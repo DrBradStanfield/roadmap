@@ -14,7 +14,8 @@
  *    extraction, not clinical IP (the algorithm doc never leaves the server).
  */
 import { z } from 'zod';
-import { lookupUnit, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from './units';
+import { reportedToCanonical, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from './units';
+import { foldName } from './lab-catalog';
 import { DOCUMENT_TYPES } from './validation';
 
 // ---------------------------------------------------------------------------
@@ -103,8 +104,9 @@ export const VALID_METRICS: MetricType[] = [
  * Every spelling of a core metric a report prints, as the extractor's prompt
  * lists them and as `file_results` resolves a printed name (US-36 AC3). One
  * table: the prompt's TARGET METRICS block is rendered from it. Matching is
- * exact after folding (case, whitespace), never a substring — "Non-HDL
- * Cholesterol" and "Chol/HDL ratio" must resolve to nothing, not to `hdl`.
+ * exact after `foldName` (case, whitespace, underscores — the lab catalogue's
+ * own fold), never a substring — "Non-HDL Cholesterol" and "Chol/HDL ratio"
+ * must resolve to nothing, not to `hdl`.
  */
 export const CORE_METRIC_ALIASES: Record<MetricType, string[]> = {
   ldl: ['LDL', 'LDL-C', 'LDL Cholesterol', 'LDL Cholesterol (calc)', 'LDL Cholesterol (calculated)', 'LDL Chol Calc', 'Low Density Lipoprotein'],
@@ -123,10 +125,6 @@ export const CORE_METRIC_ALIASES: Record<MetricType, string[]> = {
   height: ['Height'],
 };
 
-function foldName(name: string): string {
-  return name.trim().toLowerCase().replace(/\s+/g, ' ');
-}
-
 const CORE_NAME_INDEX = new Map<string, MetricType>();
 for (const metric of Object.keys(CORE_METRIC_ALIASES) as MetricType[]) {
   CORE_NAME_INDEX.set(foldName(metric), metric);
@@ -144,10 +142,8 @@ export function resolveUnit(metric: MetricType, unitStr: string, value: number):
   system: UnitSystem;
   confident: boolean;
 } {
-  const alias = lookupUnit(metric, unitStr);
-  if (alias) {
-    return { valueSI: toCanonicalValue(metric, value * (alias.scale ?? 1), alias.system), system: alias.system, confident: true };
-  }
+  const reported = reportedToCanonical(metric, value, unitStr);
+  if (reported) return { ...reported, confident: true };
 
   // Fallback: check which validation range the value fits
   const def = UNIT_DEFS[metric];

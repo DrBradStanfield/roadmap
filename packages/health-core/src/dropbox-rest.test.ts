@@ -190,13 +190,17 @@ describe('US-35 AC2 — dropboxListFolder lists files only, and follows has_more
 
   it('stops following has_more once `limit` entries are in hand (US-37 AC1)', async () => {
     let pages = 0;
-    vi.stubGlobal('fetch', vi.fn(async () => {
+    const bodies: Array<Record<string, unknown>> = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init: RequestInit) => {
       pages++;
+      bodies.push(JSON.parse(String(init.body)));
       return Response.json({ entries: [{ '.tag': 'file', id: `id:${pages}`, name: `scan-${pages}.png`, size: 1 }], cursor: `c${pages}`, has_more: true });
     }));
     const entries = await dropboxListFolder('token', '', undefined, 2);
     expect(entries.map((e) => e.name)).toEqual(['scan-1.png', 'scan-2.png']);
     expect(pages).toBe(2);
+    // The first request asks Dropbox for that many, so the page itself is small.
+    expect(bodies[0].limit).toBe(2);
   });
 
   it('lists a folder that does not exist as empty, and a subfolder by name', async () => {

@@ -13,7 +13,7 @@
  */
 import { deadlineSignal } from './adapter';
 import { dayOf, daysBetween } from './merge';
-import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
+import { displayLabUnit, type LabCatalogEntry, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 import { ISO_DATE } from './measurement-history';
 import {
   type AdditionalLabValue,
@@ -43,8 +43,9 @@ import {
 } from './record-edits';
 import type { FileDocument, FileLabValue, FileMeasurement, FileReminderOptIn, RoadmapFile } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
-import { formatDisplayValue, getDisplayLabel, getDisplayRange, lookupUnit, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
+import { formatDisplayValue, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
+import type { McpImportRoute } from './product-events';
 import { LAB_ARCHIVE_TITLE } from './document-path';
 import { DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES } from './validation';
 import { z } from 'zod';
@@ -65,6 +66,8 @@ export const MAX_LAB_ROWS_PER_CALL = 50;
  * write megabytes of a string into a record that has to be read back whole.
  */
 export const MAX_NAME_LENGTH = 120;
+/** Longest file name a source or a folder entry keeps: a file system's own bound, and what `fileNames` must match. */
+export const MAX_FILE_NAME_LENGTH = 255;
 /** Unrecognized lines one extract answers with; the model's output cap would otherwise bound them at ~30 KB. */
 export const MAX_UNRECOGNIZED_LINES = 50;
 /** One such line: a printed name, a value, a unit, the reason and the way round it (US-36 AC2). */
@@ -126,6 +129,8 @@ export const addLabValuesInput = z.object({
  */
 /** A receipt NAMES a pending payload in the user's folder; it never carries one (US-35 AC7). A proposal receipt fits the same bound. */
 export const MAX_RECEIPT_LENGTH = 1024;
+/** How long a parked import waits for its commit, on either server. */
+export const RECEIPT_LIFETIME_SECONDS = 60 * 60;
 const CONFIRM = z.string().max(MAX_RECEIPT_LENGTH).optional();
 
 export const correctValueInput = z.object({
@@ -235,7 +240,7 @@ export const fileResultRow = z.object({
  * refused in words by `runImport`, never as a schema message.
  */
 export const fileResultsInput = z.object({
-  sourceFileName: z.string().min(1).max(255).optional(),
+  sourceFileName: z.string().min(1).max(MAX_FILE_NAME_LENGTH).optional(),
   classification: z.enum(DOCUMENT_CLASSIFICATIONS).optional(),
   collectedOn: DAY.optional(),
   values: z.array(fileResultRow).max(MAX_LAB_ROWS_PER_CALL).optional(),
@@ -251,6 +256,8 @@ export const fileResultsInput = z.object({
 }).strict();
 
 export type FileResultsRequest = z.infer<typeof fileResultsInput>;
+/** A `file_results` call that names its file: what `fileResultsBundle` reads, once `runImport` has refused an incomplete one. */
+export type FileResultsSource = FileResultsRequest & Required<Pick<FileResultsRequest, 'sourceFileName' | 'classification'>>;
 
 // ---------------------------------------------------------------------------
 // What each tool answers with, typed (MCP `outputSchema`)
@@ -386,7 +393,7 @@ export const reportFeedbackOutput = z.object({
 const SLOT_STATES = ['free', 'held_equal', 'held_different'] as const;
 const IMPORT_FILE_STATUSES = ['extracted', 'already_imported', 'skipped', 'failed'] as const;
 /** `assistant`: the assistant read the file and sent rows (`file_results`, US-36). */
-const IMPORT_ROUTES = ['dropbox', 'chatgpt_file', 'assistant'] as const;
+const IMPORT_ROUTES = ['dropbox', 'chatgpt_file', 'assistant'] as const satisfies readonly McpImportRoute[];
 
 const importCandidateOutput = z.object({
   id: z.string(),
@@ -831,7 +838,7 @@ function prepareFeedback(
  * GitHub token can do. It holds no secret, makes no request and writes nothing:
  * the user opens the URL, reads what it says and submits it themselves.
  */
-export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now: string): ToolOutcome {
+export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now: string, dryRun = false): ToolOutcome {
   const prepared = prepareFeedback(request, now);
   if (!prepared.ok) return { status: 'rejected', text: prepared.text };
 
@@ -845,13 +852,13 @@ export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now
         'Shorten the detail and call again.',
     };
   }
-  return {
-    status: 'ok',
-    text: `${url}\n\nShow the user this link. Ask them to read the title and body first — they must contain no ` +
+  // A dry run is the hosted proposal (US-36 AC9): what WOULD be filed, never a link to submit.
+  const text = dryRun
+    ? `Would file a PUBLIC GitHub issue (${request.kind}): “${prepared.title}”. The detail is the text you sent, as written.`
+    : `${url}\n\nShow the user this link. Ask them to read the title and body first — they must contain no ` +
       'health values, no names and no file paths — and to submit it themselves; it needs a GitHub account. ' +
-      'Nothing has been sent anywhere.',
-    data: { filed: false, url, kind: request.kind, title: prepared.title },
-  };
+      'Nothing has been sent anywhere.';
+  return { status: 'ok', text, data: { filed: false, url, kind: request.kind, title: prepared.title } };
 }
 
 /**
@@ -910,6 +917,10 @@ export interface ImportBundle {
   files: ExtractedFile[];
   /** Folder-route names not reached inside the budget: pass them as `fileNames` next. */
   remaining: string[];
+  /** The user's own answer to "what date was this test?", per file name (AC13); it wins over the file's date. */
+  fileDates?: Record<string, string>;
+  /** Every value already passed the record's own dry run, worded per row (US-36 AC2): `prepareImport` need not run it again. */
+  checked?: true;
 }
 
 export type ImportCandidate = z.infer<typeof importCandidateOutput>;
@@ -937,8 +948,6 @@ export interface ImportPayload {
   createdAt: string;
   candidates: ImportCandidate[];
   documents: ImportDocument[];
-  /** Which assistant sent the rows, on the assistant route: the pinned client label, stored on the document row (US-36 AC5). */
-  client?: string;
 }
 
 export type ImportRefusal = { refusal: string };
@@ -955,10 +964,10 @@ export type ImportRefusal = { refusal: string };
  * every write — and `open` verifies the receipt BEFORE it charges anything,
  * so a forged receipt costs nothing.
  */
-export interface ReceiptSurface {
+export interface ImportSurface {
   /** The oldest value a `replace` may correct, in days — the hosted 90-day rule. Absent: no limit. */
   maxCorrectionAgeDays?: number;
-  /** The pinned label of the assistant calling, for the document row's audit trail (US-36 AC5). */
+  /** The pinned label of the assistant calling, stamped on the document row at commit (US-36 AC5). */
   client?: string;
   /**
    * One call's whole budget, ms (AC5). `runImport` starts the clock before the
@@ -971,16 +980,13 @@ export interface ReceiptSurface {
   stash(payload: ImportPayload, deadline: number): Promise<{ receipt: string; expiresAt: string } | ImportRefusal>;
   open(commit: ImportCommit, file: RoadmapFile, now: string, deadline: number): Promise<ImportPayload | ImportRefusal>;
   discard(payload: ImportPayload, deadline: number): Promise<void>;
-}
-
-/**
- * A surface that can also READ files: the folder route needs a listing, a
- * download and the extraction model, which only the hosted server has
- * (AC11). `file_results` needs none of that — the assistant read the file —
- * so it runs over any `ReceiptSurface`, the stdio server's included (US-36).
- */
-export interface ImportSurface extends ReceiptSurface {
-  extract(request: ImportRequest, file: RoadmapFile, now: string, deadline: number): Promise<ImportBundle | ImportRefusal>;
+  /**
+   * READ files: the folder route needs a listing, a download and the
+   * extraction model, which only the hosted server has (AC11). Absent,
+   * `import_documents` refuses in words; `file_results` needs none of it —
+   * the assistant read the file — so it runs on the stdio server too (US-36).
+   */
+  extract?(request: ImportRequest, file: RoadmapFile, now: string, deadline: number): Promise<ImportBundle | ImportRefusal>;
 }
 
 export const IMPORT_HOSTED_ONLY =
@@ -1018,16 +1024,13 @@ export function isAlreadyImported(file: RoadmapFile, name: string, contentHash: 
 }
 
 /**
- * US-37 AC1 — the nudge's own rule: a live document row with this
- * `sourceFileName`, hashed or not. `isAlreadyImported`'s name rule matches
- * hashless rows only, by design (twins named `Results.pdf`); here there are no
- * bytes to hash, and the name-only rule would nag every folder-imported file
- * forever. The trade-off runs the other way: a second `Results.pdf` looks
- * imported and is silent, which is why the sentence says "not in your
- * record", never "new".
+ * A folder entry as both the import and the nudge read it (US-35 AC2, US-37
+ * AC1): printable, bounded to a file name — so a nudged name is one
+ * `fileNames` will match — and only when it is a lab file. Null otherwise.
  */
-export function isAlreadyImportedByName(file: RoadmapFile, name: string): boolean {
-  return file.documents.some((d) => !d.deleted && d.sourceFileName === name);
+export function importableFileName(name: string): string | null {
+  const clean = oneLine(name).slice(0, MAX_FILE_NAME_LENGTH);
+  return isImportableEntryName(clean, FOLDER_IMPORT_EXTENSIONS) ? clean : null;
 }
 
 /** Names one nudge carries, at most; the folder can hold more. */
@@ -1044,11 +1047,19 @@ export const FOLDER_NUDGE_HINT =
  * folder route would read that no live document row names. Pure — the
  * surface lists and hands the names in — and `undefined` when there is
  * nothing to offer, so the field is absent rather than empty.
+ *
+ * The nudge's own rule (AC1): a live row with this `sourceFileName`, hashed
+ * or not. `isAlreadyImported`'s name rule matches hashless rows only, by
+ * design (twins named `Results.pdf`); here there are no bytes to hash, and
+ * that rule would nag every folder-imported file forever. The trade-off runs
+ * the other way: a second `Results.pdf` looks imported and is silent, which
+ * is why the sentence says "not in your record", never "new".
  */
 export function folderNudge(file: RoadmapFile, entryNames: string[]): z.infer<typeof folderNudgeOutput> | undefined {
+  const filed = new Set(file.documents.filter((d) => !d.deleted).map((d) => d.sourceFileName));
   const unimported = entryNames
-    .map((name) => oneLine(name).slice(0, MAX_NAME_LENGTH))
-    .filter((name) => isImportableEntryName(name, FOLDER_IMPORT_EXTENSIONS) && !isAlreadyImportedByName(file, name))
+    .flatMap((name) => importableFileName(name) ?? [])
+    .filter((name) => !filed.has(name))
     .sort((a, b) => a.localeCompare(b))
     .slice(0, FOLDER_NUDGE_MAX);
   return unimported.length ? { unimported, hint: FOLDER_NUDGE_HINT } : undefined;
@@ -1105,8 +1116,9 @@ type PreparedImport = { payload: ImportPayload; files: Array<z.infer<typeof impo
  * candidate's `question`, the `unrecognized` lines — and this field names
  * where to look, so text from a document never rides in it (AC9).
  */
-function extractNext(prepared: PreparedImport, remaining: string[], route: ImportRoute, tool: 'import_documents' | 'file_results'): string {
+function extractNext(prepared: PreparedImport, remaining: string[], route: ImportRoute): string {
   const { payload, files, unrecognized } = prepared;
+  const tool = route === 'assistant' ? 'file_results' : 'import_documents';
   const lines: string[] = [];
   const count = (state: SlotState) => payload.candidates.filter((c) => c.slot.state === state).length;
   const questions = payload.candidates.filter((c) => c.question).map((c) => c.id);
@@ -1159,7 +1171,7 @@ function extractNext(prepared: PreparedImport, remaining: string[], route: Impor
 export function prepareImport(
   file: RoadmapFile,
   bundle: ImportBundle,
-  ctx: EditContext & { maxCorrectionAgeDays?: number; payloadId: string; fileDates?: Record<string, string>; client?: string },
+  ctx: EditContext & { maxCorrectionAgeDays?: number; payloadId: string },
 ): PreparedImport {
   const latestDay = ctx.latestDay ?? dayOf(ctx.now);
   const system: UnitSystem = file.profile.unitSystem ?? 'si';
@@ -1201,7 +1213,7 @@ export function prepareImport(
       // The user's own answer to "what date was this test?" wins over the print
       // (AC13), and one the record refuses is said back with the refusal — a
       // `no_date` here would ask for the date the user just gave.
-      const given = ctx.fileDates?.[name];
+      const given = bundle.fileDates?.[name];
       const own = given === undefined ? null : resolveRecordedAt(given, ctx);
       const refused = typeof own === 'string' ? null : own;
       const day = typeof own === 'string' ? own : refused ? null : validDay(result.reportDate, ctx);
@@ -1226,8 +1238,8 @@ export function prepareImport(
         const own = value.recordedAt ?? day;
         // A dry run of the real append: it validates the value and the day the
         // way the record will. Only a taken slot is not a reason to drop it.
-        const check = appendMeasurement(file, { metricType: metric, value: value.valueSI, recordedAt: own, now: ctx.now, latestDay });
-        if (!check.ok && check.reason !== 'slot-occupied') {
+        const check = bundle.checked ? null : appendMeasurement(file, { metricType: metric, value: value.valueSI, recordedAt: own, now: ctx.now, latestDay });
+        if (check && !check.ok && check.reason !== 'slot-occupied') {
           unrecognized.push(`${metric}: ${oneLine(check.message)}`);
           continue;
         }
@@ -1243,8 +1255,8 @@ export function prepareImport(
       for (const value of result.additionalValues) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
         const own = value.recordedAt ?? day;
-        const check = appendLabValue(file, { metricName: value.name, value: value.value, unit: value.unit, recordedAt: own, now: ctx.now, latestDay });
-        if (!check.ok && check.reason !== 'slot-occupied') {
+        const check = bundle.checked ? null : appendLabValue(file, { metricName: value.name, value: value.value, unit: value.unit, recordedAt: own, now: ctx.now, latestDay });
+        if (check && !check.ok && check.reason !== 'slot-occupied') {
           unrecognized.push(`${oneLine(value.name).slice(0, MAX_NAME_LENGTH)}: ${oneLine(check.message)}`);
           continue;
         }
@@ -1274,7 +1286,7 @@ export function prepareImport(
     files.push(report);
   }
 
-  const payload: ImportPayload = { id: ctx.payloadId, route: bundle.route, createdAt: ctx.now, candidates, documents, ...(ctx.client ? { client: ctx.client } : null) };
+  const payload: ImportPayload = { id: ctx.payloadId, route: bundle.route, createdAt: ctx.now, candidates, documents };
   return { payload, files, unrecognized: unrecognized.slice(0, MAX_UNRECOGNIZED_LINES) };
 }
 
@@ -1283,13 +1295,13 @@ export function prepareImport(
 // ---------------------------------------------------------------------------
 
 /** What a printed name or a claimed `metric` resolves to: a core metric, a catalogued test, or nothing. */
-type ResolvedName = { kind: 'core'; metric: MetricType } | { kind: 'lab'; key: string } | null;
+type ResolvedName = { kind: 'core'; metric: MetricType } | { kind: 'lab'; key: string; entry: LabCatalogEntry } | null;
 
 function resolveName(name: string): ResolvedName {
   const core = resolveCoreMetricName(name);
   if (core) return { kind: 'core', metric: core };
   const entry = resolveLabCatalogEntry(name);
-  return entry ? { kind: 'lab', key: entry.key } : null;
+  return entry ? { kind: 'lab', key: entry.key, entry } : null;
 }
 
 const describeName = (resolved: ResolvedName): string => (resolved?.kind === 'core' ? resolved.metric : resolved?.kind === 'lab' ? resolved.key : 'nothing this record knows');
@@ -1308,9 +1320,9 @@ const describeName = (resolved: ResolvedName): string => (resolved?.kind === 'co
  * run; a canonical value under the metric's display floor is offered with a
  * question, because a unit swap on a floor-0 metric passes every range.
  */
-export function fileResultsBundle(request: FileResultsRequest, file: RoadmapFile, ctx: EditContext): ImportBundle | ImportRefusal {
-  const name = oneLine(request.sourceFileName ?? '').slice(0, 255);
-  const classification = request.classification ?? 'other';
+export function fileResultsBundle(request: FileResultsSource, file: RoadmapFile, ctx: EditContext): ImportBundle | ImportRefusal {
+  const name = oneLine(request.sourceFileName).slice(0, MAX_FILE_NAME_LENGTH);
+  const { classification } = request;
   const isLab = classification === 'lab_report';
   if (isLab && !request.collectedOn) {
     return { refusal: 'A lab report needs collectedOn: the date the sample was taken, YYYY-MM-DD. If the report prints none, ask the user — never guess. Nothing was read.' };
@@ -1367,31 +1379,32 @@ export function fileResultsBundle(request: FileResultsRequest, file: RoadmapFile
     if (claimed?.kind === 'core') {
       const metric = claimed.metric;
       const def = UNIT_DEFS[metric];
-      const canonical = reportedToCanonical(metric, row.value, unit);
-      if (canonical === null) {
-        refuse(`${metric} is measured in ${def.label.si} or ${def.label.conventional}, not "${unit}". Check the unit column; if the report really prints that, tell the user and do not file it.`);
-        continue;
-      }
-      const check = appendMeasurement(file, { metricType: metric, value: canonical, recordedAt: day, now: ctx.now, latestDay: ctx.latestDay });
+      // The real append, dry run under the printed unit: it refuses an unknown
+      // unit, an out-of-range number and a bad day in the record's own words.
+      const check = appendMeasurement(file, { metricType: metric, value: row.value, unit, recordedAt: day, now: ctx.now, latestDay: ctx.latestDay });
       if (!check.ok && check.reason !== 'slot-occupied') {
         const si = getDisplayRange(metric, 'si');
         const conv = getDisplayRange(metric, 'conventional');
-        refuse(check.reason === 'out-of-range'
-          ? `${oneLine(check.message)} (${si.min}–${si.max} ${def.label.si}; ${conv.min}–${conv.max} ${def.label.conventional}). Check the unit; if the report really says that, tell the user and do not file it.`
-          : `${oneLine(check.message)}.`);
+        refuse(check.reason === 'unknown-unit'
+          ? `${oneLine(check.message)}. Check the unit column; if the report really prints that, tell the user and do not file it.`
+          : check.reason === 'out-of-range'
+            ? `${oneLine(check.message)} (${si.min}–${si.max} ${def.label.si}; ${conv.min}–${conv.max} ${def.label.conventional}). Check the unit; if the report really says that, tell the user and do not file it.`
+            : `${oneLine(check.message)}.`);
         continue;
       }
+      // Non-null: the dry run just accepted this unit.
+      const { valueSI: canonical, system } = reportedToCanonical(metric, row.value, unit)!;
       const floor = UNIT_SWAP_FLOORS[metric];
       const swapped = floor !== undefined && canonical < floor;
-      const other = lookupUnit(metric, unit)?.system === 'si' ? def.label.conventional : def.label.si;
+      const other = system === 'si' ? def.label.conventional : def.label.si;
       values.push({
-        metric, valueSI: canonical, displayValue: row.value, displayUnit: unit, displaySystem: lookupUnit(metric, unit)!.system,
+        metric, valueSI: canonical, displayValue: row.value, displayUnit: unit, displaySystem: system,
         confidence: swapped ? 'low' : 'high',
         ...(swapped ? { question: `${row.value} ${unit} is ${canonical.toFixed(2)} ${def.label.si}, below any usual result; was the printed unit ${other}?` } : null),
         printedName, recordedAt: day,
       });
     } else {
-      const entry = printed?.kind === 'lab' ? resolveLabCatalogEntry(printed.key) : undefined;
+      const entry = printed?.kind === 'lab' ? printed.entry : undefined;
       const labName = printed?.kind === 'lab' ? printed.key : printedName;
       const check = appendLabValue(file, { metricName: labName, value: row.value, unit, recordedAt: day, now: ctx.now, latestDay: ctx.latestDay });
       if (!check.ok && check.reason !== 'slot-occupied') {
@@ -1412,7 +1425,7 @@ export function fileResultsBundle(request: FileResultsRequest, file: RoadmapFile
     values, additionalValues, unrecognized,
     document: isLab || !document ? null : { classification, title: document.title, documentDate: document.date, contentMarkdown: '', ...(document.summary ? { summary: document.summary } : null), metadata: {} },
   };
-  return { route: 'assistant', files: [{ name, contentHash, status: 'extracted', result }], remaining: [] };
+  return { route: 'assistant', files: [{ name, contentHash, status: 'extracted', result }], remaining: [], checked: true };
 }
 
 /**
@@ -1428,6 +1441,8 @@ export function importDocumentsCommit(
   payload: ImportPayload,
   commit: ImportCommit,
   now: string,
+  /** The pinned label of the assistant committing — the proposing one too, since the receipt is bound to the connection (US-36 AC5). */
+  client?: string,
 ): ToolOutcome {
   const byId = new Map(payload.candidates.map((c) => [c.id, c]));
   for (const id of [...commit.accept, ...commit.replace]) {
@@ -1487,7 +1502,7 @@ export function importDocumentsCommit(
   // (a document the user reviewed), and the document row says which way it
   // came and, on the assistant route, which assistant read it.
   const metadata = payload.route === 'assistant'
-    ? { importedVia: 'assistant', ...(payload.client ? { client: payload.client } : null) }
+    ? { importedVia: 'assistant', ...(client ? { client } : null) }
     : { importedVia: 'connector' };
   const docs: FileDocument[] = payload.documents
     .filter((d) => !isAlreadyImported(file, d.sourceFileName, d.contentHash, d.date))
@@ -1531,6 +1546,45 @@ export function importDocumentsCommit(
 }
 
 /**
+ * How a tool that runs through the import surface reads its request (US-35,
+ * US-36): declared per tool, like `cost`, so `runImport` compares no names.
+ * `R` is the tool's parsed request; the definition list holds them untyped.
+ */
+export interface ImportTool<R = unknown> {
+  /** Which refusal a malformed call gets, by the first failing field (AC13). */
+  malformed(path: string): keyof typeof IMPORT_REFUSALS;
+  /** True when the request names something to read — a source, which a commit may not ride beside. */
+  hasSource(request: R): boolean;
+  /** A source too incomplete to read, in words; null when it is whole. Checked before the record opens or anything is charged. */
+  incomplete(request: R): string | null;
+  /** What was read: the surface's own reading (the folder route) or the assistant's (`file_results`). */
+  bundle(request: R, file: RoadmapFile, surface: ImportSurface, ctx: EditContext & { deadline: number }): ImportBundle | ImportRefusal | Promise<ImportBundle | ImportRefusal>;
+}
+
+const importDocumentsTool: ImportTool<ImportRequest> = {
+  malformed: (path) => (path === 'commit' ? 'commit' : path === 'file' ? 'mobile' : 'arguments'),
+  hasSource: (request) => Boolean(request.file || request.fileNames),
+  incomplete: () => null,
+  async bundle(request, file, surface, ctx) {
+    // Reading files is the surface's; without a reader (the stdio server, AC11) the tool refuses in words.
+    if (!surface.extract) return { refusal: IMPORT_HOSTED_ONLY };
+    const bundle = await surface.extract(request, file, ctx.now, ctx.deadline);
+    if ('refusal' in bundle) return bundle;
+    // A list of pairs on the wire (ChatGPT's tool renderer drops a map-shaped
+    // param, and the model then declares the field missing; live 2026-09-07), a map here.
+    return { ...bundle, ...(request.fileDates ? { fileDates: Object.fromEntries(request.fileDates.map((d) => [d.file, d.date])) } : null) };
+  },
+};
+
+const fileResultsTool: ImportTool<FileResultsRequest> = {
+  malformed: (path) => (path === 'commit' ? 'commit' : 'fileResults'),
+  hasSource: (request) => Boolean(request.sourceFileName || request.values || request.document),
+  incomplete: (request) => (request.sourceFileName && request.classification ? null : IMPORT_REFUSALS.fileResults),
+  // The assistant read the file: nothing to download, nothing to extract (US-36 AC6).
+  bundle: (request, file, _surface, ctx) => fileResultsBundle(request as FileResultsSource, file, ctx),
+};
+
+/**
  * Both phases over one record: the surface reads and parks, the tool layer
  * slots and applies. The extract runs the loop's `beforeCall` like any write
  * (the hosted server charges the call there); the commit does not — its
@@ -1538,28 +1592,22 @@ export function importDocumentsCommit(
  */
 async function runImport(
   sync: SyncManager<RoadmapFile>,
-  name: 'import_documents' | 'file_results',
+  name: ToolName,
+  imports: ImportTool,
   args: unknown,
   now: string,
   options: RunToolOptions,
-  surface: ReceiptSurface,
+  surface: ImportSurface,
 ): Promise<ToolAnswer> {
   const parsed = parseArgs(name, args);
   // A malformed call is worded from the table, never as a raw schema message (AC13).
-  if (!parsed.ok) {
-    const which = parsed.path === 'commit' ? 'commit' : name === 'file_results' ? 'fileResults' : parsed.path === 'file' ? 'mobile' : 'arguments';
-    return { text: IMPORT_REFUSALS[which], isError: true };
-  }
-  const request = parsed.data as ImportRequest | FileResultsRequest;
-  const rows = name === 'file_results' ? (request as FileResultsRequest) : undefined;
-  const folder = name === 'import_documents' ? (request as ImportRequest) : undefined;
-  const beside = rows ? rows.sourceFileName || rows.values || rows.document : folder!.file || folder!.fileNames;
-  if (request.commit && beside) {
+  if (!parsed.ok) return { text: IMPORT_REFUSALS[imports.malformed(parsed.path)], isError: true };
+  const request = parsed.data as { commit?: ImportCommit };
+  if (request.commit && imports.hasSource(parsed.data)) {
     return { text: `${name}: pass commit on its own, without a source. Nothing was written.`, isError: true };
   }
-  if (rows && !rows.commit && (!rows.sourceFileName || !rows.classification)) {
-    return { text: IMPORT_REFUSALS.fileResults, isError: true };
-  }
+  const short = request.commit ? null : imports.incomplete(parsed.data);
+  if (short) return { text: short, isError: true };
   // One clock for the call: the record's own read and write are I/O too (AC5).
   const deadline = Date.now() + surface.budgetMs;
   const signal = deadlineSignal(deadline);
@@ -1569,7 +1617,7 @@ async function runImport(
   if (request.commit) {
     const opened = await surface.open(request.commit, file, now, deadline);
     if ('refusal' in opened) return { text: opened.refusal, isError: true };
-    const outcome = importDocumentsCommit(file, opened, request.commit, now);
+    const outcome = importDocumentsCommit(file, opened, request.commit, now, surface.client);
     if (outcome.status !== 'ok') return { text: outcome.text, isError: true };
     if (outcome.file) await sync.save(outcome.file, signal);
     await surface.discard(opened, deadline);
@@ -1582,25 +1630,14 @@ async function runImport(
 
   const refusal = options.beforeCall?.(file);
   if (refusal) return { text: refusal, isError: true };
-  let bundle: ImportBundle | ImportRefusal;
-  if (rows) {
-    // The assistant read the file: nothing to download, nothing to extract (US-36 AC6).
-    bundle = fileResultsBundle(rows, file, { now, latestDay });
-  } else if ('extract' in surface) {
-    bundle = await (surface as ImportSurface).extract(folder!, file, now, deadline);
-  } else {
-    return { text: IMPORT_HOSTED_ONLY, isError: true };
-  }
+  const bundle = await imports.bundle(parsed.data, file, surface, { now, latestDay, deadline });
   if ('refusal' in bundle) return { text: bundle.refusal, isError: true };
-  // A list of pairs on the wire (ChatGPT's tool renderer drops a map-shaped
-  // param, and the model then declares the field missing; live 2026-09-07), a map here.
-  const fileDates = folder?.fileDates && Object.fromEntries(folder.fileDates.map((d) => [d.file, d.date]));
-  const prepared = prepareImport(file, bundle, { now, latestDay, maxCorrectionAgeDays: surface.maxCorrectionAgeDays, payloadId: crypto.randomUUID(), fileDates, client: surface.client });
+  const prepared = prepareImport(file, bundle, { now, latestDay, maxCorrectionAgeDays: surface.maxCorrectionAgeDays, payloadId: crypto.randomUUID() });
   const data: z.infer<typeof importDocumentsOutput> = {
     phase: 'extracted', route: bundle.route, files: prepared.files, candidates: prepared.payload.candidates,
     documents: prepared.payload.documents.map(({ sourceFileName, title, summary, type, date }) => ({ sourceFileName, title, ...(summary ? { summary } : null), type, date })),
     unrecognized: prepared.unrecognized, remaining: bundle.remaining,
-    next: extractNext(prepared, bundle.remaining, bundle.route, name),
+    next: extractNext(prepared, bundle.remaining, bundle.route),
   };
   if (prepared.payload.candidates.length || prepared.payload.documents.length) {
     const stashed = await surface.stash(prepared.payload, deadline);
@@ -1637,13 +1674,30 @@ export interface McpToolDefinition {
   description: string;
   cost: ToolCost;
   /**
-   * How the loop runs it, when not over the opened record: `record-free`
-   * opens nothing (`report_feedback`); `surface` runs through what the caller
-   * hands in (`RunToolOptions.importer`), and without one falls through to
-   * `callTool`, which refuses in the tool's own words. Declared, like `cost`,
-   * so the loop compares no names.
+   * `record-free`: the loop opens nothing to run it (`report_feedback`).
+   * Declared, like `cost`, so the loop compares no names.
    */
-  run?: 'record-free' | 'surface';
+  run?: 'record-free';
+  /**
+   * Runs through the import surface the caller hands in
+   * (`RunToolOptions.importer`), reading its request this way; without a
+   * surface it falls through to `callTool`, which refuses in words.
+   */
+  imports?: ImportTool;
+  /**
+   * Permanent on the hosted server, so it takes two calls there (US-36 AC9):
+   * a proposal, then the same call with `confirm`. Set by `twoPhase` below,
+   * which also publishes `confirm` and the proposal fields.
+   */
+  twoPhase?: true;
+  /** The receipt's identity for its arguments; absent, the arguments themselves. `report_feedback` hashes its prepared text. */
+  canonicalArgs?(args: Record<string, unknown>): unknown;
+  /**
+   * A read that visits the folder (US-37): on Dropbox its answer lists files
+   * not in the record. A function narrows it by arguments — a filtered
+   * `read_record` is a lookup, not a visit. Set by `nudged` below.
+   */
+  nudge?: true | ((args: Record<string, unknown>) => boolean);
   inputSchema: ToolInputSchema;
   /**
    * The shape of the structured result. Declaring it obliges every OK result to
@@ -1686,6 +1740,19 @@ const PROPOSAL_SCHEMA = {
   confirm: { type: 'string', description: 'The receipt to send back, unchanged, after the user’s own yes.' },
   confirmFrom: { type: 'string', description: 'When the receipt becomes usable. Do not call before it.' },
 } as const;
+const TWO_PHASE_NOTE = ' On the hosted server this takes two calls: the first answers with what it would do and a `confirm` receipt; show it to the user and call again with `confirm` only after their own yes.';
+const CONFIRM_SCHEMA = { type: 'string', maxLength: MAX_RECEIPT_LENGTH, description: 'Hosted server, second call only: the receipt the first call returned, after the user’s own yes.' } as const;
+
+/** A permanent tool, published as two-phase (US-36 AC9): the flag, the sentence, `confirm` in, the proposal fields out — from one call. */
+function twoPhase(def: McpToolDefinition): McpToolDefinition {
+  return {
+    ...def,
+    twoPhase: true,
+    description: def.description + TWO_PHASE_NOTE,
+    inputSchema: { ...def.inputSchema, properties: { ...def.inputSchema.properties, confirm: CONFIRM_SCHEMA } },
+    outputSchema: { ...def.outputSchema, properties: { ...def.outputSchema.properties, ...PROPOSAL_SCHEMA } },
+  };
+}
 
 /** A written row's fields, shared by the three tools that answer with one. */
 const ROW_FIELDS = {
@@ -1712,19 +1779,30 @@ const RECORD_SECTIONS = {
   reminderOptIn: OBJECT,
 } as const;
 
-/** Every section `planPayload` builds. All of them are always present. */
 /** US-37: the nudge, as both reads publish it. */
 const FOLDER_NUDGE_SCHEMA = {
   type: 'object',
   description: 'Dropbox only: files in the folder root that are not in the record. Offer to import them; never do it unasked.',
   properties: {
-    unimported: { type: 'array', maxItems: FOLDER_NUDGE_MAX, items: { type: 'string', maxLength: MAX_NAME_LENGTH } },
+    unimported: { type: 'array', maxItems: FOLDER_NUDGE_MAX, items: { type: 'string', maxLength: MAX_FILE_NAME_LENGTH } },
     hint: { type: 'string', description: 'What to do about them. Follow it.' },
   },
   required: ['unimported', 'hint'],
   additionalProperties: false,
 } as const;
+const FOLDER_NUDGE_NOTE = ' On Dropbox the result also lists files in the folder that are not in the record (`folder`); offer to import them, never do it unasked.';
 
+/** A read that visits the folder (US-37): the flag, the sentence and `folder` out — from one call. */
+function nudged(def: McpToolDefinition, nudge: NonNullable<McpToolDefinition['nudge']>): McpToolDefinition {
+  return {
+    ...def,
+    nudge,
+    description: def.description + FOLDER_NUDGE_NOTE,
+    outputSchema: { ...def.outputSchema, properties: { ...def.outputSchema.properties, folder: FOLDER_NUDGE_SCHEMA } },
+  };
+}
+
+/** Every section `planPayload` builds. All of them are always present. */
 const PLAN_SECTIONS = {
   instruction: { type: 'string', description: 'How this plan must be presented. Follow it.' },
   schemaVersion: { type: 'number' },
@@ -1852,7 +1930,9 @@ const IMPORT_OUTPUT_SCHEMA: McpToolDefinition['outputSchema'] = {
  * destructive because the row it supersedes is `entered-in-error` for good.
  */
 export const MCP_TOOLS: McpToolDefinition[] = [
-  {
+  // A narrowed read is a lookup, not a visit: the write flows that read one
+  // metric first would otherwise list the folder twice a turn (US-37).
+  nudged({
     name: 'read_record',
     cost: 'none',
     _meta: invocation('Reading your record…', 'Read your record'),
@@ -1861,8 +1941,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'Return the user’s health-roadmap.json: profile, measurements, lab values, medications, supplements, ' +
       'screenings and documents. Rows are never deleted here — a superseded value stays with status ' +
       '"entered-in-error", so read `status: "active"` rows as the current truth. Optionally narrow to one ' +
-      'metric or to rows on or after a date. The reminder capability token is never included. On Dropbox the ' +
-      'result also lists files in the folder that are not in the record (`folder`); offer to import them, never do it unasked.',
+      'metric or to rows on or after a date. The reminder capability token is never included.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1873,14 +1952,14 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     },
     outputSchema: {
       type: 'object',
-      properties: { ...RECORD_SECTIONS, folder: FOLDER_NUDGE_SCHEMA },
+      properties: RECORD_SECTIONS,
       required: Object.keys(RECORD_SECTIONS).filter((key) => key !== 'reminderOptIn'),
       // Open, alone among the tools: `migrateFile` keeps unknown top-level keys,
       // so a record written by a newer app would fail a strict schema on read.
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-  },
-  {
+  }, (args) => args.metric === undefined && args.since === undefined),
+  nudged({
     name: 'get_plan',
     cost: 'none',
     _meta: invocation('Computing your plan…', 'Computed your plan'),
@@ -1888,17 +1967,16 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     description:
       'Compute the user’s plan from their record — current values, what screening or test is due, and ' +
       'suggestions with the reason and citations behind each one. This is the app’s own protocol, computed ' +
-      'offline from the file; it is educational, not medical advice. On Dropbox the result also lists files in the ' +
-      'folder that are not in the record (`folder`); offer to import them, never do it unasked.',
+      'offline from the file; it is educational, not medical advice.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     outputSchema: {
       type: 'object',
-      properties: { ...PLAN_SECTIONS, folder: FOLDER_NUDGE_SCHEMA },
+      properties: PLAN_SECTIONS,
       required: Object.keys(PLAN_SECTIONS),
       additionalProperties: false,
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-  },
+  }, true),
   {
     name: 'add_measurement',
     cost: 'add',
@@ -1988,7 +2066,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   },
-  {
+  twoPhase({
     name: 'correct_value',
     cost: 'correct',
     _meta: invocation('Correcting that value…', 'Corrected that value'),
@@ -1997,8 +2075,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'Fix a value that was recorded wrongly. This appends a new row with the corrected number and the ' +
       'ORIGINAL date, and marks the old row "entered-in-error" — permanently. Nothing is deleted or ' +
       'overwritten. Read the record first: you need the row id, and passing `expectedValue` makes the call ' +
-      'refuse if the row does not hold what you think it holds.' +
-      ' On the hosted server this takes two calls: the first answers with what it would do and a `confirm` receipt; show it to the user and call again with `confirm` only after their own yes.',
+      'refuse if the row does not hold what you think it holds.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2006,7 +2083,6 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         newValue: { type: 'number', description: 'The corrected number.' },
         unit: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The unit `newValue` is in, for a core metric. A lab value keeps its lab’s unit.' },
         expectedValue: { type: 'number', description: 'The value you believe the row holds now. Mismatch refuses the call.' },
-        confirm: { type: 'string', maxLength: MAX_RECEIPT_LENGTH, description: 'Hosted server, second call only: the receipt the first call returned, after the user’s own yes.' },
       },
       required: ['id', 'newValue'],
       additionalProperties: false,
@@ -2018,14 +2094,13 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         correctsId: { type: 'string', description: 'The row now marked "entered-in-error".' },
         metric: { type: 'string', description: 'The metric or test the row is for.' },
         unit: { type: ['string', 'null'], description: 'The unit the corrected value is stored in.' },
-        ...PROPOSAL_SCHEMA,
       },
       required: ['id', 'correctsId', 'metric', 'value', 'unit', 'recordedAt'],
       additionalProperties: false,
     },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
-  },
-  {
+  }),
+  twoPhase({
     name: 'update_profile',
     cost: 'correct',
     _meta: invocation('Updating your profile…', 'Updated your profile'),
@@ -2035,8 +2110,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'from them, so a wrong one makes the whole plan wrong. Read the record first and pass `expected` with the ' +
       'value you believe each field holds now (null if it holds none) — a mismatch refuses the call and writes ' +
       'nothing. This overwrites: the profile is one last-write-wins object, so unlike a measurement there is no ' +
-      'earlier version to read back. Display preferences (units) are not yours to change.' +
-      ' On the hosted server this takes two calls: the first answers with what it would do and a `confirm` receipt; show it to the user and call again with `confirm` only after their own yes.',
+      'earlier version to read back. Display preferences (units) are not yours to change.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2055,7 +2129,6 @@ export const MCP_TOOLS: McpToolDefinition[] = [
           },
           additionalProperties: false,
         },
-        confirm: { type: 'string', maxLength: MAX_RECEIPT_LENGTH, description: 'Hosted server, second call only: the receipt the first call returned, after the user’s own yes.' },
       },
       additionalProperties: false,
     },
@@ -2076,17 +2149,17 @@ export const MCP_TOOLS: McpToolDefinition[] = [
             additionalProperties: false,
           },
         },
-        ...PROPOSAL_SCHEMA,
       },
       required: ['changed'],
       additionalProperties: false,
     },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
-  },
-  {
+  }),
+  twoPhase({
     name: 'report_feedback',
     cost: 'correct',
     run: 'record-free',
+    canonicalArgs: (args) => canonicalFeedback(args as { kind: string; title: string; detail: string }),
     _meta: invocation('Preparing your report…', 'Prepared your report'),
     title: 'File a bug report or feature request',
     description:
@@ -2095,15 +2168,13 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'to. Offer it when a tool refuses something the user reasonably expected, when the record cannot express ' +
       'something they want to track, or when a result looks wrong. Never put health values, dates of results, ' +
       'names or file paths in the title or detail — describe the problem, not the data. A server with no GitHub ' +
-      'token instead answers with a link the user opens and submits themselves; the answer says which happened.' +
-      ' On the hosted server this takes two calls: the first answers with what it would do and a `confirm` receipt; show it to the user and call again with `confirm` only after their own yes.',
+      'token instead answers with a link the user opens and submits themselves; the answer says which happened.',
     inputSchema: {
       type: 'object',
       properties: {
         kind: { type: 'string', enum: ['bug', 'feature'], description: 'Something broken, or something missing.' },
         title: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'One line naming the problem.' },
         detail: { type: 'string', maxLength: 2000, description: 'What happened, what you expected, and the steps — no health values.' },
-        confirm: { type: 'string', maxLength: MAX_RECEIPT_LENGTH, description: 'Hosted server, second call only: the receipt the first call returned, after the user’s own yes.' },
       },
       required: ['kind', 'title', 'detail'],
       additionalProperties: false,
@@ -2116,7 +2187,6 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         number: { type: 'integer', description: 'The issue number, when one was filed.' },
         kind: { type: 'string', enum: ['bug', 'feature'] },
         title: { type: 'string' },
-        ...PROPOSAL_SCHEMA,
       },
       required: ['filed', 'url', 'kind', 'title'],
       additionalProperties: false,
@@ -2125,11 +2195,11 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     // and writes something public on someone else's system. Not destructive —
     // it takes nothing away — and not idempotent: two calls file two issues.
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
-  },
+  }),
   {
     name: 'import_documents',
     cost: 'add',
-    run: 'surface',
+    imports: importDocumentsTool,
     // No `openai/fileParams` (US-36 AC7): a file dropped into ChatGPT is read by
     // the assistant itself and sent through file_results; `file` stays callable
     // for the tool lists clients cached before that (AC12), and refuses to the
@@ -2156,7 +2226,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         fileNames: {
           type: 'array',
           maxItems: MAX_IMPORT_FILES_PER_CALL,
-          items: { type: 'string', maxLength: 255 },
+          items: { type: 'string', maxLength: MAX_FILE_NAME_LENGTH },
           description: 'Folder route: the file names to read, as listed. Omit to read every importable file in the folder root.',
         },
         fileDates: {
@@ -2211,7 +2281,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   {
     name: 'file_results',
     cost: 'add',
-    run: 'surface',
+    imports: fileResultsTool,
     _meta: invocation('Filing what you read…', 'Filing step done'),
     title: 'File the results you read from a document',
     description:
@@ -2228,7 +2298,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        sourceFileName: { type: 'string', maxLength: 255, description: 'The file’s own name, as the user gave it.' },
+        sourceFileName: { type: 'string', maxLength: MAX_FILE_NAME_LENGTH, description: 'The file’s own name, as the user gave it.' },
         classification: { type: 'string', enum: [...DOCUMENT_CLASSIFICATIONS], description: 'lab_report for results; otherwise what the document is.' },
         collectedOn: { ...DAY_SCHEMA, description: 'The sample/collection date, YYYY-MM-DD. Required for a lab report; ask the user if it is not printed.' },
         values: {
@@ -2369,6 +2439,7 @@ export const RECORD_FREE_TOOLS: ReadonlySet<ToolName> = new Set(
   MCP_TOOLS.filter((tool) => tool.run === 'record-free').map((tool) => tool.name as ToolName),
 );
 const RUN_MODE = new Map(MCP_TOOLS.map((tool) => [tool.name, tool.run]));
+const IMPORTS = new Map(MCP_TOOLS.flatMap((tool) => (tool.imports ? [[tool.name, tool.imports] as const] : [])));
 
 /** The one argument gate: every path a call takes parses here, so a malformed call is worded once. */
 function parseArgs<N extends ToolName>(name: N, args: unknown): { ok: true; data: z.infer<(typeof INPUTS)[N]> } | { ok: false; path: string; text: string } {
@@ -2390,7 +2461,7 @@ function parseArgs<N extends ToolName>(name: N, args: unknown): { ok: true; data
 export function callTool(
   name: ToolName,
   args: unknown,
-  context: EditContext & { file: RoadmapFile | undefined },
+  context: EditContext & { file: RoadmapFile | undefined; dryRun?: boolean },
 ): ToolOutcome {
   const parsed = parseArgs(name, args);
   if (!parsed.ok) return { status: 'invalid-args', text: parsed.text };
@@ -2404,7 +2475,7 @@ export function callTool(
   const record = file as RoadmapFile;
   switch (name) {
     case 'report_feedback':
-      return reportFeedback(parsed.data as z.infer<typeof reportFeedbackInput>, now);
+      return reportFeedback(parsed.data as z.infer<typeof reportFeedbackInput>, now, context.dryRun);
     case 'read_record':
       return readRecord(record, parsed.data as z.infer<typeof readRecordInput>);
     case 'get_plan':
@@ -2418,12 +2489,9 @@ export function callTool(
     case 'update_profile':
       return updateProfile(record, parsed.data as z.infer<typeof updateProfileInput>, now);
     case 'import_documents':
-      // Runs through `RunToolOptions.importer` when the surface has one;
-      // reached here, it has none (the stdio server, AC11).
-      return { status: 'rejected', text: IMPORT_HOSTED_ONLY };
     case 'file_results':
-      // Every surface passes a `ReceiptSurface`; reached here, this one did not.
-      return { status: 'rejected', text: 'file_results needs a server that can hold a receipt between two calls, and this call has none. Nothing was written.' };
+      // Both run through `RunToolOptions.importer`; reached here, the caller passed none.
+      return { status: 'rejected', text: `${name} needs a server that can hold a pending import between two calls, and this call has none. Nothing was written.` };
   }
 }
 
@@ -2437,7 +2505,7 @@ export interface ToolAnswer {
   isError: boolean;
   /** The same answer, typed to the tool's `outputSchema`. Absent on a refusal. */
   structured?: unknown;
-  /** A `dryRun` that would have written: the file is not saved, and the surface decides what to say. */
+  /** A `dryRun` that would have written: the file is not saved, and the text says what would have been. */
   pendingWrite?: true;
 }
 
@@ -2487,11 +2555,11 @@ export interface RunToolOptions {
   latestDay?: string;
   /**
    * Where a pending import waits between its two calls (US-35, US-36). The
-   * hosted server passes an `ImportSurface`, which can also READ folder files;
-   * the stdio server passes a `ReceiptSurface` held in process memory, so
-   * `file_results` runs there and `import_documents` refuses in words (AC11).
+   * hosted server's can also READ folder files (`extract`); the stdio
+   * server's is held in process memory and cannot, so `file_results` runs
+   * there and `import_documents` refuses in words (AC11).
    */
-  importer?: ReceiptSurface;
+  importer?: ImportSurface;
   /**
    * Run the tool and answer as it would, but save NOTHING (US-36 AC9): the
    * hosted server's first call of a two-phase write. `pendingWrite` on the
@@ -2530,7 +2598,7 @@ export async function runToolOverSync(
     // A malformed call is worded in one place: `callTool` parses and refuses.
     const outcome = filer && parsed?.ok
       ? await fileFeedback(parsed.data, now, filer)
-      : callTool(name, args, { file: undefined, now, latestDay: options.latestDay });
+      : callTool(name, args, { file: undefined, now, latestDay: options.latestDay, dryRun: options.dryRun });
     // A file to save with nothing opened would be a write dropped in silence.
     if (outcome.status === 'ok' && outcome.file) {
       throw new ToolContractError(`${name} produced a file without opening one`);
@@ -2540,7 +2608,8 @@ export async function runToolOverSync(
       : { text: outcome.text, isError: true };
   }
 
-  if (RUN_MODE.get(name) === 'surface' && options.importer) return runImport(sync, name as 'import_documents' | 'file_results', args, now, options, options.importer);
+  const imports = IMPORTS.get(name);
+  if (imports && options.importer) return runImport(sync, name, imports, args, now, options, options.importer);
 
   const file = await sync.load();
   const refusal = options.beforeCall?.(file);
@@ -2549,7 +2618,8 @@ export async function runToolOverSync(
   const outcome = callTool(name, args, { file, now, latestDay: options.latestDay });
   if (outcome.status !== 'ok') return { text: outcome.text, isError: true };
   if (!outcome.file) return { text: outcome.text, isError: false, structured: outcome.data };
-  if (options.dryRun) return { text: outcome.text, isError: false, structured: outcome.data, pendingWrite: true };
+  // The rows the text names were never saved: the write that follows assigns its own ids.
+  if (options.dryRun) return { text: `${outcome.text}\n(Row ids are assigned when it is written.)`, isError: false, structured: outcome.data, pendingWrite: true };
 
   await sync.save(outcome.file);
   // The note is for the person reading along; the structured answer is the

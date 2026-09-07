@@ -27,16 +27,14 @@ import JSZip from 'jszip';
 import * as Sentry from '@sentry/react-router';
 import { extractOrClassify, isNetworkOrTimeoutError } from './anthropic.server';
 import { type McpClientLabel, readCappedBytes } from './mcp-clients.server';
-import { resourceUrl } from './mcp-config.server';
-import { type AccessPayload, chargeWrites, connectionKey, importFiles, nowSeconds, WRITE_COST } from './mcp-grants.server';
-import { hash, seal, unseal } from './mcp-seal.server';
+import { type AccessPayload, chargeWrites, connectionKey, importFiles, WRITE_COST } from './mcp-grants.server';
+import { audienceFor, hash, issueStep, openStep } from './mcp-seal.server';
 import { recordServerEvent } from './product-events.server';
 import { DAY_MS, machineFiles } from './rate-limiter';
-import { deadlineSignal, StorageError, type StorageAdapter } from '../../packages/health-core/src/adapter';
+import { deadlineSignal, StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
 import { IMPORT_LIMITS, IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
 import {
   type DocumentPromptMode,
-  FOLDER_IMPORT_EXTENSIONS,
   isImportableEntryName,
   type PageContent,
   type UnifiedExtractionResult,
@@ -50,8 +48,11 @@ import {
   type ImportRefusal,
   type ImportRequest,
   type ImportSurface,
+  importableFileName,
   isAlreadyImported,
+  MAX_FILE_NAME_LENGTH,
   MAX_IMPORT_FILES_PER_CALL,
+  RECEIPT_LIFETIME_SECONDS,
 } from '../../packages/health-core/src/mcp-tools';
 import { oneLine } from '../../packages/health-core/src/plan';
 import { importFilesBucket, type McpImportRoute } from '../../packages/health-core/src/product-events';
@@ -79,7 +80,6 @@ export const MAX_IMPORT_FILE_BYTES = IMPORT_LIMITS.fileMb * 1024 * 1024;
 /** One ZIP, as downloaded — and the most one ChatGPT file may be. */
 export const MAX_IMPORT_ZIP_BYTES = IMPORT_LIMITS.zipMb * 1024 * 1024;
 export const CHATGPT_FETCH_TIMEOUT_MS = 10_000;
-export const RECEIPT_LIFETIME_SECONDS = 60 * 60;
 /** Where a pending payload lives in the user's folder, and how long before an extract sweeps it. */
 export const PENDING_FOLDER = 'imports';
 const PENDING_STALE_MS = DAY_MS;
@@ -136,7 +136,7 @@ export function sniff(bytes: Uint8Array): SniffedType | null {
 
 /** A file's own name as `sourceFileName`: printable, bounded, never a path. Empty stays empty — a made-up name would dedup every nameless file against the first. */
 function cleanName(name: string): string {
-  return oneLine(name).slice(0, 255);
+  return oneLine(name).slice(0, MAX_FILE_NAME_LENGTH);
 }
 
 const EXTENSION: Record<SniffedType, string> = { 'application/pdf': '.pdf', 'application/zip': '.zip', 'image/jpeg': '.jpg', 'image/png': '.png' };
@@ -273,15 +273,6 @@ export async function fetchChatgptFile(downloadUrl: string, signal?: AbortSignal
 // The surface
 // ---------------------------------------------------------------------------
 
-/** What a receipt names (AC7). Sealed under `'import'`, bound to the client and resource as every blob is. */
-interface ReceiptClaims {
-  id: string;
-  exp: number;
-  /** The connection hash, so a receipt cannot be committed over another connection to the same client. */
-  conn: string;
-  sha256: string;
-}
-
 function pendingName(id: string): string {
   return `${PENDING_FOLDER}/pending-${id}.json`;
 }
@@ -328,7 +319,7 @@ export interface HostedImporterOptions {
 export function hostedImporter(options: HostedImporterOptions): ImportSurface {
   const { token, adapter, client } = options;
   const connection = connectionKey(token.rt);
-  const audience = { clientId: token.clientId, resource: resourceUrl() };
+  const audience = audienceFor(token.clientId);
 
   async function sweepStale(nowMs: number, signal: AbortSignal): Promise<void> {
     if (!adapter.list || !adapter.remove) return;
@@ -376,16 +367,16 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
           return { refusal: driveRefusal(client) };
         }
         route = 'dropbox';
-        let listed: Awaited<ReturnType<NonNullable<StorageAdapter['list']>>>;
+        let listed: StoredFile[];
         try {
           listed = await adapter.list('', signal);
         } catch (error) {
           if (!signal.aborted) throw error;
           return { refusal: 'The folder did not list in time, so nothing was read. Try once more.' };
         }
+        // The nudge's own rule for what a folder file is, so a name it offered is one `fileNames` matches (US-37).
         const listing = listed
-          .map((entry) => ({ ...entry, name: cleanName(entry.name) }))
-          .filter((entry) => isImportableEntryName(entry.name, FOLDER_IMPORT_EXTENSIONS))
+          .flatMap((entry) => { const name = importableFileName(entry.name); return name ? [{ ...entry, name }] : []; })
           .sort((a, b) => a.name.localeCompare(b.name));
         let chosen = listing;
         if (request.fileNames) {
@@ -522,37 +513,42 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
     async stash(payload: ImportPayload, deadline: number) {
       // The assistant route has no extract of its own to count (US-36 usage signal): every propose that read something parks here.
       if (payload.route === 'assistant') count('assistant', 'extract', 1);
-      const exp = nowSeconds(Date.parse(payload.createdAt)) + RECEIPT_LIFETIME_SECONDS;
-      const claims: ReceiptClaims = { id: payload.id, exp, conn: hash(connection), sha256: sha256Hex(JSON.stringify(payload)) };
+      // The receipt names the pending file (`jti` = the payload id) and hashes it (`subject`), sealed like every credential (AC7).
+      const { token: receipt, claims } = issueStep(
+        'import',
+        { subject: sha256Hex(JSON.stringify(payload)), conn: hash(connection), jti: payload.id, ttlSeconds: RECEIPT_LIFETIME_SECONDS },
+        audience,
+        Date.parse(payload.createdAt),
+      );
       try {
         await adapter.write(pendingName(payload.id), payload, null, deadlineSignal(deadline));
       } catch {
         return { refusal: 'The candidates could not be parked in the user’s folder, so there is nothing to commit. Try the import again.' };
       }
-      return { receipt: seal('import', claims, audience), expiresAt: new Date(exp * 1000).toISOString() };
+      return { receipt, expiresAt: new Date(claims.exp * 1000).toISOString() };
     },
 
     async open(commit: ImportCommit, _file: RoadmapFile, now: string, deadline: number): Promise<ImportPayload | ImportRefusal> {
       // Verified BEFORE anything is charged: a forged receipt costs nothing.
       // A claims block sealed by us but naming a non-UUID id can never form a path.
-      const claims = unseal<ReceiptClaims>('import', commit.receipt, audience, Date.parse(now));
-      if (!claims || typeof claims.id !== 'string' || !UUID.test(claims.id) || claims.conn !== hash(connection) || typeof claims.sha256 !== 'string') {
+      const claims = openStep('import', commit.receipt, audience, hash(connection), Date.parse(now));
+      if (!claims || !UUID.test(claims.jti)) {
         return { refusal: 'That receipt is not valid for this connection, or has expired. Nothing was written. Extract again and show the user the fresh candidates.' };
       }
       const signal = deadlineSignal(deadline);
       let body: unknown;
       try {
-        ({ body } = await adapter.read(pendingName(claims.id), signal));
+        ({ body } = await adapter.read(pendingName(claims.jti), signal));
       } catch (error) {
         if (!signal.aborted) throw error;
         return { refusal: 'The pending import did not read in time. Nothing was written. Try the commit once more.' };
       }
       if (body == null) return { refusal: 'That import was already committed or discarded. Nothing was written. Extract again if the user still wants it.' };
-      if (sha256Hex(JSON.stringify(body)) !== claims.sha256) {
+      if (sha256Hex(JSON.stringify(body)) !== claims.subject) {
         return { refusal: 'The pending import does not match its receipt. Nothing was written. Extract again.' };
       }
       const payload = body as ImportPayload;
-      if (payload.id !== claims.id || !Array.isArray(payload.candidates) || !Array.isArray(payload.documents)) {
+      if (payload.id !== claims.jti || !Array.isArray(payload.candidates) || !Array.isArray(payload.documents)) {
         return { refusal: 'The pending import is not readable. Nothing was written. Extract again.' };
       }
       // Ids checked before the charge: a replace list of invented ids must not spend the hour.

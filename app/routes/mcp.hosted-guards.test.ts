@@ -351,9 +351,17 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     const data = OUTPUTS.update_profile.parse(proposed.structured);
     expect(data.changed).toEqual([{ field: 'heightCm', from: null, to: 178 }]);
     expect(storedRecord().profile.heightCm).toBeUndefined();
-    const done = await callToolAt(access, 'update_profile', { heightCm: 178, expected: { heightCm: null }, confirm: data.confirm }, at(11));
+    // The receipt's identity is key-order-free at every depth: the same arguments re-emitted with `expected` reordered still confirm.
+    const reordered = await callToolAt(access, 'update_profile', { expected: { sex: null, heightCm: null }, heightCm: 178, sex: 'male' }, NOW);
+    expect(reordered.isError).toBe(false);
+    const receipt = OUTPUTS.update_profile.parse(reordered.structured).confirm!;
+    expect(receipt).not.toBe(data.confirm);
+    const done = await callToolAt(access, 'update_profile', { heightCm: 178, sex: 'male', expected: { heightCm: null, sex: null }, confirm: receipt }, at(11));
     expect(done.isError).toBe(false);
     expect(storedRecord().profile.heightCm).toBe(178);
+    // The first receipt names other arguments (no `sex`), so it does not confirm this call.
+    const other = await callToolAt(access, 'update_profile', { heightCm: 178, sex: 'male', expected: { heightCm: null, sex: null }, confirm: data.confirm }, at(11));
+    expect(other.text).toContain('different arguments');
 
     const same = await callToolAt(access, 'update_profile', { heightCm: 178, expected: { heightCm: 178 } }, at(12));
     expect(same.isError).toBe(false);

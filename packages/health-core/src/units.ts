@@ -349,11 +349,11 @@ export function lookupUnit(metric: MetricType, statedUnit: string): UnitAlias | 
   return UNIT_ALIASES[metric]?.[wanted] ?? null;
 }
 
-/** A printed number under a printed unit, as the record stores it (SI canonical); null when the unit is not one this metric is measured in. */
-export function reportedToCanonical(metric: MetricType, value: number, statedUnit: string): number | null {
+/** A printed number under a printed unit, as the record stores it (SI canonical) and which system it was printed in; null when the unit is not one this metric is measured in. */
+export function reportedToCanonical(metric: MetricType, value: number, statedUnit: string): { valueSI: number; system: UnitSystem } | null {
   const alias = lookupUnit(metric, statedUnit);
   if (!alias) return null;
-  return toCanonicalValue(metric, value * (alias.scale ?? 1), alias.system);
+  return { valueSI: toCanonicalValue(metric, value * (alias.scale ?? 1), alias.system), system: alias.system };
 }
 
 /**

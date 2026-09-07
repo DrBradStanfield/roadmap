@@ -17,7 +17,7 @@
  */
 import { pathToFileURL } from 'node:url';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
-import { type ImportCommit, type ImportPayload, MCP_TOOLS, type ReceiptSurface, runToolOverSync, type ToolAnswer } from '../packages/health-core/src/mcp-tools';
+import { type ImportCommit, type ImportPayload, type ImportSurface, MCP_TOOLS, RECEIPT_LIFETIME_SECONDS, runToolOverSync, type ToolAnswer } from '../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PARSE_ERROR, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../packages/health-core/src/mcp-rpc';
 import { recordSync } from '../packages/health-core/src/roadmap-doc';
 import { describeStorageFailure, isStorageFailure } from '../packages/health-core/src/sync-manager';
@@ -64,40 +64,36 @@ in this process's memory between the two calls; a restart loses them).
 // Pending imports, in memory (US-36 AC1)
 // ---------------------------------------------------------------------------
 
-/** How long a parked `file_results` payload waits for its commit. */
-export const LOCAL_RECEIPT_LIFETIME_MS = 60 * 60 * 1000;
-
 /**
- * The `ReceiptSurface` for one process: `FileAdapter` serves the record and
- * nothing beside it, so a pending payload cannot be parked in the folder the
- * way the hosted server does. One user, one process, so the id is the
- * receipt and the map is the folder; a restart loses a pending import, and
- * the answer is to extract again. Nothing here needs a key or a network.
+ * The import surface for one process — the pending map must outlive a single
+ * call. `FileAdapter` serves the record and nothing beside it, so a pending
+ * payload cannot be parked in the folder the way the hosted server does. One
+ * user, one process, so the id is the receipt and the map is the folder; a
+ * restart loses a pending import, and the answer is to extract again. No
+ * `extract`: nothing here has a key or a network (AC11).
  */
-export function localReceipts(): ReceiptSurface {
-  const pending = new Map<string, { payload: ImportPayload; expiresAt: number }>();
-  return {
-    budgetMs: 30_000,
-    async stash(payload) {
-      const expiresAt = Date.parse(payload.createdAt) + LOCAL_RECEIPT_LIFETIME_MS;
-      pending.set(payload.id, { payload, expiresAt });
-      return { receipt: payload.id, expiresAt: new Date(expiresAt).toISOString() };
-    },
-    async open(commit: ImportCommit, _file, now) {
-      const entry = pending.get(commit.receipt);
-      if (!entry || entry.expiresAt <= Date.parse(now)) {
-        return { refusal: 'That receipt is not one this server is holding, or it has expired (the server keeps a pending import in memory for an hour, and loses it on restart). Nothing was written. Extract again and show the user the fresh candidates.' };
-      }
-      return entry.payload;
-    },
-    async discard(payload) {
-      pending.delete(payload.id);
-    },
-  };
-}
-
-/** One surface per process: the pending map must outlive a single call. */
-const receipts = localReceipts();
+const pending = new Map<string, { payload: ImportPayload; expiresAt: number }>();
+const receipts: ImportSurface = {
+  budgetMs: 30_000,
+  async stash(payload) {
+    const nowMs = Date.parse(payload.createdAt);
+    // An extract never committed would otherwise sit in memory for the process's life.
+    for (const [id, entry] of pending) if (entry.expiresAt <= nowMs) pending.delete(id);
+    const expiresAt = nowMs + RECEIPT_LIFETIME_SECONDS * 1000;
+    pending.set(payload.id, { payload, expiresAt });
+    return { receipt: payload.id, expiresAt: new Date(expiresAt).toISOString() };
+  },
+  async open(commit: ImportCommit, _file, now) {
+    const entry = pending.get(commit.receipt);
+    if (!entry || entry.expiresAt <= Date.parse(now)) {
+      return { refusal: 'That receipt is not one this server is holding, or it has expired (the server keeps a pending import in memory for an hour, and loses it on restart). Nothing was written. Extract again and show the user the fresh candidates.' };
+    }
+    return entry.payload;
+  },
+  async discard(payload) {
+    pending.delete(payload.id);
+  },
+};
 
 // ---------------------------------------------------------------------------
 // Tool calls against the file

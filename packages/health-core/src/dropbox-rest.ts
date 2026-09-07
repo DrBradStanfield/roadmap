@@ -114,14 +114,20 @@ interface DropboxEntry {
 
 /**
  * The FILES directly under one folder of the app folder (`''` for its root),
- * following `has_more` until `limit` entries are in hand. Folders are dropped: the record's own document tree
- * is not something an import reads. A folder that does not exist lists as
- * empty, which is what an app folder with no `imports/` yet is.
+ * following `has_more` until `limit` entries are in hand. The first page asks
+ * Dropbox for that many (its `limit`, at most 2000), so a big folder is not
+ * serialised whole to yield a nudge's ten names. Folders are dropped: the
+ * record's own document tree is not something an import reads. A folder that
+ * does not exist lists as empty, which is what an app folder with no
+ * `imports/` yet is.
  */
 export async function dropboxListFolder(accessToken: string, folder: string, signal?: AbortSignal, limit = Infinity): Promise<DropboxEntry[]> {
   const entries: DropboxEntry[] = [];
   let url = LIST_URL;
-  let body: object = { path: folder ? `/${folder}` : '', recursive: false, include_deleted: false };
+  let body: object = {
+    path: folder ? `/${folder}` : '', recursive: false, include_deleted: false,
+    ...(Number.isFinite(limit) ? { limit: Math.min(limit, 2000) } : null),
+  };
   for (;;) {
     const res = await request(url, {
       method: 'POST',

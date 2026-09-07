@@ -123,13 +123,6 @@ export function issueTokens(
  */
 const spentCodes = new Map<string, number>();
 
-export function claimCode(jti: string, nowMs = Date.now()): boolean {
-  for (const [id, at] of spentCodes) if (nowMs - at > CODE_LIFETIME_SECONDS * 1000) spentCodes.delete(id);
-  if (spentCodes.has(jti)) return false;
-  spentCodes.set(jti, nowMs);
-  return true;
-}
-
 /**
  * Proposal receipts already confirmed (US-36 AC9), per machine, the same
  * best-effort single-use as `spentCodes`: a replay on a second Fly machine
@@ -139,12 +132,16 @@ export function claimCode(jti: string, nowMs = Date.now()): boolean {
  */
 const spentProposals = new Map<string, number>();
 
-export function claimProposal(jti: string, lifetimeMs: number, nowMs = Date.now()): boolean {
-  for (const [id, at] of spentProposals) if (nowMs - at > lifetimeMs) spentProposals.delete(id);
-  if (spentProposals.has(jti)) return false;
-  spentProposals.set(jti, nowMs);
+/** Spend one id once: prune what has outlived `lifetimeMs`, then refuse a repeat. */
+function claimOnce(spent: Map<string, number>, jti: string, lifetimeMs: number, nowMs: number): boolean {
+  for (const [id, at] of spent) if (nowMs - at > lifetimeMs) spent.delete(id);
+  if (spent.has(jti)) return false;
+  spent.set(jti, nowMs);
   return true;
 }
+
+export const claimCode = (jti: string, nowMs = Date.now()): boolean => claimOnce(spentCodes, jti, CODE_LIFETIME_SECONDS * 1000, nowMs);
+export const claimProposal = (jti: string, lifetimeMs: number, nowMs = Date.now()): boolean => claimOnce(spentProposals, jti, lifetimeMs, nowMs);
 
 /**
  * Writes already spent by one CONNECTION this hour, per machine. Keyed on the

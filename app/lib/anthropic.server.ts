@@ -2,28 +2,22 @@
  * Anthropic API wrapper for health document processing.
  * System prompt is hardcoded server-side — client sends only content.
  *
- * Two modes:
- *   extractLabResults()        — lab report → structured numeric values
- *   processHealthDocument()    — any document → markdown + metadata
- *
- * The unified extractOrClassify() function auto-classifies each file and
- * routes to the appropriate handler in a single LLM call.
+ * extractOrClassify() auto-classifies each file and either extracts lab
+ * values or converts it to markdown + metadata, in a single LLM call, under
+ * the prompt health-core renders from its own alias and unit tables.
  */
-import { z } from 'zod';
 import * as Sentry from '@sentry/react-router';
 import {
   UNIFIED_SYSTEM_PROMPT,
   unifiedSystemPrompt,
   EXTRACTION_MODEL,
   EXTRACTION_MAX_TOKENS,
-  resolveLabValues,
   parseUnifiedResult,
   toUnifiedResult,
   extractJsonObject,
   pagesToContentBlocks,
   type DocumentPromptMode,
   type PageContent,
-  type ExtractedValue,
   type UnifiedExtractionResult,
 } from '../../packages/health-core/src/lab-extraction';
 import { sleep } from './cron-helpers.server';
@@ -46,114 +40,6 @@ export type {
   AdditionalLabValue,
   UnifiedExtractionResult,
 } from '../../packages/health-core/src/lab-extraction';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-/** What the LLM returns (raw, before unit resolution) */
-const llmResultSchema = z.object({
-  reportDate: z.string().nullable(),
-  values: z.array(z.object({
-    metric: z.string(),
-    value: z.number(),
-    unit: z.string(),
-    confidence: z.enum(['high', 'medium', 'low']),
-    question: z.string().optional(),
-  })),
-  unrecognized: z.array(z.string()).optional(),
-});
-
-type LlmResult = z.infer<typeof llmResultSchema>;
-
-export interface ExtractionResult {
-  reportDate: string | null;
-  values: ExtractedValue[];
-  unrecognized: string[];
-}
-
-// ---------------------------------------------------------------------------
-// System prompt
-// ---------------------------------------------------------------------------
-
-const SYSTEM_PROMPT = `You are a medical lab report data extractor. Extract blood test values from the provided document and return ONLY valid JSON.
-
-TARGET METRICS (use these exact keys):
-- "ldl" — LDL, LDL-C, LDL Cholesterol, Low Density Lipoprotein
-- "hdl" — HDL, HDL-C, HDL Cholesterol, High Density Lipoprotein
-- "total_cholesterol" — Total Cholesterol, TC, Cholesterol Total
-- "triglycerides" — Triglycerides, TG, Trigs
-- "hba1c" — HbA1c, Hemoglobin A1c, Glycated Hemoglobin, A1C, Glycated Haemoglobin
-- "creatinine" — Creatinine, Creat, Cr, Serum Creatinine
-- "apob" — ApoB, Apolipoprotein B, Apo B
-- "psa" — PSA, Prostate Specific Antigen
-- "lpa" — Lp(a), Lipoprotein(a), Lipoprotein little a
-- "systolic_bp" — Systolic Blood Pressure, Systolic BP, SBP
-- "diastolic_bp" — Diastolic Blood Pressure, Diastolic BP, DBP
-
-CRITICAL RULES:
-1. Extract ACTUAL measured result values ONLY. NEVER extract reference ranges, target values, or normal limits. Reference ranges often appear in parentheses, brackets, a "Reference" column, or after words like "Normal", "Ref", "Range".
-2. If the report shows previous/historical results (in a "Previous" column, "Last visit" column, trend graph, or any side-by-side layout), IGNORE them completely. Extract ONLY values from the current report's primary column, even if those historical columns are dated. Return at most ONE entry per metric — never duplicate a metric in the output.
-3. For the date: use the COLLECTION or SAMPLE date (when blood was drawn), NOT the report date, print date, or received date. Return as ISO format YYYY-MM-DD.
-4. For ambiguous date formats (e.g. 03/04/2026): prefer DD/MM/YYYY if the lab address or language suggests non-US origin. Prefer MM/DD/YYYY for US labs. If uncertain, set confidence to "low".
-5. For multi-page documents: the collection date may appear on the first page while results are on later pages. Correlate dates and results across all pages.
-6. If a value could be a reference range or you are uncertain, set confidence to "low" and include a "question" explaining the ambiguity.
-7. Skip any test not in the TARGET METRICS list. Include skipped tests in the "unrecognized" array as "test name: value unit".
-
-RESPONSE FORMAT (strict JSON, no markdown):
-{
-  "reportDate": "YYYY-MM-DD" or null,
-  "values": [
-    { "metric": "ldl", "value": 2.8, "unit": "mmol/L", "confidence": "high" },
-    { "metric": "hba1c", "value": 5.7, "unit": "%", "confidence": "low", "question": "Both 5.7% and 39 mmol/mol shown — using percentage" }
-  ],
-  "unrecognized": ["vitamin D: 45 ng/mL", "iron: 80 µg/dL"]
-}`;
-
-// ---------------------------------------------------------------------------
-// API call
-// ---------------------------------------------------------------------------
-
-export async function extractLabResults(
-  pages: PageContent[],
-): Promise<ExtractionResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
-
-  const content = pagesToContentBlocks(pages);
-
-  const body = {
-    model: EXTRACTION_MODEL,
-    max_tokens: 2048,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content }],
-  };
-
-  let responseText = await callAnthropic(apiKey, body);
-
-  // Parse + validate
-  let parsed: LlmResult;
-  try {
-    parsed = llmResultSchema.parse(JSON.parse(extractJsonObject(responseText)));
-  } catch {
-    // Retry once with prefilled assistant turn to force JSON
-    const retryBody = {
-      ...body,
-      messages: [
-        { role: 'user', content },
-        { role: 'assistant', content: [{ type: 'text', text: '{' }] },
-      ],
-    };
-    responseText = await callAnthropic(apiKey, retryBody);
-    parsed = llmResultSchema.parse(JSON.parse(extractJsonObject('{' + responseText)));
-  }
-
-  return {
-    reportDate: parsed.reportDate,
-    values: resolveLabValues(parsed.values),
-    unrecognized: parsed.unrecognized || [],
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Unified document processing (classify + extract/convert in one call)

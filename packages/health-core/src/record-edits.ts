@@ -177,11 +177,11 @@ export function resolveRecordedAt(recordedAt: string | undefined, ctx: EditConte
 function toCanonicalUnit(metricType: string, value: number, unit: string | undefined): number | EditRejection {
   const def = UNIT_DEFS[metricType as MetricType];
   if (unit === undefined || !def) return value;
-  const canonical = reportedToCanonical(metricType as MetricType, value, unit);
-  if (canonical === null) {
+  const reported = reportedToCanonical(metricType as MetricType, value, unit);
+  if (!reported) {
     return reject('unknown-unit', `${metricType} is measured in ${def.label.si} or ${def.label.conventional}, not "${unit}"`);
   }
-  return canonical;
+  return reported.valueSI;
 }
 
 /** Rule 8 — SI canonical, inside the range the app itself accepts. */

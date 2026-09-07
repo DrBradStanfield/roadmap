@@ -14,27 +14,25 @@
  * Deep imports into health-core, never `@roadmap/health-core`: the Fly Docker
  * build has no workspace symlink, and the package name only breaks at deploy.
  */
-import crypto from 'node:crypto';
 import { dayOf, daysBetween, latestDayOnEarth } from '../../packages/health-core/src/merge';
 import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 
-import { StorageError, type StorageAdapter } from '../../packages/health-core/src/adapter';
+import { StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
-import { canonicalFeedback, folderNudge, isToolName, MCP_TOOLS, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import { folderNudge, isToolName, MCP_TOOLS, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../../packages/health-core/src/mcp-rpc';
 import { importFilesBucket, MCP_TOOL_NAMES, type McpToolName } from '../../packages/health-core/src/product-events';
 import { KNOWN_CLIENTS, readCapped, type McpClientLabel } from './mcp-clients.server';
 import { hostedImporter } from './mcp-import.server';
 import { recordServerEvent } from './product-events.server';
-import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { type FileLabValue, type FileMeasurement, type RoadmapFile, stableStringify } from '../../packages/health-core/src/roadmap-file';
 import { githubFiler } from './github-issues.server';
 import { isMcpEnabled, issuer } from './mcp-config.server';
-import { type AccessPayload, allowToolCall, chargeWrites, claimProposal, connectionKey, nowSeconds, WRITE_COST } from './mcp-grants.server';
+import { type AccessPayload, allowToolCall, chargeWrites, claimProposal, connectionKey, WRITE_COST } from './mcp-grants.server';
 import { type McpProvider, providerAccessToken, providerLabel } from './mcp-providers.server';
-import { resourceUrl } from './mcp-config.server';
-import { hash, seal, unpackSealed, unseal } from './mcp-seal.server';
+import { audienceFor, hash, issueStep, openStep, type StepClaims, unpackSealed } from './mcp-seal.server';
 
 /** One JSON-RPC message. A lab panel of 50 rows is a few KB; this is slack. */
 const RPC_BODY_CAP = 1024 * 1024;
@@ -89,7 +87,6 @@ export const FOLDER_LIST_MAX_ENTRIES = 200;
  */
 export const PROPOSAL_NBF_SECONDS = 10;
 export const PROPOSAL_LIFETIME_SECONDS = 15 * 60;
-const TWO_PHASE_TOOLS = new Set(['correct_value', 'update_profile', 'report_feedback']);
 
 // ---------------------------------------------------------------------------
 // The user's folder, as a StorageAdapter
@@ -125,6 +122,10 @@ function refuse(text: string): ToolAnswer {
 const WRITE_COSTS = new Map(
   MCP_TOOLS.flatMap((tool) => (tool.cost === 'none' ? [] : [[tool.name, WRITE_COST[tool.cost]] as const])),
 );
+/** The tools that take two calls here (US-36 AC9), and how each names its arguments for the receipt — off their own declarations. */
+const TWO_PHASE = new Map(MCP_TOOLS.flatMap((tool) => (tool.twoPhase ? [[tool.name, tool.canonicalArgs ?? ((args: unknown) => args)] as const] : [])));
+/** The reads that visit the folder (US-37), by declaration; a function narrows by arguments. */
+const NUDGED = new Map(MCP_TOOLS.flatMap((tool) => (tool.nudge ? [[tool.name, tool.nudge === true ? () => true : tool.nudge] as const] : [])));
 
 function findRow(file: RoadmapFile, id: string): FileMeasurement | FileLabValue | undefined {
   return file.measurements.find((m) => m.id === id) ?? file.labValues.find((l) => l.id === id);
@@ -220,16 +221,16 @@ async function callHostedTool(
   if (!isToolName(name)) return refuse(`No tool named ${name}.`);
   /** The record as the loop opened it, kept for the nudge so the folder check costs no second read. */
   let opened: RoadmapFile | undefined;
-  const twoPhase = TWO_PHASE_TOOLS.has(name) ? splitConfirm(args) : null;
+  const twoPhase = TWO_PHASE.has(name) ? splitConfirm(args) : null;
   /** The confirm receipt's verified claims, when this is the second call; the write then runs uncharged. */
-  let confirmed: ProposalClaims | null = null;
-  if (twoPhase?.confirm !== undefined) {
-    const checked = checkConfirm(token, name, twoPhase.args, twoPhase.confirm, now);
-    if (typeof checked === 'string') return refuse(checked);
-    confirmed = checked;
+  let confirmed: StepClaims | null = null;
+  if (twoPhase) {
     args = twoPhase.args;
-  } else if (twoPhase) {
-    args = twoPhase.args;
+    if (twoPhase.confirm !== undefined) {
+      const checked = checkConfirm(token, name, twoPhase.args, twoPhase.confirm, now);
+      if (typeof checked === 'string') return refuse(checked);
+      confirmed = checked;
+    }
   }
   const charge = !confirmed;
 
@@ -254,6 +255,12 @@ async function callHostedTool(
   }
 
   const adapter = makeAdapter(token.provider, accessToken);
+  // The folder listing for the nudge (US-37) starts now and overlaps the record
+  // read: it depends on nothing the tool produces. Only on Dropbox — Drive's
+  // `drive.file` scope cannot see files the user dropped in (US-35 AC3).
+  const listing = token.provider === 'dropbox' && NUDGED.get(name)?.((args ?? {}) as Record<string, unknown>) && adapter.list
+    ? adapter.list('', AbortSignal.timeout(FOLDER_LIST_TIMEOUT_MS), FOLDER_LIST_MAX_ENTRIES).catch(() => null)
+    : null;
   try {
     const answer = await runToolOverSync(recordSync(adapter, 'mcp', now), name, args, now, {
       beforeCall: (file) => {
@@ -275,9 +282,8 @@ async function callHostedTool(
       importer: hostedImporter({ token, adapter, client: mcpClientLabel(token.clientId), maxCorrectionAgeDays: MAX_CORRECTION_AGE_DAYS }),
     });
     if (twoPhase && !confirmed) return withProposal(token, name, twoPhase.args, answer, now);
-    return opened && isFolderVisit(name, args) && token.provider === 'dropbox' && !answer.isError
-      ? withFolderNudge(answer, adapter, opened)
-      : answer;
+    const listed = listing && !answer.isError ? await listing : null;
+    return listed && opened ? withFolderNudge(answer, listed, opened) : answer;
   } catch (error) {
     // Storage is allowed to fail, and the user can act on that, so it is worded
     // as a refusal. Anything else is a bug in us: dressing one up as "the
@@ -306,20 +312,6 @@ async function callHostedTool(
 // Two-phase for the permanent tools (US-36 AC9)
 // ---------------------------------------------------------------------------
 
-/** What a proposal receipt carries: sealed, so a client cannot mint or alter one. */
-interface ProposalClaims {
-  tool: string;
-  /** Hash of the arguments the user saw, canonical: a confirm with other arguments is refused. */
-  args: string;
-  /** The connection hash, so a receipt cannot be confirmed over another connection to the same client. */
-  conn: string;
-  /** Single-use id, per machine (`claimProposal`). */
-  jti: string;
-  /** Not before / expiry, epoch seconds. */
-  nbf: number;
-  exp: number;
-}
-
 /** The `confirm` argument apart from the rest, which is what the tool sees. */
 function splitConfirm(args: unknown): { args: Record<string, unknown>; confirm: string | undefined } {
   const { confirm, ...rest } = (args && typeof args === 'object' ? args : {}) as Record<string, unknown>;
@@ -327,19 +319,14 @@ function splitConfirm(args: unknown): { args: Record<string, unknown>; confirm: 
 }
 
 /**
- * The identity of a call, for the receipt. `report_feedback` is hashed on the
- * PREPARED text — whitespace collapsed, case folded — so a small model that
- * re-emits its report a turn later with different spacing still confirms
- * (review 2.2); the other two on their arguments, keys sorted.
+ * The identity of a call, for the receipt: the tool and its arguments as the
+ * tool declares them canonical (`report_feedback`: the PREPARED text, so a
+ * small model that re-emits its report with different spacing still
+ * confirms, review 2.2), keys sorted at every depth.
  */
-function argsHash(name: string, args: Record<string, unknown>): string {
-  const canonical = name === 'report_feedback'
-    ? canonicalFeedback(args as { kind: string; title: string; detail: string })
-    : Object.fromEntries(Object.entries(args).sort(([a], [b]) => a.localeCompare(b)));
-  return hash(JSON.stringify(canonical));
+function callIdentity(name: string, args: Record<string, unknown>): string {
+  return hash(`${name}\n${stableStringify(TWO_PHASE.get(name)!(args))}`);
 }
-
-const audienceOf = (token: AccessPayload) => ({ clientId: token.clientId, resource: resourceUrl() });
 
 /**
  * The first call's answer: what the tool would have done, and the receipt to
@@ -347,19 +334,16 @@ const audienceOf = (token: AccessPayload) => ({ clientId: token.clientId, resour
  * refusal, and `update_profile` that changes nothing has nothing to confirm.
  */
 function withProposal(token: AccessPayload, name: string, args: Record<string, unknown>, answer: ToolAnswer, now: string): ToolAnswer {
-  if (answer.isError || (!answer.pendingWrite && name !== 'report_feedback')) return answer;
-  const issued = nowSeconds(Date.parse(now));
-  const claims: ProposalClaims = {
-    tool: name, args: argsHash(name, args), conn: hash(connectionKey(token.rt)),
-    jti: crypto.randomUUID(), nbf: issued + PROPOSAL_NBF_SECONDS, exp: issued + PROPOSAL_LIFETIME_SECONDS,
-  };
-  const confirm = seal('proposal', claims, audienceOf(token));
+  if (answer.isError || !answer.pendingWrite) return answer;
+  const { token: confirm, claims } = issueStep(
+    'proposal',
+    { subject: callIdentity(name, args), conn: hash(connectionKey(token.rt)), nbfSeconds: PROPOSAL_NBF_SECONDS, ttlSeconds: PROPOSAL_LIFETIME_SECONDS },
+    audienceFor(token.clientId),
+    Date.parse(now),
+  );
   const confirmFrom = new Date(claims.nbf * 1000).toISOString();
-  const would = name === 'report_feedback'
-    ? `Would file a PUBLIC GitHub issue (${String(args.kind)}): “${canonicalFeedback(args as { kind: string; title: string; detail: string }).title}”. The detail is the text you sent, as written.`
-    : `${answer.text}\n(Row ids are assigned when it is written.)`;
   const text =
-    `PROPOSAL — nothing written yet. ${would}\n\n` +
+    `PROPOSAL — nothing written yet. ${answer.text}\n\n` +
     `Show this to the user and WAIT for their own yes. Then call ${name} again with the same arguments and confirm set to the receipt below; ` +
     `it is valid from ${confirmFrom} for ${PROPOSAL_LIFETIME_SECONDS / 60} minutes and works once.\nconfirm: ${confirm}`;
   return { text, isError: false, structured: { ...(answer.structured as Record<string, unknown>), proposal: true, confirm, confirmFrom } };
@@ -370,13 +354,13 @@ function withProposal(token: AccessPayload, name: string, args: Record<string, u
  * arguments and this connection, inside its window, and unused. Every
  * failure is worded; an early call is told when to come back and not to spin.
  */
-function checkConfirm(token: AccessPayload, name: string, args: Record<string, unknown>, confirm: string, now: string): ProposalClaims | string {
+function checkConfirm(token: AccessPayload, name: string, args: Record<string, unknown>, confirm: string, now: string): StepClaims | string {
   const nowMs = Date.parse(now);
-  const claims = unseal<ProposalClaims>('proposal', confirm, audienceOf(token), nowMs);
-  if (!claims || claims.conn !== hash(connectionKey(token.rt)) || typeof claims.jti !== 'string') {
+  const claims = openStep('proposal', confirm, audienceFor(token.clientId), hash(connectionKey(token.rt)), nowMs);
+  if (!claims) {
     return `That confirm receipt is not valid for this connection, or has expired (${PROPOSAL_LIFETIME_SECONDS / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.`;
   }
-  if (claims.tool !== name || claims.args !== argsHash(name, args)) {
+  if (claims.subject !== callIdentity(name, args)) {
     return `That confirm receipt was issued for different arguments. Nothing was written. Call ${name} again without confirm, with exactly what the user approved.`;
   }
   if (nowMs < claims.nbf * 1000) {
@@ -393,32 +377,13 @@ function checkConfirm(token: AccessPayload, name: string, args: Record<string, u
 // ---------------------------------------------------------------------------
 
 /**
- * Which reads look at the folder: `get_plan`, and a `read_record` with no
- * `metric` and no `since`. A narrowed read is a lookup, not a visit, and the
- * write flows that read first would otherwise list the folder twice a turn.
+ * If the folder root holds files the record does not, say so in the answer.
+ * The text is the structured answer re-serialised, so older clients that
+ * parse the text still read JSON. A listing that failed — a Dropbox error,
+ * the two-second clock — never reaches here, and the answer is untouched: a
+ * nudge is never worth a failed read (AC2).
  */
-function isFolderVisit(name: string, args: unknown): boolean {
-  if (name === 'get_plan') return true;
-  if (name !== 'read_record') return false;
-  const request = (args ?? {}) as { metric?: unknown; since?: unknown };
-  return request.metric === undefined && request.since === undefined;
-}
-
-/**
- * List the folder root and, if it holds files the record does not, say so in
- * the answer. The text is the structured answer re-serialised, so older
- * clients that parse the text still read JSON. Any failure — a Dropbox error,
- * the two-second clock — leaves the answer untouched: a nudge is never worth
- * a failed read (AC2).
- */
-async function withFolderNudge(answer: ToolAnswer, adapter: StorageAdapter, file: RoadmapFile): Promise<ToolAnswer> {
-  if (!adapter.list) return answer;
-  let listed: Awaited<ReturnType<NonNullable<StorageAdapter['list']>>>;
-  try {
-    listed = await adapter.list('', AbortSignal.timeout(FOLDER_LIST_TIMEOUT_MS), FOLDER_LIST_MAX_ENTRIES);
-  } catch {
-    return answer;
-  }
+function withFolderNudge(answer: ToolAnswer, listed: StoredFile[], file: RoadmapFile): ToolAnswer {
   const folder = folderNudge(file, listed.map((entry) => entry.name));
   if (!folder) return answer;
   void recordServerEvent('mcp_import', { route: 'dropbox', phase: 'nudge', files: importFilesBucket(folder.unimported.length) });

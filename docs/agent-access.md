@@ -180,9 +180,8 @@ are away, and nothing updates itself. A file it cannot read comes back
 with a `hint` in plain words (the type, the size limit, the day's quota, a missing date
 , answered with `fileDates: [{ file, date }]`), and `next` says what to do with what it found.
 Three tools are permanent — `correct_value`, `update_profile`, `report_feedback` — and on
-the hosted server they take two calls: the first answers with what it would do and a
-`confirm` receipt, the second, with the same arguments at least ten seconds later, does
-it. The server cannot see your yes; the pause and the second call are what it can see.
+the hosted server they take two calls: a proposal with a `confirm` receipt, then the same
+call with it after your yes (the mechanism and its limits: docs/mcp-architecture.md §3).
 Every tool declares an `outputSchema` and answers with `structuredContent` beside the
 text: the same answer typed, so a row id is read, not parsed out of a sentence. A refusal
 carries none, it is an error result.
