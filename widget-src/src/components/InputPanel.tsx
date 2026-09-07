@@ -1,14 +1,15 @@
-import { useState, useEffect, useMemo, useRef, type MutableRefObject } from 'react';
+import { useState, useEffect, useRef, type MutableRefObject } from 'react';
 import { ColumnHeader } from './ColumnHeader';
 import { InfoTooltip } from './InfoTooltip';
 import { DocumentLightbox } from './DocumentLightbox';
-import { DOCUMENT_TYPE_LABELS, formatDocumentDate, HISTORY_PAGE_PATH, openHistoryLightbox } from '../lib/api';
+import { DOCUMENT_TYPE_LABELS, formatDocumentDate } from '../lib/document-format';
+import { openHistoryLightbox } from '../lib/roadmap-data';
 import { isLabArchiveDocument } from '../lib/archive-payloads';
 import type { CorrectFn } from '../lib/matrix-save';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance } from '../lib/blood-test-cell';
 import type { ApiDocument, ApiLabValue, ApiSupplement } from '../lib/api-types';
 
-/** Intercept a history link: lightbox on the standalone, normal nav on Shopify. */
+/** Every surface opens metric history in the local lightbox. */
 const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
   if (openHistoryLightbox(metric)) e.preventDefault();
 };
@@ -60,7 +61,6 @@ import {
   parseLocalisedNumber,
 } from '@roadmap/health-core';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
-import { LOCAL_FIRST } from '../lib/build-flags';
 import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
 import { BloodTestTimeline, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
@@ -82,18 +82,6 @@ const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
   { field: 'waistCm', name: 'Waist Circumference' },
 ];
 
-function formatRelativeTime(ts: number): string {
-  const diffMs = Date.now() - ts;
-  if (diffMs < 60_000) return 'just now';
-  const mins = Math.floor(diffMs / 60_000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
 /** Look up a screening value by its snake_case DB key. */
 function scrVal(scr: ScreeningInputs, dbKey: string): string | number | undefined {
   const camelKey = dbKey.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
@@ -114,7 +102,6 @@ interface InputPanelProps {
   onUnitSystemChange: (system: UnitSystem) => void;
   unitOverrides: Record<string, UnitSystem>;
   onToggleFieldUnit: (field: string) => void;
-  isLoggedIn: boolean;
   previousMeasurements: ApiMeasurement[];
   bloodTestHistory: ApiMeasurement[];
   /** Full vitals history (weight / waist / sys-BP / dia-BP). Same source
@@ -153,9 +140,7 @@ interface InputPanelProps {
   // mounted; HealthTool uses that to route vitals chat edits here vs the field.
   vitalsPrefillRef?: MutableRefObject<VitalsPrefillFn | null>;
   formStage: 1 | 2 | 3;
-  lastSavedAt?: number | null;
   setShowUploadModal?: (show: boolean) => void;
-  loginUrl?: string;
   activeSuggestionIds?: Set<string>;
   healthDocuments?: ApiDocument[];
   onDocumentDeleted?: (docId: string) => void;
@@ -183,7 +168,7 @@ function useAutoAdvance(): (opts: { ambiguous: boolean; advance: () => void }) =
 export function InputPanel({
   inputs, onChange, errors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
-  isLoggedIn, previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
+  previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectBloodTestValue,
   medications, onMedicationChange,
   screenings, onScreeningChange,
@@ -192,8 +177,7 @@ export function InputPanel({
   isSavingLongitudinal, hasApiResponse,
   bloodTestFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   formStage,
-  lastSavedAt,
-  setShowUploadModal, loginUrl, activeSuggestionIds,
+  setShowUploadModal, activeSuggestionIds,
   healthDocuments, onDocumentDeleted, onAutoFocusEmail,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
@@ -258,7 +242,7 @@ export function InputPanel({
   // Shared blur/Enter auto-save handlers for every longitudinal input. Each
   // site does its own pre-work (validateOnBlur, raw-input cleanup) inline,
   // then calls autoSave.onBlur(); onKeyDown is uniform.
-  const autoSaveGate = isLoggedIn && hasApiResponse;
+  const autoSaveGate = hasApiResponse;
   const autoSaveOnBlur = () => { if (autoSaveGate) scheduleLongitudinalSave(); };
   const autoSaveOnEnterKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
@@ -370,7 +354,6 @@ export function InputPanel({
   };
 
   const getPreviousPlaceholder = (field: string): string | undefined => {
-    if (!isLoggedIn) return undefined;
     const metric = FIELD_METRIC_MAP[field];
     if (!metric) return undefined;
     const measurement = previousMeasurements.find(m => m.metricType === metric);
@@ -379,7 +362,6 @@ export function InputPanel({
   };
 
   const getPreviousLabel = (field: string): string | null => {
-    if (!isLoggedIn) return null;
     const metric = FIELD_METRIC_MAP[field];
     if (!metric) return null;
     const measurement = previousMeasurements.find(m => m.metricType === metric);
@@ -398,7 +380,7 @@ export function InputPanel({
   };
 
   /** Whether any basic vital has saved data (for per-metric collapse). */
-  const hasBpPreviousData = isLoggedIn && (hasPreviousValue('systolicBp') || hasPreviousValue('diastolicBp'));
+  const hasBpPreviousData = (hasPreviousValue('systolicBp') || hasPreviousValue('diastolicBp'));
 
   // Auto-collapse vitals after save completes
   const wasSaving = useRef(false);
@@ -520,7 +502,7 @@ export function InputPanel({
     const needsAttention = field === 'weightKg' && formStage === 2 && inputs.weightKg === undefined;
     // In expanded mode with previous data, show "Previous:" reference instead of placeholder
     // (blood tests no longer use this render path — they use BloodTestTimeline).
-    const isExpandedWithData = isLoggedIn && hasPreviousValue(field) && expandedVitals.has(field);
+    const isExpandedWithData = hasPreviousValue(field) && expandedVitals.has(field);
     return (
       <div className={`health-field${needsAttention ? ' field-attention' : ''}`} key={field}>
         <label htmlFor={field}>
@@ -596,7 +578,7 @@ export function InputPanel({
             {!isExpandedWithData && previousLabel && (
               <a
                 className="previous-value"
-                href={`${HISTORY_PAGE_PATH}?metric=${FIELD_METRIC_MAP[field]}`}
+                href="#health-history"
                 onClick={interceptHistory(FIELD_METRIC_MAP[field])}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -643,7 +625,7 @@ export function InputPanel({
         <div className="collapsed-field-row">
           <a
             className="collapsed-field-label"
-            href={`${HISTORY_PAGE_PATH}?metric=${metric}`}
+            href="#health-history"
             onClick={interceptHistory(metric)}
             target="_blank"
             rel="noopener noreferrer"
@@ -684,7 +666,6 @@ export function InputPanel({
 
   /** Shared BP data for collapsed and label rendering. */
   const getBpPreviousData = (): { sysVal: number; diaVal: number; latestDate: string } | null => {
-    if (!isLoggedIn) return null;
     const sysMetric = FIELD_METRIC_MAP['systolicBp'];
     const diaMetric = FIELD_METRIC_MAP['diastolicBp'];
     const sysMeasurement = sysMetric ? previousMeasurements.find(m => m.metricType === sysMetric) : null;
@@ -713,7 +694,7 @@ export function InputPanel({
         <div className="collapsed-field-row">
           <a
             className="collapsed-field-label"
-            href={`${HISTORY_PAGE_PATH}?metric=systolic_bp`}
+            href="#health-history"
             onClick={interceptHistory('systolic_bp')}
             target="_blank"
             rel="noopener noreferrer"
@@ -936,7 +917,7 @@ export function InputPanel({
         inputs={inputs}
         vitalsHistory={vitalsHistory}
         unitSystem={unitSystem}
-        isLoggedIn={isLoggedIn}
+        isLoggedIn
         onSave={onSaveBloodTestBatch}
         onCorrectValue={onCorrectBloodTestValue}
         onFieldChange={updateField}
@@ -959,7 +940,7 @@ export function InputPanel({
     return (
       <section className="health-section">
         {BASIC_LONGITUDINAL_FIELDS.map(cfg => {
-          if (isLoggedIn && hasPreviousValue(cfg.field) && !expandedVitals.has(cfg.field)) {
+          if (hasPreviousValue(cfg.field) && !expandedVitals.has(cfg.field)) {
             return renderCollapsedField(cfg, () => {
               focusFieldRef.current = cfg.field;
               setExpandedVitals(prev => new Set(prev).add(cfg.field));
@@ -1030,7 +1011,7 @@ export function InputPanel({
               <span className="field-hint">{getBpTargetText()}</span>
               {!bpExpanded && bpLabel && (
                 <a className="previous-value"
-                   href={`${HISTORY_PAGE_PATH}?metric=systolic_bp`}
+                   href="#health-history"
             onClick={interceptHistory('systolic_bp')}
                    target="_blank" rel="noopener noreferrer">{bpLabel}</a>
               )}
@@ -1094,15 +1075,13 @@ export function InputPanel({
       unitSystem={unitSystem}
       unitOverrides={unitOverrides}
       onToggleFieldUnit={onToggleFieldUnit}
-      isLoggedIn={isLoggedIn}
+      isLoggedIn
       onSaveBatch={onSaveBloodTestBatch}
       onCorrectValue={onCorrectBloodTestValue}
       onFieldChange={updateField}
       isSaving={isSavingLongitudinal}
       sex={inputs.sex}
-      onUploadClick={isLoggedIn ? () => setShowUploadModal?.(true) : undefined}
-      uploadDisabled={!isLoggedIn}
-      loginUrl={loginUrl}
+      onUploadClick={() => setShowUploadModal?.(true)}
       hasApiResponse={hasApiResponse}
       flushRef={bloodTestFlushRef}
       prefillRef={bloodTestPrefillRef}
@@ -2027,7 +2006,7 @@ export function InputPanel({
                             {psaPreviousLabel && (
                               <a
                                 className="previous-value"
-                                href={`${HISTORY_PAGE_PATH}?metric=psa`}
+                                href="#health-history"
                                 onClick={interceptHistory('psa')}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -2211,7 +2190,6 @@ export function InputPanel({
   }, [showSupplementDropdown]);
 
   const renderSupplements = () => {
-    if (!isLoggedIn) return null;
 
     const activeSupplements = supplements.filter(s => s.status === 'active');
     const allOptions = SUPPLEMENT_OPTIONS.filter(
@@ -2339,24 +2317,9 @@ export function InputPanel({
   };
 
   // ── Render all sections with progressive disclosure (both mobile and desktop) ──
-  const inputHeaderMeta = useMemo(() => {
-    // Local-first has no accounts and auto-saves to the device/cloud — the
-    // "New account" / "Last saved ·…" status line is meaningless here (Brad,
-    // 2026-06-12). The production widget keeps it.
-    if (LOCAL_FIRST) return '';
-    if (!isLoggedIn) return '';
-    const mostRecentMeasurementAt = previousMeasurements.reduce<number>((max, m) => {
-      const t = m.recordedAt ? new Date(m.recordedAt).getTime() : 0;
-      return t > max ? t : max;
-    }, 0);
-    const effectiveSavedAt = lastSavedAt ?? (mostRecentMeasurementAt > 0 ? mostRecentMeasurementAt : null);
-    if (effectiveSavedAt === null) return 'New account';
-    return `Last saved · ${formatRelativeTime(effectiveSavedAt)}`;
-  }, [isLoggedIn, previousMeasurements, lastSavedAt]);
-
   return (
     <div className="health-input-panel">
-      <ColumnHeader step={1} title="Your information" meta={inputHeaderMeta} />
+      <ColumnHeader step={1} title="Your information" meta="" />
       {/* Card 1: Units + Basic Info + Vitals + Birth Info (stage 2+) */}
       <div className="section-card">
         {renderProfile()}
@@ -2391,7 +2354,7 @@ export function InputPanel({
       {formStage >= 3 && renderMedications()}
       {formStage >= 3 && renderScreening()}
       {formStage >= 3 && renderBoneDensity()}
-      {formStage >= 3 && isLoggedIn && renderSupplements()}
+      {formStage >= 3 && renderSupplements()}
       {healthDocuments && healthDocuments.length > 0 && (
         <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
       )}

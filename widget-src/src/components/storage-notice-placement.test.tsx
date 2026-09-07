@@ -12,11 +12,11 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { EMAIL_STORAGE_NOTICE, StorageNoticeContext } from '../lib/storage-notice';
 
-vi.mock('../lib/api', () => ({
-  sendReportEmail: vi.fn(), getReportHtml: vi.fn(), sendGuestReport: vi.fn(),
-  trackABConversion: vi.fn(), getABAssignments: () => ({}), getReportEmailCaptured: () => false,
-  markReportEmailCaptured: vi.fn(), trackProductEvent: vi.fn(),
+vi.mock('../lib/roadmap-data', () => ({
+  getReportHtml: vi.fn(), sendGuestReport: vi.fn(),
+  getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(),
 }));
+vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEvent: vi.fn() }));
 
 import { GuestEmailCapture } from './ResultsPanel';
 

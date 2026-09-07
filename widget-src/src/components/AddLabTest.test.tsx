@@ -12,8 +12,10 @@ afterEach(cleanup);
 
 const bulkSaveLabValues = vi.fn();
 const trackProductEvent = vi.fn();
-vi.mock('../lib/api', () => ({
+vi.mock('../lib/roadmap-data', () => ({
   bulkSaveLabValues: (...args: unknown[]) => bulkSaveLabValues(...args),
+}));
+vi.mock('../lib/server-api', () => ({
   trackProductEvent: (...args: unknown[]) => trackProductEvent(...args),
 }));
 

@@ -51,7 +51,7 @@ function HistoryDialog({ metric, onClose }: { metric: string | null; onClose: ()
         <button className="hr-modal-close" aria-label="Close" onClick={onClose}>×</button>
         <ErrorBoundary>
           <Suspense fallback={<p style={{ padding: 24 }}>Loading your history…</p>}>
-            <HistoryPanel isLoggedIn initialMetric={metric ?? undefined} />
+            <HistoryPanel initialMetric={metric ?? undefined} />
           </Suspense>
         </ErrorBoundary>
       </div>

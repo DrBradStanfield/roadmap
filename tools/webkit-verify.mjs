@@ -1,62 +1,103 @@
-// Verify the -685 fix by injecting the new CSS into the live -684 page
-// and measuring the matrix layout in WebKit (= iOS Chrome/Safari engine).
+// US-20: exercise real WebKit against the storefront, using disposable synthetic data.
+import assert from 'node:assert/strict';
+import { pathToFileURL } from 'node:url';
 import { webkit, devices } from 'playwright';
 
-const CSS_INJECT = ''; // -685 has the fix live, no injection needed
-
-async function inspect(deviceName, viewport) {
-  const browser = await webkit.launch();
-  const ctx = await browser.newContext(
-    deviceName ? { ...devices[deviceName] } : { viewport: { width: viewport.w, height: viewport.h } }
-  );
-  const page = await ctx.newPage();
-  // Seed inputs so the matrix appears
-  await page.addInitScript(() => {
-    const past = (m) => { const d = new Date(); d.setMonth(d.getMonth() - m); return d.toISOString(); };
-    localStorage.setItem('health_roadmap_data', JSON.stringify({
-      inputs: { sex: 'male', heightCm: 178, birthYear: 1985, birthMonth: 6, weightKg: 80, waistCm: 90, unitSystem: 'si' },
-      previousMeasurements: [
-        { metricType: 'hba1c', value: 35, recordedAt: past(12), source: 'manual', status: 'active' },
-        { metricType: 'hba1c', value: 36, recordedAt: past(6), source: 'manual', status: 'active' },
-        { metricType: 'ldl', value: 2.4, recordedAt: past(12), source: 'manual', status: 'active' },
-      ],
-      medications: [], screenings: [], reminderPreferences: [],
-      savedAt: new Date().toISOString(),
-    }));
-  });
-  await page.goto('https://drstanfield.com/pages/roadmap', { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(4000);
-  if (CSS_INJECT) {
-    await page.addStyleTag({ content: CSS_INJECT });
-    await page.waitForTimeout(500);
+export function assertMatrixLayout(data) {
+  assert(!data.error, data.error);
+  assert(data.documentWidth <= data.viewportWidth + 1, 'page overflows horizontally');
+  assert(data.scrollWidth > 0 && data.innerWidth > 0, 'matrix collapsed');
+  assert.deepEqual(data.values.map(value => value.text).sort(), ['2.4', '35', '36'], 'seeded blood results missing or incorrect');
+  for (const value of data.values) {
+    assert(value.visible && value.width > 0 && value.height > 0, 'seeded result cell hidden or collapsed');
+    assert(value.numberWidth > 0 && value.numberHeight > 0, 'seeded result number hidden or collapsed');
+    assert.equal(value.boxSizing, 'border-box', 'WebKit result cell box sizing regressed');
   }
-  await page.evaluate(() => document.querySelector('.section-card--bt')?.scrollIntoView({ block: 'center' }));
-  await page.waitForTimeout(500);
-  const data = await page.evaluate(() => {
-    const scroll = document.querySelector('.bt-timeline-scroll');
-    const inner = document.querySelector('.bt-timeline-scroll-inner');
-    const header = document.querySelector('.bt-header-row');
-    const cell = document.querySelector('.bt-cell-value');
-    const trend = header?.querySelector('.bt-cell-trend');
-    if (!scroll || !inner || !header) return { error: 'matrix not rendered' };
-    const rect = el => { const r = el.getBoundingClientRect(); return { l: r.left.toFixed(0), r: r.right.toFixed(0), w: r.width.toFixed(1) }; };
-    return {
-      viewport: window.innerWidth + 'x' + window.innerHeight,
-      scroll: rect(scroll),
-      scrollWidth: scroll.scrollWidth,
-      scrollLeft: scroll.scrollLeft,
-      inner: rect(inner),
-      cellBoxSizing: cell ? getComputedStyle(cell).boxSizing : null,
-      cellRectW: cell ? cell.getBoundingClientRect().width.toFixed(1) : null,
-      trend: trend ? rect(trend) : null,
-      gapBetweenTrendAndScrollerRight: trend && scroll ? (+rect(scroll).r - +rect(trend).r).toFixed(0) : null,
-    };
-  });
-  console.log(`==== ${deviceName ?? `desktop ${viewport.w}x${viewport.h}`} ====`);
-  console.log(JSON.stringify(data, null, 2));
-  await page.screenshot({ path: `/tmp/webkit-${deviceName ?? 'desktop'}.png`, fullPage: false });
-  await browser.close();
 }
 
-await inspect('iPhone 13', null);
-await inspect(null, { w: 1440, h: 900 });
+// Passed directly to Playwright's evaluate; keep this function self-contained.
+export function collectMatrixLayout(root) {
+  const scroll = root.querySelector('.bt-timeline-scroll');
+  const inner = root.querySelector('.bt-timeline-scroll-inner');
+  const header = root.querySelector('.bt-header-row');
+  if (!scroll || !inner || !header) return { error: 'matrix not rendered' };
+  return {
+    viewportWidth: window.innerWidth,
+    documentWidth: document.documentElement.scrollWidth,
+    scrollWidth: scroll.getBoundingClientRect().width,
+    innerWidth: inner.getBoundingClientRect().width,
+    values: [...root.querySelectorAll('.bt-cell-value:has(.bt-value-num)')].map(cell => {
+      const rect = cell.getBoundingClientRect();
+      const number = cell.querySelector('.bt-value-num');
+      const numberRect = number.getBoundingClientRect();
+      let visible = true;
+      for (let element = number; element; element = element.parentElement) {
+        const style = getComputedStyle(element);
+        if (style.display === 'none' || style.visibility !== 'visible' || Number(style.opacity) === 0) visible = false;
+      }
+      return {
+        text: number.textContent.trim(),
+        numberWidth: numberRect.width, numberHeight: numberRect.height,
+        width: rect.width, height: rect.height, visible,
+        boxSizing: getComputedStyle(cell).boxSizing,
+      };
+    }),
+  };
+}
+
+async function inspect(browser, deviceName, viewport) {
+  const ctx = await browser.newContext({
+    ...(deviceName ? devices[deviceName] : { viewport }),
+    serviceWorkers: 'block',
+  });
+  try {
+    // No submissions, telemetry, or third-party tracking from a synthetic visit.
+    await ctx.route('**/*', route => {
+      const request = route.request();
+      const url = new URL(request.url());
+      const tracking = /sentry|clarity|google-analytics|googletagmanager|facebook|hotjar/.test(url.hostname);
+      return tracking || !['GET', 'HEAD'].includes(request.method()) ? route.abort() : route.continue();
+    });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => {
+      const now = '2026-01-01T00:00:00.000Z';
+      localStorage.setItem('health_roadmap_file_v2', JSON.stringify({
+        schemaVersion: 1,
+        meta: { createdAt: now, updatedAt: now, lastDeviceId: 'webkit-smoke', lamport: 0 },
+        profile: { sex: 'male', heightCm: 178, birthYear: 1985, birthMonth: 6, unitSystem: 'si', updatedAt: now, lamport: 0 },
+        measurements: [
+          ['hba1c', 35, '2025-01-01T00:00:00.000Z'],
+          ['hba1c', 36, '2025-07-01T00:00:00.000Z'],
+          ['ldl', 2.4, '2025-01-01T00:00:00.000Z'],
+        ].map(([metricType, value, recordedAt], i) => ({
+          id: `webkit-${i}`, metricType, value, recordedAt, createdAt: recordedAt,
+          source: 'manual', status: 'active', correctsId: null, externalId: null,
+        })),
+        medications: [], medicationHistory: [], supplements: [], supplementHistory: [],
+        screenings: { updatedAt: now, lamport: 0 }, labValues: [], documents: [],
+        reminderPreferences: [], recommendationSnapshots: [],
+      }));
+      localStorage.setItem('health_roadmap_file_v2_rev', '0');
+    });
+    await page.goto(process.env.WEBKIT_VERIFY_URL || 'https://drstanfield.com/pages/roadmap', { waitUntil: 'domcontentloaded' });
+    const matrix = page.locator('.bt-timeline').first();
+    await matrix.waitFor({ state: 'visible', timeout: 30000 });
+    await matrix.scrollIntoViewIfNeeded();
+    const data = await matrix.evaluate(collectMatrixLayout);
+    assertMatrixLayout(data);
+    console.log(`${deviceName ?? 'desktop'}: matrix verified`, JSON.stringify(data));
+    await page.screenshot({ path: `/tmp/webkit-${deviceName ?? 'desktop'}.png` });
+  } finally {
+    await ctx.close();
+  }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const browser = await webkit.launch();
+  try {
+    await inspect(browser, 'iPhone 13');
+    await inspect(browser, null, { width: 1440, height: 900 });
+  } finally {
+    await browser.close();
+  }
+}

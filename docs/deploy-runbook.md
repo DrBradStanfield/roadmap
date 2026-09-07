@@ -93,7 +93,8 @@ fly status -c fly.edu.toml  # health-tool-edu
 ### Local-first (v2) builds & build flags
 
 Two widget builds from the same source; behaviour differences come from vite
-`define` flags + module swaps (`resolveId` redirects), never runtime sniffing:
+`define` flags and Pages-only AI transport swaps. Both builds import the same
+local-first record API directly; TypeScript checks the actual data calls:
 
 **PRODUCTION CUTOVER DONE (2026-06-12):** `/pages/roadmap` now serves the v2
 local-first build (prod version `health-roadmap-726`). The production app's
@@ -112,8 +113,8 @@ the teardown commits and rebuild the legacy entry from source.
 
 | Build | Command | `VITE_LOCAL_FIRST` | `VITE_SHOPIFY_SURFACE` | Module swaps |
 |---|---|---|---|---|
-| Shopify storefront — prod **and** edu apps (post-split: microvitamin.com + drstanfield.com/pages/roadmap) | `npm run build:shopify-prod` | `'true'` | `'true'` | `api.ts → roadmap-data.ts` |
-| GitHub Pages / self-host | `npm run build:pages` | `'true'` | undefined (false) | `api.ts → roadmap-data.ts`, `chat-api.ts → byok-chat.ts`, `upload-api.ts → byok-upload.ts` |
+| Shopify storefront — prod **and** edu apps (post-split: microvitamin.com + drstanfield.com/pages/roadmap) | `npm run build:shopify-prod` | `'true'` | `'true'` | None |
+| GitHub Pages / self-host | `npm run build:pages` | `'true'` | undefined (false) | `chat-api.ts → byok-chat.ts`, `upload-api.ts → byok-upload.ts` |
 
 (Both the production and education Shopify apps build from this same
 shopify-prod config family — see "Shopify app configs" below. **⚠️ §12 split is
@@ -165,7 +166,7 @@ to both — deploy twice, see "Shopify app configs".**)
     knowledge files (the chatbot knowledge base is Brad-global / store-agnostic, so it
     works on the edu store unchanged).
   - **Reuses the app-proxy subpath `health-tool-1`** so the existing widget build — which
-    hardcodes `PROXY_PATH = '/apps/health-tool-1'` in `widget-src/src/lib/api.ts` — works
+    hardcodes `PROXY_PATH = '/apps/health-tool-1'` in `widget-src/src/lib/server-api.ts` — works
     unchanged. **Order scopes are KEPT** on the edu app (`read_orders` + `read_all_orders`).
   - **Rationale:** zero changes to the production auth path — single-secret HMAC
     verification in `app/shopify.server.ts` / `route-helpers.server.ts` /

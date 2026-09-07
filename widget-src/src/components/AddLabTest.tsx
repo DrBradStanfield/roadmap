@@ -6,7 +6,8 @@
 import { useState } from 'react';
 import { LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber } from '@roadmap/health-core';
 import { UnitChip } from './UnitChip';
-import { bulkSaveLabValues, trackProductEvent } from '../lib/api';
+import { bulkSaveLabValues } from '../lib/roadmap-data';
+import { trackProductEvent } from '../lib/server-api';
 
 export function AddLabTest({ onAdded }: { onAdded: () => void }) {
   const [open, setOpen] = useState(false);

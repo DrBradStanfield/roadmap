@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  DEFAULT_EMAIL_HELPER,
   LOCAL_FIRST_EMAIL_HELPER,
   GUEST_CAPTURE_BUTTON_LABEL,
 } from './ResultsPanel';
@@ -23,10 +22,6 @@ describe('guest plan-capture CTA copy (PDF, not email)', () => {
     expect(LOCAL_FIRST_EMAIL_HELPER).toBe(HEADLINE);
   });
 
-  it('DEFAULT helper is accurate too (dead variant, but no false email promise)', () => {
-    expect(DEFAULT_EMAIL_HELPER).toBe(HEADLINE);
-  });
-
   it('button label is the locked "Get My Health Plan"', () => {
     expect(GUEST_CAPTURE_BUTTON_LABEL).toBe('Get My Health Plan');
   });
@@ -38,7 +33,7 @@ describe('guest plan-capture CTA copy (PDF, not email)', () => {
   });
 
   it('no CTA copy mentions email/emailed/sent (the framing is now inaccurate)', () => {
-    for (const copy of [LOCAL_FIRST_EMAIL_HELPER, DEFAULT_EMAIL_HELPER, GUEST_CAPTURE_BUTTON_LABEL, EMAIL_STORAGE_NOTICE]) {
+    for (const copy of [LOCAL_FIRST_EMAIL_HELPER, GUEST_CAPTURE_BUTTON_LABEL, EMAIL_STORAGE_NOTICE]) {
       expect(copy.toLowerCase()).not.toMatch(/email|sent/);
     }
   });

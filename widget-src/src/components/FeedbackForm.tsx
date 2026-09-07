@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { sendFeedback } from '../lib/api';
+import { sendFeedback } from '../lib/server-api';
 
 type FormStatus = 'idle' | 'sending' | 'sent' | 'error';
 

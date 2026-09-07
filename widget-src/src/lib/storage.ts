@@ -89,21 +89,6 @@ export function clearLocalStorage(): void {
 }
 
 /**
- * Set the authenticated flag. Only called when the data layer confirms the
- * user has saved data — never from Liquid templates. Sole remaining reader:
- * the legacy rollback bundle (health-tool.js), where it drives the
- * redirect-failed UI + guest stale-cache clear in HealthTool. On the v2
- * surfaces this flag is write-only — `data-logged-in="true"` is hardcoded,
- * so every reading branch is short-circuited (LOCAL_FIRST early-return) or
- * unreachable (the !isLoggedIn branches never run). The old
- * history-block.liquid reader was removed when /pages/health-history was
- * deleted (2026-06-14).
- */
-export function setAuthenticatedFlag(): void {
-  try { localStorage.setItem('health_roadmap_authenticated', '1'); } catch {}
-}
-
-/**
  * Save the user's preferred unit system to localStorage.
  */
 export function saveUnitPreference(system: UnitSystem): void {
@@ -126,25 +111,6 @@ export function loadUnitPreference(): UnitSystem | null {
   } catch {
     return null;
   }
-}
-
-/** Check if auth redirect was attempted (sessionStorage). */
-export function getAuthRedirectFlag(): boolean {
-  try { return !!sessionStorage.getItem('health_roadmap_auth_redirect'); } catch { return false; }
-}
-
-/** Read and clear the email confirmation flag (sessionStorage). Returns flag value or null. */
-export function consumeEmailConfirmFlag(): string | null {
-  try {
-    const flag = sessionStorage.getItem('health_roadmap_email_confirm');
-    if (flag) sessionStorage.removeItem('health_roadmap_email_confirm');
-    return flag;
-  } catch { return null; }
-}
-
-/** Check if the authenticated flag exists (localStorage). */
-export function hasAuthenticatedFlag(): boolean {
-  try { return !!localStorage.getItem('health_roadmap_authenticated'); } catch { return false; }
 }
 
 // ---------------------------------------------------------------------------

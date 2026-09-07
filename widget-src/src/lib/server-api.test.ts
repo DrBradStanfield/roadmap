@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-// Mock Sentry — api.ts imports it at module load (for sendFeedback / AB tracking).
+// Mock Sentry — server-api.ts imports it at module load (for sendFeedback / AB tracking).
 vi.mock('./sentry', () => ({
   Sentry: {
     captureException: vi.fn(),
   },
 }));
 
-import { parseJsonResponse } from './api';
+import { parseJsonResponse } from './server-api';
 
 // The Shopify app proxy can return an HTML maintenance/error page with a 200
 // status. parseJsonResponse is the guard every data call routes through — it

@@ -205,8 +205,8 @@ const METADATA_MAX_TOKENS = 2048;
 async function extractOrClassifyOnce(
   apiKey: string,
   content: Array<Record<string, unknown>>,
-  timeoutMs?: number,
-  httpAttempts?: number,
+  timeoutMs: number | undefined,
+  httpAttempts: number | undefined,
   documentMode: DocumentPromptMode,
 ): Promise<UnifiedExtractionResult> {
   const body = {
@@ -325,7 +325,8 @@ async function fetchAnthropicRaw(
       });
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown error');
+        // Discard provider bodies: errors may echo uploaded or chat content.
+        await response.body?.cancel();
 
         if (RETRYABLE_STATUSES.has(response.status) && attempt < maxAttempts) {
           console.warn(`Anthropic API ${response.status} on attempt ${attempt}/${maxAttempts}, retrying after ${RETRY_DELAY_MS}ms`);
@@ -334,9 +335,9 @@ async function fetchAnthropicRaw(
         }
 
         const err = new Error(`Anthropic API error (status ${response.status})`);
-        console.error(err.message, errorText);
+        console.error(err.message);
         if (!TRANSIENT_CAPACITY_STATUSES.has(response.status)) {
-          Sentry.captureException(err, { extra: { status: response.status, errorText, attempt } });
+          Sentry.captureException(err, { extra: { status: response.status, attempt } });
         }
         throw err;
       }

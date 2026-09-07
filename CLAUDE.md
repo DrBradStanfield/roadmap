@@ -20,8 +20,9 @@ A/B + product events, reminders, Klaviyo, hosted MCP (mcp.drstanfield.com).
 - The v1 Supabase per-user CRUD was torn down 2026-06-12 and the health tables
   purged. There are NO health-data CRUD endpoints; there is NO server deletion
   endpoint (deletion = client-side `eraseEpoch` bump).
-- Data layer: v2 builds swap `lib/api.ts → lib/roadmap-data.ts` (vite
-  `resolveId`) → [RoadmapStore](widget-src/src/storage/roadmap-store.ts).
+- Data layer: components import `lib/roadmap-data.ts` directly →
+  [RoadmapStore](widget-src/src/storage/roadmap-store.ts). Shopify services
+  live in `lib/server-api.ts`; only Pages AI transports are module-swapped.
   Cross-device merge: [mergeFiles()](packages/health-core/src/merge.ts) —
   append-only arrays, LWW scalars, monotonic `eraseEpoch`. File schema:
   [roadmap-file.ts](packages/health-core/src/roadmap-file.ts). Non-browser

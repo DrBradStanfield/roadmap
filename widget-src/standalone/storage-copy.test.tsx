@@ -18,7 +18,7 @@ vi.mock('../src/storage', () => ({
   SYNC_PENDING_EVENT: 'hr:sync-pending',
 }));
 vi.mock('./google-config', () => ({ googleDriveConfig: () => ({}) }));
-vi.mock('../src/lib/api', () => ({ trackProductEvent: vi.fn() }));
+vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('./reminders', () => ({ remindersSupported: () => false }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 vi.mock('./connect', () => ({
