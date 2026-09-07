@@ -808,7 +808,7 @@ export function ReviewTable({
             archiveCount > 0 && `${archiveCount} Original${archiveCount !== 1 ? 's' : ''}`,
           ].filter(Boolean).join(' + ')}`}
         </button>
-        <button className="review-cancel-btn" onClick={onCancel}>
+        <button className="review-cancel-btn" onClick={onCancel} disabled={isSaving}>
           Cancel
         </button>
       </div>
