@@ -329,6 +329,8 @@ describe('US-32 — correct_value', () => {
     const missing = correctValueTool(base(), { id: 'nope', newValue: 2.1 }, NOW);
     expect(missing.status).toBe('rejected');
     expect(missing.text).toContain('nope');
+    // A missing target is not a request to add (live ChatGPT 2026-09-07 offered add_measurement unasked).
+    expect(missing.text).toContain('Do not add it instead unless the user asks');
 
     const first = ok(correctValueTool(base(), { id: 'm1', newValue: 2.1 }, NOW));
     const again = correctValueTool(first.file!, { id: 'm1', newValue: 2.2 }, NOW);
@@ -937,6 +939,7 @@ import {
   importDocumentsCommit,
   importDocumentsOutput,
   isAlreadyImported,
+  dedupFileName,
   MAX_DOCUMENT_TEXT,
   MAX_UNRECOGNIZED_LINES,
   prepareImport,
@@ -1140,6 +1143,21 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(isAlreadyImported(file, 'other.pdf', '')).toBeNull();
     file.documents[0].deleted = true;
     expect(isAlreadyImported(file, 'letter.pdf', 'sha256-abc')).toBeNull();
+  });
+
+  it('AC5 — a re-drop ChatGPT’s file library renamed with a (n) suffix is the same file; Lp(a).pdf keeps its (a) (live 2026-09-07)', () => {
+    expect(dedupFileName('Results(1).pdf')).toBe('Results.pdf');
+    expect(dedupFileName('Report (2).pdf')).toBe('Report.pdf');
+    expect(dedupFileName('Lp(a).pdf')).toBe('Lp(a).pdf');
+    expect(dedupFileName('u1-labs-2026-08-28(1).pdf')).toBe('u1-labs-2026-08-28.pdf');
+    const file = base();
+    file.documents.push({ id: 'd1', title: 't', type: 'other', date: '2026-08-28', fileRef: '', contentHash: '', mimeType: '', extractedText: 'md', addedAt: NOW, sourceFileName: 'Results.pdf', metadata: {} });
+    expect(isAlreadyImported(file, 'Results(1).pdf', '', '2026-08-28')).toMatchObject({ by: 'name_date', row: { id: 'd1' } });
+    expect(isAlreadyImported(file, 'Results (2).pdf', '')).toMatchObject({ by: 'name', row: { id: 'd1' } });
+    // The stored name is the one the file came with; only the comparison folds the suffix.
+    file.documents.push({ id: 'd2', title: 't', type: 'other', date: null, fileRef: '', contentHash: 'sha256-h', mimeType: '', extractedText: 'md', addedAt: NOW, sourceFileName: 'Lp(a) (1).pdf', metadata: {} });
+    expect(folderNudge(file, ['Lp(a).pdf', 'Results(3).pdf', 'other.pdf'])!.unimported).toEqual(['other.pdf']);
+    expect(file.documents[1].sourceFileName).toBe('Lp(a) (1).pdf');
   });
 
   it('AC6 — the same bytes under two names in one call file one document row, and the twin says which file it is', () => {
@@ -1962,6 +1980,17 @@ describe('US-36 AC5 — slots, dedup and the commit are import_documents’ own'
       expect(tool.description, rule).toContain(rule);
     }
     expect(TOOL_LAYER_VERSION).toBe(2);
+  });
+});
+
+describe('US-36 AC9 — the assistant’s manners are the only gate when a client skips its approval prompt (live 2026-09-07)', () => {
+  it('the add tools refuse to become the fallback for a failed correction, and every two-phase tool asks for the user’s own words', () => {
+    for (const name of ['add_measurement', 'add_lab_values']) {
+      expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain('Only when the user asked to add a value; a failed correction is never turned into an add');
+    }
+    for (const name of ['correct_value', 'update_profile', 'report_feedback']) {
+      expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain('after their own yes, in their own words');
+    }
   });
 });
 

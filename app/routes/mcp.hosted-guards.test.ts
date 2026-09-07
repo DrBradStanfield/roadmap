@@ -272,7 +272,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     const proposed = await callToolAt(access, 'correct_value', FIX, NOW);
     expect(proposed.isError).toBe(false);
     expect(proposed.text).toMatch(/^PROPOSAL — nothing written yet\./);
-    expect(proposed.text).toContain('WAIT for their own yes');
+    expect(proposed.text).toContain('WAIT for their own yes, in their own words');
     const data = OUTPUTS.correct_value.parse(proposed.structured);
     expect(data).toMatchObject({ proposal: true, correctsId: LDL_ID, value: 2.8, confirmFrom: at(PROPOSAL_NBF_SECONDS) });
     const receipt = data.confirm!;

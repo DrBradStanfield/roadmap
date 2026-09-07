@@ -103,6 +103,8 @@ Your record still lives only in your Dropbox or Google Drive. Our server reads i
 
 Check what it files. An AI can misread a lab report the same way a person can, and the record is yours, so the last look at a new value should be yours too.
 
+Keep ChatGPT asking before it acts. By default ChatGPT asks you before a connector writes anything, and that prompt is your last look. ChatGPT has a setting for the connector, "Allow all actions" (the wording varies by account), that turns the prompt off. Leave it off. The connector still shows you every permanent change and waits for your own yes in your own words before it makes one, but with the prompt gone, that reply is the only gate left.
+
 Take care with the web tool open in another tab while ChatGPT is writing. The page now notices a change and re-reads your record within seconds, and sooner when you switch back to that tab, so what you are looking at catches up on its own. But there is still no lock: a value you are typing at that moment and a value ChatGPT is writing at that moment can still collide, and one of the two loses.
 
 ## How to cancel it

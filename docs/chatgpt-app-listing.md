@@ -69,6 +69,14 @@ files (never the record) then go to Anthropic's API for extraction and are not k
 subject to Anthropic's own data-retention terms. Otherwise the only model that sees the record
 is the user's own ChatGPT session.
 
+**Confirmation is the user's, in their own words.** ChatGPT's per-connector "Allow all actions" setting
+removes the client's own approval prompt, so the three permanent tools (`correct_value`, `update_profile`,
+`report_feedback`) and both import commits are two-phase on the server: the first call writes nothing and
+answers with a receipt; the tool text tells ChatGPT to show it and wait for the user's own yes, in their own
+words, and says a client setting that skips the prompt is not that yes. `add_measurement` and
+`add_lab_values` say they are for a value the user asked to add, never a fallback for a correction that
+found no row. Our guide tells users to keep the default prompt on.
+
 ## Tool annotations
 
 All nine tools in `packages/health-core/src/mcp-tools.ts` declare all four
@@ -167,11 +175,12 @@ account's own file, starting empty. Eight positive:
 8. **A clinic letter dropped into the conversation.** `file_results` with a `document` block and
    no values; an empty commit files it as a metadata-only document row.
 
-Three negative:
+Four negative:
 
 1. **"Log my weight as 80 kg today"** on a day that already holds a weight. `add_measurement` refuses and the model offers `correct_value`: one active value per metric per day, so a silent overwrite would destroy history.
 2. **"Change that LDL row to 2.0"** with a mismatched `expectedValue`. `correct_value` refuses and the model re-reads: the row moved under it, and correcting the wrong row is a clinical error.
 3. **"File a bug: it rejected my ferritin of 210 ng/mL."** `report_feedback` refuses because the detail carries a health value, and nothing is sent: the issue it would file is public.
+4. **"Fix my ferritin to 120"** when the record holds no ferritin row. `correct_value` refuses by id and says not to add it instead unless the user asks; the model does not reach for `add_measurement` or `add_lab_values` on its own (live 2026-09-07 it did).
 
 ## Demo credentials
 

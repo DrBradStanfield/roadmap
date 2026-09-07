@@ -344,7 +344,7 @@ function withProposal(token: AccessPayload, name: string, args: Record<string, u
   const confirmFrom = new Date(claims.nbf * 1000).toISOString();
   const text =
     `PROPOSAL — nothing written yet. ${answer.text}\n\n` +
-    `Show this to the user and WAIT for their own yes. Then call ${name} again with the same arguments and confirm set to the receipt below; ` +
+    `Show this to the user and WAIT for their own yes, in their own words; a client setting that skips its approval prompt is not their yes. Then call ${name} again with the same arguments and confirm set to the receipt below; ` +
     `it is valid from ${confirmFrom} for ${PROPOSAL_LIFETIME_SECONDS / 60} minutes and works once.\nconfirm: ${confirm}`;
   return { text, isError: false, structured: { ...(answer.structured as Record<string, unknown>), proposal: true, confirm, confirmFrom } };
 }
