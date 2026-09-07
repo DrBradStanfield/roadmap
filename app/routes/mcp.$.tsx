@@ -481,10 +481,10 @@ ${offers.some(({ provider }) => provider === 'google') ? '<p class="lede">Import
 <ul>
 <li>Read your record and produce your plan.</li>
 <li>Add measurements and lab results.</li>
-<li>Correct a recent value. Nothing is ever deleted.</li>
-<li>Update your sex, birth year, birth month and height.</li>
-<li>File a bug report as a public issue on GitHub, in your words, without your health values, and
-without asking again.</li>
+<li>Correct a recent value, after showing you what it would change. Nothing is ever deleted.</li>
+<li>Update your sex, birth year, birth month and height, after showing you the change.</li>
+<li>File a bug report as a public issue on GitHub, in your words, without your health values, after
+showing you what it would say.</li>
 <li>File the results from a lab report, a photo of one or a clinic letter you drop into the chat. Your assistant
 reads the file itself; the file never reaches our server. Only the values it read do, in memory for one request,
 and they are written to your own folder, never kept by us. Nothing is filed until you confirm what it read.</li>

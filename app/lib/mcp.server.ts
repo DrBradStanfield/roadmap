@@ -14,6 +14,7 @@
  * Deep imports into health-core, never `@roadmap/health-core`: the Fly Docker
  * build has no workspace symlink, and the package name only breaks at deploy.
  */
+import crypto from 'node:crypto';
 import { dayOf, daysBetween, latestDayOnEarth } from '../../packages/health-core/src/merge';
 import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
@@ -21,7 +22,7 @@ import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 
 import { StorageError, type StorageAdapter } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
-import { folderNudge, isToolName, MCP_TOOLS, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import { canonicalFeedback, folderNudge, isToolName, MCP_TOOLS, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../../packages/health-core/src/mcp-rpc';
 import { importFilesBucket, MCP_TOOL_NAMES, type McpToolName } from '../../packages/health-core/src/product-events';
 import { KNOWN_CLIENTS, readCapped, type McpClientLabel } from './mcp-clients.server';
@@ -30,9 +31,10 @@ import { recordServerEvent } from './product-events.server';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { githubFiler } from './github-issues.server';
 import { isMcpEnabled, issuer } from './mcp-config.server';
-import { type AccessPayload, allowToolCall, chargeWrites, connectionKey, WRITE_COST } from './mcp-grants.server';
+import { type AccessPayload, allowToolCall, chargeWrites, claimProposal, connectionKey, nowSeconds, WRITE_COST } from './mcp-grants.server';
 import { type McpProvider, providerAccessToken, providerLabel } from './mcp-providers.server';
-import { unpackSealed } from './mcp-seal.server';
+import { resourceUrl } from './mcp-config.server';
+import { hash, seal, unpackSealed, unseal } from './mcp-seal.server';
 
 /** One JSON-RPC message. A lab panel of 50 rows is a few KB; this is slack. */
 const RPC_BODY_CAP = 1024 * 1024;
@@ -52,7 +54,9 @@ const INSTRUCTIONS =
   'the user asked you to. The plan from get_plan is educational, not medical advice, and its hedged wording ' +
   'and citations are calibrated — pass them on as written. import_documents reads lab files from the Dropbox folder and ' +
   'writes nothing until its commit, which needs the user’s own confirmation of what it found; a file dropped into the chat ' +
-  'is read by you and filed through file_results the same way.';
+  'is read by you and filed through file_results the same way. correct_value, update_profile and report_feedback are ' +
+  'permanent, so here they take two calls: the first answers with a confirm receipt, and only the second, after the user’s ' +
+  'own yes, does it.';
 
 /**
  * A correction fixes a recent mistake. A result from three years ago is
@@ -71,6 +75,21 @@ export const MAX_CORRECTION_AGE_DAYS = 90;
  */
 export const FOLDER_LIST_TIMEOUT_MS = 2_000;
 export const FOLDER_LIST_MAX_ENTRIES = 200;
+
+/**
+ * Two-phase for the permanent tools (US-36 AC9). What the server can see is
+ * time and argument identity, so that is what it enforces: a permanent write
+ * takes two calls, identical arguments, the same connection, at least
+ * `PROPOSAL_NBF_SECONDS` apart (a chained call lands in under two; a person's
+ * yes takes longer) and inside `PROPOSAL_LIFETIME_SECONDS`. It cannot see
+ * the user's yes, stop an assistant with a code tool from sleeping, or a
+ * receipt held into the next turn; what it buys is a proposal in the
+ * transcript before the write, the client's approval prompt twice, and a
+ * second call an injected model has to emit.
+ */
+export const PROPOSAL_NBF_SECONDS = 10;
+export const PROPOSAL_LIFETIME_SECONDS = 15 * 60;
+const TWO_PHASE_TOOLS = new Set(['correct_value', 'update_profile', 'report_feedback']);
 
 // ---------------------------------------------------------------------------
 // The user's folder, as a StorageAdapter
@@ -162,7 +181,7 @@ function checkProfileUpdate(args: unknown): string | null {
  * mitigation 4). The loop itself is `runToolOverSync`, shared with the stdio
  * server (docs §7).
  */
-function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile, args: unknown, now: string): string | null {
+function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile, args: unknown, now: string, charge = true): string | null {
   if (name === 'correct_value') {
     const refusal = checkCorrection(file, args, now);
     if (refusal) return refusal;
@@ -171,7 +190,8 @@ function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile,
     const refusal = checkProfileUpdate(args);
     if (refusal) return refusal;
   }
-  return chargeTool(token, name);
+  // The confirmed half of a two-phase write was charged at its proposal.
+  return charge ? chargeTool(token, name) : null;
 }
 
 /**
@@ -200,6 +220,18 @@ async function callHostedTool(
   if (!isToolName(name)) return refuse(`No tool named ${name}.`);
   /** The record as the loop opened it, kept for the nudge so the folder check costs no second read. */
   let opened: RoadmapFile | undefined;
+  const twoPhase = TWO_PHASE_TOOLS.has(name) ? splitConfirm(args) : null;
+  /** The confirm receipt's verified claims, when this is the second call; the write then runs uncharged. */
+  let confirmed: ProposalClaims | null = null;
+  if (twoPhase?.confirm !== undefined) {
+    const checked = checkConfirm(token, name, twoPhase.args, twoPhase.confirm, now);
+    if (typeof checked === 'string') return refuse(checked);
+    confirmed = checked;
+    args = twoPhase.args;
+  } else if (twoPhase) {
+    args = twoPhase.args;
+  }
+  const charge = !confirmed;
 
   const provider = providerLabel(token.provider);
 
@@ -208,7 +240,7 @@ async function callHostedTool(
   // so `report_feedback` must not need the provider — nor a token minted for it.
   let accessToken = '';
   if (RECORD_FREE_TOOLS.has(name)) {
-    const refusal = chargeTool(token, name);
+    const refusal = charge ? chargeTool(token, name) : null;
     if (refusal) return refuse(refusal);
   } else {
     const minted = await providerAccessToken(token.provider, token.rt);
@@ -226,8 +258,10 @@ async function callHostedTool(
     const answer = await runToolOverSync(recordSync(adapter, 'mcp', now), name, args, now, {
       beforeCall: (file) => {
         opened = file;
-        return beforeHostedCall(token, name, file, args, now);
+        return beforeHostedCall(token, name, file, args, now, charge);
       },
+      // The first call of a two-phase write runs every guard, is charged, and saves nothing.
+      dryRun: twoPhase !== null && !confirmed,
       // This server runs in UTC and cannot know the user's timezone, so the
       // future check is the widest day anyone has reached (US-31 AC6/AC11).
       latestDay: latestDayOnEarth(now),
@@ -240,6 +274,7 @@ async function callHostedTool(
       // is built for every call; which tool uses it is the tool's declaration.
       importer: hostedImporter({ token, adapter, client: mcpClientLabel(token.clientId), maxCorrectionAgeDays: MAX_CORRECTION_AGE_DAYS }),
     });
+    if (twoPhase && !confirmed) return withProposal(token, name, twoPhase.args, answer, now);
     return opened && isFolderVisit(name, args) && token.provider === 'dropbox' && !answer.isError
       ? withFolderNudge(answer, adapter, opened)
       : answer;
@@ -265,6 +300,92 @@ async function callHostedTool(
     const failed = describeStorageFailure(error, `The record in ${provider}`);
     return refuse(`${failed.message}. ${failed.hint}`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Two-phase for the permanent tools (US-36 AC9)
+// ---------------------------------------------------------------------------
+
+/** What a proposal receipt carries: sealed, so a client cannot mint or alter one. */
+interface ProposalClaims {
+  tool: string;
+  /** Hash of the arguments the user saw, canonical: a confirm with other arguments is refused. */
+  args: string;
+  /** The connection hash, so a receipt cannot be confirmed over another connection to the same client. */
+  conn: string;
+  /** Single-use id, per machine (`claimProposal`). */
+  jti: string;
+  /** Not before / expiry, epoch seconds. */
+  nbf: number;
+  exp: number;
+}
+
+/** The `confirm` argument apart from the rest, which is what the tool sees. */
+function splitConfirm(args: unknown): { args: Record<string, unknown>; confirm: string | undefined } {
+  const { confirm, ...rest } = (args && typeof args === 'object' ? args : {}) as Record<string, unknown>;
+  return { args: rest, confirm: typeof confirm === 'string' ? confirm : undefined };
+}
+
+/**
+ * The identity of a call, for the receipt. `report_feedback` is hashed on the
+ * PREPARED text — whitespace collapsed, case folded — so a small model that
+ * re-emits its report a turn later with different spacing still confirms
+ * (review 2.2); the other two on their arguments, keys sorted.
+ */
+function argsHash(name: string, args: Record<string, unknown>): string {
+  const canonical = name === 'report_feedback'
+    ? canonicalFeedback(args as { kind: string; title: string; detail: string })
+    : Object.fromEntries(Object.entries(args).sort(([a], [b]) => a.localeCompare(b)));
+  return hash(JSON.stringify(canonical));
+}
+
+const audienceOf = (token: AccessPayload) => ({ clientId: token.clientId, resource: resourceUrl() });
+
+/**
+ * The first call's answer: what the tool would have done, and the receipt to
+ * do it with. Only a call that would have WRITTEN gets one — a refusal is a
+ * refusal, and `update_profile` that changes nothing has nothing to confirm.
+ */
+function withProposal(token: AccessPayload, name: string, args: Record<string, unknown>, answer: ToolAnswer, now: string): ToolAnswer {
+  if (answer.isError || (!answer.pendingWrite && name !== 'report_feedback')) return answer;
+  const issued = nowSeconds(Date.parse(now));
+  const claims: ProposalClaims = {
+    tool: name, args: argsHash(name, args), conn: hash(connectionKey(token.rt)),
+    jti: crypto.randomUUID(), nbf: issued + PROPOSAL_NBF_SECONDS, exp: issued + PROPOSAL_LIFETIME_SECONDS,
+  };
+  const confirm = seal('proposal', claims, audienceOf(token));
+  const confirmFrom = new Date(claims.nbf * 1000).toISOString();
+  const would = name === 'report_feedback'
+    ? `Would file a PUBLIC GitHub issue (${String(args.kind)}): “${canonicalFeedback(args as { kind: string; title: string; detail: string }).title}”. The detail is the text you sent, as written.`
+    : `${answer.text}\n(Row ids are assigned when it is written.)`;
+  const text =
+    `PROPOSAL — nothing written yet. ${would}\n\n` +
+    `Show this to the user and WAIT for their own yes. Then call ${name} again with the same arguments and confirm set to the receipt below; ` +
+    `it is valid from ${confirmFrom} for ${PROPOSAL_LIFETIME_SECONDS / 60} minutes and works once.\nconfirm: ${confirm}`;
+  return { text, isError: false, structured: { ...(answer.structured as Record<string, unknown>), proposal: true, confirm, confirmFrom } };
+}
+
+/**
+ * The second call's gate: the receipt must be ours, for this tool, these
+ * arguments and this connection, inside its window, and unused. Every
+ * failure is worded; an early call is told when to come back and not to spin.
+ */
+function checkConfirm(token: AccessPayload, name: string, args: Record<string, unknown>, confirm: string, now: string): ProposalClaims | string {
+  const nowMs = Date.parse(now);
+  const claims = unseal<ProposalClaims>('proposal', confirm, audienceOf(token), nowMs);
+  if (!claims || claims.conn !== hash(connectionKey(token.rt)) || typeof claims.jti !== 'string') {
+    return `That confirm receipt is not valid for this connection, or has expired (${PROPOSAL_LIFETIME_SECONDS / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.`;
+  }
+  if (claims.tool !== name || claims.args !== argsHash(name, args)) {
+    return `That confirm receipt was issued for different arguments. Nothing was written. Call ${name} again without confirm, with exactly what the user approved.`;
+  }
+  if (nowMs < claims.nbf * 1000) {
+    return `That confirm receipt is not valid yet: it can be used from ${new Date(claims.nbf * 1000).toISOString()}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`;
+  }
+  if (!claimProposal(claims.jti, PROPOSAL_LIFETIME_SECONDS * 1000, nowMs)) {
+    return `That confirm receipt has already been used. Nothing was written. If the user wants another change, call ${name} again without confirm.`;
+  }
+  return claims;
 }
 
 // ---------------------------------------------------------------------------

@@ -176,6 +176,23 @@ async function callTool(access: string, name: string, args: unknown, now = NOW) 
   };
 }
 
+/** Eleven seconds after NOW: past the proposal receipt's `nbf` (US-36 AC9). */
+const LATER = new Date(Date.parse(NOW) + 11_000).toISOString();
+
+/**
+ * A permanent tool on the hosted surface takes two calls (US-36 AC9): propose,
+ * then confirm with the receipt after the user's yes. A refused proposal is
+ * returned as is — the guards refuse before any receipt exists.
+ */
+async function twoStep(access: string, name: string, args: Record<string, unknown>) {
+  const proposed = await callTool(access, name, args);
+  if (proposed.isError) return proposed;
+  const { confirm, proposal } = proposed.structured as { confirm?: string; proposal?: boolean };
+  if (!confirm) return proposed; // nothing to confirm: the tool would not have written
+  expect(proposal).toBe(true);
+  return callTool(access, name, { ...args, confirm }, LATER);
+}
+
 /** Distinct days, so every add lands in a free slot. */
 function dayNumber(n: number): string {
   return new Date(Date.UTC(2026, 0, 1) + n * 86_400_000).toISOString().slice(0, 10);
@@ -227,7 +244,7 @@ describe('the whole connection, end to end (US-32)', () => {
     expect(row.value).toBe(3.2);
 
     // A correction appends and flips; it never mutates and never deletes.
-    const corrected = await callTool(access, 'correct_value', { id: row.id, newValue: 2.8, expectedValue: 3.2 });
+    const corrected = await twoStep(access, 'correct_value', { id: row.id, newValue: 2.8, expectedValue: 3.2 });
     expect(corrected.isError).toBe(false);
     const after = storedRecord().measurements;
     expect(after).toHaveLength(2);
@@ -260,7 +277,7 @@ describe('a record-free tool needs no record and no Dropbox (US-32)', () => {
     const calls = () => (fetch as unknown as { mock: { calls: unknown[] } }).mock.calls.length;
     const before = calls();
 
-    const answer = await callTool(access, 'report_feedback', {
+    const answer = await twoStep(access, 'report_feedback', {
       kind: 'bug', title: 'correct_value refused', detail: 'It asked for expectedValue and I had none.',
     });
     expect(answer.isError).toBe(false);
@@ -269,7 +286,7 @@ describe('a record-free tool needs no record and no Dropbox (US-32)', () => {
 
     // Still answers with Dropbox refusing outright, which is the point of it.
     vi.stubGlobal('fetch', vi.fn(async () => new Response('no', { status: 400 })));
-    const offline = await callTool(access, 'report_feedback', { kind: 'feature', title: 'a', detail: 'b' });
+    const offline = await twoStep(access, 'report_feedback', { kind: 'feature', title: 'a', detail: 'b' });
     expect(offline.isError).toBe(false);
     const refused = await callTool(access, 'read_record', {});
     expect(refused.isError).toBe(true);
@@ -309,7 +326,7 @@ describe('US-32 AC9 — the hosted server files the issue itself', () => {
   it('posts the issue with the token, and answers with the issue it created', async () => {
     const posts = stubGithub(() => created(11));
     const { access } = await connect();
-    const answer = await callTool(access, 'report_feedback', REPORT);
+    const answer = await twoStep(access, 'report_feedback', REPORT);
 
     expect(answer.isError).toBe(false);
     expect(answer.structured).toEqual({
@@ -339,11 +356,12 @@ describe('US-32 AC9 — the hosted server files the issue itself', () => {
     // Three file; the fourth is refused by the daily cap and is charged anyway,
     // which is what spends the last of the allowance.
     for (let i = 0; i < REPORTS_PER_DAY; i++) {
-      const answer = await callTool(access, 'report_feedback', { ...REPORT, title: `report number ${i}` });
+      const answer = await twoStep(access, 'report_feedback', { ...REPORT, title: `report number ${i}` });
       expect(answer.isError, `call ${i}`).toBe(false);
     }
+    // The proposal is what is charged (US-36 AC6/AC9); the confirm is free, so the count is unchanged.
     for (let i = REPORTS_PER_DAY; i < WRITES_PER_HOUR / WRITE_COST.correct; i++) {
-      const daily = await callTool(access, 'report_feedback', { ...REPORT, title: `report number ${i}` });
+      const daily = await twoStep(access, 'report_feedback', { ...REPORT, title: `report number ${i}` });
       expect(daily.isError, `call ${i}`).toBe(true);
       expect(daily.text).toContain('You have filed three reports today. Nothing was filed.');
     }
@@ -357,7 +375,7 @@ describe('US-32 AC9 — the hosted server files the issue itself', () => {
     const posts = stubGithub(() => new Response('nope', { status: 500 }));
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { access } = await connect();
-    const answer = await callTool(access, 'report_feedback', REPORT);
+    const answer = await twoStep(access, 'report_feedback', REPORT);
 
     expect(answer.isError).toBe(true);
     expect(answer.text).toBe('GitHub did not answer. Nothing was filed. Try again later.');
@@ -371,8 +389,8 @@ describe('US-32 AC9 — the hosted server files the issue itself', () => {
   it('files the same report once a day, and answers the second call with the first issue', async () => {
     const posts = stubGithub(() => created(13));
     const { access } = await connect();
-    const first = await callTool(access, 'report_feedback', REPORT);
-    const again = await callTool(access, 'report_feedback', { ...REPORT, title: REPORT.title.toUpperCase() });
+    const first = await twoStep(access, 'report_feedback', REPORT);
+    const again = await twoStep(access, 'report_feedback', { ...REPORT, title: REPORT.title.toUpperCase() });
 
     expect(posts).toHaveLength(1);
     expect(again.isError).toBe(false);
@@ -388,13 +406,13 @@ describe('US-32 AC9 — the hosted server files the issue itself', () => {
     for (let i = 0; i < Math.ceil(ISSUES_PER_HOUR / REPORTS_PER_DAY); i++) connections.push((await connect()).access);
     for (let i = 0; i < ISSUES_PER_HOUR; i++) {
       const who = connections[Math.floor(i / REPORTS_PER_DAY)];
-      const answer = await callTool(who, 'report_feedback', { ...REPORT, title: `distinct report ${i}` });
+      const answer = await twoStep(who, 'report_feedback', { ...REPORT, title: `distinct report ${i}` });
       expect(answer.isError, `issue ${i}`).toBe(false);
     }
     expect(posts).toHaveLength(ISSUES_PER_HOUR);
 
     // From the last connection, which still has a report left of its own three.
-    const capped = await callTool(connections[connections.length - 1], 'report_feedback', { ...REPORT, title: 'the twenty-first report' });
+    const capped = await twoStep(connections[connections.length - 1], 'report_feedback', { ...REPORT, title: 'the twenty-first report' });
     expect(capped.isError).toBe(true);
     expect(capped.text).toContain('Feedback is paused for an hour. Nothing was filed.');
     expect(posts).toHaveLength(ISSUES_PER_HOUR); // nothing left the machine
@@ -747,7 +765,7 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
     expect(storedRecord().measurements).toHaveLength(1);
 
     seedWithLdl('2026-08-30');
-    const recent = await callTool(access, 'correct_value', { id: LDL_ID, newValue: 2.8, expectedValue: 3.2 });
+    const recent = await twoStep(access, 'correct_value', { id: LDL_ID, newValue: 2.8, expectedValue: 3.2 });
     expect(recent.isError).toBe(false);
   });
 
@@ -856,7 +874,7 @@ describe('update_profile on the hosted surface (US-34)', () => {
     expect(wrongField.isError).toBe(true);
     expect(wrongField.text).toContain('expected.heightCm');
 
-    const stated = await callTool(access, 'update_profile', { heightCm: 165, expected: { heightCm: 178 } });
+    const stated = await twoStep(access, 'update_profile', { heightCm: 165, expected: { heightCm: 178 } });
     expect(stated.isError).toBe(false);
     expect(storedRecord().profile.heightCm).toBe(165);
     expect(storedRecord().profile.sex).toBe('male');

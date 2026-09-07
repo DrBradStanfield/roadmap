@@ -131,6 +131,22 @@ export function claimCode(jti: string, nowMs = Date.now()): boolean {
 }
 
 /**
+ * Proposal receipts already confirmed (US-36 AC9), per machine, the same
+ * best-effort single-use as `spentCodes`: a replay on a second Fly machine
+ * meets `not-active` on `correct_value` and an `expected` mismatch on
+ * `update_profile`, and could file a second public issue. Pruned at the
+ * receipt's own lifetime.
+ */
+const spentProposals = new Map<string, number>();
+
+export function claimProposal(jti: string, lifetimeMs: number, nowMs = Date.now()): boolean {
+  for (const [id, at] of spentProposals) if (nowMs - at > lifetimeMs) spentProposals.delete(id);
+  if (spentProposals.has(jti)) return false;
+  spentProposals.set(jti, nowMs);
+  return true;
+}
+
+/**
  * Writes already spent by one CONNECTION this hour, per machine. Keyed on the
  * hash of the provider refresh token, which is what a connection is: minting a
  * second access token over the same connection lands on the same counter, so
@@ -175,6 +191,7 @@ export const importFiles = createQuotaCounter(IMPORT_FILES_PER_DAY, DAY_MS, 30 *
 /** Test seam — the maps are process-global and would leak between cases. */
 export function resetMcpMemory(): void {
   spentCodes.clear();
+  spentProposals.clear();
   spentWrites.clear();
   importFiles.reset();
   resetCimdCache();

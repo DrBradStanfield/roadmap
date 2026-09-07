@@ -118,11 +118,22 @@ export const addLabValuesInput = z.object({
   values: z.array(labValueInput).min(1).max(MAX_LAB_ROWS_PER_CALL),
 }).strict();
 
+/**
+ * The second call of a two-phase write on the hosted server (US-36 AC9): the
+ * `confirm` receipt the first call answered with. The tool layer never reads
+ * it — the stdio server ignores it, a person watching their own file — so it
+ * is declared here once and stripped by the surface that enforces it.
+ */
+/** A receipt NAMES a pending payload in the user's folder; it never carries one (US-35 AC7). A proposal receipt fits the same bound. */
+export const MAX_RECEIPT_LENGTH = 1024;
+const CONFIRM = z.string().max(MAX_RECEIPT_LENGTH).optional();
+
 export const correctValueInput = z.object({
   id: z.string().min(1).max(MAX_ID_LENGTH),
   newValue: z.number().finite(),
   unit: z.string().min(1).max(MAX_NAME_LENGTH).optional(),
   expectedValue: z.number().finite().optional(),
+  confirm: CONFIRM,
 }).strict();
 
 /**
@@ -150,20 +161,20 @@ export const updateProfileInput = z.object({
     birthMonth: z.number().int().nullable().optional(),
     heightCm: z.number().finite().nullable().optional(),
   }).strict().optional(),
+  confirm: CONFIRM,
 }).strict();
 
 export const reportFeedbackInput = z.object({
   kind: z.enum(['bug', 'feature']),
   title: z.string().min(1).max(MAX_NAME_LENGTH),
   detail: z.string().min(1).max(2000),
+  confirm: CONFIRM,
 }).strict();
 
 /** Files one `import_documents` call may name on the folder route (US-35 AC2). */
 export const MAX_IMPORT_FILES_PER_CALL = 20;
 /** Candidates one receipt may carry, and ids one commit may name. Five files of a big panel. */
 export const MAX_IMPORT_CANDIDATES = 300;
-/** A receipt NAMES a pending payload in the user's folder; it never carries one (US-35 AC7). */
-export const MAX_RECEIPT_LENGTH = 1024;
 /** A title or question lifted from a document, as much of it as reaches the assistant (US-35 AC9). */
 export const MAX_DOCUMENT_TEXT = 120;
 const MAX_CANDIDATE_ID_LENGTH = 16;
@@ -326,6 +337,17 @@ export const labRowOutput = z.object({
 
 export const addLabValuesOutput = z.object({ rows: z.array(labRowOutput) }).strict();
 
+/**
+ * What a two-phase tool's first call adds to its ordinary answer (US-36
+ * AC9): the receipt to send back, and the moment it becomes usable. Absent
+ * on the write itself and on every other surface.
+ */
+const PROPOSAL_FIELDS = {
+  proposal: z.literal(true).optional(),
+  confirm: z.string().optional(),
+  confirmFrom: z.string().optional(),
+};
+
 /** The new row, and the row it supersedes. */
 export const correctValueOutput = z.object({
   id: z.string(),
@@ -334,6 +356,7 @@ export const correctValueOutput = z.object({
   value: z.number(),
   unit: z.string().nullable(),
   recordedAt: z.string(),
+  ...PROPOSAL_FIELDS,
 }).strict();
 
 /** Every field that moved, and what it moved from. Empty when nothing changed. */
@@ -343,6 +366,7 @@ export const updateProfileOutput = z.object({
     from: z.union([z.string(), z.number()]).nullable(),
     to: z.union([z.string(), z.number()]),
   }).strict()),
+  ...PROPOSAL_FIELDS,
 }).strict();
 
 /**
@@ -356,6 +380,7 @@ export const reportFeedbackOutput = z.object({
   number: z.number().int().optional(),
   kind: z.enum(['bug', 'feature']),
   title: z.string(),
+  ...PROPOSAL_FIELDS,
 }).strict();
 
 const SLOT_STATES = ['free', 'held_equal', 'held_different'] as const;
@@ -750,6 +775,18 @@ function fenced(text: string): string {
   for (const run of text.matchAll(/`+/g)) longest = Math.max(longest, run[0].length);
   const fence = '`'.repeat(Math.max(3, longest + 1));
   return `${fence}\n${text}\n${fence}`;
+}
+
+/**
+ * The report as the proposal receipt hashes it (US-36 AC9): the prepared
+ * text with whitespace collapsed and case folded, so a small model that
+ * re-emits its own report a turn later with different spacing still
+ * confirms, while a different report does not. What is FILED is the confirm
+ * call's own text; this is only the identity.
+ */
+export function canonicalFeedback(request: { kind: string; title: string; detail: string }): { kind: string; title: string; detail: string } {
+  const fold = (text: string) => printable(text).replace(/\s+/g, ' ').trim().toLowerCase();
+  return { kind: request.kind, title: fold(request.title), detail: fold(request.detail) };
 }
 
 /**
@@ -1643,6 +1680,13 @@ const DAY_SCHEMA = { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' } as cons
 const OBJECT = { type: 'object' } as const;
 const OBJECT_ARRAY = { type: 'array', items: { type: 'object' } } as const;
 
+/** The first call of a two-phase write answers with these beside its ordinary fields (US-36 AC9). */
+const PROPOSAL_SCHEMA = {
+  proposal: { type: 'boolean', description: 'True on the first call of a two-phase write: nothing was written yet.' },
+  confirm: { type: 'string', description: 'The receipt to send back, unchanged, after the user’s own yes.' },
+  confirmFrom: { type: 'string', description: 'When the receipt becomes usable. Do not call before it.' },
+} as const;
+
 /** A written row's fields, shared by the three tools that answer with one. */
 const ROW_FIELDS = {
   id: { type: 'string', description: 'The row id — cite this to correct the row later.' },
@@ -1953,7 +1997,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'Fix a value that was recorded wrongly. This appends a new row with the corrected number and the ' +
       'ORIGINAL date, and marks the old row "entered-in-error" — permanently. Nothing is deleted or ' +
       'overwritten. Read the record first: you need the row id, and passing `expectedValue` makes the call ' +
-      'refuse if the row does not hold what you think it holds.',
+      'refuse if the row does not hold what you think it holds.' +
+      ' On the hosted server this takes two calls: the first answers with what it would do and a `confirm` receipt; show it to the user and call again with `confirm` only after their own yes.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1961,6 +2006,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         newValue: { type: 'number', description: 'The corrected number.' },
         unit: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The unit `newValue` is in, for a core metric. A lab value keeps its lab’s unit.' },
         expectedValue: { type: 'number', description: 'The value you believe the row holds now. Mismatch refuses the call.' },
+        confirm: { type: 'string', maxLength: MAX_RECEIPT_LENGTH, description: 'Hosted server, second call only: the receipt the first call returned, after the user’s own yes.' },
       },
       required: ['id', 'newValue'],
       additionalProperties: false,
@@ -1972,6 +2018,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         correctsId: { type: 'string', description: 'The row now marked "entered-in-error".' },
         metric: { type: 'string', description: 'The metric or test the row is for.' },
         unit: { type: ['string', 'null'], description: 'The unit the corrected value is stored in.' },
+        ...PROPOSAL_SCHEMA,
       },
       required: ['id', 'correctsId', 'metric', 'value', 'unit', 'recordedAt'],
       additionalProperties: false,
@@ -1988,7 +2035,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'from them, so a wrong one makes the whole plan wrong. Read the record first and pass `expected` with the ' +
       'value you believe each field holds now (null if it holds none) — a mismatch refuses the call and writes ' +
       'nothing. This overwrites: the profile is one last-write-wins object, so unlike a measurement there is no ' +
-      'earlier version to read back. Display preferences (units) are not yours to change.',
+      'earlier version to read back. Display preferences (units) are not yours to change.' +
+      ' On the hosted server this takes two calls: the first answers with what it would do and a `confirm` receipt; show it to the user and call again with `confirm` only after their own yes.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2007,6 +2055,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
           },
           additionalProperties: false,
         },
+        confirm: { type: 'string', maxLength: MAX_RECEIPT_LENGTH, description: 'Hosted server, second call only: the receipt the first call returned, after the user’s own yes.' },
       },
       additionalProperties: false,
     },
@@ -2027,6 +2076,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
             additionalProperties: false,
           },
         },
+        ...PROPOSAL_SCHEMA,
       },
       required: ['changed'],
       additionalProperties: false,
@@ -2045,13 +2095,15 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'to. Offer it when a tool refuses something the user reasonably expected, when the record cannot express ' +
       'something they want to track, or when a result looks wrong. Never put health values, dates of results, ' +
       'names or file paths in the title or detail — describe the problem, not the data. A server with no GitHub ' +
-      'token instead answers with a link the user opens and submits themselves; the answer says which happened.',
+      'token instead answers with a link the user opens and submits themselves; the answer says which happened.' +
+      ' On the hosted server this takes two calls: the first answers with what it would do and a `confirm` receipt; show it to the user and call again with `confirm` only after their own yes.',
     inputSchema: {
       type: 'object',
       properties: {
         kind: { type: 'string', enum: ['bug', 'feature'], description: 'Something broken, or something missing.' },
         title: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'One line naming the problem.' },
         detail: { type: 'string', maxLength: 2000, description: 'What happened, what you expected, and the steps — no health values.' },
+        confirm: { type: 'string', maxLength: MAX_RECEIPT_LENGTH, description: 'Hosted server, second call only: the receipt the first call returned, after the user’s own yes.' },
       },
       required: ['kind', 'title', 'detail'],
       additionalProperties: false,
@@ -2064,6 +2116,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         number: { type: 'integer', description: 'The issue number, when one was filed.' },
         kind: { type: 'string', enum: ['bug', 'feature'] },
         title: { type: 'string' },
+        ...PROPOSAL_SCHEMA,
       },
       required: ['filed', 'url', 'kind', 'title'],
       additionalProperties: false,
@@ -2384,6 +2437,8 @@ export interface ToolAnswer {
   isError: boolean;
   /** The same answer, typed to the tool's `outputSchema`. Absent on a refusal. */
   structured?: unknown;
+  /** A `dryRun` that would have written: the file is not saved, and the surface decides what to say. */
+  pendingWrite?: true;
 }
 
 /**
@@ -2437,6 +2492,13 @@ export interface RunToolOptions {
    * `file_results` runs there and `import_documents` refuses in words (AC11).
    */
   importer?: ReceiptSurface;
+  /**
+   * Run the tool and answer as it would, but save NOTHING (US-36 AC9): the
+   * hosted server's first call of a two-phase write. `pendingWrite` on the
+   * answer says a save was skipped. A record-free tool is run tokenless, so
+   * nothing leaves the machine either.
+   */
+  dryRun?: boolean;
 }
 
 /**
@@ -2463,7 +2525,7 @@ export async function runToolOverSync(
   if (!isToolName(name)) return { text: `No tool named ${name}.`, isError: true };
 
   if (RUN_MODE.get(name) === 'record-free') {
-    const filer = name === 'report_feedback' ? options.fileFeedback : undefined;
+    const filer = name === 'report_feedback' && !options.dryRun ? options.fileFeedback : undefined;
     const parsed = filer ? parseArgs('report_feedback', args) : undefined;
     // A malformed call is worded in one place: `callTool` parses and refuses.
     const outcome = filer && parsed?.ok
@@ -2474,7 +2536,7 @@ export async function runToolOverSync(
       throw new ToolContractError(`${name} produced a file without opening one`);
     }
     return outcome.status === 'ok'
-      ? { text: outcome.text, isError: false, structured: outcome.data }
+      ? { text: outcome.text, isError: false, structured: outcome.data, ...(options.dryRun ? { pendingWrite: true } : null) }
       : { text: outcome.text, isError: true };
   }
 
@@ -2487,6 +2549,7 @@ export async function runToolOverSync(
   const outcome = callTool(name, args, { file, now, latestDay: options.latestDay });
   if (outcome.status !== 'ok') return { text: outcome.text, isError: true };
   if (!outcome.file) return { text: outcome.text, isError: false, structured: outcome.data };
+  if (options.dryRun) return { text: outcome.text, isError: false, structured: outcome.data, pendingWrite: true };
 
   await sync.save(outcome.file);
   // The note is for the person reading along; the structured answer is the

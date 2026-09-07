@@ -495,3 +495,15 @@ describe('US-36 AC1 — file_results runs here: the receipt lives in this proces
     rmSync(dir, { recursive: true, force: true });
   });
 });
+
+describe('US-36 AC9 — the stdio server ignores `confirm`: a person is watching their own file', () => {
+  it('writes a correction on the first call, confirm or not', async () => {
+    const { dir, path } = writeFixture(fixture());
+    const response = await call(path, 'correct_value', { id: 'm1', newValue: 2.8, expectedValue: 3.4, confirm: 'not-a-receipt' });
+    expect(response.result!.isError).toBeUndefined();
+    expect(text(response)).toContain('Corrected ldl 2.8');
+    const saved = JSON.parse(readFileSync(path, 'utf8')) as RoadmapFile;
+    expect(saved.measurements.find((m) => m.id === 'm1')!.status).toBe('entered-in-error');
+    rmSync(dir, { recursive: true, force: true });
+  });
+});

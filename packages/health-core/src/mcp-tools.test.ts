@@ -500,7 +500,7 @@ describe('US-32 — the published JSON Schema and the zod gate say the same thin
         }
       }
     }
-    expect(checked).toBe(13); // every string a tool takes is bounded
+    expect(checked).toBe(16); // every string a tool takes is bounded (three `confirm`s among them, US-36 AC9)
   });
 
   it('diverges in exactly one place, on purpose: add_measurement.metricType', () => {

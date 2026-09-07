@@ -19,8 +19,11 @@ import { resourceUrl, sealKeys } from './mcp-config.server';
 import { isProvider, type McpProvider } from './mcp-providers.server';
 
 /** `import` is a receipt (US-35 AC7): the name and hash of a pending payload
- *  that sits in the user's own folder, sealed like every other blob. */
-export type BlobType = 'state' | 'code' | 'access' | 'refresh' | 'import';
+ *  that sits in the user's own folder, sealed like every other blob.
+ *  `proposal` is the first call of a two-phase write (US-36 AC9): the tool,
+ *  a hash of its arguments, the connection, and the window it may be
+ *  confirmed in. */
+export type BlobType = 'state' | 'code' | 'access' | 'refresh' | 'import' | 'proposal';
 
 /**
  * Fixed-length buckets for the padded plaintext. Without padding the blob's
