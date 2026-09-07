@@ -375,7 +375,7 @@ import (`source: 'apple_health'`, `externalId` for dedup).
 
 ## v2: Local-first lab uploads (June 2026)
 
-The local-first re-architecture (`health-roadmap-v2.html` + `health-roadmap-v2-implementation.html` hold the decision record; `architecture-v2.html` the current map) extends this feature in five ways. The extraction/review/FHIR-correction *pipeline* is unchanged; what changed is where originals + values are stored (the user's own cloud) and how the extraction endpoint is authenticated (app-proxy HMAC).
+The local-first re-architecture extends this feature in five ways. [architecture-v2.html](architecture-v2.html) is the current map; dated migration decisions remain in git history. The extraction/review/FHIR-correction *pipeline* is unchanged; what changed is where originals + values are stored (the user's own cloud) and how the extraction endpoint is authenticated (app-proxy HMAC).
 
 ### 1. Originals are KEPT — archived in the user's own cloud
 
