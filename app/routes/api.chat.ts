@@ -234,7 +234,14 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 });
     }
 
-    const body = await request.json();
+    // A malformed body is client error, not ours: Node's SyntaxError message
+    // quotes the offending text, so it must not reach the outer capture.
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return Response.json({ success: false, error: 'Invalid JSON body' }, { status: 400 });
+    }
 
     let auth: AuthResult;
     try {
@@ -431,6 +438,7 @@ export async function action({ request }: ActionFunctionArgs) {
       completion,
       platform: 'shopify',
       latencyMs: tAfterLlm - tBeforeLlm,
+      conversationId: activeConversationId,
     });
 
     // Fire-and-forget: save assistant message, then (nested) log match event.

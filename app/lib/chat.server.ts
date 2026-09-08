@@ -21,7 +21,7 @@ import {
 } from '../../packages/health-core/src/measurement-history';
 import { healthInputSchema, sanitizeInputs, excludedInputFields } from '../../packages/health-core/src/validation';
 import { CHAT_EDIT_TOOLS, PREFILL_ACK_MESSAGE, parseProposedEdits, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
-import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
+import { callAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicUsage } from './anthropic.server';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -588,6 +588,19 @@ export const FALLBACK_RESPONSE =
 
 export type ChatFailureMode = 'api-error' | 'empty-response';
 
+/** Closed set for the Sentry `errorKind` tag. Derived from the error's shape, never its text. */
+export type ChatErrorKind = 'timeout' | 'http_5xx' | 'overloaded_529' | 'parse' | 'other';
+
+export function classifyChatError(err: unknown): ChatErrorKind {
+  if (isNetworkOrTimeoutError(err)) return 'timeout';
+  if (err instanceof SyntaxError) return 'parse';
+  const message = err instanceof Error ? err.message : '';
+  if (/\(status 529\)/.test(message)) return 'overloaded_529';
+  if (/\(status 5\d\d\)/.test(message)) return 'http_5xx';
+  if (message === 'No text in Anthropic response') return 'parse';
+  return 'other';
+}
+
 export interface ChatCompletionResult {
   content: string;
   usage: AnthropicUsage;
@@ -597,6 +610,8 @@ export interface ChatCompletionResult {
   failureMode?: ChatFailureMode;
   /** Error detail for the conversation failure record; never sent to Sentry. */
   errorDetail?: string;
+  /** Sentry grouping key for api-error fallbacks; the only error-derived value that leaves the process. */
+  errorKind?: ChatErrorKind;
   /** Form edits the model proposed via tool_use (additive — empty on normal turns). */
   proposedEdits?: ProposedEdit[];
 }
@@ -657,22 +672,34 @@ export async function getChatCompletion(
       isFallback: true,
       failureMode: 'api-error',
       errorDetail,
+      errorKind: classifyChatError(err),
     };
   }
 }
 
-/** Report only bounded diagnostics. Conversation content never belongs in telemetry. */
+const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Report only bounded diagnostics. Conversation content never belongs in telemetry.
+ * `conversationId` is an opaque UUID: the join key from an alert to the `chat_*` failure row.
+ */
 export function reportChatFallback(params: {
   completion: ChatCompletionResult;
   platform: 'shopify' | 'discord';
   latencyMs: number;
+  conversationId?: string | null;
 }): void {
   if (!params.completion.isFallback) return;
   const failureMode = params.completion.failureMode === 'api-error' ? 'api-error' : 'empty-response';
   const tags = { feature: 'chat', subsystem: 'main-llm', failureMode, platform: params.platform };
-  const extra = { latencyMs: params.latencyMs };
+  // Accept only a UUID shape: anything else is not a join key and must not leave the process.
+  const conversationId = UUID_SHAPE.test(params.conversationId ?? '') ? params.conversationId : null;
+  const extra = { latencyMs: params.latencyMs, conversationId };
   if (failureMode === 'api-error') {
-    Sentry.captureException(new Error('Chat: main-LLM API failure'), { level: 'error', tags, extra });
+    const errorKind = params.completion.errorKind ?? 'other';
+    Sentry.captureException(new Error(`Chat: main-LLM API failure (${errorKind})`), {
+      level: 'error', tags: { ...tags, errorKind }, extra,
+    });
   } else {
     Sentry.captureMessage('Chat: main-LLM fallback (empty-response)', { level: 'warning', tags, extra });
   }

@@ -323,10 +323,11 @@ export async function createBatch(
   });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Unknown error');
+    // Discard provider bodies: a 400 can echo the request, i.e. the user's lab pages.
+    await response.body?.cancel();
     const err = new Error(`Batch API error (status ${response.status})`);
-    console.error(err.message, errorText);
-    Sentry.captureException(err, { extra: { status: response.status, errorText } });
+    console.error(err.message);
+    Sentry.captureException(err, { extra: { status: response.status } });
     throw err;
   }
 
@@ -358,9 +359,9 @@ export async function pollBatch(
   });
 
   if (!statusResponse.ok) {
-    const errorText = await statusResponse.text().catch(() => 'Unknown error');
+    await statusResponse.body?.cancel();
     const err = new Error(`Batch status error (${statusResponse.status})`);
-    Sentry.captureException(err, { extra: { status: statusResponse.status, errorText } });
+    Sentry.captureException(err, { extra: { status: statusResponse.status } });
     throw err;
   }
 
@@ -380,9 +381,9 @@ export async function pollBatch(
   });
 
   if (!resultsResponse.ok) {
-    const errorText = await resultsResponse.text().catch(() => 'Unknown error');
+    await resultsResponse.body?.cancel();
     const err = new Error(`Batch results error (${resultsResponse.status})`);
-    Sentry.captureException(err, { extra: { status: resultsResponse.status, errorText } });
+    Sentry.captureException(err, { extra: { status: resultsResponse.status } });
     throw err;
   }
 

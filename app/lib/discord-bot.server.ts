@@ -330,6 +330,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       completion: result,
       platform: 'discord',
       latencyMs: tAfterLlm - tBeforeLlm,
+      conversationId: conversationId ?? null,
     });
 
     if (typingInterval) {

@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Sentry from '@sentry/react-router';
-import { getChatCompletion, reportChatFallback } from './chat.server';
+import { classifyChatError, getChatCompletion, reportChatFallback, type ChatErrorKind } from './chat.server';
 import { routeQuery, reportRouterFailure } from './chat-router.server';
 import { classifyMessage } from './chat-classifier.server';
+import { createBatch, pollBatch } from './anthropic.server';
 
 // US-15 AC4: inspect complete SDK transport envelopes, including exception
 // values and extra context. No request ever reaches Sentry or Anthropic.
@@ -91,6 +92,51 @@ describe('chat failure telemetry', () => {
     await Sentry.flush();
     expect(envelopes).toHaveLength(1);
     expect(JSON.stringify(envelopes)).not.toContain(marker);
+  });
+
+  it('tags api-error with a closed errorKind and keeps the opaque conversationId', async () => {
+    const conversationId = '0f3d2c1a-6b7e-4a5d-9c8b-1e2f3a4b5c6d';
+    reportChatFallback({
+      completion: {
+        content: secret, isFallback: true, failureMode: 'api-error', errorDetail: secret, errorKind: 'http_5xx',
+        usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 },
+      },
+      platform: 'shopify', latencyMs: 5, conversationId,
+    });
+    await Sentry.flush();
+    expect(envelopes).toHaveLength(1);
+    const payload = JSON.stringify(envelopes);
+    expect(payload).not.toContain(marker);
+    expect(payload).toContain('"errorKind":"http_5xx"');
+    expect(payload).toContain(conversationId);
+  });
+
+  it.each<[unknown, ChatErrorKind]>([
+    [new DOMException(secret, 'TimeoutError'), 'timeout'],
+    [new DOMException(secret, 'AbortError'), 'timeout'],
+    [new TypeError('fetch failed'), 'timeout'],
+    [new Error(`Anthropic API error (status 529)`), 'overloaded_529'],
+    [new Error(`Anthropic API error (status 503)`), 'http_5xx'],
+    [new Error(`Anthropic API error (status 400)`), 'other'],
+    [new SyntaxError(`Unexpected token 'P', "${secret}" is not valid JSON`), 'parse'],
+    [new Error('No text in Anthropic response'), 'parse'],
+    [new Error(secret), 'other'],
+    [secret, 'other'],
+  ])('classifies %o as %s without carrying its text', (err, kind) => {
+    expect(classifyChatError(err)).toBe(kind);
+  });
+
+  it.each([
+    ['createBatch', () => createBatch([{ pages: [] } as never])],
+    ['pollBatch', () => pollBatch('batch_synthetic')],
+  ])('%s discards a provider 400 body instead of logging it', async (_name, call) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(secret, { status: 400 })));
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(call()).rejects.toThrow(/status|error/);
+    await Sentry.flush();
+    expect(envelopes).toHaveLength(1);
+    expect(JSON.stringify(envelopes)).not.toContain(marker);
+    expect(JSON.stringify(consoleError.mock.calls)).not.toContain(marker);
   });
 
   it('emits nothing for a successful completion', async () => {
