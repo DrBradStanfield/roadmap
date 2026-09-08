@@ -8,10 +8,10 @@
  * shells above (edit-record.test.ts, mcp-server.test.ts) test the words; this
  * tests the bytes.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   chmodSync, existsSync, lstatSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync,
-  symlinkSync, writeFileSync,
+  symlinkSync, utimesSync, writeFileSync,
 } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
@@ -177,5 +177,77 @@ describe('US-31 AC8 / US-32 AC6 — the changed-file precondition', () => {
     await expect(adapter.write(ROADMAP_FILE_NAME, { ...createEmptyFile(CTX), n: 2 }, version)).resolves.toBeTruthy();
     expect(JSON.parse(readFileSync(path, 'utf8')).n).toBe(2);
     rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+
+describe('US-31 AC8 / US-32 AC6 — locks do not expire while an owner can resume', () => {
+  it('does not steal an aged lock from a live writer before publication', async () => {
+    const { dir, path } = scratch();
+    const a = new FileAdapter(path);
+    const b = new FileAdapter(path);
+    const initial = await a.read(ROADMAP_FILE_NAME);
+    // Hold A at the existing synchronous backup seam, then let B contend.
+    const originalBackup = (a as any).backup.bind(a);
+    let competing!: Promise<unknown>;
+    vi.useFakeTimers();
+    vi.spyOn(a as any, 'backup').mockImplementation(() => {
+      const old = new Date(Date.now() - 11_000);
+      utimesSync(`${path}.lock`, old, old);
+      competing = b.write(ROADMAP_FILE_NAME, { writer: 'B' }, initial.version);
+      // Attach immediately so a rejected promise is never unhandled.
+      void competing.catch(() => {});
+      expect(existsSync(`${path}.lock`)).toBe(true);
+      return originalBackup();
+    });
+    try {
+      await a.write(ROADMAP_FILE_NAME, { writer: 'A' }, initial.version);
+      await vi.runAllTimersAsync();
+      await expect(competing).rejects.toBeInstanceOf(ConflictError);
+      expect(JSON.parse(readFileSync(path, 'utf8'))).toEqual({ writer: 'A' });
+    } finally {
+      vi.useRealTimers();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed on abandoned or unidentifiable locks regardless of age', async () => {
+    const { dir, path } = scratch();
+    const a = new FileAdapter(path);
+    const initial = await a.read(ROADMAP_FILE_NAME);
+    writeFileSync(`${path}.lock`, '');
+    utimesSync(`${path}.lock`, new Date(0), new Date(0));
+    vi.useFakeTimers();
+    try {
+      const pending = a.write(ROADMAP_FILE_NAME, { writer: 'A' }, initial.version);
+      const outcome = pending.then(() => null, (error: unknown) => error);
+      await vi.runAllTimersAsync();
+      expect(await outcome).toBeInstanceOf(StorageError);
+      expect((await a.read(ROADMAP_FILE_NAME)).version).toBe(initial.version);
+      expect(existsSync(`${path}.lock`)).toBe(true);
+      expect(backups(dir)).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses publication and never removes a foreign lock after ownership is lost', async () => {
+    const { dir, path } = scratch();
+    const a = new FileAdapter(path);
+    const initial = await a.read(ROADMAP_FILE_NAME);
+    vi.spyOn(a as any, 'backup').mockImplementation(() => {
+      rmSync(`${path}.lock`);
+      writeFileSync(`${path}.lock`, 'another owner');
+      writeFileSync(path, JSON.stringify({ writer: 'B' }));
+      return '';
+    });
+    try {
+      await expect(a.write(ROADMAP_FILE_NAME, { writer: 'A' }, initial.version)).rejects.toBeInstanceOf(StorageError);
+      expect(JSON.parse(readFileSync(path, 'utf8'))).toEqual({ writer: 'B' });
+      expect(readFileSync(`${path}.lock`, 'utf8')).toBe('another owner');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

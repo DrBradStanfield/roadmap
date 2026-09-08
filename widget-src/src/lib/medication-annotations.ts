@@ -16,6 +16,7 @@ const MED_CHART_MAP: Record<string, string[]> = {
 };
 
 export interface ChartAnnotation {
+  id: string;
   date: number;
   label: string;
 }
@@ -28,22 +29,6 @@ const ACTIONS: Record<string, string> = {
   dose_changed: 'Recorded dose change:',
   switched: 'Recorded switch to:',
 };
-
-/**
- * Pins closer than ~4% of the axis span would overdraw each other's label, so
- * they share one line whose label lists every entry number (1-based, list
- * order). Each pin chains off the cluster's latest pin, so an evenly spaced
- * run stays one cluster.
- */
-export function pinClusters(annotations: ChartAnnotation[], span: number): Array<{ date: number; numbers: number[] }> {
-  const clusters: Array<{ date: number; last: number; numbers: number[] }> = [];
-  for (const pin of annotations.map((a, i) => ({ date: a.date, n: i + 1 })).sort((p, q) => p.date - q.date)) {
-    const last = clusters.at(-1);
-    if (last && pin.date - last.last <= span * 0.04) { last.numbers.push(pin.n); last.last = pin.date; }
-    else clusters.push({ date: pin.date, last: pin.date, numbers: [pin.n] });
-  }
-  return clusters.map(({ date, numbers }) => ({ date, numbers }));
-}
 
 /** Project recorded events only; never infer a treatment timeline from merged order. */
 export function medicationAnnotations(history: ApiMedicationHistory[]): Record<string, ChartAnnotation[]> {
@@ -59,7 +44,7 @@ export function medicationAnnotations(history: ApiMedicationHistory[]): Record<s
     const displayName = name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, ' ');
     const hasDose = Number.isFinite(h.doseValue) && (h.doseValue as number) > 0 && typeof h.doseUnit === 'string' && h.doseUnit !== '';
     const dose = h.changeType !== 'stopped' && hasDose ? ` ${h.doseValue}${h.doseUnit}` : '';
-    const ann = { date, label: `${action} ${displayName}${dose}` };
+    const ann = { id: h.id, date, label: `${action} ${displayName}${dose}` };
     for (const metric of metrics) (map[metric] ??= []).push(ann);
   }
   return map;

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
-import { synthesizeLabArchiveEntries } from '../lib/archive-payloads';
+import { attachOriginals, synthesizeLabArchiveEntries } from '../lib/archive-payloads';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { bulkSaveMeasurements, bulkSaveDocuments, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { Sentry } from '../lib/sentry';
@@ -12,7 +12,7 @@ import type { UploadHistory } from '../lib/api-types';
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
-vi.mock('../lib/archive-payloads', () => ({ attachOriginals: async (results: unknown) => results, synthesizeLabArchiveEntries: vi.fn(() => []), connectorDocumentEntries: () => [], connectorOriginals: () => [] }));
+vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), attachOriginals: vi.fn(async results => results), synthesizeLabArchiveEntries: vi.fn(() => []) }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -29,13 +29,13 @@ const archivedLetter = { id: 'd1', documentType: 'clinic_letter', title: letter.
 const onComplete = vi.fn();
 const extractFromPdf = vi.fn();
 /** `archived`: what a completed save leaves in the reloaded history. */
-function Harness({ onStart, archived }: { onStart?: () => Promise<void>; archived?: typeof archivedLetter }) {
+function Harness({ onStart, archived, completedHistory }: { onStart?: () => Promise<void>; archived?: typeof archivedLetter; completedHistory?: UploadHistory }) {
   const [open, setOpen] = useState(true);
   const [history, setHistory] = useState(emptyHistory);
   return <><button onClick={() => setOpen(true)}>Upload records</button><UploadModal
     open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)}
     unitSystem="si" history={history} onStart={onStart}
-    onComplete={() => { onComplete(); if (archived) setHistory({ ...emptyHistory, documents: [archived] }); }}
+    onComplete={() => { onComplete(); if (completedHistory) setHistory(completedHistory); if (archived) setHistory({ ...emptyHistory, documents: [archived] }); }}
   /></>;
 }
 function selectFile() {
@@ -47,6 +47,7 @@ async function ready() {
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(synthesizeLabArchiveEntries).mockReset().mockReturnValue([]);
   vi.mocked(getDocumentArchiveMode).mockReturnValue('cloud');
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
@@ -161,6 +162,26 @@ describe('US-12 AC4–6 upload session ownership', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
     expect(bulkSaveMeasurements).toHaveBeenCalledTimes(2);
+  });
+  it('US-12 AC6: retries a thrown original archive after history refresh without resaving values', async () => {
+    const file = new Blob(['synthetic original'], { type: 'application/pdf' });
+    vi.mocked(attachOriginals).mockImplementationOnce(async results => results.map(r => ({ ...r, file, contentHash: 'sha256-test' })));
+    const payload = { documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf', file };
+    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([payload]).mockReturnValueOnce([payload]);
+    vi.mocked(bulkSaveDocuments).mockRejectedValueOnce(new Error('synthetic archive failure'))
+      .mockResolvedValueOnce({ saved: [{ ...archivedLetter, fileRef: 'archive/test.pdf' }], errorCount: 0 });
+    render(<Harness completedHistory={{ ...emptyHistory, bloodTests: [{ id: 'saved', metricType: 'ldl', value: 3.9, recordedAt: '2024-06-01T00:00:00.000Z', createdAt: '2024-06-01T00:00:00.000Z' }] }} />);
+    await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByText('Some items could not be saved. Please try again.');
+    expect(screen.queryByDisplayValue('3.9')).toBeNull();
+    const retry = screen.getByRole('button', { name: 'Save 1 Original' }) as HTMLButtonElement;
+    expect(retry.disabled).toBe(false);
+    fireEvent.click(retry);
+    await screen.findByRole('button', { name: 'Done' });
+    expect(bulkSaveMeasurements).toHaveBeenCalledOnce();
+    expect(bulkSaveDocuments).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(bulkSaveDocuments).mock.calls[1][0]).toEqual(vi.mocked(bulkSaveDocuments).mock.calls[0][0]);
   });
   it('does not file a reviewed letter twice when a retry follows a partial save off-cloud (US-12 AC6)', async () => {
     vi.mocked(getDocumentArchiveMode).mockReturnValue('device-only');

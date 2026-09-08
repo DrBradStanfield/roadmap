@@ -17,7 +17,7 @@
  *
  * why: mcp-architecture.md §7
  */
-import { chmodSync, closeSync, copyFileSync, existsSync, openSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, closeSync, copyFileSync, existsSync, fstatSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { basename, dirname, join } from 'node:path';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
@@ -26,10 +26,9 @@ import { RecordShapeError } from './migrate';
 /** How many `.bak-` siblings to keep beside the record. */
 export const BACKUPS_KEPT = 3;
 
-/** Lock timings: how often to retry, how long to wait, when to call one dead. */
+/** Contention timings. A paused writer never loses its lock because of age. */
 const LOCK_RETRY_MS = 25;
 const LOCK_WAIT_MS = 5_000;
-const LOCK_STALE_MS = 10_000;
 
 /**
  * The bytes on disk, as a value that changes whenever they do. A content hash
@@ -147,17 +146,27 @@ export class FileAdapter implements StorageAdapter {
   async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
     signal?.throwIfAborted();
     this.only(fileName);
-    await this.lock();
+    const lock = await this.lock();
     try {
       if (stampOf(this.bytes()) !== expectedVersion) {
         throw new ConflictError(`${this.path} changed since it was read`);
       }
       this.lastBackup = this.backup();
       const next = `${JSON.stringify(body, null, 2)}\n`;
+      if (!this.ownsLock(lock)) {
+        throw new StorageError(
+          'The local record lock changed during the write',
+          'The write was stopped. Close all record writers and investigate the lock before retrying.',
+        );
+      }
       this.replace(next);
       return { version: stampOf(next) };
     } finally {
-      rmSync(this.lockPath, { force: true });
+      try {
+        if (this.ownsLock(lock)) rmSync(this.lockPath);
+      } finally {
+        closeSync(lock);
+      }
     }
   }
 
@@ -172,12 +181,12 @@ export class FileAdapter implements StorageAdapter {
    * syscall — the kernel picks the winner — and the loser waits its turn and
    * then conflicts honestly on the bytes the winner left.
    */
-  private async lock(): Promise<void> {
+  private async lock(): Promise<number> {
     const until = Date.now() + LOCK_WAIT_MS;
     for (;;) {
       try {
-        closeSync(openSync(this.lockPath, 'wx'));
-        return;
+        // Keep the descriptor open so an unlinked lock's inode cannot be reused.
+        return openSync(this.lockPath, 'wx', 0o600);
       } catch (error) {
         // EEXIST is another writer holding it — everything else means we
         // cannot make a lock here at all (an unwritable folder), and waiting
@@ -188,21 +197,33 @@ export class FileAdapter implements StorageAdapter {
             'Check the folder is writable, then try again. Your record was not changed.',
           );
         }
-        // A process killed mid-write leaves its lock behind; after ten seconds
-        // nobody is coming back for it, and waiting forever helps no one.
-        try {
-          if (Date.now() - statSync(this.lockPath).mtimeMs > LOCK_STALE_MS) rmSync(this.lockPath, { force: true });
-        } catch {
-          // Gone already — the next attempt takes it.
-        }
+        // Age cannot distinguish a crashed process from a suspended one. Never
+        // steal a lock: PID checks also cannot prove ownership across machines
+        // or PID reuse, and competing reclaimers introduce another unlink race.
         if (Date.now() > until) {
           throw new StorageError(
             `Another program is writing ${this.path} and did not finish`,
-            'Nothing was changed. Try again in a moment; if it persists, delete the .lock file beside the record.',
+            'Nothing was changed. Retry later. If the lock persists, terminate all record writers before investigating it; never remove a lock while a writer might resume.',
           );
         }
         await new Promise((resolve) => setTimeout(resolve, LOCK_RETRY_MS));
       }
+    }
+  }
+
+  /**
+   * Cooperative writers on one local filesystem never replace an owned lock.
+   * Identity checks also refuse an already replaced lock. They are not fencing
+   * against old clients, external lock deletion, or cloud/network filesystems.
+   * Orphan recovery requires exclusive offline access; it is not automated.
+   */
+  private ownsLock(fd: number): boolean {
+    try {
+      const held = fstatSync(fd);
+      const current = lstatSync(this.lockPath);
+      return current.isFile() && held.dev === current.dev && held.ino === current.ino;
+    } catch {
+      return false;
     }
   }
 

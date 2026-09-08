@@ -1684,3 +1684,82 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     expect(data.next).toContain('refresh the connector');
   });
 });
+
+// ---------------------------------------------------------------------------
+// US-32 AC28/AC29 — the open-source note, and why a refusal was refused
+// ---------------------------------------------------------------------------
+import { INSTRUCTIONS } from '../lib/mcp.server';
+import { OPEN_SOURCE_NOTE } from '../../packages/health-core/src/mcp-tools';
+import { REPO_URL } from '../../packages/health-core/src/plan';
+import { MCP_REFUSAL_REASONS } from '../../packages/health-core/src/product-events';
+
+function toolCallEvents(): Record<string, unknown>[] {
+  return (recordServerEvent as unknown as { mock: { calls: unknown[][] } }).mock.calls
+    .filter(([name]) => name === 'mcp_tool_call')
+    .map(([, meta]) => meta as Record<string, unknown>);
+}
+
+describe('US-32 AC28 — every assistant is told the code is open', () => {
+  it('the hosted instructions carry the note and the repository URL', () => {
+    expect(INSTRUCTIONS).toContain(OPEN_SOURCE_NOTE);
+    expect(INSTRUCTIONS).toContain(REPO_URL);
+  });
+});
+
+describe('US-32 AC29 — the counter records why a call was refused', () => {
+  it('records a feedback health-value rejection without the rejected text', async () => {
+    const { access } = await connect();
+    vi.mocked(recordServerEvent).mockClear();
+    const detail = 'Synthetic LDL shows 4.2 mmol/L twice.';
+    const refused = await callTool(access, 'report_feedback', { kind: 'bug', title: 'Duplicate display', detail });
+    expect(refused.isError).toBe(true);
+    expect(refused.text).toContain('reads as a health value');
+    expect(toolCallEvents()).toEqual([
+      { tool: 'report_feedback', client: expect.any(String), outcome: 'refused', reason: 'health-value' },
+    ]);
+    expect(JSON.stringify(toolCallEvents())).not.toContain('4.2');
+    expect(JSON.stringify(toolCallEvents())).not.toContain(detail);
+  });
+
+  it('files the reason on a refusal, nothing on an OK call, and never a value', async () => {
+    seedRecord();
+    const { access } = await connect();
+    (recordServerEvent as unknown as { mockClear(): void }).mockClear();
+
+    const ok = await callTool(access, 'read_record', {});
+    expect(ok.isError).toBe(false);
+
+    // A correction with no expectedValue: the surface's own guard.
+    const refused = await callTool(access, 'correct_value', { id: 'whatever', value: 4 });
+    expect(refused.isError).toBe(true);
+
+    const events = toolCallEvents();
+    expect(events).toEqual([
+      { tool: 'read_record', client: expect.any(String), outcome: 'ok' },
+      { tool: 'correct_value', client: expect.any(String), outcome: 'refused', reason: 'malformed' },
+    ]);
+
+    // Whatever the row held, the counter holds one word from the closed list.
+    for (const event of events) {
+      if (event.outcome !== 'refused') continue;
+      expect(MCP_REFUSAL_REASONS).toContain(event.reason as string);
+      expect(JSON.stringify(event)).not.toMatch(/\d+\.\d+|mmol|whatever/);
+    }
+  });
+
+  it('a correction older than ninety days is filed as too-old', async () => {
+    seedRecord((file) => ({
+      ...file,
+      measurements: [createMeasurement({ id: 'old', metricType: 'ldl', value: 3.2, recordedAt: '2026-01-01', createdAt: '2026-01-01' })],
+    }));
+    const { access } = await connect();
+    const whole = OUTPUTS.read_record.parse((await callTool(access, 'read_record', {})).structured);
+    expect(whole.measurements).toHaveLength(1);
+    const old = whole.measurements[0];
+    expect(old.recordedAt).toContain('2026-01-01');
+    (recordServerEvent as unknown as { mockClear(): void }).mockClear();
+    const refused = await callTool(access, 'correct_value', { id: old.id, expectedValue: old.value, newValue: old.value + 1 });
+    expect(refused.isError).toBe(true);
+    expect(toolCallEvents().at(-1)).toMatchObject({ outcome: 'refused', reason: 'too-old' });
+  });
+});

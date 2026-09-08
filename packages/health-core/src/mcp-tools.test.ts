@@ -8,7 +8,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import Ajv2020 from 'ajv/dist/2020';
-import { MCP_TOOL_NAMES } from './product-events';
+import { isRefusalReason, MCP_REFUSAL_REASONS, MCP_TOOL_NAMES } from './product-events';
 import { z } from 'zod';
 import {
   addLabValues,
@@ -20,6 +20,8 @@ import {
   addMeasurement,
   addMeasurementInput,
   callTool,
+  FEEDBACK_REPO,
+  OPEN_SOURCE_NOTE,
   correctValueInput,
   fileFeedback,
   folderNudge,
@@ -50,6 +52,7 @@ import {
   SERVER_VERSION,
   TOOL_LAYER_VERSION,
 } from './mcp-tools';
+import { REPO_SLUG, REPO_URL, SCHEMA_URL } from './plan';
 import { dayOf, mergeFiles } from './merge';
 import { migrateFile } from './migrate';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
@@ -673,7 +676,7 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
   it('refuses a number wearing a unit — a health value the user would have submitted', () => {
     for (const detail of ['my ldl is 2.1 mmol/L and it says otherwise', 'weight shows 81 kg twice', 'it took 140 mmHg as diastolic']) {
       const outcome = reportFeedback({ ...GOOD, detail }, NOW);
-      expect(outcome.status, detail).toBe('rejected');
+      expect(outcome).toMatchObject({ status: 'rejected', reason: 'health-value' });
       expect(outcome.text, detail).toContain('health value');
     }
     // The title is guarded too, not just the detail.
@@ -841,7 +844,7 @@ describe('US-32 AC9 — a surface that can file, files it', () => {
   it('refuses a health value before anything can leave, and files nothing', async () => {
     const { seen, filer } = spy();
     const outcome = await fileFeedback({ ...GOOD, detail: 'My LDL of 4.2 mmol/L looks wrong' }, NOW, filer);
-    expect(outcome.status).toBe('rejected');
+    expect(outcome).toMatchObject({ status: 'rejected', reason: 'health-value' });
     expect(outcome.text).toContain('reads as a health value');
     expect(seen).toHaveLength(0);
   });
@@ -1561,13 +1564,13 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     // AC4/AC13: the phone apps hand over a bare reference; the answer is the mobile sentence, never a raw schema message.
     for (const download_url of ['chat_upload://abc', 'http://x/y']) {
       const malformed = await runToolOverSync(sync, 'import_documents', { file: { download_url, file_id: 'f' } }, NOW, { importer: surface });
-      expect(malformed).toEqual({ isError: true, text: IMPORT_REFUSALS.mobile });
+      expect(malformed).toEqual({ isError: true, text: IMPORT_REFUSALS.mobile, reason: 'import' });
     }
     expect(chatgptFileInput.safeParse({ download_url: 'chat_upload://abc', file_id: 'f' }).error!.issues[0].message).toBe(IMPORT_REFUSALS.mobile);
     const badCommit = await runToolOverSync(sync, 'import_documents', { commit: { receipt: 'r', accept: 'c1', replace: [] } }, NOW, { importer: surface });
-    expect(badCommit).toEqual({ isError: true, text: IMPORT_REFUSALS.commit });
+    expect(badCommit).toEqual({ isError: true, text: IMPORT_REFUSALS.commit, reason: 'import' });
     const badNames = await runToolOverSync(sync, 'import_documents', { fileNames: 'a.pdf' }, NOW, { importer: surface });
-    expect(badNames).toEqual({ isError: true, text: IMPORT_REFUSALS.arguments });
+    expect(badNames).toEqual({ isError: true, text: IMPORT_REFUSALS.arguments, reason: 'import' });
     expect(JSON.stringify([badCommit, badNames])).not.toMatch(/Expected|Received|invalid_type/);
     const bad = await runToolOverSync(sync, 'import_documents', { commit: { receipt: 'forged', accept: ['c1'], replace: [] } }, NOW, { importer: surface });
     expect(bad).toMatchObject({ isError: true, text: expect.stringContaining('not valid') });
@@ -1592,12 +1595,12 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
 
   it('with no importer at all, neither phase reaches the record; a surface with no reader — the stdio server — refuses as hosted-only (AC11)', async () => {
     const sync = syncOver(new MemoryCloud());
-    const none = { text: expect.stringMatching(/^import_documents needs a server that can hold a pending import.*Nothing was written\.$/), isError: true };
+    const none = { text: expect.stringMatching(/^import_documents needs a server that can hold a pending import.*Nothing was written\.$/), isError: true, reason: 'import' };
     expect(await runToolOverSync(sync, 'import_documents', {}, NOW)).toEqual(none);
     expect(await runToolOverSync(sync, 'import_documents', { commit: { receipt: 'r', accept: [], replace: [] } }, NOW)).toEqual(none);
     expect(callTool('import_documents', {}, { file: base(), now: NOW }).status).toBe('rejected');
     const { extract: _unused, ...reader } = surface;
-    expect(await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: reader })).toEqual({ text: IMPORT_HOSTED_ONLY, isError: true });
+    expect(await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: reader })).toEqual({ text: IMPORT_HOSTED_ONLY, isError: true, reason: 'import' });
   });
 
   it('no longer publishes openai/fileParams, but keeps the file argument callable for cached tool lists (US-36 AC7, AC12)', () => {
@@ -1998,5 +2001,58 @@ describe('US-36 AC11 — tools/list stays inside ChatGPT’s budget', () => {
   it('keeps name + description + inputSchema under 16,000 characters across all nine tools (≈4,000 tokens of the 5,000 cap)', () => {
     const chars = MCP_TOOLS.reduce((sum, { name, description, inputSchema }) => sum + JSON.stringify({ name, description, inputSchema }).length, 0);
     expect(chars).toBeLessThanOrEqual(16_000);
+  });
+});
+
+describe('US-32 AC28 — the assistant is told the code is open', () => {
+  it('names the repository once, and the note points at it', () => {
+    // One literal, so the two servers and the plan cannot drift apart.
+    expect(FEEDBACK_REPO).toBe(REPO_SLUG);
+    expect(REPO_URL).toBe(`https://github.com/${REPO_SLUG}`);
+    expect(SCHEMA_URL.startsWith(`https://raw.githubusercontent.com/${REPO_SLUG}/`)).toBe(true);
+
+    expect(OPEN_SOURCE_NOTE).toContain(REPO_URL);
+    expect(OPEN_SOURCE_NOTE).toContain('open source');
+    expect(OPEN_SOURCE_NOTE).toContain('report_feedback');
+  });
+
+  it('gives get_plan a repo the paths beside it can be found in', () => {
+    const source = JSON.parse(ok(getPlan(base(), NOW)).text).source as Record<string, string>;
+    expect(source.repo).toBe(REPO_URL);
+    // Without `repo` these two are file names an assistant cannot open.
+    expect(source.tool).toBe('tools/get-plan.ts');
+    expect(source.docs).toBe('docs/agent-access.md');
+  });
+});
+
+describe('US-32 AC29 — a refusal says why, in a closed vocabulary', () => {
+  it('carries the record layer’s own reason, never the value that caused it', () => {
+    const day = NOW.slice(0, 10);
+    const first = callTool('add_measurement', { metricType: 'weight', value: 80, recordedAt: day }, { file: base(), now: NOW });
+    expect(first.status).toBe('ok');
+    const again = callTool(
+      'add_measurement',
+      { metricType: 'weight', value: 81, recordedAt: day },
+      { file: (first as { file: RoadmapFile }).file, now: NOW },
+    );
+    expect(again).toMatchObject({ status: 'rejected', reason: 'slot-occupied' });
+    // The counter gets the word and nothing else: no value, no row id, no day.
+    expect(JSON.stringify((again as { reason: string }).reason)).not.toContain('81');
+  });
+
+  it('every published reason is one word of the closed list, and the list has no duplicates', () => {
+    for (const reason of MCP_REFUSAL_REASONS) expect(reason).toMatch(/^[a-z-]+$/);
+    expect(new Set(MCP_REFUSAL_REASONS).size).toBe(MCP_REFUSAL_REASONS.length);
+    expect(isRefusalReason('slot-occupied')).toBe(true);
+    // Anything the vocabulary does not name is not a reason, so it cannot be filed.
+    for (const notAReason of ['81 kg', 'ldl', 'results.pdf', '2026-01-02', '']) {
+      expect(isRefusalReason(notAReason)).toBe(false);
+    }
+  });
+
+  it('an OK answer carries no reason at all', () => {
+    const ok = callTool('read_record', {}, { file: base(), now: NOW });
+    expect(ok.status).toBe('ok');
+    expect((ok as { reason?: string }).reason).toBeUndefined();
   });
 });

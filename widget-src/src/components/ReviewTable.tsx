@@ -18,7 +18,7 @@ import {
 import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
 import { labValueLabel } from '../lib/lab-value-labels';
-import { connectorOriginals } from '../lib/archive-payloads';
+import { unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
@@ -569,12 +569,11 @@ export function ReviewTable({
     return n;
   }, [matrix]);
   const selectedDocCount = useMemo(() => Object.values(docChecked).filter(Boolean).length, [docChecked]);
-  // Originals the connector imported metadata-only (a lab PDF, or a letter the
-  // name-dedup left unselected): Save archives them even when nothing is
-  // selected (US-13 AC1 / US-35 AC8).
+  // Original lab PDFs remain retryable after saved values become context.
+  // Connector metadata-only letters also carry archive-only work (US-35 AC8).
   const archiveCount = useMemo(() => {
     const selectedDocs = new Set(results.filter((r, fi) => r.document && docChecked[fi]).map((r) => r.fileName));
-    return connectorOriginals(results, history.documents, selectedDocs).length;
+    return unarchivedOriginals(results, history.documents, selectedDocs).length;
   }, [results, history.documents, docChecked]);
   const nothingSelected = selectedCount === 0 && selectedAdditionalCount === 0 && selectedDocCount === 0;
 
@@ -683,7 +682,7 @@ export function ReviewTable({
     <div className="review-table">
       <div className="review-summary">
         {nothingSelected && archiveCount > 0 ? (
-          `Nothing new to save. Save will archive the original PDF${archiveCount !== 1 ? 's' : ''} behind the values already in your record.`
+          `Save will archive the original PDF${archiveCount !== 1 ? 's' : ''}. No extracted values or documents are selected.`
         ) : (
           <>
             {selectedCount > 0 && `${selectedCount} value${selectedCount !== 1 ? 's' : ''}`}

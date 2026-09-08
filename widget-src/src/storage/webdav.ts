@@ -123,7 +123,7 @@ export class WebDavAdapter implements StorageAdapter {
 
   async readDocument(ref: string): Promise<Blob> {
     const res = await fetch(this.urlFor(ref), { headers: this.authHeaders() });
-    if (!res.ok) throw new StorageError(`Self-host document read failed (${res.status}): ${ref}`);
+    if (!res.ok) throw new StorageError(`Self-host document read failed (${res.status}).`);
     return res.blob();
   }
 
@@ -136,7 +136,7 @@ export class WebDavAdapter implements StorageAdapter {
       await this.ensureCollection(ref);
       res = await put();
     }
-    if (!res.ok) throw new StorageError(`Self-host document write failed (${res.status}): ${ref}`);
+    if (!res.ok) throw new StorageError(`Self-host document write failed (${res.status}).`);
   }
 
   // --- helpers --------------------------------------------------------------

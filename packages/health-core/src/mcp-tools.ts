@@ -25,7 +25,7 @@ import {
   type UnifiedExtractionResult,
   VALID_METRICS,
 } from './lab-extraction';
-import { computePlan, oneLine, PlanError, planPayload, printable } from './plan';
+import { computePlan, oneLine, PlanError, planPayload, printable, REPO_SLUG, REPO_URL } from './plan';
 import {
   appendLabValue,
   appendMeasurement,
@@ -45,7 +45,7 @@ import type { FileDocument, FileLabValue, FileMeasurement, FileReminderOptIn, Ro
 import type { SyncManager } from './sync-manager';
 import { formatDisplayValue, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
-import type { McpImportRoute } from './product-events';
+import { type McpImportRoute, type McpRefusalReason } from './product-events';
 import { LAB_ARCHIVE_TITLE } from './document-path';
 import { DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES } from './validation';
 import { z } from 'zod';
@@ -81,8 +81,18 @@ export const MAX_ID_LENGTH = 100;
  */
 export const MAX_FEEDBACK_URL_LENGTH = 8000;
 
-/** Where a prepared report goes. The only place this repo's name is written. */
-export const FEEDBACK_REPO = 'DrBradStanfield/roadmap';
+/** Where a prepared report goes. The repo is named once, in `plan.ts`. */
+export const FEEDBACK_REPO = REPO_SLUG;
+
+/**
+ * Told to every assistant, on both servers (US-32 AC28). An assistant that
+ * knows the code is readable can answer "is this safe?" with the source
+ * instead of a promise, and can read what a tool does before reporting it.
+ * It starts with a space: both servers append it to a sentence.
+ */
+export const OPEN_SOURCE_NOTE =
+  ` These tools are open source at ${REPO_URL}, MIT licensed. Read the code if the user asks how something ` +
+  'works, and use report_feedback to propose a change.';
 
 /** The version the server announces, and the one a report is stamped with. */
 export const SERVER_VERSION = '1.0.0';
@@ -473,7 +483,7 @@ export const importDocumentsOutput = z.object({
  */
 export type ToolOutcome =
   | { status: 'ok'; text: string; data: unknown; file?: RoadmapFile }
-  | { status: 'rejected'; text: string }
+  | { status: 'rejected'; text: string; reason?: McpRefusalReason }
   | { status: 'invalid-args'; text: string };
 
 /** A record safe to hand an assistant: same file, minus the capability secret. */
@@ -545,11 +555,30 @@ function rejection(result: EditRejection): ToolOutcome {
   if (result.reason === 'slot-occupied' && held) {
     return {
       status: 'rejected',
+      reason: result.reason,
       text: `${oneLine(result.message)}. That day already holds ${held.value} in row ${oneLine(held.id)}. ` +
         'Nothing was written. To change it, call correct_value with that row id — never add a second value to the same day.',
     };
   }
-  return { status: 'rejected', text: `${oneLine(result.message)}. Nothing was written.` };
+  return { status: 'rejected', reason: result.reason, text: `${oneLine(result.message)}. Nothing was written.` };
+}
+
+/**
+ * What a surface's own guard refuses with: the words the assistant reads, and
+ * the word the counter files it under.
+ */
+export interface GuardRefusal {
+  text: string;
+  reason: McpRefusalReason;
+}
+
+/**
+ * A non-ok outcome as the answer the surfaces return. One place, so the counter
+ * cannot learn a reason at one call site and lose it at the next.
+ */
+function refusalAnswer(outcome: Exclude<ToolOutcome, { status: 'ok' }>): ToolAnswer {
+  const reason = outcome.status === 'invalid-args' ? 'malformed' : (outcome.reason ?? 'other');
+  return { text: outcome.text, isError: true, reason };
 }
 
 /** A read's answer: the same payload as data, and as the JSON older clients read. */
@@ -845,7 +874,7 @@ function prepareFeedback(
  */
 export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now: string, dryRun = false): ToolOutcome {
   const prepared = prepareFeedback(request, now);
-  if (!prepared.ok) return { status: 'rejected', text: prepared.text };
+  if (!prepared.ok) return { status: 'rejected', reason: 'health-value', text: prepared.text };
 
   const body = `${prepared.detail}\n\n---\nReported via health-roadmap MCP ${SERVER_VERSION}, tool layer v${TOOL_LAYER_VERSION}, ${dayOf(now)}`;
   const url = `https://github.com/${FEEDBACK_REPO}/issues/new?labels=from-connector,${request.kind}`
@@ -877,7 +906,7 @@ export async function fileFeedback(
   filer: FeedbackFiler,
 ): Promise<ToolOutcome> {
   const prepared = prepareFeedback(request, now);
-  if (!prepared.ok) return { status: 'rejected', text: prepared.text };
+  if (!prepared.ok) return { status: 'rejected', reason: 'health-value', text: prepared.text };
 
   const result = await filer(prepared.issue);
   if (!result.ok) return { status: 'rejected', text: result.refusal };
@@ -1624,13 +1653,13 @@ async function runImport(
 ): Promise<ToolAnswer> {
   const parsed = parseArgs(name, args);
   // A malformed call is worded from the table, never as a raw schema message (AC13).
-  if (!parsed.ok) return { text: IMPORT_REFUSALS[imports.malformed(parsed.path)], isError: true };
+  if (!parsed.ok) return { text: IMPORT_REFUSALS[imports.malformed(parsed.path)], isError: true, reason: 'import' };
   const request = parsed.data as { commit?: ImportCommit };
   if (request.commit && imports.hasSource(parsed.data)) {
-    return { text: `${name}: pass commit on its own, without a source. Nothing was written.`, isError: true };
+    return { text: `${name}: pass commit on its own, without a source. Nothing was written.`, isError: true, reason: 'import' };
   }
   const short = request.commit ? null : imports.incomplete(parsed.data);
-  if (short) return { text: short, isError: true };
+  if (short) return { text: short, isError: true, reason: 'import' };
   // One clock for the call: the record's own read and write are I/O too (AC5).
   const deadline = Date.now() + surface.budgetMs;
   const signal = deadlineSignal(deadline);
@@ -1639,9 +1668,9 @@ async function runImport(
 
   if (request.commit) {
     const opened = await surface.open(request.commit, file, now, deadline);
-    if ('refusal' in opened) return { text: opened.refusal, isError: true };
+    if ('refusal' in opened) return { text: opened.refusal, isError: true, reason: 'import' };
     const outcome = importDocumentsCommit(file, opened, request.commit, now, surface.client);
-    if (outcome.status !== 'ok') return { text: outcome.text, isError: true };
+    if (outcome.status !== 'ok') return refusalAnswer(outcome);
     if (outcome.file) await sync.save(outcome.file, signal);
     await surface.discard(opened, deadline);
     return {
@@ -1652,9 +1681,9 @@ async function runImport(
   }
 
   const refusal = options.beforeCall?.(file);
-  if (refusal) return { text: refusal, isError: true };
+  if (refusal) return { ...refusal, isError: true };
   const bundle = await imports.bundle(parsed.data, file, surface, { now, latestDay, deadline });
-  if ('refusal' in bundle) return { text: bundle.refusal, isError: true };
+  if ('refusal' in bundle) return { text: bundle.refusal, isError: true, reason: 'import' };
   const prepared = prepareImport(file, bundle, { now, latestDay, maxCorrectionAgeDays: surface.maxCorrectionAgeDays, payloadId: crypto.randomUUID() });
   const data: z.infer<typeof importDocumentsOutput> = {
     phase: 'extracted', route: bundle.route, files: prepared.files, candidates: prepared.payload.candidates,
@@ -1664,7 +1693,7 @@ async function runImport(
   };
   if (prepared.payload.candidates.length || prepared.payload.documents.length) {
     const stashed = await surface.stash(prepared.payload, deadline);
-    if ('refusal' in stashed) return { text: stashed.refusal, isError: true };
+    if ('refusal' in stashed) return { text: stashed.refusal, isError: true, reason: 'import' };
     data.receipt = stashed.receipt;
     data.receiptExpiresAt = stashed.expiresAt;
   }
@@ -2516,7 +2545,7 @@ export function callTool(
     case 'import_documents':
     case 'file_results':
       // Both run through `RunToolOptions.importer`; reached here, the caller passed none.
-      return { status: 'rejected', text: `${name} needs a server that can hold a pending import between two calls, and this call has none. Nothing was written.` };
+      return { status: 'rejected', reason: 'import', text: `${name} needs a server that can hold a pending import between two calls, and this call has none. Nothing was written.` };
   }
 }
 
@@ -2528,6 +2557,12 @@ export function callTool(
 export interface ToolAnswer {
   text: string;
   isError: boolean;
+  /**
+   * Why it was refused, for the counter only (US-32 AC29). Never shown to the
+   * user, who gets `text`. Absent on an OK answer, and absent on a refusal the
+   * vocabulary does not name, which the surface counts as `other`.
+   */
+  reason?: McpRefusalReason;
   /** The same answer, typed to the tool's `outputSchema`. Absent on a refusal. */
   structured?: unknown;
   /** A `dryRun` that would have written: the file is not saved, and the text says what would have been. */
@@ -2563,7 +2598,7 @@ export interface RunToolOptions {
    * charges its write allowance here, because free guesses at a value an agent
    * does not know ARE the falsification attack (design §3).
    */
-  beforeCall?(file: RoadmapFile): string | null;
+  beforeCall?(file: RoadmapFile): GuardRefusal | null;
   /** Appended to a successful save — where the bytes landed. */
   savedNote?(): string;
   /**
@@ -2615,7 +2650,7 @@ export async function runToolOverSync(
   now: string,
   options: RunToolOptions = {},
 ): Promise<ToolAnswer> {
-  if (!isToolName(name)) return { text: `No tool named ${name}.`, isError: true };
+  if (!isToolName(name)) return { text: `No tool named ${name}.`, isError: true, reason: 'malformed' };
 
   if (RUN_MODE.get(name) === 'record-free') {
     const filer = name === 'report_feedback' && !options.dryRun ? options.fileFeedback : undefined;
@@ -2630,7 +2665,7 @@ export async function runToolOverSync(
     }
     return outcome.status === 'ok'
       ? { text: outcome.text, isError: false, structured: outcome.data, ...(options.dryRun ? { pendingWrite: true } : null) }
-      : { text: outcome.text, isError: true };
+      : refusalAnswer(outcome);
   }
 
   const imports = IMPORTS.get(name);
@@ -2638,10 +2673,10 @@ export async function runToolOverSync(
 
   const file = await sync.load();
   const refusal = options.beforeCall?.(file);
-  if (refusal) return { text: refusal, isError: true };
+  if (refusal) return { ...refusal, isError: true };
 
   const outcome = callTool(name, args, { file, now, latestDay: options.latestDay });
-  if (outcome.status !== 'ok') return { text: outcome.text, isError: true };
+  if (outcome.status !== 'ok') return refusalAnswer(outcome);
   if (!outcome.file) return { text: outcome.text, isError: false, structured: outcome.data };
   // The rows the text names were never saved: the write that follows assigns its own ids.
   if (options.dryRun) return { text: `${outcome.text}\n(Row ids are assigned when it is written.)`, isError: false, structured: outcome.data, pendingWrite: true };

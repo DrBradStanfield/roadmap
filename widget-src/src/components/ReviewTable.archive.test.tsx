@@ -48,12 +48,12 @@ const connectorLetter: ApiDocument = {
   createdAt: '2024-06-11T00:00:00.000Z', fileRef: null, contentHash: LETTER_HASH,
 };
 
-function renderReview(documents: ApiDocument[], files: FileResult[] = results) {
+function renderReview(documents: ApiDocument[], files: FileResult[] = results, savedBloodTests: ApiMeasurement[] = bloodTests) {
   const onSave = vi.fn();
   const utils = render(
     <ReviewTable
       results={files}
-      history={{ bloodTests, labValues: [], documents }}
+      history={{ bloodTests: savedBloodTests, labValues: [], documents }}
       unitSystem="si"
       onSave={onSave}
       onCancel={() => {}}
@@ -70,7 +70,21 @@ describe('ReviewTable — archiving the original behind a connector row (US-13 A
     expect(button.disabled).toBe(false);
     expect(button.textContent).toBe('Save 1 Original');
     expect(container.querySelector('.review-summary')?.textContent)
-      .toBe('Nothing new to save. Save will archive the original PDF behind the values already in your record.');
+      .toBe('Save will archive the original PDF. No extracted values or documents are selected.');
+    fireEvent.click(button);
+    expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [] });
+  });
+
+  it('US-12 AC6: describes original-only saving without claiming cleared values are stored', () => {
+    const { button, onSave, container } = renderReview([], results, []);
+    const inputs = container.querySelectorAll<HTMLInputElement>('.bt-cell-review input');
+    expect(inputs.length).toBeGreaterThan(0);
+    for (const input of inputs) fireEvent.change(input, { target: { value: '' } });
+    expect(button.disabled).toBe(false);
+    expect(button.textContent).toBe('Save 1 Original');
+    expect(container.querySelector('.review-summary')?.textContent)
+      .toBe('Save will archive the original PDF. No extracted values or documents are selected.');
+    expect(container.querySelector('.review-summary')?.textContent).not.toContain('already in your record');
     fireEvent.click(button);
     expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [] });
   });
@@ -81,8 +95,12 @@ describe('ReviewTable — archiving the original behind a connector row (US-13 A
     expect(container.querySelector('.review-summary')?.textContent).toContain('No items selected');
   });
 
-  it('keeps Save disabled when the record holds no row for these bytes and nothing is selected', () => {
-    expect(renderReview([]).button.disabled).toBe(true);
+  it('US-12 AC6: offers an original-only retry after saved values become history context', () => {
+    const { button, onSave } = renderReview([]);
+    expect(button.disabled).toBe(false);
+    expect(button.textContent).toBe('Save 1 Original');
+    fireEvent.click(button);
+    expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [] });
   });
 
   it('offers Save for a clinic letter the connector filed: name-deduped to an unselected row, yet still an original to archive', () => {
@@ -91,7 +109,7 @@ describe('ReviewTable — archiving the original behind a connector row (US-13 A
     expect(button.disabled).toBe(false);
     expect(button.textContent).toBe('Save 1 Original');
     expect(container.querySelector('.review-summary')?.textContent)
-      .toBe('Nothing new to save. Save will archive the original PDF behind the values already in your record.');
+      .toBe('Save will archive the original PDF. No extracted values or documents are selected.');
     fireEvent.click(button);
     expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [] });
   });

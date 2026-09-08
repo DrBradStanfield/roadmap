@@ -1733,6 +1733,24 @@ input[type="number"] {
   margin: 0;
   padding: 0;
 }
+.metric-chart-events.metric-chart-events button {
+  appearance: none;
+  border: 0;
+  border-radius: 3px;
+  padding: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.metric-chart-events.metric-chart-events button[aria-pressed="true"],
+.metric-chart-events.metric-chart-events button:focus-visible {
+  background: #eef2ff;
+  outline: 2px solid #6366f1;
+}
 .history-note.history-note {
   margin: 0 0 16px;
   padding: 0;

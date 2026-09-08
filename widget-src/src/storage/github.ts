@@ -134,9 +134,9 @@ export class GitHubAdapter implements StorageAdapter {
 
   async readDocument(ref: string): Promise<Blob> {
     const res = await fetch(this.contentsUrl(ref), { headers: this.headers() });
-    if (!res.ok) throw new StorageError(`GitHub document read failed (${res.status}): ${ref}`);
+    if (!res.ok) throw new StorageError(`GitHub document read failed (${res.status}).`);
     const json = (await res.json()) as { content?: string };
-    if (!json.content) throw new StorageError(`GitHub document empty or too large (>1 MB): ${ref}`);
+    if (!json.content) throw new StorageError(`GitHub document empty or too large (>1 MB).`);
     return new Blob([base64ToBytes(json.content)]);
   }
 
@@ -156,7 +156,7 @@ export class GitHubAdapter implements StorageAdapter {
       const sha = head.ok ? ((await head.json()) as { sha?: string }).sha : undefined;
       res = await put(sha);
     }
-    if (!res.ok) throw new StorageError(`GitHub document write failed (${res.status}): ${ref}`);
+    if (!res.ok) throw new StorageError(`GitHub document write failed (${res.status}).`);
   }
 
   // --- helpers --------------------------------------------------------------

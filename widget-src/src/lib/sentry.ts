@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react';
+import { EXPECTED_NETWORK_ERRORS } from './error-diagnostics';
 import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl } from '@roadmap/health-core';
 
 declare const __SENTRY_RELEASE__: string;
@@ -23,19 +24,47 @@ function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb): Sentry.Breadcrumb | nul
   // Scrub fetch/xhr breadcrumbs (request bodies contain health data)
   if ((breadcrumb.category === 'fetch' || breadcrumb.category === 'xhr') && breadcrumb.data) {
     breadcrumb.data = scrubBreadcrumbData(breadcrumb.data as Record<string, unknown>);
+    // Arbitrary WebDAV/GitHub paths and Drive lookup queries can name a
+    // clinical document. Preserve host/method/status, never resource paths.
+    if (typeof breadcrumb.data?.url === 'string') {
+      try { breadcrumb.data.url = new URL(breadcrumb.data.url, window.location.href).origin; }
+      catch { breadcrumb.data.url = '[Filtered]'; }
+    }
   }
   // Scrub console breadcrumbs (may contain emails, health data in log output)
   if (breadcrumb.category === 'console') {
     if (breadcrumb.message) breadcrumb.message = '[Filtered]';
-    if (breadcrumb.data) {
-      breadcrumb.data = scrubSensitiveData(breadcrumb.data) as Record<string, unknown>;
-    }
+    // Console argument arrays bypass field-name redaction and may quote files
+    // or results. Keep the occurrence/level, never the argument values.
+    delete breadcrumb.data;
   }
   return breadcrumb;
 }
 
 /** Scrub PII/PHI from Sentry events before they leave the browser. */
 export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
+  // Record errors can quote clinical filenames in messages, causes and fetch
+  // breadcrumbs. These captures carry only closed operation/provider tags.
+  if (event.tags?.area === 'cloud-sync' || event.tags?.area === 'upload-save' || event.tags?.feature === 'upload') {
+    const { area, op, backend, branch, uploadErrorCode } = event.tags;
+    event.tags = {
+      ...(area === 'cloud-sync' || area === 'upload-save' ? { area } : { feature: 'upload' }),
+      ...(['write-document', 'read-document', 'persist', 'log-off', 'copy-down'].includes(String(op)) ? { op } : {}),
+      ...(['google-drive', 'dropbox', 'github', 'self-host', 'local', 'file', 'memory'].includes(String(backend)) ? { backend } : {}),
+      ...(['measurements', 'documents', 'labValues'].includes(String(branch)) ? { branch } : {}),
+      ...(['rate_limit', 'timeout', 'server_restart', 'no_files', 'server_error', 'network', 'unknown'].includes(String(uploadErrorCode)) ? { uploadErrorCode } : {}),
+    };
+    if (event.message) event.message = 'Health record operation failed';
+    if (event.exception?.values) event.exception.values = event.exception.values.map(value => ({
+      type: 'Error', value: 'Health record operation failed',
+      stacktrace: value.stacktrace, mechanism: value.mechanism,
+    }));
+    delete event.breadcrumbs;
+    delete event.request;
+    delete event.extra;
+    delete event.contexts;
+    delete event.fingerprint;
+  }
   // Drop the SDK's own internal log object when it gets re-captured: after our
   // processors drop a third-party error (e.g. the Horizon theme's
   // "@shopify/events" TypeError), the SDK's "An event processor returned
@@ -117,24 +146,10 @@ export function initSentry() {
     // Limit serialization depth for Sentry event payloads
     normalizeDepth: 5,
     ignoreErrors: [
-      // Third-party fetch interceptors (Appstle Bundles) create unhandled rejections
-      // from our fetch calls. Our api.ts already catches and handles these.
-      /Failed to fetch/,
-      // Safari/WebKit's equivalent of "Failed to fetch" — network request cancelled or blocked.
-      /Load failed/,
-      // Firefox's equivalent of "Failed to fetch" — network unavailable or blocked.
-      /NetworkError when attempting to fetch resource/,
-      // The same outage, re-worded by the storage adapters: a dead network now
-      // reaches us as StorageError('Dropbox did not answer'), with the browser
-      // TypeError only as its `cause`. Listed by message so it is dropped
-      // whether or not linkedErrors matching reaches the cause.
-      /did not answer/,
+      ...EXPECTED_NETWORK_ERRORS,
       // iOS WebKit DOMException SYNTAX_ERR (code 12) — browser-level DOM noise
       // observed on iPad/Chrome Mobile iOS. Not caused by our code.
       /The string did not match the expected pattern/,
-      // AbortError from user navigating away during an in-flight fetch request.
-      // Normal browser behavior — not a real error.
-      /The operation was aborted/,
       // DuckDuckGo Privacy Browser injects feature registry code into pages;
       // these errors are from their content scripts, not our code.
       /feature named `.+` was not found/,

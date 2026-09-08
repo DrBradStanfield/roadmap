@@ -188,7 +188,7 @@ export class DropboxAdapter implements StorageAdapter {
       },
       body: bytes,
     });
-    if (!res.ok) throw new StorageError(`Dropbox document write failed (${res.status}): ${ref}`);
+    if (!res.ok) throw new StorageError(`Dropbox document write failed (${res.status}).`);
   }
 
   // --- change signal (US-34) -------------------------------------------------

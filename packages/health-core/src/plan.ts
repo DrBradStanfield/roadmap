@@ -25,8 +25,14 @@ import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } f
 import { UNIT_DEFS, formatDisplayValue, getDisplayLabel, type MetricType, type UnitSystem } from './units';
 import { getValidationErrors, validateHealthInputs } from './validation';
 
+/** This project, named once. Every URL that points at the code derives from it. */
+export const REPO_SLUG = 'DrBradStanfield/roadmap';
+
+/** Where an assistant reads the code, and where report_feedback files an issue. */
+export const REPO_URL = `https://github.com/${REPO_SLUG}`;
+
 export const SCHEMA_URL =
-  'https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json';
+  `https://raw.githubusercontent.com/${REPO_SLUG}/main/docs/health-roadmap-file.schema.json`;
 
 /**
  * What a model presenting this plan must not do: sand the hedging off a
@@ -270,7 +276,9 @@ export function planPayload(plan: Plan) {
       guidelines: s.guidelines ?? [],
       references: s.references ?? [],
     })),
-    source: { schema: SCHEMA_URL, tool: 'tools/get-plan.ts', docs: 'docs/agent-access.md' },
+    // `repo` makes the two paths below resolvable: without it an assistant is
+    // holding file names it cannot open.
+    source: { repo: REPO_URL, schema: SCHEMA_URL, tool: 'tools/get-plan.ts', docs: 'docs/agent-access.md' },
   };
 }
 

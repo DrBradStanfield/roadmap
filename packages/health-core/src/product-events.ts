@@ -96,6 +96,54 @@ export const MCP_IMPORT_FILE_BUCKETS = ['0', '1', '2-5', '6-20'] as const;
 export type McpImportRoute = (typeof MCP_IMPORT_ROUTES)[number];
 export type McpImportFileBucket = (typeof MCP_IMPORT_FILE_BUCKETS)[number];
 
+/**
+ * Why a refused call was refused (US-32 AC29). Closed, so a counter can never
+ * become a log: no value, date, row id, unit or file name can reach it, and an
+ * unrecognised word is dropped rather than passed through.
+ *
+ * The first eleven are the record layer's own `EditRejectionReason`, which
+ * already decides them and until now threw them away. `mcp-tools.ts` holds a
+ * typed rejection conversion that keeps the two in step. The rest are the tool layer's
+ * and the hosted surface's own refusals. This file imports nothing, so the
+ * eleven are written out rather than derived.
+ */
+export const MCP_REFUSAL_REASONS = [
+  'unknown-metric',
+  'core-metric',
+  'invalid-value',
+  'unknown-unit',
+  'out-of-range',
+  'invalid-date',
+  'future-date',
+  'slot-occupied',
+  'not-found',
+  'not-active',
+  'value-changed',
+  /** Arguments that did not fit the tool's schema. */
+  'malformed',
+  /** A correction older than the 90-day rule. */
+  'too-old',
+  /** The connection's hourly write allowance is spent. */
+  'allowance',
+  /** A two-phase confirm that was missing, early, replayed or from elsewhere. */
+  'confirm',
+  /** A report carrying something that reads as a health value. */
+  'health-value',
+  /** No record, or one this version cannot read. */
+  'no-record',
+  /** An import refusal, whose own reason is on the `mcp_import` row. */
+  'import',
+  /** Refused for a reason this vocabulary does not name yet. */
+  'other',
+] as const;
+
+export type McpRefusalReason = (typeof MCP_REFUSAL_REASONS)[number];
+
+/** A word only counts if the vocabulary above names it. */
+export function isRefusalReason(value: unknown): value is McpRefusalReason {
+  return typeof value === 'string' && (MCP_REFUSAL_REASONS as readonly string[]).includes(value);
+}
+
 /** A file count as the counter names it: coarse enough to identify nobody. */
 export function importFilesBucket(files: number): McpImportFileBucket {
   if (files <= 0) return '0';

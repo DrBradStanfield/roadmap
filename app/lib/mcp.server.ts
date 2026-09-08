@@ -21,9 +21,9 @@ import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 
 import { StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
-import { folderNudge, isToolName, MCP_TOOLS, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import { folderNudge, type GuardRefusal, isToolName, MCP_TOOLS, OPEN_SOURCE_NOTE, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../../packages/health-core/src/mcp-rpc';
-import { importFilesBucket, MCP_TOOL_NAMES, type McpToolName } from '../../packages/health-core/src/product-events';
+import { importFilesBucket, isRefusalReason, MCP_TOOL_NAMES, type McpRefusalReason, type McpToolName } from '../../packages/health-core/src/product-events';
 import { KNOWN_CLIENTS, readCapped, type McpClientLabel } from './mcp-clients.server';
 import { hostedImporter } from './mcp-import.server';
 import { recordServerEvent } from './product-events.server';
@@ -44,7 +44,8 @@ const RPC_BODY_CAP = 1024 * 1024;
  */
 const SUPPORTED_PROTOCOLS = new Set([PROTOCOL_VERSION, '2025-06-18', '2025-03-26']);
 
-const INSTRUCTIONS =
+/** What every assistant is told at connect. Exported so a test can pin it. */
+export const INSTRUCTIONS =
   'These tools read and write ONE health record — the user’s own file in their own cloud folder. Read before ' +
   'you write: values are slotted one per metric per day, and a day that already holds a value is corrected, ' +
   'never added to twice. Nothing is ever deleted; a superseded row stays as "entered-in-error". Correcting a ' +
@@ -54,7 +55,7 @@ const INSTRUCTIONS =
   'writes nothing until its commit, which needs the user’s own confirmation of what it found; a file dropped into the chat ' +
   'is read by you and filed through file_results the same way. correct_value, update_profile and report_feedback are ' +
   'permanent, so here they take two calls: the first answers with a confirm receipt, and only the second, after the user’s ' +
-  'own yes, does it.';
+  'own yes, does it.' + OPEN_SOURCE_NOTE;
 
 /**
  * A correction fixes a recent mistake. A result from three years ago is
@@ -113,8 +114,9 @@ export function setAdapterFactory(factory: AdapterFactory | null): void {
 // One tool call
 // ---------------------------------------------------------------------------
 
-function refuse(text: string): ToolAnswer {
-  return { text, isError: true };
+/** A refusal this surface decides, with the word the counter files it under. */
+function refuse(text: string, reason: McpRefusalReason = 'other'): ToolAnswer {
+  return { text, isError: true, reason };
 }
 
 /** What each write costs the hourly allowance, read off each tool's own
@@ -136,23 +138,27 @@ function findRow(file: RoadmapFile, id: string): FileMeasurement | FileLabValue 
  * (design §3). Neither belongs in the tool layer: the CLI (US-31) keeps
  * `expectedValue` optional, because there a human is watching their own file.
  */
-function checkCorrection(file: RoadmapFile, args: unknown, now: string): string | null {
+function checkCorrection(file: RoadmapFile, args: unknown, now: string): GuardRefusal | null {
   const request = (args ?? {}) as { id?: unknown; expectedValue?: unknown };
   if (typeof request.expectedValue !== 'number') {
-    return (
-      'correct_value needs expectedValue on this server: the value you believe the row holds right now. ' +
-      'Read the record, then correct. Nothing was written.'
-    );
+    return {
+      reason: 'malformed',
+      text:
+        'correct_value needs expectedValue on this server: the value you believe the row holds right now. ' +
+        'Read the record, then correct. Nothing was written.',
+    };
   }
   const row = typeof request.id === 'string' ? findRow(file, request.id) : undefined;
   if (!row) return null; // the tool layer answers "no such row" in its own words
   // UTC by choice: the server has no user timezone; both sides are calendar days.
   const age = daysBetween(dayOf(row.recordedAt ?? ''), dayOf(now));
   if (age > MAX_CORRECTION_AGE_DAYS) {
-    return (
-      `That value was recorded ${age} days ago, and this server only corrects values from the last ` +
-      `${MAX_CORRECTION_AGE_DAYS} days. Nothing was written. The user can correct older values in the app.`
-    );
+    return {
+      reason: 'too-old',
+      text:
+        `That value was recorded ${age} days ago, and this server only corrects values from the last ` +
+        `${MAX_CORRECTION_AGE_DAYS} days. Nothing was written. The user can correct older values in the app.`,
+    };
   }
   return null;
 }
@@ -163,15 +169,17 @@ function checkCorrection(file: RoadmapFile, args: unknown, now: string): string 
  * last-write-wins, so there is no superseded copy to read back — the claim is
  * the only thing standing between a stale read and a silently wrong plan.
  */
-function checkProfileUpdate(args: unknown): string | null {
+function checkProfileUpdate(args: unknown): GuardRefusal | null {
   const request = (args ?? {}) as Record<string, unknown>;
   const expected = (request.expected ?? {}) as Record<string, unknown>;
   const missing = PROFILE_FIELDS.filter((field) => request[field] !== undefined && expected[field] === undefined);
   if (missing.length === 0) return null;
-  return (
-    `update_profile needs expected.${missing.join(', expected.')} on this server: the value you believe the record ` +
-    'holds now, or null if it holds none. Read the record, then update. Nothing was written.'
-  );
+  return {
+    reason: 'malformed',
+    text:
+      `update_profile needs expected.${missing.join(', expected.')} on this server: the value you believe the record ` +
+      'holds now, or null if it holds none. Read the record, then update. Nothing was written.',
+  };
 }
 
 /**
@@ -182,7 +190,7 @@ function checkProfileUpdate(args: unknown): string | null {
  * mitigation 4). The loop itself is `runToolOverSync`, shared with the stdio
  * server (docs §7).
  */
-function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile, args: unknown, now: string, charge = true): string | null {
+function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile, args: unknown, now: string, charge = true): GuardRefusal | null {
   if (name === 'correct_value') {
     const refusal = checkCorrection(file, args, now);
     if (refusal) return refusal;
@@ -202,9 +210,11 @@ function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile,
  * `report_feedback` opens no record and so never reaches `beforeCall`, and an
  * uncharged tool that writes to a public issue tracker is a megaphone.
  */
-function chargeTool(token: AccessPayload, name: string): string | null {
+function chargeTool(token: AccessPayload, name: string): GuardRefusal | null {
   const cost = WRITE_COSTS.get(name);
-  return cost === undefined ? null : chargeWrites(connectionKey(token.rt), cost);
+  if (cost === undefined) return null;
+  const spent = chargeWrites(connectionKey(token.rt), cost);
+  return spent === null ? null : { text: spent, reason: 'allowance' };
 }
 
 /**
@@ -218,7 +228,7 @@ async function callHostedTool(
   args: unknown,
   now: string,
 ): Promise<ToolAnswer> {
-  if (!isToolName(name)) return refuse(`No tool named ${name}.`);
+  if (!isToolName(name)) return refuse(`No tool named ${name}.`, 'malformed');
   /** The record as the loop opened it, kept for the nudge so the folder check costs no second read. */
   let opened: RoadmapFile | undefined;
   const twoPhase = TWO_PHASE.has(name) ? splitConfirm(args) : null;
@@ -228,7 +238,7 @@ async function callHostedTool(
     args = twoPhase.args;
     if (twoPhase.confirm !== undefined) {
       const checked = checkConfirm(token, name, twoPhase.args, twoPhase.confirm, now);
-      if (typeof checked === 'string') return refuse(checked);
+      if (typeof checked === 'string') return refuse(checked, 'confirm');
       confirmed = checked;
     }
   }
@@ -242,13 +252,14 @@ async function callHostedTool(
   let accessToken = '';
   if (RECORD_FREE_TOOLS.has(name)) {
     const refusal = charge ? chargeTool(token, name) : null;
-    if (refusal) return refuse(refusal);
+    if (refusal) return { ...refusal, isError: true };
   } else {
     const minted = await providerAccessToken(token.provider, token.rt);
     if (!minted) {
       return refuse(
         `${provider} would not renew this connection, so nothing was read and nothing was written. Either the user ` +
           `disconnected the app or ${provider} could not be reached; ask them to try again, and to reconnect if it persists.`,
+        'no-record',
       );
     }
     accessToken = minted;
@@ -301,10 +312,11 @@ async function callHostedTool(
       return refuse(
         `${provider} refused this connection’s access to the record. Nothing was read and nothing was written. ` +
           'Ask the user to reconnect the connector, which grants it again.',
+        'no-record',
       );
     }
     const failed = describeStorageFailure(error, `The record in ${provider}`);
-    return refuse(`${failed.message}. ${failed.hint}`);
+    return refuse(`${failed.message}. ${failed.hint}`, 'no-record');
   }
 }
 
@@ -402,11 +414,19 @@ export function mcpClientLabel(clientId: string): McpClientLabel {
 
 /** One counter row per tool call: which tool, which assistant, whether it
  *  worked. Why it carries nothing else: docs/mcp-architecture.md §8. */
-function countToolCall(clientId: string, tool: string, outcome: 'ok' | 'refused' | 'error'): void {
+function countToolCall(
+  clientId: string,
+  tool: string,
+  outcome: 'ok' | 'refused' | 'error',
+  reason?: unknown,
+): void {
   // A name that is not a published tool was never a tool call, and free text
   // in a counter is how a counter becomes a log.
   if (!(MCP_TOOL_NAMES as readonly string[]).includes(tool)) return;
-  void recordServerEvent('mcp_tool_call', { tool: tool as McpToolName, client: mcpClientLabel(clientId), outcome });
+  // Only a refusal has a reason, and only a word the closed vocabulary names:
+  // anything else counts as `other` rather than reaching the row (US-32 AC29).
+  const why = outcome === 'refused' ? { reason: isRefusalReason(reason) ? reason : 'other' } : null;
+  void recordServerEvent('mcp_tool_call', { tool: tool as McpToolName, client: mcpClientLabel(clientId), outcome, ...why });
 }
 
 // ---------------------------------------------------------------------------
@@ -444,7 +464,7 @@ function hostedSurface(token: AccessPayload, now: string) {
       // already words by here; what lands in this catch is ours.
       try {
         const answer = await callHostedTool(token, name, args, now);
-        countToolCall(token.clientId, name, answer.isError ? 'refused' : 'ok');
+        countToolCall(token.clientId, name, answer.isError ? 'refused' : 'ok', answer.reason);
         return { answer };
       } catch {
         countToolCall(token.clientId, name, 'error');

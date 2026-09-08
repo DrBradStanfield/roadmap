@@ -62,6 +62,7 @@ import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
+import { recordFailure } from '../lib/error-diagnostics';
 
 /** Re-exported so the widget's own modules keep importing it from the store
  *  that uses it. It is defined in health-core (roadmap-doc.ts) because the
@@ -577,8 +578,8 @@ export class RoadmapStore {
         w.doc.mimeType = w.file.type || '';
         if (w.supersedes) w.supersedes.deleted = true;
       } catch (error) {
-        console.warn(`Document file not stored (${w.ref})`, error);
-        Sentry.captureException(error, {
+        console.warn('Document file not stored');
+        Sentry.captureException(recordFailure(error, 'Document file not stored'), {
           tags: { area: 'cloud-sync', op: 'write-document', backend: this.adapter.id },
         });
         w.failed = Boolean(w.supersedes);
@@ -972,8 +973,8 @@ export class RoadmapStore {
           /* device storage unavailable — memory-only is the best we have */
         }
       }
-      console.warn('Cloud sync failed', error);
-      Sentry.captureException(error, {
+      console.warn('Cloud sync failed');
+      Sentry.captureException(recordFailure(error, 'Cloud sync failed'), {
         tags: { area: 'cloud-sync', op: 'persist', backend: this.adapter.id },
       });
       return false;

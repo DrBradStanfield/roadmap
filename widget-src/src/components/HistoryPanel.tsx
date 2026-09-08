@@ -27,7 +27,7 @@ import { trackProductEvent } from '../lib/server-api';
 import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
 import { loadUnitPreference } from '../lib/storage';
 import { groupLabHistory } from '../lib/lab-rows';
-import { medicationAnnotations, pinClusters, MED_ANNOTATION_COLOR, type ChartAnnotation } from '../lib/medication-annotations';
+import { medicationAnnotations, MED_ANNOTATION_COLOR, type ChartAnnotation } from '../lib/medication-annotations';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
 
 // Register only what we need
@@ -89,6 +89,7 @@ function TimeSeriesChart({
   color: string;
   annotations?: ChartAnnotation[];
 }) {
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartRef = useRef<Chart | null>(null);
 
@@ -136,7 +137,7 @@ function TimeSeriesChart({
             },
           },
           annotation: annotations && annotations.length > 0 ? {
-            annotations: Object.fromEntries(pinClusters(annotations, xMax - xMin).map(({ date, numbers }) => [`med_${numbers[0]}`, {
+            annotations: Object.fromEntries(annotations.map(({ id, date }, index) => [`med_${id}`, {
               type: 'line' as const,
               xMin: date,
               xMax: date,
@@ -144,7 +145,8 @@ function TimeSeriesChart({
               borderDash: [4, 4],
               borderWidth: 1,
               label: {
-                content: numbers.join(', '), display: true, position: 'start' as const,
+                z: 1, // Keep the selected number above later event lines at the same date.
+                content: String(index + 1), display: id === selectedEventId, position: 'start' as const,
                 backgroundColor: MED_ANNOTATION_COLOR, font: { size: 10 }, padding: { x: 4, y: 2 },
               },
             }])),
@@ -182,7 +184,7 @@ function TimeSeriesChart({
         chartRef.current = null;
       }
     };
-  }, [data, title, unit, color, annotations]);
+  }, [data, title, unit, color, annotations, selectedEventId]);
 
   return (
     <div className="metric-chart-container">
@@ -192,8 +194,14 @@ function TimeSeriesChart({
       </div>
       {annotations && annotations.length > 0 && (
         <ol className="metric-chart-events" aria-label={`${title} recorded medication changes`}>
-          {annotations.map((annotation, index) => (
-            <li key={index}>{formatShortDate(annotation.date)}: {annotation.label}</li>
+          {annotations.map(annotation => (
+            <li key={annotation.id}>
+              <button type="button" aria-pressed={annotation.id === selectedEventId}
+                onFocus={() => setSelectedEventId(annotation.id)}
+                onClick={() => setSelectedEventId(annotation.id)}>
+                {formatShortDate(annotation.date)}: {annotation.label}
+              </button>
+            </li>
           ))}
         </ol>
       )}

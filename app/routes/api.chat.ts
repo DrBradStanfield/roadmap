@@ -8,7 +8,7 @@
  */
 import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
-import { getAuthenticatedUser, checkSubscriptionFromTags, getCustomerOrders } from '../lib/route-helpers.server';
+import { getAuthenticatedUser, checkSubscriptionFromTags, getCustomerOrders, isValidUuid } from '../lib/route-helpers.server';
 import { getClientIp } from '../lib/local-first-route.server';
 import { logAudit, getProfile, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
 import {
@@ -28,6 +28,18 @@ import {
 import { routeQuery, reportRouterFailure, sanitizeForRouter, ROUTER_VERSION } from '../lib/chat-router.server';
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 import { findDuplicateReply } from '../lib/chat-dedup.server';
+
+
+// Only fixed operation descriptions enter diagnostics. Database errors can echo
+// conversation contents even when every identifier passed validation.
+function reportChatError(message: string): void {
+  console.error(message);
+  Sentry.captureException(new Error(message), { tags: { feature: 'chat' } });
+}
+
+function validConversationId(value: unknown): value is string {
+  return typeof value === 'string' && isValidUuid(value.toLowerCase());
+}
 
 // ---------------------------------------------------------------------------
 // Unified auth: handles both authenticated users and guests
@@ -113,9 +125,8 @@ async function refreshSubscriptionIfStale(
 
   const plan = await checkSubscriptionFromTags(auth.admin, auth.customerId);
   // Fire-and-forget update
-  updateSubscriptionPlan(auth.userId, plan).catch(err => {
-    console.error('Failed to update subscription plan:', err);
-    Sentry.captureException(err, { tags: { feature: 'chat' } });
+  updateSubscriptionPlan(auth.userId, plan).catch(() => {
+    reportChatError('Chat: Failed to update subscription plan');
   });
   return plan;
 }
@@ -127,6 +138,10 @@ async function refreshSubscriptionIfStale(
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const url = new URL(request.url);
+    const conversationId = url.searchParams.get('conversationId');
+    if (conversationId !== null && !validConversationId(conversationId)) {
+      return Response.json({ success: false, error: 'Invalid conversationId' }, { status: 400 });
+    }
 
     // Guest without a session token — return empty default (don't create a session just to list conversations)
     const sessionToken = url.searchParams.get('sessionToken');
@@ -149,8 +164,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
       throw err;
     }
 
-    const conversationId = url.searchParams.get('conversationId');
-
     if (conversationId) {
       const { data, error } = await auth.client
         .from('chat_messages')
@@ -159,7 +172,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Error loading chat messages:', error);
+        reportChatError('Chat: Failed to load messages');
         return Response.json({ success: false, error: 'Failed to load messages' }, { status: 500 });
       }
 
@@ -182,7 +195,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       .limit(50);
 
     if (convError) {
-      console.error('Error listing conversations:', convError);
+      reportChatError('Chat: Failed to list conversations');
       return Response.json({ success: false, error: 'Failed to load conversations' }, { status: 500 });
     }
 
@@ -197,9 +210,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
           { admin: auth.admin, customerId, userId: auth.userId },
           profile,
         );
-      })().catch(err => {
-        console.error('Subscription refresh failed:', err);
-        Sentry.captureException(err, { tags: { feature: 'chat' } });
+      })().catch(() => {
+        reportChatError('Chat: Subscription refresh failed');
       });
     }
 
@@ -217,8 +229,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     if (error instanceof GuestRateLimitError) {
       return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
     }
-    console.error('Chat loader error:', error);
-    Sentry.captureException(error, { tags: { feature: 'chat' } });
+    reportChatError('Chat: Loader failed');
     return Response.json({ success: false, error: 'Internal error' }, { status: 500 });
   }
 }
@@ -243,6 +254,14 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ success: false, error: 'Invalid JSON body' }, { status: 400 });
     }
 
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return Response.json({ success: false, error: 'JSON object required' }, { status: 400 });
+    }
+    // Omitted/null means a new conversation; an explicitly empty ID is invalid.
+    if ((body.conversationId != null || request.method === 'DELETE') && !validConversationId(body.conversationId)) {
+      return Response.json({ success: false, error: 'Invalid conversationId' }, { status: 400 });
+    }
+
     let auth: AuthResult;
     try {
       auth = await getAuthOrGuest(request, body.sessionToken, body.localFirst === true);
@@ -256,17 +275,13 @@ export async function action({ request }: ActionFunctionArgs) {
     // ----- DELETE -----
     if (request.method === 'DELETE') {
       const { conversationId } = body;
-      if (!conversationId || typeof conversationId !== 'string') {
-        return Response.json({ success: false, error: 'conversationId required' }, { status: 400 });
-      }
-
       const { error } = await auth.client
         .from('chat_conversations')
         .delete()
         .eq('id', conversationId);
 
       if (error) {
-        console.error('Error deleting conversation:', error);
+        reportChatError('Chat: Failed to delete conversation');
         return Response.json({ success: false, error: 'Failed to delete' }, { status: 500 });
       }
 
@@ -292,11 +307,12 @@ export async function action({ request }: ActionFunctionArgs) {
     // is_fallback is needed for the dedup check below; created_at for the time window.
     let history: Array<{ role: 'user' | 'assistant'; content: string; created_at: string; is_fallback: boolean | null }> = [];
     if (conversationId) {
-      const { data: historyRows } = await auth.client
+      const { data: historyRows, error: historyError } = await auth.client
         .from('chat_messages')
         .select('role, content, created_at, is_fallback')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
+      if (historyError) reportChatError('Chat: Failed to load conversation history');
       history = (historyRows ?? []) as Array<{ role: 'user' | 'assistant'; content: string; created_at: string; is_fallback: boolean | null }>;
     }
 
@@ -310,9 +326,7 @@ export async function action({ request }: ActionFunctionArgs) {
           level: 'info',
           tags: { feature: 'chat', platform: 'shopify', diagnostic: 'dedup' },
           extra: {
-            conversationId,
             isGuest: auth.isGuest,
-            userId: auth.userId,
             ageMs: dup.ageMs,
             messageLength: message.length,
           },
@@ -371,12 +385,7 @@ export async function action({ request }: ActionFunctionArgs) {
         .single();
 
       if (convError || !conv) {
-        const err = new Error('Chat: Failed to create conversation');
-        console.error(err.message, convError);
-        Sentry.captureException(err, {
-          tags: { feature: 'chat' },
-          extra: { userId: auth.userId, dbError: convError?.message },
-        });
+        reportChatError('Chat: Failed to create conversation');
         return Response.json({ success: false, error: 'Failed to create conversation' }, { status: 500 });
       }
       activeConversationId = conv.id;
@@ -393,12 +402,7 @@ export async function action({ request }: ActionFunctionArgs) {
       });
 
     if (userMsgError) {
-      const err = new Error('Chat: Failed to save user message');
-      console.error(err.message, userMsgError);
-      Sentry.captureException(err, {
-        tags: { feature: 'chat' },
-        extra: { userId: auth.userId, conversationId: activeConversationId, dbError: userMsgError.message },
-      });
+      reportChatError('Chat: Failed to save user message');
       return Response.json({ success: false, error: 'Failed to save message' }, { status: 500 });
     }
 
@@ -462,11 +466,7 @@ export async function action({ request }: ActionFunctionArgs) {
       })
       .then(({ error: msgError }: { error: { message: string } | null }) => {
         if (msgError) {
-          console.error('Error saving assistant message:', msgError);
-          Sentry.captureException(new Error('Chat: Failed to save assistant message'), {
-            tags: { feature: 'chat' },
-            extra: { conversationId: activeConversationId, dbError: msgError.message },
-          });
+          reportChatError('Chat: Failed to save assistant message');
           return;
         }
         // FK on message_id now satisfied — safe to insert match event.
@@ -494,13 +494,10 @@ export async function action({ request }: ActionFunctionArgs) {
           })
           .then(({ error: matchError }: { error: { message: string } | null }) => {
             if (matchError) {
-              Sentry.captureException(new Error('Chat: match-event insert failed'), {
-                tags: { feature: 'chat' },
-                extra: { dbError: matchError.message, messageId: assistantMessageId },
-              });
+              reportChatError('Chat: Match-event insert failed');
             }
-          });
-      });
+          }).catch(() => reportChatError('Chat: Match-event insert failed'));
+      }).catch(() => reportChatError('Chat: Failed to save assistant message'));
 
     auth.client
       .from('chat_conversations')
@@ -508,13 +505,9 @@ export async function action({ request }: ActionFunctionArgs) {
       .eq('id', activeConversationId)
       .then(({ error: tsError }: { error: { message: string } | null }) => {
         if (tsError) {
-          console.error('Error updating conversation timestamp:', tsError);
-          Sentry.captureException(new Error('Chat: Failed to update conversation timestamp'), {
-            tags: { feature: 'chat' },
-            extra: { conversationId: activeConversationId, dbError: tsError.message },
-          });
+          reportChatError('Chat: Failed to update conversation timestamp');
         }
-      });
+      }).catch(() => reportChatError('Chat: Failed to update conversation timestamp'));
 
     logAudit(auth.userId, 'CHAT_MESSAGE', 'chat', activeConversationId, {
       cacheRead: completion.usage.cacheReadTokens,
@@ -567,8 +560,7 @@ export async function action({ request }: ActionFunctionArgs) {
     if (error instanceof GuestRateLimitError) {
       return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
     }
-    console.error('Chat action error:', error);
-    Sentry.captureException(error, { tags: { feature: 'chat' } });
+    reportChatError('Chat: Action failed');
     return Response.json({ success: false, error: 'Failed to process message' }, { status: 500 });
   }
 }

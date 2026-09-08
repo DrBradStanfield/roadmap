@@ -9,6 +9,7 @@ import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, 
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
+import { recordFailure } from '../lib/error-diagnostics';
 import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
 
 class UploadError extends Error {
@@ -233,7 +234,6 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       if (!abort.signal.aborted) setProgress(p);
     };
 
-    const fileTypes = filesToProcess.map(f => f.type || 'unknown');
     const fileCount = filesToProcess.length;
 
     try {
@@ -324,10 +324,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     } catch (err) {
       if (!abort.signal.aborted) {
         const code = err instanceof UploadError ? err.code : 'unknown';
-        console.error('Upload processing error:', code, err);
-        Sentry.captureException(err, {
-          tags: { uploadErrorCode: code },
-          extra: { fileTypes, fileCount },
+        console.error('Upload processing failed:', code);
+        Sentry.captureException(recordFailure(err, 'Upload processing failed'), {
+          tags: { feature: 'upload', uploadErrorCode: code },
         });
         trackProductEvent('upload_extract_failed');
         setError(err instanceof UploadError
@@ -457,7 +456,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
             tryStartWorker();
           }
         } catch (err) {
-          console.warn(`Failed to extract ${fileName}:`, err);
+          console.warn('Failed to extract a file');
         }
       }
     }
@@ -493,7 +492,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         const pages = await extractPages(upload, file);
         if (pages.length > 0) allFiles.push({ fileName, pages });
       } catch (err) {
-        console.warn(`Failed to extract ${fileName}:`, err);
+        console.warn('Failed to extract a file');
       }
     }
 
@@ -612,7 +611,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       let threw = false;
       const failed = <T,>(branch: string, fallback: T) => (err: unknown) => {
         threw = true;
-        Sentry.captureException(err, { tags: { area: 'upload-save', branch } });
+        Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch } });
         return fallback;
       };
       const [savedValues, savedDocs, savedLabValues] = await Promise.all([

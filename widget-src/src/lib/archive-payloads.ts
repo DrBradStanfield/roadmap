@@ -78,18 +78,19 @@ function isArchivableFile(r: FileResult, alreadyCovered: Set<string | null>): bo
 }
 
 /**
- * Files whose bytes the connector filed metadata-only (hash, no fileRef —
- * US-35 AC8), lab report or letter alike, that this save would not otherwise
- * file. Saving archives the original behind the row already in the record
- * (US-13 AC1), so the review offers Save even with nothing selected.
+ * Unarchived lab originals remain saveable after their values become history
+ * context (US-12 AC6). Unselected letters require a matching metadata-only
+ * connector row (US-35 AC8), so deselecting a new letter still excludes it.
  */
-export function connectorOriginals(
+export function unarchivedOriginals(
   results: FileResult[],
   existing: ReadonlyArray<Pick<ApiDocument, 'contentHash' | 'fileRef'>>,
   alreadyCovered: Set<string | null>,
 ): FileResult[] {
   const pending = new Set(existing.filter((d) => d.contentHash && !d.fileRef).map((d) => d.contentHash));
-  return results.filter((r) => isArchivableFile(r, alreadyCovered) && pending.has(r.contentHash));
+  const archived = new Set(existing.filter((d) => d.contentHash && d.fileRef).map((d) => d.contentHash));
+  return results.filter((r) => isArchivableFile(r, alreadyCovered)
+    && !archived.has(r.contentHash) && (!r.document || pending.has(r.contentHash)));
 }
 
 /**
@@ -102,7 +103,7 @@ export function connectorDocumentEntries(
   existing: ReadonlyArray<Pick<ApiDocument, 'contentHash' | 'fileRef'>>,
   alreadyCovered: Set<string | null>,
 ): ArchiveDocPayload[] {
-  return connectorOriginals(results, existing, alreadyCovered)
+  return unarchivedOriginals(results, existing, alreadyCovered)
     .filter((r) => r.document)
     .map((r) => ({
       documentType: r.document!.classification,

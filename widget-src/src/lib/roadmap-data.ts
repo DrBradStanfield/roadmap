@@ -182,8 +182,8 @@ export async function readDocumentFile(fileRef: string): Promise<Blob | null> {
   if (!store) return null;
   try {
     return await store.readDocumentFile(fileRef);
-  } catch (error) {
-    console.warn('readDocumentFile failed', error);
+  } catch {
+    console.warn('readDocumentFile failed');
     return null;
   }
 }

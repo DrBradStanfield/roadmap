@@ -373,9 +373,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const { folder, name } = splitDocumentRef(ref);
     const parentId = folder ? await this.ensureSubfolderId(folder) : await this.ensureFolderId();
     const id = await this.findFileId(name, parentId);
-    if (!id) throw new StorageError(`Google Drive document not found: ${ref}`);
+    if (!id) throw new StorageError(`Google Drive document not found.`);
     const res = await fetch(`${DRIVE_API}/files/${id}?alt=media`, { headers: await this.authHeaders() });
-    if (!res.ok) throw new StorageError(`Google Drive document read failed (${res.status}): ${ref}`);
+    if (!res.ok) throw new StorageError(`Google Drive document read failed (${res.status}).`);
     return res.blob();
   }
 
@@ -390,7 +390,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     // produces a same-named duplicate with identical bytes, which Drive allows
     // and readDocument resolves by name; accepted orphan semantics (§5.3).
     const res = await this.createMultipart(name, type, bytes, parentId);
-    if (!res.ok) throw new StorageError(`Google Drive document create failed (${res.status}): ${ref}`);
+    if (!res.ok) throw new StorageError(`Google Drive document create failed (${res.status}).`);
   }
 
   // --- change signal (US-34) -------------------------------------------------

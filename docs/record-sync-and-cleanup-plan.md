@@ -1,7 +1,7 @@
 # Health-record sync and cleanup plan
 
 Status: design only; not approved for implementation. Written 9 September 2026.
-Source inspected at `7069d30`. No application, schema, cloud or PR changes.
+Baseline inspected at `7069d30`; the filesystem row includes the current five-fix working tree. This document does not implement the proposed sync protocol.
 Production LOC: 0. This document proposes no production changes.
 
 ## 1. Recommendation and the unresolved constraint
@@ -166,7 +166,7 @@ Store rejection or quota errors must preserve the draft and report the failure.
 
 Save:
 1. Validate the requested change against the local record and existing rules.
-2. Allocate and persist an operation ID, exact bytes and pending state locally.
+2. Allocate and persist an operation ID, exact bytes and pending state through the writer's durable retry mechanism.
 3. Create its immutable cloud object without overwriting another object.
 4. On ambiguous timeout, reconcile that same identity; never allocate a new
    operation ID merely because the response was lost.
@@ -175,12 +175,23 @@ Save:
    may mean "recorded, needs resolution", not "your correction was applied".
 7. Attempt consolidation/cleanup when the provider's safety gate permits it.
 
-During pending work, readers load the checkpoint plus uncovered transactions.
-After cleanup, the checkpoint suffices. Listing/change feeds need complete
-pagination and resumable cursors; cursors are discovery aids, not GC proofs.
-Repeated listings and events must be harmless. Readers must tolerate files
-already deleted because a newer checkpoint covered them: reload and verify
-coverage, rather than interpreting a 404 as a lost record.
+Retry identity must survive each writer's lifetime: browser outbox, durable
+CLI/local-MCP journal, and an authenticated record-scoped retry key or sealed
+preparation receipt for hosted MCP, obtained before mutation and reused after
+a lost response/restart. Transport request IDs or payload equality alone are
+insufficient. Test same-key/same-body retry, changed-body refusal and distinct
+intentional repeats. The exact hosted key/receipt contract remains a design gate.
+
+Readers must obtain a coherent checkpoint-plus-transaction view: read C and
+revision r, discover/read uncovered transactions, then revalidate C's revision.
+If it changed, restart or reconcile against the successor and its generation.
+Otherwise a compactor can replace C and delete a transaction before listing,
+leaving an empty list with no 404 to trigger recovery. Bound retries and report
+an incomplete view on exhaustion. Apply this protocol to exports too.
+Provider read/list consistency must support this argument; stale revision
+replies or missing previously admitted objects cannot be waved away. Require
+complete pagination. Cursors aid discovery, not GC proof. A listed file that
+vanishes also requires checkpoint reload and verified coverage.
 
 A listing can miss a concurrently arriving file. That may delay visibility;
 it must not cause deletion of that unseen file. Connectivity cannot guarantee
@@ -226,6 +237,12 @@ Arbitrary out-of-protocol edits to those objects are outside this proof.
 The sole checkpoint must not acquire new destructive overwrite paths. Merely
 checking a revision in application code before uploading does not satisfy this
 protocol. Nor does a lock file whose lease may expire while its old owner writes.
+
+An undiscovered dependency is deferred, not terminally refused. A correction
+may arrive before its addition. Preserve deferred commands and provenance in
+the checkpoint if deleting their files, and reconsider them when dependencies
+arrive. Specify deterministic stale-precondition/conflict/cycle handling;
+dependency-first, dependent-first and separate-compaction delivery must agree.
 
 ## 8. Cleanup classes: nothing deleted just because it looks old
 
@@ -332,7 +349,7 @@ cleanup: unseen objects are outside the captured deletion set and remain.
 | --- | --- | --- |
 | Dropbox | Revision update and strict_conflict documented [S3]; current adapter uses them | Verify complete-file publication, conflict/retry and identity behavior with synthetic integration tests |
 | Google Drive | Both adapters read version before content, recheck, then upload unconditionally; browser parity landed in b323dfc | Establish supported atomic content publication or a different proven protocol; otherwise no destructive compaction |
-| Local filesystem | Lock/backup/temp-replace exists, but age-based takeover permits a paused owner to resume and unlink another owner's lock | Current gate fails: require ownership-safe exclusion/release and separately prove crash durability |
+| Local filesystem | The five-fix pass removes age-based takeover, keeps the lock descriptor and checks ownership; abandoned locks require exclusive recovery | Cooperative updated local writers are protected; mixed versions, external lock replacement and crash durability still need separate proof before compaction |
 | Browser-only | localStorage has no cross-tab transaction for this protocol | Transactional local store/outbox and explicit cross-tab tests |
 | GitHub | Existing writer passes the current content SHA | Verify atomic content preconditions and full compaction protocol before enabling GC |
 | WebDAV | Existing writer uses If-Match when an ETag is available, otherwise unconditional PUT | No unconditional fallback for compaction; verify each supported server and creation path |
@@ -418,6 +435,10 @@ uploads; crashes at every compaction stage; stale compactors; partial lists;
 late transactions; delete failures; corrupt/unknown files; offline return;
 erasure races; lost local storage; missing checkpoints; backup restoration;
 late document commits after abort; and all supported writer/version combinations.
+Also test an empty listing after concurrent compaction, hosted restart after
+lost acknowledgement, dependent-first delivery, old-generation uploads arriving
+after purge, and provider capacity exhaustion. Never discard history or receipts
+to fit a provider limit; capacity is a safety gate, not just a performance issue.
 Include a delayed PATCH after another writer's successful verification, a
 paused filesystem lock owner after takeover, and migration crossed by a legacy
 upload already in flight. These are distinct from a changed revision caught
@@ -435,6 +456,7 @@ Provider references checked 9 September 2026; these do not replace integration t
 - [S2: Drive file creation and pre-generated IDs](https://developers.google.com/workspace/drive/api/guides/create-file): retry-safe identity allocation.
 - [S3: Dropbox API specification](https://raw.githubusercontent.com/dropbox/dropbox-api-spec/main/files.stone): WriteMode.update and CommitInfo.strict_conflict.
 - [S4: Drive revision management](https://developers.google.com/workspace/drive/api/guides/manage-revisions): retention is not an unlimited backup promise.
+- [S5: GitHub Contents API](https://docs.github.com/en/rest/repos/contents?apiVersion=2022-11-28): directory/file limits also constrain this design.
 
 Repository evidence:
 - [SyncManager](../packages/health-core/src/sync-manager.ts): current read/merge/write/verify loop.
@@ -454,20 +476,11 @@ are deleted. Cleanup must not conceal that missing guarantee.
 
 ## 15. Adversarial status review, 9 September 2026
 
-Three Astra agents reviewed final merged code at `7069d30`; one independently
-checked this entire plan and reproduced its 35-schedule model. Its result
-remains four losses with unconditional publication and zero with atomic checks.
-It also reproduced stale-owner filesystem overwrite and foreign-lock removal
-with the actual FileAdapter and synthetic child processes.
-
-Browser Drive version-check parity is implemented. Immutable record
-transactions, durable receipts, transactional outbox, protected checkpoint
-compaction, complete GC discovery, migration fencing and erasure-safe recovery
-are not implemented. Existing import-proposal cleanup is useful plumbing,
-not evidence those record-sync milestones are done.
-
-The design remains a sound direction with unresolved gates, not an approved
-implementation plan. This review corrects the earlier inaccurate browser-Drive
-description and strengthens migration, locking and restoration requirements.
-See the [merged-code review](reviews/2026-09-09-merged-review.md) for the status
-matrix, reproduced code findings, validation limits and cleanup record.
+The [merged-code review](reviews/2026-09-09-merged-review.md) covers `7069d30`:
+Drive prechecks exist; the proposed journal, receipts, outbox, protected GC,
+migration and erasure-safe recovery do not. The 35-schedule model was reproduced.
+A subsequent fresh Astra review against `3e6ca36` found the coherent-read,
+hosted retry-identity and deferred-dependency gaps now specified above. These
+are requirements awaiting implementation/proof, not claims of working code.
+The plan remains unapproved for implementation. Existing import-proposal
+cleanup is not completion of the record-sync protocol.

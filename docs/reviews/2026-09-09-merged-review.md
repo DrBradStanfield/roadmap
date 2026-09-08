@@ -1,6 +1,8 @@
 # Adversarial review of the merged audit changes
 
 Reviewed code: `7069d30`, verified equal to origin/main on 9 September 2026.
+Followup: the [five-fix verification](2026-09-09-five-fix-verification.md)
+records subsequent fixes and their fresh adversarial reviews.
 Three independent gpt-6-astra agents reviewed the merged changes and the
 record-sync plan. The parent inspected the reported code and evidence.
 Review was read-only for production code. Reproductions used synthetic data;
