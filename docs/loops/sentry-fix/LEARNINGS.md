@@ -50,10 +50,15 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   rank by summing `stats[period]` buckets and test newness via `lastSeen` vs
   the ledger. Only the latest event per issue is retained at current tier —
   event-history pulls return 1 row.
-- `[noise][server]` 2026-08-12 — youtube-bot `logTickError` captures whole
-  upstream HTML error pages as the exception value → garbage grouping (two
-  separate Sentry issues for one cause). If volume grows, propose normalizing
-  (status + first 200 chars) before capture — server file, propose-only.
+- `[noise][server]` 2026-08-12 — youtube-bot `logTickError` (handled=yes,
+  tag `feature=youtube-bot`) relays upstream Google failures as the exception
+  value: OAuth 500s, Cloudflare HTML pages, and (confirmed again 2026-09-08) a
+  Data API 503 from `listReplies` in the follow-up pass. Every call site
+  catches per call and continues, and the next tick re-scans, so a single
+  event is transient upstream → `wontfix` on sight. Grouping: HTML-page bodies
+  once split one cause into two issues; the Data API paths already truncate to
+  status + 200 chars. Worth a look only on several events in one day, or if
+  the caught value feeds a cap or lock decision (see the PGRST303 entry).
 - `[class][widget]` 2026-08-14 — Any DESIGNED "log it and carry on" failure
   path is a silent-data-at-risk candidate: cloud persist failures were
   memory-only by design, so no test could flag the loss (US-09 had no AC).
