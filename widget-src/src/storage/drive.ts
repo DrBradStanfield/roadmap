@@ -17,17 +17,22 @@
  * documents later), never the rest of the user's Drive. The record lives as a
  * Drive files discovered by name (`health-roadmap.json`, `chat-history.json`, …).
  *
- * CONCURRENCY: Drive v3 has no conditional write (no ETag/sha/rev), so writes
- * are last-write-wins; the SyncManager's read-merge-write makes that safe. The
- * file `version` field is surfaced for change detection.
+ * CONCURRENCY: Drive v3 has no conditional write (no ETag/sha/rev). This
+ * adapter does what the hosted `DriveAdapter` does (mcp-architecture.md §7):
+ * read `version` before the bytes, re-read it just before the upload, and
+ * refuse with ConflictError if it moved so the SyncManager re-merges. The
+ * check-to-upload gap of one PATCH round trip remains; verify-after-write
+ * catches a writer who lands inside it.
  */
 import {
+  ConflictError,
   driveCreateFile,
   driveCreateFolder,
   driveDownloadJson,
+  driveFileVersion,
   driveFindFileId,
   driveFindFolder,
-  driveUpdateFile,
+  driveUpdateIfVersion,
   splitDocumentRef,
   DRIVE_API,
   DRIVE_FOLDER_NAME,
@@ -337,23 +342,24 @@ export class GoogleDriveAdapter implements StorageAdapter {
     this.rememberFileId(fileName, fileId);
     // Cosmetic, never blocks the read: adopt pre-folder files into the app folder.
     void this.ensureInFolderOnce(fileId);
-    // version: null is honest — the BROWSER write is last-write-wins (the
-    // SyncManager merges first), so nothing here consumes a version and
-    // fetching one would cost an extra round trip on every load and every
-    // save. The hosted server does re-check it (design §7); the browser cannot
-    // detect being clobbered on Drive, and the guides say so.
-    return { body: await driveDownloadJson(await this.getToken(), fileId), version: null };
+    // Version BEFORE bytes: a writer landing mid-download then conflicts at
+    // write time instead of handing us their version on our stale bytes.
+    const token = await this.getToken();
+    const version = await driveFileVersion(token, fileId);
+    return { body: await driveDownloadJson(token, fileId), version };
   }
 
-  async write(fileName: string, body: object, _expectedVersion: string | null): Promise<WriteResult> {
-    // Drive has no conditional write → last-write-wins (the SyncManager merges first).
+  async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
     const json = JSON.stringify(body);
     const fileId = this.cachedFileId(fileName) ?? (await this.findFileId(fileName));
     if (fileId) {
-      const version = await driveUpdateFile(await this.getToken(), fileId, json);
+      const version = await driveUpdateIfVersion(await this.getToken(), fileId, json, expectedVersion);
       this.rememberFileId(fileName, fileId);
       return { version };
     }
+    // The file that was read has since been deleted: re-reading turns that
+    // into a decision, so never silently re-create it here.
+    if (expectedVersion !== null) throw new ConflictError(`${this.label} no longer holds that file`);
     // First write — create the file (multipart: metadata + content).
     const res = await this.createMultipart(fileName, 'application/json', json);
     if (!res.ok) throw new StorageError(`Google Drive create failed (${res.status}): ${await res.text()}`);

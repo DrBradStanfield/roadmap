@@ -357,7 +357,7 @@ export {
   driveFileVersion,
   driveFindFileId,
   driveFindFolder,
-  driveUpdateFile,
+  driveUpdateIfVersion,
   DRIVE_API,
   DRIVE_FOLDER_NAME,
   DRIVE_LEGACY_FOLDER_NAME,

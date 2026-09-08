@@ -24,8 +24,8 @@
  *
  * Residual, disclosed: step 2 is a check, not a precondition. A writer that
  * lands between the check and the upload is caught only by step 3, so on Drive
- * concurrent writers are durable-by-retry rather than serialised, and the
- * BROWSER cannot detect being clobbered at all (it does not re-check versions).
+ * concurrent writers are durable-by-retry rather than serialised. The browser
+ * adapter (`widget-src/src/storage/drive.ts`) runs the same steps 1 and 2.
  */
 import {
   ConflictError,
@@ -177,7 +177,7 @@ export function driveCreateFile(
 }
 
 /** Overwrite a file's bytes. Unconditional — Drive offers no precondition. */
-export async function driveUpdateFile(accessToken: string, fileId: string, json: string, signal?: AbortSignal): Promise<string> {
+async function driveUpdateFile(accessToken: string, fileId: string, json: string, signal?: AbortSignal): Promise<string> {
   const res = await request(`${UPLOAD}/files/${fileId}?uploadType=media&fields=id,version`, {
     method: 'PATCH',
     headers: { ...auth(accessToken), 'Content-Type': 'application/json' },
@@ -198,6 +198,30 @@ export async function driveFileVersion(accessToken: string, fileId: string, sign
   if (res.status === 404) return null;
   if (!res.ok) await fail('version read', res);
   return (await jsonBody<{ version?: string }>(res)).version ?? null;
+}
+
+/**
+ * Drive's substitute for a conditional write (design §7 step 2), shared by the
+ * hosted and the browser adapter. Drive cannot be told "only if the version is
+ * still X", so ask it what the version is at the last possible moment and
+ * refuse the upload ourselves if it moved. That is a narrower window, not a
+ * closed one: `SyncManager`'s verify-after-write is what catches a writer who
+ * lands between this check and the upload.
+ */
+export async function driveUpdateIfVersion(
+  accessToken: string,
+  fileId: string,
+  json: string,
+  expectedVersion: string | null,
+  signal?: AbortSignal,
+): Promise<string> {
+  const current = await driveFileVersion(accessToken, fileId, signal);
+  if (current !== expectedVersion) {
+    throw new ConflictError(
+      `${PROVIDER} changed since it was read (version ${expectedVersion ?? 'none'} → ${current ?? 'none'})`,
+    );
+  }
+  return driveUpdateFile(accessToken, fileId, json, signal);
 }
 
 /** Download a file's bytes as JSON. Null = the file is gone. */
@@ -257,14 +281,8 @@ export class DriveAdapter implements StorageAdapter {
     return { body, version };
   }
 
-  /**
-   * Steps 2 and 3 of design §7. Drive cannot be told "only if the version is
-   * still X", so we ask it what the version is at the last possible moment and
-   * refuse the write ourselves if it moved. That is a narrower window, not a
-   * closed one: `SyncManager`'s verify-after-write is what actually catches a
-   * writer who landed inside it, and its `ConflictError` sends this whole
-   * method round again.
-   */
+  /** Step 2 of design §7 (`driveUpdateIfVersion`); its `ConflictError` sends
+   *  `SyncManager.save` round again. */
   async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
     const json = JSON.stringify(body);
     const fileId = await this.findFile(fileName, signal);
@@ -283,13 +301,7 @@ export class DriveAdapter implements StorageAdapter {
       return { version: String(created.version ?? '') };
     }
 
-    const current = await driveFileVersion(this.accessToken, fileId, signal);
-    if (current !== expectedVersion) {
-      throw new ConflictError(
-        `${PROVIDER} changed since it was read (version ${expectedVersion ?? 'none'} → ${current ?? 'none'})`,
-      );
-    }
-    return { version: await driveUpdateFile(this.accessToken, fileId, json, signal) };
+    return { version: await driveUpdateIfVersion(this.accessToken, fileId, json, expectedVersion, signal) };
   }
 
   async readDocument(): Promise<Blob> {

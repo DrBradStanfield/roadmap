@@ -766,8 +766,8 @@ export class RoadmapStore {
       now: new Date().toISOString(),
     });
     // A merge always bumps the file's own clock, so the comparison is on the
-    // CONTENT: Drive returns no version, and re-rendering on every poll would
-    // count a change nobody made.
+    // CONTENT, not on a version: re-rendering on every poll would count a
+    // change nobody made.
     if (contentOf(merged) === before) return false;
     // A local edit that landed during the read would be lost by taking the
     // merge — it merged against a copy taken before the edit existed.

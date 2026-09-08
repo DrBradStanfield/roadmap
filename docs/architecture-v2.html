@@ -625,7 +625,7 @@ Chat / uploads → Shopify transport OR Pages BYOK transport</code></pre>
   <path d="M595 100 C595 50, 255 50, 255 98" fill="none" stroke="#dc3545" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#rm)"/>
   <text x="425" y="44" font-size="10" font-weight="600" fill="#b91c1c" text-anchor="middle">ConflictError (stale version) → retry from READ</text>
 </svg>
-<div class="caption">Every write merges against the freshest read. Backends with conditional writes (Dropbox <code>rev</code>, GitHub <code>sha</code>, WebDAV ETag) raise a <code>ConflictError</code> on a stale token and the loop retries. Google Drive has no conditional write, so it degrades to last-write-wins — made safe because the loop always merges the latest read first.</div>
+<div class="caption">Every write merges against the freshest read. Backends with conditional writes (Dropbox <code>rev</code>, GitHub <code>sha</code>, WebDAV ETag) raise a <code>ConflictError</code> on a stale token and the loop retries. Google Drive has no conditional write, so both Drive adapters read the file <code>version</code> before the bytes and re-check it just before the upload, raising <code>ConflictError</code> if it moved; only the one-PATCH check-to-upload gap remains, and verify-after-write catches that.</div>
 </div>
 
 <h2 id="backends">Cloud backends</h2>

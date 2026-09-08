@@ -192,9 +192,10 @@ drstanfield https://mcp.drstanfield.com/mcp`. Either opens a browser once for th
 screen and your cloud provider, then holds the token itself.
 
 Both backends are available: the consent screen offers Dropbox and Google Drive, and the
-choice is sealed into the token. Drive has no conditional write, so the server re-checks
-the file version before and after each save and retries on a conflict; concurrent writers
-there are best-effort. A user revokes a Drive connection at
+choice is sealed into the token. Drive has no conditional write, so both the app and the
+server re-check the file version immediately before each save and verify every row after
+it, retrying on a conflict; concurrent writers there are durable-by-retry, not serialised.
+A user revokes a Drive connection at
 `myaccount.google.com/connections`, a Dropbox one at `dropbox.com/account/connected_apps`.
 
 Six things differ from the local path, and they are differences you will hit:
