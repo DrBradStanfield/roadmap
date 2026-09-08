@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import type { ApiMedication, ApiScreening, HealthResults, Suggestion } from '@roadmap/health-core';
+import React, { useState, useRef, useEffect } from 'react';
+import type { HealthResults, Suggestion } from '@roadmap/health-core';
 import {
   type UnitSystem,
   type MetricType,
@@ -20,49 +20,27 @@ import {
   getProteinEvidence,
   getBmiEvidence,
 } from '@roadmap/health-core';
-import { sendReportEmail, getReportHtml, sendGuestReport, trackABConversion, getABAssignments, getReportEmailCaptured, markReportEmailCaptured, trackProductEvent } from '../lib/api';
+import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured } from '../lib/roadmap-data';
+import { trackABConversion, trackProductEvent } from '../lib/server-api';
 import { EMAIL_REGEX } from '../lib/email';
-import { LOCAL_FIRST, SHOPIFY_SURFACE } from '../lib/build-flags';
+import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ColumnHeader } from './ColumnHeader';
 import { StorageNotice } from '../lib/storage-notice';
 import { FeedbackForm } from './FeedbackForm';
-// @ts-ignore — JSON import for blog post cards
-import blogIndex from '../../../docs/blog/index.json';
-
-const LATEST_BLOG_POSTS = (blogIndex as Array<{ title: string; url: string; tags: string[] }>).slice(0, 3);
-
-// Auth state type (matches HealthTool)
-interface AuthState {
-  isLoggedIn: boolean;
-  loginUrl?: string;
-  accountUrl?: string;
-}
-
 interface ResultsPanelProps {
   results: HealthResults | null;
   isValid: boolean;
-  authState?: AuthState;
-  saveStatus?: 'idle' | 'saving' | 'saved' | 'first-saved' | 'duplicates' | 'error';
-  emailConfirmStatus?: 'idle' | 'sent' | 'error';
   unitSystem: UnitSystem;
   unitOverrides?: Partial<Record<MetricType, UnitSystem>>;
   hasUnsavedLongitudinal?: boolean;
   onSaveLongitudinal?: () => Promise<void>;
-  isSavingLongitudinal?: boolean;
   onDeleteData?: () => void;
   isDeleting?: boolean;
-  redirectFailed?: boolean;
   sex?: 'male' | 'female';
-  guestReportData?: {
-    inputs: Record<string, unknown>;
-    medications?: readonly ApiMedication[];
-    screenings?: readonly ApiScreening[];
-  };
+  showEmailCapture?: boolean;
   formStage?: number;
-  /** Standalone-only: replaces the Shopify AccountStatus block with the
-   *  local-first sync control. undefined on the live widget (AccountStatus
-   *  shows). Render-prop: receives whether the user has entered real data,
-   *  so the "choose where to save" pitch can stay hidden for brand-new users. */
+  /** Cloud connection controls shared by Shopify and Pages. Hidden for new users
+   *  until they have entered real data. */
   syncControl?: (ctx: { hasData: boolean }) => React.ReactNode;
   /** The local-first email-reminders section (US-17), rendered as its own block
    *  lower in the plan — not bolted onto the sync line at the top. */
@@ -319,80 +297,7 @@ function renderGroupedSuggestions(suggestions: Suggestion[], highlightedIds?: Se
   return elements;
 }
 
-function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, redirectFailed }: {
-  authState?: AuthState;
-  saveStatus?: string;
-  emailConfirmStatus?: 'idle' | 'sent' | 'error';
-  hasUnsavedLongitudinal?: boolean;
-  onSaveLongitudinal?: () => Promise<void>;
-  isSavingLongitudinal?: boolean;
-  redirectFailed?: boolean;
-}) {
-  if (!authState) return null;
-
-  if (authState.isLoggedIn) {
-    const statusText = saveStatus === 'saving' ? 'Saving...'
-      : saveStatus === 'first-saved' ? '✓ Saved'
-      : saveStatus === 'saved' ? '✓ Saved'
-      : saveStatus === 'duplicates' ? '✓ Already saved'
-      : saveStatus === 'error' ? 'Failed to save'
-      : 'Data synced';
-    const statusClass = saveStatus === 'error' ? 'error' : saveStatus === 'saving' ? 'saving' : 'idle';
-
-    return (
-      <div className="account-status logged-in">
-        <div className="account-status-row">
-          <span className="account-info-inline">
-            <span className="account-icon">👤</span>
-            <a
-              href={authState.accountUrl || '/account'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="logged-in-link"
-            >Logged in</a> · <span className={`save-indicator-inline ${statusClass}`}>{statusText}</span>
-          </span>
-        </div>
-        {emailConfirmStatus === 'sent' && (
-          <div className="email-confirm-message">✓ Check your email for your health report!</div>
-        )}
-        {emailConfirmStatus === 'error' && (
-          <div className="email-confirm-message email-confirm-error">Sending your summary email failed. Please contact brad@drstanfield.com for help.</div>
-        )}
-        {hasUnsavedLongitudinal && onSaveLongitudinal && (
-          <button
-            className="btn-primary save-top-btn"
-            onClick={onSaveLongitudinal}
-            disabled={isSavingLongitudinal}
-          >
-            {isSavingLongitudinal ? 'Saving...' : 'Save New Values'}
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  if (redirectFailed) {
-    return (
-      <a href={authState.loginUrl || "/account/login"} className="guest-cta no-print">
-        <div className="guest-cta-text">
-          <strong>Welcome back</strong>
-          <span>Sign in to access your saved data and health history.</span>
-        </div>
-        <span className="guest-cta-btn">Sign In</span>
-      </a>
-    );
-  }
-
-  return null; // Guest email capture is rendered separately via GuestEmailCapture
-}
-
-type GuestEmailState = 'idle' | 'sending' | 'prompt-account' | 'blog-posts' | 'captured';
-
-// DEAD on all live surfaces: every shipped build sets VITE_LOCAL_FIRST='true'
-// (shopify-prod + standalone/pages), so LOCAL_FIRST_EMAIL_HELPER is always used
-// and this DEFAULT + getEmailHelperText() A/B path never renders. Kept accurate
-// (the capture saves the plan as a PDF — there is no email delivery).
-export const DEFAULT_EMAIL_HELPER = 'Get a PDF of your personalized plan, with detailed explanations and clinical references for every suggestion.';
+type GuestEmailState = 'idle' | 'sending' | 'captured';
 
 // On local-first the capture button DELIVERS the plan by opening the browser
 // save-as-PDF window; the email field only subscribes to Klaviyo (no plan is
@@ -415,37 +320,25 @@ function openPrintWindow(html: string): boolean {
   return true;
 }
 
-function getEmailHelperText(): string {
-  const assignments = getABAssignments();
-  for (const [testId, variantId] of Object.entries(assignments)) {
-    const el = document.querySelector(`.ab-email-helper[data-variant="${variantId}"][data-test="${testId}"]`);
-    if (el?.textContent) return el.textContent;
-  }
-  return DEFAULT_EMAIL_HELPER;
-}
-
-type GuestReportData = { inputs: Record<string, unknown>; medications?: readonly ApiMedication[]; screenings?: readonly ApiScreening[] };
-
 interface GuestEmailHook {
   email: string;
   setEmail: (v: string) => void;
   emailError: string;
   setEmailError: (v: string) => void;
   state: GuestEmailState;
-  setState: (s: GuestEmailState) => void;
   helperText: string;
   handleSubmit: () => void;
 }
 
-function useGuestEmailCapture(guestReportData: GuestReportData): GuestEmailHook {
+function useGuestEmailCapture(): GuestEmailHook {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   // Returning local-first users who already captured: skip the email box and
   // land straight on the "Save as PDF" view (the flag lives in their own cloud).
   const [state, setState] = useState<GuestEmailState>(
-    () => (LOCAL_FIRST && getReportEmailCaptured() ? 'captured' : 'idle'),
+    () => (getReportEmailCaptured() ? 'captured' : 'idle'),
   );
-  const helperText = useMemo(() => (LOCAL_FIRST ? LOCAL_FIRST_EMAIL_HELPER : getEmailHelperText()), []);
+  const helperText = LOCAL_FIRST_EMAIL_HELPER;
 
   const handleSubmit = async () => {
     const trimmed = email.trim();
@@ -460,85 +353,38 @@ function useGuestEmailCapture(guestReportData: GuestReportData): GuestEmailHook 
     // FIRST (it builds client-side, so this stays inside the click's user
     // activation; opening after the network await would trip popup blockers),
     // then subscribe the email to Klaviyo in the background (no plan is emailed).
-    if (LOCAL_FIRST) {
-      const report = await getReportHtml();
-      if (report.success && report.html) openPrintWindow(report.html);
-    }
+    const report = await getReportHtml();
+    if (report.success && report.html) openPrintWindow(report.html);
 
-    const result = await sendGuestReport(
-      trimmed,
-      guestReportData.inputs,
-      guestReportData.medications,
-      guestReportData.screenings,
-    );
+    const result = await sendGuestReport(trimmed);
 
     if (result.success) {
       trackABConversion();
       // Local-first: the PDF window already opened (the delivery). Persist the
       // captured flag to the user's own cloud and switch to the "Save as PDF"
       // view — no email box on return, nothing extra (no articles screen).
-      if (LOCAL_FIRST) {
-        markReportEmailCaptured();
-        setState('captured');
-      } else {
-        setState('prompt-account');
-      }
+      markReportEmailCaptured();
+      setState('captured');
     } else {
       setEmailError(result.error || 'Failed to send. Please try again.');
       setState('idle');
     }
   };
 
-  return { email, setEmail, emailError, setEmailError, state, setState, helperText, handleSubmit };
+  return { email, setEmail, emailError, setEmailError, state, helperText, handleSubmit };
 }
 
-export function GuestEmailCapture({ hook, loginUrl, formStage }: {
+export function GuestEmailCapture({ hook, formStage }: {
   hook: GuestEmailHook;
-  loginUrl?: string;
   formStage?: number;
 }) {
-  const { email, setEmail, emailError, setEmailError, state, setState, helperText, handleSubmit } = hook;
+  const { email, setEmail, emailError, setEmailError, state, helperText, handleSubmit } = hook;
 
   if (state === 'captured') {
     // Already captured (this submit, or a prior visit via the persisted flag):
     // the email box is gone and nothing renders here. The ungated "Save as PDF"
     // button lives inline in the "Your plan…" header (planHeaderMeta) instead.
     return null;
-  }
-
-  if (state === 'prompt-account') {
-    // DEAD on all live surfaces: only the non-LOCAL_FIRST path reaches this state
-    // (LOCAL_FIRST routes success to 'captured'), and every shipped build is
-    // LOCAL_FIRST. Copy kept accurate — the plan is saved as a PDF, not emailed.
-    return (
-      <div className="email-capture no-print">
-        <div className="email-capture-success">
-          <strong>Your personalized health plan is ready to save as a PDF.</strong>
-        </div>
-        <div className="email-capture-account-prompt">
-          <p>Want to save your data and track changes over time?</p>
-          <a href={loginUrl || '/account/login'} className="btn-primary email-capture-account-btn">Create Free Account</a>
-          <button type="button" className="email-capture-dismiss" onClick={() => setState('blog-posts')}>Maybe later</button>
-        </div>
-      </div>
-    );
-  }
-
-  if (state === 'blog-posts') {
-    return (
-      <div className="email-capture no-print">
-        <div className="email-capture-blog-posts">
-          <strong>Latest articles</strong>
-          {LATEST_BLOG_POSTS.map(post => (
-            <a key={post.url} href={post.url} className="blog-post-card" target="_blank" rel="noopener noreferrer">
-              <span className="blog-post-title">{post.title}</span>
-              {post.tags?.[0] && <span className="blog-post-tag">{post.tags[0]}</span>}
-            </a>
-          ))}
-        </div>
-        <button type="button" className="email-capture-dismiss" onClick={() => setState('idle')}>Send to another email</button>
-      </div>
-    );
   }
 
   return (
@@ -576,7 +422,7 @@ export function GuestEmailCapture({ hook, loginUrl, formStage }: {
   );
 }
 
-export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, sex, guestReportData, formStage, syncControl, remindersSection }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, sex, showEmailCapture, formStage, syncControl, remindersSection }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -586,25 +432,12 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
   const fadeOutTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Report actions state (shared between top and bottom buttons)
-  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [printStatus, setPrintStatus] = useState<'idle' | 'loading' | 'error'>('idle');
-
-  const handleEmailReport = async () => {
-    if (emailStatus === 'sending') return;
-    setEmailStatus('sending');
-    // Save any unsaved longitudinal values first so the server has the same data
-    if (hasUnsavedLongitudinal && onSaveLongitudinal) {
-      try { await onSaveLongitudinal(); } catch { /* proceed with saved data */ }
-    }
-    const result = await sendReportEmail();
-    setEmailStatus(result.success ? 'sent' : 'error');
-    setTimeout(() => setEmailStatus('idle'), 3000);
-  };
 
   const handlePrint = async () => {
     if (printStatus === 'loading') return;
     setPrintStatus('loading');
-    // Save any unsaved longitudinal values first so the server has the same data
+    // Include pending longitudinal values in the locally generated report.
     if (hasUnsavedLongitudinal && onSaveLongitudinal) {
       try { await onSaveLongitudinal(); } catch { /* proceed with saved data */ }
     }
@@ -682,13 +515,13 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
   }, [results?.suggestions]);
 
   // Shared state for guest email capture (top + bottom instances stay in sync)
-  const guestEmailHook = useGuestEmailCapture(guestReportData ?? { inputs: {} });
+  const guestEmailHook = useGuestEmailCapture();
 
   if (!isValid || !results) {
     return (
       <div className="health-results-panel">
         <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={null} muted />
-        {syncControl ? syncControl({ hasData: false }) : <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />}
+        {syncControl?.({ hasData: false })}
         <div className="plan-empty-preview">
           <p className="plan-empty-intro">
             <strong>Here's what your plan will look like.</strong> Real suggestions appear once you fill in your details.
@@ -736,29 +569,19 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
   const supplementSuggestions = results.suggestions.filter(s => s.category === 'supplements');
   const skinSuggestions = results.suggestions.filter(s => s.category === 'skin');
 
-  const emailLabel = emailStatus === 'sending' ? 'Sending...'
-    : emailStatus === 'sent' ? 'Sent!'
-    : emailStatus === 'error' ? 'Failed'
-    : 'Email';
   const printLabel = printStatus === 'loading' ? 'Loading...'
     : printStatus === 'error' ? 'Failed'
-    : LOCAL_FIRST ? 'Save as PDF'
-    : 'Print';
+    : 'Save as PDF';
 
   // Report actions: on the Shopify v2 surface the email-capture button IS the
   // PDF path (gated behind the email — Brad), so no standalone buttons. Pages
   // keeps an ungated Save-as-PDF; the mailto "Email Report" is gone on both v2
   // surfaces (degraded plain-text self-compose — the capture email is better).
-  const planHeaderMeta = authState?.isLoggedIn && !SHOPIFY_SURFACE ? (
+  const planHeaderMeta = !SHOPIFY_SURFACE ? (
     <>
-      <button type="button" className="action-btn-small no-print" onClick={handlePrint} disabled={printStatus === 'loading'} title={LOCAL_FIRST ? 'Save your plan as a PDF' : 'Print report'}>
+      <button type="button" className="action-btn-small no-print" onClick={handlePrint} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
         {printLabel}
       </button>
-      {!LOCAL_FIRST && (
-        <button type="button" className="action-btn-small no-print" onClick={handleEmailReport} disabled={emailStatus === 'sending'} title="Email report to yourself">
-          {emailLabel}
-        </button>
-      )}
     </>
   ) : (SHOPIFY_SURFACE && guestEmailHook.state === 'captured') ? (
     // Shopify v2, post-capture: the email box is gone; the ungated Save-as-PDF
@@ -771,9 +594,9 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
   return (
     <div className="health-results-panel">
       <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={planHeaderMeta} />
-      {/* Account Status */}
-      {syncControl ? syncControl({ hasData: true }) : <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />}
-      {guestReportData && <GuestEmailCapture hook={guestEmailHook} loginUrl={authState?.loginUrl} formStage={formStage} />}
+      {/* Cloud connection */}
+      {syncControl?.({ hasData: true })}
+      {showEmailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} />}
 
       {/* Quick Stats */}
       <section className="quick-stats">
@@ -876,18 +699,13 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
 
       {/* Health Records — documents from uploads */}
 
-      {/* Report Actions (bottom) — logged-in users only. Hidden on the Shopify
+      {/* Report Actions (bottom). Hidden on the Shopify
           v2 surface (the email-capture button is the PDF path there). */}
-      {authState?.isLoggedIn && !SHOPIFY_SURFACE && (
+      {!SHOPIFY_SURFACE && (
         <div className="report-actions no-print">
           <button type="button" className="action-btn" onClick={handlePrint} disabled={printStatus === 'loading'}>
-            {printStatus === 'loading' ? 'Loading...' : printStatus === 'error' ? 'Failed' : LOCAL_FIRST ? 'Save as PDF' : 'Print Report'}
+            {printStatus === 'loading' ? 'Loading...' : printStatus === 'error' ? 'Failed' : 'Save as PDF'}
           </button>
-          {!LOCAL_FIRST && (
-            <button type="button" className="action-btn" onClick={handleEmailReport} disabled={emailStatus === 'sending'}>
-              {emailStatus === 'sending' ? 'Sending...' : emailStatus === 'sent' ? 'Sent!' : emailStatus === 'error' ? 'Failed' : 'Email Report'}
-            </button>
-          )}
         </div>
       )}
 
@@ -906,11 +724,11 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
           unreachable (deleted 2026-08-13). */}
       {remindersSection}
 
-      {guestReportData && <GuestEmailCapture hook={guestEmailHook} loginUrl={authState?.loginUrl} />}
+      {showEmailCapture && <GuestEmailCapture hook={guestEmailHook} />}
 
       <FeedbackForm />
 
-      {authState?.isLoggedIn && onDeleteData && (
+      {onDeleteData && (
         <div className="delete-data-section">
           <button
             className="delete-data-link"

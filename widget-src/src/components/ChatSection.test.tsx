@@ -17,7 +17,7 @@ import { render, fireEvent } from '@testing-library/react';
 const trackProductEvent = vi.fn();
 const loadConversationsIfNeeded = vi.fn();
 
-vi.mock('../lib/api', () => ({ trackProductEvent: (...a: unknown[]) => trackProductEvent(...a) }));
+vi.mock('../lib/server-api', () => ({ trackProductEvent: (...a: unknown[]) => trackProductEvent(...a) }));
 vi.mock('../lib/chat-api', () => ({ getChatGate: () => null }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
 vi.mock('./ChatKeyGate', () => ({ ChatKeyGate: () => null }));

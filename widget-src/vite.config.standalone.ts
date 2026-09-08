@@ -15,28 +15,20 @@ try {
   /* not a git checkout */
 }
 
-const SHIM = resolve(__dirname, 'src/lib/roadmap-data.ts');
-const REAL_API = /\/widget-src\/src\/lib\/api\.ts$/;
 const BYOK_CHAT = resolve(__dirname, 'src/lib/byok-chat.ts');
 const REAL_CHAT_API = /\/widget-src\/src\/lib\/chat-api\.ts$/;
 const BYOK_UPLOAD = resolve(__dirname, 'src/lib/byok-upload.ts');
 const REAL_UPLOAD_API = /\/widget-src\/src\/lib\/upload-api\.ts$/;
 
-/**
- * Redirect every import that resolves to `src/lib/api.ts` to the local-first
- * shim — EXCEPT the shim's own `export * from './api'`. This swaps the data
- * layer for the standalone build only; the live Shopify widget's source is
- * untouched (it keeps using the real api.ts), so it can't break before cutover.
- */
-function redirectApiToLocalFirst(): Plugin {
+/** Only AI transports vary: Pages calls the model using the user’s own key. */
+function redirectAiToByok(): Plugin {
   return {
-    name: 'redirect-api-to-local-first',
+    name: 'redirect-ai-to-byok',
     enforce: 'pre',
     async resolveId(source, importer, options) {
       if (!importer) return null;
       const resolved = await this.resolve(source, importer, { ...options, skipSelf: true });
       if (!resolved) return null;
-      if (REAL_API.test(resolved.id) && !importer.includes('/lib/roadmap-data')) return SHIM;
       // Same swap for the chat transport: chat-api.ts (Shopify proxy) →
       // byok-chat.ts (direct browser → Anthropic with the user's own key).
       if (REAL_CHAT_API.test(resolved.id) && !importer.includes('/lib/byok-chat')) return BYOK_CHAT;
@@ -51,7 +43,7 @@ function redirectApiToLocalFirst(): Plugin {
 export default defineConfig(({ command }) => ({
   base: process.env.VITE_BASE ?? '/roadmap/',
   root: resolve(__dirname, 'standalone'),
-  plugins: [redirectApiToLocalFirst(), react()],
+  plugins: [redirectAiToByok(), react()],
   // Local dev server (`npm run dev:pages`) for rapid iteration with HMR. Port is
   // pinned + strict so the Dropbox OAuth redirect URI stays stable at
   // http://localhost:5173/roadmap/ — register that in the Dropbox app's list.

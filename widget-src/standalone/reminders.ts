@@ -31,7 +31,7 @@ import {
   setReminderOptIn,
 } from '../src/lib/roadmap-data';
 import { DropboxAdapter, GitHubAdapter, GoogleDriveAdapter } from '../src/storage';
-import { trackProductEvent } from '../src/lib/api';
+import { trackProductEvent } from '../src/lib/server-api';
 import { SHOPIFY_SURFACE } from '../src/lib/build-flags';
 import { safeGetItem, safeSetItem } from '../src/lib/storage';
 import { Sentry } from '../src/lib/sentry';

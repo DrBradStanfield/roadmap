@@ -194,7 +194,7 @@ export async function classifyMessage(
       Sentry.captureMessage('Chat classifier: unparseable output', {
         level: 'warning',
         tags: { feature: 'chat', subsystem: 'classifier' },
-        extra: { raw, latencyMs },
+        extra: { latencyMs },
       });
     }
 

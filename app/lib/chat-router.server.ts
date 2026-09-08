@@ -8,10 +8,10 @@
  *
  * Separate from chat.server.ts for single-responsibility and testability.
  */
+import * as Sentry from '@sentry/react-router';
 import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
-import * as Sentry from '@sentry/react-router';
 import { callAnthropicWithUsage, extractJsonObject, type AnthropicUsage } from './anthropic.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 
@@ -338,3 +338,13 @@ export async function routeQuery(
   }
 }
 
+
+/** Web-route telemetry excludes the raw parsing error kept in the result. */
+export function reportRouterFailure(result: RouterResult | null): void {
+  if (!result?.error) return;
+  Sentry.captureMessage('Router: request or output failure', {
+    level: 'warning',
+    tags: { feature: 'chat', subsystem: 'router' },
+    extra: { latencyMs: result.latencyMs, cacheHit: result.cacheHit },
+  });
+}

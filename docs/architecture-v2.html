@@ -514,7 +514,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
       <td><a class="file-link" href="../widget-src/vite.config.shopify-prod.ts">vite.config.shopify-prod.ts</a> (+ upload build)</td>
       <td><code>LOCAL_FIRST</code> + <code>SHOPIFY_SURFACE</code></td>
       <td><code>health-plan-v2.js</code> + lazy <code>…-HistoryPanel.js</code> + <code>.css</code> → extension assets</td>
-      <td><strong>only</strong> <code>api.ts → roadmap-data.ts</code></td>
+      <td>None; explicit local data imports</td>
     </tr>
     <tr>
       <td><strong>GitHub Pages / self-host</strong></td>
@@ -522,7 +522,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
       <td><a class="file-link" href="../widget-src/vite.config.standalone.ts">vite.config.standalone.ts</a> (+ upload build)</td>
       <td><code>LOCAL_FIRST</code> only</td>
       <td><code>dist-pages/</code>, base <code>/roadmap/</code>, sourcemaps on</td>
-      <td><code>api.ts→roadmap-data.ts</code>, <code>chat-api.ts→byok-chat.ts</code>, <code>upload-api.ts→byok-upload.ts</code></td>
+      <td><code>chat-api.ts→byok-chat.ts</code>, <code>upload-api.ts→byok-upload.ts</code></td>
     </tr>
     <tr>
       <td><strong>Legacy v1</strong> <span class="pill gray">RETIRED 2026-06-15</span></td>
@@ -536,53 +536,19 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 </table>
 
 <div class="callout">
-  <strong>Two corrections vs the older docs.</strong> (1) There is no <code>vite.config.pages.ts</code> — the Pages config is <code>vite.config.standalone.ts</code>, and <code>build:pages</code>/<code>build:shopify-prod</code> live in the <em>root</em> <code>package.json</code>, not <code>widget-src/</code>. (2) The Shopify prod build swaps <strong>only the storage module</strong>; its chat and upload still go through Brad's server (<code>chat-api.ts</code> / <code>upload-api.ts</code> → app proxy). The three-swap set is the <em>Pages</em> build, where AI is BYOK.
+  <strong>Build ownership.</strong> The Pages config is <code>vite.config.standalone.ts</code>; build commands live in the root package. Shopify uses Brad's chat/upload transports. Pages replaces only those AI transports with BYOK; no build substitutes the health-record data module.
 </div>
 <div class="callout">
-  <strong>Flag semantics.</strong> <code>LOCAL_FIRST</code> is true on both v2 builds: the plan lives client-side, "logged in" is just storage UX, chat sends the plan as context, and legacy login-sync server calls are neutralized by the shim. <code>SHOPIFY_SURFACE</code> is true on the <em>Shopify-prod build</em> (the bundle served by both storefronts, drstanfield.com + microvitamin.com) and never on Pages: it gates features that need Brad's server (the guest report-email/Klaviyo capture). Both v2 builds redirect <code>lib/api → roadmap-data.ts</code>; the now-retired legacy v1 build saw both flags as false and used <code>api.ts</code>'s fetch functions directly.
+  <strong>Flag semantics.</strong> <code>LOCAL_FIRST</code> tells the shared chat transport that health context comes from the browser. <code>SHOPIFY_SURFACE</code> gates Brad-server features such as email capture and product events. The main data layer is local-first on both builds without a flag or module substitution. Account-era form and report branches have been removed.
 </div>
 
-<h2 id="module-swap">The module-swap mechanism</h2>
-<p>The whole local-first transformation rides on a Vite <code>resolveId</code> redirect: when any module imports <code>./api</code>, the build rewrites it to <code>./roadmap-data</code>. The replacement keeps an <em>identical export surface</em>, so the ~40 call sites in <code>HealthTool.tsx</code> never changed.</p>
-
-<div class="diagram">
-<svg viewBox="0 0 1040 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Module swap">
-  <defs><marker id="ms" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#666"/></marker></defs>
-  <rect x="20" y="120" width="180" height="60" rx="8" fill="#f0f9f7" stroke="#00a38b"/>
-  <text x="110" y="146" font-size="12" font-weight="600" text-anchor="middle" fill="#111">Components import</text>
-  <text x="110" y="164" font-size="12" text-anchor="middle" fill="#b91c1c">./api</text>
-
-  <rect x="300" y="60" width="220" height="70" rx="8" fill="#fff" stroke="#bbb"/>
-  <text x="410" y="86" font-size="12" font-weight="600" text-anchor="middle" fill="#111">v1 build: resolves to api.ts</text>
-  <text x="410" y="104" font-size="10" text-anchor="middle" fill="#666">app-proxy fetches (or no-op stubs)</text>
-  <text x="410" y="119" font-size="10" text-anchor="middle" fill="#666">Supabase-backed CRUD</text>
-
-  <rect x="300" y="170" width="220" height="80" rx="8" fill="#ecfdf5" stroke="#16a34a"/>
-  <text x="410" y="194" font-size="12" font-weight="600" text-anchor="middle" fill="#111">v2 build: resolveId → roadmap-data.ts</text>
-  <text x="410" y="212" font-size="10" text-anchor="middle" fill="#444">export * from './api'</text>
-  <text x="410" y="227" font-size="10" text-anchor="middle" fill="#444">then shadow with RoadmapStore versions</text>
-  <text x="410" y="242" font-size="10" text-anchor="middle" fill="#444">+ sendGuestReport → {klaviyoCapture}</text>
-
-  <rect x="600" y="170" width="200" height="80" rx="8" fill="#f0f9f7" stroke="#00a38b"/>
-  <text x="700" y="196" font-size="12" font-weight="600" text-anchor="middle" fill="#111">RoadmapStore</text>
-  <text x="700" y="214" font-size="10" text-anchor="middle" fill="#666">SyncManager + RoadmapFile</text>
-  <text x="700" y="229" font-size="10" text-anchor="middle" fill="#666">reuses mappings.ts</text>
-
-  <rect x="840" y="60" width="190" height="70" rx="8" fill="#fef2f2" stroke="#dc3545"/>
-  <text x="935" y="84" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Pages build also swaps</text>
-  <text x="935" y="101" font-size="10" text-anchor="middle" fill="#666">chat-api → byok-chat</text>
-  <text x="935" y="116" font-size="10" text-anchor="middle" fill="#666">upload-api → byok-upload</text>
-
-  <line x1="200" y1="150" x2="296" y2="95" stroke="#666" stroke-width="1.6" marker-end="url(#ms)"/>
-  <text x="240" y="118" font-size="9" fill="#666">v1</text>
-  <line x1="200" y1="155" x2="296" y2="205" stroke="#16a34a" stroke-width="2" marker-end="url(#ms)"/>
-  <text x="240" y="190" font-size="9" font-weight="600" fill="#16a34a">v2</text>
-  <line x1="520" y1="210" x2="596" y2="210" stroke="#666" stroke-width="1.6" marker-end="url(#ms)"/>
-</svg>
-<div class="caption">A local export of the same name shadows the <code>export *</code> re-export, so the shim overrides exactly the functions it needs (reads, writes, lifecycle, lead-capture) and inherits the rest. The Pages build adds two more swaps for the BYOK AI transports.</div>
-</div>
-
-<p><strong>What the shim (<a class="file-link" href="../widget-src/src/lib/roadmap-data.ts">roadmap-data.ts</a>) overrides:</strong> lifecycle (<code>initRoadmapStore</code>, <code>flushRoadmapStore[Sync]</code>); all reads (<code>loadLatestMeasurements</code>, <code>loadAllHistory</code>, <code>loadLabValues</code>, <code>getHealthDocuments</code>, …) and writes (<code>addMeasurement</code>, <code>correctMeasurement</code>, <code>saveMedication</code>, <code>saveScreening</code>, <code>bulkSaveLabValues</code>, <code>deleteUserData</code>, …) against the file; reminders (<code>getReminderOptIn</code>, <code>computeCurrentReminderSchedule</code>); lead capture (<code>getReportEmailCaptured</code>, <code>markReportEmailCaptured</code>); and the report actions — <code>getReportHtml</code> (client-side print) and <code>sendGuestReport(email,…)</code>, which POSTs <strong>only</strong> <code>{klaviyoCapture:{email}}</code> and ignores the health-data arguments. <code>sendWelcomeEmail</code> is a no-op; the mailto "Email Report" path is stubbed.</p>
+<h2 id="module-swap">Explicit data imports; Pages-only AI transport swaps</h2>
+<p>Every health-record caller imports <a class="file-link" href="../widget-src/src/lib/roadmap-data.ts">roadmap-data.ts</a> directly. TypeScript checks the same data API that the bundle executes. The retired server CRUD implementation and its Vite redirect were removed on 2026-09-07.</p>
+<pre><code>Health UI → roadmap-data.ts → RoadmapStore → SyncManager → user's storage
+Feedback / tracking → server-api.ts → Shopify app proxy
+Chat / uploads → Shopify transport OR Pages BYOK transport</code></pre>
+<p>The local data module owns reads, writes, record lifecycle, reminder schedule computation and client-side report generation. Its Shopify-only <code>sendGuestReport(email)</code> submits the address and computed reminder calendar, never health measurements. <a class="file-link" href="../widget-src/src/lib/server-api.ts">server-api.ts</a> owns proxy parsing, feedback and A/B/product tracking. <code>document-format.ts</code> owns display labels and date formatting.</p>
+<p>Only the Pages build redirects <code>chat-api.ts → byok-chat.ts</code> and <code>upload-api.ts → byok-upload.ts</code>. Both builds use the same explicit local record API.</p>
 
 <h2 id="storage">Local-first storage spine</h2>
 <p>Three layers: a pure data model + merge engine in <code>health-core</code> (so CI exercises the correctness-critical code), a browser I/O shell in <code>widget-src/src/storage/</code>, and one store the UI talks to.</p>
@@ -631,7 +597,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 </ul>
 
 <h3>The store + sync</h3>
-<p><a class="file-link" href="../widget-src/src/storage/roadmap-store.ts">RoadmapStore</a> mirrors the old <code>api.ts</code> surface so the UI is oblivious to the swap, and adds local-first specifics: <code>getPrefillInputs()</code> (synchronous profile seed so a returning user's "Starting Info" renders collapsed on first paint), <code>getReportEmailCaptured()/markReportEmailCaptured()</code>, <code>getReminderOptIn/setReminderOptIn/computeReminderScheduleNow</code>, and <code>flush()/flushSync()</code>. <code>app.tsx</code> awaits <code>initRoadmapStore</code> before render.</p>
+<p><a class="file-link" href="../widget-src/src/storage/roadmap-store.ts">RoadmapStore</a> owns the local record operations exposed by <code>roadmap-data.ts</code>, including: <code>getPrefillInputs()</code> (synchronous profile seed so a returning user's "Starting Info" renders collapsed on first paint), <code>getReportEmailCaptured()/markReportEmailCaptured()</code>, <code>getReminderOptIn/setReminderOptIn/computeReminderScheduleNow</code>, and <code>flush()/flushSync()</code>. <code>app.tsx</code> awaits <code>initRoadmapStore</code> before render.</p>
 <p>The <a class="file-link" href="../packages/health-core/src/sync-manager.ts">SyncManager</a> runs one optimistic-concurrency loop per named document — <code>health-roadmap.json</code> and <code>chat-history.json</code> ride the same loop via injected <code>DocumentSpec</code>s (filename + migrate + merge). After every write it re-reads and confirms the file parses and <code>lamport</code> hasn't regressed — catching half-writes and corruption at the cost of one extra read per save (invisible on an app used a few times a year).</p>
 
 <h2 id="merge">Merge &amp; conflict model</h2>
@@ -1010,7 +976,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
     <ul>
       <li>The <strong>same Supabase project</strong>, Anthropic key, and chatbot knowledge files — the chatbot's knowledge base is store-agnostic, so it works on the education store unchanged.</li>
       <li>The <strong>same Postgres session store</strong> (<code>SESSION_DATABASE_URL</code> is identical on both Fly apps), so each store's offline OAuth session (<code>offline_&lt;shop&gt;</code> row in <code>shopify_sessions</code>) lives in one table. <code>unauthenticated.admin(domain)</code> resolves the right token by shop domain.</li>
-      <li>The <strong>app-proxy subpath</strong> <code>/apps/health-tool-1</code> is <em>reused</em>, so the existing widget build — which hardcodes <code>PROXY_PATH = '/apps/health-tool-1'</code> in <code><a class="file-link" href="../widget-src/src/lib/api.ts">widget-src/src/lib/api.ts</a></code> — works on the edu store with no rebuild.</li>
+      <li>The <strong>app-proxy subpath</strong> <code>/apps/health-tool-1</code> is <em>reused</em>, so the existing widget build — which hardcodes <code>PROXY_PATH = '/apps/health-tool-1'</code> in <code><a class="file-link" href="../widget-src/src/lib/server-api.ts">widget-src/src/lib/server-api.ts</a></code> — works on the edu store with no rebuild.</li>
     </ul>
   </div>
 </div>
@@ -1051,7 +1017,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 <details>
   <summary>Client &amp; Shopify</summary>
   <ul>
-    <li><code>sync-embed.liquid</code> deleted (its background guest→Supabase sync is meaningless when there's no Supabase health store). Its companion <code>health_roadmap_authenticated</code> localStorage flag was <strong>not</strong> removed: <code>HealthTool.tsx</code> (shared source, both v2 builds) still <em>sets</em> it whenever the data layer reports saved data (<code>setAuthenticatedFlag()</code> after <code>loadLatestMeasurements()</code>). On the v2 surfaces the flag is now purely write-only — <code>data-logged-in="true"</code> is hardcoded, so the flag-reading branches (<code>redirectFailed</code>, stale-cache clearing) can't fire, and the prefill read is behind the <code>LOCAL_FIRST</code> early-return. With the legacy <code>health-tool.js</code> bundle retired (2026-06-15), <strong>no live build reads it at all</strong> — the writes are dead-but-harmless. The former <code>history-block.liquid</code> reader was removed on 2026-06-14 (next bullet).</li>
+    <li><code>sync-embed.liquid</code> deleted (its background guest→Supabase sync is meaningless when there's no Supabase health store). Its companion <code>health_roadmap_authenticated</code> localStorage flag followed on 2026-09-07: <code>setAuthenticatedFlag()</code> and the flag-reading branches were deleted from <code>HealthTool.tsx</code> (nothing read it once <code>data-logged-in="true"</code> was hardcoded and the legacy <code>health-tool.js</code> bundle retired on 2026-06-15). The former <code>history-block.liquid</code> reader was removed on 2026-06-14 (next bullet).</li>
     <li>The separate dev Shopify app (<code>shopify.app.dev.toml</code>, <code>899d91…</code>) and <code>extensions-dev/</code> deleted; <code>/pages/test</code> removed.</li>
     <li>The <strong>customer-account UI extension</strong> (<code>extensions/health-roadmap-link/</code>) is removed from the codebase (production included). The customer-account surface is now <strong>just a link in the customer-account header</strong> (a menu link), not a UI extension — the same destination with none of the extension build/deploy surface.</li>
     <li>Legacy <code>health-tool.js</code> was <strong>retired and deleted on 2026-06-15</strong> — bundle, entry (<code>src/index.tsx</code>), and vite config (<code>vite.config.ts</code>) all removed; <code>build:widget</code> no longer produces it (it now builds only the upload/site-chat/chatbot side bundles). Its backend was already gone, so it was a frozen, data-less zombie — no working rollback. The standalone <code>health-history.js</code> bundle and its <code>history-block.liquid</code> mount were <strong>deleted</strong> earlier, on 2026-06-14, when Brad removed the <code>/pages/health-history</code> page from Shopify production — that page was the last live consumer of the <code>health_roadmap_authenticated</code> auto-redirect, so the redirect path is now unreachable in production. The in-widget history view survives as a lazy chunk of the v2 build (<code>HistoryPanel</code> opened via <code>openHistoryLightbox</code>), independent of the deleted page bundle.</li>

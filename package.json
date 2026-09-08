@@ -21,6 +21,7 @@
     "vite": "vite",
     "check:symlinks": "node scripts/check-symlinks.mjs",
     "test": "npm run check:symlinks && npm run test:core && npm run test:server",
+    "typecheck:server": "tsc --noEmit -p tsconfig.server.json",
     "test:all": "vitest run",
     "test:core": "npm run test --workspace=@roadmap/health-core",
     "test:server": "vitest run app/lib",

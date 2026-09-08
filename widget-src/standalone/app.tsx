@@ -1,9 +1,8 @@
 /**
  * Standalone (GitHub Pages / self-host) entry for the full Health Roadmap app.
  *
- * Same React tree as the Shopify widget, but the data layer is local-first: the
- * Vite redirect (vite.config.standalone.ts) points the app's `lib/api` imports
- * at the RoadmapStore shim. This entry resolves which backend to use (a returning
+ * Shared entry for Shopify and Pages, using the local-first RoadmapStore.
+ * This entry resolves which backend to use (a returning
  * Dropbox OAuth redirect, a remembered choice, else the on-device tier),
  * initialises the store, and renders the connect-a-cloud control inside the plan.
  */
@@ -32,7 +31,7 @@ import { SyncControl, RemindersSection } from './sync-control';
 import { StorageNoticeContext } from '../src/lib/storage-notice';
 import { HistoryLightboxHost } from './history-lightbox';
 import { liftLocalInto, storageState, BACKEND_KEY, type Backend } from './connect';
-import { trackProductEvent } from '../src/lib/api';
+import { trackProductEvent } from '../src/lib/server-api';
 
 interface ResolvedBackend {
   adapter: StorageAdapter;

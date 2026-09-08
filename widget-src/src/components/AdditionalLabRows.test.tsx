@@ -14,7 +14,7 @@ import { render, fireEvent, cleanup } from '@testing-library/react';
 afterEach(cleanup);
 import type { ApiLabValue } from '../lib/api-types';
 
-vi.mock('../lib/api', () => ({ trackProductEvent: vi.fn() }));
+vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 
 import { AdditionalLabRows } from './AdditionalLabRows';
 

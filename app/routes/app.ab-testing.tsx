@@ -122,7 +122,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return data({ tests, resultsMap, error: null });
   } catch (e) {
     console.error("AB testing dashboard error:", e);
-    return data({ tests: [], resultsMap: {}, error: "Failed to load A/B tests." });
+    const resultsMap: Record<string, ABTestResults> = {};
+    return data({ tests: [], resultsMap, error: "Failed to load A/B tests." });
   }
 };
 

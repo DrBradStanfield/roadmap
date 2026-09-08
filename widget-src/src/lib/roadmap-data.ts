@@ -1,19 +1,4 @@
-/**
- * Local-first data layer for the standalone (GitHub Pages / self-host) build.
- *
- * It re-exports the entire `api.ts` surface, then OVERRIDES the data functions to
- * run against a local-first RoadmapStore (the user's own cloud / localStorage)
- * instead of the Shopify app-proxy. A local export shadows the matching
- * `export *` name, so components keep importing the same names.
- *
- * Wiring: only the standalone Vite build redirects `lib/api` → this module (see
- * vite.config.standalone.ts). The live Shopify widget keeps using the real
- * `api.ts` untouched — so it cannot break before the deliberate cutover.
- *
- * Server / AI / email / A-B functions are inherited from `api.ts` via `export *`.
- * Off Shopify their proxy calls 404 and return their built-in fallbacks (a
- * graceful no-op); the real website AI path is Phase 4.
- */
+/** Local-first health records and client-side reports, on every widget surface. */
 import {
   buildMeasurementHistory,
   measurementsToInputs,
@@ -28,7 +13,7 @@ import {
 import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { setChatHistoryFactory } from './chat-history-access';
-import { PROXY_PATH, parseJsonResponse } from './api';
+import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
 import type { StorageAdapter } from '@roadmap/health-core';
@@ -43,7 +28,6 @@ import type {
   LatestMeasurementsResult,
 } from './api-types';
 
-export * from './api';
 
 let store: RoadmapStore | null = null;
 
@@ -68,15 +52,6 @@ export function flushRoadmapStoreSync(): void {
   store?.flushSync();
 }
 
-// --- AI lab extraction (Phase 4/5 transports) ---
-// The upload transport lives in upload-api.ts (cross-origin to Brad's Fly
-// endpoint — what the drstanfield.com v2 page uses). The Pages/self-host
-// build swaps it for byok-upload.ts (user's own Anthropic key, browser
-// direct) via vite.config.standalone.ts. The explicit re-export shadows the
-// api.ts versions inherited from `export *` (which POST to the Shopify proxy
-// path and would 404 here).
-export { checkLabImportQuota, labImport, labImportBatch, pollBatchStatus } from './upload-api';
-
 // --- document archive (§lab-uploads) ---
 export function getDocumentArchiveMode(): 'no-prompt' | 'cloud' | 'device-only' {
   // On the device-only tier originals get no durable home — localStorage blobs
@@ -96,7 +71,7 @@ export function getInitialInputsSync(): Partial<HealthInputs> {
   return store ? store.getPrefillInputs() : {};
 }
 
-// --- lead capture (Shopify surface) — overrides api.ts's no-op stubs ---
+// --- lead capture (Shopify surface) ---
 export function getReportEmailCaptured(): boolean {
   return store?.getReportEmailCaptured() ?? false;
 }
@@ -275,34 +250,20 @@ export async function getReportHtml(): Promise<{ success: boolean; html?: string
   return { success: true, html };
 }
 
-/** No Email Report button on local-first builds — stub kept only because
- *  ResultsPanel imports it unconditionally (production resolves api.ts's). */
-export async function sendReportEmail(): Promise<{ success: boolean; error?: string }> {
-  return { success: false, error: 'Not available in this version.' };
-}
-
 /**
- * "Get Your Personalized Plan" on the local-first builds. Overrides api.ts's
- * sendGuestReport (which POSTs the full health inputs to the server and triggers
- * a Resend report email). Here what crosses is the email address plus the
+ * "Get Your Personalized Plan" sends the email address plus the
  * client-computed reminder CALENDAR — labels + due dates, the constitution's
  * entire permitted footprint (US-23 AC1) — never a measurement, value, or
  * reason. Typing the address IS the reminders enrolment (opt-out model; the
  * disclosure line lives beside the input, and every email carries a one-click
  * unsubscribe). The PDF is generated entirely client-side (getReportHtml) by
- * the caller before this runs. The `inputs`/`medications`/`screenings` args
- * are accepted for signature-compatibility with the caller but ignored.
+ * the caller before this runs.
  *
  * Shopify v2 surface only: the email section is gated to VITE_SHOPIFY_SURFACE,
  * so this never fires on Pages (no Brad server there).
  */
 export async function sendGuestReport(
   email: string,
-  _inputs?: Record<string, unknown>,
-  // Kept signature-compatible with api.ts's version BY HAND — the vite swap
-  // means tsc never checks this graph against the callers (see ci.yml gates).
-  _medications?: readonly ApiMedication[],
-  _screenings?: readonly ApiScreening[],
 ): Promise<{ success: boolean; error?: string }> {
   // Self-guard, not just call-site gating (same posture as trackProductEvent):
   // off the Shopify surface there is no Brad server, so a future caller must
@@ -324,14 +285,4 @@ export async function sendGuestReport(
   } catch {
     return { success: false, error: 'Network error' };
   }
-}
-
-/**
- * Welcome email is a server/account feature — local-first has no DB-backed
- * account to email (email is a typed opt-in at the reminders flow, §10).
- * No-op success so the shared guest-sync path in HealthTool neither POSTs
- * to the data API (it 401s) nor flags an email error.
- */
-export async function sendWelcomeEmail(): Promise<{ success: boolean }> {
-  return { success: true };
 }

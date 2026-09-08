@@ -16,7 +16,7 @@ import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GitHubAdapter, WebDavAdapter } from '../src/storage';
 import { adapterFor, BACKEND_KEY, copyDownToDevice, finishFormConnect, logOff, PROVIDER_LABELS, useBusyRun, type Backend } from './connect';
-import { trackProductEvent } from '../src/lib/api';
+import { trackProductEvent } from '../src/lib/server-api';
 import { useModalDialog } from './use-dialog';
 import { PLAN_STORAGE_CTA, PLAN_STORAGE_NOTICE } from '../src/lib/storage-notice';
 

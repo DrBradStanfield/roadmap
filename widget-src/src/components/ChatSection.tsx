@@ -9,7 +9,7 @@
  */
 import React, { useState, useEffect, useCallback, useReducer } from 'react';
 import { FeedbackForm } from './FeedbackForm';
-import { trackProductEvent } from '../lib/api';
+import { trackProductEvent } from '../lib/server-api';
 import { getChatGate } from '../lib/chat-api';
 import { ChatKeyGate } from './ChatKeyGate';
 import { useChatState, THINKING_MESSAGES, MAX_CHARS } from '../hooks/useChatState';

@@ -91,8 +91,8 @@ const METADATA_MAX_TOKENS = 2048;
 async function extractOrClassifyOnce(
   apiKey: string,
   content: Array<Record<string, unknown>>,
-  timeoutMs?: number,
-  httpAttempts?: number,
+  timeoutMs: number | undefined,
+  httpAttempts: number | undefined,
   documentMode: DocumentPromptMode,
 ): Promise<UnifiedExtractionResult> {
   const body = {
@@ -211,7 +211,8 @@ async function fetchAnthropicRaw(
       });
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown error');
+        // Discard provider bodies: errors may echo uploaded or chat content.
+        await response.body?.cancel();
 
         if (RETRYABLE_STATUSES.has(response.status) && attempt < maxAttempts) {
           console.warn(`Anthropic API ${response.status} on attempt ${attempt}/${maxAttempts}, retrying after ${RETRY_DELAY_MS}ms`);
@@ -220,9 +221,9 @@ async function fetchAnthropicRaw(
         }
 
         const err = new Error(`Anthropic API error (status ${response.status})`);
-        console.error(err.message, errorText);
+        console.error(err.message);
         if (!TRANSIENT_CAPACITY_STATUSES.has(response.status)) {
-          Sentry.captureException(err, { extra: { status: response.status, errorText, attempt } });
+          Sentry.captureException(err, { extra: { status: response.status, attempt } });
         }
         throw err;
       }
@@ -322,10 +323,11 @@ export async function createBatch(
   });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Unknown error');
+    // Discard provider bodies: a 400 can echo the request, i.e. the user's lab pages.
+    await response.body?.cancel();
     const err = new Error(`Batch API error (status ${response.status})`);
-    console.error(err.message, errorText);
-    Sentry.captureException(err, { extra: { status: response.status, errorText } });
+    console.error(err.message);
+    Sentry.captureException(err, { extra: { status: response.status } });
     throw err;
   }
 
@@ -357,9 +359,9 @@ export async function pollBatch(
   });
 
   if (!statusResponse.ok) {
-    const errorText = await statusResponse.text().catch(() => 'Unknown error');
+    await statusResponse.body?.cancel();
     const err = new Error(`Batch status error (${statusResponse.status})`);
-    Sentry.captureException(err, { extra: { status: statusResponse.status, errorText } });
+    Sentry.captureException(err, { extra: { status: statusResponse.status } });
     throw err;
   }
 
@@ -379,9 +381,9 @@ export async function pollBatch(
   });
 
   if (!resultsResponse.ok) {
-    const errorText = await resultsResponse.text().catch(() => 'Unknown error');
+    await resultsResponse.body?.cancel();
     const err = new Error(`Batch results error (${resultsResponse.status})`);
-    Sentry.captureException(err, { extra: { status: resultsResponse.status, errorText } });
+    Sentry.captureException(err, { extra: { status: resultsResponse.status } });
     throw err;
   }
 

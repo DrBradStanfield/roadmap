@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["env.d.ts", "app/**/*.ts", "app/**/*.tsx"],
+  "exclude": ["app/**/*.test.ts", "app/**/*.test.tsx"],
+  "compilerOptions": {
+    "paths": {
+      "@roadmap/health-core": ["./packages/health-core/src/index.ts"],
+      "@roadmap/health-core/*": ["./packages/health-core/src/*"]
+    }
+  }
+}

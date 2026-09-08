@@ -25,7 +25,7 @@ import {
   CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
-import { routeQuery, sanitizeForRouter, ROUTER_VERSION } from '../lib/chat-router.server';
+import { routeQuery, reportRouterFailure, sanitizeForRouter, ROUTER_VERSION } from '../lib/chat-router.server';
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 import { findDuplicateReply } from '../lib/chat-dedup.server';
 
@@ -234,7 +234,14 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 });
     }
 
-    const body = await request.json();
+    // A malformed body is client error, not ours: Node's SyntaxError message
+    // quotes the offending text, so it must not reach the outer capture.
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return Response.json({ success: false, error: 'Invalid JSON body' }, { status: 400 });
+    }
 
     let auth: AuthResult;
     try {
@@ -351,13 +358,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const routerSkipped = classifierResult.routerSkipped;
     const effectiveHandles = routerResult?.handles ?? [];
 
-    if (routerResult?.error) {
-      Sentry.captureMessage(`Router: ${routerResult.error}`, {
-        level: 'warning',
-        tags: { feature: 'chat', subsystem: 'router' },
-        extra: { latencyMs: routerResult.latencyMs, cacheHit: routerResult.cacheHit },
-      });
-    }
+    reportRouterFailure(routerResult);
 
     // Create or validate conversation
     let activeConversationId = conversationId;
@@ -436,12 +437,8 @@ export async function action({ request }: ActionFunctionArgs) {
     reportChatFallback({
       completion,
       platform: 'shopify',
-      conversationId: activeConversationId,
-      messagePreview: message,
       latencyMs: tAfterLlm - tBeforeLlm,
-      matchedHandles: effectiveHandles,
-      userId: auth.userId,
-      isGuest: auth.isGuest,
+      conversationId: activeConversationId,
     });
 
     // Fire-and-forget: save assistant message, then (nested) log match event.
@@ -546,11 +543,11 @@ export async function action({ request }: ActionFunctionArgs) {
       routerCacheReadTokens: routerResult?.usage.cacheReadTokens ?? null,
       handleCount: routerResult?.handles.length ?? 0,
       effectiveHandleCount: effectiveHandles.length,
-      routerError: routerResult?.error ?? null,
+      routerError: !!routerResult?.error,
       classifierMs: classifierResult.latencyMs,
       classification: classifierResult.classification,
       routerSkipped,
-      classifierError: classifierResult.error,
+      classifierError: !!classifierResult.error,
       isGuest: auth.isGuest,
     }));
 

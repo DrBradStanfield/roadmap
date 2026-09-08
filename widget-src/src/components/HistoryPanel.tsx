@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   type UnitSystem,
   type ApiMeasurement,
@@ -22,7 +22,7 @@ import {
 } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import 'chartjs-adapter-date-fns';
-import { loadAllHistory, loadLabValues, loadMedicationHistory } from '../lib/api';
+import { loadAllHistory, loadLabValues, loadMedicationHistory } from '../lib/roadmap-data';
 import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
 import { loadUnitPreference } from '../lib/storage';
 import { groupLabHistory } from '../lib/lab-rows';
@@ -218,18 +218,14 @@ function TimeSeriesChart({
 }
 
 interface HistoryPanelProps {
-  isLoggedIn: boolean;
-  loginUrl?: string;
   /** Pre-select one metric (lightbox embedding). Falls back to ?metric= (the Shopify page). */
   initialMetric?: string;
 }
 
-export function HistoryPanel({ isLoggedIn, loginUrl, initialMetric }: HistoryPanelProps) {
+export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
   const [measurements, setMeasurements] = useState<ApiMeasurement[]>([]);
   const [labVals, setLabVals] = useState<ApiLabValue[]>([]);
   const [loading, setLoading] = useState(true);
-  const [offset, setOffset] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
   const [unitSystem] = useState<UnitSystem>(() => loadUnitPreference() ?? detectUnitSystem());
 
   // Selected metrics (initialized after first fetch)
@@ -239,29 +235,16 @@ export function HistoryPanel({ isLoggedIn, loginUrl, initialMetric }: HistoryPan
   const [medHistory, setMedHistory] = useState<ApiMedicationHistory[]>([]);
   const [showMedAnnotations, setShowMedAnnotations] = useState(true);
 
-  const PAGE_SIZE = 50;
-
-  const fetchHistory = useCallback(async (currentOffset: number, append: boolean) => {
-    setLoading(true);
-    const data = await loadAllHistory(PAGE_SIZE, currentOffset);
-    if (append) {
-      setMeasurements((prev) => [...prev, ...data]);
-    } else {
-      setMeasurements(data);
-    }
-    setHasMore(data.length === PAGE_SIZE);
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
-    if (isLoggedIn) {
-      fetchHistory(0, false);
-      loadLabValues().then(rows => { if (rows) setLabVals(rows); });
-      loadMedicationHistory().then(setMedHistory);
-    } else {
+    // The local store returns the complete history. There is no server page
+    // to append, even when the record happens to contain exactly 50 rows.
+    loadAllHistory().then(rows => {
+      setMeasurements(rows);
       setLoading(false);
-    }
-  }, [isLoggedIn, fetchHistory]);
+    });
+    loadLabValues().then(rows => { if (rows) setLabVals(rows); });
+    loadMedicationHistory().then(setMedHistory);
+  }, []);
 
   // Initialize selected metrics from URL param or default to all
   useEffect(() => {
@@ -281,12 +264,6 @@ export function HistoryPanel({ isLoggedIn, loginUrl, initialMetric }: HistoryPan
 
     setInitialized(true);
   }, [measurements, labVals, initialized, initialMetric]);
-
-  const handleLoadMore = () => {
-    const newOffset = offset + PAGE_SIZE;
-    setOffset(newOffset);
-    fetchHistory(newOffset, true);
-  };
 
   const toggleMetric = (metric: string) => {
     setSelectedMetrics((prev) => {
@@ -332,21 +309,6 @@ export function HistoryPanel({ isLoggedIn, loginUrl, initialMetric }: HistoryPan
     }
     return map;
   }, [medHistory, showMedAnnotations]);
-
-  if (!isLoggedIn) {
-    return (
-      <div className="history-panel">
-        <div className="history-guest">
-          <p>
-            <a href={loginUrl || '/account/login'} style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 500 }}>
-              Log in
-            </a>{' '}
-            to view your health history.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   // Group measurements by metricType (memoized)
   const { grouped, metricTypes } = useMemo(() => {
@@ -422,16 +384,6 @@ export function HistoryPanel({ isLoggedIn, loginUrl, initialMetric }: HistoryPan
                 annotations={annotationsByMetric[mt]}
               />
             ))}
-
-          {hasMore && (
-            <button
-              className="history-load-more"
-              onClick={handleLoadMore}
-              disabled={loading}
-            >
-              {loading ? 'Loading...' : 'Load more'}
-            </button>
-          )}
 
           {labMetricNames.length > 0 && (
             <>

@@ -4,7 +4,7 @@
  */
 import * as Sentry from '@sentry/react';
 import type { ProposedEdit } from '@roadmap/health-core';
-import { PROXY_PATH, parseJsonResponse } from './api';
+import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { getChatHistory } from './chat-history-access';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
 

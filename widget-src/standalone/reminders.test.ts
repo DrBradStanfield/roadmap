@@ -41,7 +41,7 @@ vi.mock('../src/lib/roadmap-data', () => ({
   computeCurrentReminderSchedule: () => computeCurrentReminderSchedule(),
 }));
 
-vi.mock('../src/lib/api', () => ({ trackProductEvent: (...a: unknown[]) => trackProductEvent(...a) }));
+vi.mock('../src/lib/server-api', () => ({ trackProductEvent: (...a: unknown[]) => trackProductEvent(...a) }));
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('./google-config', () => ({ googleDriveConfig: () => ({}) }));
 vi.mock('./dropbox-config', () => ({ dropboxConfig: () => ({}) }));

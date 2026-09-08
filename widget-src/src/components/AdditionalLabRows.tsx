@@ -10,7 +10,7 @@ import { AddLabTest } from './AddLabTest';
 import { UnitChip } from './UnitChip';
 import { BatchDateCell } from './BloodTestTimeline';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
-import { trackProductEvent } from '../lib/api';
+import { trackProductEvent } from '../lib/server-api';
 import type { ApiLabValue } from '../lib/api-types';
 
 function formatValue(v: number): string {

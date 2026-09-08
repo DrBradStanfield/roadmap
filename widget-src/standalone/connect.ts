@@ -20,7 +20,7 @@ import {
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import { clearLocalStorage } from '../src/lib/storage';
-import { trackProductEvent } from '../src/lib/api';
+import { trackProductEvent } from '../src/lib/server-api';
 import { Sentry } from '../src/lib/sentry';
 
 /** Which backend the app is currently using (a UI-level subset of StorageBackendId). */

@@ -329,11 +329,8 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     reportChatFallback({
       completion: result,
       platform: 'discord',
-      conversationId: conversationId ?? null,
-      messagePreview: truncatedInput,
       latencyMs: tAfterLlm - tBeforeLlm,
-      matchedHandles: result.routerResult?.handles ?? [],
-      authorTag: message.author.tag,
+      conversationId: conversationId ?? null,
     });
 
     if (typingInterval) {
