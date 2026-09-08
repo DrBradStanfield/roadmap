@@ -251,7 +251,7 @@ Pulsing `.field-attention` CSS class highlights the next field to fill. On mobil
 
 **Data sync:** the v1 cache replay and login-sync branches were removed on 2026-09-07. Every main widget reads and writes RoadmapStore directly. A compatibility cache mirror remains for the separate storefront chat context reader.
 
-**Auto-redirect** (removed from production): there is no longer any live auto-redirect. The last one lived in `history-block.liquid` on `/pages/health-history`, both of which were deleted on 2026-06-14 (the page on Shopify; the block from this repo). The v2 widget still *sets* the `health_roadmap_authenticated` flag whenever the data layer reports saved data (`setAuthenticatedFlag()` in `HealthTool.tsx`), but on the v2 surfaces the flag is now purely write-only, nothing reads it. With the legacy `health-tool.js` bundle retired (2026-06-15), no live build reads it at all; the writes are dead-but-harmless.
+**Auto-redirect** (removed from production): there is no longer any live auto-redirect. The last one lived in `history-block.liquid` on `/pages/health-history`, both of which were deleted on 2026-06-14 (the page on Shopify; the block from this repo). PR #71 removed `setAuthenticatedFlag()` and the write-only `health_roadmap_authenticated` writes. Only removal of that legacy key remains in storage cleanup.
 
 ## A/B Testing
 
