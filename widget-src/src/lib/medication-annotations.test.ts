@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { medicationAnnotations } from './medication-annotations';
+import { medicationAnnotations, pinClusters } from './medication-annotations';
 import type { ApiMedicationHistory } from './api-types';
 
 const event = (overrides: Partial<ApiMedicationHistory> = {}): ApiMedicationHistory => ({
@@ -26,6 +26,17 @@ describe('US-06 AC4: medication chart annotations', () => {
       event({ medicationKey: 'unknown' }), event({ medicationKey: 'constructor' })])).toEqual({});
     expect(medicationAnnotations([event({ medicationKey: 'ezetimibe', drugName: 'yes', doseValue: null })]).ldl[0].label)
       .toBe('Recorded start: Ezetimibe');
+  });
+
+  it('chains pins off the latest pin, so an evenly spaced run is one cluster and a wider gap splits', () => {
+    const pin = (date: number) => ({ date, label: '' });
+    const span = 1000;
+    expect(pinClusters([0, 30, 60, 90, 120].map(pin), span)).toEqual([{ date: 0, numbers: [1, 2, 3, 4, 5] }]);
+    expect(pinClusters([0, 30, 80, 200].map(pin), span)).toEqual([
+      { date: 0, numbers: [1, 2] }, { date: 80, numbers: [3] }, { date: 200, numbers: [4] },
+    ]);
+    // List order survives even when the file was not sorted by date.
+    expect(pinClusters([pin(500), pin(0)], span).map(c => c.numbers)).toEqual([[2], [1]]);
   });
 
   it('omits the dose when the value is missing, zero, NaN, or has no unit', () => {

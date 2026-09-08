@@ -162,7 +162,7 @@ export interface ApiMedicationHistory {
   doseValue: number | null;
   doseUnit: string | null;
   changeType: string;
-  /** When the change was recorded — not a claimed treatment date. */
+  /** When the change was recorded, not a claimed treatment date. */
   recordedAt: string;
 }
 export interface LatestMeasurementsResult {

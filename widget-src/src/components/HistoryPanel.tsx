@@ -27,7 +27,7 @@ import { trackProductEvent } from '../lib/server-api';
 import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
 import { loadUnitPreference } from '../lib/storage';
 import { groupLabHistory } from '../lib/lab-rows';
-import { medicationAnnotations, MED_ANNOTATION_COLOR, type ChartAnnotation } from '../lib/medication-annotations';
+import { medicationAnnotations, pinClusters, MED_ANNOTATION_COLOR, type ChartAnnotation } from '../lib/medication-annotations';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
 
 // Register only what we need
@@ -49,20 +49,6 @@ const METRIC_COLORS: Record<string, string> = {
   psa: '#d946ef',
   lpa: '#e11d48',
 };
-
-/**
- * Pins closer than ~4% of the axis span would overdraw each other's label, so
- * they share one line whose label lists every entry number (1-based, list order).
- */
-function pinClusters(annotations: ChartAnnotation[], span: number): Array<{ date: number; numbers: number[] }> {
-  const clusters: Array<{ date: number; numbers: number[] }> = [];
-  for (const pin of annotations.map((a, i) => ({ date: a.date, n: i + 1 })).sort((p, q) => p.date - q.date)) {
-    const last = clusters.at(-1);
-    if (last && pin.date - last.date <= span * 0.04) last.numbers.push(pin.n);
-    else clusters.push({ date: pin.date, numbers: [pin.n] });
-  }
-  return clusters;
-}
 
 function toDisplayValue(metricType: string, value: number, unitSystem: UnitSystem): number {
   const field = METRIC_TO_FIELD[metricType];
@@ -284,11 +270,12 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
     [medHistory, showMedAnnotations],
   );
 
+  const annotatedChartVisible = Object.keys(annotationsByMetric)
+    .some(metric => selectedMetrics.has(metric) && measurements.some(row => row.metricType === metric));
+
   useEffect(() => {
-    if (Object.keys(annotationsByMetric).some(metric => selectedMetrics.has(metric) && measurements.some(row => row.metricType === metric))) {
-      trackProductEvent('medication_history_viewed');
-    }
-  }, [annotationsByMetric, selectedMetrics, measurements]);
+    if (annotatedChartVisible) trackProductEvent('medication_history_viewed');
+  }, [annotatedChartVisible]);
 
   // Group measurements by metricType (memoized)
   const { grouped, metricTypes } = useMemo(() => {
@@ -349,7 +336,7 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
             </label>
           )}
 
-          {medHistory.length > 0 && showMedAnnotations && (
+          {annotatedChartVisible && (
             <p className="history-note">Markers show when you recorded a change, which may differ from when treatment changed.</p>
           )}
 
