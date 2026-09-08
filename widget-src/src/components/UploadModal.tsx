@@ -647,7 +647,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         // Stay in review: a second Save retries idempotently (values dedup on
         // skippedDuplicates, documents on contentHash).
         if (totalSaved > 0) onComplete();
-        setError(threw ? 'Some values could not be saved. Please try again.' : 'Failed to save. Please try again.');
+        setError(threw ? 'Some items could not be saved. Please try again.' : 'Failed to save. Please try again.');
       }
     } catch {
       setError('Failed to save. Please try again.');

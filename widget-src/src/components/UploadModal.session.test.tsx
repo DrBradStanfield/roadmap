@@ -7,6 +7,7 @@ import { synthesizeLabArchiveEntries } from '../lib/archive-payloads';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { bulkSaveMeasurements, bulkSaveDocuments, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { Sentry } from '../lib/sentry';
+import type { UploadHistory } from '../lib/api-types';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn() }));
@@ -22,14 +23,19 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 const extraction = { result: { classification: 'lab_report', document: null, reportDate: '2024-06-01', values: [{ metric: 'ldl', valueSI: 3.9, displayValue: 3.9, displayUnit: 'mmol/L', confidence: 'high' }], additionalValues: [] } };
-const history = { bloodTests: [], labValues: [], documents: [] };
+const emptyHistory: UploadHistory = { bloodTests: [], labValues: [], documents: [] };
+const letter = { classification: 'clinic_letter', title: 'Synthetic letter', documentDate: '2024-06-01', contentMarkdown: 'letter', metadata: {} };
+const archivedLetter = { id: 'd1', documentType: 'clinic_letter', title: letter.title, documentDate: letter.documentDate, contentMd: 'letter', metadata: {}, sourceFileName: 'test.pdf', createdAt: '2024-06-02T00:00:00Z' };
 const onComplete = vi.fn();
 const extractFromPdf = vi.fn();
-function Harness({ onStart }: { onStart?: () => Promise<void> }) {
+/** `archived`: what a completed save leaves in the reloaded history. */
+function Harness({ onStart, archived }: { onStart?: () => Promise<void>; archived?: typeof archivedLetter }) {
   const [open, setOpen] = useState(true);
+  const [history, setHistory] = useState(emptyHistory);
   return <><button onClick={() => setOpen(true)}>Upload records</button><UploadModal
     open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)}
-    unitSystem="si" history={history} onStart={onStart} onComplete={onComplete}
+    unitSystem="si" history={history} onStart={onStart}
+    onComplete={() => { onComplete(); if (archived) setHistory({ ...emptyHistory, documents: [archived] }); }}
   /></>;
 }
 function selectFile() {
@@ -121,7 +127,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     render(<Harness />); const value = await ready();
     fireEvent.change(value, { target: { value: '4.2' } });
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByText('Some values could not be saved. Please try again.');
+    await screen.findByText('Some items could not be saved. Please try again.');
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     fireEvent.click(screen.getByRole('button', { name: /Upload needs attention/ }));
     expect(screen.getByDisplayValue('4.2')).toBeTruthy();
@@ -148,13 +154,30 @@ describe('US-12 AC4–6 upload session ownership', () => {
     fireEvent.click(screen.getByRole('button', { name: /Upload needs attention/ }));
     expect(screen.queryByRole('button', { name: 'Done' })).toBeNull();
     expect(screen.getByDisplayValue('4.2')).toBeTruthy();
-    expect(screen.getByText('Some values could not be saved. Please try again.')).toBeTruthy();
+    expect(screen.getByText('Some items could not be saved. Please try again.')).toBeTruthy();
     expect((screen.getByRole('button', { name: 'Cancel' }) as HTMLButtonElement).disabled).toBe(false);
     expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'upload-save', branch: 'measurements' } });
     expect(onComplete).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
     expect(bulkSaveMeasurements).toHaveBeenCalledTimes(2);
+  });
+  it('does not file a reviewed letter twice when a retry follows a partial save off-cloud (US-12 AC6)', async () => {
+    vi.mocked(getDocumentArchiveMode).mockReturnValue('device-only');
+    vi.mocked(labImport).mockResolvedValue({ result: { ...extraction.result, classification: 'clinic_letter', document: letter } } as Awaited<ReturnType<typeof labImport>>);
+    vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(new Error('synthetic measurement failure'));
+    vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [{}], errorCount: 0 } as Awaited<ReturnType<typeof bulkSaveDocuments>>);
+    render(<Harness archived={archivedLetter} />);
+    fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
+    await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByText('Some items could not be saved. Please try again.');
+    expect(bulkSaveDocuments).toHaveBeenCalledOnce();
+    expect(vi.mocked(bulkSaveDocuments).mock.calls[0][0].map(d => d.sourceFileName)).toEqual(['test.pdf']);
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(bulkSaveMeasurements).toHaveBeenCalledTimes(2);
+    expect(bulkSaveDocuments).toHaveBeenCalledOnce();
   });
   it('keeps a dismissed connect-first panel dismissed when processing is cancelled (US-12 AC4)', async () => {
     vi.mocked(getDocumentArchiveMode).mockReturnValue('device-only');
