@@ -136,7 +136,6 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     setFiles([]);
     setResults([]);
     setError(null);
-    setSkipArchive(false);
     setProgress({ current: 0, total: 0, fileName: '' });
     setSavedCount(0);
     setSkippedMeasurements(0);
@@ -148,13 +147,17 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
 
   // Closing active work only hides it. Drafts and pending saves remain mounted.
   const handleClose = useCallback(() => {
-    if (!savingRef.current && (state === 'select' || state === 'done' || state === 'error')) resetSession();
+    if (!savingRef.current && (state === 'select' || state === 'done' || state === 'error')) {
+      resetSession();
+      setSkipArchive(false);
+    }
     onClose();
   }, [state, onClose, resetSession]);
 
   const handleDiscard = useCallback(() => {
     if (savingRef.current) return;
     resetSession();
+    setSkipArchive(false);
     onClose();
   }, [onClose, resetSession]);
 
@@ -230,7 +233,6 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       if (!abort.signal.aborted) setProgress(p);
     };
 
-    const fileNames = filesToProcess.map(f => f.name);
     const fileTypes = filesToProcess.map(f => f.type || 'unknown');
     const fileCount = filesToProcess.length;
 
@@ -295,6 +297,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
           : new Map<string, Blob>();
         const attached = await attachOriginals(allResults, batchBlobs);
         if (abort.signal.aborted) return;
+        abortRef.current = null;
         setResults(attached);
         setState('review');
         return;
@@ -315,6 +318,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       if (abort.signal.aborted) return;
       const attached = await attachOriginals(allResults, fileBlobs);
       if (abort.signal.aborted) return;
+      abortRef.current = null;
       setResults(attached);
       setState('review');
     } catch (err) {
@@ -323,7 +327,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         console.error('Upload processing error:', code, err);
         Sentry.captureException(err, {
           tags: { uploadErrorCode: code },
-          extra: { fileNames, fileTypes, fileCount },
+          extra: { fileTypes, fileCount },
         });
         trackProductEvent('upload_extract_failed');
         setError(err instanceof UploadError
@@ -603,10 +607,18 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
 
       // Each branch settles before the session becomes dismissible. One
       // rejected write must not release another archive that is still saving.
+      // A throw is a programming error, not a store result: report it (tag
+      // only — no payload, names or values) and keep the review for a retry.
+      let threw = false;
+      const failed = <T,>(branch: string, fallback: T) => (err: unknown) => {
+        threw = true;
+        Sentry.captureException(err, { tags: { area: 'upload-save', branch } });
+        return fallback;
+      };
       const [savedValues, savedDocs, savedLabValues] = await Promise.all([
-        measurements.length > 0 ? bulkSaveMeasurements(measurements).catch(() => ({ saved: [], skippedDuplicates: 0, errorCount: measurements.length })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
-        docPayloads.length > 0 ? bulkSaveDocuments(docPayloads).catch(() => ({ saved: [], errorCount: docPayloads.length })) : Promise.resolve({ saved: [], errorCount: 0 }),
-        labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads).catch(() => ({ saved: [], skippedDuplicates: 0, errorCount: labValuePayloads.length })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
+        measurements.length > 0 ? bulkSaveMeasurements(measurements).catch(failed('measurements', { saved: [], skippedDuplicates: 0, errorCount: measurements.length })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
+        docPayloads.length > 0 ? bulkSaveDocuments(docPayloads).catch(failed('documents', { saved: [], errorCount: docPayloads.length })) : Promise.resolve({ saved: [], errorCount: 0 }),
+        labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads).catch(failed('labValues', { saved: [], skippedDuplicates: 0, errorCount: labValuePayloads.length })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
       ]);
 
       setSavedCount(savedValues.saved.length);
@@ -627,12 +639,15 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         }
       }
 
-      if (totalCompleted > 0) {
+      if (totalCompleted > 0 && !threw) {
         trackProductEvent('upload_saved', { count: totalSaved });
         setState('done');
         onComplete();
       } else {
-        setError('Failed to save. Please try again.');
+        // Stay in review: a second Save retries idempotently (values dedup on
+        // skippedDuplicates, documents on contentHash).
+        if (totalSaved > 0) onComplete();
+        setError(threw ? 'Some values could not be saved. Please try again.' : 'Failed to save. Please try again.');
       }
     } catch {
       setError('Failed to save. Please try again.');
