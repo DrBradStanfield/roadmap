@@ -1,8 +1,12 @@
-# Sentry bundle-filter verification
+# Sentry bundle-filter verification (PR #73 probe)
+
+One-off probe note for PR #73, moved here from `docs/` on 2026-09-09 (a
+one-off verification is a loop report, not a `docs/` file). The gotcha
+itself is archived in `docs/reference.md`.
 
 PR #73 changes only the client source allow-list. Actual SDK-filter tests use
-the production init options and filenames from the build configs: 7 failures
-before, 16 passing after. Full suite: 2,247 passed, 3 opt-in integration tests
+the production init options and filenames from the build configs: 16 passing (the
+test did not exist against the old filter, so there is no "before" count). Full suite: 2,247 passed, 3 opt-in integration tests
 skipped. Widget/core checks and Shopify/side/Pages builds pass.
 
 ## Live-origin candidate check
@@ -33,3 +37,11 @@ not naturally occurring errors or proof of a deployed fix. The production
 filter was not changed. A post-deployment smoke event should still confirm
 the new version is loaded on each deployed surface. Pages URL acceptance is
 covered locally by the SDK tests; its new live runtime was not deployed here.
+
+## Cleanup
+
+The five probes formed Sentry issue `7716241012` (environment
+`bundle-filter-verification`, 5 events). The sentry-fix loop ledgered it
+wontfix on 2026-09-07; it was still `unresolved`, so it was resolved via
+`PUT /api/0/issues/7716241012/ {"status":"resolved"}` on 2026-09-09 during
+the PR #73 review fixes. The environment name remains in the project.
