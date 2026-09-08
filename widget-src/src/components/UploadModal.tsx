@@ -26,7 +26,7 @@ const UPLOAD_ERROR_MESSAGES: Record<UploadErrorCode, string> = {
   network: 'Network error. Please check your connection and try again.',
 };
 
-type ModalState = 'select' | 'processing' | 'review' | 'done';
+type ModalState = 'select' | 'processing' | 'review' | 'done' | 'error';
 
 interface UploadModalProps {
   unitSystem: UnitSystem;
@@ -39,27 +39,29 @@ interface UploadModalProps {
   onScreeningUpdate?: (screeningKey: string, value: string) => void;
   birthYear?: number;
   sex?: 'male' | 'female';
-  /** When true, modal is hidden but stays mounted (processing continues in background) */
-  hidden?: boolean;
-  onProcessingStart?: () => void;
-  onProcessingEnd?: (autoReopen: boolean) => void;
-  onProgressUpdate?: (p: { current: number; total: number; fileName: string }) => void;
+  /** Visibility does not end the session or discard review drafts. */
+  open: boolean;
+  onOpen: () => void;
 }
 
 /** Floating indicator shown when modal is hidden during processing.
  *  Portaled to body for the same reason as the modal — position:fixed must
  *  resolve against the viewport, not the transform'd .health-tool ancestor. */
-export function FloatingUploadIndicator({ progress, onClick }: {
+function FloatingUploadIndicator({ progress, state, onClick }: {
   progress: { current: number; total: number; fileName: string };
+  state: ModalState | 'saving';
   onClick: () => void;
 }) {
-  const isDone = progress.current >= 100;
+  const label = state === 'error' ? 'Upload needs attention. Click to open'
+    : state === 'saving' ? 'Saving health records. Click to open'
+    : state === 'done' ? 'Health records saved. Click to open'
+    : state === 'review' ? 'Ready for review. Click to open'
+    : 'Processing health records...';
   return createPortal((
-    <div className="floating-upload-indicator" onClick={onClick} role="button" tabIndex={0}>
-      <div className="floating-upload-text">
-        {isDone ? 'Ready for review — click to open' : 'Processing health records...'}
-      </div>
-      {!isDone && (
+    <div className="floating-upload-indicator" onClick={onClick} role="button" tabIndex={0}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}>
+      <div className="floating-upload-text">{label}</div>
+      {state === 'processing' && (
         <div className="floating-upload-bar">
           <div className="floating-upload-fill upload-progress-fill--smooth" style={{ width: `${progress.current}%` }}>&nbsp;</div>
         </div>
@@ -104,7 +106,7 @@ interface HealthUploadAPI {
 const MAX_FILES = 200;
 const MAX_FILE_SIZE = IMPORT_LIMITS.websiteFileMb * 1024 * 1024; // the connector's hint names this number
 
-export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, birthYear, sex, hidden, onProcessingStart, onProcessingEnd, onProgressUpdate }: UploadModalProps) {
+export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, birthYear, sex, open, onOpen }: UploadModalProps) {
   const [state, setState] = useState<ModalState>('select');
   const [files, setFiles] = useState<File[]>([]);
   // Connect-first gate (decision record: encourage, don't block). 'device-only'
@@ -122,13 +124,19 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   const [savedLabCount, setSavedLabCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const savingRef = useRef(false);
+  useEffect(() => () => { abortRef.current?.abort(); }, []);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile(768);
 
-  // Reset post-save counters. Called whenever the modal fully closes (not when
-  // it's just hidden during background processing), so the next reopen starts
-  // from a clean slate rather than carrying the previous run's tally.
-  const resetSaveCounters = useCallback(() => {
+  const resetSession = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setState('select');
+    setFiles([]);
+    setResults([]);
+    setError(null);
+    setProgress({ current: 0, total: 0, fileName: '' });
     setSavedCount(0);
     setSkippedMeasurements(0);
     setSkippedLabValues(0);
@@ -137,29 +145,28 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     setSavedLabCount(0);
   }, []);
 
-  // Dismiss modal — during processing/review, just hides (keeps state alive for floating indicator).
-  // Only fully ends the upload flow from select or done states.
+  // Closing active work only hides it. Drafts and pending saves remain mounted.
   const handleClose = useCallback(() => {
-    if (state === 'select' || state === 'done') {
-      onProcessingEnd?.(false);
-      resetSaveCounters();
+    if (!savingRef.current && (state === 'select' || state === 'done' || state === 'error')) {
+      resetSession();
+      setSkipArchive(false);
     }
     onClose();
-  }, [state, onClose, onProcessingEnd, resetSaveCounters]);
+  }, [state, onClose, resetSession]);
 
-  // Explicit discard — user clicked Cancel in review, intentionally discarding results
   const handleDiscard = useCallback(() => {
-    onProcessingEnd?.(false);
-    resetSaveCounters();
+    if (savingRef.current) return;
+    resetSession();
+    setSkipArchive(false);
     onClose();
-  }, [onClose, onProcessingEnd, resetSaveCounters]);
+  }, [onClose, resetSession]);
 
-  // Close on Escape
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape' && !hidden) handleClose(); };
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [handleClose, hidden]);
+  }, [handleClose, open]);
 
   // Load the upload bundle lazily — cached promise prevents duplicate script injection
   const loadPromiseRef = useRef<Promise<HealthUploadAPI> | null>(null);
@@ -214,36 +221,35 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   };
 
   const handleProcess = async (filesToProcess: File[]) => {
-    // Guard rapid re-select / drag-then-click: only the first selection
-    // starts processing; subsequent calls before that finishes are dropped.
-    if (state !== 'select' || filesToProcess.length === 0) return;
-
-    const quota = await checkLabImportQuota();
-    if (!quota.allowed) {
-      setError(quota.message ?? 'Daily upload limit reached. You can upload more tomorrow.');
-      return;
-    }
-
-    if (onStart) await onStart();
-
-    trackProductEvent('upload_started', { count: filesToProcess.length });
-    setState('processing');
-    onProcessingStart?.();
-    setError(null);
+    // Claim synchronously: React state alone cannot guard two selections in
+    // the same render, especially while quota/draft flushing is still pending.
+    if (abortRef.current || savingRef.current || filesToProcess.length === 0) return;
     const abort = new AbortController();
     abortRef.current = abort;
-
+    setState('processing');
+    setError(null);
+    setProgress({ current: 0, total: 100, fileName: 'Preparing upload...' });
     const updateProgress = (p: { current: number; total: number; fileName: string }) => {
-      setProgress(p);
-      onProgressUpdate?.(p);
+      if (!abort.signal.aborted) setProgress(p);
     };
 
-    const fileNames = filesToProcess.map(f => f.name);
     const fileTypes = filesToProcess.map(f => f.type || 'unknown');
     const fileCount = filesToProcess.length;
 
     try {
+      const quota = await checkLabImportQuota();
+      if (abort.signal.aborted) return;
+      if (!quota.allowed) {
+        setError(quota.message ?? 'Daily upload limit reached. You can upload more tomorrow.');
+        setState('error');
+        abortRef.current = null;
+        return;
+      }
+      await onStart?.();
+      if (abort.signal.aborted) return;
+      trackProductEvent('upload_started', { count: fileCount });
       const upload = await loadUploadBundle();
+      if (abort.signal.aborted) return;
       const zipFiles = filesToProcess.filter(f => upload.isZip(f));
       const otherFiles = filesToProcess.filter(f => !upload.isZip(f));
 
@@ -261,8 +267,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       if (totalFiles === 0 || abort.signal.aborted) {
         if (!abort.signal.aborted) {
           setError('No readable files found.');
-          setState('select');
-          onProcessingEnd?.(false);
+          setState('error');
+          abortRef.current = null;
         }
         return;
       }
@@ -272,7 +278,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         const allFileObjects: Array<{ fileName: string; file: File }> = [];
         for (const entries of zipEntryLists) {
           for (const { name, entry } of entries) {
+            if (abort.signal.aborted) return;
             const blob = await entry.async('blob');
+            if (abort.signal.aborted) return;
             allFileObjects.push({ fileName: name, file: new File([blob], name.split('/').pop() || name) });
           }
         }
@@ -287,7 +295,10 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         const batchBlobs = keepBlobs
           ? new Map<string, Blob>(allFileObjects.map((f) => [f.fileName, f.file as Blob]))
           : new Map<string, Blob>();
-        setResults(await attachOriginals(allResults, batchBlobs));
+        const attached = await attachOriginals(allResults, batchBlobs);
+        if (abort.signal.aborted) return;
+        abortRef.current = null;
+        setResults(attached);
         setState('review');
         return;
       }
@@ -305,7 +316,10 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       }
       const allResults = await processPipeline(upload, zipEntryLists, otherFiles, totalFiles, abort, updateProgress, unitSystem);
       if (abort.signal.aborted) return;
-      setResults(await attachOriginals(allResults, fileBlobs));
+      const attached = await attachOriginals(allResults, fileBlobs);
+      if (abort.signal.aborted) return;
+      abortRef.current = null;
+      setResults(attached);
       setState('review');
     } catch (err) {
       if (!abort.signal.aborted) {
@@ -313,14 +327,14 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         console.error('Upload processing error:', code, err);
         Sentry.captureException(err, {
           tags: { uploadErrorCode: code },
-          extra: { fileNames, fileTypes, fileCount },
+          extra: { fileTypes, fileCount },
         });
         trackProductEvent('upload_extract_failed');
         setError(err instanceof UploadError
           ? UPLOAD_ERROR_MESSAGES[err.code]
           : 'An error occurred while processing files. Please try again.');
-        setState('select');
-        onProcessingEnd?.(false);
+        setState('error');
+        abortRef.current = null;
       }
     }
   };
@@ -365,6 +379,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     const allDone = new Promise<void>(resolve => { resolveAll = resolve; });
 
     function checkDone() {
+      if (abort.signal.aborted) queue.length = 0;
       if (feedingDone && activeWorkers === 0 && queue.length === 0) {
         resolveAll?.();
       }
@@ -434,7 +449,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         const { fileName, getFile } = allInputs[i];
         try {
           const file = await getFile();
+          if (abort.signal.aborted) return;
           const pages = await extractPages(upload, file);
+          if (abort.signal.aborted) return;
           if (pages.length > 0) {
             queue.push({ fileName, pages });
             tryStartWorker();
@@ -480,11 +497,13 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       }
     }
 
+    if (abort.signal.aborted) return [];
     if (allFiles.length === 0) throw new UploadError('No readable files found.', 'no_files');
 
     updateProgress({ current: 33, total: 100, fileName: `Analyzing ${allFiles.length} files...` });
 
     const { batchId, error: batchError, errorCode: batchErrorCode } = await labImportBatch(allFiles);
+    if (abort.signal.aborted) return [];
     if (!batchId) throw new UploadError(batchError || 'Failed to start processing', batchErrorCode || 'server_error');
 
     const fileNames = allFiles.map(f => (f.fileName.split('/').pop() || f.fileName));
@@ -535,23 +554,17 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     }
   }
 
-  const handleCancel = () => {
-    abortRef.current?.abort();
-    setError(null);
-    onProcessingEnd?.(false);
-    if (results.length > 0) {
-      setState('review');
-    } else {
-      setState('select');
-    }
-  };
+  const handleCancel = () => { resetSession(); };
 
   const handleSave = useCallback(async ({ values: selectedValues, documents, labValues }: {
     values: ReviewedValue[];
     documents: DocumentToSave[];
     labValues: ReviewedLabValue[];
   }) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
     setIsSaving(true);
+    setError(null);
     try {
       // Save core measurements, additional lab values, and documents in parallel
       const measurements = selectedValues.map(v => ({
@@ -592,10 +605,20 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         correctsId: lv.correctsId,
       }));
 
+      // Each branch settles before the session becomes dismissible. One
+      // rejected write must not release another archive that is still saving.
+      // A throw is a programming error, not a store result: report it (tag
+      // only — no payload, names or values) and keep the review for a retry.
+      let threw = false;
+      const failed = <T,>(branch: string, fallback: T) => (err: unknown) => {
+        threw = true;
+        Sentry.captureException(err, { tags: { area: 'upload-save', branch } });
+        return fallback;
+      };
       const [savedValues, savedDocs, savedLabValues] = await Promise.all([
-        measurements.length > 0 ? bulkSaveMeasurements(measurements) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
-        docPayloads.length > 0 ? bulkSaveDocuments(docPayloads) : Promise.resolve({ saved: [], errorCount: 0 }),
-        labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
+        measurements.length > 0 ? bulkSaveMeasurements(measurements).catch(failed('measurements', { saved: [], skippedDuplicates: 0, errorCount: measurements.length })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
+        docPayloads.length > 0 ? bulkSaveDocuments(docPayloads).catch(failed('documents', { saved: [], errorCount: docPayloads.length })) : Promise.resolve({ saved: [], errorCount: 0 }),
+        labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads).catch(failed('labValues', { saved: [], skippedDuplicates: 0, errorCount: labValuePayloads.length })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
       ]);
 
       setSavedCount(savedValues.saved.length);
@@ -616,14 +639,20 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         }
       }
 
-      if (totalCompleted > 0) {
+      if (totalCompleted > 0 && !threw) {
         trackProductEvent('upload_saved', { count: totalSaved });
         setState('done');
         onComplete();
       } else {
-        setError('Failed to save. Please try again.');
+        // Stay in review: a second Save retries idempotently (values dedup on
+        // skippedDuplicates, documents on contentHash).
+        if (totalSaved > 0) onComplete();
+        setError(threw ? 'Some items could not be saved. Please try again.' : 'Failed to save. Please try again.');
       }
+    } catch {
+      setError('Failed to save. Please try again.');
     } finally {
+      savingRef.current = false;
       setIsSaving(false);
     }
   }, [onComplete, onScreeningUpdate, results, history.documents]);
@@ -631,8 +660,10 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   // Portal to body so position:fixed resolves against the viewport — the
   // .health-tool container has a transform/contain that would otherwise pin
   // the modal inside the (very tall) widget root instead of the viewport.
-  return createPortal((
-    <div className="upload-modal-backdrop" style={hidden ? { display: 'none' } : undefined} onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
+  return <>
+    {!open && state !== 'select' && <FloatingUploadIndicator progress={progress} state={isSaving ? 'saving' : error || saveErrorCount > 0 ? 'error' : state} onClick={onOpen} />}
+    {createPortal((
+    <div className="upload-modal-backdrop" style={!open ? { display: 'none' } : undefined} onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
       <div className={`upload-modal${isMobile ? ' upload-modal--mobile' : ''}`}>
         <div className="upload-modal-header">
           <h3>Upload Health Records</h3>
@@ -640,7 +671,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         </div>
 
         <div className="upload-modal-body">
-          {state === 'select' && archiveMode === 'device-only' && !skipArchive && (
+          {(state === 'select' || state === 'error') && archiveMode === 'device-only' && !skipArchive && (
             <div className="upload-select upload-connect-first">
               <h3 className="upload-connect-title">Keep your original documents</h3>
               <p className="upload-connect-text">{UPLOAD_STORAGE_NOTICE}</p>
@@ -659,7 +690,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               </button>
             </div>
           )}
-          {state === 'select' && (archiveMode !== 'device-only' || skipArchive) && (
+          {(state === 'select' || state === 'error') && (archiveMode !== 'device-only' || skipArchive) && (
             <div className="upload-select">
               <div
                 className="upload-dropzone"
@@ -759,5 +790,6 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         </div>
       </div>
     </div>
-  ), document.body);
+  ), document.body)}
+  </>;
 }

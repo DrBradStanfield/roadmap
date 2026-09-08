@@ -37,7 +37,7 @@ import { ResultsPanel } from './ResultsPanel';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { ChatEmbed } from './ChatEmbed';
 import { listConversations } from '../lib/chat-api';
-import { UploadModal, FloatingUploadIndicator } from './UploadModal';
+import { UploadModal } from './UploadModal';
 import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 import { ensureIsoDatetime } from '../lib/recordedAt';
@@ -123,8 +123,6 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [floatingChatOpen, setFloatingChatOpen] = useState(false);
   const [chatPrefetch, setChatPrefetch] = useState<ChatPrefetchData | null>(null);
-  const [uploadActive, setUploadActive] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0, fileName: '' });
 
   // Clean up debounce timers on unmount to prevent stale API calls
   useEffect(() => {
@@ -1018,34 +1016,20 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         </div>
       )}
 
-      {(showUploadModal || uploadActive) && (
-        <UploadModal
-          unitSystem={unitSystem}
-          metricUnitOverrides={metricUnitOverrides}
-          onToggleFieldUnit={handleToggleFieldUnit}
-          history={uploadHistory}
-          onComplete={handleUploadComplete}
-          onStart={handleUploadStart}
-          onClose={() => setShowUploadModal(false)}
-          onScreeningUpdate={handleScreeningChange}
-          birthYear={inputs.birthYear ? Number(inputs.birthYear) : undefined}
-          sex={inputs.sex === 'male' || inputs.sex === 'female' ? inputs.sex : undefined}
-          hidden={!showUploadModal && uploadActive}
-          onProcessingStart={() => setUploadActive(true)}
-          onProcessingEnd={(autoReopen) => {
-            setUploadActive(false);
-            if (autoReopen) setShowUploadModal(true);
-          }}
-          onProgressUpdate={setUploadProgress}
-        />
-      )}
-
-      {!showUploadModal && uploadActive && (
-        <FloatingUploadIndicator
-          progress={uploadProgress}
-          onClick={() => setShowUploadModal(true)}
-        />
-      )}
+      <UploadModal
+        open={showUploadModal}
+        onOpen={() => setShowUploadModal(true)}
+        unitSystem={unitSystem}
+        metricUnitOverrides={metricUnitOverrides}
+        onToggleFieldUnit={handleToggleFieldUnit}
+        history={uploadHistory}
+        onComplete={handleUploadComplete}
+        onStart={handleUploadStart}
+        onClose={() => setShowUploadModal(false)}
+        onScreeningUpdate={handleScreeningChange}
+        birthYear={inputs.birthYear ? Number(inputs.birthYear) : undefined}
+        sex={inputs.sex === 'male' || inputs.sex === 'female' ? inputs.sex : undefined}
+      />
 
       {/* Undo banner for a medication the chat just changed (meds auto-save, so
           the chat applies + states the change and offers an explicit Undo). */}

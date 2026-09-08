@@ -440,6 +440,15 @@ export function ReviewTable({
     });
     return map;
   });
+  // A document the record now holds (a partial save reloaded history) unchecks
+  // itself, so a retry cannot file it twice. The user can still re-tick it.
+  useEffect(() => {
+    setDocChecked(prev => {
+      const next = { ...prev };
+      results.forEach((r, fi) => { if (r.document && isDocDuplicate(r.fileName, docHistoryIndex)) next[fi] = false; });
+      return next;
+    });
+  }, [docHistoryIndex, results]);
 
   // Per-document: editable title
   const [docTitles, setDocTitles] = useState<Record<number, string>>(() => {
@@ -808,7 +817,7 @@ export function ReviewTable({
             archiveCount > 0 && `${archiveCount} Original${archiveCount !== 1 ? 's' : ''}`,
           ].filter(Boolean).join(' + ')}`}
         </button>
-        <button className="review-cancel-btn" onClick={onCancel}>
+        <button className="review-cancel-btn" onClick={onCancel} disabled={isSaving}>
           Cancel
         </button>
       </div>
