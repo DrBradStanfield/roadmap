@@ -1,8 +1,8 @@
 # Reference: detail moved out of CLAUDE.md (on-demand tier)
 
-> Moved 2026-08-10 (entropy pass). CLAUDE.md keeps the operative rules and points here
-> for depth. Sections below are verbatim from the pre-cleanup CLAUDE.md; update them
-> here when the underlying system changes.
+> CLAUDE.md keeps the operative rules. This reference describes the current system;
+> the gotcha archive below retains incident evidence. Retired implementation guides
+> remain available in git history, not as setup instructions.
 
 ## FHIR Compliance
 
@@ -23,37 +23,75 @@
 **Rules:**
 - Store actual drug name and dose when taking a medication (never 'yes')
 - Use 'none', 'not_yet', 'not_tolerated' only for status (no dose data)
-- `status` is derived from `drug_name` client-side when the medication is saved (v1's server `deriveMedicationStatus()` is gone)
+- The file stores `medicationKey`, `drugName`, `doseValue`, `doseUnit` and sync stamps.
+  UI adapters derive status from the drug name; there is no file `status` field
+  for medications. See [roadmap-file.ts](../packages/health-core/src/roadmap-file.ts).
+
+**Why record treatment history:** an improved lab result may reflect treatment,
+not the absence of an underlying risk. Keep the treatment context alongside
+measurements. Recording this history does not establish that a medicine caused
+a later change.
+
+`saveMedication()` and `saveSupplement()` update the current keyed state and
+append a history row when `history-change.ts` classifies a meaningful change.
+The row records `changeType` at write time so a later cross-device merge cannot
+misclassify it by reordering timestamps. Identical saves do not add history.
+Medication history uses `updatedAt` as its recorded change time; it has no
+`effective_start`, `effective_end` or user-entered treatment-start field.
+See [RoadmapStore](../widget-src/src/storage/roadmap-store.ts) and
+[history-change.ts](../packages/health-core/src/history-change.ts).
 
 ### Measurement Storage (FHIR Observation + replaces)
 
-> **v2 note:** these FHIR semantics are now enforced **client-side in the user's `health-roadmap.json` file** ([RoadmapStore](widget-src/src/storage/roadmap-store.ts) + [mergeFiles](packages/health-core/src/merge.ts)), **not** by Supabase RLS/RPC/triggers. The server-side machinery described below (the `correct_measurement` RPC, the BEFORE-UPDATE/INSERT triggers, the partial UNIQUE index, the 409 responses) is **retired**, it lived on the v1 `health_measurements` table that was purged June 2026. It's documented here because the *file* preserves the same Observation shape; read "server" as "the RoadmapStore + merge logic."
+These semantics are enforced in the user's `health-roadmap.json` by
+[RoadmapStore](../widget-src/src/storage/roadmap-store.ts),
+[record-edits.ts](../packages/health-core/src/record-edits.ts) and
+[mergeFiles](../packages/health-core/src/merge.ts). The old server RPC,
+triggers and indexes are retired; they are not prerequisites for this file.
 
 Stored values are **never mutated**. The file's `measurements`/`labValues` arrays are append-only with FHIR R4 `Observation` semantics:
 
 - **`status`** (`'active' | 'entered-in-error'`): only `active` rows feed `getLatestMeasurements()`/results. `entered-in-error` rows are kept for audit. Sticky: no revert to `active`.
-- **`corrects_id`**: when this row is a correction, points at the row it replaces (self-FK, `ON DELETE SET NULL`). NULL on original inserts.
+- **`correctsId`**: the ID of the row this correction replaces; `null` on an original row. This is a file reference, not a database foreign key.
 - **`source`** (`MEASUREMENT_SOURCES` enum in `validation.ts`):
   - `manual`: user typed into the form
   - `lab_import`: LLM-extracted, not edited
   - `lab_import_edited`: LLM-extracted then user-corrected at review time
-  - `manual_correction`: inserted by the `correct_measurement` RPC
+  - `manual_correction`: appended by a client-side correction
   - `apple_health`, `fitbit`: future HealthKit-style imports
 
 **Correction flow (the only path that flips a row's status):**
 
 1. User clicks an existing value in `BloodTestTimeline`, types a new one, presses Enter or clicks away.
 2. Widget calls `RoadmapStore.correctMeasurement(oldId, newValueSI)`, a purely client-side mutation of the in-memory file, persisted via the normal `flush()` (read-merge-write to the user's cloud). No server round-trip.
-3. It atomically marks the old row `status='entered-in-error'` and appends a new row with `source='manual_correction'` + `correctsId=oldId` ([roadmap-store.ts](widget-src/src/storage/roadmap-store.ts)).
+3. It atomically marks the old row `status='entered-in-error'` and appends a new row with `source='manual_correction'` + `correctsId=oldId` ([roadmap-store.ts](../widget-src/src/storage/roadmap-store.ts)).
 
 **Client-side invariants (RoadmapStore + `mergeFiles`):**
 
 - Arrays are append-only; corrections never edit a row in place, they add a new row and flip the old row's `status`.
 - At most one `active` row per `(metric, day)` slot, enforced in `RoadmapStore.addMeasurement()` (the old DB partial-unique-index guarantee, moved client-side).
 - `mergeFiles()` makes `status` **monotonic / sticky**: if one device marks a row `entered-in-error` and another still has it `active`, the merge converges to `entered-in-error`.
-- A `correctsId` always points within the same file (single-owner), so the old cross-user-ownership trigger is moot.
+- Correction writers target an active row in the same file and retain its original measurement date.
 
 **Bulk save (lab import review)** is also client-side: `RoadmapStore` appends each reviewed row, skipping `(metric, recorded_at)` duplicates. Re-uploading unchanged lab data is a no-op (all-duplicate is success, not error). (The server `api.lab-import-v2.ts` only *extracts* values from the uploaded file via Claude and returns them, it stores nothing.)
+
+### Document import decisions
+
+The current pipeline is documented in [lab-upload.md](lab-upload.md).
+Classification and extraction share an LLM call, avoiding a separate classifier
+request for each document. Non-lab documents retain searchable markdown and
+metadata in `healthDocuments`; originals are archived in the user's cloud when
+available. This supersedes the old decision to discard originals.
+
+Review must remain explicit. A misclassified scan must not silently move a
+screening date years into the future. `ReviewTable.tsx` presents a screening-date
+checkbox when eligible, and the user commits the reviewed selection with Save.
+Document deduplication uses `sourceFileName`, not an LLM-generated title.
+
+For retired designs, use `git show c9085eb:docs/<filename>` with
+`architecture.html`, `health-documents.md`, `homepage-pivot.md` or
+`medications-supplements-tracking.md`. Their SQL, account migration and server
+health-record instructions describe v1, not the current architecture.
 
 ## Important Files
 
@@ -110,11 +148,11 @@ Compact inventory. Tests sit beside their file (`*.test.ts`) and are not listed.
 
 ### Local-first file collections (`health-roadmap.json`)
 
-Health data lives in the user's own file ([roadmap-file.ts](packages/health-core/src/roadmap-file.ts)), **not** Supabase. The collections (append-only unless noted):
+Health data lives in the user's own file ([roadmap-file.ts](../packages/health-core/src/roadmap-file.ts)), **not** Supabase. The collections (append-only unless noted):
 
 - `measurements`: Immutable time-series records (metric_type, value in SI, recorded_at, `source`, `status`, `correctsId`). Same FHIR Observation shape the old `health_measurements` table had.
-- `medications`: FHIR-compatible (medication_key, drug_name, dose_value, dose_unit, status, started_at). Keys: `statin`, `ezetimibe`, `statin_escalation`, `pcsk9i`, `bempedoic_acid`, `glp1`, `glp1_escalation`, `sglt2i`, `metformin`. `medicationHistory`, append-only change log (FHIR MedicationStatement: effective_start/end, change_type started/stopped/dose_changed/switched/initial).
-- `supplements` (+ `supplementHistory`): supplement records (supplement_key, name, dose, status, started_at), same history pattern.
+- `medications`: current keyed state (`medicationKey`, `drugName`, `doseValue`, `doseUnit`, sync stamps), merged by last-write-wins. Keys: `statin`, `ezetimibe`, `statin_escalation`, `pcsk9i`, `bempedoic_acid`, `glp1`, `glp1_escalation`, `sglt2i`, `metformin`. `medicationHistory` is an append-only log of snapshots with optional `changeType` (`started`, `stopped`, `dose_changed`, `switched`); older rows may lack that field.
+- `supplements` (+ `supplementHistory`): current records (`supplementKey`, `supplementName`, `doseValue`, `doseUnit`, `status`, `startedAt`, sync stamps), merged by last-write-wins; history is append-only.
 - `labValues`: Free-form lab results beyond the core metrics (sodium, ALT, MCV, …). FHIR shape: `status` (`active`|`entered-in-error`), `source` (`lab_import`|`lab_import_edited`|`manual`|`manual_correction`); value+unit as reported by the lab (no SI conversion, units aren't canonical across labs). Dedup on `(metric_name, recorded_at)`.
 - `healthDocuments`: Scan results, clinic letters, discharge/pathology reports, vaccination records (markdown + metadata). Dedup on `sourceFileName` (stable) not title+date (LLM-generated, drifts).
 - `reminderOptIn`: mirrored client copy of the user's reminder schedule (the server's `reminder_optin_v2` row is the delivery source of truth).
@@ -217,26 +255,41 @@ Pulsing `.field-attention` CSS class highlights the next field to fill. On mobil
 
 ## A/B Testing
 
-Managed from the Shopify app dashboard at `/app/ab-testing`. Full design rationale in `docs/homepage-pivot.md` (Stage 2).
+**Current wiring, checked 2026-09-07:** the admin dashboard and event backend
+remain, but this repo's `app-block.liquid` renders a fixed heading and subheading.
+It neither reads `health_roadmap.ab_config` nor assigns variants. Activating a
+test in admin therefore does not change the current block's copy. This describes
+checked-in source; separately configured store themes need their own inspection.
 
-**How it works**: Each test targets a single element (`heading` or `subheading`) with two or more text variants. Test config is stored in Supabase (`ab_tests` table), delivered to the storefront via a Shopify shop metafield (`health_roadmap.ab_config`), and rendered in `app-block.liquid` with all variants in the HTML. A synchronous inline script picks one variant from localStorage before first paint (zero flash). Impressions and conversions are tracked in `ab_events` and displayed with statistical significance (two-proportion z-test) in the admin dashboard.
+The dashboard at `/app/ab-testing` accepts `heading`, `subheading` and
+`email-guest-helper` targets, with at most one active test **per target**. It
+writes active tests to the shop metafield. Pausing/completing refreshes that
+metafield, or deletes it when none remain. Supabase stores deduplicated events;
+`ab-stats.ts` computes two-proportion z-test statistics.
+
+**Retained historical rationale:** the original Liquid design rendered variants
+outside React and selected one before first paint, avoiding a fetch or extension
+deploy for copy changes. Per-event database inserts avoided concurrent counter
+updates and loss of in-memory counts on Fly restarts. These explain the backend's
+shape; they are not evidence that storefront variant delivery still operates.
 
 **Key files:**
-- `app/routes/app.ab-testing.tsx`: Admin dashboard (Polaris UI: create/activate/pause/complete tests, view results)
-- `app/routes/api.ab.ts`: Storefront endpoint for impression/conversion events (HMAC-verified, rate-limited)
-- `app/lib/ab-stats.ts`: Statistical significance functions (`normalCDF`, `calculateSignificance`)
-- `app/lib/supabase.server.ts`: AB query helpers (`getABTests`, `createABTest`, `recordABEvent`, `getABTestResults`, etc.)
-- `extensions/health-tool-widget/blocks/app-block.liquid`: Metafield-driven variant rendering + inline assignment script
-- `widget-src/src/lib/server-api.ts`: Client-side `trackABImpression()`, `trackABConversion()`, `getVisitorId()`
+- `app/routes/app.ab-testing.tsx`: admin forms, status changes and metafield writes.
+- `app/routes/api.ab.ts`: HMAC-verified, rate-limited impression/conversion endpoint.
+- `app/lib/supabase.server.ts`: test and event helpers, including event deduplication.
+- `app/lib/ab-stats.ts`: conversion-rate significance calculations.
+- `extensions/health-tool-widget/blocks/app-block.liquid`: fixed hero; no variant writer.
+- `widget-src/src/lib/server-api.ts`: `getABAssignments()`, `trackABImpression()`,
+  `trackABConversion()`, `getVisitorId()`; event tracking reads existing assignments.
+- `widget-src/src/components/HealthTool.tsx` + `ResultsPanel.tsx`: call
+  `trackABImpression()` / `trackABConversion()` only. No widget code reads a
+  variant for any target, including `email-guest-helper`.
 
-**localStorage keys** (shared between inline Liquid script and React):
-- `hr_ab`: variant assignment: `{ t: testId, v: variantId }`. Written by inline script in `app-block.liquid`, read by `getABAssignments()` in `server-api.ts`.
-- `hr_vid`: anonymous visitor UUID for event deduplication
-- `hr_ab_imp_<testId>`: flag to skip redundant impression network calls
-
-**Adding new testable elements**: Add the target value to `ABTestTarget` type in `supabase.server.ts`, add it to the Zod enum in `app.ab-testing.tsx`, add a `{% if ab.target == 'new_element' %}` block in `app-block.liquid`, and add a button to the admin create form.
-
-**Only one test can be active at a time.** Activating a new test pauses the current one. Pausing/completing deletes the Shopify metafield → storefront falls back to default text.
+**Existing localStorage readers:** `hr_ab` accepts `{ tests: { testId: variantId } }`
+and the older `{ t: testId, v: variantId }`; `hr_vid` identifies a visitor;
+`hr_ab_imp_<testId>` suppresses repeat impression calls. Old stored assignments
+can still be read, so an event alone does not prove that a variant was displayed.
+Restoring or retiring the experiment delivery path is separate behavior work.
 
 ## Dangerous Gotchas — full archive (curated shortlist lives in CLAUDE.md)
 
@@ -257,7 +310,7 @@ Managed from the Shopify app dashboard at `/app/ab-testing`. Full design rationa
 - **Lab-import is auto-retried server-side at two independent levels, and the counts multiply.** In `app/lib/anthropic.server.ts`: `extractOrClassify` makes 2 outer attempts (one retry, 1s apart), and each `extractOrClassifyOnce` calls `callAnthropic` up to twice — the initial call, then a retry with a `{` prefilled assistant turn to force JSON. That is **4 LLM calls worst-case per file** on malformed JSON or schema drift. Underneath, each individual HTTP call retries transient failures (502/503/504/529, network, timeout) up to `RETRY_MAX_ATTEMPTS = 2` with `RETRY_DELAY_MS = 1000` (a flat 1s wait, no backoff) — so if transient errors stack on top, worst-case is **up to 8 HTTP attempts**. Cost impact is bounded: the file must fail before any extra call fires.
 - **Server code (`app/`) must deep-import health-core (`../../packages/health-core/src/<module>`), NEVER `'@roadmap/health-core'`.** The Fly Docker build runs `npm ci` before `COPY . .`, so the workspace symlink for `@roadmap/health-core` never exists in the image — the SSR build then fails with `Rollup failed to resolve import "@roadmap/health-core"`. Local builds/tests pass (the symlink exists locally), so this ONLY breaks at deploy. That's why `chat.server.ts`, `email.server.ts`, `reminder-v2.server.ts` all use deep relative paths. (Bit us on `product-events.server.ts`, fixed in `d08fdeb`, 2026-08-06.) Widget code is unaffected — the vite configs alias `@roadmap/health-core` → `src`.
 - **`docs/products.md` MUST stay a REAL file (mode `100644`) — direction INVERTED 2026-08-10.** The master now lives in THIS repo; `claude_business/docs/products.md` is the symlink pointing here (`→ ~/Documents/roadmap/docs/products.md`). This killed the deploy symlink dance and unblocked CI/headless Fly deploys. `scripts/check-symlinks.mjs` (pre-commit + `npm run check:symlinks`) now blocks committing it as a symlink (mode `120000`). Two failure modes to watch: (1) someone recreates the OLD symlink here out of habit — the guard catches it; (2) a claude_business session replaces ITS symlink with a real file — that forks two divergent masters with no error anywhere; if found, restore the claude_business side to a symlink after merging any content difference. (History: pre-inversion, accidentally committing the dereferenced file was the bug — `e7547ca`, 2026-05-20. Now that's the intended state.)
-- **`.update().select()` after a self-mutating WHERE returns empty data even when the UPDATE committed.** PostgREST evaluates the WHERE filter against the row *after* the update is applied, then returns only rows that still match. If your filter is on the column you're updating (e.g. atomic CAS pattern: `UPDATE ... WHERE lock_date != today` then `SET lock_date = today`), the updated row no longer matches, so `data` comes back as `[]`. `data?.length > 0` reads false → caller thinks the UPDATE didn't happen → silent skip. Symptom: row state in DB advances correctly, but the function returns false and downstream code never runs. No errors, no Sentry. This silently broke trending_cron + reminder_cron for weeks (commit `076807d`, 2026-05-25). Fix: drop the `.select()`. Do the UPDATE alone, then a separate verify SELECT that reads back `(locked_by, lock_date)` (or whatever identifies "we won the CAS") to determine ownership. See [app/lib/supabase.server.ts:1763](app/lib/supabase.server.ts#L1763) `tryAcquireCronLock`.
+- **`.update().select()` after a self-mutating WHERE returns empty data even when the UPDATE committed.** PostgREST evaluates the WHERE filter against the row *after* the update is applied, then returns only rows that still match. If your filter is on the column you're updating (e.g. atomic CAS pattern: `UPDATE ... WHERE lock_date != today` then `SET lock_date = today`), the updated row no longer matches, so `data` comes back as `[]`. `data?.length > 0` reads false → caller thinks the UPDATE didn't happen → silent skip. Symptom: row state in DB advances correctly, but the function returns false and downstream code never runs. No errors, no Sentry. This silently broke trending_cron + reminder_cron for weeks (commit `076807d`, 2026-05-25). Fix: drop the `.select()`. Do the UPDATE alone, then a separate verify SELECT that reads back `(locked_by, lock_date)` (or whatever identifies "we won the CAS") to determine ownership. See [app/lib/supabase.server.ts:1763](../app/lib/supabase.server.ts#L1763) `tryAcquireCronLock`.
 - **react-router 7.17's package exports resolve EVERY condition to `dist/development` — the production build is unreachable by normal resolution.** There is no `production`/`development` export condition in `react-router/package.json`; `node`, `import`, and `default` all point at `dist/development/index.mjs`, so `NODE_ENV=production` and `--conditions=production` both still load the dev build (symptom: prod Sentry server frames in `react-router/dist/development/chunk-*.mjs`). `vite.config.ts` fixes this with an SSR-scoped `resolveId` redirect to `dist/production/index.mjs` + `ssr.noExternal` inlining. **Corollary: every package that imports `react-router` at SSR-render time must also be in `ssr.noExternal`** (currently `@shopify/shopify-app-react-router`, `@react-router/node`) — an externalized consumer loads a SECOND (dev) react-router copy from node_modules, and the dual instance breaks React context: every `/app/*` embedded admin page 500s with `useNavigate() may be used only in the context of a <Router>` while API routes keep working (that's why it hid for 11 days, commits `5a98714`→`175ae91`). A `generateBundle` guard in vite.config.ts now FAILS THE BUILD if react-router (or any package depending on it) escapes inlining — if that guard fires on a new dep, add the dep to `ssr.noExternal`; do NOT allow-list it as safe-external unless you've verified it never imports react-router at runtime (`@sentry/react-router` is the one legit exception — it must stay external to share SDK state with `instrument.server.mjs`). **Known residue (2026-08-06, unfixed): `react-router-serve` itself runs from node_modules, so the HTTP request pipeline (`callRouteHandler`/`callLoaderOrAction`) still executes the DEV react-router build in production** — dev frames in server Sentry stacks are therefore expected, not a sign the guard failed. Functional but adds dev-mode overhead; fixing it means a custom server entry with the same prod redirect, or a react-router upgrade that restores env-based exports (canary-deploy).
 - **A scheme-less `SHOPIFY_STORE_URL` turns a server redirect into a relative one — 302 to a 404, silently.** The education app's value is a bare myshopify host (no `https://`), so `new Response(null, {status:302, headers:{Location: `${process.env.SHOPIFY_STORE_URL}/pages/roadmap`}})` emitted a Location with no scheme; browsers resolved it against the app's own origin and landed on `health-tool-edu.fly.dev/<host>/pages/roadmap` → 404. Nothing errors: the route returns 302, the log looks healthy, only the user sees the dead end. Compounding it, the commerce store has no `/pages/roadmap` at all, so even the well-formed branch was wrong. Symptom: US-22's plan-ready email CTA worked on one app and 404'd on the other (2026-08-13). Fix: don't build the destination from env at all — `app/routes/roadmap.open.tsx` now exports one hardcoded `ROADMAP_URL` constant (`https://drstanfield.com/pages/roadmap`), which is where both apps' readers belong anyway; both apps verified live returning `302 → https://drstanfield.com/pages/roadmap` and a 200 at the end of it. Rule: any env var that may hold a bare host is never safe to interpolate straight into a `Location` header — assert the scheme or use a constant.
 - **`track_progress: false` (claude-code-action's DEFAULT when you pass an explicit `prompt`) also un-registers the `github_comment` MCP server — the reviewer runs, succeeds, and says nothing.** It reads like a cosmetic "don't post a progress checklist" flag, but it gates the comment TOOL as well, so a review job with a green check can post zero comments and zero verdicts. Symptom: PR #5's claude-review workflow succeeded with no PR comment and no APPROVE, which in a zero-click pipeline means the change silently never ships (2026-08-10). Fix: set `track_progress: true` on any claude-code-action job whose OUTPUT is a comment. Related process trap: **a failed deploy leaves its "🚀 Deploying" veto issue open forever** — only `verify-live` closes it, so a run that dies earlier (e.g. `setup-flyctl` "socket hang up", a transient infra failure seen on run 31641154488) leaves an issue that looks like a deploy still in flight. An open deploy issue with no matching in-progress workflow run means the deploy FAILED, not that it's pending.

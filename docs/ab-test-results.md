@@ -51,7 +51,7 @@ The dashboard's "B is −6.9%" framing is bot-induced. Post-fix data hints Varia
 
 Computed by paginating `ab_events` for each active test, bucketing by `event_type` and `created_at < 2026-05-01T00:00:00Z`, then running a two-proportion z-test on the post-fix counts. Diagnostic script was a one-off; not checked in.
 
-Bot-fix history is documented in commit `bf54559` ("Filter bot traffic from A/B test events to fix SRM"). Design rationale for the A/B system is in [homepage-pivot.md](homepage-pivot.md) Stage 2.
+Bot-fix history is documented in commit `bf54559` ("Filter bot traffic from A/B test events to fix SRM"). See [current A/B wiring and historical rationale](reference.md#ab-testing); the current app block no longer reads the experiment metafield.
 
 ## Implication for the dashboard
 
