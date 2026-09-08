@@ -35,7 +35,8 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   `feedback_submissions`; `product_events` by `event_name` — the funnel:
   results_viewed → upload_started/saved/extract_failed →
   cloud_connect_started/success → chat_opened → correction_made →
-  lab_rows_viewed/lab_row_added → reminder_optin/optout → report_email_* →
+  lab_rows_viewed/lab_row_added → medication_history_viewed →
+  reminder_optin/optout → report_email_* →
   reminder_sent (server; cross-check against `reminder_optin_v2.last_sent`
   stamps) → the connector family `mcp_connect` / `mcp_tool_call` /
   `mcp_import` / `remote_change_applied` (metadata breakdown by tool, client,

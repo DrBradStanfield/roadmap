@@ -48,18 +48,16 @@ export type AddMeasurementResult =
   | { status: 'duplicate' }
   | { status: 'error' };
 
-/** Medication history record (from medication_history table). */
+/** Recorded medication change projected from the append-only file history. */
 export interface ApiMedicationHistory {
   id: string;
   medicationKey: string;
   drugName: string;
   doseValue: number | null;
   doseUnit: string | null;
-  status: string;
-  effectiveStart: string;
-  effectiveEnd: string | null;
   changeType: string;
-  source: string;
+  /** When the change was recorded, not a claimed treatment date. */
+  recordedAt: string;
 }
 
 /** API supplement record. */

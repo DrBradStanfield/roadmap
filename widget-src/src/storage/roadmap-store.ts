@@ -17,7 +17,7 @@
  *  - Server/AI/email functions (lab-extract, chat, report email) are NOT here —
  *    they're website-only (Brad's server) or BYO-key (self-host); the standalone
  *    build hides them.
- *  - Medication-history chart annotations are derived from lightweight snapshots.
+ *  - Medication-history chart annotations use explicit change types saved at write time.
  */
 import { sha256Blob } from '../lib/archive-payloads';
 import {
@@ -161,11 +161,9 @@ export interface ApiMedicationHistory {
   drugName: string;
   doseValue: number | null;
   doseUnit: string | null;
-  status: string;
-  effectiveStart: string;
-  effectiveEnd: string | null;
   changeType: string;
-  source: string;
+  /** When the change was recorded, not a claimed treatment date. */
+  recordedAt: string;
 }
 export interface LatestMeasurementsResult {
   inputs: Partial<HealthInputs>;
@@ -336,11 +334,16 @@ export class RoadmapStore {
   }
 
   loadMedicationHistory(): ApiMedicationHistory[] {
-    // Phase 1: no medication-change chart annotations. The chart reads
-    // `changeType` (started/changed/stopped), which the append-only log doesn't
-    // record at write time — fabricating it mislabels stops. Proper med-history
-    // (changeType recorded on each change) is a later phase. Empty = no pins.
-    return [];
+    return this.file.medicationHistory
+      .filter(h => ['started', 'stopped', 'dose_changed', 'switched'].includes(h.changeType ?? '')
+        && typeof h.medicationKey === 'string' && typeof h.drugName === 'string'
+        && Number.isFinite(Date.parse(h.updatedAt)))
+      .map(h => ({
+        id: h.id, medicationKey: h.medicationKey, drugName: h.drugName,
+        doseValue: h.doseValue, doseUnit: h.doseUnit,
+        changeType: h.changeType!, recordedAt: h.updatedAt,
+      }))
+      .sort((a, b) => a.recordedAt.localeCompare(b.recordedAt) || a.id.localeCompare(b.id));
   }
 
   loadLabValues(): ApiLabValue[] {

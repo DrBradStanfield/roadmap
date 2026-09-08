@@ -67,6 +67,43 @@ describe('RoadmapStore — medication history (append-only change log)', () => {
     expect(current?.drugName).toBe('none');
   });
 
+  it('US-06 AC4: projects saved changes after reload without inventing legacy events', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.saveMedication('statin', 'atorvastatin', 20, 'mg');
+    store.saveMedication('statin', 'atorvastatin', 40, 'mg');
+    store.saveMedication('statin', 'rosuvastatin', 10, 'mg');
+    store.saveMedication('statin', 'none');
+    await store.flush();
+    const reloaded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const before = readCloudFile(cloud);
+    expect(reloaded.loadMedicationHistory().map(h => h.changeType).sort()).toEqual([
+      'dose_changed', 'started', 'stopped', 'switched',
+    ]);
+    for (const event of reloaded.loadMedicationHistory()) {
+      const saved = before.medicationHistory.find(h => h.id === event.id)!;
+      expect(event.recordedAt).toBe(saved.updatedAt);
+      expect(event.drugName).toBe(saved.drugName);
+    }
+    expect(readCloudFile(cloud)).toEqual(before);
+  });
+
+  it('US-06 AC4: keeps legacy and unknown events in the file without fabricating annotations', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.saveMedication('statin', 'atorvastatin', 20, 'mg');
+    await store.flush();
+    const file = readCloudFile(cloud);
+    const row = file.medicationHistory[0];
+    file.medicationHistory.push({ ...row, id: 'legacy', changeType: undefined });
+    file.medicationHistory.push({ ...row, id: 'invalid-date', updatedAt: '!invalid' });
+    file.medicationHistory.push({ ...row, id: 'invalid-drug', drugName: 55 as unknown as string });
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(file), version: 10 });
+    const reloaded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect(reloaded.loadMedicationHistory().map(h => h.id)).toEqual([row.id]);
+    expect(readCloudFile(cloud).medicationHistory).toHaveLength(4);
+  });
+
   it('does not record transitions between non-taking statuses (not_yet ↔ not_tolerated)', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));

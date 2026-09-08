@@ -8,6 +8,7 @@
  */
 export const PRODUCT_EVENT_NAMES = [
   'results_viewed',
+  'medication_history_viewed',
   'upload_started',
   'upload_extract_failed',
   'upload_saved',
