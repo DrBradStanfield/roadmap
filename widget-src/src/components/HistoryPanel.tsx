@@ -50,6 +50,20 @@ const METRIC_COLORS: Record<string, string> = {
   lpa: '#e11d48',
 };
 
+/**
+ * Pins closer than ~4% of the axis span would overdraw each other's label, so
+ * they share one line whose label lists every entry number (1-based, list order).
+ */
+function pinClusters(annotations: ChartAnnotation[], span: number): Array<{ date: number; numbers: number[] }> {
+  const clusters: Array<{ date: number; numbers: number[] }> = [];
+  for (const pin of annotations.map((a, i) => ({ date: a.date, n: i + 1 })).sort((p, q) => p.date - q.date)) {
+    const last = clusters.at(-1);
+    if (last && pin.date - last.date <= span * 0.04) last.numbers.push(pin.n);
+    else clusters.push({ date: pin.date, numbers: [pin.n] });
+  }
+  return clusters;
+}
+
 function toDisplayValue(metricType: string, value: number, unitSystem: UnitSystem): number {
   const field = METRIC_TO_FIELD[metricType];
   if (!field) return value;
@@ -136,13 +150,17 @@ function TimeSeriesChart({
             },
           },
           annotation: annotations && annotations.length > 0 ? {
-            annotations: Object.fromEntries(annotations.map((a, i) => [`med_${i}`, {
+            annotations: Object.fromEntries(pinClusters(annotations, xMax - xMin).map(({ date, numbers }) => [`med_${numbers[0]}`, {
               type: 'line' as const,
-              xMin: a.date,
-              xMax: a.date,
-              borderColor: a.color,
+              xMin: date,
+              xMax: date,
+              borderColor: MED_ANNOTATION_COLOR,
               borderDash: [4, 4],
               borderWidth: 1,
+              label: {
+                content: numbers.join(', '), display: true, position: 'start' as const,
+                backgroundColor: MED_ANNOTATION_COLOR, font: { size: 10 }, padding: { x: 4, y: 2 },
+              },
             }])),
           } : undefined,
         },
@@ -187,11 +205,11 @@ function TimeSeriesChart({
         <canvas ref={canvasRef} />
       </div>
       {annotations && annotations.length > 0 && (
-        <ul aria-label={`${title} recorded medication changes`}>
+        <ol className="metric-chart-events" aria-label={`${title} recorded medication changes`}>
           {annotations.map((annotation, index) => (
             <li key={index}>{formatShortDate(annotation.date)}: {annotation.label}</li>
           ))}
-        </ul>
+        </ol>
       )}
     </div>
   );

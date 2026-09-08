@@ -82,7 +82,7 @@ describe('RoadmapStore — medication history (append-only change log)', () => {
     ]);
     for (const event of reloaded.loadMedicationHistory()) {
       const saved = before.medicationHistory.find(h => h.id === event.id)!;
-      expect(event.effectiveStart).toBe(saved.updatedAt);
+      expect(event.recordedAt).toBe(saved.updatedAt);
       expect(event.drugName).toBe(saved.drugName);
     }
     expect(readCloudFile(cloud)).toEqual(before);

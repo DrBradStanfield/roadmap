@@ -4,8 +4,7 @@ import type { ApiMedicationHistory } from './api-types';
 
 const event = (overrides: Partial<ApiMedicationHistory> = {}): ApiMedicationHistory => ({
   id: 'event', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20,
-  doseUnit: 'mg', status: 'active', effectiveStart: '2026-09-01T10:00:00Z',
-  effectiveEnd: null, changeType: 'started', source: 'record', ...overrides,
+  doseUnit: 'mg', recordedAt: '2026-09-01T10:00:00Z', changeType: 'started', ...overrides,
 });
 
 describe('US-06 AC4: medication chart annotations', () => {
@@ -23,9 +22,17 @@ describe('US-06 AC4: medication chart annotations', () => {
   });
 
   it('does not guess legacy events or invalid dates and names boolean medication categories', () => {
-    expect(medicationAnnotations([event({ changeType: '' }), event({ effectiveStart: 'bad-date' }),
+    expect(medicationAnnotations([event({ changeType: '' }), event({ recordedAt: 'bad-date' }),
       event({ medicationKey: 'unknown' }), event({ medicationKey: 'constructor' })])).toEqual({});
     expect(medicationAnnotations([event({ medicationKey: 'ezetimibe', drugName: 'yes', doseValue: null })]).ldl[0].label)
       .toBe('Recorded start: Ezetimibe');
+  });
+
+  it('omits the dose when the value is missing, zero, NaN, or has no unit', () => {
+    const labels = medicationAnnotations([
+      event({ doseUnit: null }), event({ doseUnit: '' }), event({ doseValue: 0 }),
+      event({ doseValue: NaN }), event({ doseValue: -5 }),
+    ]).ldl.map(a => a.label);
+    expect(labels).toEqual(Array(5).fill('Recorded start: Atorvastatin'));
   });
 });

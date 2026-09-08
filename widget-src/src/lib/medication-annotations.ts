@@ -18,26 +18,32 @@ const MED_CHART_MAP: Record<string, string[]> = {
 export interface ChartAnnotation {
   date: number;
   label: string;
-  color: string;
 }
 
 export const MED_ANNOTATION_COLOR = '#6366f1';
+
+const ACTIONS: Record<string, string> = {
+  started: 'Recorded start:',
+  stopped: 'Recorded stop:',
+  dose_changed: 'Recorded dose change:',
+  switched: 'Recorded switch to:',
+};
 
 /** Project recorded events only; never infer a treatment timeline from merged order. */
 export function medicationAnnotations(history: ApiMedicationHistory[]): Record<string, ChartAnnotation[]> {
   const map: Record<string, ChartAnnotation[]> = {};
   for (const h of history) {
     const metrics = MED_CHART_MAP[h.medicationKey];
-    const actions: Record<string, string> = { started: 'Recorded start:', stopped: 'Recorded stop:', dose_changed: 'Recorded dose change:', switched: 'Recorded switch to:' };
-    const action = actions[h.changeType];
-    const date = chartTimestamp(h.effectiveStart);
+    const action = ACTIONS[h.changeType];
+    const date = chartTimestamp(h.recordedAt);
     if (!Array.isArray(metrics) || typeof action !== 'string' || !Number.isFinite(date)) continue;
     // Stops saved as 'none' do not retain the old drug. Name the category
     // instead of guessing which merged row preceded it.
     const name = !isTakingDrug(h.drugName) || h.drugName === 'yes' ? h.medicationKey : h.drugName;
     const displayName = name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, ' ');
-    const dose = h.changeType !== 'stopped' && h.doseValue != null ? ` ${h.doseValue}${h.doseUnit || ''}` : '';
-    const ann = { date, label: `${action} ${displayName}${dose}`, color: MED_ANNOTATION_COLOR };
+    const hasDose = Number.isFinite(h.doseValue) && (h.doseValue as number) > 0 && typeof h.doseUnit === 'string' && h.doseUnit !== '';
+    const dose = h.changeType !== 'stopped' && hasDose ? ` ${h.doseValue}${h.doseUnit}` : '';
+    const ann = { date, label: `${action} ${displayName}${dose}` };
     for (const metric of metrics) (map[metric] ??= []).push(ann);
   }
   return map;

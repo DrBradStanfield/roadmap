@@ -161,11 +161,9 @@ export interface ApiMedicationHistory {
   drugName: string;
   doseValue: number | null;
   doseUnit: string | null;
-  status: string;
-  effectiveStart: string;
-  effectiveEnd: string | null;
   changeType: string;
-  source: string;
+  /** When the change was recorded — not a claimed treatment date. */
+  recordedAt: string;
 }
 export interface LatestMeasurementsResult {
   inputs: Partial<HealthInputs>;
@@ -343,11 +341,9 @@ export class RoadmapStore {
       .map(h => ({
         id: h.id, medicationKey: h.medicationKey, drugName: h.drugName,
         doseValue: h.doseValue, doseUnit: h.doseUnit,
-        status: h.changeType === 'stopped' ? 'stopped' : 'active',
-        effectiveStart: h.updatedAt, effectiveEnd: null,
-        changeType: h.changeType!, source: 'record',
+        changeType: h.changeType!, recordedAt: h.updatedAt,
       }))
-      .sort((a, b) => a.effectiveStart.localeCompare(b.effectiveStart) || a.id.localeCompare(b.id));
+      .sort((a, b) => a.recordedAt.localeCompare(b.recordedAt) || a.id.localeCompare(b.id));
   }
 
   loadLabValues(): ApiLabValue[] {

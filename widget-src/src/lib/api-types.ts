@@ -55,11 +55,9 @@ export interface ApiMedicationHistory {
   drugName: string;
   doseValue: number | null;
   doseUnit: string | null;
-  status: string;
-  effectiveStart: string;
-  effectiveEnd: string | null;
   changeType: string;
-  source: string;
+  /** When the change was recorded — not a claimed treatment date. */
+  recordedAt: string;
 }
 
 /** API supplement record. */

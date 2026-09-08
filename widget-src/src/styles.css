@@ -1717,6 +1717,30 @@ input[type="number"] {
   font-size: 15px;
 }
 
+/* Recorded medication changes under a chart. Doubled selectors (0,2,0)
+   out-weigh Horizon's global `ol`/`li`/`p` rules, which otherwise add the
+   theme's list margins, bullets and paragraph spacing. Numbers match the
+   on-canvas pin labels. */
+.metric-chart-events.metric-chart-events {
+  list-style: decimal inside;
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+.metric-chart-events.metric-chart-events li {
+  margin: 0;
+  padding: 0;
+}
+.history-note.history-note {
+  margin: 0 0 16px;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
 /* Reminder Settings */
 .reminder-settings {
   border: 1px solid var(--color-gray-border);
