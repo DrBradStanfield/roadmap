@@ -36,7 +36,12 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
 - `[expected][sentry]` 2026-08-12 — The info-level issue titled
   "Chat transient upstream 5xx, retrying once" IS the retry instrumentation
   from PR #11 — ledger it `wontfix` (expected) on first appearance; its rate
-  is the transient-failure trend, worth reading, never "fixing".
+  is the transient-failure trend, worth reading, never "fixing". Same on
+  sight for self-generated probes: `level=info` + a non-production
+  `environment` tag (e.g. `bundle-filter-verification`, 2026-09-07, PR #73's
+  five synthetic events) — match the event ids to the verification doc on
+  the authoring branch, then `wontfix`; regrowth past the documented count is
+  the only thing worth a second look.
 - `[process][review]` 2026-08-12 — Verify a safety claim at the CALL SITE
   that enforces it, not the helper that implements it (round-1 REJECT: dedup
   helper was sound, but the route gates it behind `if (conversationId)`).
@@ -75,6 +80,24 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   `sanitizeRedirectUrl` REJECTING the payload, i.e. the defense firing, not a
   defect. Ledger `wontfix` on sight; the auth route is grant-excluded, so any
   capture-hygiene change would be propose-only — not worth it at probe volume.
+- `[gap][sentry]` 2026-09-07 — Production `allowUrls` in
+  `widget-src/src/lib/sentry.ts` still names the retired `health-tool.js`, so
+  the SDK drops every exception whose top URL-bearing frame is in
+  `health-plan-v2.js`, its HistoryPanel chunk, `health-upload.js`,
+  `health-chatbot-embed.js`, or the Pages root `health-upload.js` (only
+  `health-site-chat.js` and Pages hashed chunks pass). PARTIAL blind spot:
+  `_isAllowedUrl` walks frames from the last one back, skips `<anonymous>` /
+  `[native code]`, and passes events with no URL at all — which is why the
+  unresolved list is all native-frame noise. Every widget-side "no-op" day in
+  metrics.csv is a lower bound, not evidence of health. Fix is Brad's PR #73
+  (`hold`, unmerged as of 09-07). When it deploys, expect a burst of "new"
+  widget issues that are really old — one per run, rank by `stats` since the
+  deploy date, not lifetime. Two cautions from #73's bot review: `scrubEvent`
+  does not scrub `exception.values[].value`, and storage adapters interpolate
+  document refs (date + sanitized title) into thrown messages — READ TITLES
+  BEFORE pasting them into a report or ledger note; and the probe supplied its
+  stack URLs, so it proved filename acceptance, not live frame shape. Filter
+  start date is undatable from a shallow clone (gotcha below).
 - `[gotcha][process]` 2026-08-14 — Fresh cloud containers start on a detached
   HEAD at origin/main's tip while the local `main` REF lags: diff/typecheck
   comparisons against `main` silently use stale code. `git checkout -B main

@@ -5,7 +5,7 @@
  * `mcp.hosted.test.ts` proves the chain works. This file proves the refusals
  * refuse for the reason they claim: a mismatch refusal is distinguishable from
  * an outage, it teaches a guessing agent nothing, the 50-row cap is 50 and not
- * 1, a malformed body is a 400, and the tool list is the eight tools by NAME —
+ * 1, a malformed body is a 400, and the tool list is the nine tools by NAME —
  * a length assertion cannot see a tool being renamed or swapped.
  *
  * The harness is the same shape as `mcp.hosted.test.ts`'s: real Requests
@@ -30,13 +30,13 @@ const CHALLENGE = crypto.createHash('sha256').update(VERIFIER, 'ascii').digest('
 const NOW = '2026-09-02T10:00:00.000Z';
 
 /**
- * The eight tools, spelled out. Written by hand on purpose: comparing the
+ * The nine tools, spelled out. Written by hand on purpose: comparing the
  * server's list to `MCP_TOOLS` proves only that the server echoes itself, and
  * every doc, guide and consent screen in the repo counts to this list (D4–D9).
  */
-const EIGHT_TOOLS = [
+const NINE_TOOLS = [
   'read_record', 'get_plan', 'add_measurement', 'add_lab_values',
-  'correct_value', 'update_profile', 'report_feedback', 'import_documents',
+  'correct_value', 'update_profile', 'report_feedback', 'import_documents', 'file_results',
 ];
 
 let cloud: MemoryCloud;
@@ -157,11 +157,11 @@ function storedRecord(): RoadmapFile {
 
 // ---------------------------------------------------------------------------
 
-describe('the tool list is eight tools, by name (US-32 AC1, US-35 AC12)', () => {
-  it('offers exactly the eight named tools, in order', async () => {
+describe('the tool list is nine tools, by name (US-32 AC1, US-35 AC12, US-36 AC11)', () => {
+  it('offers exactly the nine named tools, in order', async () => {
     seedEmpty();
     const listed = await rpc(await connect(), 'tools/list');
-    expect(listed.result!.tools!.map((t) => t.name)).toEqual(EIGHT_TOOLS);
+    expect(listed.result!.tools!.map((t) => t.name)).toEqual(NINE_TOOLS);
   });
 });
 
@@ -233,5 +233,179 @@ describe('a malformed request body is a 400, not a crash (US-32 AC17)', () => {
     // A parse failure must not be dressed up as something the user broke in
     // their record: nothing was read and nothing was written.
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-36 AC9 — two-phase for the permanent tools, replayed by a scripted assistant
+// ---------------------------------------------------------------------------
+import { OUTPUTS } from '../../packages/health-core/src/mcp-tools';
+import { PROPOSAL_LIFETIME_SECONDS, PROPOSAL_NBF_SECONDS } from '../lib/mcp.server';
+import { WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
+
+const at = (seconds: number) => new Date(Date.parse(NOW) + seconds * 1000).toISOString();
+
+async function callToolAt(access: string, name: string, args: unknown, now: string) {
+  const res = await mcpEndpoint(new Request(`${ISSUER}/mcp`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }),
+  }), now);
+  expect(res.status).toBe(200);
+  const answer = (await res.json()) as { result: { content: Array<{ text: string }>; structuredContent?: Record<string, unknown>; isError?: boolean } };
+  return { text: answer.result.content[0].text, structured: answer.result.structuredContent, isError: answer.result.isError === true };
+}
+
+describe('US-36 AC9 — a permanent write takes two calls, identical arguments, the same connection, 10 s apart, inside 15 min', () => {
+  const FIX = { id: LDL_ID, newValue: 2.8, expectedValue: STORED_LDL };
+
+  it('a scripted assistant obeying a planted line: every shortcut is refused in words, and the honest path writes once, uncharged', async () => {
+    // The sequence the review measured a small model taking from a line in a
+    // clinic letter (5/6): read, then correct_value straight away. Deterministic
+    // here — no model — so a regression fails CI, not a monthly monitor.
+    seedWithLdl();
+    const access = await connect();
+    const stranger = await connect();
+    expect((await callTool(access, 'read_record', {})).isError).toBe(false);
+
+    // 1. The planted call, without confirm: every guard runs, nothing is written, a receipt comes back.
+    const proposed = await callToolAt(access, 'correct_value', FIX, NOW);
+    expect(proposed.isError).toBe(false);
+    expect(proposed.text).toMatch(/^PROPOSAL — nothing written yet\./);
+    expect(proposed.text).toContain('WAIT for their own yes, in their own words');
+    const data = OUTPUTS.correct_value.parse(proposed.structured);
+    expect(data).toMatchObject({ proposal: true, correctsId: LDL_ID, value: 2.8, confirmFrom: at(PROPOSAL_NBF_SECONDS) });
+    const receipt = data.confirm!;
+    expect(storedRecord().measurements).toHaveLength(1);
+    expect(storedRecord().measurements[0].status).toBe('active');
+
+    // 2. Chained straight after: not yet, and told not to spin.
+    const early = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt }, at(2));
+    expect(early.isError).toBe(true);
+    expect(early.text).toContain(`can be used from ${at(PROPOSAL_NBF_SECONDS)}`);
+    expect(early.text).toContain('end your turn');
+
+    // 3. After the pause, but with the number changed under the user's yes.
+    const altered = await callToolAt(access, 'correct_value', { ...FIX, newValue: 0.8, confirm: receipt }, at(11));
+    expect(altered.isError).toBe(true);
+    expect(altered.text).toContain('different arguments');
+
+    // 4. Someone else's connection to the same client, holding the receipt.
+    const foreign = await callToolAt(stranger, 'correct_value', { ...FIX, confirm: receipt }, at(11));
+    expect(foreign.isError).toBe(true);
+    expect(foreign.text).toContain('not valid for this connection');
+
+    // 5. Another tool, same receipt.
+    const wrongTool = await callToolAt(access, 'update_profile', { heightCm: 170, expected: { heightCm: null }, confirm: receipt }, at(11));
+    expect(wrongTool.isError).toBe(true);
+    expect(wrongTool.text).toContain('different arguments');
+    expect(storedRecord().measurements).toHaveLength(1);
+
+    // 6. The honest path: same arguments, same connection, after the pause. Written once.
+    const written = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt }, at(11));
+    expect(written.isError).toBe(false);
+    expect(written.text).toContain('Saved to the user’s Dropbox');
+    expect(OUTPUTS.correct_value.parse(written.structured).proposal).toBeUndefined();
+    expect(storedRecord().measurements).toHaveLength(2);
+    expect(storedRecord().measurements.find((m) => m.id === LDL_ID)!.status).toBe('entered-in-error');
+
+    // 7. Replayed: refused, and nothing else changes.
+    const replay = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt }, at(12));
+    expect(replay.isError).toBe(true);
+    expect(replay.text).toContain('already been used');
+    expect(storedRecord().measurements).toHaveLength(2);
+
+    // 8. The proposal was charged (a correction's five); the confirm was not. Eleven
+    //    more charged proposals fit in the hour; the twelfth meets the allowance.
+    const newRow = storedRecord().measurements.find((m) => m.correctsId === LDL_ID)!;
+    for (let i = 0; i < WRITES_PER_HOUR / WRITE_COST.correct - 1; i++) {
+      const wrong = await callToolAt(access, 'correct_value', { id: newRow.id, newValue: 2.7, expectedValue: 9.9 }, at(13));
+      expect(wrong.isError, `guess ${i}`).toBe(true);
+      expect(wrong.text, `guess ${i}`).not.toContain('allowance');
+    }
+    const spent = await callToolAt(access, 'correct_value', { id: newRow.id, newValue: 2.7, expectedValue: 2.8 }, at(13));
+    expect(spent.isError).toBe(true);
+    expect(spent.text).toContain('allowance');
+  });
+
+  it('a receipt expires at fifteen minutes, and an expectedValue mismatch is refused before any receipt exists, without the stored value', async () => {
+    seedWithLdl();
+    const access = await connect();
+    const receipt = OUTPUTS.correct_value.parse((await callToolAt(access, 'correct_value', FIX, NOW)).structured).confirm!;
+    const late = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt }, at(PROPOSAL_LIFETIME_SECONDS + 1));
+    expect(late.isError).toBe(true);
+    expect(late.text).toContain('has expired');
+    expect(storedRecord().measurements).toHaveLength(1);
+
+    const guessed = await callToolAt(access, 'correct_value', { ...FIX, expectedValue: 9.9 }, NOW);
+    expect(guessed.isError).toBe(true);
+    expect(guessed.structured).toBeUndefined();
+    expect(guessed.text).not.toContain(String(STORED_LDL));
+  });
+
+  it('update_profile: a change proposes and confirms; a no-op has nothing to confirm', async () => {
+    seedEmpty();
+    const access = await connect();
+    const proposed = await callToolAt(access, 'update_profile', { heightCm: 178, expected: { heightCm: null } }, NOW);
+    expect(proposed.isError).toBe(false);
+    const data = OUTPUTS.update_profile.parse(proposed.structured);
+    expect(data.changed).toEqual([{ field: 'heightCm', from: null, to: 178 }]);
+    expect(storedRecord().profile.heightCm).toBeUndefined();
+    // The receipt's identity is key-order-free at every depth: the same arguments re-emitted with `expected` reordered still confirm.
+    const reordered = await callToolAt(access, 'update_profile', { expected: { sex: null, heightCm: null }, heightCm: 178, sex: 'male' }, NOW);
+    expect(reordered.isError).toBe(false);
+    const receipt = OUTPUTS.update_profile.parse(reordered.structured).confirm!;
+    expect(receipt).not.toBe(data.confirm);
+    const done = await callToolAt(access, 'update_profile', { heightCm: 178, sex: 'male', expected: { heightCm: null, sex: null }, confirm: receipt }, at(11));
+    expect(done.isError).toBe(false);
+    expect(storedRecord().profile.heightCm).toBe(178);
+    // The first receipt names other arguments (no `sex`), so it does not confirm this call.
+    const other = await callToolAt(access, 'update_profile', { heightCm: 178, sex: 'male', expected: { heightCm: null, sex: null }, confirm: data.confirm }, at(11));
+    expect(other.text).toContain('different arguments');
+
+    const same = await callToolAt(access, 'update_profile', { heightCm: 178, expected: { heightCm: 178 } }, at(12));
+    expect(same.isError).toBe(false);
+    expect(same.text).toContain('already says that');
+    expect(OUTPUTS.update_profile.parse(same.structured).confirm).toBeUndefined();
+  });
+
+  it('report_feedback: the receipt is bound to the prepared text, so spacing and case drift confirm and a different report does not', async () => {
+    seedEmpty();
+    const access = await connect();
+    const report = { kind: 'bug', title: 'Tool refused a valid day', detail: 'Steps  here.\nThen it refused.' };
+    const proposed = await callToolAt(access, 'report_feedback', report, NOW);
+    expect(proposed.isError).toBe(false);
+    expect(proposed.text).toContain('Would file a PUBLIC GitHub issue');
+    expect(proposed.text).not.toContain('github.com/DrBradStanfield/roadmap/issues/new'); // the proposal is not a link to submit
+    const data = OUTPUTS.report_feedback.parse(proposed.structured);
+    expect(data).toMatchObject({ filed: false, proposal: true });
+
+    const other = await callToolAt(access, 'report_feedback', { ...report, detail: 'Something else entirely.', confirm: data.confirm }, at(11));
+    expect(other.isError).toBe(true);
+    expect(other.text).toContain('different arguments');
+
+    const drifted = await callToolAt(access, 'report_feedback', { ...report, title: 'tool refused a valid day', detail: 'steps here. then it refused.', confirm: data.confirm }, at(11));
+    expect(drifted.isError).toBe(false);
+    // No GitHub token in this suite: the confirmed call answers with the link the user submits.
+    const filed = OUTPUTS.report_feedback.parse(drifted.structured);
+    expect(filed.filed).toBe(false);
+    expect(filed.proposal).toBeUndefined();
+    expect(drifted.text).toContain('github.com');
+
+    // A confirm call that does not even parse (no detail) is refused in words, never answered as an
+    // internal error: the receipt's identity is computed before the schema runs (adversarial review 2026-09-07).
+    seedEmpty();
+    const fresh = OUTPUTS.report_feedback.parse((await callToolAt(access, 'report_feedback', report, at(20))).structured).confirm!;
+    const malformed = await callToolAt(access, 'report_feedback', { kind: 'bug', title: report.title, confirm: fresh }, at(31));
+    expect(malformed.isError).toBe(true);
+    expect(malformed.text).toContain('different arguments');
+  });
+
+  it('a stale receipt against the tool list: `confirm` is published on exactly the three permanent tools', async () => {
+    seedEmpty();
+    const listed = await rpc(await connect(), 'tools/list');
+    const withConfirm = (listed.result!.tools as Array<{ name: string; inputSchema: { properties: Record<string, unknown> } }>)
+      .filter((t) => 'confirm' in t.inputSchema.properties).map((t) => t.name);
+    expect(withConfirm).toEqual(['correct_value', 'update_profile', 'report_feedback']);
   });
 });

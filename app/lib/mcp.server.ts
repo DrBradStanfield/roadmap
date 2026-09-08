@@ -19,20 +19,20 @@ import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 
-import { StorageError, type StorageAdapter } from '../../packages/health-core/src/adapter';
+import { StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
-import { isToolName, MCP_TOOLS, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import { folderNudge, isToolName, MCP_TOOLS, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../../packages/health-core/src/mcp-rpc';
-import { MCP_TOOL_NAMES, type McpToolName } from '../../packages/health-core/src/product-events';
+import { importFilesBucket, MCP_TOOL_NAMES, type McpToolName } from '../../packages/health-core/src/product-events';
 import { KNOWN_CLIENTS, readCapped, type McpClientLabel } from './mcp-clients.server';
 import { hostedImporter } from './mcp-import.server';
 import { recordServerEvent } from './product-events.server';
-import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { type FileLabValue, type FileMeasurement, type RoadmapFile, stableStringify } from '../../packages/health-core/src/roadmap-file';
 import { githubFiler } from './github-issues.server';
 import { isMcpEnabled, issuer } from './mcp-config.server';
-import { type AccessPayload, allowToolCall, chargeWrites, connectionKey, WRITE_COST } from './mcp-grants.server';
+import { type AccessPayload, allowToolCall, chargeWrites, claimProposal, connectionKey, WRITE_COST } from './mcp-grants.server';
 import { type McpProvider, providerAccessToken, providerLabel } from './mcp-providers.server';
-import { unpackSealed } from './mcp-seal.server';
+import { audienceFor, hash, issueStep, openStep, type StepClaims, unpackSealed } from './mcp-seal.server';
 
 /** One JSON-RPC message. A lab panel of 50 rows is a few KB; this is slack. */
 const RPC_BODY_CAP = 1024 * 1024;
@@ -50,8 +50,11 @@ const INSTRUCTIONS =
   'never added to twice. Nothing is ever deleted; a superseded row stays as "entered-in-error". Correcting a ' +
   'value is permanent and needs the value you expect to find, so read the record first and correct only what ' +
   'the user asked you to. The plan from get_plan is educational, not medical advice, and its hedged wording ' +
-  'and citations are calibrated — pass them on as written. import_documents reads lab files and writes nothing ' +
-  'until its commit, which needs the user’s own confirmation of what it found.';
+  'and citations are calibrated — pass them on as written. import_documents reads lab files from the Dropbox folder and ' +
+  'writes nothing until its commit, which needs the user’s own confirmation of what it found; a file dropped into the chat ' +
+  'is read by you and filed through file_results the same way. correct_value, update_profile and report_feedback are ' +
+  'permanent, so here they take two calls: the first answers with a confirm receipt, and only the second, after the user’s ' +
+  'own yes, does it.';
 
 /**
  * A correction fixes a recent mistake. A result from three years ago is
@@ -60,6 +63,30 @@ const INSTRUCTIONS =
  * of design §3 (mitigation 2).
  */
 export const MAX_CORRECTION_AGE_DAYS = 90;
+
+/**
+ * The folder nudge (US-37): a read on Dropbox lists the folder root under its
+ * own short clock, and a listing that errors or runs out of time leaves the
+ * read exactly as it was. Two seconds is longer than one Dropbox page takes
+ * and shorter than a reader notices; 200 entries is twenty times the names
+ * a nudge shows.
+ */
+export const FOLDER_LIST_TIMEOUT_MS = 2_000;
+export const FOLDER_LIST_MAX_ENTRIES = 200;
+
+/**
+ * Two-phase for the permanent tools (US-36 AC9). What the server can see is
+ * time and argument identity, so that is what it enforces: a permanent write
+ * takes two calls, identical arguments, the same connection, at least
+ * `PROPOSAL_NBF_SECONDS` apart (a chained call lands in under two; a person's
+ * yes takes longer) and inside `PROPOSAL_LIFETIME_SECONDS`. It cannot see
+ * the user's yes, stop an assistant with a code tool from sleeping, or a
+ * receipt held into the next turn; what it buys is a proposal in the
+ * transcript before the write, the client's approval prompt twice, and a
+ * second call an injected model has to emit.
+ */
+export const PROPOSAL_NBF_SECONDS = 10;
+export const PROPOSAL_LIFETIME_SECONDS = 15 * 60;
 
 // ---------------------------------------------------------------------------
 // The user's folder, as a StorageAdapter
@@ -95,6 +122,10 @@ function refuse(text: string): ToolAnswer {
 const WRITE_COSTS = new Map(
   MCP_TOOLS.flatMap((tool) => (tool.cost === 'none' ? [] : [[tool.name, WRITE_COST[tool.cost]] as const])),
 );
+/** The tools that take two calls here (US-36 AC9), and how each names its arguments for the receipt — off their own declarations. */
+const TWO_PHASE = new Map(MCP_TOOLS.flatMap((tool) => (tool.twoPhase ? [[tool.name, tool.canonicalArgs ?? ((args: unknown) => args)] as const] : [])));
+/** The reads that visit the folder (US-37), by declaration; a function narrows by arguments. */
+const NUDGED = new Map(MCP_TOOLS.flatMap((tool) => (tool.nudge ? [[tool.name, tool.nudge === true ? () => true : tool.nudge] as const] : [])));
 
 function findRow(file: RoadmapFile, id: string): FileMeasurement | FileLabValue | undefined {
   return file.measurements.find((m) => m.id === id) ?? file.labValues.find((l) => l.id === id);
@@ -151,7 +182,7 @@ function checkProfileUpdate(args: unknown): string | null {
  * mitigation 4). The loop itself is `runToolOverSync`, shared with the stdio
  * server (docs §7).
  */
-function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile, args: unknown, now: string): string | null {
+function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile, args: unknown, now: string, charge = true): string | null {
   if (name === 'correct_value') {
     const refusal = checkCorrection(file, args, now);
     if (refusal) return refusal;
@@ -160,7 +191,8 @@ function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile,
     const refusal = checkProfileUpdate(args);
     if (refusal) return refusal;
   }
-  return chargeTool(token, name);
+  // The confirmed half of a two-phase write was charged at its proposal.
+  return charge ? chargeTool(token, name) : null;
 }
 
 /**
@@ -187,6 +219,20 @@ async function callHostedTool(
   now: string,
 ): Promise<ToolAnswer> {
   if (!isToolName(name)) return refuse(`No tool named ${name}.`);
+  /** The record as the loop opened it, kept for the nudge so the folder check costs no second read. */
+  let opened: RoadmapFile | undefined;
+  const twoPhase = TWO_PHASE.has(name) ? splitConfirm(args) : null;
+  /** The confirm receipt's verified claims, when this is the second call; the write then runs uncharged. */
+  let confirmed: StepClaims | null = null;
+  if (twoPhase) {
+    args = twoPhase.args;
+    if (twoPhase.confirm !== undefined) {
+      const checked = checkConfirm(token, name, twoPhase.args, twoPhase.confirm, now);
+      if (typeof checked === 'string') return refuse(checked);
+      confirmed = checked;
+    }
+  }
+  const charge = !confirmed;
 
   const provider = providerLabel(token.provider);
 
@@ -195,7 +241,7 @@ async function callHostedTool(
   // so `report_feedback` must not need the provider — nor a token minted for it.
   let accessToken = '';
   if (RECORD_FREE_TOOLS.has(name)) {
-    const refusal = chargeTool(token, name);
+    const refusal = charge ? chargeTool(token, name) : null;
     if (refusal) return refuse(refusal);
   } else {
     const minted = await providerAccessToken(token.provider, token.rt);
@@ -209,9 +255,20 @@ async function callHostedTool(
   }
 
   const adapter = makeAdapter(token.provider, accessToken);
+  // The folder listing for the nudge (US-37) starts now and overlaps the record
+  // read: it depends on nothing the tool produces. Only on Dropbox — Drive's
+  // `drive.file` scope cannot see files the user dropped in (US-35 AC3).
+  const listing = token.provider === 'dropbox' && NUDGED.get(name)?.((args ?? {}) as Record<string, unknown>) && adapter.list
+    ? adapter.list('', AbortSignal.timeout(FOLDER_LIST_TIMEOUT_MS), FOLDER_LIST_MAX_ENTRIES).catch(() => null)
+    : null;
   try {
-    return await runToolOverSync(recordSync(adapter, 'mcp', now), name, args, now, {
-      beforeCall: (file) => beforeHostedCall(token, name, file, args, now),
+    const answer = await runToolOverSync(recordSync(adapter, 'mcp', now), name, args, now, {
+      beforeCall: (file) => {
+        opened = file;
+        return beforeHostedCall(token, name, file, args, now, charge);
+      },
+      // The first call of a two-phase write runs every guard, is charged, and saves nothing.
+      dryRun: twoPhase !== null && !confirmed,
       // This server runs in UTC and cannot know the user's timezone, so the
       // future check is the widest day anyone has reached (US-31 AC6/AC11).
       latestDay: latestDayOnEarth(now),
@@ -224,6 +281,9 @@ async function callHostedTool(
       // is built for every call; which tool uses it is the tool's declaration.
       importer: hostedImporter({ token, adapter, client: mcpClientLabel(token.clientId), maxCorrectionAgeDays: MAX_CORRECTION_AGE_DAYS }),
     });
+    if (twoPhase && !confirmed) return withProposal(token, name, twoPhase.args, answer, now);
+    const listed = listing && !answer.isError ? await listing : null;
+    return listed && opened ? withFolderNudge(answer, listed, opened) : answer;
   } catch (error) {
     // Storage is allowed to fail, and the user can act on that, so it is worded
     // as a refusal. Anything else is a bug in us: dressing one up as "the
@@ -246,6 +306,89 @@ async function callHostedTool(
     const failed = describeStorageFailure(error, `The record in ${provider}`);
     return refuse(`${failed.message}. ${failed.hint}`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Two-phase for the permanent tools (US-36 AC9)
+// ---------------------------------------------------------------------------
+
+/** The `confirm` argument apart from the rest, which is what the tool sees. */
+function splitConfirm(args: unknown): { args: Record<string, unknown>; confirm: string | undefined } {
+  const { confirm, ...rest } = (args && typeof args === 'object' ? args : {}) as Record<string, unknown>;
+  return { args: rest, confirm: typeof confirm === 'string' ? confirm : undefined };
+}
+
+/**
+ * The identity of a call, for the receipt: the tool and its arguments as the
+ * tool declares them canonical (`report_feedback`: the PREPARED text, so a
+ * small model that re-emits its report with different spacing still
+ * confirms, review 2.2), keys sorted at every depth.
+ */
+function callIdentity(name: string, args: Record<string, unknown>): string {
+  return hash(`${name}\n${stableStringify(TWO_PHASE.get(name)!(args))}`);
+}
+
+/**
+ * The first call's answer: what the tool would have done, and the receipt to
+ * do it with. Only a call that would have WRITTEN gets one — a refusal is a
+ * refusal, and `update_profile` that changes nothing has nothing to confirm.
+ */
+function withProposal(token: AccessPayload, name: string, args: Record<string, unknown>, answer: ToolAnswer, now: string): ToolAnswer {
+  if (answer.isError || !answer.pendingWrite) return answer;
+  const { token: confirm, claims } = issueStep(
+    'proposal',
+    { subject: callIdentity(name, args), conn: hash(connectionKey(token.rt)), nbfSeconds: PROPOSAL_NBF_SECONDS, ttlSeconds: PROPOSAL_LIFETIME_SECONDS },
+    audienceFor(token.clientId),
+    Date.parse(now),
+  );
+  const confirmFrom = new Date(claims.nbf * 1000).toISOString();
+  const text =
+    `PROPOSAL — nothing written yet. ${answer.text}\n\n` +
+    `Show this to the user and WAIT for their own yes, in their own words; a client setting that skips its approval prompt is not their yes. Then call ${name} again with the same arguments and confirm set to the receipt below; ` +
+    `it is valid from ${confirmFrom} for ${PROPOSAL_LIFETIME_SECONDS / 60} minutes and works once.\nconfirm: ${confirm}`;
+  return { text, isError: false, structured: { ...(answer.structured as Record<string, unknown>), proposal: true, confirm, confirmFrom } };
+}
+
+/**
+ * The second call's gate: the receipt must be ours, for this tool, these
+ * arguments and this connection, inside its window, and unused. Every
+ * failure is worded; an early call is told when to come back and not to spin.
+ */
+function checkConfirm(token: AccessPayload, name: string, args: Record<string, unknown>, confirm: string, now: string): StepClaims | string {
+  const nowMs = Date.parse(now);
+  const claims = openStep('proposal', confirm, audienceFor(token.clientId), hash(connectionKey(token.rt)), nowMs);
+  if (!claims) {
+    return `That confirm receipt is not valid for this connection, or has expired (${PROPOSAL_LIFETIME_SECONDS / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.`;
+  }
+  if (claims.subject !== callIdentity(name, args)) {
+    return `That confirm receipt was issued for different arguments. Nothing was written. Call ${name} again without confirm, with exactly what the user approved.`;
+  }
+  if (nowMs < claims.nbf * 1000) {
+    return `That confirm receipt is not valid yet: it can be used from ${new Date(claims.nbf * 1000).toISOString()}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`;
+  }
+  if (!claimProposal(claims.jti, PROPOSAL_LIFETIME_SECONDS * 1000, nowMs)) {
+    return `That confirm receipt has already been used. Nothing was written. If the user wants another change, call ${name} again without confirm.`;
+  }
+  return claims;
+}
+
+// ---------------------------------------------------------------------------
+// The folder nudge (US-37)
+// ---------------------------------------------------------------------------
+
+/**
+ * If the folder root holds files the record does not, say so in the answer.
+ * The text is the structured answer re-serialised, so older clients that
+ * parse the text still read JSON. A listing that failed — a Dropbox error,
+ * the two-second clock — never reaches here, and the answer is untouched: a
+ * nudge is never worth a failed read (AC2).
+ */
+function withFolderNudge(answer: ToolAnswer, listed: StoredFile[], file: RoadmapFile): ToolAnswer {
+  const folder = folderNudge(file, listed.map((entry) => entry.name));
+  if (!folder) return answer;
+  void recordServerEvent('mcp_import', { route: 'dropbox', phase: 'nudge', files: importFilesBucket(folder.unimported.length) });
+  const structured = { ...(answer.structured as Record<string, unknown>), folder };
+  return { ...answer, structured, text: JSON.stringify(structured) };
 }
 
 // ---------------------------------------------------------------------------

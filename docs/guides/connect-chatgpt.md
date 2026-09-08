@@ -52,26 +52,33 @@ Claude needs no equivalent step. If you use both, [connecting Claude](/blogs/gui
 
 It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same one the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. It corrects a value that went in wrong. It changes four things about you: your sex, your birth year, your birth month and your height, the four your plan is worked out from. And if a tool refuses something you reasonably expected, it reports the problem for you: a public issue on the project's GitHub, filed as you ask, carrying its description and nothing about you or your values.
 
-It can now import lab files, too. Two ways in. In a desktop browser you can drop a
-file straight into the conversation: a PDF, a JPEG or PNG photo, or a ZIP of them.
-Or put the files in your Dropbox folder (`Apps/Health Plan by Dr Brad`) and ask it to
-import them: it reads five folder files at a time, or one ZIP of up to twenty, and
-tells you what is left. The folder route works from any device, needs no file in the
-chat, and is the way round two limits of ChatGPT's own: its phone apps do not hand
-files to apps yet, and its free tier pauses chats with files after a few in a row.
-An iPhone HEIC photo is not read either way; share it as a JPEG, or take a screenshot.
-Whatever it cannot read, it tells you why and what to do. Either way it shows you
-candidate values, in the units your record uses, before anything is saved: accept the
-ones that look right and it writes them, filing the document itself as a record with
-no text or image kept, just its name and date. A report with no printed date is not
+It can import lab files, too. Two ways in. Drop a file straight into the conversation,
+from a computer or a phone: a PDF, a JPEG or PNG photo, or a clinic letter. ChatGPT reads
+it itself, the way it reads any file you give it, and sends our server only the values it
+read: the test name as printed, the number, the unit, the date. The file never reaches our
+server. Our server checks every value against the record's own catalogue, unit table and
+ranges (a "Lipoprotein(a)" line cannot be filed as ApoB; a number that looks like the wrong
+unit comes back as a question), and files only what you confirm. Or put the files in your
+Dropbox folder (`Apps/Health Plan by Dr Brad`) and ask it to import them: it reads five
+folder files at a time, or one ZIP of up to twenty, and tells you what is left. Drop files
+in that folder and the next time you ask ChatGPT anything about your record it offers them;
+nothing runs while you are away. An iPhone HEIC photo is not read by the folder route; share
+it as a JPEG, or take a screenshot. Whatever it cannot read, it tells you why and what to
+do. Either way it shows you candidate values, in the units your record uses, before anything
+is saved: accept the ones that look right and it writes them, filing the document itself as
+a record with no text or image kept, just its name and date. If you connected before
+7 September 2026, refresh the connector once in ChatGPT's settings (open the connector and
+choose Refresh) so ChatGPT reads dropped files itself instead of handing them to our server. A report with no printed date is not
 lost: it asks you when the test was taken and files it on that day. A value your record
 already holds for that day is held, not replaced; if it differs, ChatGPT can offer a
 correction for a recent value, and an older one you correct in the app. A file it has
 already imported comes back as already imported, and is not read again. On a Google
 Drive record it refuses to import at all, because the permission it holds cannot see
-files you drop in that folder, and points you at the website upload instead. The file you import goes through our
-server to Anthropic's API for extraction and is kept nowhere, a different path from
-the website's own upload, which reads the PDF in your browser and sends only the
+files you drop in that folder; drop the file into the chat instead, or use the website
+upload. A file you drop into the chat never reaches our server; only the values ChatGPT read
+do, in memory for one request, written to your own folder. A file in your Dropbox folder goes
+through our server to Anthropic's API for extraction and is kept nowhere, a different path
+from the website's own upload, which reads the PDF in your browser and sends only the
 extracted text to our server.
 
 Paste in a lab report and ask it to file the results. Ask what your LDL has done over four tests. Ask what your plan says to do about it.
@@ -95,6 +102,8 @@ It cannot see the token that runs your email reminders, if you use them. That to
 Your record still lives only in your Dropbox or Google Drive. Our server reads it, in memory, to answer ChatGPT, and keeps no copy. We store nothing about you: no account, no row, no session. What ChatGPT holds is a sealed credential that only we can open, and what we hold is the key and no credential.
 
 Check what it files. An AI can misread a lab report the same way a person can, and the record is yours, so the last look at a new value should be yours too.
+
+Keep ChatGPT asking before it acts. By default ChatGPT asks you before a connector writes anything, and that prompt is your last look. ChatGPT has a setting for the connector, "Allow all actions" (the wording varies by account), that turns the prompt off. Leave it off. The connector still shows you every permanent change and waits for your own yes in your own words before it makes one, but with the prompt gone, that reply is the only gate left.
 
 Take care with the web tool open in another tab while ChatGPT is writing. The page now notices a change and re-reads your record within seconds, and sooner when you switch back to that tab, so what you are looking at catches up on its own. But there is still no lock: a value you are typing at that moment and a value ChatGPT is writing at that moment can still collide, and one of the two loses.
 

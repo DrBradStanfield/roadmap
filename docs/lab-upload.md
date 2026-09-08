@@ -76,7 +76,7 @@ only server call an upload makes is the extraction call.
 
 Raw files never leave the browser on the website route. Only extracted text (via `page.getTextContent()`) or page images (rendered to canvas, converted to JPEG base64) are sent to the LLM via the backend proxy. No files are stored on the server. The backend sees content but not the original file.
 
-**The connector route is different**: `import_documents` sends the WHOLE file through Brad's server to the model as a `pdf`/`image` block, holds it for one request and keeps nothing. Detail: [`lab-upload-connector.md`](lab-upload-connector.md).
+**The connector's folder route is different**: `import_documents` sends the WHOLE folder file through Brad's server to the model as a `pdf`/`image` block, holds it for one request and keeps nothing. **The connector's chat route sends no file at all**: the assistant reads it and `file_results` carries only the values it read (US-36). Detail: [`lab-upload-connector.md`](lab-upload-connector.md).
 
 ---
 
@@ -247,9 +247,11 @@ picker and lost the day; `FullDate` with an explicit `day` field fixed it.)
 
 ## Lp(a) Unit Conversion
 
-The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: "lpa", value: 93, unit: "mg/L" }`. But `UNIT_DEFS.lpa` was an identity unit (both SI and conventional nmol/L). The resolver couldn't match "mg/L", fell back to the range heuristic (93 fits 0-750 nmol/L), and stored 93 as nmol/L. The correct value was ~223 nmol/L.
+The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: "lpa", value: 93, unit: "mg/L" }`. But `UNIT_DEFS.lpa` was an identity unit (both SI and conventional nmol/L). The resolver couldn't match "mg/L", fell back to the range heuristic (93 fits 0-750 nmol/L), and stored 93 as nmol/L. The correct value is ~22 nmol/L.
 
-**Fix**: `lpa` in `units.ts` is a dual-unit definition — SI nmol/L, conventional mg/L, nmol/L = mg/L × 2.4 (Marcovina et al., Clinical Chemistry 1995) — plus the `mg/l` alias in `lab-extraction.ts`. Lp(a) molecular weight varies (300-800 kDa) with kringle IV repeats, which is why WHO and IFCC recommend nmol/L; 2.4 is the average-weight approximation most labs use, a documented limitation.
+**Fix**: `lpa` in `units.ts` is a dual-unit definition — SI nmol/L, conventional mg/L, nmol/L = mg/L × 0.24 — plus the `mg/l` alias and a scaled `mg/dl` alias (×10) in `units.ts`. The population factor is ~2.4 nmol/L per **mg/dL** (EAS 2022 consensus; Marcovina & Albers 2016), so 0.24 per mg/L. Lp(a) molecular weight varies (300-800 kDa) with kringle IV repeats, which is why WHO and IFCC recommend nmol/L; the factor is an average (~2.0–2.5), a documented limitation.
+
+**Data impact (2026-09-07)**: from the first fix until this one the code applied 2.4 per mg/L, so every Lp(a) entered in mg/L (the usual NZ/AU print, by upload, chatbot or connector) was stored 10× high, and the plan fired `lpa-elevated` on normal results. There is no migration (house rule): each affected row needs a correction row — the website's fix-this-value on the Lp(a) cell, or the connector's `correct_value` with `expectedValue` set to the stored number. Brad's own record holds one: lpa 223 nmol/L on 2023-01-24 from a report printing "Lipoprotein(a) 93 mg/L"; the right value is 22.3 nmol/L. Values entered in nmol/L were never affected.
 
 ---
 
@@ -327,7 +329,7 @@ Found with Brad's real lab reports and fixed before shipping:
 |---|---|---|
 | 1 | Unsaved weight wiped after upload | `onStart` persists longitudinal form values before extraction |
 | 2 | Blood-test section hidden after upload | `formStage` forced to 4 when saved blood-test metrics exist |
-| 3 | Lp(a) 93 mg/L stored as 93 nmol/L | dual-unit `lpa` definition (see above) |
+| 3 | Lp(a) 93 mg/L stored as 93 nmol/L, then as 223 (×2.4 per mg/L) | dual-unit `lpa` definition at 0.24 nmol/L per mg/L (see above) |
 | 4 | Day precision lost (always saved as 01) | `FullDate` with a day field + `buildRecordedAt()` |
 | 5 | ZIP progress stuck at 100% | two-phase progress (extract, then process) |
 | 6 | Letter with an em dash in its title filed twice, no blob (2026-09-06) | `dropboxApiArg()` + no metadata-only fallback behind a connector row (§1) |
@@ -472,23 +474,24 @@ Tests: `ReviewTable.conflict.test.ts` (the conflict cell),
 
 ---
 
-## Proposed, not built: assistant-side extraction (7 September 2026)
+## Assistant-side extraction: the connector's chat route (built 7 September 2026, US-36)
 
-**Status: a proposal. Decision pending Brad; an adversarial review is in progress. Nothing below describes current behaviour.**
-
-The idea: instead of Brad's server fetching the file and calling Haiku
-(`import_documents` today), the user's OWN assistant reads the file in its own
-context and calls the existing write tools (`add_lab_values`, `add_measurement`,
-`correct_value`) with structured rows. Our server would validate and write
-only: slot rule, unit resolution, provenance, the 90-day correction guard.
-
-- Pro: no health file ever transits Brad's server on the connector route, and the privacy addendum simplifies to "we never see the file".
-- Pro: no per-file model spend, no 40 s budget, no ChatGPT file-host allow-list, no pending-file/receipt machinery to maintain.
-- Pro: the assistant already has the document open and can ask the user about ambiguities before writing.
-- Con: extraction quality becomes the assistant's, not ours — no fixed prompt, no confidence flags, no `unrecognized` list, no regression fixtures.
-- Con: the assistant can be prompt-injected by the document and we lose the "data, not instructions" line and the bounded result shape.
-- Con: no `contentHash`, so the documents archive and the website's "Save 1 Original" dedup have nothing to key on unless the assistant supplies a hash.
-- Con: a value the assistant misreads carries `source: 'lab_import'`-grade trust with none of the pipeline behind it; provenance would need a new `source`.
-- Open: whether the two routes coexist (assistant-side for Claude/ChatGPT with file access, server-side as fallback) or one replaces the other.
-
-If adopted, this doc, `lab-upload-connector.md`, `mcp-import-design.md`, US-35 and the consent/privacy text all change in the same commit.
+Instead of Brad's server fetching a dropped file and calling Haiku, the user's OWN
+assistant reads the file in its own context and calls `file_results` with one file's
+rows: `metric`, `printedName` and `unit` as printed, `value`, the collection date.
+Our server validates and writes only: it resolves the printed name (`CORE_METRIC_ALIASES`
+in `lab-extraction.ts`, the same table the extraction prompt is rendered from; the lab
+catalogue) and refuses a row whose name disagrees with its metric ("Lipoprotein(a)" is
+not ApoB); converts the unit through the one table (`lookupUnit` in `units.ts`, which
+`add_measurement` and the website's extractor consult too); dry-runs the real append
+(range, day, slot); and marks a value under the metric's display floor (`UNIT_SWAP_FLOORS`)
+as a low-confidence question, because a unit swap on a floor-0 lipid passes every range.
+The candidates, the receipt, the commit and the 90-day guard are `import_documents`' own
+code; the document row carries `metadata.importedVia: 'assistant'` and the client label,
+and `contentHash` only when the assistant supplied a `sha256`. Otherwise dedup is by
+(`sourceFileName`, date). The trade-offs that were weighed: extraction quality is the
+assistant's (the review measured Sonnet- and Haiku-class assistants matching the Haiku
+pipeline on 13 synthetic and 6 real reports), and the assistant can be prompt-injected by
+the document (which is why the three permanent tools are two-phase on the hosted
+server, US-36 AC9). The folder route stays as the server-side path for files that sit in
+the Dropbox folder; the ChatGPT drag route (`openai/fileParams`) is retired per AC12.

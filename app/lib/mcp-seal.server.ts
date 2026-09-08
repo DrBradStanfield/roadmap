@@ -18,9 +18,11 @@ import crypto from 'node:crypto';
 import { resourceUrl, sealKeys } from './mcp-config.server';
 import { isProvider, type McpProvider } from './mcp-providers.server';
 
-/** `import` is a receipt (US-35 AC7): the name and hash of a pending payload
- *  that sits in the user's own folder, sealed like every other blob. */
-export type BlobType = 'state' | 'code' | 'access' | 'refresh' | 'import';
+/** `import` and `proposal` are the two sealed steps (`issueStep` below): an
+ *  import receipt names a pending payload in the user's own folder (US-35
+ *  AC7); a proposal is the first call of a two-phase write (US-36 AC9). */
+export type StepKind = 'import' | 'proposal';
+export type BlobType = 'state' | 'code' | 'access' | 'refresh' | StepKind;
 
 /**
  * Fixed-length buckets for the padded plaintext. Without padding the blob's
@@ -84,6 +86,11 @@ function unpad(padded: Buffer): Buffer {
 export interface SealAudience {
   clientId: string;
   resource: string;
+}
+
+/** The audience every blob is bound to: this client, this server. */
+export function audienceFor(clientId: string): SealAudience {
+  return { clientId, resource: resourceUrl() };
 }
 
 /**
@@ -164,7 +171,7 @@ export function unseal<T>(typ: BlobType, token: string, audience: SealAudience, 
  * token is a stolen bearer token, and no framing fixes that.
  */
 export function packSealed(typ: BlobType, clientId: string, payload: unknown): string {
-  const sealed = seal(typ, payload, { clientId, resource: resourceUrl() });
+  const sealed = seal(typ, payload, audienceFor(clientId));
   return `${b64url(Buffer.from(clientId, 'utf8'))}~${sealed}`;
 }
 
@@ -181,7 +188,7 @@ export function unpackSealed<T extends { clientId: string }>(
   } catch {
     return null;
   }
-  const payload = unseal<T & { provider?: unknown }>(typ, token.slice(at + 1), { clientId, resource: resourceUrl() }, nowMs);
+  const payload = unseal<T & { provider?: unknown }>(typ, token.slice(at + 1), audienceFor(clientId), nowMs);
   // The AAD already proves this; the explicit check keeps the invariant
   // readable at every call site that depends on it.
   if (!payload || payload.clientId !== clientId) return null;
@@ -194,4 +201,50 @@ export function unpackSealed<T extends { clientId: string }>(
   // default belongs.
   if (!isProvider(payload.provider)) (payload as { provider: McpProvider }).provider = 'dropbox';
   return payload;
+}
+
+// ---------------------------------------------------------------------------
+// A sealed step: the second call of a two-call tool carries this back
+// ---------------------------------------------------------------------------
+
+/**
+ * What both two-call tools hand out between their calls (US-35 AC7, US-36
+ * AC9): a hash of what the user saw — `subject` — bound to the connection
+ * and to a window. `jti` is the single-use id: the pending file's name for an
+ * import, a spend-map key for a proposal. One shape, so a fix to the window
+ * or the connection check reaches both.
+ */
+export interface StepClaims {
+  subject: string;
+  /** The connection hash: a step cannot be finished over another connection to the same client. */
+  conn: string;
+  jti: string;
+  /** Not before / expiry, epoch seconds. `exp` is enforced by `unseal`; `nbf` is the caller's to word. */
+  nbf: number;
+  exp: number;
+}
+
+export function issueStep(
+  kind: StepKind,
+  step: { subject: string; conn: string; jti?: string; nbfSeconds?: number; ttlSeconds: number },
+  audience: SealAudience,
+  nowMs: number,
+): { token: string; claims: StepClaims } {
+  const issued = Math.floor(nowMs / 1000);
+  const claims: StepClaims = {
+    subject: step.subject, conn: step.conn, jti: step.jti ?? crypto.randomUUID(),
+    nbf: issued + (step.nbfSeconds ?? 0), exp: issued + step.ttlSeconds,
+  };
+  return { token: seal(kind, claims, audience), claims };
+}
+
+/**
+ * The claims back, or null: not ours, another kind, another client, expired,
+ * another connection, or a shape we never sealed. The caller compares
+ * `subject`, words `nbf` and spends `jti`.
+ */
+export function openStep(kind: StepKind, token: string, audience: SealAudience, conn: string, nowMs: number): StepClaims | null {
+  const claims = unseal<Partial<StepClaims>>(kind, token, audience, nowMs);
+  if (!claims || claims.conn !== conn || typeof claims.subject !== 'string' || typeof claims.jti !== 'string' || typeof claims.nbf !== 'number') return null;
+  return claims as StepClaims;
 }

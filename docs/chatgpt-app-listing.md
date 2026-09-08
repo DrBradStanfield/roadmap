@@ -2,25 +2,25 @@
 
 > **Pending: v1.0.1 resubmission.** "Health Roadmap" v1.0.0 (submission
 > `C-Ggl3RkPf6el6`) has been in status Review since 2026-09-02. Do not touch
-> 1.0.0 while it's under review. Our live MCP server now has eight tools
-> (`import_documents` added 2026-09-04) against the seven 1.0.0 described, and
-> OpenAI requires a new version for an added tool. When the verdict lands
-> (approved or rejected), submit **1.0.1** as "Health by Dr Brad" with
-> `import_documents` and its justification (below). Tracked in
+> 1.0.0 while it's under review. Our live MCP server now has nine tools
+> (`import_documents` added 2026-09-04, `file_results` 2026-09-07) against the
+> seven 1.0.0 described, and OpenAI requires a new version for an added tool.
+> When the verdict lands (approved or rejected), submit **1.0.1** as "Health by
+> Dr Brad" with `import_documents` AND `file_results` and their justifications
+> (below), one resubmission, and note that `import_documents` no longer declares
+> `openai/fileParams`: a dropped file is read by ChatGPT itself. Tracked in
 > [issue #60](https://github.com/DrBradStanfield/roadmap/issues/60).
 > Dropbox folder names differ by connection age: a NEW connection lands in `Apps/Health Plan by Dr Brad`
 > (live on a fresh account 2026-09-05), while a connection made before the app was renamed keeps
 > `Apps/Health Roadmap by Dr Brad` (Brad's own). Dropbox names the folder at first connect and never
 > renames it, so both names are live and the guides say so.
 >
-> **Pending change to the listing copy (noted 2026-09-07).** Brad decided that
-> assistant-side extraction (the assistant reads the file itself; our server never
-> receives it) becomes the default for `import_documents`. The design is in progress
-> and NOT built (see `lab-upload.md`, "Proposed, not built"). The Compliance paragraph
-> and the `import_documents` and open-world justifications below say the file goes to
-> our server and to Anthropic's API. That is true today and is what 1.0.1 must say if it
-> is submitted before the design ships; rewrite those lines in the same commit that ships
-> the new route, not before.
+> **Assistant-side extraction shipped 2026-09-07 (US-36).** A file dropped into
+> the chat is read by ChatGPT itself and filed through `file_results`; the file never
+> reaches our server. The folder route (`import_documents`) still sends folder files
+> to our server and to Anthropic's API, and the Compliance paragraph says both.
+> Existing ChatGPT connections keep a cached tool list until the user refreshes the
+> connector; the connect guide says so.
 
 Everything the OpenAI submission form asks for, so Brad only fills in fields. 1.0.0 has been
 submitted and is in review (see above); 1.0.1 has not. Requirements read 2026-09-02 from `developers.openai.com/plugins/deploy/submission`,
@@ -56,21 +56,30 @@ information, not medical advice, and does not replace your doctor.
 
 ## Compliance
 
-**We do not collect, solicit, or process protected health information (PHI).** The record lives in the user's own Dropbox or Google Drive and stays there. To answer one tool
+**We do not collect, solicit, store or retain protected health information (PHI).** The record lives in the user's own Dropbox or Google Drive and stays there. To answer one tool
 call, the server fetches the file over the user's own credential, holds it in memory for that
 request, and writes it back if the call was a write. Nothing is persisted: no per-user row, no
 health table, no health data at rest on our infrastructure (the v1 tables were purged 2026-06-12).
 Nothing is logged: health values are excluded from logs, Sentry and product analytics, and the
-reminder capability token is stripped from every read. We send nothing to a model ourselves,
-except when the user asks to import a file: that file (never the record) then goes to
-Anthropic's API for extraction and is not kept there, subject to Anthropic's own
-data-retention terms. (Pending change, see the note at the top: this sentence is what
-the assistant-side design would remove.) Otherwise the only model that sees the record is the user's own ChatGPT
-session.
+reminder capability token is stripped from every read. A file the user drops into the chat is
+read by ChatGPT itself and never reaches our server; the values ChatGPT read are handled in
+memory for one request and written to the user's own folder (`file_results`). We send nothing
+to a model ourselves, except when the user asks to import files from their Dropbox folder: those
+files (never the record) then go to Anthropic's API for extraction and are not kept there,
+subject to Anthropic's own data-retention terms. Otherwise the only model that sees the record
+is the user's own ChatGPT session.
+
+**Confirmation is the user's, in their own words.** ChatGPT's per-connector "Allow all actions" setting
+removes the client's own approval prompt, so the three permanent tools (`correct_value`, `update_profile`,
+`report_feedback`) and both import commits are two-phase on the server: the first call writes nothing and
+answers with a receipt; the tool text tells ChatGPT to show it and wait for the user's own yes, in their own
+words, and says a client setting that skips the prompt is not that yes. `add_measurement` and
+`add_lab_values` say they are for a value the user asked to add, never a fallback for a correction that
+found no row. Our guide tells users to keep the default prompt on.
 
 ## Tool annotations
 
-All eight tools in `packages/health-core/src/mcp-tools.ts` declare all four
+All nine tools in `packages/health-core/src/mcp-tools.ts` declare all four
 hints, pinned by `mcp-tools.test.ts`.
 
 | Tool | readOnly | destructive | openWorld |
@@ -83,6 +92,7 @@ hints, pinned by `mcp-tools.test.ts`.
 | `update_profile` | false | **true** | false |
 | `report_feedback` | false | false | **true** |
 | `import_documents` | false | **true** | **true** |
+| `file_results` | false | **true** | false |
 
 **CSP and `_meta`.** None apply, so leave them blank. The server ships no widget, no UI resource
 and no iframe, so `_meta.ui.csp` (`connectDomains`, `resourceDomains`, `frameDomains`) and
@@ -92,15 +102,15 @@ and no iframe, so `_meta.ui.csp` (`connectDomains`, `resourceDomains`, `frameDom
 
 Three per tool, as the portal asks. Paste each line as written.
 
-**Open-world, six of the eight (`openWorldHint: false`).** Closed. The tool touches only the calling
+**Open-world, seven of the nine (`openWorldHint: false`).** Closed. The tool touches only the calling
 user's own `health-roadmap.json`, in that user's own Dropbox or Google Drive, over that user's own
 credential. Never the open web, never another user's record. Two are the exception. `report_feedback`
 is marked open-world: it touches no health record, and it files an issue on GitHub. `import_documents`
-is marked open-world too: it sends a file to Anthropic's API for extraction, and on the ChatGPT file
-route it first fetches that file from OpenAI's own file hosts (`files.oaiusercontent.com`, or the
-`oaisdmntprn*.blob.core.windows.net` blob store ChatGPT hands out, a namespace, not a closed list, so
-what bounds that fetch is the per-connection daily file quota and that the bytes only ever become
-candidates the same user must confirm).
+is marked open-world too: it sends a folder file to Anthropic's API for extraction (and, for a tool
+list cached before 2026-09-07, still fetches a dropped file from OpenAI's own file hosts,
+`files.oaiusercontent.com` or the `oaisdmntprn*.blob.core.windows.net` blob store; that argument
+is retiring). `file_results` is closed: the file was read by ChatGPT, and the call carries only the
+values it read.
 
 - **`read_record`**
   - *Read-only:* Reads only. It fetches the record, filters it and returns rows. Nothing is written back.
@@ -127,7 +137,11 @@ candidates the same user must confirm).
 - **`import_documents`**
   - *Read-only:* Not read-only. Its extract phase writes nothing to the record but does park candidate values in the user's own folder; its commit phase appends values and files documents, and can correct a value through the same guard as `correct_value`.
   - *Destructive:* Destructive. A `replace` in commit flips a superseded row to `entered-in-error` permanently, exactly like `correct_value`, guarded the same way.
-  - *Open-world:* Open-world. It sends the user's file, never the record, to Anthropic's API for extraction under our key, and on the ChatGPT file route it first fetches that file from OpenAI's own file host (`files.oaiusercontent.com` or its `oaisdmntprn*.blob.core.windows.net` blob store). Nothing is kept after extraction.
+  - *Open-world:* Open-world. It sends the user's folder file, never the record, to Anthropic's API for extraction under our key (and, for a cached tool list, still fetches a dropped file from OpenAI's own file host, `files.oaiusercontent.com` or its `oaisdmntprn*.blob.core.windows.net` blob store). Nothing is kept after extraction.
+- **`file_results`**
+  - *Read-only:* Not read-only. Its first call writes nothing to the record but parks the candidate values in the user's own folder; its commit appends the values the user confirmed, files the document as a metadata-only row, and can correct a value through the same guard as `correct_value`.
+  - *Destructive:* Destructive. A `replace` in commit flips a superseded row to `entered-in-error` permanently, exactly like `correct_value`, guarded the same way (90 days, the user's own selection).
+  - *Open-world:* Closed. ChatGPT read the file; the call carries only the values it read, checked against the record's own catalogue, unit table and ranges, and written to the user's own file. No file host, no model, nothing outside the user's own record.
 
 ## Starter prompts
 
@@ -137,11 +151,12 @@ candidates the same user must confirm).
 4. My last weight entry was wrong. Fix it to 78 kg.
 5. What screening am I due for?
 6. Import the lab results in my Dropbox folder.
+7. Here is my blood test (a PDF or photo dropped into the chat). Add the results to my record.
 
 ## Test cases
 
 Each needs a reviewer Dropbox account connected through the consent screen; the fixture is that
-account's own file, starting empty. Seven positive:
+account's own file, starting empty. Eight positive:
 
 1. **"Record my weight today as 78 kg."** `add_measurement` confirms the metric, the converted SI
    value and the date.
@@ -153,15 +168,19 @@ account's own file, starting empty. Seven positive:
    `correct_value`: a new row at the original date, old row `entered-in-error`.
 6. **"Import the lab results in my Dropbox folder."** `import_documents` lists the folder root,
    extracts a test PDF, and returns candidates and a receipt; accepting them commits the values.
-7. **A file dragged into the ChatGPT conversation.** `import_documents` reads the descriptor's
-   `_meta["openai/fileParams"]` file, fetches it from OpenAI's file host, and extracts it
-   the same way as the folder route.
+7. **A lab PDF or photo dropped into the ChatGPT conversation.** ChatGPT reads it itself and
+   calls `file_results` with each printed result, its name and unit as printed and the collection
+   date; the server answers candidates against the record and a receipt, and nothing is written
+   until the user confirms and ChatGPT calls again with `commit`.
+8. **A clinic letter dropped into the conversation.** `file_results` with a `document` block and
+   no values; an empty commit files it as a metadata-only document row.
 
-Three negative:
+Four negative:
 
 1. **"Log my weight as 80 kg today"** on a day that already holds a weight. `add_measurement` refuses and the model offers `correct_value`: one active value per metric per day, so a silent overwrite would destroy history.
 2. **"Change that LDL row to 2.0"** with a mismatched `expectedValue`. `correct_value` refuses and the model re-reads: the row moved under it, and correcting the wrong row is a clinical error.
 3. **"File a bug: it rejected my ferritin of 210 ng/mL."** `report_feedback` refuses because the detail carries a health value, and nothing is sent: the issue it would file is public.
+4. **"Fix my ferritin to 120"** when the record holds no ferritin row. `correct_value` refuses by id and says not to add it instead unless the user asks; the model does not reach for `add_measurement` or `add_lab_values` on its own (live 2026-09-07 it did).
 
 ## Demo credentials
 

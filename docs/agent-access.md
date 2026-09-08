@@ -156,21 +156,32 @@ Validate your result against the schema before you write it back.
 
 Everything above describes an agent holding the FILE. There is a second way in: a
 hosted MCP server at `https://mcp.drstanfield.com/mcp`, which a web ChatGPT or Claude
-user connects once and then asks in words. It offers eight tools, `read_record`,
+user connects once and then asks in words. It offers nine tools, `read_record`,
 `get_plan`, `add_measurement`, `add_lab_values`, `correct_value`, `update_profile`,
-`report_feedback`, `import_documents`,
+`report_feedback`, `import_documents`, `file_results`,
 over the user's own Dropbox or Google Drive folder, and it enforces the rules above in
-code rather than asking you to keep them. `import_documents` reads lab PDFs or images
-(or a ZIP of them; 5 MB per file, 20 MB per ZIP, 30 files a day; no HEIC) from the root
-of the Dropbox app folder, or a file dropped into ChatGPT on a computer, and proposes
-values for you to accept, in the record's own unit system. Google Drive's folder cannot
-be read that way (`drive.file` scope), so the tool refuses and points at the website
-upload. The file itself is sent to Anthropic's API for extraction, under our key, and
-is not kept; nothing else here reaches a model we run. Pending: assistant-side
-extraction (the assistant reads the file, not Brad's server) is the planned default,
-decided 2026-09-07, design in progress. A file it cannot read comes back
+code rather than asking you to keep them. Two ways a lab file comes in (US-35, US-36).
+`file_results` is the chat route: you drop a file into ChatGPT or Claude, on any device
+and on either cloud, and your assistant reads it itself; the file never reaches our
+server. Only the values it read do, in memory for one request, and they are written to
+your own folder, never kept by us. The server checks every row it sends: the printed
+name must agree with the metric it claims ("Lipoprotein(a)" cannot be filed as ApoB), the
+unit must be one the metric is measured in, the value must sit inside the app's own
+range, and a value that looks like a unit swap comes back as a question. `import_documents`
+is the folder route: it reads lab PDFs or images (or a ZIP of them; 5 MB per file, 20 MB
+per ZIP, 30 files a day; no HEIC) from the root of the Dropbox app folder and proposes
+values for you to accept, in the record's own unit system. Those files are sent to
+Anthropic's API for extraction, under our key, and are not kept; nothing else here
+reaches a model we run. Google Drive's folder cannot be read that way (`drive.file`
+scope), so on Drive the chat route and the website upload are the ways in. Drop files in
+the Dropbox folder and the next time you ask your assistant anything about your record
+it offers them ("2 files in your folder are not in your record"); nothing runs while you
+are away, and nothing updates itself. A file it cannot read comes back
 with a `hint` in plain words (the type, the size limit, the day's quota, a missing date
 , answered with `fileDates: [{ file, date }]`), and `next` says what to do with what it found.
+Three tools are permanent — `correct_value`, `update_profile`, `report_feedback` — and on
+the hosted server they take two calls: a proposal with a `confirm` receipt, then the same
+call with it after your yes (the mechanism and its limits: docs/mcp-architecture.md §3).
 Every tool declares an `outputSchema` and answers with `structuredContent` beside the
 text: the same answer typed, so a row id is read, not parsed out of a sentence. A refusal
 carries none, it is an error result.

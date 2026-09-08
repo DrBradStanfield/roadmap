@@ -176,6 +176,23 @@ async function callTool(access: string, name: string, args: unknown, now = NOW) 
   };
 }
 
+/** Eleven seconds after NOW: past the proposal receipt's `nbf` (US-36 AC9). */
+const LATER = new Date(Date.parse(NOW) + 11_000).toISOString();
+
+/**
+ * A permanent tool on the hosted surface takes two calls (US-36 AC9): propose,
+ * then confirm with the receipt after the user's yes. A refused proposal is
+ * returned as is — the guards refuse before any receipt exists.
+ */
+async function twoStep(access: string, name: string, args: Record<string, unknown>) {
+  const proposed = await callTool(access, name, args);
+  if (proposed.isError) return proposed;
+  const { confirm, proposal } = proposed.structured as { confirm?: string; proposal?: boolean };
+  if (!confirm) return proposed; // nothing to confirm: the tool would not have written
+  expect(proposal).toBe(true);
+  return callTool(access, name, { ...args, confirm }, LATER);
+}
+
 /** Distinct days, so every add lands in a free slot. */
 function dayNumber(n: number): string {
   return new Date(Date.UTC(2026, 0, 1) + n * 86_400_000).toISOString().slice(0, 10);
@@ -227,7 +244,7 @@ describe('the whole connection, end to end (US-32)', () => {
     expect(row.value).toBe(3.2);
 
     // A correction appends and flips; it never mutates and never deletes.
-    const corrected = await callTool(access, 'correct_value', { id: row.id, newValue: 2.8, expectedValue: 3.2 });
+    const corrected = await twoStep(access, 'correct_value', { id: row.id, newValue: 2.8, expectedValue: 3.2 });
     expect(corrected.isError).toBe(false);
     const after = storedRecord().measurements;
     expect(after).toHaveLength(2);
@@ -260,7 +277,7 @@ describe('a record-free tool needs no record and no Dropbox (US-32)', () => {
     const calls = () => (fetch as unknown as { mock: { calls: unknown[] } }).mock.calls.length;
     const before = calls();
 
-    const answer = await callTool(access, 'report_feedback', {
+    const answer = await twoStep(access, 'report_feedback', {
       kind: 'bug', title: 'correct_value refused', detail: 'It asked for expectedValue and I had none.',
     });
     expect(answer.isError).toBe(false);
@@ -269,7 +286,7 @@ describe('a record-free tool needs no record and no Dropbox (US-32)', () => {
 
     // Still answers with Dropbox refusing outright, which is the point of it.
     vi.stubGlobal('fetch', vi.fn(async () => new Response('no', { status: 400 })));
-    const offline = await callTool(access, 'report_feedback', { kind: 'feature', title: 'a', detail: 'b' });
+    const offline = await twoStep(access, 'report_feedback', { kind: 'feature', title: 'a', detail: 'b' });
     expect(offline.isError).toBe(false);
     const refused = await callTool(access, 'read_record', {});
     expect(refused.isError).toBe(true);
@@ -309,7 +326,7 @@ describe('US-32 AC9 — the hosted server files the issue itself', () => {
   it('posts the issue with the token, and answers with the issue it created', async () => {
     const posts = stubGithub(() => created(11));
     const { access } = await connect();
-    const answer = await callTool(access, 'report_feedback', REPORT);
+    const answer = await twoStep(access, 'report_feedback', REPORT);
 
     expect(answer.isError).toBe(false);
     expect(answer.structured).toEqual({
@@ -339,11 +356,12 @@ describe('US-32 AC9 — the hosted server files the issue itself', () => {
     // Three file; the fourth is refused by the daily cap and is charged anyway,
     // which is what spends the last of the allowance.
     for (let i = 0; i < REPORTS_PER_DAY; i++) {
-      const answer = await callTool(access, 'report_feedback', { ...REPORT, title: `report number ${i}` });
+      const answer = await twoStep(access, 'report_feedback', { ...REPORT, title: `report number ${i}` });
       expect(answer.isError, `call ${i}`).toBe(false);
     }
+    // The proposal is what is charged (US-36 AC6/AC9); the confirm is free, so the count is unchanged.
     for (let i = REPORTS_PER_DAY; i < WRITES_PER_HOUR / WRITE_COST.correct; i++) {
-      const daily = await callTool(access, 'report_feedback', { ...REPORT, title: `report number ${i}` });
+      const daily = await twoStep(access, 'report_feedback', { ...REPORT, title: `report number ${i}` });
       expect(daily.isError, `call ${i}`).toBe(true);
       expect(daily.text).toContain('You have filed three reports today. Nothing was filed.');
     }
@@ -357,7 +375,7 @@ describe('US-32 AC9 — the hosted server files the issue itself', () => {
     const posts = stubGithub(() => new Response('nope', { status: 500 }));
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { access } = await connect();
-    const answer = await callTool(access, 'report_feedback', REPORT);
+    const answer = await twoStep(access, 'report_feedback', REPORT);
 
     expect(answer.isError).toBe(true);
     expect(answer.text).toBe('GitHub did not answer. Nothing was filed. Try again later.');
@@ -371,8 +389,8 @@ describe('US-32 AC9 — the hosted server files the issue itself', () => {
   it('files the same report once a day, and answers the second call with the first issue', async () => {
     const posts = stubGithub(() => created(13));
     const { access } = await connect();
-    const first = await callTool(access, 'report_feedback', REPORT);
-    const again = await callTool(access, 'report_feedback', { ...REPORT, title: REPORT.title.toUpperCase() });
+    const first = await twoStep(access, 'report_feedback', REPORT);
+    const again = await twoStep(access, 'report_feedback', { ...REPORT, title: REPORT.title.toUpperCase() });
 
     expect(posts).toHaveLength(1);
     expect(again.isError).toBe(false);
@@ -388,13 +406,13 @@ describe('US-32 AC9 — the hosted server files the issue itself', () => {
     for (let i = 0; i < Math.ceil(ISSUES_PER_HOUR / REPORTS_PER_DAY); i++) connections.push((await connect()).access);
     for (let i = 0; i < ISSUES_PER_HOUR; i++) {
       const who = connections[Math.floor(i / REPORTS_PER_DAY)];
-      const answer = await callTool(who, 'report_feedback', { ...REPORT, title: `distinct report ${i}` });
+      const answer = await twoStep(who, 'report_feedback', { ...REPORT, title: `distinct report ${i}` });
       expect(answer.isError, `issue ${i}`).toBe(false);
     }
     expect(posts).toHaveLength(ISSUES_PER_HOUR);
 
     // From the last connection, which still has a report left of its own three.
-    const capped = await callTool(connections[connections.length - 1], 'report_feedback', { ...REPORT, title: 'the twenty-first report' });
+    const capped = await twoStep(connections[connections.length - 1], 'report_feedback', { ...REPORT, title: 'the twenty-first report' });
     expect(capped.isError).toBe(true);
     expect(capped.text).toContain('Feedback is paused for an hour. Nothing was filed.');
     expect(posts).toHaveLength(ISSUES_PER_HOUR); // nothing left the machine
@@ -747,7 +765,7 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
     expect(storedRecord().measurements).toHaveLength(1);
 
     seedWithLdl('2026-08-30');
-    const recent = await callTool(access, 'correct_value', { id: LDL_ID, newValue: 2.8, expectedValue: 3.2 });
+    const recent = await twoStep(access, 'correct_value', { id: LDL_ID, newValue: 2.8, expectedValue: 3.2 });
     expect(recent.isError).toBe(false);
   });
 
@@ -856,7 +874,7 @@ describe('update_profile on the hosted surface (US-34)', () => {
     expect(wrongField.isError).toBe(true);
     expect(wrongField.text).toContain('expected.heightCm');
 
-    const stated = await callTool(access, 'update_profile', { heightCm: 165, expected: { heightCm: 178 } });
+    const stated = await twoStep(access, 'update_profile', { heightCm: 165, expected: { heightCm: 178 } });
     expect(stated.isError).toBe(false);
     expect(storedRecord().profile.heightCm).toBe(165);
     expect(storedRecord().profile.sex).toBe('male');
@@ -1175,12 +1193,12 @@ function pendingFiles(): string[] {
 describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, AC9, AC10)', () => {
   afterEach(() => setImportSeams(null));
 
-  it('lists the tool with openai/fileParams, extracts without writing, then commits what was accepted', async () => {
+  it('lists the tool without openai/fileParams (US-36 AC7), extracts without writing, then commits what was accepted', async () => {
     seedRecord();
     const { access } = await connect();
     const listed = await rpc(access, 'tools/list');
     const tool = listed.result!.tools!.find((t) => (t as { name: string }).name === 'import_documents') as { _meta: Record<string, unknown> };
-    expect(tool._meta['openai/fileParams']).toEqual(['file']);
+    expect(tool._meta['openai/fileParams']).toBeUndefined();
 
     const extracted = stubImport({ 'labs.pdf': PDF_BYTES, 'notes.txt': new Uint8Array(1) }, () => labReport());
     // A pending payload older than a day, left by an extract whose commit never came, is swept by this one.
@@ -1469,5 +1487,200 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
       expect(JSON.stringify(spy.mock.calls)).not.toMatch(/secret-name|2\.8|broken/);
       spy.mockRestore();
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-37 — the folder nudge on a read
+// ---------------------------------------------------------------------------
+import { FOLDER_LIST_TIMEOUT_MS } from '../lib/mcp.server';
+import { FOLDER_NUDGE_HINT } from '../../packages/health-core/src/mcp-tools';
+
+function importEvents(): unknown[] {
+  return (recordServerEvent as unknown as { mock: { calls: unknown[][] } }).mock.calls.filter(([name]) => name === 'mcp_import').map(([, meta]) => meta);
+}
+
+describe('US-37 — a Dropbox read lists folder files that are not in the record (AC1, AC2, AC3, usage signal)', () => {
+  afterEach(() => setImportSeams(null));
+  /** A record `get_plan` can compute from; the nudge rides on a successful read. */
+  const withProfile = (file: RoadmapFile): RoadmapFile => ({ ...file, profile: { ...file.profile, sex: 'male', birthYear: 1971, heightCm: 178 } });
+
+  it('get_plan and an un-narrowed read_record carry `folder`; a narrowed read does not; the record is not written', async () => {
+    seedRecord(withProfile);
+    cloud.docs.set('labs.pdf', new Blob([PDF_BYTES as Uint8Array<ArrayBuffer>]));
+    cloud.docs.set('batch.zip', new Blob([new Uint8Array(4)]));
+    cloud.docs.set('notes.txt', new Blob([new Uint8Array(1)]));
+    const { access } = await connect();
+    (recordServerEvent as unknown as { mockClear(): void }).mockClear();
+
+    const plan = await callTool(access, 'get_plan', {});
+    expect(plan.isError).toBe(false);
+    const planData = OUTPUTS.get_plan.parse(plan.structured);
+    expect(planData.folder).toEqual({ unimported: ['batch.zip', 'labs.pdf'], hint: FOLDER_NUDGE_HINT });
+    // The text half is still JSON, and the same JSON: older clients parse it.
+    expect(JSON.parse(plan.text).folder).toEqual(planData.folder);
+
+    const whole = OUTPUTS.read_record.parse((await callTool(access, 'read_record', {})).structured);
+    expect(whole.folder?.unimported).toEqual(['batch.zip', 'labs.pdf']);
+    const narrowed = OUTPUTS.read_record.parse((await callTool(access, 'read_record', { metric: 'ldl' })).structured);
+    expect(narrowed.folder).toBeUndefined();
+
+    // Once per read that found something, value-free: route, phase, a bucket.
+    expect(importEvents()).toEqual([
+      { route: 'dropbox', phase: 'nudge', files: '2-5' },
+      { route: 'dropbox', phase: 'nudge', files: '2-5' },
+    ]);
+    expect(JSON.stringify(importEvents())).not.toContain('labs.pdf');
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
+  });
+
+  it('a declined file is filed as a document by the empty commit and is silent on the next read; the extract carries fromNudge (AC3)', async () => {
+    seedRecord(withProfile);
+    const { access } = await connect();
+    stubImport({ 'labs.pdf': PDF_BYTES }, () => labReport());
+    expect(OUTPUTS.get_plan.parse((await callTool(access, 'get_plan', {})).structured).folder?.unimported).toEqual(['labs.pdf']);
+    (recordServerEvent as unknown as { mockClear(): void }).mockClear();
+
+    const data = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fromNudge: true })).structured);
+    expect(data.next).toContain('empty accept and replace');
+    expect(importEvents()).toEqual([{ route: 'dropbox', phase: 'extract', files: '1', fromNudge: true }]);
+    const declined = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [] } });
+    expect(declined.isError).toBe(false);
+    // The row the empty commit wrote carries a hash — exactly the row the nudge must honour (review 3.1).
+    expect(storedRecord().documents[0].contentHash).toMatch(/^sha256-/);
+    expect(OUTPUTS.get_plan.parse((await callTool(access, 'get_plan', {})).structured).folder).toBeUndefined();
+    expect(OUTPUTS.read_record.parse((await callTool(access, 'read_record', {})).structured).folder).toBeUndefined();
+  });
+
+  it('a listing that fails, or does not answer inside two seconds, leaves the read intact with `folder` absent (AC2)', async () => {
+    seedRecord(withProfile);
+    cloud.docs.set('labs.pdf', new Blob([PDF_BYTES as Uint8Array<ArrayBuffer>]));
+    const broken = new MemoryAdapter(cloud);
+    broken.list = async () => { throw new StorageError('Dropbox list failed (500)', undefined, undefined, 500); };
+    setAdapterFactory(() => broken);
+    const { access } = await connect();
+    const failed = await callTool(access, 'get_plan', {});
+    expect(failed.isError).toBe(false);
+    expect(OUTPUTS.get_plan.parse(failed.structured).folder).toBeUndefined();
+
+    const slow = new MemoryAdapter(cloud);
+    slow.list = (_folder, signal) => new Promise((_, reject) => signal?.addEventListener('abort', () => reject(signal.reason)));
+    setAdapterFactory(() => slow);
+    const started = Date.now();
+    const timedOut = await callTool(access, 'read_record', {});
+    expect(Date.now() - started).toBeGreaterThanOrEqual(FOLDER_LIST_TIMEOUT_MS - 50);
+    expect(timedOut.isError).toBe(false);
+    expect(OUTPUTS.read_record.parse(timedOut.structured).folder).toBeUndefined();
+    expect(importEvents().filter((e) => (e as { phase: string }).phase === 'nudge')).toHaveLength(0);
+  }, 10_000);
+});
+
+// ---------------------------------------------------------------------------
+// US-36 — file_results over the hosted surface
+// ---------------------------------------------------------------------------
+import { WRITES_PER_HOUR as HOURLY } from '../lib/mcp-grants.server';
+
+describe('US-36 — file_results: propose parks a receipt and charges one, commit writes and spends it (AC5, AC6, usage signal)', () => {
+  afterEach(() => setImportSeams(null));
+  const rows = (day = LAB_DAY) => ({
+    sourceFileName: 'Results.pdf', classification: 'lab_report', collectedOn: day,
+    values: [
+      { metric: 'ldl', printedName: 'LDL Cholesterol', value: 100, unit: 'mg/dL' },
+      { metric: 'ferritin', printedName: 'Ferritin', value: 210, unit: 'ug/L', referenceLow: 30, referenceHigh: 300 },
+    ],
+  });
+
+  it('never calls the extractor, writes nothing at propose, then commits what was accepted with importedVia assistant', async () => {
+    seedRecord();
+    const { access } = await connect();
+    const extracted = stubImport({}, () => labReport());
+    (recordServerEvent as unknown as { mockClear(): void }).mockClear();
+
+    const propose = await callTool(access, 'file_results', rows());
+    expect(propose.isError).toBe(false);
+    const data = OUTPUTS.file_results.parse(propose.structured);
+    expect(data.route).toBe('assistant');
+    expect(data.candidates.map((c) => [c.id, c.metric, c.printedName, c.slot.state])).toEqual([['c1', 'ldl', 'LDL Cholesterol', 'free'], ['c2', 'ferritin', 'Ferritin', 'free']]);
+    expect(data.candidates[0].value).toBeCloseTo(2.586, 2);
+    expect(data.next).toContain('call file_results with commit');
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
+    expect(pendingFiles()).toHaveLength(1);
+    expect(extracted).toEqual([]); // no model, so no file quota and no machine cap spent
+
+    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1', 'c2'], replace: [] } });
+    expect(commit.isError).toBe(false);
+    const stored = storedRecord();
+    expect(stored.measurements.find((m) => m.metricType === 'ldl')).toMatchObject({ source: 'lab_import', recordedAt: LAB_DAY });
+    expect(stored.labValues[0]).toMatchObject({ metricName: 'ferritin', value: 210, unit: 'µg/L', source: 'lab_import' });
+    // A DCR-registered test client is not a pinned one, so its label is `other` — which is also what tells the harness apart from a real ChatGPT (AC12).
+    expect(stored.documents[0]).toMatchObject({ sourceFileName: 'Results.pdf', contentHash: '', metadata: { importedVia: 'assistant', client: 'other' } });
+    expect(pendingFiles()).toHaveLength(0);
+    const spent = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
+    expect(spent.isError).toBe(true);
+
+    // The same file re-sent is already_imported by name and date; another date files.
+    const again = OUTPUTS.file_results.parse((await callTool(access, 'file_results', rows())).structured);
+    expect(again.files[0]).toMatchObject({ status: 'already_imported' });
+    expect(again.receipt).toBeUndefined();
+    const other = OUTPUTS.file_results.parse((await callTool(access, 'file_results', rows('2026-08-27'))).structured);
+    expect(other.candidates).toHaveLength(2);
+
+    // Value-free counters: route, phase, bucket; never a name or a value.
+    const events = importEvents();
+    expect(events).toEqual([
+      { route: 'assistant', phase: 'extract', files: '1' },
+      { route: 'assistant', phase: 'commit', files: '1' },
+      { route: 'assistant', phase: 'extract', files: '1' },
+    ]);
+    expect(JSON.stringify(events)).not.toMatch(/Results\.pdf|210|2\.58/);
+  });
+
+  it('charges one write at propose whatever the row count, and the commit one plus five per replace (AC6)', async () => {
+    seedRecord((file) => ({ ...file, measurements: [createMeasurement({ id: 'old', metricType: 'ldl', value: 3.4, recordedAt: `${LAB_DAY}T00:00:00.000Z`, createdAt: NOW })] }));
+    const { access } = await connect();
+    const data = OUTPUTS.file_results.parse((await callTool(access, 'file_results', rows())).structured);
+    expect(data.candidates[0].slot).toMatchObject({ state: 'held_different', existingRowId: 'old', replaceable: true });
+    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c2'], replace: ['c1'] } });
+    expect(commit.isError).toBe(false);
+    expect(storedRecord().measurements.find((m) => m.id === 'old')!.status).toBe('entered-in-error');
+    // 1 (propose) + 1 + 5 (commit with one replace) = 7 spent; 53 adds remain of the hour.
+    let adds = 0;
+    for (let i = 0; i < HOURLY; i++) {
+      const answer = await callTool(access, 'add_measurement', { metricType: 'hdl', value: 1.2, recordedAt: dayNumber(i) });
+      if (answer.isError) break;
+      adds++;
+    }
+    expect(adds).toBe(HOURLY - 1 - WRITE_COST.add - WRITE_COST.correct);
+  });
+
+  it('refuses a replace of a value older than the 90-day rule, and files a letter by an empty commit', async () => {
+    seedRecord((file) => ({ ...file, measurements: [createMeasurement({ id: 'old', metricType: 'ldl', value: 3.4, recordedAt: '2026-01-10T00:00:00.000Z', createdAt: NOW })] }));
+    const { access } = await connect();
+    const data = OUTPUTS.file_results.parse((await callTool(access, 'file_results', rows('2026-01-10'))).structured);
+    expect(data.candidates[0].slot.replaceable).toBe(false);
+    const refused = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: [], replace: ['c1'] } });
+    expect(refused.isError).toBe(true);
+    expect(refused.text).toContain('too old to replace');
+    expect(storedRecord().measurements.find((m) => m.id === 'old')!.status).toBe('active');
+
+    const letter = OUTPUTS.file_results.parse((await callTool(access, 'file_results', { sourceFileName: 'letter.pdf', classification: 'clinic_letter', document: { title: 'Cardiology review', type: 'clinic_letter', date: '2026-08-01' } })).structured);
+    expect(letter.documents).toEqual([{ sourceFileName: 'letter.pdf', title: 'Cardiology review', type: 'clinic_letter', date: '2026-08-01' }]);
+    const filed = await callTool(access, 'file_results', { commit: { receipt: letter.receipt, accept: [], replace: [] } });
+    expect(filed.isError).toBe(false);
+    expect(storedRecord().documents.map((d) => d.title)).toEqual(['Cardiology review']);
+  });
+
+  it('a file dropped through a cached tool list still routes as chatgpt_file, and its next carries the refresh sentence (AC12)', async () => {
+    seedRecord();
+    const { access } = await connect();
+    stubImport({ 'Results.pdf': PDF_BYTES }, () => labReport());
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => (String(url).includes('oaiusercontent')
+      ? new Response(PDF_BYTES as Uint8Array<ArrayBuffer>)
+      : Response.json({ refresh_token: 'dropbox-refresh-token-x', access_token: 'dropbox-access-token', expires_in: 14400 }))));
+    const drag = await callTool(access, 'import_documents', { file: { download_url: 'https://files.oaiusercontent.com/one?sig=a', file_id: 'file-1', file_name: 'Results.pdf' } });
+    expect(drag.isError).toBe(false);
+    const data = OUTPUTS.import_documents.parse(drag.structured);
+    expect(data.route).toBe('chatgpt_file');
+    expect(data.next).toContain('refresh the connector');
   });
 });

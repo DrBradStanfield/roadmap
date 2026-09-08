@@ -142,15 +142,16 @@ describe('resolveLabValues', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Bug: resolveUnit for Lp(a) mg/L was previously broken (stored as nmol/L).
-// Verify the conversion factor is applied correctly.
+// Bug: resolveUnit for Lp(a) mg/L was previously broken (stored as nmol/L),
+// then over-corrected (×2.4 per mg/L; the factor is per mg/dL). 93 mg/L is
+// ~22 nmol/L, not 223.
 // ---------------------------------------------------------------------------
 
 describe('resolveUnit edge cases', () => {
   it('converts Lp(a) from mg/L to nmol/L', () => {
     const result = resolveUnit('lpa', 'mg/L', 93);
     expect(result.system).toBe('conventional');
-    expect(result.valueSI).toBeCloseTo(93 * 2.4, 0);
+    expect(result.valueSI).toBeCloseTo(22.3, 0);
     expect(result.confident).toBe(true);
   });
 

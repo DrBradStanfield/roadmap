@@ -173,6 +173,15 @@ export function displayLabUnit(reportedUnit: string, entry?: LabCatalogEntry): s
   return norm;
 }
 
+/**
+ * A printed name as every resolver compares it: lower case, underscores and
+ * runs of whitespace flattened to one space. One fold, so a core metric and
+ * a catalogued test cannot disagree on "free_t4" versus "free t4".
+ */
+export function foldName(name: string): string {
+  return name.trim().toLowerCase().replace(/[_\s]+/g, ' ');
+}
+
 /** Resolve a report's test name (any casing/spelling) to a catalogue entry.
  *  BOTH sides are spaced before comparing, so the underscore/space variance
  *  the LLM extractor and agents produce washes out in either direction:
@@ -181,7 +190,7 @@ export function displayLabUnit(reportedUnit: string, entry?: LabCatalogEntry): s
  *  normalization for free. */
 export function resolveLabCatalogEntry(reportedName: string): LabCatalogEntry | undefined {
   const raw = reportedName.trim().toLowerCase();
-  const spaced = raw.replace(/[_\s]+/g, ' ');
+  const spaced = foldName(raw);
   return LAB_CATALOG.find((e) =>
     e.key.replace(/_/g, ' ') === spaced ||
     e.label.toLowerCase() === spaced ||
@@ -197,5 +206,5 @@ export function resolveLabCatalogEntry(reportedName: string): LabCatalogEntry | 
  * and read time instead of becoming rows the app can never reconcile.
  */
 export function labSlotKey(name: string): string {
-  return resolveLabCatalogEntry(name)?.key ?? name.trim().toLowerCase().replace(/[_\s]+/g, ' ');
+  return resolveLabCatalogEntry(name)?.key ?? foldName(name);
 }

@@ -127,6 +127,22 @@ of truth for acceptance criteria and the schemas live in
     `sameDayAs`; a commit accepting both is refused in words. Sentry gets a
     fixed message and the error class, never a parse message.
 
+17. Assistant-side extraction (US-36, 2026-09-07): a new tool, `file_results`,
+    not a widened `add_lab_values` (a listed, single-phase tool a typed panel
+    needs no receipt for) and not a second mode of `import_documents` (the
+    biggest description in the list). It reuses `prepareImport`, the receipt
+    and the commit through one `ImportSurface` (stash/open/discard, and an
+    optional `extract` only the hosted server has); each tool declares how it
+    reads its request (`McpToolDefinition.imports`), so `runImport` compares
+    no names. The stdio server passes an in-memory surface with no `extract`,
+    so `file_results` runs locally while `import_documents` still refuses
+    there. `openai/fileParams` is gone from `import_documents`;
+    the `file` argument stays callable for cached tool lists, its `next`
+    carries the refresh sentence, and AC12 dates the deletion. Cost 1 at
+    propose, 1 + 5 per replace at commit, no file quota. The nudge (US-37) is
+    the two reads that declare `nudge` listing the Dropbox folder root under
+    a 2 s clock, overlapping the record read, and naming files with no live
+    document row (`folderNudge`, hashed rows included).
 16. Charges (2026-09-07 adversarial pass): the three counters a file spends —
     connection day quota, machine day cap, hourly write allowance — are
     charged in turn and a refusal by a later one refunds the earlier, so a

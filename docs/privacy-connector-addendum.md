@@ -4,11 +4,9 @@ DRAFT. Not published. Written 2026-09-02, re-audited 2026-09-07, from the code a
 `app/lib/mcp.server.ts`, `app/lib/mcp-*.server.ts`, `app/routes/mcp.$.tsx` and
 `packages/health-core/src/mcp-tools.ts`.
 
-> **Pending change (noted 2026-09-07).** Brad decided that assistant-side extraction
-> (the assistant reads the lab file itself; our server never receives it) becomes the
-> default. The design is in progress and NOT built. Every sentence below about a file
-> going to our server or to Anthropic's API describes the connector as it runs today,
-> and will be rewritten when the design ships. Do not publish this draft before that.
+> Assistant-side extraction shipped 2026-09-07 (US-36): a file you drop into the chat is
+> read by your assistant, and the sentences below say so. The folder route still sends
+> folder files to our server and to Anthropic's API.
 
 This section covers one optional feature: connecting an AI assistant, such as ChatGPT
 or Claude, to your health record. It applies only if you connect one. If you never do,
@@ -22,11 +20,17 @@ question, our server at `mcp.drstanfield.com` opens that file from your cloud, a
 the one request, and drops it. The file's contents exist in server memory for the
 length of that request and nowhere else.
 
-If you ask your assistant to import a lab file, that file, not your record, is held
-in server memory for one request and sent to Anthropic's API for extraction, then kept
-nowhere. The server reads it from your Dropbox folder, or, for a file dropped into a
-ChatGPT conversation, fetches it from OpenAI's file host. On a Google Drive record the
-connector cannot see such a file and refuses without reading anything. The candidate values it finds are written to YOUR folder, as
+If you drop a lab file into the chat, your assistant reads the file itself; the file
+never reaches our server. Only the values it read do, in memory for one request, and
+they are written to your own folder, never kept by us. If instead you ask your assistant
+to import the lab files in your Dropbox folder, each of those files, not your record, is
+held in server memory for one request and sent to Anthropic's API for extraction, then
+kept nowhere. (A ChatGPT connection made before 7 September 2026 keeps an older tool
+list until you refresh the connector; until then a dropped file is fetched from OpenAI's
+file host by our server, as before.) On a Google Drive record the folder cannot be read,
+so only the chat route applies. On a Dropbox record, when your assistant reads your
+record it also lists the file names in that folder, in memory, to tell you which are not
+yet in your record; the names are not kept. The candidate values either route finds are written to YOUR folder, as
 `imports/pending-<id>.json`, until you confirm them. A pending file you never confirm
 stays up to 24 hours and is swept on the next import; the receipt that names it expires
 after an hour.

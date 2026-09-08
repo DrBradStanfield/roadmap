@@ -114,14 +114,20 @@ interface DropboxEntry {
 
 /**
  * The FILES directly under one folder of the app folder (`''` for its root),
- * following `has_more`. Folders are dropped: the record's own document tree
- * is not something an import reads. A folder that does not exist lists as
- * empty, which is what an app folder with no `imports/` yet is.
+ * following `has_more` until `limit` entries are in hand. The first page asks
+ * Dropbox for that many (its `limit`, at most 2000), so a big folder is not
+ * serialised whole to yield a nudge's ten names. Folders are dropped: the
+ * record's own document tree is not something an import reads. A folder that
+ * does not exist lists as empty, which is what an app folder with no
+ * `imports/` yet is.
  */
-export async function dropboxListFolder(accessToken: string, folder: string, signal?: AbortSignal): Promise<DropboxEntry[]> {
+export async function dropboxListFolder(accessToken: string, folder: string, signal?: AbortSignal, limit = Infinity): Promise<DropboxEntry[]> {
   const entries: DropboxEntry[] = [];
   let url = LIST_URL;
-  let body: object = { path: folder ? `/${folder}` : '', recursive: false, include_deleted: false };
+  let body: object = {
+    path: folder ? `/${folder}` : '', recursive: false, include_deleted: false,
+    ...(Number.isFinite(limit) ? { limit: Math.min(limit, 2000) } : null),
+  };
   for (;;) {
     const res = await request(url, {
       method: 'POST',
@@ -141,7 +147,7 @@ export async function dropboxListFolder(accessToken: string, folder: string, sig
         modified: typeof entry.server_modified === 'string' ? entry.server_modified : '',
       });
     }
-    if (!page.has_more || !page.cursor) return entries;
+    if (!page.has_more || !page.cursor || entries.length >= limit) return entries;
     url = LIST_CONTINUE_URL;
     body = { cursor: page.cursor };
   }
@@ -239,8 +245,8 @@ export class DropboxAdapter implements StorageAdapter {
     throw new StorageError('The hosted server does not write uploaded documents.');
   }
 
-  async list(folder: string, signal?: AbortSignal): Promise<StoredFile[]> {
-    return (await dropboxListFolder(this.accessToken, folder, signal)).map((e) => ({
+  async list(folder: string, signal?: AbortSignal, limit?: number): Promise<StoredFile[]> {
+    return (await dropboxListFolder(this.accessToken, folder, signal, limit)).map((e) => ({
       name: folder ? `${folder}/${e.name}` : e.name, ref: e.id, size: e.size, modified: e.modified,
     }));
   }

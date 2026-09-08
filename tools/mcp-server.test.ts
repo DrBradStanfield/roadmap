@@ -67,14 +67,14 @@ describe('US-32 — the JSON-RPC handshake', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('lists the eight tools with their schemas, and stays quiet on a notification', async () => {
+  it('lists the nine tools with their schemas, and stays quiet on a notification', async () => {
     const { dir, path } = writeFixture(fixture());
     const listed = (await handle({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, path)) as
       { result: { tools: Array<{ name: string; inputSchema: object }> } };
 
     expect(listed.result.tools.map((t) => t.name)).toEqual([
       'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value', 'update_profile', 'report_feedback',
-      'import_documents',
+      'import_documents', 'file_results',
     ]);
     expect(listed.result.tools[0].inputSchema).toMatchObject({ type: 'object' });
     expect((await handle({ jsonrpc: '2.0', method: 'notifications/initialized' }, path))).toBeNull();
@@ -458,6 +458,52 @@ describe('US-35 AC11 — import_documents is listed here and refuses here', () =
     expect(text(response)).toMatch(/website|hosted connector/);
     expect(text(response)).toContain('Nothing was read');
     expect(readFileSync(path, 'utf8')).toBe(before);
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('US-36 AC1 — file_results runs here: the receipt lives in this process’s memory', () => {
+  it('proposes without writing, commits with a backup, and refuses a receipt it is not holding', async () => {
+    const { dir, path } = writeFixture(fixture());
+    const before = readFileSync(path, 'utf8');
+    const propose = await call(path, 'file_results', {
+      sourceFileName: 'Results.pdf', classification: 'lab_report', collectedOn: '2026-08-20',
+      values: [{ metric: 'ldl', printedName: 'LDL Cholesterol', value: 2.8, unit: 'mmol/L' }, { metric: 'ferritin', printedName: 'Ferritin', value: 210, unit: 'ug/L' }],
+    });
+    expect(propose.result!.isError).toBeUndefined();
+    const data = OUTPUTS.file_results.parse(propose.result!.structuredContent);
+    expect(data.candidates.map((c) => [c.metric, c.slot.state])).toEqual([['ldl', 'free'], ['ferritin', 'free']]);
+    expect(data.receipt).toMatch(/^[0-9a-f-]{36}$/); // the payload id, unsealed: no key locally, one user, one process
+    expect(readFileSync(path, 'utf8')).toBe(before);
+    expect(readdirSync(dir)).toEqual(['health-roadmap.json']); // nothing parked beside the record
+
+    const stranger = await call(path, 'file_results', { commit: { receipt: '00000000-0000-4000-8000-000000000000', accept: ['c1'], replace: [] } });
+    expect(stranger.result!.isError).toBe(true);
+    expect(text(stranger)).toMatch(/not one this server is holding.*loses it on restart.*Nothing was written/);
+
+    const commit = await call(path, 'file_results', { commit: { receipt: data.receipt, accept: ['c1', 'c2'], replace: [] } });
+    expect(commit.result!.isError).toBeUndefined();
+    expect(text(commit)).toContain('Saved (backup:');
+    const saved = JSON.parse(readFileSync(path, 'utf8')) as RoadmapFile;
+    expect(saved.measurements.find((m) => m.recordedAt === '2026-08-20')).toMatchObject({ metricType: 'ldl', value: 2.8, source: 'lab_import' });
+    expect(saved.labValues[0]).toMatchObject({ metricName: 'ferritin', value: 210 });
+    expect(saved.documents[0]).toMatchObject({ sourceFileName: 'Results.pdf', metadata: { importedVia: 'assistant' } });
+    expect(readdirSync(dir).some((name) => name.includes('backup') || name.includes('.bak'))).toBe(true);
+
+    const spent = await call(path, 'file_results', { commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
+    expect(spent.result!.isError).toBe(true);
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('US-36 AC9 — the stdio server ignores `confirm`: a person is watching their own file', () => {
+  it('writes a correction on the first call, confirm or not', async () => {
+    const { dir, path } = writeFixture(fixture());
+    const response = await call(path, 'correct_value', { id: 'm1', newValue: 2.8, expectedValue: 3.4, confirm: 'not-a-receipt' });
+    expect(response.result!.isError).toBeUndefined();
+    expect(text(response)).toContain('Corrected ldl 2.8');
+    const saved = JSON.parse(readFileSync(path, 'utf8')) as RoadmapFile;
+    expect(saved.measurements.find((m) => m.id === 'm1')!.status).toBe('entered-in-error');
     rmSync(dir, { recursive: true, force: true });
   });
 });

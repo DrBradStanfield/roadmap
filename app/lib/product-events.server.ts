@@ -18,6 +18,8 @@ const metadataSchema = z
     route: z.enum(MCP_IMPORT_ROUTES).optional(),
     phase: z.enum(MCP_IMPORT_PHASES).optional(),
     files: z.enum(MCP_IMPORT_FILE_BUCKETS).optional(),
+    /** US-37: this extract followed a read's folder nudge — the retirement query. */
+    fromNudge: z.literal(true).optional(),
   })
   .strict();
 

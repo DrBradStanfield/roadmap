@@ -21,13 +21,12 @@ The same file, the same write path, three ways in.
    file. See [docs/guides/command-line.md](docs/guides/command-line.md) and
    [docs/guides/connect-claude-desktop.md](docs/guides/connect-claude-desktop.md).
 3. **Hosted MCP**: `https://mcp.drstanfield.com/mcp`, live since 2026-09-02 on
-   the Fly app `health-tool-edu`, over Dropbox and Google Drive. Eight tools as
-   of 2026-09-04, including the hosted-only `import_documents` (US-35), which
-   reads lab files from the Dropbox app folder or a file dropped into
-   ChatGPT (desktop only; Drive's `drive.file` scope cannot see dropped
-   files). Extraction runs on our server today; Brad decided 2026-09-07 that
-   assistant-side extraction becomes the default (design in progress, not
-   built).
+   the Fly app `health-tool-edu`, over Dropbox and Google Drive. Nine tools as
+   of 2026-09-07: the hosted-only `import_documents` (US-35) reads lab files
+   from the Dropbox app folder (Drive's `drive.file` scope cannot see dropped
+   files), and `file_results` (US-36) takes the rows the assistant read from a
+   file dropped into the chat, so the file never reaches our server. On
+   Dropbox a read also names folder files not yet in the record (US-37).
 
 Every non-browser writer goes through the same `SyncManager`
 (`packages/health-core/src/sync-manager.ts`), which merges on conflict and

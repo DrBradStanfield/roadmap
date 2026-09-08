@@ -15,12 +15,18 @@ import {
   addLabValuesInput,
   chatgptFileInput,
   importDocumentsInput,
+  fileResultRow,
+  fileResultsInput,
   addMeasurement,
   addMeasurementInput,
   callTool,
   correctValueInput,
   fileFeedback,
+  folderNudge,
+  FOLDER_NUDGE_HINT,
+  FOLDER_NUDGE_MAX,
   runToolOverSync,
+  MAX_FILE_NAME_LENGTH,
   MAX_NAME_LENGTH,
   type FeedbackFiler,
   type FeedbackIssue,
@@ -323,6 +329,8 @@ describe('US-32 — correct_value', () => {
     const missing = correctValueTool(base(), { id: 'nope', newValue: 2.1 }, NOW);
     expect(missing.status).toBe('rejected');
     expect(missing.text).toContain('nope');
+    // A missing target is not a request to add (live ChatGPT 2026-09-07 offered add_measurement unasked).
+    expect(missing.text).toContain('Do not add it instead unless the user asks');
 
     const first = ok(correctValueTool(base(), { id: 'm1', newValue: 2.1 }, NOW));
     const again = correctValueTool(first.file!, { id: 'm1', newValue: 2.2 }, NOW);
@@ -469,6 +477,7 @@ describe('US-32 — the published JSON Schema and the zod gate say the same thin
     update_profile: updateProfileInput,
     report_feedback: reportFeedbackInput,
     import_documents: importDocumentsInput,
+    file_results: fileResultsInput,
   };
 
   it('agrees on every property and every required field, nested rows included', () => {
@@ -479,8 +488,9 @@ describe('US-32 — the published JSON Schema and the zod gate say the same thin
     let checked = 0;
     for (const tool of MCP_TOOLS) {
       const schemas: Array<[z.ZodRawShape, Record<string, unknown>]> = [[ZOD[tool.name].shape, tool.inputSchema.properties]];
-      if (tool.name === 'add_lab_values') {
-        schemas.push([labValueInput.shape, (tool.inputSchema.properties.values as { items: { properties: Record<string, unknown> } }).items.properties]);
+      if (tool.name === 'add_lab_values' || tool.name === 'file_results') {
+        const rowShape = tool.name === 'add_lab_values' ? labValueInput.shape : fileResultRow.shape;
+        schemas.push([rowShape, (tool.inputSchema.properties.values as { items: { properties: Record<string, unknown> } }).items.properties]);
       }
       for (const [shape, properties] of schemas) {
         for (const [key, property] of Object.entries(properties)) {
@@ -492,7 +502,7 @@ describe('US-32 — the published JSON Schema and the zod gate say the same thin
         }
       }
     }
-    expect(checked).toBe(9); // every string a tool takes is bounded
+    expect(checked).toBe(16); // every string a tool takes is bounded (three `confirm`s among them, US-36 AC9)
   });
 
   it('diverges in exactly one place, on purpose: add_measurement.metricType', () => {
@@ -553,19 +563,21 @@ describe('US-32 — the dispatcher', () => {
     expect(outcome.status === 'ok' && outcome.file).toBeUndefined();
   });
 
-  it('publishes eight tools, and marks only the reads read-only', () => {
+  it('publishes nine tools, and marks only the reads read-only', () => {
     expect(MCP_TOOLS.map((t) => t.name)).toEqual([
       'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value', 'update_profile', 'report_feedback',
-      'import_documents',
+      'import_documents', 'file_results',
     ]);
     // report_feedback files a public issue, so it is a write like any other.
     expect(MCP_TOOLS.filter((t) => t.annotations.readOnlyHint).map((t) => t.name))
       .toEqual(['read_record', 'get_plan']);
     // A correction supersedes a row for good, and a profile write overwrites
     // the only copy there is; both claim to destroy, and nothing else does.
-    // An import's `replace` is a correction (US-35 AC12).
+    // An import's `replace` is a correction (US-35 AC12, US-36 AC7).
     expect(MCP_TOOLS.filter((t) => t.annotations.destructiveHint).map((t) => t.name))
-      .toEqual(['correct_value', 'update_profile', 'import_documents']);
+      .toEqual(['correct_value', 'update_profile', 'import_documents', 'file_results']);
+    // file_results is closed-world: no file host, no model — nothing leaves the record (US-36 AC7).
+    expect(MCP_TOOLS.filter((t) => t.annotations.openWorldHint).map((t) => t.name)).toEqual(['report_feedback', 'import_documents']);
     for (const tool of MCP_TOOLS) {
       expect(tool.inputSchema.additionalProperties, tool.name).toBe(false);
       // ChatGPT's tool renderer drops an object declared only by
@@ -766,7 +778,8 @@ describe('US-32 — every tool answers with structured content that fits its out
   it('publishes the record’s own keys, so a new section cannot go unannounced', () => {
     const keys = Object.keys(createEmptyFile({ deviceId: 'd', now: NOW }));
     const published = Object.keys(OUTPUTS.read_record.shape);
-    expect(published.filter((k) => k !== 'reminderOptIn').sort()).toEqual(keys.sort());
+    // `folder` is the nudge (US-37), a read's addition, not a section of the record.
+    expect(published.filter((k) => k !== 'reminderOptIn' && k !== 'folder').sort()).toEqual(keys.sort());
   });
 });
 
@@ -926,6 +939,7 @@ import {
   importDocumentsCommit,
   importDocumentsOutput,
   isAlreadyImported,
+  dedupFileName,
   MAX_DOCUMENT_TEXT,
   MAX_UNRECOGNIZED_LINES,
   prepareImport,
@@ -1043,7 +1057,7 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
   it('AC13 — the user’s own date for a file that printed none makes its values candidates, and wins over the file’s date', () => {
     const undated = extracted('photo.jpg', labReport({ reportDate: null }));
     const dated = extracted('misread.pdf', labReport({ reportDate: '2026-08-01' }));
-    const { payload, files } = prepareImport(base(), bundleOf([undated, dated]), { ...IMPORT_CTX, fileDates: { 'photo.jpg': '2026-08-12', 'misread.pdf': '2026-08-02' } });
+    const { payload, files } = prepareImport(base(), { ...bundleOf([undated, dated]), fileDates: { 'photo.jpg': '2026-08-12', 'misread.pdf': '2026-08-02' } }, IMPORT_CTX);
     expect(files.map((f) => [f.name, f.status, f.documentDate])).toEqual([['photo.jpg', 'extracted', '2026-08-12'], ['misread.pdf', 'extracted', '2026-08-02']]);
     expect(payload.candidates.map((c) => [c.sourceFileName, c.recordedAt])).toEqual([
       ['photo.jpg', '2026-08-12'], ['photo.jpg', '2026-08-12'], ['misread.pdf', '2026-08-02'], ['misread.pdf', '2026-08-02'],
@@ -1051,12 +1065,12 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(payload.documents.map((d) => d.date)).toEqual(['2026-08-12', '2026-08-02']);
     // A date the record refuses is said back with the refusal, so the assistant
     // never asks for the date the user just gave (live 2026-09-06: "2030-01-01" came back as no_date).
-    const future = prepareImport(base(), bundleOf([undated]), { ...IMPORT_CTX, fileDates: { 'photo.jpg': '2099-01-01' } });
+    const future = prepareImport(base(), { ...bundleOf([undated]), fileDates: { 'photo.jpg': '2099-01-01' } }, IMPORT_CTX);
     expect(future.files[0]).toMatchObject({ status: 'failed', reason: 'bad_date', hint: importHint('bad_date', '2099-01-01 has not happened yet') });
     expect(future.files[0].hint).toMatch(/^2099-01-01 has not happened yet\. .*correct date.*fileDates/);
     expect(future.files[0].hint).not.toContain('No collection date was found');
     // Schema-valid but not a day: the same, in resolveRecordedAt's words.
-    const rolled = prepareImport(base(), bundleOf([undated]), { ...IMPORT_CTX, fileDates: { 'photo.jpg': '2026-02-30' } });
+    const rolled = prepareImport(base(), { ...bundleOf([undated]), fileDates: { 'photo.jpg': '2026-02-30' } }, IMPORT_CTX);
     expect(rolled.files[0]).toMatchObject({ status: 'failed', reason: 'bad_date' });
     expect(rolled.files[0].hint).toMatch(/^"2026-02-30" is not a date\. /);
     // The file's own bad print, with no answer from the user, is still no_date.
@@ -1131,6 +1145,21 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(isAlreadyImported(file, 'letter.pdf', 'sha256-abc')).toBeNull();
   });
 
+  it('AC5 — a re-drop ChatGPT’s file library renamed with a (n) suffix is the same file; Lp(a).pdf keeps its (a) (live 2026-09-07)', () => {
+    expect(dedupFileName('Results(1).pdf')).toBe('Results.pdf');
+    expect(dedupFileName('Report (2).pdf')).toBe('Report.pdf');
+    expect(dedupFileName('Lp(a).pdf')).toBe('Lp(a).pdf');
+    expect(dedupFileName('u1-labs-2026-08-28(1).pdf')).toBe('u1-labs-2026-08-28.pdf');
+    const file = base();
+    file.documents.push({ id: 'd1', title: 't', type: 'other', date: '2026-08-28', fileRef: '', contentHash: '', mimeType: '', extractedText: 'md', addedAt: NOW, sourceFileName: 'Results.pdf', metadata: {} });
+    expect(isAlreadyImported(file, 'Results(1).pdf', '', '2026-08-28')).toMatchObject({ by: 'name_date', row: { id: 'd1' } });
+    expect(isAlreadyImported(file, 'Results (2).pdf', '')).toMatchObject({ by: 'name', row: { id: 'd1' } });
+    // The stored name is the one the file came with; only the comparison folds the suffix.
+    file.documents.push({ id: 'd2', title: 't', type: 'other', date: null, fileRef: '', contentHash: 'sha256-h', mimeType: '', extractedText: 'md', addedAt: NOW, sourceFileName: 'Lp(a) (1).pdf', metadata: {} });
+    expect(folderNudge(file, ['Lp(a).pdf', 'Results(3).pdf', 'other.pdf'])!.unimported).toEqual(['other.pdf']);
+    expect(file.documents[1].sourceFileName).toBe('Lp(a) (1).pdf');
+  });
+
   it('AC6 — the same bytes under two names in one call file one document row, and the twin says which file it is', () => {
     // A browser names a re-download "Results (1).pdf": two names, one contentHash. Two rows would share the
     // archive key, so the website's upload could tombstone only one and would offer the other forever.
@@ -1186,7 +1215,9 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     // A reason outside the table is a bug in us, worded as unreadable rather than a bare token.
     expect(importHint('something_else')).toBe(importHint('unreadable'));
     expect(importHint(undefined)).toBe(importHint('unreadable'));
-    expect(IMPORT_REFUSALS.mobile).toMatch(/ChatGPT on mobile does not hand files to apps yet.*computer.*Apps\/Health Plan by Dr Brad.*Nothing was read\./);
+    // US-36 AC8: a drop the server cannot fetch is the assistant's to read.
+    expect(IMPORT_REFUSALS.mobile).toMatch(/could not fetch that file.*Read the file yourself and call file_results.*Apps\/Health Plan by Dr Brad.*Nothing was read\./);
+    expect(IMPORT_REFUSALS.dragFallback).toContain('file_results');
     expect(IMPORT_REFUSALS.emptyFolder).toMatch(/no PDF, JPEG, PNG or ZIP files in the folder root \(Apps\/Health Plan by Dr Brad\)/);
   });
 });
@@ -1314,9 +1345,9 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     const refused = importDocumentsCommit(after, second, { receipt: 'r2', accept: ['c1'], replace: [] }, NOW);
     expect(refused).toMatchObject({ status: 'rejected', text: `ldl on ${LAB_DAY} changed in the record since these files were read. Nothing was written. Extract again and show the user the fresh candidates.` });
     expect(after.measurements.filter((m) => m.recordedAt === LAB_DAY)).toHaveLength(1);
-    // The tool tells the assistant so, on the param ChatGPT fills.
+    // The param an older ChatGPT tool list still fills is marked retiring and points at file_results (US-36 AC12).
     const fileParam = MCP_TOOLS.find((t) => t.name === 'import_documents')!.inputSchema.properties.file as { description: string };
-    expect(fileParam.description).toMatch(/several files.*once per file.*same metric and day.*conflict.*before any commit/);
+    expect(fileParam.description).toMatch(/Retiring.*file_results/);
   });
 
   it('an empty selection writes nothing and says so, once the file itself is on record', () => {
@@ -1475,14 +1506,15 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
       return { route: 'chatgpt_file', remaining: [], files: [{ name: 'big.pdf', status: 'failed', reason: 'too_large' }, { name: 'photo.heic', status: 'failed', reason: 'unsupported' }] };
     } };
     const refused = OUTPUTS.import_documents.parse((await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: sized, latestDay: TODAY })).structured);
-    expect(refused.next).toBe("Nothing was imported.\n2 file(s) were not read: relay each file's hint to the user in plain words.");
+    // On the drag route the last line is the refresh sentence: the drop reached us from a cached tool list (US-36 AC12).
+    expect(refused.next).toBe(`Nothing was imported.\n2 file(s) were not read: relay each file's hint to the user in plain words.\n${IMPORT_REFUSALS.refresh}`);
     expect(refused.files[0].hint).toBe(importHint('too_large'));
     expect(data.next).toMatch(/1 file\(s\) in the ZIP were not reached: commit this receipt first, then ask the user to drop the ZIP in again/);
     // The question itself stays on the candidate (AC9): the instruction field carries no document text.
     expect(data.next).not.toContain('Smudged');
     expect(data.candidates[0].question).toBe('Smudged: 2.8 or 2.3?');
     expect(data.files.find((f) => f.name === 'photo.heic')!.hint).toBe(importHint('unsupported'));
-    expect(data.next.split('\n').length).toBeLessThanOrEqual(6);
+    expect(data.next.split('\n').length).toBeLessThanOrEqual(7); // + the refresh line on the drag route (US-36 AC12)
   });
 
   it('an extract leaves the file bytes untouched and answers candidates plus a receipt', async () => {
@@ -1500,7 +1532,7 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     // The order that keeps one receipt at a time: commit, then the rest (finding 16).
     expect(data.next).toMatch(/commit this receipt first, then call again with fileNames set to remaining/);
     // Short: the counts, one instruction and the continuation; detail rides on the things themselves (live 2026-09-07 it ran past 600 with the counts said twice).
-    expect(data.next.length).toBeLessThan(650);
+    expect(data.next.length).toBeLessThan(800);
     expect(cloud.files.get(ROADMAP_FILE_NAME)).toBe(before);
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
   });
@@ -1558,18 +1590,413 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(seen[0].aborted).toBe(true);
   });
 
-  it('with no importer — the stdio server — both phases refuse in one sentence (AC11)', async () => {
+  it('with no importer at all, neither phase reaches the record; a surface with no reader — the stdio server — refuses as hosted-only (AC11)', async () => {
     const sync = syncOver(new MemoryCloud());
-    expect(await runToolOverSync(sync, 'import_documents', {}, NOW)).toEqual({ text: IMPORT_HOSTED_ONLY, isError: true });
-    expect(await runToolOverSync(sync, 'import_documents', { commit: { receipt: 'r', accept: [], replace: [] } }, NOW)).toEqual({ text: IMPORT_HOSTED_ONLY, isError: true });
+    const none = { text: expect.stringMatching(/^import_documents needs a server that can hold a pending import.*Nothing was written\.$/), isError: true };
+    expect(await runToolOverSync(sync, 'import_documents', {}, NOW)).toEqual(none);
+    expect(await runToolOverSync(sync, 'import_documents', { commit: { receipt: 'r', accept: [], replace: [] } }, NOW)).toEqual(none);
     expect(callTool('import_documents', {}, { file: base(), now: NOW }).status).toBe('rejected');
+    const { extract: _unused, ...reader } = surface;
+    expect(await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: reader })).toEqual({ text: IMPORT_HOSTED_ONLY, isError: true });
   });
 
-  it('publishes openai/fileParams on the descriptor, naming the file argument (AC4)', () => {
+  it('no longer publishes openai/fileParams, but keeps the file argument callable for cached tool lists (US-36 AC7, AC12)', () => {
     const tool = MCP_TOOLS.find((t) => t.name === 'import_documents')!;
-    expect(tool._meta['openai/fileParams']).toEqual(['file']);
+    expect(tool._meta['openai/fileParams']).toBeUndefined();
+    expect(MCP_TOOLS.some((t) => t._meta['openai/fileParams'])).toBe(false);
     const file = tool.inputSchema.properties.file as { required: string[]; properties: Record<string, unknown> };
     expect(file.required).toEqual(['download_url', 'file_id']);
     expect(Object.keys(file.properties)).toEqual(['download_url', 'file_id', 'mime_type', 'file_name']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-37 — the folder nudge, pure
+// ---------------------------------------------------------------------------
+
+describe('US-37 AC1 — the nudge names folder files no live document row names', () => {
+  function withDocuments(rows: Array<{ sourceFileName: string; contentHash: string; deleted?: boolean }>): RoadmapFile {
+    const file = base();
+    file.documents = rows.map((row, i) => ({
+      id: `doc-${i}`, title: 'Lab results', type: 'pathology_report', date: '2026-08-01', fileRef: '', mimeType: 'application/pdf',
+      extractedText: '', addedAt: NOW, metadata: { importedVia: 'connector' }, ...row,
+    })) as RoadmapFile['documents'];
+    return file;
+  }
+
+  it('matches by name against HASHED rows too — a folder-imported file is never nagged (the review’s blocker 3.1)', () => {
+    // The folder route and the website both write rows WITH a hash;
+    // `isAlreadyImported`'s name rule deliberately ignores those (twins named
+    // Results.pdf), so the nudge needs its own rule or it lists every
+    // imported file on every read.
+    const file = withDocuments([{ sourceFileName: 'labs.pdf', contentHash: 'sha256-abc' }]);
+    expect(isAlreadyImported(file, 'labs.pdf', '')).toBeNull();
+    expect(folderNudge(file, ['labs.pdf', 'health-roadmap.json'])).toBeUndefined();
+    expect(folderNudge(file, ['labs.pdf', 'other.pdf'])!.unimported).toEqual(['other.pdf']);
+  });
+
+  it('is absent when every importable file has a row, and ignores a tombstoned row', () => {
+    const live = withDocuments([{ sourceFileName: 'a.pdf', contentHash: '' }]);
+    expect(folderNudge(live, ['a.pdf', 'notes.txt', 'imports/pending-x.json'])).toBeUndefined();
+    const deleted = withDocuments([{ sourceFileName: 'a.pdf', contentHash: 'sha256-1', deleted: true }]);
+    expect(folderNudge(deleted, ['a.pdf'])!.unimported).toEqual(['a.pdf']);
+  });
+
+  it('lists a ZIP (the folder route reads them), sorts, bounds the count and the names, and carries the one fixed sentence', () => {
+    const names = Array.from({ length: FOLDER_NUDGE_MAX + 3 }, (_, i) => `scan-${String(i).padStart(2, '0')}.png`);
+    const nudge = folderNudge(base(), [...names, 'batch.zip', `${'x'.repeat(300)}.pdf`, 'evil\n.pdf', '.hidden.pdf', 'letter.docx'])!;
+    expect(nudge.unimported).toHaveLength(FOLDER_NUDGE_MAX);
+    expect(nudge.unimported[0]).toBe('batch.zip');
+    // Bounded like a file name, not a metric name: a nudged name must be one `fileNames` matches (US-35 AC2).
+    expect(nudge.unimported.every((n) => n.length <= MAX_FILE_NAME_LENGTH && !n.includes('\n'))).toBe(true);
+    expect(nudge.unimported).not.toContain('.hidden.pdf');
+    expect(nudge.unimported).not.toContain('letter.docx');
+    expect(nudge.hint).toBe(FOLDER_NUDGE_HINT);
+    // The sentence teaches the way in and the way to stop being offered (AC3); never "updates itself".
+    expect(nudge.hint).toContain('fromNudge');
+    expect(nudge.hint).toContain('empty accept and replace');
+    expect(nudge.hint).not.toMatch(/updates itself|new files/);
+  });
+
+  it('publishes `folder` as optional on both reads, in the same shape (AC4), and only where the declaration says so', () => {
+    for (const name of ['read_record', 'get_plan'] as const) {
+      const tool = MCP_TOOLS.find((t) => t.name === name)!;
+      expect(tool.outputSchema.properties).toHaveProperty('folder');
+      expect(tool.outputSchema.required).not.toContain('folder');
+      expect(tool.description).toContain('never do it unasked');
+      expect(OUTPUTS[name].shape.folder.isOptional()).toBe(true);
+    }
+    // The declaration and its two mirrors — the published schema and the zod
+    // output — agree for every tool; a narrowed read is a lookup, not a visit.
+    for (const tool of MCP_TOOLS) {
+      const declared = tool.nudge !== undefined;
+      expect('folder' in tool.outputSchema.properties, tool.name).toBe(declared);
+      expect('folder' in OUTPUTS[tool.name as keyof typeof OUTPUTS].shape, tool.name).toBe(declared);
+    }
+    const readRecord = MCP_TOOLS.find((t) => t.name === 'read_record')!.nudge as (args: Record<string, unknown>) => boolean;
+    expect(readRecord({})).toBe(true);
+    expect(readRecord({ metric: 'ldl' })).toBe(false);
+    expect(readRecord({ since: '2026-01-01' })).toBe(false);
+    expect(MCP_TOOLS.find((t) => t.name === 'get_plan')!.nudge).toBe(true);
+    expect(OUTPUTS.get_plan.safeParse({ ...(getPlan(base(), NOW) as { data: object }).data, folder: { unimported: ['a.pdf'], hint: 'x' } }).success).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-36 — file_results: the assistant read the file, the server checks every row
+// ---------------------------------------------------------------------------
+import { CORE_METRIC_ALIASES, resolveCoreMetricName, UNIFIED_SYSTEM_PROMPT } from './lab-extraction';
+import { fileResultsBundle, type FileResultsRequest, type FileResultsSource, type ImportBundle } from './mcp-tools';
+import { reportedToCanonical } from './units';
+
+/** One row as the assistant would send it; the report's own spelling, the core key it thinks it is. */
+function row(metric: string, printedName: string, value: number, unit: string, extra: Partial<z.infer<typeof fileResultRow>> = {}) {
+  return { metric, printedName, value, unit, ...extra };
+}
+
+function labCall(values: ReturnType<typeof row>[], over: Partial<FileResultsRequest> = {}): FileResultsSource {
+  return { sourceFileName: 'labs.pdf', classification: 'lab_report', collectedOn: LAB_DAY, values, ...over };
+}
+
+/** The bundle, or a failed expectation naming the refusal. */
+function bundleOk(request: FileResultsSource, file = base()): ImportBundle {
+  const bundle = fileResultsBundle(request, file, { now: NOW });
+  if ('refusal' in bundle) throw new Error(`refused: ${bundle.refusal}`);
+  return bundle;
+}
+
+function prepared(request: FileResultsSource, file = base()) {
+  return prepareImport(file, bundleOk(request, file), { now: NOW, maxCorrectionAgeDays: 90, payloadId: 'p1' });
+}
+
+describe('US-36 AC9 — two-phase is declared once per tool, and its three mirrors follow the declaration', () => {
+  it('confirm in, the proposal fields out, the sentence in the description — exactly where twoPhase is set', () => {
+    const INPUTS = { correct_value: correctValueInput, update_profile: updateProfileInput, report_feedback: reportFeedbackInput, add_measurement: addMeasurementInput, read_record: readRecordInput, get_plan: getPlanInput };
+    for (const tool of MCP_TOOLS) {
+      const declared = tool.twoPhase === true;
+      expect('confirm' in tool.inputSchema.properties, tool.name).toBe(declared);
+      expect('proposal' in tool.outputSchema.properties, tool.name).toBe(declared);
+      expect(tool.description.includes('takes two calls'), tool.name).toBe(declared);
+      expect('proposal' in OUTPUTS[tool.name as keyof typeof OUTPUTS].shape, tool.name).toBe(declared);
+      const input = INPUTS[tool.name as keyof typeof INPUTS];
+      if (input) expect('confirm' in input.shape, tool.name).toBe(declared);
+    }
+    expect(MCP_TOOLS.filter((t) => t.twoPhase).map((t) => t.name)).toEqual(['correct_value', 'update_profile', 'report_feedback']);
+    // The receipt's identity: report_feedback declares its prepared text; the others their arguments.
+    expect(MCP_TOOLS.find((t) => t.name === 'report_feedback')!.canonicalArgs!({ kind: 'bug', title: '  A  Title ', detail: 'x' })).toEqual({ kind: 'bug', title: 'a title', detail: 'x' });
+  });
+});
+
+describe('US-36 AC1 — file_results takes one file per call, and refuses in words, never as a schema message', () => {
+  const memory: ImportSurface = {
+    budgetMs: 40_000,
+    async stash(payload) { return { receipt: `r-${payload.id}`, expiresAt: '2026-09-01T10:00:00Z' }; },
+    async open() { return { refusal: 'not held' }; },
+    async discard() {},
+  };
+  function sync() {
+    const cloud = new MemoryCloud();
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(base()), version: 1 });
+    return recordSync(new MemoryAdapter(cloud), 'test', NOW);
+  }
+
+  it('refuses commit beside a source, a lab report with no date, a lab report that read nothing, and a letter with no document block', async () => {
+    const both = await runToolOverSync(sync(), 'file_results', { ...labCall([row('ldl', 'LDL Cholesterol', 2.8, 'mmol/L')]), commit: { receipt: 'r', accept: [], replace: [] } }, NOW, { importer: memory });
+    expect(both).toMatchObject({ isError: true, text: expect.stringContaining('pass commit on its own') });
+
+    const undated = await runToolOverSync(sync(), 'file_results', labCall([row('ldl', 'LDL Cholesterol', 2.8, 'mmol/L')], { collectedOn: undefined }), NOW, { importer: memory });
+    expect(undated).toMatchObject({ isError: true, text: expect.stringMatching(/collectedOn.*ask the user.*never guess.*Nothing was read/) });
+
+    // A date the record refuses is the call's, not a row's: the way round names collectedOn, never
+    // fileDates, an argument this tool has not got (adversarial review 2026-09-07).
+    const future = await runToolOverSync(sync(), 'file_results', labCall([row('ldl', 'LDL Cholesterol', 2.8, 'mmol/L')], { collectedOn: '2030-01-01' }), NOW, { importer: memory });
+    expect(future).toMatchObject({ isError: true, text: expect.stringMatching(/collectedOn: 2030-01-01 has not happened yet.*Ask the user.*Nothing was read/) });
+    expect(future.text).not.toContain('fileDates');
+
+    const empty = await runToolOverSync(sync(), 'file_results', labCall([]), NOW, { importer: memory });
+    expect(empty).toMatchObject({ isError: true, text: expect.stringMatching(/read as a lab report but no value was sent.*every line of results.*tell the user what the file was/) });
+
+    const letter = await runToolOverSync(sync(), 'file_results', { sourceFileName: 'letter.pdf', classification: 'clinic_letter' }, NOW, { importer: memory });
+    expect(letter).toMatchObject({ isError: true, text: expect.stringMatching(/clinic letter is filed from its document block.*title, type and date/) });
+
+    // Malformed (51 rows; a missing classification) is the table's sentence, not a zod message.
+    const over = await runToolOverSync(sync(), 'file_results', labCall(Array.from({ length: MAX_LAB_ROWS_PER_CALL + 1 }, (_, i) => row('ferritin', `Test ${i}`, 1, 'x'))), NOW, { importer: memory });
+    expect(over).toMatchObject({ isError: true, text: IMPORT_REFUSALS.fileResults });
+    const bare = await runToolOverSync(sync(), 'file_results', { values: [row('ldl', 'LDL', 2, 'mmol/L')] }, NOW, { importer: memory });
+    expect(bare).toMatchObject({ isError: true, text: IMPORT_REFUSALS.fileResults });
+  });
+
+  it('runs over a surface with no reader — the stdio server’s — while import_documents on the same surface refuses as hosted-only', async () => {
+    const filed = await runToolOverSync(sync(), 'file_results', labCall([row('ldl', 'LDL Cholesterol', 2.8, 'mmol/L')]), NOW, { importer: memory });
+    expect(filed.isError).toBe(false);
+    expect(OUTPUTS.file_results.parse(filed.structured).receipt).toMatch(/^r-/);
+    const folder = await runToolOverSync(sync(), 'import_documents', {}, NOW, { importer: memory });
+    expect(folder).toMatchObject({ isError: true, text: expect.stringContaining('hosted connector') });
+    // Without any surface the tool refuses too, in words.
+    expect(callTool('file_results', labCall([]), { file: base(), now: NOW })).toMatchObject({ status: 'rejected', text: expect.stringContaining('Nothing was written') });
+  });
+});
+
+describe('US-36 AC2 — every row runs the record’s own dry run; a bad row is one line, never a refused call', () => {
+  it('refuses an out-of-range core value with both ranges and "check the unit", a future day, and a core metric under a lab name', () => {
+    const out = prepared(labCall([
+      row('ldl', 'LDL Cholesterol', 320, 'mmol/L'),
+      row('hdl', 'HDL Cholesterol', 1.3, 'mmol/L', { recordedAt: '2030-01-01' }),
+      row('ferritin', 'LDL Cholesterol', 2.8, 'mmol/L'),
+      row('ferritin', 'Ferritin', 210, 'ug/L'),
+    ]));
+    expect(out.unrecognized).toEqual([
+      expect.stringMatching(/^LDL Cholesterol 320 mmol\/L: LDL-c must be at most 12.9 mmol\/L \(got 320\) \(0–12.9 mmol\/L; 0–500 mg\/dL\)\. Check the unit; if the report really says that, tell the user and do not file it\.$/),
+      expect.stringMatching(/^HDL Cholesterol 1.3 mmol\/L: .*2030-01-01.*Ask the user for the date, then re-send\.$/),
+      'LDL Cholesterol 2.8 mmol/L: printed name LDL Cholesterol is the core metric ldl. Re-send it with metric ldl.',
+    ]);
+    // The good row still files: a refusal is per row.
+    expect(out.payload.candidates.map((c) => [c.metric, c.slot.state])).toEqual([['ferritin', 'free']]);
+  });
+});
+
+describe('US-36 AC3 — the printed name must agree with the claimed metric', () => {
+  it('refuses Lipoprotein(a) filed as apob — the misread this design exists for — and says how to re-send it', () => {
+    const out = prepared(labCall([row('apob', 'Lipoprotein(a)', 93, 'nmol/L')]));
+    expect(out.unrecognized).toEqual(['Lipoprotein(a) 93 nmol/L: printed name Lipoprotein(a) is lpa, not apob. Re-send it as lpa.']);
+    expect(out.payload.candidates).toEqual([]);
+  });
+
+  it('accepts the spellings labs print, exactly, and shows the printed name beside the key on the candidate', () => {
+    const out = prepared(labCall([
+      row('ldl', 'LDL Cholesterol (calc)', 2.8, 'mmol/L'),
+      row('total_cholesterol', 'Cholesterol', 5.2, 'mmol/L'),
+      row('hdl', 'HDL Cholesterol', 1.3, 'mmol/L'),
+      row('lpa', 'Lipoprotein(a)', 93, 'nmol/L'),
+    ]));
+    expect(out.unrecognized).toEqual([]);
+    expect(out.payload.candidates.map((c) => [c.metric, c.printedName])).toEqual([
+      ['ldl', 'LDL Cholesterol (calc)'], ['total_cholesterol', 'Cholesterol'], ['hdl', 'HDL Cholesterol'], ['lpa', 'Lipoprotein(a)'],
+    ]);
+  });
+
+  it('is exact, never a substring: the ratios and Non-HDL resolve to nothing, and are refused under a core key', () => {
+    for (const name of ['Non-HDL Cholesterol', 'Chol/HDL ratio', 'Total/HDL ratio']) expect(resolveCoreMetricName(name), name).toBeNull();
+    const out = prepared(labCall([row('hdl', 'Non-HDL Cholesterol', 3.9, 'mmol/L'), row('total_cholesterol', 'Chol/HDL ratio', 4.0, 'ratio')]));
+    expect(out.unrecognized).toEqual([
+      'Non-HDL Cholesterol 3.9 mmol/L: printed name Non-HDL Cholesterol is not a name this record knows for hdl. If the report really calls hdl that, tell the user and add it with add_measurement.',
+      'Chol/HDL ratio 4 ratio: printed name Chol/HDL ratio is not a name this record knows for total_cholesterol. If the report really calls total_cholesterol that, tell the user and add it with add_measurement.',
+    ]);
+    // Sent as a lab under its printed name, an unknown test still files (labSlotKey), so nothing the report holds is lost.
+    const asLab = prepared(labCall([row('Non-HDL Cholesterol', 'Non-HDL Cholesterol', 3.9, 'mmol/L')]));
+    expect(asLab.payload.candidates.map((c) => [c.kind, c.metric])).toEqual([['lab', 'non-hdl cholesterol']]);
+  });
+
+  it('refuses the lazy pairing (printedName is the bare key), and a claimed lab key whose printed name is another test', () => {
+    const out = prepared(labCall([row('apob', 'apob', 0.9, 'g/L'), row('ferritin', 'TSH', 1.8, 'mIU/L')]));
+    expect(out.unrecognized).toEqual([
+      'apob 0.9 g/L: printedName is the name as the report prints it, not the key apob. Re-send with the printed name.',
+      'TSH 1.8 mIU/L: printed name TSH is tsh, not ferritin. Re-send it as tsh.',
+    ]);
+  });
+
+  it('renders the extraction prompt’s TARGET METRICS block from the same alias table (one list), and resolves every spelling it prints', () => {
+    for (const metric of ['ldl', 'hba1c', 'lpa'] as const) {
+      expect(UNIFIED_SYSTEM_PROMPT).toContain(`- "${metric}" — ${CORE_METRIC_ALIASES[metric].join(', ')}`);
+    }
+    expect(CORE_METRIC_ALIASES.total_cholesterol).toContain('Cholesterol');
+    // Parity in the other direction: what the website's extractor is told to
+    // print, the connector's resolver accepts — in any case, and with the
+    // underscores an assistant types for a key.
+    for (const [metric, aliases] of Object.entries(CORE_METRIC_ALIASES)) {
+      for (const alias of aliases) {
+        expect(resolveCoreMetricName(alias), alias).toBe(metric);
+        expect(resolveCoreMetricName(alias.toUpperCase().replace(/ /g, '_')), alias).toBe(metric);
+      }
+    }
+  });
+});
+
+describe('US-36 AC4 — units: one table, converted to canonical, refused by name, and a wrong direction is a question', () => {
+  it('converts mg/dL LDL, % HbA1c, mg/dL Lp(a) and mg/L ApoB; keeps a lab’s unit as printed with the catalogue relabel', () => {
+    const out = prepared(labCall([
+      row('ldl', 'LDL Cholesterol', 100, 'mg/dL'),
+      row('hba1c', 'HbA1c', 6.0, '%'),
+      row('lpa', 'Lp(a)', 10, 'mg/dL'),
+      row('apob', 'ApoB', 900, 'mg/L'),
+      row('creatinine', 'Creatinine', 80, 'micromol/L'),
+      row('psa', 'PSA', 1.2, 'µg/L'), // the NZ/AU print: 1 µg/L is 1 ng/mL
+      row('ferritin', 'Ferritin', 210, 'ug/L'),
+    ]));
+    expect(out.unrecognized).toEqual([]);
+    const by = Object.fromEntries(out.payload.candidates.map((c) => [c.metric, c]));
+    expect(by.psa.value).toBe(1.2);
+    expect(by.ldl.value).toBeCloseTo(2.586, 2);
+    expect(by.ldl.unit).toBe('mmol/L');
+    expect(by.hba1c.value).toBeCloseTo(42, 0);
+    expect(by.lpa.value).toBeCloseTo(24, 5); // 10 mg/dL = 100 mg/L × 0.24 (≈ 2.4 nmol/L per mg/dL)
+    expect(by.apob.value).toBeCloseTo(0.9, 6);
+    expect(by.creatinine.value).toBe(80);
+    expect(by.ferritin).toMatchObject({ kind: 'lab', value: 210, unit: 'µg/L', printedName: 'Ferritin' });
+    // The same table serves add_measurement (review 1.3): micromol/L is one spelling, not two answers.
+    expect(addMeasurement(base(), { metricType: 'creatinine', value: 80, unit: 'micromol/L', recordedAt: TODAY }, CTX).status).toBe('ok');
+    expect(reportedToCanonical('lpa', 10, 'mg/dL')).toMatchObject({ system: 'conventional' });
+    expect(reportedToCanonical('lpa', 10, 'mg/dL')!.valueSI).toBeCloseTo(24, 5);
+    // A normal US print is accepted, not refused as out of range (live 2026-09-07: 45 mg/dL was read as 1080 nmol/L).
+    expect(prepared(labCall([row('lpa', 'Lp(a)', 45, 'mg/dL')])).payload.candidates[0]).toMatchObject({ value: 108, confidence: 'high' });
+  });
+
+  it('refuses a unit the metric is not measured in, naming both labels', () => {
+    const out = prepared(labCall([row('hba1c', 'HbA1c', 6.0, 'g/dL')]));
+    expect(out.unrecognized).toEqual(['HbA1c 6 g/dL: hba1c is measured in mmol/mol or %, not "g/dL". Check the unit column; if the report really prints that, tell the user and do not file it.']);
+  });
+
+  it('offers an SI number sent under the conventional label as low confidence with a question, not as a silent value (review blocker 1.1)', () => {
+    const out = prepared(labCall([
+      row('ldl', 'LDL Cholesterol', 3.4, 'mg/dL'),
+      row('total_cholesterol', 'Cholesterol', 5.2, 'mg/dL'),
+      row('hdl', 'HDL Cholesterol', 1.3, 'mg/dL'),
+      row('apob', 'ApoB', 0.9, 'mg/dL'),
+      row('lpa', 'Lp(a)', 2, 'mg/L'),
+    ]), { ...base(), measurements: [] });
+    expect(out.unrecognized).toEqual([]);
+    expect(out.payload.candidates.map((c) => c.confidence)).toEqual(['low', 'low', 'low', 'low', 'low']);
+    expect(out.payload.candidates[0].question).toBe('3.4 mg/dL is 0.09 mmol/L, below any usual result; was the printed unit mmol/L?');
+    // A real conventional value is not questioned.
+    const fine = prepared(labCall([row('ldl', 'LDL Cholesterol', 130, 'mg/dL')]), { ...base(), measurements: [] });
+    expect(fine.payload.candidates[0].confidence).toBe('high');
+  });
+
+  it('displays candidates in the record’s own unit system', () => {
+    const us = { ...base(), measurements: [], profile: { ...base().profile, unitSystem: 'conventional' as const } };
+    const out = prepared(labCall([row('ldl', 'LDL Cholesterol', 2.6, 'mmol/L')]), us);
+    expect(out.payload.candidates[0]).toMatchObject({ displayValue: '101', displayUnit: 'mg/dL', unit: 'mmol/L' });
+  });
+});
+
+describe('US-36 AC5 — slots, dedup and the commit are import_documents’ own', () => {
+  const HELD_DAY = '2026-07-14'; // base() holds ldl 3.4 and ferritin 210 that day
+
+  it('slots held_equal, held_different (replaceable under 90 days) and sameDayAs against a fresh read', () => {
+    const out = prepared(labCall([
+      row('ldl', 'LDL Cholesterol', 3.4, 'mmol/L', { recordedAt: HELD_DAY }),
+      row('ferritin', 'Ferritin', 180, 'ug/L', { recordedAt: HELD_DAY }),
+      row('hdl', 'HDL Cholesterol', 1.2, 'mmol/L'),
+      row('hdl', 'HDL Cholesterol', 1.3, 'mmol/L'),
+    ]));
+    // Core rows first, then lab rows — `prepareImport`'s own order.
+    expect(out.payload.candidates.map((c) => [c.id, c.metric, c.slot.state, c.slot.replaceable, c.sameDayAs])).toEqual([
+      ['c1', 'ldl', 'held_equal', undefined, undefined],
+      ['c2', 'hdl', 'free', undefined, undefined],
+      ['c3', 'hdl', 'free', undefined, 'c2'],
+      ['c4', 'ferritin', 'held_different', true, undefined],
+    ]);
+  });
+
+  it('is already_imported by sha256 when given, else by name AND date; the same name on another date files', () => {
+    const hash = 'a'.repeat(64);
+    const file = base();
+    file.documents.push({
+      id: 'd1', title: 'Lab results', type: 'pathology_report', date: LAB_DAY, fileRef: '', contentHash: `sha256-${hash}`, mimeType: 'application/pdf',
+      extractedText: '', addedAt: NOW, metadata: {}, sourceFileName: 'Results.pdf',
+    });
+    const byHash = bundleOk(labCall([row('ldl', 'LDL', 2.8, 'mmol/L')], { sourceFileName: 'renamed.pdf', document: { title: 'x', type: 'other', date: null, sha256: hash } }), file);
+    expect(byHash.files[0]).toMatchObject({ name: 'renamed.pdf', status: 'already_imported' });
+    const byNameDate = bundleOk(labCall([row('ldl', 'LDL', 2.8, 'mmol/L')], { sourceFileName: 'Results.pdf' }), file);
+    expect(byNameDate.files[0].status).toBe('already_imported');
+    expect(prepareImport(file, byNameDate, { now: NOW, payloadId: 'p' }).files[0].hint).toBe(`Already in the record: a file with this name and date was filed on ${LAB_DAY} as Results.pdf. Nothing to do.`);
+    const otherDate = bundleOk(labCall([row('ldl', 'LDL', 2.8, 'mmol/L')], { sourceFileName: 'Results.pdf', collectedOn: '2026-08-27' }), file);
+    expect(otherDate.files[0].status).toBe('extracted');
+  });
+
+  it('commits rows as lab_import with the document row marked importedVia assistant and the client; the result fits the published schema', async () => {
+    const out = prepared(labCall([row('ldl', 'LDL Cholesterol', 2.8, 'mmol/L'), row('ferritin', 'Ferritin', 180, 'ug/L', { recordedAt: HELD_DAY })]));
+    const ajv = new Ajv2020({ allErrors: true, validateFormats: false });
+    const published = ajv.compile(MCP_TOOLS.find((t) => t.name === 'file_results')!.outputSchema);
+    const answer = { phase: 'extracted', route: 'assistant', files: out.files, candidates: out.payload.candidates, documents: [], unrecognized: out.unrecognized, remaining: [], next: 'x' };
+    expect(published(answer) ? null : ajv.errorsText(published.errors)).toBeNull();
+    expect(OUTPUTS.file_results.parse(answer).route).toBe('assistant');
+
+    // The client label is the committing surface's, stamped at commit — never sealed into the payload.
+    expect(out.payload).not.toHaveProperty('client');
+    const committed = importDocumentsCommit(base(), out.payload, { receipt: 'r', accept: ['c1'], replace: ['c2'] }, NOW, 'claude');
+    expect(committed.status).toBe('ok');
+    const file = committed.status === 'ok' ? committed.file! : base();
+    expect(file.measurements.find((m) => m.recordedAt === LAB_DAY)).toMatchObject({ metricType: 'ldl', value: 2.8, source: 'lab_import' });
+    expect(file.labValues.find((l) => l.value === 180)).toMatchObject({ metricName: 'ferritin', source: 'lab_import', correctsId: 'l1' });
+    expect(file.documents.at(-1)).toMatchObject({ sourceFileName: 'labs.pdf', type: 'pathology_report', date: LAB_DAY, contentHash: '', metadata: { importedVia: 'assistant', client: 'claude' } });
+    expect((committed as { data: { written: unknown } }).data.written).toEqual({ measurements: 1, labValues: 0, corrections: 1, documents: 1 });
+  });
+
+  it('files a letter from its document block, carries the summary bounded, and files it by an empty commit', () => {
+    const out = prepareImport(base(), bundleOk({ sourceFileName: 'letter.pdf', classification: 'clinic_letter', document: { title: 'Cardiology review', type: 'clinic_letter', date: '2026-08-01', summary: 'Follow-up in 6 months' } }), { now: NOW, payloadId: 'p' });
+    expect(out.payload.documents).toEqual([{ sourceFileName: 'letter.pdf', contentHash: '', mimeType: '', type: 'clinic_letter', title: 'Cardiology review', summary: 'Follow-up in 6 months', date: '2026-08-01' }]);
+    const committed = importDocumentsCommit(base(), out.payload, { receipt: 'r', accept: [], replace: [] }, NOW);
+    expect((committed as { data: { written: { documents: number } } }).data.written.documents).toBe(1);
+  });
+
+  it('declares cost add, its own import reading, honest annotations and the ChatGPT strings (AC6, AC7)', () => {
+    const tool = MCP_TOOLS.find((t) => t.name === 'file_results')!;
+    expect(tool).toMatchObject({ cost: 'add', annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false } });
+    expect(tool.imports).toBeDefined();
+    expect(MCP_TOOLS.filter((t) => t.imports).map((t) => t.name)).toEqual(['import_documents', 'file_results']);
+    expect(tool._meta).toEqual({ 'openai/toolInvocation/invoking': 'Filing what you read…', 'openai/toolInvocation/invoked': 'Filing step done' });
+    for (const rule of ['never inferred', 'reference', 'previous', 'every result line', 'sample date', 'DD/MM', 'ASK the user', '< or >', 'WAIT for the user', 'never reaches our server']) {
+      expect(tool.description, rule).toContain(rule);
+    }
+    expect(TOOL_LAYER_VERSION).toBe(2);
+  });
+});
+
+describe('US-36 AC9 — the assistant’s manners are the only gate when a client skips its approval prompt (live 2026-09-07)', () => {
+  it('the add tools refuse to become the fallback for a failed correction, and every two-phase tool asks for the user’s own words', () => {
+    for (const name of ['add_measurement', 'add_lab_values']) {
+      expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain('Only when the user asked to add a value; a failed correction is never turned into an add');
+    }
+    for (const name of ['correct_value', 'update_profile', 'report_feedback']) {
+      expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain('after their own yes, in their own words');
+    }
+  });
+});
+
+describe('US-36 AC11 — tools/list stays inside ChatGPT’s budget', () => {
+  it('keeps name + description + inputSchema under 16,000 characters across all nine tools (≈4,000 tokens of the 5,000 cap)', () => {
+    const chars = MCP_TOOLS.reduce((sum, { name, description, inputSchema }) => sum + JSON.stringify({ name, description, inputSchema }).length, 0);
+    expect(chars).toBeLessThanOrEqual(16_000);
   });
 });

@@ -476,18 +476,22 @@ function consentPage(clientName: string, offers: Array<{ provider: McpProvider; 
     `<p class="lede"><span class="who">${escapeHtml(clientName)}</span> wants to connect to your health record.</p>
 <p class="lede">Your health record is yours, and yours alone. Keep it in your own ${escapeHtml(clouds)}. Your assistant reads and writes one file there, plus a temporary imports folder while an import is pending. Nothing is stored on our server.</p>
 <div class="pick">${buttons}</div>
-${offers.some(({ provider }) => provider === 'google') ? '<p class="lede">Importing lab files: with Dropbox you can put them in the folder or drop them into the chat. With Google Drive the folder cannot be read: drop the file into the chat (ChatGPT, from a computer), or use the website’s upload.</p>' : ''}
+${offers.some(({ provider }) => provider === 'google') ? '<p class="lede">Importing lab files: drop a file into the chat on either cloud, on any device, and your assistant reads it. With Dropbox you can also put files in the folder; with Google Drive the folder cannot be read, so the chat or the website’s upload are the ways in.</p>' : ''}
 <h2>What the assistant can do</h2>
 <ul>
 <li>Read your record and produce your plan.</li>
 <li>Add measurements and lab results.</li>
-<li>Correct a recent value. Nothing is ever deleted.</li>
-<li>Update your sex, birth year, birth month and height.</li>
-<li>File a bug report as a public issue on GitHub, in your words, without your health values, and
-without asking again.</li>
-<li>Import lab PDFs, images or a ZIP you put in the folder root or drag into ChatGPT. The file passes
-through our server and the extraction model (Anthropic) and is not kept; nothing is filed until you
-confirm what it found. What it cannot read, it says why in plain words. The website’s upload instead reads the PDF in your browser.</li>
+<li>Correct a recent value, after showing you what it would change. Nothing is ever deleted.</li>
+<li>Update your sex, birth year, birth month and height, after showing you the change.</li>
+<li>File a bug report as a public issue on GitHub, in your words, without your health values, after
+showing you what it would say.</li>
+<li>File the results from a lab report, a photo of one or a clinic letter you drop into the chat. Your assistant
+reads the file itself; the file never reaches our server. Only the values it read do, in memory for one request,
+and they are written to your own folder, never kept by us. Nothing is filed until you confirm what it read.</li>
+<li>Import lab PDFs, images or a ZIP you put in the Dropbox folder root. Those files pass through our server and
+the extraction model (Anthropic) and are not kept; nothing is filed until you confirm what it found. What it
+cannot read, it says why in plain words. The next time you ask, it offers files in the folder that are not yet
+in your record. The website’s upload instead reads the PDF in your browser.</li>
 </ul>
 <div class="fine">
 <p>We count calls, never your values.
