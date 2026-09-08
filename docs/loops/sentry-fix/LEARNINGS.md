@@ -53,12 +53,15 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
 - `[noise][server]` 2026-08-12 — youtube-bot `logTickError` (handled=yes,
   tag `feature=youtube-bot`) relays upstream Google failures as the exception
   value: OAuth 500s, Cloudflare HTML pages, and (confirmed again 2026-09-08) a
-  Data API 503 from `listReplies` in the follow-up pass. Every call site
-  catches per call and continues, and the next tick re-scans, so a single
-  event is transient upstream → `wontfix` on sight. Grouping: HTML-page bodies
-  once split one cause into two issues; the Data API paths already truncate to
-  status + 200 chars. Worth a look only on several events in one day, or if
-  the caught value feeds a cap or lock decision (see the PGRST303 entry).
+  Data API 503 from `listReplies` in the follow-up pass. Catch topology: the
+  per-thread loops catch and `continue`; token refresh and the top-level list
+  abort the whole tick; a `processFollowUps` throw drops the rest of that pass.
+  Every direction is no-post and the next tick re-scans, so a single event is
+  transient upstream → `wontfix` on sight. Grouping: HTML-page bodies once
+  split one cause into two issues; the API paths now truncate to 200-300
+  chars. Worth a look only on several events in one day, if the caught value
+  feeds a cap or lock decision (PGRST303 entry), or if it is the sticky
+  `resolveHandle` null (one failure disables @handle addressing until restart).
 - `[class][widget]` 2026-08-14 — Any DESIGNED "log it and carry on" failure
   path is a silent-data-at-risk candidate: cloud persist failures were
   memory-only by design, so no test could flag the loss (US-09 had no AC).
