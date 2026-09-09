@@ -1,6 +1,6 @@
 # Health-record sync and cleanup plan
 
-Status: design only; not approved for implementation. Written 9 September 2026.
+Status: design only; not approved for implementation. Written 9 September 2026. **Not proceeding (10 September 2026):** the deciding experiment in §13 step 2 was run against the scratch Drive account. Drive v3 exposes no ETag and ignores `If-Match` on both the media and the metadata PATCH (`200` with a garbage value), so no conditional write exists to build on and the compactor this plan needs cannot run on Drive. The adversarial review that led to that decision is summarised in the PR #85 thread; US-10 AC19 records the probe result.
 Baseline inspected at `7069d30`; the filesystem row includes the current five-fix working tree. This document does not implement the proposed sync protocol.
 Production LOC: 0. This document proposes no production changes.
 
