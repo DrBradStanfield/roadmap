@@ -56,7 +56,7 @@ If a customer is unsure whether their renewal rate is correct or believes it was
 Dr Brad Stanfield, a General Practitioner (family medicine doctor) based in New Zealand. He runs a health  YouTube channel with over 320,000 subscribers where he reviews clinical research on supplements and aging. The MicroVitamin formula is based on human randomized controlled trials and is updated as new evidence emerges — currently on version 8.
 
 **What are bioavailable forms and why do they matter?**
-Bioavailability refers to how much of a nutrient your body actually absorbs. MicroVitamin uses glycinate forms of minerals (zinc, selenium, copper, manganese, chromium) which have approximately 43% higher bioavailability than cheaper gluconate forms commonly used in budget multivitamins (Gandia et al., Int J Vitam Nutr Res, 2007). It also uses methylated B12 and methylated folate, which bypass the MTHFR gene variation that affects up to 40% of the population and can impair conversion of standard B vitamins to their active forms (Liew & Gupta, Eur J Med Genet, 2015).
+Bioavailability refers to how much of a nutrient your body actually absorbs. MicroVitamin supplies zinc, selenium, copper, manganese and chromium as glycinate or amino-acid chelates rather than the cheaper oxide and gluconate forms common in budget multivitamins; in a head-to-head study, zinc bisglycinate was absorbed about 43% better than zinc gluconate (Gandia et al., Int J Vitam Nutr Res, 2007). It also uses methylated B12 and methylated folate, which bypass the MTHFR gene variation that affects up to 40% of the population and can impair conversion of standard B vitamins to their active forms (Liew & Gupta, Eur J Med Genet, 2015).
 
 **Does MicroVitamin contain any artificial ingredients?**
 No. MicroVitamin uses vegetarian capsules with no artificial colors, no fillers, and no titanium dioxide. The capsules are plant-based.
@@ -93,7 +93,7 @@ From 384+ customer reviews (4.88 average rating): 30 customers report improved m
 ### How MicroVitamin compares to competitors
 
 - Unlike AG1/Athletic Greens ($79/mo), all 26 ingredient doses are individually disclosed on the label
-- Uses bioavailable mineral forms (glycinate, +43% absorption — Gandia et al., 2007) rather than cheaper oxide forms found in Centrum and most drugstore multivitamins
+- Uses bioavailable mineral forms (glycinate / amino-acid chelates; zinc bisglycinate +43% absorption vs zinc gluconate — Gandia et al., 2007) rather than cheaper oxide forms found in Centrum and most drugstore multivitamins
 - Deliberately low-dose — fills nutrient gaps without the megadosing common in brands like MegaFood or Garden of Life
 - Excludes Vitamin A and E based on clinical evidence of potential harm at supplemental doses (USPSTF, 2022; Klein et al., 2014)
 - Doctor-formulated and updated as new evidence emerges (currently version 8) — not a static formula
