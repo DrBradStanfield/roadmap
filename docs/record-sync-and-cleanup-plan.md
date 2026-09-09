@@ -1,8 +1,8 @@
 # Health-record sync and cleanup plan
 
-Status: design only; not approved for implementation. Written 9 September 2026.
-Baseline inspected at `7069d30`; the filesystem row includes the current five-fix working tree. This document does not implement the proposed sync protocol.
-Production LOC: 0. This document proposes no production changes.
+Status: implementation work authorized by Brad, 9 September 2026; production rollout remains gated.
+Baseline: `f3c4f0d`. The [first implementation PR](record-sync-proof.md) adds an executable specification and fault tests, not live record migration.
+Production app LOC in the first increment: 0. Experimental tooling is separate from the production data layer.
 
 ## 1. Recommendation and the unresolved constraint
 
@@ -38,7 +38,7 @@ while leaving checkpoint publication as an unconditional overwrite.
 Proposed scope: **one active health-record JSON**, not literally one file in
 the entire app folder. Original PDFs/images and the existing separate chat
 history are different artifacts. Unconfirmed import receipts also have their
-own lifecycle. This interpretation needs confirmation before implementation.
+own lifecycle. The first implementation increment uses this scope.
 
 Desired settled layout:
 
@@ -192,6 +192,7 @@ Provider read/list consistency must support this argument; stale revision
 replies or missing previously admitted objects cannot be waved away. Require
 complete pagination. Cursors aid discovery, not GC proof. A listed file that
 vanishes also requires checkpoint reload and verified coverage.
+Pagination must survive concurrent deletion of earlier pages; an offset can skip pending work without a new checkpoint revision. Retain the highest observed authority across all read retries.
 
 A listing can miss a concurrently arriving file. That may delay visibility;
 it must not cause deletion of that unseen file. Connectivity cannot guarantee
@@ -233,6 +234,7 @@ comes from the exact verified input objects, not a changing folder population.
 Prefer conditional deletion when the provider offers it. Otherwise safety
 depends on the protocol's immutable-object rule and exact provider IDs.
 Arbitrary out-of-protocol edits to those objects are outside this proof.
+Object revision tokens must not repeat across deletion/recreation; otherwise a stale delete can remove new contents under the same ID.
 
 The sole checkpoint must not acquire new destructive overwrite paths. Merely
 checking a revision in application code before uploading does not satisfy this
@@ -470,9 +472,9 @@ Repository evidence:
 - [Browser local adapter](../widget-src/src/storage/local-storage-adapter.ts): best-effort cross-tab version comparison.
 - [Hosted imports](../app/lib/mcp-import.server.ts): existing expiring proposal receipts and cleanup, distinct from proposed durable record-operation receipts.
 
-No implementation is authorized by this document. The key unresolved decision
-is how Drive safely publishes the sole checkpoint before its transaction files
-are deleted. Cleanup must not conceal that missing guarantee.
+Brad authorized implementation work after this design review. The key unresolved
+production decision is how Drive safely publishes the sole checkpoint before
+transaction files are deleted. The proof harness cannot supply that guarantee.
 
 ## 15. Adversarial status review, 9 September 2026
 
@@ -482,5 +484,7 @@ migration and erasure-safe recovery do not. The 35-schedule model was reproduced
 A subsequent fresh Astra review against `3e6ca36` found the coherent-read,
 hosted retry-identity and deferred-dependency gaps now specified above. These
 are requirements awaiting implementation/proof, not claims of working code.
-The plan remains unapproved for implementation. Existing import-proposal
-cleanup is not completion of the record-sync protocol.
+The [first implementation](record-sync-proof.md) now makes the schedule model,
+register replay and cleanup fault cases executable under [US-38](user-stories-record-sync.md).
+Live provider gates, actual health-command replay, outboxes and migration remain
+open. Existing import-proposal cleanup is not the record-sync protocol.

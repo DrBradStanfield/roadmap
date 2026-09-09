@@ -1,6 +1,6 @@
 # User Stories — Health by Dr Brad
 
-The user-perspective spec for every journey in the tool. Written 2026-08-07, grounded in the first usage audit ([usage-audit-2026-08.md](usage-audit-2026-08.md)); the architecture reference is [architecture-v2.html](architecture-v2.html). Each story carries acceptance criteria (AC), the **usage evidence** we have, and the **test status** against the current suites.
+The user-perspective spec for every journey in the tool. Written 2026-08-07, grounded in the first usage audit ([usage-audit-2026-08.md](usage-audit-2026-08.md)); the architecture reference is [architecture-v2.html](architecture-v2.html). Each story carries acceptance criteria (AC), the **usage evidence** we have, and the **test status** against the current suites. Sync/cleanup proof criteria continue in [US-38](user-stories-record-sync.md).
 
 ## The product constitution (Brad, 2026-08-14 — read every story against this)
 
@@ -488,13 +488,10 @@ As Brad, whose server runs five daily jobs behind a cross-machine day lock (remi
 - Origin: the US-27 platform fault also hit `tryAcquireCronLock` (JAVASCRIPT-REMIX-66: 4 events 08-26/27; -68: reminder_v2_cron + trending_cron 08-28). Every caller mapped the error's `false` to "day done", so one transient error made that machine skip its daily job; whether the job ran at all then depended on the other machine winning the lock.
 - Status: shipped by sentry-fix's Tier 3 PR #35, deployed 2026-08-28 — the day the first genuine reminder send came due inside the fault window (US-17). REMIX-66/68 quiet since; -68 marked resolved.
 
-## Coverage priorities — 2026-08-07 pass: DONE
+### US-38 · Record sync and cleanup proof gate
 
-1. ✅ US-10/US-04/US-11/US-13 — RoadmapStore + SyncManager suites landed (16 tests) and **immediately caught the eraseEpoch-resurrection defect** (see US-11), fixed same day.
-2. ✅ US-03 — date-defaulting semantics pinned.
-3. ✅ US-07 — LDL-without-total already covered; verified.
-4. ✅ US-02 — BP dead-click + tooltip fixes shipped (collapsed-row value click, matrix shell focus, click-toggleable InfoTooltip, mobile fixed-bar clearance).
+As a user, I want confirmed changes to survive competing writers and cleanup, with one canonical health JSON at rest. The [full acceptance criteria and implementation status](user-stories-record-sync.md) cover the executable model and provider proof gate. Production migration remains gated by the [sync plan](record-sync-and-cleanup-plan.md).
+- Usage signal: the local proof command and CI report invariant-check results; no record contents enter telemetry.
+- Tests: `tools/record-sync/*.test.ts`; run `npm run check:record-sync`. The first PR is synthetic tooling, not production health-command replay.
 
-**2026-08-07 later passes:** US-12 pure-pipeline tests landed (incl. the real `health.zip` local fixture); store gaps closed (deleteLabValue, documents, screenings, reminder prefs — which caught and fixed the US-17 opt-out revert bug); input hardening (US-02 AC4–6) shipped and live-verified; US-21 catalogue scaffold (`lab-catalog.ts`) created.
-
-Still consciously deferred, each needing infra or a product decision first: cloud adapter unit tests (OAuth mocking heavy), chat UI + upload modal state machines + canvas/pdf.js rendering (need browser-mode test infra — jsdom/Playwright component testing), print (manual/live verify), HealthTool hydration gate (UI-level), reminders opt-in UX path (pending the keep-or-kill decision).
+The completed August coverage-priority pass is retained in [Git history](https://github.com/DrBradStanfield/roadmap/blob/f3c4f0d/docs/user-stories.md). Current evidence belongs beside each story above.

@@ -22,6 +22,7 @@
     "check:symlinks": "node scripts/check-symlinks.mjs",
     "test": "npm run check:symlinks && npm run test:core && npm run test:server",
     "typecheck:server": "tsc --noEmit -p tsconfig.server.json",
+    "check:record-sync": "tsc -p tools/record-sync/tsconfig.json && node --import tsx tools/record-sync/check.ts && vitest run tools/record-sync",
     "test:all": "vitest run",
     "test:core": "npm run test --workspace=@roadmap/health-core",
     "test:server": "vitest run app/lib",
