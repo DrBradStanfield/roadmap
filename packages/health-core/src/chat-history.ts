@@ -23,6 +23,13 @@ export const CHAT_HISTORY_SCHEMA_VERSION = 1;
 
 /** Newest conversations kept on write (matches the BYOK localStorage cap). */
 export const CHAT_HISTORY_MAX_CONVERSATIONS = 50;
+/** Prior turns a chat request carries: the BYOK transport and the widget's
+ *  server both slice the conversation to this before it reaches the model. */
+export const MAX_HISTORY_MESSAGES = 20;
+/** Longest a prior turn may be when it travels with a request: a reply, not a
+ *  question, so well past the message limit; the token budget in
+ *  buildConversationMessages does the real trimming. */
+export const MAX_HISTORY_TURN_CHARS = 8000;
 
 export interface ChatFileMessage {
   id: string;

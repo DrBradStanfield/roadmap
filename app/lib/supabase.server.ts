@@ -551,7 +551,7 @@ export async function getUserIdByCustomerId(shopifyCustomerId: string): Promise<
 // welcome emails) are gone — those tables are empty/purged and their write
 // paths were deleted at the 2026-06-12 cutover. This dashboard now reports
 // ONLY the server touchpoints that still exist in v2:
-//   - Chatbot usage (chat_messages / chat_conversations — Shopify + Discord)
+//   - Chatbot usage (chat_match_events / chat_conversations — every surface)
 //   - v2 email reminders (reminder_optin_v2 — opt-ins, providers, sends)
 //   - Klaviyo email captures (live from the Klaviyo "Health Roadmap Guests" list)
 //   - A/B testing headline (ab_events)
@@ -567,9 +567,9 @@ export interface ChatStats {
   totalConversations: number;
   shopifyConversations: number;
   discordConversations: number;
-  userMessages30d: number;   // role='user' in the last 30 days
-  fallbacks30d: number;      // is_fallback messages in the last 30 days (LLM failures)
-  fallbackRate30d: number;   // fallbacks / assistant messages, 0..1
+  userMessages30d: number;   // answered turns in the last 30 days
+  fallbacks30d: number;      // is_fallback turns in the last 30 days (LLM failures)
+  fallbackRate30d: number;   // fallbacks / turns, 0..1
 }
 
 export interface ReminderStats {
@@ -598,34 +598,19 @@ export interface DashboardStats {
 
 // --- Pure aggregation helpers (unit-tested; DB rows in, plain numbers out) ---
 
-export interface ChatMessageRow {
-  role: string;
-  is_fallback: boolean | null;
-  created_at: string;
-  user_id: string;
-}
-
-export function aggregateChatMessages(
-  rows: ChatMessageRow[] | null,
-): { userMessages: number; activeChatters: number; fallbacks: number; fallbackRate: number } {
-  let userMessages = 0;
-  let assistantMessages = 0;
-  let fallbacks = 0;
-  const chatters = new Set<string>();
-  for (const r of rows || []) {
-    if (r.role === 'user') {
-      userMessages++;
-      chatters.add(r.user_id);
-    } else if (r.role === 'assistant') {
-      assistantMessages++;
-      if (r.is_fallback) fallbacks++;
-    }
-  }
+/** Turn counts from chat_match_events (one row per answered turn, every surface). */
+export function chatTurnStats(
+  turnCount: number | null,
+  rows: { user_id: string }[] | null,
+  fallbackCount: number | null,
+): { turns: number; activeChatters: number; fallbacks: number; fallbackRate: number } {
+  const turns = turnCount ?? 0;
+  const fallbacks = fallbackCount ?? 0;
   return {
-    userMessages,
-    activeChatters: chatters.size,
+    turns,
+    activeChatters: new Set((rows ?? []).map((r) => r.user_id)).size,
     fallbacks,
-    fallbackRate: assistantMessages > 0 ? fallbacks / assistantMessages : 0,
+    fallbackRate: turns > 0 ? fallbacks / turns : 0,
   };
 }
 
@@ -674,7 +659,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const [
     convTotalRes,
     convDiscordRes,
-    chatMsgRes,
+    chatTurnsRes,
+    chatFallbacksRes,
     optinRes,
     recentChatRes,
     activeTests,
@@ -686,10 +672,20 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       .from('chat_conversations')
       .select('*', { count: 'exact', head: true })
       .eq('platform', 'discord'),
-    // Chat messages in the window (role/fallback/chatter aggregation in JS).
+    // Chat turns in the window: one chat_match_events row per answered turn on
+    // every surface (the widget stores no chat_messages, US-15 AC7). user_id
+    // only, for distinct chatters; the count rides on the same query.
+    // PostgREST pages at 1000 rows by default; the explicit limit keeps the
+    // distinct-chatter count honest well past today's volume (~80 turns/wk).
     supabaseAdmin
-      .from('chat_messages')
-      .select('role, is_fallback, created_at, user_id')
+      .from('chat_match_events')
+      .select('user_id', { count: 'exact' })
+      .gte('created_at', windowStart)
+      .limit(10000),
+    supabaseAdmin
+      .from('chat_match_events')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_fallback', true)
       .gte('created_at', windowStart),
     // v2 reminder opt-ins (provider, last_sent, schedule aggregated in JS).
     supabaseAdmin.from('reminder_optin_v2').select('provider, last_sent, schedule'),
@@ -716,7 +712,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const activeTest = activeTests[0] ?? null;
   const klaviyo: KlaviyoCaptureStats | null = klaviyoSettled.ok ? klaviyoSettled.value : null;
 
-  const chatAgg = aggregateChatMessages(chatMsgRes.data as ChatMessageRow[] | null);
+  const chat30d = chatTurnStats(chatTurnsRes.count, chatTurnsRes.data as { user_id: string }[] | null, chatFallbacksRes.count);
   const reminderAgg = aggregateReminderOptins(
     optinRes.data as ReminderOptinRow[] | null,
     todayStr,
@@ -742,8 +738,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const discordConversations = convDiscordRes.count ?? 0;
 
   return {
-    chatMessages30d: chatAgg.userMessages,
-    activeChatters30d: chatAgg.activeChatters,
+    chatMessages30d: chat30d.turns,
+    activeChatters30d: chat30d.activeChatters,
     reminderOptins: activeOptins,
     klaviyoCaptures30d: klaviyo?.last30d ?? 0,
     abImpressions,
@@ -751,9 +747,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       totalConversations,
       shopifyConversations: Math.max(0, totalConversations - discordConversations),
       discordConversations,
-      userMessages30d: chatAgg.userMessages,
-      fallbacks30d: chatAgg.fallbacks,
-      fallbackRate30d: chatAgg.fallbackRate,
+      userMessages30d: chat30d.turns,
+      fallbacks30d: chat30d.fallbacks,
+      fallbackRate30d: chat30d.fallbackRate,
     },
     reminders: { activeOptins, ...reminderAgg },
     klaviyo,

@@ -12,6 +12,12 @@
  * UNIQUE constraint — same comment is never processed twice), so this helper
  * is for web + Discord only.
  *
+ * The local-first widget stores nothing server-side (US-15 AC7), so its twin
+ * lives in the client (widget-src chat-api.ts sendMessage): the same
+ * adjacent-pair rule, window and no-fallback check over the widget's own
+ * file (the POST response carries `isFallback` for it). Not shared on purpose
+ * — a package export for four lines would cost more than the twin.
+ *
  * See docs/chat-architecture.md § Consecutive-duplicate dedup.
  */
 

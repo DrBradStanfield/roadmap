@@ -649,6 +649,7 @@ async function persistYouTubeTurn(p: {
       router_error: r?.error ?? null,
       classification: outcome.classification ?? 'ERROR',
       router_skipped: outcome.routerSkipped ?? false,
+      is_fallback: outcome.isFallback ?? false,
     });
     if (evtErr) {
       Sentry.captureException(new Error('YouTube: match-event insert failed'), {

@@ -3,7 +3,7 @@
  * Uses the same Shopify app proxy path as all other API calls.
  */
 import * as Sentry from '@sentry/react';
-import type { ProposedEdit } from '@roadmap/health-core';
+import { MAX_HISTORY_MESSAGES, type ProposedEdit } from '@roadmap/health-core';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { getChatHistory } from './chat-history-access';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
@@ -28,6 +28,8 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   createdAt: string;
+  /** Assistant turns only: the server substituted its fallback text. */
+  isFallback?: boolean;
 }
 
 export interface SendMessageResult {
@@ -36,6 +38,7 @@ export interface SendMessageResult {
   content: string;
   sessionToken?: string;
   isGuest?: boolean;
+  isFallback?: boolean;
   /** Form edits the model proposed via tool_use (pre-fill the form / update meds). */
   proposedEdits?: ProposedEdit[];
 }
@@ -126,11 +129,12 @@ const TRANSIENT_RETRY_DELAY_MS = 1000;
  * retried.
  *
  * `retryable`: the send POST is retryable ONLY within an existing
- * conversation — the server's consecutive-duplicate dedup
- * (chat-dedup.server.ts) is gated on conversationId, so retrying a thread's
- * FIRST message could mint a ghost conversation + a second LLM spend. A
- * retry that lands after attempt 1 died mid-pipeline can still duplicate the
- * user row (bounded; a manual retype does the same).
+ * conversation — on the stored surfaces the server's consecutive-duplicate
+ * dedup (chat-dedup.server.ts) is gated on conversationId, so retrying a
+ * thread's FIRST message could mint a ghost conversation + a second LLM
+ * spend. On the local-first widget the server stores nothing, so a retry
+ * that lands after attempt 1 died mid-pipeline costs one more LLM call and
+ * no row.
  */
 async function fetchWithTransientRetry(input: string, init?: RequestInit, retryable = true): Promise<Response> {
   const first = await fetch(input, init);
@@ -246,11 +250,30 @@ export async function loadConversation(conversationId: string): Promise<ChatMess
   }
 }
 
+/** Same window as the server's chat-dedup.server.ts. */
+const DEDUP_WINDOW_MS = 60_000;
+
+/**
+ * `history` is the conversation so far, from the widget's own file. On
+ * local-first builds the server stores nothing the widget says (US-15 AC7),
+ * so the earlier turns travel with each request, and a byte-identical resend
+ * of the last question is answered from the last reply without a request —
+ * the same rule as the server-side dedup the stored surfaces rely on: within
+ * the window, and never a fallback.
+ */
 export async function sendMessage(
   message: string,
   conversationId?: string | null,
   guestInputs?: Record<string, unknown> | null,
+  history: ChatMessage[] = [],
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
+  if (LOCAL_FIRST && conversationId) {
+    const [prevUser, prevAssistant] = history.slice(-2);
+    if (prevUser?.role === 'user' && prevUser.content === message && prevAssistant?.role === 'assistant'
+      && !prevAssistant.isFallback && Date.now() - Date.parse(prevAssistant.createdAt) < DEDUP_WINDOW_MS) {
+      return { result: { conversationId, messageId: null, content: prevAssistant.content }, error: null };
+    }
+  }
   try {
     const response = await fetchWithTransientRetry(
       `${PROXY_PATH}/api/chat`,
@@ -261,6 +284,7 @@ export async function sendMessage(
           message,
           conversationId: conversationId || undefined,
           ...(guestInputs ? { guestInputs } : {}),
+          ...(LOCAL_FIRST ? { history: history.slice(-MAX_HISTORY_MESSAGES).map(({ role, content }) => ({ role, content })) } : {}),
           ...chatBodyParts(),
         }),
       },
@@ -318,6 +342,7 @@ export async function sendMessage(
         content: data.content,
         sessionToken: data.sessionToken,
         isGuest: data.isGuest,
+        ...(data.isFallback === true ? { isFallback: true } : {}),
         ...(Array.isArray(data.proposedEdits) && data.proposedEdits.length > 0
           ? { proposedEdits: data.proposedEdits as ProposedEdit[] }
           : {}),
@@ -337,14 +362,12 @@ export async function sendMessage(
 export async function deleteConversation(conversationId: string): Promise<boolean> {
   const store = await cloudHistory();
   if (store) {
+    // Tombstone in the user's cloud. The server holds no copy (US-15 AC7).
     try {
-      await store.deleteConversation(conversationId); // tombstone in the user's cloud
+      await store.deleteConversation(conversationId);
     } catch {
       return false;
     }
-    // Best-effort server delete too: the server's copy exists for training
-    // (anonymized), but honouring the user's delete there is the polite default.
-    void deleteServerConversation(conversationId);
     return true;
   }
   return deleteServerConversation(conversationId);

@@ -159,6 +159,30 @@ export function sanitizeForRouter(s: string): string {
   return s.replace(/[\u0000-\u001F\u007F]/g, ' ').slice(0, 2000);
 }
 
+/** The columns a widget telemetry row may carry. A column not named here is
+ *  dropped, so a new free-text column cannot reach the widget's row unseen. */
+const WIDGET_ROW_COLUMNS = [
+  'message_id', 'conversation_id', 'user_id', 'message', 'router_context', 'matched_handles',
+  'router_version', 'router_latency_ms', 'router_cache_hit', 'router_input_tokens',
+  'router_cache_read_tokens', 'router_raw', 'router_error', 'classification', 'router_skipped',
+  'is_fallback', 'failure_mode',
+] as const;
+
+export interface MatchEventRow extends Record<string, unknown> {
+  message: string;
+  router_context: { platform: string; first: string | null; recent: string[] };
+}
+
+/**
+ * The widget's telemetry row (US-15 AC7): the assembled row with the surface
+ * named and only the whitelisted columns kept. The question stays verbatim
+ * (Brad, 2026-09-10) so article matching can be audited against it.
+ */
+export function redactForWidget(row: MatchEventRow): Record<string, unknown> {
+  const kept = Object.fromEntries(WIDGET_ROW_COLUMNS.filter((c) => c in row).map((c) => [c, row[c]]));
+  return { ...kept, router_context: { ...row.router_context, platform: 'widget' } };
+}
+
 // ---------------------------------------------------------------------------
 // US → UK spelling normalisation. Our index (Auckland HealthPathways) uses
 // UK spelling. US-spelled queries miss on literal text match despite any

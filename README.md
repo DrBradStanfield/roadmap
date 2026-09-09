@@ -90,9 +90,11 @@ network tab recording and use the widget.
 - Two requests carry health content, and you trigger both. A lab-document
   upload POSTs the document's page content to `/api/lab-import-v2`, which
   extracts the values, returns them, and stores none of them. Sending a chat
-  message POSTs the message and the health context needed to answer it to
-  `/api/chat`; the context builds the prompt and is not stored, while the
-  message and the reply are kept as chat history.
+  message from the widget POSTs the message, that conversation's earlier
+  turns, and the health context needed to answer it to `/api/chat`. The
+  context and the reply are not stored; we keep the questions people ask,
+  without the answers or the health record, to check that article matching
+  works. The chat bubble on blog pages keeps its transcript on our server.
 - Telemetry is a closed allow-list of event names in
   `packages/health-core/src/product-events.ts`. An event is a name plus an
   anonymous visitor UUID, and the server rejects any name off the list.

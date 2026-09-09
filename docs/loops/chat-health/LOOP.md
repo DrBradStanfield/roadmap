@@ -73,13 +73,18 @@ this loop on reasoning alone: if you cannot measure it, you propose it.
     since the last run where `router_skipped = false` and `matched_handles`
     is empty (each cost ~1.6s and ~$0.004 and returned nothing).
   - **Router errors** (`router_error IS NOT NULL`) and **fallbacks**
-    (`chat_messages.is_fallback = true`, with `failure_mode`).
+    (`chat_match_events.is_fallback = true`, with `failure_mode`, on every
+    surface since 2026-09-10; `chat_messages.is_fallback` still holds the
+    stored surfaces' history before that).
   - **Latency**: `router_latency_ms` median/p90 + `router_cache_hit` rate.
     Baseline 2026-08-07: median 1,615ms, p90 3,063ms, hit-rate 39%.
-  - **Per-platform volume**: join `chat_conversations.platform`
-    (`shopify`/`discord`/`youtube`). YouTube only began persisting
-    2026-08-07 — if its count is 0 after that date, something is broken;
-    say so.
+  - **Per-platform volume**: `chat_match_events.router_context->>'platform'`
+    (`widget`/`shopify`/`discord`/`youtube`; `shopify` = the blog chat
+    bubble; REST filter `router_context->>platform=eq.widget`, no quotes). NOT a join on `chat_conversations` — the widget writes no
+    conversation row and the FK is gone (US-15 AC7, 2026-09-10; older rows
+    backfilled). The widget's question text there is verbatim; no reply.
+    YouTube only began persisting 2026-08-07 — if its count is 0 after that
+    date, something is broken; say so.
   - **YouTube reply length** (added 2026-08-10 with the prompt's three-way
     cap): for `platform = youtube` assistant rows, report median words and
     the count breaching ≤5 sentences / ≤90 words / ≤25 words-per-sentence

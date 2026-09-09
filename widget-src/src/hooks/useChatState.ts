@@ -238,6 +238,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       trimmed,
       currentConvId,
       guestInputs ?? null,
+      messagesRef.current,
     );
 
     if (sendError) {
@@ -267,6 +268,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         role: 'assistant',
         content: result.content,
         createdAt: new Date().toISOString(),
+        ...(result.isFallback ? { isFallback: true } : {}),
       };
       const finalMessages = [...optimisticMessages, assistantMsg];
       setMessages(finalMessages);

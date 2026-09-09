@@ -1326,6 +1326,45 @@ CREATE INDEX IF NOT EXISTS idx_match_events_classification
 ALTER TABLE chat_match_events
   ALTER COLUMN router_version DROP NOT NULL;
 
+-- ===== chat_match_events stands alone (US-15 AC7, 2026-09-10) =====
+-- The main widget stores no message content: no chat_conversations row, no
+-- chat_messages row. Its telemetry row can therefore reference neither, so
+-- both foreign keys go (they were ON DELETE CASCADE — the one-off delete
+-- below would otherwise take the router rows with it). user_id → profiles
+-- stays. Fallback flag + category move here so the dashboard and the
+-- chat-health loop count every surface. Run IN THIS ORDER; never DROP TABLE.
+--
+-- 0. Backfill the surface name so `router_context->>'platform'` replaces the
+--    `chat_conversations!inner(platform)` embed everywhere (only Discord and
+--    YouTube wrote it before).
+UPDATE chat_match_events
+  SET router_context = coalesce(router_context, '{}'::jsonb) || '{"platform":"shopify"}'::jsonb
+  WHERE router_context->>'platform' IS NULL;
+
+-- 1. Constraints (confirm names first:
+--    SELECT conname FROM pg_constraint WHERE conrelid = 'chat_match_events'::regclass;)
+ALTER TABLE chat_match_events DROP CONSTRAINT IF EXISTS chat_match_events_message_id_fkey;
+ALTER TABLE chat_match_events DROP CONSTRAINT IF EXISTS chat_match_events_conversation_id_fkey;
+
+-- 2. Columns. ADD COLUMN IF NOT EXISTS, never CREATE TABLE IF NOT EXISTS.
+ALTER TABLE chat_match_events ADD COLUMN IF NOT EXISTS is_fallback BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE chat_match_events ADD COLUMN IF NOT EXISTS failure_mode TEXT;
+
+-- 3. PostgREST caches relationships and columns.
+NOTIFY pgrst, 'reload schema';
+
+-- 4. One-off: the widget's existing transcripts. Widget turns are guest-owned
+--    (api.chat.ts forceGuest) since the 2026-06-12 v2 cutover; before it the
+--    v1 widget wrote under the customer's profile. Profile-owned shopify rows
+--    after the cutover are the blog chat bubble's and stay. Count (expect
+--    266 = 211 guest + 55 pre-cutover), then delete; chat_messages cascade.
+--    SELECT count(*) FROM chat_conversations c
+--      WHERE c.platform = 'shopify'
+--        AND (EXISTS (SELECT 1 FROM guest_chat_sessions g WHERE g.id = c.user_id) OR c.created_at < '2026-06-12');
+--    DELETE FROM chat_conversations c
+--      WHERE c.platform = 'shopify'
+--        AND (EXISTS (SELECT 1 FROM guest_chat_sessions g WHERE g.id = c.user_id) OR c.created_at < '2026-06-12');
+
 -- ===== youtube_bot_log (YouTube comment auto-poster, 2026-05-20) =====
 -- One table holds both: (a) posted replies — full audit data, kept forever;
 -- (b) skipped comments — just the comment_id for dedup, last 200 only.

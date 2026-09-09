@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   aggregateABCounts,
-  aggregateChatMessages,
   aggregateReminderOptins,
+  chatTurnStats,
   type ABCountRow,
-  type ChatMessageRow,
   type ReminderOptinRow,
 } from './supabase.server';
 import type { ABVariant } from './supabase.server';
@@ -66,56 +65,15 @@ describe('aggregateABCounts', () => {
   });
 });
 
-describe('aggregateChatMessages', () => {
-  const row = (
-    role: string,
-    user_id: string,
-    is_fallback: boolean | null = false,
-  ): ChatMessageRow => ({ role, user_id, is_fallback, created_at: '2026-06-14T00:00:00Z' });
-
-  it('counts user messages and distinct chatters', () => {
-    const result = aggregateChatMessages([
-      row('user', 'u1'),
-      row('assistant', 'u1'),
-      row('user', 'u1'),
-      row('user', 'u2'),
-      row('assistant', 'u2'),
-    ]);
-    expect(result.userMessages).toBe(3);
-    expect(result.activeChatters).toBe(2);
-  });
-
-  it('computes fallback rate over assistant messages only', () => {
-    const result = aggregateChatMessages([
-      row('user', 'u1'),
-      row('assistant', 'u1', true),
-      row('assistant', 'u1', false),
-      row('assistant', 'u1', false),
-      row('assistant', 'u1', false),
-    ]);
-    expect(result.fallbacks).toBe(1);
-    // 1 fallback / 4 assistant messages — user messages do not dilute the rate.
-    expect(result.fallbackRate).toBeCloseTo(0.25);
-  });
-
-  it('returns zero fallback rate when there are no assistant messages', () => {
-    const result = aggregateChatMessages([row('user', 'u1')]);
-    expect(result.fallbackRate).toBe(0);
-    expect(result.fallbacks).toBe(0);
-  });
-
-  it('treats null is_fallback as non-fallback', () => {
-    const result = aggregateChatMessages([row('assistant', 'u1', null)]);
-    expect(result.fallbacks).toBe(0);
-  });
-
-  it('handles null rows', () => {
-    expect(aggregateChatMessages(null)).toEqual({
-      userMessages: 0,
-      activeChatters: 0,
-      fallbacks: 0,
-      fallbackRate: 0,
+describe('chatTurnStats', () => {
+  it('counts turns, distinct chatters and the fallback rate', () => {
+    expect(chatTurnStats(4, [{ user_id: 'u1' }, { user_id: 'u1' }, { user_id: 'u2' }], 1)).toEqual({
+      turns: 4, activeChatters: 2, fallbacks: 1, fallbackRate: 0.25,
     });
+  });
+
+  it('handles null counts and rows', () => {
+    expect(chatTurnStats(null, null, null)).toEqual({ turns: 0, activeChatters: 0, fallbacks: 0, fallbackRate: 0 });
   });
 });
 

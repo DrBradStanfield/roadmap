@@ -26,6 +26,7 @@ import {
   screeningsToInputs,
   latestFromHistory,
   CHAT_EDIT_TOOLS,
+  MAX_HISTORY_MESSAGES,
   PREFILL_ACK_MESSAGE,
   parseProposedEdits,
   type HealthInputs,
@@ -158,7 +159,6 @@ export async function deleteConversation(conversationId: string): Promise<boolea
 // surfaces answer with the same voice — the user pays, but extraction-style
 // haiku pricing keeps a typical chat under a cent.
 const CHAT_MODEL = 'claude-haiku-4-5-20251001';
-const MAX_HISTORY_MESSAGES = 20;
 
 const SYSTEM_PROMPT = `You are the chat assistant inside "Health Plan by Dr Brad", a preventative-health planning app by Dr Brad Stanfield (GP, drstanfield.com). The user runs this app on their own infrastructure with their own AI key.
 

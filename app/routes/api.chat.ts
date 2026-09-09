@@ -25,9 +25,10 @@ import {
   CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
-import { routeQuery, reportRouterFailure, sanitizeForRouter, ROUTER_VERSION } from '../lib/chat-router.server';
+import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget, ROUTER_VERSION } from '../lib/chat-router.server';
+import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS } from '../../packages/health-core/src/chat-history';
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
-import { findDuplicateReply } from '../lib/chat-dedup.server';
+import { findDuplicateReply, type DedupHistoryItem } from '../lib/chat-dedup.server';
 
 
 // Only fixed operation descriptions enter diagnostics. Database errors can echo
@@ -39,6 +40,24 @@ function reportChatError(message: string): void {
 
 function validConversationId(value: unknown): value is string {
   return typeof value === 'string' && isValidUuid(value.toLowerCase());
+}
+
+type Turn = { role: 'user' | 'assistant'; content: string };
+
+/**
+ * The widget's earlier turns, sent from its own chat-history.json (US-15 AC7:
+ * the server stores none). Whitelisted roles, non-empty strings, the same
+ * bound the BYOK transport uses, each turn cut at MAX_HISTORY_TURN_CHARS (a
+ * reply runs longer than a question may), and never starting on an assistant turn — the Messages API 400s on that,
+ * which would surface as a fallback.
+ */
+function readClientHistory(value: unknown): Turn[] {
+  if (!Array.isArray(value)) return [];
+  const turns = value.slice(-MAX_HISTORY_MESSAGES).filter((t): t is Turn =>
+    !!t && typeof t === 'object' && (t.role === 'user' || t.role === 'assistant')
+    && typeof t.content === 'string' && t.content.length > 0)
+    .map((t) => ({ role: t.role, content: t.content.slice(0, MAX_HISTORY_TURN_CHARS) }));
+  return turns.slice(Math.max(0, turns.findIndex((t) => t.role === 'user')));
 }
 
 // ---------------------------------------------------------------------------
@@ -302,25 +321,31 @@ export async function action({ request }: ActionFunctionArgs) {
     // Sanitize message for router (strips control chars, caps at 2000 chars)
     const sanitizedCurrent = sanitizeForRouter(message);
 
-    // History pre-load: for existing conversations load now so router gets context.
-    // For new conversations (no conversationId yet) history is empty by definition.
-    // is_fallback is needed for the dedup check below; created_at for the time window.
-    let history: Array<{ role: 'user' | 'assistant'; content: string; created_at: string; is_fallback: boolean | null }> = [];
-    if (conversationId) {
+    // The widget (localFirst) sends the record with every turn, so nothing it
+    // says is stored: no conversation row, no message rows, no dedup — its
+    // history arrives in the body (US-15 AC7). The other surfaces keep their
+    // transcripts server-side and load them here; is_fallback is needed for
+    // the dedup check below, created_at for the time window.
+    const widget = body.localFirst === true;
+    let history: Turn[] = widget ? readClientHistory(body.history) : [];
+    let storedHistory: DedupHistoryItem[] = [];
+    if (conversationId && !widget) {
       const { data: historyRows, error: historyError } = await auth.client
         .from('chat_messages')
         .select('role, content, created_at, is_fallback')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
       if (historyError) reportChatError('Chat: Failed to load conversation history');
-      history = (historyRows ?? []) as Array<{ role: 'user' | 'assistant'; content: string; created_at: string; is_fallback: boolean | null }>;
+      storedHistory = (historyRows ?? []) as DedupHistoryItem[];
+      history = storedHistory;
     }
 
     // Dedup: re-serve the previous reply if the user just double-sent the same
     // message. See app/lib/chat-dedup.server.ts and chat-architecture.md §
-    // Consecutive-duplicate dedup. Shared with the Discord handler.
-    if (conversationId) {
-      const dup = findDuplicateReply(history, message);
+    // Consecutive-duplicate dedup. Shared with the Discord handler. The widget
+    // dedups from its own file (chat-api.ts) — its rows here carry no timestamp.
+    if (conversationId && !widget) {
+      const dup = findDuplicateReply(storedHistory, message);
       if (dup) {
         Sentry.captureMessage('chat: duplicate user message detected, re-serving previous reply', {
           level: 'info',
@@ -374,8 +399,10 @@ export async function action({ request }: ActionFunctionArgs) {
 
     reportRouterFailure(routerResult);
 
-    // Create or validate conversation
+    // Create or validate conversation. A widget conversation exists only in the
+    // user's file; the id here is a grouping key for its telemetry rows.
     let activeConversationId = conversationId;
+    if (!activeConversationId && widget) activeConversationId = crypto.randomUUID();
     if (!activeConversationId) {
       const title = generateTitle(message);
       const { data: conv, error: convError } = await auth.client
@@ -392,18 +419,20 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     // Insert user message (history already loaded above for existing convs)
-    const { error: userMsgError } = await auth.client
-      .from('chat_messages')
-      .insert({
-        conversation_id: activeConversationId,
-        user_id: auth.userId,
-        role: 'user',
-        content: message,
-      });
+    if (!widget) {
+      const { error: userMsgError } = await auth.client
+        .from('chat_messages')
+        .insert({
+          conversation_id: activeConversationId,
+          user_id: auth.userId,
+          role: 'user',
+          content: message,
+        });
 
-    if (userMsgError) {
-      reportChatError('Chat: Failed to save user message');
-      return Response.json({ success: false, error: 'Failed to save message' }, { status: 500 });
+      if (userMsgError) {
+        reportChatError('Chat: Failed to save user message');
+        return Response.json({ success: false, error: 'Failed to save message' }, { status: 500 });
+      }
     }
 
     // Check for document content match (uses full docs from context, no extra DB call)
@@ -435,8 +464,9 @@ export async function action({ request }: ActionFunctionArgs) {
     const completion = await getChatCompletion(systemBlocks, conversationMessages);
     const tAfterLlm = Date.now();
 
-    // Pre-generate the assistant message UUID so chat_match_events can FK it cleanly.
-    const assistantMessageId = crypto.randomUUID();
+    // The assistant message id doubles as the telemetry row's message_id on
+    // the stored surfaces; the widget has no message row, so null there.
+    const assistantMessageId = widget ? null : crypto.randomUUID();
 
     reportChatFallback({
       completion,
@@ -445,69 +475,80 @@ export async function action({ request }: ActionFunctionArgs) {
       conversationId: activeConversationId,
     });
 
-    // Fire-and-forget: save assistant message, then (nested) log match event.
-    // Nesting ensures the chat_messages FK is satisfied before match_events insert.
-    auth.client
-      .from('chat_messages')
-      .insert({
-        id: assistantMessageId,
-        conversation_id: activeConversationId,
-        user_id: auth.userId,
-        role: 'assistant',
-        content: completion.content,
-        input_tokens: completion.usage.inputTokens,
-        output_tokens: completion.usage.outputTokens,
-        model: CHAT_MODEL,
-        is_fallback: completion.isFallback,
-        // Persist the fallback cause so the daily audit email is self-diagnosing
-        // (previously only sent to Sentry via reportChatFallback). Null on success.
-        failure_mode: completion.failureMode ?? null,
-        error_detail: completion.errorDetail?.slice(0, 500) ?? null,
-      })
-      .then(({ error: msgError }: { error: { message: string } | null }) => {
-        if (msgError) {
-          reportChatError('Chat: Failed to save assistant message');
-          return;
+    // Router telemetry, one row per answered turn. On the widget it is the ONLY
+    // row, trimmed to its whitelist in one place (redactForWidget).
+    const matchEvent = {
+      message_id: assistantMessageId,
+      conversation_id: activeConversationId,
+      user_id: auth.userId,
+      message: sanitizedCurrent,
+      router_context: {
+        platform: 'shopify',
+        first: sanitizedFirst ?? null,
+        recent: sanitizedRecent,
+      },
+      matched_handles: effectiveHandles,
+      router_version: routerResult ? ROUTER_VERSION : null,
+      router_latency_ms: routerResult?.latencyMs ?? null,
+      router_cache_hit: routerResult?.cacheHit ?? null,
+      router_input_tokens: routerResult?.usage.inputTokens ?? null,
+      router_cache_read_tokens: routerResult?.usage.cacheReadTokens ?? null,
+      router_raw: routerResult?.error ? (routerResult.rawJson?.slice(0, 500) ?? null) : null,
+      router_error: routerResult?.error ?? null,
+      classification: classifierResult.classification,
+      router_skipped: routerSkipped,
+      is_fallback: completion.isFallback,
+      failure_mode: completion.failureMode ?? null,
+    };
+    const logMatchEvent = () => auth.client
+      .from('chat_match_events')
+      .insert(widget ? redactForWidget(matchEvent) : matchEvent)
+      .then(({ error: matchError }: { error: { message: string } | null }) => {
+        if (matchError) {
+          reportChatError('Chat: Match-event insert failed');
         }
-        // FK on message_id now satisfied — safe to insert match event.
-        auth.client
-          .from('chat_match_events')
-          .insert({
-            message_id: assistantMessageId,
-            conversation_id: activeConversationId,
-            user_id: auth.userId,
-            message: sanitizedCurrent,
-            router_context: {
-              first: sanitizedFirst ?? null,
-              recent: sanitizedRecent,
-            },
-            matched_handles: effectiveHandles,
-            router_version: routerResult ? ROUTER_VERSION : null,
-            router_latency_ms: routerResult?.latencyMs ?? null,
-            router_cache_hit: routerResult?.cacheHit ?? null,
-            router_input_tokens: routerResult?.usage.inputTokens ?? null,
-            router_cache_read_tokens: routerResult?.usage.cacheReadTokens ?? null,
-            router_raw: routerResult?.error ? (routerResult.rawJson?.slice(0, 500) ?? null) : null,
-            router_error: routerResult?.error ?? null,
-            classification: classifierResult.classification,
-            router_skipped: routerSkipped,
-          })
-          .then(({ error: matchError }: { error: { message: string } | null }) => {
-            if (matchError) {
-              reportChatError('Chat: Match-event insert failed');
-            }
-          }).catch(() => reportChatError('Chat: Match-event insert failed'));
-      }).catch(() => reportChatError('Chat: Failed to save assistant message'));
+      }).catch(() => reportChatError('Chat: Match-event insert failed'));
 
-    auth.client
-      .from('chat_conversations')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', activeConversationId)
-      .then(({ error: tsError }: { error: { message: string } | null }) => {
-        if (tsError) {
-          reportChatError('Chat: Failed to update conversation timestamp');
-        }
-      }).catch(() => reportChatError('Chat: Failed to update conversation timestamp'));
+    if (widget) {
+      logMatchEvent();
+    } else {
+      // Fire-and-forget: save the assistant message, then log the match event
+      // once its message_id names a row that exists.
+      auth.client
+        .from('chat_messages')
+        .insert({
+          id: assistantMessageId,
+          conversation_id: activeConversationId,
+          user_id: auth.userId,
+          role: 'assistant',
+          content: completion.content,
+          input_tokens: completion.usage.inputTokens,
+          output_tokens: completion.usage.outputTokens,
+          model: CHAT_MODEL,
+          is_fallback: completion.isFallback,
+          // Persist the fallback cause so the daily audit email is self-diagnosing
+          // (previously only sent to Sentry via reportChatFallback). Null on success.
+          failure_mode: completion.failureMode ?? null,
+          error_detail: completion.errorDetail?.slice(0, 500) ?? null,
+        })
+        .then(({ error: msgError }: { error: { message: string } | null }) => {
+          if (msgError) {
+            reportChatError('Chat: Failed to save assistant message');
+            return;
+          }
+          logMatchEvent();
+        }).catch(() => reportChatError('Chat: Failed to save assistant message'));
+
+      auth.client
+        .from('chat_conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', activeConversationId)
+        .then(({ error: tsError }: { error: { message: string } | null }) => {
+          if (tsError) {
+            reportChatError('Chat: Failed to update conversation timestamp');
+          }
+        }).catch(() => reportChatError('Chat: Failed to update conversation timestamp'));
+    }
 
     logAudit(auth.userId, 'CHAT_MESSAGE', 'chat', activeConversationId, {
       cacheRead: completion.usage.cacheReadTokens,
@@ -549,6 +590,8 @@ export async function action({ request }: ActionFunctionArgs) {
       conversationId: activeConversationId,
       messageId: null,
       content: completion.content,
+      // The widget's own dedup never re-serves a fallback (US-15 AC3).
+      isFallback: completion.isFallback,
       // Form edits the model proposed via tool_use (already validated server-side).
       // Omitted on normal turns — additive, no impact on existing clients.
       ...(completion.proposedEdits && completion.proposedEdits.length > 0

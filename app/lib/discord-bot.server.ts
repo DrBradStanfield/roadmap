@@ -761,6 +761,7 @@ async function persistConversation(p: PersistParams): Promise<void> {
       router_error: r?.error ?? null,
       classification: p.classifier.classification,
       router_skipped: p.classifier.routerSkipped,
+      is_fallback: p.isFallback,
     });
   if (evtErr) {
     Sentry.captureException(new Error('Discord: match-event insert failed'), {

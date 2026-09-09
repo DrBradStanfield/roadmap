@@ -31,7 +31,10 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   operational tables, expires 2027-08; you never get the service key. REST
   calls: `apikey: $SUPABASE_ANON_KEY` + `Authorization: Bearer
   $SUPABASE_PRODUCT_HEALTH_KEY`. Check presence with `env | grep -c SUPABASE`,
-  never print values): 7d vs prior-7d `chat_messages`; new
+  never print values): 7d vs prior-7d `chat_match_events` (one row per
+  answered turn on every surface; split by `router_context->>'platform'`,
+  REST filter `router_context->>platform=eq.widget`, no quotes —
+  the widget stores no `chat_messages` since 2026-09-10, US-15 AC7); new
   `feedback_submissions`; `product_events` by `event_name` — the funnel:
   results_viewed → upload_started/saved/extract_failed →
   cloud_connect_started/success → chat_opened → correction_made →

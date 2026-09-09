@@ -11,7 +11,7 @@
  *
  * Writes to --output-dir:
  *   messages.json     — raw pull (includes user IDs — keep local, never commit)
- *   routing.json      — router decisions per message
+ *   routing.json      — router decisions per message (the widget's only record of a turn: US-15 AC7)
  *   conversations.md  — human-readable conversation rendering for manual audit
  *   conversations.html — interactive triage UI (collapsible cards, ✅/⚠️/❌ buttons,
  *                        per-user color coding, search/filter, localStorage-persisted)
@@ -87,8 +87,15 @@ interface Message {
 
 interface RoutingEvent {
   created_at: string;
-  message_id: string;
+  /** Null on widget turns (US-15 AC7: no message row) and on YouTube turns the LLM never answered. */
+  message_id: string | null;
+  conversation_id: string | null;
+  user_id: string;
   message: string;
+  /** `platform` names the surface on every row since 2026-09-10 (backfilled). */
+  router_context: { platform?: string } | null;
+  is_fallback: boolean | null;
+  failure_mode: string | null;
   matched_handles: string[] | null;
   router_latency_ms: number | null;
   router_cache_hit: boolean | null;
@@ -169,7 +176,7 @@ async function pullRouting(): Promise<RoutingEvent[]> {
 
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/chat_match_events?` +
-    `select=created_at,message_id,message,matched_handles,router_latency_ms,router_cache_hit,router_error,router_raw,classification,router_skipped` +
+    `select=created_at,message_id,conversation_id,user_id,message,router_context,is_fallback,failure_mode,matched_handles,router_latency_ms,router_cache_hit,router_error,router_raw,classification,router_skipped` +
     `&created_at=gte.${since}` +
     `&order=created_at.asc`,
     {
@@ -187,11 +194,44 @@ async function pullRouting(): Promise<RoutingEvent[]> {
   return res.json() as Promise<RoutingEvent[]>;
 }
 
+/** Routing rows join messages by message_id; a row with none (the widget, or a
+ *  YouTube turn the LLM never answered) gets a key of its own. */
+const routingKey = (r: RoutingEvent) => r.message_id ?? `routing-${r.created_at}-${r.conversation_id}`;
+
+/**
+ * Widget turns have no chat_messages row (US-15 AC7): the telemetry row IS the
+ * turn. Present each as a user message so both renderers show it beside the
+ * stored surfaces (question verbatim, no reply). Widget rows only: YouTube
+ * writes its user row before deciding to answer, so its null-message_id rows
+ * would duplicate.
+ */
+function routingOnlyTurns(routing: RoutingEvent[]): Message[] {
+  return routing
+    .filter(r => r.conversation_id && r.router_context?.platform === 'widget')
+    .map(r => ({
+      message_id: routingKey(r),
+      created_at: r.created_at,
+      platform: 'widget',
+      external_id: null,
+      conversation_id: r.conversation_id!,
+      user_id: r.user_id,
+      role: 'user' as const,
+      content: r.message,
+      model: null,
+      input_tokens: null,
+      output_tokens: null,
+      discord_message_id: null,
+      is_fallback: r.is_fallback ?? false,
+      failure_mode: r.failure_mode,
+      error_detail: null,
+    }));
+}
+
 // ---------------------------------------------------------------------------
 // Render conversations
 // ---------------------------------------------------------------------------
 
-function renderConversations(messages: Message[], routing: RoutingEvent[]): string {
+function renderConversations(messages: Message[], routingById: Map<string, RoutingEvent>): string {
   // Group messages by conversation
   const convMap = new Map<string, Message[]>();
   for (const m of messages) {
@@ -199,18 +239,14 @@ function renderConversations(messages: Message[], routing: RoutingEvent[]): stri
     convMap.get(m.conversation_id)!.push(m);
   }
 
-  // Build routing lookup by message_id (exact match — avoids collision on duplicate queries)
-  const routingById = new Map<string, RoutingEvent>();
-  for (const r of routing) {
-    routingById.set(r.message_id, r);
-  }
 
   const lines: string[] = [
     `# Chat Audit — ${days} days ending ${new Date().toISOString().slice(0, 10)}`,
     ``,
     `**Total conversations:** ${convMap.size}`,
     `**Total messages:** ${messages.length}`,
-    `**Web:** ${messages.filter(m => m.platform === 'shopify' && m.role === 'user').length} user turns`,
+    `**Widget:** ${messages.filter(m => m.platform === 'widget').length} user turns (telemetry only — questions, no replies)`,
+    `**Blog chat:** ${messages.filter(m => m.platform === 'shopify' && m.role === 'user').length} user turns`,
     `**Discord:** ${messages.filter(m => m.platform === 'discord' && m.role === 'user').length} user turns`,
     `**YouTube:** ${messages.filter(m => m.platform === 'youtube' && m.role === 'user').length} user turns`,
     ``,
@@ -417,18 +453,16 @@ function renderMessageContent(raw: string): string {
   return out.filter((_, idx, arr) => !(arr[idx] === '' && arr[idx - 1] === '')).join('\n');
 }
 
-function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
+function renderHtml(messages: Message[], routingById: Map<string, RoutingEvent>): string {
   const convMap = new Map<string, Message[]>();
   for (const m of messages) {
     if (!convMap.has(m.conversation_id)) convMap.set(m.conversation_id, []);
     convMap.get(m.conversation_id)!.push(m);
   }
 
-  const routingById = new Map<string, RoutingEvent>();
-  for (const r of routing) routingById.set(r.message_id, r);
 
   const convCount = convMap.size;
-  const webTurns = messages.filter(m => m.platform === 'shopify' && m.role === 'user').length;
+  const webTurns = messages.filter(m => (m.platform === 'shopify' || m.platform === 'widget') && m.role === 'user').length;
   const discordTurns = messages.filter(m => m.platform === 'discord' && m.role === 'user').length;
   const youtubeTurns = messages.filter(m => m.platform === 'youtube' && m.role === 'user').length;
   const endDate = new Date().toISOString().slice(0, 10);
@@ -532,7 +566,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
         <header class="conv-header" tabindex="0" role="button" aria-expanded="false">
           <div class="conv-header-left">
             <span class="conv-num">#${convNum}</span>
-            <span class="platform-badge platform-${platform}">${platform === 'shopify' ? 'Shopify' : platform === 'youtube' ? 'YouTube' : 'Discord'}</span>
+            <span class="platform-badge platform-${platform}">${platform === 'widget' ? 'Widget' : platform === 'shopify' ? 'Blog chat' : platform === 'youtube' ? 'YouTube' : 'Discord'}</span>
             <span class="conv-snippet">${snippet}</span>
           </div>
           <div class="conv-header-right">
@@ -628,6 +662,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
       white-space: nowrap;
     }
     .platform-shopify { background: #e8f4ff; color: #2b5fb0; }
+    .platform-widget { background: #e6f7ee; color: #1e7a4a; }
     .platform-discord { background: #ecebff; color: #5865F2; }
     .platform-youtube { background: #ffeaea; color: #c4302b; }
     .conv-snippet {
@@ -988,21 +1023,25 @@ if (fromExisting) {
   console.log('\nWrote messages.json and routing.json');
 }
 
+// The widget's turns exist only as routing rows — surface them beside the stored ones.
+messages = [...messages, ...routingOnlyTurns(routing)].sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0));
+const routingById = new Map(routing.map(r => [routingKey(r), r]));
+
 // Render conversations (MD output — preserved exactly as before)
-const md = renderConversations(messages, routing);
+const md = renderConversations(messages, routingById);
 fs.writeFileSync(path.join(outputDir, 'conversations.md'), md);
 console.log('Wrote conversations.md');
 
 // Render interactive HTML (skippable via --no-html)
 if (!skipHtml) {
-  const html = renderHtml(messages, routing);
+  const html = renderHtml(messages, routingById);
   fs.writeFileSync(path.join(outputDir, 'conversations.html'), html);
   console.log('Wrote conversations.html');
 }
 
 const convCount = new Set(messages.map(m => m.conversation_id)).size;
 const userMsgs = messages.filter(m => m.role === 'user');
-const webMsgs = userMsgs.filter(m => m.platform === 'shopify');
+const webMsgs = userMsgs.filter(m => m.platform === 'shopify' || m.platform === 'widget');
 const discordMsgs = userMsgs.filter(m => m.platform === 'discord');
 
 console.log(`\nSummary:`);
