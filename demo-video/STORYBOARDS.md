@@ -29,18 +29,20 @@ If you want a separate cut per client later, `defaultProps` already carries
 
 Publishable now. Every path in it works in production today.
 
-Duration ~72s, with a 60s cut that drops the website beat, as the current
-explainer already does.
+Duration ~84s, with a shorter cut that drops the website beat, as the current
+explainer already does. Brad approved the beats on 2026-09-10; the verify
+beat and the open-source line are his additions.
 
 | Beat | On screen | Narration | What changes |
 |---|---|---|---|
-| 0 (0:00) | Unchanged cold open: the empty chat, then the record building up | Unchanged, except "in your own Dropbox" becomes "in your own Dropbox or Google Drive" | One line in `vo.json` and one caption in `timing.ts` |
+| 0 (0:00) | Cold open as now, then the GitHub repository page for the last line | Unchanged, except "in your own Dropbox" becomes "in your own Dropbox or Google Drive", and one sentence added at the end: "And the whole project is open source, so anyone can read exactly what it does with your data." | `vo.json`, `timing.ts`, and a repo card at the end of the cold open |
 | 1 (0:10) | **New.** Three panels, about 3s each. Left: Claude's connector settings, a URL pasted in. Middle: a terminal, `claude mcp add --transport http health https://mcp.drstanfield.com/mcp`. Right: a terminal, `codex mcp add health --url https://mcp.drstanfield.com/mcp` then `codex mcp login health`. Then the panels collapse into our real consent screen with its Dropbox and Google Drive buttons | "First, connect. In Claude, paste the connector URL. In Claude Code or Codex, one line in the terminal. Then you pick Dropbox or Google Drive. Your assistant reads and writes one file there. Nothing is stored on our server." | New scene, replaces `Connect.tsx` |
-| 2 (0:22) | The Dropbox folder with three lab PDFs in it, then the chat: "import my results". The permission prompt reads "Allow your assistant to use Health by Dr Brad?" | "Put your lab PDFs in the Dropbox folder and ask your assistant to import them. The first time, it asks your permission to run the tool." | Rewritten. The drag-a-ZIP-into-chat path is ChatGPT's; the folder path is the one that works for every client |
+| 2 (0:22) | The Dropbox folder with a blood test PDF and a clinic letter in it, then the chat: "import my results". The permission prompt reads "Allow your assistant to use Health by Dr Brad?" | "Put your health data, such as blood test results and clinic letters, in the Dropbox folder and ask your assistant to import them. The first time, it asks your permission to run the tool." | Rewritten. The drag-a-ZIP-into-chat path is ChatGPT's; the folder path is the one that works for every client |
 | 3 (0:30) | Unchanged: each value checked against the record, marked new, already recorded, or different | Unchanged | None |
 | 4 (0:44) | Unchanged: the commit, the file in Dropbox | Unchanged | None |
 | 5 (0:52) | Unchanged plan scene, plus one new card at the end: the assistant answering "how does it decide that?" with a link to the repository | "Ask what your plan says. It is Dr Brad's own protocol, computed from your file, with the reason and the citation behind each suggestion. Ask how any of it works and the assistant reads the code, because all of it is public." | Small addition to `Why.tsx`. This is new since 2026-09-09 and no video mentions it |
-| 6 (1:04) | Unchanged website beat | Unchanged | None |
+| 6 (1:04) | **New, "trust but verify".** A chat with this pasted in: *"I'm deeply skeptical about Dr Brad's project. I'm sure it must be stealing or saving my health data. Here's the code: https://github.com/DrBradStanfield/roadmap. Check it thoroughly to make sure it's not taking my health data."* The assistant's reply (wording verified by an independent audit before render, not invented). Then the repository, then the app itself running on GitHub Pages at https://drbradstanfield.github.io/roadmap with no server behind it | "Don't take my word for it. Paste this into ChatGPT or Claude and let it read the code. The same app also runs straight from the repository on GitHub Pages, with no server of mine at all." | New scene. Nominative "ChatGPT" and "Claude" in narration only, no logos |
+| 7 (1:16) | Unchanged website beat | Unchanged | None |
 
 ## Video B — "Add the ChatGPT connector"
 
