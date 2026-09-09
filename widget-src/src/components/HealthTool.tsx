@@ -952,7 +952,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // padding would leave a blank strip on the plan/chat tabs and stage 1.
   const planBarVisible = isMobile && formStage >= 2 && activeTab === 'input';
   return (
-    <div className={`health-tool${planBarVisible ? ' health-tool--plan-bar' : ''}`}>
+    <div className={`health-tool${planBarVisible ? ' health-tool--plan-bar' : ''}`} data-clarity-mask="true">
       {isMobile ? (
         <>
           <MobileTabBar activeTab={activeTab} onTabChange={setActiveTab} />

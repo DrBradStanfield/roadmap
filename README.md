@@ -77,6 +77,31 @@ Deploy → Run workflow. All credentials live in the GitHub `production`
 environment. Manual and emergency steps, plus the two-app Fly split, are in
 [docs/deploy-runbook.md](docs/deploy-runbook.md).
 
+## Verifying this yourself
+
+You do not have to take the code's word for it. Open the site with the DevTools
+network tab recording and use the widget.
+
+- Saving a metric produces no request to our server. The record file is written
+  only by the adapters in `widget-src/src/storage/` (`dropbox.ts`, `drive.ts`,
+  `github.ts`, `webdav.ts`, `local-storage-adapter.ts`), so the write goes to
+  your own Dropbox, Google Drive, GitHub, WebDAV server, or localStorage. No
+  endpoint on our server accepts the record.
+- Two requests carry health content, and you trigger both. A lab-document
+  upload POSTs the document's page content to `/api/lab-import-v2`, which
+  extracts the values, returns them, and stores none of them. Sending a chat
+  message POSTs the message and the health context needed to answer it to
+  `/api/chat`; the context builds the prompt and is not stored, while the
+  message and the reply are kept as chat history.
+- Telemetry is a closed allow-list of event names in
+  `packages/health-core/src/product-events.ts`. An event is a name plus an
+  anonymous visitor UUID, and the server rejects any name off the list.
+- Nothing else we call carries a value. `/api/google-token` forwards an OAuth
+  code or refresh token to Google and stores nothing. `/api/reminders-v2` sends
+  your reminder schedule, which is a label such as "Colonoscopy" and a due
+  date. The optional plan email sends the address you type and that same
+  schedule.
+
 ## Where to read next
 
 - [CLAUDE.md](CLAUDE.md): the working contract for this repo.

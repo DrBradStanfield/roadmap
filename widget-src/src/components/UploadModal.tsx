@@ -662,7 +662,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   return <>
     {!open && state !== 'select' && <FloatingUploadIndicator progress={progress} state={isSaving ? 'saving' : error || saveErrorCount > 0 ? 'error' : state} onClick={onOpen} />}
     {createPortal((
-    <div className="upload-modal-backdrop" style={!open ? { display: 'none' } : undefined} onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
+    <div className="upload-modal-backdrop" data-clarity-mask="true" style={!open ? { display: 'none' } : undefined} onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
       <div className={`upload-modal${isMobile ? ' upload-modal--mobile' : ''}`}>
         <div className="upload-modal-header">
           <h3>Upload Health Records</h3>

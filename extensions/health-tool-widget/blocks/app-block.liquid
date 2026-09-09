@@ -36,6 +36,9 @@
 <div
   id="health-tool-root"
   data-logged-in="true"
+  {%- comment -%} Clarity: mask this node and every descendant. Blood results
+       render as page text and Clarity records text by default. {%- endcomment -%}
+  data-clarity-mask="true"
   data-upload-url="{{ 'health-upload.js' | asset_url }}"
   data-assistant-name="{{ shop.metafields.health_roadmap.chat_assistant_name | default: 'Brad AI' | escape }}"
 >

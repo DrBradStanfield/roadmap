@@ -71,14 +71,14 @@ describe('tryAcquireCronLock — US-28 AC1: transient errors throw, race results
 
   it('resolves true when this machine owns today\'s lock', async () => {
     await expect(
-      tryAcquireCronLock('machine-a', '2026-08-28', 'chat_summary'),
+      tryAcquireCronLock('machine-a', '2026-08-28', 'youtube_bot_summary'),
     ).resolves.toBe(true);
   });
 
   it('resolves false when another machine won the race', async () => {
     db.verify = { locked_by: 'machine-b', lock_date: '2026-08-28' };
     await expect(
-      tryAcquireCronLock('machine-a', '2026-08-28', 'chat_summary'),
+      tryAcquireCronLock('machine-a', '2026-08-28', 'youtube_bot_summary'),
     ).resolves.toBe(false);
   });
 
@@ -91,7 +91,7 @@ describe('tryAcquireCronLock — US-28 AC1: transient errors throw, race results
 
   it('resolves false on a malformed date literal (guard, not transient)', async () => {
     await expect(
-      tryAcquireCronLock('machine-a', 'not-a-date,or.injection', 'chat_summary'),
+      tryAcquireCronLock('machine-a', 'not-a-date,or.injection', 'youtube_bot_summary'),
     ).resolves.toBe(false);
   });
 });

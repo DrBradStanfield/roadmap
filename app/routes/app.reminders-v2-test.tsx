@@ -5,8 +5,8 @@ import { authenticate } from "../shopify.server";
 import { processV2Reminders } from "../lib/reminder-v2-cron.server";
 
 /**
- * Manual trigger for the v2 reminder cron (same pattern as the chat-summary /
- * trending test pages — Shopify admin auth, so only Brad can reach it).
+ * Manual trigger for the v2 reminder cron (same pattern as the
+ * trending test page — Shopify admin auth, so only Brad can reach it).
  * Bypasses the hour gate and the cron lock: runs the processing pass NOW
  * against the real reminder_optin_v2 table. Re-send cooldowns still apply,
  * so refreshing won't spam anyone.

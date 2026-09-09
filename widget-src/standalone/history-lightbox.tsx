@@ -42,6 +42,7 @@ function HistoryDialog({ metric, onClose }: { metric: string | null; onClose: ()
   return createPortal(
     <dialog
       className="hr-modal hr-modal--wide"
+      data-clarity-mask="true"
       aria-label="Your health history"
       ref={dialogRef}
       onCancel={(e) => { e.preventDefault(); onCloseRef.current(); }}

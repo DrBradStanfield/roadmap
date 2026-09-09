@@ -1,3 +1,5 @@
+// The record written here goes to the user's own cloud or localStorage, never to
+// our server. README.md, "Verifying this yourself", says how to check that live.
 /**
  * RoadmapStore — the local-first data layer that replaces `widget-src/src/lib/api.ts`.
  *
