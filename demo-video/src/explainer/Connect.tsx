@@ -41,13 +41,23 @@ const CAN = [
   'File a bug report as a public issue on GitHub, in your words, without your health values, and without asking again.',
 ];
 
-/** Beat 1: the consent page (recreated from the live capture), cursor to Dropbox, a blurred Dropbox permission screen. */
-export const Connect: React.FC<{frame: number; from: number; to: number}> = ({frame, from, to}) => {
+/**
+ * The consent page (recreated from the live capture), cursor to Dropbox, a blurred
+ * Dropbox permission screen. The last 2 s of the window is the Dropbox screen; the
+ * cursor is timed off the consent phase, so a shorter window still lands the click.
+ */
+export const Connect: React.FC<{frame: number; from: number; to: number; client?: string}> = ({
+  frame,
+  from,
+  to,
+  client = 'ChatGPT',
+}) => {
   if (frame < from - 1 || frame > to + 12) return null;
-  const consentEnd = from + 120; // 4 s on the page
-  const dropboxEnd = from + 180; // 2 s of Dropbox
+  const dropboxEnd = to; // the Dropbox screen runs to the end of the window
+  const consentEnd = dropboxEnd - 60; // 2 s of Dropbox
+  const cs = consentEnd - from; // consent phase, in frames
   const btnY = PANEL_T + 372; // Dropbox button top, in frame px
-  const clickAt = from + 100;
+  const clickAt = from + Math.round(cs * 0.833);
   return (
     <>
       <AbsoluteFill style={{background: C.ground, fontFamily: T.font, opacity: between(frame, from, consentEnd, 10)}}>
@@ -72,7 +82,7 @@ export const Connect: React.FC<{frame: number; from: number; to: number}> = ({fr
             Where do you want to keep your health record?
           </div>
           <div style={{position: 'absolute', left: 44, right: 44, top: 150, fontSize: 21, color: C.muted}}>
-            <b style={{color: C.ink, fontWeight: 600}}>ChatGPT</b> wants to connect to your health record.
+            <b style={{color: C.ink, fontWeight: 600}}>{client}</b> wants to connect to your health record.
           </div>
           <div style={{position: 'absolute', left: 44, right: 44, top: 196, fontSize: 21, lineHeight: '32px', color: C.muted}}>
             Your health record is yours, and yours alone. Keep it in your own Dropbox or Google Drive. Your assistant reads and writes one file there. Nothing is stored on our server.
@@ -106,11 +116,11 @@ export const Connect: React.FC<{frame: number; from: number; to: number}> = ({fr
         <Cursor
           frame={frame}
           keys={[
-            {at: from + 30, x: 1320, y: 720},
-            {at: from + 90, x: PANEL_L + 220, y: btnY + 36},
+            {at: from + Math.round(cs * 0.25), x: 1320, y: 720},
+            {at: from + Math.round(cs * 0.75), x: PANEL_L + 220, y: btnY + 36},
           ]}
           clicks={[clickAt]}
-          show={[from + 24, consentEnd]}
+          show={[from + Math.round(cs * 0.2), consentEnd]}
         />
       </AbsoluteFill>
 

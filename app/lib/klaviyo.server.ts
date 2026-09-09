@@ -16,13 +16,14 @@ function klaviyoHeaders(): Record<string, string> {
   };
 }
 
+/**
+ * Email only. This once carried sex, height, weight and birth date as Klaviyo
+ * properties; the v1 teardown (2026-06-12) removed every caller that filled
+ * them, and health values do not belong on a marketing platform. Deleted
+ * 2026-09-10.
+ */
 interface KlaviyoProfileData {
   email: string;
-  sex?: string;
-  heightCm?: number;
-  weightKg?: number;
-  birthMonth?: number;
-  birthYear?: number;
 }
 
 /**
@@ -40,7 +41,6 @@ export async function subscribeToKlaviyo(data: KlaviyoProfileData): Promise<void
   const headers = { ...klaviyoHeaders(), 'Content-Type': 'application/json' };
 
   try {
-    // 1. Subscribe to list (this endpoint does NOT accept properties)
     const subResponse = await fetch('https://a.klaviyo.com/api/profile-subscription-bulk-create-jobs/', {
       method: 'POST',
       headers,
@@ -76,57 +76,6 @@ export async function subscribeToKlaviyo(data: KlaviyoProfileData): Promise<void
       });
     }
 
-    // 2. Set custom profile properties via the Profiles API (which accepts properties)
-    const properties: Record<string, string | number> = {};
-    if (data.sex) properties.sex = data.sex;
-    if (data.heightCm) properties.height_cm = data.heightCm;
-    if (data.weightKg) properties.weight_kg = data.weightKg;
-    if (data.birthMonth) properties.birth_month = data.birthMonth;
-    if (data.birthYear) properties.birth_year = data.birthYear;
-
-    if (Object.keys(properties).length > 0) {
-      // Try creating the profile; on 409 (duplicate), extract the ID and PATCH instead
-      const createRes = await fetch('https://a.klaviyo.com/api/profiles/', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          data: {
-            type: 'profile',
-            attributes: { email: data.email, properties },
-          },
-        }),
-      });
-
-      if (createRes.status === 409) {
-        // Extract existing profile ID from the 409 error response
-        const errBody = await createRes.json().catch(() => null);
-        const profileId = errBody?.errors?.[0]?.meta?.duplicate_profile_id;
-        if (profileId) {
-          const patchRes = await fetch(`https://a.klaviyo.com/api/profiles/${profileId}/`, {
-            method: 'PATCH',
-            headers,
-            body: JSON.stringify({
-              data: { type: 'profile', id: profileId, attributes: { properties } },
-            }),
-          });
-          if (!patchRes.ok) {
-            const body = await patchRes.text().catch(() => '');
-            console.warn(`Klaviyo profile PATCH failed: ${patchRes.status} ${body.slice(0, 200)}`);
-            Sentry.captureException(new Error(`Klaviyo profile PATCH failed (${patchRes.status})`), {
-              extra: { status: patchRes.status, errorText: body.slice(0, 500) },
-              tags: { feature: 'klaviyo' },
-            });
-          }
-        }
-      } else if (!createRes.ok) {
-        const body = await createRes.text().catch(() => '');
-        console.warn(`Klaviyo profile update failed: ${createRes.status} ${body.slice(0, 200)}`);
-        Sentry.captureException(new Error(`Klaviyo profile update failed (${createRes.status})`), {
-          extra: { status: createRes.status, errorText: body.slice(0, 500) },
-          tags: { feature: 'klaviyo' },
-        });
-      }
-    }
   } catch (error) {
     console.warn('Klaviyo subscription error:', error);
     Sentry.captureException(error, { tags: { feature: 'klaviyo' } });

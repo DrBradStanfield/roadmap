@@ -1,7 +1,7 @@
 import React from 'react';
 import {interpolate, Easing} from 'remotion';
 import {T} from './theme';
-import {CAPTIONS, Timing} from './timing';
+import {CAPTIONS, Caption, Timing, WEBSITE_BEAT} from './timing';
 
 export const CAPTION_H = 150; // bottom band; scenes keep their content above it
 export const SCENE_H = 1080 - CAPTION_H;
@@ -14,8 +14,13 @@ export const between = (frame: number, from: number, to: number, len = 10) =>
   Math.min(fadeIn(frame, from, len), fadeOut(frame, to, len));
 
 /** Burned-in caption band. One chunk at a time, crossfaded, at most two lines. */
-export const Captions: React.FC<{frame: number; t: Timing}> = ({frame, t}) => {
-  const chunks = CAPTIONS.filter((c) => t.website || c.beat !== 6).map((c, i, all) => {
+export const Captions: React.FC<{frame: number; t: Timing; captions?: Caption[]; websiteBeat?: number}> = ({
+  frame,
+  t,
+  captions = CAPTIONS,
+  websiteBeat = WEBSITE_BEAT,
+}) => {
+  const chunks = captions.filter((c) => t.website || c.beat !== websiteBeat).map((c, i, all) => {
     const at = t.start[c.beat] + Math.round(c.at * 30);
     const next = all[i + 1];
     const end = next ? t.start[next.beat] + Math.round(next.at * 30) : t.start[c.beat + 1];

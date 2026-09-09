@@ -1,8 +1,8 @@
 {
   "instruction": "Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording (\"may support\", \"evidence suggests\") is calibrated — never upgrade it into a recommendation — and every reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and tell the user to take it to their doctor.",
   "schemaVersion": 1,
-  "generatedAt": "2026-09-06T22:27:59.938Z",
-  "today": "2026-09-07",
+  "generatedAt": "2026-09-09T19:59:12.361Z",
+  "today": "2026-09-10",
   "unitSystem": "si",
   "profile": {
     "sex": "male",
@@ -765,6 +765,7 @@
     }
   ],
   "source": {
+    "repo": "https://github.com/DrBradStanfield/roadmap",
     "schema": "https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json",
     "tool": "tools/get-plan.ts",
     "docs": "docs/agent-access.md"

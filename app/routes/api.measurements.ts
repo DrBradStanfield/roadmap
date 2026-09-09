@@ -52,9 +52,8 @@ async function handleKlaviyoCapture(data: unknown, clientIp: string) {
     if (!checkGuestReportLimit(email.toLowerCase()) || !checkCaptureIpLimit(clientIp)) {
       return Response.json({ success: false, error: 'Email limit reached. Try again tomorrow.' }, { status: 429 });
     }
-    // Email-only subscribe — no `properties`, so subscribeToKlaviyo skips the
-    // profile-properties step entirely. Fire-and-forget so a Klaviyo hiccup
-    // never blocks the user's plan.
+    // Email only: the address goes to the guest list and nothing else. Fire-and-
+    // forget so a Klaviyo hiccup never blocks the user's plan.
     subscribeToKlaviyo({ email }).catch(() => {});
 
     // US-23 AC1: typed-lane reminder enrolment. AWAITED (unlike the sends)

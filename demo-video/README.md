@@ -11,6 +11,12 @@ chat product or model is recorded; every frame is drawn from data and animated i
   without the website beat) follow storyboard revision 3 (the `Import Demo
   Storyboard`, 7 September 2026): eight beats, captions burned into a 150 px band
   at the foot of the frame, and beat starts read from `src/vo.json`.
+- `ConnectExplainer` (87 s) and `ConnectExplainerShort` (81 s, no website beat) are
+  Video A, "Connect your assistant", from `STORYBOARDS.md` (approved 10 September
+  2026): the same spine with a new connect beat (Claude, Claude Code, Codex), the
+  cloud folder instead of a dropped ZIP, the open-source repository, and a
+  trust-but-verify beat. Beat starts come from `src/vo-connect.json`; no vendor is
+  named on screen.
 - `ApobDemo` (40 s) is the earlier import + ApoB demo, kept as is.
 
 ### ImportExplainer beats
@@ -34,6 +40,17 @@ chat product or model is recorded; every frame is drawn from data and animated i
 
 Every scene lives in `src/explainer/`; `src/timing.ts` holds the beat starts and the
 caption chunks (at most two lines each); `src/ui.tsx` holds the caption band and cursor.
+
+### ConnectExplainer beats
+
+0 (0 to 12) why a record, ending on the repository card · 1 (12 to 24) the three ways
+to add the connector, then the consent page · 2 (24 to 33) the cloud folder, then
+"Import my results" and the permission card · 3 (33 to 47) read and check · 4 (47 to
+55) saved · 5 (55 to 66) the plan, then "How does it decide that?" and the repository ·
+6 (66 to 77) trust but verify: the skeptic's prompt, the reply, the repository, the app
+on GitHub Pages · 7 (77 to 83; cut in the short version) the website · 8 (83 to 87)
+close. `VERIFY_REPLY` in `src/explainer/Verify.tsx` is a placeholder: the audited
+wording drops in there, and nowhere else, before the final render.
 
 ### Voice-over hook
 

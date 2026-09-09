@@ -35,6 +35,57 @@ const fmt = (iso: string) => {
   return `${m[Number(mm) - 1]} ${y}`;
 };
 
+/** The browser chrome the site is shown in: a plain window, one URL bar. */
+export const BrowserFrame: React.FC<{url: string; children: React.ReactNode}> = ({url, children}) => (
+  <div style={{position: 'absolute', left: 120, right: 120, top: 40, bottom: 0, background: '#fff', borderRadius: '18px 18px 0 0', boxShadow: '0 10px 40px rgba(0,0,0,0.10)', overflow: 'hidden'}}>
+    <div style={{height: 58, background: '#f3f4f4', borderBottom: '1px solid #e2e5e4', display: 'flex', alignItems: 'center', padding: '0 20px', gap: 8}}>
+      {['#fe5f57', '#febc2e', '#28c840'].map((c) => (
+        <span key={c} style={{width: 13, height: 13, borderRadius: 99, background: c}} />
+      ))}
+      <div style={{margin: '0 auto', background: '#fff', border: '1px solid #e2e5e4', borderRadius: 9, padding: '6px 18px', fontSize: 17, color: T.ink2, minWidth: 520, textAlign: 'center'}}>
+        {url}
+      </div>
+    </div>
+    <div style={{padding: '28px 44px 0'}}>{children}</div>
+  </div>
+);
+
+/** The results matrix, rows fading in from `f`. Built from the fictional record only. */
+export const ResultsMatrix: React.FC<{f: number; colW: number}> = ({f, colW}) => (
+  <>
+    <div style={{display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 18}}>
+      <div style={{fontSize: 30, fontWeight: 700, color: T.ink}}>Your results</div>
+      <div style={{fontSize: 15, color: T.ink3}}>Illustration of the fictional demo record</div>
+    </div>
+    <div style={{display: 'grid', gridTemplateColumns: `260px repeat(${DATES.length}, ${colW}px)`, fontSize: 17, borderTop: '1px solid #e6e9e8'}}>
+      <div style={{padding: '10px 0', fontSize: 13, color: T.ink3, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.6}}>Metric</div>
+      {DATES.map((d) => (
+        <div key={d} style={{padding: '10px 0', fontSize: 13, color: T.ink3, fontWeight: 600, textAlign: 'right'}}>
+          {fmt(d)}
+        </div>
+      ))}
+      {METRICS.map((m, i) => {
+        const o = fadeIn(f, 8 + i * 3, 8);
+        return (
+          <React.Fragment key={m}>
+            <div style={{padding: '9px 0', borderTop: '1px solid #eef0ef', color: T.ink, opacity: o}}>
+              {LABEL[m][0]} <span style={{color: T.ink3, fontSize: 13}}>{LABEL[m][1]}</span>
+            </div>
+            {DATES.map((d) => {
+              const c = cells.find((x) => x.metric === m && x.date === d);
+              return (
+                <div key={d} style={{padding: '9px 0', borderTop: '1px solid #eef0ef', textAlign: 'right', opacity: o, color: c ? T.ink : '#c8cdcc', fontVariantNumeric: 'tabular-nums'}}>
+                  {c ? c.value : '·'}
+                </div>
+              );
+            })}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  </>
+);
+
 /** Beat 6: a stylised, clearly-mock results matrix of the fictional record on the website. */
 export const Website: React.FC<{frame: number; from: number; to: number; fps: number}> = ({frame, from, to, fps}) => {
   if (frame < from - 1 || frame > to + 12) return null;
@@ -44,49 +95,9 @@ export const Website: React.FC<{frame: number; from: number; to: number; fps: nu
   const colW = 150;
   return (
     <AbsoluteFill style={{background: '#e9edec', fontFamily: T.font, opacity: between(frame, from, to + 10, 10)}}>
-      {/* browser frame */}
-      <div style={{position: 'absolute', left: 120, right: 120, top: 40, bottom: 0, background: '#fff', borderRadius: '18px 18px 0 0', boxShadow: '0 10px 40px rgba(0,0,0,0.10)', overflow: 'hidden'}}>
-        <div style={{height: 58, background: '#f3f4f4', borderBottom: '1px solid #e2e5e4', display: 'flex', alignItems: 'center', padding: '0 20px', gap: 8}}>
-          {['#fe5f57', '#febc2e', '#28c840'].map((c) => (
-            <span key={c} style={{width: 13, height: 13, borderRadius: 99, background: c}} />
-          ))}
-          <div style={{margin: '0 auto', background: '#fff', border: '1px solid #e2e5e4', borderRadius: 9, padding: '6px 18px', fontSize: 17, color: T.ink2, minWidth: 520, textAlign: 'center'}}>
-            drstanfield.com/pages/roadmap
-          </div>
-        </div>
-        <div style={{padding: '28px 44px 0'}}>
-          <div style={{display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 18}}>
-            <div style={{fontSize: 30, fontWeight: 700, color: T.ink}}>Your results</div>
-            <div style={{fontSize: 15, color: T.ink3}}>Illustration of the fictional demo record</div>
-          </div>
-          <div style={{display: 'grid', gridTemplateColumns: `260px repeat(${DATES.length}, ${colW}px)`, fontSize: 17, borderTop: '1px solid #e6e9e8'}}>
-            <div style={{padding: '10px 0', fontSize: 13, color: T.ink3, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.6}}>Metric</div>
-            {DATES.map((d) => (
-              <div key={d} style={{padding: '10px 0', fontSize: 13, color: T.ink3, fontWeight: 600, textAlign: 'right'}}>
-                {fmt(d)}
-              </div>
-            ))}
-            {METRICS.map((m, i) => {
-              const o = fadeIn(f, 8 + i * 3, 8);
-              return (
-                <React.Fragment key={m}>
-                  <div style={{padding: '9px 0', borderTop: '1px solid #eef0ef', color: T.ink, opacity: o}}>
-                    {LABEL[m][0]} <span style={{color: T.ink3, fontSize: 13}}>{LABEL[m][1]}</span>
-                  </div>
-                  {DATES.map((d) => {
-                    const c = cells.find((x) => x.metric === m && x.date === d);
-                    return (
-                      <div key={d} style={{padding: '9px 0', borderTop: '1px solid #eef0ef', textAlign: 'right', opacity: o, color: c ? T.ink : '#c8cdcc', fontVariantNumeric: 'tabular-nums'}}>
-                        {c ? c.value : '·'}
-                      </div>
-                    );
-                  })}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+      <BrowserFrame url="drstanfield.com/pages/roadmap">
+        <ResultsMatrix f={f} colW={colW} />
+      </BrowserFrame>
       {/* overlay */}
       <div style={{position: 'absolute', inset: 0, background: `rgba(23,36,34,${0.5 * pop})`}} />
       <div

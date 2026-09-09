@@ -2,6 +2,7 @@ import React from 'react';
 import {AbsoluteFill, interpolate, spring, staticFile, Img} from 'remotion';
 import {T} from '../theme';
 import {between, fadeIn, fadeOut, SCENE_H} from '../ui';
+import {RepoCard} from './Repo';
 
 const G = {ground: '#f5f8f7', ink: '#172422', muted: '#5b6b68', line: '#d9e2df', accent: '#00a38b', accentInk: '#0b6f61'};
 
@@ -13,18 +14,22 @@ const LEFT = [
 ];
 const RIGHT = [
   'Stored as structured data, updated whenever you add to it',
-  'One file, owned only by you, in your Dropbox',
+  'One file, owned only by you, in your Dropbox',  // `repo` adds Google Drive
   'Every assistant, every chat, the same record',
   "Dr Brad's protocol, with the citations",
 ];
 
-/** Beat 0: hook line alone, the two-column contrast row by row, then Brad's line held. */
-export const Why: React.FC<{frame: number; from: number; to: number; fps: number}> = ({frame, from, to, fps}) => {
+/**
+ * Beat 0: hook line alone, the two-column contrast row by row, then Brad's line held.
+ * `repo` names Google Drive beside Dropbox and ends on the repository card.
+ */
+export const Why: React.FC<{frame: number; from: number; to: number; fps: number; repo?: boolean}> = ({frame, from, to, fps, repo}) => {
   if (frame < from - 1 || frame > to + 12) return null;
   const f = frame - from;
   const hookAlone = 60; // 2.0 s
   const colsOut = 225; // 7.5 s
   const rowAt = (i: number) => 72 + i * 36;
+  const repoAt = from + 300; // 10 s: Brad's line hands over to the repository card
   // hook: centred and large, then lifts to a header as the columns arrive
   const lift = spring({frame: f - hookAlone, fps, config: {damping: 200, mass: 0.8, stiffness: 90}});
   const hookY = interpolate(lift, [0, 1], [SCENE_H / 2 - 60, 88]);
@@ -85,14 +90,17 @@ export const Why: React.FC<{frame: number; from: number; to: number; fps: number
             <Img src={staticFile('app-icon.png')} style={{width: 40, height: 40, borderRadius: 10}} />
             Health by Dr Brad
           </div>
-          {RIGHT.map((t, i) => (
-            <div key={t} style={{display: 'flex', gap: 16, alignItems: 'flex-start', margin: '16px 0', opacity: row(i).opacity, transform: `translateY(${row(i).y}px)`}}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={G.accent} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" style={{marginTop: 8, flexShrink: 0}}>
-                <path d="M20 6L9 17l-5-5" />
-              </svg>
-              <span style={{fontSize: 30, lineHeight: '40px', color: G.ink}}>{t}</span>
-            </div>
-          ))}
+          {RIGHT.map((raw, i) => {
+            const t = repo && i === 1 ? `${raw} or Google Drive` : raw;
+            return (
+              <div key={t} style={{display: 'flex', gap: 16, alignItems: 'flex-start', margin: '16px 0', opacity: row(i).opacity, transform: `translateY(${row(i).y}px)`}}>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={G.accent} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" style={{marginTop: 8, flexShrink: 0}}>
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+                <span style={{fontSize: 30, lineHeight: '40px', color: G.ink}}>{t}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -105,14 +113,25 @@ export const Why: React.FC<{frame: number; from: number; to: number; fps: number
           top: SCENE_H / 2 - 80,
           textAlign: 'center',
           padding: '0 260px',
-          opacity: between(frame, from + colsOut + 12, to + 10, 12),
+          opacity: between(frame, from + colsOut + 12, repo ? repoAt : to + 10, 12),
         }}
       >
         <Img src={staticFile('app-icon.png')} style={{width: 72, height: 72, borderRadius: 18, marginBottom: 26}} />
         <div style={{fontSize: 50, lineHeight: 1.3, fontWeight: 700, color: G.ink, letterSpacing: -0.5}}>
-          Your health data, owned only by you in your own Dropbox, understood by your AI assistant.
+          Your health data, owned only by you in your own {repo ? 'Dropbox or Google Drive' : 'Dropbox'}, understood by your AI
+          assistant.
         </div>
       </div>
+
+      {/* the whole project is open source */}
+      {repo ? (
+        <div style={{position: 'absolute', left: 300, right: 300, top: 210, opacity: between(frame, repoAt, to + 10, 12)}}>
+          <div style={{fontSize: 44, lineHeight: 1.25, fontWeight: 700, color: G.ink, letterSpacing: -0.5, textAlign: 'center', marginBottom: 34}}>
+            And the whole project is open source.
+          </div>
+          <RepoCard scale={1.9} />
+        </div>
+      ) : null}
     </AbsoluteFill>
   );
 };

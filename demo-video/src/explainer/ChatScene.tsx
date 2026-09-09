@@ -6,6 +6,7 @@ import {UserBubble, ToolRow, StreamText, Card, FileChip, ResultsTable, ResultRow
 import {useChatScroll} from '../useChatScroll';
 import {between, Cursor, SCENE_H} from '../ui';
 import {Timing} from '../timing';
+import {RepoCard} from './Repo';
 import data from '../plan-data.json';
 
 export const SCALE = SCENE_H / STAGE_H;
@@ -17,7 +18,7 @@ const TITLE = 'Import my health data';
 
 // Fictional file names and counts; status wording follows the real import_documents
 // result states (free / held_equal / held_different, documents[]).
-const ROWS: ResultRow[] = [
+export const ROWS: ResultRow[] = [
   {file: 'Labs 2026-06-14.pdf', status: '12 values, 3 new', tone: 'new'},
   {file: 'Lipid panel 2025-11-02.pdf', status: '8 values, already recorded', tone: 'same'},
   {file: 'Renal clinic letter.pdf', status: 'Clinic letter, can be filed', tone: 'filed'},
@@ -25,14 +26,17 @@ const ROWS: ResultRow[] = [
 ];
 
 const ORDER = ['fA', 'uA', 'perm', 'tA', 'aA', 'cA', 'aQ', 'uY', 'tC', 'aS', 'u5', 't5', 'c5'];
+/** The folder cut has no file chip, and ends on the question about the code. */
+const ORDER_FOLDER = [...ORDER.filter((k) => k !== 'fA'), 'u6', 'a6', 'c6'];
 
-const cues = (t: Timing) => {
-  const [, , b2, b3, b4, b5] = t.start;
+const cues = (t: Timing, folder: boolean) => {
+  const [, , s2, b3, b4, b5] = t.start;
+  const b2 = s2 + (folder ? 60 : 0); // the folder holds the first 2 s of the beat
   return {
     fA: b2,
     uA: b2 + 30,
-    perm: b2 + 105, // 21.5 s
-    allow: b2 + 195, // 24.5 s
+    perm: b2 + (folder ? 90 : 105), // 21.5 s
+    allow: b2 + (folder ? 180 : 195), // 24.5 s
     tA: b3,
     aA: b3 + 90,
     cA: b3 + 150,
@@ -43,11 +47,21 @@ const cues = (t: Timing) => {
     u5: b5,
     t5: b5 + 45,
     c5: b5 + 120,
+    u6: b5 + 195,
+    a6: b5 + 240,
+    c6: b5 + 270,
   };
 };
 
 /** The permission card, drawn from the live capture (u2a); "Always allow" is the chosen button. */
-const PermissionCard: React.FC<{frame: number; at: number; chosen: number; fps: number}> = ({frame, at, chosen, fps}) => {
+const PermissionCard: React.FC<{frame: number; at: number; chosen: number; fps: number; client: string; reads: string}> = ({
+  frame,
+  at,
+  chosen,
+  fps,
+  client,
+  reads,
+}) => {
   const {opacity, s} = enter(frame, at, fps);
   const pressed = interpolate(frame, [chosen, chosen + 6], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   const btn: React.CSSProperties = {border: `1px solid ${T.line}`, borderRadius: 999, padding: '8px 16px', fontSize: 14, color: T.ink, background: '#fff'};
@@ -70,9 +84,9 @@ const PermissionCard: React.FC<{frame: number; at: number; chosen: number; fps: 
           <Img src={staticFile('app-icon.png')} style={{width: 20, height: 20, borderRadius: 6}} />
           Health by Dr Brad
         </div>
-        <div style={{fontSize: 16, fontWeight: 600, color: T.ink, marginBottom: 8}}>Allow ChatGPT to use Health by Dr Brad?</div>
+        <div style={{fontSize: 16, fontWeight: 600, color: T.ink, marginBottom: 8}}>Allow {client} to use Health by Dr Brad?</div>
         <div style={{fontSize: 15, lineHeight: '23px', color: T.ink2}}>
-          Reads the file you dropped in and saves nothing until you confirm. <span style={{textDecoration: 'underline'}}>See details</span>
+          {reads} <span style={{textDecoration: 'underline'}}>See details</span>
         </div>
       </div>
       <div style={{borderTop: `1px solid ${T.line}`, background: '#fafafa', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8}}>
@@ -101,11 +115,23 @@ const PermissionCard: React.FC<{frame: number; at: number; chosen: number; fps: 
   );
 };
 
-/** Beats 2 to 5 in one chat, plus the empty chat the connect beat returns to. */
-export const ChatScene: React.FC<{frame: number; from: number; to: number; fps: number; t: Timing}> = ({frame, from, to, fps, t}) => {
-  const CUE = cues(t);
+/**
+ * Beats 2 to 5 in one chat, plus the empty chat the connect beat returns to.
+ * `variant` is where the health data comes from: a zip dropped in, or the cloud folder.
+ */
+export const ChatScene: React.FC<{
+  frame: number;
+  from: number;
+  to: number;
+  fps: number;
+  t: Timing;
+  variant?: 'zip' | 'folder';
+  client?: string;
+}> = ({frame, from, to, fps, t, variant = 'zip', client = 'ChatGPT'}) => {
+  const folder = variant === 'folder';
+  const CUE = cues(t, folder);
   // Always mounted (opacity 0 outside its range) so the layout measurement can run.
-  const {contentRef, set, box, scroll} = useChatScroll(ORDER, CUE, frame, VIEW_H, KEEP_H);
+  const {contentRef, set, box, scroll} = useChatScroll(folder ? ORDER_FOLDER : ORDER, CUE, frame, VIEW_H, KEEP_H);
   const b2 = data.beat2;
 
   // cursor target: the "Always allow" button sits bottom-left of the permission card
@@ -131,22 +157,56 @@ export const ChatScene: React.FC<{frame: number; from: number; to: number; fps: 
             style={{position: 'absolute', left: (STAGE_W - SIDEBAR_W - COL_W) / 2, top: 0, width: COL_W, transform: `translateY(${-scroll}px)`, willChange: 'transform'}}
           >
             {/* beat 2 */}
-            <div ref={set('fA')}>
-              <FileChip name="health.zip" meta="Zip archive · 2.3 MB" frame={frame} at={CUE.fA} fps={fps} />
-            </div>
+            {folder ? null : (
+              <div ref={set('fA')}>
+                <FileChip name="health.zip" meta="Zip archive · 2.3 MB" frame={frame} at={CUE.fA} fps={fps} />
+              </div>
+            )}
             <div ref={set('uA')}>
-              <UserBubble text="Import this file into my health record." frame={frame} at={CUE.uA} fps={fps} style={{margin: '8px 0 4px'}} />
+              <UserBubble
+                text={folder ? 'Import my results.' : 'Import this file into my health record.'}
+                frame={frame}
+                at={CUE.uA}
+                fps={fps}
+                style={{margin: '8px 0 4px'}}
+              />
             </div>
             <div ref={set('perm')}>
-              <PermissionCard frame={frame} at={CUE.perm} chosen={CUE.allow} fps={fps} />
+              <PermissionCard
+                frame={frame}
+                at={CUE.perm}
+                chosen={CUE.allow}
+                fps={fps}
+                client={client}
+                reads={
+                  folder
+                    ? 'Reads the files in your Dropbox folder and saves nothing until you confirm.'
+                    : 'Reads the file you dropped in and saves nothing until you confirm.'
+                }
+              />
             </div>
 
             {/* beat 3 */}
             <div ref={set('tA')}>
-              <ToolRow tool="import_documents" args="file: health.zip" frame={frame} at={CUE.tA} fps={fps} spinFrames={30} />
+              <ToolRow
+                tool="import_documents"
+                args={folder ? 'folder: Apps / Health Plan by Dr Brad' : 'file: health.zip'}
+                frame={frame}
+                at={CUE.tA}
+                fps={fps}
+                spinFrames={30}
+              />
             </div>
             <div ref={set('aA')}>
-              <StreamText frame={frame} at={CUE.aA} text="I read the four files in the zip. Nothing is saved yet." />
+              <StreamText
+                frame={frame}
+                at={CUE.aA}
+                text={
+                  folder
+                    ? 'I read the four files in your Dropbox folder. Nothing is saved yet.'
+                    : 'I read the four files in the zip. Nothing is saved yet.'
+                }
+              />
             </div>
             <div ref={set('cA')}>
               <ResultsTable rows={ROWS} frame={frame} at={CUE.cA} fps={fps} stagger={45} statusW={300} />
@@ -186,6 +246,25 @@ export const ChatScene: React.FC<{frame: number; from: number; to: number; fps: 
                 </div>
               </Card>
             </div>
+            {folder ? (
+              <>
+                <div ref={set('u6')}>
+                  <UserBubble text="How does it decide that?" frame={frame} at={CUE.u6} fps={fps} />
+                </div>
+                <div ref={set('a6')}>
+                  <StreamText
+                    frame={frame}
+                    at={CUE.a6}
+                    text="The rule, the threshold and the citation are all in the open source code. I can read it with you."
+                  />
+                </div>
+                <div ref={set('c6')}>
+                  <Card frame={frame} at={CUE.c6} fps={fps} style={{padding: 0, border: 'none', boxShadow: 'none'}}>
+                    <RepoCard scale={0.95} />
+                  </Card>
+                </div>
+              </>
+            ) : null}
             <div style={{height: 190}}>&nbsp;</div>
           </div>
         </div>
