@@ -49,8 +49,8 @@ to add the connector, then the consent page · 2 (24 to 33) the cloud folder, th
 55) saved · 5 (55 to 66) the plan, then "How does it decide that?" and the repository ·
 6 (66 to 77) trust but verify: the skeptic's prompt, the reply, the repository, the app
 on GitHub Pages · 7 (77 to 83; cut in the short version) the website · 8 (83 to 87)
-close. `VERIFY_REPLY` in `src/explainer/Verify.tsx` is a placeholder: the audited
-wording drops in there, and nowhere else, before the final render.
+close. `VERIFY_REPLY` in `src/explainer/Verify.tsx` holds the audited
+reply wording.
 
 ### Voice-over hook
 

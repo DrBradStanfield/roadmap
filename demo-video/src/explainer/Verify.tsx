@@ -7,15 +7,15 @@ import {between, fadeIn, SCENE_H} from '../ui';
 import {RepoCard} from './Repo';
 import {BrowserFrame, ResultsMatrix} from './Website';
 
-/**
- * Placeholder. The audited wording drops in here, and nowhere else, before the
- * final render: what the assistant actually says after reading the code.
- */
-export const VERIFY_REPLY = 'Reading the code now… [reply verified before final render]';
+export const VERIFY_REPLY =
+  "I looked at the repo and the page you linked. I didn't find a path that ships your health record to " +
+  "Dr Brad's server. Your record is one JSON file written by the adapters in widget-src/src/storage/, to " +
+  "Dropbox, Drive, GitHub, WebDAV, or localStorage; there is no endpoint on his server that accepts it.";
 
 const PROMPT =
-  "I'm deeply skeptical about Dr Brad's project. I'm sure it must be stealing or saving my health data. " +
-  "Here's the code: https://github.com/DrBradStanfield/roadmap. Check it thoroughly to make sure it's not taking my health data.";
+  "I'm deeply skeptical of dr brad's health tool. I'm sure it must be stealing my health data somehow. " +
+  "here's the project and MCP: https://github.com/DrBradStanfield/roadmap and here's the github pages page: " +
+  "https://drbradstanfield.github.io/roadmap/ thoroughly check to see how this is stealing my health data";
 
 const SCALE = SCENE_H / STAGE_H;
 const STAGE_W = Math.round(1920 / SCALE);
@@ -26,8 +26,8 @@ const TITLE = 'Is this thing safe?';
 export const Verify: React.FC<{frame: number; from: number; to: number; fps: number}> = ({frame, from, to, fps}) => {
   if (frame < from - 1 || frame > to + 12) return null;
   const f = frame - from;
-  const chatEnd = from + 150; // 5 s in the chat
-  const repoEnd = from + 225; // 2.5 s on the repository
+  const chatEnd = from + 180; // 6 s in the chat: long prompt, then the whole reply
+  const repoEnd = from + 250; // 2.3 s on the repository
   return (
     <>
       <AbsoluteFill style={{background: T.bg, opacity: between(frame, from, chatEnd, 10)}}>
@@ -35,7 +35,7 @@ export const Verify: React.FC<{frame: number; from: number; to: number; fps: num
           <Sidebar title={TITLE} />
           <div style={{position: 'absolute', left: COL_L, top: HEADER_H + 120, width: COL_W}}>
             <UserBubble text={PROMPT} frame={frame} at={from + 8} fps={fps} />
-            <StreamText frame={frame} at={from + 78} text={VERIFY_REPLY} />
+            <StreamText frame={frame} at={from + 55} perWord={1.4} text={VERIFY_REPLY} />
           </div>
           <Header title={TITLE} />
           <Composer width={COL_W} left={COL_L} />
@@ -53,7 +53,7 @@ export const Verify: React.FC<{frame: number; from: number; to: number; fps: num
 
       <AbsoluteFill style={{background: '#e9edec', fontFamily: T.font, opacity: between(frame, repoEnd, to + 10, 10)}}>
         <BrowserFrame url="drbradstanfield.github.io/roadmap">
-          <ResultsMatrix f={f - 225} colW={150} />
+          <ResultsMatrix f={f - 250} colW={150} />
         </BrowserFrame>
         <div
           style={{
@@ -62,7 +62,7 @@ export const Verify: React.FC<{frame: number; from: number; to: number; fps: num
             right: 0,
             top: 810,
             textAlign: 'center',
-            opacity: fadeIn(f, 255, 12),
+            opacity: fadeIn(f, 280, 12),
           }}
         >
           <span
