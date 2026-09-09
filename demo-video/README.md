@@ -56,7 +56,7 @@ cuts and those stills.
 ## Install and render
 
 ```bash
-cd tools/demo-video
+cd demo-video
 npm install
 npx remotion render src/index.ts ImportExplainer out/import-explainer.mp4 --codec h264
 npx remotion render src/index.ts ImportExplainer60 out/import-explainer-60.mp4 --codec h264
@@ -76,7 +76,7 @@ npx remotion still src/index.ts ApobDemo out/still.png --frame=300
 
 - `record.json` is a fictional health record — no real patient data.
 - `plan.json` and `plan-base.json` are the output of
-  `npx tsx tools/get-plan.ts tools/demo-video/record.json --json` (run from the repo
+  `npx tsx tools/get-plan.ts demo-video/record.json --json` (run from the repo
   root) against `record.json`; `node build-plan-data.mjs` then derives
   `src/plan-data.json` from it. All generated, never hand-edited. Regenerate before
   every render so the demo never shows stale reasoning or citations.

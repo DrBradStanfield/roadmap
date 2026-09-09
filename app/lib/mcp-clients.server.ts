@@ -14,7 +14,7 @@ import { b64url } from './mcp-seal.server';
  * a counter becomes a log, and a DCR client's name is attacker-chosen text —
  * so only a pinned client gets a label, and everything else is 'other'.
  */
-export const MCP_CLIENT_LABELS = ['claude', 'claude_code', 'chatgpt', 'other'] as const;
+export const MCP_CLIENT_LABELS = ['claude', 'claude_code', 'chatgpt', 'codex', 'other'] as const;
 
 export type McpClientLabel = (typeof MCP_CLIENT_LABELS)[number];
 
@@ -112,7 +112,11 @@ export function isAllowedRedirect(uri: string): boolean {
  *
  * Claude Code publishes a SECOND document, `claude-code-client-metadata`,
  * behind the same challenge. Its redirects are loopback: the port belongs to
- * the CLI and is not known until it binds one (RFC 8252 §7.3).
+ * the CLI and is not known until it binds one (RFC 8252 §7.3). Codex, OpenAI's
+ * command-line agent, publishes a third — `chatgpt.com/oauth/codex/client.json`,
+ * loopback for the same reason. It fetches today; pinning it buys the same two
+ * things as the others, a counter label of its own and immunity to the day
+ * Cloudflare decides our datacenter is a bot.
  */
 export const KNOWN_CLIENTS: ReadonlyMap<string, Readonly<KnownClient>> = new Map([
   [
@@ -140,6 +144,15 @@ export const KNOWN_CLIENTS: ReadonlyMap<string, Readonly<KnownClient>> = new Map
       name: 'ChatGPT',
       label: 'chatgpt',
       redirectUris: Object.freeze(['https://chatgpt.com/connector_platform_oauth_redirect']),
+    },
+  ],
+  [
+    'https://chatgpt.com/oauth/codex/client.json',
+    {
+      clientId: 'https://chatgpt.com/oauth/codex/client.json',
+      name: 'Codex',
+      label: 'codex',
+      redirectUris: Object.freeze(['http://127.0.0.1/callback', 'http://localhost/callback']),
     },
   ],
 ]);

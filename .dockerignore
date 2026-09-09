@@ -13,3 +13,7 @@ build/
 **/*.test.tsx
 **/*.spec.ts
 **/*.spec.tsx
+# The Remotion demo-video project: ~650 MB of renderer, mp4s and stills the
+# server never reads. The `node_modules/` line above matches the repo root only,
+# so this project brought its own into every image layer.
+demo-video/

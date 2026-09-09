@@ -401,6 +401,7 @@ describe('pinned clients (US-32, IETF CIMD draft §4 — our own policy)', () =>
   const CLAUDE = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
   const CHATGPT = 'https://chatgpt.com/oauth/client.json';
   const CLAUDE_CODE = 'https://claude.ai/oauth/claude-code-client-metadata';
+  const CODEX = 'https://chatgpt.com/oauth/codex/client.json';
 
   it('every pinned redirect is also in the allow-list, so the two cannot drift', () => {
     for (const client of KNOWN_CLIENTS.values()) {
@@ -466,6 +467,42 @@ describe('pinned clients (US-32, IETF CIMD draft §4 — our own policy)', () =>
     }), client);
     expect(checked.ok).toBe(true);
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The request below is the one `codex mcp login health` actually sent on
+   * 2026-09-09, ephemeral port and all: Codex asks by CIMD document, not DCR,
+   * and its callback is a loopback port it binds at login. Pinning the document
+   * gives the counter a `codex` label of its own — before this it arrived as
+   * `other`, indistinguishable from any dynamically-registered client.
+   */
+  it('answers Codex on its own loopback port with no fetch at all (US-32 AC30)', async () => {
+    const spy = vi.fn(async () => {
+      throw new TypeError('fetch failed');
+    });
+    vi.stubGlobal('fetch', spy);
+    const client = (await resolveClient(CODEX))!;
+    expect(client).toEqual({
+      clientId: CODEX,
+      name: 'Codex',
+      label: 'codex',
+      redirectUris: ['http://127.0.0.1/callback', 'http://localhost/callback'],
+    });
+    const checked = checkAuthorize(new URLSearchParams({
+      redirect_uri: 'http://127.0.0.1:57246/callback',
+      response_type: 'code',
+      code_challenge: 'dSyW9SK9nqHXE-fKkAKFhuYPzISi5eaD3rZ3w41Yu7w',
+      code_challenge_method: 'S256',
+      scope: 'health.read health.append',
+    }), client);
+    expect(checked.ok).toBe(true);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('does not lend Codex the ChatGPT connector\u2019s redirect, or the reverse', () => {
+    // Two OpenAI clients, two identities: a web callback is not a loopback one.
+    expect(redirectMatches('http://127.0.0.1/callback', 'https://chatgpt.com/connector_platform_oauth_redirect')).toBe(false);
+    expect(redirectMatches('https://chatgpt.com/connector_platform_oauth_redirect', 'http://127.0.0.1:57246/callback')).toBe(false);
   });
 
   it('gives Claude Code no path it did not publish, on any port', () => {

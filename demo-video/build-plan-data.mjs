@@ -1,5 +1,5 @@
 // Derives src/plan-data.json from plan.json (real get_plan output on record.json).
-// Run after: npx tsx tools/get-plan.ts tools/demo-video/record.json --json > tools/demo-video/plan.json
+// Run after: npx tsx tools/get-plan.ts demo-video/record.json --json > demo-video/plan.json
 import {readFileSync, writeFileSync} from 'node:fs';
 import {dirname, join} from 'node:path';
 import {fileURLToPath} from 'node:url';

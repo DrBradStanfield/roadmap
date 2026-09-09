@@ -11,19 +11,19 @@ import { mcpClientLabel } from './mcp.server';
 
 describe('mcpClientLabel', () => {
   it('names each pinned vendor, and nothing else', () => {
-    expect([...KNOWN_CLIENTS.keys()].map(mcpClientLabel)).toEqual(['claude', 'claude_code', 'chatgpt']);
+    expect([...KNOWN_CLIENTS.keys()].map(mcpClientLabel)).toEqual(['claude', 'claude_code', 'chatgpt', 'codex']);
   });
 
   it('reads the label off the table, so renaming a display name cannot move it', () => {
     const renamed = new Map(KNOWN_CLIENTS);
     for (const [id, client] of renamed) renamed.set(id, { ...client, name: 'Something Else' });
     // The label is a field, not a slug of `name`: the two cannot drift.
-    expect([...renamed.values()].map((c) => c.label)).toEqual(['claude', 'claude_code', 'chatgpt']);
+    expect([...renamed.values()].map((c) => c.label)).toEqual(['claude', 'claude_code', 'chatgpt', 'codex']);
     for (const client of renamed.values()) expect(MCP_CLIENT_LABELS).toContain(client.label);
   });
 
   it('calls every other client "other", however it names itself', () => {
-    for (const id of ['c.abc.def', 'https://evil.test/client.json', '', 'Claude']) {
+    for (const id of ['c.abc.def', 'https://evil.test/client.json', '', 'Claude', 'https://chatgpt.com/oauth/codex/client.json.evil.test/x']) {
       expect(mcpClientLabel(id), id).toBe('other');
     }
   });
