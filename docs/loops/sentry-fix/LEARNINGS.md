@@ -15,7 +15,10 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   `<anonymous>` frame (our bundles always load from real CDN URLs). When the
   minified symbol/pattern greps to nothing in our bundles — ledger-on-sight
   (2026-08-25 "Ba`prod"; 2026-09-03 "Ka`prod", GSA webview; 2026-09-04
-  "n.data.split", Samsung Internet 7.0 on a Tizen smart TV).
+  "n.data.split", Samsung Internet 7.0 on a Tizen smart TV; 2026-09-10
+  `window.webkit.messageHandlers` undefined in an `unload` listener — the
+  WKWebView native bridge, which only an in-app browser's injected script
+  calls; GSA on iPad).
 - `[prior][widget]` iOS WebKit-only layout/interaction bugs are a known class
   (CLAUDE.md list: content-box flex default, 280px input min-content, sticky
   in max-content parents). If a fix touches layout, the escape analysis should
@@ -112,6 +115,19 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   origin/main` first. Related: on SHALLOW clones, `git log -S`/`--stat`
   falsely attribute changes to graft-boundary commits (they diff as whole-tree
   adds) — verify blob ids across parents before blaming a commit.
+- `[class][server]` 2026-09-10 — A framework-thrown `Response` inside a
+  route's catch-all is a 500-plus-Sentry-noise defect: Shopify's
+  `authenticate.public.appProxy` rejects an unsigned request by THROWING a 400
+  Response, and react-router (7.18.3 `handleQueryRouteError`) returns a thrown
+  Response as-is without calling `handleError` — so a catch-all that captures
+  it turns the framework's silent 400 into our error. Catch-alls must let
+  Responses through (`instanceof Response` → rethrow; PR #99, US-15 AC9).
+  Audit is one grep: `appProxy` called INSIDE a `try` (only chat was; events,
+  ab, feedback, measurements call it before theirs). Triage corollary: a
+  fixed-message capture like "Chat: Action failed" carries no cause by design,
+  so one issue id pools unrelated failures — read the request tags (UA, host,
+  query string) before assuming a user-facing failure; a bare Fly host, no
+  query string and a curl UA is an unsigned probe, not a widget turn.
 - `[defect][server][platform]` 2026-08-27 — Supabase `PGRST303 "JWT issued at
   future"` hit ~1/3 of requests from one Fly machine starting 08-26 with NO
   deploy on our side. A legacy-style JWT (fixed old iat, e.g. the
