@@ -115,19 +115,14 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   origin/main` first. Related: on SHALLOW clones, `git log -S`/`--stat`
   falsely attribute changes to graft-boundary commits (they diff as whole-tree
   adds) — verify blob ids across parents before blaming a commit.
-- `[class][server]` 2026-09-10 — A framework-thrown `Response` inside a
-  route's catch-all is a 500-plus-Sentry-noise defect: Shopify's
-  `authenticate.public.appProxy` rejects an unsigned request by THROWING a 400
-  Response, and react-router (7.18.3 `handleQueryRouteError`) returns a thrown
-  Response as-is without calling `handleError` — so a catch-all that captures
-  it turns the framework's silent 400 into our error. Catch-alls must let
-  Responses through (`instanceof Response` → rethrow; PR #99, US-15 AC9).
-  Audit is one grep: `appProxy` called INSIDE a `try` (only chat was; events,
-  ab, feedback, measurements call it before theirs). Triage corollary: a
-  fixed-message capture like "Chat: Action failed" carries no cause by design,
-  so one issue id pools unrelated failures — read the request tags (UA, host,
-  query string) before assuming a user-facing failure; a bare Fly host, no
-  query string and a curl UA is an unsigned probe, not a widget turn.
+- `[class][server]` 2026-09-10 — Shopify's `appProxy` rejects an unsigned
+  request by THROWING a 400 Response, and react-router returns a thrown
+  Response as-is without `handleError`, so a route catch-all that captures it
+  turns the framework's silent 400 into a Sentry error + 500 (PR #99, US-15
+  AC9: rethrow `instanceof Response`). Audit: `appProxy` called INSIDE a `try`
+  (only chat was). Triage: a fixed-message capture ("Chat: Action failed")
+  pools unrelated causes under one id — a bare Fly host, empty query string
+  and curl UA is an unsigned probe, not a widget turn.
 - `[defect][server][platform]` 2026-08-27 — Supabase `PGRST303 "JWT issued at
   future"` hit ~1/3 of requests from one Fly machine starting 08-26 with NO
   deploy on our side. A legacy-style JWT (fixed old iat, e.g. the
