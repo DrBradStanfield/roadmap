@@ -172,6 +172,46 @@ describe('US-31 AC8 — the write, as the person running it sees it', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  // An erase write keeps no backup at all (file-adapter.ts): the copy it would
+  // make is a copy of the pre-erase record, and the prune deletes it. The line
+  // used to print `backup: ` followed by nothing, or worse, a name that had
+  // just been removed.
+  it('says no backup was kept, rather than naming one, when the write kept none', async () => {
+    vi.resetModules();
+    vi.doMock('../packages/health-core/src/file-adapter', () => {
+      let record = fixture();
+      return {
+        BACKUPS_KEPT: 3,
+        FileAdapter: class {
+          readonly id = 'file';
+          readonly label = 'Local file';
+          readonly path = '/tmp/erased-record.json';
+          lastBackup = ''; // what an erase write leaves behind
+          async connect() {}
+          isConnected() { return true; }
+          async disconnect() {}
+          async read() { return { body: JSON.parse(JSON.stringify(record)), version: 'v1' }; }
+          async write(_name: string, body: object) { record = body as RoadmapFile; return { version: 'v2' }; }
+          async readDocument(): Promise<never> { throw new Error('no'); }
+          async writeDocument(): Promise<never> { throw new Error('no'); }
+        },
+      };
+    });
+    try {
+      const { run: mocked } = await import('./edit-record');
+      const result = await captureRun(
+        ['add', '/tmp/erased-record.json', '--metric', 'hdl', '--value', '1.2', '--date', '2026-08-14'],
+        mocked,
+      );
+      expect(result.code).toBe(0);
+      expect(result.stdout).toContain('No backup kept (erase).');
+      expect(result.stdout).not.toContain('backup: ');
+    } finally {
+      vi.doUnmock('../packages/health-core/src/file-adapter');
+      vi.resetModules();
+    }
+  });
+
   it('exits 1 in words, not a stack, when the folder cannot be written', async () => {
     const { dir, path } = writeFixture();
     chmodSync(dir, 0o500);

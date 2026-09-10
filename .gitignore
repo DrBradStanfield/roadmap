@@ -41,6 +41,9 @@ dumps/
 # Local cloud/local-first data stores — never commit (real user data lives in the
 # user's own cloud or localStorage, never in this repo)
 health-roadmap.json
+# ...and its siblings: .bak-* copies, the .lock and a crashed .tmp-* all hold
+# the same real health data.
+health-roadmap.json.*
 health_roadmap_file*
 
 # Sourcemaps — stripped before Shopify deploy; never tracked

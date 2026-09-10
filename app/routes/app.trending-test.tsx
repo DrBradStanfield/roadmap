@@ -1,65 +1,39 @@
-import type { LoaderFunctionArgs } from "react-router";
-import { data, useLoaderData } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { useActionData } from "react-router";
 
-import { authenticate } from "../shopify.server";
+import { AdminTrigger, TriggerOutcome } from "../components/AdminTrigger";
+import { authenticateOwnerAdmin } from "../lib/admin-shop.server";
+import { runAdminTrigger } from "../lib/admin-trigger.server";
 import { computeAndWriteTrending } from "../lib/trending-cron.server";
 
 /**
- * Temporary admin route to manually trigger the trending cron.
- *
- * Visit /app/trending-test in the Shopify admin to fire `computeAndWriteTrending()`
- * synchronously and see the result. HMAC-protected by `authenticate.admin`, so
- * only the merchant logged into the admin can hit it.
+ * Manual trigger for the trending cron — it rewrites live trending rows, so
+ * the run is a POST, not a page view.
  *
  * Delete this route once trending cron is confirmed working.
  */
 export async function loader({ request }: LoaderFunctionArgs) {
-  await authenticate.admin(request);
+  await authenticateOwnerAdmin(request);
+  return null;
+}
 
-  const startedAt = new Date().toISOString();
-  try {
-    const ranked = await computeAndWriteTrending();
-    return data({
-      ok: true,
-      startedAt,
-      completedAt: new Date().toISOString(),
-      entries: ranked,
-    });
-  } catch (error) {
-    return data({
-      ok: false,
-      startedAt,
-      completedAt: new Date().toISOString(),
-      errorMessage: error instanceof Error ? error.message : String(error),
-      errorStack: error instanceof Error ? error.stack : undefined,
-    });
-  }
+export async function action({ request }: ActionFunctionArgs) {
+  return runAdminTrigger(request, async () => ({ entries: await computeAndWriteTrending() }));
 }
 
 export default function TrendingTest() {
-  const data = useLoaderData<typeof loader>();
   return (
-    <s-page heading="Trending cron — manual trigger">
-      <s-section>
-        <s-stack gap="base">
-          {data.ok ? (
-            <s-banner tone="success" heading="Trending cron ran successfully">
-              <s-paragraph>
-                Started: {data.startedAt} · Completed: {data.completedAt}
-              </s-paragraph>
-            </s-banner>
-          ) : (
-            <s-banner tone="critical" heading="Trending cron threw an error">
-              <s-paragraph>
-                {'errorMessage' in data ? data.errorMessage : 'Unknown error'}
-              </s-paragraph>
-            </s-banner>
-          )}
-          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 12 }}>
-            {JSON.stringify(data, null, 2)}
-          </pre>
-        </s-stack>
-      </s-section>
-    </s-page>
+    <AdminTrigger
+      heading="Trending cron — manual trigger"
+      blurb="Recomputes and overwrites the live trending rows."
+      idleLabel="Run the trending cron now"
+      busyLabel="Running…"
+    >
+      <TriggerOutcome
+        result={useActionData<typeof action>()}
+        successHeading="Trending cron ran successfully"
+        errorHeading="Trending cron threw an error"
+      />
+    </AdminTrigger>
   );
 }

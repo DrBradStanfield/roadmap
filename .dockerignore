@@ -38,6 +38,7 @@ tmp/
 **/*.pgdump
 **/*backup*
 **/health-roadmap.json
+**/health-roadmap.json.*
 **/health_roadmap_file*
 **/*.map
 widget-src/dist-pages/

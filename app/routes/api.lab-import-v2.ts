@@ -67,36 +67,39 @@ function matchesPollToken(expected: string, supplied: string | null): boolean {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-/** GET: quota preflight (?quota) or batch poll (?batchId=...&pollToken=...). */
+/**
+ * Answer one batch poll. Lives on the POST side, not the GET side, because
+ * `@react-router/serve` logs every request URL (morgan "tiny") to stdout and
+ * so to Fly's logs — a poll token in the query string is a logged capability
+ * to read someone's extracted lab text. A request body is never logged.
+ * Shopify signs the query on any method, so the proxy HMAC is unaffected.
+ */
+async function answerPoll(batchId: string, pollToken: string | null): Promise<Response> {
+  const batch = activeBatches.get(batchId);
+  if (!batch || !matchesPollToken(batch.pollToken, pollToken)) {
+    return Response.json({ error: 'Batch not found' }, { status: 404 });
+  }
+  try {
+    const result = await pollBatch(batchId);
+    return Response.json(
+      { status: result.status, results: result.results, completed: result.completed, total: result.total },
+    );
+  } catch (error) {
+    console.error('Batch poll error (v2):', error);
+    return Response.json({ status: 'processing', completed: 0, total: batch.totalFiles });
+  }
+}
+
+/** GET: quota preflight only. */
 export async function loader({ request }: LoaderFunctionArgs) {
   if (!verifyAppProxySignature(request)) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
-  const ip = getClientIp(request, 'shopify');
-  const url = new URL(request.url);
-  const batchId = url.searchParams.get('batchId');
-
-  if (batchId) {
-    const batch = activeBatches.get(batchId);
-    if (!batch || !matchesPollToken(batch.pollToken, url.searchParams.get('pollToken'))) {
-      return Response.json({ error: 'Batch not found' }, { status: 404 });
-    }
-    try {
-      const result = await pollBatch(batchId);
-      return Response.json(
-        { status: result.status, results: result.results, completed: result.completed, total: result.total },
-      );
-    } catch (error) {
-      console.error('Batch poll error (v2):', error);
-      return Response.json({ status: 'processing', completed: 0, total: batch.totalFiles });
-    }
-  }
-
-  const remaining = ipQuota.remaining(ip);
+  const remaining = ipQuota.remaining(getClientIp(request, 'shopify'));
   return Response.json({ allowed: remaining > 0, remaining });
 }
 
-/** POST: single-file extraction or batch creation. */
+/** POST: batch poll, single-file extraction, or batch creation. */
 export async function action({ request }: ActionFunctionArgs) {
   if (request.method !== 'POST') return Response.json({ success: false, error: 'POST only' }, { status: 405 });
   if (!verifyAppProxySignature(request)) {
@@ -111,6 +114,12 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     const body = await parseSimpleRequestJson(request);
+
+    // --- Batch poll --- (costs no quota; it reads a batch already paid for)
+    const poll = body as { batchId?: unknown; pollToken?: unknown } | null;
+    if (typeof poll?.batchId === 'string') {
+      return answerPoll(poll.batchId, typeof poll.pollToken === 'string' ? poll.pollToken : null);
+    }
 
     // --- Batch mode ---
     const batchValidation = batchImportRequestSchema.safeParse(body);

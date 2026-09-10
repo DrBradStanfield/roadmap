@@ -35,8 +35,11 @@ const syntheticEvent = () => ({
   breadcrumbs: [{
     category: 'fetch',
     data: {
+      method: 'POST',
       url: 'https://content.dropboxapi.com/2/files/download?path=/Apps/roadmap/Brad%20lipids.pdf',
       body: 'health payload',
+      // Unlisted by any denylist — the allowlist is what drops it.
+      input: { hba1c: 41 },
       status_code: 200,
     },
   }],
@@ -53,7 +56,7 @@ describe('beforeSend pipeline parity (browser ↔ server)', () => {
     expect(browser.extra).toEqual({ accessToken: '[Filtered]', note: 'waist [value]', status: 200 });
     expect(browser.message).toBe('My LDL is [value] and cortisol [value]');
     expect((browser.breadcrumbs as Array<{ data: Record<string, unknown> }>)[0].data)
-      .toEqual({ url: 'https://content.dropboxapi.com', status_code: 200 });
+      .toEqual({ method: 'POST', url: 'https://content.dropboxapi.com', status_code: 200 });
     expect((browser.request as { url: string }).url)
       .toBe('https://drstanfield.com/apps/health-tool-1/api/chat?token=%5BFiltered%5D');
     // Stack frames are not extra: a filename is never a key, so it survives whole.

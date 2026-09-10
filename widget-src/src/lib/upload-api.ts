@@ -87,7 +87,12 @@ export async function labImportBatch(
 export async function pollBatchStatus(batchId: string): Promise<BatchPollResponse> {
   try {
     const token = pollTokens.get(batchId) ?? '';
-    const response = await fetch(`${LAB_IMPORT_V2_URL}?batchId=${encodeURIComponent(batchId)}&pollToken=${encodeURIComponent(token)}`);
+    // A POST so the token travels in the body: the server logs request URLs
+    // (morgan) and a logged token reads the extracted lab text back.
+    const response = await fetch(LAB_IMPORT_V2_URL, {
+      method: 'POST',
+      body: JSON.stringify({ batchId, pollToken: token }),
+    });
     if (response.status === 404) {
       pollTokens.delete(batchId);
       return { status: 'ended', completed: 0, total: 0, error: 'Batch not found — server may have restarted.', errorCode: 'server_restart' };

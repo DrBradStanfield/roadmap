@@ -3,6 +3,7 @@ import { ROADMAP_URL } from '../routes/roadmap.open';
 import { PAGES_APP_URL } from './local-first-route.server';
 import * as Sentry from '@sentry/react-router';
 import { recordServerEvent } from './product-events.server';
+import { scrubText } from '../../packages/health-core/src/sentry-scrub';
 
 // ---------------------------------------------------------------------------
 // Resend client
@@ -32,6 +33,20 @@ export function escapeHtml(str: string): string {
 }
 
 /**
+ * What a Resend failure is safe to say out loud.
+ *
+ * Every one of these errors ends up at `console.error` and, on Fly, in stdout
+ * logs. The recipient address is the whole reason not to interpolate it: a
+ * subscriber list is exactly what a log leak hands over. So the message names
+ * no address of ours, and Resend's own text — which quotes the address back
+ * ("Invalid `to` field: brad@…") — goes through the same free-text scrub the
+ * Sentry hooks use before it is repeated.
+ */
+function resendErrorText(error: { name?: string; message?: string }): string {
+  return `${error.name ?? 'unknown'} — ${scrubText(error.message ?? JSON.stringify(error))}`;
+}
+
+/**
  * Send an email via Resend. Throws on configuration miss OR on Resend API errors.
  *
  * The Resend Node SDK returns `{ data, error }` for API failures (suppression,
@@ -54,10 +69,10 @@ export async function sendEmail(
     ...(replyTo ? { replyTo } : {}),
   });
   if (error) {
-    throw new Error(`Resend rejected email to ${to}: ${error.name ?? 'unknown'} — ${error.message ?? JSON.stringify(error)}`);
+    throw new Error(`Resend rejected an email: ${resendErrorText(error)}`);
   }
   if (!data?.id) {
-    throw new Error(`Resend returned no error and no id for email to ${to} — unexpected SDK response shape`);
+    throw new Error('Resend returned no error and no id — unexpected SDK response shape');
   }
   return { id: data.id };
 }
@@ -235,7 +250,7 @@ export async function sendReminderEmail(
       },
     });
     if (error) {
-      throw new Error(`Resend rejected reminder to ${to}: ${error.name ?? 'unknown'} — ${error.message ?? JSON.stringify(error)}`);
+      throw new Error(`Resend rejected a reminder: ${resendErrorText(error)}`);
     }
     return true;
   } catch (error) {
@@ -277,7 +292,7 @@ export async function sendFeedbackEmail(
       text: `${customerLine}\nTime: ${timestamp}\nFrom: ${userEmail}\n\n${message}`,
     });
     if (error) {
-      throw new Error(`Resend rejected feedback email: ${error.name ?? 'unknown'} — ${error.message ?? JSON.stringify(error)}`);
+      throw new Error(`Resend rejected a feedback email: ${resendErrorText(error)}`);
     }
     return true;
   } catch (error) {

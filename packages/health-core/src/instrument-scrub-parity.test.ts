@@ -107,15 +107,21 @@ describe('instrument-scrub.mjs ↔ health-core sentry-scrub parity', () => {
     }
   });
 
-  it('scrubBreadcrumbData keeps the origin and nothing else, identically', () => {
+  it('keeps only method, origin and status — an unlisted field does not survive', () => {
     const data = {
+      method: 'POST',
       url: 'https://content.dropboxapi.com/2/files/download?path=/Apps/roadmap/Brad%20lipids.pdf',
       body: 'health payload',
       request_body: 'x', request_body_size: 10, response_body_size: 20,
       status_code: 200,
+      // Nothing lists this key, and it is the whole point of the allowlist:
+      // an integration (or a future `addBreadcrumb` call) can hang anything
+      // off `data`, and a denylist keeps whatever it failed to predict.
+      input: { hba1c: 41 },
+      'Dropbox-API-Arg': '{"path":"/Apps/roadmap/Brad lipids.pdf"}',
     };
     const out = source.scrubBreadcrumbData(data);
-    expect(out).toEqual({ url: 'https://content.dropboxapi.com', status_code: 200 });
+    expect(out).toEqual({ method: 'POST', url: 'https://content.dropboxapi.com', status_code: 200 });
     expect(copy.scrubBreadcrumbData(data)).toEqual(out);
     // A relative URL has no origin to keep, so it keeps nothing.
     expect(copy.scrubBreadcrumbData({ url: '/apps/health-tool-1/api/chat' }))

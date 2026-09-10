@@ -30,6 +30,12 @@ assistant holds, opens that file from your cloud with it, answers the one reques
 drops it. The file's contents exist in server memory for the length of that request and
 nowhere else. We store none of them.
 
+The record file is the trust root. Anything that can write it can already delete it
+outright, and a file carrying a later erase wins on every device. Recovery is your
+provider's version history. If two devices record the same measurement for the same day
+while apart, the newer entry becomes that day's value; the other stays in your history
+marked entered-in-error. Nothing is deleted.
+
 Say plainly what that means: to answer through this connector, our server does read your
 health record, in memory, on every call. It cannot do the work without reading it. If
 you would rather no server of ours ever saw your record, there is a version with no
@@ -98,13 +104,23 @@ public key that would let a browser talk to it directly ships in none of our bun
 
 ## What we log
 
-Our hosting provider records ordinary web request lines: time, method, path, status
-code. Errors go to Sentry. Before an event leaves the server, our own code deletes the
+Our hosting provider records ordinary web request lines: the time, the method, the
+path and its query string, and the status code. The web server writes the request line
+as it arrived, so whatever sits in a URL sits in that log. As of 10 September 2026
+nothing secret and nothing about your health travels in one: the lab-import poll carries
+its token in the body of a POST instead. What does appear there is the signature and the
+timestamp Shopify puts on an app-proxy address, and both expire in ten minutes. Errors
+go to Sentry. Before an event leaves the server, our own code deletes the
 request body, the cookies and the `Authorization` header from it, redacts sensitive
 query parameters (including OAuth `code`, `state` and any token) out of the URL,
 replaces the text of console breadcrumbs, and filters values stored under a known
 health, medication or identity key name. Sentry's own PII collection is off: we never
 set `sendDefaultPii`. Your health values are never recorded as analytics.
+
+The version you run yourself reports errors to Sentry too, under the environment name
+`standalone`, through the same scrub, running in your own browser before anything leaves
+it. That page has no server of ours behind it, so there are no request lines for us to
+keep.
 
 ## Retention
 
@@ -220,13 +236,14 @@ deleted for good. Four copies the button cannot reach, and the confirm dialog no
 them before you click: documents you uploaded that are already in your folder stay;
 candidate files from a connector import (`imports/pending-*.json`) stay until your next
 import; your cloud provider keeps its own version history, and GitHub keeps every past
-commit; and backups the command-line tool made sit beside the file. Reminders are turned
-off by the erase, and stay off on your own devices. The row on our server keeps your
-address for 90 days, as it does for any switch-off, so a later enrolment of that address
-does not send a second welcome email; it does not stop the schedule being refilled.
-Anyone who enrols that address again restarts the schedule, and every reminder carries
-its own off link. A cancel that proves the inbox with a Google sign-in deletes the row
-outright, and an emptied row is deleted after 90 days.
+commit; and backups the command-line tool made sit beside the file, until that tool
+next writes it. Reminders are turned off by the erase, and stay off on your own
+devices. The row on our server keeps your address for 90 days, as it does for any
+switch-off, so a later enrolment of that address does not send a second welcome email;
+it does not stop the schedule being refilled. Anyone who enrols that address again
+restarts the schedule, and every reminder carries its own off link. A cancel that
+proves the inbox with a Google sign-in deletes the row outright, and an emptied row is
+deleted after 90 days.
 
 **Feedback.** The feedback box on the website is a separate store again. It takes your
 email address and up to 2000 characters of whatever you type, adds your Shopify customer

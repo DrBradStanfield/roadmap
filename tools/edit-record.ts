@@ -227,7 +227,9 @@ export async function run(argv: string[]): Promise<number> {
     process.stdout.write(
       `${verb} ${oneLine(rowName(row))} ${was}${shownValue(row)}${unit ? ` ${oneLine(unit)}` : ''}` +
       ` on ${oneLine(String(row.recordedAt).slice(0, 10))} — new row ${oneLine(row.id)}\n` +
-      `Wrote ${oneLine(adapter.path)} (backup: ${oneLine(adapter.lastBackup)})\n`,
+      (adapter.lastBackup
+        ? `Wrote ${oneLine(adapter.path)} (backup: ${oneLine(adapter.lastBackup)})\n`
+        : `Wrote ${oneLine(adapter.path)}. No backup kept (erase).\n`),
     );
     return 0;
   } catch (error) {

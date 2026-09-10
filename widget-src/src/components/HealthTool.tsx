@@ -86,7 +86,7 @@ export const ERASE_CONFIRM =
   '1. Documents you uploaded that are already in your cloud folder. They stay.\n' +
   '2. Candidate files from a connector import (imports/pending-*.json). They stay until your next import.\n' +
   '3. Your cloud provider keeps version history, and GitHub keeps every past commit.\n' +
-  '4. Backups made by the command-line tool stay beside the file.\n\n' +
+  '4. Backups made by the command-line tool stay beside the file until that tool next writes it.\n\n' +
   'Reminders are turned off. The row on our server keeps your address for 90 days, so a later ' +
   'enrolment of that address does not send a second welcome email; anyone who enrols the address ' +
   'again restarts the schedule, and each email carries the off link. ' +
@@ -94,7 +94,7 @@ export const ERASE_CONFIRM =
 
 const ERASE_DONE_TAIL =
   '\n\nStill in your cloud folder: the documents you uploaded, any pending import files, ' +
-  'your provider\'s version history, and any command-line backups. ' +
+  'your provider\'s version history, and any command-line backups until that tool next writes the file. ' +
   'Delete those in your cloud account if you want them gone.';
 
 export const ERASE_DONE = 'Your health record and chat history are deleted.' + ERASE_DONE_TAIL;

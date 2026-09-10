@@ -287,6 +287,47 @@ describe('US-32 — a storage failure reaches the client as a refusal, not silen
   });
 });
 
+describe('US-32 — the saved line matches what is on disk', () => {
+  // An erase write keeps no backup (file-adapter.ts), so `lastBackup` is
+  // empty. "Saved (backup: )." pointed the assistant, and the user, at a file
+  // that does not exist.
+  it('says no backup was kept, rather than naming an empty one', async () => {
+    vi.resetModules();
+    vi.doMock('../packages/health-core/src/file-adapter', () => {
+      let record = fixture();
+      return {
+        BACKUPS_KEPT: 3,
+        FileAdapter: class {
+          readonly id = 'file';
+          readonly label = 'Local file';
+          readonly path = '/tmp/erased-record.json';
+          lastBackup = '';
+          async connect() {}
+          isConnected() { return true; }
+          async disconnect() {}
+          async read() { return { body: JSON.parse(JSON.stringify(record)), version: 'v1' }; }
+          async write(_name: string, body: object) { record = body as typeof record; return { version: 'v2' }; }
+          async readDocument(): Promise<never> { throw new Error('no'); }
+          async writeDocument(): Promise<never> { throw new Error('no'); }
+        },
+      };
+    });
+    try {
+      const { handle: mocked } = await import('./mcp-server');
+      const response = (await mocked({
+        jsonrpc: '2.0', id: 91, method: 'tools/call',
+        params: { name: 'add_measurement', arguments: { metricType: 'hdl', value: 1.2, recordedAt: TODAY } },
+      }, '/tmp/erased-record.json')) as { result: { content: Array<{ text: string }> } };
+
+      expect(response.result.content[0].text).toContain('Saved. No backup kept (erase).');
+      expect(response.result.content[0].text).not.toContain('backup: ');
+    } finally {
+      vi.doUnmock('../packages/health-core/src/file-adapter');
+      vi.resetModules();
+    }
+  });
+});
+
 describe('US-32 — a bug in us still answers the request that hit it', () => {
   it('answers -32603 with the request’s own id, never a null-id -32600', async () => {
     // A failure that is NOT the record's — a broken adapter, a tool breaking

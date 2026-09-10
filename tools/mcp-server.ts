@@ -109,7 +109,7 @@ async function callAgainstFile(path: string, name: string, args: unknown): Promi
   const now = new Date().toISOString();
   const adapter = new FileAdapter(path);
   return runToolOverSync(recordSync(adapter, 'mcp-stdio', now), name, args, now, {
-    savedNote: () => `Saved (backup: ${adapter.lastBackup}).`,
+    savedNote: () => (adapter.lastBackup ? `Saved (backup: ${adapter.lastBackup}).` : 'Saved. No backup kept (erase).'),
     importer: receipts,
   });
 }
@@ -125,7 +125,9 @@ async function stdioTool(path: string, name: string, args: unknown): Promise<Rpc
     return { answer: await callAgainstFile(path, name, args) };
   } catch (error) {
     if (isStorageFailure(error)) {
-      const told = describeStorageFailure(error, path);
+      // Named, not located: the absolute path is the user's home folder and
+      // has no business in an answer an assistant reads out.
+      const told = describeStorageFailure(error, 'The local record');
       return { answer: { text: `${told.message}. ${told.hint}`, isError: true } };
     }
     return { errorMessage: error instanceof Error ? error.message : String(error) };

@@ -17,8 +17,8 @@
  *
  * why: mcp-architecture.md §7
  */
-import { chmodSync, closeSync, copyFileSync, existsSync, fstatSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { createHash } from 'node:crypto';
+import { chmodSync, closeSync, existsSync, fchmodSync, fstatSync, fsyncSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeSync } from 'node:fs';
+import { createHash, randomBytes } from 'node:crypto';
 import { basename, dirname, join } from 'node:path';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
 import { RecordShapeError } from './migrate';
@@ -38,6 +38,34 @@ const LOCK_WAIT_MS = 5_000;
  */
 function stampOf(text: string): string {
   return createHash('sha256').update(text).digest('hex');
+}
+
+/** The record's erase counter. Absent, or not a number, counts as never erased. */
+function epochOf(body: unknown): number {
+  const epoch = (body as { meta?: { eraseEpoch?: unknown } } | null)?.meta?.eraseEpoch;
+  return typeof epoch === 'number' ? epoch : 0;
+}
+
+/**
+ * Create `dest` and write `text` to it. `wx` refuses to open anything that
+ * already exists, so a symlink planted at the name fails the write instead of
+ * carrying the record's bytes to wherever it points; `fsync` is what makes the
+ * rename that follows worth doing.
+ */
+function create(dest: string, text: string, mode: number): void {
+  const fd = openSync(dest, 'wx', mode);
+  try {
+    // One `writeSync` may write only part of a large buffer, and the rest
+    // would be lost silently — a truncated record renamed over a whole one.
+    const bytes = Buffer.from(text, 'utf8');
+    for (let done = 0; done < bytes.length; ) {
+      done += writeSync(fd, bytes, done, bytes.length - done);
+    }
+    fchmodSync(fd, mode); // the open mode is filtered by the umask
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
 }
 
 export class FileAdapter implements StorageAdapter {
@@ -83,7 +111,7 @@ export class FileAdapter implements StorageAdapter {
     }
     if (basename(this.path).includes('.bak-')) {
       throw new StorageError(
-        `${this.path} is a backup, not the record`,
+        `${basename(this.path)} is a backup, not the record`,
         'Edit the record itself — backups are rotated, so an edit here is pruned away.',
       );
     }
@@ -95,7 +123,7 @@ export class FileAdapter implements StorageAdapter {
     try {
       if (!statSync(this.path).isFile()) {
         throw new StorageError(
-          `${this.path} is not a regular file`,
+          `${basename(this.path)} is not a regular file`,
           'Give the path to your health-roadmap.json — a pipe or a device cannot hold a record.',
         );
       }
@@ -107,7 +135,7 @@ export class FileAdapter implements StorageAdapter {
       return readFileSync(this.path, 'utf8');
     } catch {
       throw new StorageError(
-        `Cannot read ${this.path}`,
+        `Cannot read ${basename(this.path)}`,
         'Give the path to your health-roadmap.json — see docs/agent-access.md for where each backend keeps it.',
       );
     }
@@ -122,7 +150,7 @@ export class FileAdapter implements StorageAdapter {
       body = JSON.parse(text);
     } catch {
       throw new StorageError(
-        `${this.path} is not valid JSON`,
+        `${basename(this.path)} is not valid JSON`,
         'The file may be a partial write. Restore it from your cloud provider’s version history.',
       );
     }
@@ -148,10 +176,18 @@ export class FileAdapter implements StorageAdapter {
     this.only(fileName);
     const lock = await this.lock();
     try {
-      if (stampOf(this.bytes()) !== expectedVersion) {
-        throw new ConflictError(`${this.path} changed since it was read`);
+      const current = this.bytes();
+      if (stampOf(current) !== expectedVersion) {
+        throw new ConflictError(`${basename(this.path)} changed since it was read`);
       }
-      this.lastBackup = this.backup();
+      const mode = this.mode();
+      // An erase raises the counter, and `pruneErased` below deletes every
+      // copy that predates it — including the one this write would have just
+      // made. Making it and then removing it left `lastBackup` naming a file
+      // that no longer exists, so the CLI and the MCP server both told the
+      // user to look for it. Erase means no backups left (US-31 AC8).
+      const erasing = epochOf(body) > epochOf(this.parsed(current));
+      this.lastBackup = erasing ? '' : this.backup(current, mode);
       const next = `${JSON.stringify(body, null, 2)}\n`;
       if (!this.ownsLock(lock)) {
         throw new StorageError(
@@ -159,7 +195,8 @@ export class FileAdapter implements StorageAdapter {
           'The write was stopped. Close all record writers and investigate the lock before retrying.',
         );
       }
-      this.replace(next);
+      this.replace(next, mode);
+      this.pruneErased(body);
       return { version: stampOf(next) };
     } finally {
       try {
@@ -193,7 +230,7 @@ export class FileAdapter implements StorageAdapter {
         // five seconds to say so would be a stall on top of a failure.
         if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
           throw new StorageError(
-            `Cannot write beside ${this.path}`,
+            `Cannot write beside ${basename(this.path)}`,
             'Check the folder is writable, then try again. Your record was not changed.',
           );
         }
@@ -202,7 +239,7 @@ export class FileAdapter implements StorageAdapter {
         // or PID reuse, and competing reclaimers introduce another unlink race.
         if (Date.now() > until) {
           throw new StorageError(
-            `Another program is writing ${this.path} and did not finish`,
+            `Another program is writing ${basename(this.path)} and did not finish`,
             'Nothing was changed. Retry later. If the lock persists, terminate all record writers before investigating it; never remove a lock while a writer might resume.',
           );
         }
@@ -227,58 +264,134 @@ export class FileAdapter implements StorageAdapter {
     }
   }
 
-  /** Copy the record beside itself, then prune all but the newest few backups. */
-  private backup(): string {
+  /**
+   * The record's own permissions, narrowed to its owner. A record left group-
+   * or world-readable is health data anyone with an account on the machine can
+   * read; every copy this class makes takes the same mode, so widening it once
+   * would widen the backups too.
+   */
+  private mode(): number {
+    let mode: number;
+    try {
+      mode = statSync(this.path).mode & 0o777;
+    } catch {
+      return 0o600; // No file yet; stay private.
+    }
+    if (mode & 0o077) {
+      mode &= 0o700;
+      // Best effort, and never fatal: the copies this write creates are made
+      // at the narrowed mode and the rename replaces the original with one of
+      // them, so a record the user cannot chmod (someone else's file, a mount
+      // that refuses it) still ends up private. Left uncaught it threw a raw
+      // EPERM carrying the absolute path.
+      try {
+        chmodSync(this.path, mode);
+      } catch {
+        // The rename does the narrowing.
+      }
+    }
+    return mode;
+  }
+
+  /** The record as JSON, or null when the bytes are not JSON at all. */
+  private parsed(text: string): unknown {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  }
+
+  /** Where this write's backup goes. Overridable seam for the symlink test. */
+  private backupPath(): string {
     // Two writes inside one millisecond share a timestamp, and the second copy
     // would silently overwrite the first backup — a rollback step lost.
     // Suffixes sort between their own millisecond and the next, so pruning
-    // stays ordered.
-    const now = new Date().toISOString();
+    // stays ordered. No colons: Windows cannot create such a name at all, so
+    // an ISO timestamp straight from `toISOString` fails every save there.
+    const now = new Date().toISOString().replace(/:/g, '-');
     let dest = `${this.path}.bak-${now}`;
     for (let n = 2; existsSync(dest); n++) dest = `${this.path}.bak-${now}-${n}`;
+    return dest;
+  }
+
+  /** Copy the record beside itself, then prune all but the newest few backups. */
+  private backup(text: string, mode: number): string {
+    const dest = this.backupPath();
     try {
-      copyFileSync(this.path, dest);
+      // Create it, rather than copy onto it: a `.bak-` name planted as a
+      // symlink would otherwise take the record's bytes wherever it points.
+      create(dest, text, mode);
     } catch {
       throw new StorageError(
-        `Cannot write a backup beside ${this.path}`,
+        `Cannot write a backup beside ${basename(this.path)}`,
         'Check the folder is writable, then try again. Your record was not changed.',
       );
     }
-    const folder = dirname(this.path);
-    const prefix = `${basename(this.path)}.bak-`;
-    const older = readdirSync(folder)
-      .filter((name) => name.startsWith(prefix))
-      .sort()
-      .slice(0, -BACKUPS_KEPT);
-    for (const name of older) rmSync(join(folder, name), { force: true });
+    // Backups named before the colon-free rule carry `:` (0x3A), which sorts
+    // AFTER `-` (0x2D), so a plain sort reads an older colon name as the
+    // newest and prunes a newer one instead. Compare on a normalised key.
+    const key = (name: string) => name.replace(/:/g, '-');
+    const order = (a: string, b: string) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0);
+    for (const name of this.siblings().sort(order).slice(0, -BACKUPS_KEPT)) {
+      rmSync(join(dirname(this.path), name), { force: true });
+    }
     return basename(dest);
+  }
+
+  /** Every `.bak-` sibling of the record, by name. */
+  private siblings(): string[] {
+    const prefix = `${basename(this.path)}.bak-`;
+    return readdirSync(dirname(this.path)).filter((name) => name.startsWith(prefix));
+  }
+
+  /**
+   * Erasing the record bumps `meta.eraseEpoch`, and the widget that did it
+   * cannot reach these backups: rotation alone would keep the erased data for
+   * three more writes, or forever on a record nobody writes again. So every
+   * write drops the copies that predate the current epoch. A sibling that does
+   * not read as a record is somebody else's file — it stays.
+   */
+  private pruneErased(body: object): void {
+    const epoch = epochOf(body);
+    if (epoch <= 0) return;
+    for (const name of this.siblings()) {
+      const file = join(dirname(this.path), name);
+      let meta: unknown;
+      try {
+        meta = (JSON.parse(readFileSync(file, 'utf8')) as { meta?: unknown } | null)?.meta;
+      } catch {
+        continue;
+      }
+      if (typeof meta !== 'object' || meta === null) continue;
+      // A backup from before the counter existed has no epoch at all: that is
+      // exactly the pre-erase copy, so absent counts as zero.
+      const was = (meta as { eraseEpoch?: unknown }).eraseEpoch;
+      if ((typeof was === 'number' ? was : 0) < epoch) rmSync(file, { force: true });
+    }
+  }
+
+  /** Where this write's temp file goes. Overridable seam for the symlink test. */
+  private tempPath(): string {
+    // Unguessable, so nothing can be waiting at the name we are about to
+    // create — the pid is public and reused.
+    return `${this.path}.tmp-${randomBytes(8).toString('hex')}`;
   }
 
   /**
    * Write a temp file in the same folder, then rename over the original, so a
    * failed write leaves the old file whole rather than half of the new one.
-   * Honest limits: nothing here fsyncs, so a power cut can still lose bytes the
-   * OS had not flushed, and a SIGKILL between the two calls leaves a `.tmp-`
-   * sibling behind (harmless; the next run overwrites it).
+   * Honest limit: a SIGKILL between the two calls leaves a `.tmp-` sibling
+   * behind (harmless, and .gitignored).
    */
-  private replace(text: string): void {
-    const temp = `${this.path}.tmp-${process.pid}`;
-    // Keep the record's own permissions. A fresh temp file takes the umask
-    // default — usually 644 — which would widen a deliberately private 600
-    // record the moment it was renamed into place.
-    let mode = 0o600;
+  private replace(text: string, mode: number): void {
+    const temp = this.tempPath();
     try {
-      mode = statSync(this.path).mode & 0o777;
-    } catch {
-      // No file yet; stay private.
-    }
-    try {
-      writeFileSync(temp, text, { mode });
-      chmodSync(temp, mode); // writeFileSync's mode is filtered by the umask
+      create(temp, text, mode);
       renameSync(temp, this.path);
     } catch {
       throw new StorageError(
-        `Cannot write ${this.path}`,
+        `Cannot write ${basename(this.path)}`,
         'Check the file and its folder are writable. Your record was not changed.',
       );
     } finally {

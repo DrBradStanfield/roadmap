@@ -39,6 +39,18 @@ describe('erase confirm copy (US-11)', () => {
     expect(ERASE_CONFIRM).toMatch(/Google/);
   });
 
+  // The CLI's own backups do not last: an erase write keeps none, and every
+  // later write prunes the copies that predate the erase epoch
+  // (packages/health-core/src/file-adapter.ts). The confirm used to promise
+  // they "stay beside the file" full stop.
+  it('says the command-line backups last only until that tool next writes', () => {
+    expect(ERASE_CONFIRM).toContain(
+      'Backups made by the command-line tool stay beside the file until that tool next writes it.',
+    );
+    expect(ERASE_DONE).toContain('any command-line backups until that tool next writes the file');
+    expect(ERASE_DONE_CHAT_PENDING).toContain('until that tool next writes the file');
+  });
+
   it('never claims the kept row stops reminders from restarting', () => {
     expect(ERASE_CONFIRM).not.toMatch(/does not restart/i);
   });

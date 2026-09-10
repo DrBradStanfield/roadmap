@@ -72,7 +72,9 @@ reminders posts the address and the due dates to `/api/reminders-v2`
 this build (`widget-src/standalone/app.tsx` calls `initSentry`), scrubbed by
 `widget-src/src/lib/sentry.ts` before anything leaves the browser: on
 `drbradstanfield.github.io` it is enabled, under the environment name
-`standalone`, so the page does talk to sentry.io.
+`standalone`, so the page does talk to sentry.io. The scrub is the same one the
+storefront build runs, the shared `scrubEventText` over every free-text field of an
+event, so a Pages error is reported under the same rules as any other.
 
 The rest of what the page loads is its own. `widget-src/standalone/index.html`
 carries one module script and loads no third-party script at load time; Sentry is
@@ -154,6 +156,12 @@ network tab recording and use the widget.
   ids, the role, the timestamps, the model, the token counts, and the fallback
   flags. A blanked turn reads back as `[removed after 30 days]`. Only Shopify
   rows are touched; the Discord and YouTube transcripts are unchanged.
+- Two devices editing apart converge without a conversation. If both record the same
+  measurement for the same day while apart, the newer entry becomes that day's value;
+  the other stays in your history marked entered-in-error. Nothing is deleted. The
+  record file is the trust root: anything that can write it can already delete it
+  outright, and a file carrying a later erase wins on every device. Recovery is your
+  provider's version history.
 - Telemetry is a closed allow-list of event names in
   `packages/health-core/src/product-events.ts`. An event is a name plus an
   anonymous visitor UUID, and the server rejects any name off the list.

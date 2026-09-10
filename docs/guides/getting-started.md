@@ -147,6 +147,10 @@ If your record lives in GitHub, the web connector cannot reach it, and the setup
 
 The tool now keeps up with a file an AI is writing: it re-reads your record within seconds of the change, and as soon as you switch back to its tab. That is catching up, not a lock. Take care with it open while an AI writes. The writer on your computer takes a lock and merges in a conflicting edit. A browser tab writing through your cloud provider's own API sits outside that lock, so the two can still collide. On Google Drive this is looser still: Drive has no conditional write, so our server checks the file version before and after each save rather than reserving it, and two writers landing at the same instant can still race.
 
+If two devices record the same measurement for the same day while apart, the newer entry becomes that day's value; the other stays in your history marked entered-in-error. Nothing is deleted.
+
+The record file is the trust root. Anything that can write it can already delete it outright, and a file carrying a later erase wins on every device. Recovery is your provider's version history.
+
 ## Why it works this way
 
 Your record is yours. There is no account to create and no key to fetch, because there is nothing on our side to log in to. The AI doing the work is the one you already chose to trust. The format is open under the MIT licence in [a public repo](https://github.com/DrBradStanfield/roadmap), so if this site vanished tomorrow your file would still be a plain JSON document that any tool can read.

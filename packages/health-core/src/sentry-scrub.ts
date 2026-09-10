@@ -145,30 +145,31 @@ export function scrubUrl(url: string): string {
 
 /**
  * Scrub fetch/xhr/http breadcrumb data.
- * Removes request/response bodies entirely (they contain health data payloads).
- * Reduces the URL to its origin: an arbitrary WebDAV/GitHub path or a Drive
+ *
+ * An ALLOWLIST, not a denylist (2026-09-10): a breadcrumb's `data` is whatever
+ * the SDK, an integration, or our own `addBreadcrumb` call put there, so naming
+ * the fields to delete loses to the next field nobody listed. Three fields are
+ * what a breadcrumb is read for — method, host, status — and everything else
+ * goes, bodies and sizes included.
+ *
+ * The URL is reduced to its origin: an arbitrary WebDAV/GitHub path or a Drive
  * lookup query names a clinical document, and no param list catches that.
- * Host, method and status — what a breadcrumb is read for — survive.
  */
 export function scrubBreadcrumbData(
   data: Record<string, unknown> | undefined,
 ): Record<string, unknown> | undefined {
   if (!data) return data;
 
-  const scrubbed = { ...data };
-
-  if (typeof scrubbed.url === 'string') {
-    try { scrubbed.url = new URL(scrubbed.url).origin; }
-    catch { scrubbed.url = REDACTED; }
+  const kept: Record<string, unknown> = {};
+  if (typeof data.method === 'string') kept.method = data.method;
+  if (typeof data.url === 'string') {
+    try { kept.url = new URL(data.url).origin; }
+    catch { kept.url = REDACTED; }
   }
-
-  // Remove body fields — POST payloads always contain health data in this app
-  delete scrubbed.body;
-  delete scrubbed.request_body;
-  delete scrubbed.request_body_size;
-  delete scrubbed.response_body_size;
-
-  return scrubbed;
+  if (typeof data.status_code === 'number' || typeof data.status_code === 'string') {
+    kept.status_code = data.status_code;
+  }
+  return kept;
 }
 
 // ---------------------------------------------------------------------------

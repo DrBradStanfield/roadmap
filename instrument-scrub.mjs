@@ -133,19 +133,17 @@ export function scrubUrl(url) {
 export function scrubBreadcrumbData(data) {
   if (!data) return data;
 
-  const scrubbed = { ...data };
-
-  if (typeof scrubbed.url === 'string') {
-    try { scrubbed.url = new URL(scrubbed.url).origin; }
-    catch { scrubbed.url = REDACTED; }
+  // Allowlist, not denylist — mirror of sentry-scrub.ts. Method, host, status.
+  const kept = {};
+  if (typeof data.method === 'string') kept.method = data.method;
+  if (typeof data.url === 'string') {
+    try { kept.url = new URL(data.url).origin; }
+    catch { kept.url = REDACTED; }
   }
-
-  delete scrubbed.body;
-  delete scrubbed.request_body;
-  delete scrubbed.request_body_size;
-  delete scrubbed.response_body_size;
-
-  return scrubbed;
+  if (typeof data.status_code === 'number' || typeof data.status_code === 'string') {
+    kept.status_code = data.status_code;
+  }
+  return kept;
 }
 
 // --- Free-text scrub (2026-09-10 audit) — mirror of sentry-scrub.ts. ---------

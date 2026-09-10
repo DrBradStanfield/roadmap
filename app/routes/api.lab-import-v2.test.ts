@@ -3,6 +3,9 @@
  * Anthropic and is not a secret; the poll it names returns EXTRACTED LAB TEXT.
  * So the POST that creates a batch hands back a random `pollToken`, and a poll
  * that cannot present it gets the same answer as a batch that never existed.
+ *
+ * And the poll itself is a POST: the server logs request URLs to stdout, so a
+ * token in the query string is a logged capability. The GET side polls nothing.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -33,8 +36,13 @@ function post(ip = `10.1.0.${++ipCounter}`): Request {
   });
 }
 
-function poll(query: string): Request {
-  return new Request(`https://health-tool-app.fly.dev/api/lab-import-v2?${query}`, { headers: { 'fly-client-ip': '10.1.9.9' } });
+/** A poll: POST, token in the body, nothing identifying in the URL. */
+function poll(body: Record<string, unknown>): Request {
+  return new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST',
+    headers: { 'fly-client-ip': '10.1.9.9' },
+    body: JSON.stringify(body),
+  });
 }
 
 async function newBatch(): Promise<{ batchId: string; pollToken: string }> {
@@ -60,7 +68,7 @@ describe('the batch poll needs the token the upload was given', () => {
 
   it('404s a poll with no token, even though the batch exists', async () => {
     const { batchId } = await newBatch();
-    const answer = await loader({ request: poll(`batchId=${batchId}`) } as never);
+    const answer = await action({ request: poll({ batchId }) } as never);
     expect(answer.status).toBe(404);
     expect(pollBatch).not.toHaveBeenCalled();
   });
@@ -69,7 +77,7 @@ describe('the batch poll needs the token the upload was given', () => {
     const { batchId, pollToken } = await newBatch();
     const wrongSameLength = 'a'.repeat(pollToken.length);
     for (const token of [wrongSameLength, 'x', `${pollToken}x`, '']) {
-      const answer = await loader({ request: poll(`batchId=${batchId}&pollToken=${encodeURIComponent(token)}`) } as never);
+      const answer = await action({ request: poll({ batchId, pollToken: token }) } as never);
       expect(answer.status, token).toBe(404);
       expect(await answer.json()).toEqual({ error: 'Batch not found' });
     }
@@ -78,15 +86,34 @@ describe('the batch poll needs the token the upload was given', () => {
 
   it('polls with the token', async () => {
     const { batchId, pollToken } = await newBatch();
-    const answer = await loader({ request: poll(`batchId=${batchId}&pollToken=${encodeURIComponent(pollToken)}`) } as never);
+    const answer = await action({ request: poll({ batchId, pollToken }) } as never);
     expect(answer.status).toBe(200);
     expect(await answer.json()).toMatchObject({ status: 'ended', completed: 1, total: 1 });
     expect(pollBatch).toHaveBeenCalledWith(batchId);
   });
 
   it('404s an id nobody created, token or not — the same answer as a bad token', async () => {
-    const answer = await loader({ request: poll('batchId=batch_nope&pollToken=whatever') } as never);
+    const answer = await action({ request: poll({ batchId: 'batch_nope', pollToken: 'whatever' }) } as never);
     expect(answer.status).toBe(404);
     expect(await answer.json()).toEqual({ error: 'Batch not found' });
+  });
+
+  it('never polls from the GET side — a token in the query buys nothing', async () => {
+    const { batchId, pollToken } = await newBatch();
+    const query = `batchId=${batchId}&pollToken=${encodeURIComponent(pollToken)}`;
+    const answer = await loader({
+      request: new Request(`https://health-tool-app.fly.dev/api/lab-import-v2?${query}`, {
+        headers: { 'fly-client-ip': '10.1.9.9' },
+      }),
+    } as never);
+    expect(pollBatch).not.toHaveBeenCalled();
+    expect(await answer.json()).toEqual({ allowed: true, remaining: expect.any(Number) });
+  });
+
+  it('a poll costs no quota — only the upload does', async () => {
+    const { batchId, pollToken } = await newBatch();
+    for (let i = 0; i < 5; i++) await action({ request: poll({ batchId, pollToken }) } as never);
+    expect(pollBatch).toHaveBeenCalledTimes(5);
+    expect(createBatch).toHaveBeenCalledTimes(1);
   });
 });

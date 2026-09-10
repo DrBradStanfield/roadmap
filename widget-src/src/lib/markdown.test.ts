@@ -110,3 +110,29 @@ describe('renderMarkdown', () => {
     expect(result).toContain('<a href="https://example.com"');
   });
 });
+
+/**
+ * This renderer's output goes through `dangerouslySetInnerHTML`, so the escape
+ * and the URL filter are the whole boundary. Assert on the bytes, not on the
+ * absence of a word: an attribute that never opens cannot be broken out of.
+ */
+describe('renderMarkdown — the dangerouslySetInnerHTML boundary', () => {
+  it('escapes an inline event-handler tag instead of emitting it', () => {
+    const result = renderMarkdown('<img src=x onerror=alert(1)>');
+    expect(result).toBe('<p>&lt;img src=x onerror=alert(1)&gt;</p>');
+    expect(result).not.toContain('<img');
+  });
+
+  it('drops the anchor entirely for a javascript: URL, leaving only the text', () => {
+    // The unbalanced ")" is the URL's own last character surviving as text.
+    const result = renderMarkdown('[x](javascript:alert(1))');
+    expect(result).toBe('<p>x)</p>');
+    expect(result).not.toContain('<a');
+  });
+
+  it('cannot be broken out of the href attribute by a quote in the URL', () => {
+    const result = renderMarkdown('[x](https://a" onmouseover="alert(1))');
+    expect(result).toBe('<p><a href="https://a&quot; onmouseover=&quot;alert(1" target="_blank" rel="noopener">x</a>)</p>');
+    expect(result).not.toContain('onmouseover="');
+  });
+});

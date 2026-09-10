@@ -1,55 +1,40 @@
-import type { LoaderFunctionArgs } from "react-router";
-import { data, useLoaderData } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { useActionData } from "react-router";
 
-import { authenticate } from "../shopify.server";
+import { AdminTrigger, TriggerOutcome } from "../components/AdminTrigger";
+import { authenticateOwnerAdmin } from "../lib/admin-shop.server";
+import { runAdminTrigger } from "../lib/admin-trigger.server";
 import { runYouTubeBotSummaryOnce } from "../lib/youtube-bot-summary-cron.server";
 
+/**
+ * Manual trigger for the YouTube bot digest — it sends a real email, so the
+ * send is a POST, not a page view.
+ */
 export async function loader({ request }: LoaderFunctionArgs) {
-  await authenticate.admin(request);
+  await authenticateOwnerAdmin(request);
+  return null;
+}
 
-  const startedAt = new Date().toISOString();
-  try {
+export async function action({ request }: ActionFunctionArgs) {
+  return runAdminTrigger(request, async () => {
     await runYouTubeBotSummaryOnce();
-    return data({
-      ok: true,
-      startedAt,
-      completedAt: new Date().toISOString(),
-    });
-  } catch (error) {
-    return data({
-      ok: false,
-      startedAt,
-      completedAt: new Date().toISOString(),
-      errorMessage: error instanceof Error ? error.message : String(error),
-      errorStack: error instanceof Error ? error.stack : undefined,
-    });
-  }
+    return {};
+  });
 }
 
 export default function YouTubeBotSummaryTest() {
-  const data = useLoaderData<typeof loader>();
   return (
-    <s-page heading="YouTube bot summary — manual trigger">
-      <s-section>
-        <s-stack gap="base">
-          {data.ok ? (
-            <s-banner tone="success" heading="YouTube bot summary sent successfully">
-              <s-paragraph>
-                Started: {data.startedAt} · Completed: {data.completedAt}
-              </s-paragraph>
-            </s-banner>
-          ) : (
-            <s-banner tone="critical" heading="YouTube bot summary threw an error">
-              <s-paragraph>
-                {'errorMessage' in data ? String(data.errorMessage) : 'Unknown error'}
-              </s-paragraph>
-            </s-banner>
-          )}
-          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 12 }}>
-            {JSON.stringify(data, null, 2)}
-          </pre>
-        </s-stack>
-      </s-section>
-    </s-page>
+    <AdminTrigger
+      heading="YouTube bot summary — manual trigger"
+      blurb="Sends the digest email now."
+      idleLabel="Send the summary now"
+      busyLabel="Sending…"
+    >
+      <TriggerOutcome
+        result={useActionData<typeof action>()}
+        successHeading="YouTube bot summary sent successfully"
+        errorHeading="YouTube bot summary threw an error"
+      />
+    </AdminTrigger>
   );
 }
