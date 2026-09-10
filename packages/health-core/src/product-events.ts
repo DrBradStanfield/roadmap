@@ -49,6 +49,9 @@ export const PRODUCT_EVENT_NAMES = [
   // files as a bucket; US-36 adds the `assistant` route and US-37 the `nudge`
   // phase plus `fromNudge` on an extract. Never a file name, never a value.
   'mcp_import',
+  // US-38: the open-source hub link in the tool (metadata: placement, header
+  // or footer). The usage signal for the entry-point story.
+  'guide_opened',
 ] as const;
 
 export type ProductEventName = (typeof PRODUCT_EVENT_NAMES)[number];
@@ -93,6 +96,8 @@ export type McpToolName = (typeof MCP_TOOL_NAMES)[number];
 
 /** The `mcp_import` counter's three closed vocabularies (US-35 usage signal). */
 export const MCP_IMPORT_ROUTES = ['dropbox', 'drive_refused', 'assistant'] as const;
+/** The `guide_opened` counter's surfaces (US-38): the column header, or its mobile foot. */
+export const GUIDE_PLACEMENTS = ['header', 'footer'] as const;
 /** `nudge`: a read found folder files not in the record and said so (US-37). */
 export const MCP_IMPORT_PHASES = ['extract', 'commit', 'nudge'] as const;
 export const MCP_IMPORT_FILE_BUCKETS = ['0', '1', '2-5', '6-20'] as const;

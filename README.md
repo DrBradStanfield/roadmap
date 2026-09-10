@@ -23,7 +23,9 @@ The same file, the same write path, three ways in.
    Reads and writes through `RoadmapStore`.
 2. **CLI and stdio MCP**: `tools/get-plan.ts`, `tools/edit-record.ts` and
    `tools/mcp-server.ts`, running on the user's own machine against their own
-   file. See [docs/guides/command-line.md](docs/guides/command-line.md) and
+   file. See [docs/guides/getting-started.md](docs/guides/getting-started.md)
+   ("An open-source health record you can connect to any AI", the hub guide),
+   [docs/guides/command-line.md](docs/guides/command-line.md) and
    [docs/guides/connect-claude-desktop.md](docs/guides/connect-claude-desktop.md).
 3. **Hosted MCP**: `https://mcp.drstanfield.com/mcp`, live since 2026-09-02 on
    the Fly app `health-tool-edu`, over Dropbox and Google Drive. Nine tools as
@@ -38,7 +40,9 @@ assistant holds, opens the user's folder with it, and holds the record in
 server memory for the length of that request. It stores none of it. Anyone who
 does not want that runs surface 2 instead: `tools/mcp-server.ts` is the same
 tool layer over the same file with no server of ours in it at all
-([docs/guides/connect-claude-desktop.md](docs/guides/connect-claude-desktop.md)).
+([docs/guides/getting-started.md](docs/guides/getting-started.md), the hub
+guide, and
+[docs/guides/connect-claude-desktop.md](docs/guides/connect-claude-desktop.md)).
 
 Every non-browser writer goes through the same `SyncManager`
 (`packages/health-core/src/sync-manager.ts`), which merges on conflict and
@@ -227,6 +231,8 @@ network tab recording and use the widget.
 - [docs/agent-access.md](docs/agent-access.md) and
   [docs/mcp-architecture.md](docs/mcp-architecture.md): the agent contract and
   the MCP map.
-- [docs/guides/](docs/guides/): the user-facing guides.
+- [docs/guides/](docs/guides/): the user-facing guides, starting with
+  [getting-started.md](docs/guides/getting-started.md), "An open-source health
+  record you can connect to any AI".
 - [docs/privacy-connector-addendum.md](docs/privacy-connector-addendum.md):
   draft privacy language for the AI connector.

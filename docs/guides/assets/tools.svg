@@ -1,0 +1,35 @@
+<figure class="rmg-fig">
+<svg viewBox="0 0 400 456" role="img" aria-labelledby="rmg-tl-t rmg-tl-d" xmlns="http://www.w3.org/2000/svg">
+  <title id="rmg-tl-t">What an AI can do with your record</title>
+  <desc id="rmg-tl-d">Nine tools. Read: read_record and get_plan. Add: add_measurement, add_lab_values, file_results and import_documents. Change: correct_value and update_profile, which is four profile fields only. Report: report_feedback. There is no delete tool.</desc>
+
+  <rect class="rmg-bx2" x="16" y="10" width="368" height="62" rx="12"/>
+  <text class="rmg-m" x="30" y="32">Read</text>
+  <text class="rmg-f" x="30" y="56">read_record</text>
+  <text class="rmg-f" x="200" y="56">get_plan</text>
+
+  <rect class="rmg-bx2" x="16" y="84" width="368" height="86" rx="12"/>
+  <text class="rmg-m" x="30" y="106">Add</text>
+  <text class="rmg-f" x="30" y="130">add_measurement</text>
+  <text class="rmg-f" x="200" y="130">add_lab_values</text>
+  <text class="rmg-f" x="30" y="152">file_results</text>
+  <text class="rmg-f" x="200" y="152">import_documents</text>
+
+  <rect class="rmg-bx2" x="16" y="182" width="368" height="108" rx="12"/>
+  <text class="rmg-m" x="30" y="204">Change</text>
+  <text class="rmg-f" x="30" y="228">correct_value</text>
+  <text class="rmg-f" x="200" y="228">update_profile</text>
+  <text class="rmg-s" x="30" y="254">profile is four fields only: sex, birth year,</text>
+  <text class="rmg-s" x="30" y="272">birth month, height.</text>
+
+  <rect class="rmg-bx2" x="16" y="302" width="368" height="62" rx="12"/>
+  <text class="rmg-m" x="30" y="324">Report</text>
+  <text class="rmg-f" x="30" y="348">report_feedback</text>
+
+  <rect x="16" y="380" width="368" height="62" rx="12" fill="#f4f6f8" stroke="#dde4ea" stroke-width="1.5"/>
+  <text x="30" y="406" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="14" font-weight="500" fill="#9aa5b0">delete</text>
+  <line x1="27" y1="402" x2="85" y2="402" stroke="#9aa5b0" stroke-width="1.5"/>
+  <text class="rmg-s" x="30" y="430">there is no delete tool</text>
+</svg>
+<figcaption>Nine tools, and none of them removes anything. A correction adds a row. It never removes one.</figcaption>
+</figure>

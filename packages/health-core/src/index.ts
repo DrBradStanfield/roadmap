@@ -297,7 +297,7 @@ export {
 } from './measurement-history';
 
 // Product funnel events — anonymous behavioral counters (client tracker + server enum)
-export { PRODUCT_EVENT_NAMES, type ProductEventName } from './product-events';
+export { PRODUCT_EVENT_NAMES, GUIDE_PLACEMENTS, type ProductEventName } from './product-events';
 
 // US-21 additional blood-test catalogue (phase-1 scaffold — units/groups/aliases)
 export {

@@ -1,0 +1,51 @@
+<figure class="rmg-fig">
+<svg viewBox="0 0 400 716" role="img" aria-labelledby="rmg-tw-t rmg-tw-d" xmlns="http://www.w3.org/2000/svg">
+  <title id="rmg-tw-t">Three ways to reach your record</title>
+  <desc id="rmg-tw-d">The website reads and writes the file straight from your browser. ChatGPT or Claude on the web go through our connector, which opens your folder with your own credential, reads the record in memory for one call and keeps no copy. Claude Code or the command line on your own computer reach the file on disk with nothing of ours in between.</desc>
+  <defs>
+    <marker id="rmg-tw-ae" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0a6b5c"/>
+    </marker>
+  </defs>
+
+  <text class="rmg-t" x="16" y="22">1. The website</text>
+  <rect class="rmg-bx2" x="16" y="34" width="368" height="46" rx="12"/>
+  <text class="rmg-s" x="200" y="62" text-anchor="middle">Your browser, on the website</text>
+  <line class="rmg-ln" x1="200" y1="82" x2="200" y2="112" marker-start="url(#rmg-tw-ae)" marker-end="url(#rmg-tw-ae)"/>
+  <text class="rmg-m" x="214" y="102">reads and writes the file</text>
+  <rect class="rmg-bx2" x="16" y="114" width="368" height="56" rx="12"/>
+  <text class="rmg-s" x="200" y="138" text-anchor="middle">Your cloud folder</text>
+  <text class="rmg-f" x="200" y="159" text-anchor="middle">health-roadmap.json</text>
+  <text class="rmg-m" x="200" y="190" text-anchor="middle">our server never holds the file</text>
+
+  <text class="rmg-t" x="16" y="228">2. ChatGPT or Claude on the web</text>
+  <rect class="rmg-bx2" x="16" y="240" width="368" height="44" rx="12"/>
+  <text class="rmg-s" x="200" y="268" text-anchor="middle">ChatGPT or Claude, in your browser</text>
+  <line class="rmg-ln" x1="200" y1="286" x2="200" y2="312" marker-start="url(#rmg-tw-ae)" marker-end="url(#rmg-tw-ae)"/>
+  <rect class="rmg-bx" x="16" y="314" width="368" height="56" rx="12"/>
+  <text class="rmg-s" x="200" y="338" text-anchor="middle">Our connector</text>
+  <text class="rmg-f" x="200" y="359" text-anchor="middle">mcp.drstanfield.com</text>
+  <line class="rmg-ln" x1="200" y1="372" x2="200" y2="398" marker-start="url(#rmg-tw-ae)" marker-end="url(#rmg-tw-ae)"/>
+  <rect class="rmg-bx2" x="16" y="400" width="368" height="56" rx="12"/>
+  <text class="rmg-s" x="200" y="424" text-anchor="middle">Your Dropbox or Google Drive</text>
+  <text class="rmg-f" x="200" y="445" text-anchor="middle">health-roadmap.json</text>
+  <text class="rmg-m" x="200" y="476" text-anchor="middle">it opens your folder with your own credential</text>
+  <text class="rmg-m" x="200" y="493" text-anchor="middle">and reads the record in memory for one call</text>
+  <text class="rmg-m" x="200" y="510" text-anchor="middle">it keeps no copy</text>
+
+  <text class="rmg-t" x="16" y="548">3. On your own computer</text>
+  <rect class="rmg-bx2" x="16" y="560" width="230" height="52" rx="12"/>
+  <text class="rmg-s" x="131" y="584" text-anchor="middle">Claude Code or the</text>
+  <text class="rmg-s" x="131" y="602" text-anchor="middle">command line</text>
+  <line x1="246" y1="586" x2="258" y2="586" stroke="#a4ccc2" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <rect class="rmg-bx" x="258" y="560" width="126" height="52" rx="12"/>
+  <text class="rmg-s" x="321" y="584" text-anchor="middle">Your AI</text>
+  <text class="rmg-s" x="321" y="602" text-anchor="middle">vendor</text>
+  <line class="rmg-ln" x1="131" y1="614" x2="131" y2="642" marker-start="url(#rmg-tw-ae)" marker-end="url(#rmg-tw-ae)"/>
+  <text class="rmg-m" x="148" y="632">nothing of ours in between</text>
+  <rect class="rmg-bx2" x="16" y="644" width="230" height="56" rx="12"/>
+  <text class="rmg-f" x="131" y="668" text-anchor="middle">health-roadmap.json</text>
+  <text class="rmg-s" x="131" y="689" text-anchor="middle">on your disk</text>
+</svg>
+<figcaption>The website reads and writes the file from your browser; our server never holds the file. Through the connector our server does read your record, in memory, for the length of one call, using your own credential, and keeps no copy. On your own computer nothing of ours sits in between, though what the AI reads still goes to the vendor it runs on.</figcaption>
+</figure>

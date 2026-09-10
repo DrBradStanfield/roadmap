@@ -1,20 +1,50 @@
 ---
-title: "How to let an AI read and update your health record"
-description: "Your blood tests live in one file in your own cloud storage. Connect ChatGPT or Claude to it, or point an AI on your computer at it."
+title: "An open-source health record you can connect to your AI"
+description: "The code is public and MIT licensed. Your record is one file in your own cloud, so the website, the command line and an AI with file access can all read it."
 slug: "ai-health-record"
-updated: "2026-09-07"
-stories: ["US-29", "US-30", "US-31", "US-32"]
+updated: "2026-09-11"
+stories: ["US-29", "US-30", "US-31", "US-32", "US-38"]
 ---
 
-Your record from the Health by Dr Brad tool is one file: `health-roadmap.json`, sitting in your own Dropbox, Google Drive or GitHub. We published the format of that file, and the rules for changing it safely, so any AI that can reach the file can read your results and file new ones.
+The code behind this tool is public, under the MIT licence, at [github.com/DrBradStanfield/roadmap](https://github.com/DrBradStanfield/roadmap). Anyone can read it and run it.
 
-There are two ways to give an AI that reach. Connect ChatGPT or Claude on the web to your Dropbox, which takes a couple of minutes and installs nothing: [from the web](#from-the-web). Or point an AI running on your own computer at the file: [on your own computer](#on-your-own-computer).
+Your record is one file, `health-roadmap.json`, sitting in your own Dropbox, Google Drive or GitHub. There is no account to create and no key to fetch, because there is nothing on our side to log in to. If this site vanished tomorrow your file would still be plain JSON that any tool can read.
 
-## What this is
-
-Your health data lives in one file, in storage you control. Any AI can work with it, because we published the format instead of locking it inside our app.
+We published the format of that file and the rules for changing it safely. Because they are published, three things work besides the website: the command line, ChatGPT or Claude on the web, and an AI running on your own computer.
 
 [diagram:local-first]
+
+## Three ways in
+
+[diagram:three-ways]
+
+The website is the one you already use. You type a value, it saves to your cloud folder, and it works out your plan: [the tool](https://drstanfield.com/pages/roadmap).
+
+ChatGPT or Claude in a browser reaches your folder through a connector we run. You authorize it once, and after that you can ask for your plan or file a new blood panel from your phone. The steps are further down this page, and the longer version is in [connect ChatGPT](/blogs/guides/connect-chatgpt).
+
+An AI on your own computer opens the file directly, with no server of ours in between. For Claude there is a ready-made setup: [connect Claude](/blogs/guides/connect-claude). For a plain terminal, there is [the command line](/blogs/guides/command-line).
+
+## What the code lets an AI do
+
+[diagram:tools]
+
+There are nine tools, and none of them deletes anything. An AI reads your record with `read_record` and works out your plan with `get_plan`, the same plan the website shows, with the reason and the citations behind each suggestion. It files one value with `add_measurement`, or a whole lab panel in one call with `add_lab_values`. It fixes a value that went in wrong with `correct_value`. It changes the four facts your plan is worked out from with `update_profile`: your sex, birth year, birth month and height. On a connected Dropbox it reads the lab files sitting in your folder with `import_documents`, and it files the values it read out of a file you dropped into the chat with `file_results`. When a tool refuses something you reasonably expected, it can report that as a public issue on the project's GitHub with `report_feedback`, carrying its description of the problem and nothing about you. There is no tenth tool that deletes.
+
+## Why nothing is ever deleted
+
+[diagram:correction]
+
+A correction is a new row. The AI writes the right number as a fresh row that points back at the old one, then marks the old row "entered-in-error". Both rows stay in your file for good.
+
+That is how a hospital record works, and it is why you can always see what you were told and when. It is also why the tools never rewrite a number: the only way to change one is to add another beside it. An AI editing the file directly is bound by the same rule in our published write rules, and by nothing else.
+
+## Is there an API?
+
+We publish no API that stores your health data.
+
+The hosted connector at `mcp.drstanfield.com` is an API, and it keeps no copy of your record. It opens your folder with your own credential, answers one call, and drops the record from memory. It does read it for that call.
+
+The published parts are the [JSON Schema](https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json) for the file, the [write rules](https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/agent-access.md) an AI has to follow, and the tool set above.
 
 ## From the web
 
@@ -22,7 +52,7 @@ ChatGPT and Claude in a browser cannot open a file on your computer. So we run a
 
 This works with Dropbox and Google Drive today.
 
-Your record still lives only in your storage. To answer one call, our server unseals the sealed credential your assistant holds, opens your folder with it, and holds your record in server memory for the length of that request. It stores none of it and keeps no copy, but it does read it. If you would rather no server saw your record at all, the same tools run as a program on your own computer, straight against your own file, with nothing of ours in between: see [Claude on your own computer](connect-claude-desktop.md). You cancel it in your own cloud settings: [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) for Dropbox, [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive. Cancelling there also disconnects this website from the folder, and you can reconnect here in one click. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing of your record, and how to disconnect.
+Your record still lives only in your storage. To answer one call, our server unseals the sealed credential your assistant holds, opens your folder with it, and holds your record in server memory for the length of that request. It stores none of it and keeps no copy, but it does read it. If you would rather no server saw your record at all, the same tools run as a program on your own computer, straight against your own file, with nothing of ours in between: see [Claude on your own computer](/blogs/guides/connect-claude). You cancel it in your own cloud settings: [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) for Dropbox, [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive. Cancelling there also disconnects this website from the folder, and you can reconnect here in one click. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing of your record, and how to disconnect.
 
 [connect:chatgpt]
 [connect:claude]
@@ -150,12 +180,6 @@ The tool now keeps up with a file an AI is writing: it re-reads your record with
 If two devices record the same measurement for the same day while apart, the newer entry becomes that day's value; the other stays in your history marked entered-in-error. Nothing is deleted.
 
 The record file is the trust root. Anything that can write it can already delete it outright, and a file carrying a later erase wins on every device. Recovery is your provider's version history.
-
-## Why it works this way
-
-Your record is yours. There is no account to create and no key to fetch, because there is nothing on our side to log in to. The AI doing the work is the one you already chose to trust. The format is open under the MIT licence in [a public repo](https://github.com/DrBradStanfield/roadmap), so if this site vanished tomorrow your file would still be a plain JSON document that any tool can read.
-
-An AI on your own computer never involves us at all. The web connector does, for as long as a call takes: our server unseals the credential your assistant holds, opens your Dropbox or Google Drive folder with it, reads the record into memory, answers, and stores none of it.
 
 ## If you get stuck
 

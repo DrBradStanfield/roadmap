@@ -1231,6 +1231,7 @@ input[type="number"] {
 }
 
 .action-btn-small {
+  font-family: inherit;
   font-size: 12px;
   padding: 4px 10px;
   background: transparent;
@@ -1250,6 +1251,21 @@ input[type="number"] {
 .action-btn-small:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* US-38 guide link. The storefront theme styles bare `a` inside the widget —
+   the doubled class outranks it. */
+a.action-btn-small.action-btn-small {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-brand);
+}
+a.action-btn-small.action-btn-small:hover {
+  color: #fff;
+}
+.hr-guide-mobile.hr-guide-mobile {
+  display: none;
 }
 
 /* Report action buttons (bottom, after suggestions) */
@@ -4201,6 +4217,19 @@ input[type="number"] {
 
 @media (max-width: 768px) {
   .hr-col-header { display: none; }
+  /* US-38: the header (and its guide button) is hidden here, so the footer
+     link is the mobile entry point. */
+  .hr-guide-mobile.hr-guide-mobile {
+    display: block;
+    text-align: center;
+    margin: 12px 0 4px;
+    font-size: 13px;
+    color: var(--color-gray-medium);
+    text-decoration: none;
+  }
+  .hr-guide-mobile.hr-guide-mobile:hover {
+    color: var(--color-brand);
+  }
 }
 
 /* ─── Inline unit toggle in Basic Information card header ─────── */

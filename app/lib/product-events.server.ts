@@ -2,7 +2,7 @@ import { z } from 'zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
+import { GUIDE_PLACEMENTS, MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
 import { supabaseAdmin } from './supabase.server';
 
@@ -20,6 +20,8 @@ const metadataSchema = z
     files: z.enum(MCP_IMPORT_FILE_BUCKETS).optional(),
     /** US-37: this extract followed a read's folder nudge — the retirement query. */
     fromNudge: z.literal(true).optional(),
+    /** US-38: which guide-link surface was clicked. */
+    placement: z.enum(GUIDE_PLACEMENTS).optional(),
   })
   .strict();
 

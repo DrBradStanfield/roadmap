@@ -44,7 +44,9 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   stamps) → the connector family `mcp_connect` / `mcp_tool_call` /
   `mcp_import` / `remote_change_applied` (metadata breakdown by tool, client,
   route; value-free by design — while n is tiny these are Brad's own
-  verification, not adoption); `reminder_optin_v2` total by `provider`.
+  verification, not adoption); `guide_opened` split by `placement`
+  (header|footer), read against `results_viewed`;
+  `reminder_optin_v2` total by `provider`.
 - **Sentry** (`SENTRY_AUTH_TOKEN`): issues first-seen last 7d + big movers,
   project `dr-brad-inc/javascript-remix`, `statsPeriod=14d`.
 - **Workflow integrity** (out-of-band backstop for the CI tripwire):

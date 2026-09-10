@@ -120,3 +120,29 @@ describe('the hosted MCP counters', () => {
     }
   });
 });
+
+/** US-38 — the guide link's counter: which surface sent someone to the hub. */
+describe('the guide-link counter', () => {
+  it('takes a placement from the closed list', () => {
+    for (const placement of ['header', 'footer']) {
+      expect(
+        productEventSchema.safeParse({
+          eventName: 'guide_opened',
+          visitorId: VISITOR,
+          metadata: { placement },
+        }).success,
+        placement,
+      ).toBe(true);
+    }
+  });
+
+  it('refuses a placement the list does not name', () => {
+    expect(
+      productEventSchema.safeParse({
+        eventName: 'guide_opened',
+        visitorId: VISITOR,
+        metadata: { placement: 'sidebar' },
+      }).success,
+    ).toBe(false);
+  });
+});

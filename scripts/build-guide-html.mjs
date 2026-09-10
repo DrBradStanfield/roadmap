@@ -26,7 +26,6 @@ if (!mdPath) {
 
 const ASSETS = new URL('../docs/guides/assets/', import.meta.url);
 const md = readFileSync(mdPath, 'utf8');
-const diagram = readFileSync(new URL('diagram.svg', ASSETS), 'utf8').trim();
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -66,7 +65,21 @@ const restore = (html) =>
     return alone !== undefined && fragment.startsWith('<code') ? `<p>${fragment}</p>` : fragment;
   });
 
-let body = md.slice(md.indexOf('\n---\n', 4) + 5).replace('[diagram:local-first]', () => hold(diagram));
+let body = md.slice(md.indexOf('\n---\n', 4) + 5);
+
+// --- [diagram:*] markers ---------------------------------------------------
+// A marker alone on a line becomes assets/<name>.svg, whole; an unknown name
+// fails the build.
+body = body.replace(/^\[diagram:([a-z0-9-]+)\]$/gm, (_, name) => {
+  const file = new URL(`${name}.svg`, ASSETS);
+  try {
+    return hold(readFileSync(file, 'utf8').trim());
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
+    console.error(`${mdPath}: unknown diagram [diagram:${name}]. No such file: docs/guides/assets/${name}.svg`);
+    process.exit(1);
+  }
+});
 
 // --- [connect:*] markers ---------------------------------------------------
 const providers = JSON.parse(readFileSync(new URL('providers.json', ASSETS), 'utf8'));
@@ -134,7 +147,14 @@ const rendered = restore(
 const style = `<style>
 .rmguide .rmg-fig{margin:30px 0 34px;padding:22px 18px 16px;background:#fafcfd;border:1px solid #e3e9ef;border-radius:14px}
 .rmguide .rmg-fig figcaption{font-size:15px;line-height:1.5;color:#5c6b7a;text-align:center;margin-top:14px}
-.rmguide .rmg-fig svg{width:100%;height:auto;display:block}
+.rmguide .rmg-fig svg{width:100%;height:auto;display:block;max-width:400px;margin:0 auto}
+.rmguide .rmg-bx{fill:#fff;stroke:#d5dee6;stroke-width:1.5}
+.rmguide .rmg-bx2{fill:#f1f8f6;stroke:#a4ccc2;stroke-width:1.5}
+.rmguide .rmg-t{font:700 19px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;fill:#16202a}
+.rmguide .rmg-s{font:400 14.5px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;fill:#5c6b7a}
+.rmguide .rmg-m{font:600 13.5px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;fill:#0a6b5c}
+.rmguide .rmg-f{font:500 14px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#0a6b5c}
+.rmguide .rmg-ln{stroke:#0a6b5c;stroke-width:1.9;fill:none}
 .rmguide .rmg-btnrow{display:grid;gap:12px;margin:24px 0}
 @media(min-width:640px){.rmguide .rmg-btnrow{grid-template-columns:repeat(2,1fr)}}
 .rmguide .rmg-btn.rmg-btn{display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;

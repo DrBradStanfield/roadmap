@@ -2,7 +2,7 @@
 title: "Connect ChatGPT to your health record"
 description: "Add the Health by Dr Brad connector to ChatGPT on the web, and it can read your blood tests, work out your plan and file new results."
 slug: "connect-chatgpt"
-updated: "2026-09-07"
+updated: "2026-09-11"
 stories: ["US-32"]
 ---
 
@@ -101,7 +101,7 @@ It cannot see the token that runs your email reminders, if you use them. That to
 
 ## What we can see
 
-Your record still lives only in your Dropbox or Google Drive. To answer one call, our server unseals the sealed credential ChatGPT holds, opens your folder with it, and holds your record in server memory for the length of that request. It stores none of it and keeps no copy, but it does read it. We store nothing about you: no account, no row, no session. What ChatGPT holds is a credential only we can open, and what we hold is the key and no credential. If you would rather no server saw your record at all, the same tools run as a program on your own computer, straight against your own file, with nothing of ours in between: see [Claude on your own computer](connect-claude-desktop.md).
+Your record still lives only in your Dropbox or Google Drive. To answer one call, our server unseals the sealed credential ChatGPT holds, opens your folder with it, and holds your record in server memory for the length of that request. It stores none of it and keeps no copy, but it does read it. We store nothing about you: no account, no row, no session. What ChatGPT holds is a credential only we can open, and what we hold is the key and no credential. If you would rather no server saw your record at all, the same tools run as a program on your own computer, straight against your own file, with nothing of ours in between: see [Claude on your own computer](/blogs/guides/connect-claude).
 
 Check what it files. An AI can misread a lab report the same way a person can, and the record is yours, so the last look at a new value should be yours too.
 

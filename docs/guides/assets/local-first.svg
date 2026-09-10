@@ -1,0 +1,33 @@
+<figure class="rmg-fig">
+<svg viewBox="0 0 400 372" role="img" aria-labelledby="rmg-lf-t rmg-lf-d" xmlns="http://www.w3.org/2000/svg">
+  <title id="rmg-lf-t">Where your health record lives</title>
+  <desc id="rmg-lf-d">You talk to your AI. Your AI reads and writes one file, health-roadmap.json, in your own Dropbox or Google Drive. What the AI reads goes to its own vendor. On the web path our server reads the file for one call and keeps no copy.</desc>
+  <defs>
+    <marker id="rmg-lf-ae" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0a6b5c"/>
+    </marker>
+  </defs>
+
+  <rect class="rmg-bx" x="16" y="10" width="368" height="90" rx="15"/>
+  <text class="rmg-t" x="200" y="42" text-anchor="middle">You</text>
+  <text class="rmg-s" x="200" y="66" text-anchor="middle">your questions,</text>
+  <text class="rmg-s" x="200" y="86" text-anchor="middle">your lab reports</text>
+
+  <line class="rmg-ln" x1="200" y1="102" x2="200" y2="134" marker-start="url(#rmg-lf-ae)" marker-end="url(#rmg-lf-ae)"/>
+  <text class="rmg-m" x="216" y="123">you ask</text>
+
+  <rect class="rmg-bx2" x="16" y="136" width="368" height="90" rx="15"/>
+  <text class="rmg-t" x="200" y="168" text-anchor="middle">Your AI</text>
+  <text class="rmg-s" x="200" y="192" text-anchor="middle">Claude Code, or another</text>
+  <text class="rmg-s" x="200" y="212" text-anchor="middle">AI on your computer</text>
+
+  <line class="rmg-ln" x1="200" y1="228" x2="200" y2="260" marker-start="url(#rmg-lf-ae)" marker-end="url(#rmg-lf-ae)"/>
+  <text class="rmg-m" x="216" y="249">reads and writes</text>
+
+  <rect class="rmg-bx" x="16" y="262" width="368" height="96" rx="15"/>
+  <text class="rmg-t" x="200" y="294" text-anchor="middle">Your cloud storage</text>
+  <text class="rmg-f" x="200" y="318" text-anchor="middle">health-roadmap.json</text>
+  <text class="rmg-s" x="200" y="340" text-anchor="middle">your Dropbox or Drive</text>
+</svg>
+<figcaption>Your record lives in your storage, not ours. An AI on your own computer reaches it directly. The web connector puts our server in the middle for the length of one call: it reads the file in memory and keeps no copy.</figcaption>
+</figure>

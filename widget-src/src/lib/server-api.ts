@@ -1,5 +1,5 @@
 /** Shopify services only. Health records are read and written by roadmap-data. */
-import type { ProductEventName } from '@roadmap/health-core';
+import type { GUIDE_PLACEMENTS, ProductEventName } from '@roadmap/health-core';
 import { safeGetItem, safeSetItem } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
@@ -132,6 +132,7 @@ export function trackABConversion(): void { trackABEvent('conversion'); }
 export interface ProductEventMetadata {
   provider?: 'google-drive' | 'dropbox' | 'github' | 'webdav' | 'local' | 'typed';
   count?: number;
+  placement?: (typeof GUIDE_PLACEMENTS)[number];
 }
 
 /**

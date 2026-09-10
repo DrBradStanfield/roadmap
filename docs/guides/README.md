@@ -34,8 +34,15 @@ A marker on a line of its own is replaced by the build. Markers keep the `.md` r
 ```
 [connect:chatgpt]        a connector button for that AI provider
 [connect:claude]
-[diagram:local-first]    a named inline SVG from the build's diagram set
+[diagram:local-first]    an inline SVG figure
+[diagram:three-ways]
+[diagram:tools]
+[diagram:correction]
 ```
+
+`[diagram:<name>]` is replaced by `assets/<name>.svg`, whole. An unknown name fails the build and names the file it looked for. The four today: `local-first` (where the record lives), `three-ways` (the website, the web connector, your own computer), `tools` (the nine connector tools, and no delete), `correction` (why nothing is ever deleted).
+
+Each asset holds a `<figure class="rmg-fig">` with a `<title>`, a `<desc>`, `aria-labelledby` and a `<figcaption>`. **The shared SVG styles live in the builder, not in the SVGs** (`.rmg-bx`, `.rmg-bx2`, `.rmg-t`, `.rmg-s`, `.rmg-m`, `.rmg-f`, `.rmg-ln`), so a page with four figures ships one copy of them; a new diagram reuses those classes rather than carrying a `<style>` block. **Every id inside an SVG is prefixed per diagram** (`rmg-lf-`, `rmg-tw-`, `rmg-tl-`, `rmg-cr-`), marker and title ids alike, because four figures share one page and a repeated id is a silent collision.
 
 `connect:` button states live in `assets/providers.json`: `soon` renders a disabled greyed span, `live` renders a link to that provider's `url`. **A button must never promise what does not work today**: disabled and honest beats live and broken. A provider we have no plan for gets no button at all, not a greyed one.
 
