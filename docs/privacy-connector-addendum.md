@@ -231,8 +231,11 @@ the router audit (`app/lib/chat-purge-cron.server.ts`). Once a row is 30 days ol
 daily job blanks the message text and the conversation title, which is made of the first
 words of your question. The shape of the thread stays and the words go: row ids, the
 role, the timestamps, the model, the token counts and the fallback flags remain, and a
-blanked turn reads back as `[removed after 30 days]`. The job touches Shopify rows only.
-The Discord and YouTube bots keep their transcripts exactly as before.
+blanked turn reads back as `[removed after 30 days]`. The Discord bot's transcripts are
+blanked on the same clock. Brad decided that on the evening of 10 September 2026,
+because a question typed at the bot is as private as one typed into the bubble. The
+YouTube bot's are not: those turns are public comments on a video, kept under their own
+retention.
 
 **Deleting your data.** "Delete all my data" in the widget erases two files in your own
 folder: your health record and your chat history. The chat file cannot simply be emptied,

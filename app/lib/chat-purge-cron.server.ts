@@ -15,12 +15,13 @@
  * `is_fallback`, and the surface name — stays.
  *
  * `chat_messages` and `chat_conversations` are the transcripts behind the blog
- * bubble and the chatbot embed: question and reply, plus a title made of the
- * first few words of the question. Both get blanked on the same schedule, and
- * only on `platform = 'shopify'` — the Discord and YouTube transcripts are
- * public posts under their own retention and are never touched here. The shape
- * of the conversation survives: id, role, timestamps, model, token counts,
- * `is_fallback`, `failure_mode`. Only the words go.
+ * bubble, the chatbot embed and the Discord bot: question and reply, plus a
+ * title made of the first few words of the question. Both get blanked on the
+ * same schedule, on `platform in ('shopify','discord')` — a question typed at the
+ * bot is as private as a bubble question (Brad's decision, 2026-09-10 evening).
+ * YouTube stays: those transcripts are public comments under their own
+ * retention. The shape of the conversation survives: id, role, timestamps,
+ * model, token counts, `is_fallback`, `failure_mode`. Only the words go.
  *
  * Same shape as the other crons (trending, reminder v2): hourly setInterval, a
  * `< target hour` catch-up check so a deploy can't skip the day, and the
@@ -38,6 +39,10 @@ const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 export const PURGE_AFTER_DAYS = 30;
 /** Rows cleared per round trip. The loop re-selects until nothing is left. */
 const BATCH_SIZE = 500;
+
+/** Platforms whose transcripts are private text on a 30-day clock. YouTube is
+ *  absent on purpose: those turns are public comments. */
+const PURGED_PLATFORMS = ['shopify', 'discord'];
 
 /** What a reader sees where a purged message used to be. The row is still
  *  there — the words are not. Anything rendering a transcript substitutes it. */
@@ -69,15 +74,15 @@ export async function purgeOldChatText(now: Date = new Date()): Promise<PurgeCou
   return {
     matchEvents: await purgeMatchEvents(cutoff),
     // `!inner` makes the join a filter: a message qualifies only if its own
-    // conversation is a Shopify one. Without it PostgREST would return every
-    // message and merely null the embed.
+    // conversation is on a purged platform. Without it PostgREST would return
+    // every message and merely null the embed.
     messages: await purgeInBatches(
       'chat message',
       () =>
         supabaseAdmin!
           .from('chat_messages')
           .select('id, chat_conversations!inner(platform)')
-          .eq('chat_conversations.platform', 'shopify')
+          .in('chat_conversations.platform', PURGED_PLATFORMS)
           .lt('created_at', cutoff)
           .not('content', 'is', null)
           .limit(BATCH_SIZE),
@@ -92,7 +97,7 @@ export async function purgeOldChatText(now: Date = new Date()): Promise<PurgeCou
         supabaseAdmin!
           .from('chat_conversations')
           .select('id')
-          .eq('platform', 'shopify')
+          .in('platform', PURGED_PLATFORMS)
           .lt('updated_at', cutoff)
           .not('title', 'is', null)
           .limit(BATCH_SIZE),

@@ -134,7 +134,16 @@ this loop on reasoning alone: if you cannot measure it, you propose it.
   entry chosen despite correct terms) can't be fixed by summary edits — W33
   spent two reverted edits learning this.
 - Add every confirmed production failure to `tools/test-queries.json` as a
-  regression case, fixed or not.
+  regression case, fixed or not — **paraphrased on ingest, never verbatim**
+  (Brad 2026-09-10). The file is public, and a production failure is a real
+  person's words. Before it lands: replace numbers and units with placeholders
+  or typical values that keep the routing intent (a real LDL becomes a typical
+  one); strip names, emails, phone numbers and URLs; keep the first-person
+  phrasing, the misspellings and the shape of the ask, because that is what is
+  under test. Same rule `content-backlog.csv` already follows for its
+  `example_queries_anonymised` column. `tools/test-queries.privacy.test.ts`
+  guards the floor: no email, no 7+-digit run, no query-string URL, no
+  `@handle`.
 - `npx tsx tools/test-classifier.ts --runs 1` if anything
   classifier-adjacent changed. `npm test` before committing.
 - ⚠️ **Harness key gotcha**: the cloud env var must be named

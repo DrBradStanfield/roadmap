@@ -453,8 +453,9 @@ type ConversationLookup = { conversationId: string | null; history: ChatHistoryE
  *
  * `created_at` and `is_fallback` feed the shared content-based dedup check
  * (chat-dedup.server.ts findDuplicateReply); the LLM itself uses only role and
- * content. A read failure degrades to empty history rather than dropping the
- * reply — answering without context beats not answering at all.
+ * content. Turns whose text the 30-day purge has already removed are skipped.
+ * A read failure degrades to empty history rather than dropping the reply —
+ * answering without context beats not answering at all.
  */
 async function loadConversationHistory(conversationId: string): Promise<ChatHistoryEntry[]> {
   if (!supabaseAdmin) return [];
@@ -473,6 +474,10 @@ async function loadConversationHistory(conversationId: string): Promise<ChatHist
 
   return data
     .filter(r => r.role === 'user' || r.role === 'assistant')
+    // Purged turns are gone, not empty: past 30 days the cron nulls `content`
+    // (US-15 AC8). Drop those rows so the model never sees a blank turn and the
+    // dedup check never matches one.
+    .filter(r => r.content !== null)
     .map(r => ({
       role: r.role as 'user' | 'assistant',
       content: r.content as string,

@@ -156,8 +156,11 @@ network tab recording and use the widget.
   blanks the message text and the conversation title, which is the first words
   of your question. What stays is the shape of the thread, not the words: row
   ids, the role, the timestamps, the model, the token counts, and the fallback
-  flags. A blanked turn reads back as `[removed after 30 days]`. Only Shopify
-  rows are touched; the Discord and YouTube transcripts are unchanged.
+  flags. A blanked turn reads back as `[removed after 30 days]`. The Discord
+  bot's transcripts are blanked on the same clock, decided 2026-09-10: a
+  question typed at the bot is as private as one typed into the bubble. The
+  YouTube transcripts stay, because those turns are public comments on a video
+  under their own retention.
 - Two devices editing apart converge without a conversation. If both record the same
   measurement for the same day while apart, the newer entry becomes that day's value;
   the other stays in your history marked entered-in-error. Nothing is deleted. The

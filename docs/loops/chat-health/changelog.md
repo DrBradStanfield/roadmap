@@ -4,6 +4,14 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-09-10 (Brad): production failures are paraphrased on ingest into
+  `tools/test-queries.json`, never copied verbatim — the file is public and a
+  failure is a real person's words (the youtube-dryrun leak, US-09, is the
+  precedent for what a swept-in artefact costs). Numbers and units become
+  placeholders or typical values, names/emails/phones/URLs go, first-person
+  phrasing stays. `content-backlog.csv` already worked this way.
+  `tools/test-queries.privacy.test.ts` enforces the floor.
+
 - 2026-08-12 (Brad-directed): schedule moved from MONDAY to SUNDAY ~10:23am NZ,
   cron `23 22 * * 6` — the fleet's plan usage should land outside Brad's working week, so
   Monday's capacity is his. Time-of-day and the ~96-minute fleet stagger are

@@ -4,10 +4,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // article matching, then removed on every platform. The counts the audit runs
 // on — matched_handles, classification, timings, is_fallback — stay forever.
 //
-// US-15 AC8 (2026-09-10): the bubble and embed transcripts join the same
-// window. On Shopify rows only, `chat_messages.content` and
-// `chat_conversations.title` go null once they are past 30 days. Discord and
-// YouTube transcripts are a different record and are never touched here.
+// US-15 AC8 (2026-09-10, amended that evening): the bubble, embed and Discord
+// transcripts share one window. On `platform in ('shopify','discord')` rows,
+// `chat_messages.content` and `chat_conversations.title` go null once they are
+// past 30 days. YouTube is left alone — those turns are public comments.
 
 interface Row {
   id: string;
@@ -76,6 +76,23 @@ const fakeAdmin = vi.hoisted(() => ({
             );
         } else {
           matches = () => prev().filter((r) => r[col] === value);
+        }
+        return query;
+      },
+      in: (col: string, values: unknown[]) => {
+        const prev = matches;
+        if (col.includes('.')) {
+          const [embed, field] = col.split('.');
+          if (!embedded) throw new Error(`filtered on ${col} without an !inner join`);
+          if (embed !== 'chat_conversations') throw new Error(`unexpected embed ${embed}`);
+          matches = () =>
+            prev().filter((r) =>
+              values.includes(
+                store.chat_conversations.find((c) => c.id === r.conversation_id)?.[field as 'platform'],
+              ),
+            );
+        } else {
+          matches = () => prev().filter((r) => values.includes(r[col]));
         }
         return query;
       },
@@ -185,6 +202,7 @@ beforeEach(() => {
     conversation('conv-shopify-old', 'shopify', 40),
     conversation('conv-shopify-fresh', 'shopify', 3),
     conversation('conv-discord-old', 'discord', 400),
+    conversation('conv-discord-fresh', 'discord', 2),
     conversation('conv-youtube-old', 'youtube', 400),
   ];
   store.chat_messages = [
@@ -192,6 +210,7 @@ beforeEach(() => {
     message('msg-shopify-a', 'conv-shopify-old', 40, 'assistant'),
     message('msg-shopify-fresh', 'conv-shopify-fresh', 3),
     message('msg-discord', 'conv-discord-old', 400),
+    message('msg-discord-fresh', 'conv-discord-fresh', 2),
     message('msg-youtube', 'conv-youtube-old', 400),
   ];
   vi.mocked(tryAcquireCronLock).mockClear().mockResolvedValue(true);
@@ -250,9 +269,21 @@ describe('purgeOldChatText — US-15 AC7 30-day question retention', () => {
 describe('purgeOldChatText — US-15 AC8 bubble and embed transcripts', () => {
   it('blanks the text of Shopify messages older than 30 days', async () => {
     const counts = await purgeOldChatText(NOW);
-    expect(counts.messages).toBe(2);
+    expect(counts.messages).toBe(3);
     expect(msg('msg-shopify-q').content).toBeNull();
     expect(msg('msg-shopify-a').content).toBeNull();
+  });
+
+  it('blanks stale Discord transcripts too — text and title', async () => {
+    await purgeOldChatText(NOW);
+    expect(msg('msg-discord').content).toBeNull();
+    expect(conv('conv-discord-old').title).toBeNull();
+  });
+
+  it('leaves Discord turns inside the window alone', async () => {
+    await purgeOldChatText(NOW);
+    expect(msg('msg-discord-fresh').content).toBe('text msg-discord-fresh');
+    expect(conv('conv-discord-fresh').title).toBe('title conv-discord-fresh');
   });
 
   it('keeps every column the shape of the conversation is read from', async () => {
@@ -269,11 +300,9 @@ describe('purgeOldChatText — US-15 AC8 bubble and embed transcripts', () => {
     });
   });
 
-  it('never touches Discord or YouTube transcripts', async () => {
+  it('never touches YouTube transcripts — public comments, their own retention', async () => {
     await purgeOldChatText(NOW);
-    expect(msg('msg-discord').content).toBe('text msg-discord');
     expect(msg('msg-youtube').content).toBe('text msg-youtube');
-    expect(conv('conv-discord-old').title).toBe('title conv-discord-old');
     expect(conv('conv-youtube-old').title).toBe('title conv-youtube-old');
   });
 
@@ -282,9 +311,9 @@ describe('purgeOldChatText — US-15 AC8 bubble and embed transcripts', () => {
     expect(msg('msg-shopify-fresh').content).toBe('text msg-shopify-fresh');
   });
 
-  it('nulls the title only on stale Shopify conversations', async () => {
+  it('nulls the title only on stale purged-platform conversations', async () => {
     const counts = await purgeOldChatText(NOW);
-    expect(counts.conversations).toBe(1);
+    expect(counts.conversations).toBe(2);
     expect(conv('conv-shopify-old').title).toBeNull();
     expect(conv('conv-shopify-fresh').title).toBe('title conv-shopify-fresh');
   });
@@ -312,7 +341,7 @@ describe('purgeOldChatText — US-15 AC8 bubble and embed transcripts', () => {
 
 describe('purgeWithLock — one machine per day', () => {
   it('purges under the chat_text_purge lock', async () => {
-    expect(await purgeWithLock('2026-09-10', NOW)).toEqual({ matchEvents: 4, messages: 2, conversations: 1 });
+    expect(await purgeWithLock('2026-09-10', NOW)).toEqual({ matchEvents: 4, messages: 3, conversations: 2 });
     expect(vi.mocked(tryAcquireCronLock).mock.calls[0][2]).toBe('chat_text_purge');
   });
 

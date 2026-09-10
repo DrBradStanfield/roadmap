@@ -2751,7 +2751,7 @@
     "notes": "2026-09-04 chat-health loop (W36): real YouTube comment on the cardiologists-K2 video (bare-comment path). Self-contained - names K2 and CAC; two K2 entries carry those terms; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: hyperlipidaemia steal 3/3 (selection-side)."
   },
   {
-    "query": "Dr. Lily Johnston is a vascular surgeon YouTuber that recommends vitamin K2, so why do you two see things differently?",
+    "query": "A vascular surgeon on YouTube recommends vitamin K2, so why do you two see things differently?",
     "expected": [
       "why-arent-cardiologists-prescribing-vitamin-k2",
       "does-vitamin-k2-actually-protect-your-heart-new-trial"

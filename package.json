@@ -33,10 +33,10 @@
     "node": "^20.10 || >=21.0.0"
   },
   "dependencies": {
-    "@react-router/dev": "^7.17.0",
-    "@react-router/fs-routes": "^7.17.0",
-    "@react-router/node": "^7.17.0",
-    "@react-router/serve": "^7.17.0",
+    "@react-router/dev": "^7.18.3",
+    "@react-router/fs-routes": "^7.18.3",
+    "@react-router/node": "^7.18.3",
+    "@react-router/serve": "^7.18.3",
     "@sentry/react-router": "^10.57.0",
     "@shopify/app-bridge-react": "^4.1.6",
     "@shopify/shopify-app-react-router": "^1.2.0",
@@ -49,7 +49,7 @@
     "jszip": "^3.10.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router": "^7.17.0",
+    "react-router": "^7.18.3",
     "resend": "^6.9.2",
     "vite-tsconfig-paths": "^5.0.1",
     "zod": "^3.23.0"
