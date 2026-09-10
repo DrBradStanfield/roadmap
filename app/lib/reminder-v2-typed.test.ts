@@ -45,6 +45,8 @@ vi.mock('./supabase.server', () => ({
 }));
 
 import {
+  cancelByToken,
+  emailLimiterKey,
   enrolByEmail,
   ensureAnnualFloor,
   inQuietPeriod,
@@ -124,21 +126,74 @@ describe('US-23 AC2 — the quiet period, every lane', () => {
   });
 });
 
-describe('Google-verified opt-in over an existing row preserves the unsubscribe token and cooldowns', () => {
-  it('reuses the existing token and last_sent instead of minting/resetting (already-sent links must keep working)', async () => {
+describe('Google-verified opt-in over an existing row', () => {
+  it('keeps the token and last_sent of a row that was itself Google-verified (already-sent links must keep working)', async () => {
     primedResults = [
-      { data: { token: 'original-token', last_sent: { blood_test_lipids: '2026-08-01' } }, error: null }, // lookup
+      { data: { provider: 'google-drive', token: 'original-token', last_sent: { blood_test_lipids: '2026-08-01' } }, error: null },
       { data: null, error: null }, // upsert
     ];
 
     const result = await upsertVerifiedOptin('user@example.com', [VALID_ITEM]);
 
     expect(result).toEqual({ token: 'original-token', isNew: false });
-    const upsert = calls.find((c) => c.method === 'upsert')!;
-    const payload = upsert.args[0] as Record<string, unknown>;
+    const payload = calls.find((c) => c.method === 'upsert')!.args[0] as Record<string, unknown>;
     expect(payload.token).toBe('original-token');
     expect(payload.provider).toBe('google-drive');
     expect(payload.last_sent).toEqual({ blood_test_lipids: '2026-08-01' });
+  });
+
+  it('token squatting: ROTATES the token of a row that was not Google-verified, so the squatter can no longer cancel', async () => {
+    primedResults = [
+      { data: { provider: 'dropbox', token: 'squatter-token', last_sent: { blood_test_lipids: '2026-08-01' } }, error: null },
+      { data: null, error: null }, // upsert
+    ];
+
+    const result = await upsertVerifiedOptin('victim@example.com', [VALID_ITEM]);
+
+    expect(result.isNew).toBe(false);
+    expect(result.token).not.toBe('squatter-token');
+    const payload = calls.find((c) => c.method === 'upsert')!.args[0] as Record<string, unknown>;
+    expect(payload.token).toBe(result.token);
+    expect(payload.last_sent).toEqual({ blood_test_lipids: '2026-08-01' }); // cooldowns still kept
+  });
+});
+
+describe('the per-email rate-limit key (never the stored address)', () => {
+  it('folds case, +tags and Gmail dots into one bucket', () => {
+    expect(emailLimiterKey('User+promo@Gmail.com')).toBe('user@gmail.com');
+    expect(emailLimiterKey('u.s.e.r@googlemail.com')).toBe('user@googlemail.com');
+    expect(emailLimiterKey('first.last+x@example.com')).toBe('first.last@example.com'); // dots matter elsewhere
+  });
+});
+
+describe('cancel — a bare token tombstones; a Google-verified caller deletes (the repeat-email loop)', () => {
+  it('optin(new) → cancel → optin: the second optin is a refresh, so no second plan-ready email', async () => {
+    primedResults = [
+      { data: null, error: null }, { data: null, error: null },                      // optin: lookup none → upsert
+      { data: { provider: 'dropbox', schedule: [VALID_ITEM] }, error: null }, { data: null, error: null }, // cancel: lookup → tombstone
+      { data: { id: 'row-1' }, error: null }, { data: null, error: null },            // optin again: lookup finds the tombstone → refresh
+    ];
+
+    const first = await enrolByEmail('user@example.com', 'dropbox', [VALID_ITEM]);
+    expect(first.isNew).toBe(true);
+    await cancelByToken(first.isNew ? first.token : '', null);
+    expect(calls.map((c) => c.method)).not.toContain('delete');
+
+    const second = await enrolByEmail('user@example.com', 'dropbox', [VALID_ITEM]);
+    expect(second).toEqual({ isNew: false });
+  });
+
+  it('with a Google ID token for the row\'s own address the row is deleted outright', async () => {
+    primedResults = [
+      { data: null, error: null },                 // delete
+      { data: null, error: null },                 // unsubscribe lookup: row gone
+    ];
+    await cancelByToken('tok', 'User@Example.com');
+    const del = calls.find((c) => c.method === 'delete');
+    expect(del).toBeDefined();
+    // The delete is scoped to token AND the verified email — a token for someone else's row cannot ride a valid ID token.
+    const eqs = calls.filter((c) => c.method === 'eq').map((c) => c.args);
+    expect(eqs).toContainEqual(['email', 'user@example.com']);
   });
 });
 

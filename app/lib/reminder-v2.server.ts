@@ -41,9 +41,9 @@ import { supabaseAdmin } from './supabase.server';
  * Since 2026-09-10 every lane's consent gate is delivery: the plan-ready email
  * (US-22) must not bounce, and the cron holds a 3-day quiet period before the
  * first reminder so the bounce/complaint webhook has time to un-enrol a bad
- * address. The provider column now records WHICH surface enrolled the address
- * (for the per-lane ratio), not how strongly it was verified — only
- * 'google-drive' rows written through upsertVerifiedOptin carry a proof.
+ * address. 'google-drive' means VERIFIED: only upsertVerifiedOptin writes it,
+ * from a signed ID token. The widget's no-ID-token Drive fallback enrols as
+ * 'typed', so the column doubles as the proof flag (review 2026-09-10).
  */
 export type ReminderV2Provider = 'google-drive' | 'dropbox' | 'github' | 'typed';
 
@@ -93,6 +93,18 @@ export const scheduleSchema = z
       ),
   )
   .max(20);
+
+/**
+ * The per-email rate-limit KEY (never the stored address): lowercase, `+tag`
+ * stripped, and dots dropped for Gmail — otherwise one inbox owner has
+ * unlimited free keys for one victim (review 2026-09-10).
+ */
+export function emailLimiterKey(email: string): string {
+  const [local = '', domain = ''] = email.toLowerCase().split('@');
+  let user = local.split('+')[0];
+  if (domain === 'gmail.com' || domain === 'googlemail.com') user = user.replace(/\./g, '');
+  return `${user}@${domain}`;
+}
 
 // ---------------------------------------------------------------------------
 // Capability token
@@ -214,8 +226,12 @@ export async function enrolByEmail(
 
 /**
  * Google-verified enrolment: the address came from a signed ID token, so this
- * caller IS the inbox owner and may replace their own row — token and
- * cooldowns preserved (see writeOptinRow) — and always receives the token.
+ * caller IS the inbox owner and may replace their own row, and always
+ * receives the token. Cooldowns are preserved either way; the token is kept
+ * ONLY when the row was itself Google-verified. Any other row may be a
+ * squatter's (an address-only optin naming this inbox before its owner
+ * arrived), and keeping its token would keep the squatter's cancel capability
+ * alive across the victim's verification — so it rotates (review 2026-09-10).
  */
 export async function upsertVerifiedOptin(
   email: string,
@@ -224,27 +240,26 @@ export async function upsertVerifiedOptin(
   const normalized = email.toLowerCase();
   const { data, error } = await requireAdmin()
     .from('reminder_optin_v2')
-    .select('token, last_sent')
+    .select('provider, token, last_sent')
     .eq('email', normalized)
     .maybeSingle();
   if (error) throw new Error(`reminder_optin_v2 lookup failed: ${error.message}`);
-  return { token: await writeOptinRow(normalized, 'google-drive', schedule, data), isNew: !data };
+  const existing = data && { token: data.provider === 'google-drive' ? data.token : undefined, last_sent: data.last_sent };
+  return { token: await writeOptinRow(normalized, 'google-drive', schedule, existing), isNew: !data };
 }
 
 /**
  * The one raw row write. `existing` (the pre-write row, null when absent)
- * makes a Google-verified re-enrolment PRESERVE the token and cooldowns: a
- * typed user who later connects Drive keeps the same unsubscribe token, so the
- * links in every email already in their inbox keep working, and last_sent
- * survives so an item sent yesterday isn't re-sent tomorrow (review
- * 2026-08-14 — the same two invariants the refresh path holds). Private on
- * purpose.
+ * lets a Google-verified re-enrolment PRESERVE the token (so the links in
+ * every email already in their inbox keep working) and the cooldowns (so an
+ * item sent yesterday isn't re-sent tomorrow — review 2026-08-14). The caller
+ * decides whether the token is trustworthy enough to keep. Private on purpose.
  */
 async function writeOptinRow(
   email: string,
   provider: ReminderV2Provider,
   schedule: StoredScheduleItem[],
-  existing: { token: string; last_sent?: Record<string, string> } | null,
+  existing: { token?: string; last_sent?: Record<string, string> } | null,
 ): Promise<string> {
   const token = existing?.token ?? mintCapabilityToken();
   const { error } = await requireAdmin()
@@ -333,12 +348,25 @@ export async function unsubscribeByToken(token: string): Promise<ReminderV2Provi
   return data.provider as ReminderV2Provider;
 }
 
-/** Delete the opt-in owning this token — the widget's own toggle-off and the
- *  pre-erase hook (US-17 AC1b: a toggle-off DELETES the row). Token-authorised,
- *  so unlike the email link it needs no tombstone. */
-export async function deleteByToken(token: string): Promise<void> {
-  const { error } = await requireAdmin().from('reminder_optin_v2').delete().eq('token', token);
-  if (error) throw new Error(`reminder_optin_v2 delete failed: ${error.message}`);
+/**
+ * The widget's toggle-off and the pre-erase hook (US-17 AC1b, amended
+ * 2026-09-10). A token alone TOMBSTONES (unsubscribeByToken): a hard delete
+ * would make the next address-only optin brand new again — isNew, another
+ * plan-ready email, every cycle — so optin→cancel→optin was a repeat-email
+ * loop. Only a caller who ALSO proves the inbox with a Google ID token for the
+ * row's own address gets the row deleted outright (the erase promise, kept
+ * for the one lane that can prove itself).
+ */
+export async function cancelByToken(token: string, verifiedEmail: string | null): Promise<void> {
+  if (verifiedEmail) {
+    const { error } = await requireAdmin()
+      .from('reminder_optin_v2')
+      .delete()
+      .eq('token', token)
+      .eq('email', verifiedEmail.toLowerCase());
+    if (error) throw new Error(`reminder_optin_v2 delete failed: ${error.message}`);
+  }
+  await unsubscribeByToken(token); // no-op when the delete above took the row
 }
 
 /**

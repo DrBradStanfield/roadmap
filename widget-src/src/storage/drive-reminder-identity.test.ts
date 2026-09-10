@@ -60,6 +60,15 @@ describe('GoogleDriveAdapter reminder identity — no popup, no access token, ev
     vi.unstubAllGlobals();
   });
 
+  it('THROWS on a transient refresh failure — "try again", never "no token to give"', async () => {
+    localStorage.setItem('health_roadmap_gdrive_tokens', JSON.stringify({ accessToken: 'a', refreshToken: 'r', expiresAt: 0 }));
+    localStorage.setItem('health_roadmap_gdrive', JSON.stringify({}));
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('network'); }));
+
+    await expect(new GoogleDriveAdapter(CONFIG).getReminderIdToken()).rejects.toThrow(/retry/);
+    expect(initTokenClient).not.toHaveBeenCalled();
+  });
+
   it('returns null with no refresh token and opens NO popup', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })));
     const adapter = new GoogleDriveAdapter(CONFIG);

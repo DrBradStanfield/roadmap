@@ -18,6 +18,7 @@ import {
   type StorageAdapter,
 } from '../src/storage';
 import { dropboxConfig } from './dropbox-config';
+import { clearAutoEnrolBlock } from './reminders';
 import { googleDriveConfig } from './google-config';
 import { clearLocalStorage } from '../src/lib/storage';
 import { trackProductEvent } from '../src/lib/server-api';
@@ -77,6 +78,10 @@ export async function migrateLocalInto(adapter: StorageAdapter): Promise<void> {
  * the sync control shows "still waiting to sync" until the marker clears.
  */
 export async function liftLocalInto(adapter: StorageAdapter, backend: Backend): Promise<void> {
+  // Every fresh connect (form, Dropbox/Drive redirect, Drive popup) passes
+  // here: a new credential may be able to name an email where the old one
+  // could not, so the reminders "no email available" block is lifted.
+  clearAutoEnrolBlock();
   try {
     await migrateLocalInto(adapter);
   } catch (error) {

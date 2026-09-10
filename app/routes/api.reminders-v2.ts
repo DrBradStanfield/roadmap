@@ -4,7 +4,8 @@ import { createRateLimiter, DAY_MS } from '../lib/rate-limiter';
 import { ALLOWED_ORIGINS, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 import {
   buildUnsubscribeUrl,
-  deleteByToken,
+  cancelByToken,
+  emailLimiterKey,
   enrolByEmail,
   scheduleSchema,
   updateScheduleByToken,
@@ -32,7 +33,8 @@ import { recordServerEvent } from '../lib/product-events.server';
  *            existing address is a schedule refresh and gets nothing back.
  *  - update: capability token + replacement schedule (client re-pushes on
  *            every data change / app visit).
- *  - cancel: capability token → opt-in row is DELETED.
+ *  - cancel: capability token → the row is tombstoned (schedule emptied);
+ *            with a Google ID token for the row's own address it is deleted.
  *
  * Same cross-origin posture as api.google-token.ts: CORS allow-list (HARD
  * RULE: never localhost), text/plain simple-request bodies (remix-serve 405s
@@ -50,7 +52,9 @@ const allowOptinIp = createRateLimiter(20, 60 * 60_000, 30 * 60_000);
 const bodySchema = z.union([
   z.object({
     op: z.literal('optin'),
-    provider: z.enum(['google-drive', 'dropbox', 'github']),
+    // 'typed' here is the widget's Drive fallback with no fresh ID token —
+    // an address-only optin must never be recorded as the verified lane.
+    provider: z.enum(['google-drive', 'dropbox', 'github', 'typed']),
     idToken: z.string().min(1).max(4096).optional(),
     email: z.string().email().max(254).optional(),
     schedule: scheduleSchema,
@@ -67,6 +71,7 @@ const bodySchema = z.union([
   z.object({
     op: z.literal('cancel'),
     token: z.string().min(1).max(256),
+    idToken: z.string().min(1).max(4096).optional(),
   }),
 ]);
 
@@ -106,7 +111,7 @@ export async function action({ request }: ActionFunctionArgs) {
     } else {
       if (!input.email) return Response.json({ error: 'Missing email' }, { status: 400, headers });
       email = input.email.toLowerCase();
-      if (!allowOptinEmail(email) || !allowOptinIp(ipHash)) {
+      if (!allowOptinEmail(emailLimiterKey(email)) || !allowOptinIp(ipHash)) {
         return Response.json({ error: 'Too many requests' }, { status: 429, headers });
       }
       enrolment = await enrolByEmail(email, input.provider, input.schedule);
@@ -140,7 +145,8 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ ok: true }, { headers });
   }
 
-  // cancel — idempotent: cancelling an already-gone opt-in succeeds.
-  await deleteByToken(input.token);
+  // cancel — idempotent: cancelling an already-gone opt-in succeeds. An ID
+  // token that fails to verify degrades to the tombstone, never to an error.
+  await cancelByToken(input.token, input.idToken ? await verifyGoogleIdToken(input.idToken) : null);
   return Response.json({ ok: true }, { headers });
 }

@@ -295,7 +295,18 @@ export class GoogleDriveAdapter implements StorageAdapter {
    * or the refresh token was revoked — which also clears it).
    */
   async tryServerRefresh(): Promise<boolean> {
-    if (!this.tokens?.refreshToken) return false;
+    return (await this.refresh()) === 'ok';
+  }
+
+  /**
+   * The refresh with its failure mode kept: 'none' = there is no refresh token
+   * to use (never had one, or it was revoked), which will not change on its
+   * own; 'transient' = the endpoint was unreachable or errored, so the next
+   * attempt may succeed. The reminders identity needs the difference — a
+   * transient failure must not block auto-enrolment forever (review 2026-09-10).
+   */
+  private async refresh(): Promise<'ok' | 'none' | 'transient'> {
+    if (!this.tokens?.refreshToken) return 'none';
     let res: Response;
     try {
       res = await fetch(this.config.exchangeUrl, {
@@ -307,13 +318,13 @@ export class GoogleDriveAdapter implements StorageAdapter {
         signal: AbortSignal.timeout(5000),
       });
     } catch {
-      return false; // network/server down/timeout → caller falls back to the popup path
+      return 'transient'; // network/server down/timeout → caller falls back to the popup path
     }
     if (res.status === 400 || res.status === 401) {
       this.clearTokens(); // refresh token revoked/expired — stop retrying
-      return false;
+      return 'none';
     }
-    if (!res.ok) return false;
+    if (!res.ok) return 'transient';
     const json = (await res.json()) as { accessToken: string; expiresIn: number; idToken?: string };
     this.lastIdToken = json.idToken ?? null;
     const accountEmail = this.lastIdToken ? decodeIdTokenEmail(this.lastIdToken) : null;
@@ -326,7 +337,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
       refreshToken: this.tokens.refreshToken, // refresh grants don't re-issue it
       expiresAt: expiry(json.expiresIn),
     });
-    return true;
+    return 'ok';
   }
 
   async disconnect(): Promise<void> {
@@ -342,10 +353,14 @@ export class GoogleDriveAdapter implements StorageAdapter {
    * refresh grant returns a fresh ID token when the original grant included
    * openid. Null when there is none: the popup path that used to send a Drive
    * ACCESS token as fallback is gone — the caller falls back to the address
-   * (accountEmail) or asks for one. Never opens a popup.
+   * (accountEmail) or asks for one. Never opens a popup. THROWS when the
+   * refresh failed transiently: that is "try again next visit", not "no token
+   * to give", and the caller must not remember it as the latter.
    */
   async getReminderIdToken(): Promise<string | null> {
-    return (await this.tryServerRefresh()) ? this.lastIdToken : null;
+    const outcome = await this.refresh();
+    if (outcome === 'transient') throw new StorageError('Google token refresh unavailable — retry later.');
+    return outcome === 'ok' ? this.lastIdToken : null;
   }
 
   /** The verified account email captured at connect/refresh, or null (pre-openid grants, popup sessions). */

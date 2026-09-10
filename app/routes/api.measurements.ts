@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { authenticate } from '../shopify.server';
 import { subscribeToKlaviyo } from '../lib/klaviyo.server';
 import { sendPlanReadyEmail } from '../lib/email.server';
-import { buildUnsubscribeUrl, enrolByEmail, scheduleSchema, type Enrolment } from '../lib/reminder-v2.server';
+import { buildUnsubscribeUrl, emailLimiterKey, enrolByEmail, scheduleSchema, type Enrolment } from '../lib/reminder-v2.server';
 import { recordServerEvent } from '../lib/product-events.server';
 import { getClientIp } from '../lib/local-first-route.server';
 import { createRateLimiter } from '../lib/rate-limiter';
@@ -49,7 +49,7 @@ async function handleKlaviyoCapture(data: unknown, clientIp: string) {
       return Response.json({ success: false, error: 'Invalid request data' }, { status: 400 });
     }
     const { email, schedule } = parsed.data;
-    if (!checkGuestReportLimit(email.toLowerCase()) || !checkCaptureIpLimit(clientIp)) {
+    if (!checkGuestReportLimit(emailLimiterKey(email)) || !checkCaptureIpLimit(clientIp)) {
       return Response.json({ success: false, error: 'Email limit reached. Try again tomorrow.' }, { status: 429 });
     }
     // Email only: the address goes to the guest list and nothing else. Fire-and-

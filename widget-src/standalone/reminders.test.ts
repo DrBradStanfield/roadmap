@@ -167,7 +167,7 @@ describe('US-17 AC1/AC7 — a cloud connect enrols you, with no user action and 
     expect(JSON.stringify(postedBody(g))).not.toMatch(/accessToken|token/);
   });
 
-  it('Google without a fresh ID token falls back to the remembered address, not a popup token', async () => {
+  it("Google without a fresh ID token falls back to the remembered address as provider 'typed' — never a popup token, never the verified lane", async () => {
     getReminderIdToken.mockResolvedValue(null);
     driveAccountEmail.mockReturnValue('user@example.com');
     const f = mockFetchOk();
@@ -175,8 +175,35 @@ describe('US-17 AC1/AC7 — a cloud connect enrols you, with no user action and 
 
     await autoEnrolReminders('google-drive');
 
-    expect(postedBody(f)).toMatchObject({ provider: 'google-drive', email: 'user@example.com' });
+    expect(postedBody(f)).toMatchObject({ provider: 'typed', email: 'user@example.com' });
     expect(postedBody(f)).not.toHaveProperty('idToken');
+  });
+
+  it('a TRANSIENT Google refresh failure is not "no email": no block, retried next visit', async () => {
+    getReminderIdToken.mockRejectedValue(new Error('refresh endpoint down'));
+    const f = mockFetchOk();
+    const { autoEnrolReminders } = await loadReminders();
+
+    await autoEnrolReminders('google-drive');
+    await autoEnrolReminders('google-drive');
+
+    expect(f).not.toHaveBeenCalled();
+    expect(getReminderIdToken).toHaveBeenCalledTimes(2);
+    expect(localStorage.getItem('hr_reminders_autoenrol_blocked')).toBeNull();
+  });
+
+  it('a fresh connect lifts the "no email" block so auto-enrolment asks again', async () => {
+    githubAccountEmail.mockResolvedValue(null);
+    const f = mockFetchOk();
+    const { autoEnrolReminders, clearAutoEnrolBlock } = await loadReminders();
+
+    await autoEnrolReminders('github');
+    expect(localStorage.getItem('hr_reminders_autoenrol_blocked')).toBe('1');
+    clearAutoEnrolBlock();
+    githubAccountEmail.mockResolvedValue('gh@example.com');
+    await autoEnrolReminders('github');
+
+    expect(f).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -243,8 +270,9 @@ describe('US-17 AC1 — auto-enrolment is silent: no error, no retry storm; the 
 
     await optInToReminders('github', { email: 'typed@example.com' });
 
-    expect(postedBody(f)).toMatchObject({ provider: 'github', email: 'typed@example.com' });
-    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'active', email: 'typed@example.com' }));
+    // A typed address is never dressed up as the cloud lane it was typed on.
+    expect(postedBody(f)).toMatchObject({ provider: 'typed', email: 'typed@example.com' });
+    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'active', email: 'typed@example.com', provider: 'github' }));
   });
 
   it('swallows a failing server — an enrolment nobody asked for cannot raise an error', async () => {
@@ -320,7 +348,7 @@ describe('US-17 — switching clouds moves the reminders, it does not duplicate 
 
     // Rows are keyed by EMAIL server-side, so the new opt-in cannot replace the
     // old one — without this cancel the user gets reminders at both addresses.
-    expect(postedBody(f, 0)).toEqual({ op: 'cancel', token: 'cap-token' });
+    expect(postedBody(f, 0)).toEqual({ op: 'cancel', token: 'cap-token', idToken: 'signed-id-token' });
     expect(postedBody(f, 1).op).toBe('optin');
     expect(postedBody(f, 1).provider).toBe('dropbox');
   });
@@ -336,15 +364,15 @@ describe('US-17 — switching clouds moves the reminders, it does not duplicate 
   });
 });
 
-describe('US-17 AC1b — erasing your data deletes the server row too', () => {
-  it('cancels the live reminder row using the token that is about to be wiped', async () => {
+describe('US-17 AC1b — erasing your data reaches the server row too', () => {
+  it('cancels the live reminder row using the token that is about to be wiped, with the Drive proof that makes it a delete', async () => {
     getReminderOptIn.mockReturnValue(ACTIVE);
     const f = mockFetchOk({ ok: true });
     const { cancelRemindersForErase } = await loadReminders();
 
     await cancelRemindersForErase();
 
-    expect(postedBody(f)).toEqual({ op: 'cancel', token: 'cap-token' });
+    expect(postedBody(f)).toEqual({ op: 'cancel', token: 'cap-token', idToken: 'signed-id-token' });
   });
 
   it('is not counted as an opt-out — they erased everything, they did not judge reminders', async () => {
@@ -377,14 +405,24 @@ describe('US-17 AC1b — erasing your data deletes the server row too', () => {
 });
 
 describe('US-17 — turning reminders off is counted', () => {
-  it('fires reminder_optout after the server row is deleted and the file flipped', async () => {
+  it('a Dropbox cancel carries no proof (idToken null → the server tombstones)', async () => {
+    getReminderOptIn.mockReturnValue({ ...ACTIVE, provider: 'dropbox' });
+    const f = mockFetchOk({ ok: true });
+    const { cancelReminders } = await loadReminders();
+
+    await cancelReminders();
+
+    expect(postedBody(f)).toEqual({ op: 'cancel', token: 'cap-token', idToken: null });
+  });
+
+  it('fires reminder_optout after the server row is cancelled and the file flipped', async () => {
     getReminderOptIn.mockReturnValue(ACTIVE);
     const f = mockFetchOk({ ok: true });
     const { cancelReminders } = await loadReminders();
 
     await cancelReminders();
 
-    expect(postedBody(f)).toEqual({ op: 'cancel', token: 'cap-token' });
+    expect(postedBody(f)).toEqual({ op: 'cancel', token: 'cap-token', idToken: 'signed-id-token' });
     expect(setReminderOptIn).toHaveBeenCalledWith({ ...ACTIVE, status: 'cancelled' });
     // Tagged with the lane (US-23: typed and cloud ratios are judged apart).
     expect(trackProductEvent).toHaveBeenCalledWith('reminder_optout', { provider: 'google-drive' });

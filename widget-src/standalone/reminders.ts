@@ -35,7 +35,7 @@ import {
 import { DropboxAdapter, GitHubAdapter, GoogleDriveAdapter } from '../src/storage';
 import { trackProductEvent } from '../src/lib/server-api';
 import { SHOPIFY_SURFACE } from '../src/lib/build-flags';
-import { safeGetItem, safeSetItem } from '../src/lib/storage';
+import { safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
 import { Sentry } from '../src/lib/sentry';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
@@ -48,6 +48,12 @@ const REMINDERS_API_URL = 'https://health-tool-app.fly.dev/api/reminders-v2';
  *  so auto-enrolment stops asking; the manual toggle still works and asks the
  *  user to type the address once. Never set on a transient failure. */
 const AUTO_ENROL_BLOCKED_KEY = 'hr_reminders_autoenrol_blocked';
+
+/** A fresh connect may bring a token that CAN give an email (a new GitHub PAT
+ *  with the permission, a new openid Drive grant) — let auto-enrolment ask again. */
+export function clearAutoEnrolBlock(): void {
+  safeRemoveItem(AUTO_ENROL_BLOCKED_KEY);
+}
 
 /** Thrown by the manual path when the provider has no email: the control
  *  answers by showing a one-time typed field — never a silent enrolment. */
@@ -76,23 +82,33 @@ async function post(body: unknown, keepalive = false): Promise<Response> {
   });
 }
 
+type Identity = { provider: 'google-drive'; idToken: string } | { provider: ReminderBackend | 'typed'; email: string };
+
 /**
  * Who the reminders go to, read in the browser (US-17 AC7). Google: a fresh
- * signed ID token (verified server-side; it grants nothing). Dropbox and
- * GitHub: the account email itself. Null = the provider has no email to give
- * (never a transient failure — those throw, and the caller retries).
+ * signed ID token (verified server-side; it grants nothing) — or, with none to
+ * hand, the remembered address sent as provider 'typed', because on the server
+ * 'google-drive' MEANS verified. Dropbox and GitHub: the account email itself.
+ * Null = the provider has no email to give (never a transient failure — those
+ * throw, and the caller retries).
  */
-async function identityFor(backend: ReminderBackend): Promise<{ idToken: string } | { email: string } | null> {
+async function identityFor(backend: ReminderBackend): Promise<Identity | null> {
   if (backend === 'google-drive') {
     const drive = new GoogleDriveAdapter(googleDriveConfig());
     const idToken = await drive.getReminderIdToken();
-    if (idToken) return { idToken };
+    if (idToken) return { provider: 'google-drive', idToken };
     const email = drive.accountEmail();
-    return email ? { email } : null;
+    return email ? { provider: 'typed', email } : null;
   }
-  if (backend === 'dropbox') return { email: await new DropboxAdapter(dropboxConfig()).accountEmail() };
+  if (backend === 'dropbox') return { provider: 'dropbox', email: await new DropboxAdapter(dropboxConfig()).accountEmail() };
   const email = await new GitHubAdapter().accountEmail();
-  return email ? { email } : null;
+  return email ? { provider: 'github', email } : null;
+}
+
+/** The ID token for a Drive-verified cancel (hard delete); null on any other lane or failure. */
+async function cancelProofFor(backend: Backend): Promise<string | null> {
+  if (backend !== 'google-drive') return null;
+  return new GoogleDriveAdapter(googleDriveConfig()).getReminderIdToken().catch(() => null);
 }
 
 export interface OptInResult {
@@ -122,14 +138,13 @@ export async function optInToReminders(
 ): Promise<OptInResult> {
   if (!remindersSupported(backend)) throw new Error('Reminders need a connected cloud account.');
   const schedule = computeCurrentReminderSchedule();
-  const identity = email ? { email } : await identityFor(backend);
+  const identity: Identity | null = email ? { provider: 'typed', email } : await identityFor(backend);
   if (!identity) {
     if (silent) safeSetItem(AUTO_ENROL_BLOCKED_KEY, '1');
     throw new ReminderEmailNeeded();
   }
   const res = await post({
     op: 'optin',
-    provider: backend,
     ...identity,
     schedule,
     marketingEmail, // optional — JSON.stringify drops it when undefined
@@ -188,7 +203,7 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
     // — and the fresh enrolment below can't replace it, because rows are keyed
     // by email. Drop it first. Deliberately NOT cancelReminders(): a storage
     // switch is not a user opting out, and must not be counted as one.
-    if (optIn?.status === 'active') await post({ op: 'cancel', token: optIn.token });
+    if (optIn?.status === 'active') await post({ op: 'cancel', token: optIn.token, idToken: await cancelProofFor(optIn.provider) });
 
     // An already-enrolled address (token lost with the file, or enrolled from
     // another lane) is refreshed server-side and nothing is written here —
@@ -203,11 +218,12 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
 }
 
 /**
- * Erase teardown, run BEFORE "Delete all my data" wipes the file (US-17 AC1b:
- * "if a toggle-off arrives, the server row is DELETED"). Deleting everything
- * has to reach the one copy that isn't on the user's device — and the
- * capability token that authorises that delete lives in the file we're about
- * to destroy, so this cannot run afterwards.
+ * Erase teardown, run BEFORE "Delete all my data" wipes the file (US-17 AC1b,
+ * amended 2026-09-10: the row is tombstoned — deleted outright only when a
+ * Google ID token proves the inbox, because a bare token's delete re-opened
+ * the plan-ready email to every optin→cancel→optin cycle). Reaching the one
+ * copy that isn't on the user's device needs the capability token that lives
+ * in the file we're about to destroy, so this cannot run afterwards.
  *
  * Not counted as an opt-out: they erased everything, they didn't judge
  * reminders. Registered as a hook by the standalone entry, because `src/`
@@ -216,15 +232,16 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
 export async function cancelRemindersForErase(): Promise<void> {
   const optIn = getReminderOptIn();
   if (optIn?.status !== 'active') return;
-  const res = await post({ op: 'cancel', token: optIn.token });
+  const res = await post({ op: 'cancel', token: optIn.token, idToken: await cancelProofFor(optIn.provider) });
   if (!res.ok) throw new Error(`Reminder row delete failed (${res.status}).`);
 }
 
-/** Turn reminders off (server row deleted; cancel propagates via the file). */
+/** Turn reminders off (server row tombstoned, or deleted when Drive can prove
+ *  the inbox; the cancel propagates via the file). */
 export async function cancelReminders(): Promise<void> {
   const optIn = getReminderOptIn();
   if (!optIn) return;
-  const res = await post({ op: 'cancel', token: optIn.token });
+  const res = await post({ op: 'cancel', token: optIn.token, idToken: await cancelProofFor(optIn.provider) });
   if (!res.ok) throw new Error(`Could not turn reminders off (${res.status}). Please retry.`);
   setReminderOptIn({ ...optIn, status: 'cancelled' });
   await flushRoadmapStore();
