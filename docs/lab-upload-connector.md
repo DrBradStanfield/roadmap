@@ -17,7 +17,10 @@ route (`import_documents`) our server reads the file from the Dropbox folder
 and the extraction model is the same Haiku pipeline the website uses
 (`extractOrClassify` in `app/lib/anthropic.server.ts`), with a shorter budget
 and a cheaper prompt: the WHOLE file goes through Brad's server to the model
-as a `pdf` or `image` block, held for one request, kept nowhere. On the CHAT
+as a `pdf` or `image` block, held for one request, kept nowhere by us. That happens at the
+extract step, before the user confirms anything; Anthropic's own API policy (no training on
+customer content, deletion within 30 days barring usage-policy enforcement or law) governs
+their copy. On the CHAT
 route (`file_results`, US-36) the assistant reads the file itself and sends
 only the rows it read; the file never reaches our server, the values do, in
 memory for one request, written to the user's own folder. Consent page,

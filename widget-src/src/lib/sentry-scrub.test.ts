@@ -50,3 +50,31 @@ describe('scrubEvent — SDK self-noise filter', () => {
     expect(scrubEvent(event)).toBeNull();
   });
 });
+
+// The same free-text gap the server audit found (2026-09-10) applies in the
+// browser: the widget uses the shared scrub, so this is a wiring test.
+describe('scrubEvent — free-text scrub', () => {
+  const AUDIT = 'My LDL is 3.2 mmol/L and I have diabetes';
+
+  it('scrubs the exception value, extra strings and breadcrumbs, keeping frames', () => {
+    const event = makeEvent({
+      exception: {
+        values: [{
+          type: 'ValidationError',
+          value: AUDIT,
+          stacktrace: { frames: [{ filename: 'https://cdn.shopify.com/x/health-plan-v2.js', lineno: 7 }] },
+        }],
+      },
+      extra: { message: AUDIT, mailto: 'brad@example.com' },
+      breadcrumbs: [{ category: 'navigation', message: 'cholesterol 200' }],
+    });
+    const out = scrubEvent(event)!;
+    expect(out.exception!.values![0].value).toBe('My LDL is [value] and I have diabetes');
+    expect(out.exception!.values![0].type).toBe('ValidationError');
+    expect(out.exception!.values![0].stacktrace!.frames![0].filename)
+      .toBe('https://cdn.shopify.com/x/health-plan-v2.js');
+    expect(out.extra!.message).toBe('My LDL is [value] and I have diabetes');
+    expect(out.extra!.mailto).toBe('[email]');
+    expect(out.breadcrumbs![0].message).toBe('cholesterol [value]');
+  });
+});

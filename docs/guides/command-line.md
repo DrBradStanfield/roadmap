@@ -138,6 +138,15 @@ assistant holds the connection from then on. It reads and writes the same file t
 commands above do, under the same rules. You cancel it at your cloud provider's
 connected-apps page.
 
+One difference is worth knowing before you choose it. On this route our server unseals
+the cloud credential your assistant holds, opens your folder with it, and holds your
+record in server memory for as long as one request takes. It stores none of it and keeps
+no copy, but it does read it. The commands at the top of this page never do: they run on
+your machine against your file and reach no network at all. The same is true of
+`tools/mcp-server.ts`, which gives an assistant the same tools over that local file with
+no server of ours involved. If you do not want a server reading your record, stay on
+those.
+
 ## If something goes wrong
 
 Run either command with `--help` for the full list of options. If a command fails in a way this guide does not explain, or the output is wrong, open an issue at https://github.com/DrBradStanfield/roadmap/issues with the command you ran and what it printed. Leave your record out of it; the `schemaVersion` at the top of the file is all we need.

@@ -98,7 +98,8 @@ describe('US-15 AC7 — widget turns store no message content', () => {
     expect(row.message).toBe(question);
     expect(row.message_id).toBeNull();
     expect(row.conversation_id).toBe(body.conversationId);
-    expect(row.router_context).toEqual({ platform: 'widget', first: 'HbA1c 41 last year', recent: ['HbA1c 41 last year'] });
+    expect(row.router_context).toEqual({ platform: 'widget' });
+    expect(JSON.stringify(row)).not.toContain('HbA1c 41 last year');
     expect(row.is_fallback).toBe(false);
     expect(row.failure_mode).toBeNull();
     expect(body.isFallback).toBe(false);

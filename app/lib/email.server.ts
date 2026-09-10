@@ -356,9 +356,9 @@ function scheduleSection(schedule: Array<{ label: string; dueAt: string }>): str
 }
 
 /**
- * US-23 AC5 — for a typed (not provider-verified) address, the unsubscribe
- * must be prominent in the BODY: a delivered-but-mistyped address belongs to a
- * stranger, and one obvious click has to end it.
+ * US-23 AC5, every lane since 2026-09-10 — the unsubscribe must be prominent
+ * in the BODY: no lane proves the inbox owner asked (a delivered-but-mistyped
+ * address belongs to a stranger), and one obvious click has to end it.
  */
 function prominentUnsubscribeBlock(unsubscribeUrl: string): string {
   return `
@@ -383,8 +383,6 @@ export function buildReminderV2EmailHtml(
   options: {
     /** The complete stored schedule (due + upcoming) — US-23 AC3. */
     fullSchedule?: Array<{ label: string; dueAt: string }>;
-    /** True for typed-lane recipients — US-23 AC5. */
-    prominentUnsubscribe?: boolean;
   } = {},
 ): string {
   const items = dueItems
@@ -424,7 +422,7 @@ export function buildReminderV2EmailHtml(
       </div>
 
       ${scheduleSection(options.fullSchedule ?? [])}
-      ${options.prominentUnsubscribe ? prominentUnsubscribeBlock(unsubscribeUrl) : ''}
+      ${prominentUnsubscribeBlock(unsubscribeUrl)}
 
       <div style="background:#f8f9fa;border-radius:6px;padding:16px;margin:24px 0 0;">
         <p style="color:#666;font-size:13px;line-height:1.5;margin:0;">

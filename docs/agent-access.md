@@ -170,9 +170,18 @@ unit must be one the metric is measured in, the value must sit inside the app's 
 range, and a value that looks like a unit swap comes back as a question. `import_documents`
 is the folder route: it reads lab PDFs or images (or a ZIP of them; 5 MB per file, 20 MB
 per ZIP, 30 files a day; no HEIC) from the root of the Dropbox app folder and proposes
-values for you to accept, in the record's own unit system. Those files are sent to
-Anthropic's API for extraction, under our key, and are not kept; nothing else here
-reaches a model we run. Google Drive's folder cannot be read that way (`drive.file`
+values for you to accept, in the record's own unit system. It writes nothing to the
+record until the user confirms; the candidates wait in a pending file in the user's own
+folder (`imports/pending-<id>.json`), and the receipt naming it expires after an hour. Those files are sent to
+Anthropic's API for extraction, under our key, at the extract step and before the user
+confirms anything. We keep none of them. Anthropic's [commercial
+terms](https://www.anthropic.com/legal/commercial-terms) say "Anthropic may not train
+models on Customer Content from Services", and their privacy centre says API inputs and
+outputs are automatically deleted within 30 days of receipt or generation, kept longer
+only to enforce their usage policy or comply with the law ([how long do you store my
+organization's data](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)).
+Zero data retention is a separate arrangement for eligible customers; we do not have
+one. Nothing else here reaches a model we run. Google Drive's folder cannot be read that way (`drive.file`
 scope), so on Drive the chat route and the website upload are the ways in. Drop files in
 the Dropbox folder and the next time you ask your assistant anything about your record
 it offers them ("2 files in your folder are not in your record"); nothing runs while you
@@ -222,11 +231,20 @@ Six things differ from the local path, and they are differences you will hit:
   Nothing was written; ask again.
 
 Trust model, revocation, and the residual risks we accepted knowingly:
-[mcp-architecture.md](mcp-architecture.md). The short version: your record
-still lives only in your cloud storage, our server reads it in memory to answer one call
-and keeps no copy, and you cancel the whole thing at your provider's connected-apps
-settings, which also disconnects the website from the folder, because both providers
-scope the folder to the app, not to the surface.
+[mcp-architecture.md](mcp-architecture.md). The short version: your record still lives
+only in your cloud storage; to answer one call our server unseals the cloud credential
+your assistant holds, opens your folder with it, and holds the record in server memory
+for the length of that request, storing none of it; and you cancel the whole thing at
+your provider's connected-apps settings, which also disconnects the website from the
+folder, because both providers scope the folder to the app, not to the surface.
+
+**The version with no server of ours in it.** Everything above the "hosted path" heading
+is that version: `tools/mcp-server.ts` over stdio, or the CLI, running on the user's own
+machine against the user's own file. Same tool layer, same rules, no credential of ours
+to unseal and no request to us at all. Anyone who does not want a server reading their
+record in memory should run that instead
+([guides/connect-claude-desktop.md](guides/connect-claude-desktop.md)). The one thing it
+cannot do is `import_documents`, which needs a model and a network it does not have.
 
 ## No telemetry
 

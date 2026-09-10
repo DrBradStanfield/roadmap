@@ -9,7 +9,7 @@
 // the repo root (copied into the image by `COPY . .`) and is imported by a plain relative
 // path, so it resolves with zero workspace/dist dependency.
 //
-// DRIFT GUARD: packages/health-core/instrument-scrub-parity.test.ts asserts these functions
+// DRIFT GUARD: packages/health-core/src/instrument-scrub-parity.test.ts asserts these functions
 // behave identically to the health-core source. If you change the scrub logic or the
 // sensitive-key lists in EITHER file, update BOTH — the parity test fails otherwise.
 
@@ -135,4 +135,98 @@ export function scrubBreadcrumbData(data) {
   delete scrubbed.response_body_size;
 
   return scrubbed;
+}
+
+// --- Free-text scrub (2026-09-10 audit) — mirror of sentry-scrub.ts. ---------
+// Key-based redaction cannot see a value written in a sentence. Keep these
+// lists and rules identical in both files; the parity test fails otherwise, and
+// it also checks the lists against UNIT_DEFS / METRIC_LABELS.
+
+export const SCRUB_UNITS = [
+  'mmol/L', 'mmol/mol', 'mg/dL', 'µmol/L', 'umol/L', 'micromol/L', 'nmol/L',
+  'ng/mL', 'µg/L', 'ug/L', 'mg/L', 'g/L', 'mmHg', 'mm Hg',
+  'kg', 'lbs', 'lb', 'cm', '%',
+  // Dose units
+  'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'ml', 'units',
+  // Inches: matched by a stricter rule (see INCH_UNIT) — "5 in the morning"
+  // is English, not a height.
+  'in', '"',
+];
+
+export const SCRUB_METRIC_WORDS = [
+  'total cholesterol', 'ldl cholesterol', 'hdl cholesterol', 'non-hdl',
+  'cholesterol', 'triglycerides', 'hba1c', 'a1c', 'apob', 'apo b', 'lp(a)',
+  'lpa', 'ldl', 'hdl', 'psa', 'creatinine', 'egfr', 'blood pressure',
+  'systolic', 'diastolic', 'bp', 'bmi', 'weight', 'waist', 'height',
+  'glucose', 'testosterone', 'vitamin d', 'ferritin', 'tsh',
+];
+
+const NUMBER = '\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?';
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const alternation = (words) =>
+  [...words].sort((a, b) => b.length - a.length).map(escapeRe).join('|');
+
+const INCH_UNIT = '(?:in(?=\\s*(?:[^A-Za-z0-9\\s]|$))|")';
+const PLAIN_UNITS = SCRUB_UNITS.filter(u => u !== 'in' && u !== '"');
+
+const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+const UNIT_VALUE_RE = new RegExp(
+  `\\b${NUMBER}\\s*(?:(?:${alternation(PLAIN_UNITS)})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
+const METRIC_THEN_VALUE_RE = new RegExp(
+  `\\b(${alternation(SCRUB_METRIC_WORDS)})([^\\d\\n]{0,20}?)(${NUMBER})`, 'gi');
+const VALUE_THEN_METRIC_RE = new RegExp(
+  `(${NUMBER})([^\\d\\n]{0,20}?)\\b(${alternation(SCRUB_METRIC_WORDS)})\\b`, 'gi');
+
+export function scrubText(text) {
+  return text
+    .replace(EMAIL_RE, '[email]')
+    .replace(UNIT_VALUE_RE, '[value]')
+    .replace(METRIC_THEN_VALUE_RE, '$1$2[value]')
+    .replace(VALUE_THEN_METRIC_RE, '[value]$2$3');
+}
+
+export function scrubStrings(input, maxDepth = 10, currentDepth = 0) {
+  if (typeof input === 'string') return scrubText(input);
+  if (input === null || typeof input !== 'object') return input;
+  if (currentDepth >= maxDepth) return input;
+  if (Array.isArray(input)) return input.map((v) => scrubStrings(v, maxDepth, currentDepth + 1));
+  const out = {};
+  for (const [k, v] of Object.entries(input)) {
+    out[k] = scrubStrings(v, maxDepth, currentDepth + 1);
+  }
+  return out;
+}
+
+export function scrubEventText(event) {
+  if (event.message) event.message = scrubStrings(event.message);
+  if (event.logentry) event.logentry = scrubStrings(event.logentry);
+  for (const value of event.exception?.values ?? []) {
+    if (typeof value.value === 'string') value.value = scrubText(value.value);
+  }
+  if (event.extra) event.extra = scrubStrings(event.extra);
+  if (event.contexts) event.contexts = scrubStrings(event.contexts);
+  if (event.tags) event.tags = scrubStrings(event.tags);
+  for (const crumb of event.breadcrumbs ?? []) {
+    if (typeof crumb.message === 'string') crumb.message = scrubText(crumb.message);
+    if (crumb.data) crumb.data = scrubStrings(crumb.data);
+  }
+  if (event.request) {
+    if (typeof event.request.url === 'string') event.request.url = scrubText(event.request.url);
+    if (typeof event.request.query_string === 'string') {
+      event.request.query_string = scrubText(event.request.query_string);
+    }
+  }
+}
+
+export function dropLongStrings(input, max = 200) {
+  if (Array.isArray(input)) {
+    return input.map((v) => (typeof v === 'string' && v.length > max ? REDACTED : dropLongStrings(v, max)));
+  }
+  if (input === null || typeof input !== 'object') return input;
+  const out = {};
+  for (const [k, v] of Object.entries(input)) {
+    if (typeof v === 'string' && v.length > max) continue;
+    out[k] = v !== null && typeof v === 'object' ? dropLongStrings(v, max) : v;
+  }
+  return out;
 }

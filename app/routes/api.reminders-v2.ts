@@ -1,25 +1,35 @@
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { z } from 'zod';
-import { createRateLimiter } from '../lib/rate-limiter';
+import { createRateLimiter, DAY_MS } from '../lib/rate-limiter';
 import { ALLOWED_ORIGINS, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 import {
+  buildUnsubscribeUrl,
   deleteByToken,
+  enrolByEmail,
   scheduleSchema,
   updateScheduleByToken,
-  upsertOptin,
-  verifyProviderEmail,
-  type ProviderProof,
+  upsertVerifiedOptin,
+  verifyGoogleIdToken,
+  type Enrolment,
 } from '../lib/reminder-v2.server';
 import { subscribeToKlaviyo } from '../lib/klaviyo.server';
+import { sendPlanReadyEmail } from '../lib/email.server';
+import { hashClientIp } from '../lib/supabase.server';
+import { recordServerEvent } from '../lib/product-events.server';
 
 /**
  * v2 email reminders API (decision record §10). Three ops, all POST:
  *
- *  - optin:  provider proof (Google ID token, or a one-time-read access token
- *            for Dropbox/GitHub/popup-Google) + the client-computed schedule.
- *            The provider vouches for the email — the only address anyone can
- *            ever target is their own. Returns the capability token ONCE; the
- *            browser saves it in the user's own cloud file.
+ *  - optin:  the account email + the client-computed schedule. Google Drive
+ *            sends a signed ID token instead of the address (it grants
+ *            nothing; the server reads the verified email from it — US-17
+ *            AC7). Dropbox and GitHub send the ADDRESS the browser read from
+ *            the provider: no storage credential ever reaches this server
+ *            (Brad, 2026-09-10 — a Dropbox token or a GitHub PAT confers far
+ *            more than "verify my email"). An address-only optin follows the
+ *            typed lane's rules (AC8): a new address gets its capability token
+ *            ONCE (the browser saves it in the user's own cloud file); an
+ *            existing address is a schedule refresh and gets nothing back.
  *  - update: capability token + replacement schedule (client re-pushes on
  *            every data change / app visit).
  *  - cancel: capability token → opt-in row is DELETED.
@@ -31,13 +41,18 @@ import { subscribeToKlaviyo } from '../lib/klaviyo.server';
 
 // Opt-ins and schedule pushes are rare per user; this mostly slows abuse.
 const allowRequest = createRateLimiter(20, 60_000, 10 * 60_000);
+// An address-only optin names someone ELSE'S inbox for free, so it carries
+// the capture route's bounds (US-23 AC8): 5/day per email, 20/hour per IP.
+// Keyed on the hashed IP — the raw address never sits in process memory.
+const allowOptinEmail = createRateLimiter(5, DAY_MS, 30 * 60_000);
+const allowOptinIp = createRateLimiter(20, 60 * 60_000, 30 * 60_000);
 
 const bodySchema = z.union([
   z.object({
     op: z.literal('optin'),
     provider: z.enum(['google-drive', 'dropbox', 'github']),
     idToken: z.string().min(1).max(4096).optional(),
-    accessToken: z.string().min(1).max(4096).optional(),
+    email: z.string().email().max(254).optional(),
     schedule: scheduleSchema,
     // Optional TYPED marketing opt-in (§10: a deliberate typed step at the
     // reminders flow, never harvested from the provider). Transits straight
@@ -69,7 +84,8 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ error: 'Origin not allowed' }, { status: 403, headers });
   }
 
-  if (!allowRequest(getClientIp(request, 'fly'))) {
+  const ipHash = hashClientIp(getClientIp(request, 'fly'));
+  if (!allowRequest(ipHash)) {
     return Response.json({ error: 'Too many requests' }, { status: 429, headers });
   }
 
@@ -78,28 +94,44 @@ export async function action({ request }: ActionFunctionArgs) {
   const input = parsed.data;
 
   if (input.op === 'optin') {
-    let proof: ProviderProof | null = null;
+    let email: string;
+    let enrolment: Enrolment;
     if (input.provider === 'google-drive' && input.idToken) {
-      proof = { provider: 'google-drive', idToken: input.idToken };
-    } else if (input.accessToken) {
-      proof = { provider: input.provider, accessToken: input.accessToken } as ProviderProof;
+      const verified = await verifyGoogleIdToken(input.idToken);
+      if (!verified) {
+        return Response.json({ error: 'Could not verify your email with Google' }, { status: 401, headers });
+      }
+      email = verified;
+      enrolment = await upsertVerifiedOptin(email, input.schedule);
+    } else {
+      if (!input.email) return Response.json({ error: 'Missing email' }, { status: 400, headers });
+      email = input.email.toLowerCase();
+      if (!allowOptinEmail(email) || !allowOptinIp(ipHash)) {
+        return Response.json({ error: 'Too many requests' }, { status: 429, headers });
+      }
+      enrolment = await enrolByEmail(email, input.provider, input.schedule);
     }
-    if (!proof) return Response.json({ error: 'Missing provider proof' }, { status: 400, headers });
 
-    const verified = await verifyProviderEmail(proof);
-    if ('reason' in verified) {
-      // The server knows WHY (e.g. the GitHub PAT lacks the email permission);
-      // pass the machine-readable reason so the client never has to guess.
-      return Response.json(
-        { error: 'Could not verify your email with the provider', reason: verified.reason },
-        { status: 401, headers },
-      );
-    }
-
-    const token = await upsertOptin(verified.email, input.provider, input.schedule);
     // Fire-and-forget — Klaviyo must never block or fail the reminders opt-in.
     if (input.marketingEmail) void subscribeToKlaviyo({ email: input.marketingEmail });
-    return Response.json({ token, email: verified.email }, { headers });
+
+    if (enrolment.isNew) {
+      // Every lane's consent gate is delivery (US-22 AC4 / US-17 AC8): the
+      // plan-ready email's bounce or complaint un-enrols before the 3-day
+      // quiet period ends. Fire-and-forget; counted HERE because only the
+      // server knows the enrolment landed — abuse enrolments count too.
+      sendPlanReadyEmail(email, {
+        schedule: input.schedule,
+        unsubscribeUrl: buildUnsubscribeUrl(enrolment.token),
+      }).catch(() => {});
+      void recordServerEvent('reminder_optin', { provider: input.provider });
+      return Response.json({ token: enrolment.token, email }, { headers });
+    }
+    // The address is already enrolled: the schedule was refreshed and NO
+    // token is returned (AC8 — it would hand the cancel capability to whoever
+    // typed the address). This reply is a bounded membership oracle, accepted
+    // by Brad 2026-09-10; the limits above bound it.
+    return Response.json({ refreshed: true, email }, { headers });
   }
 
   if (input.op === 'update') {

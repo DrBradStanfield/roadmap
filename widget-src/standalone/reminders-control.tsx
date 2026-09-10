@@ -4,9 +4,11 @@
  *   off: "Get an email when a check-up is due" + [Turn on]
  *   on:  "✓ Email reminders on → user@example.com" + [Turn off]
  *
- * Opt-in uses the SAME cloud account that stores the data — the provider
- * vouches for the email, so nobody can point reminders at someone else's
- * inbox. The capability token lives in the user's cloud file.
+ * Opt-in goes to the email on the SAME cloud account that stores the data,
+ * read in the browser (US-17 AC7 — no storage credential leaves it). When the
+ * provider has none to give (a GitHub token without the email permission),
+ * the control asks for the address once. The capability token lives in the
+ * user's cloud file.
  *
  * Turning on opens a small inline step that also offers Dr Brad's email list
  * as an OPT-IN with a TYPED email (§10: no harvesting at cloud-connect — the
@@ -16,7 +18,7 @@
 import { useEffect, useState } from 'react';
 import { getReminderOptIn } from '../src/lib/roadmap-data';
 import { EMAIL_REGEX } from '../src/lib/email';
-import { cancelReminders, ENROL_NOTICE_KEY, optInToReminders, remindersSupported } from './reminders';
+import { cancelReminders, ENROL_NOTICE_KEY, optInToReminders, ReminderEmailNeeded, remindersSupported } from './reminders';
 import type { Backend } from './connect';
 
 export function RemindersControl({ backend }: { backend: Backend }) {
@@ -27,6 +29,12 @@ export function RemindersControl({ backend }: { backend: Backend }) {
   const [confirming, setConfirming] = useState(false);
   const [wantsUpdates, setWantsUpdates] = useState(false);
   const [typedEmail, setTypedEmail] = useState('');
+  // The provider had no email to give: ask once (never enrol silently).
+  const [needsEmail, setNeedsEmail] = useState(false);
+  const [reminderEmail, setReminderEmail] = useState('');
+  // The address was already enrolled (US-17 AC8): no token comes back, so
+  // this device cannot show "on" — say so instead of failing.
+  const [refreshedFor, setRefreshedFor] = useState<string | null>(null);
   // The opt-in lives in the user's file; local state just re-renders on change.
   const [, setVersion] = useState(0);
 
@@ -59,6 +67,8 @@ export function RemindersControl({ backend }: { backend: Backend }) {
     setConfirming(false);
     setWantsUpdates(false);
     setTypedEmail('');
+    setNeedsEmail(false);
+    setReminderEmail('');
   };
 
   const turnOn = wrap(async () => {
@@ -66,7 +76,17 @@ export function RemindersControl({ backend }: { backend: Backend }) {
     if (marketingEmail !== undefined && !EMAIL_REGEX.test(marketingEmail)) {
       throw new Error('That email doesn’t look right — please check it (or untick the box).');
     }
-    await optInToReminders(backend, { marketingEmail });
+    const email = needsEmail ? reminderEmail.trim() : undefined;
+    if (email !== undefined && !EMAIL_REGEX.test(email)) {
+      throw new Error('That email doesn’t look right — please check it.');
+    }
+    try {
+      const result = await optInToReminders(backend, { marketingEmail, email });
+      if (result.refreshed) setRefreshedFor(result.email);
+    } catch (e) {
+      if (e instanceof ReminderEmailNeeded) setNeedsEmail(true);
+      throw e;
+    }
     resetStep();
   });
   const turnOff = wrap(() => cancelReminders());
@@ -93,6 +113,15 @@ export function RemindersControl({ backend }: { backend: Backend }) {
           <span className="hr-sync-detail">
             Reminders go to the email on your connected cloud account.
           </span>
+          {needsEmail && (
+            <input
+              type="email"
+              placeholder="Email for your reminders"
+              aria-label="Email for your reminders"
+              value={reminderEmail}
+              onChange={(e) => setReminderEmail(e.target.value)}
+            />
+          )}
           <label className="hr-sync-detail">
             <input
               type="checkbox"
@@ -123,6 +152,11 @@ export function RemindersControl({ backend }: { backend: Backend }) {
             </button>
           </span>
         </div>
+      ) : refreshedFor ? (
+        <span className="hr-sync-detail">
+          Reminders are already set up for {refreshedFor} — we refreshed your schedule. To turn them off,
+          use the link in any reminder email.
+        </span>
       ) : (
         <>
           <span className="hr-sync-detail">Get an email when a check-up or blood test comes due.</span>

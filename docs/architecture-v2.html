@@ -641,7 +641,7 @@ Chat / uploads → Shopify transport OR Pages BYOK transport</code></pre>
 </table>
 
 <h2 id="identity">Identity / auth</h2>
-<p>v1's three-layer auth (Shopify HMAC → per-user JWT → Supabase RLS) is gone from the data path. In v2, <strong>identity is the cloud account</strong>: the browser does client-side OAuth (PKCE) directly with Google/Dropbox; no Brad server is in the loop, and Shopify login is irrelevant to where data lives. The cloud token never leaves the device.</p>
+<p>v1's three-layer auth (Shopify HMAC → per-user JWT → Supabase RLS) is gone from the data path. In v2, <strong>identity is the cloud account</strong>: the browser does client-side OAuth (PKCE) directly with Google/Dropbox, and Shopify login is irrelevant to where data lives. The cloud token never leaves the device. One exception, on both builds: Google grants a refresh token only to a confidential client, so the browser posts the OAuth code to <code>api.google-token</code>, which forwards it to Google with our client secret and stores nothing.</p>
 <p>The server-side HMAC app-proxy verification still exists, but only as an <em>anti-abuse front door</em> on the AI endpoints (chat, lab-import-v2) and the Klaviyo capture — see <a href="#security">Security model</a>. It is no longer how the app knows who you are.</p>
 
 <h2 id="data-path">The data path never touches Brad</h2>

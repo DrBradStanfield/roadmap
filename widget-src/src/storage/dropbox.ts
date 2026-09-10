@@ -47,6 +47,7 @@ const LIST_FOLDER_CONTINUE_URL = 'https://api.dropboxapi.com/2/files/list_folder
  *  there (spec: `host = "notify"`, `auth = "noauth"`; the cursor is the
  *  credential). It is CORS-enabled, so the browser can call it directly. */
 const LONGPOLL_URL = 'https://notify.dropboxapi.com/2/files/list_folder/longpoll';
+const ACCOUNT_URL = 'https://api.dropboxapi.com/2/users/get_current_account';
 /** Dropbox's own minimum, and its default. Seconds. */
 const LONGPOLL_TIMEOUT_S = 30;
 /** First retry after a failed poll, doubling to this ceiling. */
@@ -256,7 +257,7 @@ export class DropboxAdapter implements StorageAdapter {
   /** One JSON-in/JSON-out Dropbox call. Not `fetchOrFail`: its 30-second cap
    *  is exactly the long-poll's own timeout, and it would abort every poll a
    *  moment before Dropbox answered it. */
-  private async rpc(url: string, body: object, signal: AbortSignal, authed = false): Promise<Response> {
+  private async rpc(url: string, body: object | null, signal: AbortSignal, authed = false): Promise<Response> {
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -266,19 +267,23 @@ export class DropboxAdapter implements StorageAdapter {
       body: JSON.stringify(body),
       signal,
     });
-    if (!res.ok) throw new StorageError(`Dropbox watch failed (${res.status}).`);
+    if (!res.ok) throw new StorageError(`Dropbox call failed (${res.status}).`);
     return res;
   }
 
   // --- auth helpers ---------------------------------------------------------
 
   /**
-   * A current access token for the reminders opt-in (§10): the server uses it
-   * for ONE in-memory get_current_account read of the verified email, then
-   * discards it. Never stored server-side.
+   * The account's verified email, read HERE in the browser for the reminders
+   * opt-in (US-17 AC7): only the address crosses to Brad's server, never the
+   * access token that used to prove it. Throws on a transient failure (the
+   * caller retries next visit) — a Dropbox account always has an email.
    */
-  getReminderProofToken(): Promise<string> {
-    return this.accessToken();
+  async accountEmail(): Promise<string> {
+    const res = await this.rpc(ACCOUNT_URL, null, AbortSignal.timeout(10_000), true);
+    const account = (await res.json()) as { email?: string; email_verified?: boolean };
+    if (!account.email || account.email_verified !== true) throw new StorageError('Dropbox has not verified this account\'s email.');
+    return account.email.toLowerCase();
   }
 
   private async accessToken(): Promise<string> {

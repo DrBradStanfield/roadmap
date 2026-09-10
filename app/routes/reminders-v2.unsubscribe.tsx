@@ -9,14 +9,14 @@ import { recordServerEvent } from '../lib/product-events.server';
  *
  *  - GET  ?token=…  → tiny confirm page (a bare link click shouldn't nuke the
  *    opt-in — mail scanners prefetch GETs).
- *  - POST ?token=…  → delete the opt-in row entirely. This is also the
- *    RFC 8058 List-Unsubscribe-Post target, so inbox-native "Unsubscribe"
+ *  - POST ?token=…  → tombstone the opt-in row (schedule emptied, row kept —
+ *    see unsubscribeByToken for why a delete would not stick). This is also
+ *    the RFC 8058 List-Unsubscribe-Post target, so inbox-native "Unsubscribe"
  *    buttons work in one click.
  *
- * Unsubscribing DELETES the row — no suppression list, nothing retained. If
- * the user later reopens the app, the stale token 404s on the next schedule
- * push, the app clears it from their cloud file and shows the opt-in again
- * (re-subscribing requires a fresh explicit opt-in + provider proof).
+ * If the user later reopens the app, the next schedule push returns 404 for
+ * the tombstoned token, the app flips its cloud file to cancelled and shows
+ * the opt-in again.
  */
 
 function page(title: string, body: string): Response {

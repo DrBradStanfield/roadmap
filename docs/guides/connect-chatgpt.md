@@ -64,8 +64,9 @@ folder files at a time, or one ZIP of up to twenty, and tells you what is left. 
 in that folder and the next time you ask ChatGPT anything about your record it offers them;
 nothing runs while you are away. An iPhone HEIC photo is not read by the folder route; share
 it as a JPEG, or take a screenshot. Whatever it cannot read, it tells you why and what to
-do. Either way it shows you candidate values, in the units your record uses, before anything
-is saved: accept the ones that look right and it writes them, filing the document itself as
+do. Either way it shows you candidate values, in the units your record uses, and writes nothing
+to your record until you confirm: the candidates wait in a pending file in your own folder for
+an hour. Accept the ones that look right and it writes them, filing the document itself as
 a record with no text or image kept, just its name and date. If you connected before
 7 September 2026, refresh the connector once in ChatGPT's settings (open the connector and
 choose Refresh) so ChatGPT reads dropped files itself instead of handing them to our server. A report with no printed date is not
@@ -77,7 +78,8 @@ Drive record it refuses to import at all, because the permission it holds cannot
 files you drop in that folder; drop the file into the chat instead, or use the website
 upload. A file you drop into the chat never reaches our server; only the values ChatGPT read
 do, in memory for one request, written to your own folder. A file in your Dropbox folder goes
-through our server to Anthropic's API for extraction and is kept nowhere, a different path
+through our server to Anthropic's API for extraction, as soon as ChatGPT reads it and before
+you confirm anything. We keep none of it. Anthropic's terms say they do not train models on customer content, and their privacy centre says API inputs and outputs are deleted within 30 days unless they need to keep them to enforce their usage policy or comply with the law ([their policy](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)). That is a different path
 from the website's own upload, which reads the PDF in your browser and sends only the
 extracted text to our server.
 
@@ -99,7 +101,7 @@ It cannot see the token that runs your email reminders, if you use them. That to
 
 ## What we can see
 
-Your record still lives only in your Dropbox or Google Drive. Our server reads it, in memory, to answer ChatGPT, and keeps no copy. We store nothing about you: no account, no row, no session. What ChatGPT holds is a sealed credential that only we can open, and what we hold is the key and no credential.
+Your record still lives only in your Dropbox or Google Drive. To answer one call, our server unseals the sealed credential ChatGPT holds, opens your folder with it, and holds your record in server memory for the length of that request. It stores none of it and keeps no copy, but it does read it. We store nothing about you: no account, no row, no session. What ChatGPT holds is a credential only we can open, and what we hold is the key and no credential. If you would rather no server saw your record at all, the same tools run as a program on your own computer, straight against your own file, with nothing of ours in between: see [Claude on your own computer](connect-claude-desktop.md).
 
 Check what it files. An AI can misread a lab report the same way a person can, and the record is yours, so the last look at a new value should be yours too.
 
@@ -109,7 +111,7 @@ Take care with the web tool open in another tab while ChatGPT is writing. The pa
 
 ## How to cancel it
 
-Go to [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps), or [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive, and unlink Health by Dr Brad. That is the real switch, and it is yours, not ours. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing, and how to disconnect.
+Go to [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps), or [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive, and unlink Health by Dr Brad. That is the real switch, and it is yours, not ours. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing of your record, and how to disconnect.
 
 One thing to know before you press it: the provider ties the folder to the app, so unlinking also disconnects this website from your record. The tool will ask you to connect again next time you open it, which is one click.
 

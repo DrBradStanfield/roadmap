@@ -1,8 +1,10 @@
 /**
  * Client half of the §10 email-reminders model.
  *
- * Opt-in:  compute the forward schedule from the user's file, prove the
- *          account email via the connected cloud provider, POST both to
+ * Opt-in:  compute the forward schedule from the user's file, read the
+ *          account email from the connected cloud provider HERE (only Google
+ *          sends a signed ID token instead — it grants nothing; US-17 AC7:
+ *          no storage credential ever leaves the browser), POST both to
  *          Brad's server, and save the returned capability token in the
  *          user's OWN cloud file (it follows them across devices).
  *          Since US-17 this is DEFAULT-ON: autoEnrolReminders() runs the same
@@ -41,16 +43,25 @@ import type { Backend } from './connect';
 
 const REMINDERS_API_URL = 'https://health-tool-app.fly.dev/api/reminders-v2';
 
-/** Set once the provider has REFUSED to vouch for the email (401). That answer
- *  won't change on its own, and silent retries would re-post the credential on
- *  every visit forever. The manual toggle still works — and still shows the
- *  actionable "your GitHub token needs the email permission" message. */
+/** Set once the provider has NO email to give (a GitHub PAT without the email
+ *  permission, a pre-openid Drive grant). That answer won't change on its own,
+ *  so auto-enrolment stops asking; the manual toggle still works and asks the
+ *  user to type the address once. Never set on a transient failure. */
 const AUTO_ENROL_BLOCKED_KEY = 'hr_reminders_autoenrol_blocked';
+
+/** Thrown by the manual path when the provider has no email: the control
+ *  answers by showing a one-time typed field — never a silent enrolment. */
+export class ReminderEmailNeeded extends Error {
+  constructor() {
+    super('We could not read the email on your cloud account — type the address reminders should go to.');
+    this.name = 'ReminderEmailNeeded';
+  }
+}
 
 /** Survives a reload so the enrolment notice isn't lost to one refresh. */
 export const ENROL_NOTICE_KEY = 'hr_reminders_notice';
 
-/** Reminders need a provider-verified email — §10 scopes them to these three. */
+/** Reminders need an account email the browser can read — §10 scopes them to these three. */
 export type ReminderBackend = 'google-drive' | 'dropbox' | 'github';
 export function remindersSupported(backend: Backend): backend is ReminderBackend {
   return backend === 'google-drive' || backend === 'dropbox' || backend === 'github';
@@ -66,78 +77,74 @@ async function post(body: unknown, keepalive = false): Promise<Response> {
 }
 
 /**
- * Provider proof for the opt-in (§10). The Google path may need a user gesture
- * (popup fallback), so call the non-silent form from a click handler only.
- *
- * `silent` = the US-17 auto-enrolment path: no popup, ever. Returns null when
- * the provider can't vouch for the email without one — auto-enrolment then
- * simply doesn't happen this visit and retries on the next.
+ * Who the reminders go to, read in the browser (US-17 AC7). Google: a fresh
+ * signed ID token (verified server-side; it grants nothing). Dropbox and
+ * GitHub: the account email itself. Null = the provider has no email to give
+ * (never a transient failure — those throw, and the caller retries).
  */
-async function proofFor(
-  backend: ReminderBackend,
-  silent?: boolean,
-): Promise<{ idToken: string } | { accessToken: string } | null> {
+async function identityFor(backend: ReminderBackend): Promise<{ idToken: string } | { email: string } | null> {
   if (backend === 'google-drive') {
-    return new GoogleDriveAdapter(googleDriveConfig()).getReminderProof(silent);
+    const drive = new GoogleDriveAdapter(googleDriveConfig());
+    const idToken = await drive.getReminderIdToken();
+    if (idToken) return { idToken };
+    const email = drive.accountEmail();
+    return email ? { email } : null;
   }
-  if (backend === 'dropbox') {
-    return { accessToken: await new DropboxAdapter(dropboxConfig()).getReminderProofToken() };
-  }
-  return { accessToken: new GitHubAdapter().getReminderProofToken() };
+  if (backend === 'dropbox') return { email: await new DropboxAdapter(dropboxConfig()).accountEmail() };
+  const email = await new GitHubAdapter().accountEmail();
+  return email ? { email } : null;
+}
+
+export interface OptInResult {
+  email: string;
+  /** True when the address was ALREADY enrolled: the server refreshed its
+   *  schedule and returned no token (US-17 AC8 — a token to whoever names an
+   *  address would be the cancel capability). Nothing was written to the file. */
+  refreshed: boolean;
 }
 
 /**
- * Turn reminders on. Returns the provider-verified email they'll go to.
- * Call from a click handler unless `silent` — the Google fallback opens a popup.
+ * Turn reminders on. Returns the email they'll go to.
  *
  * marketingEmail: the OPTIONAL typed marketing opt-in (§10 — email capture is
  * a typed step at the reminders flow, never harvested at cloud-connect). It
  * transits Brad's server straight to Klaviyo and is never stored in the
- * reminder row; reminders themselves always go to the provider-verified email.
+ * reminder row.
  *
- * silent: the US-17 auto-enrolment path (no popup, no typed input). The two
- * options are mutually exclusive by construction — nobody types an address
- * into a flow they never opened.
+ * email: the typed reminders address, for the one case the provider has none
+ * to give (ReminderEmailNeeded on the previous attempt). Manual path only.
+ *
+ * silent: the US-17 auto-enrolment path (no typed input, no error surfaced).
  */
 export async function optInToReminders(
   backend: Backend,
-  { marketingEmail, silent }: { marketingEmail?: string; silent?: boolean } = {},
-): Promise<string> {
+  { marketingEmail, email, silent }: { marketingEmail?: string; email?: string; silent?: boolean } = {},
+): Promise<OptInResult> {
   if (!remindersSupported(backend)) throw new Error('Reminders need a connected cloud account.');
   const schedule = computeCurrentReminderSchedule();
-  const proof = await proofFor(backend, silent);
-  if (!proof) throw new Error('Your cloud account could not confirm your email address.');
+  const identity = email ? { email } : await identityFor(backend);
+  if (!identity) {
+    if (silent) safeSetItem(AUTO_ENROL_BLOCKED_KEY, '1');
+    throw new ReminderEmailNeeded();
+  }
   const res = await post({
     op: 'optin',
     provider: backend,
-    ...proof,
+    ...identity,
     schedule,
     marketingEmail, // optional — JSON.stringify drops it when undefined
   });
   if (!res.ok) {
-    // 401 = the provider refused to vouch for the email. Retrying silently on
-    // every page load would re-post the user's access token (a GitHub PAT holds
-    // write access to the repo their health data lives in) forever, for an
-    // answer that never changes. Stop; the manual toggle still works.
-    if (silent && res.status === 401) safeSetItem(AUTO_ENROL_BLOCKED_KEY, '1');
-    const body = (await res.json().catch(() => ({}))) as { error?: string; reason?: string };
-    // The server says WHY verification failed — map its reason to user copy.
-    if (body.reason === 'github-email-permission') {
-      throw new Error(
-        "GitHub couldn't confirm your email — your token needs the account permission " +
-          '"Email addresses (read-only)". Add it to the token (or create a new one) and retry.',
-      );
-    }
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(body.error || `Could not set up reminders (${res.status}).`);
   }
-  const { token, email } = (await res.json()) as { token: string; email: string };
-  setReminderOptIn({ status: 'active', token, email, provider: backend });
+  const reply = (await res.json()) as { token?: string; email: string };
+  if (!reply.token) return { email: reply.email, refreshed: true };
+  setReminderOptIn({ status: 'active', token: reply.token, email: reply.email, provider: backend });
   await flushRoadmapStore(); // the token must reach the cloud file
-  // Counted only once the enrolment is DURABLE. Counting before the flush
-  // inflates the denominator of US-17's kill criterion: a failed flush leaves
-  // no file record, so the next visit enrols — and counts — the same person again.
-  trackProductEvent('reminder_optin', { provider: backend });
-  return email;
+  // reminder_optin is counted by the SERVER when the row lands (every lane) —
+  // only it knows the enrolment happened, and abuse enrolments count too.
+  return { email: reply.email, refreshed: false };
 }
 
 /**
@@ -152,11 +159,12 @@ export async function optInToReminders(
  * opt-out rides the file to every device and must never be undone here).
  * Silent by construction: no popup, and a failure is never surfaced — an
  * enrolment the user didn't ask for must not produce an error they didn't ask
- * for either. The next visit retries.
+ * for either. The next visit retries, unless the provider has no email to
+ * give (then only the manual toggle, which asks for one, can enrol).
  *
  * AC1b is the knowing cost: every cloud-connecting user's due dates + labels +
- * provider-verified email now reach the server, where before only explicit
- * opt-ins did. AC5 still holds — no measurement, value or reasoning goes with
+ * account email now reach the server, where before only explicit opt-ins
+ * did. AC5 still holds — no measurement, value or reasoning goes with
  * them, and the visible statement of exactly that ships alongside (AC1).
  */
 export async function autoEnrolReminders(backend: Backend): Promise<void> {
@@ -167,7 +175,7 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
   // toggle. (Also: trackProductEvent no-ops off-Shopify, so a Pages opt-out
   // would be invisible to the very ratio this decision reverts on.)
   if (!SHOPIFY_SURFACE) return;
-  if (!remindersSupported(backend)) return; // AC6: no cloud → no verified email → never enrolled
+  if (!remindersSupported(backend)) return; // AC6: no cloud → no account email → never enrolled
   if (safeGetItem(AUTO_ENROL_BLOCKED_KEY)) return;
 
   const optIn = getReminderOptIn();
@@ -182,7 +190,10 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
     // switch is not a user opting out, and must not be counted as one.
     if (optIn?.status === 'active') await post({ op: 'cancel', token: optIn.token });
 
-    await optInToReminders(backend, { silent: true });
+    // An already-enrolled address (token lost with the file, or enrolled from
+    // another lane) is refreshed server-side and nothing is written here —
+    // there is no enrolment to announce, and the next visit refreshes again.
+    if ((await optInToReminders(backend, { silent: true })).refreshed) return;
     try { sessionStorage.setItem(ENROL_NOTICE_KEY, '1'); } catch { /* the live event still fires */ }
     window.dispatchEvent(new Event('hr:reminders-changed'));  // re-render the control
     window.dispatchEvent(new Event('hr:reminders-enrolled')); // show the one-time notice

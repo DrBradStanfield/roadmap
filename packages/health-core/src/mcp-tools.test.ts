@@ -683,9 +683,49 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
     expect(reportFeedback({ ...GOOD, title: 'ferritin 210 ng/mL rejected' }, NOW).status).toBe('rejected');
   });
 
-  it('lets a bare number through — a page number is not a lab result', () => {
+  it('refuses a bare number beside a name this record knows — the unit is not what makes it a value', () => {
+    for (const detail of [
+      'My LDL is 3.2',
+      'it filed ferritin as 210 and I never said that',
+      'the hba1c row says 42 but the report said otherwise',
+      // Short names are names: "Lp(a)" is one word, not "lp" and "a".
+      'BP 140/90 went in the wrong column',
+      'free T4 15 was refused',
+      'my Lp(a) is 90 and it shows nothing',
+    ]) {
+      const outcome = reportFeedback({ ...GOOD, detail }, NOW);
+      expect(outcome, detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
+    }
+  });
+
+  it('refuses an email address, a phone number and a link carrying a query string — a public issue names nobody', () => {
+    for (const detail of [
+      'I have HIV. Contact synthetic@example.invalid',
+      'call me back on +64 21 555 0199',
+      'it broke at https://example.invalid/plan?token=abc123',
+    ]) {
+      const outcome = reportFeedback({ ...GOOD, detail }, NOW);
+      expect(outcome, detail).toMatchObject({ status: 'rejected', reason: 'contact' });
+      expect(outcome.text, detail).toContain('contact details');
+    }
+    expect(reportFeedback({ ...GOOD, title: 'reply to synthetic@example.invalid' }, NOW).status).toBe('rejected');
+  });
+
+  it('lets through what a bug report is actually made of', () => {
+    // A page number is not a lab result; a metric NAME with no number is the
+    // whole point of a bug report; a day and a plain link carry nothing.
     expect(url({ ...GOOD, detail: 'See page 2 of the guide; it failed 3 times in a row.' })
       .searchParams.get('body')).toContain('page 2');
+    for (const detail of [
+      'the chart shows the wrong unit for HbA1c',
+      'it started on 2026-09-01 at 09:15 and has not stopped',
+      'the steps are at https://example.invalid/guide',
+      // The short words a bug report is full of: a clock, a sigh, a verb, &gt;.
+      'it broke at 9 am, oh and 2 tabs were open',
+      'the value sat at 3 for a minute and &gt; 4 rows vanished',
+    ]) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
+    }
   });
 });
 
@@ -846,6 +886,13 @@ describe('US-32 AC9 — a surface that can file, files it', () => {
     const outcome = await fileFeedback({ ...GOOD, detail: 'My LDL of 4.2 mmol/L looks wrong' }, NOW, filer);
     expect(outcome).toMatchObject({ status: 'rejected', reason: 'health-value' });
     expect(outcome.text).toContain('reads as a health value');
+    expect(seen).toHaveLength(0);
+  });
+
+  it('refuses contact details before anything can leave, and files nothing', async () => {
+    const { seen, filer } = spy();
+    const outcome = await fileFeedback({ ...GOOD, detail: 'email me at synthetic@example.invalid' }, NOW, filer);
+    expect(outcome).toMatchObject({ status: 'rejected', reason: 'contact' });
     expect(seen).toHaveLength(0);
   });
 
@@ -1998,9 +2045,17 @@ describe('US-36 AC9 — the assistant’s manners are the only gate when a clien
 });
 
 describe('US-36 AC11 — tools/list stays inside ChatGPT’s budget', () => {
-  it('keeps name + description + inputSchema under 16,000 characters across all nine tools (≈4,000 tokens of the 5,000 cap)', () => {
+  // Raised from 16,000 on 2026-09-10, when import_documents and file_results
+  // took on what happens to a parked candidate — the promise the user is owed,
+  // in the text the model reads. The cap that is real is ChatGPT's 5,000 tokens
+  // for the whole list. Measured, not assumed: 16,178 characters of this list
+  // tokenized to 4,226 (3.83 chars/token — schema JSON tokenizes far worse than
+  // prose), so 16,400 is ≈4,280 tokens and the cushion is ~14%, not the ~20% a
+  // 4-chars-per-token rule of thumb would suggest. Tighten the prose before
+  // raising this again; past ~17,500 characters the list stops fitting.
+  it('keeps name + description + inputSchema under 16,400 characters across all nine tools (≈4,280 tokens of the 5,000 cap)', () => {
     const chars = MCP_TOOLS.reduce((sum, { name, description, inputSchema }) => sum + JSON.stringify({ name, description, inputSchema }).length, 0);
-    expect(chars).toBeLessThanOrEqual(16_000);
+    expect(chars).toBeLessThanOrEqual(16_400);
   });
 });
 
@@ -2044,6 +2099,10 @@ describe('US-32 AC29 — a refusal says why, in a closed vocabulary', () => {
     for (const reason of MCP_REFUSAL_REASONS) expect(reason).toMatch(/^[a-z-]+$/);
     expect(new Set(MCP_REFUSAL_REASONS).size).toBe(MCP_REFUSAL_REASONS.length);
     expect(isRefusalReason('slot-occupied')).toBe(true);
+    // The report guard's two words, both of which a counter must be able to name.
+    expect(MCP_REFUSAL_REASONS).toContain('health-value');
+    expect(MCP_REFUSAL_REASONS).toContain('contact');
+    expect(isRefusalReason('contact')).toBe(true);
     // Anything the vocabulary does not name is not a reason, so it cannot be filed.
     for (const notAReason of ['81 kg', 'ldl', 'results.pdf', '2026-01-02', '']) {
       expect(isRefusalReason(notAReason)).toBe(false);

@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { EXPECTED_NETWORK_ERRORS } from './error-diagnostics';
-import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl } from '@roadmap/health-core';
+import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl, scrubEventText } from '@roadmap/health-core';
 
 declare const __SENTRY_RELEASE__: string;
 
@@ -124,6 +124,10 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
       .map(b => scrubBreadcrumb({ ...b }))
       .filter((b): b is Sentry.Breadcrumb => b !== null);
   }
+  // Free text is what the key scrub cannot see — a health value written into a
+  // sentence survives in an exception message or an `extra` string. Same rules
+  // as the server (one shared implementation). Stack frames stay intact.
+  scrubEventText(event);
   return event;
 }
 

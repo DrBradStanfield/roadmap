@@ -95,6 +95,26 @@ interface Stored {
   folderName?: string;
   /** Document subfolder ids (e.g. 'Lab results' → id), cached per device. */
   subfolders?: Record<string, string>;
+  /** The account's verified email, decoded from the ID token at connect /
+   *  refresh — the reminders control prefills it. Never sent as proof: the
+   *  signed ID token itself is (US-17 AC7). */
+  accountEmail?: string;
+}
+
+/**
+ * The verified email inside a Google ID token, or null. No signature check:
+ * this runs in the user's own browser on a token Google just handed it, and
+ * the only consumer is a prefill. The server verifies the token itself.
+ */
+export function decodeIdTokenEmail(idToken: string): string | null {
+  try {
+    const payload = idToken.split('.')[1] ?? '';
+    const bytes = Uint8Array.from(atob(payload.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+    const claims = JSON.parse(new TextDecoder().decode(bytes)) as { email?: string; email_verified?: boolean };
+    return claims.email_verified === true && claims.email ? claims.email.toLowerCase() : null;
+  } catch {
+    return null;
+  }
 }
 
 interface DriveTokens {
@@ -163,7 +183,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
   private stored: Stored | null;
   private tokens: DriveTokens | null;
   /** Signed ID token from the most recent server refresh (openid grants only) —
-   *  consumed by getReminderProof; never persisted. */
+   *  consumed by getReminderIdToken; never persisted. */
   private lastIdToken: string | null = null;
   /** At-most-once-per-session guard for the cosmetic folder migration. */
   private folderCheckDone = false;
@@ -245,13 +265,14 @@ export class GoogleDriveAdapter implements StorageAdapter {
     if (!res.ok) {
       throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`);
     }
-    const json = (await res.json()) as { accessToken: string; refreshToken?: string; expiresIn: number };
+    const json = (await res.json()) as { accessToken: string; refreshToken?: string; expiresIn: number; idToken?: string };
     setJson(TOKENS_KEY, {
       accessToken: json.accessToken,
       refreshToken: json.refreshToken,
       expiresAt: expiry(json.expiresIn),
     } satisfies DriveTokens);
-    setJson(CONFIG_KEY, {} satisfies Stored);
+    const accountEmail = json.idToken ? decodeIdTokenEmail(json.idToken) : null;
+    setJson(CONFIG_KEY, { ...(accountEmail ? { accountEmail } : {}) } satisfies Stored);
     // Strip ?code/&state so a refresh doesn't re-trigger.
     window.history.replaceState({}, '', config.redirectUri);
     return new GoogleDriveAdapter(config);
@@ -295,6 +316,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
     if (!res.ok) return false;
     const json = (await res.json()) as { accessToken: string; expiresIn: number; idToken?: string };
     this.lastIdToken = json.idToken ?? null;
+    const accountEmail = this.lastIdToken ? decodeIdTokenEmail(this.lastIdToken) : null;
+    if (accountEmail && this.stored && this.stored.accountEmail !== accountEmail) {
+      this.stored = { ...this.stored, accountEmail };
+      setJson(CONFIG_KEY, this.stored);
+    }
     this.saveTokens({
       accessToken: json.accessToken,
       refreshToken: this.tokens.refreshToken, // refresh grants don't re-issue it
@@ -310,28 +336,21 @@ export class GoogleDriveAdapter implements StorageAdapter {
   }
 
   /**
-   * Proof of the account's verified email for the reminders opt-in (§10).
-   * PREFERRED: a signed ID token from a refresh grant — Google's signature
-   * vouches for the email and no Drive-capable token ever leaves the browser.
-   * FALLBACK (popup sessions, or pre-email-scope grants that return no ID
-   * token): a fresh GIS popup token, which the server uses for ONE in-memory
-   * userinfo read. Needs a user gesture — call from the opt-in click.
-   *
-   * `silent` (US-17 auto-enrolment) forbids that fallback and returns null
-   * instead: auto-enrolment runs at page load, where a popup is both blocked
-   * by the browser and unasked-for by the user. Null = retry next visit.
+   * A fresh signed ID token for the reminders opt-in (US-17 AC7) — the one
+   * credential the server still accepts, because it grants nothing. Reuses the
+   * one token-refresh implementation (incl. its revoked-token handling); the
+   * refresh grant returns a fresh ID token when the original grant included
+   * openid. Null when there is none: the popup path that used to send a Drive
+   * ACCESS token as fallback is gone — the caller falls back to the address
+   * (accountEmail) or asks for one. Never opens a popup.
    */
-  async getReminderProof(silent = false): Promise<{ idToken: string } | { accessToken: string } | null> {
-    // Reuses the one token-refresh implementation (incl. its revoked-token
-    // handling); the refresh grant returns a fresh signed ID token when the
-    // original grant included openid.
-    if (await this.tryServerRefresh()) {
-      if (this.lastIdToken) return { idToken: this.lastIdToken };
-    }
-    if (silent) return null;
-    const token = await this.acquireViaGis();
-    this.saveTokens({ ...this.tokens, accessToken: token.accessToken, expiresAt: token.expiresAt });
-    return { accessToken: token.accessToken };
+  async getReminderIdToken(): Promise<string | null> {
+    return (await this.tryServerRefresh()) ? this.lastIdToken : null;
+  }
+
+  /** The verified account email captured at connect/refresh, or null (pre-openid grants, popup sessions). */
+  accountEmail(): string | null {
+    return this.stored?.accountEmail ?? null;
   }
 
   // --- file ops -------------------------------------------------------------

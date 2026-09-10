@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { scrubSensitiveData, scrubUrl, scrubBreadcrumbData } from './sentry-scrub';
+import { scrubSensitiveData, scrubUrl, scrubBreadcrumbData, scrubText, scrubEventText, dropLongStrings } from './sentry-scrub';
 
 describe('scrubSensitiveData', () => {
   describe('health measurement fields', () => {
@@ -320,5 +320,114 @@ describe('scrubBreadcrumbData', () => {
     const original = { ...data };
     scrubBreadcrumbData(data);
     expect(data).toEqual(original);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Free-text scrub — the gap a ChatGPT audit found on 2026-09-10: the LDL FIELD
+// was redacted, but the same sentence survived in the exception message, in an
+// `extra.message` string and in console breadcrumb arguments.
+// ---------------------------------------------------------------------------
+describe('scrubText', () => {
+  const AUDIT = 'My LDL is 3.2 mmol/L and I have diabetes, what should I do?';
+
+  it('redacts a number with a unit', () => {
+    expect(scrubText(AUDIT)).toBe('My LDL is [value] and I have diabetes, what should I do?');
+    expect(scrubText('weighed 96.4kg this morning')).toBe('weighed [value] this morning');
+    expect(scrubText('BP 128 mmHg')).toBe('BP [value]');
+  });
+
+  it('redacts a number beside a metric or lab name, in either order', () => {
+    expect(scrubText('cholesterol 200')).toBe('cholesterol [value]');
+    expect(scrubText('an ApoB of 0.9 was reported')).toBe('an ApoB of [value] was reported');
+    expect(scrubText('42 is my hba1c')).toBe('[value] is my hba1c');
+  });
+
+  it('redacts a blood-pressure pair', () => {
+    expect(scrubText('BP 140/90')).toBe('BP [value]');
+    expect(scrubText('blood pressure 138/88 mmHg')).toBe('blood pressure [value]');
+  });
+
+  it('redacts a dose', () => {
+    expect(scrubText('metformin 500mg daily')).toBe('metformin [value] daily');
+    expect(scrubText('take 25 mcg and 2 units')).toBe('take [value] and [value]');
+  });
+
+  it('reads inches only as a unit, never as the English word', () => {
+    expect(scrubText('ran 5 in the morning')).toBe('ran 5 in the morning');
+    expect(scrubText('status 500 in 12ms, took 250 in total'))
+      .toBe('status 500 in 12ms, took 250 in total');
+    expect(scrubText('height 68 in.')).toBe('height [value].');
+    expect(scrubText('68" tall')).toBe('[value] tall');
+  });
+
+  it('reaches a metric name up to the end of the 20-character window', () => {
+    expect(scrubText('my ldl on the panel read 4.2 today'))
+      .toBe('my ldl on the panel read [value] today');
+    // Beyond the window it does not — a stated limit.
+    expect(scrubText('my ldl, from the printed panel last week, read 4.2'))
+      .toContain('4.2');
+  });
+
+  it('redacts email addresses', () => {
+    expect(scrubText('write to brad@example.com now')).toBe('write to [email] now');
+  });
+
+  it('leaves ordinary diagnostic text alone', () => {
+    const line = 'POST /apps/health-tool/api/chat failed with status 500 after 3 attempts';
+    expect(scrubText(line)).toBe(line);
+  });
+
+  it('does not attempt condition words — a stated limit, not an oversight', () => {
+    expect(scrubText(AUDIT)).toContain('diabetes');
+  });
+});
+
+describe('scrubEventText', () => {
+  const AUDIT = 'My LDL is 3.2 mmol/L and I have diabetes';
+
+  it('scrubs the exception value, extra strings and breadcrumbs, keeping frames', () => {
+    const event = {
+      message: AUDIT,
+      exception: {
+        values: [{
+          type: 'ValidationError',
+          value: AUDIT,
+          stacktrace: { frames: [{ filename: 'app/routes/api.chat.tsx', lineno: 42 }] },
+        }],
+      },
+      extra: { message: AUDIT, count: 3 },
+      tags: { area: 'chat', note: 'cholesterol 200' },
+      breadcrumbs: [{ category: 'console', message: AUDIT, data: { arguments: [AUDIT] } }],
+      request: { url: '/api/chat?q=ldl%204.2' },
+    };
+    scrubEventText(event);
+
+    expect(event.message).toBe('My LDL is [value] and I have diabetes');
+    expect(event.exception.values[0].value).not.toContain('3.2');
+    // Error class and stack frames are diagnostics, never redacted.
+    expect(event.exception.values[0].type).toBe('ValidationError');
+    expect(event.exception.values[0].stacktrace.frames[0].filename).toBe('app/routes/api.chat.tsx');
+    expect((event.extra as Record<string, unknown>).message).not.toContain('3.2');
+    expect((event.extra as Record<string, unknown>).count).toBe(3);
+    expect((event.tags as Record<string, unknown>).note).toBe('cholesterol [value]');
+    const crumb = event.breadcrumbs[0] as { message: string; data: { arguments: string[] } };
+    expect(crumb.message).not.toContain('3.2');
+    expect(crumb.data.arguments[0]).not.toContain('3.2');
+  });
+});
+
+describe('dropLongStrings', () => {
+  it('drops a string longer than the limit, key and all', () => {
+    const out = dropLongStrings({ blob: 'x'.repeat(300), note: 'short', n: 1 }) as Record<string, unknown>;
+    expect('blob' in out).toBe(false);
+    expect(out.note).toBe('short');
+    expect(out.n).toBe(1);
+  });
+
+  it('reaches nested objects', () => {
+    const out = dropLongStrings({ ctx: { blob: 'y'.repeat(201), ok: 'k' } }) as { ctx: Record<string, unknown> };
+    expect('blob' in out.ctx).toBe(false);
+    expect(out.ctx.ok).toBe('k');
   });
 });

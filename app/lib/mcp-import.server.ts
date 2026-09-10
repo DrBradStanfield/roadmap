@@ -30,7 +30,7 @@ import { type McpClientLabel, readCappedBytes } from './mcp-clients.server';
 import { type AccessPayload, chargeWrites, connectionKey, importFiles, WRITE_COST } from './mcp-grants.server';
 import { audienceFor, hash, issueStep, openStep } from './mcp-seal.server';
 import { recordServerEvent } from './product-events.server';
-import { DAY_MS, machineFiles } from './rate-limiter';
+import { machineFiles } from './rate-limiter';
 import { deadlineSignal, StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
 import { IMPORT_LIMITS, IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
 import {
@@ -80,9 +80,13 @@ export const MAX_IMPORT_FILE_BYTES = IMPORT_LIMITS.fileMb * 1024 * 1024;
 /** One ZIP, as downloaded — and the most one ChatGPT file may be. */
 export const MAX_IMPORT_ZIP_BYTES = IMPORT_LIMITS.zipMb * 1024 * 1024;
 export const CHATGPT_FETCH_TIMEOUT_MS = 10_000;
-/** Where a pending payload lives in the user's folder, and how long before an extract sweeps it. */
+/** Where a pending payload lives in the user's folder, and how long before the next import sweeps it. */
 export const PENDING_FOLDER = 'imports';
-const PENDING_STALE_MS = DAY_MS;
+// Twice a receipt's life: past that the receipt is certainly dead, so the file
+// is residue and nothing can still be committed from it. A commit deletes its
+// own file; the sweep only takes what an extract nobody confirmed left behind,
+// and it runs on the next `stash`, which every route passes through.
+const PENDING_STALE_MS = 2 * RECEIPT_LIFETIME_SECONDS * 1000;
 const EXTRACT_CONCURRENCY = 3;
 /** One model call, HTTP. Inside the budget by construction; a hung call fails, never waits. */
 const EXTRACT_TIMEOUT_MS = 20_000;
@@ -273,6 +277,15 @@ export async function fetchChatgptFile(downloadUrl: string, signal?: AbortSignal
 // The surface
 // ---------------------------------------------------------------------------
 
+/**
+ * A pending file that would not delete, as a COUNT: one Sentry title, no file
+ * name, no path, no error text (AC9). What it costs is a file that lives until
+ * the sweep takes it, so the number is the whole signal.
+ */
+function countCleanupFailure(): void {
+  Sentry.captureMessage('mcp_import: pending file not deleted', { level: 'warning', tags: { feature: 'mcp_import' } });
+}
+
 function pendingName(id: string): string {
   return `${PENDING_FOLDER}/pending-${id}.json`;
 }
@@ -331,6 +344,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       }
     } catch {
       // A sweep that fails costs a stale file, not the import.
+      countCleanupFailure();
     }
   }
 
@@ -344,7 +358,6 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
     budgetMs: MCP_IMPORT_BUDGET_MS,
 
     async extract(request: ImportRequest, file: RoadmapFile, now: string, deadline: number): Promise<ImportBundle | ImportRefusal> {
-      const started = Date.now();
       // Every listing, download and model call ends by here; the reserve is for slotting and the stash.
       const ioDeadline = deadline - BUDGET_RESERVE_MS;
       const signal = deadlineSignal(ioDeadline);
@@ -398,7 +411,6 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       }
 
       // Off the critical path: it overlaps the reads below and is awaited at the end.
-      const sweep = sweepStale(started, signal);
 
       /** One file through the model, inside what is left of the budget. */
       const extractOne = async (name: string, bytes: Uint8Array, mimeType: SniffedType): Promise<ExtractedFile> => {
@@ -493,7 +505,6 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
         while (queue.length) await queue.shift()!();
       };
       await Promise.all(Array.from({ length: Math.min(EXTRACT_CONCURRENCY, queue.length) }, runner));
-      await sweep;
 
       const files = results.flat();
       // What time cut off is `remaining` on every route, and the assistant is told (AC2). The folder route
@@ -513,6 +524,12 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
     async stash(payload: ImportPayload, deadline: number) {
       // The assistant route has no extract of its own to count (US-36 usage signal): every propose that read something parks here.
       if (payload.route === 'assistant') count('assistant', 'extract', 1);
+      const signal = deadlineSignal(deadline);
+      // Every route parks here — the Dropbox folder, a file the assistant read,
+      // Drive — so this is the one place a sweep reaches every user. It was in
+      // `extract`, which `file_results` and every Drive user never call, so
+      // their abandoned pending files were never swept at all.
+      const swept = sweepStale(Date.parse(payload.createdAt), signal);
       // The receipt names the pending file (`jti` = the payload id) and hashes it (`subject`), sealed like every credential (AC7).
       const { token: receipt, claims } = issueStep(
         'import',
@@ -520,9 +537,9 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
         audience,
         Date.parse(payload.createdAt),
       );
-      try {
-        await adapter.write(pendingName(payload.id), payload, null, deadlineSignal(deadline));
-      } catch {
+      const parked = await adapter.write(pendingName(payload.id), payload, null, signal).then(() => true, () => false);
+      await swept;
+      if (!parked) {
         return { refusal: 'The candidates could not be parked in the user’s folder, so there is nothing to commit. Try the import again.' };
       }
       return { receipt, expiresAt: new Date(claims.exp * 1000).toISOString() };
@@ -565,7 +582,9 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       try {
         await adapter.remove?.(pendingName(payload.id), deadlineSignal(deadline));
       } catch {
-        // A pending file that outlives its commit is swept on the next extract.
+        // Best effort: the commit already answered. A pending file that outlives
+        // it is swept on the next extract.
+        countCleanupFailure();
       }
     },
   };

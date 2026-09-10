@@ -14,7 +14,7 @@ vi.mock('./email.server', () => ({
 vi.mock('./reminder-v2.server', () => ({
   buildUnsubscribeUrl: vi.fn(() => 'https://example.com/unsub'),
   getOptinsBatch: vi.fn(async () => []),
-  inTypedQuietPeriod: vi.fn(() => false),
+  inQuietPeriod: vi.fn(() => false),
   recordSent: vi.fn(),
 }));
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn() }));

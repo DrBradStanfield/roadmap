@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
 import * as Sentry from '@sentry/react-router';
@@ -232,7 +233,26 @@ export async function getOrCreateSupabaseUser(
 // Guest chat session management
 // ---------------------------------------------------------------------------
 
-// IP rate limit for guest session creation: 10 new sessions/hour per IP,
+/**
+ * The stand-in for a guest's IP everywhere it is compared or stored (US-15 AC7,
+ * 2026-09-10). A salted HMAC: equal addresses give equal values, so the session
+ * check and the rate-limit bucket work unchanged, but a stored value cannot be
+ * read back into an address, and a rainbow table of the whole IPv4 space does
+ * not help without the key.
+ *
+ * The salt is derived from `SHOPIFY_API_SECRET` — the app-proxy secret every
+ * surface that can reach this code already carries, so no new env var and no
+ * key to rotate separately. The HKDF info string keeps it separate from the
+ * proxy signature that uses the same secret.
+ */
+export function hashClientIp(ip: string): string {
+  const secret = process.env.SHOPIFY_API_SECRET;
+  if (!secret) throw new Error('SHOPIFY_API_SECRET is not configured');
+  const key = crypto.hkdfSync('sha256', secret, Buffer.alloc(0), 'guest-ip/v1', 32);
+  return crypto.createHmac('sha256', Buffer.from(key)).update(ip, 'utf8').digest('base64url');
+}
+
+// Hashed-IP rate limit for guest session creation: 10 new sessions/hour per IP,
 // per-process in-memory. Resets on redeploy; effective ceiling is ~N × 10/hr
 // where N is the Fly machine count. Sophisticated IP-rotation abuse isn't
 // caught here — would need an upstream WAF.
@@ -264,6 +284,9 @@ export async function getOrCreateGuestSession(
   if (!supabaseAdmin) throw new Error('Supabase admin client not configured');
 
   const now = Date.now();
+  // Nothing below this line touches `ip` again (US-15 AC7): the session row,
+  // the rate-limit bucket and the audit entry all key on the hash.
+  const ipHash = hashClientIp(ip);
 
   // Existing session — validate token + IP (checked BEFORE rate limit to avoid penalizing returning guests)
   if (sessionToken) {
@@ -273,19 +296,19 @@ export async function getOrCreateGuestSession(
       .eq('session_token', sessionToken)
       .single();
 
-    if (session && session.ip_address === ip) {
+    if (session && session.ip_address === ipHash) {
       return { sessionId: session.id, sessionToken: session.session_token };
     }
     // Invalid token or IP mismatch — fall through to create new session
   }
 
   // In-memory IP rate limit (only for new session creation, not returning sessions)
-  const ipEntry = guestIpRateMap.get(ip);
+  const ipEntry = guestIpRateMap.get(ipHash);
   if (ipEntry && now < ipEntry.resetAt && ipEntry.count >= GUEST_IP_RATE_MAX) {
     throw new GuestRateLimitError('Too many requests');
   }
   if (!ipEntry || now > ipEntry.resetAt) {
-    guestIpRateMap.set(ip, { count: 1, resetAt: now + GUEST_IP_RATE_WINDOW_MS });
+    guestIpRateMap.set(ipHash, { count: 1, resetAt: now + GUEST_IP_RATE_WINDOW_MS });
   } else {
     ipEntry.count++;
   }
@@ -316,7 +339,7 @@ export async function getOrCreateGuestSession(
 
   const { data: newSession, error: sessionError } = await supabaseAdmin
     .from('guest_chat_sessions')
-    .insert({ id: sessionId, ip_address: ip })
+    .insert({ id: sessionId, ip_address: ipHash })
     .select('session_token')
     .single();
 
@@ -328,7 +351,7 @@ export async function getOrCreateGuestSession(
     throw new Error('Failed to create guest session');
   }
 
-  logAudit(null, 'GUEST_SESSION_CREATED', 'guest_chat', sessionId, { ip });
+  logAudit(null, 'GUEST_SESSION_CREATED', 'guest_chat', sessionId);
   return { sessionId, sessionToken: newSession.session_token };
 }
 
@@ -390,7 +413,7 @@ export async function getProfile(
 /** Names of seeded `cron_lock` rows. New crons must add their lock name here AND
  *  seed a row in supabase/rls-policies.sql — typo on either side silently disables
  *  the cron (UPDATE matches zero rows → returns false → cron never runs). */
-export type CronLockName = 'reminder_v2_cron' | 'trending_cron' | 'trending_cron_edu' | 'youtube_bot_summary';
+export type CronLockName = 'reminder_v2_cron' | 'trending_cron' | 'trending_cron_edu' | 'youtube_bot_summary' | 'chat_text_purge';
 
 /** Attempt to acquire the cron lock for today. Returns true if this machine
  *  should run the cron; false if it lost the race or the lock is permanently

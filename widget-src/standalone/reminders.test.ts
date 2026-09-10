@@ -4,21 +4,23 @@
  * aggressive:
  *
  *  AC1  connecting a cloud enrols you with no user action at all;
- *  AC1  enrolment is SILENT-PROOF only — it may never open a popup, and a
- *       provider that can't vouch must fail quietly, not throw;
+ *  AC7  no storage credential ever leaves the browser: Google sends a signed
+ *       ID token (it grants nothing), Dropbox and GitHub send the ADDRESS;
+ *  AC8  an already-enrolled address gets no token back and writes nothing;
+ *  AC1  enrolment is silent — a provider with no email to give must fail
+ *       quietly, not throw, and the manual path asks for one instead;
  *  AC4  an opt-out already in the file is never overridden (the 2026-08-07
  *       incident was exactly this: an off switch that came back on);
  *  AC6  a user with no cloud (local / WebDAV) is never enrolled;
  *  AC1b erasing your data deletes the server row too — the token that
  *       authorises that delete dies with the file, so it must run first.
  *
- * Plus the kill-criterion instrumentation: an enrolment is counted only once
- * it is DURABLE, and an opt-out is counted only once the server confirms it —
- * otherwise the optout:optin ratio US-17 is judged on is a lie.
+ * Plus the kill-criterion instrumentation: an enrolment is counted by the
+ * SERVER (never here), and an opt-out is counted only once the server
+ * confirms it — otherwise the optout:optin ratio US-17 is judged on is a lie.
  *
- * The Google popup fallback itself is pinned in storage/drive.test.ts: these
- * tests mock the adapter, so they prove `proofFor` ASKS for a silent proof,
- * not that the adapter honours it.
+ * The adapters are mocked: storage/drive-reminder-identity.test.ts pins that
+ * the real Drive adapter opens no popup.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { FileReminderOptIn } from '@roadmap/health-core';
@@ -32,7 +34,9 @@ const computeCurrentReminderSchedule = vi.fn(() => [
   { category: 'blood_test_lipids', group: 'blood_test', label: 'Lipid panel blood test', dueAt: '2027-05-12' },
 ]);
 const trackProductEvent = vi.fn();
-const getReminderProof = vi.fn<[silent?: boolean], Promise<unknown>>(async () => ({ idToken: 'signed-id-token' }));
+const getReminderIdToken = vi.fn<[], Promise<string | null>>(async () => 'signed-id-token');
+const driveAccountEmail = vi.fn<[], string | null>(() => null);
+const githubAccountEmail = vi.fn<[], Promise<string | null>>(async () => 'gh@example.com');
 
 vi.mock('../src/lib/roadmap-data', () => ({
   getReminderOptIn: () => getReminderOptIn(),
@@ -48,13 +52,14 @@ vi.mock('./dropbox-config', () => ({ dropboxConfig: () => ({}) }));
 
 vi.mock('../src/storage', () => ({
   GoogleDriveAdapter: class {
-    getReminderProof(silent?: boolean) { return getReminderProof(silent); }
+    getReminderIdToken() { return getReminderIdToken(); }
+    accountEmail() { return driveAccountEmail(); }
   },
   DropboxAdapter: class {
-    async getReminderProofToken() { return 'dropbox-access-token'; }
+    async accountEmail() { return 'dbx@example.com'; }
   },
   GitHubAdapter: class {
-    getReminderProofToken() { return 'github-pat'; }
+    accountEmail() { return githubAccountEmail(); }
   },
 }));
 
@@ -103,7 +108,9 @@ async function loadReminders(shopifySurface = true) {
 beforeEach(() => {
   vi.clearAllMocks();
   getReminderOptIn.mockReturnValue(undefined);
-  getReminderProof.mockResolvedValue({ idToken: 'signed-id-token' });
+  getReminderIdToken.mockResolvedValue('signed-id-token');
+  driveAccountEmail.mockReturnValue(null);
+  githubAccountEmail.mockResolvedValue('gh@example.com');
   stubBrowser();
 });
 
@@ -112,8 +119,8 @@ afterEach(() => {
   vi.doUnmock('../src/lib/build-flags');
 });
 
-describe('US-17 AC1 — a cloud connect enrols you, with no user action', () => {
-  it('posts an optin with the provider proof and the client-computed schedule', async () => {
+describe('US-17 AC1/AC7 — a cloud connect enrols you, with no user action and no credential', () => {
+  it('Google posts the signed ID token (grants nothing) and the client-computed schedule', async () => {
     const f = mockFetchOk();
     const { autoEnrolReminders } = await loadReminders();
     await autoEnrolReminders('google-drive');
@@ -124,6 +131,7 @@ describe('US-17 AC1 — a cloud connect enrols you, with no user action', () => 
     expect(body.provider).toBe('google-drive');
     expect(body.idToken).toBe('signed-id-token');
     expect(body.schedule).toHaveLength(1);
+    expect(body).not.toHaveProperty('accessToken');
   });
 
   it('saves the returned capability token as active and flushes it to the cloud file', async () => {
@@ -137,55 +145,106 @@ describe('US-17 AC1 — a cloud connect enrols you, with no user action', () => 
     expect(flushRoadmapStore).toHaveBeenCalledTimes(1);
   });
 
-  it('counts the enrolment only once it is DURABLE — after the flush, never before', async () => {
-    flushRoadmapStore.mockRejectedValueOnce(new Error('Drive conflict'));
+  it('never counts the enrolment here — the server counts it when the row lands', async () => {
     mockFetchOk();
     const { autoEnrolReminders } = await loadReminders();
-
     await autoEnrolReminders('google-drive');
-
-    // No file record was written, so the next visit will enrol this same person
-    // again. Counting the first attempt would inflate the kill-criterion base.
     expect(trackProductEvent).not.toHaveBeenCalled();
   });
 
-  it('counts a successful enrolment (reminder_optin) so the opt-out ratio has a denominator', async () => {
-    mockFetchOk();
-    const { autoEnrolReminders } = await loadReminders();
-    await autoEnrolReminders('google-drive');
-    expect(trackProductEvent).toHaveBeenCalledWith('reminder_optin', { provider: 'google-drive' });
-  });
-
-  it('enrols Dropbox and GitHub on their stored credentials — no re-auth', async () => {
-    const f = mockFetchOk();
+  it('Dropbox and GitHub post the ADDRESS the browser read — never a token, never a PAT', async () => {
+    const f = mockFetchOk({ token: 'new-cap-token', email: 'dbx@example.com' });
     const { autoEnrolReminders } = await loadReminders();
 
     await autoEnrolReminders('dropbox');
-    expect(postedBody(f).accessToken).toBe('dropbox-access-token');
+    expect(postedBody(f)).toMatchObject({ op: 'optin', provider: 'dropbox', email: 'dbx@example.com' });
+    expect(JSON.stringify(postedBody(f))).not.toMatch(/accessToken|token/);
 
     getReminderOptIn.mockReturnValue(undefined);
-    const g = mockFetchOk();
+    const g = mockFetchOk({ token: 'new-cap-token', email: 'gh@example.com' });
     await autoEnrolReminders('github');
-    expect(postedBody(g).accessToken).toBe('github-pat');
-  });
-});
-
-describe('US-17 AC1 — auto-enrolment is silent: no popup, no error, no retry storm', () => {
-  it('asks Google for a SILENT proof (a popup at page load is blocked and unasked-for)', async () => {
-    mockFetchOk();
-    const { autoEnrolReminders } = await loadReminders();
-    await autoEnrolReminders('google-drive');
-    expect(getReminderProof).toHaveBeenCalledWith(true);
+    expect(postedBody(g)).toMatchObject({ provider: 'github', email: 'gh@example.com' });
+    expect(JSON.stringify(postedBody(g))).not.toMatch(/accessToken|token/);
   });
 
-  it('does nothing at all when the provider cannot vouch silently — retried next visit', async () => {
-    getReminderProof.mockResolvedValue(null);
+  it('Google without a fresh ID token falls back to the remembered address, not a popup token', async () => {
+    getReminderIdToken.mockResolvedValue(null);
+    driveAccountEmail.mockReturnValue('user@example.com');
     const f = mockFetchOk();
     const { autoEnrolReminders } = await loadReminders();
 
-    await expect(autoEnrolReminders('google-drive')).resolves.toBeUndefined();
+    await autoEnrolReminders('google-drive');
+
+    expect(postedBody(f)).toMatchObject({ provider: 'google-drive', email: 'user@example.com' });
+    expect(postedBody(f)).not.toHaveProperty('idToken');
+  });
+});
+
+describe('US-17 AC8 — an already-enrolled address gets no token and writes nothing', () => {
+  it('auto-enrol: the server refreshed the schedule; no file write, no notice, retried next visit', async () => {
+    const f = mockFetchOk({ refreshed: true, email: 'dbx@example.com' });
+    const { autoEnrolReminders } = await loadReminders();
+
+    await autoEnrolReminders('dropbox');
+    await autoEnrolReminders('dropbox');
+
+    expect(f).toHaveBeenCalledTimes(2);
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('hr_reminders_notice')).toBeNull();
+  });
+
+  it('manual: reports refreshed so the control can say so instead of showing "on" without a token', async () => {
+    mockFetchOk({ refreshed: true, email: 'dbx@example.com' });
+    const { optInToReminders } = await loadReminders();
+
+    await expect(optInToReminders('dropbox')).resolves.toEqual({ email: 'dbx@example.com', refreshed: true });
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+  });
+});
+
+describe('US-17 AC1 — auto-enrolment is silent: no error, no retry storm; the manual path asks for an address', () => {
+  it('does nothing at all when the provider has no email to give — and stops asking (the answer will not change)', async () => {
+    githubAccountEmail.mockResolvedValue(null);
+    const f = mockFetchOk();
+    const { autoEnrolReminders } = await loadReminders();
+
+    await expect(autoEnrolReminders('github')).resolves.toBeUndefined();
+    await autoEnrolReminders('github');
+
     expect(f).not.toHaveBeenCalled();
     expect(setReminderOptIn).not.toHaveBeenCalled();
+    expect(githubAccountEmail).toHaveBeenCalledTimes(1); // blocked after the first null
+  });
+
+  it('a TRANSIENT provider failure is not a block — retried next visit', async () => {
+    githubAccountEmail.mockRejectedValue(new Error('network'));
+    mockFetchOk();
+    const { autoEnrolReminders } = await loadReminders();
+
+    await autoEnrolReminders('github');
+    await autoEnrolReminders('github');
+
+    expect(githubAccountEmail).toHaveBeenCalledTimes(2);
+  });
+
+  it('manual path with no provider email throws ReminderEmailNeeded (the control shows a typed field, never enrols silently)', async () => {
+    githubAccountEmail.mockResolvedValue(null);
+    const f = mockFetchOk();
+    const { optInToReminders, ReminderEmailNeeded } = await loadReminders();
+
+    await expect(optInToReminders('github')).rejects.toBeInstanceOf(ReminderEmailNeeded);
+    expect(f).not.toHaveBeenCalled();
+  });
+
+  it('manual path with a typed address posts that address', async () => {
+    githubAccountEmail.mockResolvedValue(null);
+    const f = mockFetchOk({ token: 'new-cap-token', email: 'typed@example.com' });
+    const { optInToReminders } = await loadReminders();
+
+    await optInToReminders('github', { email: 'typed@example.com' });
+
+    expect(postedBody(f)).toMatchObject({ provider: 'github', email: 'typed@example.com' });
+    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'active', email: 'typed@example.com' }));
   });
 
   it('swallows a failing server — an enrolment nobody asked for cannot raise an error', async () => {
@@ -205,20 +264,6 @@ describe('US-17 AC1 — auto-enrolment is silent: no popup, no error, no retry s
     await autoEnrolReminders('github');
 
     expect(f).toHaveBeenCalledTimes(2);
-  });
-
-  it('stops re-posting the credential once the provider REFUSES to vouch (401)', async () => {
-    // A GitHub PAT without the email permission fails identically forever, and
-    // that PAT holds write access to the repo the health data lives in.
-    const f = vi.fn(async () => new Response(JSON.stringify({ reason: 'github-email-permission' }), { status: 401 }));
-    vi.stubGlobal('fetch', f);
-    const { autoEnrolReminders } = await loadReminders();
-
-    await autoEnrolReminders('github');
-    await autoEnrolReminders('github');
-    await autoEnrolReminders('github');
-
-    expect(f).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -244,7 +289,7 @@ describe('US-17 AC4/AC6 — enrolment never overrides a decision, and never happ
     expect(f).not.toHaveBeenCalled();
   });
 
-  it('AC6: a device-only or WebDAV user is never enrolled (no provider-verified email exists)', async () => {
+  it('AC6: a device-only or WebDAV user is never enrolled (no account email exists)', async () => {
     const f = mockFetchOk();
     const { autoEnrolReminders } = await loadReminders();
 

@@ -14,7 +14,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const upsertTypedOptin = vi.fn<(email: string, s: unknown) => Promise<{ token: string; isNew: boolean } | null>>();
+const enrolByEmail = vi.fn<(email: string, provider: string, s: unknown) => Promise<{ token: string; isNew: true } | { isNew: false }>>();
 const sendPlanReadyEmail = vi.fn(async () => true);
 const subscribeToKlaviyo = vi.fn(async () => {});
 const recordServerEvent = vi.fn(async () => {});
@@ -31,7 +31,7 @@ vi.mock('../lib/email.server', async (importOriginal) => ({
 }));
 vi.mock('../lib/reminder-v2.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  upsertTypedOptin: (email: string, s: unknown) => upsertTypedOptin(email, s),
+  enrolByEmail: (email: string, provider: string, s: unknown) => enrolByEmail(email, provider, s),
 }));
 vi.mock('../lib/product-events.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -63,7 +63,7 @@ beforeEach(() => {
 
 describe('US-23 AC8 — plan-ready email fires ONLY on a new enrolment', () => {
   it('new enrolment: exactly one send, carrying the calendar + unsubscribe, and one server-side optin count', async () => {
-    upsertTypedOptin.mockResolvedValue({ token: 'tok-new', isNew: true });
+    enrolByEmail.mockResolvedValue({ token: 'tok-new', isNew: true });
     const email = freshEmail();
 
     const res = await action({ request: capture({ email, schedule: SCHEDULE }) } as never);
@@ -81,21 +81,12 @@ describe('US-23 AC8 — plan-ready email fires ONLY on a new enrolment', () => {
     const res = await action({ request: capture({ email: freshEmail() }) } as never);
 
     expect(res.status).toBe(200);
-    expect(upsertTypedOptin).not.toHaveBeenCalled();
+    expect(enrolByEmail).not.toHaveBeenCalled();
     expect(sendPlanReadyEmail).not.toHaveBeenCalled();
   });
 
-  it('capture against a cloud-enrolled address (upsert returns null): NO email', async () => {
-    upsertTypedOptin.mockResolvedValue(null);
-
-    await action({ request: capture({ email: freshEmail(), schedule: SCHEDULE }) } as never);
-
-    expect(sendPlanReadyEmail).not.toHaveBeenCalled();
-    expect(recordServerEvent).not.toHaveBeenCalled();
-  });
-
-  it('replayed capture (refresh, isNew=false): NO email, NO optin count', async () => {
-    upsertTypedOptin.mockResolvedValue({ token: 'tok-old', isNew: false });
+  it('capture against an already-enrolled address (any lane — a refresh, isNew=false): NO email, NO optin count', async () => {
+    enrolByEmail.mockResolvedValue({ isNew: false });
 
     await action({ request: capture({ email: freshEmail(), schedule: SCHEDULE }) } as never);
 
@@ -104,7 +95,7 @@ describe('US-23 AC8 — plan-ready email fires ONLY on a new enrolment', () => {
   });
 
   it('a Supabase failure degrades to no-email, capture still succeeds (the PDF is the delivery)', async () => {
-    upsertTypedOptin.mockRejectedValue(new Error('supabase down'));
+    enrolByEmail.mockRejectedValue(new Error('supabase down'));
 
     const res = await action({ request: capture({ email: freshEmail(), schedule: SCHEDULE }) } as never);
 
@@ -115,18 +106,14 @@ describe('US-23 AC8 — plan-ready email fires ONLY on a new enrolment', () => {
 });
 
 describe('no membership oracle — the response is constant', () => {
-  it('returns an identical body for new, refreshed, and cloud-blocked captures', async () => {
-    upsertTypedOptin.mockResolvedValueOnce({ token: 't1', isNew: true });
+  it('returns an identical body for new and refreshed captures', async () => {
+    enrolByEmail.mockResolvedValueOnce({ token: 't1', isNew: true });
     const a = await (await action({ request: capture({ email: freshEmail(), schedule: SCHEDULE }) } as never)).json();
 
-    upsertTypedOptin.mockResolvedValueOnce({ token: 't1', isNew: false });
+    enrolByEmail.mockResolvedValueOnce({ isNew: false });
     const b = await (await action({ request: capture({ email: freshEmail(), schedule: SCHEDULE }) } as never)).json();
 
-    upsertTypedOptin.mockResolvedValueOnce(null);
-    const c = await (await action({ request: capture({ email: freshEmail(), schedule: SCHEDULE }) } as never)).json();
-
     expect(a).toEqual(b);
-    expect(b).toEqual(c);
     expect(a).not.toHaveProperty('enrolled');
   });
 });
@@ -141,12 +128,12 @@ describe('input hardening', () => {
     } as never);
 
     expect(res.status).toBe(400);
-    expect(upsertTypedOptin).not.toHaveBeenCalled();
+    expect(enrolByEmail).not.toHaveBeenCalled();
     expect(sendPlanReadyEmail).not.toHaveBeenCalled();
   });
 
   it('Klaviyo subscribe still fires on every valid capture (marketing list unchanged)', async () => {
-    upsertTypedOptin.mockResolvedValue({ token: 't', isNew: false });
+    enrolByEmail.mockResolvedValue({ token: 't', isNew: false });
     const email = freshEmail();
 
     await action({ request: capture({ email, schedule: SCHEDULE }) } as never);

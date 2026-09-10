@@ -71,7 +71,9 @@ export async function subscribeToKlaviyo(data: KlaviyoProfileData): Promise<void
       const body = await subResponse.text().catch(() => '');
       console.warn(`Klaviyo subscription failed: ${subResponse.status} ${body.slice(0, 200)}`);
       Sentry.captureException(new Error(`Klaviyo subscription failed (${subResponse.status})`), {
-        extra: { status: subResponse.status, errorText: body.slice(0, 500) },
+        // 200, not 500: the Sentry scrub drops any `extra` string longer than
+        // 200 characters outright, so a longer slice would reach ops as nothing.
+        extra: { status: subResponse.status, errorText: body.slice(0, 200) },
         tags: { feature: 'klaviyo' },
       });
     }

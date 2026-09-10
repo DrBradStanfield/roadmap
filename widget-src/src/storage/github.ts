@@ -54,14 +54,21 @@ export class GitHubAdapter implements StorageAdapter {
   }
 
   /**
-   * The stored PAT, for the reminders opt-in (§10): the server uses it for ONE
-   * in-memory /user/emails read, then discards it. Requires the fine-grained
-   * token to ALSO have the account permission "Email addresses: read-only" —
-   * the opt-in UI explains this when GitHub refuses.
+   * The account's primary verified email, read HERE in the browser for the
+   * reminders opt-in (US-17 AC7): only the address crosses to Brad's server,
+   * never the PAT (which holds write access to the repo the health data lives
+   * in). Null when the fine-grained token lacks the account permission "Email
+   * addresses: read-only" — the control then asks for the address once.
+   * Throws on a transient failure (the caller retries next visit).
    */
-  getReminderProofToken(): string {
+  async accountEmail(): Promise<string | null> {
     if (!this.config?.token) throw new StorageError('GitHub is not connected.');
-    return this.config.token;
+    const res = await fetch(`${API}/user/emails`, { headers: this.headers() });
+    if (res.status === 403 || res.status === 404) return null;
+    if (!res.ok) throw new StorageError(`GitHub email read failed (${res.status}).`);
+    const emails = (await res.json()) as Array<{ email: string; primary: boolean; verified: boolean }>;
+    const primary = emails.find((e) => e.primary && e.verified) ?? emails.find((e) => e.verified);
+    return primary ? primary.email.toLowerCase() : null;
   }
 
   /**

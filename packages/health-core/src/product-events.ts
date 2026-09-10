@@ -15,9 +15,11 @@ export const PRODUCT_EVENT_NAMES = [
   'cloud_connect_started',
   'cloud_connect_success',
   'correction_made',
-  // US-17 default-on reminders: optin fires on enrolment (auto or manual),
-  // optout on disable. The RATIO is the honest measure of the opt-out model —
-  // sustained optout > ~30% of optins means the default-on call was wrong.
+  // US-17 default-on reminders: optin fires SERVER-side when a new row lands
+  // (every lane, since 2026-09-10 — only the server knows it landed, and abuse
+  // enrolments count rather than hide), optout client-side on disable. The
+  // RATIO is the honest measure of the opt-out model — sustained optout > ~30%
+  // of optins means the default-on call was wrong.
   'reminder_optin',
   'reminder_optout',
   // Fired by the reminder cron on each successful send (server-originated,
@@ -58,6 +60,7 @@ export type ProductEventName = (typeof PRODUCT_EVENT_NAMES)[number];
  * the real cron/webhook counter (adversarial review, 2026-08-30).
  */
 export const SERVER_ONLY_EVENT_NAMES = [
+  'reminder_optin',
   'reminder_sent',
   'report_email_sent',
   'report_email_bounced',
@@ -129,6 +132,8 @@ export const MCP_REFUSAL_REASONS = [
   'confirm',
   /** A report carrying something that reads as a health value. */
   'health-value',
+  /** A report carrying an email address, a phone number or a link with a query string. */
+  'contact',
   /** No record, or one this version cannot read. */
   'no-record',
   /** An import refusal, whose own reason is on the `mcp_import` row. */

@@ -1483,3 +1483,42 @@ CREATE TABLE IF NOT EXISTS product_events (
 CREATE INDEX IF NOT EXISTS idx_product_events_name_time ON product_events(event_name, created_at);
 CREATE INDEX IF NOT EXISTS idx_product_events_visitor ON product_events(visitor_id);
 ALTER TABLE product_events ENABLE ROW LEVEL SECURITY;
+
+-- ===== Question text is kept for 30 days; addresses are hashed (US-15 AC7, 2026-09-10) =====
+-- Three privacy changes to the chat audit, applied together. Run IN THIS ORDER;
+-- never DROP TABLE. Every statement is idempotent.
+--
+-- 1. The daily purge (app/lib/chat-purge-cron.server.ts) nulls `message` on
+--    rows older than 30 days, so the column can no longer be NOT NULL.
+--    (No-op in Postgres if it is already nullable.)
+ALTER TABLE chat_match_events ALTER COLUMN message DROP NOT NULL;
+
+-- 2. The purge's lock row. One machine per day, shared by both Fly apps —
+--    they share this Supabase project, and the table is shared too, so a
+--    single lock is correct (unlike trending, which writes per-store).
+--    Sentinel past date, not NULL: see the note above the reminder_cron seed.
+INSERT INTO cron_lock (lock_name, locked_by, locked_at, lock_date)
+VALUES ('chat_text_purge', NULL, NULL, '1970-01-01')
+ON CONFLICT DO NOTHING;
+
+-- 3. guest_chat_sessions.ip_address now holds a salted HMAC of the address
+--    (hashClientIp in app/lib/supabase.server.ts), never the address. The
+--    column and its index are unchanged — every reader compares for equality.
+--    One-off for the rows written before this: overwrite the raw values. They
+--    are NOT re-hashed — the hash is derived from a server secret that has no
+--    business in a SQL console, and an old row's only use is matching a
+--    returning guest's session token, which simply mints a new session
+--    instead. NOT NULL, so overwrite rather than NULL (same move as
+--    data-purge-2026-06.sql).
+UPDATE guest_chat_sessions
+SET ip_address = 'purged-2026-09-10'
+-- Only an IP literal qualifies: a hashed value (base64url) or an earlier
+-- 'purged-' marker never matches, so this is safe to run before or after the
+-- deploy that starts hashing.
+WHERE ip_address ~ '^[0-9a-fA-F:.]+$';
+
+-- Verify: expect 0 rows still holding anything that parses as an address.
+-- SELECT COUNT(*) FROM guest_chat_sessions WHERE ip_address ~ '^[0-9a-fA-F:.]+$';
+
+-- 4. PostgREST caches column nullability.
+NOTIFY pgrst, 'reload schema';

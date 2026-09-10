@@ -15,10 +15,17 @@ import {
   scrubSensitiveData,
   scrubBreadcrumbData,
   scrubUrl,
+  scrubEventText,
+  dropLongStrings,
 } from "./instrument-scrub.mjs";
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
+  // Console arguments are raw application text — a logged sentence carries a
+  // health value past every key-based rule (found by audit, 2026-09-10). The
+  // server keeps no console breadcrumbs at all; an error still arrives as its
+  // own message and class.
+  integrations: (defaults) => defaults.filter((i) => i.name !== "Console"),
   tracesSampleRate: 0.2,
   enabled: !!process.env.SENTRY_DSN,
   ignoreErrors: [
@@ -74,20 +81,20 @@ Sentry.init({
       }
     }
     if (event.breadcrumbs) {
-      event.breadcrumbs = event.breadcrumbs.map((b) => {
-        if ((b.category === "fetch" || b.category === "xhr" || b.category === "http") && b.data) {
-          return { ...b, data: scrubBreadcrumbData(b.data) };
-        }
-        if (b.category === "console") {
-          return {
-            ...b,
-            message: b.message ? "[Filtered]" : b.message,
-            data: b.data ? scrubSensitiveData(b.data) : b.data,
-          };
-        }
-        return b;
-      });
+      event.breadcrumbs = event.breadcrumbs
+        .filter((b) => b.category !== "console")
+        .map((b) =>
+          (b.category === "fetch" || b.category === "xhr" || b.category === "http") && b.data
+            ? { ...b, data: scrubBreadcrumbData(b.data) }
+            : b,
+        );
     }
+    // Free text is the gap the key scrub cannot see: a value in an exception
+    // message, an `extra` string, a breadcrumb. Runs last, over everything.
+    scrubEventText(event);
+    // A long string is a paste of something (a body, a prompt, a record) that
+    // no rule reads reliably — keep none of it.
+    if (event.extra) event.extra = dropLongStrings(event.extra);
     return event;
   },
   beforeBreadcrumb(breadcrumb) {
@@ -99,12 +106,9 @@ Sentry.init({
     ) {
       breadcrumb.data = scrubBreadcrumbData(breadcrumb.data);
     }
-    if (breadcrumb.category === "console") {
-      if (breadcrumb.message) breadcrumb.message = "[Filtered]";
-      if (breadcrumb.data) {
-        breadcrumb.data = scrubSensitiveData(breadcrumb.data);
-      }
-    }
+    // Belt and braces for the disabled Console integration: any console
+    // breadcrumb from anywhere else is dropped, not filtered.
+    if (breadcrumb.category === "console") return null;
     return breadcrumb;
   },
 });

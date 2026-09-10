@@ -487,18 +487,26 @@ ${offers.some(({ provider }) => provider === 'google') ? '<p class="lede">Import
 showing you what it would say.</li>
 <li>File the results from a lab report, a photo of one or a clinic letter you drop into the chat. Your assistant
 reads the file itself; the file never reaches our server. Only the values it read do, in memory for one request,
-and they are written to your own folder, never kept by us. Nothing is filed until you confirm what it read.</li>
-<li>Import lab PDFs, images or a ZIP you put in the Dropbox folder root. Those files pass through our server and
-the extraction model (Anthropic) and are not kept; nothing is filed until you confirm what it found. What it
-cannot read, it says why in plain words. The next time you ask, it offers files in the folder that are not yet
-in your record. The website’s upload instead reads the PDF in your browser.</li>
+and they are written to your own folder, never kept by us. Nothing is written to your record until you confirm
+what it read; the candidates wait in a pending file in your own folder for an hour.</li>
+<li>Import lab PDFs, images or a ZIP you put in the Dropbox folder root. At the extract step, before you confirm
+anything, those files pass through our server and go to Anthropic’s API for extraction. We keep none of them;
+Anthropic’s API terms say they do not train on them, and their privacy centre says inputs and outputs are
+deleted within 30 days, kept longer only to enforce their usage policy or comply with the law
+(<a href="https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data">their policy</a>).
+Nothing is written to your record until you confirm what it found; the candidates wait in a pending file in your
+own folder for an hour. What it cannot read, it says why in plain words. The next time you ask, it offers files
+in the folder that are not yet in your record. The website’s upload instead reads the PDF in your browser.</li>
 </ul>
 <div class="fine">
 <p>We count calls, never your values.
 <a href="https://drstanfield.com/pages/connector-privacy">Privacy notice</a> ·
 <a href="https://drstanfield.com/pages/roadmap">Setup guide</a></p>
-<p>Your record stays in your own storage. Our server reads it in memory to answer your assistant and
-keeps no copy.</p>
+<p>Your record stays in your own storage. To answer one call, our server unseals the cloud credential your
+assistant holds, opens your folder with it, and holds your record in server memory for the length of that
+request. It stores none of it and keeps no copy. If you would rather no server saw your record at all, the
+same tools run as a program on your own computer, straight against your own file, with nothing of ours in
+between: <a href="https://drstanfield.com/pages/roadmap">see the setup guide</a>.</p>
 <p class="rev">Disconnect any time at ${escapeHtml(revoke)}.</p>
 <p>Educational, not medical advice.</p>
 </div>`,

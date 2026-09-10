@@ -4,7 +4,7 @@
  * Walks reminder_optin_v2 daily and emails whatever is due. Needs NO token and
  * no re-authentication: it is Brad's own server reading its own stored
  * schedule table — it just sends what each user's browser pre-computed, to the
- * address their cloud provider verified.
+ * address whose plan-ready email did not bounce.
  *
  * Built on the machinery the May-2026 cron debugging hardened (see CLAUDE.md
  * "Dangerous Gotchas"): hourly setInterval with a `< target hour` catch-up
@@ -17,7 +17,7 @@ import * as Sentry from '@sentry/react-router';
 import { GROUP_COOLDOWNS, getCategoryGroup, type ReminderCategory } from '../../packages/health-core/src/reminders';
 import { buildReminderV2EmailHtml, sendReminderEmail } from './email.server';
 import { tryAcquireCronLock } from './supabase.server';
-import { buildUnsubscribeUrl, getOptinsBatch, inTypedQuietPeriod, recordSent, type ReminderV2Optin } from './reminder-v2.server';
+import { buildUnsubscribeUrl, getOptinsBatch, inQuietPeriod, recordSent, type ReminderV2Optin } from './reminder-v2.server';
 import { recordServerEvent } from './product-events.server';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000; // hourly tick
@@ -89,7 +89,7 @@ export function stopReminderV2Cron(): void {
   }
 }
 
-type V2Result = 'sent' | 'none-due' | 'all-on-cooldown' | 'email-send-failed' | 'typed-quiet-period';
+type V2Result = 'sent' | 'none-due' | 'all-on-cooldown' | 'email-send-failed' | 'quiet-period';
 
 /**
  * An item is sendable when its due date has arrived AND we haven't nagged
@@ -113,15 +113,14 @@ export function dueItemsFor(optin: ReminderV2Optin, todayStr: string): {
 }
 
 async function processOneOptin(optin: ReminderV2Optin, todayStr: string): Promise<V2Result> {
-  if (inTypedQuietPeriod(optin, todayStr)) return 'typed-quiet-period';
+  if (inQuietPeriod(optin, todayStr)) return 'quiet-period';
   const { due, anyDue } = dueItemsFor(optin, todayStr);
   if (due.length === 0) return anyDue ? 'all-on-cooldown' : 'none-due';
 
   const unsubscribeUrl = buildUnsubscribeUrl(optin.token);
-  const html = buildReminderV2EmailHtml(due, unsubscribeUrl, {
-    fullSchedule: optin.schedule,              // US-23 AC3 — the email is the surviving artifact
-    prominentUnsubscribe: optin.provider === 'typed', // US-23 AC5
-  });
+  // US-23 AC3 — the email is the surviving artifact; AC5's prominent
+  // unsubscribe is built into the template for every lane since 2026-09-10.
+  const html = buildReminderV2EmailHtml(due, unsubscribeUrl, { fullSchedule: optin.schedule });
   const sent = await sendReminderEmail(optin.email, html, unsubscribeUrl, "Dr Brad's Health Reminder");
   if (!sent) return 'email-send-failed';
 
@@ -156,7 +155,7 @@ export async function processV2Reminders(todayStr: string): Promise<number> {
     'none-due': 0,
     'all-on-cooldown': 0,
     'email-send-failed': 0,
-    'typed-quiet-period': 0,
+    'quiet-period': 0,
   };
 
   while (true) {

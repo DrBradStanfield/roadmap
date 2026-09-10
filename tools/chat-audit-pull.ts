@@ -91,7 +91,9 @@ interface RoutingEvent {
   message_id: string | null;
   conversation_id: string | null;
   user_id: string;
-  message: string;
+  /** Null once the daily purge has cleared it — questions are kept 30 days
+   *  (US-15 AC7, chat-purge-cron.server.ts). */
+  message: string | null;
   /** `platform` names the surface on every row since 2026-09-10 (backfilled). */
   router_context: { platform?: string } | null;
   is_fallback: boolean | null;
@@ -194,6 +196,9 @@ async function pullRouting(): Promise<RoutingEvent[]> {
   return res.json() as Promise<RoutingEvent[]>;
 }
 
+/** What a purged question reads as in both renderers. */
+const PURGED_QUESTION = '[question removed after 30 days]';
+
 /** Routing rows join messages by message_id; a row with none (the widget, or a
  *  YouTube turn the LLM never answered) gets a key of its own. */
 const routingKey = (r: RoutingEvent) => r.message_id ?? `routing-${r.created_at}-${r.conversation_id}`;
@@ -216,7 +221,7 @@ function routingOnlyTurns(routing: RoutingEvent[]): Message[] {
       conversation_id: r.conversation_id!,
       user_id: r.user_id,
       role: 'user' as const,
-      content: r.message,
+      content: r.message ?? PURGED_QUESTION,
       model: null,
       input_tokens: null,
       output_tokens: null,

@@ -234,6 +234,10 @@ export {
   scrubSensitiveData,
   scrubUrl,
   scrubBreadcrumbData,
+  scrubText,
+  scrubStrings,
+  scrubEventText,
+  dropLongStrings,
 } from './sentry-scrub';
 
 // Local-first storage spine (v2) — the RoadmapFile schema + merge/migrate logic.

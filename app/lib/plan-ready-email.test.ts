@@ -130,19 +130,17 @@ describe('reminder email carries the full calendar (US-23 AC3) and typed promine
     expect(html).toContain('https://calendar.google.com/calendar/render?action=TEMPLATE');
   });
 
-  it('adds the prominent in-body unsubscribe ONLY for typed recipients', () => {
-    const typed = buildReminderV2EmailHtml(due, unsubscribeUrl, { fullSchedule: full, prominentUnsubscribe: true });
-    const cloud = buildReminderV2EmailHtml(due, unsubscribeUrl, { fullSchedule: full });
-    expect(typed).toContain('Stop them with one click');
-    expect(cloud).not.toContain('Stop them with one click');
-    // The footer unsubscribe stays in BOTH (RFC 8058 posture unchanged).
-    expect(cloud).toContain(unsubscribeUrl);
+  it('carries the prominent in-body unsubscribe for EVERY recipient (US-17 AC8: no lane proves the inbox owner asked)', () => {
+    const html = buildReminderV2EmailHtml(due, unsubscribeUrl, { fullSchedule: full });
+    expect(html).toContain('Stop them with one click');
+    // The footer unsubscribe stays too (RFC 8058 posture unchanged).
+    expect(html).toContain(unsubscribeUrl);
   });
 
-  it('without options renders exactly the legacy shape (cloud lane unaffected)', () => {
+  it('without options omits the calendar section only', () => {
     const html = buildReminderV2EmailHtml(due, unsubscribeUrl);
     expect(html).not.toContain('Your full check-up calendar');
-    expect(html).not.toContain('Stop them with one click');
+    expect(html).toContain('Stop them with one click');
     expect(html).toContain('Lipid panel blood test');
   });
 });

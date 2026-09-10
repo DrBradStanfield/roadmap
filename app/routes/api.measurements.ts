@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { authenticate } from '../shopify.server';
 import { subscribeToKlaviyo } from '../lib/klaviyo.server';
 import { sendPlanReadyEmail } from '../lib/email.server';
-import { buildUnsubscribeUrl, scheduleSchema, upsertTypedOptin } from '../lib/reminder-v2.server';
+import { buildUnsubscribeUrl, enrolByEmail, scheduleSchema, type Enrolment } from '../lib/reminder-v2.server';
 import { recordServerEvent } from '../lib/product-events.server';
 import { getClientIp } from '../lib/local-first-route.server';
 import { createRateLimiter } from '../lib/rate-limiter';
@@ -60,13 +60,13 @@ async function handleKlaviyoCapture(data: unknown, clientIp: string) {
     // because the response reports `enrolled` — the client's reminder_optin
     // event must count NEW enrolments, not attempts or refreshes — but a
     // Supabase error degrades to enrolled:false rather than failing a capture
-    // whose PDF the user already has. upsertTypedOptin never downgrades a
-    // provider-verified row, keeps the token and cooldowns on a refresh, and
-    // tells us whether this address was new.
-    let enrolment: { token: string; isNew: boolean } | null = null;
+    // whose PDF the user already has. enrolByEmail never rotates or returns an
+    // existing row's token, keeps cooldowns on a refresh, and tells us whether
+    // this address was new.
+    let enrolment: Enrolment | null = null;
     if (schedule?.length) {
       try {
-        enrolment = await upsertTypedOptin(email, schedule);
+        enrolment = await enrolByEmail(email, 'typed', schedule);
       } catch (error) {
         Sentry.captureException(error, { tags: { feature: 'typed_reminder_enrol' } });
       }
@@ -77,7 +77,7 @@ async function handleKlaviyoCapture(data: unknown, clientIp: string) {
     // Every other body shape reaching this line is an attacker or a stale
     // cached bundle, and each was a bypass of the "one email per address ever"
     // bound before 2026-08-14's review: a schedule-less body sent per-capture;
-    // a capture against a cloud-enrolled address (upsertTypedOptin → null)
+    // a capture against a cloud-enrolled address (now a plain refresh)
     // sent per-capture to exactly the most engaged users; and unsubscribe+
     // re-capture minted a fresh isNew (closed by the tombstone in
     // unsubscribeByToken, which makes a replayed capture a refresh instead).

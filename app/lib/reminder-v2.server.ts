@@ -14,14 +14,16 @@
  * link — and §10 accepts the leak risk: the token can only touch the
  * reminder schedule (revoke + reissue if ever compromised).
  *
- * Provider email verification ("the cloud vouches for the address"):
+ * Email verification (Brad, 2026-09-10 — no storage credential ever reaches
+ * this server):
  *  - google-drive: a signed ID token, verified via Google's tokeninfo endpoint
- *    (aud must be OUR client id). The Drive access token never touches us.
- *    Popup-fallback sessions have no ID token → one-time userinfo read instead.
- *  - dropbox: one-time get_current_account call with the access token —
- *    in memory, never stored (same transit-never-store posture as the AI §7).
- *  - github: one-time /user/emails read (needs the fine-grained PAT to have
- *    account permission "Email addresses: read" — the UI says so).
+ *    (aud must be OUR client id). It grants nothing; the Drive access token
+ *    never touches us. The old popup fallback (a Drive ACCESS token) is gone.
+ *  - dropbox / github / typed: the BROWSER reads the account email from the
+ *    provider and sends only the address. The server cannot tell that address
+ *    from a typed one, so every such write goes through enrolByEmail's
+ *    existing-row rule (refresh only, never a token) — the same posture the
+ *    typed lane has held since US-23.
  */
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
@@ -35,11 +37,13 @@ import { supabaseAdmin } from './supabase.server';
 // ---------------------------------------------------------------------------
 
 /**
- * 'typed' (US-23) is the lane where the address was TYPED at the PDF capture,
- * not vouched for by a cloud provider. Its consent gate is delivery: the
- * plan-ready email (US-22) must not bounce, and the cron holds a 3-day quiet
- * period before the first reminder so the bounce/complaint webhook has time
- * to un-enrol a bad address.
+ * 'typed' (US-23) is the lane where the address was TYPED at the PDF capture.
+ * Since 2026-09-10 every lane's consent gate is delivery: the plan-ready email
+ * (US-22) must not bounce, and the cron holds a 3-day quiet period before the
+ * first reminder so the bounce/complaint webhook has time to un-enrol a bad
+ * address. The provider column now records WHICH surface enrolled the address
+ * (for the per-lane ratio), not how strongly it was verified — only
+ * 'google-drive' rows written through upsertVerifiedOptin carry a proof.
  */
 export type ReminderV2Provider = 'google-drive' | 'dropbox' | 'github' | 'typed';
 
@@ -132,76 +136,24 @@ export function ensureAnnualFloor(
 // Provider email verification
 // ---------------------------------------------------------------------------
 
-export type ProviderProof =
-  | { provider: 'google-drive'; idToken: string }
-  | { provider: 'google-drive'; accessToken: string } // GIS popup fallback
-  | { provider: 'dropbox'; accessToken: string }
-  | { provider: 'github'; accessToken: string };
-
-export type VerifyResult =
-  | { email: string }
-  | { reason: 'github-email-permission' | 'unverified' };
-
 /**
- * Resolve the PROVIDER-VERIFIED email for an opt-in proof. On failure the
- * result carries a machine-readable reason (the route forwards it; the client
- * maps reason → copy — the server knows why, so the client never guesses).
- * Any provider credential seen here lives in memory for this one call and is
- * never stored or logged.
+ * Resolve the email a Google ID token vouches for, or null. Google validates
+ * the signature; we check the token was minted for OUR app. The ID token is
+ * the one credential still accepted: it can read nothing and write nothing.
  */
-export async function verifyProviderEmail(proof: ProviderProof): Promise<VerifyResult> {
+export async function verifyGoogleIdToken(idToken: string): Promise<string | null> {
   try {
-    if (proof.provider === 'google-drive' && 'idToken' in proof) {
-      // Google validates the signature; we check the token was minted for OUR app.
-      const res = await fetch(
-        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(proof.idToken)}`,
-      );
-      if (!res.ok) return { reason: 'unverified' };
-      const claims = (await res.json()) as Record<string, string>;
-      const ourClientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
-      if (!ourClientId || claims.aud !== ourClientId) return { reason: 'unverified' };
-      if (claims.email_verified !== 'true' || !claims.email) return { reason: 'unverified' };
-      return { email: claims.email.toLowerCase() };
-    }
-
-    if (proof.provider === 'google-drive') {
-      // Popup-fallback session: no ID token exists, so do the same one-time
-      // in-memory read the other providers use (requires the email scope).
-      const res = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
-        headers: { Authorization: `Bearer ${proof.accessToken}` },
-      });
-      if (!res.ok) return { reason: 'unverified' };
-      const info = (await res.json()) as { email?: string; email_verified?: boolean };
-      if (!info.email || info.email_verified !== true) return { reason: 'unverified' };
-      return { email: info.email.toLowerCase() };
-    }
-
-    if (proof.provider === 'dropbox') {
-      const res = await fetch('https://api.dropboxapi.com/2/users/get_current_account', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${proof.accessToken}` },
-      });
-      if (!res.ok) return { reason: 'unverified' };
-      const account = (await res.json()) as { email?: string; email_verified?: boolean };
-      if (!account.email || account.email_verified !== true) return { reason: 'unverified' };
-      return { email: account.email.toLowerCase() };
-    }
-
-    // github
-    const res = await fetch('https://api.github.com/user/emails', {
-      headers: {
-        Authorization: `Bearer ${proof.accessToken}`,
-        Accept: 'application/vnd.github+json',
-        'User-Agent': 'health-plan-reminders',
-      },
-    });
-    if (res.status === 403 || res.status === 404) return { reason: 'github-email-permission' };
-    if (!res.ok) return { reason: 'unverified' };
-    const emails = (await res.json()) as Array<{ email: string; primary: boolean; verified: boolean }>;
-    const primary = emails.find((e) => e.primary && e.verified) ?? emails.find((e) => e.verified);
-    return primary ? { email: primary.email.toLowerCase() } : { reason: 'unverified' };
+    const res = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
+    );
+    if (!res.ok) return null;
+    const claims = (await res.json()) as Record<string, string>;
+    const ourClientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
+    if (!ourClientId || claims.aud !== ourClientId) return null;
+    if (claims.email_verified !== 'true' || !claims.email) return null;
+    return claims.email.toLowerCase();
   } catch {
-    return { reason: 'unverified' };
+    return null;
   }
 }
 
@@ -214,66 +166,61 @@ function requireAdmin() {
   return supabaseAdmin;
 }
 
-/** Create or replace an email's reminder opt-in. Returns the raw token. */
+export type Enrolment = { isNew: true; token: string } | { isNew: false };
+
 /**
- * Typed-lane enrolment (US-23 AC1/AC7). Anyone can type anyone's email, so —
- * unlike the provider-verified upsert — a typed write may only ever CREATE a
- * fresh row or refresh the schedule of an existing TYPED row. Three attacks
- * the shape of this function exists to kill (adversarial review, 2026-08-14):
- *  - never overwrite a provider-verified row: the plain upsert would rotate
- *    its token, and the victim's own device's next schedule push would 404
- *    into "you unsubscribed" — a silent unsubscribe by anyone knowing their
- *    email;
- *  - a refresh keeps the existing TOKEN: rotating it would break the
- *    unsubscribe links in every email already sent (the page would say
- *    "unsubscribed" while the new-token row lives on);
- *  - a refresh keeps LAST_SENT: resetting cooldowns would let one
- *    re-capture/day turn "a few emails a year" into daily re-sends of
- *    whatever is due.
- * Returns the token and whether this CREATED an enrolment (isNew drives the
- * one-time plan-ready email and the reminder_optin count — refreshes are
- * neither), or null when a verified row was left untouched.
+ * Credential-free enrolment (Dropbox, GitHub, typed — US-17 AC7/AC8). Anyone
+ * can POST anyone's email, so a write here may only ever CREATE a fresh row
+ * or refresh the SCHEDULE of an existing one. Three attacks the shape of this
+ * function exists to kill (adversarial reviews 2026-08-14 and 2026-09-10):
+ *  - never rotate an existing row's token: the plain upsert would, and the
+ *    victim's own device's next schedule push would 404 into "you
+ *    unsubscribed" — a silent unsubscribe by anyone knowing their email;
+ *  - never RETURN an existing row's token: that would hand the cancel
+ *    capability to whoever typed the address;
+ *  - a refresh keeps LAST_SENT and PROVIDER: resetting cooldowns would let one
+ *    re-capture/day turn "a few emails a year" into daily re-sends, and a
+ *    provider flip would rewrite the per-lane ratio.
+ * The refresh CAN refill a tombstone (schedule=[] after an email-link
+ * unsubscribe): a user re-enrolling their own address is re-consenting; the
+ * accepted residual is that an attacker can do the same, bounded to rare
+ * reminder-cadence emails each carrying the one-click off switch.
+ * Returns whether this CREATED an enrolment (isNew drives the one-time
+ * plan-ready email, the reminder_optin count and the only token handout).
  */
-export async function upsertTypedOptin(
+export async function enrolByEmail(
   email: string,
+  provider: ReminderV2Provider,
   schedule: StoredScheduleItem[],
-): Promise<{ token: string; isNew: boolean } | null> {
+): Promise<Enrolment> {
   const normalized = email.toLowerCase();
   const { data, error } = await requireAdmin()
     .from('reminder_optin_v2')
-    .select('provider, token')
+    .select('id')
     .eq('email', normalized)
     .maybeSingle();
-  if (error) throw new Error(`reminder_optin_v2 provider check failed: ${error.message}`);
-  if (data && data.provider !== 'typed') return null;
+  if (error) throw new Error(`reminder_optin_v2 lookup failed: ${error.message}`);
 
   if (data) {
     const { error: updateError } = await requireAdmin()
       .from('reminder_optin_v2')
       .update({ schedule: ensureAnnualFloor(schedule), updated_at: new Date().toISOString() })
-      .eq('email', normalized)
-      // Re-checked IN the write, not just the read above: a cloud opt-in that
-      // raced between our SELECT and this UPDATE must not have its schedule
-      // clobbered by a typed refresh (TOCTOU, review 2026-08-14).
-      .eq('provider', 'typed');
+      .eq('email', normalized);
     if (updateError) throw new Error(`reminder_optin_v2 refresh failed: ${updateError.message}`);
-    return { token: data.token, isNew: false };
+    return { isNew: false };
   }
-  return { token: await writeOptinRow(normalized, 'typed', schedule, null), isNew: true };
+  return { isNew: true, token: await writeOptinRow(normalized, provider, schedule, null) };
 }
 
-export async function upsertOptin(
+/**
+ * Google-verified enrolment: the address came from a signed ID token, so this
+ * caller IS the inbox owner and may replace their own row — token and
+ * cooldowns preserved (see writeOptinRow) — and always receives the token.
+ */
+export async function upsertVerifiedOptin(
   email: string,
-  provider: ReminderV2Provider,
   schedule: StoredScheduleItem[],
-): Promise<string> {
-  // Structural guarantee, not caller discipline: an unverified typed write can
-  // never reach the unconditional overwrite below (it would rotate a verified
-  // row's token = silently unsubscribe the victim's devices). The typed lane's
-  // ONLY door is upsertTypedOptin, which guards before writing.
-  if (provider === 'typed') {
-    throw new Error("typed enrolments must go through upsertTypedOptin, never upsertOptin");
-  }
+): Promise<{ token: string; isNew: boolean }> {
   const normalized = email.toLowerCase();
   const { data, error } = await requireAdmin()
     .from('reminder_optin_v2')
@@ -281,16 +228,17 @@ export async function upsertOptin(
     .eq('email', normalized)
     .maybeSingle();
   if (error) throw new Error(`reminder_optin_v2 lookup failed: ${error.message}`);
-  return writeOptinRow(normalized, provider, schedule, data);
+  return { token: await writeOptinRow(normalized, 'google-drive', schedule, data), isNew: !data };
 }
 
 /**
  * The one raw row write. `existing` (the pre-write row, null when absent)
- * makes an upgrade PRESERVE the token and cooldowns: a typed user who later
- * cloud-connects keeps the same unsubscribe token, so the links in every
- * email already in their inbox keep working, and last_sent survives so an
- * item sent yesterday isn't re-sent tomorrow (review 2026-08-14 — the same
- * two invariants the typed refresh path holds). Private on purpose.
+ * makes a Google-verified re-enrolment PRESERVE the token and cooldowns: a
+ * typed user who later connects Drive keeps the same unsubscribe token, so the
+ * links in every email already in their inbox keep working, and last_sent
+ * survives so an item sent yesterday isn't re-sent tomorrow (review
+ * 2026-08-14 — the same two invariants the refresh path holds). Private on
+ * purpose.
  */
 async function writeOptinRow(
   email: string,
@@ -316,56 +264,58 @@ async function writeOptinRow(
   return token;
 }
 
-/** Replace the schedule for the opt-in owning this token. False = no such token. */
+/**
+ * Replace the schedule for the opt-in owning this token. False = no such
+ * token, OR the row is a tombstone (schedule=[] from an email-link
+ * unsubscribe): a device that pushed to a tombstone would otherwise refill it
+ * every visit, undoing the click — false makes the device flip its file to
+ * cancelled instead (review 2026-09-10).
+ */
 export async function updateScheduleByToken(
   token: string,
   schedule: StoredScheduleItem[],
 ): Promise<boolean> {
   const { data, error } = await requireAdmin()
     .from('reminder_optin_v2')
-    .update({ schedule: ensureAnnualFloor(schedule), updated_at: new Date().toISOString() })
+    .select('schedule')
     .eq('token', token)
-    .select('id');
-  if (error) throw new Error(`reminder_optin_v2 update failed: ${error.message}`);
-  return (data?.length ?? 0) > 0;
+    .maybeSingle();
+  if (error) throw new Error(`reminder_optin_v2 token lookup failed: ${error.message}`);
+  if (!data || (data.schedule as StoredScheduleItem[]).length === 0) return false;
+  const { error: updateError } = await requireAdmin()
+    .from('reminder_optin_v2')
+    .update({ schedule: ensureAnnualFloor(schedule), updated_at: new Date().toISOString() })
+    .eq('token', token);
+  if (updateError) throw new Error(`reminder_optin_v2 update failed: ${updateError.message}`);
+  return true;
 }
 
-/** Delete the opt-in owning this token (cancel / unsubscribe). */
 /**
- * US-23 AC2 — a typed (not provider-verified) enrolment gets no reminder for
- * its first 3 days. Delivery of the plan-ready email is the consent gate, and
- * its bounce/complaint arrives within minutes-to-hours; the quiet period makes
- * the race between "webhook deletes the row" and "cron mails an overdue item
- * the morning after capture" unlosable. Measured from created_at — never
+ * US-23 AC2, every lane since 2026-09-10 — a fresh enrolment gets no reminder
+ * for its first 3 days. Delivery of the plan-ready email is the consent gate,
+ * and its bounce/complaint arrives within minutes-to-hours; the quiet period
+ * makes the race between "webhook deletes the row" and "cron mails an overdue
+ * item the morning after capture" unlosable. Measured from created_at — never
  * updated_at, which refreshes touch — so a re-capture can't re-arm it and a
- * schedule push can't hold it open. Cloud-verified rows are exempt: their
- * address vouched for itself.
+ * schedule push can't hold it open.
  */
-export function inTypedQuietPeriod(
-  optin: Pick<ReminderV2Optin, 'provider' | 'created_at'>,
-  todayStr: string,
-): boolean {
-  if (optin.provider !== 'typed') return false;
+export function inQuietPeriod(optin: Pick<ReminderV2Optin, 'created_at'>, todayStr: string): boolean {
   const gate = new Date(optin.created_at);
   gate.setUTCDate(gate.getUTCDate() + 3);
   return todayStr < gate.toISOString().slice(0, 10);
 }
 
 /**
- * The email unsubscribe page's action (US-23 AC5/AC8). For a TYPED row the
- * off switch must be DURABLE against re-enrolment: deleting the row would
- * make the next attacker-replayed capture look brand new — isNew again, a
+ * The email unsubscribe page's action (US-23 AC5/AC8, every lane since
+ * 2026-09-10). The off switch must be DURABLE against re-enrolment: deleting
+ * the row would make the next replayed optin look brand new — isNew again, a
  * fresh plan-ready email again, reminders again — so the victim's one click
  * never sticks. Instead the row becomes a TOMBSTONE (schedule=[], token and
- * created_at kept): the cron has nothing to send, a replayed capture hits
- * the refresh path (isNew=false → no email), and the same link keeps working
- * if clicked twice. The refresh path CAN refill a tombstone's schedule — a
- * user who deliberately re-captures their own email is re-consenting under
- * the opt-out model; the accepted residual is that an attacker can do the
- * same, bounded to rare reminder-cadence emails each carrying this same
- * one-click off switch. Cloud rows keep hard-delete semantics (their client
- * flips its own file to cancelled when the push 404s).
- * Returns the row's provider for per-lane optout counting; null = no row.
+ * created_at kept): the cron has nothing to send, a replayed optin hits the
+ * refresh path (isNew=false → no email), the device's next push sees false
+ * and flips its own file to cancelled, and the same link keeps working if
+ * clicked twice. Returns the row's provider for per-lane optout counting;
+ * null = no row, or already tombstoned (don't re-count).
  */
 export async function unsubscribeByToken(token: string): Promise<ReminderV2Provider | null> {
   const { data, error } = await requireAdmin()
@@ -374,28 +324,21 @@ export async function unsubscribeByToken(token: string): Promise<ReminderV2Provi
     .eq('token', token)
     .maybeSingle();
   if (error) throw new Error(`reminder_optin_v2 unsubscribe lookup failed: ${error.message}`);
-  if (!data) return null;
-  if (data.provider !== 'typed') return deleteByToken(token);
-
-  if ((data.schedule as StoredScheduleItem[]).length === 0) return null; // already tombstoned — don't re-count
+  if (!data || (data.schedule as StoredScheduleItem[]).length === 0) return null;
   const { error: updateError } = await requireAdmin()
     .from('reminder_optin_v2')
     .update({ schedule: [], updated_at: new Date().toISOString() })
     .eq('token', token);
   if (updateError) throw new Error(`reminder_optin_v2 tombstone failed: ${updateError.message}`);
-  return 'typed';
+  return data.provider as ReminderV2Provider;
 }
 
-export async function deleteByToken(token: string): Promise<ReminderV2Provider | null> {
-  const { data, error } = await requireAdmin()
-    .from('reminder_optin_v2')
-    .delete()
-    .eq('token', token)
-    .select('provider');
+/** Delete the opt-in owning this token — the widget's own toggle-off and the
+ *  pre-erase hook (US-17 AC1b: a toggle-off DELETES the row). Token-authorised,
+ *  so unlike the email link it needs no tombstone. */
+export async function deleteByToken(token: string): Promise<void> {
+  const { error } = await requireAdmin().from('reminder_optin_v2').delete().eq('token', token);
   if (error) throw new Error(`reminder_optin_v2 delete failed: ${error.message}`);
-  // The deleted row's provider — so the unsubscribe surface can count the
-  // opt-out per lane (US-23's kill criterion needs the split). Null = no row.
-  return (data?.[0]?.provider as ReminderV2Provider | undefined) ?? null;
 }
 
 /**

@@ -65,8 +65,12 @@ reminder capability token is stripped from every read. A file the user drops int
 read by ChatGPT itself and never reaches our server; the values ChatGPT read are handled in
 memory for one request and written to the user's own folder (`file_results`). We send nothing
 to a model ourselves, except when the user asks to import files from their Dropbox folder: those
-files (never the record) then go to Anthropic's API for extraction and are not kept there,
-subject to Anthropic's own data-retention terms. Otherwise the only model that sees the record
+files (never the record) then go to Anthropic's API for extraction, at the extract step and
+before the user confirms anything. We keep none of them. Anthropic's commercial terms say they
+do not train models on customer content, and their privacy centre says API inputs and outputs
+are deleted within 30 days of receipt or generation, kept longer only to enforce their usage
+policy or comply with the law
+(https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data). Otherwise the only model that sees the record
 is the user's own ChatGPT session.
 
 **Confirmation is the user's, in their own words.** ChatGPT's per-connector "Allow all actions" setting

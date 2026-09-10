@@ -129,8 +129,8 @@ to both — deploy twice, see "Shopify app configs".**)
   edu apps; never Pages): gates features that need Brad's server via the Shopify app proxy.
   Currently: the guest report email section ("Get your personalized plan
   emailed to you…" / `GuestEmailCapture` via `guestReportData` in
-  HealthTool.tsx). The Pages build has no Brad server, so the section must
-  never render there; the production widget gets it through the normal
+  HealthTool.tsx). The Pages build has no app-proxy path to Brad's
+  server, so the section must never render there; the production widget gets it through the normal
   `!isLoggedIn` guest path instead. Declared in `widget-src/src/vite-env.d.ts`;
   defined in `vite.config.shopify-prod.ts`.
 - **Shopify app configs (one per app registration — TWO exist).** PRODUCTION =

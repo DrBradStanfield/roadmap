@@ -10,13 +10,14 @@ import { stopTrendingCron } from './lib/trending-cron.server';
 import { stopDiscordBot } from './lib/discord-bot.server';
 import { stopYouTubeBot } from './lib/youtube-bot.server';
 import { stopYouTubeBotSummaryCron } from './lib/youtube-bot-summary-cron.server';
+import { stopChatPurgeCron } from './lib/chat-purge-cron.server';
 
 // NOTE: Sentry.init (with the HIPAA PII/PHI scrubbing) now lives in instrument.server.mjs,
 // loaded via `node --import` before this bundle. See that file. Here we only consume the
 // already-initialized SDK for error capture + the RR7 handleError hook.
 
 // Graceful shutdown: stop the cron jobs/bots and allow in-flight requests to drain.
-// The 5 server modules self-start via top-level side-effects when their *.server modules
+// The 6 server modules self-start via top-level side-effects when their *.server modules
 // are first imported by routes; these stop* handlers tear them down on SIGTERM.
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully...');
@@ -25,6 +26,7 @@ process.on('SIGTERM', () => {
   stopDiscordBot();
   stopYouTubeBot();
   stopYouTubeBotSummaryCron();
+  stopChatPurgeCron();
   setTimeout(() => {
     console.log('Graceful shutdown complete');
     process.exit(0);

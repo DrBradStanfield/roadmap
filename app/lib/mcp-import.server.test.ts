@@ -15,7 +15,7 @@ vi.mock('./product-events.server', async (importOriginal) => {
   const original = await importOriginal<typeof import('./product-events.server')>();
   return { ...original, recordServerEvent: vi.fn(async () => {}) };
 });
-vi.mock('@sentry/react-router', () => ({ captureException: vi.fn() }));
+vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 import * as Sentry from '@sentry/react-router';
 import {
   CHATGPT_FETCH_TIMEOUT_MS,
@@ -275,6 +275,65 @@ describe('US-35 AC7 — the receipt names the payload and binds it to one connec
     expect(await surface.open({ receipt, accept: [], replace: [] }, file, NOW, deadline())).toEqual(PAYLOAD);
     process.env.MCP_SEAL_KEYS = Buffer.alloc(32, 8).toString('base64');
     expect(await refusalOf(surface, receipt)).toMatch(/not valid/);
+  });
+});
+
+describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete that fails is only counted', () => {
+  const NOW = '2026-09-02T10:00:00.000Z';
+  const PAYLOAD: ImportPayload = { id: '11111111-2222-4333-8444-555555555555', route: 'dropbox', createdAt: NOW, candidates: [], documents: [] };
+  const deadline = () => Date.now() + MCP_IMPORT_BUDGET_MS;
+  const pendingIn = (cloud: MemoryCloud) => [...cloud.files.keys()].filter((n) => n.startsWith('imports/pending-'));
+
+  beforeEach(() => { resetMcpMemory(); vi.mocked(Sentry.captureMessage).mockClear(); });
+
+  it('the commit takes the file it consumed, by its own name', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const removed: string[] = [];
+    const remove = adapter.remove!.bind(adapter);
+    adapter.remove = async (name, signal) => { removed.push(name); return remove(name, signal); };
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+
+    const stashed = await surface.stash(PAYLOAD, deadline());
+    if ('refusal' in stashed) throw new Error(stashed.refusal);
+    expect(pendingIn(cloud)).toHaveLength(1);
+
+    // What `runImport` does at the end of a commit — the only caller there is.
+    await surface.discard(PAYLOAD, deadline());
+    expect(removed).toEqual([`imports/pending-${PAYLOAD.id}.json`]);
+    expect(pendingIn(cloud)).toHaveLength(0);
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it('sweeps an abandoned pending file on the NEXT stash — every route, not just the Dropbox extract', async () => {
+    // `file_results` and every Drive user never call `extract`, so a sweep that
+    // lived there never reached them. `stash` is the one door all three share.
+    for (const route of ['dropbox', 'assistant'] as const) {
+      const cloud = new MemoryCloud();
+      const old = { json: '{}', version: 1, modified: '2026-09-02T07:30:00.000Z' }; // 2.5 h before NOW
+      cloud.files.set('imports/pending-abandoned.json', old);
+      cloud.files.set('imports/pending-recent.json', { ...old, modified: '2026-09-02T09:30:00.000Z' }); // 30 min: its receipt may still be live
+      cloud.files.set('imports/notes.json', old); // the user's own file, however old, is never ours to take
+      const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter: new MemoryAdapter(cloud), client: 'claude', maxCorrectionAgeDays: 90 });
+
+      const stashed = await surface.stash({ ...PAYLOAD, route }, deadline());
+      if ('refusal' in stashed) throw new Error(stashed.refusal);
+      expect(cloud.files.has('imports/pending-abandoned.json'), route).toBe(false);
+      expect(cloud.files.has('imports/pending-recent.json'), route).toBe(true);
+      expect(cloud.files.has('imports/notes.json'), route).toBe(true);
+      expect(pendingIn(cloud), route).toContain(`imports/pending-${PAYLOAD.id}.json`);
+    }
+  });
+
+  it('a delete that fails does not fail the call — it is one count, naming no file', async () => {
+    const adapter = new MemoryAdapter(new MemoryCloud());
+    adapter.remove = async () => { throw new Error('dropbox said no'); };
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+
+    await expect(surface.discard(PAYLOAD, deadline())).resolves.toBeUndefined();
+    expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
+    const [message, options] = vi.mocked(Sentry.captureMessage).mock.calls[0];
+    expect(`${message}${JSON.stringify(options)}`).not.toMatch(new RegExp(`${PAYLOAD.id}|imports/|dropbox said no`));
   });
 });
 

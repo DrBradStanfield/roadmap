@@ -28,8 +28,8 @@ describe('sanitizeRawHandles', () => {
   });
 });
 
-// US-15 AC7: the widget's telemetry row keeps the question verbatim and only
-// the columns it is allowed to carry.
+// US-15 AC7: the widget's telemetry row keeps the current question verbatim and
+// only the columns it is allowed to carry — never the earlier turns.
 import { redactForWidget } from './chat-router.server';
 
 describe('redactForWidget', () => {
@@ -49,10 +49,12 @@ describe('redactForWidget', () => {
     failure_mode: null,
   };
 
-  it('keeps the question and its context verbatim and names the surface', () => {
+  it('keeps the question verbatim, names the surface, and drops the earlier turns', () => {
     const out = redactForWidget(row);
     expect(out.message).toBe('my LDL is 4.2');
-    expect(out.router_context).toEqual({ platform: 'widget', first: 'HbA1c 41', recent: ['HbA1c 41', 'BP 140/90'] });
+    expect(out.router_context).toEqual({ platform: 'widget' });
+    expect(JSON.stringify(out)).not.toContain('BP 140/90');
+    expect(JSON.stringify(out)).not.toContain('HbA1c 41');
     expect(out.router_raw).toBe(row.router_raw);
     expect(out.matched_handles).toEqual(['ldl-cholesterol']);
   });

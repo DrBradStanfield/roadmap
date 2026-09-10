@@ -175,12 +175,15 @@ export interface MatchEventRow extends Record<string, unknown> {
 
 /**
  * The widget's telemetry row (US-15 AC7): the assembled row with the surface
- * named and only the whitelisted columns kept. The question stays verbatim
- * (Brad, 2026-09-10) so article matching can be audited against it.
+ * named and only the whitelisted columns kept. The current question stays
+ * verbatim (Brad, 2026-09-10) so article matching can be audited against it,
+ * but the earlier turns the router saw (`first`, `recent`) are dropped — the
+ * router still gets them at call time; only the stored row loses them, so one
+ * widget row can never hold a second question (2026-09-10).
  */
 export function redactForWidget(row: MatchEventRow): Record<string, unknown> {
   const kept = Object.fromEntries(WIDGET_ROW_COLUMNS.filter((c) => c in row).map((c) => [c, row[c]]));
-  return { ...kept, router_context: { ...row.router_context, platform: 'widget' } };
+  return { ...kept, router_context: { platform: 'widget' } };
 }
 
 // ---------------------------------------------------------------------------
