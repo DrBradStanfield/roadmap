@@ -39,6 +39,14 @@ const guard = (name, html) => {
   if (/\[VERIFY\]/.test(html)) throw new Error(`${name}: [VERIFY] marker in rendered body`);
 };
 
+// Shopify stores what it is given but hands back HTML-escaped text, so a title
+// or description carrying & < > returns as &amp; &lt; &gt; and never matches the
+// raw string — a comparison that PUTs on every run, forever. Both sides are
+// decoded before comparing. The five XML entities plus the two numeric forms
+// Shopify emits are the whole set it uses.
+const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", '#39': "'", '#34': '"' };
+const decodeEntities = (s) => s.replace(/&(amp|lt|gt|quot|apos|#39|#34);/g, (_, e) => ENTITIES[e]);
+
 const norm = (s) =>
   s.replace(/<(\w+)([^>]*?)\s*\/>/g, '<$1$2></$1>') // self-closing -> open+close
     .replace(/<[^>]+>/g, (tag) => tag.toLowerCase())
@@ -50,6 +58,10 @@ const firstDiff = (a, b) => {
   const from = Math.max(0, i - 20);
   return { at: i, live: a.slice(from, from + 120), rendered: b.slice(from, from + 120) };
 };
+
+// The builder escapes every character of prose it puts in the page; the summary
+// is prose too, so it is escaped the same way or an & in a description ships raw.
+const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const shop = process.env.SHOPIFY_EDU_SHOP;
 const token = process.env.SHOPIFY_EDU_ACCESS_TOKEN;
@@ -78,12 +90,20 @@ for (const file of files) {
   // was: the builder's stderr would need a new line AND a capture here, which
   // is more code than one more regex.
   const md = readFileSync(mdPath, 'utf8');
-  const front = (key) => md.match(new RegExp(`^${key}:\\s*"?([^"\\n]+?)"?\\s*$`, 'm'))?.[1];
+  // Take the whole line, then strip the quotes only when they wrap it. A
+  // one-character class would truncate `title: "The \"local-first\" guide"` at the
+  // first inner quote and publish half a title.
+  const front = (key) => {
+    const line = md.match(new RegExp(`^${key}:[ \\t]*(.*?)[ \\t]*$`, 'm'))?.[1];
+    if (!line) return undefined;
+    const quoted = line.match(/^"([\s\S]*)"$/);
+    return quoted ? quoted[1] : line;
+  };
   const slug = front('slug');
   const title = front('title');
   if (!slug || !title) throw new Error(`${file}: no slug or title in front matter`);
   const description = front('description');
-  const summary = description ? `<p>${description}</p>` : null;
+  const summary = description ? `<p>${esc(description)}</p>` : null;
 
   const html = render(mdPath);
   guard(file, html);
@@ -102,8 +122,8 @@ for (const file of files) {
   // drift. norm() is for comparing only; the rendered HTML is what is written.
   const fields = {};
   if (norm(live) !== norm(html)) fields.body_html = html;
-  if ((article.title ?? '') !== title) fields.title = title;
-  if (summary && norm(article.summary_html ?? '') !== norm(summary)) fields.summary_html = summary;
+  if (decodeEntities(article.title ?? '') !== decodeEntities(title)) fields.title = title;
+  if (summary && decodeEntities(norm(article.summary_html ?? '')) !== decodeEntities(norm(summary))) fields.summary_html = summary;
   const names = Object.keys(fields);
   console.log(`\n${file} -> /blogs/guides/${slug}`);
   console.log(`  article id ${article.id}, live ${live.length} chars, rendered ${html.length} chars, ${names.length ? `DIFFERS: ${names.join(', ')}` : 'IDENTICAL'}`);

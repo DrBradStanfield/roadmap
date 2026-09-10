@@ -31,5 +31,5 @@
   <line x1="27" y1="402" x2="85" y2="402" stroke="#9aa5b0" stroke-width="1.5"/>
   <text class="rmg-s" x="30" y="430">there is no delete tool</text>
 </svg>
-<figcaption>Nine tools, and none of them removes anything. A correction adds a row. It never removes one.</figcaption>
+<figcaption>Nine tools, and none of them removes a row from your history. A correction adds a row. It never removes one.</figcaption>
 </figure>

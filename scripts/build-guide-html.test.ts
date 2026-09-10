@@ -127,6 +127,17 @@ describe('build-guide-html.mjs — a guide that is missing something', () => {
     expect(html).not.toContain('[diagram:');
   });
 
+  it('leaves a diagram marker inside a fenced block as literal text', () => {
+    // A guide documenting the marker syntax writes it in a code fence — and
+    // docs/guides/README.md does. The diagram pass runs after the fences are
+    // parked, so the fence keeps its text and a marker outside one still renders.
+    const { html } = build(
+      `${FRONT_MATTER}Write it like this:\n\n\`\`\`md\n[diagram:local-first]\n\`\`\`\n\nAnd it renders:\n\n[diagram:local-first]\n`,
+    );
+    expect(html).toContain('<pre><code>[diagram:local-first]</code></pre>');
+    expect(html.match(/<figure class="rmg-fig">/g)).toHaveLength(1);
+  });
+
   it('refuses an unknown diagram, naming the file it looked for', () => {
     const { ok, stderr } = build(`${FRONT_MATTER}[diagram:nope]\n`);
     expect(ok).toBe(false);
@@ -282,6 +293,64 @@ describe('build-guide-html.mjs — the guides actually shipped', () => {
       for (const [, href] of html.matchAll(/href="([^"]+\.md)"/g)) {
         expect(href.startsWith('https://raw.githubusercontent.com/'), `${guide}: ${href}`).toBe(true);
       }
+    }
+  });
+});
+
+describe('docs/guides/assets/*.svg — the contract the builder\'s stylesheet implies', () => {
+  // An SVG is inserted verbatim. Nothing but these checks stands between a new
+  // diagram and a page that renders wrong with every other test green.
+  const SVGS = readdirSync(join(GUIDES, 'assets')).filter((n) => n.endsWith('.svg'));
+  let stylesheet = '';
+  beforeAll(() => {
+    expect(SVGS.length).toBeGreaterThan(0);
+    // The rules the SVGs rely on are the ones a built page carries, not a copy.
+    stylesheet = build(`${FRONT_MATTER}Prose.\n`).html.match(/<style>[\s\S]*?<\/style>/)?.[0] ?? '';
+    expect(stylesheet).not.toBe('');
+  });
+
+  it('uses only rmg- classes the builder stylesheet defines', () => {
+    for (const name of SVGS) {
+      const svg = readFileSync(join(GUIDES, 'assets', name), 'utf8');
+      const classes = new Set(
+        [...svg.matchAll(/class="([^"]+)"/g)].flatMap(([, v]) => v.split(/\s+/)).filter((c) => c.startsWith('rmg-')),
+      );
+      for (const c of classes) {
+        expect(stylesheet.includes(`.${c}`), `${name}: class ${c} has no rule in the builder stylesheet`).toBe(true);
+      }
+    }
+  });
+
+  it('draws on a 400-wide canvas', () => {
+    // The shared stylesheet caps .rmg-fig svg at max-width:400px, so a viewBox
+    // wider than 400 is scaled down and every label shrinks with it. Height is
+    // free. Only the root <svg> is checked: a <marker> has its own tiny viewBox.
+    for (const name of SVGS) {
+      const svg = readFileSync(join(GUIDES, 'assets', name), 'utf8');
+      const root = svg.match(/<svg\b[^>]*>/)?.[0] ?? '';
+      expect(root, `${name}: no <svg> element`).not.toBe('');
+      expect(root.match(/viewBox="([^"]*)"/)?.[1] ?? '', `${name}: viewBox must be 0 0 400 <height>`).toMatch(
+        /^0 0 400 \d+(\.\d+)?$/,
+      );
+    }
+  });
+
+  it('carries a title, a desc, an aria-labelledby naming both, and a caption', () => {
+    for (const name of SVGS) {
+      const svg = readFileSync(join(GUIDES, 'assets', name), 'utf8');
+      const titleId = svg.match(/<title id="([^"]+)"/)?.[1];
+      const descId = svg.match(/<desc id="([^"]+)"/)?.[1];
+      expect(titleId, `${name}: no <title id>`).toBeTruthy();
+      expect(descId, `${name}: no <desc id>`).toBeTruthy();
+      const labelled = (svg.match(/aria-labelledby="([^"]+)"/)?.[1] ?? '').split(/\s+/);
+      expect(labelled, `${name}: aria-labelledby must name the title and the desc`).toEqual([titleId, descId]);
+      expect(svg, `${name}: no <figcaption>`).toContain('<figcaption>');
+    }
+  });
+
+  it('carries no <style> block, so the builder owns every rule', () => {
+    for (const name of SVGS) {
+      expect(readFileSync(join(GUIDES, 'assets', name), 'utf8'), `${name}: inline <style>`).not.toContain('<style');
     }
   });
 });

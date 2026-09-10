@@ -67,20 +67,6 @@ const restore = (html) =>
 
 let body = md.slice(md.indexOf('\n---\n', 4) + 5);
 
-// --- [diagram:*] markers ---------------------------------------------------
-// A marker alone on a line becomes assets/<name>.svg, whole; an unknown name
-// fails the build.
-body = body.replace(/^\[diagram:([a-z0-9-]+)\]$/gm, (_, name) => {
-  const file = new URL(`${name}.svg`, ASSETS);
-  try {
-    return hold(readFileSync(file, 'utf8').trim());
-  } catch (err) {
-    if (err.code !== 'ENOENT') throw err;
-    console.error(`${mdPath}: unknown diagram [diagram:${name}]. No such file: docs/guides/assets/${name}.svg`);
-    process.exit(1);
-  }
-});
-
 // --- [connect:*] markers ---------------------------------------------------
 const providers = JSON.parse(readFileSync(new URL('providers.json', ASSETS), 'utf8'));
 const button = (key) => {
@@ -115,6 +101,22 @@ body = body.replace(/^```(?:bootstrap-prompt|copy-box)\n([\s\S]*?)\n```$/gm, (_,
 // backticks inside a quoted `\`\`\`npm test\`\`\`` read as an opener and swallow
 // the document down to the next real fence.
 body = body.replace(/^```[^\n]*\n([\s\S]*?)\n```$/gm, (_, code) => hold(`<pre><code>${esc(code)}</code></pre>`));
+
+// --- [diagram:*] markers ---------------------------------------------------
+// A marker alone on a line becomes assets/<name>.svg, whole; an unknown name
+// fails the build. LAST, after every fence is parked: a guide documenting this
+// syntax writes the marker inside a code fence, and a <figure> inside a <pre>
+// is not what that guide meant.
+body = body.replace(/^\[diagram:([a-z0-9-]+)\]$/gm, (_, name) => {
+  const file = new URL(`${name}.svg`, ASSETS);
+  try {
+    return hold(readFileSync(file, 'utf8').trim());
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
+    console.error(`${mdPath}: unknown diagram [diagram:${name}]. No such file: docs/guides/assets/${name}.svg`);
+    process.exit(1);
+  }
+});
 
 // --- tiny markdown render --------------------------------------------------
 // Smart quotes FIRST: running them after tag generation turns href="..." into

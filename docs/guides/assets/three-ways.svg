@@ -39,13 +39,13 @@
   <text class="rmg-s" x="131" y="602" text-anchor="middle">command line</text>
   <line x1="246" y1="586" x2="258" y2="586" stroke="#a4ccc2" stroke-width="1.5" stroke-dasharray="4 3"/>
   <rect class="rmg-bx" x="258" y="560" width="126" height="52" rx="12"/>
-  <text class="rmg-s" x="321" y="584" text-anchor="middle">Your AI</text>
-  <text class="rmg-s" x="321" y="602" text-anchor="middle">vendor</text>
+  <text class="rmg-s" x="321" y="584" text-anchor="middle">Your AI vendor,</text>
+  <text class="rmg-s" x="321" y="602" text-anchor="middle">if you use one</text>
   <line class="rmg-ln" x1="131" y1="614" x2="131" y2="642" marker-start="url(#rmg-tw-ae)" marker-end="url(#rmg-tw-ae)"/>
   <text class="rmg-m" x="148" y="632">nothing of ours in between</text>
   <rect class="rmg-bx2" x="16" y="644" width="230" height="56" rx="12"/>
   <text class="rmg-f" x="131" y="668" text-anchor="middle">health-roadmap.json</text>
   <text class="rmg-s" x="131" y="689" text-anchor="middle">on your disk</text>
 </svg>
-<figcaption>The website reads and writes the file from your browser; our server never holds the file. Through the connector our server does read your record, in memory, for the length of one call, using your own credential, and keeps no copy. On your own computer nothing of ours sits in between, though what the AI reads still goes to the vendor it runs on.</figcaption>
+<figcaption>The website reads and writes the file from your browser; our server never holds the file. Through the connector our server does read your record, in memory, for the length of one call, using your own credential, and keeps no copy. On your own computer nothing of ours sits in between, though what an AI reads still goes to the vendor it runs on. The command-line tools make no network call at all.</figcaption>
 </figure>
