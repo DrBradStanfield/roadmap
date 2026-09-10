@@ -412,3 +412,82 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     expect(withConfirm).toEqual(['correct_value', 'update_profile', 'report_feedback']);
   });
 });
+
+/**
+ * The consent screen is the only moment the user decides, so it may not be
+ * framed and it may not present a self-chosen name as a credential. `client_name`
+ * comes from whoever registered; the honest line beside it says what we can
+ * actually check — a pin, the host that published the metadata, or the place
+ * the code is sent back to.
+ */
+describe('the consent screen cannot be framed and names its own trust (US-32)', () => {
+  const CLAUDE_CIMD = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
+
+  function authorize(clientId: string, redirect: string): Promise<Response> {
+    return get(`/mcp/authorize?${new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirect,
+      response_type: 'code',
+      code_challenge: CHALLENGE,
+      code_challenge_method: 'S256',
+    })}`);
+  }
+
+  async function register(name: string, redirect: string): Promise<string> {
+    const res = await post('/mcp/register', {
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ client_name: name, redirect_uris: [redirect] }),
+    });
+    expect(res.status).toBe(201);
+    return (await res.json()).client_id as string;
+  }
+
+  it('refuses framing, in the CSP and in X-Frame-Options', async () => {
+    const consent = await authorize(CLAUDE_CIMD, REDIRECT);
+    expect(consent.status).toBe(200);
+    // `default-src 'none'` does NOT cover framing: only frame-ancestors does.
+    expect(consent.headers.get('content-security-policy')).toContain("frame-ancestors 'none'");
+    expect(consent.headers.get('x-frame-options')).toBe('DENY');
+  });
+
+  it('says a pinned vendor client is a known client', async () => {
+    const screen = await (await authorize(CLAUDE_CIMD, REDIRECT)).text();
+    expect(screen).toContain('Claude');
+    expect(screen).toContain('a known client');
+    expect(screen).not.toContain('returns you to');
+  });
+
+  it('says where a self-registered client sends you back', async () => {
+    const clientId = await register('Handy Assistant', REDIRECT);
+    const screen = await (await authorize(clientId, REDIRECT)).text();
+    expect(screen).toContain('Handy Assistant');
+    expect(screen).toContain('returns you to claude.ai');
+    expect(screen).not.toContain('a known client');
+  });
+
+  it('says a loopback client is a program on this computer', async () => {
+    const clientId = await register('Some CLI', 'http://127.0.0.1:12345/callback');
+    const screen = await (await authorize(clientId, 'http://127.0.0.1:54321/callback')).text();
+    expect(screen).toContain('a program on this computer');
+    expect(screen).not.toContain('a known client');
+  });
+
+  it('names the host that published an unpinned CIMD document', async () => {
+    const clientId = 'https://assistant.example.test/oauth/client.json';
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({
+      client_id: clientId,
+      client_name: 'Example Assistant',
+      redirect_uris: [REDIRECT],
+    })));
+    const screen = await (await authorize(clientId, REDIRECT)).text();
+    expect(screen).toContain('registered at assistant.example.test');
+    expect(screen).not.toContain('a known client');
+  });
+
+  it('never lets a registrant’s name reach the page as markup', async () => {
+    const clientId = await register('<script>alert(1)</script>', REDIRECT);
+    const screen = await (await authorize(clientId, REDIRECT)).text();
+    expect(screen).not.toContain('<script>alert(1)</script>');
+    expect(screen).toContain('&#60;script&#62;');
+  });
+});

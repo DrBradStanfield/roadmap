@@ -22,7 +22,7 @@
  * gitignored and built by nobody — the package-name import would silently run
  * a stale engine on a fresh clone.
  */
-import { realpathSync, writeFileSync } from 'node:fs';
+import { chmodSync, realpathSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
 import { FIELD_METRIC_MAP } from '../packages/health-core/src/mappings';
@@ -319,7 +319,10 @@ export async function run(argv: string[]): Promise<number> {
     const plan = computePlan(await loadRecord(path));
     if (htmlOut) {
       try {
-        writeFileSync(htmlOut, renderHtml(plan));
+        // As private as the record it summarises: the report carries the same
+        // values, and writeFileSync's mode is filtered by the umask.
+        writeFileSync(htmlOut, renderHtml(plan), { mode: 0o600 });
+        chmodSync(htmlOut, 0o600);
       } catch {
         throw new PlanError(`Cannot write ${htmlOut}`, 'Check the directory exists.');
       }

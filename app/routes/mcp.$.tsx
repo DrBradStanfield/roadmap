@@ -24,7 +24,15 @@ import { getClientIp } from '../lib/local-first-route.server';
 import { mcpClientLabel, mcpEndpoint, originRejected } from '../lib/mcp.server';
 import { recordServerEvent } from '../lib/product-events.server';
 import { checkAuthorize, sealState, verifyPkce } from '../lib/mcp-authorize.server';
-import { readCapped, redirectMatches, registerClient, resolveClient } from '../lib/mcp-clients.server';
+import {
+  isLoopbackRedirect,
+  KNOWN_CLIENTS,
+  readCapped,
+  redirectMatches,
+  registerClient,
+  resolveClient,
+  type McpClient,
+} from '../lib/mcp-clients.server';
 import { isMcpEnabled, issuer } from '../lib/mcp-config.server';
 import {
   allowAuthorize,
@@ -177,7 +185,7 @@ async function authorizeScreen(request: Request, url: URL): Promise<Response> {
     provider,
     state: sealState(checked.request, provider, Date.now()),
   }));
-  return html(consentPage(client.name, offers));
+  return html(consentPage(client, offers));
 }
 
 /**
@@ -366,7 +374,11 @@ function html(body: string, status = 200, headers: Record<string, string> = {}):
     status,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'",
+      // `frame-ancestors 'none'` is not covered by `default-src`: without it the
+      // consent screen can be framed and clickjacked into a connection the user
+      // never meant to give. `X-Frame-Options` says the same to older browsers.
+      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",
+      'X-Frame-Options': 'DENY',
       // `same-origin`, NOT `no-referrer`: under `no-referrer` a browser posts the
       // consent form with `Origin: null`, which `originRejected` refuses — the
       // consent step could not complete in a real browser at all. That Origin
@@ -453,11 +465,37 @@ function providerMark(provider: McpProvider): string {
 <path d="M5.6 15.9h16.3l-3.3 5.7H2.3l3.3-5.7Z"/></svg>`;
 }
 
+/** The host of a URL, or '' when it is not one. */
+function hostOf(uri: string): string {
+  try {
+    return new URL(uri).host;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * What we can actually vouch for about the app asking. `client_name` is
+ * whatever the registrant typed, so the screen says the one true thing beside
+ * it: a pinned vendor client is known; a CIMD client is only as good as the
+ * host that published its metadata; a self-registered client is worth nothing
+ * but the place it sends the user back to, and the redirect list is
+ * allow-listed, so that place is real.
+ */
+function clientSource(client: McpClient): string {
+  if (KNOWN_CLIENTS.has(client.clientId)) return 'it is a known client';
+  const metadataHost = client.clientId.startsWith('https://') ? hostOf(client.clientId) : '';
+  if (metadataHost) return `it is registered at ${metadataHost}`;
+  if (client.redirectUris.some(isLoopbackRedirect)) return 'it returns you to a program on this computer';
+  const hosts = [...new Set(client.redirectUris.map(hostOf).filter(Boolean))];
+  return hosts.length > 0 ? `it returns you to ${hosts.join(' or ')}` : 'we can verify nothing about it';
+}
+
 /**
  * What the user is actually agreeing to, in the words §1 approved. The
  * assistant's name is text it chose, so it is escaped.
  */
-function consentPage(clientName: string, offers: Array<{ provider: McpProvider; state: string }>): string {
+function consentPage(client: McpClient, offers: Array<{ provider: McpProvider; state: string }>): string {
   // One form per provider, each carrying its own sealed state. A button is a
   // choice of cloud, and the choice is sealed the moment it is offered.
   const buttons = offers
@@ -473,7 +511,8 @@ function consentPage(clientName: string, offers: Array<{ provider: McpProvider; 
   const clouds = offers.map(({ provider }) => providerLabel(provider)).join(' or ');
   return page(
     'Where do you want to keep your health record?',
-    `<p class="lede"><span class="who">${escapeHtml(clientName)}</span> wants to connect to your health record.</p>
+    `<p class="lede"><span class="who">${escapeHtml(client.name)}</span> wants to connect to your health record.</p>
+<p class="lede">That name is the app’s own, not ours. What we can tell you about it: ${escapeHtml(clientSource(client))}.</p>
 <p class="lede">Your health record is yours, and yours alone. Keep it in your own ${escapeHtml(clouds)}. Your assistant reads and writes one file there, plus a temporary imports folder while an import is pending. Nothing is stored on our server.</p>
 <div class="pick">${buttons}</div>
 ${offers.some(({ provider }) => provider === 'google') ? '<p class="lede">Importing lab files: drop a file into the chat on either cloud, on any device, and your assistant reads it. With Dropbox you can also put files in the folder; with Google Drive the folder cannot be read, so the chat or the website’s upload are the ways in.</p>' : ''}

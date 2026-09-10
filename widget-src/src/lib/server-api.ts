@@ -39,12 +39,14 @@ export async function parseJsonResponse<T>(response: Response): Promise<T | null
 }
 
 /**
- * Send feedback via the feedback API endpoint.
+ * Send feedback via the feedback API endpoint. Shopify surface only — the
+ * Pages build has no Brad server, so it reports failure without a fetch.
  */
 export async function sendFeedback(
   email: string,
   message: string,
 ): Promise<boolean> {
+  if (!SHOPIFY_SURFACE) return false;
   return apiCall(
     async () => {
       const response = await fetch(`${PROXY_PATH}/api/feedback`, {
@@ -98,6 +100,7 @@ export function getABAssignments(): Record<string, string> {
 }
 
 function trackABEvent(eventType: 'impression' | 'conversion'): void {
+  if (!SHOPIFY_SURFACE) return;
   const assignments = getABAssignments();
   const visitorId = getVisitorId();
   for (const [testId, variantId] of Object.entries(assignments)) {

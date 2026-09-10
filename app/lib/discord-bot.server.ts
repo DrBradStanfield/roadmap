@@ -282,7 +282,6 @@ async function handleMessage(message: GuildMessage): Promise<void> {
           tags: { feature: 'chat', platform: PLATFORM_DISCORD, diagnostic: 'dedup' },
           extra: {
             conversationId,
-            authorDiscordId: authorId,
             ageMs: dup.ageMs,
             messageLength: truncatedInput.length,
           },
@@ -361,7 +360,6 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     persistConversation({
       conversationId,
       authorId,
-      authorTag: message.author.tag,
       userMessage: truncatedInput,
       userDiscordMessageId: message.id,
       assistantContent: result.content,
@@ -638,7 +636,6 @@ export function splitForDiscord(content: string, max: number): string[] {
 interface PersistParams {
   conversationId: string | null;
   authorId: string;
-  authorTag: string;
   userMessage: string;
   userDiscordMessageId: string;
   assistantContent: string;
@@ -683,7 +680,7 @@ async function persistConversation(p: PersistParams): Promise<void> {
     if (convErr || !conv) {
       Sentry.captureException(new Error('Discord: failed to create conversation'), {
         tags: { platform: PLATFORM_DISCORD },
-        extra: { dbError: convErr?.message, discordUser: p.authorTag },
+        extra: { dbError: convErr?.message },
       });
       return;
     }

@@ -193,6 +193,14 @@ network tab recording and use the widget.
   code throws errors with fixed messages instead of echoing the text it was
   reading. The lab-extraction parse path was changed on 2026-09-10 to do the
   same, because a JSON or schema error quotes the document back.
+- Health files cannot ride into the server image. Every health-data pattern in
+  `.gitignore` is also excluded in `.dockerignore`, and a test asserts the two
+  stay in step (`tests/dockerignore.test.ts`), so adding an ignore rule without
+  the matching exclusion fails the suite.
+- The plan footer links to
+  [the privacy notice](https://drstanfield.com/pages/connector-privacy) on both
+  builds (`widget-src/src/components/ResultsPanel.tsx`), so what we do with
+  your data is one click from your plan, not buried in a consent screen.
 
 ## Where to read next
 

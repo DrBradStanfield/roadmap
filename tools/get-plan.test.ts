@@ -8,7 +8,7 @@
  * a user's plan.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { readFileSync, mkdtempSync, writeFileSync, rmSync, realpathSync, existsSync } from 'node:fs';
+import { readFileSync, mkdtempSync, writeFileSync, rmSync, realpathSync, existsSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -316,6 +316,18 @@ describe('US-30 follow-up — --html never writes over the record', () => {
     expect(result.stderr).toMatch(/^get_plan: .*record file/);
 
     expect(readFileSync(path, 'utf8')).toBe(before);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('writes the --html report 0600, as private as the record it summarises', async () => {
+    const { dir, path } = writeFixture(fixture());
+    const html = join(dir, 'plan.html');
+
+    expect((await captureRun([path, '--html', html])).code).toBe(0);
+
+    // The report carries the same values as the record; a 0644 default would
+    // hand every other account on the machine the plan the record hides.
+    expect(statSync(html).mode & 0o777).toBe(0o600);
     rmSync(dir, { recursive: true, force: true });
   });
 

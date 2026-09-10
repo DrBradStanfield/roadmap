@@ -726,7 +726,17 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
 
       {showEmailCapture && <GuestEmailCapture hook={guestEmailHook} />}
 
-      <FeedbackForm />
+      {SHOPIFY_SURFACE && <FeedbackForm />}
+
+      <div className="privacy-notice-link">
+        <a
+          href="https://drstanfield.com/pages/connector-privacy"
+          target="_blank"
+          rel="noopener"
+        >
+          How your health data is handled
+        </a>
+      </div>
 
       {onDeleteData && (
         <div className="delete-data-section">

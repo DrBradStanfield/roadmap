@@ -11,6 +11,7 @@ import React, { useState, useEffect, useCallback, useReducer } from 'react';
 import { FeedbackForm } from './FeedbackForm';
 import { trackProductEvent } from '../lib/server-api';
 import { getChatGate } from '../lib/chat-api';
+import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ChatKeyGate } from './ChatKeyGate';
 import { useChatState, THINKING_MESSAGES, MAX_CHARS } from '../hooks/useChatState';
 import { ChatMessageBubble } from './ChatMessageBubble';
@@ -103,7 +104,8 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
             <span className="chat-icon">💬</span>
             <span className="chat-placeholder">Ask about your health suggestions</span>
           </div>
-          {!isLoggedIn && (
+          {/* Feedback posts to Brad's server; the Pages build has none. */}
+          {!isLoggedIn && SHOPIFY_SURFACE && (
             <button
               type="button"
               className="chat-feedback-link"

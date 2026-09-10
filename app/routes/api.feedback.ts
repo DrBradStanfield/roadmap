@@ -5,40 +5,17 @@ import { authenticate } from '../shopify.server';
 import { sendFeedbackEmail } from '../lib/email.server';
 import { recordFeedbackSubmission } from '../lib/product-events.server';
 import { getClientIp } from '../lib/local-first-route.server';
+import { createRateLimiter } from '../lib/rate-limiter';
 
-// Rate limit: 3 submissions per hour per IP
-const RATE_LIMIT_WINDOW_MS = 60 * 60_000;
-const RATE_LIMIT_MAX = 3;
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-// Clean up stale entries every 10 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateLimitMap) {
-    if (now > entry.resetAt) rateLimitMap.delete(key);
-  }
-}, 10 * 60_000);
-
-function isRateLimited(ip: string): boolean {
-  const entry = rateLimitMap.get(ip);
-  if (!entry || Date.now() > entry.resetAt) return false;
-  return entry.count >= RATE_LIMIT_MAX;
-}
-
-function recordRequest(ip: string): void {
-  const entry = rateLimitMap.get(ip);
-  const now = Date.now();
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-  } else {
-    entry.count++;
-  }
-}
+// 3 submissions per hour per IP — the same limiter every other route uses.
+const checkFeedbackRateLimit = createRateLimiter(3, 60 * 60_000, 10 * 60_000);
 
 const feedbackSchema = z.object({
   email: z.string().email().max(200),
   message: z.string().min(1).max(2000),
-  website: z.string().max(0).optional(), // honeypot — must be empty
+  // Honeypot: a filled field fails max(0), so the request is a 400 before any
+  // insert or send. The trap is the schema — there is no second check below.
+  website: z.string().max(0).optional(),
 });
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -49,8 +26,9 @@ export async function action({ request }: ActionFunctionArgs) {
   // HMAC verification — proves request came through Shopify app proxy
   await authenticate.public.appProxy(request);
 
-  const ip = getClientIp(request, 'shopify');
-  if (isRateLimited(ip)) {
+  // Counted as it is checked, before anything can throw: a Resend outage used
+  // to throw past the counter and hand an attacker unlimited inserts.
+  if (!checkFeedbackRateLimit(getClientIp(request, 'shopify'))) {
     return Response.json({ success: false, error: 'Too many requests. Please try again later.' }, { status: 429 });
   }
 
@@ -62,11 +40,6 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ success: false, error: 'Invalid input' }, { status: 400 });
     }
 
-    // Honeypot triggered — silently succeed without sending
-    if (parsed.data.website) {
-      return Response.json({ success: true });
-    }
-
     // Extract optional customer ID for context
     const url = new URL(request.url);
     const customerId = url.searchParams.get('logged_in_customer_id') || null;
@@ -76,8 +49,6 @@ export async function action({ request }: ActionFunctionArgs) {
     recordFeedbackSubmission(parsed.data.email, parsed.data.message, customerId).catch(() => {});
 
     const sent = await sendFeedbackEmail(parsed.data.email, parsed.data.message, customerId);
-
-    recordRequest(ip);
 
     if (!sent) {
       return Response.json({ success: false, error: 'Failed to send feedback' }, { status: 500 });

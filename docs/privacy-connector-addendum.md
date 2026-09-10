@@ -15,6 +15,12 @@ This section covers one optional feature: connecting an AI assistant, such as Ch
 or Claude, to your health record. It applies only if you connect one. If you never do,
 nothing here describes you.
 
+## Where to find this notice
+
+The consent screen you see when you connect an assistant links here. So does the health
+tool itself: the footer under your plan carries a "How your health data is handled" link
+to this page, on the website and on the version you run yourself.
+
 ## Where your health record lives
 
 Your record is a single file, `health-roadmap.json`, in your own Dropbox or Google
@@ -78,6 +84,17 @@ Three things sit in the memory of a running server and vanish when it restarts: 
 list of one-time authorization codes, a count of requests per network address, and a
 count of writes per connection. The write count is keyed on a SHA-256 hash of the
 credential, not on your name, your email or your file.
+
+Our database still carries the tables the old server-stored version used: `lab_values`,
+`health_measurements`, `health_documents`, `medications`, `medication_history`,
+`supplements`, `supplement_history`, `screenings`, `reminder_preferences`,
+`reminder_log` and `message_credit_transactions`. Every one of them holds zero rows.
+They are empty, not in use, and read and written by no code. They are still there
+because dropping a table on our host breaks the API's schema cache, so we leave the
+shells standing. The `profiles` table keeps four columns that were meant to hold your
+sex, birth year, birth month and height; every one of them is null for every row, and
+nothing writes them. Row-level security is on for every table in the database, and the
+public key that would let a browser talk to it directly ships in none of our bundles.
 
 ## What we log
 

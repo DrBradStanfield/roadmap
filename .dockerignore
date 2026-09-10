@@ -17,3 +17,30 @@ build/
 # server never reads. The `node_modules/` line above matches the repo root only,
 # so this project brought its own into every image layer.
 demo-video/
+
+# `COPY . .` copies the WORKING TREE, so every .gitignore rule that keeps real
+# health data, backups and dumps out of the repo has to hold for the image too
+# (a manual `fly deploy` does not go through git). tests/dockerignore.test.ts
+# pins the pairing. `docs/` deliberately stays: the chatbot reads
+# docs/products.md, docs/pathway and docs/blog at runtime.
+.git/
+.github/
+.claude/
+.shopify/
+.mcp.json
+.review-shots/
+tmp/
+**/exports/
+**/dumps/
+**/*.dump
+**/*.bundle
+**/*.sql.gz
+**/*.pgdump
+**/*backup*
+**/health-roadmap.json
+**/health_roadmap_file*
+**/*.map
+widget-src/dist-pages/
+**/_*.mjs
+**/_*.ts
+**/_*.js

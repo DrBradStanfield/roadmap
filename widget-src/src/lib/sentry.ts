@@ -142,8 +142,6 @@ export function initSentry() {
       : window.location.hostname === 'drbradstanfield.github.io'
         ? 'standalone' // the GitHub Pages front door — separable from the website in Sentry
         : 'production',
-    // Only send 20% of transactions for performance monitoring
-    tracesSampleRate: 0.2,
     // Don't send in development
     enabled: !window.location.hostname.includes('localhost'),
     // Limit serialization depth for Sentry event payloads

@@ -1845,6 +1845,21 @@ input[type="number"] {
   margin-top: 10px;
 }
 
+.privacy-notice-link {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.privacy-notice-link a {
+  font-size: 13px;
+  color: var(--color-gray-medium);
+  text-decoration: none;
+}
+
+.privacy-notice-link a:hover {
+  color: var(--color-brand);
+}
+
 .feedback-links {
   display: flex;
   align-items: center;
