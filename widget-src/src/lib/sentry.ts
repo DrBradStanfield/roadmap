@@ -8,7 +8,7 @@ const SENTRY_DSN = 'https://d7664c1590ec997ebf0126ed5917fea4@o4510813459709952.i
 
 let initialized = false;
 
-/** Scrub fetch/xhr and console breadcrumbs of PII/PHI. */
+/** Scrub navigation, fetch/xhr and console breadcrumbs of PII/PHI. */
 function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb): Sentry.Breadcrumb | null {
   // Strip ALL non-primitive values from UI breadcrumbs — DOM element refs
   // contain React fiber circular references (__reactFiber$ → stateNode → element)
@@ -26,6 +26,17 @@ function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb): Sentry.Breadcrumb | nul
     // Bodies go, and the URL keeps its origin only — arbitrary WebDAV/GitHub
     // paths and Drive lookup queries name clinical documents.
     breadcrumb.data = scrubBreadcrumbData(breadcrumb.data as Record<string, unknown>);
+  }
+  // Scrub navigation breadcrumbs. The SDK records one on every
+  // history.replaceState, and the OAuth return calls replaceState with the
+  // provider's `?code=…&state=…` still on the address, so `from`/`to` carry a
+  // live authorization code. scrubUrl drops the query whole and scrubs the path.
+  if (breadcrumb.category === 'navigation' && breadcrumb.data) {
+    const data: Record<string, unknown> = { ...breadcrumb.data };
+    for (const key of ['from', 'to']) {
+      if (typeof data[key] === 'string') data[key] = scrubUrl(data[key] as string);
+    }
+    breadcrumb.data = data;
   }
   // Scrub console breadcrumbs (may contain emails, health data in log output)
   if (breadcrumb.category === 'console') {
@@ -106,9 +117,8 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
     if (event.request.url) {
       event.request.url = scrubUrl(event.request.url);
     }
-    if (event.request.query_string) {
-      event.request.query_string = scrubUrl('?' + event.request.query_string).slice(1);
-    }
+    // The query goes whole — see scrubUrl.
+    delete event.request.query_string;
     delete event.request.cookies;
     if (event.request.headers) {
       delete event.request.headers.cookie;

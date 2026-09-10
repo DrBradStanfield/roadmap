@@ -50,10 +50,18 @@ const SENSITIVE_EXACT_KEYS = new Set([
   'email',
   'birthyear', 'birth_year',
   'birthmonth', 'birth_month',
-  'sex',
+  'sex', 'gender',
+  'dob', 'dateofbirth', 'date_of_birth', 'birthdate',
+  'patientname', 'patient_name',
   // Identifiers
   'shopify_customer_id', 'customerid',
   'userid', 'user_id',
+  // Patient identifiers a lab report or an import carries
+  'nhi', 'mrn',
+  // Generic carriers: whatever a row, a lab result or an extraction is called,
+  // this is the field its number or its text sits in.
+  'value', 'values', 'result', 'results',
+  'title', 'note', 'notes', 'summary',
   // Screening-specific
   'prostatepsavalue', 'prostate_psa_value',
   'lungpackyears', 'lung_pack_years',
@@ -98,32 +106,20 @@ export function scrubSensitiveData(input, maxDepth = 10, currentDepth = 0) {
   return result;
 }
 
-const SENSITIVE_PARAMS = [
-  'logged_in_customer_id', 'email',
-  // OAuth / PKCE (cloud-provider connect flows land on URLs carrying these)
-  'code', 'state', 'code_verifier', 'code_challenge',
-  'client_secret', 'assertion',
-  // refresh_token / access_token / id_token need no entry: the `token` rule below.
-];
+function decodePath(path) {
+  try { return decodeURIComponent(path); } catch { return path; }
+}
 
+// Origin + path, query dropped whole, path through the free-text scrub —
+// mirror of sentry-scrub.ts. A query names a clinical document as readily as it
+// carries a token, and no param allowlist survives the next provider.
 export function scrubUrl(url) {
   try {
-    const isRelative = !url.startsWith('http');
     const parsed = new URL(url, 'https://placeholder.invalid');
-    let changed = false;
-    for (const param of [...parsed.searchParams.keys()]) {
-      // Exact names, plus anything NAMED after a token — pollToken, id_token,
-      // accessToken — which no exact list keeps up with.
-      if (SENSITIVE_PARAMS.includes(param) || param.toLowerCase().includes('token')) {
-        parsed.searchParams.set(param, REDACTED);
-        changed = true;
-      }
-    }
-    if (!changed) return url;
-    if (isRelative) return parsed.pathname + parsed.search;
-    return parsed.toString();
+    const path = scrubText(decodePath(parsed.pathname));
+    return url.startsWith('http') ? parsed.origin + path : path;
   } catch {
-    return url;
+    return REDACTED;
   }
 }
 
@@ -264,9 +260,8 @@ export function scrubServerEvent(event) {
     // Request body contains health data — remove entirely
     delete event.request.data;
     if (event.request.url) event.request.url = scrubUrl(event.request.url);
-    if (event.request.query_string) {
-      event.request.query_string = scrubUrl("?" + event.request.query_string).slice(1);
-    }
+    // The query goes whole — see scrubUrl.
+    delete event.request.query_string;
     delete event.request.cookies;
     if (event.request.headers) {
       delete event.request.headers.cookie;

@@ -48,9 +48,16 @@ const SENSITIVE_SAMPLE: Record<string, unknown> = {
   email: 'brad@example.com',
   birthYear: 1960, birth_year: 1960,
   birthMonth: 3, birth_month: 3,
-  sex: 'male',
+  sex: 'male', gender: 'female',
+  dob: '1984-06-01', dateOfBirth: '1984-06-01', date_of_birth: '1984-06-01',
+  birthDate: '1984-06-01',
+  patientName: 'Jane Roe', patient_name: 'Jane Roe',
   shopify_customer_id: '123', customerId: '123',
   userId: 'u1', user_id: 'u1',
+  nhi: 'ABC1234', mrn: '00921',
+  value: 3.2, values: [3.2], result: 'positive', results: ['positive'],
+  title: 'Lipid panel', note: 'fasting', notes: ['fasting'],
+  summary: 'LDL up since March',
   unsubscribe_token: 'tok', accessToken: 'tok', authorization: 'Bearer x',
   bearerToken: 'b', apiKey: 'k', api_key: 'k',
   sourceFileName: 'Brad lipids.pdf', filename: 'Brad lipids.pdf',
@@ -88,22 +95,44 @@ describe('instrument-scrub.mjs ↔ health-core sentry-scrub parity', () => {
       '/apps/health-tool-1/api/measurements?token=abc&metric_type=ldl',
       'https://drstanfield.com/x?logged_in_customer_id=999&email=a@b.com&keep=1',
       'https://example.com/no-sensitive-params?page=2',
-      // OAuth/PKCE params (both impls must redact all of these, keep `safe`)
       '/callback?code=SECRET&state=BLOB&access_token=X&safe=1',
-      'https://drstanfield.com/cb?code_verifier=v&code_challenge=c&client_secret=s&refresh_token=r&id_token=i&assertion=a&page=2',
-      // exact-match semantics: lookalike params must survive untouched
-      'https://example.com/x?estate=maple&statement=ok&postcode=1010',
-      // every param NAMED after a token redacts, whatever its case or prefix
+      'https://drstanfield.com/cb?code_verifier=v&client_secret=s&refresh_token=r&page=2',
       'https://drstanfield.com/api/lab-import?batchId=b&pollToken=SECRET',
       'not a url',
     ];
     for (const u of urls) {
       expect(copy.scrubUrl(u)).toBe(source.scrubUrl(u));
     }
+    // The query goes whole: a provider names a clinical document in it, and an
+    // allowlist of param names never survives the next provider.
+    const download = 'https://content.dropboxapi.com/2/files/download?path=/Apps/roadmap/Jane%20Roe%20lipids.pdf';
     for (const impl of [source, copy]) {
-      const out = impl.scrubUrl('https://drstanfield.com/api/lab-import?batchId=b&pollToken=SECRET');
-      expect(out).not.toContain('SECRET');
-      expect(out).toContain('batchId=b');
+      const out = impl.scrubUrl(download);
+      expect(out).toBe('https://content.dropboxapi.com/2/files/download');
+      expect(out).not.toContain('?');
+      expect(out).not.toContain('Jane');
+      expect(impl.scrubUrl('/apps/health-tool-1/api/measurements?token=abc'))
+        .toBe('/apps/health-tool-1/api/measurements');
+    }
+  });
+
+  it('filters every field of a lab row and a patient profile (both impls)', () => {
+    const payload = {
+      row: { metricType: 'ldl', value: 3.2, unit: 'mmol/L' },
+      profile: { dob: '1984-06-01', gender: 'female', patientName: 'Jane Roe', nhi: 'ABC1234' },
+    };
+    for (const impl of [source, copy]) {
+      const out = impl.scrubSensitiveData(payload) as {
+        row: Record<string, unknown>; profile: Record<string, unknown>;
+      };
+      expect(out.row.metricType).toBe('[Filtered]');
+      expect(out.row.value).toBe('[Filtered]');
+      expect(out.profile.dob).toBe('[Filtered]');
+      expect(out.profile.gender).toBe('[Filtered]');
+      expect(out.profile.patientName).toBe('[Filtered]');
+      expect(out.profile.nhi).toBe('[Filtered]');
+      // The unit alone is not the value, and it is what an alert is read by.
+      expect(out.row.unit).toBe('mmol/L');
     }
   });
 

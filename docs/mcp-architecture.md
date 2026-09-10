@@ -146,7 +146,7 @@ Every write: read → `migrateFile` → apply → `mergeFiles` → conditional w
 
 ## 4. Auth chain, with no storage anywhere
 
-> **Prerequisite: LANDED (commit `4ee99d3`, 2026-09-01).** OAuth secrets travel in query strings. `SENSITIVE_PARAMS` in the parity-tested pair (`instrument-scrub.mjs`, `packages/health-core/src/sentry-scrub.ts`) now also redacts `code`, `state`, `code_verifier`, `code_challenge`, `client_secret`, `refresh_token`, `access_token`, `id_token`, `assertion`, with exact-match semantics pinned by test. Standing rules for this build: **no `/mcp` route may log a request URL**, and Fly's proxy access-log setting must be checked before Phase 1 ships.
+> **Prerequisite: LANDED (commit `4ee99d3`, 2026-09-01).** OAuth secrets travel in query strings. The parity-tested pair (`instrument-scrub.mjs`, `packages/health-core/src/sentry-scrub.ts`) no longer names the parameters to redact: the query is dropped whole from every address an event reports, and the path is scrubbed as free text. So `code`, `state`, `code_verifier` and every other secret a provider invents go with it. Standing rules for this build: **no `/mcp` route may log a request URL**, and Fly's proxy access-log setting must be checked before Phase 1 ships.
 
 **We are the authorization server.** An IdP would mean user accounts, the one thing this product does not have. The identity we need is "the person who can authorize this folder," and the provider proves it.
 

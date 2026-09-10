@@ -209,67 +209,35 @@ describe('scrubSensitiveData', () => {
 });
 
 describe('scrubUrl', () => {
-  it('scrubs token from query string', () => {
-    const url = 'https://example.com/api/reminders?token=abc123';
-    const result = scrubUrl(url);
-    expect(result).toContain('token=');
-    expect(result).not.toContain('abc123');
+  it('drops the query wholesale, keeping origin and path', () => {
+    expect(scrubUrl('https://example.com/api/reminders?token=abc123&page=2'))
+      .toBe('https://example.com/api/reminders');
   });
 
-  it('scrubs logged_in_customer_id', () => {
-    const url = 'https://example.com/api/measurements?logged_in_customer_id=12345';
+  it('drops a query naming a clinical document', () => {
+    const url = 'https://content.dropboxapi.com/2/files/download?path=/Apps/roadmap/Jane%20Roe%20lipids.pdf';
     const result = scrubUrl(url);
-    expect(result).not.toContain('12345');
+    expect(result).toBe('https://content.dropboxapi.com/2/files/download');
+    expect(result).not.toContain('?');
+    expect(result).not.toContain('lipids');
   });
 
-  it('scrubs email parameter', () => {
-    const url = 'https://example.com/page?email=john@test.com';
-    const result = scrubUrl(url);
-    expect(result).not.toContain('john@test.com');
-  });
-
-  it('preserves URLs without sensitive params', () => {
-    const url = 'https://example.com/api/measurements?metric_type=weight&limit=50';
-    expect(scrubUrl(url)).toBe(url);
+  it('keeps a URL that has no query', () => {
+    expect(scrubUrl('https://example.com/api/measurements'))
+      .toBe('https://example.com/api/measurements');
   });
 
   it('handles relative URLs', () => {
-    const url = '/api/reminders?token=abc123';
-    const result = scrubUrl(url);
-    expect(result).toContain('/api/reminders');
-    expect(result).not.toContain('abc123');
+    expect(scrubUrl('/api/reminders?token=abc123')).toBe('/api/reminders');
   });
 
-  it('handles malformed URLs gracefully', () => {
-    expect(scrubUrl('not-a-url')).toBe('not-a-url');
+  it('runs the path itself through the free-text scrub', () => {
+    expect(scrubUrl('https://example.com/reports/ldl 3.2 mmol/L'))
+      .toBe('https://example.com/reports/ldl [value]');
   });
 
-  it('handles URLs without query params', () => {
-    const url = 'https://example.com/api/measurements';
-    expect(scrubUrl(url)).toBe(url);
-  });
-
-  it('scrubs OAuth/PKCE params from a redirect-return URL, keeping safe ones', () => {
-    const result = scrubUrl('/callback?code=SECRET&state=BLOB&access_token=X&safe=1');
-    expect(result).toBe(
-      '/callback?code=%5BFiltered%5D&state=%5BFiltered%5D&access_token=%5BFiltered%5D&safe=1',
-    );
-    expect(result).not.toContain('SECRET');
-    expect(result).not.toContain('BLOB');
-  });
-
-  it('scrubs the remaining OAuth params', () => {
-    for (const param of ['code_verifier', 'code_challenge', 'client_secret',
-                         'refresh_token', 'id_token', 'assertion']) {
-      const result = scrubUrl(`https://example.com/oauth?${param}=LEAK`);
-      expect(result).not.toContain('LEAK');
-    }
-  });
-
-  it('matches param names EXACTLY — never by substring', () => {
-    // 'state' must not redact 'estate'/'statement'; 'code' must not redact 'postcode'.
-    const url = 'https://example.com/x?estate=maple&statement=ok&postcode=1010&encoded=y';
-    expect(scrubUrl(url)).toBe(url);
+  it('reduces a malformed URL to a path, never the original string', () => {
+    expect(scrubUrl('not-a-url')).toBe('/not-a-url');
   });
 });
 

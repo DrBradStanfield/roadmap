@@ -1099,6 +1099,8 @@ describe('discovery documents (US-32, design §6)', () => {
     const doc = await (await wellKnown({ params: { '*': 'oauth-protected-resource/mcp' } } as never) as Response).json();
     expect(doc.resource).toBe(`${ISSUER}/mcp`);
     expect(doc.authorization_servers[0]).toBe(ISSUER);
+    // A live page, not a 404: this is the link a client shows before consent.
+    expect(doc.resource_documentation).toBe('https://drstanfield.com/pages/connector-privacy');
     // No scope menu: nothing reads a requested scope and every grant carries
     // the same fixed pair, so advertising one promised a choice we never make.
     expect(doc.scopes_supported).toBeUndefined();

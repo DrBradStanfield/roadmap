@@ -78,3 +78,37 @@ describe('scrubEvent — free-text scrub', () => {
     expect(out.breadcrumbs![0].message).toBe('cholesterol [value]');
   });
 });
+
+// The OAuth return lands on `/roadmap/?code=…&state=…`, and dropbox.ts /
+// drive.ts call history.replaceState to clear it. The SDK records a navigation
+// breadcrumb first, with the live authorization code in `data.from`/`data.to`.
+describe('scrubEvent — navigation breadcrumbs', () => {
+  it('drops the OAuth query from navigation from/to, absolute and relative', () => {
+    const event = makeEvent({
+      breadcrumbs: [
+        { category: 'navigation', data: { from: '/roadmap/?code=abc&state=xyz', to: '/roadmap/' } },
+        {
+          category: 'navigation',
+          data: {
+            from: 'https://drstanfield.com/roadmap/?code=abc&state=xyz',
+            to: 'https://drstanfield.com/roadmap/',
+          },
+        },
+      ],
+    });
+    const out = scrubEvent(event)!;
+    for (const crumb of out.breadcrumbs!) {
+      const serialized = JSON.stringify(crumb.data);
+      expect(serialized).not.toContain('code');
+      expect(serialized).not.toContain('state');
+      expect(serialized).not.toContain('abc');
+      expect(serialized).not.toContain('xyz');
+      expect(serialized).not.toContain('?');
+    }
+    expect(out.breadcrumbs![0].data).toEqual({ from: '/roadmap/', to: '/roadmap/' });
+    expect(out.breadcrumbs![1].data).toEqual({
+      from: 'https://drstanfield.com/roadmap/',
+      to: 'https://drstanfield.com/roadmap/',
+    });
+  });
+});

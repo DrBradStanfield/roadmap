@@ -78,7 +78,9 @@ event, so a Pages error is reported under the same rules as any other.
 
 The rest of what the page loads is its own. `widget-src/standalone/index.html`
 carries one module script and loads no third-party script at load time; Sentry is
-bundled into it, and the hero image is fetched from `cdn.shopify.com`. Connecting
+bundled into it, and the hero image ships with the build
+(`widget-src/standalone/hero-dr-brad.webp`, 26 KB) rather than being fetched
+from `cdn.shopify.com`, so loading the page tells Shopify nothing. Connecting
 Google Drive loads Google's sign-in script from `accounts.google.com`. Cloud credentials and the
 optional Anthropic key live in `localStorage` for that origin
 (`hr_anthropic_key`, `health_roadmap_dropbox_tokens`, `health_roadmap_gdrive`

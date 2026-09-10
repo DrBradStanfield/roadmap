@@ -111,16 +111,21 @@ nothing secret and nothing about your health travels in one: the lab-import poll
 its token in the body of a POST instead. What does appear there is the signature and the
 timestamp Shopify puts on an app-proxy address, and both expire in ten minutes. Errors
 go to Sentry. Before an event leaves the server, our own code deletes the
-request body, the cookies and the `Authorization` header from it, redacts sensitive
-query parameters (including OAuth `code`, `state` and any token) out of the URL,
-replaces the text of console breadcrumbs, and filters values stored under a known
-health, medication or identity key name. Sentry's own PII collection is off: we never
+request body, the cookies and the `Authorization` header from it, cuts the request
+address down to the site and the path with the query string dropped whole, and runs
+that path through the same text scrub as the rest of the event. It replaces the text
+of console breadcrumbs, and filters values stored under a known health, medication or
+identity key name. Sex was always one of them; on 10 September 2026 the list gained
+date of birth, gender, a patient name, a patient or NHI number, and the plain field
+names a value or a note is carried in (`value`, `values`, `result`, `results`,
+`title`, `note`, `notes` and `summary`). Sentry's own PII collection is off: we never
 set `sendDefaultPii`. Your health values are never recorded as analytics.
 
 The version you run yourself reports errors to Sentry too, under the environment name
 `standalone`, through the same scrub, running in your own browser before anything leaves
 it. That page has no server of ours behind it, so there are no request lines for us to
-keep.
+keep. Its hero image ships with the page as of 10 September 2026, so opening it no
+longer asks Shopify's image host for a picture and tells that host nothing about you.
 
 ## Retention
 
@@ -165,8 +170,9 @@ because both use the same app identity. You can reconnect in one click.
 - **Fly.io**, who run our server. It runs in Ashburn, Virginia, United States.
 - **Sentry**, for error reports, scrubbed as described above. How far that scrub reaches (`packages/health-core/src/sentry-scrub.ts`): it removes email
   addresses, numbers carrying a unit, and numbers written within 20 characters of about
-  thirty metric and lab words, and server-side it drops any extra field over 200
-  characters. It does not recognise a diagnosis or a name written in ordinary prose, and
+  thirty metric and lab words, drops the query string of every address it reports, including the page addresses in
+  its own breadcrumbs, and
+  server-side it drops any extra field over 200 characters. It does not recognise a diagnosis or a name written in ordinary prose, and
   it carries no phone-number rule (that guard sits in the connector's feedback tool). The
   control that does the work is upstream: the code raises errors with fixed messages
   rather than echoing the text it was reading. The lab-extraction parse path was changed

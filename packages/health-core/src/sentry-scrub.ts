@@ -49,10 +49,18 @@ const SENSITIVE_EXACT_KEYS = new Set([
   'email',
   'birthyear', 'birth_year',
   'birthmonth', 'birth_month',
-  'sex',
+  'sex', 'gender',
+  'dob', 'dateofbirth', 'date_of_birth', 'birthdate',
+  'patientname', 'patient_name',
   // Identifiers
   'shopify_customer_id', 'customerid',
   'userid', 'user_id',
+  // Patient identifiers a lab report or an import carries
+  'nhi', 'mrn',
+  // Generic carriers: whatever a row, a lab result or an extraction is called,
+  // this is the field its number or its text sits in.
+  'value', 'values', 'result', 'results',
+  'title', 'note', 'notes', 'summary',
   // Screening-specific
   'prostatepsavalue', 'prostate_psa_value',
   'lungpackyears', 'lung_pack_years',
@@ -109,37 +117,31 @@ export function scrubSensitiveData(
   return result;
 }
 
-/** Query params that should be redacted from URLs. */
-const SENSITIVE_PARAMS = [
-  'logged_in_customer_id', 'email',
-  // OAuth / PKCE (cloud-provider connect flows land on URLs carrying these)
-  'code', 'state', 'code_verifier', 'code_challenge',
-  'client_secret', 'assertion',
-  // refresh_token / access_token / id_token need no entry: the `token` rule below.
-];
+function decodePath(path: string): string {
+  try { return decodeURIComponent(path); } catch { return path; }
+}
 
 /**
- * Redact sensitive query parameter values from a URL string.
- * Preserves the path and non-sensitive params.
+ * Reduce a request URL to origin + path, dropping the query whole and running
+ * the path through the free-text scrub.
+ *
+ * An allowlist of param names (2026-09-10) loses to the next provider: a query
+ * carries a clinical filename (`?path=/Apps/roadmap/Jane Roe lipids.pdf`), a
+ * search term or a token just as readily as it carries `code`. An accepted
+ * residual: an attack payload carried in a query string is no longer visible
+ * (the 2026-08-23 sentry-fix diagnosis of JAVASCRIPT-REMIX-62 read the
+ * `exitIframe` query); the path and the exception text still are. The path is scrubbed too — a REST route can spell a
+ * document or a value into its segments. Breadcrumbs keep only the origin.
  */
 export function scrubUrl(url: string): string {
   try {
-    const isRelative = !url.startsWith('http');
     const parsed = new URL(url, 'https://placeholder.invalid');
-    let changed = false;
-    for (const param of [...parsed.searchParams.keys()]) {
-      // Exact names, plus anything NAMED after a token — pollToken, id_token,
-      // accessToken — which no exact list keeps up with.
-      if (SENSITIVE_PARAMS.includes(param) || param.toLowerCase().includes('token')) {
-        parsed.searchParams.set(param, REDACTED);
-        changed = true;
-      }
-    }
-    if (!changed) return url;
-    if (isRelative) return parsed.pathname + parsed.search;
-    return parsed.toString();
+    // Decoded first: a percent-encoded path hides both the value scrub's
+    // spacing ("ldl%203.2") and the filename a reader would recognise.
+    const path = scrubText(decodePath(parsed.pathname));
+    return url.startsWith('http') ? parsed.origin + path : path;
   } catch {
-    return url;
+    return REDACTED;
   }
 }
 
