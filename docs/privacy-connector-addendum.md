@@ -1,6 +1,9 @@
 # Privacy policy addendum: the AI connector
 
-DRAFT. Not published. Written 2026-09-02, re-audited 2026-09-07, from the code at
+Published at [drstanfield.com/pages/connector-privacy](https://drstanfield.com/pages/connector-privacy)
+by `node scripts/build-privacy-page.mjs --publish` (last 10 September 2026, from commit
+273cc36). Republish after every edit here; the page is generated, never hand-edited.
+Written 2026-09-02, re-audited 2026-09-07 and 2026-09-10, from the code at
 `app/lib/mcp.server.ts`, `app/lib/mcp-*.server.ts`, `app/routes/mcp.$.tsx` and
 `packages/health-core/src/mcp-tools.ts`.
 
@@ -178,7 +181,7 @@ run yourself has no way to file anything: it hands you a link to submit instead.
 
 ---
 
-## Items to verify before publishing
+## Items still to verify
 
 - [VERIFY] Legal review of the whole section. This is engineering truth, not legal text.
 - [VERIFY] Whether GDPR or CCPA wording is needed (controller vs processor, lawful
