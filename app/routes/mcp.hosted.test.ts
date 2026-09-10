@@ -1099,6 +1099,9 @@ describe('discovery documents (US-32, design §6)', () => {
     const doc = await (await wellKnown({ params: { '*': 'oauth-protected-resource/mcp' } } as never) as Response).json();
     expect(doc.resource).toBe(`${ISSUER}/mcp`);
     expect(doc.authorization_servers[0]).toBe(ISSUER);
+    // No scope menu: nothing reads a requested scope and every grant carries
+    // the same fixed pair, so advertising one promised a choice we never make.
+    expect(doc.scopes_supported).toBeUndefined();
   });
 
   it('advertises CIMD and "none", which Claude needs both of', async () => {
@@ -1108,6 +1111,7 @@ describe('discovery documents (US-32, design §6)', () => {
     expect(doc.token_endpoint_auth_methods_supported).toContain('none');
     expect(doc.code_challenge_methods_supported).toEqual(['S256']);
     expect(doc.authorization_response_iss_parameter_supported).toBe(true);
+    expect(doc.scopes_supported).toBeUndefined();
   });
 });
 

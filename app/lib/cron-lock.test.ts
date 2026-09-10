@@ -82,11 +82,14 @@ describe('tryAcquireCronLock — US-28 AC1: transient errors throw, race results
     ).resolves.toBe(false);
   });
 
-  it('resolves false when the seed row is missing (permanent misconfig, not transient)', async () => {
+  // A missing seed row used to resolve false, which every caller reads as
+  // "another machine won" — so the job was skipped for the day, forever,
+  // silently. It is a permanent misconfig and must be loud.
+  it('rejects when the seed row is missing (never resolves false)', async () => {
     db.verify = null;
     await expect(
       tryAcquireCronLock('machine-a', '2026-08-28', 'youtube_bot_summary'),
-    ).resolves.toBe(false);
+    ).rejects.toThrow(/cron lock row missing \(youtube_bot_summary\)/);
   });
 
   it('resolves false on a malformed date literal (guard, not transient)', async () => {

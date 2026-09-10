@@ -710,6 +710,21 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
     expect(reportFeedback({ ...GOOD, title: 'reply to synthetic@example.invalid' }, NOW).status).toBe('rejected');
   });
 
+  it('refuses a file name — lab portals name the download after the patient', () => {
+    for (const detail of [
+      'import failed on Jane Doe results.pdf',
+      'the scan JANE-DOE-2026.HEIC would not open',
+      'it choked on jane.doe.labs.zip',
+      'nothing happened with results (1).csv',
+      'my_report.docx was ignored',
+    ]) {
+      const outcome = reportFeedback({ ...GOOD, detail }, NOW);
+      expect(outcome, detail).toMatchObject({ status: 'rejected', reason: 'contact' });
+      expect(outcome.text, detail).toContain('file name');
+    }
+    expect(reportFeedback({ ...GOOD, title: 'upload of Jane Doe results.pdf fails' }, NOW).status).toBe('rejected');
+  });
+
   it('lets through what a bug report is actually made of', () => {
     // A page number is not a lab result; a metric NAME with no number is the
     // whole point of a bug report; a day and a plain link carry nothing.
@@ -891,6 +906,13 @@ describe('US-32 AC9 — a surface that can file, files it', () => {
   it('refuses contact details before anything can leave, and files nothing', async () => {
     const { seen, filer } = spy();
     const outcome = await fileFeedback({ ...GOOD, detail: 'email me at synthetic@example.invalid' }, NOW, filer);
+    expect(outcome).toMatchObject({ status: 'rejected', reason: 'contact' });
+    expect(seen).toHaveLength(0);
+  });
+
+  it('refuses a file name before anything can leave, and files nothing', async () => {
+    const { seen, filer } = spy();
+    const outcome = await fileFeedback({ ...GOOD, detail: 'the import failed on Jane Doe results.pdf' }, NOW, filer);
     expect(outcome).toMatchObject({ status: 'rejected', reason: 'contact' });
     expect(seen).toHaveLength(0);
   });

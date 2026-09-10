@@ -12,7 +12,7 @@ import {
 } from '@roadmap/health-core';
 import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
-import { setChatHistoryFactory } from './chat-history-access';
+import { getChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
@@ -200,8 +200,8 @@ export function setPreEraseHook(fn: () => Promise<void>): void {
   preEraseHook = fn;
 }
 
-export async function deleteUserData(): Promise<{ success: boolean; error?: string }> {
-  if (!store) return { success: false, error: 'Data store not initialised' };
+export async function deleteUserData(): Promise<{ success: boolean; error?: string; chatErased: boolean }> {
+  if (!store) return { success: false, error: 'Data store not initialised', chatErased: false };
   try {
     await preEraseHook?.();
   } catch (error) {
@@ -210,7 +210,24 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
     console.warn('Pre-erase teardown failed', error);
     Sentry.captureException(error, { tags: { area: 'reminders', op: 'pre-erase' } });
   }
-  return store.deleteUserData();
+  // Chat history is a SEPARATE file the record erase never touches, and its
+  // merge is append-only — so every conversation is tombstoned. Through the
+  // singleton, so an open chat panel's instance is the one erased, and BEFORE
+  // the record erase, which then clears the local-mode keys underneath it.
+  // Best-effort, like the hook above: a cloud that won't answer must not trap
+  // the user's data on their device.
+  // Reported, not just swallowed: the caller's post-erase notice must not claim
+  // a deletion that did not happen. The tombstones are already in the singleton,
+  // so the next recordExchange carries them through sync.save.
+  let chatErased = true;
+  try {
+    await (await getChatHistory())?.eraseAll();
+  } catch (error) {
+    chatErased = false;
+    console.warn('Chat-history erase failed', error);
+    Sentry.captureException(error, { tags: { area: 'chat-history', op: 'erase' } });
+  }
+  return { ...(await store.deleteUserData()), chatErased };
 }
 
 // ---------------------------------------------------------------------------

@@ -188,17 +188,34 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
     expect(optIn.token).toBe('');
   });
 
-  it('leaves an ENROLLED user with no opt-in record after an erase (they start over)', async () => {
+  // M1 (2026-09-10): leaving an ENROLLED user with NO opt-in record made the
+  // erase turn reminders back on. The empty file reads as "never decided", so
+  // the next storefront load auto-enrolled them again through the address lane,
+  // refilling the server row the pre-erase hook had just torn down, while the
+  // widget held no token to cancel it with. An erase now records the decision
+  // for anyone who HAD an opt-in, enrolled or not; the manual toggle still
+  // re-enrols, because that is the user asking.
+  it('turns reminders OFF for an enrolled user (the erase must not re-enrol them)', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     store.setReminderOptIn({ status: 'active', token: 'cap-token', email: 'user@example.com', provider: 'dropbox' });
 
     await store.deleteUserData();
 
-    // No stale token or address survives. The server row is deleted separately,
-    // by the pre-erase hook in roadmap-data.ts (it needs the token, so it runs
-    // before this); re-enrolment on the next visit is the default-on model
-    // working as designed, and it shows the notice again.
+    const optIn = readCloudFile(cloud).reminderOptIn!;
+    expect(optIn.status).toBe('cancelled');
+    // The decision survives; the identity does not.
+    expect(optIn.email).toBe('');
+    expect(optIn.token).toBe('');
+  });
+
+  it('leaves a user who never decided about reminders with no opt-in record', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+
+    await store.deleteUserData();
+
     expect(readCloudFile(cloud).reminderOptIn).toBeUndefined();
   });
 });
@@ -880,6 +897,23 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
     expect(localStorage.getItem(DOC_KEY)).toBeNull();
     expect(localStorage.getItem(DOC_KEY_2)).toBeNull();
+  });
+
+  // E2 (2026-09-10): chat-history.json is stored under the local adapter's
+  // NAMED_FILE_PREFIX, and only disconnect() clears that prefix — which local
+  // mode skips, so a localStorage-only user's chat history outlived the erase.
+  it('removes the named record files (chat history) but keeps the erased record file', async () => {
+    const CHAT_KEY = 'health_roadmap_file_v2:chat-history.json';
+    localStorage.setItem(CHAT_KEY, '{"conversations":[{"id":"c1","title":"my ldl is 3.2","messages":[]}]}');
+    localStorage.setItem(`${CHAT_KEY}_rev`, '3');
+
+    const store = await RoadmapStore.create(new LocalStorageAdapter());
+    expect((await store.deleteUserData()).success).toBe(true);
+
+    expect(localStorage.getItem(CHAT_KEY)).toBeNull();
+    expect(localStorage.getItem(`${CHAT_KEY}_rev`)).toBeNull();
+    // The erased record file must stay: local mode has no other copy of it.
+    expect(localStorage.getItem('health_roadmap_file_v2')).not.toBeNull();
   });
 
   it('leaves connection tokens, consent flags and the typed API key alone (named keys, never a prefix wipe)', async () => {

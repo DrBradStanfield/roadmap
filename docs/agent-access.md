@@ -1,9 +1,11 @@
 # Reading and writing a health record with an AI agent
 
 Your health record is one file: `health-roadmap.json`. It lives in **your** storage,
-your Dropbox, your Google Drive, your GitHub repo, or your browser. It is never on our
-server, so there is no API to call and no key to get. Any agent with filesystem access
-can open the file, read it, and write it back.
+your Dropbox, your Google Drive, your GitHub repo, or your browser. We do not host it
+and we keep no copy of it. Any agent with filesystem access can open the file, read it,
+and write it back, with no API to call and no key to get. The hosted connector at
+`mcp.drstanfield.com` is the one path that runs through us: to answer one call it holds
+the record in server memory for the length of that request and stores none of it.
 
 This page is the contract for doing that safely.
 

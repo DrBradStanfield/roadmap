@@ -59,10 +59,10 @@ import {
 } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
 import { ROADMAP_DOC, SyncManager, type SyncContext } from '@roadmap/health-core';
-import { LocalStorageAdapter } from './local-storage-adapter';
+import { LocalStorageAdapter, NAMED_FILE_PREFIX } from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
-import { clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { clearOffFileHealthData, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { recordFailure } from '../lib/error-diagnostics';
 
@@ -698,18 +698,20 @@ export class RoadmapStore {
     const eraseEpoch = (this.file.meta.eraseEpoch ?? 0) + 1;
     // An erase must not silently re-consent the user. Under US-17's default-on
     // model the empty file reads as "never decided", so the next app load would
-    // enrol them again — undoing an explicit opt-out (AC4) via a button that
-    // promises the opposite. A higher eraseEpoch also wins the merge WHOLESALE,
-    // so the 'cancelled' record on their other devices can't save them either.
-    // Carry the decision, never the identity: no token, no email address.
-    const optedOut = this.file.reminderOptIn?.status === 'cancelled'
-      ? this.file.reminderOptIn.provider
-      : null;
+    // enrol them again — undoing an explicit opt-out (AC4), and for an ENROLLED
+    // user refilling the server row the pre-erase hook just tore down, with no
+    // token left here to cancel it. So anyone who HAD an opt-in, active or
+    // cancelled, comes out of the erase with reminders off; the manual toggle
+    // still re-enrols, because that is the user asking. A higher eraseEpoch
+    // wins the merge WHOLESALE, so the record on their other devices can't
+    // save them either. Carry the decision, never the identity: no token, no
+    // email address.
+    const priorProvider = this.file.reminderOptIn?.provider ?? null;
     this.file = migrateFile(null, { deviceId: this.deviceId, now: new Date().toISOString() });
     this.file.meta.eraseEpoch = eraseEpoch;
-    if (optedOut) {
+    if (priorProvider) {
       this.file.reminderOptIn = {
-        status: 'cancelled', token: '', email: '', provider: optedOut,
+        status: 'cancelled', token: '', email: '', provider: priorProvider,
         updatedAt: new Date().toISOString(), lamport: 1,
       };
     }
@@ -725,7 +727,14 @@ export class RoadmapStore {
       // in every mode — a localStorage-only user gets no disconnect() below
       // (it would delete the erased file we just wrote), and used to keep both.
       clearOffFileHealthData();
-      if (this.adapter.id !== 'local') {
+      if (this.adapter.id === 'local') {
+        // The other record files (chat-history.json) sit under the adapter's
+        // named-file prefix, which only disconnect() clears — and disconnect()
+        // here would delete the erased record file we just wrote. Their
+        // contents are already tombstoned (roadmap-data.ts erases chat history
+        // BEFORE this), so removing the keys can resurrect nothing.
+        removeByPrefix(NAMED_FILE_PREFIX);
+      } else {
         clearSyncPending();
         await new LocalStorageAdapter().disconnect();
       }

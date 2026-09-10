@@ -8,6 +8,8 @@ process.env.KLAVIYO_LIST_ID = 'TESTLIST';
 import {
   computeCaptureTrend,
   getKlaviyoCaptureStats,
+  subscribeToKlaviyo,
+  suppressInKlaviyo,
 } from './klaviyo.server';
 
 describe('computeCaptureTrend', () => {
@@ -154,5 +156,47 @@ describe('getKlaviyoCaptureStats', () => {
     }) as unknown as typeof fetch;
 
     await expect(getKlaviyoCaptureStats()).rejects.toThrow(/timeout/);
+  });
+});
+
+// --- the console never carries the address (Fly logs are unscrubbed) ---
+
+describe('Klaviyo failure logging keeps the address off the console', () => {
+  const ADDRESS = 'synthetic@example.invalid';
+  // A Klaviyo 400 echoes the submitted address back in its error detail.
+  const ECHO = JSON.stringify({ errors: [{ detail: `Invalid email: ${ADDRESS}` }] });
+
+  afterEach(() => {
+    global.fetch = REAL_FETCH;
+    vi.restoreAllMocks();
+  });
+
+  function failWith(body: string, status = 400) {
+    global.fetch = vi.fn(async () => ({
+      ok: false,
+      status,
+      text: async () => body,
+      json: async () => JSON.parse(body),
+    })) as unknown as typeof fetch;
+  }
+
+  it('logs status only when a subscription fails', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    failWith(ECHO);
+    await subscribeToKlaviyo({ email: ADDRESS });
+    expect(warn).toHaveBeenCalledWith('Klaviyo subscription failed: 400');
+    for (const call of warn.mock.calls) {
+      expect(JSON.stringify(call)).not.toContain(ADDRESS);
+    }
+  });
+
+  it('logs status only when a suppression fails', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    failWith(ECHO);
+    expect(await suppressInKlaviyo(ADDRESS)).toBe(false);
+    expect(error).toHaveBeenCalledWith('Klaviyo suppression failed: 400');
+    for (const call of error.mock.calls) {
+      expect(JSON.stringify(call)).not.toContain(ADDRESS);
+    }
   });
 });

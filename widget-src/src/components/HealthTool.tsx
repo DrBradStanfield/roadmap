@@ -74,6 +74,40 @@ import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
 
+// What "Delete all my data" does, said BEFORE the click. The caveats used to
+// arrive in the alert afterwards, which is too late to be a decision, and
+// "permanently delete" on its own was a promise the app cannot keep: copies it
+// never touches sit in the user's own cloud folder.
+export const ERASE_CONFIRM =
+  'Delete all your data?\n\n' +
+  'Your health record and your chat history are erased, on this device and in your cloud file. ' +
+  'This cannot be undone.\n\n' +
+  'Four things this cannot reach:\n' +
+  '1. Documents you uploaded that are already in your cloud folder. They stay.\n' +
+  '2. Candidate files from a connector import (imports/pending-*.json). They stay until your next import.\n' +
+  '3. Your cloud provider keeps version history, and GitHub keeps every past commit.\n' +
+  '4. Backups made by the command-line tool stay beside the file.\n\n' +
+  'Reminders are turned off. The row on our server keeps your address for 90 days, so a later ' +
+  'enrolment of that address does not send a second welcome email; anyone who enrols the address ' +
+  'again restarts the schedule, and each email carries the off link. ' +
+  'Cancelling from a Google sign-in deletes that row.';
+
+const ERASE_DONE_TAIL =
+  '\n\nStill in your cloud folder: the documents you uploaded, any pending import files, ' +
+  'your provider\'s version history, and any command-line backups. ' +
+  'Delete those in your cloud account if you want them gone.';
+
+export const ERASE_DONE = 'Your health record and chat history are deleted.' + ERASE_DONE_TAIL;
+
+// The chat erase is best-effort (roadmap-data.ts): an unreachable cloud must
+// never trap a user's data on their device. When it fails, the tombstones are
+// already in the in-memory singleton, so the next recordExchange merges them
+// through sync.save. Say that, rather than claiming a deletion that did not
+// happen.
+export const ERASE_DONE_CHAT_PENDING =
+  'Your health record is deleted. Your chat history could not be reached just now; ' +
+  'it is erased on your next chat.' + ERASE_DONE_TAIL;
+
 export function HealthTool({ syncControl, remindersSection }: { syncControl?: (ctx: { hasData: boolean }) => ReactNode; remindersSection?: ReactNode } = {}) {
   // The store is ready before render, so returning users see their saved prefill immediately.
   const [inputs, setInputs] = useState<Partial<HealthInputs>>(getInitialInputsSync);
@@ -656,9 +690,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   }, [formStage, supplements, documentHistory]);
 
   const handleDeleteData = useCallback(async () => {
-    const confirmed = window.confirm(
-      'This will permanently delete all your health data and measurements. This action cannot be undone. Are you sure?',
-    );
+    const confirmed = window.confirm(ERASE_CONFIRM);
     if (!confirmed) return;
 
     setIsDeleting(true);
@@ -673,13 +705,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setMedications([]);
       setScreenings([]);
       previousInputsRef.current = {};
-      window.alert(
-        'All your health data has been deleted.\n\n' +
-          'If you connected a cloud, two things this cannot reach: the original ' +
-          'documents you uploaded, which stay in that folder, and the provider\'s ' +
-          'version history. GitHub keeps every past version of the file. Delete ' +
-          'those in your cloud account if you want them gone.',
-      );
+      window.alert(result.chatErased ? ERASE_DONE : ERASE_DONE_CHAT_PENDING);
     } else {
       window.alert(result.error || 'Failed to delete data. Please try again.');
     }

@@ -791,6 +791,15 @@ function valueNearMetric(text: string): string | null {
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
 /** A link carrying a query string — the shape that carries a token or an id. */
 const URL_WITH_QUERY = /https?:\/\/\S*\?\S/i;
+/**
+ * A file name, which is a person as often as a document is: lab portals name
+ * their downloads after the patient (`Jane Doe results.pdf`), and the issue is
+ * public and permanent. Any token carrying one of the extensions a report or a
+ * scan arrives as is refused; what the file was called is never what the bug
+ * report needed to say.
+ */
+const FILENAME = /\S+\.(?:pdf|jpe?g|png|heic|zip|csv|txt|docx?)\b/i;
+
 /** Calendar days and timestamps: digits, but nobody's phone number. */
 const TIMESTAMP = /\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?/g;
 /** A run of digits wearing phone punctuation. */
@@ -824,11 +833,12 @@ function unsafeFeedback(text: string): { reason: McpRefusalReason; text: string 
         'they submit it: say which tool or screen was wrong and what you expected, not what the record holds.',
     };
   }
-  if (EMAIL.test(text) || phoneShaped(text) || URL_WITH_QUERY.test(text)) {
+  if (EMAIL.test(text) || phoneShaped(text) || URL_WITH_QUERY.test(text) || FILENAME.test(text)) {
     return {
       reason: 'contact',
-      text: 'That report carries contact details — an email address, a phone number, or a link with a query string that may ' +
-        'carry a token — so nothing was prepared. The issue is public and permanent: describe the behaviour, not the person.',
+      text: 'That report carries contact details — an email address, a phone number, a file name, or a link with a query ' +
+        'string that may carry a token — so nothing was prepared. The issue is public and permanent: describe the ' +
+        'behaviour, not the person.',
     };
   }
   return null;

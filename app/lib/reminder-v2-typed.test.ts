@@ -30,7 +30,7 @@ function makeQuery(): Record<string, unknown> {
       calls.push({ method, args });
       return q;
     };
-  for (const m of ['from', 'select', 'eq', 'insert', 'upsert', 'update', 'delete', 'order', 'range']) q[m] = chain(m);
+  for (const m of ['from', 'select', 'eq', 'insert', 'upsert', 'update', 'delete', 'order', 'range', 'lt', 'in']) q[m] = chain(m);
   q.maybeSingle = () => {
     calls.push({ method: 'maybeSingle', args: [] });
     return Promise.resolve(primedResults.shift() ?? { data: null, error: null });
@@ -53,6 +53,8 @@ import {
   scheduleSchema,
   unsubscribeByToken,
   updateScheduleByToken,
+  purgeTombstones,
+  TOMBSTONE_TTL_DAYS,
   upsertVerifiedOptin,
 } from './reminder-v2.server';
 
@@ -317,5 +319,41 @@ describe('US-17 AC8 — a credential-free optin creates or refreshes, never clob
     // The owner's row keeps its provider, token and last_sent: nothing followed the failed insert.
     expect(calls.map((c) => c.method)).not.toContain('upsert');
     expect(calls.map((c) => c.method)).not.toContain('update');
+  });
+});
+
+// US-17 AC1b — a switched-off row keeps its address and its token. It used to
+// keep them forever on every lane but Drive; now it keeps them 90 days.
+describe('purgeTombstones — a row switched off stays 90 days', () => {
+  const NOW = Date.parse('2026-09-10T00:00:00Z');
+
+  it('deletes only the emptied rows older than the window', async () => {
+    primedResults = [
+      { data: [
+        { id: 'tombstone-a', schedule: [] },
+        { id: 'still-live', schedule: [VALID_ITEM] },
+        { id: 'tombstone-b', schedule: [] },
+      ], error: null },
+      { data: null, error: null },
+    ];
+
+    expect(await purgeTombstones(NOW)).toBe(2);
+
+    const cutoff = calls.find((c) => c.method === 'lt');
+    expect(cutoff!.args[0]).toBe('updated_at');
+    expect(cutoff!.args[1]).toBe(new Date(NOW - TOMBSTONE_TTL_DAYS * 86_400_000).toISOString());
+    expect(calls.some((c) => c.method === 'delete')).toBe(true);
+    expect(calls.find((c) => c.method === 'in')!.args[1]).toEqual(['tombstone-a', 'tombstone-b']);
+  });
+
+  it('deletes nothing — and issues no DELETE — when every old row is live', async () => {
+    primedResults = [{ data: [{ id: 'still-live', schedule: [VALID_ITEM] }], error: null }];
+    expect(await purgeTombstones(NOW)).toBe(0);
+    expect(calls.some((c) => c.method === 'delete')).toBe(false);
+  });
+
+  it('throws when the select fails, so the cron reports it rather than counting zero', async () => {
+    primedResults = [{ data: null, error: { message: 'PGRST303' } }];
+    await expect(purgeTombstones(NOW)).rejects.toThrow(/tombstone select failed/);
   });
 });

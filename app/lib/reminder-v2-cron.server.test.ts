@@ -15,6 +15,7 @@ vi.mock('./reminder-v2.server', () => ({
   buildUnsubscribeUrl: vi.fn(() => 'https://example.com/unsub'),
   getOptinsBatch: vi.fn(async () => []),
   inQuietPeriod: vi.fn(() => false),
+  purgeTombstones: vi.fn(async () => 0),
   recordSent: vi.fn(),
 }));
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn() }));
@@ -146,5 +147,29 @@ describe('reminder v2 cron tick — US-28 AC2: lock errors retry same day, losse
     await vi.advanceTimersByTimeAsync(HOUR_MS); // tick 2: short-circuits on lastRunDate
     expect(lockMock).toHaveBeenCalledTimes(1);
     expect(optinsMock).not.toHaveBeenCalled();
+  });
+});
+
+// US-17 AC1b: a row switched off keeps its address and token; the daily run is
+// what stops "kept" meaning "forever".
+describe('reminder v2 cron — tombstone retention', () => {
+  it('purges tombstones once per run, after the sends', async () => {
+    const { cron } = await loadCron();
+    const { purgeTombstones } = await import('./reminder-v2.server');
+    vi.mocked(purgeTombstones).mockClear().mockResolvedValue(3);
+
+    await cron.processV2Reminders('2026-08-30');
+    expect(purgeTombstones).toHaveBeenCalledTimes(1);
+  });
+
+  it('never fails the day over a purge error — the mail has already gone out', async () => {
+    const { cron } = await loadCron();
+    const { purgeTombstones } = await import('./reminder-v2.server');
+    const Sentry = await import('@sentry/react-router');
+    vi.mocked(purgeTombstones).mockClear().mockRejectedValue(new Error('PGRST303'));
+    vi.mocked(Sentry.captureException).mockClear();
+
+    await expect(cron.processV2Reminders('2026-08-30')).resolves.toBe(0);
+    expect(Sentry.captureException).toHaveBeenCalled();
   });
 });

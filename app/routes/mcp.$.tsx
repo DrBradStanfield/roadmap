@@ -485,8 +485,8 @@ ${offers.some(({ provider }) => provider === 'google') ? '<p class="lede">Import
 <li>Update your sex, birth year, birth month and height, after showing you the change.</li>
 <li>File a bug report as a public issue on GitHub, in your words, without your health values, after
 showing you what it would say. The check refuses numbers written near a metric name, email addresses,
-phone numbers and links with a query string, but it cannot recognise a diagnosis written in prose, so read
-what it shows you before you say yes.</li>
+phone numbers, file names and links with a query string, but it cannot recognise a diagnosis written in prose,
+so read what it shows you before you say yes.</li>
 <li>File the results from a lab report, a photo of one or a clinic letter you drop into the chat. Your assistant
 reads the file itself; the file never reaches our server. Only the values it read do, in memory for one request,
 and they are written to your own folder, never kept by us. Nothing is written to your record until you confirm

@@ -8,7 +8,7 @@
  * Caveat (surfaced to the user elsewhere): localStorage is device-only and can
  * be evicted by the browser. The cloud file is the durable store; this is a cache.
  */
-import { DOC_KEY_PREFIX, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { DOC_KEY_PREFIX, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import {
   ConflictError,
   ROADMAP_FILE_NAME,
@@ -21,10 +21,14 @@ import {
 // The roadmap file keeps its ORIGINAL keys (existing users' device data lives
 // under them); other named files (chat-history.json, …) get namespaced keys.
 const FILE_KEY = 'health_roadmap_file_v2';
-const NAMED_PREFIX = 'health_roadmap_file_v2:';
+/** Namespaced key prefix for the non-record files (chat-history.json, …), and
+ *  their version keys. The record file's own keys never carry the colon, so a
+ *  sweep of this prefix leaves health-roadmap.json alone — which is what an
+ *  erase needs in local mode, where the file must survive to carry eraseEpoch. */
+export const NAMED_FILE_PREFIX = 'health_roadmap_file_v2:';
 
 function fileKey(fileName: string): string {
-  return fileName === ROADMAP_FILE_NAME ? FILE_KEY : NAMED_PREFIX + fileName;
+  return fileName === ROADMAP_FILE_NAME ? FILE_KEY : NAMED_FILE_PREFIX + fileName;
 }
 function versionKey(fileName: string): string {
   return `${fileKey(fileName)}_rev`;
@@ -46,13 +50,8 @@ export class LocalStorageAdapter implements StorageAdapter {
     // Named record files (chat-history.json, …) and stored documents live under
     // their prefixes — clear both so log-off leaves no health data behind on a
     // shared device.
-    try {
-      for (const key of Object.keys(localStorage)) {
-        if (key.startsWith(NAMED_PREFIX) || key.startsWith(DOC_KEY_PREFIX)) safeRemoveItem(key);
-      }
-    } catch {
-      /* storage unavailable — nothing to clear */
-    }
+    removeByPrefix(NAMED_FILE_PREFIX);
+    removeByPrefix(DOC_KEY_PREFIX);
   }
 
   async read(fileName: string): Promise<ReadResult> {

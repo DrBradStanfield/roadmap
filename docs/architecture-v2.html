@@ -287,7 +287,7 @@
 <div class="card">
   <strong>What changed in one sentence:</strong> the user's health data moved out of Brad's Supabase and into the <em>user's own cloud</em> (Google Drive / Dropbox / GitHub / self-host) as plain JSON files — Brad now stores no health data and can't read the user's cloud.
   <br><br>
-  <strong>What this document is:</strong> a single visual map of how the v2 app fits together — the three build flavours, the local-first storage spine, the merge engine, the cloud backends, the thin server that survives, and the data path that deliberately never touches Brad's infrastructure.
+  <strong>What this document is:</strong> a single visual map of how the v2 app fits together — the three build flavours, the local-first storage spine, the merge engine, the cloud backends, the thin server that survives, and the data path that never touches Brad's server except through the hosted connector, which reads the record in memory for one request and stores none of it.
   <br><br>
   <strong>What it isn't:</strong> a changelog or a build log. It captures architectural <em>shape</em> as it exists in code today. For the dated <em>why</em> behind each decision and the step-by-step migration record, read the git history; for agent-facing build/deploy instructions, see <a href="../CLAUDE.md">CLAUDE.md</a>.
   <br><br>
@@ -644,7 +644,7 @@ Chat / uploads → Shopify transport OR Pages BYOK transport</code></pre>
 <p>v1's three-layer auth (Shopify HMAC → per-user JWT → Supabase RLS) is gone from the data path. In v2, <strong>identity is the cloud account</strong>: the browser does client-side OAuth (PKCE) directly with Google/Dropbox, and Shopify login is irrelevant to where data lives. The cloud token never leaves the device. One exception, on both builds: Google grants a refresh token only to a confidential client, so the browser posts the OAuth code to <code>api.google-token</code>, which forwards it to Google with our client secret and stores nothing.</p>
 <p>The server-side HMAC app-proxy verification still exists, but only as an <em>anti-abuse front door</em> on the AI endpoints (chat, lab-import-v2) and the Klaviyo capture — see <a href="#security">Security model</a>. It is no longer how the app knows who you are.</p>
 
-<h2 id="data-path">The data path never touches Brad</h2>
+<h2 id="data-path">The data path never stores anything with Brad</h2>
 <div class="good callout">
   <strong>The core invariant.</strong> Reads and writes of health data flow only between the browser and the user's chosen cloud. No measurement, lab value, medication, or document ever transits Brad's server. The only things that reach Fly are: AI request <em>content</em> (in-memory, never stored) and a reminder's <em>due date + label + verified email + capability token</em>.
 </div>

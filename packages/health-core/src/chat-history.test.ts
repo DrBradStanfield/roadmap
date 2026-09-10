@@ -81,10 +81,15 @@ describe('mergeChatHistoryFiles', () => {
     expect(merged.conversations[0].messages.map((m) => m.id)).toEqual(['m1', 'm2', 'm3']);
   });
 
-  it('deleted is a monotonic tombstone and clears messages', () => {
+  // US-11: the title is the user's own words, so a tombstone drops it exactly
+  // as it drops the messages. Without that, an erase (which blanks the title)
+  // could lose the blank to the "newer side wins" rule whenever the two sides
+  // share a timestamp — a tie goes to `a`, and same-millisecond writes are
+  // ordinary.
+  it('deleted is a monotonic tombstone and clears messages and the title', () => {
     const msg = { id: 'm1', role: 'user' as const, content: 'hi', createdAt: '2026-06-01T10:00:00Z' };
-    const deletedSide = fileWith([conv({ id: 'a', deleted: true, messages: [] })]);
-    const liveSide = fileWith([conv({ id: 'a', messages: [msg], updatedAt: '2026-06-02T00:00:00Z' })]);
+    const deletedSide = fileWith([conv({ id: 'a', title: '', deleted: true, messages: [] })]);
+    const liveSide = fileWith([conv({ id: 'a', title: 'my ldl is 3.2', messages: [msg], updatedAt: '2026-06-02T00:00:00Z' })]);
     for (const [l, r] of [
       [deletedSide, liveSide],
       [liveSide, deletedSide],
@@ -92,6 +97,7 @@ describe('mergeChatHistoryFiles', () => {
       const merged = mergeChatHistoryFiles(l, r, OPTS);
       expect(merged.conversations[0].deleted).toBe(true);
       expect(merged.conversations[0].messages).toEqual([]);
+      expect(merged.conversations[0].title).toBe('');
     }
   });
 

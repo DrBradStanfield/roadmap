@@ -17,7 +17,7 @@ import * as Sentry from '@sentry/react-router';
 import { GROUP_COOLDOWNS, getCategoryGroup, type ReminderCategory } from '../../packages/health-core/src/reminders';
 import { buildReminderV2EmailHtml, sendReminderEmail } from './email.server';
 import { tryAcquireCronLock } from './supabase.server';
-import { buildUnsubscribeUrl, getOptinsBatch, inQuietPeriod, recordSent, type ReminderV2Optin } from './reminder-v2.server';
+import { buildUnsubscribeUrl, getOptinsBatch, inQuietPeriod, purgeTombstones, recordSent, type ReminderV2Optin } from './reminder-v2.server';
 import { recordServerEvent } from './product-events.server';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000; // hourly tick
@@ -186,8 +186,19 @@ export async function processV2Reminders(todayStr: string): Promise<number> {
     if (batch.length < BATCH_SIZE) break;
   }
 
+  // Retention, once a day, after the sends: a switched-off row keeps an address
+  // and a token, and until now kept them forever (US-17 AC1b). Its failure is
+  // reported, never fatal — the day's mail has already gone out.
+  let purged = 0;
+  try {
+    purged = await purgeTombstones(Date.now());
+  } catch (purgeError) {
+    Sentry.captureException(purgeError, { tags: { feature: 'reminder_v2_cron' } });
+  }
+
   console.log(
-    `Reminder v2 cron summary: optins=${total}, sent=${sent}, errors=${errors}, skips=${JSON.stringify(skips)}`,
+    `Reminder v2 cron summary: optins=${total}, sent=${sent}, errors=${errors}, ` +
+      `tombstones purged=${purged}, skips=${JSON.stringify(skips)}`,
   );
   return sent;
 }

@@ -165,7 +165,11 @@ last-sent dates and the date the row was created. The row stays so that turning
 reminders on again does not send a second welcome email. Someone who types your address
 later can restart the schedule; each reminder carries the one-click off link. A cancel
 that proves the inbox with a Google sign-in deletes the row outright. An address that
-bounces or reports us as spam is deleted too.
+bounces or reports us as spam is deleted too. A row switched off stays 90 days, then is
+deleted: the daily reminder job sweeps emptied rows once that window has passed
+(`purgeTombstones`), so "kept" no longer means kept forever. Past that window your
+address is a stranger to us again, and an optin naming it starts over, welcome email
+included.
 
 **Chat.** On the storefront widget we store one row for each question you send: the
 text of that question, which may hold health details you wrote into it; the articles it
@@ -191,6 +195,22 @@ role, the timestamps, the model, the token counts and the fallback flags remain,
 blanked turn reads back as `[removed after 30 days]`. The job touches Shopify rows only.
 The Discord and YouTube bots keep their transcripts exactly as before.
 
+**Deleting your data.** "Delete all my data" in the widget erases two files in your own
+folder: your health record and your chat history. The chat file cannot simply be emptied,
+because the merge that keeps your devices in step would put the conversations back from
+any other copy, so each one is tombstoned instead: no messages, no title, and marked
+deleted for good. Four copies the button cannot reach, and the confirm dialog now names
+them before you click: documents you uploaded that are already in your folder stay;
+candidate files from a connector import (`imports/pending-*.json`) stay until your next
+import; your cloud provider keeps its own version history, and GitHub keeps every past
+commit; and backups the command-line tool made sit beside the file. Reminders are turned
+off by the erase, and stay off on your own devices. The row on our server keeps your
+address for 90 days, as it does for any switch-off, so a later enrolment of that address
+does not send a second welcome email; it does not stop the schedule being refilled.
+Anyone who enrols that address again restarts the schedule, and every reminder carries
+its own off link. A cancel that proves the inbox with a Google sign-in deletes the row
+outright, and an emptied row is deleted after 90 days.
+
 **Feedback.** The feedback box on the website is a separate store again. It takes your
 email address and up to 2000 characters of whatever you type, adds your Shopify customer
 id if you are signed in, writes that row to `feedback_submissions`, and emails the same
@@ -205,8 +225,9 @@ public issue on the project's GitHub repository. What goes in it is the assistan
 description of the problem, and nothing about you: no name, no email, no address, and
 no part of your health record. The tool refuses any report that reads as a health value:
 a number wearing a unit, a bare number written near a metric name it knows, an email
-address, a phone-shaped run of digits, or a link carrying a query string that could hold
-a token (`unsafeFeedback` in `packages/health-core/src/mcp-tools.ts`). It cannot
+address, a phone-shaped run of digits, a file name (lab portals name your download
+after you), or a link carrying a query string that could hold a token
+(`unsafeFeedback` in `packages/health-core/src/mcp-tools.ts`). It cannot
 recognise a diagnosis written in prose, and it does not pretend to. That is why the tool
 shows you the report before it files it: read the receipt before you say yes.
 The issue is public, so your assistant should tell you before it files one. (Software you

@@ -20,6 +20,11 @@
  * its own secret, NOT from `isMcpEnabled()`, so domain ownership can be proved
  * before the connector itself is switched on.
  *
+ * Neither document advertises `scopes_supported`: nothing reads a requested
+ * `scope` and every grant carries the same fixed pair, so advertising a menu
+ * would have promised a choice the authorize endpoint does not make. The token
+ * response still states the scope the grant actually holds.
+ *
  * These are the only unauthenticated documents this server publishes.
  */
 import { type LoaderFunctionArgs } from 'react-router';
@@ -50,7 +55,6 @@ export async function loader({ params }: LoaderFunctionArgs) {
         resource: resourceUrl(),
         authorization_servers: [issuer()],
         bearer_methods_supported: ['header'],
-        scopes_supported: ['health.read', 'health.append'],
         resource_name: 'Health by Dr Brad',
         resource_documentation: 'https://drstanfield.com/pages/health-roadmap',
       },
@@ -74,7 +78,6 @@ export async function loader({ params }: LoaderFunctionArgs) {
         client_id_metadata_document_supported: true,
         // RFC 9207, from day one — an authorization response says who issued it.
         authorization_response_iss_parameter_supported: true,
-        scopes_supported: ['health.read', 'health.append'],
       },
       { headers: HEADERS },
     );

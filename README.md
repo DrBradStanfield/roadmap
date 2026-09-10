@@ -5,7 +5,9 @@ storefront theme extension and as a self-hosted page.
 
 **Local-first.** A user's health data lives in their own cloud (Google Drive,
 Dropbox, GitHub, WebDAV) or in localStorage, as a single `health-roadmap.json`
-file. It never lands on our server. "Logged in" means a cloud provider is
+file. The website and the local tools never send that file to our server; the hosted
+connector at `mcp.drstanfield.com` holds it in server memory for the length of one
+request and stores none of it. "Logged in" means a cloud provider is
 connected. The Fly backend is thin: chatbot, lab-import extraction, A/B and
 product events, email reminders, Klaviyo capture, and the hosted MCP server.
 Supabase holds operational rows only, never health values. Email reminders are
@@ -120,7 +122,10 @@ network tab recording and use the widget.
   only by the adapters in `widget-src/src/storage/` (`dropbox.ts`, `drive.ts`,
   `github.ts`, `webdav.ts`, `local-storage-adapter.ts`), so the write goes to
   your own Dropbox, Google Drive, GitHub, WebDAV server, or localStorage. No
-  endpoint on our server accepts the record.
+  endpoint on our server accepts the record for storage. The hosted connector is
+  the one place a record reaches our server at all, and only if you connect one:
+  it reads the file in server memory for the length of one request and stores
+  none of it.
 - Two requests carry health content, and you trigger both. A lab-document
   upload POSTs the document's page content to `/api/lab-import-v2`, which sends
   it to Anthropic's API for extraction, returns the values, and stores none of

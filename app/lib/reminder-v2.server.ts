@@ -443,6 +443,46 @@ export async function getOptinsBatch(
   return (data ?? []) as ReminderV2Optin[];
 }
 
+/** How long a switched-off row keeps its address and token before deletion. */
+export const TOMBSTONE_TTL_DAYS = 90;
+
+/**
+ * Delete tombstones — rows a toggle-off, an erase or an email-link unsubscribe
+ * emptied (US-17 AC1b) — once they are older than {@link TOMBSTONE_TTL_DAYS}.
+ * On every lane but Drive the row is kept rather than deleted, because a bare
+ * delete let optin → cancel → optin mint a fresh plan-ready email each cycle;
+ * keeping it FOREVER, address and token included, is what this bounds.
+ *
+ * The emptiness test runs here rather than in the filter: `schedule` is jsonb
+ * and PostgREST has no length operator, so the query narrows by age and the
+ * rows are checked in JS. A row with no `updated_at` is never taken.
+ *
+ * Residual, stated: past the window a replayed optin on that address is `isNew`
+ * again and earns one more plan-ready email — at most one per address per 90
+ * days, under the capture route's own 5/day limiter.
+ */
+export async function purgeTombstones(nowMs: number): Promise<number> {
+  const cutoff = new Date(nowMs - TOMBSTONE_TTL_DAYS * 86_400_000).toISOString();
+  const admin = requireAdmin();
+  const { data, error } = await admin
+    .from('reminder_optin_v2')
+    .select('id, schedule')
+    .lt('updated_at', cutoff);
+  if (error) throw new Error(`reminder_optin_v2 tombstone select failed: ${error.message}`);
+
+  const ids = (data ?? [])
+    .filter((row) => Array.isArray(row.schedule) && row.schedule.length === 0)
+    .map((row) => row.id as string);
+  if (ids.length === 0) return 0;
+
+  const { error: delError } = await admin
+    .from('reminder_optin_v2')
+    .delete()
+    .in('id', ids);
+  if (delError) throw new Error(`reminder_optin_v2 tombstone delete failed: ${delError.message}`);
+  return ids.length;
+}
+
 /** Record which categories were emailed today (re-send cooldown bookkeeping). */
 export async function recordSent(
   id: string,

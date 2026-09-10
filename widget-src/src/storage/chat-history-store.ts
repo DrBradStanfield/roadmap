@@ -43,6 +43,15 @@ const CHAT_HISTORY_DOC: DocumentSpec<ChatHistoryFile> = {
   verify: false,
 };
 
+/** A tombstone carries no content: no messages, and no title (it is the user's
+ *  own words). The merge enforces the same shape; every local one matches it. */
+function tombstone(conv: ChatFileConversation, now?: string): void {
+  conv.deleted = true;
+  conv.messages = [];
+  conv.title = '';
+  if (now) conv.updatedAt = now;
+}
+
 export class ChatHistoryStore {
   private constructor(
     private readonly sync: SyncManager<ChatHistoryFile>,
@@ -118,8 +127,21 @@ export class ChatHistoryStore {
   async deleteConversation(conversationId: string): Promise<void> {
     const conv = this.file.conversations.find((c) => c.id === conversationId);
     if (!conv || conv.deleted) return;
-    conv.deleted = true;
-    conv.messages = [];
+    tombstone(conv);
+    await this.persist();
+  }
+
+  /**
+   * Erase every conversation for "delete all my data" (US-11). Tombstones, not
+   * a blank file: the merge unions conversations by id, so an empty file would
+   * be resurrected by any other device's copy. `deleted` is monotonic, and the
+   * bumped `updatedAt` carries the blanked title through the "newer side wins"
+   * rule — the title is the last of the user's own words in this file.
+   */
+  async eraseAll(): Promise<void> {
+    if (this.file.conversations.length === 0) return; // nothing to tombstone
+    const now = new Date().toISOString();
+    for (const conv of this.file.conversations) tombstone(conv, now);
     await this.persist();
   }
 
@@ -132,10 +154,7 @@ export class ChatHistoryStore {
   /** Tombstone the oldest live conversations beyond the cap (a plain slice
    *  would just resurrect on the next cloud merge — tombstones converge). */
   private enforceCap(): void {
-    for (const conv of this.liveConversations().slice(CHAT_HISTORY_MAX_CONVERSATIONS)) {
-      conv.deleted = true;
-      conv.messages = [];
-    }
+    for (const conv of this.liveConversations().slice(CHAT_HISTORY_MAX_CONVERSATIONS)) tombstone(conv);
   }
 
   private async persist(): Promise<void> {

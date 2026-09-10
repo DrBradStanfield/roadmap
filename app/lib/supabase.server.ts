@@ -490,10 +490,15 @@ export async function tryAcquireCronLock(
     );
   }
   // No row at all = missing seed row (see CronLockName) — permanent
-  // misconfig, not transient; retrying won't help.
+  // misconfig, not transient. It must not read as `false`: every caller takes
+  // that as "another machine won today" and marks the day done, so a missing
+  // row silently retired the job. Throw instead — the callers' catches report
+  // it to Sentry and leave the day unclaimed.
   if (!verify) {
     console.error(`Cron lock row missing (${lockName}) — check the seed in rls-policies.sql`);
-    return false;
+    throw new Error(
+      `cron lock row missing (${lockName}) — seed it in rls-policies.sql`,
+    );
   }
 
   return verify.locked_by === machineId && verify.lock_date === today;

@@ -139,8 +139,11 @@ function mergeConversation(
     // Newer side wins title/updatedAt and unknown per-conversation fields (H7).
     ...newer,
     createdAt: a.createdAt <= b.createdAt ? a.createdAt : b.createdAt,
-    ...(deleted ? { deleted: true } : {}),
-    // Tombstones stay cheap: a deleted conversation carries no messages.
+    // A tombstone carries no content at all: no messages, and no title. The
+    // title is the user's own words (it is the first thing they typed), so an
+    // erase that blanks it must not lose that blank to the "newer side wins"
+    // rule — two writes in the same millisecond tie, and a tie goes to `a`.
+    ...(deleted ? { deleted: true, title: '' } : {}),
     messages: deleted ? [] : mergeMessages(a.messages, b.messages),
   };
 }

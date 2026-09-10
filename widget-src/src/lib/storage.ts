@@ -103,9 +103,14 @@ export const BT_TIMELINE_DRAFT_KEY = 'health_roadmap_bt_timeline_draft';
  */
 export function clearOffFileHealthData(): void {
   safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
+  removeByPrefix(DOC_KEY_PREFIX);
+}
+
+/** Remove every stored key under `prefix` (document blobs, named record files). */
+export function removeByPrefix(prefix: string): void {
   try {
     for (const key of Object.keys(localStorage)) {
-      if (key.startsWith(DOC_KEY_PREFIX)) safeRemoveItem(key);
+      if (key.startsWith(prefix)) safeRemoveItem(key);
     }
   } catch {
     /* storage unavailable — nothing to clear */
