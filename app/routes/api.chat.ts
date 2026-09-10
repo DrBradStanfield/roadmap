@@ -174,15 +174,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       });
     }
 
-    let auth: AuthResult;
-    try {
-      auth = await getAuthOrGuest(request, sessionToken, url.searchParams.get('localFirst') === '1');
-    } catch (err) {
-      if (err instanceof GuestRateLimitError) {
-        return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
-      }
-      throw err;
-    }
+    const auth = await getAuthOrGuest(request, sessionToken, url.searchParams.get('localFirst') === '1');
 
     if (conversationId) {
       const { data, error } = await auth.client
@@ -248,6 +240,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
       ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
     });
   } catch (error) {
+    // One ladder for both handlers (the action's catch mirrors it): the
+    // app-proxy check rejects an unsigned request by THROWING a 400 Response,
+    // which the framework returns as-is (US-15 AC9); a guest over the daily
+    // cap is a 429; only our own failures are reported.
+    if (error instanceof Response) throw error;
     if (error instanceof GuestRateLimitError) {
       return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
     }
@@ -284,15 +281,7 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ success: false, error: 'Invalid conversationId' }, { status: 400 });
     }
 
-    let auth: AuthResult;
-    try {
-      auth = await getAuthOrGuest(request, body.sessionToken, body.localFirst === true);
-    } catch (err) {
-      if (err instanceof GuestRateLimitError) {
-        return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
-      }
-      throw err;
-    }
+    const auth = await getAuthOrGuest(request, body.sessionToken, body.localFirst === true);
 
     // ----- DELETE -----
     if (request.method === 'DELETE') {
@@ -611,6 +600,7 @@ export async function action({ request }: ActionFunctionArgs) {
       ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
     });
   } catch (error) {
+    if (error instanceof Response) throw error; // see the loader's catch (US-15 AC9)
     if (error instanceof GuestRateLimitError) {
       return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
     }
