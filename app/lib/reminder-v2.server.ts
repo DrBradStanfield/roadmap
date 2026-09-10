@@ -191,9 +191,14 @@ export type Enrolment = { isNew: true; token: string } | { isNew: false; token?:
  * can POST anyone's email, so a write here may only ever CREATE a fresh row
  * or refresh the SCHEDULE of an existing one. Three attacks the shape of this
  * function exists to kill (adversarial reviews 2026-08-14 and 2026-09-10):
- *  - never rotate an existing row's token: the plain upsert would, and the
+ *  - never rotate an existing row's token: an upsert on email would, and the
  *    victim's own device's next schedule push would 404 into "you
- *    unsubscribed" — a silent unsubscribe by anyone knowing their email;
+ *    unsubscribed" — a silent unsubscribe by anyone knowing their email. The
+ *    lookup alone cannot promise that: a Google-verified write landing between
+ *    it and the write would be replaced by this lane. So the write itself is a
+ *    plain INSERT, and the unique index on email is the referee — a 23505
+ *    means the row was created by its owner in the gap, and we answer isNew
+ *    false with no token and no schedule refresh (their write is fresher);
  *  - never RETURN an existing row's token: that would hand the cancel
  *    capability to whoever typed the address;
  *  - a refresh keeps LAST_SENT and PROVIDER: resetting cooldowns would let one
@@ -230,7 +235,9 @@ export async function enrolByEmail(
     if (updateError) throw new Error(`reminder_optin_v2 refresh failed: ${updateError.message}`);
     return { isNew: false };
   }
-  return { isNew: true, token: await writeOptinRow(normalized, provider, schedule, null) };
+  const token = await writeOptinRow(normalized, provider, schedule, null, false);
+  // null = the owner's verified write won the race; leave their row alone.
+  return token ? { isNew: true, token } : { isNew: false };
 }
 
 /**
@@ -257,7 +264,8 @@ export async function upsertVerifiedOptin(
     .maybeSingle();
   if (error) throw new Error(`reminder_optin_v2 lookup failed: ${error.message}`);
   const existing = data && { token: data.provider === 'google-drive' ? data.token : undefined, last_sent: data.last_sent };
-  const token = await writeOptinRow(normalized, 'google-drive', schedule, existing);
+  // The verified lane may replace its own row, so it never loses the race.
+  const token = await writeOptinRow(normalized, 'google-drive', schedule, existing, true);
   return data ? { isNew: false, token } : { isNew: true, token };
 }
 
@@ -266,29 +274,52 @@ export async function upsertVerifiedOptin(
  * lets a Google-verified re-enrolment PRESERVE the token (so the links in
  * every email already in their inbox keep working) and the cooldowns (so an
  * item sent yesterday isn't re-sent tomorrow — review 2026-08-14). The caller
- * decides whether the token is trustworthy enough to keep. Private on purpose.
+ * decides whether the token is trustworthy enough to keep.
+ * `mayReplace` says whether this caller owns the address: only the verified
+ * lane passes true, and only it upserts (so it always returns a token). Every
+ * other lane INSERTs and lets the unique index on email decide: a 23505 means
+ * an owner's row appeared between enrolByEmail's lookup and here, and
+ * returning null (rather than overwriting their provider, token and last_sent)
+ * is what keeps that race from becoming the silent-unsubscribe attack. Private
+ * on purpose.
  */
 async function writeOptinRow(
   email: string,
   provider: ReminderV2Provider,
   schedule: StoredScheduleItem[],
   existing: { token?: string; last_sent?: Record<string, string> } | null,
-): Promise<string> {
+  mayReplace: true,
+): Promise<string>;
+async function writeOptinRow(
+  email: string,
+  provider: ReminderV2Provider,
+  schedule: StoredScheduleItem[],
+  existing: { token?: string; last_sent?: Record<string, string> } | null,
+  mayReplace: false,
+): Promise<string | null>;
+async function writeOptinRow(
+  email: string,
+  provider: ReminderV2Provider,
+  schedule: StoredScheduleItem[],
+  existing: { token?: string; last_sent?: Record<string, string> } | null,
+  mayReplace: boolean,
+): Promise<string | null> {
   const token = existing?.token ?? mintCapabilityToken();
-  const { error } = await requireAdmin()
-    .from('reminder_optin_v2')
-    .upsert(
-      {
-        email: email.toLowerCase(),
-        provider,
-        token,
-        schedule: ensureAnnualFloor(schedule),
-        last_sent: existing?.last_sent ?? {},
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'email' },
-    );
-  if (error) throw new Error(`reminder_optin_v2 upsert failed: ${error.message}`);
+  const row = {
+    email: email.toLowerCase(),
+    provider,
+    token,
+    schedule: ensureAnnualFloor(schedule),
+    last_sent: existing?.last_sent ?? {},
+    updated_at: new Date().toISOString(),
+  };
+  const table = requireAdmin().from('reminder_optin_v2');
+  const { error } =
+    mayReplace ? await table.upsert(row, { onConflict: 'email' }) : await table.insert(row);
+  if (error) {
+    if (error.code === '23505') return null; // unique_violation on email — the owner got there first
+    throw new Error(`reminder_optin_v2 write failed: ${error.message}`);
+  }
   return token;
 }
 

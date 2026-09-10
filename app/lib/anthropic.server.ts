@@ -201,6 +201,26 @@ export function isNetworkOrTimeoutError(err: unknown): boolean {
   return err instanceof TypeError && err.message === 'fetch failed';
 }
 
+/**
+ * Parse a provider body without ever quoting it back. Node's JSON.parse puts a
+ * fragment of the offending body in its SyntaxError message, and lab-import
+ * hands that error straight to console.error and Sentry — a malformed 200 can
+ * carry the user's own lab text there. Same reason the !ok paths cancel the
+ * body. SyntaxError is deliberate: classifyChatError still tags it 'parse'.
+ * No `cause`, so nothing of the body survives serialisation either.
+ */
+async function parseJsonBody(response: Response): Promise<any> {
+  try {
+    return await response.json();
+  } catch (err) {
+    // Only a parse failure gets the fixed message. A body read aborted by
+    // AbortSignal.timeout rejects with DOMException TimeoutError — rethrow it
+    // so fetchAnthropicRaw still retries it and Sentry still tags it 'timeout'.
+    if (err instanceof SyntaxError) throw new SyntaxError('Anthropic response was not JSON');
+    throw err;
+  }
+}
+
 /** `maxAttempts` below the default turns the inner retry off for a caller whose own deadline cannot absorb it (US-35 AC5). */
 async function fetchAnthropicRaw(
   apiKey: string, body: Record<string, unknown>, timeoutMs = 60_000, maxAttempts = RETRY_MAX_ATTEMPTS,
@@ -236,7 +256,7 @@ async function fetchAnthropicRaw(
         throw err;
       }
 
-      const data = await response.json();
+      const data = await parseJsonBody(response);
       const contentBlocks = (data.content as AnthropicContentBlock[]) ?? [];
       const text = contentBlocks
         .filter(b => b.type === 'text')
@@ -339,7 +359,7 @@ export async function createBatch(
     throw err;
   }
 
-  const data = await response.json();
+  const data = await parseJsonBody(response);
   return { batchId: data.id };
 }
 
@@ -373,7 +393,7 @@ export async function pollBatch(
     throw err;
   }
 
-  const statusData = await statusResponse.json();
+  const statusData = await parseJsonBody(statusResponse);
   const ps = statusData.processing_status;
   const completed = (ps.succeeded || 0) + (ps.errored || 0) + (ps.expired || 0) + (ps.canceled || 0);
   const total = completed + (ps.in_progress || 0);

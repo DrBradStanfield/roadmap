@@ -1443,7 +1443,9 @@ CREATE TABLE IF NOT EXISTS reminder_optin_v2 (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- A repeat opt-in upserts on email (replaces the old row with a fresh token).
+-- Only the Google-verified lane upserts on email (an owner may replace their
+-- own row). Address-only opt-ins INSERT and treat a 23505 on this UNIQUE as
+-- "the owner already has a row": schedule refresh at most, never a new token.
 
 -- Service-role only (no policies = zero rows via the anon/authenticated API).
 ALTER TABLE reminder_optin_v2 ENABLE ROW LEVEL SECURITY;

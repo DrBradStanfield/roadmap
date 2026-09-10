@@ -25,6 +25,7 @@ process.env.ANTHROPIC_API_KEY = 'sk-test-dummy';
 
 import * as Sentry from '@sentry/react-router';
 import { callAnthropicWithUsage, extractOrClassify } from './anthropic.server';
+import { classifyChatError } from './chat.server';
 
 const REAL_FETCH = global.fetch;
 
@@ -119,6 +120,26 @@ describe('US-12: fetchAnthropicRaw retry policy (via callAnthropicWithUsage)', (
   it('retries once on a network/timeout error and succeeds', async () => {
     const fetchMock = vi.fn()
       .mockRejectedValueOnce(new TypeError('fetch failed'))
+      .mockResolvedValueOnce(anthropicMessage('recovered'));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const result = await callAnthropicWithUsage({ model: 'x' });
+    expect(result.content).toBe('recovered');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries a body read aborted by the timeout — only a SyntaxError means malformed JSON', async () => {
+    // AbortSignal.timeout can fire while the body is still streaming, so
+    // response.json() rejects with DOMException name=TimeoutError. Relabelling
+    // that as the fixed SyntaxError would strip it of its retryable identity.
+    const timedOutBody = {
+      ok: true,
+      status: 200,
+      json: async () => { throw new DOMException('The operation was aborted due to timeout', 'TimeoutError'); },
+      text: async () => '',
+    } as unknown as Response;
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(timedOutBody)
       .mockResolvedValueOnce(anthropicMessage('recovered'));
     global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -268,6 +289,27 @@ describe('extraction failures carry no document text', () => {
     expect(error!.message).toBe('extraction returned malformed JSON');
     expect(JSON.stringify(error, Object.getOwnPropertyNames(error))).not.toContain(SENTINEL);
     expect((error as { cause?: unknown }).cause).toBeUndefined();
+  });
+
+  it('a 200 whose body is not JSON throws a fixed SyntaxError, never the body fragment', async () => {
+    // Node's JSON.parse would quote the body here ("Unexpected token 'H',
+    // \"HIV_SYNTHETIC...\" is not valid JSON") and api.lab-import-v2 logs that
+    // error to console + Sentry. SyntaxError keeps classifyChatError's 'parse'.
+    const BODY_SENTINEL = 'HIV_SYNTHETIC';
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => { throw new SyntaxError(`Unexpected token 'H', "${BODY_SENTINEL} report" is not valid JSON`); },
+      text: async () => `${BODY_SENTINEL} report`,
+    } as unknown as Response) as unknown as typeof fetch;
+
+    const error = await callAnthropicWithUsage({ model: 'x' }).then(() => null, (e: unknown) => e as Error);
+
+    expect(error).toBeInstanceOf(SyntaxError);
+    expect(error!.message).toBe('Anthropic response was not JSON');
+    expect(JSON.stringify(error, Object.getOwnPropertyNames(error))).not.toContain(BODY_SENTINEL);
+    expect((error as { cause?: unknown }).cause).toBeUndefined();
+    expect(classifyChatError(error)).toBe('parse'); // the Sentry tag survives the rewrite
   });
 
   it('throws the same fixed message when the second attempt fails schema validation', async () => {

@@ -3,8 +3,9 @@
  * §4.1). GitHub's OAuth token endpoints are NOT CORS-enabled and require a
  * client secret, so a browser PKCE flow is impossible. Instead the user pastes a
  * **fine-grained personal access token** scoped to ONE repository with Contents
- * read+write — repo-scoped by construction. This is an advanced, dev-audience
- * tier, not the grandma flow.
+ * read+write and Metadata read (implicit on every fine-grained PAT, and what
+ * the repo-visibility guard reads) — repo-scoped by construction. This is an
+ * advanced, dev-audience tier, not the grandma flow.
  *
  * Storage: record files (`health-roadmap.json`, `chat-history.json`, …) live on
  * the repo's default branch; each file's `sha` is its optimistic-concurrency
@@ -43,6 +44,7 @@ export class GitHubAdapter implements StorageAdapter {
   readonly id = 'github' as const;
   readonly label = 'GitHub';
   private config: GitHubConfig | null;
+  private privacyCheck?: Promise<void>;
 
   /** First connect: pass the pasted config. Reconnect: omit, loads from storage. */
   constructor(config?: GitHubConfig) {
@@ -79,30 +81,13 @@ export class GitHubAdapter implements StorageAdapter {
     if (!this.config?.token || !this.config.owner || !this.config.repo) {
       throw new StorageError('GitHub needs a token, owner, and repo.');
     }
-    const res = await fetch(`${API}/repos/${this.config.owner}/${this.config.repo}`, {
-      headers: this.headers(),
-    });
-    if (res.status === 401 || res.status === 403) {
-      throw new StorageError('GitHub rejected the token — check it has Contents read+write on this repo.');
-    }
-    if (res.status === 404) {
-      throw new StorageError('GitHub repo not found — check owner/repo and that the token can see it.');
-    }
-    if (!res.ok) {
-      throw new StorageError(`GitHub connect failed (${res.status}): ${await res.text()}`);
-    }
-    // A public repo passes every check above and would publish the record on
-    // the first write. Refuse before persisting, so nothing is left to
-    // reconnect from.
-    const repo = (await res.json()) as { private?: boolean };
-    if (repo.private !== true) {
-      throw new StorageError('This repository is public. Choose a private one, or your health record would be published.');
-    }
+    await this.ensurePrivate();
     setJson(CONFIG_KEY, this.config);
   }
 
   async disconnect(): Promise<void> {
     this.config = null;
+    this.privacyCheck = undefined;
     safeRemoveItem(CONFIG_KEY);
   }
 
@@ -125,6 +110,7 @@ export class GitHubAdapter implements StorageAdapter {
   }
 
   async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
+    await this.ensurePrivate();
     const payload: Record<string, unknown> = {
       message: `Update ${fileName}`,
       content: bytesToBase64(new TextEncoder().encode(JSON.stringify(body))),
@@ -155,6 +141,7 @@ export class GitHubAdapter implements StorageAdapter {
   }
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
+    await this.ensurePrivate();
     const content = bytesToBase64(new Uint8Array(await bytes.arrayBuffer()));
     const put = (sha?: string): Promise<Response> =>
       fetch(this.contentsUrl(ref), {
@@ -174,6 +161,50 @@ export class GitHubAdapter implements StorageAdapter {
   }
 
   // --- helpers --------------------------------------------------------------
+
+  /**
+   * Refuse a repository that is not private. Fails CLOSED: any status other
+   * than a 200 saying `private: true` throws, because a token that can PUT
+   * contents always carries Metadata:read, so this GET cannot legitimately
+   * fail.
+   */
+  private async assertPrivate(): Promise<void> {
+    if (!this.config) throw new StorageError('GitHub is not connected.');
+    const res = await fetch(`${API}/repos/${this.config.owner}/${this.config.repo}`, {
+      headers: this.headers(),
+    });
+    if (res.status === 401 || res.status === 403) {
+      throw new StorageError('GitHub rejected the token — check it has Contents read+write on this repo.');
+    }
+    if (res.status === 404) {
+      throw new StorageError('GitHub repo not found — check owner/repo and that the token can see it.');
+    }
+    if (!res.ok) {
+      throw new StorageError(`GitHub connect failed (${res.status}): ${await res.text()}`);
+    }
+    const repo = (await res.json()) as { private?: boolean };
+    if (repo.private !== true) {
+      throw new StorageError('This repository is public. Choose a private one, or your health record would be published.');
+    }
+  }
+
+  /**
+   * Once per adapter instance, before the first write — a saved connection
+   * resumes with a bare `new GitHubAdapter()` and never calls connect(), so
+   * the connect-time check alone would miss a repo connected before the guard
+   * existed, or flipped public since. The PROMISE is memoised, so concurrent
+   * first writes share one GET; a rejection clears it so a transient failure
+   * re-checks next time. Reads stay ungated.
+   */
+  private ensurePrivate(): Promise<void> {
+    if (!this.privacyCheck) {
+      this.privacyCheck = this.assertPrivate().catch((error: unknown) => {
+        this.privacyCheck = undefined;
+        throw error;
+      });
+    }
+    return this.privacyCheck;
+  }
 
   private contentsUrl(path: string): string {
     if (!this.config) throw new StorageError('GitHub is not connected.');

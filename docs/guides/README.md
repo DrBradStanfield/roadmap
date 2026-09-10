@@ -5,6 +5,9 @@ Public how-to guides, published at drstanfield.com/blogs/guides. One `.md` file 
 ## The contract
 
 - **The `.md` file is the master.** The blog HTML is generated from it. Never hand-edit the published HTML.
+  Publish with `node scripts/publish-guides.mjs --publish` (dry run without the flag; needs the
+  Dr Brad store's `SHOPIFY_EDU_SHOP` and `SHOPIFY_EDU_ACCESS_TOKEN` in the environment). It
+  writes only `body_html`, for articles that differ, and never creates one.
 - **Style: [writing-style.md](../writing-style.md), plus Zinsser per CLAUDE.md.** Short sentences. Plain words. Sentence-case headings. No em dashes. No hype adjectives.
 - **Verify every fact against the repo before it ships**: paths, URLs, commands, rules. Read the code; do not recall it. Never describe a capability we do not have.
 - **Every built page ends with a link to its `.md` master** on raw.githubusercontent.com, so an agent can fetch the source instead of scraping the page. The build appends it; do not write it by hand.

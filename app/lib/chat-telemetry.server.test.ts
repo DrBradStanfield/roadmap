@@ -139,6 +139,22 @@ describe('chat failure telemetry', () => {
     expect(JSON.stringify(consoleError.mock.calls)).not.toContain(marker);
   });
 
+  it.each([
+    ['createBatch', () => createBatch([{ pages: [] } as never])],
+    ['pollBatch', () => pollBatch('batch_synthetic')],
+  ])('%s throws a fixed parse error when a 200 body is not JSON, quoting nothing', async (_name, call) => {
+    // JSON.parse would put a fragment of this body in its message, and that
+    // error reaches console.error + Sentry in api.lab-import-v2.
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(secret, { status: 200 })));
+
+    const error = await call().then(() => null, (e: unknown) => e as Error);
+
+    expect(error).toBeInstanceOf(SyntaxError);
+    expect(error!.message).toBe('Anthropic response was not JSON');
+    expect(JSON.stringify(error, Object.getOwnPropertyNames(error))).not.toContain(marker);
+    expect(classifyChatError(error)).toBe('parse');
+  });
+
   it('emits nothing for a successful completion', async () => {
     reportChatFallback({
       completion: { content: secret, isFallback: false, usage: { inputTokens: 1, outputTokens: 1, cacheCreationTokens: 0, cacheReadTokens: 0 } },

@@ -19,7 +19,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Chainable Supabase stub: every method returns the query object; awaiting it
 // resolves to whatever the test primed. upsert/update/select terminate via
 // maybeSingle() or by being awaited directly (thenable).
-type Primed = { data?: unknown; error?: { message: string } | null };
+type Primed = { data?: unknown; error?: { message: string; code?: string } | null };
 const calls: Array<{ method: string; args: unknown[] }> = [];
 let primedResults: Primed[] = [];
 
@@ -30,7 +30,7 @@ function makeQuery(): Record<string, unknown> {
       calls.push({ method, args });
       return q;
     };
-  for (const m of ['from', 'select', 'eq', 'upsert', 'update', 'delete', 'order', 'range']) q[m] = chain(m);
+  for (const m of ['from', 'select', 'eq', 'insert', 'upsert', 'update', 'delete', 'order', 'range']) q[m] = chain(m);
   q.maybeSingle = () => {
     calls.push({ method: 'maybeSingle', args: [] });
     return Promise.resolve(primedResults.shift() ?? { data: null, error: null });
@@ -158,6 +158,23 @@ describe('Google-verified opt-in over an existing row', () => {
   });
 });
 
+describe('the verified lane still replaces its own row (upsert, not insert)', () => {
+  it('upserts on email — the owner proved the inbox, so their write may replace a squatter row', async () => {
+    primedResults = [
+      { data: null, error: null }, // lookup: no row
+      { data: null, error: null }, // upsert
+    ];
+
+    const result = await upsertVerifiedOptin('owner@example.com', [VALID_ITEM]);
+
+    expect(result.isNew).toBe(true);
+    const upsert = calls.find((c) => c.method === 'upsert')!;
+    expect(upsert.args[1]).toEqual({ onConflict: 'email' });
+    expect((upsert.args[0] as Record<string, unknown>).provider).toBe('google-drive');
+    expect(calls.map((c) => c.method)).not.toContain('insert');
+  });
+});
+
 describe('the per-email rate-limit key (never the stored address)', () => {
   it('folds case, +tags and Gmail dots into one bucket', () => {
     expect(emailLimiterKey('User+promo@Gmail.com')).toBe('user@gmail.com');
@@ -169,7 +186,7 @@ describe('the per-email rate-limit key (never the stored address)', () => {
 describe('cancel — a bare token tombstones; a Google-verified caller deletes (the repeat-email loop)', () => {
   it('optin(new) → cancel → optin: the second optin is a refresh, so no second plan-ready email', async () => {
     primedResults = [
-      { data: null, error: null }, { data: null, error: null },                      // optin: lookup none → upsert
+      { data: null, error: null }, { data: null, error: null },                      // optin: lookup none → insert
       { data: { provider: 'dropbox', schedule: [VALID_ITEM] }, error: null }, { data: null, error: null }, // cancel: lookup → tombstone
       { data: { id: 'row-1' }, error: null }, { data: null, error: null },            // optin again: lookup finds the tombstone → refresh
     ];
@@ -270,19 +287,35 @@ describe('US-17 AC8 — a credential-free optin creates or refreshes, never clob
     expect((update.args[0] as Record<string, unknown>).schedule).toEqual(expect.arrayContaining([VALID_ITEM]));
   });
 
-  it('creates a fresh row (new token, isNew, the lane recorded) when the email is unknown', async () => {
+  it('creates a fresh row by INSERT (new token, isNew, the lane recorded) when the email is unknown', async () => {
     primedResults = [
       { data: null, error: null }, // lookup: no row
-      { data: null, error: null }, // upsert result
+      { data: null, error: null }, // insert result
     ];
 
     const result = await enrolByEmail('New@Example.com', 'github', [VALID_ITEM]);
 
     expect(result.isNew).toBe(true);
     expect(result.isNew && result.token).toMatch(/^[A-Za-z0-9_-]{20,}$/); // minted, urlsafe
-    const upsert = calls.find((c) => c.method === 'upsert');
-    const payload = (upsert!.args[0] as Record<string, unknown>);
+    const insert = calls.find((c) => c.method === 'insert');
+    const payload = (insert!.args[0] as Record<string, unknown>);
     expect(payload.email).toBe('new@example.com'); // normalised
     expect(payload.provider).toBe('github');
+    // An upsert here would let this lane replace an owner's row — see the 23505 test below.
+    expect(calls.map((c) => c.method)).not.toContain('upsert');
+  });
+
+  it('the lookup/write race: a verified row created in the gap wins — 23505 answers isNew=false, writes nothing', async () => {
+    primedResults = [
+      { data: null, error: null },                                        // lookup: no row YET
+      { data: null, error: { message: 'duplicate key value', code: '23505' } }, // insert: the owner got there first
+    ];
+
+    const result = await enrolByEmail('victim@example.com', 'dropbox', [VALID_ITEM]);
+
+    expect(result).toEqual({ isNew: false }); // no token handed out, no plan-ready email
+    // The owner's row keeps its provider, token and last_sent: nothing followed the failed insert.
+    expect(calls.map((c) => c.method)).not.toContain('upsert');
+    expect(calls.map((c) => c.method)).not.toContain('update');
   });
 });
