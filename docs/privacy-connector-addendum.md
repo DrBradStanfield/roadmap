@@ -26,8 +26,9 @@ health record, in memory, on every call. It cannot do the work without reading i
 you would rather no server of ours ever saw your record, there is a version with no
 server in it at all: `tools/mcp-server.ts`, the same tools running as a program on your
 own computer, straight against your own file
-([the setup guide](guides/connect-claude-desktop.md)). Nothing about your record touches
-the internet on that path.
+([the setup guide](guides/connect-claude-desktop.md)). No server of ours sees your
+record on that path. What your assistant reads out of the file still goes to whichever
+AI vendor you use, under that vendor's own policy.
 
 If you drop a lab file into the chat, your assistant reads the file itself; the file
 never reaches our server. Only the values it read do, in memory for one request, and
@@ -52,8 +53,11 @@ record it also lists the file names in that folder, in memory, to tell you which
 yet in your record; the names are not kept. The candidate values either route finds are written to YOUR folder, as
 `imports/pending-<id>.json`, until you confirm them. Nothing is written to your record
 until you do: the candidates wait in that pending file, in your own folder, and the
-receipt that names it expires after an hour. The file is deleted the moment you
-confirm or discard the candidates; one you never act on is swept within two hours.
+receipt that names it expires after an hour. When you confirm, the server deletes that
+file. A delete that fails is counted as a number for us, not reported to you, and the
+file stays. A file nobody acts on is removed at your next import, by whichever route you
+take, once it is two hours old. If you never import again it stays in your own folder,
+where you can delete it yourself.
 
 ## What we store
 
@@ -123,7 +127,15 @@ because both use the same app identity. You can reconnect in one click.
   API policy, quoted under "Where your health record lives" above.
 - **Dropbox or Google.** Your storage, under your own account.
 - **Fly.io**, who run our server. It runs in Ashburn, Virginia, United States.
-- **Sentry**, for error reports, scrubbed as described above.
+- **Sentry**, for error reports, scrubbed as described above. How far that scrub reaches (`packages/health-core/src/sentry-scrub.ts`): it removes email
+  addresses, numbers carrying a unit, and numbers written within 20 characters of about
+  thirty metric and lab words, and server-side it drops any extra field over 200
+  characters. It does not recognise a diagnosis or a name written in ordinary prose, and
+  it carries no phone-number rule (that guard sits in the connector's feedback tool). The
+  control that does the work is upstream: the code raises errors with fixed messages
+  rather than echoing the text it was reading. The lab-extraction parse path was changed
+  on 10 September 2026 to do the same, because a JSON or schema error quotes the
+  document back.
 
 ## What the rest of the product stores
 
@@ -137,11 +149,23 @@ no account, nothing else. A label can imply something about you, and a due date 
 date: "no health values on our server" is the accurate claim, not "nothing about your
 health."
 
-**Chat.** On the storefront widget, no message content and no reply is stored. We keep
-the question text for 30 days, to check that article matching works, and then remove it;
-the articles it matched stay on as counts. A guest session row holds a hashed address,
-not an IP. The chat bubble on blog pages, and the Discord and YouTube bots, keep their
-transcripts.
+Turning reminders off does not always empty that row. The widget toggle and the link in
+a reminder email empty the schedule and keep the rest: the address, the token, the
+last-sent dates and the date the row was created. The row stays so that turning
+reminders on again does not send a second welcome email. Someone who types your address
+later can restart the schedule; each reminder carries the one-click off link. A cancel
+that proves the inbox with a Google sign-in deletes the row outright. An address that
+bounces or reports us as spam is deleted too.
+
+**Chat.** On the storefront widget we store one row for each question you send: the
+text of that question, which may hold health details you wrote into it; the articles it
+matched; its classification; the router's raw output and any router error; the name of
+the surface; and a pseudonymous session and conversation id. The earlier turns of the
+conversation and the reply are not stored. A daily job blanks the question text, the
+router's raw output and the error text once a row is 30 days old; the match record
+stays: the articles, the classification, the ids. A guest session row holds a hashed
+address, not an IP. The chat bubble on blog pages, and the Discord and YouTube bots,
+keep their transcripts.
 
 ## Bug reports
 
@@ -160,6 +184,9 @@ run yourself has no way to file anything: it hands you a link to submit instead.
 - [VERIFY] Whether GDPR or CCPA wording is needed (controller vs processor, lawful
   basis, data subject rights). The existing Shopify policy carries that language for the
   store; this section carries none.
+- [VERIFY] Supabase's backup and point-in-time-recovery window. Rows the purge blanks
+  can survive in a backup for as long as that window runs, which is an account setting,
+  not something in the repo.
 - [VERIFY] Sentry's own data region and retention period. The code scrubs, but the
   retention window is a Sentry account setting, not in the repo.
 - [VERIFY] Fly.io region claim. `primary_region = 'iad'` in `fly.edu.toml`, but Fly may

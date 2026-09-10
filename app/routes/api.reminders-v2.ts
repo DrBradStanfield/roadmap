@@ -21,16 +21,24 @@ import { recordServerEvent } from '../lib/product-events.server';
 /**
  * v2 email reminders API (decision record §10). Three ops, all POST:
  *
- *  - optin:  the account email + the client-computed schedule. Google Drive
- *            sends a signed ID token instead of the address (it grants
- *            nothing; the server reads the verified email from it — US-17
- *            AC7). Dropbox and GitHub send the ADDRESS the browser read from
- *            the provider: no storage credential ever reaches this server
- *            (Brad, 2026-09-10 — a Dropbox token or a GitHub PAT confers far
- *            more than "verify my email"). An address-only optin follows the
- *            typed lane's rules (AC8): a new address gets its capability token
- *            ONCE (the browser saves it in the user's own cloud file); an
- *            existing address is a schedule refresh and gets nothing back.
+ *  - optin:  two disjoint body shapes, one per lane.
+ *            VERIFIED: provider 'google-drive' + a signed ID token, never an
+ *            address (it grants nothing; the server reads the verified email
+ *            from it — US-17 AC7). The token is what makes the lane, so the
+ *            schema requires it: a 'google-drive' body carrying only an
+ *            address is 400, never an address-lane row wearing the verified
+ *            provider — that row would survive its inbox owner's own
+ *            verification and keep the squatter's cancel capability. This
+ *            caller proved the inbox, so the reply ALWAYS carries the
+ *            capability token: new row, new device, or rotated.
+ *            ADDRESS: provider dropbox/github/typed + the ADDRESS the browser
+ *            read from the provider — no storage credential ever reaches this
+ *            server (Brad, 2026-09-10 — a Dropbox token or a GitHub PAT
+ *            confers far more than "verify my email"). Anyone can name anyone's
+ *            inbox here, so the typed lane's rules hold (AC8): a new address
+ *            gets its capability token ONCE (the browser saves it in the user's
+ *            own cloud file); an existing address is a schedule refresh and
+ *            gets nothing back.
  *  - update: capability token + replacement schedule (client re-pushes on
  *            every data change / app visit).
  *  - cancel: capability token → the row is tombstoned (schedule emptied);
@@ -50,17 +58,23 @@ const allowOptinEmail = createRateLimiter(5, DAY_MS, 30 * 60_000);
 const allowOptinIp = createRateLimiter(20, 60 * 60_000, 30 * 60_000);
 
 const bodySchema = z.union([
+  // Optional TYPED marketing opt-in on both optin shapes (§10: a deliberate
+  // typed step at the reminders flow, never harvested from the provider).
+  // Transits straight to Klaviyo; never stored in the reminder row.
   z.object({
     op: z.literal('optin'),
-    // 'typed' here is the widget's Drive fallback with no fresh ID token —
-    // an address-only optin must never be recorded as the verified lane.
-    provider: z.enum(['google-drive', 'dropbox', 'github', 'typed']),
-    idToken: z.string().min(1).max(4096).optional(),
-    email: z.string().email().max(254).optional(),
+    provider: z.literal('google-drive'),
+    idToken: z.string().min(1).max(4096),
     schedule: scheduleSchema,
-    // Optional TYPED marketing opt-in (§10: a deliberate typed step at the
-    // reminders flow, never harvested from the provider). Transits straight
-    // to Klaviyo; never stored in the reminder row.
+    marketingEmail: z.string().email().max(320).optional(),
+  }),
+  z.object({
+    op: z.literal('optin'),
+    // 'typed' here is also the widget's Drive fallback with no fresh ID token —
+    // an address-only optin must never be recorded as the verified lane.
+    provider: z.enum(['dropbox', 'github', 'typed']),
+    email: z.string().email().max(254),
+    schedule: scheduleSchema,
     marketingEmail: z.string().email().max(320).optional(),
   }),
   z.object({
@@ -101,7 +115,7 @@ export async function action({ request }: ActionFunctionArgs) {
   if (input.op === 'optin') {
     let email: string;
     let enrolment: Enrolment;
-    if (input.provider === 'google-drive' && input.idToken) {
+    if (input.provider === 'google-drive') {
       const verified = await verifyGoogleIdToken(input.idToken);
       if (!verified) {
         return Response.json({ error: 'Could not verify your email with Google' }, { status: 401, headers });
@@ -109,7 +123,6 @@ export async function action({ request }: ActionFunctionArgs) {
       email = verified;
       enrolment = await upsertVerifiedOptin(email, input.schedule);
     } else {
-      if (!input.email) return Response.json({ error: 'Missing email' }, { status: 400, headers });
       email = input.email.toLowerCase();
       if (!allowOptinEmail(emailLimiterKey(email)) || !allowOptinIp(ipHash)) {
         return Response.json({ error: 'Too many requests' }, { status: 429, headers });
@@ -124,15 +137,21 @@ export async function action({ request }: ActionFunctionArgs) {
       // Every lane's consent gate is delivery (US-22 AC4 / US-17 AC8): the
       // plan-ready email's bounce or complaint un-enrols before the 3-day
       // quiet period ends. Fire-and-forget; counted HERE because only the
-      // server knows the enrolment landed — abuse enrolments count too.
+      // server knows the enrolment landed — abuse enrolments count too. Both
+      // fire once per enrolment, so they hang off isNew, not off the token.
       sendPlanReadyEmail(email, {
         schedule: input.schedule,
         unsubscribeUrl: buildUnsubscribeUrl(enrolment.token),
       }).catch(() => {});
       void recordServerEvent('reminder_optin', { provider: input.provider });
-      return Response.json({ token: enrolment.token, email }, { headers });
     }
-    // The address is already enrolled: the schedule was refreshed and NO
+    // A token comes back whenever the enrolment yielded one. The verified lane
+    // always does: that caller proved the inbox, and withholding it stranded
+    // every Drive user on a second device and every user whose squatted row
+    // had just been rotated — no token in their file means schedule pushes
+    // never start and toggle-off is a no-op.
+    if (enrolment.token) return Response.json({ token: enrolment.token, email }, { headers });
+    // The address lane, already enrolled: the schedule was refreshed and NO
     // token is returned (AC8 — it would hand the cancel capability to whoever
     // typed the address). This reply is a bounded membership oracle, accepted
     // by Brad 2026-09-10; the limits above bound it.

@@ -238,3 +238,50 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
+
+/**
+ * The malformed-response error must carry NOTHING of the model's output.
+ *
+ * Node's JSON.parse quotes ~10 characters of its input in the SyntaxError
+ * ("Unexpected token 'S', \"Sure. {\"a\"... is not valid JSON"), and the Zod
+ * parse quotes received enum values. Both errors reach console.error and
+ * Sentry.captureException in api.lab-import-v2.ts, i.e. Fly logs and Sentry
+ * issue titles — where model output about someone's lab document has no
+ * business being.
+ */
+describe('extraction failures carry no document text', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+  afterEach(() => { global.fetch = REAL_FETCH; });
+
+  const SENTINEL = 'SENTINEL_LDL_4_2';
+
+  it('throws a fixed message when both sub-attempts return malformed JSON', async () => {
+    // Both the plain and the `{`-prefilled call answer with prose quoting the
+    // document — exactly what the SyntaxError excerpt would echo.
+    const fetchMock = vi.fn().mockResolvedValue(anthropicMessage(`Sure. Your ${SENTINEL} reads high.`));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const error = await extractOrClassify([{ type: 'text', content: 'doc' }], { attempts: 1 })
+      .then(() => null, (e: unknown) => e as Error);
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error!.message).toBe('extraction returned malformed JSON');
+    expect(JSON.stringify(error, Object.getOwnPropertyNames(error))).not.toContain(SENTINEL);
+    expect((error as { cause?: unknown }).cause).toBeUndefined();
+  });
+
+  it('throws the same fixed message when the second attempt fails schema validation', async () => {
+    // Valid JSON, wrong shape: the Zod message names the received value.
+    const badShape = JSON.stringify({ classification: SENTINEL, values: [] }).slice(1);
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(anthropicMessage('not json at all'))
+      .mockResolvedValueOnce(anthropicMessage(badShape));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const error = await extractOrClassify([{ type: 'text', content: 'doc' }], { attempts: 1 })
+      .then(() => null, (e: unknown) => e as Error);
+
+    expect(error!.message).toBe('extraction returned malformed JSON');
+    expect(JSON.stringify(error, Object.getOwnPropertyNames(error))).not.toContain(SENTINEL);
+  });
+});

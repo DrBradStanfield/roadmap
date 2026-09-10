@@ -68,7 +68,20 @@ nothing (`widget-src/standalone/google-config.ts`). Enrolling in email
 reminders posts the address and the due dates to `/api/reminders-v2`
 (`widget-src/standalone/reminders.ts`). Sentry error reporting also runs on
 this build (`widget-src/standalone/app.tsx` calls `initSentry`), scrubbed by
-`widget-src/src/lib/sentry.ts` before anything leaves the browser.
+`widget-src/src/lib/sentry.ts` before anything leaves the browser: on
+`drbradstanfield.github.io` it is enabled, under the environment name
+`standalone`, so the page does talk to sentry.io.
+
+The rest of what the page loads is its own. `widget-src/standalone/index.html`
+carries one module script and loads no third-party script at load time; Sentry is
+bundled into it, and the hero image is fetched from `cdn.shopify.com`. Connecting
+Google Drive loads Google's sign-in script from `accounts.google.com`. Cloud credentials and the
+optional Anthropic key live in `localStorage` for that origin
+(`hr_anthropic_key`, `health_roadmap_dropbox_tokens`, `health_roadmap_gdrive`
+and `health_roadmap_gdrive_tokens`, `health_roadmap_github`, and
+`health_roadmap_selfhost`, which holds a WebDAV username and password), where any script
+running on the origin can read them. `/roadmap/` and `/roadmap/dev/` are the
+same origin, so the staging preview shares that storage with the live page.
 
 ## Getting started
 
@@ -113,11 +126,15 @@ network tab recording and use the widget.
   it to Anthropic's API for extraction, returns the values, and stores none of
   them. Sending a chat message from the storefront widget POSTs the message,
   that conversation's earlier turns, and the health context needed to answer it
-  to `/api/chat`. On that surface no message content and no reply is stored. We
-  keep the question text for 30 days, to check that article matching works, and
-  then remove it; the articles it matched stay on as counts. A guest session
-  row holds a hashed address, not an IP. The chat bubble on blog pages, and the
-  Discord and YouTube bots, keep their transcripts on our server.
+  to `/api/chat`. On that surface the server stores one row per question: the
+  text you typed, which may hold health details you wrote into it; the articles
+  it matched; its classification; the router's raw output and any router error;
+  the name of the surface; and a pseudonymous session and conversation id. The
+  earlier turns and the reply are not stored. A daily job blanks the question
+  text, the router's raw output and the error text once a row is 30 days old;
+  the match record stays: the articles, the classification, the ids. A guest
+  session row holds a hashed address, not an IP. The chat bubble on blog pages,
+  and the Discord and YouTube bots, keep their transcripts on our server.
 - Telemetry is a closed allow-list of event names in
   `packages/health-core/src/product-events.ts`. An event is a name plus an
   anonymous visitor UUID, and the server rejects any name off the list.
@@ -131,7 +148,16 @@ network tab recording and use the widget.
   (`widget-src/src/lib/sentry.ts`): console breadcrumb text is replaced, fetch
   breadcrumb URLs are cut back to their origin, and record-operation errors are
   reduced to a fixed message and a closed set of tags. `sendDefaultPii` is
-  never set.
+  never set. Read the text scrub for what it is
+  (`packages/health-core/src/sentry-scrub.ts`): it removes email addresses,
+  numbers carrying a unit, and numbers written within 20 characters of about
+  thirty metric and lab words, and server-side it drops any extra field longer
+  than 200 characters. It does not recognise a diagnosis or a name written in
+  prose, and it has no phone-number rule (that guard sits in the connector's
+  `report_feedback` tool). The control that carries the weight is upstream: the
+  code throws errors with fixed messages instead of echoing the text it was
+  reading. The lab-extraction parse path was changed on 2026-09-10 to do the
+  same, because a JSON or schema error quotes the document back.
 
 ## Where to read next
 

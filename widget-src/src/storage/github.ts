@@ -91,6 +91,13 @@ export class GitHubAdapter implements StorageAdapter {
     if (!res.ok) {
       throw new StorageError(`GitHub connect failed (${res.status}): ${await res.text()}`);
     }
+    // A public repo passes every check above and would publish the record on
+    // the first write. Refuse before persisting, so nothing is left to
+    // reconnect from.
+    const repo = (await res.json()) as { private?: boolean };
+    if (repo.private !== true) {
+      throw new StorageError('This repository is public. Choose a private one, or your health record would be published.');
+    }
     setJson(CONFIG_KEY, this.config);
   }
 

@@ -1,10 +1,14 @@
 /**
  * US-17 AC7–AC10 — the reminders route, at the HTTP boundary:
  *  - every limiter fires BEFORE any write and before the plan-ready send;
- *  - the Drive branch needs a VALID Google ID token (an address alone is the
- *    typed lane, never the verified one);
- *  - the oracle reply is exactly {token,email} for a new row and exactly
- *    {refreshed:true,email} for an existing one — nothing else leaks;
+ *  - the Drive branch needs a VALID Google ID token — an address alone is not
+ *    a Drive optin at all, it is 400 at the schema (a squatter who could enrol
+ *    as 'google-drive' would keep the cancel capability across the inbox
+ *    owner's own verification);
+ *  - the oracle reply leaks nothing on the ADDRESS lane: exactly {token,email}
+ *    for a new row, exactly {refreshed:true,email} for an existing one. The
+ *    verified lane always gets its token back — new device or rotated, the
+ *    owner proved the inbox;
  *  - cancel tombstones on a bare token and passes a verified email through
  *    only when the ID token checks out.
  */
@@ -68,7 +72,7 @@ describe('the oracle reply shape', () => {
     expect(recordServerEvent).toHaveBeenCalledWith('reminder_optin', { provider: 'dropbox' });
   });
 
-  it('existing address: exactly {refreshed: true, email} — no token, no send, no count', async () => {
+  it('existing address-lane row: exactly {refreshed: true, email} — no token, no send, no count', async () => {
     enrolByEmail.mockResolvedValue({ isNew: false });
     const email = freshEmail();
     const res = await action({ request: post({ op: 'optin', provider: 'github', email, schedule: SCHEDULE }) } as never);
@@ -97,12 +101,22 @@ describe('the Drive branch', () => {
     expect(enrolByEmail).not.toHaveBeenCalled();
   });
 
-  it("provider 'google-drive' with only an address never reaches the verified path", async () => {
+  it("provider 'google-drive' with only an address is rejected at the schema — it never becomes an address-lane row", async () => {
     const res = await action({ request: post({ op: 'optin', provider: 'google-drive', email: freshEmail(), schedule: SCHEDULE }) } as never);
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'Invalid input' });
     expect(upsertVerifiedOptin).not.toHaveBeenCalled();
-    expect(enrolByEmail).toHaveBeenCalledWith(expect.any(String), 'google-drive', expect.anything());
+    expect(enrolByEmail).not.toHaveBeenCalled();
+  });
+
+  it('existing Google-verified address: the reply carries the token, with no plan-ready email and no optin count', async () => {
+    upsertVerifiedOptin.mockResolvedValue({ token: 'tok-drive', isNew: false });
+    const res = await action({ request: post({ op: 'optin', provider: 'google-drive', idToken: 'good', schedule: SCHEDULE }) } as never);
+
+    expect(await res.json()).toEqual({ token: 'tok-drive', email: 'drive@example.com' });
+    expect(sendPlanReadyEmail).not.toHaveBeenCalled();
+    expect(recordServerEvent).not.toHaveBeenCalled();
   });
 });
 

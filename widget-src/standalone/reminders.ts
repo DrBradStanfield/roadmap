@@ -113,9 +113,11 @@ async function cancelProofFor(backend: Backend): Promise<string | null> {
 
 export interface OptInResult {
   email: string;
-  /** True when the address was ALREADY enrolled: the server refreshed its
-   *  schedule and returned no token (US-17 AC8 — a token to whoever names an
-   *  address would be the cancel capability). Nothing was written to the file. */
+  /** True when an address-lane optin met an ALREADY enrolled address: the
+   *  server refreshed its schedule and returned no token (US-17 AC8 — a token
+   *  to whoever names an address would be the cancel capability). Nothing was
+   *  written to the file. The Google-verified lane always gets its token back,
+   *  so it is never `refreshed`. */
   refreshed: boolean;
 }
 

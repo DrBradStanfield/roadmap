@@ -178,7 +178,13 @@ function requireAdmin() {
   return supabaseAdmin;
 }
 
-export type Enrolment = { isNew: true; token: string } | { isNew: false };
+/**
+ * The result of a write. A token is present whenever the caller has earned it:
+ * always on a new row, and on an existing one only when the caller PROVED the
+ * inbox (the Google-verified lane). The address lane's existing-row refresh
+ * carries no token — see enrolByEmail.
+ */
+export type Enrolment = { isNew: true; token: string } | { isNew: false; token?: string };
 
 /**
  * Credential-free enrolment (Dropbox, GitHub, typed — US-17 AC7/AC8). Anyone
@@ -198,11 +204,14 @@ export type Enrolment = { isNew: true; token: string } | { isNew: false };
  * accepted residual is that an attacker can do the same, bounded to rare
  * reminder-cadence emails each carrying the one-click off switch.
  * Returns whether this CREATED an enrolment (isNew drives the one-time
- * plan-ready email, the reminder_optin count and the only token handout).
+ * plan-ready email, the reminder_optin count and this lane's only token
+ * handout — a refresh returns no token at all). 'google-drive' is not in this
+ * function's provider type on purpose: that value MEANS verified, and only
+ * upsertVerifiedOptin may write it.
  */
 export async function enrolByEmail(
   email: string,
-  provider: ReminderV2Provider,
+  provider: Exclude<ReminderV2Provider, 'google-drive'>,
   schedule: StoredScheduleItem[],
 ): Promise<Enrolment> {
   const normalized = email.toLowerCase();
@@ -226,17 +235,20 @@ export async function enrolByEmail(
 
 /**
  * Google-verified enrolment: the address came from a signed ID token, so this
- * caller IS the inbox owner and may replace their own row, and always
- * receives the token. Cooldowns are preserved either way; the token is kept
- * ONLY when the row was itself Google-verified. Any other row may be a
+ * caller IS the inbox owner and may replace their own row. The token is ALWAYS
+ * returned, new row or not: the same person on a new device has nothing in
+ * their file yet, and withholding it there means schedule pushes never start
+ * and toggle-off is a no-op. Cooldowns are preserved either way; the token is
+ * KEPT only when the row was itself Google-verified. Any other row may be a
  * squatter's (an address-only optin naming this inbox before its owner
  * arrived), and keeping its token would keep the squatter's cancel capability
- * alive across the victim's verification — so it rotates (review 2026-09-10).
+ * alive across the victim's verification — so it rotates (review 2026-09-10),
+ * and the rotated token goes back to the owner in the same reply.
  */
 export async function upsertVerifiedOptin(
   email: string,
   schedule: StoredScheduleItem[],
-): Promise<{ token: string; isNew: boolean }> {
+): Promise<Enrolment> {
   const normalized = email.toLowerCase();
   const { data, error } = await requireAdmin()
     .from('reminder_optin_v2')
@@ -245,7 +257,8 @@ export async function upsertVerifiedOptin(
     .maybeSingle();
   if (error) throw new Error(`reminder_optin_v2 lookup failed: ${error.message}`);
   const existing = data && { token: data.provider === 'google-drive' ? data.token : undefined, last_sent: data.last_sent };
-  return { token: await writeOptinRow(normalized, 'google-drive', schedule, existing), isNew: !data };
+  const token = await writeOptinRow(normalized, 'google-drive', schedule, existing);
+  return data ? { isNew: false, token } : { isNew: true, token };
 }
 
 /**

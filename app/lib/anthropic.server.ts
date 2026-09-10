@@ -124,7 +124,15 @@ async function extractOrClassifyOnce(
       ],
     };
     responseText = await callAnthropic(apiKey, retryBody, left(), httpAttempts);
-    parsed = parseUnifiedResult(JSON.parse(extractJsonObject('{' + responseText)));
+    try {
+      parsed = parseUnifiedResult(JSON.parse(extractJsonObject('{' + responseText)));
+    } catch {
+      // The error CLASS only: a SyntaxError quotes ~10 chars of the model's
+      // answer and Zod names the values it received — both are document text,
+      // and this error reaches console.error and Sentry (api.lab-import-v2).
+      // No `cause` either: Sentry serialises it.
+      throw new Error('extraction returned malformed JSON');
+    }
   }
 
   return toUnifiedResult(parsed);

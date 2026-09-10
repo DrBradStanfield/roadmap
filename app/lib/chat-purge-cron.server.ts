@@ -4,10 +4,12 @@
  * `chat_match_events` is the router audit: it keeps one row per answered turn
  * so article matching can be checked against the real question. The audit only
  * ever looks at recent traffic, so the text has no reason to live forever.
- * Once a day this clears `message` and the earlier turns the router saw
- * (`router_context.first` / `.recent`) on every row past the window, on every
- * platform. What the counts are made of — `matched_handles`, `classification`,
- * the timings, `is_fallback`, and the surface name — stays.
+ * Once a day this clears every free-text field on rows past the window, on
+ * every platform: `message`, the earlier turns the router saw
+ * (`router_context.first` / `.recent`), and the router's own output
+ * (`router_raw`, `router_error`) — which quotes the question back. What the
+ * counts are made of — `matched_handles`, `classification`, the timings,
+ * `is_fallback`, and the surface name — stays.
  *
  * Same shape as the other crons (trending, reminder v2): hourly setInterval, a
  * `< target hour` catch-up check so a deploy can't skip the day, and the
@@ -21,7 +23,7 @@ const CRON_INTERVAL_MS = 60 * 60 * 1000;
 const TARGET_HOUR_UTC = 4;
 const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 
-/** How long a question stays readable for the router audit. */
+/** How long the question and the router's answer stay readable for the audit. */
 export const PURGE_AFTER_DAYS = 30;
 /** Rows cleared per round trip. The loop re-selects until nothing is left. */
 const BATCH_SIZE = 500;
@@ -34,7 +36,7 @@ let cronIntervalId: ReturnType<typeof setInterval> | null = null;
 const QUESTION_KEYS = ['first', 'recent'];
 
 /**
- * Clear the question text from every row older than the window. Returns the
+ * Clear the free text from every row older than the window. Returns the
  * number of rows cleared — a count, never the text. Throws on a database
  * error so the caller's catch reports it instead of logging a clean run.
  */
@@ -49,7 +51,9 @@ export async function purgeOldChatText(now: Date = new Date()): Promise<number> 
       .from('chat_match_events')
       .select('id, router_context')
       .lt('created_at', cutoff)
-      .not('message', 'is', null)
+      // Any of the three still holding text qualifies: rows purged before
+      // `router_raw` came into scope have a null `message` already.
+      .or('message.not.is.null,router_raw.not.is.null,router_error.not.is.null')
       .limit(BATCH_SIZE);
     if (error) throw new Error(`chat text purge select failed: ${error.message}`);
     if (!data?.length) return cleared;
@@ -60,15 +64,20 @@ export async function purgeOldChatText(now: Date = new Date()): Promise<number> 
     previous = batch;
 
     // Per row, because `router_context` differs per row and a single UPDATE
-    // cannot subtract keys from each one's own JSON. `message` and the context
-    // go in the same statement, so a row can never be left half-cleared —
-    // which is what makes the `message IS NOT NULL` filter above complete.
+    // cannot subtract keys from each one's own JSON. Every field goes in the
+    // same statement, so a row can never be left half-cleared — which is what
+    // makes the filter above complete.
     for (const row of data) {
       const context = { ...(row.router_context as Record<string, unknown> | null) };
       for (const key of QUESTION_KEYS) delete context[key];
       const { error: updateError } = await supabaseAdmin
         .from('chat_match_events')
-        .update({ message: null, router_context: row.router_context === null ? null : context })
+        .update({
+          message: null,
+          router_raw: null,
+          router_error: null,
+          router_context: row.router_context === null ? null : context,
+        })
         .eq('id', row.id);
       if (updateError) throw new Error(`chat text purge update failed: ${updateError.message}`);
       cleared++;
