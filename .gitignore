@@ -48,3 +48,7 @@ health_roadmap_file*
 
 # Code-review screenshot artifacts — local only, never tracked
 .review-shots/
+
+# Dry-run outputs of the YouTube bot hold commenters' handles and their own words;
+# never tracked (a 2026-08-10 sweep committed one; removed 2026-09-10).
+tools/output/
