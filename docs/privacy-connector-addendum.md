@@ -2,7 +2,7 @@
 
 Published at [drstanfield.com/pages/connector-privacy](https://drstanfield.com/pages/connector-privacy)
 by `node scripts/build-privacy-page.mjs --publish` (last 10 September 2026, from commit
-64ba3e0). Republish after every edit here; the page is generated, never hand-edited.
+6e0d4a7). Republish after every edit here; the page is generated, never hand-edited.
 Written 2026-09-02, re-audited 2026-09-07 and 2026-09-10, from the code at
 `app/lib/mcp.server.ts`, `app/lib/mcp-*.server.ts`, `app/routes/mcp.$.tsx` and
 `packages/health-core/src/mcp-tools.ts`.
