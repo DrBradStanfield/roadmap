@@ -29,6 +29,7 @@ import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget, RO
 import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS } from '../../packages/health-core/src/chat-history';
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 import { findDuplicateReply, type DedupHistoryItem } from '../lib/chat-dedup.server';
+import { PURGED_TEXT } from '../lib/chat-purge-cron.server';
 
 
 // Only fixed operation descriptions enter diagnostics. Database errors can echo
@@ -197,10 +198,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
       return Response.json({
         success: true,
-        messages: (data ?? []).map((m: { id: string; role: string; content: string; created_at: string }) => ({
+        // A turn past the 30-day window keeps its place in the thread but not
+        // its words (US-15 AC8, chat-purge-cron.server.ts).
+        messages: (data ?? []).map((m: { id: string; role: string; content: string | null; created_at: string }) => ({
           id: m.id,
           role: m.role,
-          content: m.content,
+          content: m.content ?? PURGED_TEXT,
           createdAt: m.created_at,
         })),
         ...(auth.isGuest ? { sessionToken: auth.sessionToken } : {}),
@@ -336,7 +339,15 @@ export async function action({ request }: ActionFunctionArgs) {
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
       if (historyError) reportChatError('Chat: Failed to load conversation history');
-      storedHistory = (historyRows ?? []) as DedupHistoryItem[];
+      // Purged turns are gone, not empty: send the model only the words that
+      // are still there, and never dedup against a blank (US-15 AC8).
+      const live = (historyRows ?? []).filter(
+        (m: { content: string | null }) => m.content !== null,
+      ) as DedupHistoryItem[];
+      // The purge is per row, so on the one tick where the cutoff falls between
+      // a question and its reply the history could open on an assistant turn.
+      // Start it at the first user turn, as readClientHistory does.
+      storedHistory = live.slice(Math.max(0, live.findIndex((m) => m.role === 'user')));
       history = storedHistory;
     }
 

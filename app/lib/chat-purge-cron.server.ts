@@ -1,5 +1,8 @@
 /**
- * Question-text retention cron (US-15 AC7, 2026-09-10).
+ * Chat-text retention cron (US-15 AC7 and AC8, 2026-09-10).
+ *
+ * Three tables, one window: nothing a person typed into the chat, and nothing
+ * the model said back, stays readable past 30 days.
  *
  * `chat_match_events` is the router audit: it keeps one row per answered turn
  * so article matching can be checked against the real question. The audit only
@@ -10,6 +13,14 @@
  * (`router_raw`, `router_error`) — which quotes the question back. What the
  * counts are made of — `matched_handles`, `classification`, the timings,
  * `is_fallback`, and the surface name — stays.
+ *
+ * `chat_messages` and `chat_conversations` are the transcripts behind the blog
+ * bubble and the chatbot embed: question and reply, plus a title made of the
+ * first few words of the question. Both get blanked on the same schedule, and
+ * only on `platform = 'shopify'` — the Discord and YouTube transcripts are
+ * public posts under their own retention and are never touched here. The shape
+ * of the conversation survives: id, role, timestamps, model, token counts,
+ * `is_fallback`, `failure_mode`. Only the words go.
  *
  * Same shape as the other crons (trending, reminder v2): hourly setInterval, a
  * `< target hour` catch-up check so a deploy can't skip the day, and the
@@ -28,6 +39,17 @@ export const PURGE_AFTER_DAYS = 30;
 /** Rows cleared per round trip. The loop re-selects until nothing is left. */
 const BATCH_SIZE = 500;
 
+/** What a reader sees where a purged message used to be. The row is still
+ *  there — the words are not. Anything rendering a transcript substitutes it. */
+export const PURGED_TEXT = '[removed after 30 days]';
+
+/** What one run cleared, per table. Counts, never text. */
+export interface PurgeCounts {
+  matchEvents: number;
+  messages: number;
+  conversations: number;
+}
+
 let lastRunDate: string | null = null;
 let cronIntervalId: ReturnType<typeof setInterval> | null = null;
 
@@ -36,62 +58,126 @@ let cronIntervalId: ReturnType<typeof setInterval> | null = null;
 const QUESTION_KEYS = ['first', 'recent'];
 
 /**
- * Clear the free text from every row older than the window. Returns the
- * number of rows cleared — a count, never the text. Throws on a database
- * error so the caller's catch reports it instead of logging a clean run.
+ * Clear the free text from every row older than the window, in all three
+ * tables. Returns how many rows each pass cleared — counts, never the text.
+ * Throws on a database error so the caller's catch reports it instead of
+ * logging a clean run.
  */
-export async function purgeOldChatText(now: Date = new Date()): Promise<number> {
-  if (!supabaseAdmin) return 0;
+export async function purgeOldChatText(now: Date = new Date()): Promise<PurgeCounts> {
+  if (!supabaseAdmin) return { matchEvents: 0, messages: 0, conversations: 0 };
   const cutoff = new Date(now.getTime() - PURGE_AFTER_DAYS * 86400_000).toISOString();
+  return {
+    matchEvents: await purgeMatchEvents(cutoff),
+    // `!inner` makes the join a filter: a message qualifies only if its own
+    // conversation is a Shopify one. Without it PostgREST would return every
+    // message and merely null the embed.
+    messages: await purgeInBatches(
+      'chat message',
+      () =>
+        supabaseAdmin!
+          .from('chat_messages')
+          .select('id, chat_conversations!inner(platform)')
+          .eq('chat_conversations.platform', 'shopify')
+          .lt('created_at', cutoff)
+          .not('content', 'is', null)
+          .limit(BATCH_SIZE),
+      (rows) => supabaseAdmin!.from('chat_messages').update({ content: null }).in('id', rows.map((r) => r.id)),
+    ),
+    // The title is the first words of the question, so it is question text.
+    // `updated_at` is the conversation's own clock: a thread stays readable
+    // for 30 days after its last turn, not after its first.
+    conversations: await purgeInBatches(
+      'chat title',
+      () =>
+        supabaseAdmin!
+          .from('chat_conversations')
+          .select('id')
+          .eq('platform', 'shopify')
+          .lt('updated_at', cutoff)
+          .not('title', 'is', null)
+          .limit(BATCH_SIZE),
+      (rows) => supabaseAdmin!.from('chat_conversations').update({ title: null }).in('id', rows.map((r) => r.id)),
+    ),
+  };
+}
 
+interface Fallible {
+  error: { message: string } | null;
+}
+
+/**
+ * One table's pass: select a batch of stale rows, clear them, repeat until the
+ * select comes back empty. All three passes share it, so all three share the
+ * no-progress guard — a batch that comes back identical means the updates are
+ * not landing (a policy or trigger swallowing them), so stop rather than spin.
+ */
+async function purgeInBatches<T extends { id: string }>(
+  label: string,
+  stale: () => PromiseLike<Fallible & { data: T[] | null }>,
+  clear: (rows: T[]) => PromiseLike<Fallible>,
+): Promise<number> {
   let cleared = 0;
   let previous = '';
   for (;;) {
-    const { data, error } = await supabaseAdmin
-      .from('chat_match_events')
-      .select('id, router_context')
-      .lt('created_at', cutoff)
-      // Any of the three still holding text qualifies: rows purged before
-      // `router_raw` came into scope have a null `message` already.
-      .or('message.not.is.null,router_raw.not.is.null,router_error.not.is.null')
-      .limit(BATCH_SIZE);
-    if (error) throw new Error(`chat text purge select failed: ${error.message}`);
+    const { data, error } = await stale();
+    if (error) throw new Error(`${label} purge select failed: ${error.message}`);
     if (!data?.length) return cleared;
-    // A batch that comes back identical means the updates are not landing
-    // (a policy or trigger swallowing them); stop rather than spin.
     const batch = data.map((r) => r.id).join(',');
-    if (batch === previous) throw new Error('chat text purge made no progress');
+    if (batch === previous) throw new Error(`${label} purge made no progress`);
     previous = batch;
 
+    const { error: updateError } = await clear(data);
+    if (updateError) throw new Error(`${label} purge update failed: ${updateError.message}`);
+    cleared += data.length;
+  }
+}
+
+function purgeMatchEvents(cutoff: string): Promise<number> {
+  return purgeInBatches(
+    'chat text',
+    () =>
+      supabaseAdmin!
+        .from('chat_match_events')
+        .select('id, router_context')
+        .lt('created_at', cutoff)
+        // Any of the three still holding text qualifies: rows purged before
+        // `router_raw` came into scope have a null `message` already.
+        .or('message.not.is.null,router_raw.not.is.null,router_error.not.is.null')
+        .limit(BATCH_SIZE),
     // Per row, because `router_context` differs per row and a single UPDATE
     // cannot subtract keys from each one's own JSON. Every field goes in the
     // same statement, so a row can never be left half-cleared — which is what
     // makes the filter above complete.
-    for (const row of data) {
-      const context = { ...(row.router_context as Record<string, unknown> | null) };
-      for (const key of QUESTION_KEYS) delete context[key];
-      const { error: updateError } = await supabaseAdmin
-        .from('chat_match_events')
-        .update({
-          message: null,
-          router_raw: null,
-          router_error: null,
-          router_context: row.router_context === null ? null : context,
-        })
-        .eq('id', row.id);
-      if (updateError) throw new Error(`chat text purge update failed: ${updateError.message}`);
-      cleared++;
-    }
-  }
+    async (rows) => {
+      for (const row of rows) {
+        const context = { ...(row.router_context as Record<string, unknown> | null) };
+        for (const key of QUESTION_KEYS) delete context[key];
+        const { error } = await supabaseAdmin!
+          .from('chat_match_events')
+          .update({
+            message: null,
+            router_raw: null,
+            router_error: null,
+            router_context: row.router_context === null ? null : context,
+          })
+          .eq('id', row.id);
+        if (error) return { error };
+      }
+      return { error: null };
+    },
+  );
 }
 
 /** The day's work, behind the shared lock. Returns null if another machine
  *  won the day. Exported for the test suite. */
-export async function purgeWithLock(todayStr: string, now: Date = new Date()): Promise<number | null> {
+export async function purgeWithLock(todayStr: string, now: Date = new Date()): Promise<PurgeCounts | null> {
   const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'chat_text_purge');
   if (!acquired) return null;
   const cleared = await purgeOldChatText(now);
-  console.log(`Chat text purge: cleared ${cleared} rows older than ${PURGE_AFTER_DAYS} days`);
+  console.log(
+    `Chat text purge (older than ${PURGE_AFTER_DAYS} days): ${cleared.matchEvents} match events, ` +
+      `${cleared.messages} messages, ${cleared.conversations} conversation titles`,
+  );
   return cleared;
 }
 

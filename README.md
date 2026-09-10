@@ -140,11 +140,15 @@ network tab recording and use the widget.
   `widget-src/src/site-chat.tsx` and `widget-src/src/chatbot-embed.tsx`).
   Neither bundle sets `VITE_LOCAL_FIRST`, so the server takes them for a stored
   surface: it writes your question and the reply into `chat_messages`, and the
-  reply can quote the values you were sent with. Nothing purges those rows. The
-  30-day job clears free text in `chat_match_events` only
-  (`app/lib/chat-purge-cron.server.ts`). Brad chose on 2026-09-10 to keep the
-  transcripts, because the router is tuned against them. The Discord and
-  YouTube bots keep their transcripts the same way.
+  reply can quote the values you were sent with. Those cached values are still
+  sent as context; Brad chose on 2026-09-10 to keep that, because the answer is
+  worse without them. The transcripts now join the same 30-day purge
+  (`app/lib/chat-purge-cron.server.ts`): once a row is 30 days old the job
+  blanks the message text and the conversation title, which is the first words
+  of your question. What stays is the shape of the thread, not the words: row
+  ids, the role, the timestamps, the model, the token counts, and the fallback
+  flags. A blanked turn reads back as `[removed after 30 days]`. Only Shopify
+  rows are touched; the Discord and YouTube transcripts are unchanged.
 - Telemetry is a closed allow-list of event names in
   `packages/health-core/src/product-events.ts`. An event is a name plus an
   anonymous visitor UUID, and the server rejects any name off the list.

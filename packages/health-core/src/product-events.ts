@@ -92,7 +92,7 @@ export const MCP_TOOL_NAMES = [
 export type McpToolName = (typeof MCP_TOOL_NAMES)[number];
 
 /** The `mcp_import` counter's three closed vocabularies (US-35 usage signal). */
-export const MCP_IMPORT_ROUTES = ['dropbox', 'chatgpt_file', 'chatgpt_refused', 'drive_refused', 'assistant'] as const;
+export const MCP_IMPORT_ROUTES = ['dropbox', 'drive_refused', 'assistant'] as const;
 /** `nudge`: a read found folder files not in the record and said so (US-37). */
 export const MCP_IMPORT_PHASES = ['extract', 'commit', 'nudge'] as const;
 export const MCP_IMPORT_FILE_BUCKETS = ['0', '1', '2-5', '6-20'] as const;

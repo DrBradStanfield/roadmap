@@ -140,7 +140,9 @@ async function pullMessages(): Promise<Message[]> {
     id: string;
     created_at: string;
     role: string;
-    content: string;
+    /** Null once the daily purge has blanked it (US-15 AC8): Shopify rows past
+     *  30 days keep their place in the thread but not their words. */
+    content: string | null;
     model: string | null;
     input_tokens: number | null;
     output_tokens: number | null;
@@ -162,7 +164,7 @@ async function pullMessages(): Promise<Message[]> {
     conversation_id: r.chat_conversations.id,
     user_id: r.user_id,
     role: r.role as 'user' | 'assistant',
-    content: r.content,
+    content: r.content ?? PURGED_TEXT,
     model: r.model,
     input_tokens: r.input_tokens,
     output_tokens: r.output_tokens,
@@ -196,8 +198,10 @@ async function pullRouting(): Promise<RoutingEvent[]> {
   return res.json() as Promise<RoutingEvent[]>;
 }
 
-/** What a purged question reads as in both renderers. */
-const PURGED_QUESTION = '[question removed after 30 days]';
+/** What purged text reads as in both renderers. Mirrors PURGED_TEXT in
+ *  app/lib/chat-purge-cron.server.ts; this CLI talks to PostgREST directly and
+ *  imports nothing from the server, so the string is repeated, not shared. */
+const PURGED_TEXT = '[removed after 30 days]';
 
 /** Routing rows join messages by message_id; a row with none (the widget, or a
  *  YouTube turn the LLM never answered) gets a key of its own. */
@@ -221,7 +225,7 @@ function routingOnlyTurns(routing: RoutingEvent[]): Message[] {
       conversation_id: r.conversation_id!,
       user_id: r.user_id,
       role: 'user' as const,
-      content: r.message ?? PURGED_QUESTION,
+      content: r.message ?? PURGED_TEXT,
       model: null,
       input_tokens: null,
       output_tokens: null,

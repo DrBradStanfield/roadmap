@@ -326,8 +326,8 @@ export async function readCapped(source: { body: ReadableStream<Uint8Array> | nu
   return (await readCappedBytes(source, cap)).toString('utf8');
 }
 
-/** The same capped read, as bytes — a file the connector imports (US-35 AC4). */
-export async function readCappedBytes(source: { body: ReadableStream<Uint8Array> | null }, cap: number): Promise<Buffer> {
+/** The same capped read, as bytes. */
+async function readCappedBytes(source: { body: ReadableStream<Uint8Array> | null }, cap: number): Promise<Buffer> {
   const reader = source.body?.getReader();
   if (!reader) return Buffer.alloc(0);
   const chunks: Uint8Array[] = [];

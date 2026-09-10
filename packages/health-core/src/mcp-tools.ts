@@ -194,21 +194,6 @@ export const MAX_IMPORT_CANDIDATES = 300;
 export const MAX_DOCUMENT_TEXT = 120;
 const MAX_CANDIDATE_ID_LENGTH = 16;
 
-/**
- * The descriptor ChatGPT hands over for a file the user dragged in (US-35
- * AC4). Exactly these four properties, the first two required — OpenAI
- * validates the shape. The server fetches `download_url` and nothing else,
- * under its own host allow-list; `https://` is refused here so a plain-http
- * or `chat_upload://` reference — what the phone apps hand over — is a
- * schema error, never a request, and its message is the mobile sentence.
- */
-export const chatgptFileInput = z.object({
-  download_url: z.string().max(2048).refine((url) => url.startsWith('https://'), IMPORT_REFUSALS.mobile),
-  file_id: z.string().min(1).max(200),
-  mime_type: z.string().max(200).optional(),
-  file_name: z.string().max(255).optional(),
-}).strict();
-
 export const importCommitInput = z.object({
   receipt: z.string().min(1).max(MAX_RECEIPT_LENGTH),
   accept: z.array(z.string().min(1).max(MAX_CANDIDATE_ID_LENGTH)).max(MAX_IMPORT_CANDIDATES),
@@ -220,7 +205,6 @@ export const importDocumentsInput = z.object({
   fileNames: z.array(z.string().min(1).max(255)).max(MAX_IMPORT_FILES_PER_CALL).optional(),
   /** The user's own answer to "what date was this test?" for a file that printed none (AC13); it wins over the file's date. */
   fileDates: z.array(z.object({ file: z.string().min(1).max(255), date: z.string().regex(ISO_DATE) }).strict()).max(MAX_IMPORT_FILES_PER_CALL).optional(),
-  file: chatgptFileInput.optional(),
   commit: importCommitInput.optional(),
   /** US-37: this extract answers a read's folder nudge; carried on the extract's counter, nothing else. */
   fromNudge: z.boolean().optional(),
@@ -403,7 +387,7 @@ export const reportFeedbackOutput = z.object({
 const SLOT_STATES = ['free', 'held_equal', 'held_different'] as const;
 const IMPORT_FILE_STATUSES = ['extracted', 'already_imported', 'skipped', 'failed'] as const;
 /** `assistant`: the assistant read the file and sent rows (`file_results`, US-36). */
-const IMPORT_ROUTES = ['dropbox', 'chatgpt_file', 'assistant'] as const satisfies readonly McpImportRoute[];
+const IMPORT_ROUTES = ['dropbox', 'assistant'] as const satisfies readonly McpImportRoute[];
 
 const importCandidateOutput = z.object({
   id: z.string(),
@@ -1231,9 +1215,6 @@ function extractNext(prepared: PreparedImport, remaining: string[], route: Impor
   const shared = payload.candidates.filter((c) => c.sameDayAs).length;
   const docs = payload.documents.length;
   const notRead = files.filter((f) => f.status !== 'extracted').length;
-  // The folder route is the way round a drag the chat refused, not round a
-  // file's size or type: the folder has the same caps (live 2026-09-07).
-  const fallback = files.some((f) => (f.status === 'failed' || f.status === 'skipped') && f.reason !== 'too_large' && f.reason !== 'unsupported');
   const dropped = unrecognized.length ? ` ${unrecognized.length} value(s) could not be filed: show unrecognized.` : '';
 
   if (payload.candidates.length || docs) {
@@ -1254,13 +1235,9 @@ function extractNext(prepared: PreparedImport, remaining: string[], route: Impor
   } else {
     lines.push('Nothing was imported.');
   }
-  if (notRead) lines.push(`${notRead} file(s) were not read: relay each file's hint to the user in plain words.${fallback && route === 'chatgpt_file' ? ` ${IMPORT_REFUSALS.dragFallback}` : ''}`);
-  // A drop that reached the server came from a cached tool list (US-36 AC12): say the way out once, here, not in a refusal.
-  if (route === 'chatgpt_file') lines.push(IMPORT_REFUSALS.refresh);
+  if (notRead) lines.push(`${notRead} file(s) were not read: relay each file's hint to the user in plain words.`);
   if (remaining.length) {
-    lines.push(route === 'dropbox'
-      ? `${remaining.length} file(s) were not reached: commit this receipt first, then call again with fileNames set to remaining.`
-      : `${remaining.length} file(s) in the ZIP were not reached: commit this receipt first, then ask the user to drop the ZIP in again; files already filed are skipped and cost nothing.`);
+    lines.push(`${remaining.length} file(s) were not reached: commit this receipt first, then call again with fileNames set to remaining.`);
   }
   return lines.join('\n');
 }
@@ -1674,8 +1651,8 @@ export interface ImportTool<R = unknown> {
 }
 
 const importDocumentsTool: ImportTool<ImportRequest> = {
-  malformed: (path) => (path === 'commit' ? 'commit' : path === 'file' ? 'mobile' : 'arguments'),
-  hasSource: (request) => Boolean(request.file || request.fileNames),
+  malformed: (path) => (path === 'commit' ? 'commit' : 'arguments'),
+  hasSource: (request) => Boolean(request.fileNames),
   incomplete: () => null,
   async bundle(request, file, surface, ctx) {
     // Reading files is the surface's; without a reader (the stdio server, AC11) the tool refuses in words.
@@ -1711,6 +1688,12 @@ async function runImport(
   options: RunToolOptions,
   surface: ImportSurface,
 ): Promise<ToolAnswer> {
+  // A ChatGPT tool list cached before 2026-09-07 still hands a dropped file to
+  // `file`. The route it fed was deleted 2026-09-10 (US-36 AC12), so this line
+  // is the whole of it: one sentence, and no code behind it that reads a file.
+  if (name === 'import_documents' && typeof args === 'object' && args !== null && 'file' in args) {
+    return { text: IMPORT_REFUSALS.refresh, isError: true, reason: 'import' };
+  }
   const parsed = parseArgs(name, args);
   // A malformed call is worded from the table, never as a raw schema message (AC13).
   if (!parsed.ok) return { text: IMPORT_REFUSALS[imports.malformed(parsed.path)], isError: true, reason: 'import' };
@@ -1830,8 +1813,6 @@ export interface McpToolDefinition {
   _meta: {
     'openai/toolInvocation/invoking': string;
     'openai/toolInvocation/invoked': string;
-    /** Which arguments ChatGPT fills from a file the user dragged in (US-35 AC4). */
-    'openai/fileParams'?: string[];
   };
 }
 
@@ -2313,10 +2294,9 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: 'import_documents',
     cost: 'add',
     imports: importDocumentsTool,
-    // No `openai/fileParams` (US-36 AC7): a file dropped into ChatGPT is read by
-    // the assistant itself and sent through file_results; `file` stays callable
-    // for the tool lists clients cached before that (AC12), and refuses to the
-    // refresh sentence after it.
+    // A file dropped into ChatGPT is read by the assistant itself and sent
+    // through file_results (US-36 AC7). The old `file` argument, and the server
+    // download behind it, were deleted 2026-09-10 (AC12).
     _meta: invocation('Importing your documents…', 'Import step done'),
     title: 'Import lab files from the Dropbox folder',
     description:
@@ -2359,19 +2339,6 @@ export const MCP_TOOLS: McpToolDefinition[] = [
           },
           description: 'For a lab file that printed no date: the date the test was taken, from the user, e.g. [{ "file": "results.pdf", "date": "2026-08-12" }]. Wins over the file’s own date.',
         },
-        file: {
-          type: 'object',
-          description:
-            'Retiring: the descriptor an older connector version filled for a dropped file. Do not fill it yourself; read the file and call file_results.',
-          properties: {
-            download_url: { type: 'string', maxLength: 2048 },
-            file_id: { type: 'string', maxLength: 200 },
-            mime_type: { type: 'string', maxLength: 200 },
-            file_name: { type: 'string', maxLength: 255 },
-          },
-          required: ['download_url', 'file_id'],
-          additionalProperties: false,
-        },
         fromNudge: { type: 'boolean', description: 'True when this import answers the folder list a read returned. Counted, nothing else.' },
         commit: {
           type: 'object',
@@ -2390,8 +2357,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     outputSchema: IMPORT_OUTPUT_SCHEMA,
     // Not read-only (the commit writes), destructive (a replace flips a row for
     // good), not idempotent (a second commit of a spent receipt is refused),
-    // open-world: the file goes to the extraction model, and on the ChatGPT
-    // route the bytes come from OpenAI's file host.
+    // open-world: the file goes to the extraction model.
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
   },
   {

@@ -1193,13 +1193,9 @@ function pendingFiles(): string[] {
 describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, AC9, AC10)', () => {
   afterEach(() => setImportSeams(null));
 
-  it('lists the tool without openai/fileParams (US-36 AC7), extracts without writing, then commits what was accepted', async () => {
+  it('extracts without writing, then commits what was accepted', async () => {
     seedRecord();
     const { access } = await connect();
-    const listed = await rpc(access, 'tools/list');
-    const tool = listed.result!.tools!.find((t) => (t as { name: string }).name === 'import_documents') as { _meta: Record<string, unknown> };
-    expect(tool._meta['openai/fileParams']).toBeUndefined();
-
     const extracted = stubImport({ 'labs.pdf': PDF_BYTES, 'notes.txt': new Uint8Array(1) }, () => labReport());
     // A pending payload older than a day, left by an extract whose commit never came, is swept by this one.
     cloud.files.set('imports/pending-stale.json', { json: '{}', version: 1, modified: '2026-08-01T00:00:00.000Z' });
@@ -1359,58 +1355,6 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     // The pending payload in the folder is metadata only too.
     const pending = JSON.parse(cloud.files.get(pendingFiles()[0])!.json) as { documents: Array<Record<string, unknown>> };
     expect(Object.keys(pending.documents[0]).sort()).toEqual(['contentHash', 'date', 'mimeType', 'sourceFileName', 'title', 'type']);
-  });
-
-  it('AC4/AC13 — the ChatGPT file route end to end: fetched from the file host, extracted, committed; the same bytes again are already_imported with a reason; a different file with the same name is new', async () => {
-    seedRecord();
-    const { access } = await connect();
-    const first = new Uint8Array([...PDF_BYTES, 1]);
-    const second = new Uint8Array([...PDF_BYTES, 2]);
-    const hosted: Record<string, Uint8Array> = { 'https://files.oaiusercontent.com/one?sig=a': first, 'https://files.oaiusercontent.com/two?sig=b': second };
-    // ChatGPT's file host answers by URL; the only other fetch is Dropbox's token renewal on each call.
-    const token = global.fetch;
-    const fetchMock = vi.fn(async (url: URL | string, init?: RequestInit) => (url.toString() in hosted ? new Response(Buffer.from(hosted[url.toString()])) : token(url, init)));
-    vi.stubGlobal('fetch', fetchMock);
-    const extracted = stubImport({ 'Results.pdf': first, 'Results-2.pdf': second }, (name) => labReport({ reportDate: name === 'Results.pdf' ? LAB_DAY : '2026-08-21' }));
-    cloud.docs.clear(); // the drag route lists no folder: the bytes come from the host
-
-    const drag = (download_url: string) => callTool(access, 'import_documents', { file: { download_url, file_id: 'file-1', mime_type: 'application/pdf', file_name: 'Results.pdf' } });
-    const answer = await drag('https://files.oaiusercontent.com/one?sig=a');
-    expect(answer.isError).toBe(false);
-    const data = OUTPUTS.import_documents.parse(answer.structured);
-    expect(data.route).toBe('chatgpt_file');
-    expect(data.files).toEqual([{ name: 'Results.pdf', status: 'extracted', classification: 'lab_report', documentDate: LAB_DAY }]);
-    expect(data.candidates.map((c) => [c.id, c.metric, c.displayValue, c.displayUnit])).toEqual([['c1', 'ldl', '2.8', 'mmol/L'], ['c2', 'ferritin', '210', 'ug/L']]);
-    const fileFetches = fetchMock.mock.calls.filter(([url]) => url.toString().startsWith('https://files.'));
-    expect(fileFetches.map(([url]) => url.toString())).toEqual(['https://files.oaiusercontent.com/one?sig=a']);
-    expect(fileFetches[0][1]).toMatchObject({ redirect: 'error' });
-    expect(extracted).toEqual(['Results.pdf']);
-
-    const commit = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1', 'c2'], replace: [] } });
-    expect(commit.isError).toBe(false);
-    expect(storedRecord().documents.map((d) => [d.sourceFileName, d.contentHash.slice(0, 7)])).toEqual([['Results.pdf', 'sha256-']]);
-    expect(storedRecord().measurements.find((m) => m.source === 'lab_import')).toMatchObject({ metricType: 'ldl', value: 2.8 });
-
-    // The same bytes again: known by hash, no model call, and the hint says which row and when.
-    const again = OUTPUTS.import_documents.parse((await drag('https://files.oaiusercontent.com/one?sig=a')).structured);
-    expect(again.files).toEqual([{ name: 'Results.pdf', status: 'already_imported', hint: `Already in the record: the same file was filed on ${LAB_DAY} as Results.pdf. Nothing to do.` }]);
-    expect(again.receipt).toBeUndefined();
-    expect(again.next).toMatch(/^Nothing was imported\.\n1 file\(s\) were not read: relay each file's hint/);
-    expect(extracted).toEqual(['Results.pdf']);
-
-    // A lab portal that names every download Results.pdf: the second report is a new file, read and offered (Blocker 1).
-    const other = OUTPUTS.import_documents.parse((await drag('https://files.oaiusercontent.com/two?sig=b')).structured);
-    expect(other.files).toEqual([{ name: 'Results.pdf', status: 'extracted', classification: 'lab_report', documentDate: '2026-08-21' }]);
-    expect(other.candidates).toHaveLength(2);
-    expect(extracted).toEqual(['Results.pdf', 'Results-2.pdf']);
-
-    const events = (recordServerEvent as unknown as { mock: { calls: unknown[][] } }).mock.calls.filter(([name]) => name === 'mcp_import');
-    expect(events.slice(-4).map(([, meta]) => meta)).toEqual([
-      { route: 'chatgpt_file', phase: 'extract', files: '1' },
-      { route: 'chatgpt_file', phase: 'commit', files: '1' },
-      { route: 'chatgpt_file', phase: 'extract', files: '1' },
-      { route: 'chatgpt_file', phase: 'extract', files: '1' },
-    ]);
   });
 
   it('AC2 — five folder files a call: the rest come back as remaining with the commit-first instruction, and a second call with those names reads them (AC10: the machine cap the website spends from moves too)', async () => {
@@ -1670,18 +1614,17 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     expect(storedRecord().documents.map((d) => d.title)).toEqual(['Cardiology review']);
   });
 
-  it('a file dropped through a cached tool list still routes as chatgpt_file, and its next carries the refresh sentence (AC12)', async () => {
+  it('a file dropped through a tool list cached before 2026-09-07 is answered with the refresh sentence, and nothing is fetched (US-36 AC12)', async () => {
     seedRecord();
     const { access } = await connect();
-    stubImport({ 'Results.pdf': PDF_BYTES }, () => labReport());
-    vi.stubGlobal('fetch', vi.fn(async (url: string) => (String(url).includes('oaiusercontent')
-      ? new Response(PDF_BYTES as Uint8Array<ArrayBuffer>)
-      : Response.json({ refresh_token: 'dropbox-refresh-token-x', access_token: 'dropbox-access-token', expires_in: 14400 }))));
+    // Everything but Dropbox's own token renewal: the file host must never be reached.
+    const token = global.fetch;
+    const fetchMock = vi.fn(async (url: URL | string, init?: RequestInit) => token(url, init));
+    vi.stubGlobal('fetch', fetchMock);
     const drag = await callTool(access, 'import_documents', { file: { download_url: 'https://files.oaiusercontent.com/one?sig=a', file_id: 'file-1', file_name: 'Results.pdf' } });
-    expect(drag.isError).toBe(false);
-    const data = OUTPUTS.import_documents.parse(drag.structured);
-    expect(data.route).toBe('chatgpt_file');
-    expect(data.next).toContain('refresh the connector');
+    expect(drag.isError).toBe(true);
+    expect(drag.text).toContain('refresh the connector');
+    expect(fetchMock.mock.calls.map(([url]) => url.toString()).filter((url) => url.includes('oaiusercontent'))).toEqual([]);
   });
 });
 

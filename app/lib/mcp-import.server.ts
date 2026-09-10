@@ -15,10 +15,9 @@
  * credential this server hands out, so a value the server did not extract
  * cannot be committed.
  *
- * Two fetch targets, ever: the user's own folder through its `StorageAdapter`,
- * and OpenAI's file host for a file dragged into ChatGPT, under a closed
- * allow-list (AC4). Type is decided by magic bytes, never by a declared mime
- * type or a name.
+ * One fetch target, ever: the user's own folder through its `StorageAdapter`
+ * (the ChatGPT file-host route was deleted 2026-09-10, US-36 AC12). Type is
+ * decided by magic bytes, never by a declared mime type or a name.
  *
  * NOTHING HERE MAY LOG A FILE NAME, A URL, A VALUE OR EXTRACTED TEXT (AC9).
  */
@@ -26,7 +25,7 @@ import crypto from 'node:crypto';
 import JSZip from 'jszip';
 import * as Sentry from '@sentry/react-router';
 import { extractOrClassify, isNetworkOrTimeoutError } from './anthropic.server';
-import { type McpClientLabel, readCappedBytes } from './mcp-clients.server';
+import { type McpClientLabel } from './mcp-clients.server';
 import { type AccessPayload, chargeWrites, connectionKey, importFiles, WRITE_COST } from './mcp-grants.server';
 import { audienceFor, hash, issueStep, openStep } from './mcp-seal.server';
 import { recordServerEvent } from './product-events.server';
@@ -77,9 +76,8 @@ const BUDGET_RESERVE_MS = 4_000;
 export const IMPORT_FILES_PER_CALL = 5;
 /** One PDF or image. Pages reach the model as images, so 5 MB of scans is already many pages. The hint table names the number. */
 export const MAX_IMPORT_FILE_BYTES = IMPORT_LIMITS.fileMb * 1024 * 1024;
-/** One ZIP, as downloaded — and the most one ChatGPT file may be. */
+/** One ZIP, as downloaded. */
 export const MAX_IMPORT_ZIP_BYTES = IMPORT_LIMITS.zipMb * 1024 * 1024;
-export const CHATGPT_FETCH_TIMEOUT_MS = 10_000;
 /** Where a pending payload lives in the user's folder, and how long before the next import sweeps it. */
 export const PENDING_FOLDER = 'imports';
 // Twice a receipt's life: past that the receipt is certainly dead, so the file
@@ -90,24 +88,6 @@ const PENDING_STALE_MS = 2 * RECEIPT_LIFETIME_SECONDS * 1000;
 const EXTRACT_CONCURRENCY = 3;
 /** One model call, HTTP. Inside the budget by construction; a hung call fails, never waits. */
 const EXTRACT_TIMEOUT_MS = 20_000;
-
-/**
- * OpenAI's file hosts — EXACT hostnames, nothing else. One built in
- * (`files.oaiusercontent.com`), the rest through `CHATGPT_FILE_HOSTS`, which
- * adds a host without a deploy.
- *
- * The Azure blob pattern that was here (`oaisdmntprn*.blob.core.windows.net`)
- * is deleted: it was a NAMESPACE, not a list, and anyone may register an Azure
- * storage account with that prefix — so it let a stranger's bucket be fetched
- * by this server. The route it served is on its 30-day deprecation (US-36
- * AC12): `openai/fileParams` is gone, so only a tool list cached before the
- * launch still reaches `file`, and the answer for those is a refresh, not a
- * fetch.
- */
-export function isChatgptFileHost(hostname: string): boolean {
-  if (hostname === 'files.oaiusercontent.com') return true;
-  return (process.env.CHATGPT_FILE_HOSTS || '').split(',').map((h) => h.trim()).includes(hostname);
-}
 
 // ---------------------------------------------------------------------------
 // Test seam — the model call
@@ -139,13 +119,6 @@ export function sniff(bytes: Uint8Array): SniffedType | null {
 /** A file's own name as `sourceFileName`: printable, bounded, never a path. Empty stays empty — a made-up name would dedup every nameless file against the first. */
 function cleanName(name: string): string {
   return oneLine(name).slice(0, MAX_FILE_NAME_LENGTH);
-}
-
-const EXTENSION: Record<SniffedType, string> = { 'application/pdf': '.pdf', 'application/zip': '.zip', 'image/jpeg': '.jpg', 'image/png': '.png' };
-
-/** A name for bytes that came without one (a ChatGPT drag with no `file_name`): from the bytes, so two different files never share it. */
-function nameFromBytes(bytes: Uint8Array, type: SniffedType | null): string {
-  return `file-${sha256Hex(bytes).slice(0, 8)}${type ? EXTENSION[type] : ''}`;
 }
 
 export interface ZipEntryBytes {
@@ -238,42 +211,6 @@ function contentHashOf(bytes: Uint8Array): string {
 }
 
 // ---------------------------------------------------------------------------
-// The ChatGPT file route (AC4)
-// ---------------------------------------------------------------------------
-
-/**
- * Fetch the file ChatGPT described. `https:` only, host on the allow-list,
- * no redirects, ten seconds, capped bytes. The URL is never logged; a refused
- * host is warned by hostname only, which is how a second legitimate host
- * would ever be learned.
- */
-export async function fetchChatgptFile(downloadUrl: string, signal?: AbortSignal): Promise<{ bytes: Uint8Array } | ImportRefusal> {
-  let url: URL;
-  try {
-    url = new URL(downloadUrl);
-  } catch {
-    return { refusal: 'That file reference is not a URL this server can fetch. Drag the file in from a browser, or put it in the connected folder. Nothing was read.' };
-  }
-  if (url.protocol !== 'https:' || !isChatgptFileHost(url.hostname)) {
-    console.warn('import: file host refused', url.hostname);
-    // Not "drag it in again" — a cached tool list would hand back the same
-    // unfetchable host and loop. The way out is the refresh (US-36 AC12).
-    return { refusal: `${IMPORT_REFUSALS.refresh} Nothing was read.` };
-  }
-  try {
-    const timeout = AbortSignal.timeout(CHATGPT_FETCH_TIMEOUT_MS);
-    const res = await fetch(url, { redirect: 'error', signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
-    if (!res.ok) return { refusal: `The file host answered ${res.status}, so the file could not be read. Ask the user to drag it in again.` };
-    return { bytes: await readCappedBytes(res, MAX_IMPORT_ZIP_BYTES) };
-  } catch (error) {
-    if (error instanceof Error && error.message === 'body too large') {
-      return { refusal: `That file is larger than ${MAX_IMPORT_ZIP_BYTES / (1024 * 1024)} MB, so it was not read. Split it, or put smaller files in the connected folder.` };
-    }
-    return { refusal: 'The file host did not answer in time, so the file could not be read. Ask the user to drag it in again.' };
-  }
-}
-
-// ---------------------------------------------------------------------------
 // The surface
 // ---------------------------------------------------------------------------
 
@@ -361,54 +298,41 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       // Every listing, download and model call ends by here; the reserve is for slotting and the stash.
       const ioDeadline = deadline - BUDGET_RESERVE_MS;
       const signal = deadlineSignal(ioDeadline);
-      let route: McpImportRoute;
       const units: Unit[] = [];
       const remaining: string[] = [];
 
-      if (request.file) {
-        route = 'chatgpt_file';
-        const fetched = await fetchChatgptFile(request.file.download_url, signal);
-        if ('refusal' in fetched) {
-          // A drag that was not read is still a drag: counted, so the route's demand is visible.
-          count('chatgpt_refused', 'extract', 0);
-          return fetched;
-        }
-        units.push({ name: cleanName(request.file.file_name ?? '') || nameFromBytes(fetched.bytes, sniff(fetched.bytes)), fetch: async () => fetched.bytes });
-      } else {
-        if (token.provider === 'google' || !adapter.list) {
-          count('drive_refused', 'extract', 0);
-          return { refusal: driveRefusal(client) };
-        }
-        route = 'dropbox';
-        let listed: StoredFile[];
-        try {
-          listed = await adapter.list('', signal);
-        } catch (error) {
-          if (!signal.aborted) throw error;
-          return { refusal: 'The folder did not list in time, so nothing was read. Try once more.' };
-        }
-        // The nudge's own rule for what a folder file is, so a name it offered is one `fileNames` matches (US-37).
-        const listing = listed
-          .flatMap((entry) => { const name = importableFileName(entry.name); return name ? [{ ...entry, name }] : []; })
-          .sort((a, b) => a.name.localeCompare(b.name));
-        let chosen = listing;
-        if (request.fileNames) {
-          chosen = [];
-          for (const wanted of request.fileNames) {
-            const found = listing.find((entry) => entry.name === wanted);
-            if (!found) {
-              return { refusal: `“${cleanName(wanted)}” is not an importable file in the folder root. Nothing was read. The folder holds: ${listing.map((e) => e.name).join(', ') || 'no importable files'}.` };
-            }
-            if (!chosen.includes(found)) chosen.push(found);
-          }
-        }
-        if (chosen.length === 0) return { refusal: IMPORT_REFUSALS.emptyFolder };
-        for (const entry of chosen.slice(0, IMPORT_FILES_PER_CALL)) {
-          // By the listing's own ref, never by a name an assistant supplied.
-          units.push({ name: entry.name, size: entry.size, fetch: async () => new Uint8Array(await (await adapter.readDocument(entry.ref, signal)).arrayBuffer()) });
-        }
-        remaining.push(...chosen.slice(IMPORT_FILES_PER_CALL).map((entry) => entry.name));
+      if (token.provider === 'google' || !adapter.list) {
+        count('drive_refused', 'extract', 0);
+        return { refusal: driveRefusal(client) };
       }
+      let listed: StoredFile[];
+      try {
+        listed = await adapter.list('', signal);
+      } catch (error) {
+        if (!signal.aborted) throw error;
+        return { refusal: 'The folder did not list in time, so nothing was read. Try once more.' };
+      }
+      // The nudge's own rule for what a folder file is, so a name it offered is one `fileNames` matches (US-37).
+      const listing = listed
+        .flatMap((entry) => { const name = importableFileName(entry.name); return name ? [{ ...entry, name }] : []; })
+        .sort((a, b) => a.name.localeCompare(b.name));
+      let chosen = listing;
+      if (request.fileNames) {
+        chosen = [];
+        for (const wanted of request.fileNames) {
+          const found = listing.find((entry) => entry.name === wanted);
+          if (!found) {
+            return { refusal: `“${cleanName(wanted)}” is not an importable file in the folder root. Nothing was read. The folder holds: ${listing.map((e) => e.name).join(', ') || 'no importable files'}.` };
+          }
+          if (!chosen.includes(found)) chosen.push(found);
+        }
+      }
+      if (chosen.length === 0) return { refusal: IMPORT_REFUSALS.emptyFolder };
+      for (const entry of chosen.slice(0, IMPORT_FILES_PER_CALL)) {
+        // By the listing's own ref, never by a name an assistant supplied.
+        units.push({ name: entry.name, size: entry.size, fetch: async () => new Uint8Array(await (await adapter.readDocument(entry.ref, signal)).arrayBuffer()) });
+      }
+      remaining.push(...chosen.slice(IMPORT_FILES_PER_CALL).map((entry) => entry.name));
 
       // Off the critical path: it overlaps the reads below and is awaited at the end.
 
@@ -453,8 +377,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       const results: Array<ExtractedFile | ExtractedFile[]> = [];
       const queue: Array<() => Promise<void>> = units.map((unit, i) => async () => {
         if (signal.aborted) {
-          if (route === 'dropbox') remaining.push(unit.name);
-          else results[i] = fail(unit.name, 'skipped', 'time');
+          remaining.push(unit.name);
           return;
         }
         const isZip = unit.name.toLowerCase().endsWith('.zip');
@@ -507,18 +430,18 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       await Promise.all(Array.from({ length: Math.min(EXTRACT_CONCURRENCY, queue.length) }, runner));
 
       const files = results.flat();
-      // What time cut off is `remaining` on every route, and the assistant is told (AC2). The folder route
-      // names it in `fileNames`, and a ZIP's entry is not in the folder root, so the ZIP's own name stands
-      // for it there (filed entries are skipped by hash on the re-read); the drag route asks for the ZIP again.
+      // What time cut off is `remaining`, and the assistant is told (AC2): it names those files in `fileNames`.
+      // A ZIP's entry is not in the folder root, so the ZIP's own name stands for it (filed entries are
+      // skipped by hash on the re-read).
       results.forEach((r, i) => {
         for (const f of [r].flat()) {
           if (f.status !== 'skipped' || f.reason !== 'time') continue;
-          const name = Array.isArray(r) && route === 'dropbox' ? units[i].name : f.name;
+          const name = Array.isArray(r) ? units[i].name : f.name;
           if (!remaining.includes(name)) remaining.push(name);
         }
       });
-      count(route, 'extract', files.filter((f) => f.contentHash).length, request.fromNudge === true);
-      return { route, files, remaining };
+      count('dropbox', 'extract', files.filter((f) => f.contentHash).length, request.fromNudge === true);
+      return { route: 'dropbox', files, remaining };
     },
 
     async stash(payload: ImportPayload, deadline: number) {

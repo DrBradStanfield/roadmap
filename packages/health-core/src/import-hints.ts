@@ -23,9 +23,6 @@ export const DROPBOX_APP_FOLDER = 'Apps/Health Plan by Dr Brad';
 
 export const IMPORT_ACCEPTED_TYPES = 'PDF, JPEG, PNG or ZIP';
 
-/** The folder route, in one clause, for every sentence that offers it as the way round. */
-const FOLDER_ROUTE = `put the file in the Dropbox folder ${DROPBOX_APP_FOLDER} and ask again`;
-
 /** The `fileDates` argument, shown verbatim: a list of pairs, because ChatGPT drops a map-shaped param (live 2026-09-07). */
 const FILE_DATES_SHAPE = 'fileDates: [{ "file": "<name as listed>", "date": "YYYY-MM-DD" }]';
 
@@ -72,11 +69,7 @@ export function importHint(reason: string | undefined, detail?: string): string 
 
 /** The whole-call refusals that are not about one file. */
 export const IMPORT_REFUSALS = {
-  /** A `file` descriptor the server cannot fetch — the phone apps hand over a bare `chat_upload://` reference (AC4). */
-  mobile:
-    'This server could not fetch that file. Read the file yourself and call file_results with what it says, ' +
-    `or ${FOLDER_ROUTE}. Nothing was read.`,
-  /** A cached ChatGPT tool list still hands dropped files to `file` (US-36 AC12): the way out is a refresh, said once per extract. */
+  /** A tool list cached before the drag route was deleted still sends `file` (US-36 AC12): the way out is a refresh. */
   refresh:
     'This connector now reads dropped files through you: ask the user to refresh the connector in ChatGPT’s settings, ' +
     'then read the next dropped file yourself and call file_results.',
@@ -94,6 +87,4 @@ export const IMPORT_REFUSALS = {
   /** Anything else that does not parse: a fileNames or fileDates shape. */
   arguments:
     `The call was malformed: fileNames is a list of file names as listed, fileDates is a list of {file, date} pairs (${FILE_DATES_SHAPE}). Nothing was read.`,
-  /** A drag ChatGPT refused or paused (its file limit): read it yourself, or the folder route needs no file turn at all. */
-  dragFallback: `If the chat cannot take the file, read it yourself and call file_results, or ${FOLDER_ROUTE}.`,
 } as const;

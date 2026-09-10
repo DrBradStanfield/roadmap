@@ -49,8 +49,8 @@ need to "enforce our Usage Policy" (up to 2 years for flagged inputs and outputs
 ([how long do you store my organization's data](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)).
 Zero data retention is a separate arrangement Anthropic offers eligible customers; we do
 not have one. (A ChatGPT connection made before 7 September 2026 keeps an older tool
-list until you refresh the connector; until then a dropped file is fetched from OpenAI's
-file host by our server, as before.) On a Google Drive record the folder cannot be read,
+list until you refresh the connector; since 10 September 2026 our server fetches nothing
+for a dropped file. It asks you to refresh instead.) On a Google Drive record the folder cannot be read,
 so only the chat route applies. On a Dropbox record, when your assistant reads your
 record it also lists the file names in that folder, in memory, to tell you which are not
 yet in your record; the names are not kept. The candidate values either route finds are written to YOUR folder, as
@@ -182,10 +182,14 @@ as context with every message you type (`loadGuestInputs()` in
 `widget-src/src/site-chat.tsx` and `widget-src/src/chatbot-embed.tsx`). Neither is built
 as a local-first surface, so the server keeps the transcript: your question and the
 reply are written to `chat_messages`, and the reply can quote the values it was sent.
-Nothing purges those rows. The 30-day job clears free text in the router audit only
-(`app/lib/chat-purge-cron.server.ts`). Brad decided on 10 September 2026 to keep the
-transcripts, because the router is tuned against real questions. The Discord and YouTube
-bots keep theirs the same way.
+Brad decided on 10 September 2026 to keep sending those cached values, because the
+answer is worse without them, and to put the transcripts under the same 30-day window as
+the router audit (`app/lib/chat-purge-cron.server.ts`). Once a row is 30 days old the
+daily job blanks the message text and the conversation title, which is made of the first
+words of your question. The shape of the thread stays and the words go: row ids, the
+role, the timestamps, the model, the token counts and the fallback flags remain, and a
+blanked turn reads back as `[removed after 30 days]`. The job touches Shopify rows only.
+The Discord and YouTube bots keep their transcripts exactly as before.
 
 **Feedback.** The feedback box on the website is a separate store again. It takes your
 email address and up to 2000 characters of whatever you type, adds your Shopify customer

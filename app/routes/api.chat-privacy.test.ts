@@ -1,7 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Sentry from '@sentry/react-router';
 
-const mocks = vi.hoisted(() => ({ from: vi.fn(), auth: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  from: vi.fn(),
+  auth: vi.fn(),
+  buildConversationMessages: vi.fn(() => []),
+  /** Rows a `<table>:select` hands back, when a test needs stored history. */
+  selectRows: {} as Record<string, unknown[]>,
+}));
 vi.mock('../lib/route-helpers.server', async (original) => ({
   ...await original<typeof import('../lib/route-helpers.server')>(),
   getAuthenticatedUser: mocks.auth,
@@ -13,7 +19,7 @@ vi.mock('../lib/supabase.server', () => ({
 }));
 vi.mock('../lib/chat.server', () => ({
   resolveChatContext: () => ({ healthDocuments: [], userContextJson: '{}' }),
-  buildSystemBlocks: () => [], buildConversationMessages: () => [],
+  buildSystemBlocks: () => [], buildConversationMessages: mocks.buildConversationMessages,
   matchDocumentTitle: () => null, loadMatchedArticlesFromHandles: () => [],
   DOCTOR_POSTURE: '', BRAND_POSTURE: '',
   getChatCompletion: async () => ({ content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 }, isFallback: false }),
@@ -36,6 +42,8 @@ beforeEach(() => {
   envelopes = [];
   failOperation = '';
   rejectFailure = false;
+  mocks.selectRows = {};
+  mocks.buildConversationMessages.mockClear();
   mocks.auth.mockResolvedValue({ client: { from: mocks.from }, userId: id, customerId: null, admin: null });
   mocks.from.mockReset().mockImplementation((table: string) => {
     let operation = `${table}:select`;
@@ -49,7 +57,10 @@ beforeEach(() => {
       const echoedError = { code: '22P02', message: marker, details: marker, hint: marker };
       const result = failed && rejectFailure
         ? Promise.reject(Object.assign(new Error(marker), echoedError))
-        : Promise.resolve({ data: operation === 'chat_conversations:insert:' ? { id } : [], error: failed ? echoedError : null });
+        : Promise.resolve({
+            data: operation === 'chat_conversations:insert:' ? { id } : (mocks.selectRows[operation] ?? []),
+            error: failed ? echoedError : null,
+          });
       return result.then(resolve, reject);
     };
     return query;
@@ -142,5 +153,36 @@ describe('US-15 AC4 — chat identifiers and persistence diagnostics', () => {
     const res = await request(method, { message: marker, conversationId: id }, `&conversationId=${id}`);
     expect(res.status).toBe(method !== 'POST' || operation === 'chat_messages:insert:user' ? 500 : 200);
     await assertPrivateDiagnostics();
+  });
+});
+
+describe('US-15 AC8 — a transcript past the 30-day purge', () => {
+  const purged = { id: 'a', role: 'user', content: null, created_at: '2026-01-01T00:00:00Z', is_fallback: false };
+  const live = { id: 'b', role: 'user', content: 'live turn', created_at: '2026-09-09T00:00:00Z', is_fallback: false };
+
+  it('GET shows the placeholder where the words used to be', async () => {
+    mocks.selectRows['chat_messages:select'] = [purged, live];
+    const res = await request('GET', null, `&conversationId=${id}`);
+    expect(res.status).toBe(200);
+    const body = await res.json() as { messages: { id: string; content: string }[] };
+    expect(body.messages).toEqual([
+      { id: 'a', role: 'user', content: '[removed after 30 days]', createdAt: '2026-01-01T00:00:00Z' },
+      { id: 'b', role: 'user', content: 'live turn', createdAt: '2026-09-09T00:00:00Z' },
+    ]);
+  });
+
+  it('POST answers from the live turns only, never a blank one', async () => {
+    mocks.selectRows['chat_messages:select'] = [purged, live];
+    expect((await request('POST', { message: marker, conversationId: id })).status).toBe(200);
+    expect(mocks.buildConversationMessages).toHaveBeenCalledWith([live], marker);
+  });
+
+  it('POST drops a leading assistant turn whose question was purged', async () => {
+    // The purge is per row, so the cutoff can fall between a question and its
+    // reply: the history then opens on an orphaned assistant turn.
+    const orphanReply = { id: 'c', role: 'assistant', content: 'orphaned reply', created_at: '2026-01-01T00:01:00Z', is_fallback: false };
+    mocks.selectRows['chat_messages:select'] = [purged, orphanReply, live];
+    expect((await request('POST', { message: marker, conversationId: id })).status).toBe(200);
+    expect(mocks.buildConversationMessages).toHaveBeenCalledWith([live], marker);
   });
 });

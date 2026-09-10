@@ -2,15 +2,12 @@
  * US-35 · the hosted half of `import_documents`, piece by piece.
  *
  * What is pinned here: the type of a file is its bytes (AC4), a ZIP is opened
- * under caps that a bomb cannot talk its way past (AC5), the ChatGPT fetch
- * refuses everything but https on the allow-list with no redirects (AC4), and
- * a receipt is small, sealed, bound to one connection, and fails closed on
- * any tamper (AC7). The whole flow over a folder is `mcp.hosted.test.ts`.
+ * under caps that a bomb cannot talk its way past (AC5), and a receipt is
+ * small, sealed, bound to one connection, and fails closed on any tamper
+ * (AC7). The whole flow over a folder is `mcp.hosted.test.ts`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import JSZip from 'jszip';
-import { recordServerEvent } from './product-events.server';
-
 vi.mock('./product-events.server', async (importOriginal) => {
   const original = await importOriginal<typeof import('./product-events.server')>();
   return { ...original, recordServerEvent: vi.fn(async () => {}) };
@@ -18,8 +15,6 @@ vi.mock('./product-events.server', async (importOriginal) => {
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 import * as Sentry from '@sentry/react-router';
 import {
-  CHATGPT_FETCH_TIMEOUT_MS,
-  fetchChatgptFile,
   hostedImporter,
   MAX_IMPORT_FILE_BYTES,
   MAX_IMPORT_ZIP_BYTES,
@@ -44,7 +39,6 @@ const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]);
 
 beforeEach(() => {
   process.env.MCP_SEAL_KEYS = Buffer.alloc(32, 7).toString('base64');
-  delete process.env.CHATGPT_FILE_HOSTS;
 });
 
 afterEach(() => {
@@ -112,102 +106,6 @@ describe('US-35 AC5 — a ZIP is opened under caps, by position, with a counted 
   it('strips control characters from an entry name; a name is a label, not a path', async () => {
     const { entries } = await unzip(await zipOf({ 'evil\u0007\u007f.pdf': PDF }));
     expect(entries[0].name).toBe('evil.pdf');
-  });
-});
-
-describe('US-35 AC4 — the ChatGPT file fetch', () => {
-  it('refuses http, a foreign host, and the mobile chat_upload reference without fetching', async () => {
-    const fetchSpy = vi.fn();
-    vi.stubGlobal('fetch', fetchSpy);
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    for (const url of ['http://files.oaiusercontent.com/x', 'https://evil.example/x', 'chat_upload://abc', 'javascript:alert(1)']) {
-      const answer = await fetchChatgptFile(url);
-      expect('refusal' in answer, url).toBe(true);
-    }
-    expect(fetchSpy).not.toHaveBeenCalled();
-    // The refused host is warned by hostname only — never the URL.
-    expect(warn.mock.calls.every(([, host]) => typeof host === 'string' && !String(host).includes('/'))).toBe(true);
-    warn.mockRestore();
-  });
-
-  it('fetches the allow-listed host with no redirects and a ten-second bound, and caps the bytes', async () => {
-    let init: RequestInit | undefined;
-    vi.stubGlobal('fetch', vi.fn(async (_url: URL, i: RequestInit) => {
-      init = i;
-      return new Response(PDF);
-    }));
-    const answer = await fetchChatgptFile('https://files.oaiusercontent.com/file-abc?sig=1');
-    expect('bytes' in answer && [...answer.bytes]).toEqual([...PDF]);
-    expect(init!.redirect).toBe('error');
-    expect(init!.signal).toBeInstanceOf(AbortSignal);
-    expect(CHATGPT_FETCH_TIMEOUT_MS).toBe(10_000);
-
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(new Uint8Array(MAX_IMPORT_ZIP_BYTES + 1))));
-    const tooBig = await fetchChatgptFile('https://files.oaiusercontent.com/file-big');
-    expect('refusal' in tooBig && tooBig.refusal).toMatch(/larger than/);
-  });
-
-  it('a redirect, a non-2xx and a timeout each come back as a refusal, never a throw', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('fetch failed'); }));
-    expect('refusal' in (await fetchChatgptFile('https://files.oaiusercontent.com/x'))).toBe(true);
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('gone', { status: 410 })));
-    expect('refusal' in (await fetchChatgptFile('https://files.oaiusercontent.com/x'))).toBe(true);
-  });
-
-  it('refuses the Azure blob namespace outright — anyone may register an oaisdmntprn… storage account (US-36 AC12)', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(PDF)));
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    expect('bytes' in (await fetchChatgptFile('https://files.oaiusercontent.com/file-abc?sig=1'))).toBe(true);
-    for (const url of [
-      // The pattern that used to pass these: a namespace, not a list. An
-      // attacker's account named oaisdmntprn… was fetched by this server.
-      'https://oaisdmntprnznorth.blob.core.windows.net/files/file-abc?sv=1&sig=2',
-      'https://oaisdmntprn.blob.core.windows.net/x',
-      'https://oaisdmntprnuseast2.blob.core.windows.net/x',
-      'https://evil-oaisdmntprn.blob.core.windows.net/x',
-      'https://oaisdmntprn.blob.core.windows.net.evil.com/x',
-      'https://files.oaiusercontent.com.evil.com/x',
-      'http://files.oaiusercontent.com/x',
-    ]) expect('refusal' in (await fetchChatgptFile(url)), url).toBe(true);
-    // One accepted fetch above, none for the refused.
-    expect((fetch as unknown as { mock: { calls: unknown[][] } }).mock.calls).toHaveLength(1);
-  });
-
-  it('a refused host is told to refresh the connector, not to drag the file again — the drag would loop', async () => {
-    vi.stubGlobal('fetch', vi.fn());
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const answer = await fetchChatgptFile('https://oaisdmntprnznorth.blob.core.windows.net/x');
-    expect('refusal' in answer && answer.refusal).toBe(`${IMPORT_REFUSALS.refresh} Nothing was read.`);
-    expect('refusal' in answer && answer.refusal).not.toMatch(/[Dd]rag/);
-  });
-
-  it('honours CHATGPT_FILE_HOSTS as extra exact hosts, so a second host is one env change, not a deploy', async () => {
-    process.env.CHATGPT_FILE_HOSTS = 'files.example.test';
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(PDF)));
-    expect('bytes' in (await fetchChatgptFile('https://files.example.test/x'))).toBe(true);
-    // The env adds; the built-in host stays.
-    expect('bytes' in (await fetchChatgptFile('https://files.oaiusercontent.com/x'))).toBe(true);
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    expect('refusal' in (await fetchChatgptFile('https://sub.files.example.test/x'))).toBe(true);
-  });
-
-  it('a dragged file that was not read is still counted: mcp_import chatgpt_refused, value-free (usage signal)', async () => {
-    resetMcpMemory();
-    vi.mocked(recordServerEvent).mockClear();
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const fetchSpy = vi.fn();
-    vi.stubGlobal('fetch', fetchSpy);
-    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter: new MemoryAdapter(new MemoryCloud()), client: 'chatgpt', maxCorrectionAgeDays: 90 });
-    const file = createEmptyFile({ deviceId: 'test', now: '2026-09-05T00:00:00.000Z' });
-    const answer = await surface.extract(
-      { file: { download_url: 'https://evil.example/secret-name.pdf?sig=abc', file_id: 'f1', file_name: 'my-clinic-letter.pdf' } },
-      file, '2026-09-05T00:00:00.000Z', Date.now() + MCP_IMPORT_BUDGET_MS,
-    );
-    expect('refusal' in answer).toBe(true);
-    expect(fetchSpy).not.toHaveBeenCalled();
-    const events = vi.mocked(recordServerEvent).mock.calls;
-    expect(events).toEqual([['mcp_import', { route: 'chatgpt_refused', phase: 'extract', files: '0' }]]);
-    expect(JSON.stringify(events)).not.toMatch(/secret-name|clinic-letter|evil\.example/);
   });
 });
 
@@ -576,24 +474,6 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     expect(captured.name).toBe('ZodError');
     expect(context).toEqual({ tags: { feature: 'mcp_import', errorName: 'ZodError' }, extra: { kind: 'application/pdf' } });
     expect(JSON.stringify([captured.message, captured.name, captured.stack, context])).not.toMatch(/SECRET|Received|3\.4/);
-  });
-
-  it('a dragged file with no name gets one from its bytes, so two nameless drags never dedup against each other', async () => {
-    const other = new Uint8Array([...PDF, 1]);
-    const bytesByUrl: Record<string, Uint8Array> = { 'https://files.oaiusercontent.com/a': PDF, 'https://files.oaiusercontent.com/b': other };
-    vi.stubGlobal('fetch', vi.fn(async (url: URL) => new Response(Buffer.from(bytesByUrl[url.toString()]))));
-    setImportSeams({ extract: async () => letter });
-    const surface = surfaceOver(new MemoryAdapter(new MemoryCloud()));
-    const names: string[] = [];
-    for (const [download_url, name] of [['https://files.oaiusercontent.com/a', undefined], ['https://files.oaiusercontent.com/b', undefined], ['https://files.oaiusercontent.com/a', 'Results.pdf']] as const) {
-      const bundle = await surface.extract({ file: { download_url, file_id: 'f', ...(name ? { file_name: name } : null) } }, file, NOW, deadline());
-      if (!('files' in bundle)) throw new Error(bundle.refusal);
-      names.push(bundle.files[0].name);
-    }
-    expect(names[0]).toMatch(/^file-[0-9a-f]{8}\.pdf$/);
-    expect(names[1]).toMatch(/^file-[0-9a-f]{8}\.pdf$/);
-    expect(names[0]).not.toBe(names[1]);
-    expect(names[2]).toBe('Results.pdf');
   });
 
   it('a ZIP flows through extract(): entries in order under the same file, each typed, charged and hashed; junk and a nested zip named (AC5)', async () => {

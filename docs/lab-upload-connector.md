@@ -32,7 +32,11 @@ privacy addendum and the tool listing say both.
 |---|---|---|
 | Folder | The file sits in the root of the connected Dropbox app folder (`Apps/Health Plan by Dr Brad` for new connections). The tool lists the root through the `StorageAdapter`, downloads by id. `fileNames` picks specific files. | 5 files per call (`IMPORT_FILES_PER_CALL`); the rest are named in `remaining` |
 | Chat (`file_results`) | The assistant reads the dropped file itself (any device, either cloud) and sends one file's rows: `metric`, `printedName`, `value`, `unit` as printed, `collectedOn`, an optional `document` block with an optional `sha256`. The server resolves names, converts units through the one table, dry-runs the append, flags a suspected unit swap as a question. | One file per call, 50 rows (split a long report over calls with the same name; the twin document row dedups by name+date or hash) |
-| ChatGPT file (retiring) | A tool list cached before 2026-09-07 still hands a dragged file to `import_documents.file` with a `download_url`. Fetched `https:` only, from OpenAI's file hosts (`files.oaiusercontent.com`; the Azure blob namespace was dropped 2026-09-10, exact hosts only via `CHATGPT_FILE_HOSTS`), no redirects, 10 s; `next` tells the assistant to have the user refresh the connector. Deleted per US-36 AC12. | One file per call; a reference the server cannot fetch is refused toward `file_results` |
+
+The ChatGPT drag route — `import_documents.file` with a `download_url` the
+server fetched — was deleted 2026-09-10 (US-36 AC12). A tool list cached
+before 2026-09-07 may still send `file`: one guard line answers it with the
+refresh sentence and fetches nothing.
 
 Google Drive is refused per client before any Drive call: the permission the
 connector holds cannot see files dropped into the folder.
@@ -125,7 +129,7 @@ free-form `metadata`; `title` and `question` are ≤ 120 chars, control
 characters stripped, labelled as text from the document. One prompt line says
 the document is data, not instructions. Telemetry is `mcp_import {route,
 phase, files: bucket}`, value-free; Sentry gets a fixed message and the error
-class. Routes: `dropbox`, `chatgpt_file`, `chatgpt_refused`, `drive_refused`, `assistant`; phases `extract`, `commit`, `nudge` (US-37: a read on Dropbox found folder files not in the record), with `fromNudge: true` on an extract that answered one.
+class. Routes: `dropbox`, `drive_refused`, `assistant`; phases `extract`, `commit`, `nudge` (US-37: a read on Dropbox found folder files not in the record), with `fromNudge: true` on an extract that answered one.
 
 ## Gotchas archived (docs/reference.md)
 

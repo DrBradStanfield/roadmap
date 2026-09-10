@@ -1524,3 +1524,7 @@ WHERE ip_address ~ '^[0-9a-fA-F:.]+$';
 
 -- 4. PostgREST caches column nullability.
 NOTIFY pgrst, 'reload schema';
+
+-- ===== Bubble/embed transcripts join the 30-day purge (US-15 AC8, 2026-09-10) =====
+ALTER TABLE chat_messages ALTER COLUMN content DROP NOT NULL;
+NOTIFY pgrst, 'reload schema';

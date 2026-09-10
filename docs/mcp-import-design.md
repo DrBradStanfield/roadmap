@@ -93,14 +93,20 @@ of truth for acceptance criteria and the schemas live in
    refresh sentence.
    The phone apps hand over a bare `chat_upload://` reference: the schema
    refuses it with the mobile sentence (use a computer, or the folder).
+   **Deleted whole 2026-09-10 (Brad's decision, 27 days before AC12's date):**
+   the `file` argument, `fetchChatgptFile`, `isChatgptFileHost`,
+   `CHATGPT_FILE_HOSTS`, `IMPORT_REFUSALS.mobile`/`dragFallback` and the
+   `chatgpt_file`/`chatgpt_refused` counters are gone. One guard line in
+   `runImport` answers a cached tool list that still sends `file` with the
+   refresh sentence; nothing is fetched behind it.
 9. Honesty: consent page, privacy addendum, agent-access, listing, guides,
    architecture map, READMEs and `.env.example` say the connector route sends
    the file through Brad's server and to the extraction model and keeps
    nothing; the website route keeps the PDF in the browser.
 10. Telemetry: `import_documents` in `MCP_TOOL_NAMES`; `mcp_import {route,
-    phase, files: bucket}`, value-free. Routes: `dropbox`, `chatgpt_file`,
-    `chatgpt_refused` (a drag the server would not read: host, size, timeout),
-    `drive_refused`.
+    phase, files: bucket}`, value-free. Routes: `dropbox`, `drive_refused`,
+    `assistant` (`file_results`); the two `chatgpt_*` routes went with the drag
+    route on 2026-09-10.
 12. Document-only extracts (2026-09-05): a clinic letter yields no candidates,
     and the first live run read as "0 values, nothing to do". The extract now
     lists `documents` (source name, bounded title, type, date) and `next`

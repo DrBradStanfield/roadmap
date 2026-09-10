@@ -13,7 +13,6 @@ import { z } from 'zod';
 import {
   addLabValues,
   addLabValuesInput,
-  chatgptFileInput,
   importDocumentsInput,
   fileResultRow,
   fileResultsInput,
@@ -1265,9 +1264,8 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     // A reason outside the table is a bug in us, worded as unreadable rather than a bare token.
     expect(importHint('something_else')).toBe(importHint('unreadable'));
     expect(importHint(undefined)).toBe(importHint('unreadable'));
-    // US-36 AC8: a drop the server cannot fetch is the assistant's to read.
-    expect(IMPORT_REFUSALS.mobile).toMatch(/could not fetch that file.*Read the file yourself and call file_results.*Apps\/Health Plan by Dr Brad.*Nothing was read\./);
-    expect(IMPORT_REFUSALS.dragFallback).toContain('file_results');
+    // US-36 AC12: a tool list cached before the drag route was deleted is told the one way out.
+    expect(IMPORT_REFUSALS.refresh).toMatch(/refresh the connector.*call file_results/);
     expect(IMPORT_REFUSALS.emptyFolder).toMatch(/no PDF, JPEG, PNG or ZIP files in the folder root \(Apps\/Health Plan by Dr Brad\)/);
   });
 });
@@ -1395,9 +1393,6 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     const refused = importDocumentsCommit(after, second, { receipt: 'r2', accept: ['c1'], replace: [] }, NOW);
     expect(refused).toMatchObject({ status: 'rejected', text: `ldl on ${LAB_DAY} changed in the record since these files were read. Nothing was written. Extract again and show the user the fresh candidates.` });
     expect(after.measurements.filter((m) => m.recordedAt === LAB_DAY)).toHaveLength(1);
-    // The param an older ChatGPT tool list still fills is marked retiring and points at file_results (US-36 AC12).
-    const fileParam = MCP_TOOLS.find((t) => t.name === 'import_documents')!.inputSchema.properties.file as { description: string };
-    expect(fileParam.description).toMatch(/Retiring.*file_results/);
   });
 
   it('an empty selection writes nothing and says so, once the file itself is on record', () => {
@@ -1491,7 +1486,7 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
   it('AC13 — a failed file, a same-day candidate and a commit each validate against the published outputSchema', async () => {
     const sync = syncOver(new MemoryCloud());
     const mixed: ImportSurface = { ...surface, async extract() {
-      return { route: 'chatgpt_file', remaining: [], files: [
+      return { route: 'dropbox', remaining: [], files: [
         extracted('prelim.pdf', ldlOnly(3.9, LAB_DAY)), extracted('final.pdf', ldlOnly(3.7, LAB_DAY)),
         { name: 'photo.heic', status: 'failed', reason: 'unsupported' },
         letter('Discharge summary'),
@@ -1510,7 +1505,7 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     // and say what to do with them.
     const cloud = new MemoryCloud();
     const sync = syncOver(cloud);
-    const letters: ImportSurface = { ...surface, async extract() { return { route: 'chatgpt_file', remaining: [], files: [letter('Discharge summary')] }; } };
+    const letters: ImportSurface = { ...surface, async extract() { return { route: 'dropbox', remaining: [], files: [letter('Discharge summary')] }; } };
     const answer = await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: letters, latestDay: TODAY });
     expect(answer.isError).toBe(false);
     const data = fits(answer.structured);
@@ -1532,10 +1527,10 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(fits(commit.structured).documents).toEqual([]);
   });
 
-  it('AC13 — next counts the questions, the shared days and the dropped values, names where each lives, and on a drag names the folder as the way round', async () => {
+  it('AC13 — next counts the questions, the shared days and the dropped values, and names where each lives', async () => {
     const sync = syncOver(new MemoryCloud());
     const noisy: ImportSurface = { ...surface, async extract() {
-      return { route: 'chatgpt_file', remaining: ['inner/b.pdf'], files: [
+      return { route: 'dropbox', remaining: ['inner/b.pdf'], files: [
         extracted('a.pdf', labReport({ values: [
           { metric: 'ldl', valueSI: 2.8, displayValue: 2.8, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'low', question: 'Smudged: 2.8 or 2.3?' },
           { metric: 'hdl', valueSI: 99, displayValue: 99, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' },
@@ -1550,21 +1545,19 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(data.next).toContain('1 candidate(s) carry a question from the extractor (c1): show it beside the value.');
     expect(data.next).toContain('1 candidate(s) share a day with another (sameDayAs)');
     expect(data.next).toContain('2 value(s) could not be filed: show unrecognized.');
-    expect(data.next).toContain("2 file(s) were not read: relay each file's hint to the user in plain words. " + IMPORT_REFUSALS.dragFallback);
-    // When every failure is size or type, the folder has the same limits: no fallback to a route that refuses again (live 2026-09-07).
+    expect(data.next).toContain("2 file(s) were not read: relay each file's hint to the user in plain words.");
     const sized: ImportSurface = { ...surface, async extract() {
-      return { route: 'chatgpt_file', remaining: [], files: [{ name: 'big.pdf', status: 'failed', reason: 'too_large' }, { name: 'photo.heic', status: 'failed', reason: 'unsupported' }] };
+      return { route: 'dropbox', remaining: [], files: [{ name: 'big.pdf', status: 'failed', reason: 'too_large' }, { name: 'photo.heic', status: 'failed', reason: 'unsupported' }] };
     } };
     const refused = OUTPUTS.import_documents.parse((await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: sized, latestDay: TODAY })).structured);
-    // On the drag route the last line is the refresh sentence: the drop reached us from a cached tool list (US-36 AC12).
-    expect(refused.next).toBe(`Nothing was imported.\n2 file(s) were not read: relay each file's hint to the user in plain words.\n${IMPORT_REFUSALS.refresh}`);
+    expect(refused.next).toBe(`Nothing was imported.\n2 file(s) were not read: relay each file's hint to the user in plain words.`);
     expect(refused.files[0].hint).toBe(importHint('too_large'));
-    expect(data.next).toMatch(/1 file\(s\) in the ZIP were not reached: commit this receipt first, then ask the user to drop the ZIP in again/);
+    expect(data.next).toMatch(/1 file\(s\) were not reached: commit this receipt first, then call again with fileNames set to remaining\./);
     // The question itself stays on the candidate (AC9): the instruction field carries no document text.
     expect(data.next).not.toContain('Smudged');
     expect(data.candidates[0].question).toBe('Smudged: 2.8 or 2.3?');
     expect(data.files.find((f) => f.name === 'photo.heic')!.hint).toBe(importHint('unsupported'));
-    expect(data.next.split('\n').length).toBeLessThanOrEqual(7); // + the refresh line on the drag route (US-36 AC12)
+    expect(data.next.split('\n').length).toBeLessThanOrEqual(6);
   });
 
   it('an extract leaves the file bytes untouched and answers candidates plus a receipt', async () => {
@@ -1608,12 +1601,6 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     const sync = syncOver(cloud);
     const both = await runToolOverSync(sync, 'import_documents', { fileNames: ['a.pdf'], commit: { receipt: 'r', accept: [], replace: [] } }, NOW, { importer: surface });
     expect(both).toMatchObject({ isError: true, text: expect.stringContaining('on its own') });
-    // AC4/AC13: the phone apps hand over a bare reference; the answer is the mobile sentence, never a raw schema message.
-    for (const download_url of ['chat_upload://abc', 'http://x/y']) {
-      const malformed = await runToolOverSync(sync, 'import_documents', { file: { download_url, file_id: 'f' } }, NOW, { importer: surface });
-      expect(malformed).toEqual({ isError: true, text: IMPORT_REFUSALS.mobile, reason: 'import' });
-    }
-    expect(chatgptFileInput.safeParse({ download_url: 'chat_upload://abc', file_id: 'f' }).error!.issues[0].message).toBe(IMPORT_REFUSALS.mobile);
     const badCommit = await runToolOverSync(sync, 'import_documents', { commit: { receipt: 'r', accept: 'c1', replace: [] } }, NOW, { importer: surface });
     expect(badCommit).toEqual({ isError: true, text: IMPORT_REFUSALS.commit, reason: 'import' });
     const badNames = await runToolOverSync(sync, 'import_documents', { fileNames: 'a.pdf' }, NOW, { importer: surface });
@@ -1650,13 +1637,20 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: reader })).toEqual({ text: IMPORT_HOSTED_ONLY, isError: true, reason: 'import' });
   });
 
-  it('no longer publishes openai/fileParams, but keeps the file argument callable for cached tool lists (US-36 AC7, AC12)', () => {
+  it('the ChatGPT drag route is gone: no file argument, and a tool list cached before 2026-09-07 gets the refresh sentence, not a fetch (US-36 AC12, deleted 2026-09-10)', async () => {
     const tool = MCP_TOOLS.find((t) => t.name === 'import_documents')!;
-    expect(tool._meta['openai/fileParams']).toBeUndefined();
-    expect(MCP_TOOLS.some((t) => t._meta['openai/fileParams'])).toBe(false);
-    const file = tool.inputSchema.properties.file as { required: string[]; properties: Record<string, unknown> };
-    expect(file.required).toEqual(['download_url', 'file_id']);
-    expect(Object.keys(file.properties)).toEqual(['download_url', 'file_id', 'mime_type', 'file_name']);
+    expect(tool.inputSchema.properties.file).toBeUndefined();
+    expect(JSON.stringify(MCP_TOOLS)).not.toContain('fileParams');
+    // The one line left of the route: no host list, no fetch, no counter.
+    const sync = syncOver(new MemoryCloud());
+    const cached = await runToolOverSync(
+      sync,
+      'import_documents',
+      { file: { download_url: 'https://files.oaiusercontent.com/one?sig=a', file_id: 'f' } },
+      NOW,
+      { importer: surface },
+    );
+    expect(cached).toEqual({ isError: true, text: IMPORT_REFUSALS.refresh, reason: 'import' });
   });
 });
 
