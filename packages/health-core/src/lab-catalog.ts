@@ -18,6 +18,9 @@
  *    absent — they live in units.ts and the main matrix.
  */
 
+import { METRIC_LABELS } from './mappings';
+import { UNIT_DEFS } from './units';
+
 export type LabGroupId =
   | 'renal'
   | 'liver'
@@ -208,3 +211,70 @@ export function resolveLabCatalogEntry(reportedName: string): LabCatalogEntry | 
 export function labSlotKey(name: string): string {
   return resolveLabCatalogEntry(name)?.key ?? foldName(name);
 }
+
+// ---------------------------------------------------------------------------
+// Vocabularies read off the catalogue
+// ---------------------------------------------------------------------------
+// Two guards need to know what a health value looks like written down: the
+// feedback guard in `mcp-tools.ts` (a bug report must not carry a result) and
+// the Sentry free-text scrub. Both read the words and units off METRIC_LABELS,
+// UNIT_DEFS and the catalogue below rather than keeping a hand list, so a test
+// added tomorrow guards both for free.
+
+/**
+ * The English a test name is built from. Read on their own these words say
+ * nothing clinical — "3 of the total", "page 2 of the count" — so they are
+ * dropped from the vocabulary below; every other word of every metric and
+ * every catalogued test stays in.
+ */
+const GENERIC_NAME_WORDS = new Set([
+  'total', 'free', 'blood', 'red', 'white', 'cell', 'cells', 'count', 'mean', 'volume', 'packed',
+  'corpuscular', 'serum', 'acid', 'high', 'sensitivity', 'rate', 'sed', 'distribution', 'width',
+  'binding', 'sex', 'hormone', 'stimulating', 'estimated', 'morning', 'adjusted', 'corrected',
+  'saturation', 'ratio', 'protein',
+]);
+
+/**
+ * Short names that are English (or markup) long before they are tests: "na" is
+ * not applicable, "gt" is `&gt;` in every rendering bug ever filed, "am" is a
+ * clock and half a sentence, "oh" is a sigh, "sat" is a verb, and "hs" is only
+ * the prefix of hs-CRP, which `crp` already carries. Everything else short —
+ * bp, hb, t3, t4, e2 — stays, so "BP 140/90" and "free T4 15" are refused.
+ */
+const SHORT_NAME_WORDS = new Set(['na', 'gt', 'hs', 'am', 'oh', 'sat']);
+
+/** "Lp(a)" is one name, not "lp" and "a" — folded before either side is read. */
+export function foldLpa(text: string): string {
+  return text.toLowerCase().replace(/lp\s*\(\s*a\s*\)/g, 'lpa');
+}
+
+/**
+ * Every word this record knows a metric or a lab test by, sorted so a literal
+ * mirror of the list is stable. Pure digits go ("25" of 25-OH vitamin D is a
+ * number in any sentence) and so do the two sets above. `minLength` is how
+ * short a name a caller can afford: the feedback guard takes 2 and over-refuses
+ * on purpose, the Sentry scrub takes 3 so "mg" stays a unit and not a name.
+ */
+export function metricNameWords(minLength: number): string[] {
+  return [...new Set(
+    [
+      ...Object.keys(METRIC_LABELS),
+      ...Object.values(METRIC_LABELS),
+      ...LAB_CATALOG.flatMap((entry) => [entry.key, entry.label, ...entry.aliases]),
+    ]
+      .flatMap((name) => foldLpa(name).match(/[a-z0-9]+/g) ?? [])
+      .filter((word) => word.length >= minLength && !/^\d+$/.test(word)
+        && !GENERIC_NAME_WORDS.has(word) && !SHORT_NAME_WORDS.has(word)),
+  )].sort();
+}
+
+/**
+ * Every unit spelling this record can print: the three spellings of each core
+ * metric's unit and every catalogued test's canonical unit. `unitAliases` are
+ * deliberately absent — "ratio" and "fraction" are English before they are
+ * units. Sorted, for the same stable-mirror reason.
+ */
+export const CATALOG_UNITS: readonly string[] = [...new Set([
+  ...Object.values(UNIT_DEFS).flatMap((def) => [def.canonical, def.label.si, def.label.conventional]),
+  ...LAB_CATALOG.map((entry) => entry.unit),
+])].sort();

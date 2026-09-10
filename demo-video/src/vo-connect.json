@@ -6,7 +6,7 @@
   {"beat": 4, "start": 47, "text": "You say yes, and the values and the letter go into the one file in your Dropbox, as structured data your assistant can use next time. Nothing is written until you say so, and nothing is ever deleted."},
   {"beat": 5, "start": 55, "text": "Ask what your plan says. It is Dr Brad's own protocol, computed from your file, with the reason and the citation behind each suggestion. Ask how any of it works and the assistant reads the code, because all of it is public."},
   {"beat": 6, "start": 66, "text": "Don't take my word for it. Paste this into ChatGPT or Claude and let it read the code. The same app also runs straight from the repository on GitHub Pages, with no server of mine at all."},
-  {"beat": 7, "start": 77, "text": "Open the website and the same values are already there, because it is one file, not a copy."},
-  {"beat": 8, "start": 83, "text": ""},
-  {"beat": 9, "start": 87, "text": ""}
+  {"beat": 7, "start": 77, "text": "Open the website and the same values are already there, because it is one file, not a copy. Change a value on the website, and your assistant sees it on its next read. Add one in the chat, and it is on the website when you refresh. Two doors, one record."},
+  {"beat": 8, "start": 98, "text": ""},
+  {"beat": 9, "start": 102, "text": ""}
 ]

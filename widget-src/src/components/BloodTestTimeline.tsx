@@ -20,7 +20,7 @@ import {
   parseLocalisedNumber,
 } from '@roadmap/health-core';
 import { MONTHS_SHORT } from '../lib/constants';
-import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/storage';
+import { BT_TIMELINE_DRAFT_KEY, safeGetItem, safeSetItem, safeRemoveItem } from '../lib/storage';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { usePrefillRef } from '../lib/usePrefillRef';
@@ -38,7 +38,6 @@ import { UnitChip } from './UnitChip';
 
 // localStorage key for the matrix's typed-but-unsaved state. Persists across
 // page reloads so users don't lose work mid-edit. Cleared on successful Save.
-const DRAFT_STORAGE_KEY = 'health_roadmap_bt_timeline_draft';
 
 interface PersistedDraft {
   draft: { date: string; values: Record<string, string> };
@@ -182,7 +181,7 @@ function emptyDraft(): DraftRow {
 }
 
 function loadPersisted(): { draft: DraftRow; backfills: BackfillMap } | null {
-  const raw = safeGetItem(DRAFT_STORAGE_KEY);
+  const raw = safeGetItem(BT_TIMELINE_DRAFT_KEY);
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as PersistedDraft;
@@ -220,14 +219,14 @@ export function BloodTestTimeline({
     const isEmpty =
       Object.keys(draft.values).length === 0 && Object.keys(backfills).length === 0;
     if (isEmpty) {
-      safeRemoveItem(DRAFT_STORAGE_KEY);
+      safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
       return;
     }
     const payload: PersistedDraft = {
       draft: { date: draft.date, values: draft.values as Record<string, string> },
       backfills: backfills as Record<string, Record<string, string>>,
     };
-    safeSetItem(DRAFT_STORAGE_KEY, JSON.stringify(payload));
+    safeSetItem(BT_TIMELINE_DRAFT_KEY, JSON.stringify(payload));
   }, [draft, backfills]);
 
   // After a successful Save, clear stored draft state explicitly. setDraft +
@@ -422,7 +421,7 @@ export function BloodTestTimeline({
     setDraft(emptyDraft());
     setBackfills({});
     setActiveCell(null);
-    safeRemoveItem(DRAFT_STORAGE_KEY);
+    safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
   };
 
   // Expose `handleSave` to the parent via flushRef so the upload-modal flow

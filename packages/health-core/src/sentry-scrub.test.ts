@@ -285,7 +285,17 @@ describe('scrubBreadcrumbData', () => {
     expect(result.body).toBeUndefined();
     expect(result.method).toBe('POST');
     expect(result.status_code).toBe(200);
-    expect(result.url).toBe('/api/measurements');
+    // A relative URL has no origin to keep, so the path goes with the body.
+    expect(result.url).toBe('[Filtered]');
+  });
+
+  it('reduces the URL to its origin — a path names a clinical document', () => {
+    const result = scrubBreadcrumbData({
+      url: 'https://content.dropboxapi.com/2/files/download?path=/Apps/roadmap/Brad%20lipids.pdf',
+      method: 'POST',
+    })!;
+    expect(result.url).toBe('https://content.dropboxapi.com');
+    expect(result.method).toBe('POST');
   });
 
   it('removes request_body and size fields', () => {
@@ -301,7 +311,7 @@ describe('scrubBreadcrumbData', () => {
     expect(result.response_body_size).toBeUndefined();
   });
 
-  it('scrubs sensitive query params from URL', () => {
+  it('drops the query string with the rest of the path', () => {
     const data = {
       url: 'https://example.com/api/reminders?token=secret123',
       method: 'GET',

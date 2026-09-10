@@ -673,7 +673,13 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setMedications([]);
       setScreenings([]);
       previousInputsRef.current = {};
-      window.alert('All your health data has been deleted.');
+      window.alert(
+        'All your health data has been deleted.\n\n' +
+          'If you connected a cloud, two things this cannot reach: the original ' +
+          'documents you uploaded, which stay in that folder, and the provider\'s ' +
+          'version history. GitHub keeps every past version of the file. Delete ' +
+          'those in your cloud account if you want them gone.',
+      );
     } else {
       window.alert(result.error || 'Failed to delete data. Please try again.');
     }

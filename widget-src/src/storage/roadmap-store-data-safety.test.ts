@@ -800,3 +800,94 @@ describe('RoadmapStore.addMeasurement date semantics (US-03)', () => {
     expect(active[0].value).toBe(80); // the original — a same-day re-entry must route through correctMeasurement (US-04), not addMeasurement.
   });
 });
+
+// US-11 AC1 (2026-09-10) — off-file health data must not outlive an erase.
+// Before this, deleteUserData() cleared document blobs only when a CLOUD was
+// connected (the localStorage-only branch skipped disconnect() so as not to
+// delete the erased file it had just written), and the blood-test matrix's
+// typed-but-unsaved draft survived an erase in every mode.
+describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', () => {
+  const DRAFT_KEY = 'health_roadmap_bt_timeline_draft';
+  const DOC_KEY = 'health_roadmap_doc_v2:scan-123';
+  const DOC_KEY_2 = 'health_roadmap_doc_v2:scan-456';
+
+  // Stored keys are own ENUMERABLE props so Object.keys(localStorage) lists
+  // them (the erase enumerates the document-blob family that way); the Storage
+  // methods stay non-enumerable, as in connect.test.ts.
+  function makeStorage(): Storage {
+    const s = {} as Record<string, string>;
+    Object.defineProperties(s, {
+      length: { get() { return Object.keys(this).length; } },
+      getItem: { value(k: string) { return k in this ? this[k] : null; } },
+      setItem: { value(k: string, v: string) { this[k] = String(v); } },
+      removeItem: { value(k: string) { delete this[k]; } },
+      clear: { value() { for (const k of Object.keys(this)) delete this[k]; } },
+      key: { value(i: number) { return Object.keys(this)[i] ?? null; } },
+    });
+    return s as unknown as Storage;
+  }
+
+  /** The keys an erase must NOT touch: a wipe by prefix would log the user out
+   *  and reset consent decisions they had already made. */
+  const KEEP: Record<string, string> = {
+    health_roadmap_gdrive_tokens: '{"access_token":"secret"}',
+    health_roadmap_dropbox_tokens: '{"access_token":"secret"}',
+    health_roadmap_backend: 'dropbox',
+    health_roadmap_device_id: 'device-1',
+    hr_reminders_autoenrol_blocked: '1',
+    hr_ab: '{"variant":"b"}',
+    hr_vid: 'visitor-1',
+    hr_anthropic_key: 'sk-ant-typed-by-the-user',
+  };
+
+  beforeEach(() => {
+    const store = makeStorage();
+    Object.defineProperty(globalThis, 'localStorage', { value: store, writable: true, configurable: true });
+    store.setItem(DRAFT_KEY, '{"draft":{"date":"2026-09-01","values":{"ldl":"3.2"}}}');
+    store.setItem(DOC_KEY, 'data:application/pdf;base64,AAAA');
+    store.setItem(DOC_KEY_2, 'data:application/pdf;base64,BBBB');
+    for (const [k, v] of Object.entries(KEEP)) store.setItem(k, v);
+  });
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis, 'localStorage');
+  });
+
+  it('clears the unsaved lab-value draft and every document blob for a localStorage-only user', async () => {
+    const store = await RoadmapStore.create(new LocalStorageAdapter());
+    store.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+
+    const result = await store.deleteUserData();
+    expect(result.success).toBe(true);
+
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+    expect(localStorage.getItem(DOC_KEY)).toBeNull();
+    expect(localStorage.getItem(DOC_KEY_2)).toBeNull();
+    // The erased file itself is still there (local mode has no other copy) and
+    // holds no data — disconnect() must NOT run here, or the erase would delete
+    // the very file that carries eraseEpoch.
+    const file = JSON.parse(localStorage.getItem('health_roadmap_file_v2')!) as RoadmapFile;
+    expect(file.meta.eraseEpoch).toBe(1);
+    expect(file.measurements).toEqual([]);
+  });
+
+  it('clears the same keys for a cloud user', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+
+    expect((await store.deleteUserData()).success).toBe(true);
+
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+    expect(localStorage.getItem(DOC_KEY)).toBeNull();
+    expect(localStorage.getItem(DOC_KEY_2)).toBeNull();
+  });
+
+  it('leaves connection tokens, consent flags and the typed API key alone (named keys, never a prefix wipe)', async () => {
+    const store = await RoadmapStore.create(new LocalStorageAdapter());
+    expect((await store.deleteUserData()).success).toBe(true);
+
+    // hr_anthropic_key is a credential the user typed, not health data: an
+    // erase leaves it, so a self-host user does not have to re-enter it.
+    for (const [k, v] of Object.entries(KEEP)) expect(localStorage.getItem(k)).toBe(v);
+  });
+});

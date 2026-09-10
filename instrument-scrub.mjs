@@ -54,7 +54,6 @@ const SENSITIVE_EXACT_KEYS = new Set([
   // Identifiers
   'shopify_customer_id', 'customerid',
   'userid', 'user_id',
-  'unsubscribe_token',
   // Screening-specific
   'prostatepsavalue', 'prostate_psa_value',
   'lungpackyears', 'lung_pack_years',
@@ -62,6 +61,11 @@ const SENSITIVE_EXACT_KEYS = new Set([
 
 const SENSITIVE_SUBSTRINGS = [
   'password', 'secret', 'credential',
+  // Every credential family, by the word it is named after: `token` covers
+  // unsubscribe_token, refreshToken and access_token in one rule.
+  'token', 'auth', 'bearer', 'apikey', 'api_key',
+  // A clinical document is named by its file: "Brad Stanfield lipids Mar 2026.pdf".
+  'filename', 'sourcefilename',
   'screening', 'followup',
   'medication', 'statin', 'ezetimibe', 'pcsk9', 'glp1', 'sglt2', 'metformin',
 ];
@@ -95,10 +99,11 @@ export function scrubSensitiveData(input, maxDepth = 10, currentDepth = 0) {
 }
 
 const SENSITIVE_PARAMS = [
-  'token', 'logged_in_customer_id', 'email',
+  'logged_in_customer_id', 'email',
   // OAuth / PKCE (cloud-provider connect flows land on URLs carrying these)
   'code', 'state', 'code_verifier', 'code_challenge',
-  'client_secret', 'refresh_token', 'access_token', 'id_token', 'assertion',
+  'client_secret', 'assertion',
+  // refresh_token / access_token / id_token need no entry: the `token` rule below.
 ];
 
 export function scrubUrl(url) {
@@ -106,8 +111,10 @@ export function scrubUrl(url) {
     const isRelative = !url.startsWith('http');
     const parsed = new URL(url, 'https://placeholder.invalid');
     let changed = false;
-    for (const param of SENSITIVE_PARAMS) {
-      if (parsed.searchParams.has(param)) {
+    for (const param of [...parsed.searchParams.keys()]) {
+      // Exact names, plus anything NAMED after a token — pollToken, id_token,
+      // accessToken — which no exact list keeps up with.
+      if (SENSITIVE_PARAMS.includes(param) || param.toLowerCase().includes('token')) {
         parsed.searchParams.set(param, REDACTED);
         changed = true;
       }
@@ -120,13 +127,17 @@ export function scrubUrl(url) {
   }
 }
 
+// The URL keeps its origin and nothing else: an arbitrary WebDAV/GitHub path
+// or a Drive lookup query names a clinical document, and no param list catches
+// that. Host, method and status — what a breadcrumb is read for — survive.
 export function scrubBreadcrumbData(data) {
   if (!data) return data;
 
   const scrubbed = { ...data };
 
   if (typeof scrubbed.url === 'string') {
-    scrubbed.url = scrubUrl(scrubbed.url);
+    try { scrubbed.url = new URL(scrubbed.url).origin; }
+    catch { scrubbed.url = REDACTED; }
   }
 
   delete scrubbed.body;
@@ -142,23 +153,34 @@ export function scrubBreadcrumbData(data) {
 // lists and rules identical in both files; the parity test fails otherwise, and
 // it also checks the lists against UNIT_DEFS / METRIC_LABELS.
 
+// The two vocabularies below are DERIVED in sentry-scrub.ts (from UNIT_DEFS,
+// METRIC_LABELS and the lab catalogue) and literal here, because this file
+// imports nothing. When the catalogue moves, the parity test fails and prints
+// the arrays to paste back in.
 export const SCRUB_UNITS = [
-  'mmol/L', 'mmol/mol', 'mg/dL', 'µmol/L', 'umol/L', 'micromol/L', 'nmol/L',
-  'ng/mL', 'µg/L', 'ug/L', 'mg/L', 'g/L', 'mmHg', 'mm Hg',
-  'kg', 'lbs', 'lb', 'cm', '%',
-  // Dose units
-  'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'ml', 'units',
-  // Inches: matched by a stricter rule (see INCH_UNIT) — "5 in the morning"
-  // is English, not a height.
-  'in', '"',
+  '%', 'L/L', 'U/L', 'cm', 'fL', 'g/L', 'in', 'kg', 'lbs', 'mIU/L', 'mL/min/1.73m²',
+  'mg/L', 'mg/dL', 'mg/mmol', 'mm/hr', 'mmHg', 'mmol/L', 'mmol/mol', 'ng/mL', 'nmol/L',
+  'pg', 'pmol/L', 'µg/L', 'µmol/L', '×10¹²/L', '×10⁹/L', 'mm Hg', 'umol/L', 'micromol/L',
+  'ug/L', 'lb', 'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'ml', 'units', '"',
 ];
 
 export const SCRUB_METRIC_WORDS = [
-  'total cholesterol', 'ldl cholesterol', 'hdl cholesterol', 'non-hdl',
-  'cholesterol', 'triglycerides', 'hba1c', 'a1c', 'apob', 'apo b', 'lp(a)',
-  'lpa', 'ldl', 'hdl', 'psa', 'creatinine', 'egfr', 'blood pressure',
-  'systolic', 'diastolic', 'bp', 'bmi', 'weight', 'waist', 'height',
-  'glucose', 'testosterone', 'vitamin d', 'ferritin', 'tsh',
+  'acr', 'alanine', 'albumin', 'alkaline', 'alp', 'alt', 'aminotransferase', 'apob',
+  'aspartate', 'ast', 'b12', 'basophil', 'basophils', 'bicarbonate', 'bilirubin', 'bun',
+  'calcium', 'chloride', 'cholesterol', 'co2', 'cobalamin', 'concentration', 'cortisol',
+  'creatinine', 'crp', 'diastolic', 'egfr', 'eosinophil', 'eosinophils', 'erythrocyte',
+  'erythrocytes', 'esr', 'estradiol', 'ferritin', 'filtration', 'folate', 'folic', 'ft3',
+  'ft4', 'gamma', 'gfr', 'ggt', 'ggtp', 'globulin', 'glomerular', 'glutamyl',
+  'haematocrit', 'haemoglobin', 'hba1c', 'hco3', 'hct', 'hdl', 'hematocrit', 'hemoglobin',
+  'hgb', 'hscrp', 'hydroxyvitamin', 'iron', 'ldl', 'leucocytes', 'leukocytes', 'lpa',
+  'lymphocyte', 'lymphocytes', 'magnesium', 'mch', 'mchc', 'mcv', 'microalbumin',
+  'monocyte', 'monocytes', 'neut', 'neutrophil', 'neutrophils', 'nitrogen', 'oestradiol',
+  'pcv', 'phosphatase', 'platelet', 'platelets', 'plt', 'potassium', 'prolactin', 'psa',
+  'rbc', 'rdw', 'reactive', 'sedimentation', 'sgot', 'sgpt', 'shbg', 'sodium', 'systolic',
+  'testosterone', 'thyroid', 'thyrotropin', 'thyroxine', 'transferase', 'transferrin',
+  'triglycerides', 'triiodothyronine', 'tsat', 'tsh', 'urate', 'urea', 'uric', 'urine',
+  'vitamin', 'waist', 'wbc', 'weight', 'zinc', 'blood pressure', 'apo b', 'lp(a)', 'a1c',
+  'bp', 'bmi', 'height', 'glucose',
 ];
 
 const NUMBER = '\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?';
@@ -173,7 +195,7 @@ const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const UNIT_VALUE_RE = new RegExp(
   `\\b${NUMBER}\\s*(?:(?:${alternation(PLAIN_UNITS)})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
 const METRIC_THEN_VALUE_RE = new RegExp(
-  `\\b(${alternation(SCRUB_METRIC_WORDS)})([^\\d\\n]{0,20}?)(${NUMBER})`, 'gi');
+  `\\b(${alternation(SCRUB_METRIC_WORDS)})(?![a-z0-9])([^\\d\\n]{0,20}?)(${NUMBER})`, 'gi');
 const VALUE_THEN_METRIC_RE = new RegExp(
   `(${NUMBER})([^\\d\\n]{0,20}?)\\b(${alternation(SCRUB_METRIC_WORDS)})\\b`, 'gi');
 
@@ -229,4 +251,47 @@ export function dropLongStrings(input, max = 200) {
     out[k] = v !== null && typeof v === 'object' ? dropLongStrings(v, max) : v;
   }
   return out;
+}
+
+/**
+ * The server's whole beforeSend scrub, in one place so the parity test can run
+ * an event through it (instrument.server.mjs cannot be imported — it calls
+ * Sentry.init on load). The browser's `scrubEvent` runs the same steps in the
+ * same order after its browser-only drops.
+ */
+export function scrubServerEvent(event) {
+  if (event.extra) event.extra = scrubSensitiveData(event.extra);
+  if (event.contexts) event.contexts = scrubSensitiveData(event.contexts);
+  if (event.request) {
+    // Request body contains health data — remove entirely
+    delete event.request.data;
+    if (event.request.url) event.request.url = scrubUrl(event.request.url);
+    if (event.request.query_string) {
+      event.request.query_string = scrubUrl("?" + event.request.query_string).slice(1);
+    }
+    delete event.request.cookies;
+    if (event.request.headers) {
+      delete event.request.headers.cookie;
+      // Belt and braces for the hosted MCP server (US-32): the bearer token
+      // seals a live Dropbox refresh token, so it never reaches an event.
+      delete event.request.headers.authorization;
+      delete event.request.headers.Authorization;
+    }
+  }
+  if (event.breadcrumbs) {
+    event.breadcrumbs = event.breadcrumbs
+      .filter((b) => b.category !== "console")
+      .map((b) =>
+        (b.category === "fetch" || b.category === "xhr" || b.category === "http") && b.data
+          ? { ...b, data: scrubBreadcrumbData(b.data) }
+          : b,
+      );
+  }
+  // Free text is the gap the key scrub cannot see: a value in an exception
+  // message, an `extra` string, a breadcrumb. Runs last, over everything.
+  scrubEventText(event);
+  // A long string is a paste of something (a body, a prompt, a record) that
+  // no rule reads reliably — keep none of it.
+  if (event.extra) event.extra = dropLongStrings(event.extra);
+  return event;
 }

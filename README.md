@@ -133,17 +133,43 @@ network tab recording and use the widget.
   earlier turns and the reply are not stored. A daily job blanks the question
   text, the router's raw output and the error text once a row is 30 days old;
   the match record stays: the articles, the classification, the ids. A guest
-  session row holds a hashed address, not an IP. The chat bubble on blog pages,
-  and the Discord and YouTube bots, keep their transcripts on our server.
+  session row holds a hashed address, not an IP.
+- The chat bubble on blog pages and the chatbot embed send more, and keep more.
+  Both read the widget's cached inputs out of `localStorage` and send them as
+  chat context on every message (`loadGuestInputs()` in
+  `widget-src/src/site-chat.tsx` and `widget-src/src/chatbot-embed.tsx`).
+  Neither bundle sets `VITE_LOCAL_FIRST`, so the server takes them for a stored
+  surface: it writes your question and the reply into `chat_messages`, and the
+  reply can quote the values you were sent with. Nothing purges those rows. The
+  30-day job clears free text in `chat_match_events` only
+  (`app/lib/chat-purge-cron.server.ts`). Brad chose on 2026-09-10 to keep the
+  transcripts, because the router is tuned against them. The Discord and
+  YouTube bots keep their transcripts the same way.
 - Telemetry is a closed allow-list of event names in
   `packages/health-core/src/product-events.ts`. An event is a name plus an
   anonymous visitor UUID, and the server rejects any name off the list.
 - Nothing else we call carries a value. `/api/google-token` forwards an OAuth
   code or refresh token to Google and stores nothing. `/api/reminders-v2` sends
   your reminder schedule, which is a label such as "Colonoscopy" and a due
-  date. If you enrol, that is what we hold, beside your email address and the
-  token that turns reminders off: no health values, no account, nothing else.
-  The optional plan email sends the address you type and that same schedule.
+  date. On the storefront you do not have to enrol: connecting a cloud provider
+  enrols you, because that connection IS the consent (`autoEnrolReminders` in
+  `widget-src/standalone/reminders.ts`, the default-on decision of 2026-08-11).
+  Your cloud account's email address, the labels and the dates reach us on that
+  connect. The plan-ready email that follows says reminders are coming and
+  carries the one-click off switch, as does every reminder after it. On the
+  GitHub Pages build nothing enrols you: `autoEnrolReminders` returns
+  immediately off the Shopify surface, and only the toggle, which asks you for
+  an address, can enrol you. Either way what we hold is that address, the
+  schedule and the token that turns reminders off: no health values, no
+  account, nothing else. The optional plan email sends the address you type and
+  that same schedule.
+- Feedback you type into the widget's feedback box is stored and emailed. The
+  route takes your email address and up to 2000 characters of free text, adds
+  your Shopify customer id when you are logged in, writes the row to
+  `feedback_submissions` and sends the same thing to Brad through Resend
+  (`app/routes/api.feedback.ts`, `recordFeedbackSubmission` in
+  `app/lib/product-events.server.ts`). Nothing scrubs that text and nothing
+  deletes the row, so health details you write there stay written.
 - Errors go to Sentry, scrubbed in the browser before they leave it
   (`widget-src/src/lib/sentry.ts`): console breadcrumb text is replaced, fetch
   breadcrumb URLs are cut back to their origin, and record-operation errors are

@@ -12,6 +12,8 @@ import * as source from './sentry-scrub';
 import { UNIT_DEFS } from './units';
 import { METRIC_TYPES } from './validation';
 import { METRIC_LABELS } from './mappings';
+import { foldName, LAB_CATALOG } from './lab-catalog';
+import { scrubEvent } from '../../../widget-src/src/lib/sentry';
 // @ts-expect-error -- plain .mjs script with no declarations; this parity test
 // only needs its runtime exports.
 import * as copy from '../../../instrument-scrub.mjs';
@@ -50,7 +52,9 @@ const SENSITIVE_SAMPLE: Record<string, unknown> = {
   sex: 'male',
   shopify_customer_id: '123', customerId: '123',
   userId: 'u1', user_id: 'u1',
-  unsubscribe_token: 'tok',
+  unsubscribe_token: 'tok', accessToken: 'tok', authorization: 'Bearer x',
+  bearerToken: 'b', apiKey: 'k', api_key: 'k',
+  sourceFileName: 'Brad lipids.pdf', filename: 'Brad lipids.pdf',
   prostatePsaValue: 1, prostate_psa_value: 1,
   lungPackYears: 0, lung_pack_years: 0,
   // substring matches
@@ -90,21 +94,34 @@ describe('instrument-scrub.mjs ↔ health-core sentry-scrub parity', () => {
       'https://drstanfield.com/cb?code_verifier=v&code_challenge=c&client_secret=s&refresh_token=r&id_token=i&assertion=a&page=2',
       // exact-match semantics: lookalike params must survive untouched
       'https://example.com/x?estate=maple&statement=ok&postcode=1010',
+      // every param NAMED after a token redacts, whatever its case or prefix
+      'https://drstanfield.com/api/lab-import?batchId=b&pollToken=SECRET',
       'not a url',
     ];
     for (const u of urls) {
       expect(copy.scrubUrl(u)).toBe(source.scrubUrl(u));
     }
+    for (const impl of [source, copy]) {
+      const out = impl.scrubUrl('https://drstanfield.com/api/lab-import?batchId=b&pollToken=SECRET');
+      expect(out).not.toContain('SECRET');
+      expect(out).toContain('batchId=b');
+    }
   });
 
-  it('scrubBreadcrumbData produces identical output', () => {
+  it('scrubBreadcrumbData keeps the origin and nothing else, identically', () => {
     const data = {
-      url: 'https://x.com/a?token=t',
+      url: 'https://content.dropboxapi.com/2/files/download?path=/Apps/roadmap/Brad%20lipids.pdf',
       body: 'health payload',
       request_body: 'x', request_body_size: 10, response_body_size: 20,
       status_code: 200,
     };
-    expect(copy.scrubBreadcrumbData(data)).toEqual(source.scrubBreadcrumbData(data));
+    const out = source.scrubBreadcrumbData(data);
+    expect(out).toEqual({ url: 'https://content.dropboxapi.com', status_code: 200 });
+    expect(copy.scrubBreadcrumbData(data)).toEqual(out);
+    // A relative URL has no origin to keep, so it keeps nothing.
+    expect(copy.scrubBreadcrumbData({ url: '/apps/health-tool-1/api/chat' }))
+      .toEqual(source.scrubBreadcrumbData({ url: '/apps/health-tool-1/api/chat' }));
+    expect(source.scrubBreadcrumbData({ url: '/apps/x' })).toEqual({ url: '[Filtered]' });
     expect(copy.scrubBreadcrumbData(undefined)).toBe(source.scrubBreadcrumbData(undefined));
   });
 });
@@ -125,9 +142,54 @@ const TEXTS = [
 ];
 
 describe('free-text scrub parity', () => {
-  it('both impls carry the SAME vocabularies', () => {
-    expect(copy.SCRUB_UNITS).toEqual(source.SCRUB_UNITS);
-    expect(copy.SCRUB_METRIC_WORDS).toEqual(source.SCRUB_METRIC_WORDS);
+  // sentry-scrub.ts DERIVES both lists from UNIT_DEFS, METRIC_LABELS and the
+  // lab catalogue; the .mjs cannot import, so it carries them as literals. When
+  // the catalogue moves, these two fail and print the array to paste back.
+  const paste = (name: string, words: readonly string[]) =>
+    `${name} drifted — paste this array into instrument-scrub.mjs:\n[\n  ${
+      words.map(w => (w.includes("'") ? JSON.stringify(w) : `'${w}'`)).join(', ')}\n]`;
+
+  it('instrument-scrub.mjs carries the derived SCRUB_UNITS verbatim', () => {
+    expect(copy.SCRUB_UNITS, paste('SCRUB_UNITS', source.SCRUB_UNITS)).toEqual(source.SCRUB_UNITS);
+  });
+
+  it('instrument-scrub.mjs carries the derived SCRUB_METRIC_WORDS verbatim', () => {
+    expect(copy.SCRUB_METRIC_WORDS, paste('SCRUB_METRIC_WORDS', source.SCRUB_METRIC_WORDS))
+      .toEqual(source.SCRUB_METRIC_WORDS);
+  });
+
+  it('the vocabularies cover the lab catalogue, not just the core metrics', () => {
+    for (const impl of [source, copy]) {
+      const words = impl.SCRUB_METRIC_WORDS as string[];
+      for (const entry of LAB_CATALOG) {
+        // "Total protein" is two generic English words and nothing else, so the
+        // vocabulary deliberately cannot name it — a scrub word "total" would
+        // redact "3 of the total". Its unit (g/L) still catches the value.
+        if (entry.key === 'total_protein') continue;
+        const names = [foldName(entry.label), entry.key.replace(/_/g, ' ')];
+        expect(names.some(name => words.some(w => name.includes(w))),
+          `no scrub word for lab "${entry.label}"`).toBe(true);
+      }
+      const units = new Set(impl.SCRUB_UNITS.map(u => u.toLowerCase()));
+      for (const entry of LAB_CATALOG) {
+        expect(units, `unit "${entry.unit}" (${entry.key}) missing`).toContain(entry.unit.toLowerCase());
+      }
+    }
+  });
+
+  it('scrubs a catalogued lab sentence and leaves engineering text alone', () => {
+    for (const impl of [source, copy]) {
+      expect(impl.scrubText('cortisol 550')).toBe('cortisol [value]');
+      expect(impl.scrubText('ALT 62 U/L')).toBe('ALT [value]');
+      expect(impl.scrubText('CRP 4.1')).toBe('CRP [value]');
+      expect(impl.scrubText('Platelets 180')).toBe('Platelets [value]');
+      expect(impl.scrubText('500 in 12ms')).toBe('500 in 12ms');
+      // A metric word must END where the word ends: "alt" is not "alternative".
+      expect(impl.scrubText('bundle size exceeded 3 MB')).toBe('bundle size exceeded 3 MB');
+      expect(impl.scrubText('alternative 2 failed')).toBe('alternative 2 failed');
+      expect(impl.scrubText('ironclad 3 rows')).toBe('ironclad 3 rows');
+      expect(impl.scrubText('iron 3')).toBe('iron [value]');
+    }
   });
 
   it('scrubText produces identical output', () => {
@@ -185,5 +247,61 @@ describe('free-text scrub parity', () => {
     const server = readFileSync(new URL('../../../instrument.server.mjs', import.meta.url), 'utf8');
     expect(server).toMatch(/defaults\.filter\(\(i\) => i\.name !== "Console"\)/);
     expect(server).toMatch(/category === "console"\) return null/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pipeline parity: the browser and the server must scrub the SAME event alike
+// ---------------------------------------------------------------------------
+// The two hooks are separate code (the browser drops third-party noise, the
+// server drops console breadcrumbs), so behaviour drifted once already: the
+// browser reduced breadcrumb URLs to their origin and the server kept the full
+// path; the server dropped long strings and the browser kept them. One event
+// through both is the guard that neither half loses a step again.
+
+const syntheticEvent = () => ({
+  message: 'My LDL is 3.2 mmol/L and cortisol 550',
+  exception: {
+    values: [{
+      type: 'Error',
+      value: 'Upload failed for HbA1c 42 mmol/mol',
+      stacktrace: { frames: [{ filename: 'app/routes/upload.ts', lineno: 12 }] },
+    }],
+  },
+  extra: {
+    accessToken: 'sl.ABC-secret',
+    note: 'waist 101 cm',
+    paste: 'x'.repeat(300),
+    status: 200,
+  },
+  tags: { area: 'chat' },
+  breadcrumbs: [{
+    category: 'fetch',
+    data: {
+      url: 'https://content.dropboxapi.com/2/files/download?path=/Apps/roadmap/Brad%20lipids.pdf',
+      body: 'health payload',
+      status_code: 200,
+    },
+  }],
+  request: { url: 'https://drstanfield.com/apps/health-tool-1/api/chat?token=abc', headers: {} },
+});
+
+describe('beforeSend pipeline parity (browser ↔ server)', () => {
+  it('scrubs one synthetic event to the same output on both sides', () => {
+    const browser = scrubEvent(syntheticEvent() as never) as unknown as Record<string, unknown>;
+    const server = copy.scrubServerEvent(syntheticEvent()) as Record<string, unknown>;
+
+    expect(browser).toEqual(server);
+    // …and what that output must actually be: no token, no value, no path, no paste.
+    expect(browser.extra).toEqual({ accessToken: '[Filtered]', note: 'waist [value]', status: 200 });
+    expect(browser.message).toBe('My LDL is [value] and cortisol [value]');
+    expect((browser.breadcrumbs as Array<{ data: Record<string, unknown> }>)[0].data)
+      .toEqual({ url: 'https://content.dropboxapi.com', status_code: 200 });
+    expect((browser.request as { url: string }).url)
+      .toBe('https://drstanfield.com/apps/health-tool-1/api/chat?token=%5BFiltered%5D');
+    // Stack frames are not extra: a filename is never a key, so it survives whole.
+    const frames = (browser.exception as { values: Array<{ stacktrace: { frames: Array<{ filename: string }> } }> })
+      .values[0].stacktrace.frames;
+    expect(frames[0].filename).toBe('app/routes/upload.ts');
   });
 });

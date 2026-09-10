@@ -376,6 +376,9 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     const proposed = await callToolAt(access, 'report_feedback', report, NOW);
     expect(proposed.isError).toBe(false);
     expect(proposed.text).toContain('Would file a PUBLIC GitHub issue');
+    // The receipt is the one human review step, so it shows the DETAIL that
+    // goes public — not the title alone, which hides what is filed.
+    expect(proposed.text).toContain(report.detail); // exactly the text sent, spacing and all
     expect(proposed.text).not.toContain('github.com/DrBradStanfield/roadmap/issues/new'); // the proposal is not a link to submit
     const data = OUTPUTS.report_feedback.parse(proposed.structured);
     expect(data).toMatchObject({ filed: false, proposal: true });

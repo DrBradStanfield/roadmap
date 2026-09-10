@@ -54,6 +54,14 @@ export async function labImport(
   }
 }
 
+/**
+ * The poll token the batch POST handed back, per batch id. A batch id alone
+ * does not read results — the server wants this too — and keeping it here means
+ * the callers pass a batch id around exactly as they always did. It is dropped
+ * when the batch ends; the map only ever holds this tab's own batches.
+ */
+const pollTokens = new Map<string, string>();
+
 export async function labImportBatch(
   files: Array<{ fileName: string; pages: PageContent[] }>,
 ): Promise<{ batchId: string | null; error?: string; errorCode?: UploadErrorCode }> {
@@ -66,8 +74,9 @@ export async function labImportBatch(
       return { batchId: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
     }
     if (!response.ok) return { batchId: null, error: 'Failed to start batch processing', errorCode: 'server_error' };
-    const data = await parseJsonResponse<{ success: boolean; batchId?: string; error?: string }>(response);
+    const data = await parseJsonResponse<{ success: boolean; batchId?: string; pollToken?: string; error?: string }>(response);
     if (!data?.success || !data.batchId) return { batchId: null, error: data?.error || 'Batch creation failed', errorCode: 'server_error' };
+    if (data.pollToken) pollTokens.set(data.batchId, data.pollToken);
     return { batchId: data.batchId };
   } catch (error) {
     console.warn('Batch import error:', error);
@@ -77,12 +86,16 @@ export async function labImportBatch(
 
 export async function pollBatchStatus(batchId: string): Promise<BatchPollResponse> {
   try {
-    const response = await fetch(`${LAB_IMPORT_V2_URL}?batchId=${encodeURIComponent(batchId)}`);
+    const token = pollTokens.get(batchId) ?? '';
+    const response = await fetch(`${LAB_IMPORT_V2_URL}?batchId=${encodeURIComponent(batchId)}&pollToken=${encodeURIComponent(token)}`);
     if (response.status === 404) {
+      pollTokens.delete(batchId);
       return { status: 'ended', completed: 0, total: 0, error: 'Batch not found — server may have restarted.', errorCode: 'server_restart' };
     }
     if (!response.ok) return { status: 'processing', completed: 0, total: 0 };
-    return (await parseJsonResponse<BatchPollResponse>(response)) ?? { status: 'processing', completed: 0, total: 0 };
+    const poll = (await parseJsonResponse<BatchPollResponse>(response)) ?? { status: 'processing' as const, completed: 0, total: 0 };
+    if (poll.status === 'ended') pollTokens.delete(batchId);
+    return poll;
   } catch {
     return { status: 'processing', completed: 0, total: 0 };
   }

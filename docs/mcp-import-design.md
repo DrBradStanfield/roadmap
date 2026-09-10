@@ -86,6 +86,11 @@ of truth for acceptance criteria and the schemas live in
    so the real bound is the daily file quota and that fetched bytes only ever
    become candidates the same user confirms. `CHATGPT_FILE_HOSTS` adds exact
    hosts on top. A refused drag counts as `mcp_import {route: chatgpt_refused}`.
+   **Deleted 2026-09-10 (Opus audit, Fable-confirmed):** the namespace regex
+   admitted any attacker-registered account; with `openai/fileParams` gone and
+   the `file` argument retiring (US-36 AC12/AC13), only `files.oaiusercontent.com`
+   and `CHATGPT_FILE_HOSTS` remain, and a refused host now answers with the
+   refresh sentence.
    The phone apps hand over a bare `chat_upload://` reference: the schema
    refuses it with the mobile sentence (use a computer, or the folder).
 9. Honesty: consent page, privacy addendum, agent-access, listing, guides,

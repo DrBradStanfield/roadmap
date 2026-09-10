@@ -13,8 +13,7 @@
  */
 import { deadlineSignal } from './adapter';
 import { dayOf, daysBetween } from './merge';
-import { displayLabUnit, LAB_CATALOG, type LabCatalogEntry, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
-import { METRIC_LABELS } from './mappings';
+import { displayLabUnit, foldLpa, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
 import { ISO_DATE } from './measurement-history';
 import {
   type AdditionalLabValue,
@@ -782,51 +781,8 @@ const VALUE_WITH_UNIT = new RegExp(
   'i',
 );
 
-/**
- * The English a test name is built from. Read on their own these words say
- * nothing clinical — "3 of the total", "page 2 of the count" — so they are
- * dropped from the vocabulary below; every other word of every metric and
- * every catalogued test stays in.
- */
-const GENERIC_NAME_WORDS = new Set([
-  'total', 'free', 'blood', 'red', 'white', 'cell', 'cells', 'count', 'mean', 'volume', 'packed',
-  'corpuscular', 'serum', 'acid', 'high', 'sensitivity', 'rate', 'sed', 'distribution', 'width',
-  'binding', 'sex', 'hormone', 'stimulating', 'estimated', 'morning', 'adjusted', 'corrected',
-  'saturation', 'ratio', 'protein',
-]);
-
-/**
- * Short names that are English (or markup) long before they are tests: "na" is
- * not applicable, "gt" is `&gt;` in every rendering bug ever filed, "am" is a
- * clock and half a sentence, "oh" is a sigh, "sat" is a verb, and "hs" is only
- * the prefix of hs-CRP, which `crp` already carries. Everything else short —
- * bp, hb, t3, t4, e2 — stays, so "BP 140/90" and "free T4 15" are refused.
- */
-const SHORT_NAME_WORDS = new Set(['na', 'gt', 'hs', 'am', 'oh', 'sat']);
-
-/** "Lp(a)" is one name, not "lp" and "a" — folded before either side is read. */
-function foldLpa(text: string): string {
-  return text.toLowerCase().replace(/lp\s*\(\s*a\s*\)/g, 'lpa');
-}
-
-/**
- * Every word this record knows a metric or a lab test by, read off METRIC_LABELS
- * and the lab catalogue rather than written out again — so a metric added
- * tomorrow guards a report for free. Single letters go ("k" is a thousand long
- * before it is potassium), and so do the two sets above. What is left
- * over-refuses rather than under: a refused report is rephrased in a turn, a
- * filed one is public forever.
- */
-const METRIC_WORDS = new Set(
-  [
-    ...Object.keys(METRIC_LABELS),
-    ...Object.values(METRIC_LABELS),
-    ...LAB_CATALOG.flatMap((entry) => [entry.key, entry.label, ...entry.aliases]),
-  ]
-    .flatMap((name) => foldLpa(name).match(/[a-z0-9]+/g) ?? [])
-    .filter((word) => word.length >= 2 && !/^\d+$/.test(word)
-      && !GENERIC_NAME_WORDS.has(word) && !SHORT_NAME_WORDS.has(word)),
-);
+/** Every word a metric or catalogued test is known by; 2 over-refuses on purpose. */
+const METRIC_WORDS = new Set(metricNameWords(2));
 
 /** Words as the guard reads them; a number keeps its decimal ("3.2", "hba1c"). */
 const FEEDBACK_WORD = /[a-z0-9]+(?:[.,]\d+)?/g;
@@ -990,7 +946,9 @@ export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now
   }
   // A dry run is the hosted proposal (US-36 AC9): what WOULD be filed, never a link to submit.
   const text = dryRun
-    ? `Would file a PUBLIC GitHub issue (${request.kind}): “${prepared.title}”. The detail is the text you sent, as written.`
+    // The receipt is the ONE place a human sees the report before it is public,
+    // so it shows the prepared text itself — a title alone hides what gets filed.
+    ? `Would file a PUBLIC GitHub issue (${request.kind}): “${prepared.title}”.\n\n${prepared.detail}\n\nThat detail is filed as written. Read it to the user before they confirm.`
     : `${url}\n\nShow the user this link. Ask them to read the title and body first — they must contain no ` +
       'health values, no names and no file paths — and to submit it themselves; it needs a GitHub account. ' +
       'Nothing has been sent anywhere.';

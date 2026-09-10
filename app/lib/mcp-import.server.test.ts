@@ -154,35 +154,39 @@ describe('US-35 AC4 — the ChatGPT file fetch', () => {
     expect('refusal' in (await fetchChatgptFile('https://files.oaiusercontent.com/x'))).toBe(true);
   });
 
-  it('accepts OpenAI’s two host forms and refuses every look-alike — live 2026-09-05 the URL was a region-suffixed Azure blob', async () => {
+  it('refuses the Azure blob namespace outright — anyone may register an oaisdmntprn… storage account (US-36 AC12)', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(PDF)));
     vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect('bytes' in (await fetchChatgptFile('https://files.oaiusercontent.com/file-abc?sig=1'))).toBe(true);
     for (const url of [
-      'https://files.oaiusercontent.com/file-abc?sig=1',
+      // The pattern that used to pass these: a namespace, not a list. An
+      // attacker's account named oaisdmntprn… was fetched by this server.
       'https://oaisdmntprnznorth.blob.core.windows.net/files/file-abc?sv=1&sig=2',
       'https://oaisdmntprn.blob.core.windows.net/x',
       'https://oaisdmntprnuseast2.blob.core.windows.net/x',
-    ]) expect('bytes' in (await fetchChatgptFile(url)), url).toBe(true);
-    for (const url of [
       'https://evil-oaisdmntprn.blob.core.windows.net/x',
-      'https://oaisdmntprn-west-2.blob.core.windows.net/x', // Azure storage accounts carry no hyphen, so the pattern matches none
       'https://oaisdmntprn.blob.core.windows.net.evil.com/x',
-      'https://oaisdmntprnznorth.blob.core.windows.net.evil.com/x',
-      'https://xoaisdmntprn.blob.core.windows.net/x',
-      'https://oaisdmntprn.blob.core.windows.com/x',
       'https://files.oaiusercontent.com.evil.com/x',
-      'http://oaisdmntprnznorth.blob.core.windows.net/x',
+      'http://files.oaiusercontent.com/x',
     ]) expect('refusal' in (await fetchChatgptFile(url)), url).toBe(true);
-    // The family is whole hostnames: two accepted fetches per URL above, none for the refused.
-    expect((fetch as unknown as { mock: { calls: unknown[][] } }).mock.calls).toHaveLength(4);
+    // One accepted fetch above, none for the refused.
+    expect((fetch as unknown as { mock: { calls: unknown[][] } }).mock.calls).toHaveLength(1);
   });
 
-  it('honours CHATGPT_FILE_HOSTS as extra exact hosts, so a third host is one env change, not a deploy', async () => {
-    process.env.CHATGPT_FILE_HOSTS = 'files.oaiusercontent.com, files.example.test';
+  it('a refused host is told to refresh the connector, not to drag the file again — the drag would loop', async () => {
+    vi.stubGlobal('fetch', vi.fn());
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const answer = await fetchChatgptFile('https://oaisdmntprnznorth.blob.core.windows.net/x');
+    expect('refusal' in answer && answer.refusal).toBe(`${IMPORT_REFUSALS.refresh} Nothing was read.`);
+    expect('refusal' in answer && answer.refusal).not.toMatch(/[Dd]rag/);
+  });
+
+  it('honours CHATGPT_FILE_HOSTS as extra exact hosts, so a second host is one env change, not a deploy', async () => {
+    process.env.CHATGPT_FILE_HOSTS = 'files.example.test';
     vi.stubGlobal('fetch', vi.fn(async () => new Response(PDF)));
     expect('bytes' in (await fetchChatgptFile('https://files.example.test/x'))).toBe(true);
-    // The env adds; the built-in family stays.
-    expect('bytes' in (await fetchChatgptFile('https://oaisdmntprnznorth.blob.core.windows.net/x'))).toBe(true);
+    // The env adds; the built-in host stays.
+    expect('bytes' in (await fetchChatgptFile('https://files.oaiusercontent.com/x'))).toBe(true);
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect('refusal' in (await fetchChatgptFile('https://sub.files.example.test/x'))).toBe(true);
   });

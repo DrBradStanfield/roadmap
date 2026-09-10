@@ -145,10 +145,17 @@ because both use the same app identity. You can reconnect in one click.
 This section covers the connector. Two neighbouring features are worth naming, because
 "we keep no health data" is easy to read more broadly than it is true.
 
-**Email reminders.** If you enrol, we hold your email address, the screening labels and
-the dates they are due, a token that turns reminders off, and the date each label was
-last emailed. That is the whole row (`app/lib/reminder-v2.server.ts`). No health values,
-no account, nothing else. A label can imply something about you, and a due date is a
+**Email reminders.** On the website you do not enrol yourself. Connecting a cloud
+provider enrols you, because that connection is treated as the consent
+(`autoEnrolReminders` in `widget-src/standalone/reminders.ts`, a decision taken on
+11 August 2026). The email address comes from the cloud account you just connected. The
+plan-ready email that follows tells you reminders are coming and carries the one-click
+off switch, and so does every reminder after it. The version you run yourself enrols
+nobody: that code path stops at once off the website, and only the toggle, which asks
+you for an address, can enrol you. Enrolled, we hold your email address, the screening
+labels and the dates they are due, a token that turns reminders off, and the date each
+label was last emailed. That is the whole row (`app/lib/reminder-v2.server.ts`). No
+health values, no account, nothing else. A label can imply something about you, and a due date is a
 date: "no health values on our server" is the accurate claim, not "nothing about your
 health."
 
@@ -167,15 +174,37 @@ the surface; and a pseudonymous session and conversation id. The earlier turns o
 conversation and the reply are not stored. A daily job blanks the question text, the
 router's raw output and the error text once a row is 30 days old; the match record
 stays: the articles, the classification, the ids. A guest session row holds a hashed
-address, not an IP. The chat bubble on blog pages, and the Discord and YouTube bots,
-keep their transcripts.
+address, not an IP.
+
+The chat bubble on blog pages and the chatbot embed both send and keep more than the
+widget does. Each one reads the inputs the widget cached in your browser and sends them
+as context with every message you type (`loadGuestInputs()` in
+`widget-src/src/site-chat.tsx` and `widget-src/src/chatbot-embed.tsx`). Neither is built
+as a local-first surface, so the server keeps the transcript: your question and the
+reply are written to `chat_messages`, and the reply can quote the values it was sent.
+Nothing purges those rows. The 30-day job clears free text in the router audit only
+(`app/lib/chat-purge-cron.server.ts`). Brad decided on 10 September 2026 to keep the
+transcripts, because the router is tuned against real questions. The Discord and YouTube
+bots keep theirs the same way.
+
+**Feedback.** The feedback box on the website is a separate store again. It takes your
+email address and up to 2000 characters of whatever you type, adds your Shopify customer
+id if you are signed in, writes that row to `feedback_submissions`, and emails the same
+thing to Brad through Resend (`app/routes/api.feedback.ts`). Nothing scrubs that text
+and nothing deletes the row, so anything about your health you write in that box stays
+written.
 
 ## Bug reports
 
 If you ask your assistant to report a bug, it files one for you: our server opens a
 public issue on the project's GitHub repository. What goes in it is the assistant's own
 description of the problem, and nothing about you: no name, no email, no address, and
-no part of your health record. The tool refuses any report that reads as a health value.
+no part of your health record. The tool refuses any report that reads as a health value:
+a number wearing a unit, a bare number written near a metric name it knows, an email
+address, a phone-shaped run of digits, or a link carrying a query string that could hold
+a token (`unsafeFeedback` in `packages/health-core/src/mcp-tools.ts`). It cannot
+recognise a diagnosis written in prose, and it does not pretend to. That is why the tool
+shows you the report before it files it: read the receipt before you say yes.
 The issue is public, so your assistant should tell you before it files one. (Software you
 run yourself has no way to file anything: it hands you a link to submit instead.)
 

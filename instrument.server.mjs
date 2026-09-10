@@ -11,13 +11,7 @@
 // .dockerignored and never rebuilt, so importing the workspace package here would fail to
 // resolve and crash startup. A parity test keeps the copy in sync with the health-core source.
 import * as Sentry from "@sentry/react-router";
-import {
-  scrubSensitiveData,
-  scrubBreadcrumbData,
-  scrubUrl,
-  scrubEventText,
-  dropLongStrings,
-} from "./instrument-scrub.mjs";
+import { scrubBreadcrumbData, scrubServerEvent } from "./instrument-scrub.mjs";
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
@@ -55,46 +49,9 @@ Sentry.init({
       return null;
     }
 
-    // Scrub PII/PHI from event data before it leaves the server
-    if (event.extra) {
-      event.extra = scrubSensitiveData(event.extra);
-    }
-    if (event.contexts) {
-      event.contexts = scrubSensitiveData(event.contexts);
-    }
-    if (event.request) {
-      // Request body contains health data — remove entirely
-      delete event.request.data;
-      if (event.request.url) {
-        event.request.url = scrubUrl(event.request.url);
-      }
-      if (event.request.query_string) {
-        event.request.query_string = scrubUrl("?" + event.request.query_string).slice(1);
-      }
-      delete event.request.cookies;
-      if (event.request.headers) {
-        delete event.request.headers.cookie;
-        // Belt and braces for the hosted MCP server (US-32): the bearer token
-        // seals a live Dropbox refresh token, so it never reaches an event.
-        delete event.request.headers.authorization;
-        delete event.request.headers.Authorization;
-      }
-    }
-    if (event.breadcrumbs) {
-      event.breadcrumbs = event.breadcrumbs
-        .filter((b) => b.category !== "console")
-        .map((b) =>
-          (b.category === "fetch" || b.category === "xhr" || b.category === "http") && b.data
-            ? { ...b, data: scrubBreadcrumbData(b.data) }
-            : b,
-        );
-    }
-    // Free text is the gap the key scrub cannot see: a value in an exception
-    // message, an `extra` string, a breadcrumb. Runs last, over everything.
-    scrubEventText(event);
-    // A long string is a paste of something (a body, a prompt, a record) that
-    // no rule reads reliably — keep none of it.
-    if (event.extra) event.extra = dropLongStrings(event.extra);
+    // Scrub PII/PHI from event data before it leaves the server (shared with
+    // the parity test, which runs this exact pipeline against the browser's).
+    scrubServerEvent(event);
     return event;
   },
   beforeBreadcrumb(breadcrumb) {

@@ -11,7 +11,7 @@ chat product or model is recorded; every frame is drawn from data and animated i
   without the website beat) follow storyboard revision 3 (the `Import Demo
   Storyboard`, 7 September 2026): eight beats, captions burned into a 150 px band
   at the foot of the frame, and beat starts read from `src/vo.json`.
-- `ConnectExplainer` (87 s) and `ConnectExplainerShort` (81 s, no website beat) are
+- `ConnectExplainer` (102 s) and `ConnectExplainerShort` (81 s, no website beat) are
   Video A, "Connect your assistant", from `STORYBOARDS.md` (approved 10 September
   2026): the same spine with a new connect beat (Claude, Claude Code, Codex), the
   cloud folder instead of a dropped ZIP, the open-source repository, and a
@@ -48,8 +48,9 @@ to add the connector, then the consent page · 2 (24 to 33) the cloud folder, th
 "Import my results" and the permission card · 3 (33 to 47) read and check · 4 (47 to
 55) saved · 5 (55 to 66) the plan, then "How does it decide that?" and the repository ·
 6 (66 to 77) trust but verify: the skeptic's prompt, the reply, the repository, the app
-on GitHub Pages · 7 (77 to 83; cut in the short version) the website · 8 (83 to 87)
-close. `VERIFY_REPLY` in `src/explainer/Verify.tsx` holds the audited
+on GitHub Pages · 7 (77 to 98; cut in the short version) the website, a weight typed
+into it, the assistant reading that weight back and writing a blood pressure of its
+own, then the refreshed site · 8 (98 to 102) close. `VERIFY_REPLY` in `src/explainer/Verify.tsx` holds the audited
 reply wording.
 
 ### Voice-over hook

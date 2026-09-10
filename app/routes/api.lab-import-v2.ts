@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
 import { labImportRequestSchema, batchImportRequestSchema } from '../../packages/health-core/src/validation';
@@ -40,14 +41,33 @@ function consumeQuota(ip: string, count: number): boolean {
 
 // Batch poll state — per-machine, like v1 (a poll landing on the other Fly
 // machine returns 404 and the client falls back; same accepted risk as v1).
+//
+// A batch id is Anthropic's, not a secret, and the poll returns EXTRACTED LAB
+// TEXT — so the id alone must not be enough to read someone else's results.
+// Each batch carries a random `pollToken`, handed to the uploader once and
+// required on every poll; without it, or with the wrong one, the batch does not
+// exist (404, the same answer as an id nobody created).
 const MAX_ACTIVE_BATCHES = 200;
-const activeBatches = new Map<string, { totalFiles: number; createdAt: number }>();
+const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string }>();
 setInterval(() => {
   const cutoff = Date.now() - 60 * 60_000;
   for (const [id, b] of activeBatches) if (b.createdAt < cutoff) activeBatches.delete(id);
 }, 10 * 60_000);
 
-/** GET: quota preflight (?quota) or batch poll (?batchId=...). */
+/** The token the uploader gets back and every poll must present. */
+function newPollToken(): string {
+  return crypto.randomBytes(16).toString('base64url');
+}
+
+/** Constant-length compare; a missing or differently sized token is simply wrong. */
+function matchesPollToken(expected: string, supplied: string | null): boolean {
+  if (!supplied) return false;
+  const a = Buffer.from(expected);
+  const b = Buffer.from(supplied);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+/** GET: quota preflight (?quota) or batch poll (?batchId=...&pollToken=...). */
 export async function loader({ request }: LoaderFunctionArgs) {
   if (!verifyAppProxySignature(request)) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -58,7 +78,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   if (batchId) {
     const batch = activeBatches.get(batchId);
-    if (!batch) return Response.json({ error: 'Batch not found' }, { status: 404 });
+    if (!batch || !matchesPollToken(batch.pollToken, url.searchParams.get('pollToken'))) {
+      return Response.json({ error: 'Batch not found' }, { status: 404 });
+    }
     try {
       const result = await pollBatch(batchId);
       return Response.json(
@@ -104,8 +126,9 @@ export async function action({ request }: ActionFunctionArgs) {
         return Response.json({ success: false, error: 'Server busy. Please try again later.' }, { status: 429 });
       }
       const { batchId } = await createBatch(files);
-      activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now() });
-      return Response.json({ success: true, batchId, totalFiles: files.length });
+      const pollToken = newPollToken();
+      activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollToken });
+      return Response.json({ success: true, batchId, pollToken, totalFiles: files.length });
     }
 
     // --- Single file mode ---

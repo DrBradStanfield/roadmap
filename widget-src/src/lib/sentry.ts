@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { EXPECTED_NETWORK_ERRORS } from './error-diagnostics';
-import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl, scrubEventText } from '@roadmap/health-core';
+import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl, scrubEventText, dropLongStrings } from '@roadmap/health-core';
 
 declare const __SENTRY_RELEASE__: string;
 
@@ -23,13 +23,9 @@ function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb): Sentry.Breadcrumb | nul
   }
   // Scrub fetch/xhr breadcrumbs (request bodies contain health data)
   if ((breadcrumb.category === 'fetch' || breadcrumb.category === 'xhr') && breadcrumb.data) {
+    // Bodies go, and the URL keeps its origin only — arbitrary WebDAV/GitHub
+    // paths and Drive lookup queries name clinical documents.
     breadcrumb.data = scrubBreadcrumbData(breadcrumb.data as Record<string, unknown>);
-    // Arbitrary WebDAV/GitHub paths and Drive lookup queries can name a
-    // clinical document. Preserve host/method/status, never resource paths.
-    if (typeof breadcrumb.data?.url === 'string') {
-      try { breadcrumb.data.url = new URL(breadcrumb.data.url, window.location.href).origin; }
-      catch { breadcrumb.data.url = '[Filtered]'; }
-    }
   }
   // Scrub console breadcrumbs (may contain emails, health data in log output)
   if (breadcrumb.category === 'console') {
@@ -128,6 +124,9 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
   // sentence survives in an exception message or an `extra` string. Same rules
   // as the server (one shared implementation). Stack frames stay intact.
   scrubEventText(event);
+  // A long string is a paste of something (a body, a prompt, a record) that no
+  // rule reads reliably — keep none of it. Same last step as the server.
+  if (event.extra) event.extra = dropLongStrings(event.extra) as Record<string, unknown>;
   return event;
 }
 

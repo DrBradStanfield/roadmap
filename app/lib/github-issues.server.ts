@@ -25,9 +25,12 @@ export const ISSUES_PER_HOUR = 20;
 const WINDOW_MS = 60 * 60 * 1000;
 
 /**
- * How long the same report counts as the same report. An assistant that files,
- * loses the thread and files again is the ordinary case, not an attack, and a
- * second issue helps nobody — so the first one's URL comes back instead.
+ * How long the same report counts as the same report — the SAME connection's,
+ * which is the whole point. An assistant that files, loses the thread and files
+ * again is the ordinary case, not an attack, and a second issue helps nobody —
+ * so the first one's URL comes back instead. Two connections that happen to
+ * choose one title are two users, and the second must not be swallowed: the key
+ * carries the connection.
  */
 const DEDUPE_MS = 24 * 60 * 60 * 1000;
 const DEDUPE_CAP = 256;
@@ -81,7 +84,7 @@ async function fileIssue(
   connection: string,
   now: number,
 ): Promise<{ ok: true; url: string; number: number } | { ok: false; refusal: string }> {
-  const key = dedupeKey(issue.title);
+  const key = `${connection}\n${dedupeKey(issue.title)}`;
   for (const [id, entry] of recent) if (now - entry.at > DEDUPE_MS) recent.delete(id);
   const already = recent.get(key);
   if (already) return { ok: true, url: already.url, number: already.number };

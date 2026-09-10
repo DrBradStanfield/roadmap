@@ -6,6 +6,8 @@
  * via Sentry error reports.
  */
 
+import { CATALOG_UNITS, metricNameWords } from './lab-catalog';
+
 const REDACTED = '[Filtered]';
 
 /**
@@ -51,7 +53,6 @@ const SENSITIVE_EXACT_KEYS = new Set([
   // Identifiers
   'shopify_customer_id', 'customerid',
   'userid', 'user_id',
-  'unsubscribe_token',
   // Screening-specific
   'prostatepsavalue', 'prostate_psa_value',
   'lungpackyears', 'lung_pack_years',
@@ -63,6 +64,11 @@ const SENSITIVE_EXACT_KEYS = new Set([
  */
 const SENSITIVE_SUBSTRINGS = [
   'password', 'secret', 'credential',
+  // Every credential family, by the word it is named after: `token` covers
+  // unsubscribe_token, refreshToken and access_token in one rule.
+  'token', 'auth', 'bearer', 'apikey', 'api_key',
+  // A clinical document is named by its file: "Brad Stanfield lipids Mar 2026.pdf".
+  'filename', 'sourcefilename',
   'screening', 'followup',
   'medication', 'statin', 'ezetimibe', 'pcsk9', 'glp1', 'sglt2', 'metformin',
 ];
@@ -105,10 +111,11 @@ export function scrubSensitiveData(
 
 /** Query params that should be redacted from URLs. */
 const SENSITIVE_PARAMS = [
-  'token', 'logged_in_customer_id', 'email',
+  'logged_in_customer_id', 'email',
   // OAuth / PKCE (cloud-provider connect flows land on URLs carrying these)
   'code', 'state', 'code_verifier', 'code_challenge',
-  'client_secret', 'refresh_token', 'access_token', 'id_token', 'assertion',
+  'client_secret', 'assertion',
+  // refresh_token / access_token / id_token need no entry: the `token` rule below.
 ];
 
 /**
@@ -120,8 +127,10 @@ export function scrubUrl(url: string): string {
     const isRelative = !url.startsWith('http');
     const parsed = new URL(url, 'https://placeholder.invalid');
     let changed = false;
-    for (const param of SENSITIVE_PARAMS) {
-      if (parsed.searchParams.has(param)) {
+    for (const param of [...parsed.searchParams.keys()]) {
+      // Exact names, plus anything NAMED after a token — pollToken, id_token,
+      // accessToken — which no exact list keeps up with.
+      if (SENSITIVE_PARAMS.includes(param) || param.toLowerCase().includes('token')) {
         parsed.searchParams.set(param, REDACTED);
         changed = true;
       }
@@ -137,7 +146,9 @@ export function scrubUrl(url: string): string {
 /**
  * Scrub fetch/xhr/http breadcrumb data.
  * Removes request/response bodies entirely (they contain health data payloads).
- * Scrubs sensitive query params from the URL.
+ * Reduces the URL to its origin: an arbitrary WebDAV/GitHub path or a Drive
+ * lookup query names a clinical document, and no param list catches that.
+ * Host, method and status — what a breadcrumb is read for — survive.
  */
 export function scrubBreadcrumbData(
   data: Record<string, unknown> | undefined,
@@ -147,7 +158,8 @@ export function scrubBreadcrumbData(
   const scrubbed = { ...data };
 
   if (typeof scrubbed.url === 'string') {
-    scrubbed.url = scrubUrl(scrubbed.url);
+    try { scrubbed.url = new URL(scrubbed.url).origin; }
+    catch { scrubbed.url = REDACTED; }
   }
 
   // Remove body fields — POST payloads always contain health data in this app
@@ -168,34 +180,36 @@ export function scrubBreadcrumbData(
 // event, on top of the key scrub. Stack frames, filenames and error class names
 // are never touched.
 //
-// The vocabularies are literals, not imports: instrument-scrub.mjs must carry
-// the same lists and is loaded before the bundle, outside any workspace
-// resolution. `instrument-scrub-parity.test.ts` compares both impls AND checks
-// the lists against UNIT_DEFS / METRIC_LABELS, so a new unit or metric fails.
+// The vocabularies are READ OFF the catalogue here, so a test added tomorrow
+// scrubs a report about it. instrument-scrub.mjs cannot import anything — it
+// loads before the bundle, outside any workspace resolution — so it carries
+// the same lists as literals, and `instrument-scrub-parity.test.ts` compares
+// the two arrays and prints the literal to paste when the catalogue moves.
 
 /**
- * Unit spellings that make a bare number a health value. Covers every
- * UNIT_DEFS label (parity-tested) plus the dose units a medication sentence
- * uses ("metformin 500mg").
+ * Unit spellings that make a bare number a health value: every unit the record
+ * prints, plus the ASCII and dose spellings a sentence uses ("metformin 500mg").
  */
 export const SCRUB_UNITS: readonly string[] = [
-  'mmol/L', 'mmol/mol', 'mg/dL', 'µmol/L', 'umol/L', 'micromol/L', 'nmol/L',
-  'ng/mL', 'µg/L', 'ug/L', 'mg/L', 'g/L', 'mmHg', 'mm Hg',
-  'kg', 'lbs', 'lb', 'cm', '%',
-  // Dose units
+  // Every unit the record can print, read off UNIT_DEFS and the lab catalogue.
+  ...CATALOG_UNITS,
+  // ASCII spellings a report or a log writes instead of the µ/space forms.
+  'mm Hg', 'umol/L', 'micromol/L', 'ug/L', 'lb',
+  // Dose units — "metformin 500mg" is a health value with no metric name in it.
   'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'ml', 'units',
   // Inches: matched by a stricter rule (see INCH_UNIT) — "5 in the morning"
   // is English, not a height.
-  'in', '"',
+  '"',
 ];
 
 /** Metric and lab names that make an adjacent number a health value. */
 export const SCRUB_METRIC_WORDS: readonly string[] = [
-  'total cholesterol', 'ldl cholesterol', 'hdl cholesterol', 'non-hdl',
-  'cholesterol', 'triglycerides', 'hba1c', 'a1c', 'apob', 'apo b', 'lp(a)',
-  'lpa', 'ldl', 'hdl', 'psa', 'creatinine', 'egfr', 'blood pressure',
-  'systolic', 'diastolic', 'bp', 'bmi', 'weight', 'waist', 'height',
-  'glucose', 'testosterone', 'vitamin d', 'ferritin', 'tsh',
+  // Every word a metric or catalogued test is known by. 3 is the floor: "mg"
+  // and "na" are a unit and a word long before they are magnesium and sodium.
+  ...metricNameWords(3),
+  // What no name in either list spells: the phrases a person writes, and the
+  // metrics that live in the calculator rather than the catalogue.
+  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height', 'glucose',
 ];
 
 /** A number, or a blood-pressure pair ("140/90"). */
@@ -213,7 +227,7 @@ const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const UNIT_VALUE_RE = new RegExp(
   `\\b${NUMBER}\\s*(?:(?:${alternation(PLAIN_UNITS)})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
 const METRIC_THEN_VALUE_RE = new RegExp(
-  `\\b(${alternation(SCRUB_METRIC_WORDS)})([^\\d\\n]{0,20}?)(${NUMBER})`, 'gi');
+  `\\b(${alternation(SCRUB_METRIC_WORDS)})(?![a-z0-9])([^\\d\\n]{0,20}?)(${NUMBER})`, 'gi');
 const VALUE_THEN_METRIC_RE = new RegExp(
   `(${NUMBER})([^\\d\\n]{0,20}?)\\b(${alternation(SCRUB_METRIC_WORDS)})\\b`, 'gi');
 

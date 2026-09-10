@@ -8,7 +8,7 @@
  * Caveat (surfaced to the user elsewhere): localStorage is device-only and can
  * be evicted by the browser. The cloud file is the durable store; this is a cache.
  */
-import { safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { DOC_KEY_PREFIX, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import {
   ConflictError,
   ROADMAP_FILE_NAME,
@@ -22,7 +22,6 @@ import {
 // under them); other named files (chat-history.json, …) get namespaced keys.
 const FILE_KEY = 'health_roadmap_file_v2';
 const NAMED_PREFIX = 'health_roadmap_file_v2:';
-const DOC_PREFIX = 'health_roadmap_doc_v2:';
 
 function fileKey(fileName: string): string {
   return fileName === ROADMAP_FILE_NAME ? FILE_KEY : NAMED_PREFIX + fileName;
@@ -49,7 +48,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     // shared device.
     try {
       for (const key of Object.keys(localStorage)) {
-        if (key.startsWith(NAMED_PREFIX) || key.startsWith(DOC_PREFIX)) safeRemoveItem(key);
+        if (key.startsWith(NAMED_PREFIX) || key.startsWith(DOC_KEY_PREFIX)) safeRemoveItem(key);
       }
     } catch {
       /* storage unavailable — nothing to clear */
@@ -101,7 +100,7 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   async readDocument(ref: string): Promise<Blob> {
-    const dataUrl = safeGetItem(DOC_PREFIX + ref);
+    const dataUrl = safeGetItem(DOC_KEY_PREFIX + ref);
     if (dataUrl == null) throw new StorageError(`document not found: ${ref}`);
     return (await fetch(dataUrl)).blob(); // data: URLs are fetchable → preserves mime type
   }
@@ -111,7 +110,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     try {
       // Direct setItem (not safeSetItem) so a quota overflow surfaces instead of
       // silently dropping the document — no silent data loss.
-      localStorage.setItem(DOC_PREFIX + ref, dataUrl);
+      localStorage.setItem(DOC_KEY_PREFIX + ref, dataUrl);
     } catch (error) {
       throw new StorageError(
         'Could not store the document on this device (local storage is likely full). Connect a cloud backend for documents.',

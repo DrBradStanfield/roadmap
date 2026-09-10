@@ -66,6 +66,18 @@ describe('Clarity masking — health values never reach a session recording', ()
     );
   });
 
+  it('masks the standalone chat embed, both its React root and its theme block', () => {
+    // The embedded chatbot renders the same answers the widget chat does, and
+    // it mounts outside the widget root, so it carries its own attribute.
+    expect(src('./ChatEmbed.tsx')).toContain(
+      '<div className="chat-embed-root no-print" data-clarity-mask="true"',
+    );
+    const liquid = src('../../../extensions/health-tool-widget/blocks/chatbot-embed.liquid');
+    const rootTag = /<div\b[^>]*id="health-chatbot-embed-root"[^>]*>/s.exec(liquid);
+    expect(rootTag).not.toBeNull();
+    expect(rootTag![0]).toContain('data-clarity-mask="true"');
+  });
+
   it('masks the two remaining <body> portals that show health values', () => {
     // Lab values under review, and the full history lightbox.
     expect(/<div\s+className="upload-modal-backdrop"\s+data-clarity-mask="true"/

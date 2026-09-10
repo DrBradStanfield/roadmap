@@ -59,3 +59,23 @@ describe('one connection files three reports a day', () => {
     expect(await githubFiler('dropbox', 'connection-b')!({ ...ISSUE, title: 'Report 5' })).toMatchObject({ ok: true });
   });
 });
+
+describe('the dedupe is per connection', () => {
+  it('files both when two connections report the same title — the second is a second user, not a repeat', async () => {
+    let n = 0;
+    vi.stubGlobal('fetch', async () => {
+      n += 1;
+      return new Response(JSON.stringify({ html_url: `https://github.com/x/issues/${n}`, number: n }), { status: 200 });
+    });
+
+    const first = await githubFiler('dropbox', 'connection-a')!(ISSUE);
+    const second = await githubFiler('google', 'connection-b')!({ ...ISSUE, title: '  sync stalls ON reconnect ' });
+    expect(first).toMatchObject({ ok: true, number: 1 });
+    expect(second).toMatchObject({ ok: true, number: 2 });
+    expect(n).toBe(2);
+
+    // Within one connection the dedupe still holds: same words, same issue, no second call.
+    expect(await githubFiler('dropbox', 'connection-a')!({ ...ISSUE, title: 'sync stalls on reconnect' })).toMatchObject({ ok: true, number: 1 });
+    expect(n).toBe(2);
+  });
+});

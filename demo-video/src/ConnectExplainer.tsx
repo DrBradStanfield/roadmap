@@ -8,7 +8,7 @@ import {Connect} from './explainer/Connect';
 import {Folder} from './explainer/Folder';
 import {ChatScene} from './explainer/ChatScene';
 import {Verify} from './explainer/Verify';
-import {Website} from './explainer/Website';
+import {WebsiteSync} from './explainer/Website';
 import {Close} from './explainer/Close';
 
 const CLIENT = 'your assistant';
@@ -33,7 +33,7 @@ export const ConnectExplainer: React.FC<{website: boolean}> = ({website}) => {
       <Folder frame={frame} from={b[2]} to={chatFrom} />
       <ChatScene frame={frame} from={chatFrom} to={b[6]} fps={fps} t={t} variant="folder" client={CLIENT} />
       <Verify frame={frame} from={b[6]} to={b[7]} fps={fps} />
-      {website ? <Website frame={frame} from={b[7]} to={b[8]} fps={fps} /> : null}
+      {website ? <WebsiteSync frame={frame} from={b[7]} to={b[8]} fps={fps} /> : null}
       <Close frame={frame} from={b[8]} to={b[9]} />
       <Captions frame={frame} t={t} captions={CONNECT_CAPTIONS} websiteBeat={CONNECT_WEBSITE_BEAT} />
       {hasVo ? <Audio src={staticFile('vo-connect.mp3')} /> : null}

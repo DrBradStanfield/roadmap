@@ -95,7 +95,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
   );
 
   return (
-    <div className="chat-embed-root no-print" ref={rootRef}>
+    <div className="chat-embed-root no-print" data-clarity-mask="true" ref={rootRef}>
       <ColumnHeader step={3} title="Ask about your plan" meta={null} muted={muted} />
       <div className="chat-embed" role="region" aria-label="Health by Dr Brad Chat">
 

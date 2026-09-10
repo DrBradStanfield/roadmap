@@ -112,7 +112,7 @@ credential. Never the open web, never another user's record. Two are the excepti
 is marked open-world: it touches no health record, and it files an issue on GitHub. `import_documents`
 is marked open-world too: it sends a folder file to Anthropic's API for extraction (and, for a tool
 list cached before 2026-09-07, still fetches a dropped file from OpenAI's own file hosts,
-`files.oaiusercontent.com` or the `oaisdmntprn*.blob.core.windows.net` blob store; that argument
+`files.oaiusercontent.com` only since 2026-09-10; that argument
 is retiring). `file_results` is closed: the file was read by ChatGPT, and the call carries only the
 values it read.
 
@@ -141,7 +141,7 @@ values it read.
 - **`import_documents`**
   - *Read-only:* Not read-only. Its extract phase writes nothing to the record but does park candidate values in the user's own folder; its commit phase appends values and files documents, and can correct a value through the same guard as `correct_value`.
   - *Destructive:* Destructive. A `replace` in commit flips a superseded row to `entered-in-error` permanently, exactly like `correct_value`, guarded the same way.
-  - *Open-world:* Open-world. It sends the user's folder file, never the record, to Anthropic's API for extraction under our key (and, for a cached tool list, still fetches a dropped file from OpenAI's own file host, `files.oaiusercontent.com` or its `oaisdmntprn*.blob.core.windows.net` blob store). Nothing is kept after extraction.
+  - *Open-world:* Open-world. It sends the user's folder file, never the record, to Anthropic's API for extraction under our key (and, for a cached tool list, still fetches a dropped file from OpenAI's own file host, `files.oaiusercontent.com` only since 2026-09-10). Nothing is kept after extraction.
 - **`file_results`**
   - *Read-only:* Not read-only. Its first call writes nothing to the record but parks the candidate values in the user's own folder; its commit appends the values the user confirmed, files the document as a metadata-only row, and can correct a value through the same guard as `correct_value`.
   - *Destructive:* Destructive. A `replace` in commit flips a superseded row to `entered-in-error` permanently, exactly like `correct_value`, guarded the same way (90 days, the user's own selection).

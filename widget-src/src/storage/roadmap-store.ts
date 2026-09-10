@@ -62,7 +62,7 @@ import { ROADMAP_DOC, SyncManager, type SyncContext } from '@roadmap/health-core
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
-import { safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { clearOffFileHealthData, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { recordFailure } from '../lib/error-diagnostics';
 
@@ -720,6 +720,11 @@ export class RoadmapStore {
       // the erase on this device (US-11). On a failed flush we keep the mirror
       // instead: it now holds the ERASED file, whose bumped eraseEpoch wins the
       // merge and carries the erase to the cloud next session.
+      // Document blobs and the unsaved lab-value draft sit outside the roadmap
+      // file, so the erased file alone doesn't reach them. Clear them by NAME
+      // in every mode — a localStorage-only user gets no disconnect() below
+      // (it would delete the erased file we just wrote), and used to keep both.
+      clearOffFileHealthData();
       if (this.adapter.id !== 'local') {
         clearSyncPending();
         await new LocalStorageAdapter().disconnect();

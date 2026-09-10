@@ -92,22 +92,20 @@ const EXTRACT_CONCURRENCY = 3;
 const EXTRACT_TIMEOUT_MS = 20_000;
 
 /**
- * OpenAI's file hosts, from field reports — the docs name none. Two forms so
- * far: `files.oaiusercontent.com`, and the region-suffixed Azure blob store
- * ChatGPT hands out for a dragged-in file (`oaisdmntprnznorth.blob.core.windows.net`,
- * seen live 2026-09-05). Honestly: the blob form is a NAMESPACE, not a closed
- * list — any Azure storage account named `oaisdmntprn…` (3–24 lowercase
- * letters and digits; Azure allows no hyphen, so none is matched) would pass.
- * What bounds the route is not the host: it is the per-connection file quota
- * and that fetched bytes only ever become candidates the same user must
- * confirm. The match is anchored at both ends so a prefix, a suffix or a
- * look-alike domain fails; a refused host shows up as a `chatgpt_refused`
- * count and a hostname warning, and `CHATGPT_FILE_HOSTS` adds exact hosts
- * without a deploy.
+ * OpenAI's file hosts — EXACT hostnames, nothing else. One built in
+ * (`files.oaiusercontent.com`), the rest through `CHATGPT_FILE_HOSTS`, which
+ * adds a host without a deploy.
+ *
+ * The Azure blob pattern that was here (`oaisdmntprn*.blob.core.windows.net`)
+ * is deleted: it was a NAMESPACE, not a list, and anyone may register an Azure
+ * storage account with that prefix — so it let a stranger's bucket be fetched
+ * by this server. The route it served is on its 30-day deprecation (US-36
+ * AC12): `openai/fileParams` is gone, so only a tool list cached before the
+ * launch still reaches `file`, and the answer for those is a refresh, not a
+ * fetch.
  */
-const CHATGPT_BLOB_HOST = /^oaisdmntprn[a-z0-9]*\.blob\.core\.windows\.net$/;
 export function isChatgptFileHost(hostname: string): boolean {
-  if (hostname === 'files.oaiusercontent.com' || CHATGPT_BLOB_HOST.test(hostname)) return true;
+  if (hostname === 'files.oaiusercontent.com') return true;
   return (process.env.CHATGPT_FILE_HOSTS || '').split(',').map((h) => h.trim()).includes(hostname);
 }
 
@@ -258,7 +256,9 @@ export async function fetchChatgptFile(downloadUrl: string, signal?: AbortSignal
   }
   if (url.protocol !== 'https:' || !isChatgptFileHost(url.hostname)) {
     console.warn('import: file host refused', url.hostname);
-    return { refusal: 'That file is not on a host this server will fetch from. Drag the file in from a browser, or put it in the connected folder. Nothing was read.' };
+    // Not "drag it in again" — a cached tool list would hand back the same
+    // unfetchable host and loop. The way out is the refresh (US-36 AC12).
+    return { refusal: `${IMPORT_REFUSALS.refresh} Nothing was read.` };
   }
   try {
     const timeout = AbortSignal.timeout(CHATGPT_FETCH_TIMEOUT_MS);

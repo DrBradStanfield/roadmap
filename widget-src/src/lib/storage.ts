@@ -88,6 +88,30 @@ export function clearLocalStorage(): void {
   }
 }
 
+// Health data that lives OUTSIDE the roadmap file, one key each. An erase has
+// to name them: a prefix wipe of `health_roadmap_*` would take the cloud
+// tokens, the remembered backend, the device id and the consent flags with it,
+// logging the user out and resetting decisions they already made.
+/** Uploaded document blobs (LocalStorageAdapter writes them under this). */
+export const DOC_KEY_PREFIX = 'health_roadmap_doc_v2:';
+/** The blood-test matrix's typed-but-unsaved values (BloodTestTimeline). */
+export const BT_TIMELINE_DRAFT_KEY = 'health_roadmap_bt_timeline_draft';
+
+/**
+ * Remove every stored document blob and the unsaved lab-value draft — the
+ * on-device health data an erase would otherwise leave behind.
+ */
+export function clearOffFileHealthData(): void {
+  safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
+  try {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith(DOC_KEY_PREFIX)) safeRemoveItem(key);
+    }
+  } catch {
+    /* storage unavailable — nothing to clear */
+  }
+}
+
 /**
  * Save the user's preferred unit system to localStorage.
  */

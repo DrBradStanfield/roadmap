@@ -72,4 +72,7 @@ export const CONNECT_CAPTIONS: Caption[] = [
   {beat: 6, at: 1.6, lines: ['Paste this into ChatGPT or Claude and let it read the code.']},
   {beat: 6, at: 7.0, lines: ['The same app also runs straight from the repository on GitHub Pages,', 'with no server of mine at all.']},
   {beat: 7, at: 0, lines: ['Open the website and the same values are already there,', 'because it is one file, not a copy.']},
+  {beat: 7, at: 5.5, lines: ['Change a value on the website,', 'and your assistant sees it on its next read.']},
+  {beat: 7, at: 11.5, lines: ['Add one in the chat,', 'and it is on the website when you refresh.']},
+  {beat: 7, at: 17.5, lines: ['Two doors, one record.']},
 ];
