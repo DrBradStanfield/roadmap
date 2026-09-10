@@ -5,12 +5,13 @@
 // pages have it) and compares that body to what the article carries.
 //
 //   node scripts/publish-guides.mjs            # dry run: report only
-//   node scripts/publish-guides.mjs --publish  # PUT body_html where it differs
+//   node scripts/publish-guides.mjs --publish  # PUT the fields that differ
 //
 // Needs SHOPIFY_EDU_SHOP and SHOPIFY_EDU_ACCESS_TOKEN (write_content) in the
-// environment, the same pair scripts/build-privacy-page.mjs uses. Only
-// body_html is written: title, image, tags and handle are left alone. An
-// article that does not exist is reported, never created.
+// environment, the same pair scripts/build-privacy-page.mjs uses. body_html,
+// title and summary_html are written, and only the ones that differ; image,
+// tags and handle are left alone. An article that does not exist is reported,
+// never created.
 import { readFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
@@ -73,8 +74,16 @@ const files = readdirSync(guidesDir).filter((f) => f.endsWith('.md') && f !== 'R
 let differing = 0;
 for (const file of files) {
   const mdPath = new URL(file, guidesDir).pathname;
-  const slug = readFileSync(mdPath, 'utf8').match(/^slug:\s*"?([^"\n]+)"?\s*$/m)?.[1];
-  if (!slug) throw new Error(`${file}: no slug in front matter`);
+  // The front matter is read straight from the .md, the way the slug always
+  // was: the builder's stderr would need a new line AND a capture here, which
+  // is more code than one more regex.
+  const md = readFileSync(mdPath, 'utf8');
+  const front = (key) => md.match(new RegExp(`^${key}:\\s*"?([^"\\n]+?)"?\\s*$`, 'm'))?.[1];
+  const slug = front('slug');
+  const title = front('title');
+  if (!slug || !title) throw new Error(`${file}: no slug or title in front matter`);
+  const description = front('description');
+  const summary = description ? `<p>${description}</p>` : null;
 
   const html = render(mdPath);
   guard(file, html);
@@ -91,22 +100,36 @@ for (const file of files) {
   // newlines between tags on save, so the comparison expands self-closing
   // tags, lowercases every tag and ignores inter-tag whitespace, or every run after a publish reports
   // drift. norm() is for comparing only; the rendered HTML is what is written.
-  const same = norm(live) === norm(html);
+  const fields = {};
+  if (norm(live) !== norm(html)) fields.body_html = html;
+  if ((article.title ?? '') !== title) fields.title = title;
+  if (summary && norm(article.summary_html ?? '') !== norm(summary)) fields.summary_html = summary;
+  const names = Object.keys(fields);
   console.log(`\n${file} -> /blogs/guides/${slug}`);
-  console.log(`  article id ${article.id}, live ${live.length} chars, rendered ${html.length} chars, ${same ? 'IDENTICAL' : 'DIFFERS'}`);
-  if (same) continue;
+  console.log(`  article id ${article.id}, live ${live.length} chars, rendered ${html.length} chars, ${names.length ? `DIFFERS: ${names.join(', ')}` : 'IDENTICAL'}`);
+  if (!names.length) continue;
   differing += 1;
-  const d = firstDiff(norm(live), norm(html));
-  console.log(`  first difference at char ${d.at}`);
-  console.log(`    live:     ${JSON.stringify(d.live)}`);
-  console.log(`    rendered: ${JSON.stringify(d.rendered)}`);
+  if (fields.title) {
+    console.log(`  title live:     ${JSON.stringify(article.title ?? '')}`);
+    console.log(`  title rendered: ${JSON.stringify(title)}`);
+  }
+  if (fields.summary_html) {
+    console.log(`  summary live:     ${JSON.stringify(article.summary_html ?? '')}`);
+    console.log(`  summary rendered: ${JSON.stringify(summary)}`);
+  }
+  if (fields.body_html) {
+    const d = firstDiff(norm(live), norm(html));
+    console.log(`  first body difference at char ${d.at}`);
+    console.log(`    live:     ${JSON.stringify(d.live)}`);
+    console.log(`    rendered: ${JSON.stringify(d.rendered)}`);
+  }
 
   if (publish) {
     const res = await api(`/blogs/${blog.id}/articles/${article.id}.json`, {
       method: 'PUT',
-      body: JSON.stringify({ article: { id: article.id, body_html: html } }),
+      body: JSON.stringify({ article: { id: article.id, ...fields } }),
     });
-    console.log(`  PUT ok, updated_at ${res.article?.updated_at}, len ${res.article?.body_html?.length}`);
+    console.log(`  PUT ok (${names.join(', ')}), updated_at ${res.article?.updated_at}, len ${res.article?.body_html?.length}`);
   }
 }
 
