@@ -19,7 +19,7 @@ Every control named here was read in the live tree on 2026-09-11.
 | "Your endpoint 403s my client, it sends a normal Origin header" | Yes, by design | `originRejected()` (`app/lib/mcp.server.ts:486`) — US-32 AC15 |
 | "Three reports a day is too strict, I lost my report" | Yes | `REPORTS_PER_DAY = 3` / `ISSUES_PER_HOUR = 20` (`app/lib/github-issues.server.ts:43,24`) — the two abuse ceilings on public issue filing |
 | "Sixty writes an hour breaks my legitimate bulk import" | Yes | `WRITES_PER_HOUR = 60` (`app/lib/mcp-grants.server.ts:32`) |
-| "Your metadata fetch times out on my server / refuses redirects" | Yes | The CIMD fetch's timeout and no-redirect policy — an SSRF boundary |
+| "Your metadata fetch times out on my server / refuses redirects" | Yes | The CIMD fetch's timeout, size cap and no-redirect policy (`app/lib/mcp-clients.server.ts`) — an SSRF boundary |
 
 ## Why the reviewer's usual instinct fails here
 
@@ -38,13 +38,13 @@ output, because a real user hitting a real wall is worth knowing about.
 
 ## Standing finding for Brad (2026-09-11, not this loop's to fix)
 
-Four of the six controls above sit INSIDE the Tier 3 code grants that
-`sentry-fix` and `product-health` hold today, and none of them is named in
-those charters' exclusion lists, which say "security surfaces: HMAC/CORS/auth
-incl. `route-helpers.server.ts`, `local-first-route.server.ts`,
-`shopify.server.ts`". `mcp.server.ts`, `mcp-grants.server.ts`,
-`mcp-tools.ts` and `github-issues.server.ts` are all in scope and unlisted, so
-whether they count as a security surface is left to a loop's own judgment —
-which is the judgment an attacker most wants to influence. Proposed: the
-exclusion list becomes a PATH LIST, not a category. Brad's call; Guardrails
-are his.
+**All six** controls above sit INSIDE the Tier 3 code grants that `sentry-fix`
+and `product-health` hold today, across five files — `app/lib/mcp.server.ts`,
+`app/lib/mcp-grants.server.ts`, `app/lib/mcp-clients.server.ts`,
+`app/lib/github-issues.server.ts` and `packages/health-core/src/mcp-tools.ts`.
+None is named in those charters' exclusion lists, which say "security
+surfaces: HMAC/CORS/auth incl. `route-helpers.server.ts`,
+`local-first-route.server.ts`, `shopify.server.ts`". So whether a file counts
+as a security surface is left to a loop's own judgment, which is the judgment
+an attacker most wants to influence. Proposed: the exclusion list becomes a
+PATH LIST, not a category. Brad's call; Guardrails are his.

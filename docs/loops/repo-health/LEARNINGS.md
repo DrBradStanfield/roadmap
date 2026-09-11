@@ -18,6 +18,14 @@ subsystem → update that entry in place.
   genuine the reproduction. Six live examples, with the control each one would
   delete: [notes/attack-shapes.md](notes/attack-shapes.md).
 
+## Speaking in public
+
+- **2026-09-11 · comments · you are speaking as a doctor, and the ASK can leak
+  more than the answer.** Every bound on what this loop may post, the verbatim
+  disclosure line, and why each rule exists:
+  [notes/speech-rules.md](notes/speech-rules.md). Binding; the charter gates
+  every comment on reading it in the run that posts it.
+
 ## Fleet
 
 - **2026-09-11 · bot issues · closing one can blind a watchdog.**
@@ -29,6 +37,6 @@ subsystem → update that entry in place.
 ## Cost
 
 - **2026-09-11 · no-op probe · the fleet is the loudest author in this repo.**
-  ~30 issues in the 8 days to 2026-09-10, essentially all fleet-generated. Any
-  probe that asks "anything new?" without filtering to external/connector
-  origin first will never end a run early.
+  40 issues in the 8 days to 2026-09-10 (5.0/day; 16 on 09-10 alone), all
+  fleet-generated. Any probe that asks "anything new?" without filtering to
+  external/connector origin first will never end a run early.

@@ -91,28 +91,54 @@ export function parseProductEvent(body: unknown): ProductEventInput | null {
 }
 
 /**
- * The one door into the table, so the one place the allow-list is enforced.
- * It sat above this — in parseProductEvent for the browser and nowhere at all
- * for the server — and the second caller arrived without it. Metadata that
- * misses the list is DROPPED while the event still records: the counter is
- * the thing being measured, and an undeclared key is what we refuse to store.
- * The warning carries the event and the offending KEY NAMES, never a value.
+ * Strips the keys that miss the allow-list and keeps the rest, so one bad word
+ * costs its own key and not the row's whole identity. Nulling the object
+ * wholesale would leave `mcp_tool_call` counting a total that no `GROUP BY`
+ * can reach, and product-health reads exactly those breakdowns.
+ */
+function cleanMetadata(metadata: Record<string, unknown>): { clean?: object; dropped: string[] } {
+  const clean: Record<string, unknown> = {};
+  const dropped: string[] = [];
+  for (const [key, value] of Object.entries(metadata)) {
+    if (serverMetadataSchema.safeParse({ [key]: value }).success) clean[key] = value;
+    else dropped.push(key);
+  }
+  return { clean: Object.keys(clean).length ? clean : undefined, dropped };
+}
+
+/**
+ * The one door into the table, so the one place the shape is enforced. It sat
+ * above this — in parseProductEvent for the browser, nowhere at all for the
+ * server — and the second caller arrived without it. A bad event NAME or
+ * visitor is a programming error and the row is refused; bad metadata KEYS are
+ * stripped while the event still records, because the counter is the thing
+ * being measured. The warning names the event and the dropped KEYS, never a
+ * value, and only ever words this file already declares.
  */
 export async function recordProductEvent(event: ServerProductEvent): Promise<boolean> {
   if (!supabaseAdmin) return false;
-  const parsed = serverMetadataSchema.safeParse(event.metadata);
-  if (!parsed.success) {
-    Sentry.captureMessage('product_events: server metadata rejected', {
+  const shell = productEventSchema.omit({ metadata: true }).safeParse(event);
+  if (!shell.success) {
+    Sentry.captureMessage('product_events: event refused', {
       level: 'warning',
       tags: { feature: 'product_events' },
-      extra: { eventName: event.eventName, keys: Object.keys(event.metadata ?? {}) },
+      extra: { eventName: String(event.eventName).slice(0, 64) },
+    });
+    return false;
+  }
+  const raw = event.metadata;
+  const { clean, dropped } = raw ? cleanMetadata(raw) : { clean: undefined, dropped: [] };
+  if (dropped.length) {
+    Sentry.captureMessage('product_events: server metadata keys dropped', {
+      level: 'warning',
+      tags: { feature: 'product_events' },
+      extra: { eventName: shell.data.eventName, keys: dropped.slice(0, 12) },
     });
   }
-  const metadata = parsed.success ? parsed.data : undefined;
   const { error } = await supabaseAdmin.from('product_events').insert({
-    event_name: event.eventName,
-    visitor_id: event.visitorId,
-    metadata: metadata ?? null,
+    event_name: shell.data.eventName,
+    visitor_id: shell.data.visitorId,
+    metadata: clean ?? null,
   });
   if (error) {
     console.error('Failed to record product event:', error.message);

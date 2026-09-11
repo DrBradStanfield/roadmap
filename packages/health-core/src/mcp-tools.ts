@@ -881,16 +881,24 @@ function fenced(text: string): string {
 }
 
 /**
- * A title an `@name` in it cannot summon anyone from. The body gets this for
- * free from its fence; a title renders as written on a public list, and the
- * relay that mails a new issue interpolates the title raw. A zero-width space
- * after the `@` is the relay's own move on the body — deliberately broader
- * here: every `@`, not the relay's `@` followed by a word character, because
- * this string is written by a stranger's assistant and the relay's is not.
- * Applied AFTER the length cap, so the cap cannot cut between the two.
+ * A title that cannot act when something renders it as Markdown. The detail
+ * gets this for free from its fence; the title does not, and the relay that
+ * mails a new issue interpolates it RAW inside `**…**` in a comment body —
+ * where GitHub links `@name`, `#123`, `owner/repo#1`, `[text](url)` and a
+ * bare `https://` on sight. A mention pings a stranger, a cross-reference
+ * posts an event in someone else's repo, and a link is a live phishing link
+ * in a bot comment on a doctor's public repo. `unsafeFeedback` catches none
+ * of them: it looks for values, emails, phone numbers and query strings.
+ *
+ * So a zero-width space goes after every character that can START one of
+ * those, which breaks the construct and shows nothing to a reader. `_` is
+ * deliberately absent: it opens nothing but italics, and every tool this
+ * project has is named with one. Applied to the assistant's own words only —
+ * never to our `[connector]` prefix — and after the cap is taken off the raw
+ * title, so the cap can never cut between a character and its escape.
  */
-function mentionSafe(text: string): string {
-  return text.replace(/@/g, '@\u200b');
+function titleSafe(text: string): string {
+  return text.replace(/[@#[\]()*`<>!|~\\]/g, '$&\u200b').replace(/:(?=\/\/)/g, ':\u200b');
 }
 
 /**
@@ -924,7 +932,7 @@ function prepareFeedback(
     title,
     detail,
     issue: {
-      title: mentionSafe(`${FEEDBACK_TITLE_PREFIX}${title}`.slice(0, MAX_NAME_LENGTH)),
+      title: FEEDBACK_TITLE_PREFIX + titleSafe(title.slice(0, MAX_NAME_LENGTH - FEEDBACK_TITLE_PREFIX.length)),
       body: `${fenced(detail)}\n\n---\nkind: ${request.kind}\n${stamp}\n` +
         'Filed by the user’s AI assistant through the Health by Dr Brad connector; no health values are included by policy.',
       labels: ['from-connector', request.kind === 'bug' ? 'bug' : 'enhancement'],
@@ -943,7 +951,7 @@ export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now
 
   const body = `${prepared.detail}\n\n---\nReported via health-roadmap MCP ${SERVER_VERSION}, tool layer v${TOOL_LAYER_VERSION}, ${dayOf(now)}`;
   const url = `https://github.com/${FEEDBACK_REPO}/issues/new?labels=from-connector,${request.kind}`
-    + `&title=${encodeURIComponent(mentionSafe(prepared.title))}&body=${encodeURIComponent(body)}`;
+    + `&title=${encodeURIComponent(titleSafe(prepared.title))}&body=${encodeURIComponent(body)}`;
   if (url.length > MAX_FEEDBACK_URL_LENGTH) {
     return {
       status: 'rejected',

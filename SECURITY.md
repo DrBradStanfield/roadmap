@@ -49,10 +49,18 @@ to be named or to stay anonymous.
 ## What the tool promises, so you know what counts as a break
 
 Health data lives in the user's own storage, not on our server. There is no
-server-side health database and no API that stores a health record. The
-server holds operational data only: reminder rows, chat routing counters,
-anonymous product events. If you find something that contradicts that, it is a
-security problem even if nothing crashed.
+server-side health database, and no API that stores a health record. If you
+find something that contradicts that, it is a security problem even if
+nothing crashed.
 
-The full architecture is in [CLAUDE.md](CLAUDE.md) and
-[docs/reference.md](docs/reference.md).
+What the server does hold is operational, and some of it is free text a person
+typed, so it is worth naming rather than summarising: chat messages on the
+stored surfaces, kept 30 days and then blanked; anonymous product counters with
+no free text; reminder rows tying an email address to screening labels and due
+dates; feedback submissions with an email and a message; guest chat sessions;
+audit logs. A chat message in a health app can be a health value, which is why
+the main widget stores none at all.
+
+Architecture: [CLAUDE.md](CLAUDE.md) and [docs/reference.md](docs/reference.md).
+What is stored and why, in the user's own words:
+<https://drstanfield.com/pages/connector-privacy>.

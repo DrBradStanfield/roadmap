@@ -665,7 +665,9 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       title: 'add_lab_values & \u001b[2Jread_record\nboth wrong?',
       detail: 'Steps:\n1. call it\n2. \u0007watch it fail #1',
     });
-    expect(link.searchParams.get('title')).toBe('add_lab_values & [2Jread_record both wrong?');
+    // `[` is Markdown-active so it carries a zero-width space; `_` is not, and
+    // every tool here is named with one, so tool names stay readable.
+    expect(link.searchParams.get('title')).toBe('add_lab_values & [\u200b2Jread_record both wrong?');
     expect(link.searchParams.get('body')).toContain('Steps:\n1. call it\n2. watch it fail #1');
     expect(link.href).not.toContain('\u001b');
     expect(link.href).not.toContain(' ');
@@ -882,7 +884,7 @@ describe('US-32 AC9 — a surface that can file, files it', () => {
   });
 
   /**
-   * US-32 AC29: the title is a stranger's assistant's text, and it reaches a
+   * US-32 AC9: the title is a stranger's assistant's text, and it reaches a
    * public issue list and a relay that interpolates it raw. An `@name` there
    * must ping nobody — the same guarantee the body's fence buys.
    */
@@ -891,6 +893,28 @@ describe('US-32 AC9 — a surface that can file, files it', () => {
     await fileFeedback({ ...GOOD, title: '@one and @two and @three should look' }, NOW, filer);
     expect(seen[0].title).toBe('[connector] @\u200bone and @\u200btwo and @\u200bthree should look');
     expect(seen[0].title).not.toMatch(/@(?!\u200b)/);
+  });
+
+  // The relay interpolates the title RAW into a Markdown comment body, so a
+  // mention is only the first of five things that act there.
+  it('makes a cross-reference, a link and a bare URL inert in the filed title', async () => {
+    const { seen, filer } = spy();
+    await fileFeedback(
+      { ...GOOD, title: 'see #123, [reset](https://evil.example/login) and owner/repo#4' },
+      NOW,
+      filer,
+    );
+    const title = seen[0].title;
+    expect(title).not.toMatch(/#(?!\u200b)/);       // no issue cross-reference
+    expect(title).not.toContain('](');               // no Markdown link
+    expect(title).not.toContain('https://');         // no bare autolink
+    expect(title.startsWith('[connector] ')).toBe(true); // our own prefix is untouched
+  });
+
+  it('leaves a plain title byte-identical, underscores and all', async () => {
+    const { seen, filer } = spy();
+    await fileFeedback(GOOD, NOW, filer);
+    expect(seen[0].title).toBe(`[connector] ${GOOD.title}`);
   });
 
   // Ordering, not a duplicate of the refusal tests above: this fails if the

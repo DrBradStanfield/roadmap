@@ -249,7 +249,7 @@ describe('recordServerEvent — the server path validates too', () => {
       reason: 'ldl 4.2' as never,
     });
     expect(JSON.stringify(inserts)).not.toContain('4.2');
-    expect(inserts[0]?.metadata).toBeNull();
+    expect(inserts[0]?.metadata).not.toHaveProperty('reason');
   });
 
   it('drops an undeclared key before the insert', async () => {
@@ -258,13 +258,30 @@ describe('recordServerEvent — the server path validates too', () => {
     expect(inserts[0]?.metadata).toBeNull();
   });
 
+  // US-32 AC29 counts an unrecognised refusal as `other` and KEEPS the row.
+  // The backstop must not be harsher than the rule it backs up: one bad key
+  // costs its own key, never tool/client/outcome, which product-health reads.
+  it('strips only the offending key and keeps the rest of the breakdown', async () => {
+    await recordServerEvent('mcp_tool_call', {
+      tool: 'correct_value', client: 'claude', outcome: 'refused', reason: 'made-up-word',
+    } as never);
+    expect(inserts[0]?.metadata).toEqual({ tool: 'correct_value', client: 'claude', outcome: 'refused' });
+    expect(captureMessage.mock.calls[0][1].extra).toEqual({ eventName: 'mcp_tool_call', keys: ['reason'] });
+  });
+
+  it('refuses a row whose event name is not on the list, and says so without a value', async () => {
+    await recordServerEvent('not_an_event' as never, { client: 'claude' });
+    expect(inserts).toHaveLength(0);
+    expect(captureMessage.mock.calls[0][0]).toBe('product_events: event refused');
+  });
+
   // The report exists so a misbehaving caller is visible. It must name the
   // KEYS and never the value: the value is the thing we refused to store.
   it('reports a rejection by key name, never by value', async () => {
     await recordServerEvent('mcp_connect', { ldl: '4.2 mmol/L' } as never);
     expect(captureMessage).toHaveBeenCalledTimes(1);
     const [message, options] = captureMessage.mock.calls[0];
-    expect(message).toBe('product_events: server metadata rejected');
+    expect(message).toBe('product_events: server metadata keys dropped');
     expect(options).toMatchObject({ level: 'warning', tags: { feature: 'product_events' } });
     expect(options.extra).toEqual({ eventName: 'mcp_connect', keys: ['ldl'] });
     expect(JSON.stringify(options)).not.toContain('4.2');

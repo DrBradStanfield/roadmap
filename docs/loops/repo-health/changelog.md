@@ -27,6 +27,11 @@ the archive). Exempt from the 200-line operative cap.
   disclosed; everything substantive drafted for him.
   (4) **The no-op probe filters by origin first.** The fleet files 3-4 issues
   a day of its own, so an unfiltered probe would never once end a run early.
-  Charter 181/200 lines at creation, deliberately inside the one-in-one-out
-  band: every remaining line is an operative rule, and buying headroom by
-  deleting rules is the wrong trade. Amendments compress.
+  A second adversarial pass, against the committed work rather than the plan,
+  found twelve more — two of them paths by which a Tier 0 loop could still put
+  code on main (a granted `labels` authority that can strip `auto-ship.yml`'s
+  `hold` veto, and the HARD sweep rule carrying a reproduction test out of the
+  tree it was written in). Both are closed in the write scope, which is now a
+  list rather than a category. The public-speech rules moved to
+  notes/speech-rules.md under the constitution's split-never-raise rule, gated
+  on being read in the run that posts. Charter 179 lines (`wc -l`).
