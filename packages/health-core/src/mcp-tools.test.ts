@@ -648,6 +648,13 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
     expect(outcome.file).toBeUndefined();
   });
 
+  // US-32 AC29: the tokenless path hands the user a prefilled issue URL, so
+  // the title it carries gets the same neutralisation the filed one does.
+  it('neutralises an @mention in the prefilled URL title', () => {
+    expect(url({ ...GOOD, title: 'ask @octocat why correct_value refused' }).searchParams.get('title'))
+      .toBe('ask @\u200boctocat why correct_value refused');
+  });
+
   it('labels a feature request as one', () => {
     expect(url({ ...GOOD, kind: 'feature' }).searchParams.get('labels')).toBe('from-connector,feature');
   });
@@ -872,6 +879,28 @@ describe('US-32 AC9 — a surface that can file, files it', () => {
     const data = OUTPUTS.report_feedback.parse((outcome as { data: unknown }).data);
     expect(data).toEqual({ filed: true, url: 'https://github.com/DrBradStanfield/roadmap/issues/7', number: 7, kind: 'bug', title: GOOD.title });
     expect(outcome.status === 'ok' && outcome.file).toBeUndefined();
+  });
+
+  /**
+   * US-32 AC29: the title is a stranger's assistant's text, and it reaches a
+   * public issue list and a relay that interpolates it raw. An `@name` there
+   * must ping nobody — the same guarantee the body's fence buys.
+   */
+  it('neutralises every @mention in the filed title', async () => {
+    const { seen, filer } = spy();
+    await fileFeedback({ ...GOOD, title: '@one and @two and @three should look' }, NOW, filer);
+    expect(seen[0].title).toBe('[connector] @\u200bone and @\u200btwo and @\u200bthree should look');
+    expect(seen[0].title).not.toMatch(/@(?!\u200b)/);
+  });
+
+  // Ordering, not a duplicate of the refusal tests above: this fails if the
+  // neutraliser is ever moved AHEAD of unsafeFeedback, where a `@\u200b` would
+  // split the address and walk it straight past the EMAIL regex.
+  it('refuses an email in the title — the guard runs before the neutraliser', async () => {
+    const { seen, filer } = spy();
+    const outcome = await fileFeedback({ ...GOOD, title: 'reply to synthetic@example.invalid' }, NOW, filer);
+    expect(outcome).toMatchObject({ status: 'rejected', reason: 'contact' });
+    expect(seen).toHaveLength(0);
   });
 
   it('labels a feature request as an enhancement, and caps the title GitHub sees', async () => {

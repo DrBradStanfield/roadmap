@@ -1,13 +1,17 @@
+import * as Sentry from '@sentry/react-router';
 import { z } from 'zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { GUIDE_PLACEMENTS, MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
+import { GUIDE_PLACEMENTS, MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_REFUSAL_REASONS, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
 import { supabaseAdmin } from './supabase.server';
 
 // Metadata is a closed allow-list: no free text, no health values, everything
-// else rejected by .strict().
+// else rejected by .strict(). Enforced at recordProductEvent, the single door
+// into the table, so a new caller inherits it. This list is the BROWSER's,
+// applied at parseProductEvent; the server's is the same plus `reason` (see
+// serverMetadataSchema), which SERVER_ONLY_EVENT_NAMES keeps out of a browser.
 const metadataSchema = z
   .object({
     provider: z.enum(['google-drive', 'dropbox', 'github', 'webdav', 'local', 'typed']).optional(),
@@ -25,13 +29,33 @@ const metadataSchema = z
   })
   .strict();
 
+/**
+ * US-32 AC29's refusal word, on the server list only: it can ride on
+ * `mcp_tool_call`, which SERVER_ONLY_EVENT_NAMES already keeps out of the
+ * browser, so parseProductEvent goes on rejecting it. The vocabulary's real
+ * owner is `countToolCall` (`mcp.server.ts`), the single producer, which maps
+ * an unrecognised word to `other` and keeps the row. This is the backstop
+ * under it, not a second opinion.
+ *
+ * `.optional()` is part of the shape, not an oversight: four server counters
+ * send no metadata at all (the US-22 email funnel), and saying so here is what
+ * keeps the check below a single expression.
+ */
+const serverMetadataSchema = metadataSchema
+  .extend({ reason: z.enum(MCP_REFUSAL_REASONS).optional() })
+  .optional();
+
 export const productEventSchema = z.object({
   eventName: z.enum(PRODUCT_EVENT_NAMES),
   visitorId: z.string().uuid(),
   metadata: metadataSchema.optional(),
 });
 
+/** The same event, with the server's slightly wider metadata list. */
+const serverEventSchema = productEventSchema.extend({ metadata: serverMetadataSchema });
+
 export type ProductEventInput = z.infer<typeof productEventSchema>;
+type ServerProductEvent = z.infer<typeof serverEventSchema>;
 
 /**
  * Sentinel visitor for events the SERVER originates, where no browser visitor
@@ -44,8 +68,8 @@ export const SERVER_VISITOR_ID = '00000000-0000-0000-0000-000000000000';
 
 /** Fire-and-forget server-side counter. Never throws — callers are hot paths. */
 export async function recordServerEvent(
-  eventName: ProductEventInput['eventName'],
-  metadata?: ProductEventInput['metadata'],
+  eventName: ServerProductEvent['eventName'],
+  metadata?: ServerProductEvent['metadata'],
 ): Promise<void> {
   try {
     await recordProductEvent({ eventName, visitorId: SERVER_VISITOR_ID, metadata });
@@ -66,12 +90,29 @@ export function parseProductEvent(body: unknown): ProductEventInput | null {
   return parsed.data;
 }
 
-export async function recordProductEvent(event: ProductEventInput): Promise<boolean> {
+/**
+ * The one door into the table, so the one place the allow-list is enforced.
+ * It sat above this — in parseProductEvent for the browser and nowhere at all
+ * for the server — and the second caller arrived without it. Metadata that
+ * misses the list is DROPPED while the event still records: the counter is
+ * the thing being measured, and an undeclared key is what we refuse to store.
+ * The warning carries the event and the offending KEY NAMES, never a value.
+ */
+export async function recordProductEvent(event: ServerProductEvent): Promise<boolean> {
   if (!supabaseAdmin) return false;
+  const parsed = serverMetadataSchema.safeParse(event.metadata);
+  if (!parsed.success) {
+    Sentry.captureMessage('product_events: server metadata rejected', {
+      level: 'warning',
+      tags: { feature: 'product_events' },
+      extra: { eventName: event.eventName, keys: Object.keys(event.metadata ?? {}) },
+    });
+  }
+  const metadata = parsed.success ? parsed.data : undefined;
   const { error } = await supabaseAdmin.from('product_events').insert({
     event_name: event.eventName,
     visitor_id: event.visitorId,
-    metadata: event.metadata ?? null,
+    metadata: metadata ?? null,
   });
   if (error) {
     console.error('Failed to record product event:', error.message);

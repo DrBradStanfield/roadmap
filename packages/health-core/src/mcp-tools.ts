@@ -881,6 +881,19 @@ function fenced(text: string): string {
 }
 
 /**
+ * A title an `@name` in it cannot summon anyone from. The body gets this for
+ * free from its fence; a title renders as written on a public list, and the
+ * relay that mails a new issue interpolates the title raw. A zero-width space
+ * after the `@` is the relay's own move on the body — deliberately broader
+ * here: every `@`, not the relay's `@` followed by a word character, because
+ * this string is written by a stranger's assistant and the relay's is not.
+ * Applied AFTER the length cap, so the cap cannot cut between the two.
+ */
+function mentionSafe(text: string): string {
+  return text.replace(/@/g, '@\u200b');
+}
+
+/**
  * The report as the proposal receipt hashes it (US-36 AC9): the prepared
  * text with whitespace collapsed and case folded, so a small model that
  * re-emits its own report a turn later with different spacing still
@@ -911,7 +924,7 @@ function prepareFeedback(
     title,
     detail,
     issue: {
-      title: `${FEEDBACK_TITLE_PREFIX}${title}`.slice(0, MAX_NAME_LENGTH),
+      title: mentionSafe(`${FEEDBACK_TITLE_PREFIX}${title}`.slice(0, MAX_NAME_LENGTH)),
       body: `${fenced(detail)}\n\n---\nkind: ${request.kind}\n${stamp}\n` +
         'Filed by the user’s AI assistant through the Health by Dr Brad connector; no health values are included by policy.',
       labels: ['from-connector', request.kind === 'bug' ? 'bug' : 'enhancement'],
@@ -930,7 +943,7 @@ export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now
 
   const body = `${prepared.detail}\n\n---\nReported via health-roadmap MCP ${SERVER_VERSION}, tool layer v${TOOL_LAYER_VERSION}, ${dayOf(now)}`;
   const url = `https://github.com/${FEEDBACK_REPO}/issues/new?labels=from-connector,${request.kind}`
-    + `&title=${encodeURIComponent(prepared.title)}&body=${encodeURIComponent(body)}`;
+    + `&title=${encodeURIComponent(mentionSafe(prepared.title))}&body=${encodeURIComponent(body)}`;
   if (url.length > MAX_FEEDBACK_URL_LENGTH) {
     return {
       status: 'rejected',

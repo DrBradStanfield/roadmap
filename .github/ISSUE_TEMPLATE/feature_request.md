@@ -5,6 +5,9 @@ title: "[Feature] "
 labels: enhancement
 ---
 
+> ⚠️ **This issue will be public and permanent.** Please keep your own health
+> data out of it: no lab values, no medications, no screenshots of your record.
+
 **What would you like?**
 A clear description of the feature or improvement.
 
