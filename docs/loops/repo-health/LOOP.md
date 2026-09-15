@@ -128,6 +128,11 @@ each, with the reasoning and the exact disclosure wording in that file:
   Escalate with a redaction recommendation.
 - MAY close spam only. A wrong comment is deleted, a wrong close reopened;
   both go in the ledger and the report.
+- **The reviewer sees it BEFORE the thread does.** The constitution's
+  adversarial review fires after the report is drafted, which for every other
+  loop is before anything external happens and for you is after you have
+  already spoken. So each comment is reviewed as drafted text first: no
+  comment is posted in a run that has not run its reviewer.
 
 ## Report (non-no-op runs only: `YYYY-MM-DD.md` here, ≤100 lines)
 

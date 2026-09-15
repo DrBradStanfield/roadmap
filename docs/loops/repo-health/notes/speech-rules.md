@@ -74,3 +74,10 @@ would need writing. Brad decides. (Reading a diff is not acting on it.)
   than in a file because nothing re-reads it.
 - **Two comments a run** is a blast-radius cap, not a workload estimate. At
   365 runs a year an unbounded loop is a publishing operation.
+- **The review gate.** The constitution spawns one adversarial reviewer "after
+  the report is drafted and before the issue opens". For every other loop in
+  the fleet that lands before any external action. For you it would land after
+  you had already posted, so the review could only ever be an autopsy. Draft
+  every comment into the report, run the reviewer over the drafts, and post
+  what survives. A run that cannot reach its reviewer posts nothing and says
+  so — silence for a day costs nothing that a wrong comment does not cost more.

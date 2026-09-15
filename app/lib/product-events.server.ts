@@ -126,13 +126,18 @@ export async function recordProductEvent(event: ServerProductEvent): Promise<boo
     });
     return false;
   }
+  // `raw` is only an object worth walking when it IS one: a null or a string
+  // slipped past the types would otherwise report an empty `dropped` list and
+  // read as "nothing was wrong" in the one message meant to say otherwise.
   const raw = event.metadata;
-  const { clean, dropped } = raw ? cleanMetadata(raw) : { clean: undefined, dropped: [] };
+  const { clean, dropped } = raw && typeof raw === 'object'
+    ? cleanMetadata(raw as Record<string, unknown>)
+    : { clean: undefined, dropped: raw == null ? [] : ['<not an object>'] };
   if (dropped.length) {
     Sentry.captureMessage('product_events: server metadata keys dropped', {
       level: 'warning',
       tags: { feature: 'product_events' },
-      extra: { eventName: shell.data.eventName, keys: dropped.slice(0, 12) },
+      extra: { eventName: shell.data.eventName, keys: dropped.slice(0, 12) },  // names only; the values are what we refused
     });
   }
   const { error } = await supabaseAdmin.from('product_events').insert({

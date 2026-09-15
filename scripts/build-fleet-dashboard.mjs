@@ -71,11 +71,32 @@ function sparkline(vals) {
   return `<svg class="spark" viewBox="0 0 60 20" width="60" height="20" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`;
 }
 
+/**
+ * The constitution lets a charter override the standard metrics columns, and
+ * two loops do: sentry-fix and repo-health write a WIDE row (one run per line,
+ * one column per number) rather than the long `week,metric,count_7d,…` shape.
+ * Rendering only the long shape put an empty row on the dashboard for every
+ * such loop and hid the numbers entirely. Detect the shape instead.
+ */
+function wideMetricsSection(rows) {
+  const keyCol = Object.keys(rows[0])[0];              // run_date or week
+  const cols = Object.keys(rows[0]).slice(1).filter((c) => rows.some((r) => r[c] !== '' && !Number.isNaN(Number(r[c]))));
+  if (!cols.length) return '<p class="dim">metrics.csv has no numeric columns.</p>';
+  const latest = rows[rows.length - 1];
+  let html = `<table><tr><th>metric</th><th>latest (${esc(latest[keyCol] ?? '')})</th><th>trend</th></tr>`;
+  for (const col of cols) {
+    const series = rows.map((r) => r[col]).filter((v) => v !== '' && !Number.isNaN(Number(v)));
+    html += `<tr><td>${esc(col)}</td><td>${esc(latest[col] ?? '—')}</td><td>${sparkline(series)}</td></tr>`;
+  }
+  return html + '</table>';
+}
+
 function metricsSection(dir) {
   const p = path.join(dir, 'metrics.csv');
   if (!existsSync(p)) return '<p class="dim">No metrics.csv yet.</p>';
   const rows = parseCsv(readFileSync(p, 'utf8'));
   if (!rows.length) return '<p class="dim">metrics.csv is empty.</p>';
+  if (!('metric' in rows[0]) || !('count_7d' in rows[0])) return wideMetricsSection(rows);
   // Latest row per metric wins within a week (loops append superseding rows).
   const byMetric = new Map();
   for (const r of rows) {
@@ -104,8 +125,13 @@ function ledgerSection(dir) {
   return `<p><strong>Ledger:</strong> ${rows.length} issue${rows.length === 1 ? '' : 's'}${parts ? ` (${parts})` : ''}</p>`;
 }
 
+/**
+ * Weekly loops file `YYYY-Www.md`; the daily ones file `YYYY-MM-DD.md`. Only
+ * the weekly shape was matched, so sentry-fix has read "no report yet" on the
+ * dashboard since it started, with a dozen reports on disk.
+ */
 function latestReport(dir, slug) {
-  const reports = readdirSync(dir).filter((f) => /^\d{4}-W\d{2}\.md$/.test(f)).sort();
+  const reports = readdirSync(dir).filter((f) => /^\d{4}-(W\d{2}|\d{2}-\d{2})\.md$/.test(f)).sort();
   if (!reports.length) return '<span class="dim">no report yet</span>';
   const f = reports[reports.length - 1];
   return `<a href="${BLOB}/${slug}/${encodeURIComponent(f)}">${esc(f)}</a>`;
