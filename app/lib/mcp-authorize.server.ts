@@ -7,13 +7,12 @@
  * travel back to the client and which the route must render itself.
  */
 import crypto from 'node:crypto';
-import { resourceUrl } from './mcp-config.server';
+import { issuer, resourceUrl } from './mcp-config.server';
 import { isAllowedRedirect, redirectMatches, type McpClient } from './mcp-clients.server';
-import { nowSeconds, type StatePayload } from './mcp-grants.server';
+import { nowSeconds, STATE_LIFETIME_SECONDS, type StatePayload } from './mcp-grants.server';
 import type { McpProvider } from './mcp-providers.server';
 import { packSealed } from './mcp-seal.server';
 
-const STATE_LIFETIME_SECONDS = 10 * 60;
 
 /**
  * `state` is the CLIENT's opaque value and it must come back byte-identical.
@@ -40,6 +39,20 @@ export interface AuthorizeRequest {
 }
 
 /** The client's host, or a label — never the id itself, which may be long. */
+/**
+ * Is this RFC 8707 `resource` us? A trailing slash is not a different
+ * audience, and a client that names the issuer rather than the resource still
+ * means this server — we are both. Anything else is refused, so this widens
+ * the spelling and never the audience.
+ */
+function isThisResource(resource: string): boolean {
+  const bare = (url: string) => url.replace(/\/$/, '');
+  const named = bare(resource);
+  // Both sides: MCP_ISSUER is a secret we do not control the spelling of, and a
+  // trailing slash on it would otherwise make the server refuse its own issuer.
+  return named === bare(resourceUrl()) || named === bare(issuer());
+}
+
 function clientHost(clientId: string): string {
   try {
     return new URL(clientId).host;
@@ -79,7 +92,7 @@ export function checkAuthorize(params: URLSearchParams, client: McpClient): Auth
   // RFC 8707. The audience must be this server, or a token we mint here could
   // be replayed somewhere else — the confused-deputy the MCP spec warns about.
   const resource = params.get('resource');
-  if (resource !== null && resource !== resourceUrl()) {
+  if (resource !== null && !isThisResource(resource)) {
     return fail('invalid_target', 'This server is not that resource');
   }
   return {

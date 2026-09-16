@@ -19,7 +19,7 @@ vi.mock('node:dns/promises', () => ({ default: { lookup: async () => [{ address:
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { resetMcpMemory, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
+import { resetMcpMemory, STATE_LIFETIME_SECONDS, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 import { ISSUES_PER_HOUR, REPORTS_PER_DAY } from '../lib/github-issues.server';
 import { MAX_RECEIPT_LENGTH, MCP_PROMPTS, MCP_TOOLS, OUTPUTS, SERVER_VERSION } from '../../packages/health-core/src/mcp-tools';
 import { MAX_CORRECTION_AGE_DAYS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
@@ -552,10 +552,101 @@ describe('a pinned vendor client connects without DCR and without a fetch (US-32
     expect((await callTool(tokens.access_token, 'read_record', {})).isError).toBe(false);
   });
 
+  /**
+   * The counter that says whether ANYONE connected. It has three rows in its
+   * whole life, all labelled `other`, and it has never been observed recording
+   * a pinned vendor — so when it reads zero for a review window, nothing proved
+   * that zero meant "nobody connected" rather than "the counter does not fire".
+   * This is that proof, at the one call site that writes it.
+   */
+  it('writes one mcp_connect row naming the pinned vendor, not `other`', async () => {
+    vi.mocked(recordServerEvent).mockClear();
+    const { nonce, cookie } = await pressConnect(await consentScreen(CLAUDE_CIMD));
+    const back = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(nonce)}`, { cookie });
+    expect(back.status).toBe(302);
+
+    const connects = vi.mocked(recordServerEvent).mock.calls.filter(([name]) => name === 'mcp_connect');
+    expect(connects).toHaveLength(1);
+    expect(connects[0][1]).toEqual({ client: 'claude', provider: 'dropbox' });
+  });
+
   it('still refuses a redirect_uri the pinned client never published', async () => {
     const res = await get(`/mcp/authorize?client_id=${encodeURIComponent(CLAUDE_CIMD)}&redirect_uri=https%3A%2F%2Fevil.test%2Fcb&response_type=code&code_challenge=${CHALLENGE}&code_challenge_method=S256`);
     expect(res.status).toBe(400);
     expect(res.headers.get('location')).toBeNull();
+  });
+});
+
+/**
+ * US-32 AC14. Two live defects found while investigating OpenAI's 2026-09-15
+ * rejection ("We're unable to complete your sign-in or OAuth flow").
+ */
+describe('the front door answers the spellings real clients send (US-32 AC14)', () => {
+  const CHATGPT = 'https://chatgpt.com/oauth/client.json';
+  const LINKS = 'https://chatgpt.com/backend-api/aip/connectors/links/oauth/callback';
+
+  function authorize(over: Record<string, string> = {}): Promise<Response> {
+    return get(`/mcp/authorize?${new URLSearchParams({
+      client_id: CHATGPT,
+      redirect_uri: 'https://chatgpt.com/connector_platform_oauth_redirect',
+      response_type: 'code',
+      code_challenge: CHALLENGE,
+      code_challenge_method: 'S256',
+      state: 'client-state',
+      ...over,
+    })}`);
+  }
+
+  /**
+   * The links callback was in ALLOWED_REDIRECTS from the first commit but was
+   * never on the ChatGPT pin, and a pinned client is refused any redirect its
+   * own entry omits — answered with a NON-redirectable 400, so ChatGPT shows a
+   * dead window instead of an error. Live in production until this fix.
+   */
+  it('accepts both of ChatGPT’s callbacks, not only the published one', async () => {
+    expect((await authorize()).status).toBe(200);
+    expect((await authorize({ redirect_uri: LINKS })).status).toBe(200);
+  });
+
+  /**
+   * The cookie must outlive the seal, or a timeout renders "that sign-in did
+   * not start here" — the wrong sentence for running out of time. The route
+   * used to carry a hard-coded 600 three lines from the constant; reverting it
+   * left the whole suite green, because nothing read the header the route
+   * actually emits. This reads it.
+   */
+  it('sets a state cookie that outlives the seal it carries', async () => {
+    const res = await post('/mcp/authorize', {
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ state: await consentScreen(await registerClientOverHttp()) }),
+    });
+    expect(res.status).toBe(302);
+    const setCookie = res.headers.get('set-cookie')!;
+    const maxAge = Number(/Max-Age=(\d+)/.exec(setCookie)![1]);
+    expect(maxAge).toBeGreaterThanOrEqual(STATE_LIFETIME_SECONDS);
+    expect(setCookie).toContain('__Host-mcp-state=');
+    expect(setCookie).toContain('Secure');
+    expect(setCookie).toContain('HttpOnly');
+  });
+
+  it('still refuses a redirect on ChatGPT’s host that no client registered', async () => {
+    const res = await authorize({ redirect_uri: 'https://chatgpt.com/not-a-callback' });
+    expect(res.status).toBe(400);
+    expect(res.headers.get('location')).toBeNull();   // never an open redirector
+  });
+
+  /**
+   * RFC 8707. We are the resource, the resource with a trailing slash, and the
+   * issuer. Refusing a client that normalises its own URL surfaces to the user
+   * as a failed sign-in, and buys nothing — the audience is identical.
+   */
+  it('accepts every spelling of its own audience, and no other', async () => {
+    for (const resource of [`${ISSUER}/mcp`, `${ISSUER}/mcp/`, ISSUER, `${ISSUER}/`]) {
+      expect((await authorize({ resource })).status).toBe(200);
+    }
+    const foreign = await authorize({ resource: 'https://evil.test/mcp' });
+    expect(foreign.status).toBe(302);
+    expect(new URL(foreign.headers.get('location')!).searchParams.get('error')).toBe('invalid_target');
   });
 });
 
@@ -878,6 +969,30 @@ describe('update_profile on the hosted surface (US-34)', () => {
     expect(stated.isError).toBe(false);
     expect(storedRecord().profile.heightCm).toBe(165);
     expect(storedRecord().profile.sex).toBe('male');
+
+    // The value it just wrote is protected the same way the seeded one was.
+    const blind = await twoStep(access, 'update_profile', { heightCm: 180 });
+    expect(blind.isError).toBe(true);
+    expect(blind.text).toContain('expected.heightCm');
+  });
+
+  /**
+   * The record prices an ADD cheaply everywhere else, and a profile field the
+   * record does not hold is an add: there is no value to overwrite, so there
+   * is nothing for `expected` to protect. Requiring it cost a read_record
+   * before a user could say how tall they are.
+   */
+  it('fills an empty profile field without an expected value', async () => {
+    seedRecord();
+    const { access } = await connect();
+
+    const filled = await twoStep(access, 'update_profile', { sex: 'male', heightCm: 180 });
+    expect(filled.isError).toBe(false);
+    expect(storedRecord().profile.heightCm).toBe(180);
+    expect(storedRecord().profile.sex).toBe('male');
+
+    const plan = await callTool(access, 'get_plan', {});
+    expect(plan.isError).toBe(false);
   });
 
   it('costs a correction, and a refused one spends it too', async () => {
@@ -1710,5 +1825,46 @@ describe('US-32 AC29 — the counter records why a call was refused', () => {
     const refused = await callTool(access, 'correct_value', { id: old.id, expectedValue: old.value, newValue: old.value + 1 });
     expect(refused.isError).toBe(true);
     expect(toolCallEvents().at(-1)).toMatchObject({ outcome: 'refused', reason: 'too-old' });
+  });
+});
+
+/**
+ * The OpenAI reviewer's first five minutes, on a brand-new empty account.
+ *
+ * `docs/chatgpt-app-listing.md` told OpenAI's reviewer to bring "any free
+ * Dropbox account" and promised "An empty account runs every test case". The
+ * submission was rejected 2026-09-15: "We're unable to complete your sign-in
+ * or OAuth flow ... no additional setup or verification to access your
+ * service." These pin what an empty account actually answers.
+ */
+describe('a brand-new empty account — the reviewer first-run path (US-32)', () => {
+  it('reads an empty record and accepts the first write, which creates the file', async () => {
+    const { access } = await connect();
+
+    const read = await callTool(access, 'read_record', {});
+    expect(read.isError).toBe(false);
+    expect(JSON.parse(read.text).measurements).toEqual([]);
+
+    const wrote = await callTool(access, 'add_measurement', {
+      metricType: 'weight', value: 78, unit: 'kg', recordedAt: dayNumber(0),
+    });
+    expect(wrote.isError).toBe(false);
+    const stored = storedRecord().measurements.filter((m) => m.status === 'active');
+    expect(stored).toHaveLength(1);
+    expect(stored[0]).toMatchObject({ metricType: 'weight', value: 78 });
+  });
+
+  /**
+   * The listing's own test case 4 ("What should I do next about my health?").
+   * `update_profile` can set sex and heightCm in the same conversation, so a
+   * refusal that sends the user to a website is a dead end we invented: it is
+   * the "additional setup" the rejection names, inside the product.
+   */
+  it('tells the assistant to fill the profile in-conversation, not to go to the website', async () => {
+    const { access } = await connect();
+
+    const plan = await callTool(access, 'get_plan', {});
+    expect(plan.text).toContain('update_profile');
+    expect(plan.text).not.toContain('Open the app');
   });
 });

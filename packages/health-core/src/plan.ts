@@ -164,7 +164,9 @@ export function computePlan(file: RoadmapFile, now = new Date()): Plan {
     if (invalid.has('heightCm') || invalid.has('sex')) {
       throw new PlanError(
         `This record has no usable height and sex (${Object.values(getValidationErrors(validation.errors)).join('; ')})`,
-        'The plan needs both. Open the app and fill in the first two fields, then run this again.',
+        'The plan needs both. Ask the user for their height, and whether the plan should be computed for male or ' +
+          'female, and set them on the record — with `update_profile` if you have it, otherwise in the app — then ' +
+          'run this again.',
       );
     }
     const stripped = { ...inputs } as Record<string, unknown>;

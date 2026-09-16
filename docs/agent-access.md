@@ -214,9 +214,11 @@ Six things differ from the local path, and they are differences you will hit:
 - **`correct_value` requires `expectedValue`**: the number you believe the row holds
   right now. It is optional locally. A mismatch refuses the call and writes nothing, so
   read the record immediately before correcting.
-- **`update_profile` requires `expected` for every field it changes**: the value you
-  believe the record holds now, or `null` if you believe it holds none. Optional locally,
-  for the same reason. A profile field is not append-only: there is no superseded copy to
+- **`update_profile` requires `expected` for every field it CHANGES**: the value you
+  believe the record holds now. Narrowed 2026-09-16: a field the record does not hold
+  yet is an ADD and needs no claim — there is no earlier value to protect, and demanding
+  one only forced a `read_record` before a user could say how tall they are. Optional
+  locally, for the same reason. A profile field is not append-only: there is no superseded copy to
   read back, so the claim is what stands between a stale read and a wrong plan. A profile
   change costs the same as a correction.
 - **A row older than 90 days cannot be corrected there.** Corrections fix recent

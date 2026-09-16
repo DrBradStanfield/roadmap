@@ -661,8 +661,9 @@ export function correctValueTool(
  * object the record already holds: every field it carries survives, named or
  * not, known to this version or not. What makes that safe against a second
  * writer is `expected`: the agent states what it believes it is replacing, and
- * a mismatch writes nothing. Optional here (a person watching their own file),
- * REQUIRED on the hosted server, exactly as `expectedValue` is.
+ * a mismatch writes nothing. Optional here (a person watching their own file);
+ * on the hosted server it is required to CHANGE a field the record holds, and
+ * not to fill one it does not — there is no earlier value to protect.
  */
 export function updateProfile(
   file: RoadmapFile,
@@ -2233,9 +2234,10 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     title: 'Change the profile the plan is computed from',
     description:
       'Change who the record is about: sex, birth year, birth month, height in cm. Every suggestion is derived ' +
-      'from them, so a wrong one makes the whole plan wrong. Read the record first and pass `expected` with the ' +
-      'value you believe each field holds now (null if it holds none) — a mismatch refuses the call and writes ' +
-      'nothing. This overwrites: the profile is one last-write-wins object with no earlier version to read back. ' +
+      'from them, so a wrong one makes the whole plan wrong. Setting a field the record does not hold yet is an ' +
+      'add: send it on its own. CHANGING one the record already holds needs `expected` with the value you believe ' +
+      'is there now, read from the record first — a mismatch refuses the call and writes nothing. This ' +
+      'overwrites: the profile is one last-write-wins object with no earlier version to read back. ' +
       'Display preferences (units) are not yours to change.',
     inputSchema: {
       type: 'object',

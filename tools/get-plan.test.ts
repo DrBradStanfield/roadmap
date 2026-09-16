@@ -254,6 +254,27 @@ describe('US-30 AC5 — an untrusted file fails clearly, never with a stack', ()
     expect(() => computePlan(createEmptyFile(CTX), NOW)).toThrow(/no usable height and sex/);
   });
 
+  /**
+   * The hint is shared: an MCP agent reads it, and so does a terminal user via
+   * `--html`/stderr, who has no `update_profile` — `tools/edit-record.ts` has
+   * only `add` and `correct`. So it must name the FIELDS and offer both routes,
+   * never one surface's mechanism. Asserted here rather than by a `not.toContain`
+   * in the app suite: `npm test` runs health-core, and a negative assertion
+   * passes just as happily when the hint degrades to saying nothing.
+   */
+  it('hints in words that are true for the command line and an assistant alike', () => {
+    let hint = '';
+    try {
+      computePlan(createEmptyFile(CTX), NOW);
+    } catch (error) {
+      hint = (error as { hint?: string }).hint ?? '';
+    }
+    expect(hint).toMatch(/height/);
+    expect(hint).toMatch(/male or female/);
+    expect(hint).toMatch(/in the app/);           // the route the CLI user has
+    expect(hint).toMatch(/update_profile/);       // the route an assistant has
+  });
+
   it('loads a null-riddled file through migrateFile and still computes', async () => {
     const file = fixture();
     const mangled = {

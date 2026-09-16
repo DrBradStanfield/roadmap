@@ -132,7 +132,7 @@ values it read.
   - *Destructive:* Destructive. It deletes nothing, but it flips the superseded row to `entered-in-error` permanently and no tool reverses that. Guarded by a required `expectedValue` and a 90-day age limit.
 - **`update_profile`**
   - *Read-only:* Not read-only. It writes sex, birth year, birth month or height into the record's profile and saves the file.
-  - *Destructive:* Destructive. The profile is one last-writer-wins object, so a write overwrites what stood there and keeps no history. Guarded by a required `expected` value per field: a mismatch writes nothing.
+  - *Destructive:* Destructive. The profile is one last-writer-wins object, so a write overwrites what stood there and keeps no history. Guarded by a required `expected` value for each field it CHANGES: a mismatch writes nothing. Filling a field the record does not hold yet is an add and needs none — there is no earlier value to protect.
 - **`report_feedback`**
   - *Read-only:* Not read-only. It never opens the health record, but it files a public GitHub issue on the project's repository for the user.
   - *Destructive:* Not destructive. It creates an issue and takes nothing away. Nothing in the health record is read or changed.

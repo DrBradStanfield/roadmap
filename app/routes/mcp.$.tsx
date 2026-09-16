@@ -34,16 +34,7 @@ import {
   type McpClient,
 } from '../lib/mcp-clients.server';
 import { isMcpEnabled, issuer } from '../lib/mcp-config.server';
-import {
-  allowAuthorize,
-  allowToken,
-  claimCode,
-  CODE_LIFETIME_SECONDS,
-  type CodePayload,
-  issueTokens,
-  type RefreshPayload,
-  type StatePayload,
-} from '../lib/mcp-grants.server';
+import { allowAuthorize, allowToken, claimCode, CODE_LIFETIME_SECONDS, issueTokens, STATE_LIFETIME_SECONDS, type CodePayload, type RefreshPayload, type StatePayload } from '../lib/mcp-grants.server';
 import {
   availableProviders,
   isProvider,
@@ -279,7 +270,10 @@ async function consentGiven(request: Request): Promise<Response> {
   const nonce = crypto.randomBytes(32).toString('base64url');
   const sealed = packSealed('state', state.clientId, { ...state, nonce });
   return redirectTo(providerAuthorizeUrl(state.provider, nonce), {
-    'Set-Cookie': `${STATE_COOKIE}=${sealed}; ${STATE_COOKIE_ATTRS}; Max-Age=600`,
+    // Derived, never retyped: the cookie must outlive the seal or a timeout
+    // reads as "that sign-in did not start here", which is the wrong sentence.
+    // The seal still binds first — its clock started at the authorize GET.
+    'Set-Cookie': `${STATE_COOKIE}=${sealed}; ${STATE_COOKIE_ATTRS}; Max-Age=${STATE_LIFETIME_SECONDS}`,
   });
 }
 

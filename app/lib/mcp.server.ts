@@ -167,18 +167,29 @@ function checkCorrection(file: RoadmapFile, args: unknown, now: string): GuardRe
  * The same guard for `update_profile` (US-34): every field the call changes
  * must come with the value the agent believes it is replacing. The profile is
  * last-write-wins, so there is no superseded copy to read back — the claim is
- * the only thing standing between a stale read and a silently wrong plan.
+ * the only thing standing between a stale read and a silently wrong plan —
+ * when there IS a value to replace. Filling a field the record does not hold
+ * is an add, and needs no claim about what was there (see below).
  */
-function checkProfileUpdate(args: unknown): GuardRefusal | null {
+function checkProfileUpdate(args: unknown, file: RoadmapFile): GuardRefusal | null {
   const request = (args ?? {}) as Record<string, unknown>;
   const expected = (request.expected ?? {}) as Record<string, unknown>;
-  const missing = PROFILE_FIELDS.filter((field) => request[field] !== undefined && expected[field] === undefined);
+  // Filling a field the record does not hold is an ADD, and the record prices
+  // adds cheaply everywhere else — `add_measurement` needs no expected value
+  // either. `expected` exists to stop an agent overwriting a value it never
+  // read; where there is no value, there is nothing to overwrite and nothing
+  // for the guard to protect. Demanding it here only forced a read_record
+  // before a user could say how tall they are.
+  const missing = PROFILE_FIELDS.filter(
+    (field) => request[field] !== undefined && expected[field] === undefined && file.profile[field] != null,
+  );
   if (missing.length === 0) return null;
   return {
     reason: 'malformed',
     text:
-      `update_profile needs expected.${missing.join(', expected.')} on this server: the value you believe the record ` +
-      'holds now, or null if it holds none. Read the record, then update. Nothing was written.',
+      `update_profile needs expected.${missing.join(', expected.')} on this server: the record already holds a value ` +
+      'for each of those, and changing one needs the value you believe is there now. Read the record, then update. ' +
+      'Nothing was written. (A field the record does not hold yet needs no expected value.)',
   };
 }
 
@@ -196,7 +207,7 @@ function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile,
     if (refusal) return refusal;
   }
   if (name === 'update_profile') {
-    const refusal = checkProfileUpdate(args);
+    const refusal = checkProfileUpdate(args, file);
     if (refusal) return refusal;
   }
   // The confirmed half of a two-phase write was charged at its proposal.

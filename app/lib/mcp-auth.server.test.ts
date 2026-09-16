@@ -19,28 +19,9 @@ vi.mock('node:dns/promises', () => ({
   default: { lookup: async () => [{ address: '1.1.1.1', family: 4 }] },
 }));
 import { checkAuthorize, MAX_STATE_LENGTH, sealState, verifyPkce } from './mcp-authorize.server';
-import {
-  isAllowedRedirect,
-  isLoopbackRedirect,
-  isPublicAddress,
-  redirectMatches,
-  KNOWN_CLIENTS,
-  registerClient,
-  resolveClient,
-} from './mcp-clients.server';
+import { ALLOWED_REDIRECTS, isAllowedRedirect, isLoopbackRedirect, isPublicAddress, KNOWN_CLIENTS, redirectMatches, registerClient, resolveClient } from './mcp-clients.server';
 import { isMcpEnabled } from './mcp-config.server';
-import {
-  ACCESS_LIFETIME_SECONDS,
-  type AccessPayload,
-  connectionKey,
-  issueTokens,
-  type RefreshPayload,
-  type StatePayload,
-  resetMcpMemory,
-  spendWrites,
-  WRITE_COST,
-  WRITES_PER_HOUR,
-} from './mcp-grants.server';
+import { ACCESS_LIFETIME_SECONDS, connectionKey, issueTokens, resetMcpMemory, spendWrites, STATE_LIFETIME_SECONDS, type AccessPayload, type RefreshPayload, type StatePayload, WRITE_COST, WRITES_PER_HOUR } from './mcp-grants.server';
 import { packSealed, seal, typeKey, unpackSealed, unseal } from './mcp-seal.server';
 
 const KEY_A = Buffer.alloc(32, 1).toString('base64');
@@ -410,6 +391,35 @@ describe('pinned clients (US-32, IETF CIMD draft §4 — our own policy)', () =>
     }
   });
 
+  /**
+   * The other direction, which is the one that actually broke. Once a vendor is
+   * pinned, the pin OVERRIDES the allow-list for that vendor: `checkAuthorize`
+   * demands the redirect be in the client's own list as well. So an allow-list
+   * entry on a pinned vendor's host that the pin omits is unreachable by that
+   * vendor and answered with a non-redirectable 400 — ChatGPT saw a dead window
+   * rather than an error. That was live from 548c1c5 (2026-09-02) until
+   * 2026-09-16 and no test could see it, because the subset above runs the
+   * other way.
+   *
+   * What this asserts, exactly: no https allow-list entry on a pinned host is
+   * carried by NO pin. Deliberately not the stronger "each vendor carries every
+   * entry on its own host" — `chatgpt.com` has two pinned vendors, ChatGPT and
+   * Codex, and neither should be forced to claim the other's callbacks. Scoped
+   * to pinned hosts because an entry serving a DCR-only vendor is legitimate
+   * and has no pin by definition.
+   */
+  it('no allow-listed redirect on a pinned host is orphaned', () => {
+    const pinnedHosts = new Set(
+      [...KNOWN_CLIENTS.values()].flatMap((c) => c.redirectUris.map((u) => new URL(u).host)),
+    );
+    const pinned = new Set([...KNOWN_CLIENTS.values()].flatMap((c) => [...c.redirectUris]));
+    for (const uri of ALLOWED_REDIRECTS) {
+      const { host, protocol } = new URL(uri);
+      if (protocol !== 'https:' || !pinnedHosts.has(host)) continue;
+      expect(pinned.has(uri), `${uri} is allow-listed but no pin on ${host} carries it`).toBe(true);
+    }
+  });
+
   it('resolves without touching the network, even when fetch would throw', async () => {
     const spy = vi.fn(async () => {
       throw new TypeError('fetch failed');
@@ -562,6 +572,12 @@ describe('PKCE (US-32)', () => {
 describe('client state round-trip (US-32)', () => {
   const CHATGPT_STATE = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
 
+  /** The consent press re-seals the state to carry the provider nonce. */
+  function pressConnect(sealed: string, nowMs?: number): string {
+    const opened = unpackSealed<StatePayload>('state', sealed, nowMs)!;
+    return packSealed('state', opened.clientId, { ...opened, nonce: 'n'.repeat(43) });
+  }
+
   function authorizeParams(state: string): URLSearchParams {
     return new URLSearchParams({
       redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
@@ -614,9 +630,39 @@ describe('client state round-trip (US-32)', () => {
     expect(checked.ok).toBe(true);
     if (!checked.ok) return;
     // The cookie the callback actually reads carries the 43-byte consent nonce.
-    const opened = unpackSealed<StatePayload>('state', sealState(checked.request, 'dropbox', Date.now()))!;
-    const sealed = packSealed('state', opened.clientId, { ...opened, nonce: 'n'.repeat(43) });
-    const cookie = `__Host-mcp-state=${sealed}; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=600`;
+    const sealed = pressConnect(sealState(checked.request, 'dropbox', Date.now()));
+    const cookie = `__Host-mcp-state=${sealed}; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=${STATE_LIFETIME_SECONDS}`;
     expect(cookie.length).toBeLessThan(4096);
+  });
+
+  /**
+   * US-32 AC14. The budget covers the WHOLE consent trip, because `sealState`
+   * stamps `exp` at the authorize GET and `consentGiven` re-seals without
+   * restamping. That is load-bearing and was untested: a refactor that
+   * restamped by accident would have passed CI and quietly doubled the window.
+   */
+  it('gives the whole consent trip half an hour, not ten minutes', () => {
+    // The clock test below is written RELATIVE to the constant, so reverting
+    // 30 to 10 left the whole suite green. The number is itself the policy.
+    expect(STATE_LIFETIME_SECONDS).toBe(30 * 60);
+  });
+
+  it('runs the state clock from the authorize GET, not from the consent press', () => {
+    const t0 = Date.parse('2026-09-16T00:00:00.000Z');
+    const checked = checkAuthorize(authorizeParams('client-state'), KNOWN_CLIENTS.get(CHATGPT_STATE)!);
+    expect(checked.ok).toBe(true);
+    if (!checked.ok) return;
+    const atGet = sealState(checked.request, 'dropbox', t0);
+
+    // `exp` must survive the press.
+    const afterPress = pressConnect(atGet, t0);
+
+    const fromGet = (seconds: number) => t0 + seconds * 1000;
+    const inside = fromGet(STATE_LIFETIME_SECONDS - 5 * 60);
+    const outside = fromGet(STATE_LIFETIME_SECONDS + 5 * 60);
+    expect(unpackSealed<StatePayload>('state', afterPress, inside)).not.toBeNull();
+    expect(unpackSealed<StatePayload>('state', afterPress, outside)).toBeNull();
+    // ...and pressing Connect late does not buy a fresh budget.
+    expect(unpackSealed<StatePayload>('state', atGet, outside)).toBeNull();
   });
 });

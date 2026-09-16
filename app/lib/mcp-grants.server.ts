@@ -12,6 +12,21 @@ import { hash, packSealed } from './mcp-seal.server';
 import type { McpProvider } from './mcp-providers.server';
 import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 
+/**
+ * The whole consent trip, not just the part after the button. `sealState` is
+ * stamped at the authorize GET and `consentGiven` re-seals WITHOUT restamping,
+ * so this covers reading the screen, pressing Connect, signing in at Dropbox or
+ * Google, creating an account if you have none, clearing the provider's device
+ * check, and coming back. Ten minutes was a race; overrunning it renders a 400
+ * on our own domain with no way back to the assistant.
+ *
+ * Lengthening it costs nothing, and not for the reasons it looks like: the
+ * authorize GET is unauthenticated and mints a fresh state on demand, so this
+ * lifetime never bounded anyone who wanted one. What bounds the flow is the
+ * `__Host-` cookie, the 32-byte provider nonce, PKCE, and the 60-second
+ * single-use code. The blob itself carries no credential (see StatePayload).
+ */
+export const STATE_LIFETIME_SECONDS = 30 * 60;
 export const CODE_LIFETIME_SECONDS = 60;
 export const ACCESS_LIFETIME_SECONDS = 60 * 60;
 export const REFRESH_LIFETIME_SECONDS = 90 * 24 * 60 * 60;

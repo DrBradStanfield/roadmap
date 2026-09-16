@@ -41,7 +41,7 @@ interface KnownClient extends McpClient {
  * origin anything — and the code that reaches such a URL is worthless without
  * the PKCE verifier, which never left the process that asked.
  */
-const ALLOWED_REDIRECTS = [
+export const ALLOWED_REDIRECTS = [
   'https://claude.ai/api/mcp/auth_callback',
   'https://chatgpt.com/connector_platform_oauth_redirect',
   'https://chatgpt.com/backend-api/aip/connectors/links/oauth/callback',
@@ -106,9 +106,12 @@ export function isAllowedRedirect(uri: string): boolean {
  * spec's own sanctioned mechanisms: IETF draft-ietf-oauth-client-id-metadata-
  * document-00 §4 says a server SHOULD fetch the document and MAY apply its own
  * policy about which clients it accepts. This IS that policy. The redirect URIs
- * here are copied verbatim from the vendors' published documents, and every one
- * must pass `isAllowedRedirect` — a test asserts that, so the pins and the
- * policy cannot drift apart.
+ * here are the vendors' published redirects PLUS any path we have observed one
+ * of them actually use (see ChatGPT below), and every one must pass
+ * `isAllowedRedirect` — a test asserts that, so the pins and the policy cannot
+ * drift apart — in BOTH directions since 2026-09-16: an allow-listed redirect
+ * on a pinned vendor's host that its pin omits is unreachable by that vendor,
+ * which is how ChatGPT spent two weeks getting a dead window.
  *
  * Claude Code publishes a SECOND document, `claude-code-client-metadata`,
  * behind the same challenge. Its redirects are loopback: the port belongs to
@@ -143,7 +146,20 @@ export const KNOWN_CLIENTS: ReadonlyMap<string, Readonly<KnownClient>> = new Map
       clientId: 'https://chatgpt.com/oauth/client.json',
       name: 'ChatGPT',
       label: 'chatgpt',
-      redirectUris: Object.freeze(['https://chatgpt.com/connector_platform_oauth_redirect']),
+      // Two callbacks, and only the first is in OpenAI's published document.
+      // The second is the Connectors ("links") flow: it has been in
+      // ALLOWED_REDIRECTS since the hosted server shipped (548c1c5), so the
+      // policy already trusted it — but the pin did not carry it, and a pinned
+      // client is refused any redirect its own entry omits. That combination
+      // answers `/authorize` with a NON-redirectable 400: ChatGPT gets a dead
+      // window rather than an error it can show the user. Observed in
+      // production 2026-09-15. Pinned rather than dropped because the pin is
+      // our record of what a vendor USES, not a mirror of what it publishes —
+      // which is the whole reason pinning exists (Cloudflare, above).
+      redirectUris: Object.freeze([
+        'https://chatgpt.com/connector_platform_oauth_redirect',
+        'https://chatgpt.com/backend-api/aip/connectors/links/oauth/callback',
+      ]),
     },
   ],
   [
