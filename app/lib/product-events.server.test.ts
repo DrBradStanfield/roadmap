@@ -266,13 +266,28 @@ describe('recordServerEvent — the server path validates too', () => {
     ]);
   });
 
-  it('keeps the word each OAuth event does own', async () => {
+  it('keeps the word each OAuth event does own, `/token`\'s included', async () => {
     await recordServerEvent('mcp_authorize_refused', { client: 'claude', reason: 'unknown-client' });
     await recordServerEvent('mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'exchange-failed' });
-    expect(inserts.map((row) => row.metadata)).toEqual([
-      { client: 'claude', reason: 'unknown-client' },
-      { client: 'claude', provider: 'dropbox', reason: 'exchange-failed' },
+    // The `/token` words, the last door: same list, same event, one per exit.
+    await recordServerEvent('mcp_connect_failed', { reason: 'token-bad-request' });
+    await recordServerEvent('mcp_connect_failed', { client: 'claude', reason: 'token-grant-type' });
+    await recordServerEvent('mcp_connect_failed', { client: 'claude', reason: 'token-dead-code' });
+    await recordServerEvent('mcp_connect_failed', { client: 'other', provider: 'dropbox', reason: 'token-client' });
+    await recordServerEvent('mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'token-redirect' });
+    await recordServerEvent('mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'token-pkce' });
+    await recordServerEvent('mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'token-replayed' });
+    await recordServerEvent('mcp_connect_failed', { client: 'claude', reason: 'token-dead-refresh' });
+    expect(inserts.map((row) => (row.metadata as { reason?: string } | null)?.reason)).toEqual([
+      'unknown-client', 'exchange-failed', 'token-bad-request', 'token-grant-type', 'token-dead-code',
+      'token-client', 'token-redirect', 'token-pkce', 'token-replayed', 'token-dead-refresh',
     ]);
+    expect(inserts[1]?.metadata).toEqual({ client: 'claude', provider: 'dropbox', reason: 'exchange-failed' });
+  });
+
+  it('refuses a `/token` word on the tool counter, which draws from the other list', async () => {
+    await recordServerEvent('mcp_tool_call', { tool: 'add_measurement', outcome: 'refused', reason: 'token-pkce' as never });
+    expect(inserts[0]?.metadata).toEqual({ tool: 'add_measurement', outcome: 'refused' });
   });
 
   it('drops an undeclared key before the insert', async () => {

@@ -203,6 +203,28 @@ export const MCP_OAUTH_REASONS = [
   'provider-denied',
   /** The provider would not trade its code for a refresh token. */
   'exchange-failed',
+  // `/token` answers `invalid_grant` on every dead grant, deliberately: a
+  // specific error tells an attacker which check they failed. The COUNTER may
+  // say, because nobody outside reads it — these are the words for the last
+  // door, where a connection that got a code still never becomes a token.
+  // One word for both malformed bodies on purpose: neither has a grant to name,
+  // and the pair below shares `token-client` the same way, across both grants.
+  /** The body was not form-encoded, or was over the 64 KB cap. */
+  'token-bad-request',
+  /** Neither `authorization_code` nor `refresh_token`. */
+  'token-grant-type',
+  /** The authorization code was dead, expired or tampered with. */
+  'token-dead-code',
+  /** A grant redeemed by a client that is not the one it was minted for. */
+  'token-client',
+  /** The `redirect_uri` does not match the one the code was minted with. */
+  'token-redirect',
+  /** The `code_verifier` does not answer the PKCE challenge. */
+  'token-pkce',
+  /** A code redeemed twice — on this machine, which is all stateless can see. */
+  'token-replayed',
+  /** The refresh token was dead, expired or tampered with. */
+  'token-dead-refresh',
 ] as const;
 
 export type McpOAuthReason = (typeof MCP_OAUTH_REASONS)[number];

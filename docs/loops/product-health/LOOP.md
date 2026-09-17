@@ -44,12 +44,17 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   stamps) → the connector family, whose OAuth funnel runs
   `mcp_authorize_shown` → `mcp_authorize_refused` (split by `reason`: a
   refused vendor shows here and nowhere else) → `mcp_consent_posted` →
-  `mcp_connect` / `mcp_connect_failed`, then `mcp_tool_call` /
+  `mcp_connect` / `mcp_connect_failed` (whose `reason` now covers `/token`
+  too: a `token-*` word means a client that reached the last door and still
+  got no token), then `mcp_tool_call` /
   `mcp_import` / `remote_change_applied` (metadata breakdown by tool, client,
   route, reason; value-free by design — while n is tiny these are Brad's own
   verification, not adoption); `guide_opened` split by `placement`
   (header|footer), read against `results_viewed`;
-  `reminder_optin_v2` total by `provider`.
+  `reminder_optin_v2` total by `provider`. Read `mcp_authorize_shown` with a
+  clock: more than two rows a second from one client, with no
+  `mcp_consent_posted` following, is a probe scanning the door, not people
+  trying to connect — count it as traffic and say so, never as demand.
 - **Sentry** (`SENTRY_AUTH_TOKEN`): issues first-seen last 7d + big movers,
   project `dr-brad-inc/javascript-remix`, `statsPeriod=14d`.
 - **Workflow integrity** (out-of-band backstop for the CI tripwire):

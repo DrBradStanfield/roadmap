@@ -151,7 +151,7 @@ values it read.
 3. Show me how my LDL has changed over the past year.
 4. My last weight entry was wrong. Fix it to 78 kg.
 5. What screening am I due for?
-6. Import the lab results in my Dropbox folder.
+6. Import the lab results in my connected Dropbox folder (Dropbox only).
 7. Here is my blood test (a PDF or photo dropped into the chat). Add the results to my record.
 
 ## Test cases
@@ -222,6 +222,11 @@ is not his own record and not a shared production credential; everything in it i
 > If Google shows a one-time code anyway because you are signing in from a new place, the same
 > password opens that account's own Gmail inbox, so you can read the code there and continue.
 >
+> One thing to know about the folder import: `import_documents` reads a Dropbox folder, and this
+> account is on Google Drive, where Google's `drive.file` scope cannot list a folder. So the tool
+> will refuse there and say so. Test importing by dropping a lab PDF or photo straight into the
+> chat instead, which is test cases 7 and 8.
+>
 > The account already holds a profile and some results, so every test case works immediately.
 
 ## What 1.0.1 adds over 1.0.0
@@ -285,7 +290,10 @@ This is a **resubmission**: a new 1.0.1 version inside the existing app record, 
 0. DONE 2026-09-17. `95ba57b` deployed by run 35173356172 (all jobs green), and a real ChatGPT
    reconnect landed the full funnel in `product_events` that morning, UTC: `mcp_authorize_shown`
    02:19:01, `mcp_consent_posted` 02:19:09, `mcp_connect` 02:19:10, then `mcp_tool_call`
-   (`read_record`, outcome ok) 02:20:34. ChatGPT used the `chatgpt.com/connector_platform_oauth_redirect`
+   (`read_record`, outcome ok) 02:20:34. The proof the connection completed is that
+   `mcp_tool_call` at 02:20:34, not the `mcp_connect` row: `mcp_connect` is written when the
+   authorization code is minted, before the client redeems it at `/token`, so on its own it says
+   the door opened and not that anyone walked through. ChatGPT used the `chatgpt.com/connector_platform_oauth_redirect`
    callback; a live probe confirms the consent page also answers 200 on the callback the review
    environment used. The counters carry no health values.
 1. Create the reviewer account and fill it (Demo credentials above), then test it cold from a clean

@@ -2020,6 +2020,87 @@ describe('the OAuth funnel counts refusals, not only successes (US-32 AC34)', ()
   });
 
   /**
+   * `/token` is the last door, and it wrote nothing at all: a client that was
+   * shown the screen, pressed Connect and came back from Dropbox could still
+   * fail to become a token, and the funnel showed a completed `mcp_connect`
+   * with no sign of it. Every exit here answers the same `invalid_grant` on
+   * purpose, so only the counter can say which check failed.
+   *
+   * One test per call site: remove any single `connectFailed(...)` from
+   * `tokenEndpoint` and one of these fails.
+   */
+  describe('and counts the grants that never become a token', () => {
+    const form = (fields: Record<string, string>) =>
+      post('/mcp/token', { headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(fields) });
+
+    /** Consent, come back from Dropbox, and stop: a live code, unredeemed. */
+    async function mintCode(): Promise<string> {
+      const { nonce, cookie } = await pressConnect(await consentScreen(CLAUDE_CIMD));
+      const back = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(nonce)}`, { cookie });
+      return new URL(back.headers.get('location')!).searchParams.get('code')!;
+    }
+
+    const codeGrant = (code: string, over: Record<string, string> = {}) => ({
+      grant_type: 'authorization_code', code, redirect_uri: REDIRECT, code_verifier: VERIFIER, client_id: CLAUDE_CIMD, ...over,
+    });
+
+    it('counts a body that is not form-encoded', async () => {
+      expect((await post('/mcp/token', { headers: { 'content-type': 'application/json' }, body: '{}' })).status).toBe(400);
+      expect(funnel()).toEqual([['mcp_connect_failed', { reason: 'token-bad-request' }]]);
+    });
+
+    it('counts a body over the cap, which is read before any client id is', async () => {
+      const res = await post('/mcp/token', {
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: `grant_type=refresh_token&refresh_token=${'x'.repeat(64 * 1024 + 1)}`,
+      });
+      expect(res.status).toBe(413);
+      expect(funnel()).toEqual([['mcp_connect_failed', { reason: 'token-bad-request' }]]);
+    });
+
+    it('counts a grant type we do not issue', async () => {
+      expect((await form({ grant_type: 'password', client_id: CLAUDE_CIMD })).status).toBe(400);
+      expect(funnel()).toEqual([['mcp_connect_failed', { client: 'claude', reason: 'token-grant-type' }]]);
+    });
+
+    it('counts a code that will not open — expired, tampered or never ours', async () => {
+      expect((await form(codeGrant('nonsense'))).status).toBe(400);
+      expect(funnel()).toEqual([['mcp_connect_failed', { client: 'claude', reason: 'token-dead-code' }]]);
+    });
+
+    it('counts a code redeemed by a client it was not minted for', async () => {
+      const code = await mintCode();
+      const other = await registerClientOverHttp();
+      expect((await form(codeGrant(code, { client_id: other }))).status).toBe(400);
+      expect(funnel().at(-1)).toEqual(['mcp_connect_failed', { client: 'other', provider: 'dropbox', reason: 'token-client' }]);
+    });
+
+    it('counts a code redeemed against a redirect it was not minted with', async () => {
+      const code = await mintCode();
+      expect((await form(codeGrant(code, { redirect_uri: 'https://claude.ai/api/mcp/elsewhere' }))).status).toBe(400);
+      expect(funnel().at(-1)).toEqual(['mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'token-redirect' }]);
+    });
+
+    it('counts a verifier that does not answer the PKCE challenge', async () => {
+      const code = await mintCode();
+      expect((await form(codeGrant(code, { code_verifier: 'w'.repeat(64) }))).status).toBe(400);
+      expect(funnel().at(-1)).toEqual(['mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'token-pkce' }]);
+    });
+
+    it('counts a code redeemed twice', async () => {
+      const code = await mintCode();
+      expect((await form(codeGrant(code))).status).toBe(200);
+      expect((await form(codeGrant(code))).status).toBe(400);
+      expect(funnel().at(-1)).toEqual(['mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'token-replayed' }]);
+    });
+
+    it('counts a refresh token that will not open', async () => {
+      expect((await form({ grant_type: 'refresh_token', refresh_token: 'nonsense', client_id: CLAUDE_CIMD })).status).toBe(400);
+      expect(funnel()).toEqual([['mcp_connect_failed', { client: 'claude', reason: 'token-dead-refresh' }]]);
+    });
+  });
+
+  /**
    * The counter's whole promise. A refusal knows a `redirect_uri`, a
    * `client_id` and a `state`, all caller-chosen text, and this is the one
    * place any of it could leak into a row we keep.

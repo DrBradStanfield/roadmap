@@ -76,15 +76,16 @@ function authorizeRefused(reason: McpOAuthReason, client: McpClientLabel): void 
 }
 
 /**
- * The sealed state, when we have one: before the seal opens, a failure can say
- * only why. `isProvider` guards the provider key, because the seal is ours but
- * the counter's vocabulary is closed and this is the one word that could come
- * from outside it.
+ * Whatever grant we have, when we have one: before a seal opens, a failure can
+ * say only why. Any of the three payloads fits, and so does `/token`'s own
+ * pair of a form `client_id` with the provider its grant names. `isProvider`
+ * guards the provider key, because the seal is ours but the counter's
+ * vocabulary is closed and this is the one word that could come from outside it.
  */
-function connectFailed(reason: McpOAuthReason, state?: StatePayload): void {
+function connectFailed(reason: McpOAuthReason, grant?: { clientId: string; provider?: string }): void {
   void recordServerEvent('mcp_connect_failed', {
-    ...(state ? { client: mcpClientLabel(state.clientId) } : {}),
-    ...(state && isProvider(state.provider) ? { provider: providerTag(state.provider) } : {}),
+    ...(grant ? { client: mcpClientLabel(grant.clientId) } : {}),
+    ...(grant && isProvider(grant.provider) ? { provider: providerTag(grant.provider) } : {}),
     reason,
   });
 }
@@ -269,7 +270,9 @@ async function providerCallback(request: Request, url: URL): Promise<Response> {
     exp: Math.floor(Date.now() / 1000) + CODE_LIFETIME_SECONDS,
   };
   back.searchParams.set('code', packSealed('code', state.clientId, payload));
-  // One value-free row per completed connection: which assistant, which cloud.
+  // One value-free row per code minted: which assistant, which cloud. Redemption
+  // failures are counted at `/token` as `mcp_connect_failed`, so this row says
+  // the door opened, not that the client walked through.
   // Fire-and-forget — a counter never stands between the user and their record.
   void recordServerEvent('mcp_connect', {
     client: mcpClientLabel(state.clientId),
@@ -341,37 +344,51 @@ async function tokenEndpoint(request: Request): Promise<Response> {
   if (!allowToken(getClientIp(request, 'fly'))) return new Response('Too many requests', { status: 429 });
   const type = request.headers.get('content-type') ?? '';
   if (!type.includes('application/x-www-form-urlencoded')) {
+    // No form yet, so no client either: the word is the whole row.
+    connectFailed('token-bad-request');
     return oauthError('invalid_request', 'Send application/x-www-form-urlencoded');
   }
   const body = await cappedBody(request);
-  if (body === null) return tooLarge();
+  if (body === null) {
+    connectFailed('token-bad-request');
+    return tooLarge();
+  }
   const form = new URLSearchParams(body);
   const clientId = form.get('client_id') ?? '';
   const grant = form.get('grant_type');
 
   if (grant === 'authorization_code') {
     const code = unpackSealed<CodePayload>('code', form.get('code') ?? '');
-    if (!code || code.clientId !== clientId) return oauthError('invalid_grant', 'That code is not usable');
-    if (!redirectMatches(code.redirectUri, form.get('redirect_uri') ?? '')) return oauthError('invalid_grant', 'That code is not usable');
-    if (!verifyPkce(form.get('code_verifier') ?? '', code.codeChallenge)) {
+    const from = { clientId, provider: code?.provider };
+    // One sentence for every dead code, and one word each to the counter: the
+    // client is told nothing about WHICH check it failed, on purpose.
+    const dead = (reason: McpOAuthReason) => {
+      connectFailed(reason, from);
       return oauthError('invalid_grant', 'That code is not usable');
-    }
+    };
+    if (!code || code.clientId !== clientId) return dead(code ? 'token-client' : 'token-dead-code');
+    if (!redirectMatches(code.redirectUri, form.get('redirect_uri') ?? '')) return dead('token-redirect');
+    if (!verifyPkce(form.get('code_verifier') ?? '', code.codeChallenge)) return dead('token-pkce');
     // Best-effort, per machine: OAuth 2.1 wants single-use codes and stateless
     // cannot promise it across Fly machines. Redemption still needs the
     // verifier, which never leaves the client (design §4).
-    if (!claimCode(code.jti)) return oauthError('invalid_grant', 'That code is not usable');
+    if (!claimCode(code.jti)) return dead('token-replayed');
     return Response.json(issueTokens(clientId, code.provider, code.rt, Date.now()), { headers: NO_STORE });
   }
 
   if (grant === 'refresh_token') {
     const refresh = unpackSealed<RefreshPayload>('refresh', form.get('refresh_token') ?? '');
-    if (!refresh || refresh.clientId !== clientId) return oauthError('invalid_grant', 'Please reconnect');
+    if (!refresh || refresh.clientId !== clientId) {
+      connectFailed(refresh ? 'token-client' : 'token-dead-refresh', { clientId, provider: refresh?.provider });
+      return oauthError('invalid_grant', 'Please reconnect');
+    }
     // The original expiry travels through, so 90 days runs from consent.
     return Response.json(issueTokens(clientId, refresh.provider, refresh.rt, Date.now(), refresh.exp), {
       headers: NO_STORE,
     });
   }
 
+  connectFailed('token-grant-type', { clientId });
   return oauthError('unsupported_grant_type', 'Only authorization_code and refresh_token');
 }
 
