@@ -6,6 +6,7 @@
  * two modules.
  */
 import { useState } from 'react';
+import { isStorageFailure } from '@roadmap/health-core';
 import {
   DropboxAdapter,
   GoogleDriveAdapter,
@@ -21,6 +22,7 @@ import { dropboxConfig } from './dropbox-config';
 import { clearAutoEnrolBlock } from './reminders';
 import { googleDriveConfig } from './google-config';
 import { clearLocalStorage } from '../src/lib/storage';
+import { recordFailure } from '../src/lib/error-diagnostics';
 import { trackProductEvent } from '../src/lib/server-api';
 import { Sentry } from '../src/lib/sentry';
 
@@ -28,6 +30,48 @@ import { Sentry } from '../src/lib/sentry';
 export type Backend = 'dropbox' | 'google-drive' | 'github' | 'self-host' | 'local';
 
 export const BACKEND_KEY = 'health_roadmap_backend';
+
+export interface ResolvedBackend {
+  adapter: StorageAdapter;
+  backend: Backend;
+  /** Google Drive is remembered but unusable this session (token gone, or the
+   * provider refused the record): on-device until the user clicks Reconnect. */
+  reconnect?: 'google-drive';
+}
+
+/** The on-device session a cloud backend falls back to. The marker makes the
+ *  next good cloud session merge this session's edits up, whether the user
+ *  clicks Reconnect or the next load simply succeeds; only Drive has an
+ *  in-page Reconnect. */
+export function onDeviceFallback(backend: Exclude<Backend, 'local'>): ResolvedBackend {
+  markSyncPending();
+  return { adapter: new LocalStorageAdapter(), backend: 'local', reconnect: backend === 'google-drive' ? backend : undefined };
+}
+
+/**
+ * Start the data layer on the resolved backend. A cloud record that cannot be
+ * read at load — a token the provider now refuses (a Drive grant without the
+ * `drive.file` scope, Sentry JAVASCRIPT-REMIX-6G), a dead network, a body the
+ * app cannot parse — runs the session on-device instead of leaving the mount
+ * empty (US-09 AC13). Anything else is a defect and still throws.
+ */
+export async function startOnBackend(
+  resolved: ResolvedBackend,
+  init: (adapter: StorageAdapter) => Promise<void>,
+): Promise<ResolvedBackend> {
+  try {
+    await init(resolved.adapter);
+    return resolved;
+  } catch (error) {
+    if (resolved.backend === 'local' || !isStorageFailure(error)) throw error;
+    const failure = recordFailure(error, 'Cloud record could not be loaded');
+    console.warn(failure.message);
+    Sentry.captureException(failure, { tags: { area: 'cloud-sync', op: 'load', backend: resolved.backend } });
+    const fallback = onDeviceFallback(resolved.backend);
+    await init(fallback.adapter);
+    return fallback;
+  }
+}
 
 /** Which storage state the UI is in. Defined once so app.tsx (the storage-notice
  *  gate) and sync-control.tsx (the branch it renders) cannot disagree about what

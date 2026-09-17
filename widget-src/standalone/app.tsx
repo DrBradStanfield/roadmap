@@ -23,24 +23,22 @@ import {
   GitHubAdapter,
   WebDavAdapter,
   LocalStorageAdapter,
-  type StorageAdapter,
 } from '../src/storage';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import { SyncControl, RemindersSection } from './sync-control';
 import { StorageNoticeContext } from '../src/lib/storage-notice';
 import { HistoryLightboxHost } from './history-lightbox';
-import { liftLocalInto, storageState, BACKEND_KEY, type Backend } from './connect';
+import {
+  liftLocalInto,
+  onDeviceFallback,
+  startOnBackend,
+  storageState,
+  BACKEND_KEY,
+  type Backend,
+  type ResolvedBackend,
+} from './connect';
 import { trackProductEvent } from '../src/lib/server-api';
-
-interface ResolvedBackend {
-  adapter: StorageAdapter;
-  backend: Backend;
-  /** Google Drive is the remembered backend but its ~1h token is gone — the
-   * session runs on-device until the user clicks Reconnect (popups need a
-   * user gesture, so we can't re-auth at page load). */
-  reconnect?: 'google-drive';
-}
 
 async function resolveBackend(): Promise<ResolvedBackend> {
   // Returning from a Dropbox OAuth redirect?
@@ -95,9 +93,8 @@ async function resolveBackend(): Promise<ResolvedBackend> {
         return { adapter: gd, backend: 'google-drive' };
       }
       // Endpoint unreachable or refresh token revoked. A popup can't open at
-      // page load, so run this session on-device and offer Reconnect. KEEP the
-      // remembered choice — local edits merge up on reconnect.
-      return { adapter: new LocalStorageAdapter(), backend: 'local', reconnect: 'google-drive' };
+      // page load: run on-device, offer Reconnect, KEEP the remembered choice.
+      return onDeviceFallback('google-drive');
     }
   }
   if (remembered) localStorage.removeItem(BACKEND_KEY); // creds gone → fall back, will re-prompt
@@ -107,8 +104,7 @@ async function resolveBackend(): Promise<ResolvedBackend> {
 
 async function main() {
   initSentry();
-  const { adapter, backend, reconnect } = await resolveBackend();
-  await initRoadmapStore(adapter);
+  const { backend, reconnect } = await startOnBackend(await resolveBackend(), initRoadmapStore);
   // "Delete all my data" must also delete the reminder row on Brad's server,
   // and the token that authorises it dies with the file — so it runs first.
   setPreEraseHook(cancelRemindersForErase);

@@ -345,6 +345,7 @@ export {
 } from './adapter';
 export {
   SyncManager,
+  isStorageFailure,
   type DocumentSpec,
   type SaveResult,
   type SyncContext,

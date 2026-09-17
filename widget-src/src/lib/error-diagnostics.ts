@@ -7,7 +7,12 @@ export const EXPECTED_NETWORK_ERRORS = [
   /The operation was aborted/,
 ];
 
-type RecordFailure = 'Document file not stored' | 'Cloud sync failed' | 'Upload processing failed' | 'Upload save failed';
+type RecordFailure =
+  | 'Document file not stored'
+  | 'Cloud sync failed'
+  | 'Cloud record could not be loaded'
+  | 'Upload processing failed'
+  | 'Upload save failed';
 
 /** Fresh exception: no provider text, original cause or document reference. */
 export function recordFailure(error: unknown, message: RecordFailure): Error {
