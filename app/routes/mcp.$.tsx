@@ -32,9 +32,10 @@ import {
   registerClient,
   resolveClient,
   type McpClient,
+  type McpClientLabel,
 } from '../lib/mcp-clients.server';
 import { isMcpEnabled, issuer } from '../lib/mcp-config.server';
-import { allowAuthorize, allowToken, claimCode, CODE_LIFETIME_SECONDS, issueTokens, STATE_LIFETIME_SECONDS, type CodePayload, type RefreshPayload, type StatePayload } from '../lib/mcp-grants.server';
+import { allowAuthorize, allowRateLimitEvent, allowToken, claimCode, CODE_LIFETIME_SECONDS, issueTokens, STATE_LIFETIME_SECONDS, type CodePayload, type RefreshPayload, type StatePayload } from '../lib/mcp-grants.server';
 import {
   availableProviders,
   isProvider,
@@ -43,8 +44,10 @@ import {
   providerExchange,
   providerLabel,
   providerRevokeUrl,
+  providerTag,
 } from '../lib/mcp-providers.server';
 import { packSealed, unpackSealed } from '../lib/mcp-seal.server';
+import type { McpOAuthReason } from '../../packages/health-core/src/product-events';
 
 /**
  * The consent screen is the only place a provider trip may start, and this
@@ -61,6 +64,30 @@ const CLEAR_STATE_COOKIE = `${STATE_COOKIE}=; ${STATE_COOKIE_ATTRS}; Max-Age=0`;
 
 /** 64 KB at the OAuth doors: a registration document is the largest honest body. */
 const AUTH_BODY_CAP = 64 * 1024;
+
+/**
+ * One shape for every funnel row, built in one place (US-32 AC34). A refused
+ * connection knows a `client_id`, a `redirect_uri` and a `state`, all
+ * caller-chosen text: what reaches a row is the client's LABEL, the provider
+ * as the counter spells it, and the name of the check that failed.
+ */
+function authorizeRefused(reason: McpOAuthReason, client: McpClientLabel): void {
+  void recordServerEvent('mcp_authorize_refused', { client, reason });
+}
+
+/**
+ * The sealed state, when we have one: before the seal opens, a failure can say
+ * only why. `isProvider` guards the provider key, because the seal is ours but
+ * the counter's vocabulary is closed and this is the one word that could come
+ * from outside it.
+ */
+function connectFailed(reason: McpOAuthReason, state?: StatePayload): void {
+  void recordServerEvent('mcp_connect_failed', {
+    ...(state ? { client: mcpClientLabel(state.clientId) } : {}),
+    ...(state && isProvider(state.provider) ? { provider: providerTag(state.provider) } : {}),
+    reason,
+  });
+}
 
 
 
@@ -141,25 +168,37 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
  * exactly that reason.
  */
 async function authorizeScreen(request: Request, url: URL): Promise<Response> {
+  // The label, not the id: a client id is caller-chosen text, and an id we do
+  // not recognise is `other` — the same word every refusal below carries.
+  const who = mcpClientLabel(url.searchParams.get('client_id') ?? '');
   // Rate-limit BEFORE resolving the client: resolving may fetch a URL the
   // caller chose, which is the expensive and abusable half (design §4).
-  if (!allowAuthorize(getClientIp(request, 'fly'))) {
+  const ip = getClientIp(request, 'fly');
+  if (!allowAuthorize(ip)) {
+    // Once per IP per window: a flood is when this branch runs, so a row per
+    // refused request would spend a database insert on every one of them.
+    if (allowRateLimitEvent(ip)) authorizeRefused('rate-limited', who);
     return new Response('Too many requests', { status: 429 });
   }
   // Only providers whose secrets exist are offered, so Drive stays invisible
   // until Brad finishes the Google console steps (design §7, phase-2 gate).
   const providers = availableProviders();
   if (providers.length === 0) {
+    authorizeRefused('no-provider', who);
     return oauthError('temporarily_unavailable', 'No storage provider is configured', 503);
   }
 
   const client = await resolveClient(url.searchParams.get('client_id') ?? '');
   // An unknown client can never be answered by redirecting — that would make
   // this an open redirector.
-  if (!client) return htmlError('We do not recognise the app that sent you here.');
+  if (!client) {
+    authorizeRefused('unknown-client', who);
+    return htmlError('We do not recognise the app that sent you here.');
+  }
 
   const checked = checkAuthorize(url.searchParams, client);
   if (!checked.ok) {
+    authorizeRefused(checked.reason, who);
     if (!checked.redirectable) return htmlError('That sign-in link is malformed.');
     const back = new URL(url.searchParams.get('redirect_uri') ?? '');
     back.searchParams.set('error', checked.error);
@@ -176,6 +215,7 @@ async function authorizeScreen(request: Request, url: URL): Promise<Response> {
     provider,
     state: sealState(checked.request, provider, Date.now()),
   }));
+  void recordServerEvent('mcp_authorize_shown', { client: who });
   return html(consentPage(client, offers));
 }
 
@@ -190,10 +230,12 @@ async function providerCallback(request: Request, url: URL): Promise<Response> {
   const held = readCookie(request, STATE_COOKIE);
   const state = held ? unpackSealed<StatePayload>('state', held) : null;
   if (!state) {
+    connectFailed('no-cookie');
     return htmlError('That sign-in did not start here, or it took too long. Please start again from your assistant.');
   }
   const clear = { 'Set-Cookie': CLEAR_STATE_COOKIE };
   if (!state.nonce || !sameNonce(url.searchParams.get('state') ?? '', state.nonce)) {
+    connectFailed('nonce-mismatch', state);
     return htmlError('That sign-in could not be matched to this browser. Please start again from your assistant.', clear);
   }
 
@@ -204,12 +246,14 @@ async function providerCallback(request: Request, url: URL): Promise<Response> {
   if (state.clientState) back.searchParams.set('state', state.clientState);
 
   if (denied || !code) {
+    connectFailed('provider-denied', state);
     back.searchParams.set('error', 'access_denied');
     return redirectTo(back.toString(), clear);
   }
 
   const refreshToken = await providerExchange(state.provider, code);
   if (!refreshToken) {
+    connectFailed('exchange-failed', state);
     back.searchParams.set('error', 'server_error');
     back.searchParams.set('error_description', `${providerLabel(state.provider)} would not complete the connection`);
     return redirectTo(back.toString(), clear);
@@ -229,7 +273,7 @@ async function providerCallback(request: Request, url: URL): Promise<Response> {
   // Fire-and-forget — a counter never stands between the user and their record.
   void recordServerEvent('mcp_connect', {
     client: mcpClientLabel(state.clientId),
-    provider: state.provider === 'google' ? 'google-drive' : 'dropbox',
+    provider: providerTag(state.provider),
   });
   return redirectTo(back.toString(), clear);
 }
@@ -260,12 +304,18 @@ async function consentGiven(request: Request): Promise<Response> {
   const body = await cappedBody(request);
   if (body === null) return tooLarge();
   const state = unpackSealed<StatePayload>('state', new URLSearchParams(body).get('state') ?? '');
-  if (!state) return htmlError('That sign-in took too long. Please start again from your assistant.');
+  if (!state) {
+    connectFailed('state-expired');
+    return htmlError('That sign-in took too long. Please start again from your assistant.');
+  }
+  const who = mcpClientLabel(state.clientId);
   // The provider is read from the sealed state, never from the form, and a
   // provider whose secrets have since gone is refused rather than half-tried.
   if (!isProvider(state.provider) || !availableProviders().includes(state.provider)) {
+    connectFailed('provider-unavailable', state);
     return htmlError('That storage provider is not available here. Please start again from your assistant.');
   }
+  void recordServerEvent('mcp_consent_posted', { client: who, provider: providerTag(state.provider) });
 
   const nonce = crypto.randomBytes(32).toString('base64url');
   const sealed = packSealed('state', state.clientId, { ...state, nonce });

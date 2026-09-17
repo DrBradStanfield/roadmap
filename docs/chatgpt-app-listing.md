@@ -1,29 +1,27 @@
 # ChatGPT app listing: Health by Dr Brad
 
-> **Pending: v1.0.1 resubmission.** "Health Roadmap" v1.0.0 (submission
-> `C-Ggl3RkPf6el6`) has been in status Review since 2026-09-02. Do not touch
-> 1.0.0 while it's under review. Our live MCP server now has nine tools
-> (`import_documents` added 2026-09-04, `file_results` 2026-09-07) against the
-> seven 1.0.0 described, and OpenAI requires a new version for an added tool.
-> When the verdict lands (approved or rejected), submit **1.0.1** as "Health by
-> Dr Brad" with `import_documents` AND `file_results` and their justifications
-> (below), one resubmission, and note that `import_documents` no longer declares
-> `openai/fileParams`: a dropped file is read by ChatGPT itself. Tracked in
-> [issue #60](https://github.com/DrBradStanfield/roadmap/issues/60).
-> Dropbox folder names differ by connection age: a NEW connection lands in `Apps/Health Plan by Dr Brad`
-> (live on a fresh account 2026-09-05), while a connection made before the app was renamed keeps
-> `Apps/Health Roadmap by Dr Brad` (Brad's own). Dropbox names the folder at first connect and never
-> renames it, so both names are live and the guides say so.
+> **Rejected 2026-09-15. v1.0.1 is the resubmission.** OpenAI declined "Health Roadmap" v1.0.0
+> (submission `C-Ggl3RkPf6el6`) with one reason, quoted whole: "We're unable to complete your sign-in
+> or OAuth flow. Please ensure valid, working credentials are included and that they include no
+> additional setup or verification to access your service." Two causes, both ours.
 >
-> **Assistant-side extraction shipped 2026-09-07 (US-36).** A file dropped into
-> the chat is read by ChatGPT itself and filed through `file_results`; the file never
-> reaches our server. The folder route (`import_documents`) still sends folder files
-> to our server and to Anthropic's API, and the Compliance paragraph says both.
-> Existing ChatGPT connections keep a cached tool list until the user refreshes the
-> connector; the connect guide says so.
+> **One: a redirect our server refused.** The pinned ChatGPT client carried only the first of OpenAI's
+> two callbacks, so `/mcp/authorize` answered a non-redirectable 400 for
+> `https://chatgpt.com/backend-api/aip/connectors/links/oauth/callback`, and the reviewer got a dead
+> window with no error ChatGPT could show. Fixed on main in `ca62912` (2026-09-16) and deployed before this resubmission.
+> Telemetry agrees with the reviewer: we record no completed connection in the review window.
+>
+> **Two: we answered the credentials question with a refusal.** The Demo credentials section said
+> there were none and none could exist. The form asks for valid, working credentials. It is replaced
+> below: Brad creates a reviewer account holding synthetic data only.
+>
+> Resubmit as **1.0.1**, named "Health by Dr Brad", with `import_documents` and `file_results` and
+> their justifications. `import_documents` no longer declares `openai/fileParams`: a dropped file is
+> read by ChatGPT itself and filed through `file_results`, never reaching our server (US-36). Tracked
+> in [issue #60](https://github.com/DrBradStanfield/roadmap/issues/60).
 
-Everything the OpenAI submission form asks for, so Brad only fills in fields. 1.0.0 has been
-submitted and is in review (see above); 1.0.1 has not. Requirements read 2026-09-02 from `developers.openai.com/plugins/deploy/submission`,
+Everything the OpenAI submission form asks for, so Brad only fills in fields. 1.0.0 was submitted
+and rejected (see above); 1.0.1 has not been submitted. Requirements read 2026-09-02 from `developers.openai.com/plugins/deploy/submission`,
 `.../apps-sdk/app-submission-guidelines` and `.../plugins/reference`. Server:
 `https://mcp.drstanfield.com/mcp` (Fly app `health-tool-edu`); design in [mcp-architecture.md](mcp-architecture.md).
 
@@ -34,8 +32,8 @@ submitted and is in review (see above); 1.0.1 has not. Requirements read 2026-09
 | Name | Health by Dr Brad |
 | Website | https://drstanfield.com |
 | Support | https://drstanfield.com/pages/contact (live, contact form) |
-| Privacy policy | `[PRIVACY_URL]` |
-| Terms of service | `[TERMS_URL]` |
+| Privacy policy | https://drstanfield.com/policies/privacy-policy |
+| Terms of service | https://drstanfield.com/policies/terms-of-service |
 | Category | Health and fitness |
 | Countries | All available countries. The app is English only and the support form is global. |
 | Auth | OAuth 2.1, PKCE, CIMD. The user authorizes their own Dropbox or Google Drive. |
@@ -132,7 +130,7 @@ values it read.
   - *Destructive:* Destructive. It deletes nothing, but it flips the superseded row to `entered-in-error` permanently and no tool reverses that. Guarded by a required `expectedValue` and a 90-day age limit.
 - **`update_profile`**
   - *Read-only:* Not read-only. It writes sex, birth year, birth month or height into the record's profile and saves the file.
-  - *Destructive:* Destructive. The profile is one last-writer-wins object, so a write overwrites what stood there and keeps no history. Guarded by a required `expected` value for each field it CHANGES: a mismatch writes nothing. Filling a field the record does not hold yet is an add and needs none — there is no earlier value to protect.
+  - *Destructive:* Destructive. The profile is one last-writer-wins object, so a write overwrites what stood there and keeps no history. Guarded by a required `expected` value for each field it CHANGES: a mismatch writes nothing. Filling a field the record does not hold yet is an add and needs none: there is no earlier value to protect.
 - **`report_feedback`**
   - *Read-only:* Not read-only. It never opens the health record, but it files a public GitHub issue on the project's repository for the user.
   - *Destructive:* Not destructive. It creates an issue and takes nothing away. Nothing in the health record is read or changed.
@@ -158,8 +156,10 @@ values it read.
 
 ## Test cases
 
-Each needs a reviewer Dropbox account connected through the consent screen; the fixture is that
-account's own file, starting empty. Eight positive:
+Each runs on the reviewer account described under Demo credentials, connected through our consent
+screen; the fixture is that account's own file. `correct_value`, `update_profile` and
+`report_feedback` take two calls: the first returns a confirm receipt and writes nothing; the write
+happens after you say yes. Eight positive:
 
 1. **"Record my weight today as 78 kg."** `add_measurement` confirms the metric, the converted SI
    value and the date.
@@ -171,6 +171,8 @@ account's own file, starting empty. Eight positive:
    `correct_value`: a new row at the original date, old row `entered-in-error`.
 6. **"Import the lab results in my Dropbox folder."** `import_documents` lists the folder root,
    extracts a test PDF, and returns candidates and a receipt; accepting them commits the values.
+   Needs a Dropbox connection: Google Drive's `drive.file` scope cannot list a folder, so on the
+   Google reviewer account the tool refuses and points to cases 7 and 8. Say so in the form.
 7. **A lab PDF or photo dropped into the ChatGPT conversation.** ChatGPT reads it itself and
    calls `file_results` with each printed result, its name and unit as printed and the collection
    date; the server answers candidates against the record and a receipt, and nothing is written
@@ -187,20 +189,115 @@ Four negative:
 
 ## Demo credentials
 
-**There are none, and none can exist.** The app has no accounts. Authorization is a Dropbox OAuth
-flow the user completes, and the folder is scoped to the authorizing account, so a shared credential
-would be Brad's own health record. A reviewer signs in with any free Dropbox account: connect, read
-our consent screen naming the scopes, approve at Dropbox, return with a token. No MFA, no SMS, no
-private network. An empty account runs every test case: the writes create the file.
+**A dedicated reviewer account, holding synthetic data only.** Brad creates it before submitting. It
+is not his own record and not a shared production credential; everything in it is invented.
+
+- **Google Workspace, not Dropbox.** Dropbox emails a device code to the account inbox on every new
+  device, which is exactly the "additional setup or verification" the rejection names. Google can
+  still fire a risk challenge on an unusual location, and the Workspace admin override "turn off
+  login challenges" lasts only ten minutes per user, so the override is not the fix. Self-service
+  is: the account's own Gmail inbox opens with the same password, so a challenged reviewer reads
+  the code themselves and carries on.
+- **Pre-filled profile** (sex, birth year, height), so `get_plan` runs first time instead of asking
+  the reviewer to fill fields. **A few synthetic measurements and labs**, so `read_record` returns
+  something and the correction cases have a row to correct.
+- **Tested cold before submitting.** Brad runs the whole flow from a clean browser profile on a
+  different network, ideally a US exit IP. If it asks for anything the paste below does not cover,
+  it is not ready.
+- **Our Google consent screen is already published.** Publishing status is "In production" and
+  brand verification was done 2026-09-02, so there is no test-user list to join and no
+  unverified-app warning for the reviewer to click past (docs/deploy-runbook-mcp.md).
+- **Placeholders here, values only in the form.** `[REVIEWER_EMAIL]` and `[REVIEWER_PASSWORD]` live
+  in the OpenAI form and nowhere in this repository, ever.
+
+**Paste into the form's demo-credentials field, as written:**
+
+> Email: `[REVIEWER_EMAIL]` / Password: `[REVIEWER_PASSWORD]`
+>
+> This account is ours, made for your review. It holds invented data, not a real person's record.
+>
+> To connect: start the connector, and our consent screen asks which cloud storage to use. Choose
+> **Google Drive**. Sign in with the email and password above, approve Google's permission screen,
+> and you are returned to ChatGPT connected. No MFA, no emailed code, no app to install, no waiting.
+> If Google shows a one-time code anyway because you are signing in from a new place, the same
+> password opens that account's own Gmail inbox, so you can read the code there and continue.
+>
+> The account already holds a profile and some results, so every test case works immediately.
+
+## What 1.0.1 adds over 1.0.0
+
+The 1.0.0 form described seven tools, five starter prompts and no prompt list. This is the
+version-notes answer, one line each, in the voice of a form field.
+
+- **Renamed from Health Roadmap to Health by Dr Brad.**
+- **`import_documents` (new).** Reads the lab files in the user's own connected Dropbox folder,
+  extracts the values, and writes nothing until the user confirms what it found.
+- **`file_results` (new).** Files the values ChatGPT itself read from a file dropped into the chat;
+  the file never reaches our server.
+- **Four prompts (new).** `summarise_my_plan`, `add_todays_results`, `whats_missing` and
+  `import_my_lab_files`, so the common errands are one click instead of a typed sentence.
+- **Two-phase confirm on the three permanent tools.** `correct_value`, `update_profile` and
+  `report_feedback` answer the first call with a receipt and change nothing; only a second call,
+  after the user's own yes, acts.
+- **`update_profile` guard narrowed.** It still requires the value it expects to find before
+  changing a field, and no longer demands one for a field the record does not hold yet.
+- **Codex is a named client.** OpenAI's command-line agent is pinned by its own client document, so
+  it connects as itself rather than as an unknown client.
+- **OAuth fixes.** Both ChatGPT callbacks accepted, the consent budget raised from 10 minutes to 30,
+  and all four spellings of our own address accepted as the RFC 8707 `resource`.
+- **New OAuth funnel counters**, value-free: `mcp_authorize_shown`, `mcp_authorize_refused`,
+  `mcp_consent_posted` and `mcp_connect_failed`, so a connection that fails is visible to us rather
+  than silent.
+
+## Reply to openai-review@tm.openai.com
+
+Send this by replying to the rejection thread, BEFORE resubmitting. Keep the thread's subject.
+
+> Hello,
+>
+> One question first: did your reviewer reach our consent screen, and if so, which `redirect_uri`
+> did ChatGPT send and at what UTC time? We record no completed connection at all in the review
+> window, so the redirect and the time would let us confirm our fix covers what you hit.
+>
+> Here is what we found. Our server pinned only one of ChatGPT's two OAuth callbacks. A request
+> using `https://chatgpt.com/backend-api/aip/connectors/links/oauth/callback` was refused with a
+> 400, and because that refusal is deliberately not redirected back, ChatGPT had no error it could
+> show you. The window would simply have died. That was our bug. We have fixed it, and the fix is
+> live on our server.
+>
+> We also took your point about credentials. Our earlier answer said there were none, because each
+> user brings their own cloud storage. That was not good enough for a review. We have made a
+> reviewer account with a profile and sample data already in it, and 1.0.1 carries its email and
+> password. Signing in needs no code, no second device and no waiting.
+>
+> We will resubmit as 1.0.1. If you can tell us the redirect and the time, we will check them
+> against the fix first.
+>
+> Thank you,
+> Brad Stanfield
 
 ## Brad's dashboard checklist
 
-1. Verify the publisher identity first (it gates creating the app, not just submitting it): Organization → General → Verifications → Individual or Business → Start → "Start ID Check" (Persona: photo ID, likely a selfie).
-2. Publish the privacy policy and terms, then replace `[PRIVACY_URL]` and `[TERMS_URL]` above,
-   matching the Compliance section on data categories, purpose, recipients, retention and controls.
-3. At https://platform.openai.com/plugins, click Create plugin, choose "With MCP" (not Skills only), enter `https://mcp.drstanfield.com/mcp`. Brad's dev-mode connector id `asdk_app_…` is not a platform app record; this creates a real one.
-4. Copy the domain-verification token from that flow, run `fly secrets set OPENAI_APPS_CHALLENGE=<token> -a health-tool-edu`, confirm `curl .../.well-known/openai-apps-challenge` returns it alone as `text/plain`, then click Verify.
-5. Paste the listing fields, descriptions, category, countries and starter prompts. Upload the logo (size requirement not reachable as of 2026-09-02).
-6. Paste the ten test cases (seven positive, three negative), the demo-credentials answer and the tool justifications above (three per tool; the shared open-world line serves six of them).
-7. Read the developer policy questions honestly (the Compliance section settles the PHI question; if OpenAI reads it differently, ask them).
-8. Submit. Approval does not publish the app. Brad chooses when it goes live.
+This is a **resubmission**: a new 1.0.1 version inside the existing app record, not a new app.
+
+0. Confirm `ca62912` is deployed and that one real ChatGPT connection has landed since: an
+   `mcp_connect` row in `product_events`. Steps 1 and 2 wait on that row. Claiming a fix we have
+   not seen work is how we lose the second review too.
+1. Create the reviewer account and fill it (Demo credentials above), then test it cold from a clean
+   browser on a different network. Nothing else on this list matters if that flow asks for a code.
+   Confirm the Google consent screen still reads "In production" while you are there.
+2. Send the reply to openai-review@tm.openai.com (above), on the rejection thread, before submitting.
+3. Confirm the publisher identity still reads Verified: Organization → General → Verifications.
+   It was verified for 1.0.0, so there should be nothing to redo.
+4. Domain verification is already done: `curl https://mcp.drstanfield.com/.well-known/openai-apps-challenge`
+   returns the token alone as `text/plain` (checked 2026-09-17). Leave `OPENAI_APPS_CHALLENGE` alone.
+5. Open the existing app at https://platform.openai.com/plugins and start a new version, 1.0.1.
+   The server URL, `https://mcp.drstanfield.com/mcp`, does not change.
+6. Paste the listing fields, descriptions, category, countries and starter prompts. The privacy and
+   terms URLs above are live (both 200 on 2026-09-17). Logo unchanged.
+7. Paste the twelve test cases (eight positive, four negative), the demo-credentials text and the
+   tool justifications above (three per tool; the shared open-world line serves seven of them).
+8. Paste the version notes from "What 1.0.1 adds over 1.0.0".
+9. Read the developer policy questions honestly (the Compliance section settles the PHI question; if
+   OpenAI reads it differently, ask them).
+10. Submit. Approval does not publish the app. Brad chooses when it goes live.

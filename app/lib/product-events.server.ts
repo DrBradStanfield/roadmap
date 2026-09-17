@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { GUIDE_PLACEMENTS, MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_REFUSAL_REASONS, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
+import { EVENT_REASONS, GUIDE_PLACEMENTS, MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES, type McpOAuthReason, type McpRefusalReason, type ProductEventName } from '../../packages/health-core/src/product-events';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
 import { supabaseAdmin } from './supabase.server';
 
@@ -37,13 +37,10 @@ const metadataSchema = z
  * an unrecognised word to `other` and keeps the row. This is the backstop
  * under it, not a second opinion.
  *
- * `.optional()` is part of the shape, not an oversight: four server counters
- * send no metadata at all (the US-22 email funnel), and saying so here is what
- * keeps the check below a single expression.
+ * The word itself is parsed as a plain string and judged against its own
+ * EVENT below, because the two vocabularies share this one key.
  */
-const serverMetadataSchema = metadataSchema
-  .extend({ reason: z.enum(MCP_REFUSAL_REASONS).optional() })
-  .optional();
+const serverMetadataSchema = metadataSchema.extend({ reason: z.string().optional() });
 
 export const productEventSchema = z.object({
   eventName: z.enum(PRODUCT_EVENT_NAMES),
@@ -51,11 +48,29 @@ export const productEventSchema = z.object({
   metadata: metadataSchema.optional(),
 });
 
-/** The same event, with the server's slightly wider metadata list. */
-const serverEventSchema = productEventSchema.extend({ metadata: serverMetadataSchema });
+/**
+ * The same event, with the server's slightly wider metadata list — and the
+ * `reason` word held against ITS OWN event. One column, two vocabularies: a
+ * tool-refusal word on an OAuth row would validate and then split every query
+ * in two, so the pairing is checked here rather than assumed.
+ */
+const serverEventSchema = productEventSchema
+  .extend({ metadata: serverMetadataSchema.optional() })
+  .superRefine((event, ctx) => {
+    const reason = event.metadata?.reason;
+    if (reason === undefined) return;
+    const allowed: readonly string[] = EVENT_REASONS[event.eventName as keyof typeof EVENT_REASONS] ?? [];
+    if (!allowed.includes(reason)) {
+      // The word only, never the value that failed — and only when it is one
+      // this file already declares.
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', 'reason'], message: 'reason is not one this event may carry' });
+    }
+  });
 
 export type ProductEventInput = z.infer<typeof productEventSchema>;
-type ServerProductEvent = z.infer<typeof serverEventSchema>;
+/** The schema parses `reason` as a string; a PRODUCER may only write a word. */
+type ServerEventMetadata = z.infer<typeof serverMetadataSchema> & { reason?: McpRefusalReason | McpOAuthReason };
+type ServerProductEvent = { eventName: ProductEventName; visitorId: string; metadata?: ServerEventMetadata };
 
 /**
  * Sentinel visitor for events the SERVER originates, where no browser visitor
@@ -96,11 +111,18 @@ export function parseProductEvent(body: unknown): ProductEventInput | null {
  * wholesale would leave `mcp_tool_call` counting a total that no `GROUP BY`
  * can reach, and product-health reads exactly those breakdowns.
  */
-function cleanMetadata(metadata: Record<string, unknown>): { clean?: object; dropped: string[] } {
+function cleanMetadata(event: ServerProductEvent & { metadata: object }): { clean?: object; dropped: string[] } {
+  const metadata = event.metadata as Record<string, unknown>;
+  // The whole object, in one parse: nearly every row is already clean, and the
+  // walk below exists only for the row that is not.
+  if (serverEventSchema.safeParse(event).success) {
+    return { clean: Object.keys(metadata).length ? metadata : undefined, dropped: [] };
+  }
   const clean: Record<string, unknown> = {};
   const dropped: string[] = [];
   for (const [key, value] of Object.entries(metadata)) {
-    if (serverMetadataSchema.safeParse({ [key]: value }).success) clean[key] = value;
+    // The EVENT, one key at a time: `reason` is judged against its own event.
+    if (serverEventSchema.safeParse({ ...event, metadata: { [key]: value } }).success) clean[key] = value;
     else dropped.push(key);
   }
   return { clean: Object.keys(clean).length ? clean : undefined, dropped };
@@ -131,7 +153,7 @@ export async function recordProductEvent(event: ServerProductEvent): Promise<boo
   // read as "nothing was wrong" in the one message meant to say otherwise.
   const raw = event.metadata;
   const { clean, dropped } = raw && typeof raw === 'object'
-    ? cleanMetadata(raw as Record<string, unknown>)
+    ? cleanMetadata({ ...shell.data, metadata: raw })
     : { clean: undefined, dropped: raw == null ? [] : ['<not an object>'] };
   if (dropped.length) {
     Sentry.captureMessage('product_events: server metadata keys dropped', {

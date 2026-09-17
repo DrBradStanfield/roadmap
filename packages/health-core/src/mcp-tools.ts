@@ -2201,15 +2201,16 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     description:
       'Fix a value that was recorded wrongly. This appends a new row with the corrected number and the ' +
       'ORIGINAL date, and marks the old row "entered-in-error" — permanently. Nothing is deleted or ' +
-      'overwritten. Read the record first: you need the row id, and passing `expectedValue` makes the call ' +
-      'refuse if the row holds something else.',
+      'overwritten. Read the record first: you need the row id, and `expectedValue` — the value you believe ' +
+      'the row holds right now. On the hosted server it is required and the call is refused without it; ' +
+      'everywhere, a mismatch refuses the call and writes nothing.',
     inputSchema: {
       type: 'object',
       properties: {
         id: { type: 'string', maxLength: MAX_ID_LENGTH, description: 'The id of the active row to correct.' },
         newValue: { type: 'number', description: 'The corrected number.' },
         unit: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The unit `newValue` is in, for a core metric. A lab value keeps its lab’s unit.' },
-        expectedValue: { type: 'number', description: 'The value you believe the row holds now. Mismatch refuses the call.' },
+        expectedValue: { type: 'number', description: 'The value you believe the row holds now. Required on the hosted server. Mismatch refuses the call.' },
       },
       required: ['id', 'newValue'],
       additionalProperties: false,

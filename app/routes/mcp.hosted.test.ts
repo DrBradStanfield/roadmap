@@ -19,16 +19,19 @@ vi.mock('node:dns/promises', () => ({ default: { lookup: async () => [{ address:
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { resetMcpMemory, STATE_LIFETIME_SECONDS, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
+import { AUTHORIZE_PER_WINDOW, resetMcpMemory, STATE_LIFETIME_SECONDS, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 import { ISSUES_PER_HOUR, REPORTS_PER_DAY } from '../lib/github-issues.server';
 import { MAX_RECEIPT_LENGTH, MCP_PROMPTS, MCP_TOOLS, OUTPUTS, SERVER_VERSION } from '../../packages/health-core/src/mcp-tools';
 import { MAX_CORRECTION_AGE_DAYS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
+import { MAX_STATE_LENGTH } from '../lib/mcp-authorize.server';
 import { action, loader } from './mcp.$';
 
 const ISSUER = 'https://mcp.example.test';
 const REDIRECT = 'https://claude.ai/api/mcp/auth_callback';
 const VERIFIER = 'v'.repeat(64);
 const CHALLENGE = crypto.createHash('sha256').update(VERIFIER, 'ascii').digest('base64url');
+/** Claude's published CIMD id: pinned, so /mcp/authorize answers it with no fetch. */
+const CLAUDE_CIMD = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
 const NOW = '2026-09-02T10:00:00.000Z';
 /** Derived from the pinned clock, not the real one — the server's "today" is NOW's day. */
 const TODAY = NOW.slice(0, 10);
@@ -89,18 +92,22 @@ async function registerClientOverHttp(): Promise<string> {
   return (await res.json()).client_id as string;
 }
 
-/** GET /mcp/authorize and pull our own sealed state out of the consent page. */
-async function consentScreen(clientId: string): Promise<string> {
-  const query = new URLSearchParams({
-    client_id: clientId,
+/** A well-formed `/authorize` query for the pinned Claude client, one field bent. */
+function authorizeQuery(over: Record<string, string> = {}): string {
+  return new URLSearchParams({
+    client_id: CLAUDE_CIMD,
     redirect_uri: REDIRECT,
     response_type: 'code',
     code_challenge: CHALLENGE,
     code_challenge_method: 'S256',
     state: 'client-state',
-    resource: `${ISSUER}/mcp`,
-  });
-  const consent = await get(`/mcp/authorize?${query}`);
+    ...over,
+  }).toString();
+}
+
+/** GET /mcp/authorize and pull our own sealed state out of the consent page. */
+async function consentScreen(clientId: string): Promise<string> {
+  const consent = await get(`/mcp/authorize?${authorizeQuery({ client_id: clientId, resource: `${ISSUER}/mcp` })}`);
   expect(consent.status).toBe(200);
   return unescapeHtml(/name="state" value="([^"]+)"/.exec(await consent.text())![1]);
 }
@@ -510,18 +517,8 @@ describe('the doors that must stay shut (US-32, design §6)', () => {
  * whole point is that /mcp/authorize answers it with no network call at all.
  */
 describe('a pinned vendor client connects without DCR and without a fetch (US-32)', () => {
-  const CLAUDE_CIMD = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
-
   it('shows the consent page and never reaches claude.ai', async () => {
-    const consent = await get(`/mcp/authorize?${new URLSearchParams({
-      client_id: CLAUDE_CIMD,
-      redirect_uri: REDIRECT,
-      response_type: 'code',
-      code_challenge: CHALLENGE,
-      code_challenge_method: 'S256',
-      state: 'client-state',
-      resource: `${ISSUER}/mcp`,
-    })}`);
+    const consent = await get(`/mcp/authorize?${authorizeQuery({ resource: `${ISSUER}/mcp` })}`);
     expect(consent.status).toBe(200);
     const screen = await consent.text();
     expect(screen).toContain('Claude');
@@ -571,7 +568,7 @@ describe('a pinned vendor client connects without DCR and without a fetch (US-32
   });
 
   it('still refuses a redirect_uri the pinned client never published', async () => {
-    const res = await get(`/mcp/authorize?client_id=${encodeURIComponent(CLAUDE_CIMD)}&redirect_uri=https%3A%2F%2Fevil.test%2Fcb&response_type=code&code_challenge=${CHALLENGE}&code_challenge_method=S256`);
+    const res = await get(`/mcp/authorize?${authorizeQuery({ redirect_uri: 'https://evil.test/cb' })}`);
     expect(res.status).toBe(400);
     expect(res.headers.get('location')).toBeNull();
   });
@@ -586,13 +583,9 @@ describe('the front door answers the spellings real clients send (US-32 AC14)', 
   const LINKS = 'https://chatgpt.com/backend-api/aip/connectors/links/oauth/callback';
 
   function authorize(over: Record<string, string> = {}): Promise<Response> {
-    return get(`/mcp/authorize?${new URLSearchParams({
+    return get(`/mcp/authorize?${authorizeQuery({
       client_id: CHATGPT,
       redirect_uri: 'https://chatgpt.com/connector_platform_oauth_redirect',
-      response_type: 'code',
-      code_challenge: CHALLENGE,
-      code_challenge_method: 'S256',
-      state: 'client-state',
       ...over,
     })}`);
   }
@@ -606,6 +599,27 @@ describe('the front door answers the spellings real clients send (US-32 AC14)', 
   it('accepts both of ChatGPT’s callbacks, not only the published one', async () => {
     expect((await authorize()).status).toBe(200);
     expect((await authorize({ redirect_uri: LINKS })).status).toBe(200);
+  });
+
+  /**
+   * The `error` half of the refusal table was never read by a test: changing
+   * `response-type` to `invalid_request` left the whole suite green. A client
+   * branches on this word — it is the difference between "fix your request"
+   * and "you are talking to the wrong server" — so each branch is pinned.
+   */
+  it('answers each redirectable refusal with the OAuth error code the RFC gives it', async () => {
+    const cases: Array<[Record<string, string>, string]> = [
+      [{ response_type: 'token' }, 'unsupported_response_type'],
+      [{ resource: 'https://someone-else.test/mcp' }, 'invalid_target'],
+      [{ code_challenge_method: 'plain' }, 'invalid_request'],
+      [{ code_challenge: 'short' }, 'invalid_request'],
+      [{ state: 'S'.repeat(MAX_STATE_LENGTH + 1) }, 'invalid_request'],
+    ];
+    for (const [bent, error] of cases) {
+      const res = await authorize(bent);
+      expect(res.status).toBe(302);
+      expect(new URL(res.headers.get('location')!).searchParams.get('error')).toBe(error);
+    }
   });
 
   /**
@@ -1277,6 +1291,13 @@ vi.mock('../lib/product-events.server', async (importOriginal) => {
   return { ...original, recordServerEvent: vi.fn(async () => {}) };
 });
 
+/** The rows this test wrote, oldest first, as `[name, metadata]`. */
+function serverEvents(names: (name: string) => boolean): Array<[string, Record<string, unknown>]> {
+  return vi.mocked(recordServerEvent).mock.calls
+    .filter(([name]) => names(String(name)))
+    .map(([name, meta]) => [String(name), (meta ?? {}) as Record<string, unknown>]);
+}
+
 const PDF_BYTES = new TextEncoder().encode('%PDF-1.4 tiny');
 const LAB_DAY = '2026-08-20';
 
@@ -1562,7 +1583,7 @@ import { FOLDER_LIST_TIMEOUT_MS } from '../lib/mcp.server';
 import { FOLDER_NUDGE_HINT } from '../../packages/health-core/src/mcp-tools';
 
 function importEvents(): unknown[] {
-  return (recordServerEvent as unknown as { mock: { calls: unknown[][] } }).mock.calls.filter(([name]) => name === 'mcp_import').map(([, meta]) => meta);
+  return serverEvents((name) => name === 'mcp_import').map(([, meta]) => meta);
 }
 
 describe('US-37 — a Dropbox read lists folder files that are not in the record (AC1, AC2, AC3, usage signal)', () => {
@@ -1758,9 +1779,7 @@ import { REPO_URL } from '../../packages/health-core/src/plan';
 import { MCP_REFUSAL_REASONS } from '../../packages/health-core/src/product-events';
 
 function toolCallEvents(): Record<string, unknown>[] {
-  return (recordServerEvent as unknown as { mock: { calls: unknown[][] } }).mock.calls
-    .filter(([name]) => name === 'mcp_tool_call')
-    .map(([, meta]) => meta as Record<string, unknown>);
+  return serverEvents((name) => name === 'mcp_tool_call').map(([, meta]) => meta);
 }
 
 describe('US-32 AC28 — every assistant is told the code is open', () => {
@@ -1866,5 +1885,160 @@ describe('a brand-new empty account — the reviewer first-run path (US-32)', ()
     const plan = await callTool(access, 'get_plan', {});
     expect(plan.text).toContain('update_profile');
     expect(plan.text).not.toContain('Open the app');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-32 AC34 — the OAuth front door's own funnel
+// ---------------------------------------------------------------------------
+
+/**
+ * OpenAI's reviewer was refused at `/mcp/authorize` for two weeks and nothing
+ * recorded it: the only trace was a `console.error`, and Sentry drops the
+ * Console integration. `mcp_connect` counts successes, so the funnel read the
+ * same at zero connections and at zero attempts.
+ *
+ * Every counter below is asserted at its own call site with its own reason.
+ * Remove any one `void recordServerEvent(...)` from the route and one of these
+ * fails — that is the point of writing them one per exit rather than in a
+ * sweep.
+ */
+describe('the OAuth funnel counts refusals, not only successes (US-32 AC34)', () => {
+  /** Every funnel row this test wrote, in order, as `[name, metadata]`. */
+  const funnel = () => serverEvents((name) => name.startsWith('mcp_authorize') || name.startsWith('mcp_connect') || name === 'mcp_consent_posted');
+
+  beforeEach(() => {
+    vi.mocked(recordServerEvent).mockClear();
+  });
+
+  it('counts the consent page rendering, naming the assistant', async () => {
+    expect((await get(`/mcp/authorize?${authorizeQuery()}`)).status).toBe(200);
+    expect(funnel()).toEqual([['mcp_authorize_shown', { client: 'claude' }]]);
+  });
+
+  it('counts a client we do not recognise — the refusal OpenAI met', async () => {
+    const res = await get(`/mcp/authorize?${authorizeQuery({ client_id: 'https://evil.test/client.json' })}`);
+    expect(res.status).toBe(400);
+    expect(funnel()).toEqual([['mcp_authorize_refused', { client: 'other', reason: 'unknown-client' }]]);
+  });
+
+  it('counts a redirect the pinned client never published', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = await get(`/mcp/authorize?${authorizeQuery({ redirect_uri: 'https://evil.test/cb' })}`);
+    expect(res.status).toBe(400);
+    expect(funnel()).toEqual([['mcp_authorize_refused', { client: 'claude', reason: 'redirect-uri' }]]);
+  });
+
+  it('counts a redirectable refusal too, which answers the client rather than us', async () => {
+    const res = await get(`/mcp/authorize?${authorizeQuery({ response_type: 'token' })}`);
+    expect(res.status).toBe(302);
+    expect(funnel()).toEqual([['mcp_authorize_refused', { client: 'claude', reason: 'response-type' }]]);
+  });
+
+  it('counts a deployment with no storage provider configured', async () => {
+    delete process.env.DROPBOX_APP_KEY;
+    delete process.env.DROPBOX_APP_SECRET;
+    expect((await get(`/mcp/authorize?${authorizeQuery()}`)).status).toBe(503);
+    expect(funnel()).toEqual([['mcp_authorize_refused', { client: 'claude', reason: 'no-provider' }]]);
+  });
+
+  it('counts the per-IP brake once per window, not once per refused request', async () => {
+    // Bounded: a brake that never engages is this test failing, not the suite
+    // hanging. Ten requests past the allowance, because the row we do NOT want
+    // is the one written on each of them — a flood is when this branch runs,
+    // and an insert per request would spend the database the brake protects.
+    let braked = 0;
+    for (let i = 0; i < AUTHORIZE_PER_WINDOW + 10; i++) {
+      if ((await get(`/mcp/authorize?${authorizeQuery()}`)).status === 429) braked++;
+    }
+    expect(braked).toBeGreaterThan(1);
+    expect(funnel().filter(([, meta]) => meta.reason === 'rate-limited')).toEqual([
+      ['mcp_authorize_refused', { client: 'claude', reason: 'rate-limited' }],
+    ]);
+  });
+
+  it('takes an empty `resource=` rather than refusing over punctuation', async () => {
+    expect((await get(`/mcp/authorize?${authorizeQuery({ resource: '' })}`)).status).toBe(200);
+    expect(funnel()).toEqual([['mcp_authorize_shown', { client: 'claude' }]]);
+  });
+
+  it('counts the consent press, naming the cloud the user pressed', async () => {
+    await pressConnect(await consentScreen(CLAUDE_CIMD));
+    expect(funnel()).toEqual([
+      ['mcp_authorize_shown', { client: 'claude' }],
+      ['mcp_consent_posted', { client: 'claude', provider: 'dropbox' }],
+    ]);
+  });
+
+  it('counts a consent press whose sealed state has died', async () => {
+    const res = await post('/mcp/authorize', {
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ state: 'not-a-seal' }),
+    });
+    expect(res.status).toBe(400);
+    expect(funnel()).toEqual([['mcp_connect_failed', { reason: 'state-expired' }]]);
+  });
+
+  it('counts a consent press for a provider whose secrets have since gone', async () => {
+    const sealed = await consentScreen(CLAUDE_CIMD);
+    delete process.env.DROPBOX_APP_KEY;
+    delete process.env.DROPBOX_APP_SECRET;
+    const res = await post('/mcp/authorize', {
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ state: sealed }),
+    });
+    expect(res.status).toBe(400);
+    expect(funnel().at(-1)).toEqual(['mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'provider-unavailable' }]);
+  });
+
+  it('counts a callback that arrives with no cookie', async () => {
+    const res = await get('/mcp/callback?code=dropbox-code&state=anything');
+    expect(res.status).toBe(400);
+    expect(funnel()).toEqual([['mcp_connect_failed', { reason: 'no-cookie' }]]);
+  });
+
+  it('counts a callback whose state is not the nonce we minted', async () => {
+    const { cookie } = await pressConnect(await consentScreen(CLAUDE_CIMD));
+    const res = await get('/mcp/callback?code=dropbox-code&state=forged', { cookie });
+    expect(res.status).toBe(400);
+    expect(funnel().at(-1)).toEqual(['mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'nonce-mismatch' }]);
+  });
+
+  it('counts the user saying no at the provider', async () => {
+    const { nonce, cookie } = await pressConnect(await consentScreen(CLAUDE_CIMD));
+    const res = await get(`/mcp/callback?error=access_denied&state=${encodeURIComponent(nonce)}`, { cookie });
+    expect(res.status).toBe(302);
+    expect(funnel().at(-1)).toEqual(['mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'provider-denied' }]);
+  });
+
+  it('counts a provider that will not trade its code for a refresh token', async () => {
+    const { nonce, cookie } = await pressConnect(await consentScreen(CLAUDE_CIMD));
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 500 })));
+    const res = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(nonce)}`, { cookie });
+    expect(res.status).toBe(302);
+    expect(funnel().at(-1)).toEqual(['mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'exchange-failed' }]);
+  });
+
+  /**
+   * The counter's whole promise. A refusal knows a `redirect_uri`, a
+   * `client_id` and a `state`, all caller-chosen text, and this is the one
+   * place any of it could leak into a row we keep.
+   */
+  it('writes no URL, no client id and no query value on any refused row', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    await get(`/mcp/authorize?${authorizeQuery({ client_id: 'https://evil.test/client.json' })}`);
+    await get(`/mcp/authorize?${authorizeQuery({ redirect_uri: 'https://evil.test/cb?leak=secret' })}`);
+    await get(`/mcp/authorize?${authorizeQuery({ state: 'S'.repeat(2000) })}`);
+    await get('/mcp/callback?code=dropbox-code&state=anything');
+
+    const rows = funnel();
+    expect(rows.length).toBe(4);
+    const written = JSON.stringify(rows);
+    expect(written).not.toContain('http');
+    expect(written).not.toContain('evil.test');
+    expect(written).not.toContain('client.json');
+    expect(written).not.toContain('secret');
+    expect(written).not.toContain('SSS');
+    expect(written).not.toContain(CLAUDE_CIMD);
   });
 });

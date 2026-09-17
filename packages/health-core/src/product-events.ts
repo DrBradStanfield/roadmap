@@ -44,6 +44,16 @@ export const PRODUCT_EVENT_NAMES = [
   // (mcp_connect). Never a value, never an identifier, never a connection key.
   'mcp_tool_call',
   'mcp_connect',
+  // US-32 AC34, the OAuth front door's own funnel. `mcp_connect` counts
+  // successes only, so for two weeks a refused ChatGPT reviewer left no trace
+  // anywhere we could query. These four make every exit countable: the consent
+  // page rendering, a refusal on the authorize GET, the consent press, and any
+  // later exit that never reaches a code. Metadata is the same closed words —
+  // never a URL, a client id, a `state` or a query value.
+  'mcp_authorize_shown',
+  'mcp_authorize_refused',
+  'mcp_consent_posted',
+  'mcp_connect_failed',
   // US-35 import_documents: which route people use (Dropbox folder, a file
   // dragged into ChatGPT, or a Drive user refused), which phase, and how many
   // files as a bucket; US-36 adds the `assistant` route and US-37 the `nudge`
@@ -71,6 +81,10 @@ export const SERVER_ONLY_EVENT_NAMES = [
   'report_email_clicked',
   'mcp_tool_call',
   'mcp_connect',
+  'mcp_authorize_shown',
+  'mcp_authorize_refused',
+  'mcp_consent_posted',
+  'mcp_connect_failed',
   'mcp_import',
 ] as const satisfies readonly ProductEventName[];
 
@@ -148,6 +162,64 @@ export const MCP_REFUSAL_REASONS = [
 ] as const;
 
 export type McpRefusalReason = (typeof MCP_REFUSAL_REASONS)[number];
+
+/**
+ * Why an OAuth connection ended where it did (US-32 AC34). Closed for the same
+ * reason the list above is: the words a refusal knows are a `redirect_uri`, a
+ * `client_id` and a `state`, and every one of them is caller-chosen text. Only
+ * the NAME of the check that failed reaches a row.
+ *
+ * The first six are `checkAuthorize`'s own branches, which it now returns
+ * rather than the route re-deriving them from an English description.
+ */
+export const MCP_OAUTH_REASONS = [
+  /** The redirect the client asked for is not one it published, or not allow-listed. */
+  'redirect-uri',
+  /** Anything but `response_type=code`. */
+  'response-type',
+  /** PKCE missing or not S256. */
+  'pkce',
+  /** A `code_challenge` that is not 43–128 unreserved characters. */
+  'code-challenge',
+  /** A `state` longer than the cookie budget, which we bound rather than truncate. */
+  'state-too-long',
+  /** RFC 8707 `resource` naming a server that is not us. */
+  'resource',
+  /** No client document we would accept — the refusal OpenAI's reviewer met. */
+  'unknown-client',
+  /** The per-IP authorize brake. */
+  'rate-limited',
+  /** No storage provider is configured on this deployment. */
+  'no-provider',
+  /** The sealed state was dead, expired or absent when the user pressed Connect. */
+  'state-expired',
+  /** The provider the sealed state names is not offered any more. */
+  'provider-unavailable',
+  /** The callback arrived without the `__Host-mcp-state` cookie. */
+  'no-cookie',
+  /** The provider echoed a `state` that is not the nonce we minted. */
+  'nonce-mismatch',
+  /** The user said no at the provider, or it sent back no code. */
+  'provider-denied',
+  /** The provider would not trade its code for a refresh token. */
+  'exchange-failed',
+] as const;
+
+export type McpOAuthReason = (typeof MCP_OAUTH_REASONS)[number];
+
+/**
+ * Which events may carry which `reason` words. The two vocabularies share one
+ * `reason` column, and nothing before this said WHICH list an event draws
+ * from: a tool-refusal word on an OAuth row, or the reverse, would have
+ * validated and then split a query in two. The pairing is checked where the
+ * row is written (`product-events.server.ts`); events absent here carry no
+ * reason at all.
+ */
+export const EVENT_REASONS = {
+  mcp_tool_call: MCP_REFUSAL_REASONS,
+  mcp_authorize_refused: MCP_OAUTH_REASONS,
+  mcp_connect_failed: MCP_OAUTH_REASONS,
+} as const satisfies Partial<Record<ProductEventName, readonly string[]>>;
 
 /** A word only counts if the vocabulary above names it. */
 export function isRefusalReason(value: unknown): value is McpRefusalReason {

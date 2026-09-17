@@ -552,6 +552,53 @@ describe('pinned clients (US-32, IETF CIMD draft §4 — our own policy)', () =>
   });
 });
 
+/** A well-formed `/authorize` query for a pinned client, with one field bent. */
+function authorizeParams(over: Record<string, string> = {}): URLSearchParams {
+  return new URLSearchParams({
+    redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
+    response_type: 'code',
+    code_challenge: 'a'.repeat(43),
+    code_challenge_method: 'S256',
+    ...over,
+  });
+}
+
+/**
+ * US-32 AC34. `checkAuthorize` decided WHY it refused and threw the word away,
+ * leaving the route to guess from an English description — and the counter
+ * with nothing it could group by. Each branch now returns a closed word, and
+ * each one is pinned here: a branch whose reason drifts is a query that
+ * silently reads zero.
+ */
+describe('a refusal names the check that failed (US-32 AC34)', () => {
+  const CLAUDE = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
+
+  const cases: Array<[string, URLSearchParams]> = [
+    ['redirect-uri', authorizeParams({ redirect_uri: 'https://evil.test/cb' })],
+    ['response-type', authorizeParams({ response_type: 'token' })],
+    ['pkce', authorizeParams({ code_challenge_method: 'plain' })],
+    ['code-challenge', authorizeParams({ code_challenge: 'short' })],
+    ['state-too-long', authorizeParams({ state: 'S'.repeat(MAX_STATE_LENGTH + 1) })],
+    ['resource', authorizeParams({ resource: 'https://someone-else.test/mcp' })],
+  ];
+
+  for (const [reason, params] of cases) {
+    it(`answers \`${reason}\``, () => {
+      const checked = checkAuthorize(params, KNOWN_CLIENTS.get(CLAUDE)!);
+      expect(checked).toMatchObject({ ok: false, reason });
+    });
+  }
+
+  /**
+   * A client that serialises every parameter it knows sends `resource=` with
+   * nothing in it. That names no audience, so it is absent — refusing it is
+   * refusing a connection over punctuation.
+   */
+  it('takes an empty `resource=` as absent, not as a foreign audience', () => {
+    expect(checkAuthorize(authorizeParams({ resource: '' }), KNOWN_CLIENTS.get(CLAUDE)!).ok).toBe(true);
+  });
+});
+
 describe('PKCE (US-32)', () => {
   it('accepts the matching verifier and nothing else', () => {
     const verifier = 'a'.repeat(64);
@@ -578,19 +625,9 @@ describe('client state round-trip (US-32)', () => {
     return packSealed('state', opened.clientId, { ...opened, nonce: 'n'.repeat(43) });
   }
 
-  function authorizeParams(state: string): URLSearchParams {
-    return new URLSearchParams({
-      redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
-      response_type: 'code',
-      code_challenge: 'a'.repeat(43),
-      code_challenge_method: 'S256',
-      state,
-    });
-  }
-
   it('returns a 600-character state byte-identical, the length OpenAI actually sends', () => {
     const state = 'S'.repeat(600);
-    const checked = checkAuthorize(authorizeParams(state), KNOWN_CLIENTS.get(CHATGPT_STATE)!);
+    const checked = checkAuthorize(authorizeParams({ state }), KNOWN_CLIENTS.get(CHATGPT_STATE)!);
     expect(checked.ok).toBe(true);
     if (!checked.ok) return;
     expect(checked.request.clientState).toBe(state);
@@ -598,7 +635,7 @@ describe('client state round-trip (US-32)', () => {
 
   it('carries that state through the seal and back out unchanged', () => {
     const state = 'S'.repeat(MAX_STATE_LENGTH);
-    const checked = checkAuthorize(authorizeParams(state), KNOWN_CLIENTS.get(CHATGPT_STATE)!);
+    const checked = checkAuthorize(authorizeParams({ state }), KNOWN_CLIENTS.get(CHATGPT_STATE)!);
     expect(checked.ok).toBe(true);
     if (!checked.ok) return;
     const sealed = sealState(checked.request, 'dropbox', Date.now());
@@ -608,7 +645,7 @@ describe('client state round-trip (US-32)', () => {
 
   it('refuses one character over the cap rather than truncating it', () => {
     const checked = checkAuthorize(
-      authorizeParams('S'.repeat(MAX_STATE_LENGTH + 1)),
+      authorizeParams({ state: 'S'.repeat(MAX_STATE_LENGTH + 1) }),
       KNOWN_CLIENTS.get(CHATGPT_STATE)!,
     );
     expect(checked.ok).toBe(false);
@@ -624,7 +661,7 @@ describe('client state round-trip (US-32)', () => {
    */
   it('keeps the sealed state cookie under the 4096-byte browser limit at the cap', () => {
     const checked = checkAuthorize(
-      authorizeParams('S'.repeat(MAX_STATE_LENGTH)),
+      authorizeParams({ state: 'S'.repeat(MAX_STATE_LENGTH) }),
       KNOWN_CLIENTS.get(CHATGPT_STATE)!,
     );
     expect(checked.ok).toBe(true);
@@ -649,7 +686,7 @@ describe('client state round-trip (US-32)', () => {
 
   it('runs the state clock from the authorize GET, not from the consent press', () => {
     const t0 = Date.parse('2026-09-16T00:00:00.000Z');
-    const checked = checkAuthorize(authorizeParams('client-state'), KNOWN_CLIENTS.get(CHATGPT_STATE)!);
+    const checked = checkAuthorize(authorizeParams({ state: 'client-state' }), KNOWN_CLIENTS.get(CHATGPT_STATE)!);
     expect(checked.ok).toBe(true);
     if (!checked.ok) return;
     const atGet = sealState(checked.request, 'dropbox', t0);

@@ -7,6 +7,7 @@
  * travel back to the client and which the route must render itself.
  */
 import crypto from 'node:crypto';
+import type { McpOAuthReason } from '../../packages/health-core/src/product-events';
 import { issuer, resourceUrl } from './mcp-config.server';
 import { isAllowedRedirect, redirectMatches, type McpClient } from './mcp-clients.server';
 import { nowSeconds, STATE_LIFETIME_SECONDS, type StatePayload } from './mcp-grants.server';
@@ -63,7 +64,26 @@ function clientHost(clientId: string): string {
 
 export type AuthorizeCheck =
   | { ok: true; request: AuthorizeRequest }
-  | { ok: false; error: string; description: string; redirectable: boolean };
+  | { ok: false; error: string; description: string; redirectable: boolean; reason: McpOAuthReason };
+
+/**
+ * The OAuth answer for each refusal word. One table, so the `error` code the
+ * client reads and the `reason` the counter groups by cannot drift apart: a
+ * new branch adds a row here and gets both halves at once.
+ */
+const OAUTH_FAILURES = {
+  'redirect-uri': ['invalid_request', 'Unknown redirect_uri'],
+  'response-type': ['unsupported_response_type', 'Only response_type=code'],
+  pkce: ['invalid_request', 'PKCE S256 is required'],
+  'code-challenge': ['invalid_request', 'Malformed code_challenge'],
+  'state-too-long': ['invalid_request', 'state is too long'],
+  resource: ['invalid_target', 'This server is not that resource'],
+} as const satisfies Record<string, readonly [string, string]>;
+
+function fail(reason: keyof typeof OAUTH_FAILURES, redirectable = true): AuthorizeCheck {
+  const [error, description] = OAUTH_FAILURES[reason];
+  return { ok: false, error, description, redirectable, reason };
+}
 
 /**
  * Validate an `/authorize` query. A fault in `redirect_uri` or `client_id` can
@@ -78,23 +98,21 @@ export function checkAuthorize(params: URLSearchParams, client: McpClient): Auth
     // A vendor quietly changing its callback shows up in Sentry as this line
     // with its own hostname; anything else is someone probing us.
     console.error(`[mcp] authorize refused: redirect_uri not allowed for client host ${clientHost(client.clientId)}`);
-    return { ok: false, error: 'invalid_request', description: 'Unknown redirect_uri', redirectable: false };
+    return fail('redirect-uri', false);
   }
-  const fail = (error: string, description: string): AuthorizeCheck =>
-    ({ ok: false, error, description, redirectable: true });
-
-  if (params.get('response_type') !== 'code') return fail('unsupported_response_type', 'Only response_type=code');
-  if (params.get('code_challenge_method') !== 'S256') return fail('invalid_request', 'PKCE S256 is required');
+  if (params.get('response_type') !== 'code') return fail('response-type');
+  if (params.get('code_challenge_method') !== 'S256') return fail('pkce');
   const codeChallenge = params.get('code_challenge') ?? '';
-  if (!/^[A-Za-z0-9._~-]{43,128}$/.test(codeChallenge)) return fail('invalid_request', 'Malformed code_challenge');
+  if (!/^[A-Za-z0-9._~-]{43,128}$/.test(codeChallenge)) return fail('code-challenge');
   const clientState = params.get('state') ?? '';
-  if (clientState.length > MAX_STATE_LENGTH) return fail('invalid_request', 'state is too long');
+  if (clientState.length > MAX_STATE_LENGTH) return fail('state-too-long');
   // RFC 8707. The audience must be this server, or a token we mint here could
   // be replayed somewhere else — the confused-deputy the MCP spec warns about.
+  // An empty `resource=` names no audience, so it is absent, not wrong: a
+  // client that serialises every parameter it knows sends the key with nothing
+  // in it, and refusing that is refusing a connection over punctuation.
   const resource = params.get('resource');
-  if (resource !== null && !isThisResource(resource)) {
-    return fail('invalid_target', 'This server is not that resource');
-  }
+  if (resource && !isThisResource(resource)) return fail('resource');
   return {
     ok: true,
     request: {

@@ -210,12 +210,23 @@ export function resetMcpMemory(): void {
   resetGithubIssues();
   resetMcpWarnings();
   allowAuthorize.reset();
+  allowRateLimitEvent.reset();
   allowToken.reset();
   allowToolCall.reset();
 }
 
 /** Per-IP, before any CIMD fetch — the fetch is the expensive, abusable half. */
-export const allowAuthorize = createRateLimiter(20, 60_000, 10 * 60_000);
+export const AUTHORIZE_PER_WINDOW = 20;
+export const allowAuthorize = createRateLimiter(AUTHORIZE_PER_WINDOW, 60_000, 10 * 60_000);
+
+/**
+ * The brake's own counter, braked. A flood is exactly when the row is written
+ * every time, so counting each refused request would turn a cheap in-memory
+ * `false` into one Supabase insert per request on the shared admin pool — the
+ * limiter paying the cost it exists to avoid. One row per IP per window says
+ * the same thing.
+ */
+export const allowRateLimitEvent = createRateLimiter(1, 60_000, 10 * 60_000);
 
 /**
  * Per-IP at `/token`, and per-connection at `tools/call`. Both are flood

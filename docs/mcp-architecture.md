@@ -39,6 +39,8 @@ Closes the gap `docs/guides/getting-started.md` admits: "A web AI cannot write t
 
 **Why the counters are closed enums.** `mcp_tool_call` carries a tool name, an assistant label and an outcome, each read off a fixed list. A DCR client's id and name are attacker-chosen text, and free text in a counter is how a counter becomes a log. Nothing in the source files repeats this, they point here.
 
+**Why the front door counts its refusals.** `mcp_connect` counts successes only, so a funnel reading zero could not tell "nobody tried" from "everybody was refused" — and for two weeks it was the latter (§ the 2026-09-16 archive entry). Four more rows close it: `mcp_authorize_shown` {client}, `mcp_authorize_refused` {client, reason}, `mcp_consent_posted` {client, provider} and `mcp_connect_failed` {client?, provider?, reason}. The `reason` is a closed word from `MCP_OAUTH_REASONS` naming the CHECK that failed — `unknown-client`, `redirect-uri`, `rate-limited`, `exchange-failed` and the rest — never the value that failed it. `checkAuthorize` returns that word, so the route never reads an English description back to guess.
+
 **What is genuinely new and worse.** Today Brad's server *cannot* read a record. After this, a live bearer token is a standing capability over one folder in a user's cloud, and **our server reads health values in memory on every call.** Statelessness removes our breach surface; it does not remove the capability.
 
 **Revocation.**
@@ -308,7 +310,7 @@ Brad's ruling: build the full thing. The recruitment gate is removed. The phase 
 
 ## 9. What this does not do
 
-No health data in Supabase, and no *anything* in Supabase. No accounts, no passwords, no stored email. No analytics on health content. No delete tool, no `eraseEpoch`, no reminder-token access. No WebDAV, GitHub or self-host in v1, and §4's rotation finding closes generic providers entirely. No per-user revocation, no connection list, no per-user audit trail, value-free counters (`product_events`: `mcp_connect` {client, provider}, `mcp_tool_call` {tool, client, outcome}, `mcp_import` {route, phase, file-count bucket}) and nothing that identifies a user. **No Gemini promise:** consumer custom MCP exists only inside Spark tasks, personal accounts, US-only, English-only, 18+.
+No health data in Supabase, and no *anything* in Supabase. No accounts, no passwords, no stored email. No analytics on health content. No delete tool, no `eraseEpoch`, no reminder-token access. No WebDAV, GitHub or self-host in v1, and §4's rotation finding closes generic providers entirely. No per-user revocation, no connection list, no per-user audit trail, value-free counters (`product_events`: `mcp_connect` {client, provider}, `mcp_authorize_shown` / `mcp_authorize_refused` / `mcp_consent_posted` / `mcp_connect_failed` {client, provider, reason}, `mcp_tool_call` {tool, client, outcome}, `mcp_import` {route, phase, file-count bucket}) and nothing that identifies a user. **No Gemini promise:** consumer custom MCP exists only inside Spark tasks, personal accounts, US-only, English-only, 18+.
 
 ---
 

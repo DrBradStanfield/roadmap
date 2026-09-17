@@ -252,6 +252,29 @@ describe('recordServerEvent — the server path validates too', () => {
     expect(inserts[0]?.metadata).not.toHaveProperty('reason');
   });
 
+  /**
+   * US-32 AC34. Two vocabularies, one `reason` column. A word from the wrong
+   * list would validate and then split every funnel query in two — the row
+   * counts, the breakdown reads zero — so the pairing is checked per event.
+   */
+  it('holds each `reason` word to the event that may carry it', async () => {
+    await recordServerEvent('mcp_tool_call', { tool: 'add_measurement', outcome: 'refused', reason: 'no-cookie' as never });
+    await recordServerEvent('mcp_authorize_refused', { client: 'claude', reason: 'slot-occupied' as never });
+    expect(inserts.map((row) => row.metadata)).toEqual([
+      { tool: 'add_measurement', outcome: 'refused' },
+      { client: 'claude' },
+    ]);
+  });
+
+  it('keeps the word each OAuth event does own', async () => {
+    await recordServerEvent('mcp_authorize_refused', { client: 'claude', reason: 'unknown-client' });
+    await recordServerEvent('mcp_connect_failed', { client: 'claude', provider: 'dropbox', reason: 'exchange-failed' });
+    expect(inserts.map((row) => row.metadata)).toEqual([
+      { client: 'claude', reason: 'unknown-client' },
+      { client: 'claude', provider: 'dropbox', reason: 'exchange-failed' },
+    ]);
+  });
+
   it('drops an undeclared key before the insert', async () => {
     await recordServerEvent('mcp_connect', { foo: 'bar' } as never);
     expect(JSON.stringify(inserts)).not.toContain('foo');

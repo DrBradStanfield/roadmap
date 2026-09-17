@@ -24,6 +24,8 @@ export function isProvider(value: unknown): value is McpProvider {
 interface ProviderSpec {
   /** What the user sees. */
   label: string;
+  /** What a COUNTER sees: the one spelling every `product_events` row uses. */
+  tag: 'dropbox' | 'google-drive';
   /** Where the user revokes us — the real kill switch (design §1). */
   revokeUrl: string;
   authorizeUrl: string;
@@ -58,6 +60,7 @@ interface ProviderSpec {
 const PROVIDERS: Record<McpProvider, ProviderSpec> = {
   dropbox: {
     label: 'Dropbox',
+    tag: 'dropbox',
     revokeUrl: 'dropbox.com/account/connected_apps',
     authorizeUrl: 'https://www.dropbox.com/oauth2/authorize',
     tokenUrl: DROPBOX_TOKEN_URL,
@@ -68,6 +71,7 @@ const PROVIDERS: Record<McpProvider, ProviderSpec> = {
   },
   google: {
     label: 'Google Drive',
+    tag: 'google-drive',
     revokeUrl: 'myaccount.google.com/connections',
     authorizeUrl: GOOGLE_AUTHORIZE_URL,
     tokenUrl: GOOGLE_TOKEN_URL,
@@ -80,6 +84,15 @@ const PROVIDERS: Record<McpProvider, ProviderSpec> = {
 
 export function providerLabel(provider: McpProvider): string {
   return PROVIDERS[provider].label;
+}
+
+/**
+ * The provider as the counter spells it. Two spellings of one cloud cannot be
+ * grouped in a single query, and the OAuth funnel (US-32 AC34) names the cloud
+ * at five exits where `mcp_connect` once named it at one.
+ */
+export function providerTag(provider: McpProvider): ProviderSpec['tag'] {
+  return PROVIDERS[provider].tag;
 }
 
 export function providerRevokeUrl(provider: McpProvider): string {

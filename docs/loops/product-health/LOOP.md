@@ -41,9 +41,12 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   lab_rows_viewed/lab_row_added → medication_history_viewed →
   reminder_optin/optout → report_email_* →
   reminder_sent (server; cross-check against `reminder_optin_v2.last_sent`
-  stamps) → the connector family `mcp_connect` / `mcp_tool_call` /
+  stamps) → the connector family, whose OAuth funnel runs
+  `mcp_authorize_shown` → `mcp_authorize_refused` (split by `reason`: a
+  refused vendor shows here and nowhere else) → `mcp_consent_posted` →
+  `mcp_connect` / `mcp_connect_failed`, then `mcp_tool_call` /
   `mcp_import` / `remote_change_applied` (metadata breakdown by tool, client,
-  route; value-free by design — while n is tiny these are Brad's own
+  route, reason; value-free by design — while n is tiny these are Brad's own
   verification, not adoption); `guide_opened` split by `placement`
   (header|footer), read against `results_viewed`;
   `reminder_optin_v2` total by `provider`.
