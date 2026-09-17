@@ -7,6 +7,8 @@
 > **Two: we answered the credentials question with a refusal.** The old Demo credentials section said there were none and none could exist. The form asks for valid, working credentials. It is replaced below: Brad creates a reviewer account holding synthetic data only.
 >
 > Resubmit as **1.0.1**, named "Health by Dr Brad", with `import_documents` and `file_results` and their justifications. `import_documents` no longer declares `openai/fileParams`: a dropped file is read by ChatGPT itself and filed through `file_results`, never reaching our server (US-36). Tracked in [issue #60](https://github.com/DrBradStanfield/roadmap/issues/60).
+>
+> **1.0.1 was submitted on 2026-09-18, about 21:40 UTC. The dashboard shows status Review.** Named "Health by Dr Brad", with `import_documents` and `file_results` and their justifications. The form was filled by uploading the generated JSON: scan the tools first so all nine appear, then upload. The upload resets Category to **Other**, because the JSON schema has no health member, so re-select **Healthcare** after every upload. Credentials were pasted from the private file, and the release notes below were used as written. Tracked in [issue #60](https://github.com/DrBradStanfield/roadmap/issues/60).
 
 Everything the OpenAI submission form asks for, so Brad only fills in fields. Field names and section
 order below were read off the live form on 2026-09-18 against the rejected 1.0.0 record; requirements
@@ -175,7 +177,8 @@ One catch. The JSON's `category` is a closed enum (`BUSINESS`, `COLLABORATION`, 
 `DEVELOPER_TOOLS`, `EDUCATION`, `ENTERTAINMENT`, `FINANCE`, `FOOD`, `LIFESTYLE`, `NEWS`,
 `PRODUCTIVITY`, `SHOPPING`, `TRAVEL`) with no health member, while the form's own dropdown has
 Healthcare, which is what 1.0.0 used. So the file says `LIFESTYLE` and Brad sets Healthcare in the
-form afterwards. If the upload overwrites the dropdown, re-check the category before submitting.
+form afterwards. Confirmed on 2026-09-18: every upload resets the dropdown to **Other**, so re-select
+Healthcare after each one and check it again before submitting.
 
 ## Demo credentials
 
@@ -261,21 +264,19 @@ This is a **resubmission**: a new 1.0.1 version inside the existing app record, 
 0. DONE 2026-09-17. `95ba57b` deployed by run 35173356172 (all jobs green), and a real ChatGPT reconnect landed the full funnel in `product_events` that morning, UTC: `mcp_authorize_shown` 02:19:01, `mcp_consent_posted` 02:19:09, `mcp_connect` 02:19:10, then `mcp_tool_call` (`read_record`, outcome ok) 02:20:34. The proof the connection completed is that last row, not `mcp_connect`: `mcp_connect` is written when the authorization code is minted, before the client redeems it at `/token`, so on its own it says the door opened and not that anyone walked through. ChatGPT used the `chatgpt.com/connector_platform_oauth_redirect` callback; a live probe confirms the consent page also answers 200 on the callback the review environment used. No health values in the counters.
 1. DONE 2026-09-17 02:21 UTC. Reply sent to openai-review@tm.openai.com on the rejection thread: our bug named (one callback pinned, non-redirectable 400), the fix live, a reviewer account promised for 1.0.1, and a question back asking which `redirect_uri` and what UTC time their reviewer hit.
 2. DONE 2026-09-18. Dropbox reviewer account created and loaded (Variant B), cold-tested from a new browser: password only, no code, consent flow completed, and a fresh client read the record and got a plan. Remaining work is filling and submitting the 1.0.1 form.
-   After approval, apply for Dropbox production status: it removes the "Before you connect this app" screen for everyone, so new users see one less click.
 3. Confirm the publisher identity still reads Verified: Organization, then General, then
    Verifications. It was verified for 1.0.0, so there should be nothing to redo.
 4. Domain verification is already done: `curl https://mcp.drstanfield.com/.well-known/openai-apps-challenge`
    returns the token alone as `text/plain` (checked 2026-09-17). Leave `OPENAI_APPS_CHALLENGE` alone.
-5. Open the existing app at https://platform.openai.com/plugins and start a new version, **1.0.1**.
-6. **Info.** Display name, version, subtitle, description, category Healthcare, developer identity,
-   website, support URL, privacy URL (`/pages/connector-privacy`), terms URL, the 1.0.0 demo
-   recording link, commerce left unchecked, logo unchanged. Optionally upload
-   `chatgpt-app-submission.json`, then re-check the category the upload set.
-7. **MCP.** Server URL unchanged. Paste the tool justifications, three per tool; the shared
-   open-world line serves seven of them. CSP blank.
-8. **Skills.** Nothing to upload. **Prompts.** Paste the seven starter prompts.
-9. **Testing.** Paste the chosen credentials variant, then the five positive cases in the form's four
-   fields and the three negative cases.
-10. **Global.** All available countries. **Submit.** Paste "What 1.0.1 adds over 1.0.0" as release
-    notes and read the policy questions honestly (Compliance settles the PHI question; if OpenAI
-    reads it differently, ask them). Approval does not publish the app: Brad chooses when it goes live.
+5. DONE 2026-09-18, ~21:40 UTC. Version 1.0.1 filled and submitted inside the existing app record; the dashboard shows status **Review**.
+   - **Info, MCP, Prompts, Testing.** Filled by uploading `docs/chatgpt-app-submission.json`. Run **Scan Tools** first so all nine tools appear, then upload; scanning after the upload is not needed.
+   - **Category.** Every upload of the JSON resets Category to **Other**, because the schema's enum has no health member. Re-select **Healthcare** after each upload, and check it once more before pressing Submit.
+   - **Testing.** Credentials pasted from Brad's private credentials file, Variant B, the Dropbox reviewer account. Five positive cases, three negative.
+   - **Info, by hand.** Display name, subtitle, description, developer identity, website, support URL, privacy URL (`/pages/connector-privacy`), terms URL, the 1.0.0 demo recording link, commerce unchecked, logo unchanged. CSP blank.
+   - **Submit.** Release notes written from "What 1.0.1 adds over 1.0.0". Approval does not publish the app: Brad chooses when it goes live.
+
+### Still to do
+
+6. **Publish the guide article.** The store article must exist first, handle `chatgpt-app` under the `guides` blog; then `node scripts/publish-guides.mjs --publish`.
+7. **Watch for the verdict email** from OpenAI, on the existing review thread.
+8. **After approval, apply for Dropbox production status.** It removes the "Before you connect this app" screen for everyone, so new users see one less click.
