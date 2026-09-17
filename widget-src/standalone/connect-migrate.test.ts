@@ -18,6 +18,8 @@ import { MemoryAdapter, MemoryCloud, LocalStorageAdapter } from '../src/storage'
 import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core';
 import { RoadmapStore, PENDING_MIRROR_KEY } from '../src/storage/roadmap-store';
 import { migrateLocalInto, copyDownFrom, liftLocalInto } from './connect';
+import { markSyncPending } from '../src/storage';
+import { createEmptyFile } from '@roadmap/health-core';
 
 function readCloudFile(cloud: MemoryCloud): RoadmapFile {
   return JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
@@ -115,5 +117,27 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
     const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
     const rows = (body as RoadmapFile).measurements.map((m) => [m.metricType, m.value]).sort();
     expect(rows).toEqual([['ldl', 3.2], ['weight', 80]]);
+  });
+
+  it('US-09 AC13: a copy-down from an ERASED cloud keeps the rows this device has not synced', async () => {
+    // Another device erased the record; this one has been on its own copy since.
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const erased = createEmptyFile({ deviceId: 'other-device', now: '2026-01-01T00:00:00.000Z' });
+    erased.meta.eraseEpoch = 1;
+    await adapter.write(ROADMAP_FILE_NAME, erased, null);
+
+    const local = await RoadmapStore.create(new LocalStorageAdapter());
+    local.addMeasurement('weight', 80, '2026-05-11T00:00:00.000Z');
+    await local.flush();
+    markSyncPending('2026-01-01T00:00:00.000Z');
+
+    // The user opens the picker to switch away: the copy-down runs first.
+    await copyDownFrom(adapter);
+
+    const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
+    const file = body as RoadmapFile;
+    expect(file.measurements.map((m) => m.value)).toEqual([80]); // not wiped by the erased copy
+    expect(file.meta.eraseEpoch).toBe(1); // and the erase still came down
   });
 });

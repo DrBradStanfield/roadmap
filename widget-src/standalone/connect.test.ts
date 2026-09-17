@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // MUST stay uncalled (proves the remote file is never touched on log-off).
 const disconnectSpy = vi.fn(async () => {});
 const remoteDeleteSpy = vi.fn();
+const cloudReadSpy = vi.fn(async (): Promise<{ body: unknown; version: string | null }> => ({ body: null, version: null }));
 
 // Stub the cloud adapters (so adapterFor('dropbox') yields a spy-able sign-out)
 // while keeping the REAL LocalStorageAdapter — its disconnect() is the on-device
@@ -21,6 +22,7 @@ const remoteDeleteSpy = vi.fn();
 vi.mock('../src/storage', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../src/storage')>();
   class CloudStub {
+    async read() { return cloudReadSpy(); }
     async disconnect() { return disconnectSpy(); }
     delete = remoteDeleteSpy;
     remove = remoteDeleteSpy;
@@ -51,7 +53,7 @@ function makeStorage(): Storage {
   return s as unknown as Storage;
 }
 
-import { logOff, storageState, BACKEND_KEY, type Backend } from './connect';
+import { logOff, prepareSwitch, storageState, BACKEND_KEY, type Backend } from './connect';
 
 const FILE_KEY = 'health_roadmap_file_v2';
 const REV_KEY = 'health_roadmap_file_v2_rev';
@@ -163,5 +165,37 @@ describe('storageState', () => {
     for (const backend of backends.filter((b) => b !== 'local')) {
       expect(storageState(backend)).toBe('cloud');
     }
+  });
+});
+
+/**
+ * US-09 AC13 — switching away from a cloud that cannot be reached. The old
+ * record would be left behind with no connection pointing at it, and this
+ * browser would hold none of it, so the switch stops instead.
+ */
+describe('prepareSwitch (US-09 AC13)', () => {
+  beforeEach(() => {
+    disconnectSpy.mockClear();
+    cloudReadSpy.mockClear();
+    Object.defineProperty(globalThis, 'localStorage', { value: makeStorage(), writable: true, configurable: true });
+  });
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis, 'localStorage');
+  });
+
+  it('US-09 AC13: refuses to leave a cloud it could not copy down, and keeps its tokens', async () => {
+    cloudReadSpy.mockRejectedValueOnce(new Error('cloud down'));
+    await expect(prepareSwitch('dropbox')).rejects.toThrow(/Dropbox could not be reached/);
+    expect(disconnectSpy).not.toHaveBeenCalled();
+  });
+
+  it('copies down, then signs out, when the cloud answers', async () => {
+    await expect(prepareSwitch('dropbox')).resolves.toBeUndefined();
+    expect(disconnectSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('has nothing to copy down from the device tier', async () => {
+    await expect(prepareSwitch('local')).resolves.toBeUndefined();
+    expect(cloudReadSpy).not.toHaveBeenCalled();
   });
 });

@@ -307,7 +307,7 @@ describe('mergeFiles — append-only logs & snapshots', () => {
     b.medicationHistory = [histRow('h2'), histRow('h3')];
     expect(mergeFiles(a, b, OPTS).medicationHistory.map((h) => h.id)).toEqual(['h1', 'h2', 'h3']);
 
-    const doc = (id: string): FileDocument => ({ id, title: id, type: 'lab_report' as any, date: '2026-05-01', fileRef: `documents/${id}.pdf`, contentHash: `sha256-${id}`, mimeType: 'application/pdf', extractedText: '', addedAt: '2026-05-01T00:00:00Z' });
+    const doc = (id: string): FileDocument => ({ id, title: id, type: 'pathology_report' as any, date: '2026-05-01', fileRef: `documents/${id}.pdf`, contentHash: `sha256-${id}`, mimeType: 'application/pdf', extractedText: '', addedAt: '2026-05-01T00:00:00Z' });
     a.documents = [doc('d1')];
     b.documents = [doc('d1'), doc('d2')];
     expect(mergeFiles(a, b, OPTS).documents.map((d) => d.id)).toEqual(['d1', 'd2']);
@@ -689,5 +689,94 @@ describe('mergeFiles — append-only logs and documents quarantine a reused id (
     expect(merged.documents).toHaveLength(1);
     expect(merged.medicationHistory[0].id).toBe('H1');
     expect(merged.documents[0].id).toBe('D1');
+  });
+});
+
+describe('mergeFiles — keepNewerThan (the on-device fallback, US-09 AC13)', () => {
+  const SINCE = '2026-05-10T00:00:00Z';
+  const FALLBACK = { ...OPTS, keepNewerThan: SINCE };
+
+  /** The cloud copy a device that fell back comes back to: erased once already. */
+  function erasedCloud(): RoadmapFile {
+    const cloud = emptyFile();
+    cloud.meta.eraseEpoch = 1;
+    return cloud;
+  }
+
+  it('US-09 AC13: keeps the fallback session\'s own rows and drops the stale ones, epoch stays the winner\'s', () => {
+    const device = emptyFile(); // epoch 0 — the empty file the fallback started on
+    device.measurements = [
+      measurement({ id: 'during', metricType: 'weight', value: 80, recordedAt: '2026-05-11', createdAt: '2026-05-11T09:00:00Z' }),
+      measurement({ id: 'before', metricType: 'weight', value: 95, recordedAt: '2026-05-01', createdAt: '2026-05-01T09:00:00Z' }),
+    ];
+    const merged = mergeFiles(device, erasedCloud(), FALLBACK);
+    expect(merged.measurements.map((m) => m.id)).toEqual(['during']);
+    expect(merged.meta.eraseEpoch).toBe(1);
+  });
+
+  it('US-09 AC13: carries the session\'s lab values, supplements and documents too', () => {
+    const device = emptyFile();
+    device.labValues = [
+      { id: 'lv1', metricName: 'ferritin', value: 90, unit: 'ng/mL', referenceLow: null, referenceHigh: null, recordedAt: '2026-05-11', createdAt: '2026-05-11T09:00:00Z', source: 'manual', status: 'active', correctsId: null },
+    ];
+    device.supplements = [
+      { id: 's1', supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: null, doseUnit: null, status: 'active', startedAt: '2026-05-11', updatedAt: '2026-05-11T09:00:00Z', lamport: 1 },
+    ];
+    device.documents = [
+      { id: 'd1', title: 'Labs', type: 'pathology_report', date: '2026-05-11', fileRef: '', contentHash: '', mimeType: '', extractedText: 'x', addedAt: '2026-05-11T09:00:00Z' },
+    ];
+    const merged = mergeFiles(device, erasedCloud(), FALLBACK);
+    expect(merged.labValues.map((r) => r.id)).toEqual(['lv1']);
+    expect(merged.supplements.map((r) => r.id)).toEqual(['s1']);
+    expect(merged.documents.map((r) => r.id)).toEqual(['d1']);
+  });
+
+  it('US-09 AC13: when the device erased and the cloud is stale, the gate is untouched', () => {
+    const device = emptyFile();
+    device.meta.eraseEpoch = 2;
+    const stale = emptyFile();
+    stale.meta.eraseEpoch = 1;
+    stale.measurements = [measurement({ id: 'cloud1', metricType: 'weight', value: 95, createdAt: '2026-05-11T09:00:00Z' })];
+    const merged = mergeFiles(device, stale, FALLBACK);
+    expect(merged.measurements).toEqual([]);
+    expect(merged.meta.eraseEpoch).toBe(2);
+  });
+
+  it('US-09 AC13: a row stamped at exactly the fallback instant is kept', () => {
+    const device = emptyFile();
+    device.measurements = [measurement({ id: 'onTheDot', metricType: 'weight', value: 80, createdAt: SINCE })];
+    expect(mergeFiles(device, erasedCloud(), FALLBACK).measurements.map((m) => m.id)).toEqual(['onTheDot']);
+  });
+
+  it('US-09 AC13: the merged clock never sits behind a row it just kept', () => {
+    const device = emptyFile();
+    device.measurements = [measurement({ id: 'late', metricType: 'weight', value: 80, createdAt: '2027-01-01T00:00:00Z' })];
+    const merged = mergeFiles(device, erasedCloud(), FALLBACK);
+    // migrate.ts clamps any row that post-dates meta.updatedAt back to it — a
+    // meta behind the kept row would rewrite it on the next load.
+    expect(merged.meta.updatedAt >= '2027-01-01T00:00:00Z').toBe(true);
+  });
+
+  it('US-09 AC13: a stale device profile never rides back in with the kept rows', () => {
+    const device = emptyFile();
+    // A device copy that predates the erase, with a clock and a clock count that
+    // would win an ordinary last-write-wins contest.
+    device.profile = { updatedAt: '2030-01-01T00:00:00Z', lamport: 99, heightCm: 150 };
+    device.screenings = { updatedAt: '2030-01-01T00:00:00Z', lamport: 99 };
+    device.measurements = [measurement({ id: 'during', metricType: 'weight', value: 80, createdAt: '2026-05-11T09:00:00Z' })];
+    const cloud = erasedCloud();
+    cloud.profile = { updatedAt: '2026-05-09T00:00:00Z', lamport: 1, heightCm: 180 };
+    const merged = mergeFiles(device, cloud, FALLBACK);
+    expect(merged.profile).toEqual(cloud.profile);
+    expect(merged.screenings).toEqual(cloud.screenings);
+    expect(merged.measurements.map((m) => m.id)).toEqual(['during']); // the rows still travel
+  });
+
+  it('US-09 AC13: without the option the epoch gate is exactly what it was', () => {
+    const device = emptyFile();
+    device.measurements = [measurement({ id: 'during', metricType: 'weight', value: 80, createdAt: '2026-05-11T09:00:00Z' })];
+    const merged = mergeFiles(device, erasedCloud(), OPTS);
+    expect(merged.measurements).toEqual([]);
+    expect(merged.meta.eraseEpoch).toBe(1);
   });
 });

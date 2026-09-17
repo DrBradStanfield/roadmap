@@ -156,7 +156,7 @@ function measurement(id: string, day: string) {
 }
 
 function sync(deviceId: string): SyncManager<RoadmapFile> {
-  return new SyncManager(new DriveAdapter('access-token'), deviceId, ROADMAP_DOC, () => '2026-02-01T00:00:00.000Z');
+  return new SyncManager(new DriveAdapter('access-token'), deviceId, ROADMAP_DOC, { now: () => '2026-02-01T00:00:00.000Z' });
 }
 
 function seed(drive: FakeDrive): DriveFile {

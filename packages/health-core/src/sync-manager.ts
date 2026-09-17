@@ -42,6 +42,9 @@ export interface SyncedFile {
 export interface SyncContext {
   deviceId: string;
   now: string;
+  /** Merge policy carried through to `doc.merge` — see `mergeFiles`' own
+   *  `keepNewerThan` (the on-device fallback, US-09 AC13). */
+  keepNewerThan?: string;
 }
 
 /**
@@ -70,13 +73,19 @@ export interface SaveResult<T> {
   attempts: number;
 }
 
+export interface SyncOptions {
+  /** Injectable clock so tests/harness are deterministic. */
+  now?: () => string;
+  /** Passed to every merge this manager runs (see SyncContext). */
+  keepNewerThan?: string;
+}
+
 export class SyncManager<T extends SyncedFile> {
   constructor(
     private readonly adapter: StorageAdapter,
     private readonly deviceId: string,
     private readonly doc: DocumentSpec<T>,
-    /** Injectable clock so tests/harness are deterministic. */
-    private readonly now: () => string = () => new Date().toISOString(),
+    private readonly opts: SyncOptions = {},
   ) {}
 
   get backendId(): StorageBackendId {
@@ -84,7 +93,8 @@ export class SyncManager<T extends SyncedFile> {
   }
 
   private ctx(): SyncContext {
-    return { deviceId: this.deviceId, now: this.now() };
+    const now = this.opts.now?.() ?? new Date().toISOString();
+    return { deviceId: this.deviceId, now, keepNewerThan: this.opts.keepNewerThan };
   }
 
   /** Load the document, normalising whatever is in the cloud (or empty). */

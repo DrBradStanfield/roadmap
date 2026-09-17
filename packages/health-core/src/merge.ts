@@ -65,6 +65,18 @@ export interface MergeOptions {
   deviceId: string;
   /** ISO 8601 wall-clock for the merged file's meta.updatedAt. */
   now: string;
+  /**
+   * The instant this device started working on its own copy, because the cloud
+   * could not be read (US-09 AC13). Only the epoch gate below reads it, and
+   * only when `local` is the device copy and `remote` wins: the ROWS `local`
+   * stamped at or after it (the arrays in `ROW_STAMPS`) are re-merged onto the
+   * winner instead of going with the rest. Nothing else travels — `profile`,
+   * `screenings` and `reminderOptIn` are last-write-wins singletons a stale
+   * device clock could resurrect, `recommendationSnapshots` carries no stamp to
+   * judge by, and `meta` (epoch, lamport, clocks) is the winner's by
+   * definition. Absent, as in every other caller, the merge is what it was.
+   */
+  keepNewerThan?: string;
 }
 
 /** A row that participates in append-only slot resolution. */
@@ -363,6 +375,88 @@ function pickNewerOptional<T extends SyncStamp>(
 }
 
 /**
+ * The stamp that says WHEN each append-only row was written, per array. One
+ * table, so a new array is added here and nowhere else. `recommendationSnapshots`
+ * is absent on purpose: its entries carry no stamp and are regenerated, never
+ * appended to.
+ */
+const ROW_STAMPS = {
+  measurements: (r: FileMeasurement) => r.createdAt,
+  labValues: (r: FileLabValue) => r.createdAt,
+  documents: (r: FileDocument) => r.addedAt,
+  medications: (r: FileMedication) => r.updatedAt,
+  medicationHistory: (r: FileMedication) => r.updatedAt,
+  supplements: (r: FileSupplement) => r.updatedAt,
+  supplementHistory: (r: FileSupplement) => r.updatedAt,
+  reminderPreferences: (r: FileReminderPreference) => r.updatedAt,
+} as const;
+
+type StampedArray = keyof typeof ROW_STAMPS;
+
+/**
+ * What a device that was cut off from the cloud (US-09 AC13) may bring back to
+ * the file that just won the epoch gate: its own rows, and nothing else.
+ *
+ * A fallback session works on the LAST local copy — or, more often, an empty one
+ * at epoch 0. If the cloud has ever been erased its epoch is higher, so the gate
+ * hands it the whole file and everything the user typed meanwhile goes without a
+ * word. This keeps the rows stamped at or after `since` and takes EVERY other
+ * field from the winner, so the result is the winner's file plus those rows. The
+ * caller then runs the ordinary equal-epoch merge, which puts them through the
+ * same slot, key and union rules as any other row: no slot ends with two active
+ * rows, no id lands twice, and the erase itself still stands.
+ *
+ * Taking the non-row fields from the winner is what makes this safe. `profile`,
+ * `screenings` and `reminderOptIn` are single last-write-wins objects, so a
+ * device copy that predates the erase could otherwise win one of them on its
+ * stale clock and resurrect it; `recommendationSnapshots` has no stamp to judge
+ * by; `meta` (epoch, lamport, clocks) is the winner's by definition. None of
+ * them can travel — a fallback edit to the profile or the screening answers is
+ * still lost to the gate.
+ *
+ * Returns null when the session wrote nothing, so the gate returns the winner
+ * untouched.
+ */
+function pruneToFallbackRows(device: RoadmapFile, winner: RoadmapFile, since: string): RoadmapFile | null {
+  // `>=`, not `>`: the marker is stamped at the moment the fallback starts, so
+  // the session's first row can share its millisecond. Keeping one row too many
+  // is recoverable; dropping one is not.
+  const kept: Record<string, unknown[]> = {};
+  let wrote = false;
+  // The file's clock must stay at or ahead of every row in it: `migrate.ts`
+  // clamps a row that post-dates `meta.updatedAt` back to it, which would
+  // rewrite the very rows this is rescuing.
+  let latest = winner.meta.updatedAt;
+  for (const key of Object.keys(ROW_STAMPS) as StampedArray[]) {
+    const stamp = ROW_STAMPS[key] as (row: unknown) => string;
+    const rows = (device[key] as unknown[]).filter((row) => stamp(row) >= since);
+    for (const row of rows) if (stamp(row) > latest) latest = stamp(row);
+    if (rows.length > 0) wrote = true;
+    kept[key] = rows;
+  }
+  return wrote
+    ? ({ ...winner, ...kept, meta: { ...winner.meta, updatedAt: latest } } as RoadmapFile)
+    : null;
+}
+
+/**
+ * The oldest stamp on any row in the file (null when it holds none). A device
+ * whose data has never reached the cloud is unsynced from here on, which is the
+ * `keepNewerThan` a failed first lift marks (US-09 AC13).
+ */
+export function earliestRowStamp(file: RoadmapFile): string | null {
+  let earliest: string | null = null;
+  for (const key of Object.keys(ROW_STAMPS) as StampedArray[]) {
+    const stamp = ROW_STAMPS[key] as (row: unknown) => string;
+    for (const row of file[key] as unknown[]) {
+      const at = stamp(row);
+      if (earliest === null || at < earliest) earliest = at;
+    }
+  }
+  return earliest;
+}
+
+/**
  * Merge `remote` (just read from the cloud) into `local` (this device's working
  * copy), producing the file to write back. Deterministic and symmetric.
  */
@@ -386,7 +480,18 @@ export function mergeFiles(
     a > b ? a : b,
   );
   if (localEpoch !== remoteEpoch) {
-    const winner = localEpoch > remoteEpoch ? local : remote;
+    const localWins = localEpoch > remoteEpoch;
+    const winner = localWins ? local : remote;
+    // The device fell back, wrote, and lost the gate: re-merge its own rows —
+    // on the winner's file, at the winner's epoch — through the ordinary path
+    // below, which for those two inputs is an equal-epoch merge.
+    if (!localWins && opts.keepNewerThan) {
+      const pruned = pruneToFallbackRows(local, winner, opts.keepNewerThan);
+      // `now: updatedAt` carries the max over BOTH metas into the re-merge —
+      // the pruned copy wears the winner's meta, so the device's own clock
+      // would otherwise be dropped here (the never-rewind guard above).
+      if (pruned) return mergeFiles(pruned, winner, { ...opts, now: updatedAt });
+    }
     return {
       ...winner,
       meta: {

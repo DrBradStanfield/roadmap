@@ -5,8 +5,9 @@
  *    Dropbox, then Advanced: GitHub, self-host. "This browser only" last as the
  *    explicit no-wall escape hatch.
  *  - Switching while connected copies the current cloud's data down to this
- *    device first and drops the old connection's tokens (prepareSwitch), then
- *    the new connect lifts the data up — never stranded, nothing left behind.
+ *    device first and drops the old connection's tokens (prepareSwitch in
+ *    connect.ts), then the new connect lifts the data up — never stranded,
+ *    nothing left behind. A cloud that cannot be read stops the switch.
  *  - Opened only via openBackendPicker() (src/lib/storage-notice.tsx); the
  *    listener lives in SyncControl.
  *  - Native <dialog>/showModal(): real focus trap + Escape + top-layer for
@@ -15,7 +16,7 @@
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GitHubAdapter, WebDavAdapter } from '../src/storage';
-import { adapterFor, BACKEND_KEY, copyDownToDevice, finishFormConnect, logOff, PROVIDER_LABELS, useBusyRun, type Backend } from './connect';
+import { adapterFor, BACKEND_KEY, finishFormConnect, logOff, prepareSwitch, PROVIDER_LABELS, useBusyRun, type Backend } from './connect';
 import { trackProductEvent } from '../src/lib/server-api';
 import { useModalDialog } from './use-dialog';
 import { PLAN_STORAGE_CTA, PLAN_STORAGE_NOTICE } from '../src/lib/storage-notice';
@@ -108,13 +109,6 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
-  /** Leaving a connected cloud: copy its data down, then drop its tokens. */
-  const prepareSwitch = async (): Promise<void> => {
-    if (current === 'local') return;
-    await copyDownToDevice(current);
-    await adapterFor(current)?.disconnect();
-  };
-
   const choose = (id: Backend): void => {
     if (busy) return;
     if (id === current) {
@@ -127,7 +121,7 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
       return;
     }
     void run(async () => {
-      await prepareSwitch();
+      await prepareSwitch(current);
       if (id === 'local') {
         localStorage.removeItem(BACKEND_KEY);
         location.reload();
@@ -141,7 +135,7 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
 
   const submitForm = (id: 'github' | 'self-host'): void => {
     void run(async () => {
-      await prepareSwitch();
+      await prepareSwitch(current);
       trackProductEvent('cloud_connect_started', { provider: id === 'self-host' ? 'webdav' : id });
       const adapter =
         id === 'github'

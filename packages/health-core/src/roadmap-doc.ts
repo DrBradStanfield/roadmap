@@ -60,5 +60,5 @@ export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
 
 /** The one write path over the user's record, whichever adapter holds it. */
 export function recordSync(adapter: StorageAdapter, deviceId: string, now: string): SyncManager<RoadmapFile> {
-  return new SyncManager<RoadmapFile>(adapter, deviceId, ROADMAP_DOC, () => now);
+  return new SyncManager<RoadmapFile>(adapter, deviceId, ROADMAP_DOC, { now: () => now });
 }

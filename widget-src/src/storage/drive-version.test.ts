@@ -103,7 +103,7 @@ function adapter(cachedFileId = true): GoogleDriveAdapter {
 const record = () => createEmptyFile({ deviceId: 'seed', now: T0 });
 const measurement = (id: string, metricType: string) =>
   createMeasurement({ id, metricType, value: 80, recordedAt: T0, createdAt: T0 });
-const sync = (device: string) => new SyncManager<RoadmapFile>(adapter(), device, ROADMAP_DOC, () => T0);
+const sync = (device: string) => new SyncManager<RoadmapFile>(adapter(), device, ROADMAP_DOC, { now: () => T0 });
 
 function deferred(): { promise: Promise<void>; resolve: () => void } {
   let resolve!: () => void;

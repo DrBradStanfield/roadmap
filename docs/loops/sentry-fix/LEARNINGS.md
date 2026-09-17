@@ -132,6 +132,21 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   connect-time lift catch in `liftLocalInto` already sees a 401/403 and
   swallows it, then `cloud_connect_success` fires: the funnel counts a
   refused grant as a success.
+- `[defect][widget][merge]` 2026-09-18 — The 09-17 fallback (PR #106) ran the
+  session on the device copy at `eraseEpoch` 0; `mergeFiles` hands a higher
+  epoch the whole file, so the next good load of a once-erased record silently
+  dropped every fallback edit, and the marker cleared on that same save. Drive
+  had it already; the fix widened it to every provider. Fixed outside the
+  loop's grant (merge.ts is health-core): the pending marker holds the last
+  in-step moment and never advances while pending; `mergeFiles` takes
+  `keepNewerThan`, pruning the device file to rows at or after it and
+  re-merging those as ordinary rows, as copy-down on a provider switch now does
+  too; Dropbox/GitHub/WebDAV get "could not be reached, Retry", not the guest
+  pitch (US-09 AC14). Residual: no `erasedAt`, so a faster clock's row can
+  outlive a later erase. Lesson: a fix changing WHICH FILE a session runs on
+  must be checked against the merge that brings it back (eraseEpoch, LWW,
+  marker timing); a guest view for a signed-in user is a fork, not a fallback,
+  and our tests proved only the fallback.
 - `[gotcha][process]` 2026-08-14 — Fresh cloud containers start on a detached
   HEAD at origin/main's tip while the local `main` REF lags: diff/typecheck
   comparisons against `main` silently use stale code. `git checkout -B main

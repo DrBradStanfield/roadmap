@@ -26,10 +26,10 @@ vi.mock('./connect', () => ({
   // Real behaviour (connect.test.ts pins it); the rest of the module is stubbed.
   storageState: (backend: string, reconnect?: string) =>
     (reconnect ? 'reconnect' : backend === 'local' ? 'guest' : 'cloud'),
-  PROVIDER_LABELS: { 'google-drive': 'Google Drive', dropbox: 'Dropbox' },
+  PROVIDER_LABELS: { 'google-drive': 'Google Drive', dropbox: 'Dropbox', github: 'GitHub', 'self-host': 'your own server' },
+  prepareSwitch: vi.fn(),
   liftLocalInto: vi.fn(),
   adapterFor: () => null,
-  copyDownToDevice: vi.fn(),
   finishFormConnect: vi.fn(),
   logOff: vi.fn(),
   useBusyRun: () => ({ busy: false, error: null, setError: vi.fn(), run: vi.fn() }),
@@ -78,6 +78,14 @@ describe('US-09 AC5 — under the plan', () => {
     expect(container.textContent).toContain('Google Drive is signed out');
     expect(container.textContent).toContain('kept in this browser and merges when you reconnect');
     expect(getByRole('button', { name: 'Use this browser only' })).toBeTruthy();
+  });
+
+  it('US-09 AC13: a Dropbox record that could not be read names Dropbox and offers a retry', () => {
+    const { container, getByRole } = guest(<SyncControl backend="local" reconnect="dropbox" hasData />);
+    expect(container.textContent).toContain('Dropbox could not be reached');
+    expect(getByRole('button', { name: 'Retry' })).toBeTruthy();
+    expect(container.textContent).not.toContain(PLAN_STORAGE_CTA); // never the guest pitch
+    expect(container.textContent).not.toMatch(/—/);
   });
 });
 

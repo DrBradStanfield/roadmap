@@ -33,6 +33,7 @@ import {
   createMeasurement,
   dayOf,
   diffInputsToMeasurements,
+  earliestRowStamp,
   fileProfileToApi,
   fileScreeningRows,
   latestActivePerMetric,
@@ -101,9 +102,15 @@ function notify(name: string): void {
   }
 }
 
-/** Record that on-device data is ahead of the cloud (see PENDING_MIRROR_KEY). */
-export function markSyncPending(): void {
-  safeSetItem(PENDING_MIRROR_KEY, new Date().toISOString());
+/** Record that on-device data is ahead of the cloud (see PENDING_MIRROR_KEY).
+ *  The stamp is WHEN it went ahead — the LAST moment the two were in step, not
+ *  the moment the failure surfaced: rows typed during the debounce, or while
+ *  the doomed request was in flight, predate the failure and must still count
+ *  as unsynced. It only ever moves EARLIER while it stands, so a second failure
+ *  cannot orphan the first one's edits (US-09 AC13). */
+export function markSyncPending(since = new Date().toISOString()): void {
+  const existing = syncPendingSince();
+  if (existing == null || since < existing) safeSetItem(PENDING_MIRROR_KEY, since);
   notify(SYNC_PENDING_EVENT);
 }
 
@@ -112,9 +119,15 @@ function clearSyncPending(): void {
   notify(SYNC_PENDING_EVENT);
 }
 
+/** Since when on-device data has been waiting to reach the cloud (null: it
+ *  isn't). The merge-up reads it — see `mergeFiles`' `keepNewerThan`. */
+export function syncPendingSince(): string | null {
+  return safeGetItem(PENDING_MIRROR_KEY);
+}
+
 /** True while on-device data is still waiting to reach the cloud. */
 export function isSyncPending(): boolean {
-  return safeGetItem(PENDING_MIRROR_KEY) != null;
+  return syncPendingSince() != null;
 }
 
 // --- App-facing shapes (moved here from api.ts; the data ones come from health-core) ---
@@ -253,6 +266,10 @@ export class RoadmapStore {
   /** Leading-edge throttle for refreshFromRemote(), in epoch millis. */
   private lastRefresh = 0;
   private readonly deviceId: string;
+  /** The last moment this device's copy and the cloud were known to agree: the
+   *  load, then every successful save. A failed save marks the pending mirror
+   *  from HERE, so everything typed since it survives the merge back up. */
+  private lastSyncedAt = new Date().toISOString();
 
   private constructor(
     private readonly sync: SyncManager<RoadmapFile>,
@@ -272,15 +289,21 @@ export class RoadmapStore {
     // A previous cloud session failed to save and mirrored its changes
     // on-device (see persist()'s catch). Merge them in now and schedule a save
     // to lift them up; the marker clears only once a cloud save succeeds.
-    if (adapter.id !== 'local' && isSyncPending()) {
+    const since = syncPendingSince();
+    if (adapter.id !== 'local' && since != null) {
       // Fault-tolerant like the mirror-WRITE side: an unreadable mirror must
       // not brick the load — continue on the cloud file. What happens to the
       // marker depends on WHY it was unreadable (see the catch below).
       try {
-        const ctx: SyncContext = { deviceId, now: new Date().toISOString() };
+        // `keepNewerThan` makes the epoch gate spare this device's own edits:
+        // a fallback session runs on a file at epoch 0, so an erased cloud
+        // would otherwise take the file wholesale and discard them (US-09
+        // AC13). The on-device copy goes in as `local` — the argument the
+        // option speaks about, and the one it has always meant.
+        const ctx: SyncContext = { deviceId, now: new Date().toISOString(), keepNewerThan: since };
         const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
         if (body != null) {
-          store.file = ROADMAP_DOC.merge(store.file, ROADMAP_DOC.migrate(body, ctx), ctx);
+          store.file = ROADMAP_DOC.merge(ROADMAP_DOC.migrate(body, ctx), store.file, ctx);
           store.touch();
         } else {
           clearSyncPending(); // stale marker, nothing mirrored
@@ -961,6 +984,7 @@ export class RoadmapStore {
         if (contentOf(this.file) !== beforeMerge) remoteFolded = true;
       } while (this.dirtyDuringPersist);
       if (remoteFolded) notify(REMOTE_CHANGED_EVENT);
+      this.lastSyncedAt = new Date().toISOString();
       // A skipped (unreadable) mirror holds data this save did NOT include —
       // keep its marker so the next load retries it.
       if (this.adapter.id !== 'local' && !this.mirrorSkipped) clearSyncPending();
@@ -977,7 +1001,7 @@ export class RoadmapStore {
       // unhandled rejection Sentry's noise filters dropped; awaited callers
       // (flush) check the result.
       if (this.adapter.id !== 'local') {
-        markSyncPending();
+        markSyncPending(this.lastSyncedAt);
         // Deliberately the merged transfer primitive, NOT writeSync: the local
         // file may hold guest-era data this session never loaded (no marker
         // set), and a plain overwrite would destroy its only copy. The merge
@@ -1006,10 +1030,47 @@ export class RoadmapStore {
  * pre-switch copy-down (standalone/connect.ts) both delegate here, so
  * DocumentSpec/SyncManager knowledge stays in this schema-owning module.
  */
-export async function saveRoadmapFileInto(target: StorageAdapter, body: unknown): Promise<void> {
+export async function saveRoadmapFileInto(
+  target: StorageAdapter,
+  body: unknown,
+  /** Set ONLY when `body` is this device's own copy and the target is the cloud
+   *  (the connect-time lift): it spares the rows written since that moment from
+   *  the erase-epoch gate (US-09 AC13). The copy-down runs the other way round,
+   *  so it must never pass it. */
+  keepNewerThan?: string,
+): Promise<void> {
   const deviceId = getDeviceId();
-  const ctx = { deviceId, now: new Date().toISOString() };
-  await new SyncManager(target, deviceId, ROADMAP_DOC).save(ROADMAP_DOC.migrate(body, ctx));
+  const ctx = { deviceId, now: new Date().toISOString(), keepNewerThan };
+  await new SyncManager(target, deviceId, ROADMAP_DOC, { keepNewerThan }).save(ROADMAP_DOC.migrate(body, ctx));
+}
+
+/**
+ * Copy a cloud body DOWN onto this device, merged. The DEVICE file is the
+ * `local` side, which is the side `keepNewerThan` speaks about: an erased cloud
+ * file wins the epoch gate, so without it a copy-down before a backend switch
+ * would wipe the very rows a fallback session is still holding (US-09 AC13).
+ */
+export async function copyCloudDownToDevice(body: unknown, keepNewerThan?: string): Promise<void> {
+  const deviceId = getDeviceId();
+  const ctx: SyncContext = { deviceId, now: new Date().toISOString(), keepNewerThan };
+  const sync = new SyncManager(new LocalStorageAdapter(), deviceId, ROADMAP_DOC, { keepNewerThan });
+  await sync.save(ROADMAP_DOC.merge(await sync.load(), ROADMAP_DOC.migrate(body, ctx), ctx));
+}
+
+/**
+ * The oldest row this device holds. A first lift that fails has synced NOTHING,
+ * so that is the moment from which its data is unsynced (US-09 AC13). Undefined
+ * when the file is empty or unreadable — the caller then falls back to now.
+ */
+export async function localUnsyncedSince(): Promise<string | undefined> {
+  try {
+    const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
+    if (body == null) return undefined;
+    const ctx = { deviceId: getDeviceId(), now: new Date().toISOString() };
+    return earliestRowStamp(ROADMAP_DOC.migrate(body, ctx)) ?? undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function toApiDocument(d: FileDocument): ApiDocument {

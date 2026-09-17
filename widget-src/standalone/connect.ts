@@ -13,7 +13,10 @@ import {
   GitHubAdapter,
   WebDavAdapter,
   LocalStorageAdapter,
+  copyCloudDownToDevice,
+  localUnsyncedSince,
   markSyncPending,
+  syncPendingSince,
   ROADMAP_FILE_NAME,
   saveRoadmapFileInto,
   type StorageAdapter,
@@ -34,18 +37,20 @@ export const BACKEND_KEY = 'health_roadmap_backend';
 export interface ResolvedBackend {
   adapter: StorageAdapter;
   backend: Backend;
-  /** Google Drive is remembered but unusable this session (token gone, or the
-   * provider refused the record): on-device until the user clicks Reconnect. */
-  reconnect?: 'google-drive';
+  /** The remembered cloud is unusable this session (token gone, or the provider
+   * refused the record): the session runs on-device and the UI names this
+   * provider, so the user is never shown the guest "choose where to save"
+   * pitch for a record they have already placed (US-09 AC13). */
+  reconnect?: Exclude<Backend, 'local'>;
 }
 
-/** The on-device session a cloud backend falls back to. The marker makes the
- *  next good cloud session merge this session's edits up, whether the user
- *  clicks Reconnect or the next load simply succeeds; only Drive has an
- *  in-page Reconnect. */
+/** The on-device session a cloud backend falls back to. The marker records
+ *  WHEN, so the next good cloud session merges this session's edits up even
+ *  against an erased cloud file (US-09 AC13), whether the user clicks Reconnect
+ *  or the next load simply succeeds. */
 export function onDeviceFallback(backend: Exclude<Backend, 'local'>): ResolvedBackend {
   markSyncPending();
-  return { adapter: new LocalStorageAdapter(), backend: 'local', reconnect: backend === 'google-drive' ? backend : undefined };
+  return { adapter: new LocalStorageAdapter(), backend: 'local', reconnect: backend };
 }
 
 /**
@@ -78,7 +83,7 @@ export async function startOnBackend(
  *  "guest, no provider" means. */
 export type StorageState = 'reconnect' | 'cloud' | 'guest';
 
-export function storageState(backend: Backend, reconnect?: 'google-drive'): StorageState {
+export function storageState(backend: Backend, reconnect?: Exclude<Backend, 'local'>): StorageState {
   if (reconnect) return 'reconnect';
   return backend === 'local' ? 'guest' : 'cloud';
 }
@@ -107,8 +112,11 @@ export async function migrateLocalInto(adapter: StorageAdapter): Promise<void> {
     return;
   }
   if (body == null) return;
-  // saveRoadmapFileInto merges with whatever is already in the cloud.
-  await saveRoadmapFileInto(adapter, body);
+  // saveRoadmapFileInto merges with whatever is already in the cloud. The
+  // pending marker's timestamp travels with it: an erased cloud file wins the
+  // merge wholesale, and without it this device's fallback edits would go with
+  // the rest (US-09 AC13).
+  await saveRoadmapFileInto(adapter, body, syncPendingSince() ?? undefined);
 }
 
 /**
@@ -130,7 +138,10 @@ export async function liftLocalInto(adapter: StorageAdapter, backend: Backend): 
     await migrateLocalInto(adapter);
   } catch (error) {
     console.warn('Guest-data lift on connect failed', error);
-    markSyncPending();
+    // Nothing on this device has reached the cloud, so it is unsynced from its
+    // OLDEST row: marking from "now" would let the next merge drop everything
+    // the user typed before this connect (US-09 AC13).
+    markSyncPending(await localUnsyncedSince());
     Sentry.captureException(error, { tags: { area: 'cloud-connect', op: 'migrate-up', backend } });
   }
 }
@@ -224,24 +235,34 @@ export async function logOff(backend: Backend): Promise<void> {
 }
 
 /**
- * Copy the connected cloud's latest data down to this device (merged), so a
- * disconnect or backend switch never appears to lose anything. Best-effort:
- * the cloud file itself is never touched.
+ * Leaving a connected cloud (the picker's switch): copy its data down to this
+ * device first, then drop its tokens. A cloud that cannot be READ stops the
+ * switch — otherwise the record is left in a provider nothing points at any
+ * more while this browser holds none of it (US-09 AC13: the provider is
+ * unreachable exactly when the user is most tempted to pick another one). The
+ * cloud file itself is never touched.
  */
-export async function copyDownToDevice(backend: Backend): Promise<void> {
-  const adapter = adapterFor(backend);
+export async function prepareSwitch(current: Backend): Promise<void> {
+  if (current === 'local') return;
+  const adapter = adapterFor(current);
   if (!adapter) return;
   try {
     await copyDownFrom(adapter);
   } catch (error) {
     console.warn('Copy-down before switch failed', error);
-    Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-down', backend } });
+    Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-down', backend: current } });
+    throw new Error(
+      `${PROVIDER_LABELS[current]} could not be reached, so your record there could not be copied to this browser. Try again once it answers.`,
+    );
   }
+  await adapter.disconnect();
 }
 
-/** The adapter-level copy-down (exported for tests; policy/catch stays above). */
+/** The adapter-level copy-down (exported for tests; policy/catch stays above).
+ *  The pending marker rides along: an erased cloud file wins the epoch gate, so
+ *  without it this would wipe the rows a fallback session is still holding. */
 export async function copyDownFrom(adapter: StorageAdapter): Promise<void> {
   const { body } = await adapter.read(ROADMAP_FILE_NAME);
   if (body == null) return;
-  await saveRoadmapFileInto(new LocalStorageAdapter(), body);
+  await copyCloudDownToDevice(body, syncPendingSince() ?? undefined);
 }

@@ -3,8 +3,9 @@
  * lives and opens the BackendPickerModal to choose/switch — switching copies
  * the current cloud down to this device first, so nothing is ever stranded.
  *
- * The Drive "signed out" state keeps its own inline Reconnect button (GIS popup
- * fallback — one click, no modal).
+ * A provider that could not be read this session is NAMED, never replaced by the
+ * guest pitch (US-09 AC13): Drive keeps its own inline Reconnect button (GIS
+ * popup fallback — one click, no modal), every other provider gets Retry.
  *
  * openBackendPicker() (src/lib/storage-notice.tsx) is the only way in; the
  * listener below is the only listener.
@@ -12,7 +13,7 @@
 import React, { useEffect, useState } from 'react';
 import { GoogleDriveAdapter, isSyncPending, SYNC_PENDING_EVENT } from '../src/storage';
 import { googleDriveConfig } from './google-config';
-import { BACKEND_KEY, liftLocalInto, PROVIDER_LABELS, storageState, useBusyRun, type Backend } from './connect';
+import { adapterFor, BACKEND_KEY, liftLocalInto, PROVIDER_LABELS, storageState, useBusyRun, type Backend } from './connect';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
@@ -20,7 +21,7 @@ import { openBackendPicker, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, StorageSentence
 
 export function SyncControl({ backend, reconnect, hasData = true }: {
   backend: Backend;
-  reconnect?: 'google-drive';
+  reconnect?: Exclude<Backend, 'local'>;
   /** False while the user hasn't entered any data yet — the device-tier
    *  "choose where to save" pitch stays hidden (nothing to save; Brad,
    *  2026-06-11). Cloud/reconnect states always show — data is at stake. */
@@ -62,11 +63,11 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
       location.reload();
     });
 
-  // Forget the pending Google Drive connection (no copy-down needed — this
-  // session already runs on the device copy; the Drive file stays put).
-  const forgetDrive = (): Promise<void> =>
+  // Forget the unreachable connection (no copy-down needed — this session
+  // already runs on the device copy; the cloud file stays put).
+  const forgetProvider = (provider: Exclude<Backend, 'local'>): Promise<void> =>
     run(async () => {
-      await new GoogleDriveAdapter(googleDriveConfig()).disconnect();
+      await adapterFor(provider)?.disconnect();
       localStorage.removeItem(BACKEND_KEY);
       location.reload();
     });
@@ -74,21 +75,32 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
   const state = storageState(backend, reconnect);
   const provider = backend === 'local' ? '' : PROVIDER_LABELS[backend];
   let content: React.ReactNode;
-  if (state === 'reconnect') {
-    // Google Drive remembered but its short-lived token is gone (endpoint down /
-    // revoked). Re-auth needs a user click (browsers block popups at page load).
+  if (reconnect) {
+    // The remembered provider could not be read this session (US-09 AC13). Name
+    // it and offer the way back — never the guest "choose where to save" pitch:
+    // this user HAS chosen, and their record is sitting in that provider. Drive
+    // can re-auth in place (the GIS popup), so it gets that button; for the
+    // others the only cure is to try the read again.
+    const label = PROVIDER_LABELS[reconnect];
+    const drive = reconnect === 'google-drive';
     content = (
       <div className="hr-sync hr-sync-local">
-        <span className="hr-sync-status">Google Drive is signed out</span>
-        <button className="hr-sync-btn" disabled={busy} onClick={() => void reconnectDrive()}>
-          {busy ? 'Reconnecting…' : 'Reconnect Google Drive'}
+        <span className="hr-sync-status">{label} {drive ? 'is signed out' : 'could not be reached'}</span>
+        <button
+          className="hr-sync-btn"
+          disabled={busy}
+          onClick={() => (drive ? void reconnectDrive() : location.reload())}
+        >
+          {drive ? (busy ? 'Reconnecting…' : `Reconnect ${label}`) : 'Retry'}
         </button>
         <span className="hr-sync-detail">
-          Your record is safe in your Google Drive. Sign in again to keep it in step. Anything you
-          change meanwhile is kept in this browser and merges when you reconnect.
+          Your record is safe in your {label}.{' '}
+          {drive
+            ? 'Sign in again to keep it in step. Anything you change meanwhile is kept in this browser and merges when you reconnect.'
+            : `Anything you change now is kept in this browser and merges as soon as ${label} answers again.`}
         </span>
         <div className="hr-sync-more">
-          <button type="button" className="hr-sync-link" onClick={() => void forgetDrive()}>Use this browser only</button>
+          <button type="button" className="hr-sync-link" onClick={() => void forgetProvider(reconnect)}>Use this browser only</button>
         </div>
         {error && <span className="hr-sync-error">{error}</span>}
       </div>
@@ -134,7 +146,10 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
   return (
     <>
       {content}
-      {pickerOpen && <BackendPickerModal current={backend} onClose={() => setPickerOpen(false)} />}
+      {/* An unreachable provider is still the CURRENT one: the picker must copy
+          it down (and fail loudly if it cannot) before any switch, or the
+          record is orphaned there (US-09 AC13). */}
+      {pickerOpen && <BackendPickerModal current={reconnect ?? backend} onClose={() => setPickerOpen(false)} />}
     </>
   );
 }
