@@ -100,15 +100,31 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   `_isAllowedUrl` walks frames from the last one back, skips `<anonymous>` /
   `[native code]`, and passes events with no URL at all — which is why the
   unresolved list is all native-frame noise. Every widget-side "no-op" day in
-  metrics.csv is a lower bound, not evidence of health. Fix is Brad's PR #73
-  (`hold`, unmerged as of 09-07). When it deploys, expect a burst of "new"
-  widget issues that are really old — one per run, rank by `stats` since the
-  deploy date, not lifetime. Two cautions from #73's bot review: `scrubEvent`
+  metrics.csv is a lower bound, not evidence of health. Fix was Brad's PR #73,
+  merged 09-08, live from deploy run 68 (09-10 06:37Z). The predicted burst
+  arrived (09-17 run): five widget issues with no `release` tag, all old
+  bugs newly visible — one per run, rank by `stats` since 09-10, not
+  lifetime. Two cautions from #73's bot review: `scrubEvent`
   does not scrub `exception.values[].value`, and storage adapters interpolate
   document refs (date + sanitized title) into thrown messages — READ TITLES
   BEFORE pasting them into a report or ledger note; and the probe supplied its
   stack URLs, so it proved filename acceptance, not live frame shape. Filter
   start date is undatable from a shallow clone (gotcha below).
+- `[class][widget]` 2026-09-17 — Anything `main()` awaits before
+  `createRoot` is a blank-widget path: an unhandled rejection there leaves
+  the mount empty with no message, and the user's only move is reloading
+  (Sentry shows it as 3-6 identical events per session). Found via a Drive
+  grant without `drive.file` (Google's granular consent lets the box stay
+  unticked; the refresh token still works, so `isConnected()` and the
+  refresh both pass and the first lookup answers 403 `insufficientPermissions`
+  — 6G/6K, at least two users over 5 days). Fixed for cloud storage
+  failures by `startOnBackend` (US-09 AC13: on-device session + mirror
+  marker + Drive Reconnect). Still open in the same class: `resolveBackend`
+  touching bare `localStorage` (SecurityError when site storage is blocked,
+  6N; `null` on an old WebView, 6J) — the on-device tier itself has nothing
+  to fall back to, so that needs a memory adapter or a message, not a catch.
+  Triage tell for the scope case: a 200 from the exchange endpoint in the
+  breadcrumb right before the provider's 403.
 - `[gotcha][process]` 2026-08-14 — Fresh cloud containers start on a detached
   HEAD at origin/main's tip while the local `main` REF lags: diff/typecheck
   comparisons against `main` silently use stale code. `git checkout -B main
