@@ -74,8 +74,8 @@ export { ROADMAP_DOC };
 /**
  * Set while the on-device copy may hold changes a cloud backend hasn't seen
  * (US-09 AC4): a failed cloud persist mirrors the working copy locally under
- * this marker, and a failed connect-time lift (standalone/connect.ts) marks
- * the existing local file the same way. Cleared by the next successful cloud
+ * this marker; a failed connect-time lift and an on-device fallback session
+ * (standalone/connect.ts) mark the existing local file the same way. Cleared by the next successful cloud
  * save, after create() has merged the on-device copy back in. ONLY the
  * functions below write it — the key is exported for tests alone.
  */

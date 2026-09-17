@@ -34,24 +34,18 @@ export const BACKEND_KEY = 'health_roadmap_backend';
 export interface ResolvedBackend {
   adapter: StorageAdapter;
   backend: Backend;
-  /** Google Drive is the remembered backend but this session cannot use it
-   * (its token is gone, or the provider refused the record): the session runs
-   * on-device until the user clicks Reconnect (popups need a user gesture, so
-   * we can't re-auth at page load). */
+  /** Google Drive is remembered but unusable this session (token gone, or the
+   * provider refused the record): on-device until the user clicks Reconnect. */
   reconnect?: 'google-drive';
 }
 
-/**
- * The on-device session a cloud backend falls back to when it cannot be used
- * right now. The marker makes the next cloud session merge this session's
- * edits up (RoadmapStore.create), whether the user clicks Reconnect or the
- * next load simply succeeds — without it, edits made while signed out stayed
- * on the device once a later load reconnected silently. Only Drive has an
- * in-page Reconnect; the others reconnect through the picker.
- */
+/** The on-device session a cloud backend falls back to. The marker makes the
+ *  next good cloud session merge this session's edits up, whether the user
+ *  clicks Reconnect or the next load simply succeeds; only Drive has an
+ *  in-page Reconnect. */
 export function onDeviceFallback(backend: Exclude<Backend, 'local'>): ResolvedBackend {
   markSyncPending();
-  return { adapter: new LocalStorageAdapter(), backend: 'local', ...(backend === 'google-drive' ? { reconnect: backend } : {}) };
+  return { adapter: new LocalStorageAdapter(), backend: 'local', reconnect: backend === 'google-drive' ? backend : undefined };
 }
 
 /**
@@ -70,10 +64,9 @@ export async function startOnBackend(
     return resolved;
   } catch (error) {
     if (resolved.backend === 'local' || !isStorageFailure(error)) throw error;
-    console.warn('Cloud record could not be loaded');
-    Sentry.captureException(recordFailure(error, 'Cloud record could not be loaded'), {
-      tags: { area: 'cloud-sync', op: 'load', backend: resolved.backend },
-    });
+    const failure = recordFailure(error, 'Cloud record could not be loaded');
+    console.warn(failure.message);
+    Sentry.captureException(failure, { tags: { area: 'cloud-sync', op: 'load', backend: resolved.backend } });
     const fallback = onDeviceFallback(resolved.backend);
     await init(fallback.adapter);
     return fallback;

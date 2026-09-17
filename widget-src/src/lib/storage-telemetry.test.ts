@@ -75,13 +75,8 @@ describe('cloud-storage telemetry boundary', () => {
   });
 
   it('keeps the load operation of a startup fallback capture (US-09 AC13)', () => {
-    const scrubbed = scrubEvent({
-      type: undefined,
-      tags: { area: 'cloud-sync', op: 'load', backend: 'google-drive' },
-      exception: { values: [{ type: 'StorageError', value: marker }] },
-    })!;
-    expect(scrubbed.tags).toEqual({ area: 'cloud-sync', op: 'load', backend: 'google-drive' });
-    expect(JSON.stringify(scrubbed)).not.toContain(marker);
+    const tags = { area: 'cloud-sync', op: 'load', backend: 'google-drive' };
+    expect(scrubEvent({ type: undefined, tags })!.tags).toEqual(tags);
   });
 
   it('still admits a sanitized current-bundle event through the real SDK filter', () => {

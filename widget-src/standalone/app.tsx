@@ -93,8 +93,7 @@ async function resolveBackend(): Promise<ResolvedBackend> {
         return { adapter: gd, backend: 'google-drive' };
       }
       // Endpoint unreachable or refresh token revoked. A popup can't open at
-      // page load, so run this session on-device and offer Reconnect. KEEP the
-      // remembered choice — local edits merge up on reconnect.
+      // page load: run on-device, offer Reconnect, KEEP the remembered choice.
       return onDeviceFallback('google-drive');
     }
   }
@@ -105,8 +104,6 @@ async function resolveBackend(): Promise<ResolvedBackend> {
 
 async function main() {
   initSentry();
-  // A cloud record the first read cannot load runs this session on-device
-  // (US-09 AC13) — an unhandled rejection here would leave the mount empty.
   const { backend, reconnect } = await startOnBackend(await resolveBackend(), initRoadmapStore);
   // "Delete all my data" must also delete the reminder row on Brad's server,
   // and the token that authorises it dies with the file — so it runs first.
