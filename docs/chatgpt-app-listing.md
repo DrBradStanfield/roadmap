@@ -253,6 +253,8 @@ version-notes answer, one line each, in the voice of a form field.
 
 Send this by replying to the rejection thread, BEFORE resubmitting. Keep the thread's subject.
 
+Sent 2026-09-17 02:21 UTC.
+
 > Hello,
 >
 > One question first: did your reviewer reach our consent screen, and if so, which `redirect_uri`
@@ -266,9 +268,9 @@ Send this by replying to the rejection thread, BEFORE resubmitting. Keep the thr
 > live on our server.
 >
 > We also took your point about credentials. Our earlier answer said there were none, because each
-> user brings their own cloud storage. That was not good enough for a review. We have made a
-> reviewer account with a profile and sample data already in it, and 1.0.1 carries its email and
-> password. Signing in needs no code, no second device and no waiting.
+> user brings their own cloud storage. That was not good enough for a review. Version 1.0.1 will
+> carry a reviewer account with a profile and sample data already in it, with its email and password
+> in the form. Signing in will need no code, no second device and no waiting.
 >
 > We will resubmit as 1.0.1. If you can tell us the redirect and the time, we will check them
 > against the fix first.
@@ -280,9 +282,12 @@ Send this by replying to the rejection thread, BEFORE resubmitting. Keep the thr
 
 This is a **resubmission**: a new 1.0.1 version inside the existing app record, not a new app.
 
-0. Confirm `ca62912` is deployed and that one real ChatGPT connection has landed since: an
-   `mcp_connect` row in `product_events`. Steps 1 and 2 wait on that row. Claiming a fix we have
-   not seen work is how we lose the second review too.
+0. DONE 2026-09-17. `95ba57b` deployed by run 35173356172 (all jobs green), and a real ChatGPT
+   reconnect landed the full funnel in `product_events` that morning, UTC: `mcp_authorize_shown`
+   02:19:01, `mcp_consent_posted` 02:19:09, `mcp_connect` 02:19:10, then `mcp_tool_call`
+   (`read_record`, outcome ok) 02:20:34. ChatGPT used the `chatgpt.com/connector_platform_oauth_redirect`
+   callback; a live probe confirms the consent page also answers 200 on the callback the review
+   environment used. The counters carry no health values.
 1. Create the reviewer account and fill it (Demo credentials above), then test it cold from a clean
    browser on a different network. Nothing else on this list matters if that flow asks for a code.
    Confirm the Google consent screen still reads "In production" while you are there.
