@@ -233,7 +233,7 @@ Melatonin can be taken with or without food. Splitting between immediate-release
 
 ### Product Mention
 
-Dr Brad Stanfield's [Sleep by Dr Brad](https://drstanfield.com/products/sleep) combines a micro-dose of melatonin (0.3 mg -- within the physiological range that restores nighttime levels without the grogginess and receptor desensitization associated with standard 3-5 mg doses) with magnesium glycinate and glycine (2,500 mg), which work through complementary mechanisms: melatonin signals circadian sleep onset, magnesium promotes relaxation via GABA receptor activation, and glycine lowers core body temperature at bedtime.
+Dr Brad Stanfield's [Sleep by Dr Brad](https://drstanfield.com/products/sleep) combines a low dose of sustained-release melatonin (0.8 mg, Melotime®, released gradually across the night rather than the 3-5 mg immediate-release spike of standard products) with fully chelated magnesium bisglycinate and glycine (2,400 mg), which work through complementary mechanisms: melatonin signals circadian sleep onset, magnesium promotes relaxation via GABA receptor activation, and glycine lowers core body temperature at bedtime.
 
 ## 5. Safety and Side Effects
 

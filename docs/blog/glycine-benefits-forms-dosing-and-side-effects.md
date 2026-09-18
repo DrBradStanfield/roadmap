@@ -244,7 +244,7 @@ There do not appear to be any published clinical trials investigating the effect
 
 ### Product Mention
 
-Dr Brad Stanfield's [Sleep by Dr Brad](https://drstanfield.com/products/sleep) contains 2,500 mg of glycine alongside micro-dose melatonin (300 mcg) and magnesium glycinate (126 mg elemental) — three ingredients targeting different sleep mechanisms: glycine for core body temperature reduction, melatonin for circadian signaling, and magnesium for relaxation and reduced sleep latency. The glycine dose is close to the 3 g studied in clinical trials, and the magnesium glycinate form provides additional glycine as the chelating amino acid.
+Dr Brad Stanfield's [Sleep by Dr Brad](https://drstanfield.com/products/sleep) contains 2,400 mg of glycine alongside low-dose, sustained-release melatonin (0.8 mg) and magnesium bisglycinate (126 mg elemental) — three ingredients targeting different sleep mechanisms: glycine for core body temperature reduction, melatonin for circadian signaling, and magnesium for relaxation and reduced sleep latency. The glycine dose is close to the 3 g studied in clinical trials, and the magnesium glycinate form provides additional glycine as the chelating amino acid.
 
 ## 5. Safety and Side Effects
 
