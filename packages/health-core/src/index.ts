@@ -375,7 +375,6 @@ export {
 } from './drive-rest';
 
 // US-35: the slot rule and the bulk save the website and the connector share.
-export { bulkAppendValues, slotKey, slotState, type BulkRow, type SlotState } from './record-edits';
-export { createLabValue } from './roadmap-file';
+export { bulkAppendValues, slotKey, slotState, type BulkRow, type LabUnitRefusal, type SlotState } from './record-edits';
 export { isImportableEntryName } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';

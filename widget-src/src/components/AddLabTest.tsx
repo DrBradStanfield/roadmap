@@ -58,6 +58,10 @@ export function AddLabTest({ onAdded }: { onAdded: () => void }) {
         trackProductEvent('lab_row_added');
         close();
         onAdded();
+      } else if (result.refused.length > 0) {
+        // A catalogued test typed under "Other" can still name a unit the
+        // catalogue does not take (US-21 phase 3). Say which units reach it.
+        setNotice(result.refused[0].message);
       } else if (result.skippedDuplicates > 0) {
         setNotice('That test already has a value for that date.');
       } else {

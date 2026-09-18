@@ -44,7 +44,11 @@ export const HELP = `edit_record — add and correct values in your own record f
 add        --metric  one of the app's core metrics (ldl, hba1c, weight, …), stored
                      in SI units; --unit converts from the other unit system.
            --test    any other blood test, by catalogue name (ferritin, tsh, …);
-                     --unit is required and kept exactly as the lab reported it.
+                     --unit is required and is the unit the LAB printed: a
+                     catalogued test is stored in the catalogue's SI unit, and a
+                     spelling it does not know for that test is refused, naming
+                     the ones it takes. A test the catalogue does not know is
+                     stored in the unit it was reported in.
            --date    the clinical date (YYYY-MM-DD). Defaults to today; a future
                      date is refused. One value per metric per day — a day that
                      already has a value is refused, and you correct it instead.
@@ -53,8 +57,9 @@ correct    --id      the row id to correct (get-plan --json shows them). The new
                      entered-in-error. Nothing is ever deleted or overwritten.
                      --expect <n> refuses the correction unless the row holds
                      that value now — worth passing from a script.
-                     --unit converts, as it does for add; a lab value keeps the
-                     unit its lab reported, so give the number only.
+                     --unit converts, as it does for add — for a core metric and
+                     a catalogued test alike. Leave it off when the number is
+                     already in the unit the row is stored in.
 
 Before writing, the record is copied to <file>.bak-<ISO> (the last ${BACKUPS_KEPT} are kept)
 and the new version is written through a temp file, so a failed write cannot
@@ -175,7 +180,9 @@ function runAdd(args: Args, record: RoadmapFile, now: string): Change {
   if (!unit) throw new PlanError('--test needs --unit', 'Give the unit the lab reported, e.g. `--unit "µg/L"`.');
   const result = appendLabValue(record, { metricName: test as string, value, unit, recordedAt: date, now });
   if (!result.ok) refuse(result, args.path);
-  return { file: result.file, row: result.row, unit };
+  // The unit the row was STORED in, which a catalogued test converts into —
+  // echoing the flag back would name a unit the record does not hold.
+  return { file: result.file, row: result.row, unit: result.row.unit };
 }
 
 function runCorrect(args: Args, record: RoadmapFile, now: string): Change {

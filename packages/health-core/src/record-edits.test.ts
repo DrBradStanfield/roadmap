@@ -298,7 +298,12 @@ describe('US-31 AC5 — units are resolved here, not in the CLI (F1)', () => {
     expect(result.row.value).toBeCloseTo(92.08, 2);
   });
 
-  it('refuses a unit on a lab-value correction — a lab value keeps its reported unit', () => {
+  // Superseded by US-21 phase 3: a lab value no longer "keeps its reported
+  // unit", it is stored in the catalogue's SI unit, so a unit on a correction
+  // now CONVERTS. The refusal survives for the spelling the catalogue does not
+  // know for that test — mg/L is not a ferritin unit — which is the case this
+  // test was really protecting: a silently mis-scaled value.
+  it('refuses a lab-value correction in a unit the catalogue does not know for that test (US-21 phase 3)', () => {
     const result = correctValue(base(), { id: 'l1', newValue: 96, unit: 'mg/L', now: NOW });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe('unknown-unit');
@@ -412,6 +417,7 @@ describe('US-31 AC5 \u2014 unit labels resolve through the shared resolver (unit
 // US-35 — provenance, the shared slot rule, and the shared bulk save
 // ---------------------------------------------------------------------------
 import { bulkAppendValues, findActiveInSlot, slotIndex, slotKey, slotState } from './record-edits';
+import { isLabKeyWord, isLabUnitWord, PRODUCT_EVENT_NAMES } from './product-events';
 
 describe('US-35 AC8 — a writer states its source; the defaults stay what they were', () => {
   it('appends carry the source they are given, and `manual` when none', () => {
@@ -541,5 +547,110 @@ describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pu
       { kind: 'measurement', metricType: 'ldl', value: 3.1, recordedAt: '2026-07-14', source: 'lab_import' },
     ], NOW);
     expect(result.file).toBe(file);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-21 phase 3 — a catalogued lab value is stored in SI, or refused
+// ---------------------------------------------------------------------------
+// Before this, `labValues[].unit` was whatever the lab printed, so one test
+// could hold a mg/dL row and a mmol/L row in the same series and no chart
+// could be trusted. There are three write doors and they all go through
+// `canonicalLabValue`.
+describe('US-21 phase 3 — every catalogued lab value is stored in SI', () => {
+  it('US-21 phase 3 — an append converts the value and its reference range by the same factor', () => {
+    const result = ok(appendLabValue(base(), {
+      metricName: 'Vitamin D', value: 32, unit: 'ng/mL', referenceLow: 30, referenceHigh: 100,
+      recordedAt: '2026-08-14', now: NOW,
+    }));
+    const row = result.row as FileLabValue;
+    expect(row).toMatchObject({ metricName: 'vitamin_d', unit: 'nmol/L', value: 79.872 });
+    expect(row.referenceLow).toBeCloseTo(74.88, 6);
+    expect(row.referenceHigh).toBeCloseTo(249.6, 6);
+  });
+
+  it('US-21 phase 3 — a spelling the catalogue does not know for that test is refused, and the message names what it takes', () => {
+    const result = appendLabValue(base(), { metricName: 'ferritin', value: 210, unit: 'pmol/L', recordedAt: '2026-08-14', now: NOW });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe('unknown-unit');
+    expect(result.message).toContain('µg/L');
+    expect(result.message).toContain('ng/ml');
+    expect(result.message).toContain('pmol/L');
+  });
+
+  it('US-21 phase 3 — an uncatalogued test has no SI definition, so it is stored exactly as reported', () => {
+    const row = ok(appendLabValue(base(), { metricName: 'Lipase', value: 44, unit: 'U/mL', recordedAt: '2026-08-14', now: NOW })).row as FileLabValue;
+    expect(row).toMatchObject({ metricName: 'lipase', unit: 'U/mL', value: 44 });
+  });
+
+  it('US-21 phase 3 — mg/dL reaches urea only under a nitrogen name; the bare molecule is refused', () => {
+    const bun = ok(appendLabValue(base(), { metricName: 'BUN', value: 14, unit: 'mg/dL', recordedAt: '2026-08-14', now: NOW })).row as FileLabValue;
+    expect(bun).toMatchObject({ metricName: 'urea', unit: 'mmol/L' });
+    expect(bun.value).toBeCloseTo(4.998, 6);
+    // "urea 14 mg/dL" is two different results depending on the continent it
+    // was printed on, so the record refuses it instead of picking one.
+    const refused = appendLabValue(base(), { metricName: 'Urea', value: 14, unit: 'mg/dL', recordedAt: '2026-08-15', now: NOW });
+    expect(refused.ok).toBe(false);
+    if (refused.ok) return;
+    expect(refused.reason).toBe('unknown-unit');
+    expect(refused.message).toContain('mmol/L');
+    expect(refused.message).not.toContain('mg/dl');
+  });
+
+  it('US-21 phase 3 — the bulk save converts too, and hands back the rows it refused', () => {
+    const result = bulkAppendValues(base(), [
+      { kind: 'lab', metricName: 'Vitamin D', value: 32, unit: 'ng/mL', referenceLow: 30, referenceHigh: 100, recordedAt: '2026-08-14', source: 'lab_import' },
+      { kind: 'lab', metricName: 'ferritin', value: 210, unit: 'pmol/L', recordedAt: '2026-08-14', source: 'lab_import' },
+      { kind: 'lab', metricName: 'Lipase', value: 44, unit: 'U/mL', recordedAt: '2026-08-14', source: 'lab_import' },
+    ], NOW);
+    expect(result.saved).toHaveLength(2);
+    expect(result.saved[0]).toMatchObject({ metricName: 'Vitamin D', unit: 'nmol/L', value: 79.872, referenceLow: 74.88 });
+    expect(result.saved[1]).toMatchObject({ metricName: 'Lipase', unit: 'U/mL', value: 44 });
+    expect(result.refused).toEqual([{ key: 'ferritin', unit: 'pmol/L', message: expect.stringContaining('µg/L') }]);
+    // The usage signal's two words, and nothing else: `lab_unit_refused` counts
+    // which spelling to add next, never the number that was refused.
+    expect(isLabKeyWord(result.refused[0].key)).toBe(true);
+    expect(isLabUnitWord(result.refused[0].unit)).toBe(true);
+    expect(isLabUnitWord('210')).toBe(false);
+    expect(PRODUCT_EVENT_NAMES).toContain('lab_unit_refused');
+    // A refused row is not a duplicate: the two counters answer different questions.
+    expect(result.skippedDuplicates).toBe(0);
+    // Nothing of the refused row reached the record — not even its slot.
+    expect(result.file.labValues.some((l) => l.metricName === 'ferritin' && l.recordedAt === '2026-08-14')).toBe(false);
+  });
+
+  it('US-21 phase 3 — a correction given a unit converts; given none, the number is already stored-unit', () => {
+    const file = ok(appendLabValue(base(), { metricName: 'vitamin_d', value: 80, unit: 'nmol/L', recordedAt: '2026-08-14', now: NOW })).file;
+    const id = file.labValues.find((l) => l.metricName === 'vitamin_d')!.id;
+    const converted = ok(correctValue(file, { id, newValue: 32, unit: 'ng/mL', expectedValue: 80, now: NOW })).row as FileLabValue;
+    expect(converted).toMatchObject({ unit: 'nmol/L', value: 79.872, correctsId: id });
+    const plain = ok(correctValue(file, { id, newValue: 85, expectedValue: 80, now: NOW })).row as FileLabValue;
+    expect(plain).toMatchObject({ unit: 'nmol/L', value: 85 });
+    // An uncatalogued test has no unit to convert to, so a unit is still refused.
+    const other = ok(appendLabValue(base(), { metricName: 'Lipase', value: 44, unit: 'U/mL', recordedAt: '2026-08-14', now: NOW }));
+    const refused = correctValue(other.file, { id: other.row.id, newValue: 40, unit: 'U/L', now: NOW });
+    expect(refused.ok).toBe(false);
+    if (!refused.ok) expect(refused.reason).toBe('unknown-unit');
+  });
+
+  it('US-21 phase 3 — a correction into another unit is STORED in that unit, not relabelled with the old one', () => {
+    // The row this is for: written before phase 3, in a spelling the catalogue
+    // refuses (prolactin ng/mL is assay-dependent), so the load-time migration
+    // cannot convert it either. The user corrects it into the unit their lab
+    // now prints. The new row must SAY mIU/L — a 318 labelled ng/mL is a
+    // twentyfold error that no error message would ever announce.
+    const file = base();
+    file.labValues.push({
+      id: 'p1', metricName: 'prolactin', value: 15, unit: 'ng/mL', referenceLow: 4, referenceHigh: 15,
+      recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z', source: 'lab_import',
+      status: 'active', correctsId: null,
+    });
+    const row = ok(correctValue(file, { id: 'p1', newValue: 318, unit: 'mIU/L', expectedValue: 15, now: NOW })).row as FileLabValue;
+    expect(row).toMatchObject({ metricName: 'prolactin', value: 318, unit: 'mIU/L', correctsId: 'p1' });
+    // The report's own range was in the old unit, and no factor carries it
+    // across: it is dropped rather than left beside a number it no longer reads.
+    expect(row.referenceLow).toBeNull();
+    expect(row.referenceHigh).toBeNull();
   });
 });

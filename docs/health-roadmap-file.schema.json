@@ -55,7 +55,7 @@
     "screenings": { "$ref": "#/$defs/FileScreenings" },
     "labValues": {
       "type": "array",
-      "description": "Append-only. Lab tests beyond the core metrics, kept in the lab's own reported unit.",
+      "description": "Append-only. Lab tests beyond the core metrics. A test in packages/health-core/src/lab-catalog.ts is stored in that catalogue's canonical SI unit; a test the catalogue does not know keeps the unit it was reported in.",
       "items": { "$ref": "#/$defs/FileLabValue" }
     },
     "documents": {
@@ -205,15 +205,15 @@
         "correctsId"
       ],
       "properties": {
-        "id": { "type": "string", "description": "Stable unique id. Write a fresh UUID; never reuse one. An id containing '#dup-' is a merge-quarantined duplicate — never write one yourself." },
+        "id": { "type": "string", "description": "Stable unique id. Write a fresh UUID; never reuse one. An id containing '#dup-' is a merge-quarantined duplicate, and an id ending '#si' is the app's own unit conversion of the row it corrects — never write either one yourself." },
         "metricName": {
           "type": "string",
           "description": "Prefer a catalogue key from packages/health-core/src/lab-catalog.ts (e.g. 'ferritin'). Free text otherwise. Slot key is (metricName, day of recordedAt)."
         },
-        "value": { "type": "number" },
-        "unit": { "type": "string", "description": "The lab's own reported unit. No SI conversion is applied." },
-        "referenceLow": { "type": ["number", "null"], "description": "Lab reference range low, or null." },
-        "referenceHigh": { "type": ["number", "null"], "description": "Lab reference range high, or null." },
+        "value": { "type": "number", "description": "The value in the unit this row is STORED in — the catalogue's canonical SI unit for a catalogued test, converted from what the lab printed; as reported for a test the catalogue does not know." },
+        "unit": { "type": "string", "description": "The unit the value is STORED in. For a catalogued test this is the catalogue's canonical SI unit, not necessarily the one the lab printed; the conversion factors are in health_roadmap_algorithm.md section 2. A spelling the catalogue does not know for that test is refused on write, never rescaled by guess." },
+        "referenceLow": { "type": ["number", "null"], "description": "Lab reference range low, in the same unit as value (converted by the same factor), or null." },
+        "referenceHigh": { "type": ["number", "null"], "description": "Lab reference range high, in the same unit as value (converted by the same factor), or null." },
         "recordedAt": { "type": "string" },
         "createdAt": { "type": "string" },
         "source": { "$ref": "#/$defs/MeasurementSource" },

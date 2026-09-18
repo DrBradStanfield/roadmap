@@ -4,8 +4,13 @@ import { RoadmapStore } from '../storage/roadmap-store';
 import { initRoadmapStore, flushRoadmapStore } from './roadmap-data';
 import * as data from './roadmap-data';
 import { getChatHistory } from './chat-history-access';
+import { trackProductEvent } from './server-api';
 
 vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn() } }));
+vi.mock('./server-api', async importOriginal => ({
+  ...await importOriginal<typeof import('./server-api')>(),
+  trackProductEvent: vi.fn(),
+}));
 
 // US-03/04/09: the module used by UI callers must work without Vite rewriting
 // its identity. The actual store and sync engine persist into a fake cloud.
@@ -72,5 +77,21 @@ describe('explicit local-first data path', () => {
 
     expect(await data.deleteUserData()).toEqual({ success: true, chatErased: false });
     expect(JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json).meta.eraseEpoch).toBe(1);
+  });
+
+  // US-21 phase 3 · the usage signal. A refused unit is the only way to learn
+  // which spelling to teach the catalogue next, and the counter must carry the
+  // key and the spelling ALONE — the value is the one thing it may never hold.
+  it('counts a refused lab unit with the catalogue key and the spelling, never the value', async () => {
+    vi.mocked(trackProductEvent).mockClear();
+
+    const result = await data.bulkSaveLabValues([
+      { metricName: 'ferritin', value: 80, unit: 'mg/dL', recordedAt: '2024-06-01T09:00:00.000Z' },
+      { metricName: 'sodium', value: 140, unit: 'mEq/L', recordedAt: '2024-06-01T09:00:00.000Z' },
+    ]);
+
+    expect(result.saved).toHaveLength(1);
+    expect(trackProductEvent).toHaveBeenCalledTimes(1);
+    expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin', unit: 'mg/dL' });
   });
 });

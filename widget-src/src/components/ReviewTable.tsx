@@ -281,7 +281,8 @@ export function buildMatrixModel(
         nameKey,
         displayName: labValueLabel(lv.metricName),
         // Same display-only unit-spelling normalization as the lab-rows
-        // matrix ("umol/L" → "µmol/L", ratio ≡ L/L) — values untouched.
+        // matrix ("umol/L" → "µmol/L", ratio ≡ L/L) — these are stored rows,
+        // already in the catalogue's SI unit when the test is catalogued.
         unit: displayLabUnit(lv.unit, resolveLabCatalogEntry(lv.metricName)),
         referenceLow: lv.referenceLow,
         referenceHigh: lv.referenceHigh,
@@ -329,8 +330,9 @@ export function buildMatrixModel(
           kind: 'additional',
           nameKey,
           displayName: labValueLabel(av.name),
-          // Display-only spelling normalization; the save path below keeps
-          // av.unit as-reported.
+          // Display-only spelling normalization. The review shows the report
+          // as PRINTED, and the save path passes av.unit on unchanged — the
+          // conversion to SI happens once, at the write (US-21 phase 3).
           unit: displayLabUnit(av.unit, resolveLabCatalogEntry(av.name)),
           referenceLow: av.referenceLow ?? null,
           referenceHigh: av.referenceHigh ?? null,

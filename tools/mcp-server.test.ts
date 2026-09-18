@@ -527,7 +527,8 @@ describe('US-36 AC1 — file_results runs here: the receipt lives in this proces
     expect(text(commit)).toContain('Saved (backup:');
     const saved = JSON.parse(readFileSync(path, 'utf8')) as RoadmapFile;
     expect(saved.measurements.find((m) => m.recordedAt === '2026-08-20')).toMatchObject({ metricType: 'ldl', value: 2.8, source: 'lab_import' });
-    expect(saved.labValues[0]).toMatchObject({ metricName: 'ferritin', value: 210 });
+    // Written under the name the report PRINTED (US-21 phase 3: the printed name is what chooses a conversion); the slot is the catalogue key either way.
+    expect(saved.labValues[0]).toMatchObject({ metricName: 'Ferritin', value: 210 });
     expect(saved.documents[0]).toMatchObject({ sourceFileName: 'Results.pdf', metadata: { importedVia: 'assistant' } });
     expect(readdirSync(dir).some((name) => name.includes('backup') || name.includes('.bak'))).toBe(true);
 

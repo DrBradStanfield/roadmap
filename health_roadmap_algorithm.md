@@ -160,6 +160,119 @@ Source: `units.ts`
 | psa | 1 | 1 |
 | lpa | 0 | 0 |
 
+### Lab catalogue conversions
+
+Source: `packages/health-core/src/lab-catalog.ts` (`LAB_CONVERSIONS`, `canonicalLabValue`). Since US-21 phase 3, a lab test the catalogue knows is **stored** in its canonical SI unit, not in the unit the lab printed. A writer sends the number and the unit as printed; the record converts it once, on the write, and converts `referenceLow`/`referenceHigh` by the same factor.
+
+Factor = the number a reported value is multiplied by to reach the canonical unit. Spellings are matched lower case, after `normalizeLabUnit` folds report and LLM spelling (`umol/L` → `µmol/L`, `mcg` → `µg`, `uL` → `µL`, `x 10e9/L` → `×10⁹/L`, `1.73m2` → `1.73m²`). A factor of 1 is a different notation for the same scale, not a conversion.
+
+A spelling this table does not carry for that test is **refused** — never rescaled by guess. The refusal names the canonical unit and every spelling the test accepts, and the website counts it as `lab_unit_refused`. Three things follow from that:
+
+- **Prolactin in ng/mL is refused on purpose.** The mIU/L factor is assay-dependent (about 21.2 for the WHO 3rd IS), so converting would invent precision the report does not have.
+- **A test the catalogue does not know is stored exactly as reported**, with its printed unit. There is no SI definition to convert it to, and refusing it would throw the value away.
+- **Rows written before phase 3 are corrected at load**, not edited: `migrate.ts` appends a converted row with the id `<id>#si` and `correctsId` set, and flips the printed row to `entered-in-error`. Same id on every device, so cross-device copies merge into one row.
+
+| key | canonical | reported spelling | × factor | note |
+|-----|-----------|-------------------|----------|------|
+| `sodium` | mmol/L | meq/l | 1 | mEq/L and mmol/L are the same number for a singly charged ion |
+| `potassium` | mmol/L | meq/l | 1 | mEq/L and mmol/L are the same number for a singly charged ion |
+| `chloride` | mmol/L | meq/l | 1 | mEq/L and mmol/L are the same number for a singly charged ion |
+| `bicarbonate` | mmol/L | meq/l | 1 | mEq/L and mmol/L are the same number for a singly charged ion |
+| `urea` | mmol/L | mg/dl (printed name: bun / blood urea nitrogen / urea nitrogen) | 0.357 | urea nitrogen, the molecule’s 2 N, 28.014 g/mol. mg/dL reaches this slot ONLY under a nitrogen name: under the bare name "urea" it is ambiguous (US nitrogen vs the whole molecule), so it is refused |
+| `urate` | mmol/L | mg/dl | 0.05948 | urate 168.11 g/mol |
+| `urate` | mmol/L | µmol/l | 0.001 | a micromole is a thousandth of a millimole (UK labs print µmol/L) |
+| `urine_acr` | mg/mmol | mg/g | 0.113 | creatinine 113.12 g/mol, so 1 g ≡ 8.840 mmol |
+| `egfr` | mL/min/1.73m² | ml/min/1.73 m² | 1 | spacing only |
+| `egfr` | mL/min/1.73m² | ml/min/1.73 | 1 | the body-surface area left unwritten (LabCorp) |
+| `alt` | U/L | iu/l | 1 | an international unit of enzyme activity IS a unit |
+| `ast` | U/L | iu/l | 1 | an international unit of enzyme activity IS a unit |
+| `ggt` | U/L | iu/l | 1 | an international unit of enzyme activity IS a unit |
+| `alp` | U/L | iu/l | 1 | an international unit of enzyme activity IS a unit |
+| `bilirubin_total` | µmol/L | mg/dl | 17.1 | bilirubin 584.66 g/mol |
+| `albumin` | g/L | g/dl | 10 | a decilitre is a tenth of a litre |
+| `total_protein` | g/L | g/dl | 10 | a decilitre is a tenth of a litre |
+| `globulin` | g/L | g/dl | 10 | a decilitre is a tenth of a litre |
+| `haemoglobin` | g/L | g/dl | 10 | a decilitre is a tenth of a litre |
+| `haemoglobin` | g/L | mmol/l | 16.11 | haemoglobin per haem, 16.11 g/mol (Dutch convention) |
+| `haematocrit` | L/L | ratio | 1 | a ratio IS L/L |
+| `haematocrit` | L/L | fraction | 1 | a fraction IS L/L |
+| `haematocrit` | L/L | % | 0.01 | a percentage is a hundredth |
+| `rbc` | ×10¹²/L | ×10⁶/µl | 1 | an analyser’s spelling of ×10¹²/L |
+| `rbc` | ×10¹²/L | m/µl | 1 | an analyser’s spelling of ×10¹²/L |
+| `rbc` | ×10¹²/L | million/µl | 1 | an analyser’s spelling of ×10¹²/L |
+| `rbc` | ×10¹²/L | t/l | 1 | an analyser’s spelling of ×10¹²/L |
+| `wbc` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `wbc` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `wbc` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `wbc` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `wbc` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `wbc` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `platelets` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `platelets` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `platelets` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `platelets` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `platelets` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `platelets` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `neutrophils` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `neutrophils` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `neutrophils` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `neutrophils` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `neutrophils` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `neutrophils` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `lymphocytes` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `lymphocytes` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `lymphocytes` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `lymphocytes` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `lymphocytes` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `lymphocytes` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `monocytes` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `monocytes` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `monocytes` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `monocytes` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `monocytes` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `monocytes` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `eosinophils` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `eosinophils` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `eosinophils` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `eosinophils` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `eosinophils` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `eosinophils` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `basophils` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `basophils` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `basophils` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `basophils` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `basophils` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `basophils` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `mchc` | g/L | g/dl | 10 | a decilitre is a tenth of a litre |
+| `tsh` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number |
+| `tsh` | mIU/L | mu/l | 1 | mU/L is mIU/L, printed short |
+| `ft4` | pmol/L | ng/dl | 12.87 | thyroxine 776.87 g/mol |
+| `ft3` | pmol/L | pg/ml | 1.536 | triiodothyronine 650.97 g/mol |
+| `testosterone_total` | nmol/L | ng/dl | 0.0347 | testosterone 288.42 g/mol |
+| `testosterone_total` | nmol/L | ng/ml | 3.467 | testosterone 288.42 g/mol |
+| `estradiol` | pmol/L | pg/ml | 3.671 | estradiol 272.38 g/mol |
+| `estradiol` | pmol/L | ng/l | 3.671 | estradiol 272.38 g/mol |
+| `prolactin` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number (ng/mL stays refused: assay-dependent) |
+| `cortisol_am` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
+| `vitamin_d` | nmol/L | ng/ml | 2.496 | 25-OH-D 400.64 g/mol |
+| `vitamin_d` | nmol/L | µg/l | 2.496 | 25-OH-D 400.64 g/mol |
+| `vitamin_b12` | pmol/L | pg/ml | 0.738 | cyanocobalamin 1355.4 g/mol |
+| `vitamin_b12` | pmol/L | ng/l | 0.738 | cyanocobalamin 1355.4 g/mol |
+| `folate` | nmol/L | ng/ml | 2.266 | folate 441.4 g/mol |
+| `folate` | nmol/L | µg/l | 2.266 | folate 441.4 g/mol |
+| `ferritin` | µg/L | ng/ml | 1 | ng/mL and µg/L are the same number |
+| `iron` | µmol/L | µg/dl | 0.179 | iron 55.845 g/mol |
+| `magnesium` | mmol/L | mg/dl | 0.4114 | magnesium 24.305 g/mol |
+| `magnesium` | mmol/L | meq/l | 0.5 | Mg²⁺ carries two charges |
+| `calcium_corrected` | mmol/L | mg/dl | 0.2495 | calcium 40.078 g/mol |
+| `zinc` | µmol/L | µg/dl | 0.153 | zinc 65.38 g/mol |
+| `crp` | mg/L | mg/dl | 10 | a decilitre is a tenth of a litre |
+| `esr` | mm/hr | mm/h | 1 | spelling only |
+
+`calcium_corrected` also answers to a plain "calcium" (an existing alias), so a plain calcium converts on the corrected-calcium factor — the same number, a different test. Known, pre-existing, not fixed here.
+
+Three-file sync: `evidence.ts` and `roadmap_text.html` are untouched because no threshold, suggestion or user-facing sentence changes — only the unit a stored number is expressed in.
+
 ---
 
 ## 3. Clinical Thresholds

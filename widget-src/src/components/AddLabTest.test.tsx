@@ -23,7 +23,7 @@ import { AddLabTest } from './AddLabTest';
 import { AdditionalLabRows } from './AdditionalLabRows';
 
 beforeEach(() => {
-  bulkSaveLabValues.mockReset().mockResolvedValue({ saved: [{ id: 'x' }], skippedDuplicates: 0, errorCount: 0 });
+  bulkSaveLabValues.mockReset().mockResolvedValue({ saved: [{ id: 'x' }], skippedDuplicates: 0, errorCount: 0, refused: [] });
   trackProductEvent.mockReset();
 });
 
@@ -76,7 +76,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
   });
 
   it('a duplicate (same test, same day) shows a notice instead of silently doing nothing', async () => {
-    bulkSaveLabValues.mockResolvedValue({ saved: [], skippedDuplicates: 1, errorCount: 0 });
+    bulkSaveLabValues.mockResolvedValue({ saved: [], skippedDuplicates: 1, errorCount: 0, refused: [] });
     const { getByLabelText, getByRole, onAdded, findByText } = openForm();
     fireEvent.change(getByLabelText('Test'), { target: { value: 'sodium' } });
     fireEvent.change(getByLabelText('Value'), { target: { value: '140' } });

@@ -133,6 +133,10 @@ export interface ProductEventMetadata {
   provider?: 'google-drive' | 'dropbox' | 'github' | 'webdav' | 'local' | 'typed';
   count?: number;
   placement?: (typeof GUIDE_PLACEMENTS)[number];
+  /** `lab_unit_refused` (US-21 phase 3): the catalogue key of the test and the
+   *  unit spelling the record would not take. Never a value. */
+  key?: string;
+  unit?: string;
 }
 
 /**
@@ -151,7 +155,9 @@ export function trackProductEvent(
 ): void {
   if (!SHOPIFY_SURFACE) return;
   try {
-    const sentKey = `hr_pe_${eventName}`;
+    // Counted per (test, spelling): collapsing them would hide every spelling
+    // but the first — the very list this signal exists to build.
+    const sentKey = `hr_pe_${eventName}${metadata?.key ? `_${metadata.key}_${metadata.unit}` : ''}`;
     if (sessionStorage.getItem(sentKey)) return;
     sessionStorage.setItem(sentKey, '1');
   } catch { /* sessionStorage unavailable — still send once */ }

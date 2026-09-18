@@ -86,7 +86,7 @@ export interface FileLabValue {
   id: string;
   metricName: string;       // free-form, e.g. 'ferritin'
   value: number;
-  unit: string;             // original lab unit (no SI conversion)
+  unit: string;             // the catalogue's SI unit for a catalogued test; as reported for one it does not know
   referenceLow: number | null;
   referenceHigh: number | null;
   recordedAt: string;       // ISO 8601 — slot key (by day) with metricName

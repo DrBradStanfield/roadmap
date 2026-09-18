@@ -17,7 +17,10 @@
  *    `meta` field touched — rule 6 (leave it stale and `migrate.ts` rewinds the
  *    row you just wrote, and it can lose its slot);
  *  - SI canonical values inside `healthInputSchema`'s range for measurements,
- *    the lab's own number and unit for lab values — rule 8;
+ *    and — since US-21 phase 3 — the catalogue's SI unit for a catalogued lab
+ *    test, converted here from the spelling the lab printed, or refused when
+ *    the catalogue does not know that spelling; a test the catalogue does not
+ *    know keeps the unit it was reported in — rule 8;
  *  - catalogue keys for `metricName` — rule 10.
  *
  * v1 writes clinical VALUES only: no delete (deletion is a document tombstone
@@ -25,7 +28,7 @@
  * screening op — those are last-write-wins current state, which a second
  * writer can only edit safely with the lamport discipline this does not take on.
  */
-import { labSlotKey } from './lab-catalog';
+import { acceptedLabUnits, canonicalLabRow, foldName, type LabCatalogEntry, labSlotKey, resolveLabCatalogEntry, type StoredLabRow } from './lab-catalog';
 import { METRIC_LABELS, METRIC_TO_FIELD } from './mappings';
 import { dayOf, localDay } from './merge';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
@@ -67,7 +70,13 @@ export interface AppendMeasurementRequest extends EditContext {
 export interface AppendLabValueRequest extends EditContext {
   /** Reported test name; stored as the catalogue key when catalogued (rule 10). */
   metricName: string;
-  /** The lab's own number, in the lab's own unit — never converted. */
+  /**
+   * The number and unit as the lab PRINTED them. A catalogued test is
+   * converted to the catalogue's SI unit here (US-21 phase 3) — reference
+   * bounds by the same factor — and a spelling the catalogue does not know for
+   * that test is refused, never rescaled by guess. A test the catalogue does
+   * not know has no SI definition, so it is stored exactly as reported.
+   */
   value: number;
   unit: string;
   referenceLow?: number | null;
@@ -81,15 +90,15 @@ export interface CorrectValueRequest extends EditContext {
   id: string;
   newValue: number;
   /**
-   * The unit `newValue` is in, for a MEASUREMENT — resolved against the metric
-   * of the row being corrected. A lab value keeps the unit its lab reported,
-   * so passing one here is refused rather than silently ignored.
+   * The unit `newValue` is in, resolved against the metric or the catalogued
+   * test of the row being corrected. Absent means `newValue` is already in the
+   * unit the row is STORED in. A unit neither knows is refused rather than
+   * silently ignored.
    */
   unit?: string;
   /**
    * What the caller believes the row holds right now, in the STORED number —
-   * SI canonical for a measurement, the lab's own for a lab value, which is
-   * exactly what a read returned. A mismatch refuses the correction, so a
+   * SI canonical, which is exactly what a read returned. A mismatch refuses the correction, so a
    * caller working from a stale or invented read writes nothing.
    *
    * Optional here and on the CLI, where a human is watching their own file.
@@ -182,6 +191,30 @@ function toCanonicalUnit(metricType: string, value: number, unit: string | undef
     return reject('unknown-unit', `${metricType} is measured in ${def.label.si} or ${def.label.conventional}, not "${unit}"`);
   }
   return reported.valueSI;
+}
+
+/**
+ * Rule 8 for a lab value: the row a catalogued test is STORED in, or the
+ * refusal. The three write doors — `appendLabValue`, `bulkAppendValues` and
+ * the lab branch of `correctValue` — all come here, because a second opinion
+ * about a factor is a wrong lab result.
+ *
+ * A test the catalogue does not know is returned untouched: there is no SI
+ * definition to convert it to, and refusing it would throw the value away.
+ */
+function toStoredLab(
+  entry: LabCatalogEntry | undefined, value: number, unit: string,
+  referenceLow?: number | null, referenceHigh?: number | null,
+): StoredLabRow | EditRejection {
+  const bounds = { referenceLow: referenceLow ?? null, referenceHigh: referenceHigh ?? null };
+  if (!entry) return { value, unit, ...bounds };
+  const canonical = canonicalLabRow(entry, { value, unit, ...bounds });
+  if (!canonical) {
+    // The refusal, in the shape a core metric's already takes: what it is
+    // stored in, what spellings reach it, and the one that did not.
+    return reject('unknown-unit', `${entry.label} is stored in ${entry.unit}; this record takes ${acceptedLabUnits(entry).join(', ')}, not "${unit}"`);
+  }
+  return canonical.stored;
 }
 
 /** Rule 8 — SI canonical, inside the range the app itself accepts. */
@@ -301,12 +334,16 @@ const CORE_METRIC_NAMES = new Set<string>([
 ]);
 
 /**
- * Append one non-core lab value. The number and unit are the lab's own (rule
- * 8), so there is no range to check — only the app's 13 core metrics have one.
+ * Append one non-core lab value. A catalogued test is stored in the
+ * catalogue's SI unit (rule 8, US-21 phase 3); an uncatalogued one keeps the
+ * unit it was reported in. There is no range to check either way — only the
+ * app's 13 core metrics have one.
  */
 export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest): EditResult<FileLabValue> {
   const { value, now } = request;
-  const metricName = labSlotKey(request.metricName);
+  // Resolved once: the entry decides both the slot key and the conversion.
+  const entry = resolveLabCatalogEntry(request.metricName);
+  const metricName = entry?.key ?? foldName(request.metricName);
   if (!metricName) return reject('invalid-value', 'A lab value needs a test name');
   if (CORE_METRIC_NAMES.has(metricName)) {
     return reject('core-metric', `"${request.metricName}" is a core metric — write it as a measurement, in SI units`);
@@ -316,14 +353,16 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
   const recordedAt = resolveRecordedAt(request.recordedAt, request);
   if (typeof recordedAt !== 'string') return recordedAt;
 
+  const stored = toStoredLab(entry, value, request.unit, request.referenceLow, request.referenceHigh);
+  if ('ok' in stored) return stored;
+
   const taken = findActiveInSlot(file, 'lab', metricName, recordedAt);
   if (taken) {
     return reject('slot-occupied', `${metricName} already has a value on ${dayOf(recordedAt)}`, taken);
   }
 
   const row = createLabValue({
-    id: newId(), metricName, value, unit: request.unit,
-    referenceLow: request.referenceLow ?? null, referenceHigh: request.referenceHigh ?? null,
+    id: newId(), metricName, ...stored,
     recordedAt, createdAt: now, ...(request.source ? { source: request.source } : null),
   });
   return { ok: true, file: withRow(file, 'labValues', [...file.labValues, row], now), row };
@@ -369,12 +408,29 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
     return { ok: true, file: withRow(file, 'measurements', [...rows, row], now), row };
   }
 
-  if (request.unit !== undefined) {
-    return reject('unknown-unit', `A lab value keeps the unit its lab reported (${(lab as FileLabValue).unit}) — correct the number only`);
+  // A unit CONVERTS (US-21 phase 3), the way the core branch above does; no
+  // unit means the caller is already in the unit the row is stored in. An
+  // uncatalogued test has no SI unit to convert to, so a unit there is refused.
+  const labRow = lab as FileLabValue;
+  const entry = resolveLabCatalogEntry(labRow.metricName);
+  if (request.unit !== undefined && !entry) {
+    return reject('unknown-unit', `${labRow.metricName} is stored in the unit it was reported in (${labRow.unit}) — correct the number only`);
   }
+  const stored = request.unit === undefined
+    ? { value: request.newValue, unit: labRow.unit }
+    : toStoredLab(entry, request.newValue, request.unit);
+  if ('ok' in stored) return stored;
+  // The row carries the unit it is STORED in, which is the conversion's answer
+  // and not the old row's label: a legacy row in a spelling the catalogue
+  // refuses is corrected INTO the canonical unit, and saying otherwise would
+  // be a wrong result that no message announces. The report's own reference
+  // range was read in the old unit and no factor carries it across, so a
+  // changed unit drops it rather than leaving it beside a number it misreads.
+  const relabelled = stored.unit !== labRow.unit;
   const row: FileLabValue = {
-    ...(lab as FileLabValue),
-    id: newId(), value: request.newValue, createdAt: now,
+    ...labRow,
+    id: newId(), value: stored.value, unit: stored.unit, createdAt: now,
+    ...(relabelled ? { referenceLow: null, referenceHigh: null } : null),
     source: request.source ?? 'manual_correction', status: 'active', correctsId: id,
   };
   const rows = file.labValues.map((l) => (l.id === id ? { ...l, status: 'entered-in-error' as const } : l));
@@ -389,9 +445,10 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
  * One reviewed row on its way into the record. `correctsId` is set when the
  * reviewer chose "Replace" on a slot another writer already holds — it turns
  * the write into a FHIR correction instead of a skip. Values are already the
- * stored number (SI for a measurement, the lab's own for a lab value) and the
  * date is already the day the reviewer confirmed: this is the save behind a
- * review step, not a fresh claim to validate.
+ * review step, not a fresh claim to validate. A lab row still carries the unit
+ * the report PRINTED — the conversion to SI happens here, at the write, so
+ * there is one conversion site and the review table shows what the lab said.
  */
 export type BulkRow =
   | { kind: 'measurement'; metricType: string; value: number; recordedAt: string; source: MeasurementSource; correctsId?: string }
@@ -400,11 +457,27 @@ export type BulkRow =
       recordedAt: string; source: MeasurementSource; correctsId?: string;
     };
 
+/** One lab row the record would not store because the catalogue does not know
+ *  that unit spelling for that test (US-21 phase 3): the key and the printed
+ *  unit, never the value — that is what refusing the row protected. */
+export interface LabUnitRefusal {
+  key: string;
+  unit: string;
+  message: string;
+}
+
 export interface BulkAppendResult {
   file: RoadmapFile;
   saved: Array<FileMeasurement | FileLabValue>;
   /** Rows that found their slot taken, or named a `correctsId` that was no longer the slot's active row. */
   skippedDuplicates: number;
+  /**
+   * Lab rows refused because the catalogue does not know that unit spelling
+   * for that test. The caller SHOWS these — a silently dropped value is the
+   * failure this whole change exists to prevent — and counts one
+   * `lab_unit_refused` event per row.
+   */
+  refused: LabUnitRefusal[];
 }
 
 /**
@@ -427,15 +500,29 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
   const atMeasurement = new Map(measurements.map((m, i) => [m.id, i]));
   const atLab = new Map(labValues.map((l, i) => [l.id, i]));
 
-  const makeRow = (input: BulkRow, recordedAt: string, correctsId: string | null) => input.kind === 'measurement'
-    ? createMeasurement({ id: newId(), metricType: input.metricType, value: input.value, recordedAt, createdAt: now, source: input.source, correctsId })
-    : createLabValue({
-        id: newId(), metricName: input.metricName, value: input.value, unit: input.unit,
-        referenceLow: input.referenceLow ?? null, referenceHigh: input.referenceHigh ?? null,
-        recordedAt, createdAt: now, source: input.source, correctsId,
-      });
+  const refused: BulkAppendResult['refused'] = [];
 
   for (const input of rows) {
+    // A lab row is CONVERTED before its slot is touched: a refused row must
+    // not flip the active row it was going to replace.
+    let makeRow: (recordedAt: string, correctsId: string | null) => FileMeasurement | FileLabValue;
+    if (input.kind === 'lab') {
+      const entry = resolveLabCatalogEntry(input.metricName);
+      const stored = toStoredLab(entry, input.value, input.unit, input.referenceLow, input.referenceHigh);
+      if ('ok' in stored) {
+        refused.push({ key: entry?.key ?? foldName(input.metricName), unit: input.unit, message: stored.message });
+        continue;
+      }
+      makeRow = (recordedAt, correctsId) => createLabValue({
+        id: newId(), metricName: input.metricName, ...stored,
+        recordedAt, createdAt: now, source: input.source, correctsId,
+      });
+    } else {
+      makeRow = (recordedAt, correctsId) => createMeasurement({
+        id: newId(), metricType: input.metricType, value: input.value,
+        recordedAt, createdAt: now, source: input.source, correctsId,
+      });
+    }
     const slot = input.kind === 'measurement' ? slotKey('measurement', input.metricType, input.recordedAt) : slotKey('lab', input.metricName, input.recordedAt);
     const list: Array<FileMeasurement | FileLabValue> = input.kind === 'measurement' ? measurements : labValues;
     if (input.correctsId) {
@@ -443,17 +530,17 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
       const old = index === undefined ? undefined : list[index];
       if (!old || old.status !== 'active' || slotOfRow(old) !== slot) { skippedDuplicates++; continue; }
       list[index!] = { ...old, status: 'entered-in-error' };
-      const row = makeRow(input, old.recordedAt, old.id);
+      const row = makeRow(old.recordedAt, old.id);
       list.push(row);
       saved.push(row);
       continue;
     }
     if (taken.has(slot)) { skippedDuplicates++; continue; }
     taken.add(slot);
-    const row = makeRow(input, input.recordedAt, null);
+    const row = makeRow(input.recordedAt, null);
     list.push(row);
     saved.push(row);
   }
   const next = saved.length ? stampUpdatedAt({ ...file, measurements, labValues }, now) : file;
-  return { file: next, saved, skippedDuplicates };
+  return { file: next, saved, skippedDuplicates, refused };
 }

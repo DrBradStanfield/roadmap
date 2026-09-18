@@ -64,7 +64,7 @@ export const TOOL_PROSE: Record<McpToolName, ToolProse> = {
     readOnly: "Appends up to 50 lab rows in one call and writes the file back to the user's own cloud.",
     openWorld: "Writes only to the calling user's own file, over that user's own credential.",
     destructive: 'Append-only and all rows or none: existing rows are never deleted, and a duplicate test on the same day is refused.',
-    does: 'Adds a whole blood panel in one go, up to 50 tests, each with its unit and the date it was taken.',
+    does: 'Adds a whole blood panel in one go, up to 50 tests, each with the unit the lab printed and the date it was taken.',
     never: 'It never replaces a result you already hold, and it files all the rows or none of them.',
   },
   correct_value: {

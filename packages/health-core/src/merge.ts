@@ -172,8 +172,11 @@ function shortHash(text: string): string {
  * trailing suffixes go: a writer that layers a second one on a quarantined id
  * belongs in the original id's group, and since no base can then end in
  * `#dup-<8 hex>`, an assigned id can never collide with another group's.
+ *
+ * Only that suffix: migrate.ts's `#si` conversion id (US-21 phase 3) must
+ * survive here, or a converted row would merge into its own parent's group.
  */
-function baseIdOf(id: string): string {
+export function baseIdOf(id: string): string {
   return id.replace(/(?:#dup-[0-9a-f]{8})+$/, '');
 }
 

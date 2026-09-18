@@ -104,8 +104,17 @@ someone's medical history, or lose their data at the next device sync.
    `lamport` exactly as you found it, or absent.
 8. **Units.** `measurements[].value` is the SI canonical unit, kg, cm, mmHg, mmol/mol
    for HbA1c, mmol/L for lipids, g/L for ApoB, µmol/L for creatinine, ng/mL for PSA,
-   nmol/L for Lp(a). Convert before you write. `labValues[].value` keeps the lab's own
-   number and its reported `unit` string verbatim; no conversion. You do not have to
+   nmol/L for Lp(a). Convert before you write. **Lab values are SI at rest too, since
+   2026-09-18 (US-21 phase 3).** Send `labValues[].value` and `unit` as the lab PRINTED
+   them and let the record convert: a test in `lab-catalog.ts` is stored in that
+   catalogue's canonical unit — reference bounds by the same factor — and a unit
+   spelling the catalogue does not know for that test is REFUSED, naming the spellings
+   it takes, rather than guessed from the number. A test the catalogue does not know has
+   no SI definition, so it is stored exactly as reported. If you write the file
+   yourself rather than through a tool, convert with the table in
+   `health_roadmap_algorithm.md` §2 "Lab catalogue conversions"; a row already written
+   in another unit is corrected on the next load (a `<id>#si` row, `correctsId` set, the
+   old row `entered-in-error`), so leave old rows alone. You do not have to
    remember the list: `read_record` publishes a `units` map keyed by `metricType`, and
    `get_plan` one keyed by its own `inputs` field names. `get_plan.inputs` is SI
    canonical; `currentValues` is the same values converted to the record's `unitSystem`,
@@ -157,6 +166,14 @@ Validate your result against the schema before you write it back.
   file to store your own state.
 - **A file with a higher `schemaVersion` than the app understands is refused, not
   downgraded** (`SchemaTooNewError`). Never bump `schemaVersion` yourself.
+- **Loading the file can add lab rows you did not write, and it does not bump
+  `schemaVersion`** (US-21 phase 3, 2026-09-18). A lab row stored in a unit that is not
+  the catalogue's canonical one is CORRECTED on load: the app appends the converted row
+  under the id `<id>#si` with `correctsId` set and flips the printed row to
+  `entered-in-error`. The id is deterministic, so every device computes the same one and
+  the copies merge into a single row; a second load changes nothing. Read the active row
+  and leave the superseded one where it is. If you convert such a row yourself you will
+  make a second, competing correction.
 - **A thin plan is not a clean bill of health.** On a record holding no measurement at
   all, `get_plan` still returns `protein-target`, `exercise` and `sleep` — they rest on
   no value whatever — plus the screening, skin and supplement cards, which follow from

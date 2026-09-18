@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { EVENT_REASONS, GUIDE_PLACEMENTS, MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES, type McpOAuthReason, type McpRefusalReason, type ProductEventName } from '../../packages/health-core/src/product-events';
+import { EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES, type McpOAuthReason, type McpRefusalReason, type ProductEventName } from '../../packages/health-core/src/product-events';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
 import { supabaseAdmin } from './supabase.server';
 
@@ -26,6 +26,16 @@ const metadataSchema = z
     fromNudge: z.literal(true).optional(),
     /** US-38: which guide-link surface was clicked. */
     placement: z.enum(GUIDE_PLACEMENTS).optional(),
+    /**
+     * US-21 phase 3: the catalogue key and the unit spelling a refused lab row
+     * carried — the signal that says which spelling to add next. The words are
+     * judged by health-core's own predicates, the same ones the producer uses,
+     * so a unit that is really a number (the shape a health VALUE arrives in)
+     * never reaches the column, and EVENT_KEY_OWNERS keeps both off every
+     * other event.
+     */
+    key: z.string().refine(isLabKeyWord).optional(),
+    unit: z.string().refine(isLabUnitWord).optional(),
   })
   .strict();
 
@@ -42,30 +52,56 @@ const metadataSchema = z
  */
 const serverMetadataSchema = metadataSchema.extend({ reason: z.string().optional() });
 
-export const productEventSchema = z.object({
-  eventName: z.enum(PRODUCT_EVENT_NAMES),
-  visitorId: z.string().uuid(),
-  metadata: metadataSchema.optional(),
-});
+/** The event a metadata key belongs to, where the key has no vocabulary of its
+ *  own to be judged against (`reason` has EVENT_REASONS). Without this a
+ *  `unit` could ride on any counter. */
+const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
+  key: ['lab_unit_refused'],
+  unit: ['lab_unit_refused'],
+};
 
 /**
- * The same event, with the server's slightly wider metadata list — and the
- * `reason` word held against ITS OWN event. One column, two vocabularies: a
+ * Metadata held against the EVENT that carries it — the pairing both schemas
+ * check, because neither a `reason` nor a `unit` means anything on its own. A
  * tool-refusal word on an OAuth row would validate and then split every query
- * in two, so the pairing is checked here rather than assumed.
+ * in two, and a `key` on any other counter would be a column nothing reads.
+ * Only words this file already declares are ever named in an issue.
  */
-const serverEventSchema = productEventSchema
-  .extend({ metadata: serverMetadataSchema.optional() })
-  .superRefine((event, ctx) => {
-    const reason = event.metadata?.reason;
-    if (reason === undefined) return;
-    const allowed: readonly string[] = EVENT_REASONS[event.eventName as keyof typeof EVENT_REASONS] ?? [];
-    if (!allowed.includes(reason)) {
-      // The word only, never the value that failed — and only when it is one
-      // this file already declares.
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', 'reason'], message: 'reason is not one this event may carry' });
+function checkEventKeys(
+  event: { eventName: string; metadata?: Record<string, unknown> },
+  ctx: z.RefinementCtx,
+): void {
+  const metadata = event.metadata;
+  if (!metadata) return;
+  for (const [key, owners] of Object.entries(EVENT_KEY_OWNERS)) {
+    if (metadata[key] !== undefined && !owners.includes(event.eventName)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', key], message: 'key is not one this event may carry' });
     }
-  });
+  }
+  const reason = metadata.reason;
+  if (reason === undefined) return;
+  const allowed: readonly string[] = EVENT_REASONS[event.eventName as keyof typeof EVENT_REASONS] ?? [];
+  if (!allowed.includes(reason as string)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', 'reason'], message: 'reason is not one this event may carry' });
+  }
+}
+
+/** Event name and visitor alone: what `recordProductEvent` refuses a row on,
+ *  and the base both metadata lists extend. */
+const eventShellSchema = z.object({
+  eventName: z.enum(PRODUCT_EVENT_NAMES),
+  visitorId: z.string().uuid(),
+});
+
+export const productEventSchema = eventShellSchema
+  .extend({ metadata: metadataSchema.optional() })
+  .superRefine(checkEventKeys);
+
+/** The same event, with the server's slightly wider metadata list — one
+ *  column, two vocabularies for `reason`. */
+const serverEventSchema = eventShellSchema
+  .extend({ metadata: serverMetadataSchema.optional() })
+  .superRefine(checkEventKeys);
 
 export type ProductEventInput = z.infer<typeof productEventSchema>;
 /** The schema parses `reason` as a string; a PRODUCER may only write a word. */
@@ -139,7 +175,7 @@ function cleanMetadata(event: ServerProductEvent & { metadata: object }): { clea
  */
 export async function recordProductEvent(event: ServerProductEvent): Promise<boolean> {
   if (!supabaseAdmin) return false;
-  const shell = productEventSchema.omit({ metadata: true }).safeParse(event);
+  const shell = eventShellSchema.safeParse(event);
   if (!shell.success) {
     Sentry.captureMessage('product_events: event refused', {
       level: 'warning',

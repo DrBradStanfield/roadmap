@@ -94,6 +94,18 @@ describe('US-31 AC1/AC5 — add', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it('US-21 phase 3 — the add receipt echoes the unit the row was STORED in, not the one typed', async () => {
+    const { dir, path } = writeFixture();
+    const result = await captureRun(['add', path, '--test', 'Vitamin D', '--value', '32', '--unit', 'ng/mL', '--date', '2026-08-14']);
+
+    expect(result.code).toBe(0);
+    expect(read(path).labValues[0]).toMatchObject({ metricName: 'vitamin_d', value: 79.872, unit: 'nmol/L' });
+    // What the record holds is what the receipt says: an echo of "32 ng/mL"
+    // would tell the user their file holds a number it does not.
+    expect(result.stdout).toContain('Added vitamin_d 79.872 nmol/L on 2026-08-14');
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it('refuses an occupied slot, naming the row and how to correct it', async () => {
     const { dir, path } = writeFixture();
     const before = readFileSync(path, 'utf8');

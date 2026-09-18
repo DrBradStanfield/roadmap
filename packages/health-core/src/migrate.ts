@@ -29,9 +29,11 @@
  * edited its own meta), and content is preserved — only the ordering clocks
  * move.
  */
+import { canonicalLabRow, resolveLabCatalogEntry } from './lab-catalog';
 import {
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
+  type FileLabValue,
   type RoadmapFile,
 } from './roadmap-file';
 
@@ -131,6 +133,37 @@ function sanitizeCreatedAt<T>(row: T, anchor: string): T {
   return { ...row, createdAt: anchor } as T;
 }
 
+/** The printed row's id plus this suffix, so every device computes the SAME id
+ *  for the same conversion and `mergeFiles` folds their copies into one row. */
+const SI_SUFFIX = '#si';
+
+/**
+ * US-21 phase 3 — rows written before lab values were stored in SI. A clinical
+ * row is never edited in place, so the legacy row is CORRECTED: the converted
+ * value is appended with `correctsId`, and the printed row flips to
+ * `entered-in-error` (monotonic, so an older client still converges).
+ *
+ * Only rows whose NUMBER changes are corrected — a same-scale spelling ("ug/L"
+ * for µg/L) holds the right number already, and a correction row there would
+ * assert a value was wrong when it never was. That makes this idempotent, and
+ * cheap: a record with nothing to convert returns the array it was given.
+ */
+function withSiCorrections(rows: FileLabValue[]): FileLabValue[] {
+  let corrected = false;
+  const out = rows.flatMap((row): FileLabValue[] => {
+    if (row.status !== 'active' || typeof row.value !== 'number' || typeof row.unit !== 'string') return [row];
+    const entry = resolveLabCatalogEntry(row.metricName);
+    const si = entry && canonicalLabRow(entry, row);
+    if (!si || si.factor === 1) return [row];
+    corrected = true;
+    return [
+      { ...row, status: 'entered-in-error' },
+      { ...row, ...si.stored, id: `${row.id}${SI_SUFFIX}`, status: 'active', correctsId: row.id },
+    ];
+  });
+  return corrected ? out : rows;
+}
+
 /**
  * Normalise raw parsed JSON into a complete RoadmapFile.
  *
@@ -206,7 +239,7 @@ export function migrateFile(
       ...rawScreenings,
       updatedAt: typeof rawScreenings.updatedAt === 'string' ? rawScreenings.updatedAt : base.screenings.updatedAt,
     }, anchor),
-    labValues: dated(raw.labValues),
+    labValues: withSiCorrections(dated<FileLabValue>(raw.labValues)),
     documents: rowsOf(raw.documents),
     reminderPreferences: stamped(raw.reminderPreferences),
     recommendationSnapshots: rowsOf(raw.recommendationSnapshots),

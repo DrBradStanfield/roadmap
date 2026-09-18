@@ -54,6 +54,7 @@ import {
   type FileReminderOptIn,
   type FileSupplement,
   type HealthInputs,
+  type LabUnitRefusal,
   type MeasurementSource,
   type ReminderScheduleItem,
   type RoadmapFile,
@@ -208,6 +209,7 @@ export interface BulkLabValuesResult {
   saved: ApiLabValue[];
   skippedDuplicates: number;
   errorCount: number;
+  refused: LabUnitRefusal[];
 }
 /** One reviewed upload row. `correctsId` is set only when the reviewer ticked
  *  "Replace" on a slot another writer (a connector, another device) already
@@ -521,11 +523,12 @@ export class RoadmapStore {
     return this.bulkSave(values.map((v) => ({ kind: 'lab' as const, ...v, source: (v.source as MeasurementSource) ?? 'lab_import' }))) as BulkLabValuesResult;
   }
 
-  private bulkSave(rows: BulkRow[]): { saved: Array<ApiMeasurement | ApiLabValue>; skippedDuplicates: number; errorCount: number } {
+  private bulkSave(rows: BulkRow[]): { saved: Array<ApiMeasurement | ApiLabValue>; skippedDuplicates: number; errorCount: number; refused: LabUnitRefusal[] } {
     const result = bulkAppendValues(this.file, rows, new Date().toISOString());
     this.file = result.file;
     if (result.saved.length) this.touch();
-    return { saved: result.saved as Array<ApiMeasurement | ApiLabValue>, skippedDuplicates: result.skippedDuplicates, errorCount: 0 };
+    // Always empty for measurements; for labs, the rows the caller must SHOW.
+    return { saved: result.saved as Array<ApiMeasurement | ApiLabValue>, skippedDuplicates: result.skippedDuplicates, errorCount: 0, refused: result.refused };
   }
 
   /**

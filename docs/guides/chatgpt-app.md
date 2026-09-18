@@ -44,7 +44,7 @@ Adds one value you state, such as a weight or a blood pressure, on the day you s
 
 ### `add_lab_values`: Add lab results
 
-Adds a whole blood panel in one go, up to 50 tests, each with its unit and the date it was taken.
+Adds a whole blood panel in one go, up to 50 tests, each with the unit the lab printed and the date it was taken.
 
 **What it will not do.** It never replaces a result you already hold, and it files all the rows or none of them.
 

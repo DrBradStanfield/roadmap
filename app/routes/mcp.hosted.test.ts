@@ -1697,7 +1697,8 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     expect(commit.isError).toBe(false);
     const stored = storedRecord();
     expect(stored.measurements.find((m) => m.metricType === 'ldl')).toMatchObject({ source: 'lab_import', recordedAt: LAB_DAY });
-    expect(stored.labValues[0]).toMatchObject({ metricName: 'ferritin', value: 210, unit: 'µg/L', source: 'lab_import' });
+    // Written under the name the report PRINTED (US-21 phase 3: the printed name is what chooses a conversion); the slot is the catalogue key either way.
+    expect(stored.labValues[0]).toMatchObject({ metricName: 'Ferritin', value: 210, unit: 'µg/L', source: 'lab_import' });
     // A DCR-registered test client is not a pinned one, so its label is `other` — which is also what tells the harness apart from a real ChatGPT (AC12).
     expect(stored.documents[0]).toMatchObject({ sourceFileName: 'Results.pdf', contentHash: '', metadata: { importedVia: 'assistant', client: 'other' } });
     expect(pendingFiles()).toHaveLength(0);

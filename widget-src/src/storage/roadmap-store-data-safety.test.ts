@@ -257,6 +257,31 @@ describe('RoadmapStore.bulkSaveMeasurements dedup (US-13)', () => {
   });
 });
 
+// US-21 phase 3: a catalogued test is stored in the catalogue's SI unit, so a
+// printed spelling the catalogue does not know for that test is REFUSED. The
+// upload must SAY so — a silently dropped lab value is the failure this exists
+// to prevent — while the rest of the batch still saves.
+describe('RoadmapStore.bulkSaveLabValues unit refusals (US-21 phase 3)', () => {
+  it('reports the refused row, stores nothing for it, and saves the accepted rows', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+
+    const result = store.bulkSaveLabValues([
+      { metricName: 'ferritin', value: 80, unit: 'mg/dL', recordedAt: '2024-06-01T09:00:00.000Z' },
+      { metricName: 'sodium', value: 140, unit: 'mEq/L', recordedAt: '2024-06-01T09:00:00.000Z' },
+    ]);
+    await store.flush();
+
+    expect(result.saved).toHaveLength(1);
+    expect(result.saved[0].metricName).toBe('sodium');
+    expect(result.refused).toEqual([
+      { key: 'ferritin', unit: 'mg/dL', message: expect.stringContaining('µg/L') },
+    ]);
+    const file = readCloudFile(cloud);
+    expect(file.labValues.map((l) => l.metricName)).toEqual(['sodium']);
+  });
+});
+
 describe('RoadmapStore.bulkSaveLabValues dedup (US-13)', () => {
   it('skips (metricName, day) duplicates and reports skippedDuplicates', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter());

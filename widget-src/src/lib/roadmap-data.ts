@@ -13,7 +13,7 @@ import {
 import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, setChatHistoryFactory } from './chat-history-access';
-import { PROXY_PATH, parseJsonResponse } from './server-api';
+import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
 import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
 import type { StorageAdapter } from '@roadmap/health-core';
@@ -130,7 +130,11 @@ export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[])
   return store ? store.bulkSaveMeasurements(measurements) : { saved: [], skippedDuplicates: 0, errorCount: measurements.length };
 }
 export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {
-  return store ? store.bulkSaveLabValues(values) : { saved: [], skippedDuplicates: 0, errorCount: values.length };
+  if (!store) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
+  const result = store.bulkSaveLabValues(values);
+  // The one place every lab writer passes, so each refused row is counted once.
+  for (const row of result.refused) trackProductEvent('lab_unit_refused', { key: row.key, unit: row.unit });
+  return result;
 }
 export async function bulkSaveDocuments(
   documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob }>,

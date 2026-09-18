@@ -525,7 +525,8 @@ describe('US-36 AC8 — file_results works on a Google Drive record, where the f
     const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
     expect(commit.isError).toBe(false);
     expect(commit.text).toContain('Saved to the user’s Google Drive');
-    expect(storedRecord().labValues[0]).toMatchObject({ metricName: 'ferritin', value: 210 });
+    // Written under the name the report PRINTED (US-21 phase 3: the printed name is what chooses a conversion); the slot is the catalogue key either way.
+    expect(storedRecord().labValues[0]).toMatchObject({ metricName: 'Ferritin', value: 210 });
   });
 });
 

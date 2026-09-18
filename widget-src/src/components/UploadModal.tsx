@@ -1,10 +1,11 @@
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota } from '../lib/upload-api';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { IMPORT_LIMITS, type UnitSystem, type MetricType } from '@roadmap/health-core';
+import { IMPORT_LIMITS, type LabUnitRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
+import { labValueLabel } from '../lib/lab-value-labels';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
@@ -123,6 +124,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   const [saveErrorCount, setSaveErrorCount] = useState(0);
   const [savedDocCount, setSavedDocCount] = useState(0);
   const [savedLabCount, setSavedLabCount] = useState(0);
+  // US-21 phase 3: lab rows the record would not store because it does not know
+  // that unit for that test. Shown by name — a dropped value must never be silent.
+  const [refusedLabUnits, setRefusedLabUnits] = useState<LabUnitRefusal[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const savingRef = useRef(false);
@@ -144,6 +148,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     setSaveErrorCount(0);
     setSavedDocCount(0);
     setSavedLabCount(0);
+    setRefusedLabUnits([]);
   }, []);
 
   // Closing active work only hides it. Drafts and pending saves remain mounted.
@@ -617,19 +622,23 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       const [savedValues, savedDocs, savedLabValues] = await Promise.all([
         measurements.length > 0 ? bulkSaveMeasurements(measurements).catch(failed('measurements', { saved: [], skippedDuplicates: 0, errorCount: measurements.length })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
         docPayloads.length > 0 ? bulkSaveDocuments(docPayloads).catch(failed('documents', { saved: [], errorCount: docPayloads.length })) : Promise.resolve({ saved: [], errorCount: 0 }),
-        labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads).catch(failed('labValues', { saved: [], skippedDuplicates: 0, errorCount: labValuePayloads.length })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
+        labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads).catch(failed('labValues', { saved: [], skippedDuplicates: 0, errorCount: labValuePayloads.length, refused: [] })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] }),
       ]);
 
       setSavedCount(savedValues.saved.length);
       setSkippedMeasurements(savedValues.skippedDuplicates);
       setSkippedLabValues(savedLabValues.skippedDuplicates);
-      setSaveErrorCount(savedValues.errorCount + savedLabValues.errorCount + savedDocs.errorCount);
+      setRefusedLabUnits(savedLabValues.refused);
+      const saveErrors = savedValues.errorCount + savedLabValues.errorCount + savedDocs.errorCount;
+      setSaveErrorCount(saveErrors);
       setSavedDocCount(savedDocs.saved.length);
       setSavedLabCount(savedLabValues.saved.length);
-      // 100% duplicates is still "ok" — DB already has the data. Only fail
-      // if everything errored AND nothing was a known-duplicate.
+      // A save error is the only failure: it keeps the review open so a second
+      // Save retries that branch (US-12 AC6). A duplicate and a refused unit
+      // are settled outcomes — the data is already there, or the record will
+      // never take it — and neither is anything a retry could change.
       const totalSaved = savedValues.saved.length + savedDocs.saved.length + savedLabValues.saved.length;
-      const totalCompleted = totalSaved + savedValues.skippedDuplicates + savedLabValues.skippedDuplicates;
+      const saveFailed = threw || saveErrors > 0;
 
       // Update screening dates for documents with screening mappings
       for (const doc of documents) {
@@ -638,7 +647,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         }
       }
 
-      if (totalCompleted > 0 && !threw) {
+      if (!saveFailed) {
         trackProductEvent('upload_saved', { count: totalSaved });
         setState('done');
         onComplete();
@@ -764,7 +773,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                 {savedLabCount > 0 && savedDocCount > 0 && ', '}
                 {savedDocCount > 0 && `${savedDocCount} document${savedDocCount !== 1 ? 's' : ''}`}
                 {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0
-                  && skippedMeasurements === 0 && skippedLabValues === 0 && saveErrorCount === 0 && 'No items saved'}
+                  && skippedMeasurements === 0 && skippedLabValues === 0 && saveErrorCount === 0
+                  && refusedLabUnits.length === 0 && 'No items saved'}
               </p>
               {skippedMeasurements > 0 && (
                 <p className="upload-done-skipped">
@@ -776,6 +786,13 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                   {skippedLabValues} additional lab value{skippedLabValues !== 1 ? 's were' : ' was'} already saved at the same date.
                 </p>
               )}
+              {/* One report can refuse the same test on several dates; the
+                  user needs the spelling named once. */}
+              {[...new Map(refusedLabUnits.map(r => [`${r.key}|${r.unit}`, r])).values()].map(r => (
+                <p key={`${r.key}|${r.unit}`} className="upload-done-skipped">
+                  {labValueLabel(r.key)} &mdash; unit not recognised: {r.unit}. It was not saved.
+                </p>
+              ))}
               {saveErrorCount > 0 && (
                 <p className="upload-done-skipped">
                   {saveErrorCount} item{saveErrorCount !== 1 ? 's' : ''} could not be saved. Please try again.

@@ -30,7 +30,9 @@ export interface LabSeries {
   seriesKey: string;
   label: string;
   /** Display unit for the group's UnitChip — the most recent point's unit.
-   *  Phase 1 shows values as-reported (no conversion), so check
+   *  A catalogued test is STORED in the catalogue's SI unit (US-21 phase 3),
+   *  so its points agree; a test the catalogue does not know keeps the unit it
+   *  was reported in, and older rows predate the conversion — check
    *  `mixedUnits` before treating this as every point's unit. */
   unit: string;
   mixedUnits: boolean;
@@ -68,9 +70,10 @@ export function groupLabValues(rows: LabValueRow[]): LabValueGroup[] {
     if (!groupMap) { groupMap = new Map(); seriesByGroup.set(groupId, groupMap); }
     let series = groupMap.get(seriesKey);
     if (!series) { series = { label, points: [] }; groupMap.set(seriesKey, series); }
-    // Store the DISPLAY unit: catalogue-canonical when the reported spelling
+    // Store the DISPLAY unit: catalogue-canonical when the stored spelling
     // means the same unit, typography-normalized otherwise. Relabeling only —
-    // values are never converted; a truly different unit flags mixedUnits.
+    // nothing is converted here (catalogued tests are converted once, on the
+    // write); a unit that still differs flags mixedUnits.
     series.points.push({ id: row.id, value: row.value, unit: displayLabUnit(row.unit, entry), recordedAt: row.recordedAt });
   }
 

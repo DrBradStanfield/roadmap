@@ -33,6 +33,9 @@ export const PRODUCT_EVENT_NAMES = [
   // US-21 additional blood tests: phase-1 surfacing + phase-2 manual add.
   'lab_rows_viewed',
   'lab_row_added',
+  // US-21 phase 3: a lab row was refused for its unit, so nothing was written.
+  // Metadata is the catalogue KEY and the unit spelling — never the value.
+  'lab_unit_refused',
   // US-22 plan-ready email. Server-originated (no browser visitor): recorded
   // with the nil-UUID sentinel, see SERVER_VISITOR_ID in product-events.server.
   'report_email_sent',
@@ -242,6 +245,25 @@ export const EVENT_REASONS = {
   mcp_authorize_refused: MCP_OAUTH_REASONS,
   mcp_connect_failed: MCP_OAUTH_REASONS,
 } as const satisfies Partial<Record<ProductEventName, readonly string[]>>;
+
+/**
+ * The two words a `lab_unit_refused` row may carry (US-21 phase 3), checked
+ * where the row is written. A catalogue key is a lower-case word; a unit is a
+ * short printed spelling, and it must not BE a number — a bare number is the
+ * one thing a health value could arrive as, and no unit is spelled that way.
+ * Anything else is dropped rather than stored: a counter must never become a
+ * log of somebody's results.
+ */
+const LAB_KEY_PATTERN = /^[a-z][a-z0-9_]{0,39}$/;
+const LAB_UNIT_PATTERN = /^[\p{L}\p{N}µ×°%^/().·\- ]{1,24}$/u;
+
+export function isLabUnitWord(value: unknown): value is string {
+  return typeof value === 'string' && LAB_UNIT_PATTERN.test(value) && !Number.isFinite(Number(value));
+}
+
+export function isLabKeyWord(value: unknown): value is string {
+  return typeof value === 'string' && LAB_KEY_PATTERN.test(value);
+}
 
 /** A word only counts if the vocabulary above names it. */
 export function isRefusalReason(value: unknown): value is McpRefusalReason {

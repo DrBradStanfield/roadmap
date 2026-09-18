@@ -5,7 +5,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { UploadModal } from './UploadModal';
 import { attachOriginals, synthesizeLabArchiveEntries } from '../lib/archive-payloads';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
-import { bulkSaveMeasurements, bulkSaveDocuments, getDocumentArchiveMode } from '../lib/roadmap-data';
+import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { Sentry } from '../lib/sentry';
 import type { UploadHistory } from '../lib/api-types';
 
@@ -229,5 +229,20 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(screen.queryByDisplayValue('3.9')).toBeNull();
     expect(document.querySelector('input[type=file]')).toBeTruthy();
     expect(onComplete).toHaveBeenCalledOnce();
+  });
+
+  // US-21 phase 3 · a lab value the record refused for its unit is never a
+  // silent drop: the summary names the test and the spelling it would not take.
+  it('names a lab value refused for its unit in the save summary', async () => {
+    vi.mocked(labImport).mockResolvedValue({
+      result: { ...extraction.result, additionalValues: [{ name: 'Ferritin', value: 80, unit: 'mg/dL', referenceLow: null, referenceHigh: null }] },
+    } as Awaited<ReturnType<typeof labImport>>);
+    vi.mocked(bulkSaveLabValues).mockResolvedValue({
+      saved: [], skippedDuplicates: 0, errorCount: 0,
+      refused: [{ key: 'ferritin', unit: 'mg/dL', message: 'Ferritin is stored in µg/L' }],
+    } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    expect(await screen.findByText(/Ferritin — unit not recognised: mg\/dL/)).toBeTruthy();
   });
 });

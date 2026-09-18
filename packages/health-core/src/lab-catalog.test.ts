@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LAB_CATALOG, LAB_GROUPS, resolveLabCatalogEntry, normalizeLabUnit, labSlotKey } from './lab-catalog';
+import { acceptedLabUnits, canonicalLabValue, LAB_CATALOG, LAB_CONVERSIONS, LAB_GROUPS, resolveLabCatalogEntry, normalizeLabUnit, labSlotKey } from './lab-catalog';
 
 // US-21 · Additional blood tests — catalogue integrity (phase-1 scaffold).
 describe('lab catalogue integrity (US-21)', () => {
@@ -165,5 +165,97 @@ describe('every catalogue spelling resolves (US-31 AC5)', () => {
   it('slots an uncatalogued name on its folded spelling, spaces and underscores alike', () => {
     expect(labSlotKey('  Some Novel Assay ')).toBe('some novel assay');
     expect(labSlotKey('some_novel_assay')).toBe('some novel assay');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-21 phase 3 — every catalogued lab value is STORED in SI canonical units.
+// ---------------------------------------------------------------------------
+// Until now a lab row kept the unit its lab printed, so one test could hold a
+// mg/dL row and a mmol/L row in the same series. The catalogue now carries the
+// factor from every spelling it accepts to its canonical unit, and refuses a
+// spelling it does not know rather than guessing the scale from the number.
+describe('US-21 phase 3 — canonical SI conversion', () => {
+  const entryOf = (name: string) => resolveLabCatalogEntry(name)!;
+
+  it('US-21 phase 3 — every declared conversion row converts, and its canonical spelling is the identity', () => {
+    for (const row of LAB_CONVERSIONS) {
+      const entry = entryOf(row.reportedNames?.[0] ?? row.key);
+      expect(row.canonical).toBe(entry.unit);
+      const converted = canonicalLabValue(entry, 2, row.spelling);
+      expect(converted, `${row.key} ${row.spelling}`).not.toBeNull();
+      expect(converted!.unit).toBe(entry.unit);
+      expect(converted!.factor).toBe(row.factor);
+      expect(converted!.value).toBeCloseTo(2 * row.factor, 9);
+      // Already canonical: the same number back, and converting twice is the
+      // same as converting once (idempotent at load — migrate.ts leans on it).
+      const again = canonicalLabValue(entry, converted!.value, entry.unit)!;
+      expect(again.factor).toBe(1);
+      expect(again.value).toBe(converted!.value);
+    }
+  });
+
+  it('US-21 phase 3 — mg/dL reaches urea only under a nitrogen name: BUN converts, a bare "urea" is refused', () => {
+    // The resolver hands back the entry the PRINTED NAME earns: "BUN" carries
+    // the nitrogen factor, and mg/dL under the bare molecule name is ambiguous
+    // (US nitrogen vs molecule), so it is refused rather than guessed.
+    expect(canonicalLabValue(entryOf('BUN'), 14, 'mg/dL')!.value).toBeCloseTo(14 * 0.357, 6);
+    expect(canonicalLabValue(entryOf('blood urea nitrogen'), 14, 'mg/dL')!.factor).toBe(0.357);
+    expect(canonicalLabValue(entryOf('urea'), 14, 'mg/dL')).toBeNull();
+    // Both names are one slot, and both take the canonical unit.
+    expect(labSlotKey('BUN')).toBe('urea');
+    expect(canonicalLabValue(entryOf('urea'), 5, 'mmol/L')!.factor).toBe(1);
+  });
+
+  it('US-21 phase 3 — prolactin in ng/mL is refused: the factor is assay-dependent', () => {
+    expect(canonicalLabValue(entryOf('prolactin'), 12, 'ng/mL')).toBeNull();
+    expect(canonicalLabValue(entryOf('prolactin'), 260, 'mIU/L')!.factor).toBe(1);
+    // µIU/mL is the same number as mIU/L — a notation, not a conversion.
+    expect(canonicalLabValue(entryOf('prolactin'), 260, 'µIU/mL')).toMatchObject({ value: 260, unit: 'mIU/L', factor: 1 });
+  });
+
+  it('US-21 phase 3 — the other spellings real reports print: UK urate, a US "urea nitrogen", LabCorp eGFR', () => {
+    // A UK lab prints urate in µmol/L: a thousandth of the canonical mmol/L.
+    expect(canonicalLabValue(entryOf('urate'), 380, 'µmol/L')).toMatchObject({ value: 0.38, unit: 'mmol/L' });
+    expect(canonicalLabValue(entryOf('urate'), 380, 'umol/L')!.value).toBe(0.38);
+    // "Urea Nitrogen" without the "Blood" is the same nitrogen, same slot, same factor.
+    expect(labSlotKey('Urea Nitrogen')).toBe('urea');
+    expect(canonicalLabValue(entryOf('urea nitrogen'), 18, 'mg/dL')!.factor).toBe(0.357);
+    // LabCorp leaves the body-surface area off the eGFR unit.
+    expect(canonicalLabValue(entryOf('eGFR'), 92, 'mL/min/1.73')).toMatchObject({ value: 92, unit: 'mL/min/1.73m²', factor: 1 });
+  });
+
+  it('US-21 phase 3 — normalizeLabUnit folds mcg to µg and uL to µL', () => {
+    expect(normalizeLabUnit('mcg/dL')).toBe('µg/dL');
+    expect(normalizeLabUnit('mcg/L')).toBe('µg/L');
+    expect(normalizeLabUnit('K/uL')).toBe('K/µL');
+    expect(normalizeLabUnit('x10e3/ul')).toBe('×10³/µL');
+    expect(canonicalLabValue(entryOf('iron'), 100, 'mcg/dL')!.value).toBeCloseTo(17.9, 6);
+  });
+
+  it('US-21 phase 3 — the count spellings a haematology analyser prints are the same number', () => {
+    for (const spelling of ['×10³/µL', 'K/uL', 'x10e3/uL', 'G/L', 'thou/uL', 'thousand/uL']) {
+      expect(canonicalLabValue(entryOf('wbc'), 6.2, spelling), spelling).toMatchObject({ value: 6.2, unit: '×10⁹/L', factor: 1 });
+    }
+    for (const spelling of ['×10⁶/µL', 'M/uL', 'T/L', 'million/uL']) {
+      expect(canonicalLabValue(entryOf('rbc'), 4.8, spelling), spelling).toMatchObject({ value: 4.8, unit: '×10¹²/L', factor: 1 });
+    }
+    expect(canonicalLabValue(entryOf('haematocrit'), 45, '%')!.value).toBe(0.45);
+  });
+
+  it('US-21 phase 3 — a spelling the catalogue does not know for that test is refused, never guessed', () => {
+    expect(canonicalLabValue(entryOf('ferritin'), 210, 'pmol/L')).toBeNull();
+    expect(canonicalLabValue(entryOf('tsh'), 1.8, 'ng/dL')).toBeNull();
+    expect(canonicalLabValue(entryOf('ferritin'), 210, '')).toBeNull();
+    // The refusal names the canonical unit and every spelling it does accept.
+    const accepted = acceptedLabUnits(entryOf('ferritin'));
+    expect(accepted[0]).toBe('µg/L');
+    expect(accepted).toContain('ng/ml');
+  });
+
+  it('US-21 phase 3 — float noise from a factor never reaches the record', () => {
+    // 0.1 * 3.671 is 0.3671000000000000… in binary; the stored number is not.
+    expect(canonicalLabValue(entryOf('estradiol'), 0.1, 'pg/mL')!.value).toBe(0.3671);
+    expect(canonicalLabValue(entryOf('vitamin_d'), 32, 'ng/mL')!.value).toBe(79.872);
   });
 });

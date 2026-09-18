@@ -20,7 +20,7 @@ Compute your plan. The same plan the web tool shows, worked out offline from you
 
 Add a measurement. One core value, such as a weight or an LDL.
 
-Add lab results. A whole panel in one call, up to 50 tests, in the lab's own numbers and units.
+Add lab results. A whole panel in one call, up to 50 tests, in the numbers and units your lab printed. A test the catalogue knows is stored in one standard unit, converted for you, so a year of results reads as one series instead of a mixture; a unit it does not recognise for that test is refused rather than guessed at, and a test it does not know keeps the unit it was reported in.
 
 Correct a value. Fix a number that went in wrong.
 

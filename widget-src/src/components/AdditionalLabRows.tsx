@@ -108,7 +108,7 @@ function LabGroupMatrix({ group }: { group: LabValueGroup }) {
               <div key={s.seriesKey} className={`bt-row${idx === group.series.length - 1 ? ' bt-row-last' : ''}`}>
                 <div className="bt-cell-name">
                   <div className="bt-name-label">{s.label}</div>
-                  <UnitChip label={s.unit} title="Unit as reported on the lab document"/>
+                  <UnitChip label={s.unit} title="The unit this value is stored in"/>
                   {s.mixedUnits && <div className="bt-ref-label">Units vary between reports</div>}
                 </div>
                 {dates.map((d, i) => {

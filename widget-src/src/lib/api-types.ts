@@ -8,7 +8,7 @@
  * disturbing the type graph. `api.ts` re-exports everything here for back-compat
  * import paths; new code may import directly from `./api-types`.
  */
-import type { HealthInputs, DocumentType, ApiMeasurement, ApiMedication, ApiScreening } from '@roadmap/health-core';
+import type { HealthInputs, DocumentType, ApiMeasurement, ApiMedication, ApiScreening, LabUnitRefusal } from '@roadmap/health-core';
 
 export interface ApiReminderPreference {
   reminderCategory: string;
@@ -177,4 +177,6 @@ export interface BulkLabValuesResult {
   skippedDuplicates: number;
   /** How many rows hit a server error. */
   errorCount: number;
+  /** Rows refused for their unit — never silently dropped. */
+  refused: LabUnitRefusal[];
 }

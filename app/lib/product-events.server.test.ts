@@ -330,4 +330,67 @@ describe('recordServerEvent — the server path validates too', () => {
     expect(captureMessage).not.toHaveBeenCalled();
   });
 
+  // US-21 phase 3, the same pairing on the server path, where a bad key is
+  // pruned rather than costing the row: the counter still counts.
+  it('keeps the refused key and unit, and prunes them off any other event', async () => {
+    await recordServerEvent('lab_unit_refused', { key: 'ldl_cholesterol', unit: 'mg/dL' });
+    await recordServerEvent('lab_unit_refused', { key: 'ldl_cholesterol', unit: '4.2' } as never);
+    await recordServerEvent('lab_row_added', { key: 'ldl_cholesterol', unit: 'mg/dL' } as never);
+    expect(inserts.map((row) => row.metadata)).toEqual([
+      { key: 'ldl_cholesterol', unit: 'mg/dL' },
+      { key: 'ldl_cholesterol' },
+      null,
+    ]);
+    expect(JSON.stringify(inserts)).not.toContain('4.2');
+  });
+
+});
+
+/**
+ * US-21 phase 3 — the refused-unit counter. It says which catalogue key and
+ * which unit spelling to add next, and nothing else: a bare number is what a
+ * health value would arrive as, and no unit is spelled that way.
+ */
+describe('the refused-unit counter', () => {
+  it('keeps the catalogue key and the unit spelling', () => {
+    expect(
+      parseProductEvent({
+        eventName: 'lab_unit_refused',
+        visitorId: VISITOR,
+        metadata: { key: 'ldl_cholesterol', unit: 'mg/dL' },
+      }),
+    ).toMatchObject({ metadata: { key: 'ldl_cholesterol', unit: 'mg/dL' } });
+  });
+
+  it('refuses a unit that is really a number — the shape a value arrives in', () => {
+    for (const unit of ['4.2', '0', '1e3', ' 4.2 ']) {
+      expect(
+        parseProductEvent({
+          eventName: 'lab_unit_refused',
+          visitorId: VISITOR,
+          metadata: { key: 'ldl_cholesterol', unit },
+        }),
+        unit,
+      ).toBeNull();
+    }
+  });
+
+  it('refuses a key that is not a catalogue word', () => {
+    expect(
+      parseProductEvent({
+        eventName: 'lab_unit_refused',
+        visitorId: VISITOR,
+        metadata: { key: 'LDL is 4.2 mmol/L', unit: 'mmol/L' },
+      }),
+    ).toBeNull();
+  });
+
+  it('lets no other event carry a key or a unit', () => {
+    for (const metadata of [{ key: 'ldl_cholesterol' }, { unit: 'mg/dL' }]) {
+      expect(
+        parseProductEvent({ eventName: 'lab_row_added', visitorId: VISITOR, metadata }),
+        JSON.stringify(metadata),
+      ).toBeNull();
+    }
+  });
 });

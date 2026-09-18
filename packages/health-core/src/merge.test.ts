@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mergeFiles } from './merge';
+import { baseIdOf, mergeFiles } from './merge';
 import {
   createEmptyFile,
   stableStringify,
@@ -778,5 +778,16 @@ describe('mergeFiles — keepNewerThan (the on-device fallback, US-09 AC13)', ()
     const merged = mergeFiles(device, erasedCloud(), OPTS);
     expect(merged.measurements).toEqual([]);
     expect(merged.meta.eraseEpoch).toBe(1);
+  });
+});
+
+// US-21 phase 3 — migrate.ts writes the converted row under `<id>#si`, and it
+// groups on its OWN id: stripped here, the conversion would collapse into its
+// parent's group and one of the two contents would be quarantined instead.
+describe('baseIdOf strips the quarantine suffix and nothing else', () => {
+  it('leaves the #si conversion id alone', () => {
+    expect(baseIdOf('row-1#si')).toBe('row-1#si');
+    expect(baseIdOf('row-1#dup-deadbeef')).toBe('row-1');
+    expect(baseIdOf('row-1#si#dup-deadbeef')).toBe('row-1#si');
   });
 });

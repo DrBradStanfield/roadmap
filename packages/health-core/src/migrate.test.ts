@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { migrateFile, SchemaTooNewError } from './migrate';
 import { mergeFiles } from './merge';
-import { CURRENT_SCHEMA_VERSION, createEmptyFile, createMeasurement, stableStringify, type FileMeasurement } from './roadmap-file';
+import { CURRENT_SCHEMA_VERSION, createEmptyFile, createMeasurement, stableStringify, type FileLabValue, type FileMeasurement } from './roadmap-file';
 
 const OPTS = { deviceId: 'dev_x', now: '2026-06-08T00:00:00Z' };
 
@@ -233,5 +233,70 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     // Absent is not the same as garbage — present-beats-absent still decides.
     const absent = migrateFile(rawFile({ medications: [{ id: 'm', medicationKey: 'statin', drugName: 'x', doseValue: null, doseUnit: null, lamport: 1 }] }), OPTS);
     expect('updatedAt' in absent.medications[0]).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-21 phase 3 — legacy rows reach SI by CORRECTION, never by mutation
+// ---------------------------------------------------------------------------
+// Rows written before phase 3 hold the unit their lab printed. A row is never
+// edited in place (the FHIR rule), so load appends a deterministic correction
+// row — same id and same content on every device, so merge folds the copies
+// into one — and flips the printed row to `entered-in-error`.
+describe('US-21 phase 3 — legacy lab rows are corrected into SI at load', () => {
+  const labRow = (over: Partial<FileLabValue> & { id: string }): FileLabValue => ({
+    metricName: 'vitamin_d', value: 32, unit: 'ng/mL', referenceLow: 30, referenceHigh: 100,
+    recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z', source: 'lab_import',
+    status: 'active', correctsId: null, ...over,
+  });
+  const fileWith = (rows: FileLabValue[]) => ({
+    schemaVersion: 1,
+    meta: { createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-08-01T00:00:00Z', lastDeviceId: 'dev_a', lamport: 3 },
+    labValues: rows,
+  });
+
+  it('US-21 phase 3 — a legacy row gets a #si child; the printed row is flipped, never rewritten', () => {
+    const out = migrateFile(fileWith([labRow({ id: 'l1' })]), OPTS);
+    expect(out.labValues).toHaveLength(2);
+    const [printed, si] = out.labValues;
+    expect(printed).toMatchObject({ id: 'l1', value: 32, unit: 'ng/mL', status: 'entered-in-error' });
+    expect(si).toMatchObject({
+      id: 'l1#si', metricName: 'vitamin_d', value: 79.872, unit: 'nmol/L',
+      status: 'active', correctsId: 'l1', recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z',
+    });
+    expect(si.referenceLow).toBeCloseTo(74.88, 6);
+    expect(si.referenceHigh).toBeCloseTo(249.6, 6);
+  });
+
+  it('US-21 phase 3 — converting twice is converting once: the second load is a no-op', () => {
+    const once = migrateFile(fileWith([labRow({ id: 'l1' })]), OPTS);
+    const twice = migrateFile(JSON.parse(JSON.stringify(once)), OPTS);
+    expect(stableStringify(twice.labValues)).toBe(stableStringify(once.labValues));
+    expect(migrateFile(JSON.parse(JSON.stringify(twice)), OPTS).labValues).toHaveLength(2);
+  });
+
+  it('US-21 phase 3 — a row already in the canonical unit, a superseded row and an unknown unit are all left alone', () => {
+    const rows = [
+      labRow({ id: 'canonical', value: 80, unit: 'nmol/L' }),
+      labRow({ id: 'spelling', metricName: 'ferritin', value: 210, unit: 'ug/L' }),
+      labRow({ id: 'superseded', status: 'entered-in-error' }),
+      labRow({ id: 'unknown', metricName: 'ferritin', value: 210, unit: 'pmol/L' }),
+      labRow({ id: 'uncatalogued', metricName: 'lipase', value: 44, unit: 'U/mL' }),
+      // mg/dL under the bare molecule name is ambiguous, so it is refused at
+      // the write and left exactly as it is at load (US-21 phase 3).
+      labRow({ id: 'ambiguous', metricName: 'urea', value: 14, unit: 'mg/dL' }),
+    ];
+    const out = migrateFile(fileWith(rows), OPTS);
+    expect(stableStringify(out.labValues)).toBe(stableStringify(rows));
+  });
+
+  it('US-21 phase 3 — a v1 copy merged with a migrated copy converges: no #dup ids, one active row per slot', () => {
+    const v1 = migrateFile(fileWith([labRow({ id: 'l1' })]), OPTS);
+    const other = migrateFile(fileWith([labRow({ id: 'l1' })]), { ...OPTS, deviceId: 'dev_b' });
+    const merged = mergeFiles(v1, other, { deviceId: 'dev_a', now: '2026-08-02T00:00:00Z' });
+    expect(merged.labValues.map((l) => l.id).sort()).toEqual(['l1', 'l1#si']);
+    expect(merged.labValues.filter((l) => l.status === 'active').map((l) => l.id)).toEqual(['l1#si']);
+    // And migrating the merge output changes nothing at all.
+    expect(stableStringify(migrateFile(JSON.parse(JSON.stringify(merged)), OPTS).labValues)).toBe(stableStringify(merged.labValues));
   });
 });

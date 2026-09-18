@@ -310,6 +310,30 @@ describe('US-32 — add_lab_values is a batch, and all or nothing', () => {
     expect(outcome.text.split('\n')).toHaveLength(2);
   });
 
+  // US-21 phase 3: the assistant sends what the lab printed and the record
+  // converts. Before this, a US report's ng/mL landed in the same series as a
+  // NZ report's nmol/L and no chart of it could be trusted.
+  it('US-21 phase 3 — a US unit is answered with the row as it is STORED, in SI', () => {
+    const outcome = ok(addLabValues(base(), {
+      values: [{ metricName: 'Vitamin D', value: 32, unit: 'ng/mL', referenceLow: 30, referenceHigh: 100, recordedAt: TODAY }],
+    }, CTX));
+    const row = outcome.file!.labValues.find((l) => l.metricName === 'vitamin_d')!;
+    expect(row).toMatchObject({ value: 79.872, unit: 'nmol/L' });
+    expect(((outcome as { data?: unknown }).data as { rows: Array<{ unit: string; value: number }> }).rows[0]).toMatchObject({ unit: 'nmol/L', value: 79.872 });
+    expect(outcome.text).toContain('nmol/L');
+    expect(outcome.text).not.toContain('ng/mL');
+  });
+
+  it('US-21 phase 3 — a unit the catalogue does not know for that test is refused, and nothing is written', () => {
+    const outcome = addLabValues(base(), {
+      values: [{ metricName: 'ferritin', value: 210, unit: 'pmol/L', recordedAt: TODAY }],
+    }, CTX);
+    expect(outcome.status).toBe('rejected');
+    expect(outcome.text).toContain('values[0] (ferritin)');
+    expect(outcome.text).toContain('µg/L');
+    expect((outcome as { file?: RoadmapFile }).file).toBeUndefined();
+  });
+
   it('files a spaced test name under its catalogue key', () => {
     const outcome = ok(addLabValues(base(), {
       values: [{ metricName: 'Vitamin D', value: 88, unit: 'nmol/L', recordedAt: TODAY }],
@@ -1423,7 +1447,9 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     expect(outcome.status).toBe('ok');
     const written = outcome.status === 'ok' ? outcome.file! : base();
     expect(written.measurements.find((m) => m.recordedAt === LAB_DAY)).toMatchObject({ metricType: 'ldl', value: 2.8, source: 'lab_import', status: 'active', correctsId: null });
-    expect(written.labValues.find((l) => l.recordedAt === LAB_DAY)).toMatchObject({ metricName: 'ferritin', value: 210, unit: 'ug/L', referenceLow: 30, referenceHigh: 300, source: 'lab_import' });
+    // The report prints "ug/L"; the record stores the catalogue's own spelling
+    // of the same unit (US-21 phase 3 — every write goes through the catalogue).
+    expect(written.labValues.find((l) => l.recordedAt === LAB_DAY)).toMatchObject({ metricName: 'ferritin', value: 210, unit: 'µg/L', referenceLow: 30, referenceHigh: 300, source: 'lab_import' });
     expect(written.documents).toHaveLength(2);
     // Metadata-only, with the bytes' own `contentHash` and no `fileRef`: the
     // website archives the blob onto this hash when the same PDF is uploaded there.
@@ -2137,7 +2163,12 @@ describe('US-36 AC5 — slots, dedup and the commit are import_documents’ own'
     expect(committed.status).toBe('ok');
     const file = committed.status === 'ok' ? committed.file! : base();
     expect(file.measurements.find((m) => m.recordedAt === LAB_DAY)).toMatchObject({ metricType: 'ldl', value: 2.8, source: 'lab_import' });
-    expect(file.labValues.find((l) => l.value === 180)).toMatchObject({ metricName: 'ferritin', source: 'lab_import', correctsId: 'l1' });
+    // The row is written under the name the report PRINTED, as the website's
+    // own review table writes it (US-21 phase 3 — the printed name is what
+    // chooses a conversion); the slot it lands in is the catalogue key either way.
+    const ferritin = file.labValues.find((l) => l.value === 180)!;
+    expect(ferritin).toMatchObject({ metricName: 'Ferritin', source: 'lab_import', correctsId: 'l1' });
+    expect(labSlotKey(ferritin.metricName)).toBe('ferritin');
     expect(file.documents.at(-1)).toMatchObject({ sourceFileName: 'labs.pdf', type: 'pathology_report', date: LAB_DAY, contentHash: '', metadata: { importedVia: 'assistant', client: 'claude' } });
     expect((committed as { data: { written: unknown } }).data.written).toEqual({ measurements: 1, labValues: 0, corrections: 1, documents: 1 });
   });
@@ -2242,5 +2273,62 @@ describe('US-32 AC29 — a refusal says why, in a closed vocabulary', () => {
     const ok = callTool('read_record', {}, { file: base(), now: NOW });
     expect(ok.status).toBe('ok');
     expect((ok as { reason?: string }).reason).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-21 phase 3 — the receipt and the commit read ONE name
+// ---------------------------------------------------------------------------
+import { labSlotKey } from './lab-catalog';
+
+/**
+ * The bug this pins: the dry run that builds the receipt resolved the PRINTED
+ * name ("BUN", which converts mg/dL), and the commit resolved the slot key
+ * ("urea", which refuses it). The receipt offered a value the write then threw
+ * away. Both import doors must commit under the name they offered.
+ */
+describe('US-21 phase 3 — the import commit converts under the name the receipt was built from', () => {
+  const printedAs = (name: string, value: number) => labReport({
+    values: [], unrecognized: [],
+    additionalValues: [{ name, value, unit: 'mg/dL', referenceLow: null, referenceHigh: null }],
+  });
+
+  it('the connector route: "BUN 18 mg/dL" is offered as printed and filed as 6.426 mmol/L', () => {
+    const file = base();
+    const { payload, unrecognized } = prepareImport(file, bundleOf([extracted('us.pdf', printedAs('BUN', 18))]), IMPORT_CTX);
+    expect(unrecognized).toEqual([]);
+    // Offered in the unit the report prints — the conversion is the record's, at the write.
+    expect(payload.candidates).toMatchObject([{ kind: 'lab', metric: 'urea', value: 18, unit: 'mg/dL', printedName: 'BUN' }]);
+
+    const outcome = importDocumentsCommit(file, payload, { receipt: 'r', accept: ['c1'], replace: [] }, NOW);
+    expect(outcome.status).toBe('ok');
+    const row = (outcome.status === 'ok' ? outcome.file! : file).labValues.find((l) => l.recordedAt === LAB_DAY)!;
+    expect(row).toMatchObject({ value: 6.426, unit: 'mmol/L' });
+    expect(labSlotKey(row.metricName)).toBe('urea');
+    expect(outcome.text).not.toContain('Not filed');
+  });
+
+  it('the assistant route: the same row through file_results files the same number', () => {
+    const file = base();
+    const { payload } = prepared(labCall([row('urea', 'BUN', 18, 'mg/dL')]), file);
+    expect(payload.candidates).toMatchObject([{ kind: 'lab', metric: 'urea', value: 18, unit: 'mg/dL', printedName: 'BUN' }]);
+
+    const outcome = importDocumentsCommit(file, payload, { receipt: 'r', accept: ['c1'], replace: [] }, NOW);
+    expect(outcome.status).toBe('ok');
+    const written = (outcome.status === 'ok' ? outcome.file! : file).labValues.find((l) => l.recordedAt === LAB_DAY)!;
+    expect(written).toMatchObject({ value: 6.426, unit: 'mmol/L' });
+    expect(labSlotKey(written.metricName)).toBe('urea');
+  });
+
+  it('a bare "Urea" in mg/dL is refused at the DRY RUN on both routes — it never reaches a receipt', () => {
+    const connector = prepareImport(base(), bundleOf([extracted('nz.pdf', printedAs('Urea', 6))]), IMPORT_CTX);
+    expect(connector.payload.candidates).toEqual([]);
+    expect(connector.unrecognized).toHaveLength(1);
+    expect(connector.unrecognized[0]).toContain('mmol/L');
+
+    const assistant = prepared(labCall([row('urea', 'Urea', 6, 'mg/dL')]));
+    expect(assistant.payload.candidates).toEqual([]);
+    expect(assistant.unrecognized).toHaveLength(1);
+    expect(assistant.unrecognized[0]).toContain('mmol/L');
   });
 });
