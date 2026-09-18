@@ -13,6 +13,7 @@ build/
 .shopify/
 .claude/*
 !.claude/agents/
+!.claude/skills/
 .mcp.json
 fly.toml
 *.js.map
