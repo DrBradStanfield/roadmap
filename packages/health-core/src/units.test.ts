@@ -16,6 +16,7 @@ import {
   cmToFeetInches,
   feetInchesToCm,
   formatHeightDisplay,
+  CANONICAL_UNITS,
   type MetricType,
 } from './units';
 import { METRIC_TYPES } from './validation';
@@ -356,5 +357,34 @@ describe('resolveUnitSystem — no-regression sweep over every metric', () => {
     expect(resolveUnitSystem('weight', 'stone')).toBeNull();
     expect(resolveUnitSystem('ldl', 'g/L')).toBeNull();
     expect(resolveUnitSystem('ldl', '')).toBeNull();
+  });
+});
+
+describe('US-32 AC37 — the spellings of pounds every writer accepts', () => {
+  it('reads "lb", "pound" and "pounds" as the label "lbs" already reads', () => {
+    const lbs = reportedToCanonical('weight', 180, 'lbs');
+    for (const spelling of ['lb', 'pound', 'pounds', 'LB', ' Pounds ']) {
+      expect([spelling, reportedToCanonical('weight', 180, spelling)]).toEqual([spelling, lbs]);
+    }
+  });
+
+  it('accepts those spellings for weight alone', () => {
+    for (const metric of METRIC_TYPES.filter((m) => m !== 'weight')) {
+      for (const spelling of ['lb', 'pound', 'pounds']) {
+        expect([metric, spelling, reportedToCanonical(metric as MetricType, 1, spelling)]).toEqual([metric, spelling, null]);
+      }
+    }
+  });
+});
+
+describe('US-32 AC35 — the SI unit every stored measurement is in', () => {
+  it('names one canonical unit per metric, the unit definition\u2019s own', () => {
+    for (const metric of METRIC_TYPES) {
+      expect([metric, CANONICAL_UNITS[metric as MetricType]]).toEqual([metric, UNIT_DEFS[metric as MetricType].canonical]);
+    }
+    expect(CANONICAL_UNITS.weight).toBe('kg');
+    // Every metric with a unit definition, height included: it is a profile
+    // field, so METRIC_TYPES does not list it, but a read still states its unit.
+    expect(Object.keys(CANONICAL_UNITS).sort()).toEqual(Object.keys(UNIT_DEFS).sort());
   });
 });

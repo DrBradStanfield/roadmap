@@ -342,6 +342,8 @@ const CONVENTIONAL: UnitAlias = { system: 'conventional' };
  */
 const UNIT_ALIASES: Partial<Record<MetricType, Record<string, UnitAlias>>> = {
   creatinine: { 'umol/l': SI, 'micromol/l': SI },
+  // Scales print "lbs"; people and their notes write "lb" and "pounds".
+  weight: { lb: CONVENTIONAL, pound: CONVENTIONAL, pounds: CONVENTIONAL },
   hba1c: { 'mmol/mol': SI, '%': CONVENTIONAL },
   // PSA — NZ/AU labs print µg/L, the same number as ng/mL.
   psa: { 'ug/l': SI },
@@ -351,6 +353,15 @@ const UNIT_ALIASES: Partial<Record<MetricType, Record<string, UnitAlias>>> = {
   systolic_bp: { mmhg: SI },
   diastolic_bp: { mmhg: SI },
 };
+
+/**
+ * The unit a stored measurement of each metric is in — the SI canonical one,
+ * read off the definitions so a new metric joins for free. Every agent-facing
+ * read publishes this map, so nobody has to guess what a bare number means.
+ */
+export const CANONICAL_UNITS: Readonly<Record<MetricType, string>> = Object.fromEntries(
+  Object.entries(UNIT_DEFS).map(([metric, def]) => [metric, def.canonical]),
+) as Record<MetricType, string>;
 
 /** How a printed unit is read for a metric, or null when no writer accepts that spelling. Never guesses from the number. */
 export function lookupUnit(metric: MetricType, statedUnit: string): UnitAlias | null {

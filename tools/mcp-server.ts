@@ -17,7 +17,7 @@
  */
 import { pathToFileURL } from 'node:url';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
-import { type ImportCommit, type ImportPayload, type ImportSurface, MCP_TOOLS, OPEN_SOURCE_NOTE, RECEIPT_LIFETIME_SECONDS, runToolOverSync, type ToolAnswer } from '../packages/health-core/src/mcp-tools';
+import { type ImportCommit, type ImportPayload, type ImportSurface, MCP_TOOLS, OPEN_SOURCE_NOTE, SI_NOTE, RECEIPT_LIFETIME_SECONDS, runToolOverSync, type ToolAnswer } from '../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PARSE_ERROR, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../packages/health-core/src/mcp-rpc';
 import { recordSync } from '../packages/health-core/src/roadmap-doc';
 import { describeStorageFailure, isStorageFailure } from '../packages/health-core/src/sync-manager';
@@ -33,7 +33,7 @@ const INSTRUCTIONS =
   'user reviews and submits themselves. import_documents is listed but refuses here: this server has no model and ' +
   'no network; folder files go through the website’s upload or the hosted connector. A file the user gives YOU is ' +
   'file_results: read it, send every value it prints, show the candidates, and commit only what the user confirms.' +
-  OPEN_SOURCE_NOTE;
+  SI_NOTE + OPEN_SOURCE_NOTE;
 
 export const HELP = `mcp-server — your health record as an MCP server, over stdio.
 

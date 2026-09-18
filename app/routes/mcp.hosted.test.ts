@@ -1774,7 +1774,7 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
 // US-32 AC28/AC29 — the open-source note, and why a refusal was refused
 // ---------------------------------------------------------------------------
 import { INSTRUCTIONS } from '../lib/mcp.server';
-import { OPEN_SOURCE_NOTE } from '../../packages/health-core/src/mcp-tools';
+import { OPEN_SOURCE_NOTE, SI_NOTE } from '../../packages/health-core/src/mcp-tools';
 import { REPO_URL } from '../../packages/health-core/src/plan';
 import { MCP_REFUSAL_REASONS } from '../../packages/health-core/src/product-events';
 
@@ -1786,6 +1786,8 @@ describe('US-32 AC28 — every assistant is told the code is open', () => {
   it('the hosted instructions carry the note and the repository URL', () => {
     expect(INSTRUCTIONS).toContain(OPEN_SOURCE_NOTE);
     expect(INSTRUCTIONS).toContain(REPO_URL);
+    // US-32 AC35: the SI contract is told at connect, not only per tool.
+    expect(INSTRUCTIONS).toContain(SI_NOTE);
   });
 });
 

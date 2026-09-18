@@ -95,8 +95,8 @@ Reuse otherwise: `mergeFiles`, `migrateFile`, `SyncManager`, `createRateLimiter`
 
 | Tool | Kind | Note |
 | --- | --- | --- |
-| `read_record` | `readOnlyHint` | Migrated record minus `reminderOptIn.token`; `metric`/`since` filters. |
-| `get_plan` | `readOnlyHint` | `renderJson(computePlan(file))`. The one thing only this repo can do; costs no Anthropic spend. |
+| `read_record` | `readOnlyHint` | Migrated record minus `reminderOptIn.token`; `metric`/`since` filters. Carries a `units` map (metric → its SI canonical unit), so no row's number is a bare number. |
+| `get_plan` | `readOnlyHint` | `renderJson(computePlan(file))`. The one thing only this repo can do; costs no Anthropic spend. Carries its own `units` map, keyed by `inputs` field: `inputs` is SI, `currentValues` is converted to the record's `unitSystem`. |
 | `add_measurement` | append | One core metric, SI canonical, validated by health-core. |
 | `add_lab_values` | append | Batch, the lab-report case, which is the point. |
 | `update_profile` | overwrite (**guarded**) | Sex, birth year, birth month, height, the four fields the plan is computed from. Read-modify-write of the one last-write-wins profile object; `expected` per changed field is required hosted (to CHANGE a field the record holds; filling an empty one is an add and needs none, 2026-09-16), optional locally. See the 2026-09-02 revision below. |

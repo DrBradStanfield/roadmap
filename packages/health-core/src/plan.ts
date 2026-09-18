@@ -10,6 +10,7 @@ import { calculateHealthResults } from './calculations';
 import { fileProfileToApi, fileScreeningRows } from './file-inputs';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 import {
+  FIELD_METRIC_MAP,
   METRIC_LABELS,
   METRIC_TO_FIELD,
   measurementsToInputs,
@@ -22,7 +23,7 @@ import { cmpStr, localDay } from './merge';
 import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-schedule';
 import { CURRENT_SCHEMA_VERSION, type FileLabValue, type RoadmapFile } from './roadmap-file';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
-import { UNIT_DEFS, formatDisplayValue, getDisplayLabel, type MetricType, type UnitSystem } from './units';
+import { CANONICAL_UNITS, UNIT_DEFS, formatDisplayValue, getDisplayLabel, type MetricType, type UnitSystem } from './units';
 import { getValidationErrors, validateHealthInputs } from './validation';
 
 /** This project, named once. Every URL that points at the code derives from it. */
@@ -229,16 +230,22 @@ export function dueSplit(plan: Plan): { overdue: ReminderScheduleItem[]; upcomin
 
 /**
  * The inputs whose absence silently removes plan content: the four the whole
- * plan is computed from (sex, birth year, height, weight) and the four markers
- * that each gate a group of suggestions. Naming them is the difference between
- * a thin plan and a plan the assistant knows is thin (US-32).
+ * plan is computed from (sex, birth year, height, weight) and the five markers
+ * that each gate a group of suggestions. Creatinine is one of them: without it
+ * there is no eGFR, and no CKD adjustment to the protein target. Naming them is
+ * the difference between a thin plan and a plan the assistant knows is thin (US-32).
  */
-const GATING_INPUTS = ['sex', 'birthYear', 'heightCm', 'weightKg', 'waistCm', 'systolicBp', 'hba1c', 'apoB'] as const;
+const GATING_INPUTS = ['sex', 'birthYear', 'heightCm', 'weightKg', 'waistCm', 'systolicBp', 'hba1c', 'apoB', 'creatinine'] as const;
 
 /** Those of them the record does not hold. Empty when nothing is missing. */
 function missingPlanInputs(plan: Plan): Array<(typeof GATING_INPUTS)[number]> {
   return GATING_INPUTS.filter((field) => plan.inputs[field] === undefined || plan.inputs[field] === null);
 }
+
+/** The SI unit each `inputs` field holds, keyed the way `inputs` is keyed. */
+const INPUT_UNITS: Record<string, string> = Object.fromEntries(
+  Object.entries(FIELD_METRIC_MAP).map(([field, metric]) => [field, CANONICAL_UNITS[metric]]),
+);
 
 /** The agent-facing shape. Field names are stable; add, never rename. */
 export function planPayload(plan: Plan) {
@@ -249,12 +256,14 @@ export function planPayload(plan: Plan) {
     generatedAt: plan.generatedAt,
     today: plan.today,
     unitSystem: plan.unitSystem,
+    units: INPUT_UNITS,
     profile: {
       sex: plan.inputs.sex,
       age: plan.results.age ?? null,
       heightCm: plan.results.heightCm,
       bmi: plan.results.bmi ?? null,
       bmiCategory: plan.results.bmiCategory ?? null,
+      waistToHeightRatio: plan.results.waistToHeightRatio ?? null,
       eGFR: plan.results.eGFR ?? null,
       idealBodyWeightKg: plan.results.idealBodyWeight,
       proteinTargetG: plan.results.proteinTarget,

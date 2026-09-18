@@ -142,6 +142,22 @@ describe('US-32 — read_record survives a record from a newer app', () => {
   });
 });
 
+describe('US-32 AC35 — a read states the unit every stored value is in', () => {
+  it('names the SI unit of each metric, keyed the way rows are', () => {
+    const parsed = JSON.parse(ok(readRecord(base(), {})).text);
+
+    expect(parsed.units).toMatchObject({ weight: 'kg', height: 'cm', ldl: 'mmol/L', creatinine: 'µmol/L' });
+    // Every measurement row's metric is in the map, so no value is a bare number.
+    for (const row of parsed.measurements) expect([row.metricType, row.metricType in parsed.units]).toEqual([row.metricType, true]);
+    expect(() => OUTPUTS.read_record.parse(parsed)).not.toThrow();
+  });
+
+  it('is on a narrowed read too, and on the dispatched call', () => {
+    expect(JSON.parse(ok(readRecord(base(), { metric: 'ldl' })).text).units.ldl).toBe('mmol/L');
+    expect(JSON.parse(ok(callTool('read_record', {}, { file: base(), now: NOW })).text).units.weight).toBe('kg');
+  });
+});
+
 describe('US-32 — a read answers compactly', () => {
   it('emits JSON without pretty-print padding, so the text half stays inside client caps', () => {
     const text = ok(readRecord(base(), {})).text;
@@ -193,8 +209,50 @@ describe('US-32 — get_plan', () => {
   it('names the inputs the record is missing that would change the plan (US-32)', () => {
     const parsed = JSON.parse(ok(getPlan(base(), NOW)).text);
     // The fixture holds sex, birth year, height and a weight; it holds no
-    // waist, no blood pressure, no HbA1c and no ApoB.
-    expect(parsed.missingInputs).toEqual(['waistCm', 'systolicBp', 'hba1c', 'apoB']);
+    // waist, no blood pressure, no HbA1c, no ApoB and no creatinine.
+    expect(parsed.missingInputs).toEqual(['waistCm', 'systolicBp', 'hba1c', 'apoB', 'creatinine']);
+  });
+
+  it('US-32 AC36: drops creatinine from missingInputs once the record holds one', () => {
+    const file = base();
+    file.measurements.push(createMeasurement({
+      id: 'm3', metricType: 'creatinine', value: 78, recordedAt: '2026-07-14',
+      createdAt: '2026-07-14T08:00:00Z', source: 'lab_import',
+    }));
+    expect(JSON.parse(ok(getPlan(base(), NOW)).text).missingInputs).toContain('creatinine');
+    const parsed = JSON.parse(ok(getPlan(file, NOW)).text);
+
+    expect(parsed.missingInputs).not.toContain('creatinine');
+    expect(parsed.profile.eGFR).not.toBeNull();
+  });
+
+  it('US-32 AC35: states the SI unit of every input field, keyed the way inputs are', () => {
+    const parsed = JSON.parse(ok(getPlan(base(), NOW)).text);
+
+    expect(parsed.units).toMatchObject({ weightKg: 'kg', heightCm: 'cm', apoB: 'g/L', ldlC: 'mmol/L' });
+  });
+
+  it('US-32 AC36: carries the waist-to-height ratio behind the BMI category', () => {
+    expect(JSON.parse(ok(getPlan(base(), NOW)).text).profile.waistToHeightRatio).toBeNull();
+
+    const file = base();
+    file.measurements.push(createMeasurement({
+      id: 'm4', metricType: 'waist', value: 86, recordedAt: '2026-07-14',
+      createdAt: '2026-07-14T08:00:00Z', source: 'manual',
+    }));
+    expect(JSON.parse(ok(getPlan(file, NOW)).text).profile.waistToHeightRatio).toBeCloseTo(0.48, 2); // 86 / 178, rounded to 2 dp
+  });
+
+  it('US-32 AC36: pins what a record holding no values at all still suggests', () => {
+    const file = createEmptyFile({ deviceId: 'd', now: NOW });
+    Object.assign(file.profile, { sex: 'male', birthYear: 1971, heightCm: 178, unitSystem: 'si' });
+    const ids = JSON.parse(ok(getPlan(file, NOW)).text).suggestions.map((s: { id: string }) => s.id);
+    // protein-target, exercise and sleep rest on no measurement at all; the
+    // screening, skin and supplement cards follow from sex and age; fiber shows
+    // whenever lipids are not elevated, absent included. Every other card needs
+    // a value, so an assistant reading a thin plan knows the difference.
+    expect(ids).toEqual(expect.arrayContaining(['protein-target', 'exercise', 'sleep', 'fiber']));
+    expect(ids).not.toContain('lipid-diet');
   });
 
   it('keeps each suggestion’s link beside its reason and references', () => {
@@ -844,8 +902,10 @@ describe('US-32 — every tool answers with structured content that fits its out
   it('publishes the record’s own keys, so a new section cannot go unannounced', () => {
     const keys = Object.keys(createEmptyFile({ deviceId: 'd', now: NOW }));
     const published = Object.keys(OUTPUTS.read_record.shape);
-    // `folder` is the nudge (US-37), a read's addition, not a section of the record.
-    expect(published.filter((k) => k !== 'reminderOptIn' && k !== 'folder').sort()).toEqual(keys.sort());
+    // `folder` is the nudge (US-37) and `units` the SI contract (US-32 AC35):
+    // both are a read's addition, not a section of the record.
+    const added = new Set(['reminderOptIn', 'folder', 'units']);
+    expect(published.filter((k) => !added.has(k)).sort()).toEqual(keys.sort());
   });
 });
 

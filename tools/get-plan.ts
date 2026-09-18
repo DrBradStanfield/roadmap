@@ -257,8 +257,9 @@ record is never written back.
 --json emits:
   instruction    how to present this plan: keep the hedging, keep the citations
   schemaVersion, generatedAt, today, unitSystem
-  profile        age, sex, heightCm, bmi, bmiCategory, eGFR, idealBodyWeightKg,
-                 proteinTargetG
+  profile        age, sex, heightCm, bmi, bmiCategory, waistToHeightRatio,
+                 eGFR, idealBodyWeightKg, proteinTargetG
+  units          the SI unit each inputs field is stored in, keyed by field
   inputs         the HealthInputs the plan was computed from (SI canonical)
   currentValues  one row per metric — id, label, display value, unit, clinical
                  date; excluded: true marks a value out of range — shown, but

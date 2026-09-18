@@ -43,7 +43,7 @@ import {
 } from './record-edits';
 import type { FileDocument, FileLabValue, FileMeasurement, FileReminderOptIn, RoadmapFile } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
-import { formatDisplayValue, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
+import { CANONICAL_UNITS, formatDisplayValue, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
 import { type McpImportRoute, type McpRefusalReason } from './product-events';
 import { LAB_ARCHIVE_TITLE } from './document-path';
@@ -93,6 +93,15 @@ export const FEEDBACK_REPO = REPO_SLUG;
 export const OPEN_SOURCE_NOTE =
   ` These tools are open source at ${REPO_URL}, MIT licensed. Read the code if the user asks how something ` +
   'works, and use report_feedback to propose a change.';
+
+/**
+ * The unit contract, told at connect on both servers (US-32 AC35). A number
+ * without its unit is a guess, and a guessed unit is a wrong health value. It
+ * starts with a space: both servers append it to a sentence.
+ */
+export const SI_NOTE =
+  ' Every measurement is stored in SI canonical units; the `units` map in read_record and get_plan names them, ' +
+  'and a lab value keeps the unit its lab printed.';
 
 /** The version the server announces, and the one a report is stamped with. */
 export const SERVER_VERSION = '1.0.0';
@@ -283,6 +292,7 @@ export const folderNudgeOutput = z.object({
 /** The record as `readRecord` filters it — the file's own keys, minus the token. */
 export const readRecordOutput = z.object({
   schemaVersion: z.number(),
+  units: LOOSE,
   meta: LOOSE,
   profile: LOOSE,
   measurements: ROWS,
@@ -306,6 +316,7 @@ export const getPlanOutput = z.object({
   generatedAt: z.string(),
   today: z.string(),
   unitSystem: z.string(),
+  units: LOOSE,
   profile: LOOSE,
   inputs: LOOSE,
   missingInputs: z.array(z.string()),
@@ -507,13 +518,15 @@ export function readRecord(file: RoadmapFile, request: z.infer<typeof readRecord
   const since = request.since;
   const keep = (row: { recordedAt?: string | null }) => !since || dayOf(row.recordedAt ?? '') >= since;
 
-  const filtered: RedactedRecord = {
+  const filtered = {
     ...record,
     measurements: record.measurements.filter((m) => (!metric || matchesMetric(m.metricType, metric)) && keep(m)),
     labValues: record.labValues.filter((l) => (!metric || matchesMetric(l.metricName, metric)) && keep(l)),
     // A question about one metric is not a question about the user's documents,
     // and a lab PDF's row list is the biggest thing in the record.
     documents: metric ? [] : record.documents,
+    // The rows carry a bare number, so the read says what those numbers are in.
+    units: CANONICAL_UNITS,
   };
   return okJson(filtered);
 }
@@ -728,14 +741,9 @@ export function updateProfile(
 function rowValue(row: FileMeasurement | FileLabValue): { value: number; unit: string | null; recordedAt: string } {
   return {
     value: row.value,
-    unit: 'metricType' in row ? canonicalUnit(row.metricType) : row.unit,
+    unit: 'metricType' in row ? CANONICAL_UNITS[row.metricType as MetricType] ?? null : row.unit,
     recordedAt: dayOf(row.recordedAt ?? ''),
   };
-}
-
-/** The unit a stored measurement is in — SI canonical, or null off-catalogue. */
-function canonicalUnit(metricType: string): string | null {
-  return UNIT_DEFS[metricType as MetricType]?.canonical ?? null;
 }
 
 /** One line per row written: what it is, what it says, and the id to cite. */
@@ -1360,7 +1368,7 @@ export function prepareImport(
         }
         const display = formatDisplayValue(metric, value.valueSI, system);
         offer(slotKey('measurement', metric, own), {
-          kind: 'measurement', metric, value: value.valueSI, unit: UNIT_DEFS[metric].canonical,
+          kind: 'measurement', metric, value: value.valueSI, unit: CANONICAL_UNITS[metric],
           displayValue: display, displayUnit: getDisplayLabel(metric, system),
           recordedAt: own, confidence: value.confidence,
           ...(value.question ? { question: fromDocument(value.question) } : null),
@@ -1886,9 +1894,13 @@ const ROW_FIELDS = {
   recordedAt: { ...DAY_SCHEMA, description: 'The clinical day the row is filed under.' },
 } as const;
 
+/** The half of the unit contract both `units` maps share (US-32 AC35). */
+const LAB_UNIT_NOTE = ' labValues[].unit is the lab’s own, unconverted.';
+
 /** Every section `readRecord` returns. `reminderOptIn` is the only optional one. */
 const RECORD_SECTIONS = {
   schemaVersion: { type: 'number' },
+  units: { type: 'object', description: `Every measurements[].value is stored in this SI unit, keyed by metricType.${LAB_UNIT_NOTE}` },
   meta: OBJECT,
   profile: OBJECT,
   measurements: OBJECT_ARRAY,
@@ -1934,8 +1946,15 @@ const PLAN_SECTIONS = {
   generatedAt: { type: 'string' },
   today: { type: 'string' },
   unitSystem: { type: 'string' },
-  profile: OBJECT,
-  inputs: OBJECT,
+  units: { type: 'object', description: `The SI unit each \`inputs\` field is stored in, keyed by input field.${LAB_UNIT_NOTE}` },
+  profile: {
+    ...OBJECT,
+    description: '`bmiCategory` is waist-informed: a BMI of 25–29.9 with a waist-to-height ratio below 0.5 reads Normal (AACE 2025 / NICE). `waistToHeightRatio` is the ratio it used, or null.',
+  },
+  inputs: {
+    ...OBJECT,
+    description: 'The values the plan was computed from, in SI canonical units (see `units`, keyed by input field). `currentValues` is the same rows converted to `unitSystem`, plus any row marked excluded.',
+  },
   missingInputs: {
     type: 'array',
     items: { type: 'string' },
@@ -2066,7 +2085,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'Return the user’s health-roadmap.json: profile, measurements, lab values, medications, supplements, ' +
       'screenings and documents. Rows are never deleted here — a superseded value stays with status ' +
       '"entered-in-error", so read `status: "active"` rows as the current truth. Optionally narrow to one ' +
-      'metric or to rows on or after a date. The reminder capability token is never included.',
+      'metric or to rows on or after a date. The reminder capability token is never included. Every measurement ' +
+      'value is in the SI unit `units` names for its metric; a lab value keeps the unit its lab printed.',
     inputSchema: {
       type: 'object',
       properties: {

@@ -105,7 +105,11 @@ someone's medical history, or lose their data at the next device sync.
 8. **Units.** `measurements[].value` is the SI canonical unit, kg, cm, mmHg, mmol/mol
    for HbA1c, mmol/L for lipids, g/L for ApoB, µmol/L for creatinine, ng/mL for PSA,
    nmol/L for Lp(a). Convert before you write. `labValues[].value` keeps the lab's own
-   number and its reported `unit` string verbatim; no conversion.
+   number and its reported `unit` string verbatim; no conversion. You do not have to
+   remember the list: `read_record` publishes a `units` map keyed by `metricType`, and
+   `get_plan` one keyed by its own `inputs` field names. `get_plan.inputs` is SI
+   canonical; `currentValues` is the same values converted to the record's `unitSystem`,
+   so read `inputs` when you are computing and `currentValues` when you are quoting.
 9. **Timestamps are ISO 8601, and never in the future.** On every load the app clamps a
    row's write-clocks, `createdAt` on measurements and lab values, `updatedAt`/`lamport`
    on current-state rows, to the file's own last write (the later of `meta.createdAt`
@@ -153,6 +157,13 @@ Validate your result against the schema before you write it back.
   file to store your own state.
 - **A file with a higher `schemaVersion` than the app understands is refused, not
   downgraded** (`SchemaTooNewError`). Never bump `schemaVersion` yourself.
+- **A thin plan is not a clean bill of health.** On a record holding no measurement at
+  all, `get_plan` still returns `protein-target`, `exercise` and `sleep` — they rest on
+  no value whatever — plus the screening, skin and supplement cards, which follow from
+  sex and age alone, and `fiber`, which shows whenever lipids are NOT elevated, absent
+  lipids included: read it as "no lipid card", never as "lipids fine". Every other
+  suggestion is conditional on a measurement the record holds, and `missingInputs`
+  names the ones whose absence removed content.
 
 ## The hosted path (US-32 Phase 1)
 
