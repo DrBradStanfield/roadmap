@@ -2110,8 +2110,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'Return the user’s health-roadmap.json: profile, measurements, lab values, medications, supplements, ' +
       'screenings and documents. Rows are never deleted here — a superseded value stays with status ' +
       '"entered-in-error", so read `status: "active"` rows as the current truth. Optionally narrow to one ' +
-      'metric or to rows on or after a date. The reminder capability token is never included. Every measurement ' +
-      'value is in the SI unit `units` names for its metric; a lab value keeps the unit its lab printed.',
+      'metric or to rows on or after a date. The reminder capability token is never included. Measurements ' +
+      'are SI (`units`). A catalogued lab is converted to SI; an unknown test keeps the unit it was reported in.',
     inputSchema: {
       type: 'object',
       properties: {
