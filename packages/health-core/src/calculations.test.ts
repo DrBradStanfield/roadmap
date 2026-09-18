@@ -165,6 +165,21 @@ describe('getBMICategory', () => {
     expect(getBMICategory(29.9, 0.6)).toBe('Overweight');
   });
 
+  it('classifies from unrounded WHtR in the full pipeline, then rounds only the displayed ratio', () => {
+    // Synthetic: 200 cm, 99.2 cm waist, 108 kg → BMI 27.0, exact WHtR 0.496.
+    // Rounding the ratio before the < 0.5 test would flip this to Overweight.
+    const results = calculateHealthResults({
+      heightCm: 200,
+      waistCm: 99.2,
+      weightKg: 108,
+      sex: 'male',
+    });
+
+    expect(results.bmi).toBe(27);
+    expect(results.waistToHeightRatio).toBe(0.5);
+    expect(results.bmiCategory).toBe('Normal');
+  });
+
   it('does not reclassify BMI >= 30 regardless of WHtR', () => {
     expect(getBMICategory(31, 0.45)).toBe('Obese (Class I)');
     expect(getBMICategory(36, 0.42)).toBe('Obese (Class II)');

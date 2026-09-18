@@ -47,7 +47,7 @@ The CKD adjustment uses strict less-than: at exactly eGFR 45, the normal 1.2 mul
 
 ### BMI
 
-`weightKg / (heightCm / 100)^2` — rounded to 1 decimal place.
+`weightKg / (heightCm / 100)^2` — rounded to 1 decimal place for display. Classification uses the unrounded value.
 
 #### Composite Assessment (BMI + Waist-to-Height Ratio)
 
@@ -68,7 +68,7 @@ Per AACE 2025 and NICE guidelines, BMI classification in the 25–29.9 range is 
 
 ### Waist-to-Height Ratio
 
-`waistCm / heightCm` — rounded to 2 decimal places. Values >= 0.5 indicate increased metabolic risk. When BMI is 25–29.9 and waist data is missing, a "Measure your waist circumference" suggestion is shown.
+`waistCm / heightCm` — rounded to 2 decimal places for display. Classification uses the unrounded ratio against the < 0.5 / >= 0.5 thresholds, so a displayed 0.50 can still be Normal when the exact ratio is below 0.5. Values >= 0.5 indicate increased metabolic risk. When BMI is 25–29.9 and waist data is missing, a "Measure your waist circumference" suggestion is shown.
 
 ### Age
 

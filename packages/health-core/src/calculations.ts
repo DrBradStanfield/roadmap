@@ -165,21 +165,23 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
     suggestions: [],
   };
 
-  // Calculate BMI if weight is provided
+  // Classify from unrounded values; round only what the payload displays.
+  let bmiExact: number | undefined;
+  let ratioExact: number | undefined;
+
   if (inputs.weightKg) {
-    const bmi = calculateBMI(inputs.weightKg, inputs.heightCm);
-    results.bmi = Math.round(bmi * 10) / 10;
+    bmiExact = calculateBMI(inputs.weightKg, inputs.heightCm);
+    results.bmi = Math.round(bmiExact * 10) / 10;
   }
 
-  // Calculate waist-to-height ratio if waist is provided
   if (inputs.waistCm) {
-    const ratio = calculateWaistToHeight(inputs.waistCm, inputs.heightCm);
-    results.waistToHeightRatio = Math.round(ratio * 100) / 100;
+    ratioExact = calculateWaistToHeight(inputs.waistCm, inputs.heightCm);
+    results.waistToHeightRatio = Math.round(ratioExact * 100) / 100;
   }
 
   // Classify BMI (accounts for WHtR reclassification of BMI 25-29.9)
-  if (results.bmi !== undefined) {
-    results.bmiCategory = getBMICategory(results.bmi, results.waistToHeightRatio);
+  if (bmiExact !== undefined) {
+    results.bmiCategory = getBMICategory(bmiExact, ratioExact);
   }
 
   // Calculate non-HDL cholesterol if both total and HDL are provided
