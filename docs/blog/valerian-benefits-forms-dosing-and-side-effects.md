@@ -190,7 +190,7 @@ For those seeking evidence-based sleep support, it is worth noting that other co
 - **Magnesium glycinate** (250-300 mg elemental) has been shown to reduce sleep onset latency by approximately 17 minutes in a meta-analysis of RCTs in older adults
 - **Glycine** (2,500-3,000 mg) has demonstrated improved subjective sleep quality in three RCTs
 
-Dr Brad Stanfield's [Sleep by Dr Brad](https://drstanfield.com/products/sleep) combines these three evidence-based ingredients: micro-dose melatonin (300 mcg), magnesium glycinate (126 mg elemental), and glycine (2,500 mg) — targeting different sleep mechanisms with stronger clinical support than valerian alone.
+Dr Brad Stanfield's [Sleep by Dr Brad](https://drstanfield.com/products/sleep) combines these three evidence-based ingredients: low-dose, sustained-release melatonin (0.8 mg), magnesium bisglycinate (126 mg elemental), and glycine (2,400 mg) — targeting different sleep mechanisms with stronger clinical support than valerian alone.
 
 ## 5. Safety and Side Effects
 
