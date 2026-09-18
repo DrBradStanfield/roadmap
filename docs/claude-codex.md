@@ -336,6 +336,45 @@ One disagreement. Codex says defer the cloud auto-review to keep variables separ
 
 Not built, by design: any change to `.github/workflows/**` or `auto-ship.yml` (Brad-only), the reciprocal Codex-authors path, and the cloud auto-review toggle (a Brad click in the Codex web app).
 
-## First real run
+## First real run: commit 889d193 (the AC35–AC37 unit-contract change)
 
-See the entry below, appended when the review of commit 889d193 finished.
+Two runs, same snapshot `fda980c3e76b+da2ff0371353`, 15 files, gpt-6-astra at
+high reasoning.
+
+| Run | Status | Time | Findings |
+|---|---|---|---|
+| 1 | incomplete | 2.3 min | R1 (medium, blocking) |
+| 2 | complete | 1.5 min | R1 (medium, blocking), same defect |
+
+Run 1 came back incomplete because the snapshot carried no commit message, so
+the reviewer could not verify the LOC declaration. That was a wrapper gap:
+it now ships the commit message(s) as `REVIEW_COMMITS.txt`, and the prompt
+says an unverifiable check is a low finding, not an incomplete review. Run 2
+confirmed the fix. The same defect was found both times, which is the
+consistency a gate needs.
+
+**R1, verified by Claude: Accepted.** AC35 promises three exceptions "said in
+words", and the third, that a metric off the catalogue has no canonical
+unit, is stated nowhere at that commit. `SI_NOTE` says every measurement has
+an SI unit the map names; `metricType` is a plain string in the file schema,
+so an off-catalogue row can exist and reach `read_record`. Claude's own
+review, the AC test-status line, and the tests all missed it. This is the
+first Codex-unique finding; the control count starts at one.
+
+Fixed in the commit after 25f3ad9: the other session committed its work
+(and swept this tooling in with it), which freed `mcp-tools.ts`. One shared
+sentence, `OFF_CATALOGUE_NOTE`, now sits in `SI_NOTE` (both servers'
+instructions) and in the `read_record` units description. Regression test
+citing US-32 AC35 and Codex R1: fails without the sentence, passes with it.
+The fix itself went back through the Codex reviewer before commit:
+snapshot `25f3ad9b52bb+c8793120fec2`, complete, 1.2 min, no findings, and it
+confirmed the regression test would fail without the change.
+
+## Standing state
+
+- Local Codex review is wired and works from Claude's shell.
+- Wrapper found and fixed one gap on its first outing (no commit message in
+  the snapshot); the fix and R1's fix are committed together.
+- Next: run `/codex-review` on the next few real changes alongside the
+  fresh-Fable check, count unique findings per model, then decide on the
+  cloud auto-review toggle and, if earned, the Brad-only CI gate.

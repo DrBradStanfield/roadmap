@@ -43,6 +43,7 @@ import {
   readRecord,
   readRecordInput,
   readRecordOutput,
+  SI_NOTE,
   redactRecord,
   reportFeedback,
   reportFeedbackInput,
@@ -155,6 +156,20 @@ describe('US-32 AC35 — a read states the unit every stored value is in', () =>
   it('is on a narrowed read too, and on the dispatched call', () => {
     expect(JSON.parse(ok(readRecord(base(), { metric: 'ldl' })).text).units.ldl).toBe('mmol/L');
     expect(JSON.parse(ok(callTool('read_record', {}, { file: base(), now: NOW })).text).units.weight).toBe('kg');
+  });
+
+  it('US-32 AC35: an off-catalogue metric has no entry in the map, and both the instructions and the read say so in words (Codex review R1, 2026-09-18)', () => {
+    const file = base();
+    const foreign = createMeasurement({ id: 'm9', metricType: 'ldl', value: 100, recordedAt: '2026-02-01', createdAt: '2026-02-01T08:00:00Z', source: 'manual' });
+    foreign.metricType = 'vitamin_d';
+    file.measurements.push(foreign);
+    const parsed = JSON.parse(ok(readRecord(file, {})).text);
+
+    expect(parsed.measurements.map((m: { metricType: string }) => m.metricType)).toContain('vitamin_d');
+    expect('vitamin_d' in parsed.units).toBe(false);
+    const readTool = MCP_TOOLS.find((tool) => tool.name === 'read_record')!;
+    const unitsDescription = (readTool.outputSchema.properties.units as { description: string }).description;
+    for (const text of [SI_NOTE, unitsDescription]) expect(text).toContain('has no canonical unit: never infer one');
   });
 });
 

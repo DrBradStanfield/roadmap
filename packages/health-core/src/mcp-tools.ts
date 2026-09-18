@@ -99,8 +99,16 @@ export const OPEN_SOURCE_NOTE =
  * without its unit is a guess, and a guessed unit is a wrong health value. It
  * starts with a space: both servers append it to a sentence.
  */
+/**
+ * The exception AC35 promises in words: a `measurements[]` row whose metricType
+ * the catalogue does not know (an older or foreign writer) has no entry in
+ * `units`, and no unit may be guessed for it.
+ */
+export const OFF_CATALOGUE_NOTE = ' A metric the `units` map does not name has no canonical unit: never infer one.';
+
 export const SI_NOTE =
-  ' Every value is stored in SI canonical units; the `units` map in read_record and get_plan names them. ' +
+  ' Every value is stored in SI canonical units; the `units` map in read_record and get_plan names them.' +
+  OFF_CATALOGUE_NOTE + ' ' +
   'Send a lab result in the unit the lab printed: a test the catalogue knows is converted on the way in, and a ' +
   'spelling it does not know for that test is refused rather than guessed. A test the catalogue does not know ' +
   'keeps the unit it was reported in.';
@@ -1917,7 +1925,7 @@ const LAB_UNIT_NOTE = ' A catalogued labValues[] row is stored in its SI unit, c
 /** Every section `readRecord` returns. `reminderOptIn` is the only optional one. */
 const RECORD_SECTIONS = {
   schemaVersion: { type: 'number' },
-  units: { type: 'object', description: `Every measurements[].value is stored in this SI unit, keyed by metricType.${LAB_UNIT_NOTE}` },
+  units: { type: 'object', description: `Every measurements[].value is stored in this SI unit, keyed by metricType.${OFF_CATALOGUE_NOTE}${LAB_UNIT_NOTE}` },
   meta: OBJECT,
   profile: OBJECT,
   measurements: OBJECT_ARRAY,
