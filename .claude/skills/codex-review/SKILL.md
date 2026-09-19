@@ -7,7 +7,11 @@ description: Independent adversarial review of the current change by a different
 
 A fresh-context reviewer on a different model, the cross-model analogue of
 the fresh-Fable check. It reviews an immutable snapshot in a read-only
-sandbox with no MCP servers and no `.env`; it cannot edit, test, or merge.
+sandbox with no MCP servers, no ChatGPT connectors, and no `.env`; it cannot
+edit, test, or merge. Add `--record` when the change touches what an agent
+reads (MCP tool descriptions, units, plan sections, refusals): the reviewer
+then gets `read_record` and `get_plan` against the live SCRATCH record
+(the microvitamin.com Dropbox account), nothing else.
 
 ## Run
 
@@ -15,6 +19,7 @@ sandbox with no MCP servers and no `.env`; it cannot edit, test, or merge.
 node tools/codex-review.mjs --out "$SCRATCH/codex-review.json"          # uncommitted work
 node tools/codex-review.mjs --commit <sha> --out "$SCRATCH/codex-review.json"
 node tools/codex-review.mjs --range main..HEAD --out "$SCRATCH/codex-review.json"
+node tools/codex-review.mjs --record --out "$SCRATCH/codex-review.json"     # + live scratch record, read-only
 ```
 
 Run it in a Bash subagent or in the background; a review takes minutes. Exit

@@ -378,3 +378,41 @@ confirmed the regression test would fail without the change.
 - Next: run `/codex-review` on the next few real changes alongside the
   fresh-Fable check, count unique findings per model, then decide on the
   cloud auto-review toggle and, if earned, the Brad-only CI gate.
+
+---
+
+# Live record for the reviewer, and an isolation check (Claude, 2026-09-19)
+
+Brad wants the reviewer able to read a real record, using the scratch account
+(the microvitamin.com Dropbox), not his own. Wiring that exposed two facts
+worth recording.
+
+**The `health` server in `~/.codex/config.toml` is not logged in.** When
+Codex's own config loads, the record is reached instead through Codex's
+built-in ChatGPT connector layer (`codex_apps`), which also exposes GitHub
+merge, auto-merge, update-ref and file-write tools, site deploys, and more.
+A reviewer must never have that layer.
+
+**The three review runs on 2026-09-18 had zero MCP tools.** Verified by
+asking a reviewer under the wrapper's posture (`--ignore-user-config`) to
+count its MCP tools: none. The connector layer rides on the user config, so
+ignoring the config drops it. The `apps` feature flag is the switch; the
+wrapper does not need it, but `--disable apps` is the belt to that brace if
+the posture ever changes.
+
+**`--record` mode.** The wrapper now takes `--record`, which adds back exactly
+one server, the direct `mcp.drstanfield.com` MCP, with
+`enabled_tools=["read_record","get_plan"]` (config keys validated under
+`--strict-config`). No write tool is reachable. The prompt tells the reviewer
+the record is a scratch account and that a failed MCP call is evidence about
+auth, not about the change. The output carries a `record` field: `read-only`
+when it worked, or `auth failed` with the login command.
+
+**One Brad action remains.** The direct server needs an interactive OAuth
+login that Claude cannot perform: in the Codex extension's terminal, run
+`codex mcp login health` and choose the microvitamin.com Dropbox account.
+Until then `--record` runs report `auth failed` and review without the
+record, which the dry run on commit 6bec189 confirmed (0.6 min, complete,
+no crash). Which Dropbox account backs the ChatGPT connector's record (18
+measurements, 4 labs, created 2026-09-05 via MCP) is for Brad to confirm;
+Claude did not read anything from it beyond `meta` and row counts.

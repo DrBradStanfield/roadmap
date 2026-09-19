@@ -7,8 +7,11 @@
 //   * reviews an IMMUTABLE snapshot — `git archive <base>` + the patch applied
 //     in a scratch dir, so nothing the author does mid-review moves the target;
 //     .env and every other untracked/ignored file are absent by construction;
-//   * `--ignore-user-config` drops ~/.codex/config.toml, so no MCP servers
-//     (the health record, Chrome) and no user hooks; auth still loads;
+//   * `--ignore-user-config` drops ~/.codex/config.toml AND the ChatGPT
+//     connector layer (`codex_apps`: GitHub merge/auto-merge/update-ref, site
+//     deploys, the health connector) — verified 2026-09-19: zero MCP tools in
+//     this posture; auth still loads. `--record` adds back ONE server, the
+//     direct health MCP, with `enabled_tools` limited to the two reads;
 //   * `--sandbox read-only`, `--ephemeral`, wall-clock timeout;
 //   * output must match a JSON schema; anything else is INCOMPLETE, not a pass.
 //
@@ -18,6 +21,10 @@
 //   node tools/codex-review.mjs --range A..B    # a range (e.g. main..HEAD)
 //   options: --model <id> --timeout-min <n> --out <json> --keep --codex <bin>
 //            --message "<text>"  (uncommitted: the commit message you intend)
+//            --record  give the reviewer READ access (read_record, get_plan only)
+//                      to the live scratch record through mcp.drstanfield.com;
+//                      needs a one-time `codex mcp login health` by Brad, done
+//                      as the scratch (microvitamin.com) Dropbox account
 // Exit: 0 clean, 2 blocking findings, 3 incomplete review, 1 usage error.
 
 import { execFileSync, spawn } from "node:child_process";
@@ -57,6 +64,10 @@ function which(bin) {
 if (!CODEX) { console.error("codex binary not found: pass --codex <path> or set CODEX_BIN"); process.exit(1); }
 
 const MODEL = opt("--model", "gpt-6-astra");
+const RECORD = has("--record");
+const RECORD_ARGS = RECORD
+  ? ["-c", 'mcp_servers.health.url="https://mcp.drstanfield.com/mcp"', "-c", 'mcp_servers.health.enabled_tools=["read_record","get_plan"]']
+  : [];
 const TIMEOUT_MS = Number(opt("--timeout-min", "25")) * 60_000;
 
 // --- 1. Resolve target: base sha + patch ---------------------------------
@@ -160,7 +171,14 @@ restrictions" section does NOT apply to this session-authored change):
 
 ${contract}
 
-Return ONLY the JSON object the schema asks for. Number findings R1, R2, ...
+${RECORD ? `You also have READ access to a live test record (a scratch account, not a
+real person's) through the health MCP server: read_record and get_plan only.
+Use them when the change touches what an agent reads (tool descriptions,
+units, plan sections, refusals) to check the live behaviour against the code
+you are reviewing. A refused or failed MCP call is evidence about auth, not
+about the change; say so in a low finding and carry on.
+
+` : ""}Return ONLY the JSON object the schema asks for. Number findings R1, R2, ...
 Set status to "incomplete" ONLY if you could not review the change at all
 (a file you needed is unreadable, the patch is truncated). A single check you
 cannot verify is a low-severity finding that says so, with status "complete".`;
@@ -169,10 +187,10 @@ cannot verify is a low-severity finding that says so, with status "complete".`;
 const outPath = join(snap, "REVIEW_OUT.json");
 const codexArgs = [
   "exec", "--ignore-user-config", "--ephemeral", "--skip-git-repo-check",
-  "--sandbox", "read-only", "--model", MODEL, "-c", 'model_reasoning_effort="high"',
+  "--sandbox", "read-only", "--model", MODEL, "-c", 'model_reasoning_effort="high"', ...RECORD_ARGS,
   "-C", snap, "--output-schema", schemaPath, "-o", outPath, "--color", "never", "-",
 ];
-console.error(`codex-review: ${label} → snapshot ${snapshotId} (${files.length} files), model ${MODEL}, timeout ${TIMEOUT_MS / 60000} min`);
+console.error(`codex-review: ${label} → snapshot ${snapshotId} (${files.length} files), model ${MODEL}${RECORD ? ", live record (read-only)" : ""}, timeout ${TIMEOUT_MS / 60000} min`);
 const started = Date.now();
 const result = await new Promise((resolve) => {
   const child = spawn(CODEX, codexArgs, { cwd: snap, stdio: ["pipe", "ignore", "pipe"], env: { ...process.env, CI: "1" } });
@@ -200,14 +218,15 @@ if (!has("--commit") && !has("--range")) {
   if (nowHash !== patchHash) drift = `working tree changed during review (${patchHash} → ${nowHash}); this verdict is for the snapshot only`;
 }
 
-const report = { ...review, model: MODEL, label, base, files: files.length, elapsed_min: Number(elapsedMin), drift };
+const mcpAuthFailed = RECORD && /AuthRequired/.test(result.stderr);
+const report = { ...review, model: MODEL, label, base, files: files.length, elapsed_min: Number(elapsedMin), drift, record: RECORD ? (mcpAuthFailed ? "auth failed (run: codex mcp login health)" : "read-only") : null };
 const out = opt("--out");
 if (out) writeFileSync(out, JSON.stringify(report, null, 2));
 
 // --- 5. Print --------------------------------------------------------------
 const blocking = report.findings.filter((f) => f.blocks_merge);
 console.log(`## Codex review (${MODEL}) — ${label}, snapshot ${snapshotId}, ${elapsedMin} min`);
-console.log(`**Status:** ${report.status}${drift ? `  \n**Drift:** ${drift}` : ""}`);
+console.log(`**Status:** ${report.status}${drift ? `  \n**Drift:** ${drift}` : ""}${report.record ? `  \n**Live record:** ${report.record}` : ""}`);
 console.log(`\n${report.summary}\n`);
 for (const f of report.findings) {
   console.log(`### ${f.id} · ${f.severity}${f.blocks_merge ? " · BLOCKS MERGE" : ""} · ${f.file}:${f.line}`);
