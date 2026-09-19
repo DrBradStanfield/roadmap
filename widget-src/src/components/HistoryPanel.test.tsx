@@ -26,6 +26,8 @@ describe('US-06 AC4: rendered medication timeline', () => {
   it('includes later events with one old measurement; same-date changes remain readable and toggle off', async () => {
     const { container, getByLabelText } = render(<HistoryPanel initialMetric="ldl" />);
     await waitFor(() => expect(container.querySelectorAll('li')).toHaveLength(3));
+    // The chart mounts after the rows: on a slow runner the list is there and the chart is not yet (CI 2026-09-18).
+    await waitFor(() => expect(charts.length).toBeGreaterThan(0));
     const chart = charts.at(-1);
     expect(chart.options.scales.x.min).toBeLessThan(Date.parse('2026-09-07T12:00:00Z'));
     expect(chart.options.scales.x.max).toBeGreaterThan(Date.parse('2026-09-21T12:00:00Z'));
