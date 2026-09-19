@@ -107,32 +107,37 @@ duplicates.
   Claude Code CLI sit outside the closed chatgpt/claude enum. Until the enum
   widens and the ChatGPT app verdict lands, per-assistant adoption is
   unreadable and any MCP trend line starts at W37, not W36.
-- **2026-09-19 [fleet]** The whole weekend fleet skipped 2026-09-12 (no
-  product-health W37, no chat-health W37, no partial commit, no session
-  branch) — a missed run is invisible from inside the repo. Cost: the Drive
-  403 blank-widget regression (REMIX-6G, 09-10 → 09-17) went a week without
-  this loop's read. Recovery convention used by the W38 run: compute BOTH
-  windows, append the missed week's Supabase/Sentry rows marked
-  "backfilled", derive what must be derived and say so, and name the Clarity
-  sample (3-day window) as lost. Ask for a fleet-level "run missed" tripwire
-  (charter proposal, W38 retro).
-- **2026-09-19 [instrumentation]** A success-only counter reads a broken door
-  as "nobody came": W37 logged 0 `mcp_connect` in the very week OpenAI's
-  reviewer bounced off the OAuth flow (v1.0.0 rejected 09-15), because
-  nothing counted a refusal or a `/token` failure until AC34 shipped 09-17
-  (refused 3, `token-dead-code` 1 in their first three days). Every
-  success-shaped event needs its failure sibling from birth; a zero on a
-  success event with no failure counter is unreadable, not reassuring
-  (cousin of the 08-10 reminder-optin zero).
+- **2026-09-19 [fleet]** The cloud fleet went silent 2026-09-11 → 09-16: no
+  product-health or chat-health W37, no sentry-fix report between 09-10 and
+  09-17, and sentry-fix's 09-17 report records five routines FAILED on
+  09-11/09-12. From inside the repo a missed run leaves no trace — a report
+  that is not there is easy not to notice. Cost: the Drive 403 blank-widget
+  regression (REMIX-6G, 09-10 → 09-17) went a week without this loop's read.
+  Recovery convention (W38): compute BOTH windows, append the missed week's
+  rows marked "backfilled", derive what must be derived and say so, and name
+  the Clarity sample (3-day window) as lost. A shallow session clone's graft
+  root shows up in `git log -- <path>` for EVERY path — cite workflow commits
+  from the GitHub API, not from the graft.
+- **2026-09-19 [instrumentation]** A success-only counter cannot tell "nobody
+  came" from "everyone bounced": OpenAI's reviewer failed our OAuth flow some
+  time 09-02 → 09-15 (rejected 09-15) and no window shows it — `mcp_connect`
+  was the only counter until AC34 added refused/`token-*` events on 09-17
+  (refused 3, `token-dead-code` 1 in their first three days). Give every
+  success-shaped event its failure sibling from birth; a zero on a success
+  event with no failure counter is unreadable, not reassuring (cousin of the
+  08-10 reminder-optin zero).
 - **2026-09-19 [tooling]** `reminder_optin_v2.last_sent` is a jsonb map
   `{screening-type: YYYY-MM-DD}`, not a timestamp — cross-check `reminder_sent`
   by counting nested dates inside the window (W37: 2 = 2, W38: 0 = 0), never
   by a range filter on the column (PostgREST answers 22P02). Server-side
   `product_events` carry the nil-UUID `visitor_id`, so burst detection groups
-  on `metadata.client`.
-- **2026-09-19 [usage]** ChatGPT's connect flow renders our authorize page
-  ~3 times within a second, so a `mcp_authorize_shown` burst is client
-  behaviour, not a scan: on 09-17 two 3-row chatgpt bursts sat inside Brad's
-  own re-test (consent followed the first within 60 s; the second, six
-  minutes later, had none). Read the charter's probe rule with its
-  consent-follow clause and the timing context, or Brad's tests count as attacks.
+  on `metadata.client`. The unsubscribe route hard-deletes the opted-out row,
+  so `reminder_optin_total` can fall by one per optout.
+- **2026-09-19 [usage]** An `mcp_authorize_shown` burst marks the REFUSAL
+  path, not a scan and not a normal connect: on 09-17 two 4-row bursts
+  (02:18, 02:24, client chatgpt) were each followed ~1 s later by a
+  `mcp_authorize_refused reason=resource`, while the three later ChatGPT flows
+  rendered the page once or twice and consented. Both bursts sat inside Brad's
+  own re-test (AC34 commits 01:04Z/02:38Z, his OpenAI reply 02:20Z). Read the
+  charter's probe rule with the refusal and consent rows beside it, or Brad's
+  tests count as attacks.
