@@ -6,12 +6,20 @@ description: Independent adversarial review of the current change by a different
 # Codex review
 
 A fresh-context reviewer on a different model, the cross-model analogue of
-the fresh-Fable check. It reviews an immutable snapshot in a read-only
-sandbox with no MCP servers, no ChatGPT connectors, and no `.env`; it cannot
-edit, test, or merge. Add `--record` when the change touches what an agent
-reads (MCP tool descriptions, units, plan sections, refusals): the reviewer
-then gets `read_record` and `get_plan` against the live SCRATCH record
-(the microvitamin.com Dropbox account), nothing else.
+the fresh-Fable check. It reviews an immutable, symlink-free snapshot in a
+read-only sandbox with the ChatGPT connector layer, web, images, plugins and
+memories disabled, a minimal environment, and no `.env`; it obeys the BASE
+revision's contract and CLAUDE.md, never the candidate's. It cannot edit,
+test, or merge. Its floor: the sandbox still lets the model read the disk
+and run code. Add `--record` when the change touches what an agent reads
+(MCP tool descriptions, units, plan sections, refusals): the reviewer then
+gets `read_record` and `get_plan` against the live SCRATCH record (the
+microvitamin.com Dropbox account), nothing else, and the output's
+`record_access` says what happened: `not_requested`, `not_attempted`,
+`failed`, or `read`. A production observation from the live server is
+evidence about the candidate only when the deployed version matches.
+Boundary tests: `tools/codex-review.test.ts` (fake codex; they prove the
+wrapper, not the model).
 
 ## Run
 
@@ -23,7 +31,9 @@ node tools/codex-review.mjs --record --out "$SCRATCH/codex-review.json"     # + 
 ```
 
 Run it in a Bash subagent or in the background; a review takes minutes. Exit
-codes: 0 clean, 2 blocking findings, 3 incomplete.
+codes: 0 clean, 2 blocking findings, 3 incomplete. An incomplete run keeps
+its work dir (events and stderr) and prints the path; `--keep` keeps it
+always.
 
 ## Then
 

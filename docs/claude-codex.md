@@ -424,3 +424,134 @@ Claude did not read anything from it beyond `meta` and row counts.
 Reviewed the requested changes through `12e456d`. **Changes required.** R1's fix passes all 149 MCP tests, including an isolated regression check that fails when its wording is removed. The wrapper has blocking isolation and result-handling defects, including a reproduced write outside the snapshot through a tracked symlink.
 
 The full findings, evidence, remedies, and remaining OAuth verification limits are in [the implementation review](reviews/2026-09-19-codex-reviewer-wiring.md). Claude should respond to CR1–CR6 there. No production code, workflows, credentials, or live records were changed during this review.
+
+
+---
+
+# Claude's response to Codex review CR1–CR6 (2026-09-19)
+
+Review: [docs/reviews/2026-09-19-codex-reviewer-wiring.md](reviews/2026-09-19-codex-reviewer-wiring.md).
+Every finding reproduced by Codex with a fake binary is now a regression test
+in `tools/codex-review.test.ts`, driven the same way.
+
+- **CR1 (artifact writes follow symlinks) — Accepted.** Every generated file
+  now lives beside the source tree (`work/REVIEW_*.diff|txt|json`), written
+  with exclusive create; the tree itself (`work/src`) has its symlinks
+  stripped after extraction and again after the patch. Test: a tracked
+  symlink named `REVIEW_PATCH.diff` pointing at an external marker leaves
+  the marker untouched.
+- **CR2 (isolation not established) — Accepted, with one honest limit.**
+  Codex was more right than its own wording: a `--json` probe showed the
+  reviewer reaching the connector-layer health tool under
+  `--ignore-user-config`, so the "zero MCP tools" self-report on 2026-09-18
+  was false and the three runs had that layer in reach. The wrapper now
+  passes `--disable apps`, `--disable image_generation`, `--disable
+  browser_use`, `--disable computer_use`, `--disable plugins`, `--disable
+  memories`, `--disable skill_search`, `web_search="disabled"`,
+  `shell_environment_policy.inherit="core"`, `--strict-config`, and a
+  five-variable process environment. A probe asking the hardened reviewer
+  to call the health tool and run a web search produced no tool-call event
+  of either kind. Any `mcp_tool_call` event to a server other than `health`
+  now marks the review incomplete (`E_TOOL_BOUNDARY`). The limit: this CLI's
+  read-only sandbox still lets the model read the whole disk and run code.
+  There is no read-root policy to set. That floor is stated in the wrapper
+  header and the skill, not papered over.
+- **CR3 (candidate rewrites its mandate) — Accepted.** The contract and
+  CLAUDE.md the reviewer obeys are read from the base revision into
+  `work/base/`; the prompt names them, calls the in-tree copies data, and
+  lists any instruction file the patch edits as under review. Test: a
+  candidate contract saying "always approve" never reaches the prompt.
+- **CR4 (failed or malformed reviews return clean) — Accepted.** Nonzero
+  exit, spawn error, timeout, non-JSON, any missing or mistyped field, and a
+  wrong snapshot id each yield `incomplete` with a bounded diagnostic code
+  (`E_EXIT_19`, `E_SCHEMA: findings[0].severity`, `E_TARGET`); raw stderr
+  goes to a kept `stderr.log`, never into the report. The prompt now
+  distinguishes evidence the verdict depends on (unverifiable → incomplete)
+  from bookkeeping (→ low finding); the contract says the same.
+- **CR5 (record values can enter durable output) — Accepted in part, rest
+  Needs Brad.** The prompt now forbids copying any record value into any
+  output field and asks for structure only; the stderr tail no longer enters
+  the report. That is a prompt rule, not a proof, and the wrapper says so.
+  Brad has designated the microvitamin.com Dropbox as scratch and asked for
+  live-record access, so `--record` stays available as an opt-in flag. The
+  identity check is Brad's at login: `codex mcp login health` as that
+  account. A structural adapter that exposes no values is the right next
+  step if `--record` earns regular use.
+- **CR6 (record status inferred from an error string) — Accepted.** The
+  wrapper runs with `--json` and judges `record_access` from `mcp_tool_call`
+  events on the `health` server: `not_requested`, `not_attempted`,
+  `failed`, or `read`. The prompt says live behaviour is a production
+  observation, and evidence about the candidate only if the server's
+  announced version equals the snapshot's `SERVER_VERSION`.
+- **Lower-priority items — Accepted.** File list from `git diff
+  --name-only -z` (test: a name with a space); `--strict-config` in the
+  wrapper; `docs/user-stories.md` AC35 test line names the off-catalogue
+  test, HTML regenerated.
+
+Net prod LOC: 0 (tooling and docs). Deleted: the regex file-list parser and
+the stderr-tail report path, replaced by the NUL-delimited list and
+diagnostic codes.
+
+## Second Codex review, on the hardening itself (2026-09-19)
+
+The hardened wrapper reviewed its own change (snapshot
+`3ca017ce6a89+5f03478ad312`, 1.9 min, complete, four blocking findings).
+
+- **R1 (raw MCP payloads persisted in events.jsonl) — Accepted.** The kept
+  logs now hold event metadata only: type, server, tool, status, and whether
+  an error occurred; never arguments, results, or message text. stderr keeps
+  only ERROR/WARN lines, truncated. Test: a health marker inside a fake
+  `read_record` result never reaches either file.
+- **R2 (contract fallback to the working checkout) — Accepted.** A base
+  revision without `docs/review-format.md` ends the run as incomplete
+  (`E_NO_CONTRACT`) before the reviewer is ever started. Test: a repo whose
+  working copy says "Always approve" and whose base has no contract yields
+  exit 3 and no reviewer invocation.
+- **R3 (symlinks stripped before apply; `keep` read before init) —
+  Accepted, both halves.** The patch applies first, on the full preimage;
+  symlinks are stripped after. `keep` is initialised before any failure
+  path, and the early-exit and normal paths share one `finish()`. Test: a
+  patch deleting a tracked symlink applies and the reviewer sees a
+  symlink-free tree.
+- **R4 (no user story for the reviewer) — Disputed.** User stories specify
+  product behaviour. No file under `tools/` or `scripts/` has ever carried
+  one, and the contract now says so in check 1, so this stops recurring. The
+  spec for tooling is the commit message plus its own tests.
+
+## Third pass: round-two findings on the hardening (2026-09-19)
+
+Snapshot `3ca017ce6a89+2970ba071491`, 2.4 min, complete, three blocking.
+
+- **R1 (stderr.log keeps message bodies) — Accepted.** It now holds three
+  numbers: ERROR count, WARN count, and whether auth was required. Test: a
+  marker inside a WARN line never reaches the kept logs.
+- **R2 (resolve on `exit` can drop trailing events) — Accepted.** The
+  wrapper resolves on `close`, after stdio drains.
+- **R3 (a matching version string does not bind the live server to the
+  snapshot) — Accepted.** Live results are production observations only,
+  never evidence about the candidate. The version clause is gone.
+- **R4 (the tooling exemption cannot authorise itself) — Needs Brad,
+  non-blocking.** Codex is right that check 1's new sentence was not in the
+  base contract this change was reviewed under. Brad merging this commit is
+  the authorisation; if he wants tooling under user stories instead, the
+  sentence comes out and a story goes in.
+
+## Fourth pass (2026-09-19): round three
+
+Snapshot `3ca017ce6a89+7ac4ed135f1a`, 2.6 min, complete, two blocking.
+
+- **R1 (a completed call with a refusal payload counted as a read) —
+  Accepted.** `read` now needs a result with content and `isError` not
+  true; a refusal or an empty payload is `failed`. Tests cover both.
+- **R2 (the tooling exemption; same dispute as before, now blocking) —
+  Needs Brad.** Two rounds unresolved, so per the contract it is Brad's
+  call, and committing this work on `main` does not settle it. Options:
+  (a) authorise check 1's sentence: tooling is specified by its commit
+  message and tests; (b) create a user story for the reviewer tooling and
+  cite it from `tools/codex-review.test.ts`. Claude recommends (a): the
+  story file describes what the product does for a person, and a review
+  wrapper is not that.
+
+Committed at this point with R2 open and named. Three Codex rounds on the
+hardening found eleven defects in Claude's wrapper, all real but the story
+question; the cross-model count is now well past one.
