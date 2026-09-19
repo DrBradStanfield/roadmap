@@ -39,3 +39,21 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W36,router_cache_hit_rate_pct,31,27,15,chat_match_events,13/42
 2026-W36,yt_reply_median_words,70,67,4,chat_messages,"n=27 incl 3 SKIP_NO_REPLY sentinel rows stored as 1-word assistant messages; excluding sentinels median 72.5 (n=24); cap ≤90 holding"
 2026-W36,yt_reply_gt90w_count_7d,2,4,-50,chat_messages,"2/27 (7.4%), max 123; >5-sentence breaches 0"
+2026-W37,empty_handle_turns,23,17,35,chat_match_events,"backfilled by the W38 run (no W37 run fired: fleet silent 09-11 → 09-16); window 2026-09-05T22:25Z → 09-12T22:25Z; split shopify 3 / youtube 20 / discord 0; total match events 158 = 110 skipped + 48 ran; 14 of 23 on one cancer video (09-10/11)"
+2026-W37,classifier_catchable_share_pct,0,0,0,manual categorisation,"0/23 — third consecutive zero; classifier skipped 110 upstream (GREETING 97 / PRODUCT 10 / ACCOUNT 3); 3 of the 23 carried classification=ERROR (09-11 brownout fall-through, fail-open by design)"
+2026-W37,router_errors_7d,6,0,,chat_match_events,"all youtube, all 2026-09-11 04:45–07:15Z: 5 timeouts at ~11.0s + 1 malformed JSON; classifier also returned ERROR on 5 rows in the same 90 min — one API brownout, recovered by 06:45Z; fallbacks 0"
+2026-W37,router_latency_median_ms,1367,1494,-9,chat_match_events,"n=48; excluding the 6 error rows: median 1318 (n=42)"
+2026-W37,router_latency_p90_ms,11006,1920,473,chat_match_events,"the 5 timeout rows ARE the p90; excluding the 6 error rows p90 = 2528 (n=42)"
+2026-W37,router_cache_hit_rate_pct,21,31,-32,chat_match_events,"10/48; every hit was within 300 s of the previous router call, no hit beyond it (W36–W38 alike) — this metric measures traffic burstiness, not the router"
+2026-W37,yt_reply_median_words,66,72.5,-9,chat_messages,"n=25 excluding 20 SKIP_NO_REPLY sentinels (45 assistant rows; 11/21 sentinels on 09-11, the hostile cancer-video thread); incl. sentinels median 52; prior = W36 sentinel-excluded"
+2026-W37,yt_reply_gt90w_count_7d,2,2,0,chat_messages,"2/25 (8%), max 111; >5-sentence breaches 1"
+2026-W38,empty_handle_turns,6,23,-74,chat_match_events,"window 2026-09-12T22:25Z → 09-19T22:25Z; split shopify 1 / youtube 5 / discord 0; total match events 63 = 44 skipped + 19 ran (lowest week on record); W36 slice re-measured 17 = published"
+2026-W38,classifier_catchable_share_pct,0,0,0,manual categorisation,"0/6 — fourth consecutive zero; classifier skipped 44 upstream (GREETING 33 / PRODUCT 7 / ACCOUNT 4)"
+2026-W38,router_errors_7d,0,6,-100,chat_match_events,clean week; fallbacks 0
+2026-W38,router_latency_median_ms,1243,1367,-9,chat_match_events,n=19 (small n)
+2026-W38,router_latency_p90_ms,1639,11006,-85,chat_match_events,"n=19; vs W37 excluding error rows (2528): -35%"
+2026-W38,router_cache_hit_rate_pct,11,21,-48,chat_match_events,"2/19; both hits within 300 s of the previous call — burstiness metric (see W37 note)"
+2026-W38,yt_reply_median_words,70,66,6,chat_messages,"n=11 excluding 3 sentinels (14 assistant rows); incl. sentinels 61; cap ≤90 holding"
+2026-W38,yt_reply_gt90w_count_7d,0,2,-100,chat_messages,"0/11, max 88; >5-sentence breaches 0"
+2026-W37,routing_miss_share_pct,17.4,35.3,-51,manual categorisation,"4/23: 2 consistent ∅ 3/3 at baseline (creatine-powder headaches: product-context side-effect shape; 'how is my liver health': own-labs interpretation shape) + 2 stochastic (omega-3 study-review and omega-3+blood-thinners both pass 3/3 at baseline); all 4 fixtures added (319 → 323)"
+2026-W38,routing_miss_share_pct,0,17.4,-100,manual categorisation,"0/6: 3 opinion, 2 in-context, 1 genuine gap (klotho for cognition — 0 documents mention klotho)"

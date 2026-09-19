@@ -139,3 +139,22 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   literal `SKIP_NO_REPLY` 1-word assistant message (3 rows in W36) —
   exclude these sentinels when computing reply-length stats, or the median
   reads low. Proposal filed W36 to stop persisting the sentinel as content.
+  Confirmed again W37: 20/45 assistant rows were sentinels (11/21 on one
+  hostile video thread); median 66 words excluding them, 52 including.
+- **2026-09-19 [latency]** The cache-hit rate is an inter-arrival metric, not
+  a router property: every hit in W36–W38 fell within 300 s of the previous
+  router call (13/13, 10/13, 2/2) and none beyond it (0/28, 0/34, 0/16) —
+  the 5-minute prompt-cache TTL. Its rise and fall is traffic burstiness;
+  W33's "mix-shift" and three later "watch" notes were chasing that.
+- **2026-09-19 [retrieval]** Index composition flips residue fixtures: two
+  unrelated blog entries added (1022 → 1024) turned the natto should-I-stop
+  and K2-variables known-fails into 3/3 passes; `--index` with the 09-10 file
+  fails them again in the same minutes. A known-fail that passes after a
+  blog publish is not fixed, and a prompt fix is proven only on the full
+  suite. Extends the W36 "summary edits shift boundaries index-wide" rule to
+  additions.
+- **2026-09-19 [loop]** Production brownout signature (09-11 04:45–07:15Z):
+  5 router timeouts at ~11.0 s, 5 classifier `ERROR` labels and 1 malformed
+  JSON in 90 min, all one YouTube thread, recovered by 06:45Z. The timeouts
+  ARE the week's p90 — report p90 with and without error rows. Classifier
+  ERROR fails open to the router by design (a hostile comment reached it).
