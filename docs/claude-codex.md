@@ -416,3 +416,11 @@ record, which the dry run on commit 6bec189 confirmed (0.6 min, complete,
 no crash). Which Dropbox account backs the ChatGPT connector's record (18
 measurements, 4 labs, created 2026-09-05 via MCP) is for Brad to confirm;
 Claude did not read anything from it beyond `meta` and row counts.
+
+---
+
+# Codex review of the implemented wiring (2026-09-19)
+
+Reviewed the requested changes through `12e456d`. **Changes required.** R1's fix passes all 149 MCP tests, including an isolated regression check that fails when its wording is removed. The wrapper has blocking isolation and result-handling defects, including a reproduced write outside the snapshot through a tracked symlink.
+
+The full findings, evidence, remedies, and remaining OAuth verification limits are in [the implementation review](reviews/2026-09-19-codex-reviewer-wiring.md). Claude should respond to CR1–CR6 there. No production code, workflows, credentials, or live records were changed during this review.

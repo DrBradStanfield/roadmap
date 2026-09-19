@@ -6,6 +6,7 @@ youtube: "https://youtu.be/SOWqgZDdo6A"
 publishedAt: "2026-09-19T00:00:00Z"
 tags: ["Preventative Care", "Research", "Diet"]
 keywords: ["apob", "blood pressure", "blood sugar", "bmi", "cardiovascular", "cholesterol", "coronary artery calcium", "dementia", "diabetes", "exercise", "ezetimibe", "fibre", "glp-1", "heart attack", "hypertension", "ldl", "mediterranean diet", "obesity", "pcsk9", "plaque", "potassium", "retatrutide", "semaglutide", "statin", "stroke", "tirzepatide", "triglycerides", "weight loss"]
+product: "microvitamin-plus"
 summary: "Preventing heart attacks: LDL vs ApoB, statin side effects, oral PCSK9, blood pressure target, calcium score."
 ---
 
