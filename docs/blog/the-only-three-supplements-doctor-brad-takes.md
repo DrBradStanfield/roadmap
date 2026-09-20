@@ -7,7 +7,7 @@ publishedAt: "2025-07-30T20:38:06Z"
 tags: ["Supplements"]
 keywords: ["alzheimer","antioxidant","blood pressure","blood sugar","bone density","boron","brain health","cardiovascular","cholesterol","cognitive","collagen","creatine","dementia","dha","epa","exercise","glycine","hba1c","hormone","hyaluronic acid","inflammation","ldl","lifespan","magnesium","melatonin","muscle","omega-3","prostate","psyllium","selenium","skin","sleep","taurine","tmg","triglycerides","vitamin a","vitamin b6","vitamin d","vitamin e","vitamin k2","wrinkles","zinc"]
 product: "microvitamin-plus"
-summary: "Dr Brad’s supplement stack post: he takes only omega-3 (~1g), MicroVitamin multivitamin, and a sleep supplement (melatonin 300mcg, magnesium glycinate, glycine). Covers dementia risk, atrial fibrillation, B vitamin-omega-3 synergy, vitamin D dosing, creatine, collagen, psyllium, taurine."
+summary: "Dr Brad’s supplement stack post: he takes only omega-3 (~1g), MicroVitamin multivitamin, and a sleep supplement (melatonin 0.8mg sustained-release, magnesium glycinate, glycine). Covers dementia risk, atrial fibrillation, B vitamin-omega-3 synergy, vitamin D dosing, creatine, collagen, psyllium, taurine."
 ---
 
 Just because I take a supplement does **NOT** in any way mean that you should as well.
@@ -223,7 +223,7 @@ So what is the ideal dose? Unfortunately, many melatonin supplements are anythin
 
 The body produces between 10 to 80 micrograms of melatonin at night \[32\]. About 15% of the melatonin in a supplement is absorbed by the body \[33\].
 
-So Sleep includes just 300 micrograms, enough to match levels naturally produced by the body. For melatonin to work properly, it’s crucial to take it about 2 hours before wanting to fall asleep, so that it has time to shift the sleep-wake cycle.
+So Sleep includes just 0.8 mg, in a sustained-release form that releases gradually rather than all at once. For melatonin to work properly, it’s crucial to take it about 3 hours before wanting to fall asleep, so that it has time to shift the sleep-wake cycle.
 
 The second ingredient is magnesium, in the form of magnesium glycinate. A meta-analysis from last year examined randomized controlled trials of magnesium supplements to improve sleep. Five out of the 8 included trials reported improvements in at least one aspect of sleep \[34\].
 

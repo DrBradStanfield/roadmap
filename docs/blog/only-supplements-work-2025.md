@@ -7,7 +7,7 @@ publishedAt: "2024-11-19T03:13:05Z"
 tags: ["Supplements"]
 keywords: ["aging","alzheimer","antioxidant","blood pressure","blood sugar","brain health","cardiovascular","cholesterol","cognitive","collagen","creatine","dementia","dha","epa","estrogen","exercise","fiber","glycine","heart attack","hyaluronic acid","magnesium","melatonin","muscle","omega-3","peptide","psyllium","skin","sleep","testosterone","tmg","uric acid","vitamin a","vitamin b3","vitamin k2","wrinkles","zinc"]
 product: "sleep"
-summary: "Dr Brad's supplement stack post: creatine 5g, protein 1.6g/kg, TMG 500mg, multivitamin, omega-3 1g, psyllium husk, collagen 10-15g, hyaluronic acid 200mg, melatonin 300mcg, glycine+NAC for glutathione. Covers muscle, brain, heart, skin, sleep."
+summary: "Dr Brad's supplement stack post: creatine 5g, protein 1.6g/kg, TMG 500mg, multivitamin, omega-3 1g, psyllium husk, collagen 10-15g, hyaluronic acid 200mg, melatonin 0.8mg sustained-release, glycine+NAC for glutathione. Covers muscle, brain, heart, skin, sleep."
 ---
 
 This post summarizes the supplements I take. We'll start with the three supplements that have strong evidence backing their benefits for improving muscle performance. After that, we'll delve into a supplement I take for memory and cognitive function.
@@ -162,7 +162,7 @@ But the big issue is dose and timing. Melatonin helps to regulate our sleep-wake
 
 There's also the issue of dose. The body creates up to 80 micrograms of melatonin an hour while we sleep, which equates to 640 mcg for an 8-hour sleep. But many melatonin supplements have doses much, much higher than that. We don't have long-term safety data about megadosing melatonin supplements.
 
-Personally, I take **300 mcg** about 2 hours before wanting to fall asleep.
+Personally, I take **0.8 mg of sustained-release melatonin** about 3 hours before wanting to fall asleep.
 
 Melatonin doesn't only have effects on sleep, but there are also antioxidant and anti-inflammatory effects. This is especially important to consider with respect to aging \[31\].
 

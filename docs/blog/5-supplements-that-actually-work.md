@@ -7,7 +7,7 @@ publishedAt: "2025-10-05T20:31:48Z"
 tags: ["Supplements"]
 keywords: ["aging","alzheimer","antioxidant","betaine","blood pressure","blood sugar","bmi","bone density","brain health","calcium","cardiovascular","cholesterol","cognitive","collagen","creatine","dementia","dha","diabetes","epa","fiber","folic acid","gut health","hyaluronic acid","inflammation","ldl","lifespan","longevity","magnesium","melatonin","muscle","obesity","omega-3","psyllium","resistance training","skin","sleep","stroke","taurine","testosterone","tmg","vitamin d","vitamin k2","weight loss"]
 product: "microvitamin"
-summary: "Dr Brad's top 5 supplement picks for healthy aging: psyllium husk (fibre, LDL, blood sugar), multivitamin/mineral (cognition, magnesium), omega-3 ~1g/day (heart, brain), creatine (muscle, memory in older adults), TMG (homocysteine, Alzheimer's risk). Bonus: melatonin 300mcg."
+summary: "Dr Brad's top 5 supplement picks for healthy aging: psyllium husk (fibre, LDL, blood sugar), multivitamin/mineral (cognition, magnesium), omega-3 ~1g/day (heart, brain), creatine (muscle, memory in older adults), TMG (homocysteine, Alzheimer's risk). Bonus: melatonin 0.8mg sustained-release."
 ---
 
 What are the best supplements to maximize our chances of living a long, healthy life? In this article, I’ll walk you through my top five picks, grounded in research rather than hype or speculation.
@@ -201,7 +201,7 @@ Melatonin supplementation can:
 
 Most supplements are overdosed. The body naturally makes 10–80 micrograms of melatonin at night, and only 15% of a supplement is absorbed \[57\]\[58\].
 
-I use 300 micrograms, taken 2 hours before bedtime, to align with the body’s natural rhythm.
+I use 0.8 mg in a sustained-release form, taken about 3 hours before bedtime, to align with the body’s natural rhythm.
 
 ## **Final Thoughts**
 

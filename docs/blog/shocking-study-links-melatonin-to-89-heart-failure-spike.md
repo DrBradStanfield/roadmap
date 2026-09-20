@@ -157,7 +157,7 @@ So if you take **5 mg** (that’s **5,000 μg**) and absorb **15%**, that’s **
 
 That’s why personally, **I** **wouldn’t take more than 1 mg per night**.
 
-I do take melatonin regularly as part of a sleep supplement, but it includes just **0.3 mg (or 300 μg)**. Given bioavailability, that **dose** **closely mimics the natural production range** — and it’s far lower than most over-the-counter products.
+I do take melatonin regularly as part of a sleep supplement, but it includes just **0.8 mg, in a sustained-release form**. Only about 15% of oral melatonin is absorbed, so that works out to roughly 120 micrograms reaching the bloodstream, spread across the night — a few times what the body makes itself, and about a quarter of what a typical 3 mg capsule delivers.
 
 But just because I take a supplement, that certainly doesn’t mean you also need to.
 

@@ -2397,7 +2397,7 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/supplements-strongest-evidence",
     "youtube": "https://www.youtube.com/watch?v=HQeIhuROnpM",
     "product": "microvitamin",
-    "summary": "Dr Brad's top 5 supplement picks for healthy aging: psyllium husk (fibre, LDL, blood sugar), multivitamin/mineral (cognition, magnesium), omega-3 ~1g/day (heart, brain), creatine (muscle, memory in older adults), TMG (homocysteine, Alzheimer's risk). Bonus: melatonin 300mcg."
+    "summary": "Dr Brad's top 5 supplement picks for healthy aging: psyllium husk (fibre, LDL, blood sugar), multivitamin/mineral (cognition, magnesium), omega-3 ~1g/day (heart, brain), creatine (muscle, memory in older adults), TMG (homocysteine, Alzheimer's risk). Bonus: melatonin 0.8mg sustained-release."
   },
   {
     "title": "SAMe: Benefits, Forms, Dosing, and Side Effects",
@@ -2810,7 +2810,7 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/glycine-sleep-quality",
     "youtube": "https://www.youtube.com/watch?v=YHaqsps24tk",
     "product": "sleep",
-    "summary": "Dr Brad's glycine post: 3g glycine before bed improves sleep quality and reduces next-day fatigue without disrupting sleep architecture. Covers dosage, melatonin 300mcg, magnesium, morning light, and exercise for sleep."
+    "summary": "Dr Brad's glycine post: 3g glycine before bed improves sleep quality and reduces next-day fatigue without disrupting sleep architecture. Covers dosage, melatonin 0.8mg sustained-release, magnesium, morning light, and exercise for sleep."
   },
   {
     "title": "Harvard Says THIS Is the Healthiest Way to Eat",
@@ -2943,7 +2943,7 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/evidence-based-supplement-stack",
     "youtube": "https://www.youtube.com/watch?v=iuWUL0_t5B0",
     "product": "microvitamin-plus",
-    "summary": "Dr Brad’s supplement stack post: he takes only omega-3 (~1g), MicroVitamin multivitamin, and a sleep supplement (melatonin 300mcg, magnesium glycinate, glycine). Covers dementia risk, atrial fibrillation, B vitamin-omega-3 synergy, vitamin D dosing, creatine, collagen, psyllium, taurine."
+    "summary": "Dr Brad’s supplement stack post: he takes only omega-3 (~1g), MicroVitamin multivitamin, and a sleep supplement (melatonin 0.8mg sustained-release, magnesium glycinate, glycine). Covers dementia risk, atrial fibrillation, B vitamin-omega-3 synergy, vitamin D dosing, creatine, collagen, psyllium, taurine."
   },
   {
     "title": "The “Longevity” Craze is Actually Making You Sicker",
@@ -8478,7 +8478,7 @@
     "commerceUrl": "https://microvitamin.com/blogs/articles/evidence-based-supplements-guide",
     "youtube": "https://www.youtube.com/watch?v=uwnXLsAL9wM",
     "product": "sleep",
-    "summary": "Dr Brad's supplement stack post: creatine 5g, protein 1.6g/kg, TMG 500mg, multivitamin, omega-3 1g, psyllium husk, collagen 10-15g, hyaluronic acid 200mg, melatonin 300mcg, glycine+NAC for glutathione. Covers muscle, brain, heart, skin, sleep."
+    "summary": "Dr Brad's supplement stack post: creatine 5g, protein 1.6g/kg, TMG 500mg, multivitamin, omega-3 1g, psyllium husk, collagen 10-15g, hyaluronic acid 200mg, melatonin 0.8mg sustained-release, glycine+NAC for glutathione. Covers muscle, brain, heart, skin, sleep."
   },
   {
     "title": "What Types of Food Are Proven to Trigger Gout?",
@@ -9443,7 +9443,7 @@
     "publishedAt": "2024-07-26T20:58:47Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/sleep-schedule-evidence-based",
     "youtube": "https://www.youtube.com/watch?v=UXBcWPlZ_qA",
-    "summary": "Dr Brad's sleep schedule post: consistent wake time, morning sunlight, caffeine cutoff 3h after waking, light early dinners, no naps, and low-dose melatonin (under 300mcg) improve sleep quality. Covers insomnia, circadian rhythm, blood pressure, blood sugar, obesity, anxiety, and pre-bed routines."
+    "summary": "Dr Brad's sleep schedule post: consistent wake time, morning sunlight, caffeine cutoff 3h after waking, light early dinners, no naps, and low-dose low-dose melatonin improve sleep quality. Covers insomnia, circadian rhythm, blood pressure, blood sugar, obesity, anxiety, and pre-bed routines."
   },
   {
     "title": "Which Medications Can Potentially Improve Your Longevity?",
@@ -10348,7 +10348,7 @@
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "Sleep and insomnia — can't sleep, trouble staying asleep, sleep hygiene, CBT-I as first-line, melatonin dosing, magnesium glycinate, glycine. Covers ICSD-3-TR diagnosis, CBT-I techniques, pharmacotherapy drug classes (DORAs, Z-drugs, doxepin, trazodone) with dosing tables, and supplement evidence. Brad's key divergence: 300–800mcg melatonin vs typical 3–5mg OTC. Compiled from UpToDate 2025–2026 insomnia articles, Auckland HealthPathways, and Brad's clinical framework."
+    "summary": "Sleep and insomnia — can't sleep, trouble staying asleep, sleep hygiene, CBT-I as first-line, melatonin dosing, magnesium glycinate, glycine. Covers ICSD-3-TR diagnosis, CBT-I techniques, pharmacotherapy drug classes (DORAs, Z-drugs, doxepin, trazodone) with dosing tables, and supplement evidence. Brad's key divergence: 0.8mg sustained-release melatonin vs typical 3–5mg immediate-release OTC. Compiled from UpToDate 2025–2026 insomnia articles, Auckland HealthPathways, and Brad's clinical framework."
   },
   {
     "title": "Pathway: Abdominal Aortic Aneurysm",

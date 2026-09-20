@@ -111,7 +111,7 @@ Let me put this dose into perspective. The body produces between 10 to 80 microg
 
 So think of that 5 mg dose. That would be 5,000 micrograms. And if 15% gets absorbed, that's 750 micrograms. That's 10 times the amount our bodies naturally produce or more. Personally, I wouldn't take more than 1 mg per night.
 
-In fact, I do take melatonin regularly as part of my [Sleep supplement](https://drstanfield.com/products/sleep). But it includes just 0.3 mg (or 300 micrograms).
+In fact, I do take melatonin regularly as part of my [Sleep supplement](https://drstanfield.com/products/sleep). But it includes just 0.8 mg, in a sustained-release form — a fraction of the 3 to 5 mg most over-the-counter products use.
 
 Given the typical bioavailability, that dose sits right in the middle of the range normally produced by the body. And it's a mile away from the doses seen in some supplements. But just because I take a supplement, that certainly doesn't mean you also need to.
 

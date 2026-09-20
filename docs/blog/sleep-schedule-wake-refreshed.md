@@ -6,7 +6,7 @@ youtube: "https://www.youtube.com/watch?v=UXBcWPlZ_qA"
 publishedAt: "2024-07-26T20:58:47Z"
 tags: ["General Health"]
 keywords: ["blood pressure","blood sugar","cardiovascular","circadian","diabetes","exercise","insomnia","insulin resistance","melatonin","obesity","skin","sleep","stroke"]
-summary: "Dr Brad's sleep schedule post: consistent wake time, morning sunlight, caffeine cutoff 3h after waking, light early dinners, no naps, and low-dose melatonin (under 300mcg) improve sleep quality. Covers insomnia, circadian rhythm, blood pressure, blood sugar, obesity, anxiety, and pre-bed routines."
+summary: "Dr Brad's sleep schedule post: consistent wake time, morning sunlight, caffeine cutoff 3h after waking, light early dinners, no naps, and low-dose low-dose melatonin improve sleep quality. Covers insomnia, circadian rhythm, blood pressure, blood sugar, obesity, anxiety, and pre-bed routines."
 ---
 
 The three pillars of good health are a good diet, a good exercise routine, and good sleep. In my opinion, sleep is far too often sacrificed, but it's much too critical to ignore. That's why I've created this resource: to compile evidence-based recommendations and habits you can use to sleep better and wake up feeling refreshed.
@@ -132,7 +132,7 @@ My last tip is to dedicate your bed to sleep and sleep alone. If you're struggli
 
 Melatonin is frequently used as a sleep aid, but many people use it incorrectly.
 
-At most, I only recommend a low dose, less than 300 mcg, to help fall asleep. Also, melatonin is meant to be taken at least 1-2 hours before going to bed. Make sure you're using it properly if you've decided to use it at all.
+At most, I only recommend a low dose — well under the 3 to 5 mg most over-the-counter products use — to help fall asleep. Also, melatonin is meant to be taken a few hours before going to bed. Make sure you're using it properly if you've decided to use it at all.
 
 ## Sources
 

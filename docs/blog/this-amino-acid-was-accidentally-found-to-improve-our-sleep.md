@@ -7,7 +7,7 @@ publishedAt: "2025-08-20T02:05:05Z"
 tags: ["Supplements"]
 keywords: ["aging","blood pressure","circadian","collagen","diabetes","exercise","glycine","inflammation","lifespan","longevity","magnesium","melatonin","obesity","oxidative stress","sleep"]
 product: "sleep"
-summary: "Dr Brad's glycine post: 3g glycine before bed improves sleep quality and reduces next-day fatigue without disrupting sleep architecture. Covers dosage, melatonin 300mcg, magnesium, morning light, and exercise for sleep."
+summary: "Dr Brad's glycine post: 3g glycine before bed improves sleep quality and reduces next-day fatigue without disrupting sleep architecture. Covers dosage, melatonin 0.8mg sustained-release, magnesium, morning light, and exercise for sleep."
 ---
 
 The link between the amino acid glycine and how it can improve our sleep was initially found completely by accident.
@@ -63,7 +63,7 @@ If we want to add glycine to our sleep routine, what’s the right way to approa
 
 The sleep studies used a dose of 3,000 mg, taken shortly before bedtime.
 
-I personally take glycine as part of my Sleep supplement. It has 2,500 mg of glycine on its own, and an additional 774 mg of glycine from magnesium glycinate, totaling just over 3,200 mg of glycine.
+I personally take glycine as part of my Sleep supplement. Its label lists 2,400 mg of glycine, which now counts the glycine carried in the fully chelated magnesium bisglycinate. That is the most that fits in four capsules.
 
 But just because I take a supplement does not in any way mean that you should as well.
 
@@ -123,7 +123,7 @@ Melatonin signals the body it’s time to sleep. A meta-analysis of 14 studies f
 
 However, the dose matters. The body naturally produces 10–80 micrograms. About 15% of a melatonin supplement is absorbed.
 
-That’s why I include 300 micrograms in my Sleep supplement—enough to mimic what the body makes naturally. For best results, take melatonin 2 hours before bed.
+That’s why I include 0.8 mg of sustained-release melatonin in my Sleep supplement—a low dose released gradually across the night. For best results, take melatonin about 3 hours before bed.
 
 ### Magnesium
 
