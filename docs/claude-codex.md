@@ -680,3 +680,21 @@ tree); `npx tsx` could fetch a package (now the checkout's own
 `node_modules/.bin/tsx`, `E_NO_TSX` if absent); and the LOC declaration
 described the wrong base. The server and runtime resolve from the wrapper's
 own checkout, so a review of any repo still serves this repo's tools.
+
+Two more rounds followed, both accepted. The record copy survived a failed
+write because the exit handler was armed after it, not before (now armed
+first, with `SIGXFSZ` trapped and a bounded `E_COPY_FAILED`), and an
+unreadable or directory `--record-file` crashed instead of returning a
+verdict. Then: a record placed INSIDE the reviewed checkout was swept into
+the patch and the snapshot before any check ran, so the wrapper now refuses
+a record path under the checkout (`E_RECORD_IN_REPO`, real paths compared)
+before the patch exists.
+
+**A test of mine passed vacuously and a manual probe caught it.** The first
+partial-write regression ran the wrapper under a file-size limit, but the
+limit killed `git read-tree` long before the record copy, so the assertion
+walked an empty set of directories. The test now targets a commit (git
+output goes through pipes, which the limit does not touch), asserts the
+bounded `E_COPY_FAILED` line appears, and asserts at least one work
+directory existed to inspect. Worth stating because Codex warned about
+exactly this shape: a green suite is not evidence that the path ran.

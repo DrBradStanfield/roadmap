@@ -268,6 +268,8 @@ describe('US-40 AC6 — only the designated scratch record is ever served, verif
     const file = join(mkdtempSync(join(tmpdir(), 'sr-')), 'r.json');
     writeFileSync(file, big);
     const before = new Set(readdirSync(tmpdir()).filter((d) => d.startsWith('codex-review-')));
+    // HEAD must have a parent AND content; only this fixture is staged, so other tests' dirty files stay dirty.
+    sh(repo, 'echo limit > limit-fixture.txt && git add limit-fixture.txt && git commit -q -m limit-fixture')
     const f = fake({ output: CLEAN });
     // 1 block = 512 bytes: the oversized copy is the first write the wrapper makes.
     // --commit: the patch comes from git pipes, so the record copy is the first FILE write the limit can hit.
