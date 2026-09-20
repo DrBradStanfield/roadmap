@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { isStorageFailure } from '@roadmap/health-core';
 import {
   DropboxAdapter,
+  DriveGrantRefusedError,
   GoogleDriveAdapter,
   GitHubAdapter,
   WebDavAdapter,
@@ -42,6 +43,15 @@ export interface ResolvedBackend {
    * provider, so the user is never shown the guest "choose where to save"
    * pitch for a record they have already placed (US-09 AC13). */
   reconnect?: Exclude<Backend, 'local'>;
+}
+
+/** A Google grant refused at connect (US-09 AC15) is the user's move, not a
+ *  defect: counted here, once, wherever it is caught, and never sent to
+ *  Sentry. The message is what to show; null for any other error. */
+export function connectRefusal(error: unknown): string | null {
+  if (!(error instanceof DriveGrantRefusedError)) return null;
+  trackProductEvent('cloud_connect_refused', { provider: 'google-drive' });
+  return error.message;
 }
 
 /** The on-device session a cloud backend falls back to. The marker records

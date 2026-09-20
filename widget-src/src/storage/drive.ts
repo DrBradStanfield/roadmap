@@ -128,11 +128,38 @@ function expiry(expiresIn?: number): number {
   return Date.now() + (expiresIn ?? 3600) * 1000;
 }
 
+/** The one scope Drive access needs; `google-config.ts` builds the request from it. */
+export const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+
+/**
+ * Google names the approved scopes on both connect paths (the redirect URL,
+ * the popup's token response), so a grant with the Drive box left unticked is
+ * known BEFORE any token is kept (US-09 AC15). A response that omits the list
+ * is trusted, as it was before the check.
+ */
+function grantsDrive(scope?: string): boolean {
+  return typeof scope !== 'string' || scope.split(' ').includes(DRIVE_FILE_SCOPE);
+}
+
+/** A grant without `drive.file`, refused at connect (US-09 AC15). The message
+ *  is what the user is told, so it names the box. */
+export class DriveGrantRefusedError extends StorageError {
+  constructor() {
+    super(
+      "Google didn't grant this app access to Google Drive, so nothing was connected. " +
+        "Try again and tick the Google Drive box on Google's permission screen.",
+    );
+    this.name = 'DriveGrantRefusedError';
+  }
+}
+
 // --- GIS (Google Identity Services) popup fallback ---------------------------
 
 interface TokenResponse {
   access_token?: string;
   expires_in?: number;
+  /** The scopes the user actually approved, space-delimited. */
+  scope?: string;
   error?: string;
 }
 interface TokenClient {
@@ -249,6 +276,10 @@ export class GoogleDriveAdapter implements StorageAdapter {
   static async completeRedirect(config: GoogleDriveConfig): Promise<GoogleDriveAdapter | null> {
     const claimed = claimRedirectCode(PKCE_KEY); // null when the ?code isn't ours
     if (!claimed) return null;
+    if (!grantsDrive(claimed.scope)) {
+      window.history.replaceState({}, '', config.redirectUri);
+      throw new DriveGrantRefusedError();
+    }
 
     // No Content-Type header: a string body defaults to text/plain, keeping the
     // POST a CORS "simple request" (no preflight — remix-serve can't answer
@@ -633,6 +664,10 @@ export class GoogleDriveAdapter implements StorageAdapter {
             callback: (r) => {
               if (r.error || !r.access_token) {
                 reject(new StorageError(`Google Drive authorization failed${r.error ? `: ${r.error}` : ''}.`));
+                return;
+              }
+              if (!grantsDrive(r.scope)) {
+                reject(new DriveGrantRefusedError());
                 return;
               }
               resolve({ accessToken: r.access_token, expiresAt: expiry(r.expires_in) });

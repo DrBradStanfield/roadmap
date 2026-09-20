@@ -45,10 +45,13 @@ export function generateState(): string {
  * the state doesn't match (stale/forged — declining to exchange IS the CSRF
  * defense; the entry is cleared so it can't go stale-positive later). The
  * entry is consumed either way; on success the caller exchanges the code and
- * then strips ?code/&state from the URL itself.
+ * then strips ?code/&state from the URL itself. `scope` is the space-delimited
+ * list of scopes the user actually approved, when the provider appends it
+ * (Google does; Dropbox does not).
  */
-export function claimRedirectCode(pkceKey: string): { code: string; verifier: string } | null {
-  const code = new URLSearchParams(window.location.search).get('code');
+export function claimRedirectCode(pkceKey: string): { code: string; verifier: string; scope?: string } | null {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
   if (!code) return null;
   let stored: { verifier: string; state: string } | null = null;
   try {
@@ -62,7 +65,6 @@ export function claimRedirectCode(pkceKey: string): { code: string; verifier: st
   } catch {
     /* ignore */
   }
-  const state = new URLSearchParams(window.location.search).get('state');
-  if (stored.state !== state) return null; // stale entry or CSRF — don't exchange
-  return { code, verifier: stored.verifier };
+  if (stored.state !== params.get('state')) return null; // stale entry or CSRF — don't exchange
+  return { code, verifier: stored.verifier, scope: params.get('scope') ?? undefined };
 }

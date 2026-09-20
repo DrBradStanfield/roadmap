@@ -1,3 +1,4 @@
+
 /**
  * Google Drive OAuth config for the standalone build. The client id is public
  * (it appears in the OAuth URL every user sees); the "Web application" client is
@@ -7,6 +8,8 @@
  * (github.io + drstanfield.com ONLY — HARD RULE: localhost is never an
  * approved origin).
  */
+import { DRIVE_FILE_SCOPE } from '../src/storage';
+
 export const GOOGLE_DRIVE_CLIENT_ID =
   '687809032623-dh4f91ravotu2cdactok13i2eirfadcs.apps.googleusercontent.com';
 
@@ -18,7 +21,7 @@ export const GOOGLE_DRIVE_CLIENT_ID =
  * to Brad's server (§10) — via a signed ID token from the code flow, or a
  * one-time userinfo read on the popup path. No extra Drive access.
  */
-export const GOOGLE_DRIVE_SCOPE = 'openid email https://www.googleapis.com/auth/drive.file';
+export const GOOGLE_DRIVE_SCOPE = `openid email ${DRIVE_FILE_SCOPE}`;
 
 /**
  * Brad's stateless token-exchange endpoint (decision record §14) — the only

@@ -27,9 +27,11 @@ import {
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import { SyncControl, RemindersSection } from './sync-control';
+import { ConnectRefusedNotice } from './connect-refused';
 import { StorageNoticeContext } from '../src/lib/storage-notice';
 import { HistoryLightboxHost } from './history-lightbox';
 import {
+  connectRefusal,
   liftLocalInto,
   onDeviceFallback,
   startOnBackend,
@@ -40,7 +42,10 @@ import {
 } from './connect';
 import { trackProductEvent } from '../src/lib/server-api';
 
-async function resolveBackend(): Promise<ResolvedBackend> {
+/** The backend this load runs on, and the connect it refused on the way, if
+ *  any (US-09 AC15) — kept apart from the backend so a load-time fallback
+ *  cannot drop it. */
+async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: string }> {
   // Returning from a Dropbox OAuth redirect?
   let resumed: DropboxAdapter | null = null;
   try {
@@ -53,27 +58,35 @@ async function resolveBackend(): Promise<ResolvedBackend> {
     await liftLocalInto(resumed, 'dropbox');
     localStorage.setItem(BACKEND_KEY, 'dropbox');
     trackProductEvent('cloud_connect_success', { provider: 'dropbox' });
-    return { adapter: resumed, backend: 'dropbox' };
+    return { resolved: { adapter: resumed, backend: 'dropbox' } };
   }
 
   // Returning from a Google Drive OAuth redirect? (Each completeRedirect only
   // claims a ?code that its own PKCE session entry initiated.)
   let gdResumed: GoogleDriveAdapter | null = null;
+  let refused: string | undefined;
   try {
     gdResumed = await GoogleDriveAdapter.completeRedirect(googleDriveConfig());
   } catch (error) {
-    console.warn('Google Drive connect failed', error);
-    Sentry.captureException(error, { tags: { area: 'cloud-connect', backend: 'google-drive' } });
+    refused = connectRefusal(error) ?? undefined;
+    if (!refused) {
+      console.warn('Google Drive connect failed', error);
+      Sentry.captureException(error, { tags: { area: 'cloud-connect', backend: 'google-drive' } });
+    }
   }
   if (gdResumed) {
     await liftLocalInto(gdResumed, 'google-drive');
     localStorage.setItem(BACKEND_KEY, 'google-drive');
     trackProductEvent('cloud_connect_success', { provider: 'google-drive' });
-    return { adapter: gdResumed, backend: 'google-drive' };
+    return { resolved: { adapter: gdResumed, backend: 'google-drive' } };
   }
 
-  // Remembered choice. The credential/token lives in each adapter's own storage,
-  // so a bare `new Adapter()` reconnects if it's still there.
+  return { resolved: await resolveRemembered(), refused };
+}
+
+/** The remembered choice. The credential/token lives in each adapter's own
+ *  storage, so a bare `new Adapter()` reconnects if it's still there. */
+async function resolveRemembered(): Promise<ResolvedBackend> {
   const remembered = localStorage.getItem(BACKEND_KEY) as Backend | null;
   if (remembered === 'dropbox') {
     const dbx = new DropboxAdapter(dropboxConfig());
@@ -104,7 +117,8 @@ async function resolveBackend(): Promise<ResolvedBackend> {
 
 async function main() {
   initSentry();
-  const { backend, reconnect } = await startOnBackend(await resolveBackend(), initRoadmapStore);
+  const { resolved, refused } = await resolveBackend();
+  const { backend, reconnect } = await startOnBackend(resolved, initRoadmapStore);
   // "Delete all my data" must also delete the reminder row on Brad's server,
   // and the token that authorises it dies with the file — so it runs first.
   setPreEraseHook(cancelRemindersForErase);
@@ -126,6 +140,7 @@ async function main() {
             every connect path reloads onto slide 1, so a notice inside it would
             be announced to an off-screen panel. */}
         <RemindersEnrolledNotice backend={backend} />
+        {refused && <ConnectRefusedNotice message={refused} />}
         <StorageNoticeContext.Provider value={storageState(backend, reconnect) === 'guest'}>
           <HealthTool
             syncControl={({ hasData }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} />}
