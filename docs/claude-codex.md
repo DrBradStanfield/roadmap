@@ -555,3 +555,11 @@ Snapshot `3ca017ce6a89+7ac4ed135f1a`, 2.6 min, complete, two blocking.
 Committed at this point with R2 open and named. Three Codex rounds on the
 hardening found eleven defects in Claude's wrapper, all real but the story
 question; the cross-model count is now well past one.
+
+## Brad's decision on the story question (2026-09-21)
+
+Tooling goes under user stories: the story file documents everything. So
+Codex's R4/R2 is **Accepted**, not disputed. US-40 now specifies the
+reviewer (seven ACs, six of them written from Codex's findings), the tests
+cite it, and the contract's check 1 says stories cover tooling too. The
+self-authorising sentence is gone.
