@@ -1,4 +1,3 @@
-
 /**
  * Google Drive OAuth config for the standalone build. The client id is public
  * (it appears in the OAuth URL every user sees); the "Web application" client is
@@ -8,6 +7,8 @@
  * (github.io + drstanfield.com ONLY — HARD RULE: localhost is never an
  * approved origin).
  */
+// Read at module load: a test that factory-mocks '../src/storage' must mock
+// this module too (storage-copy / reminders tests do), or the import throws.
 import { DRIVE_FILE_SCOPE } from '../src/storage';
 
 export const GOOGLE_DRIVE_CLIENT_ID =
