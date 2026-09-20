@@ -13,11 +13,13 @@ revision's contract and CLAUDE.md, never the candidate's. It cannot edit,
 test, or merge. Its floor: the sandbox still lets the model read the disk
 and run code. Add `--record` when the change touches what an agent reads
 (MCP tool descriptions, units, plan sections, refusals): the reviewer then
-gets `read_record` and `get_plan` against the live SCRATCH record (the
-microvitamin.com Dropbox account), nothing else, and the output's
+gets `read_record` and `get_plan` against a LOCAL copy of the scratch
+record (brad@microvitamin.com; Brad keeps it at
+`~/.codex-review/scratch-record.json`), served by `tools/mcp-server.ts`
+with no network. The wrapper checks the file's creation stamp before launch;
+any other record is `E_WRONG_RECORD` and nothing starts. The output's
 `record_access` says what happened: `not_requested`, `not_attempted`,
-`failed`, or `read`. What the live server does is a production
-observation; it never establishes what the candidate does.
+`failed`, or `read`.
 Boundary tests: `tools/codex-review.test.ts` (fake codex; they prove the
 wrapper, not the model).
 

@@ -3,7 +3,7 @@ title: "Sleep: Clinical Insomnia Guidance"
 type: "guideline"
 tags: ["Guideline"]
 keywords: ["sleep", "insomnia", "sleep hygiene", "CBT-I", "cognitive behavioural therapy", "melatonin", "zopiclone", "zolpidem", "benzodiazepine", "DORA", "suvorexant", "lemborexant", "doxepin", "ramelteon", "trazodone", "magnesium glycinate", "glycine", "sleep restriction", "stimulus control", "sleep duration", "PSQI", "ISI", "Epworth", "ICSD-3", "sleep apnea", "restless legs", "circadian rhythm", "shift work", "sleep supplement", "valerian", "L-theanine", "GABA", "tryptophan", "5-HTP"]
-summary: "Sleep and insomnia — can't sleep, trouble staying asleep, sleep hygiene, CBT-I as first-line, melatonin dosing, magnesium glycinate, glycine. Covers ICSD-3-TR diagnosis, CBT-I techniques, pharmacotherapy drug classes (DORAs, Z-drugs, doxepin, trazodone) with dosing tables, and supplement evidence. Brad's key divergence: 300–800mcg melatonin vs typical 3–5mg OTC. Compiled from UpToDate 2025–2026 insomnia articles, Auckland HealthPathways, and Brad's clinical framework."
+summary: "Sleep and insomnia — can't sleep, trouble staying asleep, sleep hygiene, CBT-I as first-line, melatonin dosing, magnesium glycinate, glycine. Covers ICSD-3-TR diagnosis, CBT-I techniques, pharmacotherapy drug classes (DORAs, Z-drugs, doxepin, trazodone) with dosing tables, and supplement evidence. Brad's key divergence: 0.8mg sustained-release melatonin vs typical 3–5mg immediate-release OTC. Compiled from UpToDate 2025–2026 insomnia articles, Auckland HealthPathways, and Brad's clinical framework."
 ---
 
 # Sleep: Clinical Insomnia Guidance
@@ -306,14 +306,14 @@ UpToDate dosing note: "Typical melatonin doses for insomnia are in the 1 to 5 mg
 
 **Brad's position: DIVERGES from typical consumer behaviour, ALIGNS with evidence.**
 
-Brad advocates 300mcg (V1) and 800mcg extended-release (V2 — "Melotime" brand) — far below the typical 3–5mg OTC doses. His rationale:
-- The human body produces 20–35 mcg melatonin naturally overnight; only ~15% of oral melatonin is bioavailable, so 300 mcg delivers approximately 45 mcg active — a physiological replacement dose.
-- High-dose melatonin (3–5 mg) causes next-morning receptor desensitisation, daytime grogginess, and elevated daytime melatonin levels.
-- An MIT study (Wurtman/Zhdanova) confirmed 300 mcg restores sleep efficiency without the side effects of higher doses.
+Brad's Sleep product uses **0.8 mg sustained-release melatonin** (Melotime®) — far below the typical 3–5 mg immediate-release OTC doses. (The earlier V1 formula used 0.3 mg immediate-release; it was superseded in August 2026 and is quoted here only to explain what changed.) His rationale:
+- The body makes roughly 10–80 mcg of melatonin a night (Kor 2014, a range statement from a secondary source); direct measurement puts most adults at 20–35 mcg (Fourtillan 2001; Mahle 2004). Only ~15% of oral melatonin is absorbed (DeMuro 2000), so 0.8 mg delivers ~120 mcg to the bloodstream — a few times what the body makes, and about a quarter of a 3 mg capsule. Do not describe this as restoring or replacing a physiological range.
+- High-dose melatonin (3–5 mg) is associated with next-morning grogginess, daytime melatonin elevation and receptor desensitisation (Zhdanova 2001: 3 mg kept melatonin elevated into daylight and lowered body temperature).
+- Zhdanova 2001 found 0.3 mg improved sleep efficiency, acting mainly in the mid-third of the night — which is why the sustained-release form was adopted rather than a higher immediate-release dose. Never say the V1 dose "did nothing" later in the night.
 - UpToDate explicitly states doses below 1 mg may be as effective as higher amounts — supporting Brad's position.
-- V2 uses extended-release melatonin (Melotime), targeting a more physiological sustained release profile.
+- Sustained-release pharmacokinetics (Thanawala 2024, Pharmaceutics, n=16): about half the peak concentration of immediate-release, half-life ~5.1 h vs ~1.0 h. Levels after 4 h were higher with sustained-release but the difference was not statistically significant, so say "a lower peak, with a lower level kept going later into the night" rather than claiming it is still present at 3 am.
 
-The V2 dose of 800 mcg extended-release remains well below the 1 mg threshold identified by UpToDate as potentially equally effective to higher doses, while the extended-release formulation aims to better approximate the body's own melatonin secretion profile across the night.
+At 0.8 mg the dose stays below the 1 mg threshold UpToDate identifies as potentially equal to higher amounts, while the sustained-release profile spreads delivery across the night instead of one spike.
 
 **Algorithm links:** `supplement-sleep` (always-show supplement suggestion, links to Sleep by Dr Brad product)
 
@@ -325,7 +325,7 @@ The V2 dose of 800 mcg extended-release remains well below the 1 mg threshold id
 
 The glycinate chelate form has high bioavailability and is well-tolerated (no laxative effect unlike magnesium oxide or citrate at sleep-relevant doses).
 
-**Brad's position:** Aligns with cautious use. Brad's Sleep product contains 126 mg elemental magnesium glycinate (V1), increased to 150 mg in V2. Brad cites a meta-analysis finding reduced time to fall asleep by approximately 17 minutes. Framed as "promising, not definitive" — consistent with honest evidence communication.
+**Brad's position:** Aligns with cautious use. Brad's Sleep product contains 126 mg elemental magnesium as fully chelated magnesium bisglycinate (each magnesium bound to two glycines). The elemental amount is unchanged from V1; what changed in V2 is that the chelate is now fully chelated, where V1's magnesium glycinate was not. Brad cites a meta-analysis finding reduced time to fall asleep by approximately 17 minutes. Framed as "promising, not definitive" — consistent with honest evidence communication.
 
 Note: MicroVitamin and MicroVitamin+ use magnesium taurate (chosen for cardiovascular benefit). The Sleep product uses magnesium glycinate (chosen for sleep/relaxation benefit). Different forms serve different purposes.
 
@@ -344,7 +344,7 @@ Note: MicroVitamin and MicroVitamin+ use magnesium taurate (chosen for cardiovas
 
 Mechanism: glycine lowers core body temperature at sleep onset (via peripheral vasodilation), which is a key circadian signal for sleep initiation. It also acts as an inhibitory neuromodulator in the CNS. The 3 g dose is well below any toxicity threshold (glycine is a non-essential amino acid present in food).
 
-**Brad's position:** Includes 2,500 mg (V1) / 2,400 mg (V2) glycine in his Sleep product, targeting the 3 g threshold studied in the RCTs. The V2 dose of 2,400 mg reflects a slight reduction due to capsule space constraints. Brad cites the three RCTs for sleep quality improvement and next-day fatigue reduction. This is the strongest ingredient-level evidence in Brad's sleep stack.
+**Brad's position:** Includes 2,400 mg glycine in his Sleep product, targeting the 3 g threshold studied in the RCTs. (V1 stated 2,500 mg; the V2 label now counts the glycine carried in the magnesium bisglycinate chelate, and 2,400 mg is the most that fits in four capsules.) Brad cites the three RCTs for sleep quality improvement and next-day fatigue reduction. This is the strongest ingredient-level evidence in Brad's sleep stack.
 
 **References:**
 - Inagawa K et al. 2006 – Glycine and sleep quality, J Sleep Res
@@ -371,11 +371,11 @@ Mechanism: glycine lowers core body temperature at sleep onset (via peripheral v
 
 ### Brad's Sleep product summary
 
-Sleep by Dr Brad (V1): melatonin 300 mcg + magnesium glycinate 126 mg elemental + glycine 2,500 mg. 4 capsules/day. $40 one-time / $36 subscription.
+**Sleep by Dr Brad — current formula (V2, on sale since August 2026):** melatonin 0.8 mg sustained-release (Melotime®) + 126 mg elemental magnesium as fully chelated magnesium bisglycinate + glycine 2,400 mg. 120 capsules, **4 capsules about 3 hours before you want to fall asleep** (30 servings). $40 one-time / $36 subscription. Labdoor-certified (LTSCERT-151).
 
-Sleep by Dr Brad (V2 — in development): melatonin 800 mcg extended-release (Melotime) + magnesium glycinate 150 mg elemental + glycine 2,400 mg. Moving toward more physiological melatonin delivery.
+Superseded V1 formula, for answering "what changed" only: melatonin 0.3 mg immediate-release + 126 mg elemental magnesium glycinate (not fully chelated) + glycine 2,500 mg, taken 2 hours before bed. Three changes in V2: melatonin form and dose, fully chelated magnesium, and the glycine figure now counting the chelate's glycine.
 
-Brad's rationale for this combination: addresses three complementary mechanisms simultaneously — circadian timing (melatonin), relaxation and reduced sleep latency (magnesium glycinate), and core body temperature reduction plus sleep quality improvement (glycine). All three are non-habit-forming and have safety profiles compatible with long-term use.
+Brad's rationale for this combination: addresses three complementary mechanisms simultaneously — circadian timing (melatonin), relaxation and reduced sleep latency (magnesium bisglycinate), and core body temperature reduction plus sleep quality improvement (glycine). All three are non-habit-forming and have safety profiles compatible with long-term use.
 
 **Brad's position:** His Sleep product represents his curated evidence-based stack for mild-moderate sleep difficulties. For consumers wanting to try supplements before seeing a doctor, this is a reasonable starting point for sleep-onset and sleep-quality issues. It does not replace CBT-I or medical evaluation for chronic insomnia.
 

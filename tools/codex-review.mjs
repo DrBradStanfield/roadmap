@@ -18,10 +18,13 @@
 //     floor, and the reviewer's only egress is the model API;
 //   * the result is validated field by field; a nonzero exit, timeout, or
 //     malformed output is INCOMPLETE, never clean (CR4);
-//   * `--record` adds ONE server, the direct health MCP, with `enabled_tools`
-//     limited to the two reads; access is judged from the JSONL tool-call
-//     events, not from an error string (CR6); the prompt forbids copying
-//     record values into any output field (CR5; a prompt rule, not a proof).
+//   * `--record` serves a LOCAL copy of the designated scratch record through
+//     this repo's own stdio MCP server (tools/mcp-server.ts): no network, no
+//     token, `enabled_tools` limited to the two reads. The wrapper verifies the
+//     file's own creation stamp BEFORE anything launches, so a wrong record is
+//     never disclosed (Codex, 2026-09-21). Access is judged from the JSONL
+//     tool-call events (CR6); the prompt forbids copying record values into
+//     any output field (CR5; a prompt rule, Brad accepted the residual).
 //
 // Usage:
 //   node tools/codex-review.mjs                 # uncommitted work vs HEAD
@@ -29,17 +32,19 @@
 //   node tools/codex-review.mjs --range A..B    # a range (e.g. main..HEAD)
 //   options: --model <id> --timeout-min <n> --out <json> --keep --codex <bin>
 //            --message "<text>"  (uncommitted: the commit message you intend)
-//            --record  READ access (read_record, get_plan) to the live scratch
-//                      record via mcp.drstanfield.com; needs a one-time
-//                      `codex mcp login health` by Brad, as the scratch
-//                      (microvitamin.com) Dropbox account
+//            --record  READ access (read_record, get_plan) to a local copy of
+//                      the scratch record at ~/.codex-review/scratch-record.json
+//                      (Brad downloads health-roadmap.json from the
+//                      brad@microvitamin.com Dropbox, Apps/Health Roadmap);
+//                      --record-file <path> overrides the location
 // Exit: 0 clean, 2 blocking findings, 3 incomplete review, 1 usage error.
 
 import { execFileSync, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const args = process.argv.slice(2);
 const opt = (name, dflt) => { const i = args.indexOf(name); return i === -1 ? dflt : args[i + 1]; };
@@ -59,12 +64,38 @@ if (!CODEX) { console.error("codex binary not found: pass --codex <path> or set 
 const MODEL = opt("--model", "gpt-6-astra");
 const TIMEOUT_MS = Number(opt("--timeout-min", "25")) * 60_000;
 const RECORD = has("--record");
+/**
+ * The ONLY record the reviewer may read: the scratch account's, identified by
+ * the record's own creation stamp (merge keeps the minimum, so it is stable
+ * for the record's life; an erase makes a new one and this must be re-pinned).
+ * Checked by the wrapper on the file, before the reviewer exists. Brad's rule,
+ * 2026-09-21: always brad@microvitamin.com.
+ */
+/** The wrapper's own checkout supplies the server and its runtime, whatever repo is under review. */
+const HOME_REPO = join(dirname(fileURLToPath(import.meta.url)), "..");
+const TSX = join(HOME_REPO, "node_modules", ".bin", "tsx");
+const SCRATCH_RECORD = {
+  account: "brad@microvitamin.com",
+  createdAt: "2026-09-17T20:06:27.965Z",
+  path: opt("--record-file", join(process.env.HOME ?? "", ".codex-review", "scratch-record.json")),
+};
 /** Files whose candidate version must never instruct the reviewer (CR3). */
 const INSTRUCTION_FILES = ["docs/review-format.md", "CLAUDE.md", "AGENTS.md"];
 const isInstruction = (f) => INSTRUCTION_FILES.includes(f) || f.startsWith(".claude/") || f.startsWith(".codex/");
 
+let recordCopy = null;
+let symlinks = [];
+let keep = has("--keep");
+let work = null, snapshotId = "(not built)", instructionEdits = [], files = [], label = "(not built)", base = "";
+// --record: a record inside the reviewed checkout would be swept into the patch
+// and the snapshot before any check ran; refuse it before the patch exists.
+const real = (p) => { try { return realpathSync(p); } catch { return resolve(p); } };
+if (RECORD && real(SCRATCH_RECORD.path).startsWith(real(ROOT) + sep)) {
+  finish(incomplete(`E_RECORD_IN_REPO: the scratch record must live outside the reviewed checkout (it would enter the review snapshot). Move it to ${join(process.env.HOME ?? "", ".codex-review", "scratch-record.json")}.`), "0.0");
+}
+
 // --- 1. Resolve target: base sha + patch + file list + messages ------------
-let base, label, patch, messages, files;
+let patch, messages;
 if (has("--commit")) {
   const sha = git(["rev-parse", opt("--commit")]).trim();
   base = git(["rev-parse", `${sha}^`]).trim();
@@ -99,12 +130,41 @@ function uncommitted() {
 }
 
 const patchHash = createHash("sha256").update(patch).digest("hex").slice(0, 12);
-const snapshotId = `${base.slice(0, 12)}+${patchHash}`;
-const instructionEdits = files.filter(isInstruction);
+snapshotId = `${base.slice(0, 12)}+${patchHash}`;
+instructionEdits = files.filter(isInstruction);
 
 // --- 2. Immutable snapshot: source in work/src, artifacts beside it (CR1) ---
-const work = mkdtempSync(join(tmpdir(), "codex-review-"));
-let keep = has("--keep");
+work = mkdtempSync(join(tmpdir(), "codex-review-"));
+// --record: verify the local record BEFORE anything can read it (a wrong
+// account must never be disclosed, not merely detected afterwards).
+if (RECORD) {
+  const how = `Download health-roadmap.json from the ${SCRATCH_RECORD.account} Dropbox (Apps/Health Roadmap) to ${SCRATCH_RECORD.path}.`;
+  if (!existsSync(SCRATCH_RECORD.path)) finish(incomplete(`E_NO_SCRATCH_RECORD: no local scratch record. ${how}`), "0.0");
+  // One read: the bytes that are verified are the bytes that are served. A
+  // directory, an unreadable file, or non-JSON is a bounded incomplete, not a crash.
+  let bytes, stamp;
+  try {
+    if (!statSync(SCRATCH_RECORD.path).isFile()) throw new Error("not a file");
+    bytes = readFileSync(SCRATCH_RECORD.path);
+    stamp = JSON.parse(bytes.toString("utf8"))?.meta?.createdAt;
+  } catch { stamp = undefined; }
+  if (typeof stamp !== "string") finish(incomplete(`E_BAD_SCRATCH_RECORD: the local record is not a readable roadmap file. ${how}`), "0.0");
+  if (stamp !== SCRATCH_RECORD.createdAt) finish(incomplete(`E_WRONG_RECORD: the local record is not the designated test record (its creation stamp differs). ${how} If that record was erased and recreated, re-pin SCRATCH_RECORD.`), "0.0");
+  // The server runtime is the checkout's own pinned tsx, never a launcher that can fetch (no network, US-40 AC6).
+  if (!existsSync(TSX)) finish(incomplete("E_NO_TSX: node_modules/.bin/tsx is missing in this checkout; run npm install"), "0.0");
+  recordCopy = join(work, "record.json");
+  // Armed BEFORE the write: a partial copy from a failed write must die too
+  // (US-40 AC5). Normal exit, thrown, or signalled, including SIGXFSZ from a
+  // file-size limit, which is what a half-written copy looks like.
+  process.on("exit", () => rmSync(recordCopy, { force: true }));
+  for (const sig of ["SIGINT", "SIGTERM", "SIGHUP", "SIGXFSZ"]) process.on(sig, () => process.exit(130));
+  try {
+    writeFileSync(recordCopy, bytes, { flag: "wx" });
+  } catch {
+    rmSync(recordCopy, { force: true });
+    finish(incomplete("E_COPY_FAILED: the scratch record could not be staged for the reviewer"), "0.0");
+  }
+}
 const src = join(work, "src");
 const baseDir = join(work, "base");
 mkdirSync(src); mkdirSync(baseDir);
@@ -117,7 +177,7 @@ try {
   console.error("patch did not apply to the snapshot:", String(e.stderr || e).slice(0, 400));
   cleanup(); process.exit(1);
 }
-let symlinks = stripSymlinks(src);
+symlinks = stripSymlinks(src);
 const artifact = (name, content) => { const p = join(work, name); writeFileSync(p, content, { flag: "wx" }); return p; };
 const patchPath = artifact("REVIEW_PATCH.diff", patch);
 artifact("REVIEW_COMMITS.txt", messages);
@@ -191,17 +251,19 @@ Apply the contract in full (its "Universal checks"; the "Tier 3 restrictions"
 do NOT apply to this session-authored change). Open docs/user-stories.md in
 the snapshot for the story the change cites.
 ${RECORD ? `
-You also have READ access to a live test record through the MCP server named
-"health" (read_record and get_plan only). Brad designates it a scratch account;
-nothing verifies that, so treat its contents as private regardless. Use it
-when the change touches what an agent reads (tool descriptions, units, plan
-sections, refusals). Rules: NEVER copy a value from the record (a number, a
-date, a name, a unit string tied to a value) into any output field; describe
-structure only ("a measurement row whose metric has no units entry"). The
-live server runs whatever is deployed, and nothing ties that to this
-snapshot: report what you see ONLY as a production observation (what the
-shipped server does today), never as evidence of what the candidate does. A
-refused or failed MCP call is evidence about auth, not about the change.
+You also have READ access to a LOCAL COPY of a test record through the MCP
+server named "health" (read_record and get_plan only; no network). It is a
+scratch account's record, verified by the wrapper before you started; treat
+its contents as private regardless. Use it when the change touches what an
+agent reads (tool descriptions, units, plan sections, refusals). Rules: NEVER
+copy a value from the record (a number, a date, a name, a unit string tied
+to a value) into any output field; describe structure only ("a measurement
+row whose metric has no units entry"). The server is this repo's own stdio
+MCP server running the code in the repo's WORKING TREE: for uncommitted work
+that is the candidate itself, so what you see is candidate behaviour; for a
+commit or range review the working tree may be newer than the snapshot, so
+say which you observed. A failed MCP call is evidence about the server
+process, not about the change.
 ` : ""}
 Status rules. "incomplete" when a check that the change's correctness,
 security, privacy, or data integrity depends on could not be verified (a
@@ -214,7 +276,13 @@ Return ONLY the JSON object the schema asks for. Number findings R1, R2, ...`;
 // --- 3. Run Codex, hardened ---------------------------------------------------
 const outPath = join(work, "REVIEW_OUT.json");
 const RECORD_ARGS = RECORD
-  ? ["-c", 'mcp_servers.health.url="https://mcp.drstanfield.com/mcp"', "-c", 'mcp_servers.health.enabled_tools=["read_record","get_plan"]']
+  ? [
+      "-c", `mcp_servers.health.command=${JSON.stringify(TSX)}`,
+      "-c", `mcp_servers.health.args=${JSON.stringify([join(HOME_REPO, "tools", "mcp-server.ts"), "--file", recordCopy])}`,
+      "-c", `mcp_servers.health.cwd=${JSON.stringify(HOME_REPO)}`,
+      "-c", "mcp_servers.health.startup_timeout_sec=90",
+      "-c", 'mcp_servers.health.enabled_tools=["read_record","get_plan"]',
+    ]
   : [];
 const codexArgs = [
   "exec", "--ignore-user-config", "--strict-config", "--json", "--ephemeral", "--skip-git-repo-check",
@@ -244,7 +312,7 @@ const run = await new Promise((resolve) => {
 const elapsedMin = ((Date.now() - started) / 60000).toFixed(1);
 writeFileSync(join(work, "events.jsonl"), eventMetadata(run.stdout));
 const errLines = run.stderr.split("\n");
-writeFileSync(join(work, "stderr.log"), JSON.stringify({ errors: errLines.filter((l) => /ERROR/.test(l)).length, warnings: errLines.filter((l) => /WARN/.test(l)).length, authRequired: /AuthRequired/.test(run.stderr) }));
+writeFileSync(join(work, "stderr.log"), JSON.stringify({ errors: errLines.filter((l) => /ERROR/.test(l)).length, warnings: errLines.filter((l) => /WARN/.test(l)).length }));
 /** Diagnostic metadata only: tool arguments, results, and message text never persist (a live record may be in them). */
 function eventMetadata(jsonl) {
   return jsonl.split("\n").flatMap((line) => {
@@ -298,11 +366,12 @@ function pick(r) {
 const calls = run.stdout.split("\n").flatMap((line) => {
   try { const ev = JSON.parse(line); return ev.item?.type === "mcp_tool_call" ? [ev] : []; } catch { return []; }
 });
-const ALLOWED_TOOLS = ["read_record", "get_plan"];
+const ALLOWED_TOOLS = ["read_record", "get_plan", "list_mcp_resources", "list_mcp_resource_templates"];
+const READ_TOOLS = ["read_record", "get_plan"];
 const allowed = (ev) => RECORD && ev.item.server === "health" && ALLOWED_TOOLS.includes(ev.item.tool);
 const foreignCalls = calls.filter((ev) => !allowed(ev));
-const startedCalls = calls.filter((ev) => allowed(ev) && ev.type === "item.started").length;
-const completed = calls.filter((ev) => allowed(ev) && ev.type === "item.completed");
+const startedCalls = calls.filter((ev) => allowed(ev) && READ_TOOLS.includes(ev.item.tool) && ev.type === "item.started").length;
+const completed = calls.filter((ev) => allowed(ev) && READ_TOOLS.includes(ev.item.tool) && ev.type === "item.completed");
 const nonEmptyObject = (v) => v && typeof v === "object" && !Array.isArray(v) && Object.keys(v).length > 0;
 const nonEmptyBlock = (b) => b && typeof b === "object" && (b.type === "text" ? typeof b.text === "string" && b.text.trim().length > 0 : Object.keys(b).length > 1);
 // The exec event stream spells it structured_content; the MCP payload inside spells it structuredContent. Both strings are in the 0.154 binary.
@@ -310,7 +379,7 @@ const payloadOk = (r) => r && r.isError !== true && ((Array.isArray(r.content) &
 // "read" means: an allowed tool returned a non-error payload. It does not verify what the payload held.
 const recordAccess = !RECORD ? "not_requested"
   : completed.some((ev) => ev.item.error == null && ev.item.status !== "failed" && payloadOk(ev.item.result)) ? "read"
-  : completed.length || startedCalls || /AuthRequired/.test(run.stderr) ? "failed"
+  : completed.length || startedCalls ? "failed"
   : "not_attempted";
 if (foreignCalls.length) {
   const names = [...new Set(foreignCalls.map((ev) => `${ev.item.server}.${ev.item.tool}`))].join(", ");
@@ -346,6 +415,9 @@ function finish(review, elapsedMin, extra = {}) {
   process.exit(report.status !== "complete" ? 3 : blocking.length ? 2 : 0);
 }
 function cleanup() {
+  if (!work) return;
+  // The record copy never outlives the run, whatever else is kept (US-40 AC5).
+  if (recordCopy) rmSync(recordCopy, { force: true });
   if (keep) console.error(`work dir kept at ${work} (events.jsonl and stderr.log hold metadata only)`);
   else rmSync(work, { recursive: true, force: true });
 }

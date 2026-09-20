@@ -621,3 +621,62 @@ structured payload, an empty text block, the wrapper's own LOC declared as
 zero, and the exec event stream's snake-case `structured_content` (both
 spellings are in the binary; both are accepted). All fixed with tests. The
 wrapper is executable tooling and its LOC is declared as such from now on.
+
+## The record is always the scratch one (Brad, 2026-09-21)
+
+Brad accepted the free-text residual (point 1) and asked that the second
+half be closed: the reviewer must only ever read the brad@microvitamin.com
+record. The hosted server is tenant-blind by design (it holds a hash of the
+connection, never an email), and a who-am-I would weaken that for every
+user, so the check is local and content-based. The wrapper pins the scratch
+record's own `meta.createdAt` (merge keeps the minimum, so it is stable for
+the record's life), never puts it in the prompt, has the reviewer copy the
+stamp it read into a schema field, and refuses any other value with
+`E_WRONG_RECORD` and the login instruction. Model-reported, fails closed,
+and the pinned value is unknowable to the reviewer. An erase creates a new
+record; Brad re-pins.
+
+Facts from data: the Codex `health` login's record was created
+2026-09-17T20:06:27.965Z with 15 measurements; the ChatGPT connector's
+record is a different one (2026-09-05, 18 measurements). Brad confirms which
+account the 2026-09-17 record belongs to; the pin assumes it is
+microvitamin.com, as he chose at login.
+
+## Codex on the pin: detection is not prevention (2026-09-21, later)
+
+Codex's review of the pinned-stamp change was right and blocking: the
+check ran after the reviewer had already received the record, and the live
+run then proved the model-reported stamp unreliable as well (it left the
+field null). A model-mediated check cannot prevent a disclosure.
+
+**New design, built.** `--record` no longer touches the network. The
+wrapper serves a LOCAL copy of the scratch record through this repo's own
+stdio MCP server (`tools/mcp-server.ts`, the same tools), restricted to the
+two reads, and checks the file's `meta.createdAt` against the pin BEFORE
+anything launches: a missing, unreadable, or different record ends the run
+with the instruction and the reviewer process is never started (tests prove
+the fake binary is not invoked). The reviewer's schema field, the post-hoc
+check, and the auth-string heuristics are deleted. Codex's generic
+`list_mcp_resources` calls on the server are reads and are allowed.
+
+**One step for Brad, and why.** Claude's attempt to save a copy of the
+scratch record to disk was refused by the auto-mode classifier as health
+data handling, and that refusal was not worked around. So Brad places the
+file: download `health-roadmap.json` from the brad@microvitamin.com Dropbox
+(Apps/Health Roadmap) to `~/.codex-review/scratch-record.json`. The wrapper
+will accept it only if its creation stamp is `2026-09-17T20:06:27.965Z`,
+which is the record behind the Codex `health` login Brad made today; if the
+microvitamin file shows a different stamp, that login was a different
+account, and the pin moves to the microvitamin file's stamp.
+
+The Codex `health` OAuth login is no longer used by the reviewer. It can
+stay or be removed with `codex mcp logout health`.
+
+Codex's review of the local design found four more, all accepted: the served
+bytes were read separately from the verified bytes (now one buffer, verified
+then written); a kept diagnostics directory retained the record copy (now
+deleted on every exit path, tested with a marker across the whole kept
+tree); `npx tsx` could fetch a package (now the checkout's own
+`node_modules/.bin/tsx`, `E_NO_TSX` if absent); and the LOC declaration
+described the wrong base. The server and runtime resolve from the wrapper's
+own checkout, so a review of any repo still serves this repo's tools.

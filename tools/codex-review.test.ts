@@ -6,12 +6,14 @@
  */
 import { describe, it, expect, beforeAll } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, symlinkSync, existsSync, chmodSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, symlinkSync, existsSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const WRAPPER = resolve(__dirname, 'codex-review.mjs');
 const CLEAN = { status: 'complete', target: 'FILLED', summary: 'clean', findings: [] };
+const SCRATCH_CREATED_AT = '2026-09-17T20:06:27.965Z';
+let scratchFile: string;
 
 let repo: string;
 let marker: string;
@@ -67,6 +69,8 @@ beforeAll(() => {
   sh(repo, 'git add -A && git commit -q -m base');
   fakeDir = mkdtempSync(join(tmpdir(), 'unused-'));
   outJson = join(fakeDir, 'out.json');
+  scratchFile = join(fakeDir, 'scratch-record.json');
+  writeFileSync(scratchFile, JSON.stringify({ schemaVersion: 1, meta: { createdAt: SCRATCH_CREATED_AT }, measurements: [] }));
 });
 
 describe('US-40 AC1 (CR1) — artifacts never land inside the snapshot tree', () => {
@@ -158,7 +162,7 @@ describe('US-40 AC3 (CR2) — process environment and tool flags', () => {
   });
   it('CF2: a health tool outside the two reads, or any health call without --record, is a boundary breach', () => {
     const ev = (tool: string) => JSON.stringify({ type: 'item.completed', item: { type: 'mcp_tool_call', server: 'health', tool, error: null, status: 'completed', result: { content: [{ type: 'text', text: 'ok' }] } } });
-    const a = runWrapper(fake({ output: CLEAN, events: [ev('edit_record')] }).bin, ['--record']);
+    const a = runWrapper(fake({ output: CLEAN, events: [ev('edit_record')] }).bin, ['--record', '--record-file', scratchFile]);
     expect(a.status).toBe(3); expect(a.stdout).toContain('E_TOOL_BOUNDARY'); expect(a.stdout).toContain('health.edit_record');
     const b = runWrapper(fake({ output: CLEAN, events: [ev('read_record')] }).bin);
     expect(b.status).toBe(3); expect(b.stdout).toContain('E_TOOL_BOUNDARY');
@@ -174,12 +178,12 @@ describe('US-40 AC3 (CR2) — process environment and tool flags', () => {
 describe('US-40 AC5, AC2, AC1 (R1–R3) — logs hold metadata only, no contract means incomplete, symlink patches apply', () => {
   it('R1: a health marker in an MCP result or a stderr warning never reaches the kept logs', () => {
     const f = fake({ output: CLEAN, stderr: '2026-09-19 WARN health: value HEALTH-MARKER-9137 out of range\n2026-09-19 ERROR something\n', events: [JSON.stringify({ type: 'item.completed', item: { type: 'mcp_tool_call', server: 'health', tool: 'read_record', arguments: {}, error: null, status: 'completed', result: { content: [{ type: 'text', text: 'HEALTH-MARKER-9137' }] } } })] });
-    const r = runWrapper(f.bin, ['--record', '--keep']);
+    const r = runWrapper(f.bin, ['--record', '--keep', '--record-file', scratchFile]);
     const work = r.stderr.match(/work dir kept at (\S+)/)![1];
     const logs = readFileSync(join(work, 'events.jsonl'), 'utf8') + readFileSync(join(work, 'stderr.log'), 'utf8');
     expect(logs).not.toContain('HEALTH-MARKER-9137');
     expect(logs).toContain('"tool":"read_record"');
-    expect(JSON.parse(readFileSync(join(work, 'stderr.log'), 'utf8'))).toEqual({ errors: 1, warnings: 1, authRequired: false });
+    expect(JSON.parse(readFileSync(join(work, 'stderr.log'), 'utf8'))).toEqual({ errors: 1, warnings: 1 });
     expect(JSON.parse(readFileSync(outJson, 'utf8')).record_access).toBe('read');
   });
   it('R2: a base revision without the contract → incomplete, never the working copy', () => {
@@ -203,6 +207,98 @@ describe('US-40 AC5, AC2, AC1 (R1–R3) — logs hold metadata only, no contract
   });
 });
 
+describe('US-40 AC6 — only the designated scratch record is ever served, verified before launch', () => {
+  it('missing file, unreadable file, or another record → incomplete, and the reviewer is never started', () => {
+    const cases: Array<[string | null, string]> = [[null, 'E_NO_SCRATCH_RECORD'], ['not json', 'E_BAD_SCRATCH_RECORD'], ['DIR', 'E_BAD_SCRATCH_RECORD'], ['UNREADABLE', 'E_BAD_SCRATCH_RECORD'], [JSON.stringify({ meta: { createdAt: '2026-09-05T01:18:28.289Z' } }), 'E_WRONG_RECORD']];
+    for (const [content, code] of cases) {
+      const file = join(mkdtempSync(join(tmpdir(), 'sr-')), 'r.json');
+      if (content === 'DIR') mkdirSync(file);
+      else if (content === 'UNREADABLE') { writeFileSync(file, '{}'); chmodSync(file, 0o000); }
+      else if (content !== null) writeFileSync(file, content);
+      const f = fake({ output: CLEAN });
+      const r = runWrapper(f.bin, ['--record', '--record-file', file]);
+      expect(r.status).toBe(3);
+      expect(r.stdout).toContain(code);
+      expect(r.stdout).toContain('brad@microvitamin.com');
+      expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+    }
+  });
+  it('the right record is served from a COPY through the stdio server via the checkout\'s own tsx, read tools only, no URL, no launcher', () => {
+    const f = fake({ output: CLEAN });
+    runWrapper(f.bin, ['--record', '--record-file', scratchFile]);
+    const argv: string[] = JSON.parse(f.read('argv.json'));
+    const joined = argv.join(' ');
+    expect(joined).toContain('mcp_servers.health.command="' + resolve(__dirname, '..', 'node_modules', '.bin', 'tsx') + '"');
+    expect(joined).not.toContain('npx');
+    expect(joined).toContain('tools/mcp-server.ts');
+    expect(joined).toContain('enabled_tools=["read_record","get_plan"]');
+    expect(joined).not.toContain('mcp.drstanfield.com');
+    expect(joined).not.toContain(scratchFile);
+    const args = JSON.parse(argv[argv.findIndex((a) => a.startsWith('mcp_servers.health.args=')) ].slice('mcp_servers.health.args='.length));
+    expect(args[args.indexOf('--file') + 1]).toMatch(/codex-review-.*\/record\.json$/);
+    expect(f.read('stdin.txt')).not.toContain(SCRATCH_CREATED_AT);
+  });
+  it('the record copy is gone from a kept directory, and the served bytes are the verified bytes', () => {
+    const marker = JSON.stringify({ schemaVersion: 1, meta: { createdAt: SCRATCH_CREATED_AT }, measurements: [{ note: 'HEALTH-MARKER-2210' }] });
+    const file = join(mkdtempSync(join(tmpdir(), 'sr-')), 'r.json');
+    writeFileSync(file, marker);
+    const f = fake({ output: CLEAN, exit: 19 }); // a failing run keeps its diagnostics
+    const r = runWrapper(f.bin, ['--record', '--record-file', file]);
+    expect(r.status).toBe(3);
+    const work = r.stderr.match(/work dir kept at (\S+)/)![1];
+    expect(existsSync(join(work, 'record.json'))).toBe(false);
+    expect(sh(work, 'grep -rl HEALTH-MARKER-2210 . || true')).toBe('');
+    // the copy the server was pointed at held exactly the verified bytes while the run was live:
+    const args = JSON.parse(JSON.parse(f.read('argv.json')).find((a: string) => a.startsWith('mcp_servers.health.args=')).slice('mcp_servers.health.args='.length));
+    expect(args[args.indexOf('--file') + 1]).toBe(join(work, 'record.json'));
+  });
+  it('a record inside the reviewed checkout is refused before any patch or snapshot exists', () => {
+    const inside = join(repo, 'scratch-record.json');
+    writeFileSync(inside, JSON.stringify({ meta: { createdAt: SCRATCH_CREATED_AT }, measurements: [{ note: 'HEALTH-MARKER-3390' }] }));
+    const f = fake({ output: CLEAN });
+    const r = runWrapper(f.bin, ['--record', '--keep', '--record-file', inside]);
+    sh(repo, 'rm scratch-record.json');
+    expect(r.status).toBe(3);
+    expect(r.stdout).toContain('E_RECORD_IN_REPO');
+    expect(r.stderr).not.toContain('work dir kept');
+    expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+  });
+  it('a copy write that fails part-way leaves no record bytes behind (file-size limit)', () => {
+    const big = JSON.stringify({ schemaVersion: 1, meta: { createdAt: SCRATCH_CREATED_AT }, measurements: [{ note: 'HEALTH-MARKER-7714'.padEnd(4000, 'x') }] });
+    const file = join(mkdtempSync(join(tmpdir(), 'sr-')), 'r.json');
+    writeFileSync(file, big);
+    const before = new Set(readdirSync(tmpdir()).filter((d) => d.startsWith('codex-review-')));
+    const f = fake({ output: CLEAN });
+    // 1 block = 512 bytes: the oversized copy is the first write the wrapper makes.
+    // --commit: the patch comes from git pipes, so the record copy is the first FILE write the limit can hit.
+    const r = spawnSync('bash', ['-c', `ulimit -f 1; exec node ${JSON.stringify(WRAPPER)} --codex ${JSON.stringify(f.bin)} --commit HEAD --record --keep --record-file ${JSON.stringify(file)}`], { cwd: repo, encoding: 'utf8' });
+    expect(r.stdout).toContain('E_COPY_FAILED');
+    const fresh = readdirSync(tmpdir()).filter((d) => d.startsWith('codex-review-') && !before.has(d));
+    expect(fresh.length).toBeGreaterThan(0); // the run got far enough to stage a copy
+    for (const d of fresh) {
+      expect(existsSync(join(tmpdir(), d, 'record.json'))).toBe(false);
+      expect(sh(join(tmpdir(), d), 'grep -rl HEALTH-MARKER-7714 . || true')).toBe('');
+      rmSync(join(tmpdir(), d), { recursive: true, force: true });
+    }
+    expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+  });
+  it('the copy is gone even when the wrapper itself throws after the run (unwritable --out)', () => {
+    const f = fake({ output: CLEAN });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--record', '--record-file', scratchFile, '--keep', '--out', '/nonexistent-dir-4471/out.json'], { cwd: repo, encoding: 'utf8' });
+    expect(r.status).not.toBe(0);
+    const argv: string[] = JSON.parse(f.read('argv.json'));
+    const args = JSON.parse(argv.find((a) => a.startsWith('mcp_servers.health.args='))!.slice('mcp_servers.health.args='.length));
+    const copy = args[args.indexOf('--file') + 1];
+    expect(existsSync(copy)).toBe(false);
+  });
+  it("Codex's generic resource listing on the health server is a read, not a breach", () => {
+    const ev = (tool: string) => JSON.stringify({ type: 'item.completed', item: { type: 'mcp_tool_call', server: 'health', tool, error: null, status: 'completed', result: { content: [] } } });
+    const r = runWrapper(fake({ output: CLEAN, events: [ev('list_mcp_resources'), ev('list_mcp_resource_templates')] }).bin, ['--record', '--record-file', scratchFile]);
+    expect(r.status).toBe(0);
+    expect(JSON.parse(readFileSync(outJson, 'utf8')).record_access).toBe('not_attempted');
+  });
+});
+
 describe('US-40 AC6 (CR6) — record access is judged from events', () => {
   const call = (error: unknown, result: unknown = { isError: false, content: [{ type: 'text', text: '{}' }] }) => JSON.stringify({ type: 'item.completed', item: { type: 'mcp_tool_call', server: 'health', tool: 'read_record', error, status: error ? 'failed' : 'completed', result: error ? null : result } });
   it('not_requested without --record', () => {
@@ -214,7 +310,7 @@ describe('US-40 AC6 (CR6) — record access is judged from events', () => {
     const startedOnly = JSON.stringify({ type: 'item.started', item: { type: 'mcp_tool_call', server: 'health', tool: 'read_record', error: null, status: 'in_progress' } });
     for (const [events, want] of [[[], 'not_attempted'], [[call({ code: 401 })], 'failed'], [[call(null, { isError: true, content: [{ type: 'text', text: 'refused' }] })], 'failed'], [[call(null, null)], 'failed'], [[startedOnly], 'failed'], [[call(null)], 'read'], [[call(null, { isError: false, content: [{ type: 'text', text: '' }] })], 'failed'], [[call(null, { isError: false, content: [{ type: 'text', text: '  ' }], structuredContent: {} })], 'failed'], [[call(null, { isError: false, content: [], structuredContent: {} })], 'failed'], [[call(null, { isError: false, content: [], structuredContent: [1] })], 'failed'], [[call(null, { isError: false, content: [], structuredContent: { schemaVersion: 1 } })], 'read'], [[call(null, { isError: false, content: [], structured_content: { schemaVersion: 1 } })], 'read']] as const) {
       const f = fake({ output: CLEAN, events: [...events] });
-      runWrapper(f.bin, ['--record']);
+      runWrapper(f.bin, ['--record', '--record-file', scratchFile]);
       expect(JSON.parse(readFileSync(outJson, 'utf8')).record_access).toBe(want);
     }
   });
