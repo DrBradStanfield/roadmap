@@ -101,12 +101,22 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   Same run: summary edits shift selection boundaries index-wide (two
   unrelated fixtures flipped state under the edit pair and flipped back on
   revert) — never attribute a distant fixture flip to your target edit.
+  W38 extended this to ADDITIONS: two unrelated blog entries (1022 → 1024)
+  turned the natto and K2-variables known-fails into 6/6 passes, and
+  `--index` pinned to the W36-era file fails them 6/6 in the same minutes;
+  a fifth attractor (`cholesterol-lowering-supplements…`) stole an ApoB
+  derivation ask 3/3. A known-fail that passes after a blog publish is not
+  fixed; a prompt fix is proven only on the full suite.
 - **2026-08-10 [loop]** Baseline a production failure in the harness BEFORE
   editing anything: the 08-05 MSM miss already passed at baseline (the 08-07
   fix wave had fixed it). Production failures predating the last fix wave may
   be stale — or pure sampling noise: confirmed again 2026-08-22, when the ECA
   routing miss (production empty that same morning) passed 3/3 at baseline
   with no edit. One production empty is one router sample, not a defect.
+  W38: baseline the text AS TYPED — a one-word paraphrase ("my" for "the")
+  turned a 3/3-passing liver query into a ∅ 3/3 "shape" that did not exist;
+  the recommender fixture also flipped ∅ 3/3 → 6/6 on an identical index
+  between sessions, so a single 3-run arm is weak evidence either way.
 - **2026-08-10 [loop]** Cloud environments intercept `ANTHROPIC_API_KEY` — the
   platform warns it "won't be used to authenticate requests" because Claude
   Code sessions authenticate through the account. Scripts that need a key for
@@ -139,3 +149,18 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   literal `SKIP_NO_REPLY` 1-word assistant message (3 rows in W36) —
   exclude these sentinels when computing reply-length stats, or the median
   reads low. Proposal filed W36 to stop persisting the sentinel as content.
+  Confirmed again W37: 20/45 assistant rows were sentinels (11/21 on one
+  hostile video thread); median 66 words excluding them, 52 including.
+- **2026-09-19 [latency]** The cache-hit rate is an inter-arrival metric, not
+  a router property: every hit in W36–W38 fell within 300 s of the previous
+  router call (13/13, 10/13, 2/2) and none beyond it (0/28, 0/34, 0/16) —
+  the 5-minute prompt-cache TTL. Its rise and fall is traffic burstiness;
+  W33's "mix-shift" and three later "watch" notes were chasing that.
+- **2026-09-19 [loop]** Production brownout signature (09-11 04:45–06:18Z):
+  5 router timeouts at 11,006–11,013 ms — the router's 5 s call + 1 s backoff
+  + 5 s retry (`callAnthropicWithUsage(body, 5_000)`, `RETRY_MAX_ATTEMPTS`
+  2) — with 5 classifier `ERROR` labels in the same window, all one YouTube
+  thread, recovered by 06:45Z. The timeouts ARE the week's p90 — report p90
+  with and without error rows (nearest-rank from W37 on). Classifier ERROR
+  fails open to the router by design; router failures reach Sentry only as
+  `warning`-level events (`reportRouterFailure`), so a burst raises no alert.

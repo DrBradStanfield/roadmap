@@ -113,25 +113,25 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   BEFORE pasting them into a report or ledger note; and the probe supplied its
   stack URLs, so it proved filename acceptance, not live frame shape. Filter
   start date is undatable from a shallow clone (gotcha below).
-- `[class][widget]` 2026-09-17 — Anything `main()` awaits before
-  `createRoot` is a blank-widget path: an unhandled rejection there leaves
-  the mount empty with no message, and the user's only move is reloading
-  (1-4 loads per session in 6G/6K). Found via a Drive grant without
-  `drive.file`: tokens exist and refresh, so `isConnected()` passes and the
-  first lookup answers 403 `insufficientPermissions` (two browsers, 09-10
-  and 09-15). Fixed for cloud storage failures by `startOnBackend` (US-09
-  AC13: on-device session + mirror marker + Drive Reconnect). Still open in
-  the same class: `resolveBackend` touching bare `localStorage`
-  (SecurityError when site storage is blocked, 6N; `null` on an old
-  WebView, 6J) — the on-device tier has nothing to fall back to, so that
-  needs a memory adapter or a message, not a catch. Reading tells: a
-  same-second PAIR (handled `cloud-connect op=migrate-up` + unhandled
-  `main`) is one page load, and an exchange POST + `navigation` crumb before
-  it is a fresh consent, not a refresh — 6G's sessions were three fresh
-  consents, so "old bug newly visible" was the wrong first read. The
-  connect-time lift catch in `liftLocalInto` already sees a 401/403 and
-  swallows it, then `cloud_connect_success` fires: the funnel counts a
-  refused grant as a success.
+- `[class][widget]` 2026-09-17, root-fixed 2026-09-20 — Anything `main()`
+  awaits before `createRoot` is a blank-widget path: an unhandled rejection
+  there leaves the mount empty and the user reloads (1-4 loads per session in
+  6G/6K). The Drive case: Google's granular consent lets the Drive box stay
+  unticked, the grant carries openid+email only, tokens exist and refresh, so
+  `isConnected()` passes and every lookup answers 403 (three browsers, 09-10,
+  09-15, 09-20, each a fresh consent). Net: `startOnBackend` (US-09 AC13,
+  PR #106). Root: Google NAMES the granted scopes — `scope=` on the redirect
+  URL beside `code`/`state`, and `scope` in the popup token response — so the
+  grant is refused before any token is kept (US-09 AC15). Rule: before adding
+  a probe request to learn a fact, check whether the provider already handed
+  it over (URL params, token-response fields); the /simplify altitude pass
+  found this after a first draft probed Drive and special-cased 401/403. Still
+  true for any OTHER 403: `liftLocalInto` swallows it and
+  `cloud_connect_success` fires (a refused grant counts as a success). Open: `resolveBackend` touching bare `localStorage`
+  (SecurityError, 6N; `null`, 6J) needs a memory adapter or a message, not a
+  catch. Reading tells: a same-second PAIR (handled `cloud-connect
+  op=migrate-up` + a second capture) is one page load; an exchange POST plus a
+  `navigation` crumb before it is a fresh consent, not a refresh.
 - `[defect][widget][merge]` 2026-09-18 — The 09-17 fallback (PR #106) ran the
   session on the device copy at `eraseEpoch` 0; `mergeFiles` hands a higher
   epoch the whole file, so the next good load of a once-erased record silently
