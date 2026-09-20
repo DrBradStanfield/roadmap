@@ -126,7 +126,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   a probe request to learn a fact, check whether the provider already handed
   it over (URL params, token-response fields); the /simplify altitude pass
   found this after a first draft probed Drive and special-cased 401/403. Still
-  open in the class: `resolveBackend` touching bare `localStorage`
+  true for any OTHER 403: `liftLocalInto` swallows it and
+  `cloud_connect_success` fires (a refused grant counts as a success). Open: `resolveBackend` touching bare `localStorage`
   (SecurityError, 6N; `null`, 6J) needs a memory adapter or a message, not a
   catch. Reading tells: a same-second PAIR (handled `cloud-connect
   op=migrate-up` + a second capture) is one page load; an exchange POST plus a
