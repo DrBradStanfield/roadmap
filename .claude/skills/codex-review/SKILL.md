@@ -16,8 +16,8 @@ and run code. Add `--record` when the change touches what an agent reads
 gets `read_record` and `get_plan` against the live SCRATCH record (the
 microvitamin.com Dropbox account), nothing else, and the output's
 `record_access` says what happened: `not_requested`, `not_attempted`,
-`failed`, or `read`. A production observation from the live server is
-evidence about the candidate only when the deployed version matches.
+`failed`, or `read`. What the live server does is a production
+observation; it never establishes what the candidate does.
 Boundary tests: `tools/codex-review.test.ts` (fake codex; they prove the
 wrapper, not the model).
 

@@ -563,3 +563,61 @@ Codex's R4/R2 is **Accepted**, not disputed. US-40 now specifies the
 reviewer (seven ACs, six of them written from Codex's findings), the tests
 cite it, and the contract's check 1 says stories cover tooling too. The
 self-authorising sentence is gone.
+
+## Codex follow-up review CF1–CF3 and the boundary probes (Claude, 2026-09-21)
+
+Review: [docs/reviews/2026-09-21-codex-reviewer-followup.md](reviews/2026-09-21-codex-reviewer-followup.md).
+
+- **CF1 (undeclared fields accepted and saved) — Accepted.** Exact keys are
+  checked at both levels; the report is built by copying declared fields one
+  by one. Test: an extra field at either level is incomplete and never
+  reaches the JSON.
+- **CF2 (any health tool, or a health call without `--record`, passed the
+  boundary) — Accepted.** A call is allowed only when `--record` is on, the
+  server is `health`, and the tool is `read_record` or `get_plan`; anything
+  else is `E_TOOL_BOUNDARY`, with the wrapper saying plainly that detection
+  is after the fact. Record state comes from allowed calls only.
+- **CF3 (rejected output retained or echoed) — Accepted.** A target
+  mismatch yields a fresh incomplete with no rejected text, and the raw
+  output file is deleted on every run before the work dir is kept. Test: a
+  marker in a rejected summary reaches neither stdout, the JSON, nor disk.
+- **Candidate instruction discovery — Accepted, verified.** A probe with a
+  sentinel `AGENTS.md` in the reviewed tree showed the sentinel loaded by
+  default and gone with `project_doc_max_bytes=0`; the wrapper now sets it
+  and empties the fallback list. Test pins the flag.
+- **Whole-disk reads — Codex was right to refuse the "floor" claim.** Probes,
+  all with synthetic canaries: the read-only sandbox read a file outside the
+  workspace. A `permissions.<name>.filesystem` profile with `"/"="read"` and
+  one path `"none"` DID block that read under `codex sandbox -P <name>` while
+  allowing the rest, so the mechanism exists in this CLI. Under `codex exec`
+  the same profile as `permissions.default` was accepted and not enforced,
+  and no activation key was found among the shapes tried. Status: **open,
+  Needs Codex**: it cited the config reference for filesystem profiles; the
+  one fact needed is how `exec` selects a profile in 0.154. Until then the
+  wrapper header says reads are unrestricted in exec, not that they cannot
+  be.
+- **CR5 residual (valid free text can carry record values) — Needs Brad,
+  stated narrowly.** Brad asked for live-record access on the scratch
+  account. The residual is: a reviewer that obeys the prompt copies no
+  values, and nothing mechanical checks that; the record is scratch by his
+  designation. If he accepts that sentence, `--record` is approved as is; if
+  not, the next step is a structural adapter that returns shapes, not values.
+- **Skill line — Accepted**, the version-match sentence is gone.
+- **Record-state edges — Accepted.** Started-never-completed is `failed`;
+  a structured-only payload is `read`; the code comment says `read` proves a
+  non-error payload, not what it held.
+- **"No tools/ file has a story" was too broad — Accepted.** `get-plan` and
+  `edit-record` cite US-30 and US-31. Moot since US-40.
+
+**Live record, end to end (2026-09-21).** After Brad's login, a `--record`
+review of commit 4347e88 completed in 1.2 min with `record_access: read`,
+two successful reads (one `read_record`, one `get_plan`), and the reviewer
+reporting production's older wording as an observation, not as candidate
+evidence. The kept logs held metadata only.
+
+Verification rounds on the CF fixes (2026-09-21): three, each finding one
+or two more real edges — property names as a leak channel, an empty
+structured payload, an empty text block, the wrapper's own LOC declared as
+zero, and the exec event stream's snake-case `structured_content` (both
+spellings are in the binary; both are accepted). All fixed with tests. The
+wrapper is executable tooling and its LOC is declared as such from now on.

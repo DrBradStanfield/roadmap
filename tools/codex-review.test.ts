@@ -121,9 +121,24 @@ describe('US-40 AC4 (CR4) — a failed or malformed review is never clean', () =
     const f = fake({ output: 'LGTM' });
     expect(runWrapper(f.bin).status).toBe(3);
   });
-  it('wrong snapshot id → incomplete', () => {
-    const f = fake({ output: { ...CLEAN, target: 'deadbeef+0000' } });
-    expect(runWrapper(f.bin).stdout).toContain('E_TARGET');
+  it('wrong snapshot id → incomplete, and none of the rejected text is echoed or kept (CF3)', () => {
+    const f = fake({ output: { ...CLEAN, target: 'deadbeef+0000', summary: 'SYNTHETIC-PRIVATE-5561' } });
+    const r = runWrapper(f.bin);
+    expect(r.stdout).toContain('E_TARGET');
+    expect(r.stdout).not.toContain('SYNTHETIC-PRIVATE-5561');
+    expect(readFileSync(outJson, 'utf8')).not.toContain('SYNTHETIC-PRIVATE-5561');
+    const work = r.stderr.match(/work dir kept at (\S+)/)![1];
+    expect(existsSync(join(work, 'REVIEW_OUT.json'))).toBe(false);
+  });
+  it('undeclared fields at either level → incomplete, and never saved (CF1)', () => {
+    const finding = { id: 'R1', severity: 'low', blocks_merge: false, file: 'a', line: 1, summary: 's', failure_scenario: 'f', evidence: 'e', remedy: 'r' };
+    for (const output of [{ ...CLEAN, extra_channel: 'SYNTHETIC-MARKER-8802' }, { ...CLEAN, 'SYNTHETIC-MARKER-8802': 1 }, { ...CLEAN, findings: [{ ...finding, note: 'SYNTHETIC-MARKER-8802' }] }, { ...CLEAN, findings: [{ ...finding, 'SYNTHETIC-MARKER-8802': 1 }] }]) {
+      const f = fake({ output });
+      const r = runWrapper(f.bin);
+      expect(r.status).toBe(3);
+      expect(r.stdout).toContain('undeclared');
+      expect(r.stdout + readFileSync(outJson, 'utf8')).not.toContain('SYNTHETIC-MARKER-8802');
+    }
   });
 });
 
@@ -139,6 +154,14 @@ describe('US-40 AC3 (CR2) — process environment and tool flags', () => {
     expect(argv.join(' ')).toContain('--disable apps');
     expect(argv.join(' ')).toContain('web_search="disabled"');
     expect(argv.join(' ')).toContain('--sandbox read-only');
+    expect(argv.join(' ')).toContain('project_doc_max_bytes=0');
+  });
+  it('CF2: a health tool outside the two reads, or any health call without --record, is a boundary breach', () => {
+    const ev = (tool: string) => JSON.stringify({ type: 'item.completed', item: { type: 'mcp_tool_call', server: 'health', tool, error: null, status: 'completed', result: { content: [{ type: 'text', text: 'ok' }] } } });
+    const a = runWrapper(fake({ output: CLEAN, events: [ev('edit_record')] }).bin, ['--record']);
+    expect(a.status).toBe(3); expect(a.stdout).toContain('E_TOOL_BOUNDARY'); expect(a.stdout).toContain('health.edit_record');
+    const b = runWrapper(fake({ output: CLEAN, events: [ev('read_record')] }).bin);
+    expect(b.status).toBe(3); expect(b.stdout).toContain('E_TOOL_BOUNDARY');
   });
   it('a tool call to a server outside the allow-list marks the review incomplete', () => {
     const f = fake({ output: CLEAN, events: [JSON.stringify({ type: 'item.completed', item: { type: 'mcp_tool_call', server: 'codex_apps', tool: 'github.merge_pull_request', error: null } })] });
@@ -187,8 +210,9 @@ describe('US-40 AC6 (CR6) — record access is judged from events', () => {
     runWrapper(f.bin);
     expect(JSON.parse(readFileSync(outJson, 'utf8')).record_access).toBe('not_requested');
   });
-  it('not_attempted, failed (transport error, tool refusal, empty payload), read', () => {
-    for (const [events, want] of [[[], 'not_attempted'], [[call({ code: 401 })], 'failed'], [[call(null, { isError: true, content: [{ type: 'text', text: 'refused' }] })], 'failed'], [[call(null, null)], 'failed'], [[call(null)], 'read']] as const) {
+  it('not_attempted, failed (transport error, tool refusal, empty payload, started-never-completed), read (text or structured payload)', () => {
+    const startedOnly = JSON.stringify({ type: 'item.started', item: { type: 'mcp_tool_call', server: 'health', tool: 'read_record', error: null, status: 'in_progress' } });
+    for (const [events, want] of [[[], 'not_attempted'], [[call({ code: 401 })], 'failed'], [[call(null, { isError: true, content: [{ type: 'text', text: 'refused' }] })], 'failed'], [[call(null, null)], 'failed'], [[startedOnly], 'failed'], [[call(null)], 'read'], [[call(null, { isError: false, content: [{ type: 'text', text: '' }] })], 'failed'], [[call(null, { isError: false, content: [{ type: 'text', text: '  ' }], structuredContent: {} })], 'failed'], [[call(null, { isError: false, content: [], structuredContent: {} })], 'failed'], [[call(null, { isError: false, content: [], structuredContent: [1] })], 'failed'], [[call(null, { isError: false, content: [], structuredContent: { schemaVersion: 1 } })], 'read'], [[call(null, { isError: false, content: [], structured_content: { schemaVersion: 1 } })], 'read']] as const) {
       const f = fake({ output: CLEAN, events: [...events] });
       runWrapper(f.bin, ['--record']);
       expect(JSON.parse(readFileSync(outJson, 'utf8')).record_access).toBe(want);

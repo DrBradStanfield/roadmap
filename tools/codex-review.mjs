@@ -140,6 +140,8 @@ function stripSymlinks(dir) {
   return removed;
 }
 
+const TOP_KEYS = ["status", "target", "summary", "findings"];
+const FINDING_KEYS = ["id", "severity", "blocks_merge", "file", "line", "summary", "failure_scenario", "evidence", "remedy"];
 const schema = {
   type: "object", additionalProperties: false,
   required: ["status", "target", "summary", "findings"],
@@ -220,6 +222,7 @@ const codexArgs = [
   "--disable", "apps", "--disable", "image_generation", "--disable", "browser_use", "--disable", "computer_use",
   "--disable", "plugins", "--disable", "memories", "--disable", "skill_search",
   "-c", 'web_search="disabled"', "-c", 'shell_environment_policy.inherit="core"', "-c", 'model_reasoning_effort="high"',
+  "-c", "project_doc_max_bytes=0", "-c", "project_doc_fallback_filenames=[]",
   "--model", MODEL, ...RECORD_ARGS,
   "-C", src, "--output-schema", schemaPath, "-o", outPath, "--color", "never", "-",
 ];
@@ -264,33 +267,55 @@ else {
   try { parsed = JSON.parse(readFileSync(outPath, "utf8")); } catch { parsed = null; }
   const problem = parsed === null ? "not JSON" : validate(parsed);
   if (problem) review = incomplete(`E_SCHEMA: ${problem}`);
-  else if (parsed.target !== snapshotId) review = { ...parsed, status: "incomplete", summary: `E_TARGET: reviewer named ${parsed.target}, not ${snapshotId}. ${parsed.summary}` };
-  else review = parsed;
+  else if (parsed.target !== snapshotId) review = incomplete("E_TARGET: the reviewer named a different snapshot; its output is discarded");
+  else review = pick(parsed);
 }
+// Raw model output never survives the run: a rejected result could hold anything (CF3).
+if (existsSync(outPath)) unlinkSync(outPath);
 function incomplete(why) { return { status: "incomplete", target: snapshotId, summary: why, findings: [] }; }
 function validate(r) {
   const str = (v) => typeof v === "string";
+  if (typeof r !== "object" || r === null || Array.isArray(r)) return "not an object";
+  // Diagnostics name positions, never the model's text: a property NAME can carry a value too.
+  if (Object.keys(r).some((k) => !TOP_KEYS.includes(k))) return "undeclared top-level field";
   if (!["complete", "incomplete"].includes(r.status)) return "status";
   if (!str(r.target) || !str(r.summary) || !Array.isArray(r.findings)) return "top-level fields";
   for (const [i, f] of r.findings.entries()) {
-    for (const k of ["id", "file", "summary", "failure_scenario", "evidence", "remedy"]) if (!str(f?.[k])) return `findings[${i}].${k}`;
+    if (typeof f !== "object" || f === null) return `findings[${i}]`;
+    if (Object.keys(f).some((k) => !FINDING_KEYS.includes(k))) return `findings[${i}] has an undeclared field`;
+    for (const k of ["id", "file", "summary", "failure_scenario", "evidence", "remedy"]) if (!str(f[k])) return `findings[${i}].${k}`;
     if (!["high", "medium", "low"].includes(f.severity)) return `findings[${i}].severity`;
     if (typeof f.blocks_merge !== "boolean") return `findings[${i}].blocks_merge`;
     if (!Number.isInteger(f.line)) return `findings[${i}].line`;
   }
   return null;
 }
+/** Only the declared fields, copied one by one: nothing else the model wrote reaches a report. */
+function pick(r) {
+  return { status: r.status, target: r.target, summary: r.summary, findings: r.findings.map((f) => Object.fromEntries(FINDING_KEYS.map((k) => [k, f[k]]))) };
+}
 
 const calls = run.stdout.split("\n").flatMap((line) => {
   try { const ev = JSON.parse(line); return ev.item?.type === "mcp_tool_call" ? [ev] : []; } catch { return []; }
 });
-const foreignCalls = calls.filter((ev) => ev.item.server !== "health");
-const healthCalls = calls.filter((ev) => ev.item.server === "health" && ev.type === "item.completed");
+const ALLOWED_TOOLS = ["read_record", "get_plan"];
+const allowed = (ev) => RECORD && ev.item.server === "health" && ALLOWED_TOOLS.includes(ev.item.tool);
+const foreignCalls = calls.filter((ev) => !allowed(ev));
+const startedCalls = calls.filter((ev) => allowed(ev) && ev.type === "item.started").length;
+const completed = calls.filter((ev) => allowed(ev) && ev.type === "item.completed");
+const nonEmptyObject = (v) => v && typeof v === "object" && !Array.isArray(v) && Object.keys(v).length > 0;
+const nonEmptyBlock = (b) => b && typeof b === "object" && (b.type === "text" ? typeof b.text === "string" && b.text.trim().length > 0 : Object.keys(b).length > 1);
+// The exec event stream spells it structured_content; the MCP payload inside spells it structuredContent. Both strings are in the 0.154 binary.
+const payloadOk = (r) => r && r.isError !== true && ((Array.isArray(r.content) && r.content.some(nonEmptyBlock)) || nonEmptyObject(r.structured_content ?? r.structuredContent));
+// "read" means: an allowed tool returned a non-error payload. It does not verify what the payload held.
 const recordAccess = !RECORD ? "not_requested"
-  : healthCalls.some((ev) => ev.item.error == null && ev.item.status !== "failed" && ev.item.result && ev.item.result.isError !== true && (ev.item.result.content?.length ?? 0) > 0) ? "read"
-  : healthCalls.length || /AuthRequired/.test(run.stderr) ? "failed"
+  : completed.some((ev) => ev.item.error == null && ev.item.status !== "failed" && payloadOk(ev.item.result)) ? "read"
+  : completed.length || startedCalls || /AuthRequired/.test(run.stderr) ? "failed"
   : "not_attempted";
-if (foreignCalls.length) review = { ...review, status: "incomplete", summary: `E_TOOL_BOUNDARY: the reviewer reached a tool server outside the allow-list (${[...new Set(foreignCalls.map((ev) => ev.item.server))].join(", ")}). ${review.summary}` };
+if (foreignCalls.length) {
+  const names = [...new Set(foreignCalls.map((ev) => `${ev.item.server}.${ev.item.tool}`))].join(", ");
+  review = incomplete(`E_TOOL_BOUNDARY: the reviewer called a tool outside the allow-list (${names}); detected after the fact, so a write may already have happened`);
+}
 
 let drift = null;
 if (!has("--commit") && !has("--range")) {
