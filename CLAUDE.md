@@ -208,10 +208,8 @@ same commit).
   `tools/test-queries.json` (router) or `tools/test-tool-edits.json`
   (tool-use harness, `npx tsx tools/test-tool-edits.ts --name <case>`).
 - **Verify beyond tests:** UI/CSS/Liquid via Chrome DevTools MCP AND real
-  WebKit (`tools/webkit-verify.mjs` pattern — Chrome mobile emulation is
-  Blink and misses iOS bugs; theme CSS only reproduces LIVE). Known WebKit
-  traps: content-box flex default, ~280px input min-content,
-  sticky-in-max-content-parent.
+  WebKit (`tools/webkit-verify.mjs` — Chrome mobile emulation is Blink and
+  misses iOS bugs; theme CSS only reproduces LIVE). Traps: docs/reference.md.
 - **If an approach is failing, stop and re-plan.**
 - **Every gotcha gets archived, same commit as the fix** — symptom / root
   cause / fix / evidence commit, appended to the docs/reference.md archive.
@@ -225,6 +223,13 @@ same commit).
   strongest model; Sonnet only for machine-verified mechanical work). Never set
   `CLAUDE_CODE_SUBAGENT_MODEL`. Clinical logic, merge semantics, security,
   FHIR shapes always get Fable-level judgment.
+- **Every adversarial Claude check gets a Codex one beside it** (Brad,
+  2026-09-21): `node tools/codex-review.mjs` — skill `codex-review`, contract
+  docs/review-format.md, spec US-40. REQUIRED before committing clinical,
+  merge/FHIR, security or agent-contract changes WHATEVER their size — a
+  one-line auth or threshold edit still gets it. Skip ONLY outside those
+  classes (doc/blog sweeps, one-liners). Incomplete is never a pass. Cloud
+  loops + CI stay Claude-only.
 
 ## Dangerous Gotchas (curated — full archive in docs/reference.md)
 
@@ -245,15 +250,13 @@ same commit).
   — hold space with an NBSP.
 - **Never dedup on LLM-generated text** (titles drift between runs) — stable
   IDs only.
-- **Lab-import auto-retries server-side** (`extractOrClassify` = 2 outer
-  attempts × 2 calls each (initial + `{` prefill) = 4 LLM calls worst-case; each
-  HTTP call retries transient 503/529/network up to `RETRY_MAX_ATTEMPTS=2`, flat
-  1 s → 8 HTTP attempts) — failures self-heal; don't add client retries.
-- **react-router 7.17 exports resolve everything to dist/development** —
-  vite.config.ts redirects SSR to the prod build + `ssr.noExternal` inlining;
-  a `generateBundle` guard FAILS THE BUILD if a dep escapes — add it to
-  `ssr.noExternal`, don't allow-list. Sentry dev frames from
-  `react-router-serve` are expected residue (full saga: docs/reference.md).
+- **Lab-import auto-retries server-side** (up to 4 LLM calls and 8 HTTP
+  attempts per file; counts in docs/reference.md) — failures self-heal, so
+  never add client retries.
+- **react-router 7.17 exports resolve everything to dist/development** — a
+  `generateBundle` guard FAILS THE BUILD if a dep escapes: add it to
+  `ssr.noExternal`, never allow-list. Sentry dev frames from
+  `react-router-serve` are expected residue (saga: docs/reference.md).
 - **Fly:** deploy from repo root; suspension needs `fly machine start`; "No
   access token" ≠ expired (pass `FLY_API_TOKEN` from `~/.fly/config.yml`,
   never `fly auth login`); canary-deploy anything regenerating package-lock.

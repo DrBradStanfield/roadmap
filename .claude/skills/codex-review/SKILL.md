@@ -1,9 +1,19 @@
 ---
 name: codex-review
-description: Independent adversarial review of the current change by a different model (Codex, gpt-6-astra) against docs/review-format.md. Run after every non-trivial change before committing, and whenever asked to "get Codex to review" or "cross-model review". Advisory only.
+description: Independent adversarial review of the current change by a different model (Codex, gpt-6-astra) against docs/review-format.md. Run it beside every adversarial Claude check, and REQUIRED before committing clinical, merge/FHIR, security or agent-contract changes whatever their size; skip ONLY outside those classes (doc/blog sweeps, one-liners). Not in cloud loops or CI, which stay Claude-only. Also whenever asked to "get Codex to review" or "cross-model review". Advisory only.
 ---
 
 # Codex review
+
+**When.** Beside every adversarial Claude check (the fresh-agent review,
+`/code-review`, the skeptic pass), and always before committing a change to
+clinical logic, merge or FHIR semantics, a security surface, or an
+agent-facing contract — whatever its size, because a one-line auth or
+threshold edit is exactly the kind that hurts someone. Skip it ONLY outside
+those classes, for doc and blog sweeps and one-line fixes, where the round
+trip costs more than it returns. A cloud loop or a CI job does not run this
+at all: no Codex there, so those stay Claude-only (Brad, 2026-09-21;
+US-40 AC8).
 
 A fresh-context reviewer on a different model, the cross-model analogue of
 the fresh-Fable check. It reviews an immutable, symlink-free snapshot in a

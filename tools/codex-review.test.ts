@@ -318,6 +318,46 @@ describe('US-40 AC6 (CR6) — record access is judged from events', () => {
   });
 });
 
+describe('US-40 AC8 — the invocation policy says the same thing in all three places', () => {
+  // Wrapped prose: collapse whitespace so a line break inside a phrase cannot hide it.
+  const read = (p: string) => readFileSync(resolve(__dirname, '..', p), 'utf8').replace(/\s+/g, ' ');
+  it('CLAUDE.md, the skill and the story agree on the required classes, the skips, and the CI exception', () => {
+    const claude = read('CLAUDE.md');
+    const skill = read('.claude/skills/codex-review/SKILL.md');
+    const story = read('docs/user-stories.md').split('### US-40')[1].split('### US-4')[0];
+    for (const text of [claude, skill, story]) {
+      for (const required of ['clinical', 'merge', 'security', 'agent-contract|agent-facing contract']) {
+        expect(new RegExp(required, 'i').test(text)).toBe(true);
+      }
+      expect(/doc[\w\/ ]*sweep/i.test(text)).toBe(true);
+      expect(/one-liner|one-line fix/i.test(text)).toBe(true);
+      // precedence: a one-line change in a required class is still reviewed
+      expect(/only outside those classes|required classes win|whatever (their|its) size/i.test(text)).toBe(true);
+    }
+    // the cloud-loop / CI exemption is stated in ALL THREE, not just two
+    for (const text of [claude, skill, story]) {
+      expect(/Claude-only|Claude only|not available there/i.test(text)).toBe(true);
+    }
+    // The skill is only discoverable if its frontmatter is valid YAML, and the way
+    // to break it while editing prose is a ": " inside an unquoted value.
+    const raw = readFileSync(resolve(__dirname, '..', '.claude/skills/codex-review/SKILL.md'), 'utf8');
+    const front = raw.split('---')[1].trim().split('\n');
+    const keys: string[] = [];
+    for (const line of front) {
+      const m = /^([a-z_]+): (.*)$/.exec(line);
+      expect([line, m !== null]).toEqual([line, true]); // no continuation lines, no stray indentation
+      const [, key, value] = m!;
+      keys.push(key);
+      const quoted = /^(".*"|'.*')$/.test(value);
+      expect([key, quoted || !value.includes(': ')]).toEqual([key, true]);
+    }
+    expect(keys).toEqual(['name', 'description']);
+    // the rule names its own spec and entry point where an agent will look
+    expect(claude).toContain('tools/codex-review.mjs');
+    expect(claude).toContain('US-40');
+  });
+});
+
 describe('US-40 AC1 — file list', () => {
   it('names files with spaces correctly and counts them', () => {
     writeFileSync(join(repo, 'name with space.txt'), 'y\n');

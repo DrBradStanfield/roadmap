@@ -713,3 +713,40 @@ values. A full `--record` review of commit 4347e88 then ran on the default
 path: complete, `record_access: read`, no blocking findings, and the reviewer
 said in its own summary that the local reads came from the working-tree
 server rather than the snapshot. No record copy survived the run.
+
+## The rule, and Codex's review of it (2026-09-21)
+
+Brad: "whenever a Claude adversarial agent is spawned, a separate Codex
+adversarial agent should also be spawned." That is now CLAUDE.md's
+Development Rules, the `codex-review` skill, and US-40 AC8, in the same
+words: required before committing clinical, merge/FHIR, security or
+agent-contract changes; skipped for doc and blog sweeps and one-liners; the
+required classes win when a change touches both; cloud loops and CI stay
+Claude-only. Budget paid per the one-in-one-out rule: the WebKit trap list
+moved to docs/reference.md and the lab-import retry arithmetic was deleted
+as duplicated detail already archived there.
+
+Codex reviewed the rule change and blocked twice.
+
+- **R1 (no acceptance criterion for the policy) — Accepted.** US-40 promised
+  review of "every non-trivial change" and had nothing about triggers or
+  exceptions. AC8 now states them and the story's opening sentence matches.
+- **R2 (no test for the selection behaviour) — Accepted in part.** Whether
+  an agent actually spawns the reviewer is not machine-checkable in this
+  repo, and inventing a harness that asserts a mock would test the mock.
+  What IS checkable is that the policy has not drifted in one file and not
+  the others, so a test pins the required classes, the skips and the CI
+  exception across CLAUDE.md, the skill and the story. The honest evidence
+  that the rule is followed is the review ledger in this document.
+
+Two more rounds on the rule itself, both accepted and both about the policy
+saying the same thing everywhere. The skip for one-liners was unqualified, so
+a one-line auth or threshold edit could have been committed unreviewed; all
+three places now say the required classes are reviewed whatever their size
+and the skip applies only outside them. Then the skill was missing the
+cloud-loop and CI exemption that CLAUDE.md and AC8 both carried. The last
+round found that the sentence Claude added for that exemption put a colon
+inside an unquoted YAML value, which breaks the skill's frontmatter and would
+have made the skill undiscoverable. The test now walks the frontmatter and
+rejects a stray colon, without adding a dependency; it was mutation-checked,
+as was the precedence wording.
