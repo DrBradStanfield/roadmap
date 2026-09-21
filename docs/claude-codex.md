@@ -698,3 +698,18 @@ output goes through pipes, which the limit does not touch), asserts the
 bounded `E_COPY_FAILED` line appears, and asserts at least one work
 directory existed to inspect. Worth stating because Codex warned about
 exactly this shape: a green suite is not evidence that the path ran.
+
+**The scratch record is in place (2026-09-21).** Brad gave explicit
+permission, so Claude fetched it rather than asking him to: a Codex run with
+`apps` disabled and `enabled_tools=["read_record"]` wrote the hosted server's
+response straight to `~/.codex-review/scratch-record.json` (mode 600), so no
+value passed through Claude's context. Two false starts worth noting: a
+`workspace-write` run with no approval policy hung for an hour on an approval
+prompt with no terminal to answer it (`approval_policy="never"` fixes it), and
+`timeout` does not exist on macOS, so a guarded retry silently never ran.
+
+The file matches the pin: `2026-09-17T20:06:27.965Z`, 15 measurements, 5 lab
+values. A full `--record` review of commit 4347e88 then ran on the default
+path: complete, `record_access: read`, no blocking findings, and the reviewer
+said in its own summary that the local reads came from the working-tree
+server rather than the snapshot. No record copy survived the run.
