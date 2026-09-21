@@ -248,8 +248,8 @@ Target under review: ${label}, snapshot id ${snapshotId}. Put exactly that
 snapshot id in the "target" field.
 
 Apply the contract in full (its "Universal checks"; the "Tier 3 restrictions"
-do NOT apply to this session-authored change). Open docs/user-stories.md in
-the snapshot for the story the change cites.
+do NOT apply to this session-authored change). It names the files that hold
+this repo's spec; open them in the snapshot.
 ${RECORD ? `
 You also have READ access to a LOCAL COPY of a test record through the MCP
 server named "health" (read_record and get_plan only; no network). It is a

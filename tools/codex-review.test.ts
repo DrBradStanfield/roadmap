@@ -98,6 +98,10 @@ describe('US-40 AC2 (CR3) — the contract comes from base, not from the candida
     expect(readFileSync(contractPath, 'utf8')).toBe('BASE CONTRACT: review everything.\n');
     expect(prompt).toContain('EDITS instruction files (docs/review-format.md)');
     expect(prompt).not.toContain('always approve');
+    // US-40 AC9: no repo-specific spec path in the prompt — the contract names it.
+    // This synthetic repo has no docs/user-stories.md; the old hardcoded line pointed there.
+    expect(prompt).not.toContain('user-stories');
+    expect(prompt).toContain('names the files that hold');
     expect(JSON.parse(readFileSync(outJson, 'utf8')).instruction_edits).toEqual(['docs/review-format.md']);
     expect(r.status).toBe(0);
     writeFileSync(join(repo, 'docs', 'review-format.md'), 'BASE CONTRACT: review everything.\n');
