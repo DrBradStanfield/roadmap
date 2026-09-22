@@ -750,3 +750,38 @@ inside an unquoted YAML value, which breaks the skill's frontmatter and would
 have made the skill undiscoverable. The test now walks the frontmatter and
 rejects a stray colon, without adding a dependency; it was mutation-checked,
 as was the precedence wording.
+
+## Could a Codex reviewer run inside a cloud loop, read-only? (2026-09-22)
+
+Brad asked. My earlier framing was wrong to lead with write access: writes
+were never the main risk, and the wrapper never had them. Two probes decide
+it.
+
+**The Codex shell has no network egress under the read-only sandbox.** A
+`curl` to an external host from inside a sandboxed run returns `000`
+(macOS Seatbelt; a Linux CI container uses a different backend and must be
+re-probed before the same claim is made there). So the shell cannot POST
+anything out. The channel that does exist is the model itself: whatever the
+reviewer reads is in its context, and its context goes to OpenAI.
+
+**So the control is what it can READ, and "read-only" does not restrict
+reads.** A read-only run still reads the whole disk, verified earlier with a
+canary outside the workspace. Three things do restrict it, and the wrapper
+already does all three: a five-variable environment (a `CANARY_SECRET` in the
+parent never reaches the child, pinned by a test), a `git archive` snapshot
+instead of the live checkout (no `.env`, no untracked files), and
+`--ignore-user-config` (no MCP servers).
+
+**What a cloud loop would still need.** Its environment holds real keys as
+environment variables (`SUPABASE_*` including the read-only product-health
+role, `SENTRY_AUTH_TOKEN`), so the minimal-environment control is what keeps
+them out of the reviewer, not the sandbox mode. Beyond that: the Codex CLI
+must be installable there, and it needs an `OPENAI_API_KEY`, because the
+login used on this Mac is a browser OAuth flow with no headless equivalent.
+That key is a new credential in a model-reachable environment, which the
+constitution's Guardrails make Brad-only, and it moves the cost from a
+subscription to metered billing on every loop run.
+
+Unverified and worth testing before anyone claims it works: whether the CLI
+installs in that environment at all, and whether the Linux sandbox blocks
+network the way the macOS one does.
