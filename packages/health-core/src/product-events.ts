@@ -43,6 +43,13 @@ export const PRODUCT_EVENT_NAMES = [
   'report_email_bounced',
   'report_email_complained',
   'report_email_clicked',
+  // US-23 AC10: a reminder email's button, counted apart from the plan-ready
+  // one by the same server redirect. Server-originated, no metadata.
+  'reminder_email_clicked',
+  // US-22 AC13: a guest arrived from an email and this browser held no plan,
+  // so the landing notice showed. Name only. Recovery is the same visitor then
+  // firing results_viewed or cloud_connect_success.
+  'email_landing_empty',
   // US-32 hosted connector. Value-free counters: which tool, which assistant,
   // whether it worked (mcp_tool_call), and one row per completed connection
   // (mcp_connect). Never a value, never an identifier, never a connection key.
@@ -83,6 +90,7 @@ export const SERVER_ONLY_EVENT_NAMES = [
   'report_email_bounced',
   'report_email_complained',
   'report_email_clicked',
+  'reminder_email_clicked',
   'mcp_tool_call',
   'mcp_connect',
   'mcp_authorize_shown',

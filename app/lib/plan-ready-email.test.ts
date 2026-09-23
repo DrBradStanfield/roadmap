@@ -1,5 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { buildPlanReadyEmailHtml, buildReminderV2EmailHtml, googleCalendarUrl } from './email.server';
+import { APP_BASE_URL, buildPlanReadyEmailHtml, buildReminderV2EmailHtml, googleCalendarUrl, type PlanLane } from './email.server';
+
+/** The text a RECIPIENT sees, not the raw markup: styling legitimately contains
+ *  both digits (padding, font sizes) and letter runs that trip naive substring
+ *  matching ("background" contains "kg"). */
+const visible = (html: string): string =>
+  html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&[a-z]+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/** The button's one target in both emails (US-22 AC5, US-23 AC10). */
+const OPEN_URL = `${APP_BASE_URL}/roadmap/open`;
+const LANES: PlanLane[] = ['guest', 'cloud'];
 
 /**
  * US-22 AC1 (as amended 2026-08-14 by US-23/US-24) — the plan-ready email
@@ -10,31 +24,17 @@ import { buildPlanReadyEmailHtml, buildReminderV2EmailHtml, googleCalendarUrl } 
  * footprint ("we keep your calendar, never your chart"), and once a capture
  * enrols reminders this email carries that calendar — deliberately, because
  * for a typed-lane user it may become the only durable copy. What must still
- * never appear, in either variant, is a VALUE: an LDL, a blood pressure, a
- * dose, a result. These tests hold that line for both variants.
+ * never appear, in either variant or either lane, is a VALUE: an LDL, a blood
+ * pressure, a dose, a result. These tests hold that line.
  */
-describe('US-22 AC1 — plan-ready email (unenrolled variant) carries no health data', () => {
-  const html = buildPlanReadyEmailHtml('https://health-tool-app.fly.dev/roadmap/open');
+describe.each(LANES)('US-22 AC1 — plan-ready email (unenrolled variant, %s lane) carries no health data', (lane) => {
+  const html = buildPlanReadyEmailHtml(lane);
+  const visibleText = visible(html);
 
-  it('renders with only the CTA url interpolated', () => {
-    expect(html).toContain('https://health-tool-app.fly.dev/roadmap/open');
-    expect(html).toContain('Open my Health Roadmap');
+  it('links its one button through /roadmap/open', () => {
+    expect(html).toContain(`href="${OPEN_URL}"`);
+    expect(html).toContain('Open the Health Roadmap');
   });
-
-  it('has exactly one required argument — options carry only calendar fields', () => {
-    // The options parameter is defaulted, so .length stays 1: nothing REQUIRED
-    // beyond the CTA url, and the optional channel is typed to labels + dates.
-    expect(buildPlanReadyEmailHtml.length).toBe(1);
-  });
-
-  // Assert against the text a RECIPIENT sees, not the raw markup: styling
-  // legitimately contains both digits (padding, font sizes) and letter runs
-  // that trip naive substring matching ("background" contains "kg").
-  const visibleText = html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&[a-z]+;/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
 
   it('mentions no metric, lab value, medication, or screening vocabulary', () => {
     const forbidden = [
@@ -52,14 +52,56 @@ describe('US-22 AC1 — plan-ready email (unenrolled variant) carries no health 
     expect(visibleText, `visible copy was: ${visibleText}`).not.toMatch(/\d/);
   });
 
-  it('states the local-first promise (the reason it is thin)', () => {
-    expect(html.toLowerCase()).toContain('your own cloud storage');
+  it('says what the server keeps, and that the plan is not there', () => {
+    expect(visibleText).toContain("Dr Brad's server keeps your reminder calendar and this email address.");
+    expect(visibleText).toContain('Your plan is not stored there.');
   });
 
   it('sets expectations about reminders and their unsubscribe', () => {
     const lower = html.toLowerCase();
     expect(lower).toContain('comes due');
     expect(lower).toContain('unsubscribe');
+  });
+});
+
+it('the lane is the one required argument, so no send site can default into the wrong storage claim (US-22 AC12)', () => {
+  // Options stay defaulted and typed to labels + dates only: nothing else is
+  // required beyond the lane.
+  expect(buildPlanReadyEmailHtml.length).toBe(1);
+});
+
+/**
+ * US-22 AC12 — the email tells each reader where THEIR plan lives. The old copy
+ * ("Your plan reloads from your own device or your own cloud storage") promised
+ * every guest a way back that only worked in the browser they made the plan
+ * in; Safari clears that after a week without a visit (Darren, 2026-09-24).
+ */
+describe('US-22 AC12 — the storage sentence is true for the lane it goes to', () => {
+  it('guest: the browser it was made in, the PDF, the Safari limit, and the cloud as the way to carry it', () => {
+    const text = visible(buildPlanReadyEmailHtml('guest'));
+    expect(text).toContain('Your plan is saved in the browser you made it in, and in the PDF if you saved one.');
+    expect(text).toContain('On another phone, computer or browser, the tool starts empty.');
+    expect(text).toContain('Safari can also clear a saved plan after a week without a visit.');
+    expect(text).toContain('open the tool in the browser you made it in and connect Google Drive or Dropbox');
+    expect(text).not.toContain('reloads');
+    expect(text).not.toContain('your own cloud storage');
+  });
+
+  it('cloud: the plan is in their own storage and loads on any device that connects the same account', () => {
+    const text = visible(buildPlanReadyEmailHtml('cloud'));
+    expect(text).toContain('Your plan is saved in your own cloud storage.');
+    expect(text).toContain('open the tool and connect the same account, and your plan loads');
+    // A cloud user may never have made a PDF, and their plan is not tied to one browser.
+    expect(text).not.toContain('PDF');
+    expect(text).not.toContain('browser you made it in');
+  });
+
+  it.each(LANES)('%s: no em dash anywhere in the email (docs/writing-style.md)', (lane) => {
+    const html = buildPlanReadyEmailHtml(lane, {
+      schedule: [{ label: 'Colonoscopy', dueAt: '2034-03-01' }],
+      unsubscribeUrl: 'https://health-tool-app.fly.dev/reminders-v2/unsubscribe?token=t',
+    });
+    expect(html).not.toMatch(/—|&mdash;/);
   });
 });
 
@@ -70,7 +112,7 @@ describe('plan-ready email (enrolled variant) carries the calendar and nothing e
     { label: 'Lipid panel blood test', dueAt: '2027-05-12' },
   ];
   const unsubscribeUrl = 'https://health-tool-app.fly.dev/reminders-v2/unsubscribe?token=tok123';
-  const html = buildPlanReadyEmailHtml('https://health-tool-app.fly.dev/roadmap/open', { schedule, unsubscribeUrl });
+  const html = buildPlanReadyEmailHtml('guest', { schedule, unsubscribeUrl });
 
   it('renders every schedule item as label + human date', () => {
     expect(html).toContain('Colonoscopy');
@@ -90,9 +132,9 @@ describe('plan-ready email (enrolled variant) carries the calendar and nothing e
   });
 
   it('still shows no VALUE — a label and a date are the entire footprint', () => {
-    const visible = html.replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;/gi, ' ').toLowerCase();
+    const shown = visible(html).toLowerCase();
     for (const term of ['mmol', 'mg/dl', 'mmhg', 'ldl 3', 'result', 'reading']) {
-      expect(visible, `enrolled plan-ready email must not mention "${term}"`).not.toContain(term);
+      expect(shown, `enrolled plan-ready email must not mention "${term}"`).not.toContain(term);
     }
   });
 });
@@ -107,9 +149,11 @@ describe('US-24 — googleCalendarUrl', () => {
     expect(parsed.searchParams.get('dates')).toBe('20271231/20280101'); // year rollover handled
     // The details string is VISIBLE text in the saved event (calendar
     // descriptions don't hide hrefs behind labels) — it must show the
-    // canonical storefront page, never a fly.dev backend host.
-    expect(parsed.searchParams.get('details')).toContain('https://drstanfield.com/pages/roadmap');
-    expect(parsed.searchParams.get('details')).not.toContain('fly.dev');
+    // canonical storefront page, bare, never a fly.dev backend host and never
+    // the redirect's email flag.
+    expect(parsed.searchParams.get('details')).toBe(
+      'From your Health Roadmap. Reopen your plan: https://drstanfield.com/pages/roadmap',
+    );
   });
 });
 
@@ -142,5 +186,39 @@ describe('reminder email carries the full calendar (US-23 AC3) and typed promine
     expect(html).not.toContain('Your full check-up calendar');
     expect(html).toContain('Stop them with one click');
     expect(html).toContain('Lipid panel blood test');
+  });
+});
+
+/**
+ * US-23 AC10 — the reminder button pointed at the GitHub Pages build
+ * (drbradstanfield.github.io), a different site from the one every reminder
+ * reader made their plan on, and 404 on the day it was found. It now goes
+ * through the same counted redirect as the plan-ready email, marked so its
+ * clicks are counted apart. The footer claimed "Your health data lives only in
+ * your own cloud storage", false for the typed lane, which is 169 of 183 rows.
+ */
+describe('US-23 AC10 — the reminder button and footer', () => {
+  const html = buildReminderV2EmailHtml(
+    [{ label: 'Lipid panel blood test', dueAt: '2026-08-01' }],
+    'https://health-tool-app.fly.dev/reminders-v2/unsubscribe?token=tok789',
+    { fullSchedule: [{ label: 'Colonoscopy', dueAt: '2034-03-01' }] },
+  );
+
+  it('links the button through /roadmap/open with the reminder counter, never the Pages site', () => {
+    expect(html).toContain(`href="${OPEN_URL}?src=reminder"`);
+    expect(html).toContain('Open the Health Roadmap');
+    expect(html).not.toContain('github.io');
+  });
+
+  it('makes no storage claim that is false for a typed-lane reader', () => {
+    const text = visible(html);
+    expect(text).not.toContain('lives only in your own cloud storage');
+    expect(text).toContain("Dr Brad's server keeps your reminder calendar and this email address.");
+    expect(text).toContain('Your plan is not stored there.');
+  });
+
+  it('has no em dash anywhere (docs/writing-style.md)', () => {
+    expect(html).not.toMatch(/—|&mdash;/);
+    expect(visible(html)).toContain('Lipid panel blood test, due Aug 2026');
   });
 });

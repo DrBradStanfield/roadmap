@@ -155,6 +155,27 @@ describe('the hosted MCP counters', () => {
   });
 });
 
+/**
+ * US-22 AC13 + US-23 AC10 — the email-arrival counters. A browser may say an
+ * email arrival found no plan (name only); only the server may count a
+ * reminder-button click, as it counts the plan-ready one.
+ */
+describe('the email-arrival counters', () => {
+  it('takes email_landing_empty from a browser, with no metadata (US-22 AC13)', () => {
+    expect(PRODUCT_EVENT_NAMES).toContain('email_landing_empty');
+    expect(parseProductEvent({ eventName: 'email_landing_empty', visitorId: VISITOR })).toEqual({
+      eventName: 'email_landing_empty',
+      visitorId: VISITOR,
+    });
+  });
+
+  it('keeps reminder_email_clicked server-only, like report_email_clicked (US-23 AC10)', () => {
+    expect(PRODUCT_EVENT_NAMES).toContain('reminder_email_clicked');
+    expect(SERVER_ONLY_EVENT_NAMES).toContain('reminder_email_clicked');
+    expect(parseProductEvent({ eventName: 'reminder_email_clicked', visitorId: VISITOR })).toBeNull();
+  });
+});
+
 /** US-38 — the guide link's counter: which surface sent someone to the hub. */
 describe('the guide-link counter', () => {
   it('takes a placement from the closed list', () => {
@@ -214,6 +235,7 @@ describe('recordServerEvent — the server path validates too', () => {
       'report_email_clicked',
       'report_email_complained',
       'report_email_bounced',
+      'reminder_email_clicked',
     ] as const) {
       await recordServerEvent(eventName);
     }
@@ -222,6 +244,7 @@ describe('recordServerEvent — the server path validates too', () => {
       'report_email_clicked',
       'report_email_complained',
       'report_email_bounced',
+      'reminder_email_clicked',
     ]);
     expect(inserts.every((row) => row.metadata === null)).toBe(true);
   });

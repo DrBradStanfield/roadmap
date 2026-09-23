@@ -28,6 +28,7 @@ import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import { SyncControl, RemindersSection } from './sync-control';
 import { ConnectRefusedNotice } from './connect-refused';
+import { EmailLandingNotice, emailLandingApplies, takeEmailFlag } from './email-landing';
 import { StorageNoticeContext } from '../src/lib/storage-notice';
 import { HistoryLightboxHost } from './history-lightbox';
 import {
@@ -117,8 +118,12 @@ async function resolveRemembered(): Promise<ResolvedBackend> {
 
 async function main() {
   initSentry();
+  // Before the first await (US-22 AC13): an OAuth return rewrites the URL.
+  const fromEmail = takeEmailFlag();
   const { resolved, refused } = await resolveBackend();
   const { backend, reconnect } = await startOnBackend(resolved, initRoadmapStore);
+  const state = storageState(backend, reconnect);
+  const emailLanding = await emailLandingApplies(fromEmail, state);
   // "Delete all my data" must also delete the reminder row on Brad's server,
   // and the token that authorises it dies with the file — so it runs first.
   setPreEraseHook(cancelRemindersForErase);
@@ -141,7 +146,8 @@ async function main() {
             be announced to an off-screen panel. */}
         <RemindersEnrolledNotice backend={backend} />
         {refused && <ConnectRefusedNotice message={refused} />}
-        <StorageNoticeContext.Provider value={storageState(backend, reconnect) === 'guest'}>
+        {emailLanding && <EmailLandingNotice />}
+        <StorageNoticeContext.Provider value={state === 'guest'}>
           <HealthTool
             syncControl={({ hasData }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} />}
             remindersSection={<RemindersSection backend={backend} />}

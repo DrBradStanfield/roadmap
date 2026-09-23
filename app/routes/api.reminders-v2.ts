@@ -139,7 +139,9 @@ export async function action({ request }: ActionFunctionArgs) {
       // quiet period ends. Fire-and-forget; counted HERE because only the
       // server knows the enrolment landed — abuse enrolments count too. Both
       // fire once per enrolment, so they hang off isNew, not off the token.
-      sendPlanReadyEmail(email, {
+      // Every caller here has a connected cloud (the widget refuses the opt-in
+      // without one), so the email says the plan is there (US-22 AC12).
+      sendPlanReadyEmail(email, 'cloud', {
         schedule: input.schedule,
         unsubscribeUrl: buildUnsubscribeUrl(enrolment.token),
       }).catch(() => {});

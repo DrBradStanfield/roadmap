@@ -1,6 +1,5 @@
 import { Resend } from 'resend';
 import { ROADMAP_URL } from '../routes/roadmap.open';
-import { PAGES_APP_URL } from './local-first-route.server';
 import * as Sentry from '@sentry/react-router';
 import { recordServerEvent } from './product-events.server';
 import { scrubText } from '../../packages/health-core/src/sentry-scrub';
@@ -15,6 +14,9 @@ const SHOPIFY_STORE_URL = process.env.SHOPIFY_STORE_URL || 'https://drstanfield.
 // Our own origin, for links that must hit our routes (the US-22 click redirect)
 // rather than the storefront. Same source as the reminder cron's unsubscribe URL.
 export const APP_BASE_URL = process.env.SHOPIFY_APP_URL || 'https://health-tool-app.fly.dev';
+/** Both emails' button: counts the click, then lands on the tool (US-22 AC5,
+ *  US-23 AC10). The reminder adds `?src=reminder` to be counted apart. */
+const ROADMAP_OPEN_URL = `${APP_BASE_URL}/roadmap/open`;
 
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
@@ -325,8 +327,8 @@ function reminderItem(title: string, description: string, color: string): string
  * exclusive, so one day = dueAt..dueAt+1). The event description is VISIBLE
  * text in the saved event, so it carries the canonical storefront URL — a
  * fly.dev redirect there reads as phishing (Brad, 2026-08-14). Cost accepted:
- * calendar-sourced return visits go uncounted; only the email CTA (a real
- * href behind a button) routes through /roadmap/open.
+ * calendar-sourced return visits go uncounted; only the two email buttons
+ * (real hrefs) route through /roadmap/open.
  */
 export function googleCalendarUrl(label: string, dueAt: string): string {
   const day = dueAt.replace(/-/g, '');
@@ -380,10 +382,22 @@ function prominentUnsubscribeBlock(unsubscribeUrl: string): string {
       <div style="border:1px solid #e5e7eb;border-radius:6px;padding:14px;margin:24px 0 0;text-align:center;">
         <p style="color:#555;font-size:13px;line-height:1.5;margin:0;">
           Didn't ask for these reminders, or got this by mistake?
-          <a href="${unsubscribeUrl}" style="color:#2563eb;text-decoration:underline;">Stop them with one click</a> — no login, no questions.
+          <a href="${unsubscribeUrl}" style="color:#2563eb;text-decoration:underline;">Stop them with one click</a>. No login, no questions.
         </p>
       </div>`;
 }
+
+/**
+ * What the server holds, in the footer of both emails (US-22 AC12, US-23
+ * AC10). True for every lane: the reminder row is the whole footprint, and no
+ * lane's plan is on the server. It replaced "Your health data lives only in
+ * your own cloud storage", which was false for the typed lane.
+ */
+const SERVER_FOOTPRINT = "Dr Brad's server keeps your reminder calendar and this email address. Your plan is not stored there.";
+
+/** The one button both emails carry (US-22 AC12, US-23 AC10). It opens the tool;
+ *  it cannot promise the plan, which lives wherever the reader saved it. */
+const OPEN_TOOL_LABEL = 'Open the Health Roadmap';
 
 /**
  * Build HTML for a v2 reminder email. No name (the server doesn't store one),
@@ -403,7 +417,7 @@ export function buildReminderV2EmailHtml(
   const items = dueItems
     .map((item) =>
       reminderItem(
-        `${escapeHtml(item.label)} — due ${formatReminderDate(item.dueAt)}`,
+        `${escapeHtml(item.label)}, due ${formatReminderDate(item.dueAt)}`,
         'Please book this with your doctor.',
         '#f0ad4e',
       ),
@@ -430,9 +444,9 @@ export function buildReminderV2EmailHtml(
       ${items}
 
       <div style="text-align:center;margin:32px 0;">
-        <a href="${PAGES_APP_URL}"
+        <a href="${ROADMAP_OPEN_URL}?src=reminder"
            style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:16px;font-weight:600;">
-          Open Your Health Plan
+          ${OPEN_TOOL_LABEL}
         </a>
       </div>
 
@@ -447,9 +461,7 @@ export function buildReminderV2EmailHtml(
     </div>
 
     <div style="padding:16px 24px;text-align:center;border-top:1px solid #eee;">
-      <p style="color:#999;font-size:12px;margin:0 0 4px;">
-        Your health data lives only in your own cloud storage — these reminders are the only thing on Dr Brad's server.
-      </p>
+      <p style="color:#999;font-size:12px;margin:0 0 4px;">${SERVER_FOOTPRINT}</p>
       <p style="color:#999;font-size:12px;margin:0;">
         <a href="${unsubscribeUrl}" style="color:#999;text-decoration:underline;">Unsubscribe</a>
       </p>
@@ -464,21 +476,43 @@ export function buildReminderV2EmailHtml(
 // ---------------------------------------------------------------------------
 
 /**
- * Build the plan-ready email sent when a guest hands over their address
- * (US-22 AC1).
+ * Which storage the reader chose, as each send site knows it (US-22 AC12): the
+ * capture button is the guest's lane (api.measurements), and a reminders
+ * opt-in needs a connected cloud (api.reminders-v2).
+ */
+export type PlanLane = 'guest' | 'cloud';
+
+/** Where the reader's plan lives, one entry per paragraph. The guest copy must
+ *  hold for a Safari user coming back to the same browser (a week without a
+ *  visit and Safari may have cleared it) and must never imply the button
+ *  brings the plan to another device. */
+const WHERE_YOUR_PLAN_LIVES: Record<PlanLane, string[]> = {
+  guest: [
+    'Your plan is saved in the browser you made it in, and in the PDF if you saved one. On another phone, computer or browser, the tool starts empty. Safari can also clear a saved plan after a week without a visit.',
+    'To have your plan on any device, open the tool in the browser you made it in and connect Google Drive or Dropbox.',
+  ],
+  cloud: [
+    'Your plan is saved in your own cloud storage. On any phone, computer or browser, open the tool and connect the same account, and your plan loads.',
+  ],
+};
+
+/**
+ * Build the plan-ready email sent on a new reminder enrolment (US-22 AC1):
+ * the capture button's typed address, or a cloud user's opt-in.
  *
- * Carries no measurement, lab value, medication, or result — the plan
- * re-renders from the user's OWN storage when they follow the link. Since
- * US-23 it MAY carry the reminder calendar (labels + due dates): that is the
- * constitution's permitted server footprint, it is "what reminders to expect"
- * (US-22 AC1's own words), and for a typed-lane user this email may end up
- * being the only durable copy of their schedule.
+ * Carries no measurement, lab value, medication, or result. The button opens
+ * the tool, and the copy says where this reader's plan lives, because only
+ * their own browser or cloud can bring it back (AC12). Since US-23 it MAY
+ * carry the reminder calendar (labels + due dates): that is the constitution's
+ * permitted server footprint, it is "what reminders to expect" (US-22 AC1's
+ * own words), and for a typed-lane user this email may end up being the only
+ * durable copy of their schedule.
  *
  * Its two jobs beyond being useful: a bounce proves the address is dead, and a
  * click proves someone with access to that inbox wanted it (US-22 AC3/AC5).
  */
 export function buildPlanReadyEmailHtml(
-  openUrl: string,
+  lane: PlanLane,
   options: {
     /** Present when the capture also enrolled reminders (US-23 AC1). */
     schedule?: Array<{ label: string; dueAt: string }>;
@@ -489,6 +523,9 @@ export function buildPlanReadyEmailHtml(
     ? scheduleSection(options.schedule) +
       (options.unsubscribeUrl ? prominentUnsubscribeBlock(options.unsubscribeUrl) : '')
     : '';
+  const whereItLives = WHERE_YOUR_PLAN_LIVES[lane]
+    .map((text) => `<p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">${text}</p>`)
+    .join('\n      ');
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -501,20 +538,12 @@ export function buildPlanReadyEmailHtml(
       <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
         Hi, well done on building your personalized health plan.
       </p>
-      <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
-        You downloaded it as a PDF — this email is just so you can find your way
-        back to it whenever you want.
-      </p>
-      <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 24px;">
-        Your plan reloads from your own device or your own cloud storage. It is
-        not stored on our servers, so this email doesn't contain any of your
-        health information.
-      </p>
-      <p style="text-align:center;margin:0 0 24px;">
-        <a href="${openUrl}" style="display:inline-block;background:#0052a3;color:#fff;text-decoration:none;padding:12px 24px;border-radius:6px;font-size:15px;">Open my Health Roadmap</a>
+      ${whereItLives}
+      <p style="text-align:center;margin:8px 0 24px;">
+        <a href="${ROADMAP_OPEN_URL}" style="display:inline-block;background:#0052a3;color:#fff;text-decoration:none;padding:12px 24px;border-radius:6px;font-size:15px;">${OPEN_TOOL_LABEL}</a>
       </p>
       <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">
-        We'll also email you when something in your plan comes due — a blood
+        We'll also email you when something in your plan comes due: a blood
         test, a screening, or a medication review. That's a few emails a year at
         most, and every one has a one-click unsubscribe.
       </p>
@@ -528,9 +557,7 @@ export function buildPlanReadyEmailHtml(
       </p>
     </div>
     <div style="padding:16px 24px;text-align:center;border-top:1px solid #eee;">
-      <p style="color:#999;font-size:12px;margin:0;">
-        Your health data lives only on your device or in your own cloud storage — never on Dr Brad's server.
-      </p>
+      <p style="color:#999;font-size:12px;margin:0;">${SERVER_FOOTPRINT}</p>
     </div>
   </div>
 </body>
@@ -538,8 +565,8 @@ export function buildPlanReadyEmailHtml(
 }
 
 /**
- * Send the plan-ready email (US-22 AC1/AC2). Never throws — the caller is the
- * capture path and the user already has their PDF.
+ * Send the plan-ready email (US-22 AC1/AC2). Never throws: both callers are
+ * enrolment paths, and a failed send must never fail the enrolment.
  *
  * The CTA points at our own /roadmap/open redirect rather than straight at the
  * store, so the click is counted first-party (AC5) without Resend link-rewriting
@@ -547,14 +574,14 @@ export function buildPlanReadyEmailHtml(
  */
 export async function sendPlanReadyEmail(
   email: string,
+  lane: PlanLane,
   options: { schedule?: Array<{ label: string; dueAt: string }>; unsubscribeUrl?: string } = {},
 ): Promise<boolean> {
   try {
-    const openUrl = `${APP_BASE_URL}/roadmap/open`;
     // replyTo is load-bearing, not decoration: the copy invites a reply, and
     // RESEND_FROM_EMAIL is a sending address that may not accept inbound mail.
     // Without this, every reply Brad asked for would vanish.
-    await sendEmail(email, 'Your Health Roadmap is ready', buildPlanReadyEmailHtml(openUrl, options), FEEDBACK_EMAIL);
+    await sendEmail(email, 'Your Health Roadmap is ready', buildPlanReadyEmailHtml(lane, options), FEEDBACK_EMAIL);
     await recordServerEvent('report_email_sent');
     return true;
   } catch (error) {

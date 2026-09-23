@@ -83,9 +83,11 @@ async function handleKlaviyoCapture(data: unknown, clientIp: string) {
     // unsubscribeByToken, which makes a replayed capture a refresh instead).
     // The email carries the calendar (labels + dates, the permitted footprint)
     // and the one-click unsubscribe (AC5). Fire-and-forget — a Resend outage
-    // must never surface to a user who already has their plan.
+    // must never surface to a user who already has their plan. The capture
+    // button is the guest lane: its email says the plan lives in the browser
+    // it was made in (US-22 AC12).
     if (enrolment?.isNew) {
-      sendPlanReadyEmail(email, {
+      sendPlanReadyEmail(email, 'guest', {
         schedule,
         unsubscribeUrl: buildUnsubscribeUrl(enrolment.token),
       }).catch(() => {});

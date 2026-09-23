@@ -55,6 +55,7 @@ import {
 } from '../lib/storage';
 import {
   loadLatestMeasurements,
+  hasSavedRecord,
   getInitialInputsSync,
   loadAllHistory,
   loadLabValues,
@@ -247,7 +248,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     async function loadData() {
       const result = await loadLatestMeasurements();
 
-      if (result && (Object.keys(result.inputs).length > 0 || result.previousMeasurements.length > 0 || result.medications.length > 0 || result.screenings.length > 0)) {
+      if (hasSavedRecord(result)) {
         // Apply saved unit preference
         const unitPref = result.inputs.unitSystem;
         if (unitPref === 'si' || unitPref === 'conventional') {

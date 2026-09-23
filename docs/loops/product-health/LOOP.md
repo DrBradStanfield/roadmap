@@ -41,7 +41,11 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   lab_rows_viewed/lab_row_added → medication_history_viewed →
   reminder_optin/optout → report_email_* →
   reminder_sent (server; cross-check against `reminder_optin_v2.last_sent`
-  stamps) → the connector family, whose OAuth funnel runs
+  stamps) → reminder_email_clicked (server; the reminder button, counted
+  apart from the plan-ready `report_email_clicked`) → email_landing_empty
+  (browser: an email arrival that found no plan in that browser; recovery
+  is the same `visitor_id` then firing results_viewed or
+  cloud_connect_success) → the connector family, whose OAuth funnel runs
   `mcp_authorize_shown` → `mcp_authorize_refused` (split by `reason`: a
   refused vendor shows here and nowhere else) → `mcp_consent_posted` →
   `mcp_connect` / `mcp_connect_failed` (whose `reason` now covers `/token`

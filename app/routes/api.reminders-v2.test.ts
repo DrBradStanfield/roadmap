@@ -72,6 +72,19 @@ describe('the oracle reply shape', () => {
     expect(recordServerEvent).toHaveBeenCalledWith('reminder_optin', { provider: 'dropbox' });
   });
 
+  // US-22 AC12: this route's opt-in needs a connected cloud (the widget refuses
+  // it without one), so its plan-ready email says the plan is in their cloud.
+  it.each([
+    { provider: 'dropbox', email: 'cloud-lane-dbx@example.com' },
+    { provider: 'typed', email: 'cloud-lane-typed@example.com' },
+    { provider: 'google-drive', idToken: 'good' },
+  ])('a new $provider enrolment sends the plan-ready email in the cloud lane', async (identity) => {
+    await action({ request: post({ op: 'optin', ...identity, schedule: SCHEDULE }) } as never);
+
+    expect(sendPlanReadyEmail).toHaveBeenCalledTimes(1);
+    expect((sendPlanReadyEmail.mock.calls[0] as unknown[])[1]).toBe('cloud');
+  });
+
   it('existing address-lane row: exactly {refreshed: true, email} — no token, no send, no count', async () => {
     enrolByEmail.mockResolvedValue({ isNew: false });
     const email = freshEmail();

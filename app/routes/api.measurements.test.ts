@@ -70,8 +70,11 @@ describe('US-23 AC8 — plan-ready email fires ONLY on a new enrolment', () => {
 
     expect(res.status).toBe(200);
     expect(sendPlanReadyEmail).toHaveBeenCalledTimes(1);
-    const [sentTo, options] = sendPlanReadyEmail.mock.calls[0] as [string, { schedule: unknown; unsubscribeUrl: string }];
+    const [sentTo, lane, options] = sendPlanReadyEmail.mock.calls[0] as [string, string, { schedule: unknown; unsubscribeUrl: string }];
     expect(sentTo).toBe(email);
+    // US-22 AC12: the capture button is the guest lane, so the email says the
+    // plan lives in the browser it was made in, not in a cloud.
+    expect(lane).toBe('guest');
     expect(options.schedule).toEqual(SCHEDULE);
     expect(options.unsubscribeUrl).toContain('/reminders-v2/unsubscribe?token=tok-new');
     expect(recordServerEvent).toHaveBeenCalledWith('reminder_optin', { provider: 'typed' });

@@ -73,13 +73,6 @@ export function verifyAppProxySignature(request: Request, nowSeconds = Date.now(
 }
 
 /**
- * The public standalone app (GitHub Pages is the only public front door until
- * Phase 5 — switch to the drstanfield.com page at the Shopify port). Used for
- * email CTAs and anywhere the server must name the app's URL.
- */
-export const PAGES_APP_URL = 'https://drbradstanfield.github.io/roadmap/';
-
-/**
  * The caller's IP, as far as anything here can know it. Every rate limiter in
  * the app keys on this one reader (2026-09-02) — a second copy would silently
  * reopen a bypass — so the caller must name which of THREE trust models its
