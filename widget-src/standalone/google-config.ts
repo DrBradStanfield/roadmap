@@ -7,6 +7,10 @@
  * (github.io + drstanfield.com ONLY — HARD RULE: localhost is never an
  * approved origin).
  */
+// Read at module load: a test that factory-mocks '../src/storage' must mock
+// this module too (storage-copy / reminders tests do), or the import throws.
+import { DRIVE_FILE_SCOPE } from '../src/storage';
+
 export const GOOGLE_DRIVE_CLIENT_ID =
   '687809032623-dh4f91ravotu2cdactok13i2eirfadcs.apps.googleusercontent.com';
 
@@ -18,7 +22,7 @@ export const GOOGLE_DRIVE_CLIENT_ID =
  * to Brad's server (§10) — via a signed ID token from the code flow, or a
  * one-time userinfo read on the popup path. No extra Drive access.
  */
-export const GOOGLE_DRIVE_SCOPE = 'openid email https://www.googleapis.com/auth/drive.file';
+export const GOOGLE_DRIVE_SCOPE = `openid email ${DRIVE_FILE_SCOPE}`;
 
 /**
  * Brad's stateless token-exchange endpoint (decision record §14) — the only

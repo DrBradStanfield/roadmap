@@ -203,9 +203,9 @@ export function RemindersEnrolledNotice({ backend }: { backend: Backend }) {
     setShown(false);
   };
   return (
-    <div className="hr-sync hr-reminders-notice">
+    <div className="hr-sync hr-page-notice">
       <RemindersControl backend={backend} />
-      <button type="button" className="hr-sync-link hr-reminders-dismiss" onClick={dismiss}>
+      <button type="button" className="hr-sync-link hr-page-notice-dismiss" onClick={dismiss}>
         Got it
       </button>
     </div>

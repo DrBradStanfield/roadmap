@@ -14,6 +14,7 @@ export const PRODUCT_EVENT_NAMES = [
   'upload_saved',
   'cloud_connect_started',
   'cloud_connect_success',
+  'cloud_connect_refused',
   'correction_made',
   // US-17 default-on reminders: optin fires SERVER-side when a new row lands
   // (every lane, since 2026-09-10 — only the server knows it landed, and abuse
