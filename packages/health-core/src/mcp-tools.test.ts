@@ -171,6 +171,18 @@ describe('US-32 AC35 — a read states the unit every stored value is in', () =>
     const unitsDescription = (readTool.outputSchema.properties.units as { description: string }).description;
     for (const text of [SI_NOTE, unitsDescription]) expect(text).toContain('has no canonical unit: never infer one');
   });
+
+  it('US-32 AC35: the read_record description matches the SI lab-unit contract, not the superseded printed-unit claim', () => {
+    const readTool = MCP_TOOLS.find((tool) => tool.name === 'read_record')!;
+    const unitsDescription = (readTool.outputSchema.properties.units as { description: string }).description;
+
+    expect(readTool.description).toContain('A catalogued lab is converted to SI');
+    expect(readTool.description).toContain('keeps the unit it was reported in');
+    expect(readTool.description).not.toContain('a lab value keeps the unit its lab printed');
+    expect(SI_NOTE).toContain('converted on the way in');
+    expect(unitsDescription).toContain('stored in its SI unit');
+    expect(unitsDescription).toContain('keeps the unit it was reported in');
+  });
 });
 
 describe('US-32 — a read answers compactly', () => {
