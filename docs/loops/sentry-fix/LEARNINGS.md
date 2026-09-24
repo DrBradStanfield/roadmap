@@ -14,11 +14,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   native-frames-only unhandled rejections, or onerror with a single
   `<anonymous>` frame (our bundles always load from real CDN URLs). When the
   minified symbol/pattern greps to nothing in our bundles — ledger-on-sight
-  (2026-08-25 "Ba`prod"; 2026-09-03 "Ka`prod", GSA webview; 2026-09-04
-  "n.data.split", Samsung Internet 7.0 on a Tizen smart TV; 2026-09-10
-  `window.webkit.messageHandlers` undefined in an `unload` listener — the
-  WKWebView native bridge, which only an in-app browser's injected script
-  calls; GSA on iPad).
+  (Ba`prod, Ka`prod, n.data.split on a Tizen TV, `window.webkit.messageHandlers`
+  in an `unload` listener from GSA's WKWebView bridge, zaloJSV2).
 - `[prior][widget]` iOS WebKit-only layout/interaction bugs are a known class
   (CLAUDE.md list: content-box flex default, 280px input min-content, sticky
   in max-content parents). If a fix touches layout, the escape analysis should
@@ -40,11 +37,9 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   "Chat transient upstream 5xx, retrying once" IS the retry instrumentation
   from PR #11 — ledger it `wontfix` (expected) on first appearance; its rate
   is the transient-failure trend, worth reading, never "fixing". Same on
-  sight for self-generated probes: `level=info` + a non-production
-  `environment` tag (e.g. `bundle-filter-verification`, 2026-09-07, PR #73's
-  five synthetic events) — match the event ids to the verification doc on
-  the authoring branch, then `wontfix`; regrowth past the documented count is
-  the only thing worth a second look.
+  sight for self-generated probes (`level=info` + a non-production
+  `environment` tag, e.g. PR #73's five `bundle-filter-verification` events):
+  match the ids to the verification doc, `wontfix`; only regrowth matters.
 - `[process][review]` 2026-08-12 — Verify a safety claim at the CALL SITE
   that enforces it, not the helper that implements it (round-1 REJECT: dedup
   helper was sound, but the route gates it behind `if (conversationId)`).
@@ -74,17 +69,12 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   in cross-origin form: an edge 5xx without CORS headers surfaces as an
   immediate fetch REJECTION, not a status code.
 - `[defect][widget]` 2026-08-14 — `standalone/connect.ts` migrateLocalInto /
-  copyDownToDevice were type-broken and silently no-oped (read() without
-  fileName; `{file}` destructured from `{body,version}`; SyncManager missing
-  its DocumentSpec). US-09 AC3 dead in source, no Sentry signal — silence was
-  the symptom. FIXED same day on Brad's live authorization (failing tests
-  first, `connect-migrate.test.ts`); widget-src/tsconfig now includes
-  `standalone/` so tsc sees the directory (13 pre-existing errors surfaced —
-  burn-down list). Root enabler CLOSED same day (Brad-authorized): both
-  project tsconfigs burned down 36→0 and gated in ci.yml; the burn-down
-  itself surfaced a second latent crash (Object.hasOwn on iOS WebKit <15.4
-  in the statin cascade — replaced with hasOwnProperty.call, floors kept at
-  ES2020). app/ still ungated — its burn-down is a standing task.
+  copyDownToDevice were type-broken and silently no-oped (US-09 AC3 dead in
+  source, no Sentry signal — silence was the symptom). Fixed same day on
+  Brad's authorization (`connect-migrate.test.ts`); both tsconfigs burned down
+  36→0 and gated in ci.yml, which surfaced a second latent crash (Object.hasOwn
+  on iOS WebKit <15.4 → hasOwnProperty.call, floors kept at ES2020). app/ is
+  still ungated — a standing task.
 - `[noise][server]` 2026-08-23 — Open-redirect/XSS probes on the Shopify OAuth
   surface (`/auth/exit-iframe?exitIframe=javascript:…` or `data:…`) surface as
   handled "Invalid URL. Refusing to redirect" server errors — that is
@@ -116,11 +106,23 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   it over (URL params, token-response fields); the /simplify altitude pass
   found this after a first draft probed Drive and special-cased 401/403. Still
   true for any OTHER 403: `liftLocalInto` swallows it and
-  `cloud_connect_success` fires (a refused grant counts as a success). Open: `resolveBackend` touching bare `localStorage`
-  (SecurityError, 6N; `null`, 6J) needs a memory adapter or a message, not a
-  catch. Reading tells: a same-second PAIR (handled `cloud-connect
+  `cloud_connect_success` fires (a refused grant counts as a success). Closed 09-24 (6T, US-09 AC16, PR #PRNUM): the
+  remembered-backend key now goes through the safe accessors on every path;
+  a "nothing will be kept" notice is still owed. Reading tells: a same-second PAIR (handled `cloud-connect
   op=migrate-up` + a second capture) is one page load; an exchange POST plus a
   `navigation` crumb before it is a fresh consent, not a refresh.
+- `[class][widget]` 2026-09-24 — Storage-blocked browsers come in three shapes
+  and the field sent all three inside ten days: `localStorage` missing (Safari
+  26.6, ReferenceError), the getter throwing SecurityError (Chrome Mobile),
+  the property `null` (old WebView). One bare read on the path `main()` awaits
+  is a blank widget for every shape; `lib/storage.ts`' safe accessors already
+  covered them, and the remembered-backend key was the one caller that
+  bypassed them (6T/6N/6J, US-09 AC16). Escape: every standalone test stubs a
+  WORKING localStorage. Audit shortcut: `grep -rn "localStorage\." widget-src
+  --include=*.ts* | grep -v test` — anything outside lib/storage.ts and a
+  try/catch is this class again. Same run: a scrub that keeps only closed tags
+  can still carry the browser's error NAME (`cause`) value-free; 6M sat
+  unreadable at 32 events for want of it.
 - `[defect][widget][merge]` 2026-09-18 — The 09-17 fallback (PR #106) ran the
   session on the device copy at `eraseEpoch` 0; `mergeFiles` hands a higher
   epoch the whole file, so the next good load of a once-erased record silently
