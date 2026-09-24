@@ -1,7 +1,7 @@
 # Deploy Runbook — full manual sequence & platform detail
 
 > Moved out of CLAUDE.md 2026-08-10 (entropy pass). **The PRIMARY deploy path is CI**
-> (`.github/workflows/deploy.yml` — see CLAUDE.md "Deploy"). This file is the
+> (`.github/workflows/deploy.yml` — see CLAUDE.md "Deploy & Environment Variables"). This file is the
 > manual/emergency runbook plus the full two-app split, build-flag, and scaling detail.
 
 ### Deploy Workflow
@@ -221,6 +221,23 @@ to both — deploy twice, see "Shopify app configs".**)
   ```
   This nearly produced a wrong report that `CHAT_SURFACE` was unset on the commerce app (it is set and Deployed). Treat an auth-failed command as *no information*: re-run it authenticated, then conclude.
 - **Use `fly deploy --strategy canary` for risky server deploys (framework/runtime/dep changes).** Fly's DEFAULT rolling deploy + the `/healthz` check does NOT protect against a boot crash — on 2026-06-14 the RR7 cutover crashed on boot (server never bound `:3000`) and the rolling strategy updated BOTH machines to the broken image anyway, taking production down (rolled back via `fly deploy --image <prev>`). Canary boots ONE throwaway machine, health-checks it FIRST, and leaves the serving machines untouched if it fails. The boot crash was `@supabase/realtime-js >=2.108` hard-throwing "Node.js 20 detected without native WebSocket support" — local Node was 22 so it only failed in the `node:*-alpine` container; that's why the Docker base is now `node:22`. **Lesson: anything that regenerates package-lock.json (a migration, a dep add/remove) can silently bump a runtime dep that only fails in the Docker Node version — canary-deploy it.**
+
+## Environment variables
+
+Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
+
+- **Shared keys**: SUPABASE_*, SESSION_DATABASE_URL, SENTRY_*, RESEND_*,
+  ANTHROPIC_API_KEY, SHOPIFY_*, KLAVIYO_API_KEY/KLAVIYO_LIST_ID (per app).
+- **Fly-only**: MCP_ISSUER, MCP_SEAL_KEYS, MCP_CLIENT_HMAC_KEY,
+  OPENAI_APPS_CHALLENGE, GITHUB_ISSUES_TOKEN (edu; the connector files bug
+  reports with it, and without it hands the user a link), DROPBOX_APP_KEY/SECRET,
+  GOOGLE_DRIVE_CLIENT_ID/SECRET (BOTH Fly apps: `health-tool-app` for the
+  widget's Google exchange, edu for the MCP's Drive leg). Setup and rotation:
+  [deploy-runbook-mcp.md](deploy-runbook-mcp.md).
+- **Per-app secrets diverge post-split**: each app has its own SHOPIFY_ and
+  KLAVIYO_ pairs; edu omits the Discord and YouTube bot tokens.
+- **GitHub Actions**: deploy secrets live ONLY in the gated `production`
+  environment; ANTHROPIC_API_KEY (spend-capped) is the only repo secret.
 
 ## Hosted MCP (health-tool-edu)
 
