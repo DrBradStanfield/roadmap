@@ -16,7 +16,7 @@
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GitHubAdapter, WebDavAdapter } from '../src/storage';
-import { adapterFor, BACKEND_KEY, finishFormConnect, logOff, prepareSwitch, PROVIDER_LABELS, useBusyRun, type Backend } from './connect';
+import { adapterFor, finishFormConnect, forgetBackend, logOff, prepareSwitch, PROVIDER_LABELS, useBusyRun, type Backend } from './connect';
 import { trackProductEvent } from '../src/lib/server-api';
 import { useModalDialog } from './use-dialog';
 import { PLAN_STORAGE_CTA, PLAN_STORAGE_NOTICE } from '../src/lib/storage-notice';
@@ -123,7 +123,7 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
     void run(async () => {
       await prepareSwitch(current);
       if (id === 'local') {
-        localStorage.removeItem(BACKEND_KEY);
+        forgetBackend();
         location.reload();
         return;
       }

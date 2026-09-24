@@ -14,17 +14,14 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   native-frames-only unhandled rejections, or onerror with a single
   `<anonymous>` frame (our bundles always load from real CDN URLs). When the
   minified symbol/pattern greps to nothing in our bundles — ledger-on-sight
-  (2026-08-25 "Ba`prod"; 2026-09-03 "Ka`prod", GSA webview; 2026-09-04
-  "n.data.split", Samsung Internet 7.0 on a Tizen smart TV; 2026-09-10
-  `window.webkit.messageHandlers` undefined in an `unload` listener — the
-  WKWebView native bridge, which only an in-app browser's injected script
-  calls; GSA on iPad).
+  (08-25 Ba`prod; 09-03 Ka`prod; 09-04 n.data.split, Tizen TV; 09-10
+  `window.webkit.messageHandlers` in `unload`, GSA's WKWebView; 09-20 zaloJSV2).
 - `[prior][widget]` iOS WebKit-only layout/interaction bugs are a known class
   (CLAUDE.md list: content-box flex default, 280px input min-content, sticky
   in max-content parents). If a fix touches layout, the escape analysis should
   ask "would tools/webkit-verify have caught this?"
-- `[prior][process]` Three blanket-rewrite attempts on 2026-08-07 (chat-health)
-  all regressed retrieval: fix ONE issue at a time, measure, never batch-fix.
+- `[prior][process]` Three blanket rewrites (chat-health, 2026-08-07) all
+  regressed retrieval: fix ONE issue at a time, measure, never batch-fix.
 
 ## Run learnings
 
@@ -40,19 +37,17 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   "Chat transient upstream 5xx, retrying once" IS the retry instrumentation
   from PR #11 — ledger it `wontfix` (expected) on first appearance; its rate
   is the transient-failure trend, worth reading, never "fixing". Same on
-  sight for self-generated probes: `level=info` + a non-production
-  `environment` tag (e.g. `bundle-filter-verification`, 2026-09-07, PR #73's
-  five synthetic events) — match the event ids to the verification doc on
-  the authoring branch, then `wontfix`; regrowth past the documented count is
-  the only thing worth a second look.
+  sight for self-generated probes (`level=info` + a non-production
+  `environment` tag; 2026-09-07: PR #73's five `bundle-filter-verification`
+  events, ids in docs/sentry-filter-verification-2026-09-07.md): match,
+  `wontfix`; only regrowth matters.
 - `[process][review]` 2026-08-12 — Verify a safety claim at the CALL SITE
   that enforces it, not the helper that implements it (round-1 REJECT: dedup
   helper was sound, but the route gates it behind `if (conversationId)`).
 - `[gotcha][sentry-api]` 2026-08-12 — Issues-list `count` is LIFETIME and
-  `statsPeriod` does not filter the list (valid values only ''/24h/14d);
-  rank by summing `stats[period]` buckets and test newness via `lastSeen` vs
-  the ledger. Only the latest event per issue is retained at current tier —
-  event-history pulls return 1 row.
+  `statsPeriod` shapes only `stats` (''/24h/14d): rank by summing buckets,
+  test newness by `lastSeen` vs the ledger. Only the latest event per issue
+  is retained — event-history pulls return 1 row.
 - `[noise][server]` 2026-08-12 — youtube-bot `logTickError` (handled=yes,
   tag `feature=youtube-bot`) relays upstream Google failures as the exception
   value: OAuth 500s, Cloudflare HTML pages, and (confirmed again 2026-09-08) a
@@ -74,45 +69,29 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   in cross-origin form: an edge 5xx without CORS headers surfaces as an
   immediate fetch REJECTION, not a status code.
 - `[defect][widget]` 2026-08-14 — `standalone/connect.ts` migrateLocalInto /
-  copyDownToDevice were type-broken and silently no-oped (read() without
-  fileName; `{file}` destructured from `{body,version}`; SyncManager missing
-  its DocumentSpec). US-09 AC3 dead in source, no Sentry signal — silence was
-  the symptom. FIXED same day on Brad's live authorization (failing tests
-  first, `connect-migrate.test.ts`); widget-src/tsconfig now includes
-  `standalone/` so tsc sees the directory (13 pre-existing errors surfaced —
-  burn-down list). Root enabler CLOSED same day (Brad-authorized): both
-  project tsconfigs burned down 36→0 and gated in ci.yml; the burn-down
-  itself surfaced a second latent crash (Object.hasOwn on iOS WebKit <15.4
-  in the statin cascade — replaced with hasOwnProperty.call, floors kept at
-  ES2020). app/ still ungated — its burn-down is a standing task.
+  copyDownToDevice were type-broken and silently no-oped (US-09 AC3 dead in
+  source, no Sentry signal — silence was the symptom). Fixed same day on
+  Brad's authorization (`connect-migrate.test.ts`); both tsconfigs burned down
+  36→0 and gated in ci.yml, which surfaced a second latent crash (Object.hasOwn
+  on iOS WebKit <15.4 → hasOwnProperty.call, floors kept at ES2020). app/ is
+  still ungated — a standing task.
 - `[noise][server]` 2026-08-23 — Open-redirect/XSS probes on the Shopify OAuth
   surface (`/auth/exit-iframe?exitIframe=javascript:…` or `data:…`) surface as
   handled "Invalid URL. Refusing to redirect" server errors — that is
   `sanitizeRedirectUrl` REJECTING the payload, i.e. the defense firing, not a
   defect. Ledger `wontfix` on sight; the auth route is grant-excluded, so any
   capture-hygiene change would be propose-only — not worth it at probe volume.
-- `[gap][sentry]` 2026-09-07 — Production `allowUrls` in
-  `widget-src/src/lib/sentry.ts` still names the retired `health-tool.js`, so
-  the SDK drops every exception whose top URL-bearing frame is in
-  `health-plan-v2.js`, its HistoryPanel chunk, `health-upload.js`,
-  `health-chatbot-embed.js`, or the Pages root `health-upload.js` (only
-  `health-site-chat.js` and Pages hashed chunks pass). PARTIAL blind spot:
-  `_isAllowedUrl` walks frames from the last one back, skips `<anonymous>` /
-  `[native code]`, and passes events with no URL at all — which is why the
-  unresolved list is all native-frame noise. Every widget-side "no-op" day in
-  metrics.csv is a lower bound, not evidence of health. Fix was Brad's PR #73,
-  merged 09-08, live from deploy run 58 (09-08 20:59Z). The predicted burst
-  arrived (09-17 run: five main-bundle issues) — one per run, rank by
-  `stats` since 09-08, not lifetime; "newly visible" is not "old" (6G's
-  events are fresh connects). Only the side bundles define
-  `__SENTRY_RELEASE__` (vite.config.chatbot/site-chat/upload), so a
-  `release` tag means a side bundle and its absence means health-plan-v2 —
-  grep the right asset. Two cautions from #73's bot review: `scrubEvent`
-  does not scrub `exception.values[].value`, and storage adapters interpolate
-  document refs (date + sanitized title) into thrown messages — READ TITLES
-  BEFORE pasting them into a report or ledger note; and the probe supplied its
-  stack URLs, so it proved filename acceptance, not live frame shape. Filter
-  start date is undatable from a shallow clone (gotcha below).
+- `[gap][sentry]` 2026-09-07, closed 09-08 — Until Brad's PR #73 (live from
+  deploy run 58, 09-08 20:59Z) production `allowUrls` named the retired
+  `health-tool.js`, so the SDK dropped every main-bundle exception: widget
+  "no-op" days before 09-08 are lower bounds, and issues first seen soon
+  after are newly VISIBLE, not old (6G's events were fresh connects), so rank
+  by `stats` since 09-08. Only the side bundles define `__SENTRY_RELEASE__`
+  (vite.config.chatbot/site-chat/upload): a `release` tag means a side
+  bundle, its absence health-plan-v2 — grep the right asset. Storage
+  adapters put document refs (date + sanitized title) into thrown messages:
+  READ TITLES before pasting them into a report or ledger note (AC7's text
+  scrub catches values, not titles).
 - `[class][widget]` 2026-09-17, root-fixed 2026-09-20 — Anything `main()`
   awaits before `createRoot` is a blank-widget path: an unhandled rejection
   there leaves the mount empty and the user reloads (1-4 loads per session in
@@ -127,11 +106,23 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   it over (URL params, token-response fields); the /simplify altitude pass
   found this after a first draft probed Drive and special-cased 401/403. Still
   true for any OTHER 403: `liftLocalInto` swallows it and
-  `cloud_connect_success` fires (a refused grant counts as a success). Open: `resolveBackend` touching bare `localStorage`
-  (SecurityError, 6N; `null`, 6J) needs a memory adapter or a message, not a
-  catch. Reading tells: a same-second PAIR (handled `cloud-connect
+  `cloud_connect_success` fires (a refused grant counts as a success). Closed 09-24 (6T, US-09 AC16, PR #121): the
+  remembered-backend key now goes through the safe accessors on every path;
+  a "nothing will be kept" notice is still owed. Reading tells: a same-second PAIR (handled `cloud-connect
   op=migrate-up` + a second capture) is one page load; an exchange POST plus a
   `navigation` crumb before it is a fresh consent, not a refresh.
+- `[class][widget]` 2026-09-24 — Storage-blocked browsers come in three shapes
+  and the field sent all three inside ten days: `localStorage` missing (Safari
+  26.6, ReferenceError), the getter throwing SecurityError (Chrome Mobile),
+  the property `null` (old WebView). One bare read on the path `main()` awaits
+  is a blank widget for every shape; `lib/storage.ts`' safe accessors already
+  covered them, and the remembered-backend key was the one caller that
+  bypassed them (6T/6N/6J, US-09 AC16, PR #121). Escape: every standalone test stubs a
+  WORKING localStorage. Audit shortcut: `grep -rn "localStorage\." widget-src
+  --include=*.ts* | grep -v test` — anything outside lib/storage.ts and a
+  try/catch is this class again. Same run: a scrub that keeps only closed tags
+  can still carry the browser's error NAME (`cause`) value-free; 6M sat
+  unreadable at 32 events for want of it.
 - `[defect][widget][merge]` 2026-09-18 — The 09-17 fallback (PR #106) ran the
   session on the device copy at `eraseEpoch` 0; `mergeFiles` hands a higher
   epoch the whole file, so the next good load of a once-erased record silently
@@ -147,6 +138,15 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   must be checked against the merge that brings it back (eraseEpoch, LWW,
   marker timing); a guest view for a signed-in user is a fork, not a fallback,
   and our tests proved only the fallback.
+- `[gotcha][supabase]` 2026-09-24 — `SUPABASE_PRODUCT_HEALTH_KEY` is a Bearer
+  JWT, not an API key: send `apikey: $SUPABASE_ANON_KEY` (a publishable key)
+  + `Authorization: Bearer $SUPABASE_PRODUCT_HEALTH_KEY` (role
+  `product_health_ro`, valid to 2027-08-07; the product-health charter has
+  the recipe). The JWT in `apikey` answers 401 "Invalid API key": every
+  "key rejected" gap this loop reported (08-28, 09-17, 09-20) was that
+  misuse, not a dead key. Funnel column: `event_name`. The role reads
+  product_events, ab_events, feedback, chat_* and reminder_optin_v2 (emails):
+  counts and event names only into a public report, never rows.
 - `[gotcha][process]` 2026-08-14 — Fresh cloud containers start on a detached
   HEAD at origin/main's tip while the local `main` REF lags: diff/typecheck
   comparisons against `main` silently use stale code. `git checkout -B main

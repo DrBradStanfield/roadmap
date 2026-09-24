@@ -600,20 +600,22 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
   // Swiper ref for programmatic slide control (tab button clicks)
   const swiperRef = useRef<SwiperType | null>(null);
+  // The Swiper renders only under isMobile: a viewport crossing the
+  // breakpoint destroys it while the ref still points at it, and
+  // updateAutoHeight on a destroyed instance throws inside the commit
+  // (US-20 AC2). Every call goes through here; the test counts direct reads.
+  const liveSwiper = () => (swiperRef.current && !swiperRef.current.destroyed ? swiperRef.current : null);
 
   // Sync tab button clicks → Swiper
   useEffect(() => {
     const index = activeTab === 'input' ? 0 : activeTab === 'plan' ? 1 : 2;
-    if (swiperRef.current && swiperRef.current.activeIndex !== index) {
-      swiperRef.current.slideTo(index);
-    }
+    const swiper = liveSwiper();
+    if (swiper && swiper.activeIndex !== index) swiper.slideTo(index);
   }, [activeTab]);
 
   // Re-measure Swiper autoHeight when slide content changes
   useEffect(() => {
-    if (swiperRef.current) {
-      swiperRef.current.updateAutoHeight();
-    }
+    liveSwiper()?.updateAutoHeight();
   }, [formStage, supplements, documentHistory]);
 
   const handleDeleteData = useCallback(async () => {
@@ -806,7 +808,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     // cell + Save button (they were on the chat tab). Mirror handleAutoFocusEmail.
     if (hasFieldEdit && isMobileRef.current) {
       setActiveTab('input');
-      swiperRef.current?.slideTo(0);
+      liveSwiper()?.slideTo(0);
     }
   }, [applyFieldEdit, applyMedicationEdit]);
 

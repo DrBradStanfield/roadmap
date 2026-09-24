@@ -53,13 +53,14 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
   // Record errors can quote clinical filenames in messages, causes and fetch
   // breadcrumbs. These captures carry only closed operation/provider tags.
   if (event.tags?.area === 'cloud-sync' || event.tags?.area === 'upload-save' || event.tags?.feature === 'upload') {
-    const { area, op, backend, branch, uploadErrorCode } = event.tags;
+    const { area, op, backend, branch, uploadErrorCode, cause } = event.tags;
     event.tags = {
       ...(area === 'cloud-sync' || area === 'upload-save' ? { area } : { feature: 'upload' }),
       ...(['write-document', 'read-document', 'persist', 'log-off', 'copy-down', 'load'].includes(String(op)) ? { op } : {}),
       ...(['google-drive', 'dropbox', 'github', 'self-host', 'local', 'file', 'memory'].includes(String(backend)) ? { backend } : {}),
       ...(['measurements', 'documents', 'labValues'].includes(String(branch)) ? { branch } : {}),
       ...(['rate_limit', 'timeout', 'server_restart', 'no_files', 'server_error', 'network', 'unknown'].includes(String(uploadErrorCode)) ? { uploadErrorCode } : {}),
+      ...(['QuotaExceededError', 'SecurityError', 'TypeError', 'ReferenceError', 'other'].includes(String(cause)) ? { cause } : {}),
     };
     if (event.message) event.message = 'Health record operation failed';
     if (event.exception?.values) event.exception.values = event.exception.values.map(value => ({
