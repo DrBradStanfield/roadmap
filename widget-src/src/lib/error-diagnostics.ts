@@ -25,10 +25,12 @@ export function recordFailure(error: unknown, message: RecordFailure): Error {
 const STORAGE_FAILURE_CLASSES = ['QuotaExceededError', 'SecurityError', 'TypeError', 'ReferenceError'];
 
 /** The browser's own name for a refused device write, from a closed list —
- *  quota versus blocked storage (Sentry JAVASCRIPT-REMIX-6M). A name, never
- *  the message, so it survives the scrub value-free. */
+ *  quota versus blocked storage (Sentry JAVASCRIPT-REMIX-6M). Read only from
+ *  the adapter's wrapped cause: a bare TypeError elsewhere in the save path
+ *  is a defect or a dead network, not a storage class. A name, never the
+ *  message, so it survives the scrub value-free. */
 export function storageFailureClass(error: unknown): string {
-  const cause = error instanceof StorageError ? error.cause : error;
+  const cause = error instanceof StorageError ? error.cause : undefined;
   const name = cause instanceof Error || cause instanceof DOMException ? cause.name : '';
   return STORAGE_FAILURE_CLASSES.includes(name) ? name : 'other';
 }

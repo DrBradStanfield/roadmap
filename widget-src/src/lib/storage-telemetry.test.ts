@@ -91,11 +91,25 @@ describe('cloud-storage telemetry boundary', () => {
     expect(JSON.stringify(envelopes)).not.toContain(marker);
   });
 
+  it('names no cause on a cloud persist failure — that is the transport, not the device', async () => {
+    class DeadCloud extends MemoryAdapter {
+      async write(): Promise<never> { throw new TypeError(`${marker} is not a function`); } // a defect, not a transport interruption
+    }
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const store = await RoadmapStore.create(new DeadCloud());
+    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z');
+    await expect(store.flush()).rejects.toThrow('still on this device');
+    await Sentry.flush();
+    const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
+    expect(items[0][1].tags).toEqual({ area: 'cloud-sync', op: 'persist', backend: 'memory' });
+  });
+
   it.each([
     [new StorageError(marker, undefined, new DOMException(marker, 'SecurityError')), 'SecurityError'],
     [new StorageError(marker, undefined, new TypeError(marker)), 'TypeError'],
-    [new ReferenceError(marker), 'ReferenceError'],
+    [new StorageError(marker, undefined, new ReferenceError(marker)), 'ReferenceError'],
     [new StorageError(marker, undefined, new Error(marker)), 'other'],
+    [new TypeError('Failed to fetch'), 'other'], // a bare transport error is not a storage class
     [marker, 'other'],
   ])('names the failure class from a closed list: %s → %s', (error, expected) => {
     expect(storageFailureClass(error)).toBe(expected);

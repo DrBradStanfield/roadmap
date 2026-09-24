@@ -1018,7 +1018,12 @@ export class RoadmapStore {
       }
       console.warn('Cloud sync failed');
       Sentry.captureException(recordFailure(error, 'Cloud sync failed'), {
-        tags: { area: 'cloud-sync', op: 'persist', backend: this.adapter.id, cause: storageFailureClass(error) },
+        tags: {
+          area: 'cloud-sync', op: 'persist', backend: this.adapter.id,
+          // Only the device tier names its refusal (6M): a cloud failure's
+          // cause is the transport, which `recordFailure` already classifies.
+          ...(this.adapter.id === 'local' ? { cause: storageFailureClass(error) } : {}),
+        },
       });
       return false;
     } finally {
