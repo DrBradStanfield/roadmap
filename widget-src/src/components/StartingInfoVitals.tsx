@@ -296,9 +296,10 @@ export function StartingInfoVitals({
     if (key === 'weight' || key === 'waist') return { [key]: col?.[`${key}Id` as const] ?? null };
     return { systolic_bp: col?.sysId ?? null, diastolic_bp: col?.diaId ?? null };
   };
+  const latestDay = (key: VitalsKey) => [...dateColumns].reverse().find(c => c[key] != null)?.date;
   const {
-    draft, backfills, type, setDate, unitOf, expected, typedHere, clashes, taken, settle, refusal,
-  } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, cellOf: key => (key === 'dia' ? 'sys' : key) });
+    draft, backfills, type, setDate, unitOf, expected, clashes, taken, lends, settle, refusal,
+  } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, latestDay, cellOf: key => (key === 'dia' ? 'sys' : key) });
   const [activeCell, setActiveCell] = useState<string | null>(null);
 
   // A typed weight or waist keeps the unit it was typed in. A unit switch
@@ -368,20 +369,20 @@ export function StartingInfoVitals({
   const setBpDraft = (which: 'sys' | 'dia', typed: string) => type([null, which], typed);
 
   // Inject an external value (from the chatbot) into the matrix and flash the
-  // cell, mirroring BloodTestTimeline.prefillCell exactly: convert into the
-  // cell's display unit, route to a same-date backfill slot if that slot is
-  // EMPTY, else the draft column, then set `activeCell` (the same brand-
-  // underline highlight a focused cell gets). Weight/waist reuse the simple
-  // draft/backfill setters; BP routes by metric into its shared sys/dia cell.
-  // Returns the cell key so the parent can scroll to it.
+  // cell: route to a same-date backfill slot if that slot is EMPTY, else the
+  // draft column, then set `activeCell` (the same brand-underline highlight a
+  // focused cell gets). The cell is typed with the chat's number in the unit
+  // it was stated (mmHg either way): it shows in the cell's own unit, and the
+  // commit saves that number exactly (US-03 AC3, AC5). BP routes by metric
+  // into its shared sys/dia cell. Returns the cell key so the parent can
+  // scroll to it.
   const prefillCell: VitalsPrefillFn = (metric, value, fromUnit, date) => {
     const column = date ? dateColumns.find(c => c.date === date) : undefined;
     // Every branch flashes (highlights) the cell it filled and returns its key.
     const flash = (cellId: string) => { setActiveCell(cellId); return cellId; };
+    const typed = String(value);
 
     if (metric === 'systolic_bp' || metric === 'diastolic_bp') {
-      // mmHg has no SI conversion (stored as-is); the chat value is the number.
-      const typed = String(value);
       const which = metric === 'systolic_bp' ? 'sys' : 'dia';
       // Backfill only when an existing date column has NO BP recorded yet
       // (both sys+dia absent). A partial/complete BP there is a correction,
@@ -396,17 +397,12 @@ export function StartingInfoVitals({
     }
 
     if (metric !== 'weight' && metric !== 'waist') return null;
-    const field: 'weightKg' | 'waistCm' = metric === 'weight' ? 'weightKg' : 'waistCm';
-    const cellUnit = fieldUnit(field);
-    const si = toCanonicalValue(metric, value, fromUnit);
-    const typed = formatDisplayValue(metric, si, cellUnit);
-    const existing = column ? (metric === 'weight' ? column.weight : column.waist) : undefined;
-    if (date && column && existing == null) {
-      setBackfill(date, metric, typed);
+    if (date && column && column[metric] == null) {
+      type([date, metric], typed, fromUnit);
       return flash(`${date}.${metric}`);
     }
     if (date) setDate(date);
-    setSimpleDraft(metric, typed); // mirrors to inputs[field] so suggestions update live
+    type([null, metric], typed, fromUnit);
     return flash(`draft.${metric}`);
   };
 
@@ -431,16 +427,12 @@ export function StartingInfoVitals({
   const bpClashes = clashes('sys') || clashes('dia');
   const bpTaken = taken('sys') || taken('dia');
 
-  // A draft value typed since the page last read the record stands in for it
-  // in the plan and the chat while it could be saved and is its vital's latest:
-  // never one that clashes, nor one dated before the record's own latest
-  // value (US-03 AC6). Each half of a blood pressure counts on its own, in
-  // range.
-  const latestDay = (key: VitalsKey) => [...dateColumns].reverse().find(c => c[key] != null)?.date;
+  // What the plan and the chat read of the draft (US-03 AC6, `lends`): a
+  // value it could save, clear of clashes. Each half of a blood pressure
+  // counts on its own, in range.
   const standsIn = (key: VitalsKey): number | undefined => {
     const text = draft.values[key];
-    const latest = latestDay(key);
-    if (!text || !typedHere([null, key]) || clashes(key) || taken(key) || (latest && draft.date < latest)) return undefined;
+    if (!text || !lends(key) || clashes(key)) return undefined;
     const n = parseLocalisedNumber(text);
     if (key === 'sys') return n != null && n >= BP_SYS_MIN && n <= BP_SYS_MAX ? n : undefined;
     if (key === 'dia') return n != null && n >= BP_DIA_MIN && n <= BP_DIA_MAX ? n : undefined;

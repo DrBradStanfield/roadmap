@@ -13,8 +13,9 @@
  *
  * The whole widget renders over a REAL RoadmapStore on this browser's
  * localStorage, the guest's own backend. Only the network edges and the chat's
- * own UI are stubbed. Every assertion reads the record file itself, through the
- * adapter that stores it, or what the page shows.
+ * own UI are stubbed, and one test holds a correction in flight. Every
+ * assertion reads the record file itself, through the adapter that stores it,
+ * or what the page shows.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, waitFor, within, act, type RenderResult } from '@testing-library/react';
@@ -30,7 +31,7 @@ import {
   type ProposedEdit,
   type RoadmapFile,
 } from '@roadmap/health-core';
-import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
+import { REMOTE_CHANGED_EVENT, RoadmapStore, type CorrectStatus } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {
   addMeasurement,
@@ -128,6 +129,41 @@ function wideDesktop() {
 
 /** Time passes, and the promises it settles run. */
 const wait = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
+/** The store heard another writer (a device, a connector): the page re-reads. */
+const remoteChange = () => act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+
+/** Type into a first-time vitals field and leave it. Its save runs 500 ms
+ *  later; `beforeSave` acts while it waits. */
+async function typeAndLeave(field: HTMLInputElement, value: string, beforeSave?: () => void) {
+  typeInto(field, value);
+  act(() => field.blur());
+  beforeSave?.();
+  await wait(600);
+}
+/** A guest at stage 2 who has typed today's weight into its first-time field. */
+async function firstWeight(value: string): Promise<RenderResult> {
+  await guest();
+  const view = render(<HealthTool />);
+  await typeAndLeave(await shown<HTMLInputElement>(view.container, '#weightKg'), value);
+  await waitFor(async () => expect(await activeOn('weight')).toEqual([[Number(value), TODAY]]));
+  return view;
+}
+/** Today's saved weight, clicked open in its first-time field. */
+async function openToday(view: RenderResult): Promise<HTMLInputElement> {
+  fireEvent.click(await shown<HTMLElement>(view.container, '.collapsed-field-value'));
+  return view.container.querySelector('#weightKg') as HTMLInputElement;
+}
+/** The store's next correction waits for the call this hands back: a save
+ *  caught in flight, so the user can type while it runs. */
+function holdNextCorrection(): () => void {
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  const correct = RoadmapStore.prototype.correctValue;
+  vi.spyOn(RoadmapStore.prototype, 'correctValue').mockImplementationOnce(function (this: RoadmapStore, ...args) {
+    return held.then(() => correct.apply(this, args)) as unknown as CorrectStatus;
+  });
+  return release;
+}
 
 function bloodMatrix(container: HTMLElement): HTMLElement {
   return container.querySelector('.bt-timeline-title')!.closest('.bt-timeline') as HTMLElement;
@@ -192,7 +228,7 @@ const editHeight = (container: HTMLElement) =>
 const leaveVitals = (container: HTMLElement) => press(container.querySelector('.bt-timeline-title') as HTMLElement);
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** A phone turned across 768 px, which swaps the whole form for another
- *  (useIsMobile). Each call turns it. */
+ *  (useIsMobile). Each call turns it and waits while the form is built again. */
 function rotatablePhone() {
   const heard = new Set<{ query: string; listener: (e: { matches: boolean }) => void }>();
   let portrait = false;
@@ -205,10 +241,13 @@ function rotatablePhone() {
       for (const h of heard) if (h.listener === listener) heard.delete(h);
     },
   }));
-  return () => act(() => {
-    portrait = !portrait;
-    for (const h of [...heard]) h.listener({ matches: matches(h.query) });
-  });
+  return async () => {
+    act(() => {
+      portrait = !portrait;
+      for (const h of [...heard]) h.listener({ matches: matches(h.query) });
+    });
+    await wait(200);
+  };
 }
 /** Save as PDF, and the LDL figure on the page it prints. */
 async function printedLdl(view: RenderResult) {
@@ -318,7 +357,7 @@ describe('the 2026-09-22 feedback: blood tests on the wrong day', () => {
     // The connector corrects the value; the store takes it in and the page re-reads.
     const [saved] = (await loadAllHistory()).filter((m) => m.metricType === 'ldl');
     expect(await correctValue(saved.id, 2.1)).toBe('ok');
-    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    remoteChange();
 
     await waitFor(() => expect(ldlTile(view.container)).toBe('2.1 mmol/L'));
     expect(ldlInChat()).toEqual([2.1, 2.1]);
@@ -455,21 +494,12 @@ describe('the 2026-09-22 feedback: a mistyped "add a blood test"', () => {
 
 describe('the 2026-09-22 feedback: edits that added new things instead', () => {
   it('US-03 AC3: a same-day fix to a weight replaces it, says so, and an unchanged value writes nothing', async () => {
-    await guest(); // stage 2: the first-time weight field
-    const view = render(<HealthTool />);
-    const weight = await shown<HTMLInputElement>(view.container, '#weightKg');
-    fireEvent.change(weight, { target: { value: '82' } });
-    fireEvent.blur(weight);
-    await wait(600);
-    await waitFor(async () => expect(active(await rowsOf('weight'))).toHaveLength(1));
+    const view = await firstWeight('82');
 
     // The user spots the typo and clicks the value to fix it.
-    fireEvent.click(await shown<HTMLElement>(view.container, '.collapsed-field-value'));
+    const again = await openToday(view);
     expect(view.getByText('Replaces 82 kg')).toBeTruthy();
-    const again = view.container.querySelector('#weightKg') as HTMLInputElement;
-    fireEvent.change(again, { target: { value: '84' } });
-    fireEvent.blur(again);
-    await wait(600);
+    await typeAndLeave(again, '84');
 
     await waitFor(async () => expect(active(await rowsOf('weight')).map((m) => m.value)).toEqual([84]));
     const both = await rowsOf('weight');
@@ -480,12 +510,9 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
 
     // The save closed the field. The same number again is not a change: the
     // field closes as after any save, and nothing is written.
-    fireEvent.click(await shown<HTMLElement>(view.container, '.collapsed-field-value'));
+    const same = await openToday(view);
     expect(view.getByText('Replaces 84 kg')).toBeTruthy();
-    const same = view.container.querySelector('#weightKg') as HTMLInputElement;
-    fireEvent.change(same, { target: { value: '84' } });
-    fireEvent.blur(same);
-    await wait(600);
+    await typeAndLeave(same, '84');
     await waitFor(() => expect(view.container.querySelector('#weightKg')).toBeNull());
     expect(await rowsOf('weight')).toHaveLength(2);
   });
@@ -494,26 +521,16 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
   // nothing" in the unit on screen at the save, not the unit the number was
   // typed in. Round 5 fixed only the vitals matrix.
   it('US-03 AC3: in the first-time fields, today\'s weight re-entered as shown in lb, then switched back to kg before the save, writes nothing; a new number is a correction, exactly', async () => {
-    await guest(); // stage 2: the first-time weight field
-    const view = render(<HealthTool />);
-    const weight = await shown<HTMLInputElement>(view.container, '#weightKg');
-    fireEvent.change(weight, { target: { value: '84' } });
-    fireEvent.blur(weight);
-    await wait(600);
-    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, TODAY]]));
+    const view = await firstWeight('84');
 
     // Open today's weight, switch it to lb, type, and switch back to kg while
-    // the save still waits (500 ms after the field is left).
+    // the save still waits.
     const unitPill = () => view.container.querySelector('label[for="weightKg"] .unit-toggle-pill') as HTMLElement;
     async function typeInLbThenSwitchBack(typed: string) {
-      fireEvent.click(await shown<HTMLElement>(view.container, '.collapsed-field-value'));
+      const field = await openToday(view);
       fireEvent.click(unitPill()); // kg → lb
       expect(view.getByText('Replaces 185 lbs')).toBeTruthy();
-      const field = view.container.querySelector('#weightKg') as HTMLInputElement;
-      fireEvent.change(field, { target: { value: typed } });
-      fireEvent.blur(field);
-      fireEvent.click(unitPill()); // lb → kg
-      await wait(600);
+      await typeAndLeave(field, typed, () => fireEvent.click(unitPill())); // lb → kg
       await waitFor(() => expect(view.container.querySelector('#weightKg')).toBeNull()); // the save closed the field
     }
 
@@ -527,13 +544,7 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
   // Round 7 review: the chat fills a first-time field from the unit the user
   // stated, and the field kept the unit on screen instead.
   it('US-03 AC3: in the first-time fields, the chat\'s 185 lb over today\'s 84 kg, shown in kg, writes nothing', async () => {
-    await guest(); // stage 2: the first-time weight field
-    const view = render(<HealthTool />);
-    const weight = await shown<HTMLInputElement>(view.container, '#weightKg');
-    fireEvent.change(weight, { target: { value: '84' } });
-    fireEvent.blur(weight);
-    await wait(600);
-    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, TODAY]]));
+    const view = await firstWeight('84');
 
     act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 185, unitSystem: 'conventional', date: null }]));
     await waitFor(() => expect(chat.context?.weightKg).toBe(toCanonicalValue('weight', 185, 'conventional')));
@@ -568,6 +579,26 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     expect(await bpRows()).toEqual([[120, 'active', TODAY], [80, 'active', TODAY]]);
   });
 
+  // Cleanup review of 2026-09-25: a save took each field it saved out of the
+  // form by name, so a number typed there while the save ran went with it.
+  it('US-03 AC3: a weight typed into its first-time field while that field\'s save runs stays in the form, and is saved next', async () => {
+    const view = await firstWeight('82');
+    const field = await openToday(view);
+    const release = holdNextCorrection();
+    await typeAndLeave(field, '84'); // its save starts, and holds as it writes
+    expect(view.getByText('Saving…')).toBeTruthy();
+    typeInto(field, '85'); // back in the field while the save runs
+    release();
+    await waitFor(() => expect(view.queryByText('Saving…')).toBeNull());
+    expect(await activeOn('weight')).toEqual([[84, TODAY]]);
+    expect(chat.context?.weightKg).toBe(85);
+    expect((view.container.querySelector('#weightKg') as HTMLInputElement).value).toBe('85');
+
+    act(() => field.blur()); // leaving saves it
+    await wait(600);
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[85, TODAY]]));
+  });
+
   it('US-34 AC4: a change arriving while a weight is being typed keeps the typed weight', async () => {
     await guest();
     const view = render(<HealthTool />);
@@ -575,7 +606,7 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     typeInto(weight, '82');
 
     // The record changed under the page (the demographics form is clean).
-    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    remoteChange();
     await wait(50);
     fireEvent.blur(weight);
     await wait(600);
@@ -592,10 +623,32 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     const weight = await shown<HTMLInputElement>(view.container, '#weightKg');
     typeInto(weight, '82');
     act(() => weight.blur());
-    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    remoteChange();
     await wait(600);
 
     await waitFor(async () => expect(active(await rowsOf('weight')).map((m) => m.value)).toEqual([82]));
+  });
+});
+
+// Cleanup review of 2026-09-25: each edit in one chat reply spread the same
+// copy of the form, so a reply carrying two first-time field edits kept only
+// the last.
+describe('US-16 AC1: the chat fills the first-time fields', () => {
+  it.each([
+    ['a blood pressure ("120/80")', { systolicBp: 120, diastolicBp: 80 }, { systolic_bp: 120, diastolic_bp: 80 }],
+    ['a weight and a waist', { weightKg: 84, waistCm: 90 }, { weight: 84, waist: 90 }],
+  ])('one reply carrying %s leaves both in the form, and a save saves both', async (_what, fields, saved) => {
+    await guest(); // stage 2: the first-time fields
+    const view = render(<HealthTool />);
+    await shown(view.container, '#weightKg');
+    act(() => chat.proposeEdit!(Object.entries(fields).map(([field, displayValue]) =>
+      ({ kind: 'field', field, displayValue, unitSystem: 'si', date: null }) as ProposedEdit)));
+    await waitFor(() => expect(Object.keys(fields).map((f) => chat.context?.[f])).toEqual(Object.values(fields)));
+
+    savePdf(view); // saves what the fields hold
+    await waitFor(async () => {
+      for (const [metric, value] of Object.entries(saved)) expect(await activeOn(metric)).toEqual([[value, TODAY]]);
+    });
   });
 });
 
@@ -694,7 +747,7 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     await wait(1000);
     showPage();
     await addMeasurement('waist', 88, '2026-09-01'); // a connector, meanwhile
-    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    remoteChange();
     await waitFor(() => expect(backfillInput(vitalsMatrix(view.container), 'Waist Circumference')).toBeNull());
 
     typeInto(draftInput(vitalsMatrix(view.container), 'Weight'), '84');
@@ -800,6 +853,30 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [toCanonicalValue('weight', 190, 'conventional'), TODAY]]));
   });
 
+  // Cleanup review of 2026-09-25 (the rest of Codex R2): the chat's pre-fill
+  // typed its number into the matrix converted to the cell's unit and rounded
+  // to the display, and the commit saved the rounded number.
+  it('US-03 AC3: the chat\'s 185 lb over today\'s 84 kg, in the vitals matrix shown in kg, writes nothing; a new number is a correction, exactly', async () => {
+    const view = await returningGuest();
+    typeInto(draftInput(vitalsMatrix(view.container), 'Weight'), '84');
+    leaveVitals(view.container);
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [84, TODAY]]));
+
+    async function chatSaysLb(lb: number) {
+      act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: lb, unitSystem: 'conventional', date: null }]));
+      const weight = draftInput(vitalsMatrix(view.container), 'Weight');
+      expect(weight.value).toBe(formatDisplayValue('weight', toCanonicalValue('weight', lb, 'conventional'), 'si')); // shown in kg
+      press(weight); // the user looks it over, then leaves
+      leaveVitals(view.container);
+      await wait(1000);
+    }
+    await chatSaysLb(185);
+    expect(await rowsOf('weight')).toHaveLength(2);
+
+    await chatSaysLb(190);
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [toCanonicalValue('weight', 190, 'conventional'), TODAY]]));
+  });
+
   // Codex R2 (2026-09-24): an upload flushed the blood-test draft only, and a
   // vitals draft restored from the device waited through the extraction.
   it('starting a lab upload commits a vitals draft restored from the device, before any file is read', async () => {
@@ -877,7 +954,7 @@ describe('another writer changes a value the user is working on', () => {
 
     const [saved] = (await loadAllHistory()).filter((m) => m.metricType === 'ldl');
     expect(await correctValue(saved.id, 2.5)).toBe('ok'); // a connector, meanwhile
-    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    remoteChange();
     await wait(500);
     act(() => editor.blur()); // the user clicks away
     await wait(500);
@@ -899,7 +976,7 @@ describe('another writer changes a value the user is working on', () => {
 
     const held = (await recordOnDisk()).labValues.find((l) => l.metricName === 'ferritin')!;
     expect(await correctValue(held.id, 60)).toBe('ok'); // another device, meanwhile
-    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    remoteChange();
     await wait(500);
     fireEvent.keyDown(editor, { key: 'Enter' });
     await wait(500);
@@ -919,7 +996,7 @@ describe('another writer changes a value the user is working on', () => {
     await wait(1000);
     showPage();
     await addMeasurement('ldl', 3.0, `${TODAY}T00:00:00.000Z`); // a connector, meanwhile
-    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    remoteChange();
     await waitFor(() => expect(within(row(bloodMatrix(view.container), 'LDL Cholesterol')).getByText(SAME_SLOT)).toBeTruthy());
 
     typeInto(draftInput(bloodMatrix(view.container), 'HDL Cholesterol'), '1.4');
@@ -962,7 +1039,7 @@ describe('another writer changes a value the user is working on', () => {
     await wait(300);
     showPage();
     await addMeasurement(metric, value, '2026-09-01T00:00:00.000Z'); // a connector, meanwhile
-    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    remoteChange();
     await waitFor(() => expect(within(bp()).getByText(half)).toBeTruthy());
     expect(bp().querySelector('.bt-cell-backfill input')).toBeNull();
 
@@ -984,7 +1061,7 @@ describe('another writer changes a value the user is working on', () => {
     typeInto(ldl(), '3.2');
     editHeight(view.container);
     await addMeasurement('ldl', 3.0, `${TODAY}T00:00:00.000Z`); // a connector, meanwhile
-    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    remoteChange();
     expect(row(bloodMatrix(view.container), 'LDL Cholesterol').querySelector('.bt-cell-clickable')).toBeNull(); // not on the page
 
     fireEvent.keyDown(ldl(), { key: 'Enter' });
@@ -1005,7 +1082,7 @@ describe('another writer changes a value the user is working on', () => {
     editHeight(view.container);
     const [shownRow] = (await loadAllHistory()).filter((m) => m.metricType === 'ldl');
     expect(await correctValue(shownRow.id, 2.8)).toBe('ok'); // a connector, meanwhile
-    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    remoteChange();
     typeInto(ldl(), '');
     typeInto(ldl(), '3.4'); // the page still shows 3.0
 
@@ -1022,7 +1099,7 @@ describe('another writer changes a value the user is working on', () => {
     typeInto(bp().querySelector('.bt-cell-draft input[aria-label="Diastolic blood pressure"]') as HTMLInputElement, '80');
     editHeight(view.container);
     await addMeasurement('systolic_bp', 130, `${TODAY}T00:00:00.000Z`); // a connector, meanwhile
-    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    remoteChange();
 
     leaveVitals(view.container);
     await wait(1000);
@@ -1156,7 +1233,7 @@ describe('US-03: what the plan and the chat read of a draft', () => {
     ['emptied', (matrix: HTMLElement) => typeInto(draftInput(matrix, 'LDL Cholesterol'), '')],
     ['dated before the record\'s latest', (matrix: HTMLElement) => pickDraftDate(matrix, RIGHT_DAY)],
   ])('a draft value, the phone turned and back, then the cell %s: the plan, the chat and the PDF read the record', async (_how, change) => {
-    const rotate = rotatablePhone();
+    const turnPhone = rotatablePhone();
     await guest({ weight: 82 });
     await addMeasurement('ldl', 3.9, '2026-09-10');
     const view = render(<HealthTool />);
@@ -1164,11 +1241,9 @@ describe('US-03: what the plan and the chat read of a draft', () => {
     typeInto(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'), '2.0');
     await waitFor(() => expect(ldlTile(view.container)).toBe('2.0 mmol/L'));
 
-    rotate(); // portrait
-    await wait(200);
-    rotate(); // landscape again
+    await turnPhone(); // portrait
+    await turnPhone(); // landscape again
     await shown(view.container, '.bt-timeline-title');
-    await wait(200);
     expect(ldlTile(view.container)).toBe('2.0 mmol/L'); // the draft, back on screen, still stands in
 
     change(bloodMatrix(view.container));
@@ -1200,7 +1275,7 @@ describe('US-03: what the plan and the chat read of a draft', () => {
   // on the device waits until the user types into it here. A phone turned
   // builds the form again on the same page, and what was typed stands in.
   it('a blood-test draft restored as the page loads leaves the plan, the chat and the PDF to the record until it is typed into; a phone turned keeps it standing in', async () => {
-    const rotate = rotatablePhone();
+    const turnPhone = rotatablePhone();
     await guest({ weight: 82 });
     await addMeasurement('ldl', 3.9, '2026-09-10');
     localStorage.setItem(BT_TIMELINE_DRAFT_KEY, JSON.stringify({ draft: { values: { ldl: '2.0' } }, backfills: {} })); // left by an earlier load
@@ -1213,11 +1288,9 @@ describe('US-03: what the plan and the chat read of a draft', () => {
 
     typeInto(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'), '2.1');
     await waitFor(() => expect(ldlTile(view.container)).toBe('2.1 mmol/L'));
-    rotate(); // portrait
-    await wait(200);
-    rotate(); // landscape again
+    await turnPhone(); // portrait
+    await turnPhone(); // landscape again
     await shown(view.container, '.bt-timeline-title');
-    await wait(200);
     expect(ldlTile(view.container)).toBe('2.1 mmol/L');
     expect(chat.context?.ldlC).toBe(2.1);
   });
@@ -1250,7 +1323,7 @@ describe('US-03: what the plan and the chat read of a draft', () => {
     await waitFor(() => expect(ldlTile(view.container)).toBe('3.0 mmol/L'));
 
     await addMeasurement('hdl', 1.4, RIGHT_DAY); // a connector's change, to another test
-    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    remoteChange();
     await waitFor(() => expect(ldlTile(view.container)).toBe('4.0 mmol/L'));
     expect(chat.context?.ldlC).toBe(4);
     expect(ldl().value).toBe('3');
@@ -1263,14 +1336,9 @@ describe('US-03: what the plan and the chat read of a draft', () => {
   // Round 7: a matrix built again after an upload (a phone turned) lent the
   // draft again, though nobody had typed into it since.
   it('US-03 AC6: after an upload, a phone turned lends the vitals draft nothing until it is typed into again; then it keeps lending', async () => {
-    const rotate = rotatablePhone();
+    const turnPhone = rotatablePhone(); // the whole form is built again
     const view = await returningGuest(); // 82 kg on 1 Sep
     const weight = () => draftInput(vitalsMatrix(view.container), 'Weight');
-    const turnPhone = async () => { // the whole form is built again
-      rotate();
-      await shown(view.container, '.bt-vitals-card');
-      await wait(200);
-    };
     typeInto(weight(), '84');
     await waitFor(() => expect(chat.context?.weightKg).toBe(84));
 
@@ -1278,12 +1346,14 @@ describe('US-03: what the plan and the chat read of a draft', () => {
     await act(async () => { await upload.onComplete!(); });
     await waitFor(() => expect(chat.context?.weightKg).toBe(82));
     await turnPhone(); // portrait
+    await shown(view.container, '.bt-vitals-card');
     expect(chat.context?.weightKg).toBe(82);
     expect(weight().value).toBe('84');
 
     typeInto(weight(), '84.0');
     await waitFor(() => expect(chat.context?.weightKg).toBe(84));
     await turnPhone(); // landscape again
+    await shown(view.container, '.bt-vitals-card');
     expect(chat.context?.weightKg).toBe(84);
   });
 });

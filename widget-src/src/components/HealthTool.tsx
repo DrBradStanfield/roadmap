@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode, type SetStateAction } from 'react';
 import { createPortal } from 'react-dom';
 import {
   calculateHealthResults,
@@ -122,6 +122,13 @@ const countedCorrection: CorrectFn = async (id, newValue) => {
 export function HealthTool({ syncControl, remindersSection }: { syncControl?: (ctx: { hasData: boolean }) => ReactNode; remindersSection?: ReactNode } = {}) {
   // The store is ready before render, so returning users see their saved prefill immediately.
   const [inputs, setInputs] = useState<Partial<HealthInputs>>(getInitialInputsSync);
+  // The form replaced from the record: at the first load, after an upload or
+  // a remote change, and after an erase. Each matrix's draft then lends the
+  // plan and the chat nothing until it is typed into again (US-03 AC6).
+  const replaceInputs = useCallback((next: SetStateAction<Partial<HealthInputs>>) => {
+    recordReread();
+    setInputs(next);
+  }, []);
   const [previousMeasurements, setPreviousMeasurements] = useState<ApiMeasurement[]>([]);
   // Every active measurement, re-read after each save. The blood-test matrix
   // and the vitals matrix (StartingInfoVitals) each read their own metrics.
@@ -168,8 +175,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // The unit a first-time weight or waist was typed in, in its field or to
   // the chat, beside the value it gave: a unit switch before the save leaves
   // "changes nothing" asked in that unit (US-03 AC3). It holds only while
-  // the form holds that value.
-  const typedIn = useRef<Partial<Record<keyof HealthInputs, { value?: number; unit: UnitSystem }>>>({});
+  // the form holds that value. The journey redesign deletes it: it rebuilds
+  // these fields on the matrices' draft model.
+  const typedIn = useRef<Partial<Record<keyof HealthInputs, { value: unknown; unit: UnitSystem }>>>({});
   const [isDeleting, setIsDeleting] = useState(false);
   const medSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const screeningSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -286,7 +294,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
           setUnitSystem(unitPref);
           saveUnitPreference(unitPref);
         }
-        setInputs(result.inputs);
+        replaceInputs(result.inputs);
         previousInputsRef.current = { ...result.inputs };
         setPreviousMeasurements(result.previousMeasurements);
         if (result.previousMeasurements.length > 0) {
@@ -416,7 +424,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         const unit = typed && typed.value === inputs[field] ? typed.unit : unitOverrides[field] ?? unitSystem;
         const task: SaveTask = { date, values: {}, expected: {}, unit };
         for (const metric of metrics) {
-          const value = inputs[METRIC_TO_FIELD[metric] as keyof HealthInputs] as number | undefined;
+          const value = inputs[METRIC_TO_FIELD[metric]] as number | undefined;
           if (value === undefined) continue;
           task.values[metric] = value;
           task.expected[metric] = shown.get(slotOf(date, metric))?.id ?? null;
@@ -447,11 +455,14 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         // What was saved leaves the form, in one update. A copy left in
         // `inputs` outranked the saved row in the plan and the chat, and the
         // next save of the fields wrote it again, under today (2026-09-24).
+        // A number typed there while the save ran is not what was saved, and
+        // stays for the next save (US-03 AC3).
         setInputs(prev => {
           const next = { ...prev };
           for (const t of toSave) {
-            for (const metric of Object.keys(t.values)) {
-              if (!refused.has(slotOf(t.date, metric))) delete next[METRIC_TO_FIELD[metric] as keyof HealthInputs];
+            for (const [metric, value] of Object.entries(t.values)) {
+              const field = METRIC_TO_FIELD[metric];
+              if (!refused.has(slotOf(t.date, metric)) && next[field] === value) delete next[field];
             }
           }
           return next;
@@ -525,11 +536,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       // The record holds the profile and every saved value. A number being
       // typed lives only in the form until its save, so the field the user is
       // typing in rides through (US-34 AC4); nothing else does, or a copy of a
-      // value since corrected would outrank the record. A matrix's draft
-      // lends its values again only once it is typed into (US-03 AC6).
-      recordReread();
+      // value since corrected would outrank the record.
       const typing = document.activeElement?.id as keyof HealthInputs | undefined;
-      setInputs(prev => (typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
+      replaceInputs(prev => (typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
         ? { ...result.inputs, [typing]: prev[typing] }
         : result.inputs));
       previousInputsRef.current = { ...result.inputs };
@@ -537,12 +546,15 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setScreenings(result.screenings);
       setDocumentHistory(result.documents);
     }
-  }, [reloadValues, longitudinalDebounce]);
+  }, [reloadValues, longitudinalDebounce, replaceInputs]);
 
   // Something wrote to the record under us — another device, or an AI
   // connector through MCP (US-34). The store has already re-read and merged;
   // re-run the same load path an upload finishes with, so the page shows the
-  // new profile and values without a reload.
+  // new profile and values without a reload. The listener reads the form
+  // through a ref, never a stale closure.
+  const inputsRef = useRef(inputs);
+  inputsRef.current = inputs;
   useEffect(() => {
     applyRemoteRef.current = handleUploadComplete;
     // Not while the user is mid-typing: the load path replaces the form's
@@ -639,7 +651,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
     if (result.success) {
       clearLocalStorage();
-      setInputs({});
+      replaceInputs({});
       setPreviousMeasurements([]);
       setHistory([]);
       setMedications([]);
@@ -649,16 +661,16 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     } else {
       window.alert(result.error || 'Failed to delete data. Please try again.');
     }
-  }, []);
+  }, [replaceInputs]);
 
-  const handleInputChange = (newInputs: Partial<HealthInputs>, typedUnit?: UnitSystem) => {
-    // A weight or waist keeps the unit its caller converted it from (typedIn).
-    for (const field of ['weightKg', 'waistCm'] as const) {
-      if (typedUnit && newInputs[field] !== inputs[field]) typedIn.current[field] = { value: newInputs[field], unit: typedUnit };
-    }
-    setInputs(newInputs);
+  // One field's new value, from the form or the chat. A weight or waist
+  // keeps the unit its caller converted it from (typedIn). One update per
+  // field, so several made at once all land (US-16 AC1).
+  const handleInputChange = useCallback(<K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => {
+    if (unit) typedIn.current[field] = { value, unit };
+    setInputs(prev => ({ ...prev, [field]: value }));
     window.dispatchEvent(new CustomEvent('hr:inputs-changed'));
-  };
+  }, []);
   // A matrix's draft value, as the plan and the chat read it (US-03). One
   // update per field, so several sent at once all land; one that changes
   // nothing (a draft withdrawn after a re-read) renders nothing.
@@ -774,9 +786,6 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   >(null);
   const medicationsRef = useRef(medications);
   medicationsRef.current = medications;
-  // Latest values for the chat-edit callbacks (memoised; avoid stale closures).
-  const inputsRef = useRef(inputs);
-  inputsRef.current = inputs;
   const isMobileRef = useRef(isMobile);
   isMobileRef.current = isMobile;
 
@@ -793,8 +802,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       if (routeVitalsEdit(!!vitalsPrefillRef.current) === 'matrix') {
         vitalsPrefillRef.current!(metric, edit.displayValue, edit.unitSystem, edit.date);
       } else {
-        const si = toCanonicalValue(metric, edit.displayValue, edit.unitSystem);
-        handleInputChange({ ...inputsRef.current, [edit.field]: si }, edit.unitSystem);
+        handleInputChange(edit.field, toCanonicalValue(metric, edit.displayValue, edit.unitSystem), edit.unitSystem);
       }
       return;
     }

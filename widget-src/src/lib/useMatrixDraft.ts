@@ -6,7 +6,7 @@
 // store has taken its value. Shared by BloodTestTimeline and
 // StartingInfoVitals.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { localDay, type UnitSystem } from '@roadmap/health-core';
 import { DRAFTS_CLEARED_EVENT, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import type { SaveTask } from './matrix-save';
@@ -16,16 +16,24 @@ type Typed<K extends string> = Partial<Record<K, string>>;
 type Expected = SaveTask['expected'];
 
 const newRead = () => Math.random().toString(36).slice(2);
-/** The page's read of the record: this load of it, until a remote change or
- *  an upload is read in (`recordReread`). A matrix built again on the same
- *  read (a phone turned) keeps what was typed on it. */
+/** The page's read of the record: this load of it, until the form is
+ *  replaced from the record again (`recordReread`). A draft restored from the
+ *  device was typed on another load's read, so it never matches. A matrix
+ *  built again on the same read (a phone turned) keeps what was typed on it. */
 let read = newRead();
+const readers = new Set<() => void>();
+const subscribe = (heard: () => void) => {
+  readers.add(heard);
+  return () => { readers.delete(heard); };
+};
+const currentRead = () => read;
 
 /** The page has read the record again, over what the drafts lent the plan
  *  and the chat: each draft cell waits until it is typed into again (US-03
- *  AC6). */
+ *  AC6). Every matrix on screen hears it and renders again. */
 export function recordReread(): void {
   read = newRead();
+  for (const heard of readers) heard();
 }
 
 /** What a draft keeps about a typed cell beside its text: the unit it was
@@ -97,21 +105,33 @@ function withCell<K extends string>(
  * there and its slot still empty; one filled elsewhere since (the draft
  * outlives the page) is not, and what was typed into it is left in the draft,
  * never committed. `rowsUnder(day, key)`: the rows the page shows under the
- * cell's slots on that day, by metric (null: empty). `cellOf(key)`: the cell
- * a key is typed into, when one cell takes two (a blood pressure's halves);
- * its keys share one expectation.
+ * cell's slots on that day, by metric (null: empty). `latestDay(key)`: the
+ * last day the page shows a value for it. `cellOf(key)`: the cell a key is
+ * typed into, when one cell takes two (a blood pressure's halves); its keys
+ * share one expectation.
  */
 export function useMatrixDraft<K extends string>(storageKey: string, record: {
   onScreen: (column: string, key: K) => boolean;
   rowsUnder: (day: string, key: K) => Expected;
+  latestDay: (key: K) => string | undefined;
   cellOf?: (key: K) => string;
 }) {
   const [state, setState] = useState<MatrixDraft<K>>(() => loadDraft<K>(storageKey) ?? EMPTY);
-  const { onScreen, rowsUnder, cellOf = (key: K) => key } = record;
+  // The read this render sees, so a re-read renders the matrix again.
+  const pageRead = useSyncExternalStore(subscribe, currentRead);
+  const { onScreen, rowsUnder, latestDay, cellOf = (key: K) => key } = record;
   const date = dayOf(state);
   const { values } = state.draft;
   const idOf = ([column, key]: CellRef<K>) => `${column ?? 'new'}|${cellOf(key)}`;
   const metaOf = (cell: CellRef<K>): CellMeta | undefined => state.meta[idOf(cell)];
+  /** A draft cell whose slots hold other rows on the page than it expects
+   *  (US-03 AC2): shown as the clash, and never standing in for the record.
+   *  The store refuses its write whatever the page shows. */
+  const taken = (key: K) => {
+    const expected = metaOf([null, key])?.expected;
+    return !!values[key] && Object.entries(rowsUnder(date, key)).some(([metric, id]) => id !== (expected?.[metric] ?? null));
+  };
+  const typedSinceRead = (key: K) => metaOf([null, key])?.typedOn === pageRead;
 
   useEffect(() => {
     if (holdsAny(state.draft.values) || holdsAny(state.backfills)) safeSetItem(storageKey, JSON.stringify(state));
@@ -161,19 +181,21 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
      *  (`SaveTask.expected`): what the page showed when the user began
      *  typing there. None known: empty slots. */
     expected: (cell: CellRef<K>): Expected => metaOf(cell)?.expected ?? {},
-    /** Typed since the page last read the record. A draft restored from the
-     *  device, or typed before a remote change or an upload, stands in for
-     *  the record only once the user types into it (US-03 AC6). */
-    typedHere: (cell: CellRef<K>) => metaOf(cell)?.typedOn === read,
     /** Two cells for one slot (US-03 AC3): the draft's `key`, and the same
      *  cell of the saved column on the draft's day, both typed and shown. */
     clashes: (key: K) => !!values[key] && !!state.backfills[date]?.[key] && onScreen(date, key),
-    /** A draft cell whose slots hold other rows on the page than it expects
-     *  (US-03 AC2): shown as the clash, and never standing in for the record.
-     *  The store refuses its write whatever the page shows. */
-    taken: (key: K) => {
-      const expected = metaOf([null, key])?.expected;
-      return !!values[key] && Object.entries(rowsUnder(date, key)).some(([metric, id]) => id !== (expected?.[metric] ?? null));
+    taken,
+    /** Whether the draft's value for `key` may stand in for the record in
+     *  the plan and the chat (US-03 AC6): typed since the page last read the
+     *  record, its slot still holding the row it expects, and not dated
+     *  before the record's own latest value. So a draft restored from the
+     *  device, or typed before a remote change or an upload, waits until it
+     *  is typed into again. Each matrix adds the rest: a value it can save,
+     *  clear of clashes. */
+    lends: (key: K) => {
+      if (!typedSinceRead(key) || taken(key)) return false;
+      const latest = latestDay(key);
+      return !latest || date >= latest;
     },
     /** A commit's answer (US-03 AC4), each cell sent with why it was
      *  refused, or undefined: the saved cells leave the draft, and each

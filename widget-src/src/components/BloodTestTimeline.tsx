@@ -173,9 +173,10 @@ export function BloodTestTimeline({
     return !!batch && batch.values[metric] == null;
   };
   const rowsUnder = (day: string, metric: MetricType) => ({ [metric]: batches.find(b => b.date === day)?.ids[metric] ?? null });
+  const latestDay = (metric: MetricType) => [...batches].reverse().find(b => b.values[metric] != null)?.date;
   const {
-    draft, backfills, type, setDate: setDraftDate, expected, typedHere, clashes, taken, settle, refusal,
-  } = useMatrixDraft<MetricType>(BT_TIMELINE_DRAFT_KEY, { onScreen, rowsUnder });
+    draft, backfills, type, setDate: setDraftDate, expected, clashes, taken, lends, settle, refusal,
+  } = useMatrixDraft<MetricType>(BT_TIMELINE_DRAFT_KEY, { onScreen, rowsUnder, latestDay });
   const [activeCell, setActiveCell] = useState<string | null>(null);
 
   const fieldUnit = (field: string): UnitSystem => unitOverrides[field] ?? unitSystem;
@@ -244,15 +245,12 @@ export function BloodTestTimeline({
   // on first mount).
   const scrollRef = useScrollToRightOnMount<HTMLDivElement>([columns.length]);
 
-  // A draft value typed since the page last read the record stands in for it
-  // in the plan and the chat while it can be saved and is the test's latest:
-  // never one that clashes, nor one dated before the record's own latest
-  // value (US-03 AC6).
-  useDraftMirror(ROWS.map(({ metric, field }) => {
-    const si = cells.find(c => c.column === null && c.metric === metric)?.si;
-    const latest = [...batches].reverse().find(b => b.values[metric] != null)?.date;
-    return [field, si != null && typedHere([null, metric]) && !taken(metric) && !(latest && draft.date < latest) ? si : undefined];
-  }), onFieldChange);
+  // What the plan and the chat read of the draft (US-03 AC6, `lends`): a
+  // value the test can take, clear of clashes (`si`).
+  useDraftMirror(ROWS.map(({ metric, field }) => [
+    field,
+    lends(metric) ? cells.find(c => c.column === null && c.metric === metric)?.si ?? undefined : undefined,
+  ]), onFieldChange);
 
   const setDraftValue = (metric: MetricType, typed: string) => type([null, metric], typed);
   const setBackfillValue = (batchDate: string, metric: MetricType, typed: string) => type([batchDate, metric], typed);

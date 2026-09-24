@@ -10,6 +10,7 @@ import { localDay, toCanonicalValue, type ApiMeasurement } from '@roadmap/health
 import { BloodTestTimeline, ValueCell } from './BloodTestTimeline';
 import { hidePage, pickDraftDate, press, showPage, typeInto, typeWithoutTap } from '../testing/matrix-gestures';
 import { slotOf, type Refused, type SaveTask } from '../lib/matrix-save';
+import { recordReread } from '../lib/useMatrixDraft';
 
 beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => {
@@ -145,11 +146,11 @@ function history(rows: Array<[string, number, string]>): ApiMeasurement[] {
   }));
 }
 /** The matrix on a page, with a control and some text outside it. */
-function matrix(rows: ApiMeasurement[] = [], onSaveBatch: Mock = vi.fn().mockResolvedValue(new Map())) {
+function matrix(rows: ApiMeasurement[] = [], onSaveBatch: Mock = vi.fn().mockResolvedValue(new Map()), onFieldChange: () => void = noop) {
   const view = render(
     <>
       <BloodTestTimeline bloodTestHistory={rows} unitSystem="si" unitOverrides={{}} onToggleFieldUnit={noop}
-        onSaveBatch={onSaveBatch} onCorrectValue={vi.fn()} onFieldChange={noop}
+        onSaveBatch={onSaveBatch} onCorrectValue={vi.fn()} onFieldChange={onFieldChange}
         isSaving={false} hasApiResponse/>
       <button type="button">Elsewhere</button>
       <p>Page text</p>
@@ -351,6 +352,22 @@ describe('US-03 — the draft', () => {
     await act(async () => { accept(new Map()); });
     first.view.unmount();
     expect(matrix().cell('LDL Cholesterol').value).toBe('');
+  });
+
+  // Cleanup review of 2026-09-25: the matrix read the page's read of the
+  // record from state React could not see, so it withdrew what it lent only
+  // when something above it happened to render too.
+  it('US-03 AC6: a re-read of the record takes back what the draft lent, with nothing above the matrix rendering; typing lends it again', () => {
+    const onFieldChange = vi.fn();
+    const m = matrix([], undefined, onFieldChange);
+    typeInto(m.cell('LDL Cholesterol'), '3');
+    expect(onFieldChange).toHaveBeenLastCalledWith('ldlC', 3);
+
+    act(() => recordReread());
+    expect(onFieldChange).toHaveBeenLastCalledWith('ldlC', undefined);
+
+    typeWithoutTap(m.cell('LDL Cholesterol'), '3.0');
+    expect(onFieldChange).toHaveBeenLastCalledWith('ldlC', 3);
   });
 });
 

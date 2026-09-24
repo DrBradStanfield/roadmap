@@ -99,8 +99,8 @@ function scrNum(scr: ScreeningInputs, dbKey: string): number | undefined {
 
 interface InputPanelProps {
   inputs: Partial<HealthInputs>;
-  /** `typedUnit`: the unit a weight or waist was typed in, when one was. */
-  onChange: (inputs: Partial<HealthInputs>, typedUnit?: UnitSystem) => void;
+  /** One field's new value; `unit`: the unit a weight or waist was typed in. */
+  onChange: <K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => void;
   errors: Record<string, string>;
   unitSystem: UnitSystem;
   onUnitSystemChange: (system: UnitSystem) => void;
@@ -176,7 +176,7 @@ function useAutoAdvance(): (opts: { ambiguous: boolean; advance: () => void }) =
 }
 
 export function InputPanel({
-  inputs, onChange, errors, unitSystem, onUnitSystemChange,
+  inputs, onChange: updateField, errors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, onDraftValue,
@@ -321,14 +321,6 @@ export function InputPanel({
 
   // PSA date picker state (for prostate section)
   const [psaDate, setPsaDate] = useState<DateValue>(getCurrentDateValue);
-
-  const updateField = <K extends keyof HealthInputs>(
-    field: K,
-    value: HealthInputs[K] | undefined,
-    typedUnit?: UnitSystem,
-  ) => {
-    onChange({ ...inputs, [field]: value }, typedUnit);
-  };
 
   const parseAndConvert = (field: string, value: string): number | undefined => {
     const num = parseLocalisedNumber(value);
