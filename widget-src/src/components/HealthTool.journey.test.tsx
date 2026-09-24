@@ -937,6 +937,21 @@ describe('leftover form state never writes a value', () => {
     expect((await rowsOf('waist')).every((m) => m.status === 'active')).toBe(true);
     expect(await activeOn('weight')).toEqual([[82, '2026-09-01']]);
   });
+
+  // An upload's start runs the first-time fields' save, whatever they hold.
+  // What a matrix's draft lends the plan is kept apart from the form (US-03
+  // AC6), so that save never sees it. Half a blood pressure stands in, and
+  // no commit can save it.
+  it('half a blood pressure in the vitals matrix stands in for the plan; the fields\' save as an upload starts writes nothing', async () => {
+    const view = await returningGuest();
+    const bp = row(vitalsMatrix(view.container), 'Blood Pressure');
+    typeInto(bp.querySelector('.bt-cell-draft input[aria-label="Systolic blood pressure"]') as HTMLInputElement, '150');
+    await waitFor(() => expect(chat.context?.systolicBp).toBe(150));
+
+    await act(async () => { await upload.onStart!(); });
+    await wait(1000);
+    expect([...await rowsOf('systolic_bp'), ...await rowsOf('diastolic_bp')]).toEqual([]);
+  });
 });
 
 // Review of 2026-09-24, round 3, and Codex R1: a value on screen can change
@@ -1310,51 +1325,80 @@ describe('US-03: what the plan and the chat read of a draft', () => {
     await waitFor(() => expect(chat.context?.weightKg).toBe(84.5));
   });
 
-  // Codex R3 (2026-09-25, round 7): a remote change took back what the draft
-  // lent the plan and the chat, but the matrix still counted it as lent, so
-  // the same number typed again ("3" on to "3.0") sent nothing.
-  it('US-03 AC6: after a remote change the plan and the chat read the record until the draft is typed into again, the same number included', async () => {
+  // Brad, 2026-09-25: a draft typed on this page is still on screen after the
+  // page reads the record again, and the guards judge it again on every
+  // render. So it keeps standing in, with nothing typed again. (Round 7 had
+  // it wait for a keystroke; "3" typed on to "3.0" then sent nothing.)
+  it.each([
+    ['a remote change', async () => {}, () => remoteChange()],
+    ['an upload', () => act(async () => { await upload.onStart!(); }), () => act(async () => { await upload.onComplete!(); })],
+  ])('US-03 AC6: across %s, a draft typed on this page stands in for the record in the plan and the chat, with nothing typed again', async (_how, start, readAgain) => {
     await guest({ weight: 82 });
     await addMeasurement('ldl', 4.0, RIGHT_DAY);
     const view = render(<HealthTool />);
     await waitFor(() => expect(ldlTile(view.container)).toBe('4.0 mmol/L'));
+    await start(); // an upload commits the drafts as it starts: this one is typed while it runs
     const ldl = () => draftInput(bloodMatrix(view.container), 'LDL Cholesterol');
     typeInto(ldl(), '3');
     await waitFor(() => expect(ldlTile(view.container)).toBe('3.0 mmol/L'));
 
-    await addMeasurement('hdl', 1.4, RIGHT_DAY); // a connector's change, to another test
-    remoteChange();
-    await waitFor(() => expect(ldlTile(view.container)).toBe('4.0 mmol/L'));
-    expect(chat.context?.ldlC).toBe(4);
-    expect(ldl().value).toBe('3');
+    await addMeasurement('hdl', 1.4, RIGHT_DAY); // another writer's value, for another test
+    await readAgain();
+    await waitFor(() => expect(chat.context?.hdlC).toBe(1.4)); // the page has read the record again
+    expect(ldlTile(view.container)).toBe('3.0 mmol/L');
+    expect(chat.context?.ldlC).toBe(3);
 
-    typeWithoutTap(ldl(), '3.0');
-    await waitFor(() => expect(ldlTile(view.container)).toBe('3.0 mmol/L'));
+    typeWithoutTap(ldl(), '3.0'); // typed on: the same number
+    await wait(50);
+    expect(ldlTile(view.container)).toBe('3.0 mmol/L');
     expect(chat.context?.ldlC).toBe(3);
   });
 
-  // Round 7: a matrix built again after an upload (a phone turned) lent the
-  // draft again, though nobody had typed into it since.
-  it('US-03 AC6: after an upload, a phone turned lends the vitals draft nothing until it is typed into again; then it keeps lending', async () => {
+  // Round 7 had a matrix built again after an upload (a phone turned) lend
+  // nothing until the draft was typed into. The draft was typed on this page,
+  // so it stands in wherever the form is built.
+  it('US-03 AC6: across an upload, a vitals draft typed on this page stands in, and a phone turned keeps it standing in', async () => {
     const turnPhone = rotatablePhone(); // the whole form is built again
     const view = await returningGuest(); // 82 kg on 1 Sep
+    await act(async () => { await upload.onStart!(); }); // the draft is typed while the upload runs
     const weight = () => draftInput(vitalsMatrix(view.container), 'Weight');
     typeInto(weight(), '84');
     await waitFor(() => expect(chat.context?.weightKg).toBe(84));
 
     await addMeasurement('hdl', 1.4, RIGHT_DAY); // what the upload saved
     await act(async () => { await upload.onComplete!(); });
-    await waitFor(() => expect(chat.context?.weightKg).toBe(82));
+    await waitFor(() => expect(chat.context?.hdlC).toBe(1.4));
+    expect(chat.context?.weightKg).toBe(84);
     await turnPhone(); // portrait
     await shown(view.container, '.bt-vitals-card');
-    expect(chat.context?.weightKg).toBe(82);
-    expect(weight().value).toBe('84');
-
-    typeInto(weight(), '84.0');
-    await waitFor(() => expect(chat.context?.weightKg).toBe(84));
+    expect(chat.context?.weightKg).toBe(84);
     await turnPhone(); // landscape again
     await shown(view.container, '.bt-vitals-card');
     expect(chat.context?.weightKg).toBe(84);
+  });
+
+  // A record read again can still take a draft's place: another writer fills
+  // its slot, or saves a later value for its test. Each draft is judged on
+  // its own.
+  it.each([
+    ['whose slot another writer filled', '2026-09-01'],
+    ['that is no longer its test\'s latest', '2026-09-10'],
+  ])('US-03 AC6: after a remote change, a draft %s leaves the plan and the chat to the record; another draft still stands in', async (_how, day) => {
+    await guest({ weight: 82 });
+    await addMeasurement('ldl', 4.0, RIGHT_DAY);
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(ldlTile(view.container)).toBe('4.0 mmol/L'));
+    pickDraftDate(bloodMatrix(view.container), '2026-09-01');
+    typeInto(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'), '3');
+    typeInto(draftInput(bloodMatrix(view.container), 'HDL Cholesterol'), '1.2');
+    await waitFor(() => expect(ldlTile(view.container)).toBe('3.0 mmol/L'));
+    expect(chat.context?.hdlC).toBe(1.2);
+
+    await addMeasurement('ldl', 3.5, day); // another writer
+    remoteChange();
+    await waitFor(() => expect(ldlTile(view.container)).toBe('3.5 mmol/L'));
+    expect(chat.context?.ldlC).toBe(3.5);
+    expect(chat.context?.hdlC).toBe(1.2); // still its test's latest, in the slot it expects
   });
 });
 

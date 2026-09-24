@@ -10,7 +10,6 @@ import { localDay, toCanonicalValue, type ApiMeasurement } from '@roadmap/health
 import { BloodTestTimeline, ValueCell } from './BloodTestTimeline';
 import { hidePage, pickDraftDate, press, showPage, typeInto, typeWithoutTap } from '../testing/matrix-gestures';
 import { slotOf, type Refused, type SaveTask } from '../lib/matrix-save';
-import { recordReread } from '../lib/useMatrixDraft';
 
 beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => {
@@ -354,20 +353,28 @@ describe('US-03 — the draft', () => {
     expect(matrix().cell('LDL Cholesterol').value).toBe('');
   });
 
-  // Cleanup review of 2026-09-25: the matrix read the page's read of the
-  // record from state React could not see, so it withdrew what it lent only
-  // when something above it happened to render too.
-  it('US-03 AC6: a re-read of the record takes back what the draft lent, with nothing above the matrix rendering; typing lends it again', () => {
+  // Brad, 2026-09-25: the record read again no longer takes back what the
+  // draft lent. The matrix judges the draft again against each history it is
+  // given, with nothing typed.
+  it('US-03 AC6: a new history judges the draft again, with nothing typed: it lends while its slot holds what it expects, and nothing once another row fills it', () => {
     const onFieldChange = vi.fn();
     const m = matrix([], undefined, onFieldChange);
     typeInto(m.cell('LDL Cholesterol'), '3');
     expect(onFieldChange).toHaveBeenLastCalledWith('ldlC', 3);
+    const read = (rows: ApiMeasurement[]) => m.view.rerender(
+      <>
+        <BloodTestTimeline bloodTestHistory={rows} unitSystem="si" unitOverrides={{}} onToggleFieldUnit={noop}
+          onSaveBatch={m.onSaveBatch} onCorrectValue={vi.fn()} onFieldChange={onFieldChange} isSaving={false} hasApiResponse/>
+        <button type="button">Elsewhere</button>
+        <p>Page text</p>
+      </>,
+    );
 
-    act(() => recordReread());
+    read(history([['hdl', 1.4, TODAY]])); // another test
+    expect(onFieldChange).not.toHaveBeenCalledWith('ldlC', undefined);
+
+    read(history([['hdl', 1.4, TODAY], ['ldl', 2.9, TODAY]])); // the draft's slot, filled elsewhere
     expect(onFieldChange).toHaveBeenLastCalledWith('ldlC', undefined);
-
-    typeWithoutTap(m.cell('LDL Cholesterol'), '3.0');
-    expect(onFieldChange).toHaveBeenLastCalledWith('ldlC', 3);
   });
 });
 

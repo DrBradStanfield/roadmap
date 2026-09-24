@@ -63,11 +63,12 @@ interface StartingInfoVitalsProps {
    *  Same prop the blood-test matrix uses. BP cells stay display-only (a
    *  sys/dia cell is ambiguous to correct in place). */
   onCorrectValue?: CorrectFn;
-  /** The draft values the suggestions engine (which reads `inputs[field]`)
-   *  may use, in SI; undefined leaves the field to the record. */
+  /** The draft values the plan and the chat may read, in SI; undefined
+   *  leaves the field to the record. */
   onFieldChange: (field: keyof HealthInputs, value: number | undefined) => void;
   /** Used to pulse the weight draft cell at stage 2 (the progressive-
-   *  disclosure gate that unlocks the blood-test panel). */
+   *  disclosure gate that unlocks the blood-test panel): no weight in what
+   *  the plan reads, the draft's own included. */
   formStage: 1 | 2 | 3;
   /** Called after the user types a valid weight — continues the
    *  height → weight → email focus chain from the legacy form. */
@@ -535,7 +536,7 @@ export function StartingInfoVitals({
                             value={shownText(null, row.metric)}
                             externalError={clashes(row.metric) || taken(row.metric) ? SAME_SLOT : refusal([null, row.metric])}
                             placeholder="—"
-                            wrapperClass={`bt-cell-input bt-cell-draft${formStage === 2 && row.metric === 'weight' && inputs.weightKg === undefined ? ' field-attention' : ''}`}
+                            wrapperClass={`bt-cell-input bt-cell-draft${formStage === 2 && row.metric === 'weight' ? ' field-attention' : ''}`}
                             active={activeCell === cellId}
                             onChange={v => setSimpleDraft(row.metric, v)}
                             onFocus={() => setActiveCell(cellId)}

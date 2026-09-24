@@ -123,8 +123,8 @@ export interface BloodTestTimelineProps {
   // ValueCell calls this when the user corrects a saved value. A failure
   // leaves the editor open so the user can retry.
   onCorrectValue?: CorrectFn;
-  // The draft values the suggestions engine (which reads `inputs[field]`)
-  // may use, in SI; undefined leaves the field to the record.
+  // The draft values the plan and the chat may read, in SI; undefined leaves
+  // the field to the record.
   onFieldChange: (field: keyof HealthInputs, siValue: number | undefined) => void;
   isSaving: boolean;
   sex?: 'male' | 'female';
@@ -280,7 +280,7 @@ export function BloodTestTimeline({
       return cellId;
     }
     if (date) setDraftDate(date);
-    setDraftValue(metric, typed); // mirrors to inputs[field] so suggestions update live
+    setDraftValue(metric, typed); // the plan and the chat read it while it may stand in
     const cellId = `draft.${metric}`;
     setActiveCell(cellId);
     return cellId;

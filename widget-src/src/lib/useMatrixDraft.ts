@@ -6,7 +6,7 @@
 // store has taken its value. Shared by BloodTestTimeline and
 // StartingInfoVitals.
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { localDay, type UnitSystem } from '@roadmap/health-core';
 import { DRAFTS_CLEARED_EVENT, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import type { SaveTask } from './matrix-save';
@@ -15,33 +15,16 @@ type Typed<K extends string> = Partial<Record<K, string>>;
 /** The rows a cell expects under its slots (`SaveTask.expected`). */
 type Expected = SaveTask['expected'];
 
-const newRead = () => Math.random().toString(36).slice(2);
-/** The page's read of the record: this load of it, until the form is
- *  replaced from the record again (`recordReread`). A draft restored from the
- *  device was typed on another load's read, so it never matches. A matrix
- *  built again on the same read (a phone turned) keeps what was typed on it. */
-let read = newRead();
-const readers = new Set<() => void>();
-const subscribe = (heard: () => void) => {
-  readers.add(heard);
-  return () => { readers.delete(heard); };
-};
-const currentRead = () => read;
-
-/** The page has read the record again, over what the drafts lent the plan
- *  and the chat: each draft cell waits until it is typed into again (US-03
- *  AC6). Every matrix on screen hears it and renders again. */
-export function recordReread(): void {
-  read = newRead();
-  for (const heard of readers) heard();
-}
+/** This load of the page. A draft restored by the next load was not typed on
+ *  it, and a matrix built again on this one (a phone turned) keeps it. */
+const PAGE = Math.random().toString(36).slice(2);
 
 /** What a draft keeps about a typed cell beside its text: the unit it was
  *  typed in, where a unit switch keeps the quantity (the vitals, US-05); the
  *  rows the page showed under its slots when the user began typing there,
  *  kept until the cell is emptied, never retaken by typing again (US-03 AC2);
- *  the read of the record it was typed on; and why a commit refused its
- *  value, until it is typed into again. */
+ *  the load of the page it was typed on; and why a commit refused its value,
+ *  until it is typed into again. */
 interface CellMeta { unit?: UnitSystem; expected?: Expected; typedOn?: string; refused?: string }
 
 export interface MatrixDraft<K extends string> {
@@ -117,8 +100,6 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
   cellOf?: (key: K) => string;
 }) {
   const [state, setState] = useState<MatrixDraft<K>>(() => loadDraft<K>(storageKey) ?? EMPTY);
-  // The read this render sees, so a re-read renders the matrix again.
-  const pageRead = useSyncExternalStore(subscribe, currentRead);
   const { onScreen, rowsUnder, latestDay, cellOf = (key: K) => key } = record;
   const date = dayOf(state);
   const { values } = state.draft;
@@ -131,7 +112,7 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     const expected = metaOf([null, key])?.expected;
     return !!values[key] && Object.entries(rowsUnder(date, key)).some(([metric, id]) => id !== (expected?.[metric] ?? null));
   };
-  const typedSinceRead = (key: K) => metaOf([null, key])?.typedOn === pageRead;
+  const typedHere = (key: K) => metaOf([null, key])?.typedOn === PAGE;
 
   useEffect(() => {
     if (holdsAny(state.draft.values) || holdsAny(state.backfills)) safeSetItem(storageKey, JSON.stringify(state));
@@ -158,7 +139,7 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     /** What the user typed into a cell, verbatim, and the unit it is in when
      *  a unit switch must keep the quantity. */
     type: (cell: CellRef<K>, typed: string, unit?: UnitSystem) => setState((s) => set(s, cell, typed, (was) => ({
-      unit, expected: was?.expected ?? rowsUnder(cell[0] ?? dayOf(s), cell[1]), typedOn: read,
+      unit, expected: was?.expected ?? rowsUnder(cell[0] ?? dayOf(s), cell[1]), typedOn: PAGE,
     }))),
     /** The day the user picked. Anything else is never taken: iOS's Reset
      *  hands back '', and the column keeps its day. Another day is another
@@ -186,14 +167,15 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     clashes: (key: K) => !!values[key] && !!state.backfills[date]?.[key] && onScreen(date, key),
     taken,
     /** Whether the draft's value for `key` may stand in for the record in
-     *  the plan and the chat (US-03 AC6): typed since the page last read the
-     *  record, its slot still holding the row it expects, and not dated
-     *  before the record's own latest value. So a draft restored from the
-     *  device, or typed before a remote change or an upload, waits until it
-     *  is typed into again. Each matrix adds the rest: a value it can save,
-     *  clear of clashes. */
+     *  the plan and the chat (US-03 AC6): typed on this load of the page, its
+     *  slot still holding the row it expects, and not dated before the
+     *  record's own latest value. A draft restored from the device waits
+     *  until it is typed into. Each render judges the draft again against the
+     *  record it shows, so a remote change or an upload ends its standing in
+     *  only by filling its slot or saving a later value. Each matrix adds the
+     *  rest: a value it can save, clear of clashes. */
     lends: (key: K) => {
-      if (!typedSinceRead(key) || taken(key)) return false;
+      if (!typedHere(key) || taken(key)) return false;
       const latest = latestDay(key);
       return !latest || date >= latest;
     },
@@ -213,14 +195,13 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
 }
 
 /**
- * Keep the form's copy of the draft, which the plan and the chat read, to the
- * values that may stand in for the record there (US-03 AC6): `values` maps
- * each field to its value, or to undefined to leave it to the record. Only a
- * field that changed is sent, so what was sent must be what the form holds: a
- * re-read that drops the form's copies also stops the drafts standing in
- * (`recordReread`), and undefined is sent. A matrix leaving the page takes
- * back what it sent, and one mounting sends it again: a phone turned across
- * 768 px builds the whole form again.
+ * Keep what the draft lends the plan and the chat to the values that may
+ * stand in for the record there (US-03 AC6): `values` maps each field to its
+ * value, or to undefined to leave it to the record. Only a field that changed
+ * is sent. The page keeps what is sent apart from the form, and nothing else
+ * writes it, so what was sent is what the page holds. A matrix leaving the
+ * page takes back what it sent, and one mounting sends it again: a phone
+ * turned across 768 px builds the whole form again.
  */
 export function useDraftMirror<F extends string>(values: Array<[F, number | undefined]>, send: (field: F, value: number | undefined) => void): void {
   const sent = useRef(new Map<F, number | undefined>());
