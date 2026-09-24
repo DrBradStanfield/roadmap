@@ -76,6 +76,7 @@ import type { ApiDocument } from '../lib/api-types';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
+import { recordReread } from '../lib/useMatrixDraft';
 
 // What "Delete all my data" does, said BEFORE the click. The caveats used to
 // arrive in the alert afterwards, which is too late to be a decision, and
@@ -164,6 +165,11 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // Counts the first-time vitals fields' saves, so InputPanel closes the
   // fields a save emptied.
   const [fieldsSaved, setFieldsSaved] = useState(0);
+  // The unit a first-time weight or waist was typed in, in its field or to
+  // the chat, beside the value it gave: a unit switch before the save leaves
+  // "changes nothing" asked in that unit (US-03 AC3). It holds only while
+  // the form holds that value.
+  const typedIn = useRef<Partial<Record<keyof HealthInputs, { value?: number; unit: UnitSystem }>>>({});
   const [isDeleting, setIsDeleting] = useState(false);
   const medSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const screeningSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -396,16 +402,19 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   const handleSaveLongitudinal = useCallback((tasks?: SaveTask[]): Promise<Refused> => {
     // The first-time vitals fields: a weight, a waist, a blood pressure, each
     // naming the row the page shows for today ("Replaces 82 kg"), in the unit
-    // on screen. What `inputs` holds for a matrix's cells mirrors its draft
-    // (for live suggestions), which only that matrix saves, on the day the
-    // draft is dated: the blood tests always, and the vitals while their
-    // matrix is showing (review of 2026-09-24).
+    // it was typed in (mmHg either way). What `inputs` holds for a matrix's
+    // cells mirrors its draft (for live suggestions), which only that matrix
+    // saves, on the day the draft is dated: the blood tests always, and the
+    // vitals while their matrix is showing (review of 2026-09-24).
     const fromForm = (): SaveTask[] => {
       if (vitalsPrefillRef.current) return [];
       const date = localDay(new Date());
       const shown = activeRowIndex(history);
       return [['weight'], ['waist'], ['systolic_bp', 'diastolic_bp']].flatMap((metrics): SaveTask[] => {
-        const task: SaveTask = { date, values: {}, expected: {}, unit: metricUnitOverrides?.[metrics[0] as MetricType] ?? unitSystem };
+        const field = METRIC_TO_FIELD[metrics[0]];
+        const typed = typedIn.current[field];
+        const unit = typed && typed.value === inputs[field] ? typed.unit : unitOverrides[field] ?? unitSystem;
+        const task: SaveTask = { date, values: {}, expected: {}, unit };
         for (const metric of metrics) {
           const value = inputs[METRIC_TO_FIELD[metric] as keyof HealthInputs] as number | undefined;
           if (value === undefined) continue;
@@ -462,7 +471,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     const run = savesRef.current.then(save);
     savesRef.current = run.catch(() => {});
     return run;
-  }, [inputs, history, metricUnitOverrides, unitSystem, reloadValues]);
+  }, [inputs, history, unitOverrides, unitSystem, reloadValues]);
 
   // Auto-save on blur / Enter for InputPanel longitudinal fields. The
   // 500ms debounce batches systolic→diastolic tab transitions into one
@@ -516,7 +525,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       // The record holds the profile and every saved value. A number being
       // typed lives only in the form until its save, so the field the user is
       // typing in rides through (US-34 AC4); nothing else does, or a copy of a
-      // value since corrected would outrank the record.
+      // value since corrected would outrank the record. A matrix's draft
+      // lends its values again only once it is typed into (US-03 AC6).
+      recordReread();
       const typing = document.activeElement?.id as keyof HealthInputs | undefined;
       setInputs(prev => (typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
         ? { ...result.inputs, [typing]: prev[typing] }
@@ -640,14 +651,19 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     }
   }, []);
 
-  const handleInputChange = (newInputs: Partial<HealthInputs>) => {
+  const handleInputChange = (newInputs: Partial<HealthInputs>, typedUnit?: UnitSystem) => {
+    // A weight or waist keeps the unit its caller converted it from (typedIn).
+    for (const field of ['weightKg', 'waistCm'] as const) {
+      if (typedUnit && newInputs[field] !== inputs[field]) typedIn.current[field] = { value: newInputs[field], unit: typedUnit };
+    }
     setInputs(newInputs);
     window.dispatchEvent(new CustomEvent('hr:inputs-changed'));
   };
   // A matrix's draft value, as the plan and the chat read it (US-03). One
-  // update per field, so several sent at once all land.
+  // update per field, so several sent at once all land; one that changes
+  // nothing (a draft withdrawn after a re-read) renders nothing.
   const handleDraftValue = useCallback((field: keyof HealthInputs, value: number | undefined) =>
-    setInputs(prev => ({ ...prev, [field]: value })), []);
+    setInputs(prev => (prev[field] === value ? prev : { ...prev, [field]: value })), []);
 
   const handleMedicationChange = useCallback((
     medicationKey: string,
@@ -778,7 +794,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         vitalsPrefillRef.current!(metric, edit.displayValue, edit.unitSystem, edit.date);
       } else {
         const si = toCanonicalValue(metric, edit.displayValue, edit.unitSystem);
-        handleInputChange({ ...inputsRef.current, [edit.field]: si });
+        handleInputChange({ ...inputsRef.current, [edit.field]: si }, edit.unitSystem);
       }
       return;
     }

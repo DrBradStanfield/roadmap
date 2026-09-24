@@ -99,7 +99,8 @@ function scrNum(scr: ScreeningInputs, dbKey: string): number | undefined {
 
 interface InputPanelProps {
   inputs: Partial<HealthInputs>;
-  onChange: (inputs: Partial<HealthInputs>) => void;
+  /** `typedUnit`: the unit a weight or waist was typed in, when one was. */
+  onChange: (inputs: Partial<HealthInputs>, typedUnit?: UnitSystem) => void;
   errors: Record<string, string>;
   unitSystem: UnitSystem;
   onUnitSystemChange: (system: UnitSystem) => void;
@@ -323,9 +324,10 @@ export function InputPanel({
 
   const updateField = <K extends keyof HealthInputs>(
     field: K,
-    value: HealthInputs[K] | undefined
+    value: HealthInputs[K] | undefined,
+    typedUnit?: UnitSystem,
   ) => {
-    onChange({ ...inputs, [field]: value });
+    onChange({ ...inputs, [field]: value }, typedUnit);
   };
 
   const parseAndConvert = (field: string, value: string): number | undefined => {
@@ -541,7 +543,7 @@ export function InputPanel({
               if (raw === '0' && inputs[field] === undefined && rawInputs[field] === undefined) {
                 return;
               }
-              updateField(field, parseAndConvert(field, raw));
+              updateField(field, parseAndConvert(field, raw), fieldUnit(field));
               if (field === 'weightKg' && !hasAutoFocusedEmail.current && onAutoFocusEmail) {
                 const weightNum = parseLocalisedNumber(raw);
                 if (weightNum !== undefined && /^\d{2,3}$/.test(raw) && weightNum >= r.min && weightNum <= r.max) {

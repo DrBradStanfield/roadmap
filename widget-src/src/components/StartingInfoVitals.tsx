@@ -431,8 +431,8 @@ export function StartingInfoVitals({
   const bpClashes = clashes('sys') || clashes('dia');
   const bpTaken = taken('sys') || taken('dia');
 
-  // A draft value typed on this load of the page stands in for the record in
-  // the plan and the chat while it could be saved and is its vital's latest:
+  // A draft value typed since the page last read the record stands in for it
+  // in the plan and the chat while it could be saved and is its vital's latest:
   // never one that clashes, nor one dated before the record's own latest
   // value (US-03 AC6). Each half of a blood pressure counts on its own, in
   // range.

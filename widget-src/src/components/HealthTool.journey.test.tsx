@@ -27,6 +27,7 @@ import {
   toCanonicalValue,
   type FileLabValue,
   type FileMeasurement,
+  type ProposedEdit,
   type RoadmapFile,
 } from '@roadmap/health-core';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
@@ -45,10 +46,18 @@ import { trackProductEvent } from '../lib/server-api';
 import { hidePage, pickDraftDate, press, showPage, typeInto, typeWithoutTap } from '../testing/matrix-gestures';
 import { SAME_SLOT, SAVE_ERRORS } from './BloodTestTimeline';
 
-// What the chat is told: the context the page hands the chat column.
-const chat = vi.hoisted(() => ({ context: null as Record<string, unknown> | null }));
-// What the page does as a lab upload starts, before any file is read.
-const upload = vi.hoisted(() => ({ onStart: null as null | (() => Promise<void>) }));
+// What the chat is told: the context the page hands the chat column. And how
+// the chat proposes an edit to the form.
+const chat = vi.hoisted(() => ({
+  context: null as Record<string, unknown> | null,
+  proposeEdit: null as null | ((edits: ProposedEdit[]) => void),
+}));
+// What the page does as a lab upload starts, before any file is read, and
+// once its values are saved.
+const upload = vi.hoisted(() => ({
+  onStart: null as null | (() => Promise<void>),
+  onComplete: null as null | (() => Promise<void>),
+}));
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -59,11 +68,19 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ guestInputs }: { guestInputs: Record<string, unknown> }) => { chat.context = guestInputs; return null; },
+  ChatEmbed: ({ guestInputs, onProposeEdit }: { guestInputs: Record<string, unknown>; onProposeEdit: (edits: ProposedEdit[]) => void }) => {
+    chat.context = guestInputs;
+    chat.proposeEdit = onProposeEdit;
+    return null;
+  },
 }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({
-  UploadModal: ({ onStart }: { onStart: () => Promise<void> }) => { upload.onStart = onStart; return null; },
+  UploadModal: ({ onStart, onComplete }: { onStart: () => Promise<void>; onComplete: () => Promise<void> }) => {
+    upload.onStart = onStart;
+    upload.onComplete = onComplete;
+    return null;
+  },
 }));
 
 import { HealthTool } from './HealthTool';
@@ -212,7 +229,9 @@ beforeEach(() => {
   vi.stubGlobal('open', () => null); // Save as PDF's print window
   vi.mocked(trackProductEvent).mockClear();
   chat.context = null;
+  chat.proposeEdit = null;
   upload.onStart = null;
+  upload.onComplete = null;
 });
 afterEach(async () => {
   cleanup();
@@ -469,6 +488,84 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     await wait(600);
     await waitFor(() => expect(view.container.querySelector('#weightKg')).toBeNull());
     expect(await rowsOf('weight')).toHaveLength(2);
+  });
+
+  // Codex R2 (2026-09-25, round 7): the first-time fields asked "changes
+  // nothing" in the unit on screen at the save, not the unit the number was
+  // typed in. Round 5 fixed only the vitals matrix.
+  it('US-03 AC3: in the first-time fields, today\'s weight re-entered as shown in lb, then switched back to kg before the save, writes nothing; a new number is a correction, exactly', async () => {
+    await guest(); // stage 2: the first-time weight field
+    const view = render(<HealthTool />);
+    const weight = await shown<HTMLInputElement>(view.container, '#weightKg');
+    fireEvent.change(weight, { target: { value: '84' } });
+    fireEvent.blur(weight);
+    await wait(600);
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, TODAY]]));
+
+    // Open today's weight, switch it to lb, type, and switch back to kg while
+    // the save still waits (500 ms after the field is left).
+    const unitPill = () => view.container.querySelector('label[for="weightKg"] .unit-toggle-pill') as HTMLElement;
+    async function typeInLbThenSwitchBack(typed: string) {
+      fireEvent.click(await shown<HTMLElement>(view.container, '.collapsed-field-value'));
+      fireEvent.click(unitPill()); // kg → lb
+      expect(view.getByText('Replaces 185 lbs')).toBeTruthy();
+      const field = view.container.querySelector('#weightKg') as HTMLInputElement;
+      fireEvent.change(field, { target: { value: typed } });
+      fireEvent.blur(field);
+      fireEvent.click(unitPill()); // lb → kg
+      await wait(600);
+      await waitFor(() => expect(view.container.querySelector('#weightKg')).toBeNull()); // the save closed the field
+    }
+
+    await typeInLbThenSwitchBack(formatDisplayValue('weight', 84, 'conventional')); // 185, as shown
+    expect((await rowsOf('weight')).map((m) => [m.value, m.status])).toEqual([[84, 'active']]);
+
+    await typeInLbThenSwitchBack('190');
+    expect(await activeOn('weight')).toEqual([[toCanonicalValue('weight', 190, 'conventional'), TODAY]]);
+  });
+
+  // Round 7 review: the chat fills a first-time field from the unit the user
+  // stated, and the field kept the unit on screen instead.
+  it('US-03 AC3: in the first-time fields, the chat\'s 185 lb over today\'s 84 kg, shown in kg, writes nothing', async () => {
+    await guest(); // stage 2: the first-time weight field
+    const view = render(<HealthTool />);
+    const weight = await shown<HTMLInputElement>(view.container, '#weightKg');
+    fireEvent.change(weight, { target: { value: '84' } });
+    fireEvent.blur(weight);
+    await wait(600);
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, TODAY]]));
+
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'weightKg', displayValue: 185, unitSystem: 'conventional', date: null }]));
+    await waitFor(() => expect(chat.context?.weightKg).toBe(toCanonicalValue('weight', 185, 'conventional')));
+    savePdf(view); // saves what the fields hold
+    await wait(1500);
+    expect((await rowsOf('weight')).map((m) => [m.value, m.status])).toEqual([[84, 'active']]);
+  });
+
+  // Round 7: a blood pressure has no unit to keep; mmHg is mmHg in both.
+  it('US-03 AC3: in the first-time fields, a blood pressure saves as a pair, and the same pair typed again writes nothing across a unit switch', async () => {
+    await guest(); // stage 2: the first-time fields
+    const view = render(<HealthTool />);
+    async function typePair(sys: string, dia: string) {
+      const systolic = await shown<HTMLInputElement>(view.container, '#systolicBp');
+      fireEvent.change(systolic, { target: { value: sys } });
+      fireEvent.blur(systolic);
+      const diastolic = view.container.querySelector('#diastolicBp') as HTMLInputElement;
+      fireEvent.change(diastolic, { target: { value: dia } });
+      fireEvent.blur(diastolic); // the two blurs make one save
+    }
+    const bpRows = async () => [...await rowsOf('systolic_bp'), ...await rowsOf('diastolic_bp')].map((m) => [m.value, m.status, day(m)]);
+
+    await typePair('120', '80');
+    await wait(600);
+    await waitFor(async () => expect(await bpRows()).toEqual([[120, 'active', TODAY], [80, 'active', TODAY]]));
+
+    fireEvent.click(await shown<HTMLElement>(view.container, '.collapsed-field-value')); // open today's 120/80
+    await typePair('120', '80');
+    fireEvent.click(view.getByRole('button', { name: /Switch units/ })); // to US units, before the save runs
+    await wait(600);
+    await waitFor(() => expect(view.container.querySelector('#systolicBp')).toBeNull()); // the save closed the pair
+    expect(await bpRows()).toEqual([[120, 'active', TODAY], [80, 'active', TODAY]]);
   });
 
   it('US-34 AC4: a change arriving while a weight is being typed keeps the typed weight', async () => {
@@ -1138,6 +1235,56 @@ describe('US-03: what the plan and the chat read of a draft', () => {
 
     typeInto(draftInput(vitalsMatrix(view.container), 'Weight'), '84.5');
     await waitFor(() => expect(chat.context?.weightKg).toBe(84.5));
+  });
+
+  // Codex R3 (2026-09-25, round 7): a remote change took back what the draft
+  // lent the plan and the chat, but the matrix still counted it as lent, so
+  // the same number typed again ("3" on to "3.0") sent nothing.
+  it('US-03 AC6: after a remote change the plan and the chat read the record until the draft is typed into again, the same number included', async () => {
+    await guest({ weight: 82 });
+    await addMeasurement('ldl', 4.0, RIGHT_DAY);
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(ldlTile(view.container)).toBe('4.0 mmol/L'));
+    const ldl = () => draftInput(bloodMatrix(view.container), 'LDL Cholesterol');
+    typeInto(ldl(), '3');
+    await waitFor(() => expect(ldlTile(view.container)).toBe('3.0 mmol/L'));
+
+    await addMeasurement('hdl', 1.4, RIGHT_DAY); // a connector's change, to another test
+    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    await waitFor(() => expect(ldlTile(view.container)).toBe('4.0 mmol/L'));
+    expect(chat.context?.ldlC).toBe(4);
+    expect(ldl().value).toBe('3');
+
+    typeWithoutTap(ldl(), '3.0');
+    await waitFor(() => expect(ldlTile(view.container)).toBe('3.0 mmol/L'));
+    expect(chat.context?.ldlC).toBe(3);
+  });
+
+  // Round 7: a matrix built again after an upload (a phone turned) lent the
+  // draft again, though nobody had typed into it since.
+  it('US-03 AC6: after an upload, a phone turned lends the vitals draft nothing until it is typed into again; then it keeps lending', async () => {
+    const rotate = rotatablePhone();
+    const view = await returningGuest(); // 82 kg on 1 Sep
+    const weight = () => draftInput(vitalsMatrix(view.container), 'Weight');
+    const turnPhone = async () => { // the whole form is built again
+      rotate();
+      await shown(view.container, '.bt-vitals-card');
+      await wait(200);
+    };
+    typeInto(weight(), '84');
+    await waitFor(() => expect(chat.context?.weightKg).toBe(84));
+
+    await addMeasurement('hdl', 1.4, RIGHT_DAY); // what the upload saved
+    await act(async () => { await upload.onComplete!(); });
+    await waitFor(() => expect(chat.context?.weightKg).toBe(82));
+    await turnPhone(); // portrait
+    expect(chat.context?.weightKg).toBe(82);
+    expect(weight().value).toBe('84');
+
+    typeInto(weight(), '84.0');
+    await waitFor(() => expect(chat.context?.weightKg).toBe(84));
+    await turnPhone(); // landscape again
+    expect(chat.context?.weightKg).toBe(84);
   });
 });
 
