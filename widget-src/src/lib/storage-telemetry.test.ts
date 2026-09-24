@@ -5,8 +5,9 @@ import { webcrypto } from 'node:crypto';
 import { Blob as NodeBlob } from 'node:buffer';
 import { MemoryAdapter, StorageError } from '@roadmap/health-core';
 import { RoadmapStore } from '../storage/roadmap-store';
+import { LocalStorageAdapter } from '../storage';
 import { Sentry, scrubEvent } from './sentry';
-import { EXPECTED_NETWORK_ERRORS, recordFailure } from './error-diagnostics';
+import { EXPECTED_NETWORK_ERRORS, recordFailure, storageFailureClass } from './error-diagnostics';
 
 // US-09 AC6: provider errors and request breadcrumbs may contain document
 // titles or results. Inspect complete outgoing SDK envelopes, not just extras.
@@ -72,6 +73,46 @@ describe('cloud-storage telemetry boundary', () => {
     expect(JSON.stringify(envelopes)).toContain('copy-down');
     const [, items] = envelopes[0] as [unknown, Array<[unknown, { exception: { values: unknown[] } }]>];
     expect(items[0][1].exception.values).toHaveLength(2);
+  });
+
+  it("keeps the browser's failure class of a device persist failure, never its message (US-09 AC16)", async () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => { throw new DOMException(marker, 'QuotaExceededError'); },
+      removeItem: () => {},
+    });
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const store = await RoadmapStore.create(new LocalStorageAdapter());
+    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z');
+    await expect(store.flush()).rejects.toThrow('still on this device');
+    await Sentry.flush();
+    const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
+    expect(items[0][1].tags).toEqual({ area: 'cloud-sync', op: 'persist', backend: 'local', cause: 'QuotaExceededError' });
+    expect(JSON.stringify(envelopes)).not.toContain(marker);
+  });
+
+  it('names no cause on a cloud persist failure — that is the transport, not the device', async () => {
+    class DeadCloud extends MemoryAdapter {
+      async write(): Promise<never> { throw new TypeError(`${marker} is not a function`); } // a defect, not a transport interruption
+    }
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const store = await RoadmapStore.create(new DeadCloud());
+    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z');
+    await expect(store.flush()).rejects.toThrow('still on this device');
+    await Sentry.flush();
+    const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
+    expect(items[0][1].tags).toEqual({ area: 'cloud-sync', op: 'persist', backend: 'memory' });
+  });
+
+  it.each([
+    [new StorageError(marker, undefined, new DOMException(marker, 'SecurityError')), 'SecurityError'],
+    [new StorageError(marker, undefined, new TypeError(marker)), 'TypeError'],
+    [new StorageError(marker, undefined, new ReferenceError(marker)), 'ReferenceError'],
+    [new StorageError(marker, undefined, new Error(marker)), 'other'],
+    [new TypeError('Failed to fetch'), 'other'], // a bare transport error is not a storage class
+    [marker, 'other'],
+  ])('names the failure class from a closed list: %s → %s', (error, expected) => {
+    expect(storageFailureClass(error)).toBe(expected);
   });
 
   it('keeps the load operation of a startup fallback capture (US-09 AC13)', () => {
