@@ -20,8 +20,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   (CLAUDE.md list: content-box flex default, 280px input min-content, sticky
   in max-content parents). If a fix touches layout, the escape analysis should
   ask "would tools/webkit-verify have caught this?"
-- `[prior][process]` Three blanket-rewrite attempts on 2026-08-07 (chat-health)
-  all regressed retrieval: fix ONE issue at a time, measure, never batch-fix.
+- `[prior][process]` Three blanket rewrites (chat-health, 2026-08-07) all
+  regressed retrieval: fix ONE issue at a time, measure, never batch-fix.
 
 ## Run learnings
 
@@ -107,7 +107,7 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   it over (URL params, token-response fields); the /simplify altitude pass
   found this after a first draft probed Drive and special-cased 401/403. Still
   true for any OTHER 403: `liftLocalInto` swallows it and
-  `cloud_connect_success` fires (a refused grant counts as a success). Closed 09-24 (6T, US-09 AC16, PR #PRNUM): the
+  `cloud_connect_success` fires (a refused grant counts as a success). Closed 09-24 (6T, US-09 AC16, PR #121): the
   remembered-backend key now goes through the safe accessors on every path;
   a "nothing will be kept" notice is still owed. Reading tells: a same-second PAIR (handled `cloud-connect
   op=migrate-up` + a second capture) is one page load; an exchange POST plus a
@@ -118,7 +118,7 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   the property `null` (old WebView). One bare read on the path `main()` awaits
   is a blank widget for every shape; `lib/storage.ts`' safe accessors already
   covered them, and the remembered-backend key was the one caller that
-  bypassed them (6T/6N/6J, US-09 AC16, PR #PRNUM). Escape: every standalone test stubs a
+  bypassed them (6T/6N/6J, US-09 AC16, PR #121). Escape: every standalone test stubs a
   WORKING localStorage. Audit shortcut: `grep -rn "localStorage\." widget-src
   --include=*.ts* | grep -v test` — anything outside lib/storage.ts and a
   try/catch is this class again. Same run: a scrub that keeps only closed tags
