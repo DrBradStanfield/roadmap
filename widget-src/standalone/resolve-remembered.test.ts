@@ -7,7 +7,7 @@
  * tier instead of rejecting `main()` before the mount is rendered.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { LocalStorageAdapter } from '../src/storage';
+import { GoogleDriveAdapter, LocalStorageAdapter } from '../src/storage';
 import { BACKEND_KEY, forgetBackend, rememberBackend, rememberedBackend, resolveRemembered } from './connect';
 
 const blockedStorage = {
@@ -64,8 +64,39 @@ describe('resolveRemembered with working storage', () => {
     expect(backing.has(BACKEND_KEY)).toBe(false);
   });
 
-  it('ignores a value that names no backend', async () => {
-    fakeStorage({ [BACKEND_KEY]: 'floppy' });
+  it('ignores a value that names no backend, and forgets it', async () => {
+    const backing = fakeStorage({ [BACKEND_KEY]: 'floppy' });
     expect((await resolveRemembered()).backend).toBe('local');
+    expect(backing.has(BACKEND_KEY)).toBe(false);
+  });
+
+  // The Google Drive branches (review of PR #121): a connected Drive whose
+  // token is valid or refreshes runs on Drive; one that cannot refresh runs
+  // on-device with Reconnect offered and the remembered choice KEPT.
+  describe('a remembered Google Drive', () => {
+    const drive = (hasValidToken: boolean, refreshes: boolean) => {
+      vi.stubGlobal('location', { origin: 'https://example.test', pathname: '/roadmap' });
+      vi.spyOn(GoogleDriveAdapter.prototype, 'isConnected').mockReturnValue(true);
+      vi.spyOn(GoogleDriveAdapter.prototype, 'hasValidToken').mockReturnValue(hasValidToken);
+      vi.spyOn(GoogleDriveAdapter.prototype, 'tryServerRefresh').mockResolvedValue(refreshes);
+      return fakeStorage({ [BACKEND_KEY]: 'google-drive' });
+    };
+    afterEach(() => { vi.restoreAllMocks(); });
+
+    it.each([[true, false], [false, true]])('valid token %s, refresh %s → runs on Drive', async (valid, refreshes) => {
+      const backing = drive(valid, refreshes);
+      const resolved = await resolveRemembered();
+      expect(resolved.backend).toBe('google-drive');
+      expect(resolved.adapter).toBeInstanceOf(GoogleDriveAdapter);
+      expect(backing.get(BACKEND_KEY)).toBe('google-drive');
+    });
+
+    it('no valid token and no refresh → on-device with Reconnect, choice kept', async () => {
+      const backing = drive(false, false);
+      const resolved = await resolveRemembered();
+      expect(resolved.backend).toBe('local');
+      expect(resolved.reconnect).toBe('google-drive');
+      expect(backing.get(BACKEND_KEY)).toBe('google-drive');
+    });
   });
 });
