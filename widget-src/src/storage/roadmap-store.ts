@@ -30,6 +30,7 @@ import {
   classifyMedicationChange,
   classifySupplementChange,
   computeReminderSchedule,
+  correctValue as correctRecordValue,
   createMeasurement,
   dayOf,
   diffInputsToMeasurements,
@@ -50,7 +51,6 @@ import {
   type ApiScreening,
   type DocumentType,
   type FileDocument,
-  type FileMeasurement,
   type FileReminderOptIn,
   type FileSupplement,
   type HealthInputs,
@@ -64,7 +64,7 @@ import { ROADMAP_DOC, SyncManager, type SyncContext } from '@roadmap/health-core
 import { LocalStorageAdapter, NAMED_FILE_PREFIX } from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
-import { clearOffFileHealthData, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { clearMatrixDrafts, clearOffFileHealthData, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { recordFailure } from '../lib/error-diagnostics';
 
@@ -195,11 +195,11 @@ export type AddMeasurementResult =
   | { status: 'inserted'; row: ApiMeasurement }
   | { status: 'duplicate' }
   | { status: 'error' };
-export type CorrectMeasurementResult =
-  | { status: 'ok'; newId: string }
-  | { status: 'conflict' }
-  | { status: 'not_found' }
-  | { status: 'error' };
+/** How a correction ended. `changed`: the value named is not there any
+ *  more, or another row has replaced it (another device, a connector).
+ *  `invalid`: the record does not take that number (outside the metric's
+ *  range). `error`: no record is open. */
+export type CorrectStatus = 'ok' | 'changed' | 'invalid' | 'error';
 export interface BulkSaveResult {
   saved: ApiMeasurement[];
   skippedDuplicates: number;
@@ -254,6 +254,26 @@ function activeOnly<T extends { status: string }>(rows: T[]): T[] {
 function contentOf(file: RoadmapFile): string {
   const { meta: _clocks, ...rest } = file;
   return stableStringify(rest);
+}
+
+const RECORD_CLOCKS = new Set(['updatedAt', 'lamport']);
+
+/**
+ * What a person would SEE of the record: `contentOf` with each list read as a
+ * set and every record's own clock (`updatedAt`, `lamport`) left out. A merge
+ * re-sorts rows by id, and against an empty backend it trades one singleton's
+ * stamp for the other's; neither is a change anyone made. This decides only
+ * what is ANNOUNCED (US-34 AC3). Taking a merge in still goes by `contentOf`:
+ * a skipped clock-only lead would leave the profile lamport behind the
+ * cloud's, and the next profile edit would lose the merge.
+ */
+function visibleContentOf(file: RoadmapFile): string {
+  const { meta: _clocks, ...rest } = file;
+  const seen: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(rest)) {
+    seen[key] = Array.isArray(value) ? value.map((row) => stableStringify(row, RECORD_CLOCKS)).sort() : value;
+  }
+  return stableStringify(seen, RECORD_CLOCKS);
 }
 
 export class RoadmapStore {
@@ -408,31 +428,15 @@ export class RoadmapStore {
     return { status: 'inserted', row: row as ApiMeasurement };
   }
 
-  /** The one correction primitive: flip the old row (never mutate its value)
-   *  and append the replacement on the SAME date with `correctsId`. Shared by
-   *  the click-to-correct path and the upload conflict path, which differ only
-   *  in the source they stamp. Caller touches. */
-  private supersedeMeasurement(old: FileMeasurement, newValueSI: number, source: MeasurementSource): FileMeasurement {
-    old.status = 'entered-in-error';
-    const row = createMeasurement({
-      id: newId(),
-      metricType: old.metricType,
-      value: newValueSI,
-      recordedAt: old.recordedAt, // a correction keeps the original date
-      createdAt: new Date().toISOString(),
-      source,
-      correctsId: old.id,
-    });
-    this.file.measurements.push(row);
-    return row;
-  }
-
-  correctMeasurement(oldId: string, newValueSI: number): CorrectMeasurementResult {
-    const old = this.file.measurements.find((m) => m.id === oldId);
-    if (!old || old.status !== 'active') return { status: 'not_found' };
-    const row = this.supersedeMeasurement(old, newValueSI, 'manual_correction');
+  /** Correct one saved value, core or lab, by record-edits' one rule: append
+   *  the new number on the SAME day with `correctsId`, flip the old row.
+   *  `newValue` is in the unit the row is stored in (SI for a core metric). */
+  correctValue(id: string, newValue: number): CorrectStatus {
+    const result = correctRecordValue(this.file, { id, newValue, now: new Date().toISOString() });
+    if (!result.ok) return result.reason === 'not-found' || result.reason === 'not-active' ? 'changed' : 'invalid';
+    this.file = result.file;
     this.touch();
-    return { status: 'ok', newId: row.id };
+    return 'ok';
   }
 
   saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>): boolean {
@@ -654,14 +658,6 @@ export class RoadmapStore {
     return true;
   }
 
-  deleteLabValue(labValueId: string): boolean {
-    const row = this.file.labValues.find((l) => l.id === labValueId);
-    if (!row) return false;
-    row.status = 'entered-in-error';
-    this.touch();
-    return true;
-  }
-
   // ============================================================ reminders (§10)
 
   /**
@@ -818,12 +814,13 @@ export class RoadmapStore {
     // A local edit that landed during the read would be lost by taking the
     // merge — it merged against a copy taken before the edit existed.
     if (this.file !== local) return false;
-    this.file = merged;
+    this.adopt(merged);
     // The counting is HealthTool's: it fires `remote_change_applied` when it
     // has actually re-rendered. The store cannot import the API layer — the
     // v2 builds alias `lib/api` to `lib/roadmap-data`, which imports this
-    // module, and the cycle would be real.
-    notify(REMOTE_CHANGED_EVENT);
+    // module, and the cycle would be real. A change of clocks alone is taken
+    // in above and announced to nobody: there is nothing new to show.
+    if (visibleContentOf(merged) !== visibleContentOf(local)) notify(REMOTE_CHANGED_EVENT);
     return true;
   }
 
@@ -950,6 +947,14 @@ export class RoadmapStore {
     }
   }
 
+  /** Take a merge in as the working copy. One that carries an erase made on
+   *  another device (a higher eraseEpoch than this copy's) clears the drafts
+   *  typed here, as the erase clears them where it is made (US-11). */
+  private adopt(merged: RoadmapFile): void {
+    if ((merged.meta.eraseEpoch ?? 0) > (this.file.meta.eraseEpoch ?? 0)) clearMatrixDrafts();
+    this.file = merged;
+  }
+
   /** Mark dirty + schedule a debounced persist. */
   private touch(): void {
     if (this.persisting) this.dirtyDuringPersist = true;
@@ -979,12 +984,12 @@ export class RoadmapStore {
         const result = await this.sync.save(this.file);
         // Fold remote changes back in without dropping mutations made during the
         // await; merge is the source of truth for combining the two.
-        const beforeMerge = contentOf(this.file);
-        this.file = mergeFiles(this.file, result.file, {
+        const seenBefore = visibleContentOf(this.file);
+        this.adopt(mergeFiles(this.file, result.file, {
           deviceId: this.deviceId,
           now: new Date().toISOString(),
-        });
-        if (contentOf(this.file) !== beforeMerge) remoteFolded = true;
+        }));
+        if (visibleContentOf(this.file) !== seenBefore) remoteFolded = true;
       } while (this.dirtyDuringPersist);
       if (remoteFolded) notify(REMOTE_CHANGED_EVENT);
       this.lastSyncedAt = new Date().toISOString();

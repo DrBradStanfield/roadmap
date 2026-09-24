@@ -207,7 +207,7 @@ describe('RoadmapStore — deleted measurements stay deleted (no resurrection)',
     expect(dia.status).toBe('inserted');
 
     // User corrects the systolic reading → the original flips to entered-in-error.
-    if (sys.status === 'inserted') store.correctMeasurement(sys.row.id, 130);
+    if (sys.status === 'inserted') store.correctValue(sys.row.id, 130);
     await store.flush();
 
     const file = readCloudFile(cloud);
@@ -254,8 +254,8 @@ describe('RoadmapStore — deleted measurements stay deleted (no resurrection)',
     const deviceB = await RoadmapStore.create(new MemoryAdapter(cloud));
 
     // Device A deletes both (correction flips the originals to entered-in-error).
-    if (bp.status === 'inserted') deviceA.correctMeasurement(bp.row.id, 138);
-    if (wt.status === 'inserted') deviceA.correctMeasurement(wt.row.id, 88);
+    if (bp.status === 'inserted') deviceA.correctValue(bp.row.id, 138);
+    if (wt.status === 'inserted') deviceA.correctValue(wt.row.id, 88);
     await deviceA.flush();
 
     // Device B (which still had them active) now flushes → read-merge-write.

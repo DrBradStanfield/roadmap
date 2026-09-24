@@ -1,71 +1,86 @@
-// Shared save-routing for the two timeline matrices (BloodTestTimeline +
-// StartingInfoVitals). Both commit a set of per-date {metric → SI value}
-// tasks; for each (date, metric) that ALREADY has an active row, the save must
-// route through the FHIR correction flow (append a new active row + tombstone
-// the old as `entered-in-error`, `corrects_id` set) instead of a plain INSERT —
-// otherwise the partial-unique index (one active row per (user, metric, date))
-// 409s and the typed value is silently cleared.
-//
-// Empty slot → INSERT (`onInsert`). Occupied slot (race / already-saved) →
-// correction (`onCorrect`). One source of truth so the vitals backfill and the
-// blood-test matrix can't drift on this collision policy.
+// The one routing rule for typed values (US-03 AC2, AC3), stated here and
+// nowhere else. The first-time vitals fields and both matrices
+// (BloodTestTimeline, StartingInfoVitals) save through HealthTool, which
+// routes every cell here against the store's own rows, read as it writes:
+//   - each cell names the row it expects under each slot: the one the page
+//     showed when the user began typing there, or none. A slot holding any
+//     other row by now (another device, a connector; the page can show an
+//     older record than the store holds) writes nothing of the cell, a blood
+//     pressure's halves alike, and answers `changed`;
+//   - an empty slot is an insert (`onInsert`);
+//   - the row expected is corrected (`onCorrect`: a new active row with
+//     `correctsId`, the old one flipped to `entered-in-error`);
+//   - a value that changes nothing (`sameAsSaved`, in the unit it was typed
+//     in) writes nothing;
+//   - every write's answer is read, slot by slot: the caller keeps what was
+//     refused, with why, and only that (US-03 AC4);
+//   - one write per (day, metric), the later cell's. A safety net only: a
+//     matrix never sends two values for one slot, it shows them as an error.
 
-import type { ApiMeasurement } from '@roadmap/health-core';
+import { formatDisplayValue, fromCanonicalValue, type ApiMeasurement, type MetricType, type UnitSystem } from '@roadmap/health-core';
+import { sameAsSaved } from './blood-test-cell';
+import type { CorrectStatus } from '../storage/roadmap-store';
 
+/** One cell's values on its day: one test, or a blood pressure's halves. */
 export interface SaveTask {
   date: string; // yyyy-mm-dd
   values: Record<string, number>; // metricType → SI value
+  /** By metric, the row the cell expects to replace: its id, or null for an
+   *  empty slot. A metric left out expects an empty slot. */
+  expected: Record<string, string | null>;
+  /** The unit the values were typed in. */
+  unit: UnitSystem;
 }
 
-export type CorrectFn = (
-  oldId: string,
-  newValueSI: number,
-) => Promise<{ ok: true } | { ok: false; reason: 'conflict' | 'not_found' | 'error' }>;
+/** Correct one saved value, core or lab; `newValue` is in the unit it is stored in. */
+export type CorrectFn = (id: string, newValue: number) => Promise<CorrectStatus>;
+
+/** The values a save refused, by slot (`slotOf`), and why. Empty: every
+ *  value landed or changed nothing. */
+export type Refused = Map<string, Exclude<CorrectStatus, 'ok'>>;
+
+/** A (day, metric) slot, as `Refused` and `activeRowIndex` key it. */
+export const slotOf = (date: string, metric: string) => `${date}|${metric}`;
 
 /** Index the active row per (date, metric) from a flat history list. O(N). */
 export function activeRowIndex(history: ApiMeasurement[]): Map<string, ApiMeasurement> {
   const index = new Map<string, ApiMeasurement>();
   for (const m of history) {
     if ((m.status ?? 'active') !== 'active') continue;
-    const key = `${m.recordedAt.slice(0, 10)}|${m.metricType}`;
+    const key = slotOf(m.recordedAt.slice(0, 10), m.metricType);
     if (!index.has(key)) index.set(key, m);
   }
   return index;
 }
 
 /**
- * Route each task's metrics to either a correction (slot occupied by an active
- * row) or a fresh insert (empty slot). Corrections for a task run in parallel;
- * inserts for a task batch into one `onInsert` call. Returns `{ failed }` =
- * true if any correction failed, so the caller can preserve the user's typed
- * draft for retry instead of clearing it.
+ * Save `tasks` by the rule above. `history` is the store's rows, read just
+ * before this call, never the page's copy. `onInsert` answers as the store
+ * does.
  */
 export async function routeTasksToSaves(
   tasks: SaveTask[],
   history: ApiMeasurement[],
-  onInsert: (date: string, values: Record<string, number>) => Promise<void>,
-  onCorrect?: CorrectFn,
-): Promise<{ failed: boolean }> {
+  onInsert: (date: string, metric: string, value: number) => Promise<CorrectStatus>,
+  onCorrect: CorrectFn,
+): Promise<Refused> {
   const index = activeRowIndex(history);
-  let failed = false;
-  for (const t of tasks) {
-    const corrections: Array<{ id: string; value: number }> = [];
-    const newInserts: Record<string, number> = {};
-    for (const [metric, value] of Object.entries(t.values)) {
-      const existing = index.get(`${t.date}|${metric}`);
-      if (existing && onCorrect) {
-        corrections.push({ id: existing.id, value });
-      } else {
-        newInserts[metric] = value;
-      }
-    }
-    if (corrections.length > 0 && onCorrect) {
-      const results = await Promise.all(corrections.map(c => onCorrect(c.id, c.value)));
-      if (results.some(r => !r.ok)) failed = true;
-    }
-    if (Object.keys(newInserts).length > 0) {
-      await onInsert(t.date, newInserts);
-    }
+  const slots = new Map<string, { task: SaveTask; metric: MetricType } | 'changed'>();
+  for (const task of tasks) {
+    const metrics = Object.keys(task.values);
+    const changed = metrics.some((metric) => (index.get(slotOf(task.date, metric))?.id ?? null) !== (task.expected[metric] ?? null));
+    for (const metric of metrics) slots.set(slotOf(task.date, metric), changed ? 'changed' : { task, metric: metric as MetricType });
   }
-  return { failed };
+  const refused: Refused = new Map();
+  await Promise.all([...slots].map(async ([key, slot]) => {
+    if (slot === 'changed') { refused.set(key, 'changed'); return; }
+    const { task: { date, values, unit }, metric } = slot;
+    const value = values[metric];
+    const held = index.get(key);
+    const status = !held ? await onInsert(date, metric, value)
+      : sameAsSaved(fromCanonicalValue(metric, value, unit), formatDisplayValue(metric, held.value, unit), value, held.value) ? 'ok'
+      : await onCorrect(held.id, value);
+    if (status !== 'ok') refused.set(key, status);
+  }));
+  return refused;
 }

@@ -791,3 +791,18 @@ describe('baseIdOf strips the quarantine suffix and nothing else', () => {
     expect(baseIdOf('row-1#si#dup-deadbeef')).toBe('row-1#si');
   });
 });
+
+// US-34 AC3: the widget announces a remote change by what a person would see,
+// which leaves out every record's own clock. The same key sort, told which
+// keys to drop, at every depth; with none it is the merge tiebreak unchanged.
+describe('stableStringify with keys to drop', () => {
+  const value = { b: 1, a: { lamport: 2, rows: [{ updatedAt: 't', y: 1 }] } };
+
+  it('drops the named keys at every depth, arrays included', () => {
+    expect(stableStringify(value, new Set(['lamport', 'updatedAt']))).toBe('{"a":{"rows":[{"y":1}]},"b":1}');
+  });
+
+  it('keeps every key when told of none', () => {
+    expect(stableStringify(value)).toBe('{"a":{"lamport":2,"rows":[{"updatedAt":"t","y":1}]},"b":1}');
+  });
+});

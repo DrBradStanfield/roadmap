@@ -17,6 +17,8 @@ import {
   buildMeasurementHistory,
   computeFormStage,
   FIELD_METRIC_MAP,
+  METRIC_TO_FIELD,
+  localDay,
   toCanonicalValue,
   VITALS_INPUT_FIELDS,
   type HealthInputs,
@@ -61,7 +63,7 @@ import {
   loadLabValues,
   saveChangedMeasurements,
   addMeasurement,
-  correctMeasurement,
+  correctValue,
   saveMedication,
   saveScreening,
   saveSupplement,
@@ -69,7 +71,7 @@ import {
   deleteUserData,
 } from '../lib/roadmap-data';
 import { trackABImpression, trackABConversion, trackProductEvent } from '../lib/server-api';
-import type { CorrectFn } from '../lib/matrix-save';
+import { activeRowIndex, routeTasksToSaves, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import type { ApiDocument } from '../lib/api-types';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
@@ -109,17 +111,25 @@ export const ERASE_DONE_CHAT_PENDING =
   'Your health record is deleted. Your chat history could not be reached just now; ' +
   'it is erased on your next chat.' + ERASE_DONE_TAIL;
 
+/** A correction the store answered; a success is counted (name only). */
+const countedCorrection: CorrectFn = async (id, newValue) => {
+  const status = await correctValue(id, newValue);
+  if (status === 'ok') trackProductEvent('correction_made');
+  return status;
+};
+
 export function HealthTool({ syncControl, remindersSection }: { syncControl?: (ctx: { hasData: boolean }) => ReactNode; remindersSection?: ReactNode } = {}) {
   // The store is ready before render, so returning users see their saved prefill immediately.
   const [inputs, setInputs] = useState<Partial<HealthInputs>>(getInitialInputsSync);
   const [previousMeasurements, setPreviousMeasurements] = useState<ApiMeasurement[]>([]);
-  // Full blood-test history (all draws, all metrics) for the timeline-matrix UI.
-  // Filtered subset of loadAllHistory(); refreshed after each blood-test save.
-  const [bloodTestHistory, setBloodTestHistory] = useState<ApiMeasurement[]>([]);
-  // Full history of vitals (weight / waist / sys-BP / dia-BP) for the
-  // StartingInfoVitals matrix. Same fetch as bloodTestHistory; just a
-  // different filter on the same loadAllHistory() result.
-  const [vitalsHistory, setVitalsHistory] = useState<ApiMeasurement[]>([]);
+  // Every active measurement, re-read after each save. The blood-test matrix
+  // and the vitals matrix (StartingInfoVitals) each read their own metrics.
+  const [history, setHistory] = useState<ApiMeasurement[]>([]);
+  const bloodTestHistory = useMemo(() => history.filter(r => BLOOD_TEST_METRICS.includes(r.metricType)), [history]);
+  const vitalsHistory = useMemo(
+    () => history.filter(r => ['weight', 'waist', 'systolic_bp', 'diastolic_bp'].includes(r.metricType)),
+    [history],
+  );
   const [documentHistory, setDocumentHistory] = useState<ApiDocument[]>([]);
   const [labValueHistory, setLabValueHistory] = useState<ApiLabValue[]>([]);
   const [medications, setMedications] = useState<ApiMedication[]>([]);
@@ -137,11 +147,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     }),
   ).current;
 
-  // Filled by BloodTestTimeline on mount so we can flush its in-flight typed
-  // values (draft + backfills) before kicking off the upload-modal flow.
-  // `handleSaveLongitudinal` (legacy path) skips blood-test metrics, so without
-  // this flush, typed-but-unsaved matrix values are lost when the user uploads.
+  // Filled by each matrix with its commit, so a lab upload commits both
+  // drafts before its own save (US-03 AC5).
   const bloodTestFlushRef = useRef<(() => Promise<void>) | null>(null);
+  const vitalsFlushRef = useRef<(() => Promise<void>) | null>(null);
   // Filled by BloodTestTimeline so the chatbot can inject a value into a
   // blood-test cell (highlighted, for the user to Save).
   const bloodTestPrefillRef = useRef<BloodTestPrefillFn | null>(null);
@@ -150,7 +159,11 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // edit flashes the matrix cell when set, else falls back to the plain field.
   const vitalsPrefillRef = useRef<VitalsPrefillFn | null>(null);
   const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
-  const isSavingLongitudinalRef = useRef(false);
+  // The saves in order, each after the last (see handleSaveLongitudinal).
+  const savesRef = useRef<Promise<unknown>>(Promise.resolve());
+  // Counts the first-time vitals fields' saves, so InputPanel closes the
+  // fields a save emptied.
+  const [fieldsSaved, setFieldsSaved] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const medSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const screeningSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -193,7 +206,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   const labValuesFetchGen = useRef(0);
   const refreshLabValues = useCallback(() => {
     const myGen = ++labValuesFetchGen.current;
-    loadLabValues().then(rows => {
+    return loadLabValues().then(rows => {
       // Skip null (API error) so we don't blank cached history.
       if (rows && myGen === labValuesFetchGen.current) setLabValueHistory(rows);
     }).catch(() => {});
@@ -228,20 +241,32 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     safeRemoveItem('health_roadmap_unit_overrides');
   }, []);
 
-  // Load full blood-test history (filtered) for the timeline-matrix UI.
-  // Fire-and-forget so it doesn't block the initial render.
-  const loadBloodTestHistory = () => {
-    loadAllHistory().then(rows => {
-      const bloodTestSet = new Set(BLOOD_TEST_METRICS);
-      setBloodTestHistory(rows.filter(r => bloodTestSet.has(r.metricType)));
-      setVitalsHistory(rows.filter(r =>
-        r.metricType === 'weight' ||
-        r.metricType === 'waist' ||
-        r.metricType === 'systolic_bp' ||
-        r.metricType === 'diastolic_bp'
-      ));
-    });
-  };
+  const loadHistory = () => loadAllHistory().then(setHistory);
+
+  // Re-read every value the page shows from the store: the plan's latest
+  // values, both matrices, the lab rows and so the chat context. Every save
+  // and correction ends here, so nothing reads a patched copy that could
+  // disagree with the record. Hands back what it read.
+  const reloadValues = useCallback(async () => {
+    const result = await loadLatestMeasurements();
+    if (result) {
+      setPreviousMeasurements(result.previousMeasurements);
+      // The storefront chat embed reads this mirror; keep it in step too.
+      saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings);
+    }
+    await Promise.all([refreshLabValues(), loadHistory()]);
+    return result;
+  }, [refreshLabValues]);
+
+  // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel
+  const metricUnitOverrides = useMemo(() => {
+    const m: Partial<Record<MetricType, UnitSystem>> = {};
+    for (const [field, fieldUs] of Object.entries(unitOverrides)) {
+      const metric = FIELD_METRIC_MAP[field];
+      if (metric) m[metric] = fieldUs;
+    }
+    return Object.keys(m).length > 0 ? m : undefined;
+  }, [unitOverrides]);
 
   // The RoadmapStore is authoritative. Never replay the retired v1 cache into it.
   useEffect(() => {
@@ -265,8 +290,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         setScreenings(result.screenings);
         if (result.supplements) setSupplements(result.supplements);
         setDocumentHistory(result.documents);
-        // Full blood-test history for the timeline-matrix UI (fire-and-forget).
-        loadBloodTestHistory();
+        // Every measurement, for both matrices (fire-and-forget, so it
+        // doesn't block the first render).
+        loadHistory();
         // Keep the legacy mirror available to the separate storefront chat embed.
         saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings);
       }
@@ -353,174 +379,90 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     return () => clearTimeout(timeout);
   }, [inputs, hasApiResponse, effectiveInputs]);
 
-  // Patches local state in place: drops the old row + appends the new one with
-  // the same date/metric, no network refetch. Suggestions recompute via the
-  // existing `effectiveInputs` derivation off `previousMeasurements`.
-  //
-  // `previousMeasurements` is intentionally a no-op when `oldId` isn't the
-  // latest for its metric (correcting a non-latest entry shouldn't shift the
-  // latest summary). For `bloodTestHistory`, a miss means local state is
-  // stale — fall back to a refetch so the corrected row appears.
-  const handleCorrectBloodTestValue = useCallback<CorrectFn>(async (
-    oldId,
-    newValueSI,
-  ) => {
-    const result = await correctMeasurement(oldId, newValueSI);
-    if (result.status !== 'ok') return { ok: false, reason: result.status };
-    trackProductEvent('correction_made');
+  // The saved-value editor's correction, core or lab (US-04, US-21 AC5),
+  // then the page re-reads the record.
+  const handleCorrectValue = useCallback<CorrectFn>(async (id, newValue) => {
+    const status = await countedCorrection(id, newValue);
+    if (status === 'ok') await reloadValues();
+    return status;
+  }, [reloadValues]);
 
-    const newId = result.newId;
-    const patchList = <T extends ApiMeasurement>(rows: T[]): T[] => {
-      const old = rows.find(r => r.id === oldId);
-      if (!old) return rows;
-      const withoutOld = rows.filter(r => r.id !== oldId);
-      const replacement: T = {
-        ...old,
-        id: newId,
-        value: newValueSI,
-        source: 'manual_correction',
-        status: 'active',
-        correctsId: oldId,
-      };
-      return [...withoutOld, replacement];
+  // Save typed values by the one routing rule (matrix-save.ts), against the
+  // store's own rows, then re-read the record. The matrices pass their cells;
+  // with none, it saves the first-time vitals fields under today. Saves run
+  // one after another, so two asked for at once (a press on Save as PDF
+  // leaves a matrix, and saves the fields) both land. Resolves with what was
+  // refused, slot by slot, so the caller keeps only that.
+  const handleSaveLongitudinal = useCallback((tasks?: SaveTask[]): Promise<Refused> => {
+    // The first-time vitals fields: a weight, a waist, a blood pressure, each
+    // naming the row the page shows for today ("Replaces 82 kg"), in the unit
+    // on screen. What `inputs` holds for a matrix's cells mirrors its draft
+    // (for live suggestions), which only that matrix saves, on the day the
+    // draft is dated: the blood tests always, and the vitals while their
+    // matrix is showing (review of 2026-09-24).
+    const fromForm = (): SaveTask[] => {
+      if (vitalsPrefillRef.current) return [];
+      const date = localDay(new Date());
+      const shown = activeRowIndex(history);
+      return [['weight'], ['waist'], ['systolic_bp', 'diastolic_bp']].flatMap((metrics): SaveTask[] => {
+        const task: SaveTask = { date, values: {}, expected: {}, unit: metricUnitOverrides?.[metrics[0] as MetricType] ?? unitSystem };
+        for (const metric of metrics) {
+          const value = inputs[METRIC_TO_FIELD[metric] as keyof HealthInputs] as number | undefined;
+          if (value === undefined) continue;
+          task.values[metric] = value;
+          task.expected[metric] = shown.get(slotOf(date, metric))?.id ?? null;
+        }
+        return Object.keys(task.values).length > 0 ? [task] : [];
+      });
     };
-    // Inspect `prev` inside the updater so the stale-check sees the freshest
-    // state — not a closure-captured snapshot that may have been replaced by
-    // a concurrent refetch while the network round-trip was in flight.
-    let needsRefetch = false;
-    setBloodTestHistory(prev => {
-      needsRefetch = !prev.some(r => r.id === oldId);
-      return patchList(prev);
-    });
-    setPreviousMeasurements(patchList);
-    if (needsRefetch) {
-      // Stale: row vanished from local history between display and click.
-      // Refetch so the corrected value appears in the matrix.
-      loadBloodTestHistory();
-    }
-    return { ok: true };
-  }, []);
 
-  const handleSaveLongitudinal = useCallback(async (
-    bloodTestDate?: string,
-    // Optional: when provided, save these metric→SI-value pairs at the given
-    // recordedAt instead of reading from the form `inputs` state. Used by the
-    // BloodTestTimeline component to commit a draft batch (and back-filled
-    // values into a past batch). When omitted, the legacy path runs.
-    explicitMeasurements?: Record<string, number>,
-  ) => {
-    if (isSavingLongitudinalRef.current) return;
-    isSavingLongitudinalRef.current = true;
-
-    try {
-      // Flush any pending profile auto-save before saving measurements.
+    const save = async (): Promise<Refused> => {
       // Keep the profile and saved measurements consistent across the debounce.
       await flushPendingProfileSave();
-
-      const bloodTestMetrics = new Set(BLOOD_TEST_METRICS);
-      const fieldsToSave: Array<{ metricType: string; value: number; recordedAt?: string }> = [];
-
-      if (explicitMeasurements) {
-        // Caller supplied a batch directly (bloodTestDate + metric→SI map).
-        // BloodTestTimeline passes the batch date as `yyyy-mm-dd`; the server
-        // schema validates `recordedAt` as a full ISO datetime, so widen.
-        const recordedAtIso = ensureIsoDatetime(bloodTestDate);
-        for (const [metricType, value] of Object.entries(explicitMeasurements)) {
-          if (value === undefined || value === null || Number.isNaN(value)) continue;
-          fieldsToSave.push({ metricType, value, recordedAt: recordedAtIso });
-        }
-      } else {
-        // Legacy path: read from current form `inputs`. Skip blood-test
-        // metrics — they're committed via BloodTestTimeline's own Save button
-        // which calls this function with explicitMeasurements. Without this
-        // skip, blood-test values mirrored into `inputs` (for live suggestions)
-        // would double-save when the user clicks the global Save button.
-        for (const field of LONGITUDINAL_FIELDS) {
-          const value = inputs[field];
-          if (value === undefined) continue;
-          const metricType = FIELD_TO_METRIC[field];
-          if (!metricType) continue;
-          if (bloodTestMetrics.has(metricType)) continue;
-          fieldsToSave.push({ metricType, value: value as number, recordedAt: undefined });
-        }
-      }
-
-      if (fieldsToSave.length === 0) return;
+      const toSave = tasks ?? fromForm();
+      if (toSave.length === 0) return new Map();
 
       setIsSavingLongitudinal(true);
-
-      const results = await Promise.all(
-        fieldsToSave.map(f => addMeasurement(f.metricType, f.value, f.recordedAt)),
-      );
-      const insertedRows = results
-        .filter((r): r is { status: 'inserted'; row: ApiMeasurement } => r.status === 'inserted')
-        .map(r => r.row);
-      const hasError = results.some(r => r.status === 'error');
-      // Duplicates are success: the value is already present at this timestamp.
-      const allSaved = !hasError;
-
-      if (allSaved) {
-        // Update previousMeasurements with the new values, holding the
-        // newest-active-row-per-metric invariant the load path establishes.
-        // Only replace the existing entry when the saved row is newer —
-        // backfilling an older date must NOT clobber the latest entry, since
-        // `effectiveInputs` reads from `previousMeasurements` and would then
-        // surface stale data on the Results page.
-        const newMeasurements = [...previousMeasurements];
-        for (const saved of insertedRows) {
-          const idx = newMeasurements.findIndex(m => m.metricType === saved.metricType);
-          if (idx >= 0) {
-            if (saved.recordedAt > newMeasurements[idx].recordedAt) {
-              newMeasurements[idx] = saved;
-            }
-          } else {
-            newMeasurements.push(saved);
-          }
-        }
-        setPreviousMeasurements(newMeasurements);
-
-        // Append new blood-test rows to the full-history state so the timeline
-        // matrix reflects the save without a reload.
-        const savedBloodTestRows = insertedRows.filter(r => bloodTestMetrics.has(r.metricType));
-        if (savedBloodTestRows.length > 0) {
-          setBloodTestHistory(prev => [...prev, ...savedBloodTestRows]);
-        }
-
-        // Same pattern for vitals — keeps the StartingInfoVitals matrix
-        // in sync after a per-metric save without refetching.
-        const savedVitalsRows = insertedRows.filter(r =>
-          r.metricType === 'weight' ||
-          r.metricType === 'waist' ||
-          r.metricType === 'systolic_bp' ||
-          r.metricType === 'diastolic_bp'
+      try {
+        const refused = await routeTasksToSaves(
+          toSave,
+          await loadAllHistory(), // the store's rows, as it writes: never the page's copy
+          async (date, metric, value) => {
+            const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date));
+            return status === 'inserted' ? 'ok' : status === 'duplicate' ? 'changed' : 'error';
+          },
+          countedCorrection,
         );
-        if (savedVitalsRows.length > 0) {
-          setVitalsHistory(prev => [...prev, ...savedVitalsRows]);
-        }
+        await reloadValues();
 
-        // Clear longitudinal input fields (legacy path only — when caller
-        // supplied explicit values, the form `inputs` weren't used so leave them).
-        if (!explicitMeasurements) {
-          setInputs(prev => {
-            const next = { ...prev };
-            for (const field of LONGITUDINAL_FIELDS) {
-              delete (next as any)[field];
+        // What was saved leaves the form, in one update. A copy left in
+        // `inputs` outranked the saved row in the plan and the chat, and the
+        // next save of the fields wrote it again, under today (2026-09-24).
+        setInputs(prev => {
+          const next = { ...prev };
+          for (const t of toSave) {
+            for (const metric of Object.keys(t.values)) {
+              if (!refused.has(slotOf(t.date, metric))) delete next[METRIC_TO_FIELD[metric] as keyof HealthInputs];
             }
-            return next;
-          });
-        }
+          }
+          return next;
+        });
+        if (!tasks) setFieldsSaved(n => n + 1);
 
         // Track A/B conversion on the first measurement save.
-        if (isFirstSaveRef.current) {
-          trackABConversion();
+        if (refused.size === 0) {
+          if (isFirstSaveRef.current) trackABConversion();
+          isFirstSaveRef.current = false;
         }
-        isFirstSaveRef.current = false;
+        return refused;
+      } finally {
+        setIsSavingLongitudinal(false);
       }
-      setIsSavingLongitudinal(false);
-    } finally {
-      isSavingLongitudinalRef.current = false;
-    }
-  }, [inputs, previousMeasurements]);
+    };
+    const run = savesRef.current.then(save);
+    savesRef.current = run.catch(() => {});
+    return run;
+  }, [inputs, history, metricUnitOverrides, unitSystem, reloadValues]);
 
   // Auto-save on blur / Enter for InputPanel longitudinal fields. The
   // 500ms debounce batches systolic→diastolic tab transitions into one
@@ -541,13 +483,11 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     longitudinalDebounce.commit(() => { void handleSaveLongitudinalRef.current(); });
   }, [longitudinalDebounce]);
 
-  // Tab-close safety net: flush any pending debounced saves before the
-  // page unloads so a "typed then closed" edit doesn't get lost.
+  // Tab-close safety net for the first-time vitals fields: a field the user
+  // left has its save waiting (500 ms); it runs before the page unloads. A
+  // matrix's draft stays on the device instead (US-03 AC5).
   useEffect(() => {
-    const onUnload = () => {
-      longitudinalDebounce.flush();
-      bloodTestFlushRef.current?.();
-    };
+    const onUnload = () => longitudinalDebounce.flush();
     window.addEventListener('beforeunload', onUnload);
     window.addEventListener('pagehide', onUnload);
     return () => {
@@ -556,41 +496,37 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     };
   }, [longitudinalDebounce]);
 
-  // Save any unsaved longitudinal values (weight, BP, etc.) then refresh from API.
-  // Called when the upload modal opens — ensures typed-but-unsaved values persist.
+  // A lab upload starts: both matrices commit their drafts, then the fields
+  // save (US-03 AC5), before any file is read.
   const handleUploadStart = useCallback(async () => {
-    // Flush BloodTestTimeline's in-flight draft + backfills BEFORE the legacy
-    // save runs. Sequential (not parallel): handleSaveLongitudinal has a
-    // re-entry guard (isSavingLongitudinalRef) and the matrix flush also goes
-    // through it (via onSaveBatch → handleSaveLongitudinal with explicit args),
-    // so a parallel run would short-circuit one of them.
-    if (bloodTestFlushRef.current) {
-      try { await bloodTestFlushRef.current(); }
-      catch { /* swallow — best-effort flush, legacy save still runs below */ }
+    for (const commit of [bloodTestFlushRef.current, vitalsFlushRef.current]) {
+      try { await commit?.(); }
+      catch { /* best-effort: the next save still runs */ }
     }
     await handleSaveLongitudinal();
   }, [handleSaveLongitudinal]);
 
-  // Refresh state after upload bulk save (lab values + documents)
+  // Refresh state after upload bulk save (lab values + documents): the values,
+  // lab rows and both matrices, then the profile and the rest.
   const handleUploadComplete = useCallback(async () => {
-    const result = await loadLatestMeasurements();
+    // A field the user left has its save waiting (500 ms): it lands first.
+    longitudinalDebounce.flush();
+    const result = await reloadValues();
     if (result) {
-      setInputs(result.inputs);
+      // The record holds the profile and every saved value. A number being
+      // typed lives only in the form until its save, so the field the user is
+      // typing in rides through (US-34 AC4); nothing else does, or a copy of a
+      // value since corrected would outrank the record.
+      const typing = document.activeElement?.id as keyof HealthInputs | undefined;
+      setInputs(prev => (typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
+        ? { ...result.inputs, [typing]: prev[typing] }
+        : result.inputs));
       previousInputsRef.current = { ...result.inputs };
-      setPreviousMeasurements(result.previousMeasurements);
       setMedications(result.medications);
       setScreenings(result.screenings);
       setDocumentHistory(result.documents);
-      saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings);
     }
-    // labValues are lazy — refresh now so the next modal-open shows the
-    // values this upload just saved without an extra round-trip. The gen
-    // counter (inside refreshLabValues) keeps a stale post-upload fetch from
-    // overwriting a fresh modal-open fetch that started later.
-    refreshLabValues();
-    // Refresh full blood-test history so the matrix reflects newly extracted lab rows.
-    loadBloodTestHistory();
-  }, [refreshLabValues]);
+  }, [reloadValues, longitudinalDebounce]);
 
   // Something wrote to the record under us — another device, or an AI
   // connector through MCP (US-34). The store has already re-read and merged;
@@ -607,16 +543,6 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     window.addEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
     return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
   }, [remoteRelay, handleUploadComplete]);
-
-  // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel
-  const metricUnitOverrides = useMemo(() => {
-    const m: Partial<Record<MetricType, UnitSystem>> = {};
-    for (const [field, fieldUs] of Object.entries(unitOverrides)) {
-      const metric = FIELD_METRIC_MAP[field];
-      if (metric) m[metric] = fieldUs;
-    }
-    return Object.keys(m).length > 0 ? m : undefined;
-  }, [unitOverrides]);
 
   // Calculate results using effective inputs (form + fallback to previous)
   const { results, isValid, validationErrors } = useMemo(() => {
@@ -702,7 +628,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       clearLocalStorage();
       setInputs({});
       setPreviousMeasurements([]);
-      setBloodTestHistory([]);
+      setHistory([]);
       setMedications([]);
       setScreenings([]);
       previousInputsRef.current = {};
@@ -716,6 +642,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     setInputs(newInputs);
     window.dispatchEvent(new CustomEvent('hr:inputs-changed'));
   };
+  // A matrix's draft value, as the plan and the chat read it (US-03). One
+  // update per field, so several sent at once all land.
+  const handleDraftValue = useCallback((field: keyof HealthInputs, value: number | undefined) =>
+    setInputs(prev => ({ ...prev, [field]: value })), []);
 
   const handleMedicationChange = useCallback((
     medicationKey: string,
@@ -920,9 +850,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     labValues: labValueHistory,
     // Refresh additional lab rows after a manual addition (US-21).
     onLabValueAdded: refreshLabValues,
-    onSaveBloodTestBatch: (date: string, values: Record<string, number>) =>
-      handleSaveLongitudinal(date, values),
-    onCorrectBloodTestValue: handleCorrectBloodTestValue,
+    onSaveBloodTestBatch: handleSaveLongitudinal,
+    onCorrectValue: handleCorrectValue,
+    onDraftValue: handleDraftValue,
     medications,
     onMedicationChange: handleMedicationChange,
     screenings,
@@ -933,8 +863,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     scheduleLongitudinalSave,
     flushLongitudinalSave,
     isSavingLongitudinal,
+    fieldsSaved,
     hasApiResponse,
     bloodTestFlushRef,
+    vitalsFlushRef,
     bloodTestPrefillRef,
     vitalsPrefillRef,
     formStage,

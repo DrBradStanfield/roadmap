@@ -1,21 +1,18 @@
-// US-21 phase 1 — read-only surfacing of stored `labValues` (tests beyond
-// the core 8 matrix), grouped by panel, collapsed by default, icon per
-// group. No editing/corrections here (that's a later phase). Expanded groups
-// render in the SAME date-column matrix layout as the core blood-test table
-// (AC1) — reusing its cells, scroller, and CSS vars.
+// US-21 — stored `labValues` (tests beyond the core 8 matrix), grouped by
+// panel, collapsed by default, icon per group. Expanded groups render in the
+// SAME date-column matrix layout as the core blood-test table (AC1), reusing
+// its cells, scroller and CSS vars, and its saved-value editor: a value is
+// corrected in place, like a core one (AC5).
 
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { groupLabValues, countLabValuePoints, labGroupMatrix, type LabRowsIcon, type LabValueGroup } from '../lib/lab-rows';
 import { AddLabTest } from './AddLabTest';
 import { UnitChip } from './UnitChip';
-import { BatchDateCell } from './BloodTestTimeline';
+import { BatchDateCell, ValueCell } from './BloodTestTimeline';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { trackProductEvent } from '../lib/server-api';
+import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiLabValue } from '../lib/api-types';
-
-function formatValue(v: number): string {
-  return String(Math.round(v * 100) / 100);
-}
 
 function GroupIcon({ icon }: { icon: LabRowsIcon }) {
   const common = { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', 'aria-hidden': true } as const;
@@ -90,8 +87,10 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
 }
 
 // The same single-scroller matrix as BloodTestTimeline (rows = tests,
-// columns = dates, sticky name cell, newest column pinned), read-only.
-function LabGroupMatrix({ group }: { group: LabValueGroup }) {
+// columns = dates, sticky name cell, newest column pinned). Memoised: a group
+// once opened stays mounted, and its lab values do not change as the user
+// types elsewhere in the form.
+const LabGroupMatrix = memo(function LabGroupMatrix({ group, onCorrect }: { group: LabValueGroup; onCorrect?: CorrectFn }) {
   const { dates, points } = useMemo(() => labGroupMatrix(group), [group]);
   const scrollRef = useScrollToRightOnMount<HTMLDivElement>([dates.length]);
   return (
@@ -113,19 +112,15 @@ function LabGroupMatrix({ group }: { group: LabValueGroup }) {
                 </div>
                 {dates.map((d, i) => {
                   const p = points[s.seriesKey]?.[d];
-                  const pinned = i === dates.length - 1 ? ' bt-cell-pinned' : '';
+                  const pinned = i === dates.length - 1;
                   if (!p) {
                     // The space holds the cell open — theme `div:empty
                     // { display:none }` collapses truly empty cells (gotcha).
-                    return <div key={d} className={`bt-cell-value bt-cell-empty${pinned}`}>{' '}</div>;
+                    return <div key={d} className={`bt-cell-value bt-cell-empty${pinned ? ' bt-cell-pinned' : ''}`}>{' '}</div>;
                   }
                   return (
-                    <div key={d} className={`bt-cell-value${pinned}`}>
-                      <span className="bt-value-num num">
-                        {formatValue(p.value)}
-                        {s.mixedUnits && <span className="alr-cell-unit">{p.unit}</span>}
-                      </span>
-                    </div>
+                    <ValueCell key={d} value={p.value} unit={s.mixedUnits ? p.unit : undefined}
+                               rowId={p.id} status={null} pinned={pinned} onCorrect={onCorrect}/>
                   );
                 })}
                 <div className="bt-row-filler"/>
@@ -136,23 +131,40 @@ function LabGroupMatrix({ group }: { group: LabValueGroup }) {
       </div>
     </div>
   );
-}
+});
 
-function LabGroupSection({ group, expanded, onToggle }: { group: LabValueGroup; expanded: boolean; onToggle: () => void }) {
+function LabGroupSection({ group, expanded, onToggle, onCorrect }: { group: LabValueGroup; expanded: boolean; onToggle: () => void; onCorrect?: CorrectFn }) {
+  // Once opened, the matrix stays mounted and is only hidden when the group
+  // closes (US-21 AC5): a correction left open in it still saves, and one the
+  // record refused is still there, with its reason, when the group reopens.
+  const [opened, setOpened] = useState(expanded);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const toggle = () => {
+    // Closing the group leaves its editor, as a click-away does. A tap on a
+    // phone leaves the focus where it was, so take it out here.
+    const focused = document.activeElement;
+    if (focused instanceof HTMLElement && bodyRef.current?.contains(focused)) focused.blur();
+    setOpened(true);
+    onToggle();
+  };
   return (
     <div className="alr-group">
-      <button type="button" className="alr-group-header" aria-expanded={expanded} onClick={onToggle}>
+      <button type="button" className="alr-group-header" aria-expanded={expanded} onClick={toggle}>
         <span className={`alr-group-icon alr-group-icon--${group.icon}`}><GroupIcon icon={group.icon}/></span>
         <span className="alr-group-label">{group.label}</span>
         <span className="alr-group-count">{group.series.length}</span>
         <ChevronIcon expanded={expanded}/>
       </button>
-      {expanded && <LabGroupMatrix group={group}/>}
+      {opened && (
+        <div ref={bodyRef} style={expanded ? undefined : { display: 'none' }}>
+          <LabGroupMatrix group={group} onCorrect={onCorrect}/>
+        </div>
+      )}
     </div>
   );
 }
 
-export function AdditionalLabRows({ labValues, onAdded }: { labValues: ApiLabValue[]; onAdded?: () => void }) {
+export function AdditionalLabRows({ labValues, onAdded, onCorrect }: { labValues: ApiLabValue[]; onAdded?: () => void; onCorrect?: CorrectFn }) {
   const groups = useMemo(() => groupLabValues(labValues), [labValues]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
@@ -178,9 +190,9 @@ export function AdditionalLabRows({ labValues, onAdded }: { labValues: ApiLabVal
     <div className="alr-wrap">
       <div className="alr-title">Additional lab results</div>
       {groups.map(g => (
-        <LabGroupSection key={g.id} group={g} expanded={expandedIds.has(g.id)} onToggle={() => toggle(g.id)}/>
+        <LabGroupSection key={g.id} group={g} expanded={expandedIds.has(g.id)} onToggle={() => toggle(g.id)} onCorrect={onCorrect}/>
       ))}
-      {onAdded && <AddLabTest onAdded={onAdded}/>}
+      {onAdded && <AddLabTest onAdded={onAdded} labValues={labValues} onCorrect={onCorrect}/>}
     </div>
   );
 }

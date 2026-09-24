@@ -4424,6 +4424,10 @@ a.action-btn-small.action-btn-small:hover {
   color: var(--bt-bad);
   font-weight: 600;
 }
+/* The vitals matrix has no header: its notice sits under the rows. */
+.bt-timeline-body > .bt-save-error {
+  padding: 6px 0 2px;
+}
 
 /* Mobile-only commit tick — touch devices have no reliable Enter/Done on
    numeric keypads, so an explicit tap target is needed. */
@@ -4773,6 +4777,16 @@ a.action-btn-small.action-btn-small:hover {
   border: none;
 }
 .bt-date-hidden-icon::-webkit-calendar-picker-indicator { display: none; }
+/* The draft column's first line (US-03): "New", so it never reads as a
+   second copy of a saved column's date. */
+.bt-cell-draft-date .bt-draft-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-brand);
+  line-height: 1.2;
+}
 
 .bt-value-num {
   font-size: 14px;

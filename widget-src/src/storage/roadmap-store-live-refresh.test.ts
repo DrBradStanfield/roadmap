@@ -13,6 +13,7 @@ import { MemoryAdapter, MemoryCloud, ROADMAP_FILE_NAME, type RoadmapFile, type S
 // The tool the connector actually calls — deep-imported, as the servers do.
 import { updateProfile } from '../../../packages/health-core/src/mcp-tools';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from './roadmap-store';
+import { LocalStorageAdapter } from './local-storage-adapter';
 
 /** The connector's write clock. Deliberately in the past: a tied lamport
  *  falls through to wall-clock time, and the local edit below is later. */
@@ -290,5 +291,112 @@ describe('US-34 AC1 — a change the save itself folded in is still announced', 
     await store.flush();
 
     expect(heard).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The 2026-09-22 guest's typed weight vanished because the store announced a
+ * remote change that never happened: on an empty backend the first save merges
+ * against a record the migration stamps NOW, so the singleton clocks differ,
+ * and a merge re-sorts rows by id, so any new row whose id sorts first reads as
+ * a change too. HealthTool re-ran its load path on the false alarm and took the
+ * typed value with it. The alarm now compares what a person would see: rows as
+ * a set, and no per-record clocks.
+ */
+describe('US-34 AC3 — only a change someone made is announced', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    localStorage.clear();
+  });
+
+  it('an empty browser: neither the first save nor a row whose id sorts first announces anything', async () => {
+    const store = await RoadmapStore.create(new LocalStorageAdapter());
+    const heard = vi.fn();
+    window.addEventListener(REMOTE_CHANGED_EVENT, heard);
+
+    store.saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+    await store.flush();
+    const ids = ['ffffffff-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000002'] as const;
+    const uuid = vi.spyOn(crypto, 'randomUUID');
+    uuid.mockReturnValueOnce(ids[0]).mockReturnValueOnce(ids[1]);
+    store.addMeasurement('weight', 82, '2026-09-20');
+    await store.flush();
+    store.addMeasurement('ldl', 3.2, '2026-09-20'); // its id sorts before the weight's
+    await store.flush();
+    uuid.mockRestore();
+
+    expect(store.loadAllHistory().map((m) => m.id).sort()).toEqual([ids[1], ids[0]]);
+    expect(heard).not.toHaveBeenCalled();
+    window.removeEventListener(REMOTE_CHANGED_EVENT, heard);
+  });
+
+  it('an empty cloud: the first save announces nothing either', async () => {
+    const store = await RoadmapStore.create(new MemoryAdapter(new MemoryCloud()));
+    const heard = vi.fn();
+    window.addEventListener(REMOTE_CHANGED_EVENT, heard);
+    // A person takes a few seconds to type: the save's own reading of the
+    // empty cloud is stamped later than the page's.
+    vi.setSystemTime(Date.now() + 5_000);
+
+    store.saveChangedMeasurements({ sex: 'female', heightCm: 165 }, {});
+    await store.flush();
+
+    expect(heard).not.toHaveBeenCalled();
+    window.removeEventListener(REMOTE_CHANGED_EVENT, heard);
+  });
+
+  it('a real change from another writer is announced exactly once', async () => {
+    const cloud = new MemoryCloud();
+    const store = await connected(cloud);
+    const heard = vi.fn();
+    window.addEventListener(REMOTE_CHANGED_EVENT, heard);
+
+    const other = await RoadmapStore.create(new MemoryAdapter(cloud));
+    other.addMeasurement('ldl', 2.9, '2026-09-10');
+    await other.flush();
+    store.addMeasurement('weight', 80, '2026-09-11');
+    await store.flush();
+    store.addMeasurement('waist', 90, '2026-09-11');
+    await store.flush();
+
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(store.loadAllHistory().map((m) => m.metricType).sort()).toEqual(['ldl', 'waist', 'weight']);
+    window.removeEventListener(REMOTE_CHANGED_EVENT, heard);
+  });
+
+  /** Another device re-saved the same profile: its clock moved, nothing else. */
+  function bumpProfileClock(cloud: MemoryCloud): void {
+    const file = cloudFile(cloud);
+    file.profile.lamport = (file.profile.lamport ?? 0) + 5;
+    const stored = cloud.files.get(ROADMAP_FILE_NAME)!;
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(file), version: stored.version + 1 });
+  }
+
+  it('a re-read that brings only a clock takes it in without announcing it', async () => {
+    const cloud = new MemoryCloud();
+    const store = await connected(cloud);
+    const heard = vi.fn();
+    window.addEventListener(REMOTE_CHANGED_EVENT, heard);
+
+    bumpProfileClock(cloud);
+    await store.refreshFromRemote();
+
+    expect(heard).not.toHaveBeenCalled();
+    window.removeEventListener(REMOTE_CHANGED_EVENT, heard);
+  });
+
+  // The reason the ADOPTION test stays clock-sensitive: a re-read that
+  // skipped a clock-only change would leave this device's profile lamport
+  // behind the cloud's, and the next profile edit would lose the merge.
+  it('after a clock-only re-read, the next profile edit still wins', async () => {
+    const cloud = new MemoryCloud();
+    const store = await connected(cloud);
+
+    bumpProfileClock(cloud);
+    await store.refreshFromRemote();
+    store.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 });
+    await store.flush();
+
+    expect(cloudFile(cloud).profile.heightCm).toBe(180);
   });
 });

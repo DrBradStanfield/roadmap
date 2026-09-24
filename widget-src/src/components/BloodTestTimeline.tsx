@@ -16,18 +16,21 @@ import {
   METRIC_TO_FIELD,
   METRIC_LABELS,
   refHintFor,
-  localDay,
   parseLocalisedNumber,
 } from '@roadmap/health-core';
 import { MONTHS_SHORT } from '../lib/constants';
-import { BT_TIMELINE_DRAFT_KEY, safeGetItem, safeSetItem, safeRemoveItem } from '../lib/storage';
-import { useDebouncedSave } from '../lib/useDebouncedSave';
+import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
+import { useDraftMirror, useMatrixDraft } from '../lib/useMatrixDraft';
+import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { usePrefillRef } from '../lib/usePrefillRef';
-import { routeTasksToSaves, type CorrectFn } from '../lib/matrix-save';
+import { slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
+import type { CorrectStatus } from '../storage/roadmap-store';
 import {
   type Status,
   blockBadNumericKeys,
+  formatLabValue,
+  sameAsSaved,
   validateTypedValue,
   statusOf,
 } from '../lib/blood-test-cell';
@@ -35,14 +38,6 @@ import { NumericInputCell } from './NumericInputCell';
 import { CommitTickButton } from './CommitTickButton';
 import { DraftDateCell } from './DraftDateCell';
 import { UnitChip } from './UnitChip';
-
-// localStorage key for the matrix's typed-but-unsaved state. Persists across
-// page reloads so users don't lose work mid-edit. Cleared on successful Save.
-
-interface PersistedDraft {
-  draft: { date: string; values: Record<string, string> };
-  backfills: Record<string, Record<string, string>>;
-}
 
 // PSA is omitted from the matrix — rendered separately in the men's section
 // elsewhere in the widget.
@@ -122,19 +117,14 @@ export interface BloodTestTimelineProps {
   unitSystem: UnitSystem;
   unitOverrides: Record<string, UnitSystem>;
   onToggleFieldUnit: (field: string) => void;
-  // Guests have no cloud account; typed values persist via localStorage
-  // (draft state + inputs mirror saved by HealthTool's guest debounce). The
-  // matrix skips its save→clear cycle in that case to avoid wiping the user's
-  // typed values when the cloud save no-ops.
-  isLoggedIn: boolean;
-  onSaveBatch: (date: string, values: Record<string, number>) => Promise<void>;
-  // ValueCell calls this when the user submits an in-place correction.
-  // Resolves true if the parent successfully refreshed; false leaves the
-  // edit form open so the user can retry.
+  /** Save the typed values, one task per day. Resolves with what was
+   *  refused, slot by slot; those cells are kept for a retry. */
+  onSaveBatch: (tasks: SaveTask[]) => Promise<Refused>;
+  // ValueCell calls this when the user corrects a saved value. A failure
+  // leaves the editor open so the user can retry.
   onCorrectValue?: CorrectFn;
-  // Called on every typed-value change so the suggestions engine (which reads
-  // from `inputs[field]`) sees draft values live. Pass siValue = undefined
-  // to clear the field (empty input or out-of-range).
+  // The draft values the suggestions engine (which reads `inputs[field]`)
+  // may use, in SI; undefined leaves the field to the record.
   onFieldChange: (field: keyof HealthInputs, siValue: number | undefined) => void;
   isSaving: boolean;
   sex?: 'male' | 'female';
@@ -165,74 +155,28 @@ export type BloodTestPrefillFn = (
   date: string | null,
 ) => string | null;
 
-interface DraftRow {
-  date: string;
-  // Typed values, keyed by MetricType, in display unit (NOT SI).
-  values: Partial<Record<MetricType, string>>;
-}
-
-interface BackfillMap {
-  // batchDate → metric → typed value (in display unit).
-  [batchDate: string]: Partial<Record<MetricType, string>>;
-}
-
-function emptyDraft(): DraftRow {
-  return { date: localDay(new Date()), values: {} };
-}
-
-function loadPersisted(): { draft: DraftRow; backfills: BackfillMap } | null {
-  const raw = safeGetItem(BT_TIMELINE_DRAFT_KEY);
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as PersistedDraft;
-    if (!parsed || typeof parsed !== 'object') return null;
-    const draftDate = typeof parsed.draft?.date === 'string' && parsed.draft.date
-      ? parsed.draft.date : localDay(new Date());
-    const draftValues = (parsed.draft && typeof parsed.draft.values === 'object' && parsed.draft.values)
-      ? (parsed.draft.values as Partial<Record<MetricType, string>>) : {};
-    const backfills = (parsed.backfills && typeof parsed.backfills === 'object')
-      ? (parsed.backfills as BackfillMap) : {};
-    return { draft: { date: draftDate, values: draftValues }, backfills };
-  } catch { return null; }
-}
+/** What two typed cells for one test on one day say, on both (US-03 AC3). */
+export const SAME_SLOT = 'This test already has a value on that day in another column.';
 
 const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
 
 export function BloodTestTimeline({
-  bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit, isLoggedIn,
+  bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit,
   onSaveBatch, onCorrectValue, onFieldChange, isSaving, sex, onUploadClick, uploadDisabled, loginUrl,
   hasApiResponse, flushRef, prefillRef,
 }: BloodTestTimelineProps) {
   const batches = useMemo(() => groupByBatch(bloodTestHistory), [bloodTestHistory]);
-  // Restore draft + backfills from localStorage on mount so typed-but-unsaved
-  // values survive page reloads. The mirrored `inputs[field]` SI value comes
-  // back via the legacy load path, but loses the user's typed display-unit
-  // text (e.g. `4.5` vs `4.50`); persisting here preserves the typed UX.
-  const [draft, setDraft] = useState<DraftRow>(() => loadPersisted()?.draft ?? emptyDraft());
-  const [backfills, setBackfills] = useState<BackfillMap>(() => loadPersisted()?.backfills ?? {});
+  // Typed values, in the unit they were typed in: a draft, kept on the device.
+  // A saved column's cell is on screen while its slot is empty.
+  const onScreen = (date: string, metric: MetricType) => {
+    const batch = batches.find(b => b.date === date);
+    return !!batch && batch.values[metric] == null;
+  };
+  const rowsUnder = (day: string, metric: MetricType) => ({ [metric]: batches.find(b => b.date === day)?.ids[metric] ?? null });
+  const {
+    draft, backfills, type, setDate: setDraftDate, expected, typedHere, clashes, taken, settle, refusal,
+  } = useMatrixDraft<MetricType>(BT_TIMELINE_DRAFT_KEY, { onScreen, rowsUnder });
   const [activeCell, setActiveCell] = useState<string | null>(null);
-
-  // Persist draft + backfills on every change so reloads don't lose typed
-  // values. Empty state ⇒ remove the key (no stray storage). activeCell is
-  // intentionally NOT persisted (UI-only state, fine to lose on reload).
-  useEffect(() => {
-    const isEmpty =
-      Object.keys(draft.values).length === 0 && Object.keys(backfills).length === 0;
-    if (isEmpty) {
-      safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
-      return;
-    }
-    const payload: PersistedDraft = {
-      draft: { date: draft.date, values: draft.values as Record<string, string> },
-      backfills: backfills as Record<string, Record<string, string>>,
-    };
-    safeSetItem(BT_TIMELINE_DRAFT_KEY, JSON.stringify(payload));
-  }, [draft, backfills]);
-
-  // After a successful Save, clear stored draft state explicitly. setDraft +
-  // setBackfills already reset, and the persist effect above will see empty
-  // state and remove the key — but call removeItem here too for safety in case
-  // the effect is somehow batched away.
 
   const fieldUnit = (field: string): UnitSystem => unitOverrides[field] ?? unitSystem;
 
@@ -273,23 +217,26 @@ export function BloodTestTimeline({
     [batches, draft],
   );
 
-  // Count of filled draft + backfill cells, and any validation error blocks Save.
-  const { filledCount, hasError } = useMemo(() => {
-    let n = 0;
-    let err = false;
-    const check = (m: MetricType, typed: string | undefined, fld: keyof HealthInputs) => {
-      if (typed == null || typed === '') return;
-      n++;
-      const display = unitOverrides[fld] ?? unitSystem;
-      const v = validateTypedValue(m, typed, display);
-      if (v.error) err = true;
-    };
-    for (const r of ROWS) check(r.metric, draft.values[r.metric], r.field);
-    for (const dateMap of Object.values(backfills)) {
-      for (const r of ROWS) check(r.metric, dateMap[r.metric], r.field);
-    }
-    return { filledCount: n, hasError: err };
-  }, [draft.values, backfills, unitOverrides, unitSystem]);
+  // Every typed cell with the SI value it saves, in the unit it is read in,
+  // or null while it cannot be saved: a number the test does not take, or a
+  // second value for one test on one day (the draft dated onto a saved
+  // column, and that column's empty cell), which waits for the user to clear
+  // one (US-03 AC3). A cell that cannot be saved stays in the draft, with its
+  // error; it blocks no other. A saved column's cell that is not on screen is
+  // not committed (useMatrixDraft); what was typed into it stays.
+  const cellsOf = (column: string | null, typedMap: Partial<Record<MetricType, string>>) =>
+    ROWS.flatMap(({ metric, field }) => {
+      const typed = typedMap[metric];
+      if (!typed || (column !== null && !onScreen(column, metric))) return [];
+      const unit = fieldUnit(field);
+      const blocked = !!validateTypedValue(metric, typed, unit).error || ((column ?? draft.date) === draft.date && clashes(metric));
+      return [{ column, date: column ?? draft.date, metric, unit, si: blocked ? null : toCanonicalValue(metric, parseLocalisedNumber(typed)!, unit) }];
+    });
+  const cells = [...Object.entries(backfills).flatMap(([date, typed]) => cellsOf(date, typed)), ...cellsOf(null, draft.values)];
+  const ready = cells.filter(c => c.si !== null);
+  const hasError = ready.length < cells.length;
+  // A refused cell on screen (one off it has nothing left to fix).
+  const refused = cells.some(c => refusal([c.column, c.metric]));
 
   // Single scroll container for the whole matrix. Native horizontal scroll
   // moves all rows in lockstep — sticky name + trend cells stay in place.
@@ -297,40 +244,18 @@ export function BloodTestTimeline({
   // on first mount).
   const scrollRef = useScrollToRightOnMount<HTMLDivElement>([columns.length]);
 
-  const setDraftValue = (metric: MetricType, typed: string) => {
-    setDraft(d => ({ ...d, values: { ...d.values, [metric]: typed } }));
-    // Mirror to inputs[field] in SI so the suggestions engine sees the draft
-    // value live. Pass undefined when empty or out-of-range so suggestions
-    // don't fire on bogus values.
-    const row = ROWS.find(r => r.metric === metric);
-    if (!row) return;
-    const display = unitOverrides[row.field] ?? unitSystem;
-    const { error } = validateTypedValue(metric, typed, display);
-    if (typed === '' || error) {
-      onFieldChange(row.field, undefined);
-    } else {
-      const n = parseLocalisedNumber(typed);
-      if (n !== undefined) onFieldChange(row.field, toCanonicalValue(metric, n, display));
-    }
-  };
+  // A draft value typed on this load of the page stands in for the record in
+  // the plan and the chat while it can be saved and is the test's latest:
+  // never one that clashes, nor one dated before the record's own latest
+  // value (US-03 AC6).
+  useDraftMirror(ROWS.map(({ metric, field }) => {
+    const si = cells.find(c => c.column === null && c.metric === metric)?.si;
+    const latest = [...batches].reverse().find(b => b.values[metric] != null)?.date;
+    return [field, si != null && typedHere([null, metric]) && !taken(metric) && !(latest && draft.date < latest) ? si : undefined];
+  }), onFieldChange);
 
-  const setDraftDate = (date: string) =>
-    setDraft(d => ({ ...d, date }));
-
-  const setBackfillValue = (batchDate: string, metric: MetricType, typed: string) =>
-    setBackfills(prev => {
-      const next = { ...prev };
-      const row = { ...(next[batchDate] || {}) };
-      if (typed === '') {
-        delete (row as Record<string, string>)[metric];
-        if (Object.keys(row).length === 0) delete next[batchDate];
-        else next[batchDate] = row;
-      } else {
-        (row as Record<string, string>)[metric] = typed;
-        next[batchDate] = row;
-      }
-      return next;
-    });
+  const setDraftValue = (metric: MetricType, typed: string) => type([null, metric], typed);
+  const setBackfillValue = (batchDate: string, metric: MetricType, typed: string) => type([batchDate, metric], typed);
 
   // Inject an external value (from the chatbot) into the matrix. Converts the
   // value from its stated unit into THIS cell's display unit, formats it, and
@@ -365,95 +290,36 @@ export function BloodTestTimeline({
 
   usePrefillRef(prefillCell, prefillRef);
 
-  // Convert display-unit typed values to SI using the metric's display unit.
-  const toSiMap = (typedMap: Partial<Record<MetricType, string>>): Record<string, number> => {
-    const out: Record<string, number> = {};
-    for (const row of ROWS) {
-      const typed = typedMap[row.metric];
-      if (typed == null || typed === '') continue;
-      const n = parseLocalisedNumber(typed);
-      if (n === undefined) continue;
-      const display = fieldUnit(row.field);
-      out[row.metric] = toCanonicalValue(row.metric, n, display);
-    }
-    return out;
-  };
-
   const saveDisabledByLoad = hasApiResponse === false;
 
   const handleSave = async () => {
-    if (filledCount === 0 || isSaving || hasError || saveDisabledByLoad) return;
-    // Guests have no remote save target — onSaveBatch resolves as a no-op via
-    // handleSaveLongitudinal's `!authState.isLoggedIn` early return. Without
-    // this guard we'd then clear draft + inputs mirror, wiping the user's
-    // typed values from both the matrix and localStorage.
-    if (!isLoggedIn) return;
-
-    // Commit each affected batch (backfill date or draft date) sequentially.
-    // Concurrent calls would be short-circuited by handleSaveLongitudinal's
-    // re-entry guard (isSavingLongitudinalRef) in HealthTool. Backfills first,
-    // draft last so the newest entry ends up at the right of the matrix.
-    const tasks: Array<{ date: string; values: Record<string, number> }> = [];
-    for (const [batchDate, typedMap] of Object.entries(backfills)) {
-      const siValues = toSiMap(typedMap);
-      if (Object.keys(siValues).length > 0) tasks.push({ date: batchDate, values: siValues });
-    }
-    const draftSi = toSiMap(draft.values);
-    if (Object.keys(draftSi).length > 0) tasks.push({ date: draft.date, values: draftSi });
-
-    // Same-(date, metric) rows route through correctMeasurement to honour FHIR
-    // (replaces semantic + entered-in-error on old row), avoiding the silent
-    // 409-cleared-draft that the partial unique index would otherwise produce.
-    // Shared with the vitals matrix via routeTasksToSaves (one collision policy).
-    const { failed: anySaveFailed } = await routeTasksToSaves(
-      tasks, bloodTestHistory, onSaveBatch, onCorrectValue,
-    );
-
-    // Preserve the user's typed draft if any save failed so they can retry
-    // (otherwise the matrix clears and the typed value is lost).
-    if (anySaveFailed) return;
-
-    // Clear `inputs` mirror for blood-test fields that were saved, so the
-    // legacy global "Save New Values" button doesn't pick them up again.
-    for (const r of ROWS) {
-      if (draft.values[r.metric] !== undefined) onFieldChange(r.field, undefined);
-    }
-    setDraft(emptyDraft());
-    setBackfills({});
-    setActiveCell(null);
-    safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
+    if (ready.length === 0 || isSaving || saveDisabledByLoad) return;
+    // The cells that can be saved, each on its day with the row it expects
+    // there; the parent routes each value (matrix-save.ts) and answers slot
+    // by slot. What landed leaves the draft; what was refused stays, with why
+    // (US-03 AC4).
+    const refusedSlots = await onSaveBatch(ready.map(c => ({
+      date: c.date, values: { [c.metric]: c.si! }, expected: expected([c.column, c.metric]), unit: c.unit,
+    })));
+    settle(ready.map(c => {
+      const status = refusedSlots.get(slotOf(c.date, c.metric));
+      return [[c.column, c.metric], status && SAVE_ERRORS[status]];
+    }));
+    if (refusedSlots.size === 0) setActiveCell(null);
   };
 
-  // Expose `handleSave` to the parent via flushRef so the upload-modal flow
-  // (and any future "save before X" caller) can commit in-flight typed values
-  // before its own save runs. Re-assign on every render so the latest closure
-  // (with current draft/backfills) is what fires. Cleanup on unmount.
-  const handleSaveRef = useRef(handleSave);
-  handleSaveRef.current = handleSave;
-  useEffect(() => {
-    if (!flushRef) return;
-    flushRef.current = () => handleSaveRef.current();
-    return () => { if (flushRef) flushRef.current = null; };
-  }, [flushRef]);
+  // The upload flow commits the draft before its own save (flushRef).
+  usePrefillRef(handleSave, flushRef);
 
-  // Auto-save on blur / Enter for draft + backfill cells. 500ms debounce
-  // so tab-between-cells doesn't fire mid-edit; the existing handleSave
-  // already batches every dirty cell into one onSaveBatch per date.
-  const matrixDebounce = useDebouncedSave(500);
-  const scheduleMatrixSave = () => {
-    if (filledCount === 0 || isSaving || hasError || saveDisabledByLoad) return;
-    matrixDebounce.schedule(() => { void handleSaveRef.current(); });
-  };
-  const flushMatrixSave = () => {
-    if (filledCount === 0 || isSaving || hasError || saveDisabledByLoad) {
-      matrixDebounce.cancel();
-      return;
-    }
-    matrixDebounce.commit(() => { void handleSaveRef.current(); });
-  };
+  // The draft is committed when the user leaves the matrix, presses Enter or
+  // the tick; never while the user is still in it, and never because the page
+  // hides (US-03 AC5).
+  const rootRef = useRef<HTMLDivElement>(null);
+  useSaveOnLeave(rootRef, handleSave);
+  const saveNow = () => { void handleSave(); };
 
   return (
-    <div className="bt-timeline">
+    <div ref={rootRef} className="bt-timeline">
       <div className="bt-timeline-header">
         <h3 className="bt-timeline-title">Blood Test Results</h3>
         <div className="bt-timeline-actions">
@@ -479,8 +345,11 @@ export function BloodTestTimeline({
           {hasError && !isSaving && (
             <span className="bt-save-error" aria-live="polite">Fix invalid values</span>
           )}
-          {filledCount > 0 && !isSaving && !hasError && (
-            <CommitTickButton variant="matrix" ariaLabel="Save typed values" onClick={flushMatrixSave}/>
+          {refused && !isSaving && !hasError && (
+            <span className="bt-save-error" aria-live="polite">{SAVE_FAILED}</span>
+          )}
+          {ready.length > 0 && !isSaving && (
+            <CommitTickButton variant="matrix" ariaLabel="Save typed values" onClick={saveNow}/>
           )}
         </div>
       </div>
@@ -496,7 +365,9 @@ export function BloodTestTimeline({
           <div className="bt-row bt-header-row">
             <div className="bt-cell-name bt-cell-header">Metric</div>
             {columns.map((c, i) => {
-              if (c.kind === 'draft') return <DraftDateCell key="draft" date={c.date} onChange={setDraftDate} ariaLabel="Choose draft batch date"/>;
+              if (c.kind === 'draft') {
+                return <DraftDateCell key="draft" date={c.date} onChange={setDraftDate} label="New" ariaLabel="Choose draft batch date"/>;
+              }
               const isPinnedRecent = i === columns.length - 2;
               return <BatchDateCell key={c.date} date={c.date} pinned={isPinnedRecent}/>;
             })}
@@ -538,10 +409,11 @@ export function BloodTestTimeline({
                         display={display}
                         sex={sex}
                         value={typed}
+                        error={clashes(row.metric) || taken(row.metric) ? SAME_SLOT : refusal([null, row.metric])}
                         active={activeCell === cellId}
                         onFocus={() => setActiveCell(cellId)}
-                        onBlur={() => { setActiveCell(null); scheduleMatrixSave(); }}
-                        onEnter={flushMatrixSave}
+                        onBlur={() => setActiveCell(null)}
+                        onEnter={saveNow}
                         onChange={v => setDraftValue(row.metric, v)}
                       />
                     );
@@ -556,10 +428,11 @@ export function BloodTestTimeline({
                         metric={row.metric}
                         display={display}
                         value={typed}
+                        error={c.date === draft.date && clashes(row.metric) ? SAME_SLOT : refusal([c.date, row.metric])}
                         active={activeCell === cellId}
                         onFocus={() => setActiveCell(cellId)}
-                        onBlur={() => { setActiveCell(null); scheduleMatrixSave(); }}
-                        onEnter={flushMatrixSave}
+                        onBlur={() => setActiveCell(null)}
+                        onEnter={saveNow}
                         onChange={v => setBackfillValue(c.date, row.metric, v)}
                       />
                     );
@@ -575,7 +448,7 @@ export function BloodTestTimeline({
                       metric={row.metric}
                       display={display}
                       sex={sex}
-                      siValue={v}
+                      value={v}
                       rowId={rowId}
                       status={status}
                       pinned={isPinned}
@@ -618,29 +491,48 @@ export function BatchDateCell({ date, pinned }: { date: string; pinned: boolean 
 }
 
 interface ValueCellProps {
-  metric: MetricType;
-  display: UnitSystem;
+  /** A core metric: shown in `display` units and range-checked. Absent for a
+   *  lab value, which is edited in the unit it is stored in. */
+  metric?: MetricType;
+  display?: UnitSystem;
   sex?: 'male' | 'female';
-  siValue: number;
+  /** As stored: SI for a core metric, the stored unit for a lab value. */
+  value: number;
+  /** A lab value's unit, shown in the cell (a series whose reports used more
+   *  than one unit). */
+  unit?: string;
   rowId?: string;
   status: Status;
   pinned: boolean;
-  onActivate: () => void;
-  onDeactivate: () => void;
+  onActivate?: () => void;
+  onDeactivate?: () => void;
   onCorrect?: CorrectFn;
 }
 
-// Exported so StartingInfoVitals reuses the identical click-to-correct saved
-// cell (FHIR correction UX, status tick, pinned styling) — one source of truth
-// for both matrices instead of two copies of the correction flow to keep in sync.
+/** What a matrix says when a save did not all land (US-03 AC4). */
+export const SAVE_FAILED = 'Some values did not save. Try again.';
+
+/** What a refused correction says, wherever one is made. */
+export const SAVE_ERRORS: Record<Exclude<CorrectStatus, 'ok'>, string> = {
+  changed: 'This value changed on another device, so your edit was not saved.',
+  invalid: 'That value is outside the range this record takes.',
+  error: 'Could not save. Check your connection and try again.',
+};
+
+// The saved-value editor, one for every matrix: the blood tests, the vitals
+// (StartingInfoVitals) and the additional lab rows. Click a value to correct
+// it in place: a FHIR correction, never an edit of the saved row.
 export function ValueCell({
-  metric, display, sex, siValue, rowId, status, pinned, onActivate, onDeactivate, onCorrect,
+  metric, display, sex, value, unit, rowId, status, pinned, onActivate, onDeactivate, onCorrect,
 }: ValueCellProps) {
   // `typed === null` ⇒ read-only; otherwise the in-place edit form is open.
   // One field replaces the old (editing, typed) pair — impossible state gone.
   const [typed, setTyped] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // The row the editor opened on, which its correction names: the store
+  // refuses it once another writer has replaced that row (US-04 AC1).
+  const openedOn = useRef<string>();
   const blurTimerRef = useRef<number | null>(null);
 
   const clearBlurTimer = () => {
@@ -651,7 +543,8 @@ export function ValueCell({
   };
   useEffect(() => clearBlurTimer, []); // also fires on unmount
 
-  const initialDisplay = formatDisplayValue(metric, siValue, display);
+  const core = metric && display ? { metric, display } : null;
+  const initialDisplay = core ? formatDisplayValue(core.metric, value, core.display) : formatLabValue(value);
   const canCorrect = !!(rowId && onCorrect);
 
   const beginEdit = () => {
@@ -660,50 +553,47 @@ export function ValueCell({
     // would fire after this cell mounts and clobber our active state.
     clearBlurTimer();
     setSaveError(null);
+    openedOn.current = rowId;
     setTyped(initialDisplay);
-    onActivate();
+    onActivate?.();
   };
 
   const cancel = () => {
     clearBlurTimer();
     setTyped(null);
     setSaveError(null);
-    onDeactivate();
+    onDeactivate?.();
   };
 
+  // Text the editor cannot save: outside the metric's range, or no number.
+  const unusable = (text: string) => core
+    ? !!validateTypedValue(core.metric, text, core.display).error
+    : parseLocalisedNumber(text) === undefined;
+
   const submit = async () => {
-    if (!canCorrect || !rowId || !onCorrect || typed === null) return;
-    const { error } = validateTypedValue(metric, typed, display);
-    if (error) return;
-    const parsed = parseLocalisedNumber(typed);
-    if (parsed === undefined) return;
-    if (typed.trim() === initialDisplay.trim()) { cancel(); return; }
-    const newSi = toCanonicalValue(metric, parsed, display);
+    const opened = openedOn.current;
+    if (!opened || !onCorrect || typed === null) return;
+    // An emptied editor is a change of mind: it closes and writes nothing.
+    if (typed.trim() === '') { cancel(); return; }
+    if (unusable(typed)) return;
+    const parsed = parseLocalisedNumber(typed)!;
+    const newValue = core ? toCanonicalValue(core.metric, parsed, core.display) : parsed;
+    if (sameAsSaved(parsed, initialDisplay, newValue, value)) { cancel(); return; }
     setSaving(true);
     setSaveError(null);
-    const result = await onCorrect(rowId, newSi);
+    const status = await onCorrect(opened, newValue);
     setSaving(false);
-    if (result.ok) {
-      cancel();
-    } else {
-      // Keep the form open so the user can retry. Tailor the message to
-      // the failure mode so a transient conflict reads differently from a
-      // network drop.
-      setSaveError(
-        result.reason === 'conflict'
-          ? 'Another value was saved at this date. Refresh and try again.'
-          : result.reason === 'not_found'
-          ? 'This value was deleted or already updated. Refresh to see the latest.'
-          : 'Could not save. Check your connection and try again.'
-      );
-    }
+    // A value replaced meanwhile closes the editor, and the cell says the
+    // edit went; any other failure keeps it open for a retry.
+    if (status === 'ok' || status === 'changed') cancel();
+    if (status !== 'ok') setSaveError(SAVE_ERRORS[status]);
   };
 
   if (typed !== null) {
     return (
       <NumericInputCell
-        metric={metric}
-        display={display}
+        metric={core?.metric}
+        display={core?.display}
         sex={sex}
         value={typed}
         onChange={v => { setSaveError(null); setTyped(v); }}
@@ -724,8 +614,7 @@ export function ValueCell({
           // 150ms defer lets clicks on adjacent affordances intercept.
           blurTimerRef.current = window.setTimeout(() => {
             if (saving || typed === null) return;
-            const { error } = validateTypedValue(metric, typed, display);
-            if (error) cancel();
+            if (unusable(typed)) cancel();
             else void submit();
           }, 150);
         }}
@@ -733,13 +622,20 @@ export function ValueCell({
     );
   }
 
+  const shown = (
+    <>
+      <span className="bt-value-num num">
+        {initialDisplay}
+        {unit && <span className="alr-cell-unit">{unit}</span>}
+      </span>
+      {saveError
+        ? <span className="bt-input-error-text">{saveError}</span>
+        : <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>}
+    </>
+  );
+
   if (!canCorrect) {
-    return (
-      <div className={`bt-cell-value${pinned ? ' bt-cell-pinned' : ''}`}>
-        <span className="bt-value-num num">{initialDisplay}</span>
-        <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>
-      </div>
-    );
+    return <div className={`bt-cell-value${pinned ? ' bt-cell-pinned' : ''}`}>{shown}</div>;
   }
 
   return (
@@ -749,8 +645,7 @@ export function ValueCell({
       onClick={beginEdit}
       title="Click to correct this value"
     >
-      <span className="bt-value-num num">{initialDisplay}</span>
-      <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>
+      {shown}
     </button>
   );
 }
@@ -760,6 +655,8 @@ interface DraftCellProps {
   display: UnitSystem;
   sex?: 'male' | 'female';
   value: string;
+  /** Why the typed value cannot be saved as it stands (`SAME_SLOT`). */
+  error?: string | null;
   active: boolean;
   onFocus: () => void;
   onBlur: () => void;
@@ -767,13 +664,14 @@ interface DraftCellProps {
   onChange: (v: string) => void;
 }
 
-function DraftCell({ metric, display, sex, value, active, onFocus, onBlur, onEnter, onChange }: DraftCellProps) {
+function DraftCell({ metric, display, sex, value, error, active, onFocus, onBlur, onEnter, onChange }: DraftCellProps) {
   return (
     <NumericInputCell
       metric={metric}
       display={display}
       sex={sex}
       value={value}
+      externalError={error}
       onChange={onChange}
       wrapperClass="bt-cell-input bt-cell-draft"
       active={active}
@@ -792,6 +690,8 @@ interface BackfillCellProps {
   metric: MetricType;
   display: UnitSystem;
   value: string;
+  /** Why the typed value cannot be saved as it stands (`SAME_SLOT`). */
+  error?: string | null;
   active: boolean;
   onFocus: () => void;
   onBlur: () => void;
@@ -804,12 +704,13 @@ interface BackfillCellProps {
 
 // Exported so StartingInfoVitals reuses the identical empty-slot input cell
 // (one source of truth for backfill styling + key handling across both matrices).
-export function BackfillCell({ metric, display, value, active, onFocus, onBlur, onEnter, onChange, pinned }: BackfillCellProps) {
+export function BackfillCell({ metric, display, value, error, active, onFocus, onBlur, onEnter, onChange, pinned }: BackfillCellProps) {
   return (
     <NumericInputCell
       metric={metric}
       display={display}
       value={value}
+      externalError={error}
       onChange={onChange}
       wrapperClass={`bt-cell-backfill${pinned ? ' bt-cell-pinned' : ''}`}
       inputClass="bt-input bt-input-backfill"

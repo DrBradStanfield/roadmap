@@ -4,6 +4,7 @@ import { RoadmapStore, PENDING_MIRROR_KEY } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core';
+import { DRAFTS_CLEARED_EVENT } from '../lib/storage';
 
 /** The file as it landed in the (simulated) cloud after a flush. */
 function readCloudFile(cloud: MemoryCloud): RoadmapFile {
@@ -17,16 +18,17 @@ function insertedRow(result: ReturnType<RoadmapStore['addMeasurement']>) {
 }
 
 // US-04 · Correcting a saved value (FHIR) — coverage priority #1
-// (docs/user-stories.md: "RoadmapStore.correctMeasurement itself untested").
-describe('RoadmapStore.correctMeasurement (US-04)', () => {
+// (docs/user-stories.md: "RoadmapStore.correctMeasurement itself untested"; renamed
+// correctValue on 2026-09-24, when it took on lab rows through record-edits).
+describe('RoadmapStore.correctValue (US-04)', () => {
   it('flips the old row to entered-in-error and appends a manual_correction row with correctsId', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
 
     const oldId = insertedRow(store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z')).id;
 
-    const result = store.correctMeasurement(oldId, 3.2);
-    expect(result.status).toBe('ok');
+    const result = store.correctValue(oldId, 3.2);
+    expect(result).toBe('ok');
     await store.flush();
 
     const file = readCloudFile(cloud);
@@ -44,7 +46,7 @@ describe('RoadmapStore.correctMeasurement (US-04)', () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
 
-    store.correctMeasurement(insertedRow(store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z')).id, 3.2);
+    store.correctValue(insertedRow(store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z')).id, 3.2);
 
     // Both loadAllHistory() and loadLatestMeasurements() filter to status==='active'.
     const history = store.loadAllHistory();
@@ -56,15 +58,15 @@ describe('RoadmapStore.correctMeasurement (US-04)', () => {
     expect(latest.previousMeasurements.find((m) => m.metricType === 'ldl')?.value).toBe(3.2);
   });
 
-  it('correcting a non-existent id returns not_found and leaves the file untouched', async () => {
+  it('correcting a non-existent id answers changed and leaves the file untouched', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z');
     await store.flush();
     const before = readCloudFile(cloud);
 
-    const result = store.correctMeasurement('does-not-exist', 3.2);
-    expect(result.status).toBe('not_found');
+    const result = store.correctValue('does-not-exist', 3.2);
+    expect(result).toBe('changed');
     await store.flush();
 
     const after = readCloudFile(cloud);
@@ -72,16 +74,16 @@ describe('RoadmapStore.correctMeasurement (US-04)', () => {
     expect(after.measurements).toEqual(before.measurements);
   });
 
-  it('correcting an already-corrected (entered-in-error) id also returns not_found, without corrupting state', async () => {
-    // Same documented failure shape as the unknown-id case — correctMeasurement
-    // only accepts oldId pointing at a currently-active row (roadmap-store.ts:261).
+  it('correcting an already-corrected (entered-in-error) id also answers changed, without corrupting state', async () => {
+    // Same documented failure shape as the unknown-id case — correctValue
+    // only accepts oldId pointing at a currently-active row.
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     const oldId = insertedRow(store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z')).id;
-    store.correctMeasurement(oldId, 3.2); // first correction — oldId now entered-in-error
+    store.correctValue(oldId, 3.2); // first correction — oldId now entered-in-error
 
-    const second = store.correctMeasurement(oldId, 2.9); // re-correcting the now-dead row
-    expect(second.status).toBe('not_found');
+    const second = store.correctValue(oldId, 2.9); // re-correcting the now-dead row
+    expect(second).toBe('changed');
     await store.flush();
 
     const file = readCloudFile(cloud);
@@ -96,7 +98,7 @@ describe('RoadmapStore.correctMeasurement (US-04)', () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     const day = '2024-06-01T09:00:00.000Z';
-    store.correctMeasurement(insertedRow(store.addMeasurement('ldl', 4.5, day)).id, 3.2);
+    store.correctValue(insertedRow(store.addMeasurement('ldl', 4.5, day)).id, 3.2);
 
     const activeForSlot = store
       .loadAllHistory()
@@ -107,6 +109,43 @@ describe('RoadmapStore.correctMeasurement (US-04)', () => {
     // row for this (metric, day) — a fresh add for the same day is blocked.
     const dup = store.addMeasurement('ldl', 5.0, day);
     expect(dup.status).toBe('duplicate');
+  });
+});
+
+// US-21 AC5 · a lab value is corrected like a core row, through the same door.
+describe('RoadmapStore.correctValue on lab values (US-21 AC5)', () => {
+  it('appends a correction on the same day, in the unit the row is stored in, and flips the old row', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const old = store.bulkSaveLabValues([
+      { metricName: 'Feritin', value: 45, unit: 'ug/L', recordedAt: '2024-06-01T00:00:00.000Z', source: 'manual' },
+    ]).saved[0];
+
+    const result = store.correctValue(old.id, 54);
+    expect(result).toBe('ok');
+    await store.flush();
+
+    const rows = readCloudFile(cloud).labValues;
+    expect(rows.find((l) => l.id === old.id)!.status).toBe('entered-in-error');
+    const fixed = rows.find((l) => l.id !== old.id)!;
+    expect(fixed).toMatchObject({ value: 54, unit: 'ug/L', status: 'active', correctsId: old.id, recordedAt: old.recordedAt, source: 'manual_correction' });
+    expect(store.loadLabValues().map((l) => l.value)).toEqual([54]);
+  });
+});
+
+// US-04 AC2 · the record's own range decides, as it does for every other writer.
+describe('RoadmapStore.correctValue refusals (US-04)', () => {
+  it('a value outside the range the record takes is refused with its reason, and nothing changes', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const id = insertedRow(store.addMeasurement('ldl', 4.5, '2024-06-01')).id;
+    await store.flush();
+    const before = readCloudFile(cloud).measurements;
+
+    const result = store.correctValue(id, 12.93); // 500 mg/dL passes the mg/dL field, not the record
+    expect(result).toBe('invalid');
+    await store.flush();
+    expect(readCloudFile(cloud).measurements).toEqual(before);
   });
 });
 
@@ -332,72 +371,6 @@ describe('RoadmapStore.bulkSaveLabValues dedup (US-13)', () => {
     ]);
     expect(third.saved).toHaveLength(1);
     expect(third.skippedDuplicates).toBe(1);
-  });
-});
-
-// US-13 · Review before save — deleting a reviewed lab value
-// (docs/user-stories.md: "store deleteLabValue untested").
-describe('RoadmapStore.deleteLabValue (US-13)', () => {
-  it('soft-deletes: flips status to entered-in-error (never splices the row)', async () => {
-    const cloud = new MemoryCloud();
-    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    const saved = store.bulkSaveLabValues([
-      { metricName: 'ferritin', value: 80, unit: 'ng/mL', recordedAt: '2024-06-01T09:00:00.000Z' },
-    ]);
-    const id = saved.saved[0].id;
-    await store.flush();
-
-    const ok = store.deleteLabValue(id);
-    expect(ok).toBe(true);
-    await store.flush();
-
-    const file = readCloudFile(cloud);
-    expect(file.labValues).toHaveLength(1); // row is kept, not removed
-    expect(file.labValues[0].id).toBe(id);
-    expect(file.labValues[0].status).toBe('entered-in-error');
-
-    // Reads (activeOnly) exclude it.
-    expect(store.loadLabValues()).toHaveLength(0);
-  });
-
-  it('deleting an unknown id returns false and leaves the file untouched', async () => {
-    const cloud = new MemoryCloud();
-    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    store.bulkSaveLabValues([
-      { metricName: 'ferritin', value: 80, unit: 'ng/mL', recordedAt: '2024-06-01T09:00:00.000Z' },
-    ]);
-    await store.flush();
-    const before = readCloudFile(cloud);
-
-    const ok = store.deleteLabValue('does-not-exist');
-    expect(ok).toBe(false);
-    await store.flush();
-
-    const after = readCloudFile(cloud);
-    expect(after.labValues).toEqual(before.labValues);
-  });
-
-  // TODO(US-13): possible bug — unlike deleteDocument (`if (!doc || doc.deleted)
-  // return false`), deleteLabValue has no already-deleted guard (roadmap-store.ts:515-521):
-  // it re-sets status unconditionally and returns true again. Harmless today (status
-  // is already 'entered-in-error', no duplicate row), but it's an inconsistency with
-  // the document-delete idempotency contract worth a second look if either path grows
-  // more logic (e.g. an audit-log side effect keyed off "was this a real transition").
-  it('deleting an already-deleted lab value succeeds again (idempotent no-op), pinning current behavior', async () => {
-    const cloud = new MemoryCloud();
-    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    const id = store.bulkSaveLabValues([
-      { metricName: 'ferritin', value: 80, unit: 'ng/mL', recordedAt: '2024-06-01T09:00:00.000Z' },
-    ]).saved[0].id;
-    store.deleteLabValue(id);
-
-    const second = store.deleteLabValue(id);
-    expect(second).toBe(true);
-    await store.flush();
-
-    const file = readCloudFile(cloud);
-    expect(file.labValues).toHaveLength(1);
-    expect(file.labValues[0].status).toBe('entered-in-error');
   });
 });
 
@@ -839,7 +812,7 @@ describe('RoadmapStore.addMeasurement date semantics (US-03)', () => {
 
     const active = store.loadAllHistory().filter((m) => m.metricType === 'weight');
     expect(active).toHaveLength(1);
-    expect(active[0].value).toBe(80); // the original — a same-day re-entry must route through correctMeasurement (US-04), not addMeasurement.
+    expect(active[0].value).toBe(80); // the original — a same-day re-entry must route through correctValue (US-04), not addMeasurement.
   });
 });
 
@@ -847,9 +820,11 @@ describe('RoadmapStore.addMeasurement date semantics (US-03)', () => {
 // Before this, deleteUserData() cleared document blobs only when a CLOUD was
 // connected (the localStorage-only branch skipped disconnect() so as not to
 // delete the erased file it had just written), and the blood-test matrix's
-// typed-but-unsaved draft survived an erase in every mode.
+// typed-but-unsaved draft survived an erase in every mode. The vitals matrix
+// keeps its draft on the device too since 2026-09-24 (US-03 AC5).
 describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', () => {
   const DRAFT_KEY = 'health_roadmap_bt_timeline_draft';
+  const VITALS_DRAFT_KEY = 'health_roadmap_vitals_draft';
   const DOC_KEY = 'health_roadmap_doc_v2:scan-123';
   const DOC_KEY_2 = 'health_roadmap_doc_v2:scan-456';
 
@@ -886,15 +861,17 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     const store = makeStorage();
     Object.defineProperty(globalThis, 'localStorage', { value: store, writable: true, configurable: true });
     store.setItem(DRAFT_KEY, '{"draft":{"date":"2026-09-01","values":{"ldl":"3.2"}}}');
+    store.setItem(VITALS_DRAFT_KEY, '{"draft":{"date":"2026-09-01","values":{"weight":"82"}}}');
     store.setItem(DOC_KEY, 'data:application/pdf;base64,AAAA');
     store.setItem(DOC_KEY_2, 'data:application/pdf;base64,BBBB');
     for (const [k, v] of Object.entries(KEEP)) store.setItem(k, v);
   });
   afterEach(() => {
     Reflect.deleteProperty(globalThis, 'localStorage');
+    vi.unstubAllGlobals();
   });
 
-  it('clears the unsaved lab-value draft and every document blob for a localStorage-only user', async () => {
+  it('clears both matrices\' unsaved drafts and every document blob for a localStorage-only user', async () => {
     const store = await RoadmapStore.create(new LocalStorageAdapter());
     store.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
 
@@ -902,6 +879,7 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     expect(result.success).toBe(true);
 
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
     expect(localStorage.getItem(DOC_KEY)).toBeNull();
     expect(localStorage.getItem(DOC_KEY_2)).toBeNull();
     // The erased file itself is still there (local mode has no other copy) and
@@ -920,6 +898,7 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     expect((await store.deleteUserData()).success).toBe(true);
 
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
     expect(localStorage.getItem(DOC_KEY)).toBeNull();
     expect(localStorage.getItem(DOC_KEY_2)).toBeNull();
   });
@@ -947,6 +926,41 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
 
     // hr_anthropic_key is a credential the user typed, not health data: an
     // erase leaves it, so a self-host user does not have to re-enter it.
+    for (const [k, v] of Object.entries(KEEP)) expect(localStorage.getItem(k)).toBe(v);
+  });
+
+  // Review of 2026-09-24, round 3: an erase made on ANOTHER device reached
+  // this one by a re-read or a save, and the drafts typed here outlived it:
+  // the matrix restored them, and a leave committed them into the new record.
+  it('clears both drafts when an erase made on another device arrives, by a re-read or by a save', async () => {
+    const drafts = [DRAFT_KEY, VITALS_DRAFT_KEY].map((k) => [k, localStorage.getItem(k)!] as const);
+    // jsdom has one localStorage for every device: this device's drafts go back.
+    const putBack = () => { for (const [k, v] of drafts) localStorage.setItem(k, v); };
+    // What a matrix on screen hears, so it drops its own copy (round 4).
+    const heard = vi.fn();
+    vi.stubGlobal('window', new EventTarget());
+    window.addEventListener(DRAFTS_CLEARED_EVENT, heard);
+    const cloud = new MemoryCloud();
+    const page = await RoadmapStore.create(new MemoryAdapter(cloud));
+    page.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+    await page.flush();
+    const otherPage = await RoadmapStore.create(new MemoryAdapter(cloud));
+
+    await (await RoadmapStore.create(new MemoryAdapter(cloud))).deleteUserData(); // the other device
+    heard.mockClear();
+    putBack();
+    expect(await page.refreshFromRemote()).toBe(true);
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
+    expect(heard).toHaveBeenCalledTimes(1);
+
+    putBack();
+    otherPage.addMeasurement('weight', 81, '2024-02-01T00:00:00.000Z'); // made before it heard of the erase
+    await otherPage.flush();
+    expect(otherPage.loadAllHistory()).toEqual([]);
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
+    expect(heard).toHaveBeenCalledTimes(2);
     for (const [k, v] of Object.entries(KEEP)) expect(localStorage.getItem(k)).toBe(v);
   });
 });

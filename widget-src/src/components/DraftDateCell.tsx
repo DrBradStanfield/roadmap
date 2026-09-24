@@ -13,9 +13,12 @@ export interface DraftDateCellProps {
   /** Render "—" instead of the day digit to flag a placeholder day. */
   needsDay?: boolean;
   ariaLabel?: string;
+  /** A first line above the date. The matrices say "New", so the draft
+   *  column never reads as a second copy of a saved column's date. */
+  label?: string;
 }
 
-export function DraftDateCell({ date, onChange, needsDay, ariaLabel }: DraftDateCellProps) {
+export function DraftDateCell({ date, onChange, needsDay, ariaLabel, label }: DraftDateCellProps) {
   const ref = useRef<HTMLInputElement | null>(null);
   const d = new Date(date + 'T00:00');
   const day = d.getDate();
@@ -29,6 +32,7 @@ export function DraftDateCell({ date, onChange, needsDay, ariaLabel }: DraftDate
     <button type="button" onClick={open}
             title={needsDay ? 'Pick the exact day' : 'Click to change date'}
             className={`bt-cell-value bt-cell-draft-date${needsDay ? ' bt-cell-draft-date-incomplete' : ''}`}>
+      {label && <span className="bt-draft-label">{label}</span>}
       <span className="bt-date-day">{needsDay ? '—' : day} {mon}</span>
       <div className="bt-draft-date-year-row">
         <span className="bt-date-year">'{yr}</span>

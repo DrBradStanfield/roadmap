@@ -10,7 +10,7 @@ import {
   type HealthInputs,
   type ReminderScheduleItem,
 } from '@roadmap/health-core';
-import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput } from '../storage/roadmap-store';
+import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
@@ -24,7 +24,6 @@ import type {
   ApiMedicationHistory,
   BulkLabValuesResult,
   BulkSaveResult,
-  CorrectMeasurementResult,
   LatestMeasurementsResult,
 } from './api-types';
 
@@ -114,8 +113,9 @@ export async function loadLabValues(): Promise<ApiLabValue[] | null> {
 export async function addMeasurement(metricType: string, value: number, recordedAt?: string): Promise<AddMeasurementResult> {
   return store ? store.addMeasurement(metricType, value, recordedAt) : { status: 'error' };
 }
-export async function correctMeasurement(oldId: string, newValueSI: number): Promise<CorrectMeasurementResult> {
-  return store ? store.correctMeasurement(oldId, newValueSI) : { status: 'error' };
+/** Correct a saved core or lab value; `newValue` is in the unit it is stored in. */
+export async function correctValue(id: string, newValue: number): Promise<CorrectStatus> {
+  return store ? store.correctValue(id, newValue) : 'error';
 }
 export async function saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>): Promise<boolean> {
   return store ? store.saveChangedMeasurements(current, previous) : false;
@@ -149,9 +149,6 @@ export async function bulkSaveDocuments(
 }
 export async function deleteDocument(documentId: string): Promise<boolean> {
   return store ? store.deleteDocument(documentId) : false;
-}
-export async function deleteLabValue(labValueId: string): Promise<boolean> {
-  return store ? store.deleteLabValue(labValueId) : false;
 }
 /**
  * Data snapshot for the BYOK chat's system-prompt context (byok-chat.ts).

@@ -60,6 +60,29 @@ export function bpSysAdvance(typed: string): BpAdvance {
   return 'stay';
 }
 
+/** A lab value as the matrix shows it: up to two decimals, no trailing zeros. */
+export function formatLabValue(v: number): string {
+  return String(Math.round(v * 100) / 100);
+}
+
+/**
+ * A typed value that changes nothing, so saving it writes nothing (US-03
+ * AC3): the number the user saw, typed again in any spelling ("3.20", "3,2"),
+ * or the stored value itself once converted. `typed` is in the unit it was
+ * typed in and `shown` is the saved value as displayed in that unit;
+ * `candidate` and `stored` are in the unit the record keeps. The typed
+ * number is never rounded: 3.24 over a shown 3.2 is a change.
+ */
+export function sameAsSaved(typed: number, shown: string, candidate: number, stored: number): boolean {
+  const seen = parseLocalisedNumber(shown);
+  return (seen !== undefined && closeTo(typed, seen)) || closeTo(candidate, stored);
+}
+
+/** Equal up to float noise (1e-9 relative), which is all a unit round trip leaves. */
+function closeTo(a: number, b: number): boolean {
+  return Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(a), Math.abs(b));
+}
+
 /** Validate a typed display-unit value against the metric's range. */
 export function validateTypedValue(
   metric: MetricType,

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { ApiMeasurement, UnitSystem } from '@roadmap/health-core';
-import { buildColumns, bpPairReady, blurLeavesCell, vitalsBackfillsToTasks, routeVitalsEdit, mergeBpDraft } from './StartingInfoVitals';
+import { toCanonicalValue, type ApiMeasurement, type UnitSystem } from '@roadmap/health-core';
+import { buildColumns, bpPairReady, vitalsCellsOf, routeVitalsEdit } from './StartingInfoVitals';
 
 // `buildColumns` is the one genuinely new pure helper introduced when the
 // vitals section was unified onto the blood-test matrix's column grid: it
@@ -131,162 +131,52 @@ describe('bpPairReady', () => {
   });
 });
 
-// Reported bug: in the Blood Pressure cell, entering systolic then entering
-// diastolic wiped the systolic (and vice-versa) — the two inputs clobbered each
-// other's state. The fix is that each onChange merges ONLY its own field into
-// the existing pair, never replacing the whole value. `mergeBpDraft` is that
-// merge, extracted so the "one field never blanks the other" invariant is
-// directly testable (the setter in the component is `setDraft(d => ({ ...d,
-// ...mergeBpDraft(...) }))`).
-describe('mergeBpDraft — sys and dia never clobber each other', () => {
-  it('setting diastolic preserves an already-typed systolic', () => {
-    const afterSys = mergeBpDraft({ sys: '', dia: '' }, 'sys', '118');
-    expect(afterSys).toEqual({ sys: '118', dia: '' });
-    const afterDia = mergeBpDraft(afterSys, 'dia', '78');
-    expect(afterDia).toEqual({ sys: '118', dia: '78' });
-  });
-
-  it('re-entering systolic preserves the diastolic', () => {
-    const start = { sys: '118', dia: '78' };
-    const next = mergeBpDraft(start, 'sys', '120');
-    expect(next).toEqual({ sys: '120', dia: '78' });
-  });
-
-  it('clearing one field leaves the other intact', () => {
-    const next = mergeBpDraft({ sys: '120', dia: '80' }, 'sys', '');
-    expect(next).toEqual({ sys: '', dia: '80' });
-  });
-
-  it('does not mutate the previous pair (returns a new object)', () => {
-    const prev = { sys: '120', dia: '80' };
-    const next = mergeBpDraft(prev, 'dia', '85');
-    expect(prev).toEqual({ sys: '120', dia: '80' }); // untouched
-    expect(next).not.toBe(prev);
-  });
-});
-
-// The systolic and diastolic inputs share one matrix cell. A blur from
-// systolic → diastolic (focus staying inside the cell) must NOT trigger a
-// save — only a blur that leaves the whole BP cell should. This is what keeps
-// the draft from clearing under the user mid-edit.
-describe('blurLeavesCell', () => {
-  function fakeCell(children: unknown[]) {
-    return { contains: (n: unknown) => children.includes(n) } as unknown as HTMLElement;
-  }
-
-  it('returns false when focus moves to a sibling inside the same cell', () => {
-    const sib = {};
-    const cell = fakeCell([sib]);
-    expect(blurLeavesCell(sib as unknown as HTMLElement, cell)).toBe(false);
-  });
-
-  it('returns true when focus leaves the cell (relatedTarget outside)', () => {
-    const outside = {};
-    const cell = fakeCell([]);
-    expect(blurLeavesCell(outside as unknown as HTMLElement, cell)).toBe(true);
-  });
-
-  it('returns true when focus is lost entirely (relatedTarget null)', () => {
-    const cell = fakeCell([]);
-    expect(blurLeavesCell(null, cell)).toBe(true);
-  });
-
-  it('returns true defensively when the cell ref is missing', () => {
-    expect(blurLeavesCell(null, null)).toBe(true);
-  });
-});
-
-// Empty weight/waist cells in past date columns are click-to-input: typing a
-// value backfills a NEW measurement at that date. `vitalsBackfillsToTasks`
-// folds the `${date}|${metric}` → typed map into one SI value map per date,
-// dropping empty / invalid / non-weight-waist entries. Each task is a pure
-// INSERT (an empty cell has no row to correct).
-describe('vitalsBackfillsToTasks', () => {
+// Each typed column (the draft's, or a saved column's empty cells) becomes
+// the cells a commit saves on its day: weight and waist in SI, a BP pair as
+// one cell (mmHg, stored as typed). A cell that cannot be saved as it stands
+// is kept, its values null: it stays in the draft with its error (US-03 AC5).
+describe('vitalsCellsOf', () => {
   const si: (m: 'weight' | 'waist') => UnitSystem = () => 'si';
-  // Convenience builders for the {simple, bp} backfill state.
-  const simpleBf = (simple: Record<string, string>) => ({ simple, bp: {} });
-  const bpBf = (bp: Record<string, { sys: string; dia: string }>) => ({ simple: {}, bp });
 
-  it('returns no tasks for an empty backfill map', () => {
-    expect(vitalsBackfillsToTasks({ simple: {}, bp: {} }, si)).toEqual([]);
+  it('makes no cells for an empty column', () => {
+    expect(vitalsCellsOf({}, si)).toEqual([]);
+    expect(vitalsCellsOf({ weight: '', sys: '', dia: '' }, si)).toEqual([]);
   });
 
-  it('drops empty-string typed values', () => {
-    expect(vitalsBackfillsToTasks(simpleBf({ '2024-03-01|weight': '' }), si)).toEqual([]);
+  it('turns a weight into one cell, in SI', () => {
+    expect(vitalsCellsOf({ weight: '82' }, si)).toEqual([{ keys: ['weight'], values: { weight: 82 } }]);
   });
 
-  it('converts a weight (SI kg) to one task at its date', () => {
-    const tasks = vitalsBackfillsToTasks(simpleBf({ '2024-03-01|weight': '82' }), si);
-    expect(tasks).toEqual([{ date: '2024-03-01', values: { weight: 82 } }]);
+  it('keeps what was typed: 90.4 cm is saved as 90.4', () => {
+    expect(vitalsCellsOf({ waist: '90.4' }, si)).toEqual([{ keys: ['waist'], values: { waist: 90.4 } }]);
   });
 
-  it('converts conventional units (lbs → kg, in → cm) on commit', () => {
-    const conv: (m: 'weight' | 'waist') => UnitSystem = () => 'conventional';
-    const tasks = vitalsBackfillsToTasks(
-      simpleBf({ '2024-03-01|weight': '180', '2024-03-01|waist': '36' }),
-      conv,
-    );
-    const t = tasks.find(t => t.date === '2024-03-01')!;
-    expect(t.values.weight).toBeCloseTo(180 / 2.20462, 2);
-    expect(t.values.waist).toBeCloseTo(36 * 2.54, 2);
+  it('converts conventional units (lbs → kg, in → cm)', () => {
+    const cells = vitalsCellsOf({ weight: '180', waist: '36' }, () => 'conventional');
+    expect(cells.find((c) => c.keys[0] === 'weight')!.values!.weight).toBeCloseTo(toCanonicalValue('weight', 180, 'conventional'), 9);
+    expect(cells.find((c) => c.keys[0] === 'waist')!.values!.waist).toBeCloseTo(toCanonicalValue('waist', 36, 'conventional'), 9);
   });
 
-  it('groups weight + waist backfilled at the same date into one task', () => {
-    const tasks = vitalsBackfillsToTasks(
-      simpleBf({ '2024-03-01|weight': '82', '2024-03-01|waist': '90' }),
-      si,
-    );
-    expect(tasks).toHaveLength(1);
-    expect(tasks[0]).toMatchObject({ date: '2024-03-01', values: { weight: 82, waist: 90 } });
+  it('keeps a value out of range as a cell that cannot be saved', () => {
+    expect(vitalsCellsOf({ weight: '5' }, si)).toEqual([{ keys: ['weight'], values: null }]);
   });
 
-  it('produces one task per distinct date', () => {
-    const tasks = vitalsBackfillsToTasks(
-      simpleBf({ '2024-03-01|weight': '82', '2025-01-10|weight': '79' }),
-      si,
-    );
-    expect(tasks).toHaveLength(2);
-    expect(tasks.map(t => t.date).sort()).toEqual(['2024-03-01', '2025-01-10']);
+  it('turns a complete BP pair into one cell: systolic and diastolic together', () => {
+    expect(vitalsCellsOf({ sys: '128', dia: '82' }, si)).toEqual([
+      { keys: ['sys', 'dia'], values: { systolic_bp: 128, diastolic_bp: 82 } },
+    ]);
   });
 
-  it('drops invalid / out-of-range typed values', () => {
-    // weight 5 kg is below the metric's plausible range → dropped.
-    expect(vitalsBackfillsToTasks(simpleBf({ '2024-03-01|weight': '5' }), si)).toEqual([]);
-    // non-numeric → dropped.
-    expect(vitalsBackfillsToTasks(simpleBf({ '2024-03-01|weight': 'abc' }), si)).toEqual([]);
+  it('never saves half a BP pair, or one mid-typed', () => {
+    expect(vitalsCellsOf({ sys: '128' }, si)).toEqual([{ keys: ['sys', 'dia'], values: null }]);
+    expect(vitalsCellsOf({ dia: '82' }, si)).toEqual([{ keys: ['sys', 'dia'], values: null }]);
+    expect(vitalsCellsOf({ sys: '128', dia: '8' }, si)).toEqual([{ keys: ['sys', 'dia'], values: null }]);
   });
 
-  // ── BP backfill (paired systolic_bp + diastolic_bp at a past date) ──────
-
-  it('commits a complete BP pair as paired systolic_bp + diastolic_bp at its date', () => {
-    const tasks = vitalsBackfillsToTasks(bpBf({ '2024-03-01': { sys: '128', dia: '82' } }), si);
-    expect(tasks).toHaveLength(1);
-    // mmHg has no SI conversion — stored as-is.
-    expect(tasks[0]).toEqual({ date: '2024-03-01', values: { systolic_bp: 128, diastolic_bp: 82 } });
-  });
-
-  it('does NOT commit a half-entered BP pair (one field blank)', () => {
-    expect(vitalsBackfillsToTasks(bpBf({ '2024-03-01': { sys: '128', dia: '' } }), si)).toEqual([]);
-    expect(vitalsBackfillsToTasks(bpBf({ '2024-03-01': { sys: '', dia: '82' } }), si)).toEqual([]);
-  });
-
-  it('does NOT commit a mid-typed out-of-range BP pair', () => {
-    // dia "8" on the way to "80" — must not land.
-    expect(vitalsBackfillsToTasks(bpBf({ '2024-03-01': { sys: '128', dia: '8' } }), si)).toEqual([]);
-  });
-
-  it('merges a BP backfill and a weight backfill at the same date into one task', () => {
-    const tasks = vitalsBackfillsToTasks(
-      {
-        simple: { '2024-03-01|weight': '82' },
-        bp: { '2024-03-01': { sys: '128', dia: '82' } },
-      },
-      si,
-    );
-    expect(tasks).toHaveLength(1);
-    expect(tasks[0]).toEqual({
-      date: '2024-03-01',
-      values: { weight: 82, systolic_bp: 128, diastolic_bp: 82 },
-    });
+  it('keeps a weight and a BP pair in one column as two cells', () => {
+    expect(vitalsCellsOf({ weight: '82', sys: '128', dia: '82' }, si)).toEqual([
+      { keys: ['weight'], values: { weight: 82 } },
+      { keys: ['sys', 'dia'], values: { systolic_bp: 128, diastolic_bp: 82 } },
+    ]);
   });
 });

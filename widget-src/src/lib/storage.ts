@@ -96,14 +96,28 @@ export function clearLocalStorage(): void {
 export const DOC_KEY_PREFIX = 'health_roadmap_doc_v2:';
 /** The blood-test matrix's typed-but-unsaved values (BloodTestTimeline). */
 export const BT_TIMELINE_DRAFT_KEY = 'health_roadmap_bt_timeline_draft';
+/** The vitals matrix's typed-but-unsaved values (StartingInfoVitals). */
+export const VITALS_DRAFT_KEY = 'health_roadmap_vitals_draft';
 
 /**
- * Remove every stored document blob and the unsaved lab-value draft — the
+ * Remove every stored document blob and both matrices' unsaved drafts — the
  * on-device health data an erase would otherwise leave behind.
  */
 export function clearOffFileHealthData(): void {
-  safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
+  clearMatrixDrafts();
   removeByPrefix(DOC_KEY_PREFIX);
+}
+
+/** Fired by `clearMatrixDrafts`: a matrix on screen drops its own copy of
+ *  the draft too (useMatrixDraft), or its next keystroke writes it back. */
+export const DRAFTS_CLEARED_EVENT = 'hr:drafts-cleared';
+
+/** Remove both matrices' unsaved drafts: an erase, made here or on another
+ *  device, leaves none behind (US-11). */
+export function clearMatrixDrafts(): void {
+  safeRemoveItem(BT_TIMELINE_DRAFT_KEY);
+  safeRemoveItem(VITALS_DRAFT_KEY);
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(DRAFTS_CLEARED_EVENT));
 }
 
 /** Remove every stored key under `prefix` (document blobs, named record files). */

@@ -33,7 +33,7 @@ interface ResultsPanelProps {
   unitSystem: UnitSystem;
   unitOverrides?: Partial<Record<MetricType, UnitSystem>>;
   hasUnsavedLongitudinal?: boolean;
-  onSaveLongitudinal?: () => Promise<void>;
+  onSaveLongitudinal?: () => Promise<unknown>;
   onDeleteData?: () => void;
   isDeleting?: boolean;
   sex?: 'male' | 'female';

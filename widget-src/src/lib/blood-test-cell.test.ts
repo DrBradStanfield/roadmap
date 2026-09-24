@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type React from 'react';
-import { validateTypedValue } from './blood-test-cell';
+import { formatDisplayValue, fromCanonicalValue, parseLocalisedNumber, toCanonicalValue } from '@roadmap/health-core';
+import { formatLabValue, sameAsSaved, validateTypedValue } from './blood-test-cell';
 
 // ---------------------------------------------------------------------------
 // Bug: user typed a value in the Lp(a) text box, hit Enter, the value
@@ -174,5 +175,37 @@ describe('bpSysAdvance — systolic → diastolic auto-advance (US-02 AC6)', () 
     expect(bpSysAdvance('300')).toBe('stay');
     expect(bpSysAdvance('')).toBe('stay');
     expect(bpSysAdvance('abc')).toBe('stay');
+  });
+});
+
+// US-03 AC3 / US-04 AC1: a typed value that changes nothing writes nothing.
+// "Nothing" is judged without rounding the number typed: every surface used to
+// round it to the displayed precision first, so 3.24 over a shown 3.2 read as
+// unchanged and the correction was dropped without a word.
+describe('sameAsSaved — a typed value that changes nothing', () => {
+  it('3.24 typed over a shown 3.2 is a change', () => {
+    expect(sameAsSaved(3.24, '3.2', 3.24, 3.2)).toBe(false);
+  });
+
+  it('the shown number typed again, in any spelling, is not', () => {
+    for (const typed of ['3.2', '3.20', ' 3,2 ']) {
+      const n = parseLocalisedNumber(typed)!;
+      expect(sameAsSaved(n, '3.2', n, 3.2)).toBe(true);
+    }
+  });
+
+  it('a lab value typed as it is displayed (1.17) over a stored 1.1655 is not', () => {
+    expect(sameAsSaved(1.17, formatLabValue(1.1655), 1.17, 1.1655)).toBe(true);
+  });
+
+  it('the stored value itself, back from another unit, is not', () => {
+    const stored = 3.4; // mmol/L, shown in mg/dL as 131
+    const typed = fromCanonicalValue('ldl', stored, 'conventional');
+    expect(sameAsSaved(typed, formatDisplayValue('ldl', stored, 'conventional'), toCanonicalValue('ldl', typed, 'conventional'), stored)).toBe(true);
+  });
+
+  it('a change the other unit would round away is a change', () => {
+    const typed = 130; // mg/dL, over a shown 131 (3.4 mmol/L); both read 3.4 mmol/L
+    expect(sameAsSaved(typed, formatDisplayValue('ldl', 3.4, 'conventional'), toCanonicalValue('ldl', typed, 'conventional'), 3.4)).toBe(false);
   });
 });

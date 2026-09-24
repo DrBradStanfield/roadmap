@@ -32,7 +32,7 @@ describe('explicit local-first data path', () => {
     const added = await data.addMeasurement('ldl', 4.2, '2026-08-01');
     expect(added.status).toBe('inserted');
     if (added.status !== 'inserted') throw new Error('measurement was not saved');
-    expect(await data.correctMeasurement(added.row.id, 3.1)).toMatchObject({ status: 'ok' });
+    expect(await data.correctValue(added.row.id, 3.1)).toBe('ok');
     await flushRoadmapStore();
     const persisted = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
     expect(persisted.measurements).toHaveLength(2);

@@ -50,7 +50,7 @@ describe('RoadmapStore.bulkSaveMeasurements with correctsId (US-32)', () => {
   it('a stale correctsId (row already superseded elsewhere) is skipped, never duplicated (US-32)', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter(new MemoryCloud()));
     const oldId = insertedRow(store.addMeasurement('ldl', 4.5, '2024-06-01T00:00:00.000Z')).id;
-    store.correctMeasurement(oldId, 4.0);
+    store.correctValue(oldId, 4.0);
 
     const result = store.bulkSaveMeasurements([
       { metricType: 'ldl', value: 3.2, recordedAt: '2024-06-01T00:00:00.000Z', source: 'lab_import', correctsId: oldId },

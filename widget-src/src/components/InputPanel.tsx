@@ -6,7 +6,7 @@ import { DocumentLightbox } from './DocumentLightbox';
 import { DOCUMENT_TYPE_LABELS, formatDocumentDate } from '../lib/document-format';
 import { openHistoryLightbox } from '../lib/roadmap-data';
 import { isLabArchiveDocument } from '../lib/archive-payloads';
-import type { CorrectFn } from '../lib/matrix-save';
+import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance } from '../lib/blood-test-cell';
 import type { ApiDocument, ApiLabValue, ApiSupplement } from '../lib/api-types';
 
@@ -60,6 +60,8 @@ import {
   validateInputValue,
   isBirthYearClearlyInvalid,
   parseLocalisedNumber,
+  dayOf,
+  localDay,
 } from '@roadmap/health-core';
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
@@ -113,9 +115,12 @@ interface InputPanelProps {
   labValues: ApiLabValue[];
   /** US-21 phase 2: present = manual add enabled; called after a saved add. */
   onLabValueAdded?: () => void;
-  onSaveBloodTestBatch: (date: string, values: Record<string, number>) => Promise<void>;
-  // Click-to-correct handler for saved cells in the BloodTestTimeline matrix.
-  onCorrectBloodTestValue?: CorrectFn;
+  onSaveBloodTestBatch: (tasks: SaveTask[]) => Promise<Refused>;
+  // Click-to-correct handler for saved cells in every matrix: blood tests,
+  // vitals and the additional lab rows.
+  onCorrectValue?: CorrectFn;
+  /** A matrix's draft value as the plan reads it (both matrices). */
+  onDraftValue: (field: keyof HealthInputs, value: number | undefined) => void;
   medications: ApiMedication[];
   onMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
   screenings: ApiScreening[];
@@ -130,10 +135,13 @@ interface InputPanelProps {
    *  a save without waiting for the 500ms tail. */
   flushLongitudinalSave: () => void;
   isSavingLongitudinal: boolean;
+  /** Counts the saves of the first-time vitals fields. */
+  fieldsSaved: number;
   hasApiResponse: boolean;
-  // Forwarded to BloodTestTimeline so the parent (HealthTool) can flush
-  // typed-but-unsaved matrix values before kicking off the upload modal.
+  // Forwarded to each matrix, so the parent (HealthTool) can commit its
+  // draft before the upload modal's own save.
   bloodTestFlushRef?: MutableRefObject<(() => Promise<void>) | null>;
+  vitalsFlushRef?: MutableRefObject<(() => Promise<void>) | null>;
   // Forwarded to BloodTestTimeline so the chatbot can pre-fill a blood-test cell.
   bloodTestPrefillRef?: MutableRefObject<BloodTestPrefillFn | null>;
   // Forwarded to StartingInfoVitals (matrix mode only) so the chatbot can
@@ -170,13 +178,13 @@ export function InputPanel({
   inputs, onChange, errors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
-  onCorrectBloodTestValue,
+  onCorrectValue, onDraftValue,
   medications, onMedicationChange,
   screenings, onScreeningChange,
   supplements, onSupplementChange, onSupplementDelete,
   scheduleLongitudinalSave, flushLongitudinalSave,
-  isSavingLongitudinal, hasApiResponse,
-  bloodTestFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
+  isSavingLongitudinal, fieldsSaved, hasApiResponse,
+  bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   formStage,
   setShowUploadModal, activeSuggestionIds,
   healthDocuments, onDocumentDeleted, onAutoFocusEmail,
@@ -362,16 +370,11 @@ export function InputPanel({
     return toDisplay(field, measurement.value);
   };
 
-  const getPreviousLabel = (field: string): string | null => {
-    const metric = FIELD_METRIC_MAP[field];
-    if (!metric) return null;
-    const measurement = previousMeasurements.find(m => m.metricType === metric);
-    if (!measurement) return null;
-
-    const displayValue = toDisplay(field, measurement.value);
-    const unit = getDisplayLabel(metric, fieldUnit(field));
-    return `${displayValue} ${unit} · ${formatShortDate(measurement.recordedAt)}`;
-  };
+  /** The line over an open field whose metric holds a saved value: "Previous:
+   *  82 kg · 3 Sep", or "Replaces 82 kg" when that value is today's, since one
+   *  day holds one value and what is typed here corrects it (US-03 AC3). */
+  const previousReference = (shown: string, recordedAt: string): string =>
+    dayOf(recordedAt) === localDay(new Date()) ? `Replaces ${shown}` : `Previous: ${shown} · ${formatShortDate(recordedAt)}`;
 
   // Blood-test fields are committed via BloodTestTimeline's own Save button,
   /** Check if a field has a previous saved measurement. */
@@ -383,23 +386,21 @@ export function InputPanel({
   /** Whether any basic vital has saved data (for per-metric collapse). */
   const hasBpPreviousData = (hasPreviousValue('systolicBp') || hasPreviousValue('diastolicBp'));
 
-  // Auto-collapse vitals after save completes
-  const wasSaving = useRef(false);
+  // Close the vitals fields a save emptied. A count of saves, not the saving
+  // flag: React batches the flag's true and false into one render, so an
+  // effect waiting for it to fall never ran and a saved field stayed open.
   useEffect(() => {
-    if (wasSaving.current && !isSavingLongitudinal) {
-      if (bpExpanded && inputs.systolicBp === undefined && inputs.diastolicBp === undefined) {
-        setBpExpanded(false);
-      }
-      setExpandedVitals(prev => {
-        const next = new Set(prev);
-        for (const field of prev) {
-          if (inputs[field as keyof typeof inputs] === undefined) next.delete(field);
-        }
-        return next.size === prev.size ? prev : next;
-      });
+    if (bpExpanded && inputs.systolicBp === undefined && inputs.diastolicBp === undefined) {
+      setBpExpanded(false);
     }
-    wasSaving.current = isSavingLongitudinal;
-  }, [isSavingLongitudinal]);
+    setExpandedVitals(prev => {
+      const next = new Set(prev);
+      for (const field of prev) {
+        if (inputs[field as keyof typeof inputs] === undefined) next.delete(field);
+      }
+      return next.size === prev.size ? prev : next;
+    });
+  }, [fieldsSaved]);
 
   /** Get effective value: current input or fallback to last saved measurement. */
   const getEffective = (field: keyof HealthInputs, metricType: string): number | undefined =>
@@ -499,11 +500,14 @@ export function InputPanel({
     const { field, name, step } = config;
     const effectiveHint = resolveHint(config);
     const r = range(field);
-    const previousLabel = getPreviousLabel(field);
+    const metric = FIELD_METRIC_MAP[field];
+    const previous = metric && previousMeasurements.find(m => m.metricType === metric);
+    const shown = metric && previous ? `${toDisplay(field, previous.value)} ${getDisplayLabel(metric, fieldUnit(field))}` : '';
+    const previousLabel = previous ? `${shown} · ${formatShortDate(previous.recordedAt)}` : null;
     const needsAttention = field === 'weightKg' && formStage === 2 && inputs.weightKg === undefined;
     // In expanded mode with previous data, show "Previous:" reference instead of placeholder
     // (blood tests no longer use this render path — they use BloodTestTimeline).
-    const isExpandedWithData = hasPreviousValue(field) && expandedVitals.has(field);
+    const isExpandedWithData = !!previous && expandedVitals.has(field);
     return (
       <div className={`health-field${needsAttention ? ' field-attention' : ''}`} key={field}>
         <label htmlFor={field}>
@@ -521,8 +525,8 @@ export function InputPanel({
             FIELD_METRIC_MAP[field] ? <span>({getDisplayLabel(FIELD_METRIC_MAP[field]!, fieldUnit(field))})</span> : null
           )}
         </label>
-        {isExpandedWithData && previousLabel && (
-          <span className="previous-reference">Previous: {previousLabel}</span>
+        {isExpandedWithData && previous && (
+          <span className="previous-reference">{previousReference(shown, previous.recordedAt)}</span>
         )}
         <div className="longitudinal-input-row">
           <input
@@ -918,15 +922,15 @@ export function InputPanel({
         inputs={inputs}
         vitalsHistory={vitalsHistory}
         unitSystem={unitSystem}
-        isLoggedIn
         onSave={onSaveBloodTestBatch}
-        onCorrectValue={onCorrectBloodTestValue}
-        onFieldChange={updateField}
+        onCorrectValue={onCorrectValue}
+        onFieldChange={onDraftValue}
         formStage={formStage}
         onAutoFocusEmail={onAutoFocusEmail}
         unitOverrides={unitOverrides}
         onToggleFieldUnit={onToggleFieldUnit}
         prefillRef={vitalsPrefillRef}
+        flushRef={vitalsFlushRef}
       />
     </section>
   );
@@ -937,7 +941,8 @@ export function InputPanel({
   // measurement. Returning users with any saved vitals get the matrix.
   const renderVitalsLegacy = () => {
     const bpData = getBpPreviousData();
-    const bpLabel = bpData ? `${bpData.sysVal}/${bpData.diaVal} mmHg · ${formatShortDate(bpData.latestDate)}` : null;
+    const bpShown = bpData ? `${bpData.sysVal}/${bpData.diaVal} mmHg` : '';
+    const bpLabel = bpData ? `${bpShown} · ${formatShortDate(bpData.latestDate)}` : null;
     return (
       <section className="health-section">
         {BASIC_LONGITUDINAL_FIELDS.map(cfg => {
@@ -960,8 +965,8 @@ export function InputPanel({
                 <a href="https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings/monitoring-your-blood-pressure-at-home" target="_blank" rel="noopener noreferrer">Learn more &rarr;</a>
               </InfoTooltip>
             </label>
-            {bpExpanded && bpLabel && (
-              <span className="previous-reference">Previous: {bpLabel}</span>
+            {bpExpanded && bpData && (
+              <span className="previous-reference">{previousReference(bpShown, bpData.latestDate)}</span>
             )}
             <div className="longitudinal-input-row">
               <div className="bp-fieldset">
@@ -1076,10 +1081,9 @@ export function InputPanel({
       unitSystem={unitSystem}
       unitOverrides={unitOverrides}
       onToggleFieldUnit={onToggleFieldUnit}
-      isLoggedIn
       onSaveBatch={onSaveBloodTestBatch}
-      onCorrectValue={onCorrectBloodTestValue}
-      onFieldChange={updateField}
+      onCorrectValue={onCorrectValue}
+      onFieldChange={onDraftValue}
       isSaving={isSavingLongitudinal}
       sex={inputs.sex}
       onUploadClick={() => setShowUploadModal?.(true)}
@@ -2348,7 +2352,7 @@ export function InputPanel({
       {formStage >= 3 && (
         <div className="section-card section-card--bt stage-reveal">
           {renderBloodTests()}
-          <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded}/>
+          <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded} onCorrect={onCorrectValue}/>
         </div>
       )}
 

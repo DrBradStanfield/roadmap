@@ -86,6 +86,100 @@ describe('US-21 phase 2 — AddLabTest', () => {
     expect(trackProductEvent).not.toHaveBeenCalled();
   });
 
+  // US-21 AC13 (2026-09-22): the notice was a dead end. It now names the value
+  // already there and offers to replace it: a correction through the cell
+  // editor's own door, never a second row.
+  describe('a same-day duplicate', () => {
+    const held = {
+      id: 'held1', metricName: 'ferritin', value: 45, unit: 'µg/L', referenceLow: null, referenceHigh: null,
+      recordedAt: `${todayIso}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso}T08:00:00.000Z`,
+    };
+    function duplicate(value: string) {
+      bulkSaveLabValues.mockResolvedValue({ saved: [], skippedDuplicates: 1, errorCount: 0, refused: [] });
+      const onCorrect = vi.fn().mockResolvedValue('ok');
+      const onAdded = vi.fn();
+      const utils = render(<AddLabTest onAdded={onAdded} labValues={[held]} onCorrect={onCorrect} />);
+      fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+      fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'ferritin' } });
+      fireEvent.change(utils.getByLabelText('Value'), { target: { value } });
+      fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+      return { ...utils, onCorrect, onAdded };
+    }
+
+    it('names the value there and offers Replace, which corrects it', async () => {
+      const { findByRole, getByText, onCorrect, queryByLabelText } = duplicate('54');
+      fireEvent.click(await findByRole('button', { name: 'Replace 45 µg/L with 54' }));
+      expect(getByText('That test already has 45 µg/L for that date.')).toBeTruthy();
+      await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('held1', 54));
+      await waitFor(() => expect(queryByLabelText('Test')).toBeNull()); // the form closes
+      expect(bulkSaveLabValues).toHaveBeenCalledTimes(1); // no second row was tried
+    });
+
+    // US-03 AC3 rule: the number typed is never rounded to decide it changed
+    // nothing. 45.004 displays as 45, yet it is a different number.
+    it('offers Replace for a change the display would round away', async () => {
+      const { findByRole } = duplicate('45.004');
+      expect(await findByRole('button', { name: 'Replace 45 µg/L with 45.004' })).toBeTruthy();
+    });
+
+    it('offers no Replace when the value typed is the value there', async () => {
+      const { findByText, queryByRole, onCorrect } = duplicate('45');
+      expect(await findByText('That test already has 45 µg/L for that date.')).toBeTruthy();
+      expect(queryByRole('button', { name: /^Replace/ })).toBeNull();
+      expect(onCorrect).not.toHaveBeenCalled();
+    });
+
+    it('a Replace the record refuses says why, as the cell editor does', async () => {
+      const { findByRole, findByText, onCorrect, getByLabelText } = duplicate('54');
+      onCorrect.mockResolvedValue('changed'); // corrected on another device meanwhile
+      fireEvent.click(await findByRole('button', { name: 'Replace 45 µg/L with 54' }));
+      expect(await findByText('This value changed on another device, so your edit was not saved.')).toBeTruthy();
+      expect(getByLabelText('Test')).toBeTruthy(); // the form stays open
+    });
+  });
+
+  // US-21 AC13: Replace names one saved value. Change the test's name or unit
+  // and that value is no longer the one the form describes, so the offer goes:
+  // it used to stay, and Replace corrected the first test in the old unit.
+  describe('a same-day duplicate of an "Other" test', () => {
+    const held = {
+      id: 'held2', metricName: 'Feritin', value: 45, unit: 'ug/L', referenceLow: null, referenceHigh: null,
+      recordedAt: `${todayIso}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso}T08:00:00.000Z`,
+    };
+    async function replaceOffered() {
+      bulkSaveLabValues.mockResolvedValue({ saved: [], skippedDuplicates: 1, errorCount: 0, refused: [] });
+      const onCorrect = vi.fn().mockResolvedValue('ok');
+      const utils = render(<AddLabTest onAdded={vi.fn()} labValues={[held]} onCorrect={onCorrect} />);
+      fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+      fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
+      fireEvent.change(utils.getByLabelText('Test name'), { target: { value: 'Feritin' } });
+      fireEvent.change(utils.getByLabelText('Unit'), { target: { value: 'ug/L' } });
+      fireEvent.change(utils.getByLabelText('Value'), { target: { value: '54' } });
+      fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+      await utils.findByRole('button', { name: 'Replace 45 µg/L with 54' });
+      bulkSaveLabValues.mockResolvedValue({ saved: [{ id: 'new' }], skippedDuplicates: 0, errorCount: 0, refused: [] });
+      return { ...utils, onCorrect };
+    }
+
+    it('a changed name withdraws Replace, and Save adds the test it names', async () => {
+      const { getByLabelText, getByRole, queryByRole, onCorrect } = await replaceOffered();
+      fireEvent.change(getByLabelText('Test name'), { target: { value: 'Folate' } });
+      expect(queryByRole('button', { name: /^Replace/ })).toBeNull();
+      fireEvent.click(getByRole('button', { name: /^save$/i }));
+      await waitFor(() => expect(bulkSaveLabValues).toHaveBeenLastCalledWith([expect.objectContaining({ metricName: 'Folate', value: 54 })]));
+      expect(onCorrect).not.toHaveBeenCalled();
+    });
+
+    it('a changed unit withdraws Replace: a value in another unit is never a correction', async () => {
+      const { getByLabelText, getByRole, queryByRole, onCorrect } = await replaceOffered();
+      fireEvent.change(getByLabelText('Unit'), { target: { value: 'ng/mL' } });
+      expect(queryByRole('button', { name: /^Replace/ })).toBeNull();
+      fireEvent.click(getByRole('button', { name: /^save$/i }));
+      await waitFor(() => expect(bulkSaveLabValues).toHaveBeenLastCalledWith([expect.objectContaining({ metricName: 'Feritin', unit: 'ng/mL' })]));
+      expect(onCorrect).not.toHaveBeenCalled();
+    });
+  });
+
   it('Save is disabled until a test and a parseable value are entered', () => {
     const { getByLabelText, getByRole } = openForm();
     const save = getByRole('button', { name: /^save$/i }) as HTMLButtonElement;

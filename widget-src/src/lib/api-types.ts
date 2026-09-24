@@ -165,12 +165,6 @@ export interface BulkSaveResult {
   errorCount: number;
 }
 
-export type CorrectMeasurementResult =
-  | { status: 'ok'; newId: string }
-  | { status: 'conflict' }
-  | { status: 'not_found' }
-  | { status: 'error' };
-
 export interface BulkLabValuesResult {
   saved: ApiLabValue[];
   /** How many rows were already present (active) at this (user, metric_name, recorded_at). */
