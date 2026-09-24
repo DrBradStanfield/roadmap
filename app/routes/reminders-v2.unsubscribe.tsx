@@ -40,7 +40,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     'Unsubscribe from health reminders?',
     `<p style="color:#555;font-size:15px;line-height:1.5;margin:0 0 24px;">
        You'll stop receiving reminder emails from Dr Brad's health plan tool.
-       Your health data is unaffected — it lives only in your own cloud storage.
+       Your health data is unaffected.
      </p>
      <form method="post">
        <button type="submit" style="background:#dc3545;color:#fff;border:none;border-radius:6px;padding:12px 28px;font-size:15px;font-weight:600;cursor:pointer;">

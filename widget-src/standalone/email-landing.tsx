@@ -44,7 +44,11 @@ export function takeEmailFlag(): boolean {
  * visitor then firing results_viewed or cloud_connect_success.
  */
 export async function emailLandingApplies(fromEmail: boolean, state: StorageState): Promise<boolean> {
-  if (!fromEmail || state !== 'guest' || hasSavedRecord(await loadLatestMeasurements())) return false;
+  if (!fromEmail || state !== 'guest') return false;
+  // Awaited before the widget mounts: a read that fails shows no notice,
+  // never a rejection into an empty mount (US-09 AC16).
+  const empty = await loadLatestMeasurements().then((result) => !hasSavedRecord(result), () => false);
+  if (!empty) return false;
   trackProductEvent('email_landing_empty');
   return true;
 }
@@ -59,7 +63,8 @@ export function EmailLandingNotice() {
       <span className="hr-sync-status">Looking for your plan?</span>
       <p className="hr-sync-detail">
         If you saved it to Google Drive or Dropbox, connect it and it loads. If not, it stays only in the
-        browser you made it in, and Safari can clear that after a week without a visit. Your PDF still has it.
+        browser you made it in, and Safari can clear that after a week without a visit. Your PDF still has it,
+        if you saved one.
       </p>
       <button type="button" className="hr-sync-btn" onClick={openBackendPicker}>Connect</button>
       <button type="button" className="hr-sync-link hr-page-notice-dismiss" onClick={() => setShown(false)}>

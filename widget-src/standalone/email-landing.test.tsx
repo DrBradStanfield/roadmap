@@ -92,6 +92,15 @@ describe('emailLandingApplies (US-22 AC13)', () => {
     expect(await emailLandingApplies(false, 'guest')).toBe(false);
     expect(trackProductEvent).not.toHaveBeenCalled();
   });
+
+  // main() awaits this before the widget mounts, and nothing there catches:
+  // a read that fails must show no notice, never reject into an empty mount
+  // (US-09 AC16; adversarial review of 950844e, 2026-09-25).
+  it('a record that cannot be read shows nothing and never rejects', async () => {
+    vi.spyOn(RoadmapStore.prototype, 'loadLatestMeasurements').mockImplementation(() => { throw new Error('read failed'); });
+    await expect(emailLandingApplies(true, 'guest')).resolves.toBe(false);
+    expect(trackProductEvent).not.toHaveBeenCalled();
+  });
 });
 
 describe('EmailLandingNotice (US-22 AC13)', () => {
@@ -104,7 +113,7 @@ describe('EmailLandingNotice (US-22 AC13)', () => {
     expect(text).toContain('Looking for your plan?');
     expect(text).toContain('If you saved it to Google Drive or Dropbox, connect it and it loads.');
     expect(text).toContain('If not, it stays only in the browser you made it in, and Safari can clear that after a week without a visit.');
-    expect(text).toContain('Your PDF still has it.');
+    expect(text).toContain('Your PDF still has it, if you saved one.');
     expect(text).not.toMatch(/—/);
     fireEvent.click(getByRole('button', { name: 'Connect' }));
     expect(opened).toHaveBeenCalledTimes(1);
