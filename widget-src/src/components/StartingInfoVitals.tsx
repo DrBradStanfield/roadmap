@@ -89,7 +89,8 @@ interface StartingInfoVitalsProps {
 }
 
 /** Inject a vitals value into the matrix from outside (e.g. the chatbot).
- *  `value` is in `fromUnit`; the matrix converts to its own display unit.
+ *  `value` is in `fromUnit`, and the cell keeps it in that unit, as typed;
+ *  it shows in the display unit and is saved exactly (US-03 AC3).
  *  `date` null = today's draft column. BP routes by metric (systolic_bp /
  *  diastolic_bp) into the shared sys/dia cell. Returns the cell key it filled
  *  so the parent can scroll/highlight it (or null for an unhandled metric). */
