@@ -14,8 +14,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   native-frames-only unhandled rejections, or onerror with a single
   `<anonymous>` frame (our bundles always load from real CDN URLs). When the
   minified symbol/pattern greps to nothing in our bundles — ledger-on-sight
-  (Ba`prod, Ka`prod, n.data.split on a Tizen TV, `window.webkit.messageHandlers`
-  in an `unload` listener from GSA's WKWebView bridge, zaloJSV2).
+  (08-25 Ba`prod; 09-03 Ka`prod; 09-04 n.data.split, Tizen TV; 09-10
+  `window.webkit.messageHandlers` in `unload`, GSA's WKWebView; 09-20 zaloJSV2).
 - `[prior][widget]` iOS WebKit-only layout/interaction bugs are a known class
   (CLAUDE.md list: content-box flex default, 280px input min-content, sticky
   in max-content parents). If a fix touches layout, the escape analysis should
@@ -38,8 +38,9 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   from PR #11 — ledger it `wontfix` (expected) on first appearance; its rate
   is the transient-failure trend, worth reading, never "fixing". Same on
   sight for self-generated probes (`level=info` + a non-production
-  `environment` tag, e.g. PR #73's five `bundle-filter-verification` events):
-  match the ids to the verification doc, `wontfix`; only regrowth matters.
+  `environment` tag; 2026-09-07: PR #73's five `bundle-filter-verification`
+  events, ids in docs/sentry-filter-verification-2026-09-07.md): match,
+  `wontfix`; only regrowth matters.
 - `[process][review]` 2026-08-12 — Verify a safety claim at the CALL SITE
   that enforces it, not the helper that implements it (round-1 REJECT: dedup
   helper was sound, but the route gates it behind `if (conversationId)`).
@@ -117,7 +118,7 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   the property `null` (old WebView). One bare read on the path `main()` awaits
   is a blank widget for every shape; `lib/storage.ts`' safe accessors already
   covered them, and the remembered-backend key was the one caller that
-  bypassed them (6T/6N/6J, US-09 AC16). Escape: every standalone test stubs a
+  bypassed them (6T/6N/6J, US-09 AC16, PR #PRNUM). Escape: every standalone test stubs a
   WORKING localStorage. Audit shortcut: `grep -rn "localStorage\." widget-src
   --include=*.ts* | grep -v test` — anything outside lib/storage.ts and a
   try/catch is this class again. Same run: a scrub that keeps only closed tags
