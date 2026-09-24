@@ -48,7 +48,7 @@
       "hypertension-in-adults"
     ],
     "category": "cardiovascular",
-    "notes": "abbreviation"
+    "notes": "abbreviation 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): passes both final arms (∅ 6/6 on the original arms) — rule 6 abbreviation example; the sibling guard \"MI is low in my blood test\" (expected empty) is empty 6/6 on the final prompt."
   },
   {
     "query": "My chest hurts when I walk up stairs",
@@ -650,7 +650,8 @@
     "expected": [
       "pain-in-spinal-cord-impairment-sci"
     ],
-    "category": "symptomatic"
+    "category": "symptomatic",
+    "notes": " 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): passes one final arm, 2/3 on the other (acute-neurosurgery-assessment on the third run); passes both original arms. Noise-level under the final prompt; watch. Neurosurgical assessment of a syrinx with new pain is a defensible second route."
   },
   {
     "query": "I'm changing my pad every hour is that normal",
@@ -1230,7 +1231,8 @@
     "expected": [
       "preterm-and-low-birth-weight-infants"
     ],
-    "category": "pediatric"
+    "category": "pediatric",
+    "notes": " 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): guard finding from the adversarial review — two intermediate drafts routed this to constipation-in-palliative-care-and-oncology 3/3 (rule 2 broken for an infant); the final prompt names the population rule inside the selection rule and routes constipation-in-children 6/6 (the fixture still fails only because iron-benefits is not in its expected list)."
   },
   {
     "query": "my son woke up crying his testicle hurts",
@@ -2638,7 +2640,7 @@
     ],
     "category": "cardiovascular",
     "source": "production",
-    "notes": "2026-08-10 chat-health loop: anonymised from a YouTube comment (statins + cognitive decline). Statin-panic post covers cognition/dementia; router returned empty in production."
+    "notes": "2026-08-10 chat-health loop: anonymised from a YouTube comment (statins + cognitive decline). Statin-panic post covers cognition/dementia; router returned empty in production. 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): the medications-in-chronic-pain steal (5/6 on the original arms) is gone; the router now returns hyperlipidaemia (5/6 final-arm runs), whose summary covers statin side effects but not cognition, so the fixture still fails against the statin-panic article. Known-fail, no longer a steal."
   },
   {
     "query": "Short term is it really harmful for eca",
@@ -2676,7 +2678,7 @@
     ],
     "category": "medications",
     "source": "production",
-    "notes": "2026-08-25 chat-health loop (W35): real Shopify turn — brand/sourcing ask about tirzepatide; router returned empty. Three tirzepatide blogs exist (the why-I-take post names Mounjaro/Zepbound); any of them grounds the answer. KNOWN-FAIL (∅ 3/3 at baseline) until a router-prompt change lands (Tier 0 proposal W35)."
+    "notes": "2026-08-25 chat-health loop (W35): real Shopify turn — brand/sourcing ask about tirzepatide; router returned empty. Three tirzepatide blogs exist (the why-I-take post names Mounjaro/Zepbound); any of them grounds the answer. KNOWN-FAIL (∅ 3/3 at baseline) until a router-prompt change lands (Tier 0 proposal W35). 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): the non-insulin-diabetes-medications steal (6/6 on the original arms) is gone; routes the tirzepatide articles on some runs and ∅ on others (fails the 3-run intersection on both final arms). Still a known-fail; no longer a steal."
   },
   {
     "query": "Can you look up the testostrone dossage trials?",
@@ -2728,7 +2730,7 @@
     ],
     "category": "cardiovascular",
     "source": "production",
-    "notes": "2026-09-04 chat-health loop (W36): real Discord turn. Mechanism question about a covered topic; lipoproteina summary shows Lp(a) verbatim; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (refusal, terms visible)."
+    "notes": "2026-09-04 chat-health loop (W36): real Discord turn. Mechanism question about a covered topic; lipoproteina summary shows Lp(a) verbatim; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (refusal, terms visible). 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): ∅ 6/6 on the final arms and 6/6 on the original arms — it passed 3/3 on four intermediate drafts in earlier harness sessions, then returned ∅ on later ones with no change to the relevant wording: cross-session variance; still a known-fail."
   },
   {
     "query": "1. Does Lp(a) respond to diet, if the diet calms chronic bowl diseases? 2. Could you please explain this part more?: \"through areas of endothelial dysfunction or via transcytosis\"",
@@ -2737,7 +2739,7 @@
     ],
     "category": "cardiovascular",
     "source": "production",
-    "notes": "2026-09-04 chat-health loop (W36): real Discord follow-up (verbatim incl. 'bowl' typo). lipoproteina body says Lp(a) is genetic, not lifestyle-driven - directly answers part 1; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: chronic-non-cancer-pain steal 3/3 in harness (∅ in production, which had conversation context)."
+    "notes": "2026-09-04 chat-health loop (W36): real Discord follow-up (verbatim incl. 'bowl' typo). lipoproteina body says Lp(a) is genetic, not lifestyle-driven - directly answers part 1; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: chronic-non-cancer-pain steal 3/3 in harness (∅ in production, which had conversation context). 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): still fails (∅ or a chronic-non-cancer-pain / IBS pick depending on the arm); the bare \"does Lp(a) respond to diet?\" routes 3/3. The quoted-passage half needs conversation context."
   },
   {
     "query": "Could there be other variables affected by K2 that would reduce risks of cardiac related incidents? CAC is only one and nit even the most reliable",
@@ -2748,7 +2750,7 @@
     ],
     "category": "supplement",
     "source": "production",
-    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment on the cardiologists-K2 video (bare-comment path). Self-contained - names K2 and CAC; two K2 entries carry those terms; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: hyperlipidaemia steal 3/3 (selection-side). W38 (2026-09-19) (two arms, 6 runs each): passes 6/6 on today's 1024-entry index and fails 6/6 (∅ or the hyperlipidaemia steal) on the 1022-entry index the W36 run used — the two entries added since (soon-well-forget-what-heart-attacks-are, we-are-witnessing-cancers-downfall) flipped it, not a fix; still a residue shape."
+    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment on the cardiologists-K2 video (bare-comment path). Self-contained - names K2 and CAC; two K2 entries carry those terms; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: hyperlipidaemia steal 3/3 (selection-side). W38 (2026-09-19) (two arms, 6 runs each): passes 6/6 on today's 1024-entry index and fails 6/6 (∅ or the hyperlipidaemia steal) on the 1022-entry index the W36 run used — the two entries added since (soon-well-forget-what-heart-attacks-are, we-are-witnessing-cancers-downfall) flipped it, not a fix; still a residue shape. 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): passes both final arms (hyperlipidaemia steal at this session's baseline)."
   },
   {
     "query": "A vascular surgeon on YouTube recommends vitamin K2, so why do you two see things differently?",
@@ -2758,7 +2760,7 @@
     ],
     "category": "supplement",
     "source": "production",
-    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment, bare-comment path. Third-party-recommender disagreement about K2 - the cardiologists-K2 blog is exactly this topic; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (third-party-recommender shape). W38 (2026-09-19, two arms, 6 runs each): passes 6/6 on today's 1024-entry index (→ vitamin-k-benefits) AND 6/6 on the 1022-entry index the W36 run used (→ cardiologists-K2) — the W36 ∅ 3/3 did not reproduce on an identical index: cross-session variance, not a fix; watch."
+    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment, bare-comment path. Third-party-recommender disagreement about K2 - the cardiologists-K2 blog is exactly this topic; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (third-party-recommender shape). W38 (2026-09-19, two arms, 6 runs each): passes 6/6 on today's 1024-entry index (→ vitamin-k-benefits) AND 6/6 on the 1022-entry index the W36 run used (→ cardiologists-K2) — the W36 ∅ 3/3 did not reproduce on an identical index: cross-session variance, not a fix; watch. 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): passes both final arms with why-arent-cardiologists-prescribing-vitamin-k2 first (an intermediate draft led with the generic K2 reference; the rule-6 example now says Brad's article first per rule 4). Expected list unchanged."
   },
   {
     "query": "But I took natto almost everyday, that is like 350-600 mcg of vitamin k2. Should I stop my natto?",
@@ -2769,7 +2771,7 @@
     ],
     "category": "supplement",
     "source": "production",
-    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment, bare-comment path. Self-contained should-I-stop question naming K2 and dose; cardiologists-K2 summary carries MK-7 dosing verbatim; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (should-I-stop shape survives the Rule 6 fix). W38 (2026-09-19) (two arms, 6 runs each): passes 6/6 on today's 1024-entry index and fails ∅ 6/6 on the 1022-entry index the W36 run used — the two entries added since (soon-well-forget-what-heart-attacks-are, we-are-witnessing-cancers-downfall) flipped it, not a fix; still a residue shape."
+    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment, bare-comment path. Self-contained should-I-stop question naming K2 and dose; cardiologists-K2 summary carries MK-7 dosing verbatim; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (should-I-stop shape survives the Rule 6 fix). W38 (2026-09-19) (two arms, 6 runs each): passes 6/6 on today's 1024-entry index and fails ∅ 6/6 on the 1022-entry index the W36 run used — the two entries added since (soon-well-forget-what-heart-attacks-are, we-are-witnessing-cancers-downfall) flipped it, not a fix; still a residue shape. 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): passes on all four arms (index-dependent, see W38)."
   },
   {
     "query": "I'd like to have microdose trazepatide. How do I start the process",
@@ -2780,7 +2782,7 @@
     ],
     "category": "medications",
     "source": "production",
-    "notes": "2026-09-05 chat-health loop (W36): real Shopify turn, misspelling verbatim (trazepatide). How-to-start ask about microdosing tirzepatide - the microdosing blog covers it; router returned empty in production. Same practical/consumer class as tirzepatide-company (W35). KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (how-do-I-start shape; same class as tirzepatide-company)."
+    "notes": "2026-09-05 chat-health loop (W36): real Shopify turn, misspelling verbatim (trazepatide). How-to-start ask about microdosing tirzepatide - the microdosing blog covers it; router returned empty in production. Same practical/consumer class as tirzepatide-company (W35). KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (how-do-I-start shape; same class as tirzepatide-company). 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): passes both final arms; passed one of two original arms (noisy)."
   },
   {
     "query": "I have taken your multivitamin capsules for years and bought creatine separately. I switched to your multivitamin powder, the one with the creatine already in it, in my protein shake, and got unbearable headaches both times, so I went back to the capsules.",
@@ -2789,7 +2791,7 @@
     ],
     "category": "supplement",
     "source": "production",
-    "notes": "2026-09-19 chat-health loop (W38 run, covering W37+W38): real Shopify turn 2026-09-06, paraphrased on ingest (Brad's product named as in production; no question mark in the original either). Product-context side-effect report naming creatine three times; the creatine summary names creatine at char 13 and the body covers side effects; router returned empty in production. KNOWN-FAIL at W38 baseline: ∅ 3/3 on both the 1024- and 1022-entry index (see docs/loops/chat-health/2026-W38.md) — product-context shape (router rule 7 Brad's-products bullet); router territory, no summary edit attempted."
+    "notes": "2026-09-19 chat-health loop (W38 run, covering W37+W38): real Shopify turn 2026-09-06, paraphrased on ingest (Brad's product named as in production; no question mark in the original either). Product-context side-effect report naming creatine three times; the creatine summary names creatine at char 13 and the body covers side effects; router returned empty in production. KNOWN-FAIL at W38 baseline: ∅ 3/3 on both the 1024- and 1022-entry index (see docs/loops/chat-health/2026-W38.md) — product-context shape (router rule 7 Brad's-products bullet); router territory, no summary edit attempted. 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): passes both final arms (∅ 6/6 on the original arms) — rule 6 ingredient side-effect example; the product-sourcing sibling (\"What is your creatine source?\") stays empty 6/6 as required."
   },
   {
     "query": "Can you review that cardiologist's big study on taking omega 3s?",
@@ -2816,7 +2818,7 @@
     ],
     "category": "gi",
     "source": "production",
-    "notes": "2026-09-19 chat-health loop (W38 run, covering W37+W38): real Shopify turn 2026-09-07, wording kept as typed (\"the\", not \"my\"; whether the user had recorded labs is unknown — the shopify router_context carries nothing). Own-numbers-shaped interpretation ask; router rule 7 excludes only read-back/correction from routing and the LFT pathway summary carries \"LFT pattern interpretation\"; router returned empty in production. W38 BASELINE (2026-09-19): passes 3/3 AS TYPED; my first paraphrase (\"my\" for \"the\") failed ∅ 3/3 — a one-word change flipped the shape, so the production empty was one router sample, not a shape. Kept as a passing regression case."
+    "notes": "2026-09-19 chat-health loop (W38 run, covering W37+W38): real Shopify turn 2026-09-07, wording kept as typed (\"the\", not \"my\"; whether the user had recorded labs is unknown — the shopify router_context carries nothing). Own-numbers-shaped interpretation ask; router rule 7 excludes only read-back/correction from routing and the LFT pathway summary carries \"LFT pattern interpretation\"; router returned empty in production. W38 BASELINE (2026-09-19): passes 3/3 AS TYPED; my first paraphrase (\"my\" for \"the\") failed ∅ 3/3 — a one-word change flipped the shape, so the production empty was one router sample, not a shape. Kept as a passing regression case. 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): ∅ on all four full-suite arms (passed 3/3 in the W38 gi run) — noisy fixture, not a second-pass target."
   },
   {
     "query": "can you estimate my apob from my non hdl cholesterol",
@@ -2828,6 +2830,6 @@
     ],
     "category": "cardiovascular",
     "source": "production",
-    "notes": "2026-09-19 chat-health loop (W38 run, covering W37+W38): real Shopify turn 2026-09-07 (the turn after the liver one), paraphrased on ingest. Asks to derive ApoB from the user's non-HDL; four index entries cover ApoB and rule 7 keeps only read-back/correction empty, so by the prompt's own rules this routes; router returned empty in production. Re-bucketed from \"own-labs derivation\" to routing miss by the W38 adversarial review. KNOWN-FAIL at W38 baseline: stolen 3/3 by cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects (selection-side; fifth documented attractor — see docs/loops/chat-health/2026-W38.md)."
+    "notes": "2026-09-19 chat-health loop (W38 run, covering W37+W38): real Shopify turn 2026-09-07 (the turn after the liver one), paraphrased on ingest. Asks to derive ApoB from the user's non-HDL; four index entries cover ApoB and rule 7 keeps only read-back/correction empty, so by the prompt's own rules this routes; router returned empty in production. Re-bucketed from \"own-labs derivation\" to routing miss by the W38 adversarial review. KNOWN-FAIL at W38 baseline: stolen 3/3 by cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects (selection-side; fifth documented attractor — see docs/loops/chat-health/2026-W38.md). 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): ∅ 3/3 on every arm (the cholesterol-lowering-supplements steal is gone). A knowledge-shaped twin (\"ApoB vs non-HDL, which matters more?\") routes to hyperlipidaemia 3/3 while the derivation shape returns ∅, so the residue is the derivation SHAPE; a derive/estimate clause was drafted, measured (no effect) and dropped."
   }
 ]

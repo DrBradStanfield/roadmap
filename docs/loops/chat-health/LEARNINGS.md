@@ -139,7 +139,20 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   territory, skip the summary edit. RESIDUE (W36, all fixtures): third-party-
   recommender disagreement, should-I-stop-taking-X, how-do-I-start/obtain,
   and pure mechanism-depth questions still refuse; tirzepatide-company still
-  fails selection-side.
+  fails selection-side. SECOND PASS 2026-09-24 (Brad, issue #63 option 2;
+  trail: [notes/router-second-pass-2026-09.md](notes/router-second-pass-2026-09.md)):
+  rule 6 gained the residue shapes and an unnumbered selection rule ("a
+  NAMED topic beats a THEME neighbour") went between rules 6 and 7. Two
+  full-suite arms each: 273/272 → 278/277, six robust fixes, no two-arm
+  regression, guards unchanged, held-out paraphrases 13 → 15; every
+  documented steal gone (a suppressed steal becomes ∅ unless the named
+  entry is findable). Nine drafts; four regressed CLINICAL routing and were
+  caught only by numbers or the adversarial reviewer (symptom over-refusal,
+  insomnia → sleep guideline, a premature baby → adult palliative entry
+  inside a fixture that fails before AND after, ambiguous "MI" → cardiac).
+  Rules: selection guidance sits BELOW rules 1 and 2 and never empties a
+  match; score like-for-like on ONE fixture file (no widening); one 3-run
+  arm is weak — the same prompt flips 1–2% of fixtures per arm.
 - **2026-09-05 [loop]** The cloud runner is uid 0 (root): chmod-based tests
   can't fail writes, so health-core's US-31 AC8 (`file-adapter.test.ts`)
   fails in this env on a CLEAN tree — verify on clean tree before blaming
