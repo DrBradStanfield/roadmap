@@ -674,17 +674,20 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // Swiper ref for programmatic slide control (tab button clicks)
   const swiperRef = useRef<SwiperType | null>(null);
 
+  // Both effects check `destroyed`: the Swiper renders only under isMobile,
+  // so a viewport crossing the breakpoint destroys it while the ref still
+  // points at it, and a call then throws inside the commit (US-20 AC2).
   // Sync tab button clicks → Swiper
   useEffect(() => {
     const index = activeTab === 'input' ? 0 : activeTab === 'plan' ? 1 : 2;
-    if (swiperRef.current && swiperRef.current.activeIndex !== index) {
+    if (swiperRef.current && !swiperRef.current.destroyed && swiperRef.current.activeIndex !== index) {
       swiperRef.current.slideTo(index);
     }
   }, [activeTab]);
 
   // Re-measure Swiper autoHeight when slide content changes
   useEffect(() => {
-    if (swiperRef.current) {
+    if (swiperRef.current && !swiperRef.current.destroyed) {
       swiperRef.current.updateAutoHeight();
     }
   }, [formStage, supplements, documentHistory]);
