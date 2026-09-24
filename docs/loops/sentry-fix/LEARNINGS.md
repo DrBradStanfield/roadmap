@@ -45,10 +45,9 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   that enforces it, not the helper that implements it (round-1 REJECT: dedup
   helper was sound, but the route gates it behind `if (conversationId)`).
 - `[gotcha][sentry-api]` 2026-08-12 — Issues-list `count` is LIFETIME and
-  `statsPeriod` does not filter the list (valid values only ''/24h/14d);
-  rank by summing `stats[period]` buckets and test newness via `lastSeen` vs
-  the ledger. Only the latest event per issue is retained at current tier —
-  event-history pulls return 1 row.
+  `statsPeriod` shapes only `stats` (''/24h/14d): rank by summing buckets,
+  test newness by `lastSeen` vs the ledger. Only the latest event per issue
+  is retained — event-history pulls return 1 row.
 - `[noise][server]` 2026-08-12 — youtube-bot `logTickError` (handled=yes,
   tag `feature=youtube-bot`) relays upstream Google failures as the exception
   value: OAuth 500s, Cloudflare HTML pages, and (confirmed again 2026-09-08) a
