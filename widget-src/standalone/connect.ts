@@ -25,7 +25,7 @@ import {
 import { dropboxConfig } from './dropbox-config';
 import { clearAutoEnrolBlock } from './reminders';
 import { googleDriveConfig } from './google-config';
-import { clearLocalStorage } from '../src/lib/storage';
+import { clearLocalStorage, safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
 import { recordFailure } from '../src/lib/error-diagnostics';
 import { trackProductEvent } from '../src/lib/server-api';
 import { Sentry } from '../src/lib/sentry';
@@ -166,7 +166,7 @@ export async function liftLocalInto(adapter: StorageAdapter, backend: Backend): 
 export async function finishFormConnect(adapter: StorageAdapter, backend: Backend): Promise<void> {
   await adapter.connect();
   await liftLocalInto(adapter, backend);
-  localStorage.setItem(BACKEND_KEY, backend);
+  rememberBackend(backend);
   trackProductEvent('cloud_connect_success', { provider: backend === 'self-host' ? 'webdav' : backend });
   location.reload();
 }
@@ -207,6 +207,42 @@ export function adapterFor(backend: Backend): StorageAdapter | null {
   }
 }
 
+/** The remembered choice, from a browser that may block storage: a blocked
+ *  read is "nothing remembered", a blocked write is dropped (US-09 AC16). */
+export function rememberedBackend(): Backend | null {
+  return safeGetItem(BACKEND_KEY) as Backend | null;
+}
+export function rememberBackend(backend: Backend): void {
+  safeSetItem(BACKEND_KEY, backend);
+}
+export function forgetBackend(): void {
+  safeRemoveItem(BACKEND_KEY);
+}
+
+/** The remembered choice, or the on-device tier. The credential/token lives
+ *  in each adapter's own storage, so a bare `new Adapter()` reconnects if it's
+ *  still there. Never rejects on a browser that blocks storage: `main()`
+ *  awaits this before the mount is rendered, so a throw here is a blank
+ *  widget (Sentry JAVASCRIPT-REMIX-6T / 6N / 6J, US-09 AC16). */
+export async function resolveRemembered(): Promise<ResolvedBackend> {
+  const remembered = rememberedBackend();
+  const adapter = remembered ? adapterFor(remembered) : null;
+  if (remembered && adapter?.isConnected()) {
+    if (!(adapter instanceof GoogleDriveAdapter)) return { adapter, backend: remembered };
+    // Valid cached token, or a silent refresh through the stateless endpoint
+    // (a fetch — fine at page load, unlike a popup).
+    if (adapter.hasValidToken() || (await adapter.tryServerRefresh())) {
+      return { adapter, backend: 'google-drive' };
+    }
+    // Endpoint unreachable or refresh token revoked. A popup can't open at
+    // page load: run on-device, offer Reconnect, KEEP the remembered choice.
+    return onDeviceFallback('google-drive');
+  }
+  if (remembered) forgetBackend(); // creds gone → fall back, will re-prompt
+
+  return { adapter: new LocalStorageAdapter(), backend: 'local' };
+}
+
 /**
  * Log off this device: sign out of the active cloud and wipe the on-device
  * copy so the next person on a SHARED computer sees nothing. This NEVER deletes
@@ -240,7 +276,7 @@ export async function logOff(backend: Backend): Promise<void> {
   // Also clear the legacy v1 health blob + the authenticated flag (the shared
   // HealthTool source still writes these), so a shared device leaks nothing.
   clearLocalStorage();
-  localStorage.removeItem(BACKEND_KEY);
+  forgetBackend();
   location.reload();
 }
 

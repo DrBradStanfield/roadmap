@@ -13,7 +13,7 @@
 import React, { useEffect, useState } from 'react';
 import { GoogleDriveAdapter, isSyncPending, SYNC_PENDING_EVENT } from '../src/storage';
 import { googleDriveConfig } from './google-config';
-import { adapterFor, BACKEND_KEY, connectRefusal, liftLocalInto, PROVIDER_LABELS, storageState, useBusyRun, type Backend } from './connect';
+import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, PROVIDER_LABELS, rememberBackend, storageState, useBusyRun, type Backend } from './connect';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
@@ -59,7 +59,7 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
       const gd = new GoogleDriveAdapter(googleDriveConfig());
       await gd.connectViaPopup().catch((error: unknown) => { connectRefusal(error); throw error; });
       await liftLocalInto(gd, 'google-drive');
-      localStorage.setItem(BACKEND_KEY, 'google-drive');
+      rememberBackend('google-drive');
       location.reload();
     });
 
@@ -68,7 +68,7 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
   const forgetProvider = (provider: Exclude<Backend, 'local'>): Promise<void> =>
     run(async () => {
       await adapterFor(provider)?.disconnect();
-      localStorage.removeItem(BACKEND_KEY);
+      forgetBackend();
       location.reload();
     });
 

@@ -17,13 +17,7 @@ import { initRoadmapStore, flushRoadmapStoreSync, setPreEraseHook } from '../src
 import { resolveAssistantName, setAssistantName } from '../src/lib/assistant-config';
 import { autoEnrolReminders, cancelRemindersForErase, pushReminderSchedule } from './reminders';
 import { RemindersEnrolledNotice } from './reminders-control';
-import {
-  DropboxAdapter,
-  GoogleDriveAdapter,
-  GitHubAdapter,
-  WebDavAdapter,
-  LocalStorageAdapter,
-} from '../src/storage';
+import { DropboxAdapter, GoogleDriveAdapter } from '../src/storage';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import { SyncControl, RemindersSection } from './sync-control';
@@ -33,11 +27,10 @@ import { HistoryLightboxHost } from './history-lightbox';
 import {
   connectRefusal,
   liftLocalInto,
-  onDeviceFallback,
+  rememberBackend,
+  resolveRemembered,
   startOnBackend,
   storageState,
-  BACKEND_KEY,
-  type Backend,
   type ResolvedBackend,
 } from './connect';
 import { trackProductEvent } from '../src/lib/server-api';
@@ -56,7 +49,7 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
   }
   if (resumed) {
     await liftLocalInto(resumed, 'dropbox');
-    localStorage.setItem(BACKEND_KEY, 'dropbox');
+    rememberBackend('dropbox');
     trackProductEvent('cloud_connect_success', { provider: 'dropbox' });
     return { resolved: { adapter: resumed, backend: 'dropbox' } };
   }
@@ -76,43 +69,12 @@ async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: 
   }
   if (gdResumed) {
     await liftLocalInto(gdResumed, 'google-drive');
-    localStorage.setItem(BACKEND_KEY, 'google-drive');
+    rememberBackend('google-drive');
     trackProductEvent('cloud_connect_success', { provider: 'google-drive' });
     return { resolved: { adapter: gdResumed, backend: 'google-drive' } };
   }
 
   return { resolved: await resolveRemembered(), refused };
-}
-
-/** The remembered choice. The credential/token lives in each adapter's own
- *  storage, so a bare `new Adapter()` reconnects if it's still there. */
-async function resolveRemembered(): Promise<ResolvedBackend> {
-  const remembered = localStorage.getItem(BACKEND_KEY) as Backend | null;
-  if (remembered === 'dropbox') {
-    const dbx = new DropboxAdapter(dropboxConfig());
-    if (dbx.isConnected()) return { adapter: dbx, backend: 'dropbox' };
-  } else if (remembered === 'github') {
-    const gh = new GitHubAdapter();
-    if (gh.isConnected()) return { adapter: gh, backend: 'github' };
-  } else if (remembered === 'self-host') {
-    const wd = new WebDavAdapter();
-    if (wd.isConnected()) return { adapter: wd, backend: 'self-host' };
-  } else if (remembered === 'google-drive') {
-    const gd = new GoogleDriveAdapter(googleDriveConfig());
-    if (gd.isConnected()) {
-      // Valid cached token, or a silent refresh through the stateless endpoint
-      // (a fetch — fine at page load, unlike a popup).
-      if (gd.hasValidToken() || (await gd.tryServerRefresh())) {
-        return { adapter: gd, backend: 'google-drive' };
-      }
-      // Endpoint unreachable or refresh token revoked. A popup can't open at
-      // page load: run on-device, offer Reconnect, KEEP the remembered choice.
-      return onDeviceFallback('google-drive');
-    }
-  }
-  if (remembered) localStorage.removeItem(BACKEND_KEY); // creds gone → fall back, will re-prompt
-
-  return { adapter: new LocalStorageAdapter(), backend: 'local' };
 }
 
 async function main() {

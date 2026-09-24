@@ -66,7 +66,7 @@ import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { clearOffFileHealthData, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
-import { recordFailure } from '../lib/error-diagnostics';
+import { recordFailure, storageFailureClass } from '../lib/error-diagnostics';
 
 /** Re-exported so the widget's own modules keep importing it from the store
  *  that uses it. It is defined in health-core (roadmap-doc.ts) because the
@@ -1018,7 +1018,7 @@ export class RoadmapStore {
       }
       console.warn('Cloud sync failed');
       Sentry.captureException(recordFailure(error, 'Cloud sync failed'), {
-        tags: { area: 'cloud-sync', op: 'persist', backend: this.adapter.id },
+        tags: { area: 'cloud-sync', op: 'persist', backend: this.adapter.id, cause: storageFailureClass(error) },
       });
       return false;
     } finally {
