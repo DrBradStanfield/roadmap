@@ -91,28 +91,17 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   `sanitizeRedirectUrl` REJECTING the payload, i.e. the defense firing, not a
   defect. Ledger `wontfix` on sight; the auth route is grant-excluded, so any
   capture-hygiene change would be propose-only — not worth it at probe volume.
-- `[gap][sentry]` 2026-09-07 — Production `allowUrls` in
-  `widget-src/src/lib/sentry.ts` still names the retired `health-tool.js`, so
-  the SDK drops every exception whose top URL-bearing frame is in
-  `health-plan-v2.js`, its HistoryPanel chunk, `health-upload.js`,
-  `health-chatbot-embed.js`, or the Pages root `health-upload.js` (only
-  `health-site-chat.js` and Pages hashed chunks pass). PARTIAL blind spot:
-  `_isAllowedUrl` walks frames from the last one back, skips `<anonymous>` /
-  `[native code]`, and passes events with no URL at all — which is why the
-  unresolved list is all native-frame noise. Every widget-side "no-op" day in
-  metrics.csv is a lower bound, not evidence of health. Fix was Brad's PR #73,
-  merged 09-08, live from deploy run 58 (09-08 20:59Z). The predicted burst
-  arrived (09-17 run: five main-bundle issues) — one per run, rank by
-  `stats` since 09-08, not lifetime; "newly visible" is not "old" (6G's
-  events are fresh connects). Only the side bundles define
-  `__SENTRY_RELEASE__` (vite.config.chatbot/site-chat/upload), so a
-  `release` tag means a side bundle and its absence means health-plan-v2 —
-  grep the right asset. Two cautions from #73's bot review: `scrubEvent`
-  does not scrub `exception.values[].value`, and storage adapters interpolate
-  document refs (date + sanitized title) into thrown messages — READ TITLES
-  BEFORE pasting them into a report or ledger note; and the probe supplied its
-  stack URLs, so it proved filename acceptance, not live frame shape. Filter
-  start date is undatable from a shallow clone (gotcha below).
+- `[gap][sentry]` 2026-09-07, closed 09-08 — Until Brad's PR #73 (live from
+  deploy run 58, 09-08 20:59Z) production `allowUrls` named the retired
+  `health-tool.js`, so the SDK dropped every main-bundle exception: widget
+  "no-op" days before 09-08 are lower bounds, and issues first seen soon
+  after are newly VISIBLE, not old (6G's events were fresh connects), so rank
+  by `stats` since 09-08. Only the side bundles define `__SENTRY_RELEASE__`
+  (vite.config.chatbot/site-chat/upload): a `release` tag means a side
+  bundle, its absence health-plan-v2 — grep the right asset. Storage
+  adapters put document refs (date + sanitized title) into thrown messages:
+  READ TITLES before pasting them into a report or ledger note (AC7's text
+  scrub catches values, not titles).
 - `[class][widget]` 2026-09-17, root-fixed 2026-09-20 — Anything `main()`
   awaits before `createRoot` is a blank-widget path: an unhandled rejection
   there leaves the mount empty and the user reloads (1-4 loads per session in
@@ -147,6 +136,15 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   must be checked against the merge that brings it back (eraseEpoch, LWW,
   marker timing); a guest view for a signed-in user is a fork, not a fallback,
   and our tests proved only the fallback.
+- `[gotcha][supabase]` 2026-09-24 — `SUPABASE_PRODUCT_HEALTH_KEY` is a Bearer
+  JWT, not an API key: send `apikey: $SUPABASE_ANON_KEY` (a publishable key)
+  + `Authorization: Bearer $SUPABASE_PRODUCT_HEALTH_KEY` (role
+  `product_health_ro`, valid to 2027-08-07; the product-health charter has
+  the recipe). The JWT in `apikey` answers 401 "Invalid API key": every
+  "key rejected" gap this loop reported (08-28, 09-17, 09-20) was that
+  misuse, not a dead key. Funnel column: `event_name`. The role reads
+  product_events, ab_events, feedback, chat_* and reminder_optin_v2 (emails):
+  counts and event names only into a public report, never rows.
 - `[gotcha][process]` 2026-08-14 — Fresh cloud containers start on a detached
   HEAD at origin/main's tip while the local `main` REF lags: diff/typecheck
   comparisons against `main` silently use stale code. `git checkout -B main
