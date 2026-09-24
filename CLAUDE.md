@@ -3,7 +3,7 @@
 Context for Claude Code in this repo. Depth lives in on-demand docs:
 [docs/reference.md](docs/reference.md) (FHIR detail, file inventory, data model,
 A/B, endpoints, gotcha archive) · [docs/deploy-runbook.md](docs/deploy-runbook.md)
-(manual deploy, build flags, two-app split, scaling) ·
+(manual deploy, build flags, two-app split, env vars, scaling) ·
 [docs/architecture-v2.html](docs/architecture-v2.html) (visual system map; the entry point for new threads).
 
 ## Project Overview
@@ -35,10 +35,9 @@ A/B + product events, reminders, Klaviyo, hosted MCP (mcp.drstanfield.com).
   `sourceFileName` for documents, `(metric, recorded_at)` for lab values.
   Full FHIR tables + correction flow: docs/reference.md.
 - Agent surfaces: docs/agent-access.md (contract) · docs/mcp-architecture.md (map).
-- Supabase still holds OPERATIONAL data only (`chat_*`, `guest_chat_sessions`,
-  `ab_*`, `product_events`, `reminder_optin_v2`, `feedback_submissions`,
-  `audit_logs`, `cron_lock`, `profiles`, `youtube_bot_log`, Shopify sessions).
-  No health values, ever.
+- Supabase still holds OPERATIONAL data only (chat, A/B, product events,
+  reminders, feedback, audit, cron lock, Shopify sessions; table list:
+  docs/reference.md). No health values, ever.
 - Two builds, same source: Shopify storefront (`build:shopify-prod`, both
   stores) and GitHub Pages self-host (`build:pages`, no Brad server, BYOK).
   Flags: `VITE_LOCAL_FIRST` (all v2), `VITE_SHOPIFY_SURFACE` (Shopify only —
@@ -60,7 +59,7 @@ before deploying.
 - **`docs/products.md` is the MASTER here — a real tracked file** (inverted
   2026-08-10; claude_business holds the symlink pointing here). Edit it here;
   claude_business edits arrive as uncommitted changes here — sweep-commit them.
-  `scripts/check-symlinks.mjs` blocks committing it as a symlink.
+  `scripts/check-symlinks.mjs` keeps it a REAL file (mode 100644), never a symlink.
 - `docs/blog/*.md` — chatbot blog cache, written by claude_business's
   `/blog-post`. Rebuild: `npx tsx scripts/build-blog-content.ts`.
 - Chatbot work starts at `claude_business/docs/chat-start-here.md`.
@@ -106,18 +105,11 @@ is absent on CI and other machines; edit it there, not here.
 React+TS widget (Vite) · Remix/react-router admin+API (`app/`) · Supabase
 (operational only) · Fly.io ×2 (`health-tool-app` commerce / `health-tool-edu`
 education) · Zod · Vitest · Sentry · Clarity (MCP, 10/day) · Chrome DevTools MCP.
-
-```
-/packages/health-core/src/   calculations, suggestions, validation, units,
-                             mappings, evidence, merge, roadmap-file (+tests)
-/widget-src/src/             React widget (components/, lib/, storage/, hooks/)
-/app/                        server routes (app-proxy HMAC) + libs
-/extensions/health-tool-widget/  built assets + Liquid blocks
-/tools/                      mcp-server.ts + edit-record.ts + get-plan.ts (stdio
-                             MCP + CLI); the rest are test harnesses + ops scripts
-/docs/loops/                 autonomous-loop fleet (constitution + charters)
-```
-Full file-by-file inventory: docs/reference.md.
+Key dirs: `packages/health-core/src/` (calculations, suggestions, validation,
+units, mappings, evidence, merge, roadmap-file, + tests) · `widget-src/src/`
+(React widget) · `app/` (server routes, app-proxy HMAC) · `extensions/health-tool-widget/`
+(built assets + Liquid) · `tools/` (stdio MCP + CLI, harnesses, ops scripts) ·
+`docs/loops/` (loop fleet). File-by-file inventory: docs/reference.md.
 
 ## Commands & Tests
 
@@ -130,18 +122,18 @@ npx vitest run <path>        # single suite
 node scripts/build-guide-html.mjs docs/guides/<g>.md   # publishable guide HTML
 ```
 
-## Deploy
+## Deploy & Environment Variables
 
-**Primary path: CI.** `.github/workflows/deploy.yml` — gate → GitHub Pages
-WebKit smoke → full suite → builds → Sentry maps → Shopify ×2 → Fly ×2
-(`--strategy canary`) → health gates → live WebKit verify. All credentials in
-the `production` environment, which since 2026-09-02 has NO wait timer and NO
-required reviewer: the gate is the only check, and the notification issue is a
-heads-up, not a veto. Trigger: Actions → Deploy → Run workflow, or the Tier 3
-loop pipeline (claude-review → auto-ship → dispatch). Agents cannot trigger
-deploys (auto-mode blocks it) — a human clicks, or auto-ship dispatches.
-**Commit before any deploy** — `fly deploy` ships the working tree.
-Manual/emergency sequence + two-app split detail: docs/deploy-runbook.md.
+**Primary path: CI** (`.github/workflows/deploy.yml`; its stages, the
+manual/emergency sequence and the two-app split: docs/deploy-runbook.md).
+Deploy secrets live ONLY in GitHub's gated `production` environment, which
+since 2026-09-02 has NO wait timer and NO required reviewer: the gate is the
+only check, and the notification issue is a heads-up, not a veto. Trigger:
+Actions → Deploy → Run workflow, or the Tier 3 pipeline (claude-review →
+auto-ship → dispatch). Agents cannot trigger deploys (auto-mode blocks it).
+**Commit before any deploy** — `fly deploy` ships the working tree. `.env`
+has every variable; the list and per-Fly-app secrets: docs/deploy-runbook.md
+§ Environment variables. ANTHROPIC_API_KEY (spend-capped) is the only repo secret.
 
 ## CRITICAL: Security Rules
 
@@ -175,12 +167,11 @@ same commit).
   deploy → verify live (desktop + REAL WebKit) → update story test-status.
 - **Lane B (new feature):** story + ACs FIRST → **declare the usage signal**
   (`product_events` event; unmeasurable features can't be evaluated) → gate
-  check (clinical → three-file sync; merge/security/FHIR → Fable-level
-  judgment) → build with AC-mapped tests → Lane A steps 3–5.
+  check (clinical → three-file sync; merge/security/FHIR → the Fable
+  orchestrator's own judgment) → build with AC-mapped tests → Lane A steps 3–5.
 - **Loops fleet:** [docs/loops/LOOP.md](docs/loops/LOOP.md) constitution +
   thin charters + [REGISTRY.md](docs/loops/REGISTRY.md). Loops are features:
-  registry row + success signal before first run. Tier 3 loops ship code via
-  claude-review → auto-ship (own 30-min veto) → deploy.yml, which runs unpaused.
+  registry row + success signal before first run. Tier 3 ships via auto-ship's 30-min veto.
 - **No staging — production is the acceptance environment.** Small changes,
   deploy promptly, verify immediately; lean on funnel events, Clarity, Sentry.
 
@@ -189,10 +180,9 @@ same commit).
 - **Single branch, main only** for sessions — commit directly, push when
   ready. EXCEPTION: Tier 3 / pipeline code changes go via `claude/` branch +
   PR (that's the review boundary).
-- **Pull first (2026-08-13)** — cloud loops push to `main` on weekends (and
-  sentry-fix daily): start every session, and precede every push, with
-  `git pull --ff-only` (commit local work first per the sweep rule; on
-  divergence, merge deliberately — never force).
+- **Pull first (2026-08-13)** — cloud loops push to `main` (weekends; sentry-fix
+  daily): start every session, and precede every push, with `git pull --ff-only`
+  (commit local work first; on divergence, merge deliberately, never force).
 - **🧹 SWEEP EVERYTHING ON EVERY COMMIT (HARD).** "Commit" means ALL
   uncommitted changes, tracked and untracked, from every session. Never stash
   aside, never reword others' work. Say what you swept. Commit freely; gate
@@ -201,7 +191,7 @@ same commit).
 - **Say "I don't know" over guessing** — a confident wrong answer is worse,
   especially clinically.
 - **Every feature/behavior change includes unit tests**; bug fix = failing
-  test first. Run tests in a Bash subagent (keeps output out of context).
+  test first. Run tests in a `worker` (keeps output out of context).
 - **Debug from data, not theory** — query live rows/DOM/metafields first;
   read code to explain WHY, not to guess WHAT.
 - **Chatbot regressions:** every real miss becomes a fixture —
@@ -212,17 +202,15 @@ same commit).
   misses iOS bugs; theme CSS only reproduces LIVE). Traps: docs/reference.md.
 - **If an approach is failing, stop and re-plan.**
 - **Every gotcha gets archived, same commit as the fix** — symptom / root
-  cause / fix / evidence commit, appended to the docs/reference.md archive.
-  Promote to the curated list below ONLY if it is silent (no error, no test
-  catches it) or repo-wide; domain-specific ones belong in the owning loop's
-  LEARNINGS.md.
-- **Model delegation:** Sonnet sessions escalate ONCE to `fable-advisor`
-  before architecture/clinical/security/merge decisions; Fable sessions
-  delegate mechanical work to `worker` (Sonnet) — in autonomous loops the
-  constitution's Orchestration section governs (workers default to the
-  strongest model; Sonnet only for machine-verified mechanical work). Never set
-  `CLAUDE_CODE_SUBAGENT_MODEL`. Clinical logic, merge semantics, security,
-  FHIR shapes always get Fable-level judgment.
+  cause / fix / evidence commit, in the docs/reference.md archive. Promote to
+  the curated list below ONLY if silent (no error, no test catches it) or
+  repo-wide; domain-specific ones go to the owning loop's LEARNINGS.md.
+- **Model delegation (Brad, 2026-09-24):** the main session runs the latest
+  Fable as orchestrator and keeps the calls: clinical logic, merge semantics,
+  FHIR shapes, security, synthesis. All delegated work goes to `worker`, every
+  adversarial check to a FRESH `adversary`: both Opus 5.5 at max effort, pinned
+  in `.claude/agents/`. Spawn them by name, never with a per-call `model`; never
+  set `CLAUDE_CODE_SUBAGENT_MODEL`; no Sonnet or Haiku. Loops: docs/loops/LOOP.md.
 - **Every adversarial Claude check gets a Codex one beside it** (Brad,
   2026-09-21): `node tools/codex-review.mjs` — skill `codex-review`, contract
   docs/review-format.md, spec US-40. REQUIRED before committing clinical,
@@ -235,24 +223,21 @@ same commit).
 
 - **NEVER `shopify app dev`** (dev preview overrides production; fix:
   `npx shopify app dev clean`). **NEVER DROP TABLE on Supabase** (PostgREST
-  caches OIDs — use `ALTER TABLE ADD COLUMN IF NOT EXISTS`).
-- **`CREATE TABLE IF NOT EXISTS` is a no-op on existing tables** — always pair
-  new columns with `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` (bit us on
-  `lab_values.status`).
+  caches OIDs). **`CREATE TABLE IF NOT EXISTS` is a no-op on existing tables**:
+  add every new column with `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` (bit us
+  on `lab_values.status`).
 - **PostgREST `.update().select()` returns `[]` after a self-mutating WHERE**
   (CAS) though the UPDATE committed — drop the `.select()`, verify with a
   separate SELECT. Silently broke both crons for weeks (`tryAcquireCronLock`).
 - **Server code deep-imports health-core** (`../../packages/health-core/src/…`),
   NEVER `@roadmap/health-core` — no workspace symlink in the Fly Docker build;
   only breaks at deploy.
-- **`docs/products.md` stays a REAL file (mode 100644)** — guard enforces.
 - **Storefront theme `div:empty{display:none}`** collapses empty widget cells
   — hold space with an NBSP.
 - **Never dedup on LLM-generated text** (titles drift between runs) — stable
   IDs only.
-- **Lab-import auto-retries server-side** (up to 4 LLM calls and 8 HTTP
-  attempts per file; counts in docs/reference.md) — failures self-heal, so
-  never add client retries.
+- **Lab-import auto-retries server-side** (retry counts: docs/reference.md), so
+  failures self-heal: never add client retries.
 - **react-router 7.17 exports resolve everything to dist/development** — a
   `generateBundle` guard FAILS THE BUILD if a dep escapes: add it to
   `ssr.noExternal`, never allow-list. Sentry dev frames from
@@ -260,17 +245,5 @@ same commit).
 - **Fly:** deploy from repo root; suspension needs `fly machine start`; "No
   access token" ≠ expired (pass `FLY_API_TOKEN` from `~/.fly/config.yml`,
   never `fly auth login`); canary-deploy anything regenerating package-lock.
-  Shopify Dashboard is read-only — config via toml + deploy; scopes:
-  `write_app_proxy`, `read_customers`, `read_orders`+`read_all_orders`.
-
-## Environment Variables
-
-`.env` has all. Key: SUPABASE_*, SESSION_DATABASE_URL, SENTRY_*, RESEND_*,
-ANTHROPIC_API_KEY, SHOPIFY_*, KLAVIYO_API_KEY/KLAVIYO_LIST_ID (per app).
-Fly-only: MCP_ISSUER, MCP_SEAL_KEYS, MCP_CLIENT_HMAC_KEY,
-OPENAI_APPS_CHALLENGE, GITHUB_ISSUES_TOKEN (edu; the connector files bug reports
-— absent, it hands the user a link), DROPBOX_APP_KEY/SECRET,
-GOOGLE_DRIVE_CLIENT_ID/SECRET (BOTH Fly apps: `health-tool-app` for the widget's
-Google exchange, edu for the MCP's Drive leg). Per-app secrets diverge post-split
-(own SHOPIFY_/KLAVIYO_ pairs; edu omits Discord/YouTube bot tokens). GitHub Actions: deploy secrets live ONLY in the
-gated `production` env; ANTHROPIC_API_KEY (spend-capped) is the only repo secret.
+  Shopify Dashboard is read-only: config via toml + deploy.
+- **Without the `write_app_proxy` scope the app proxy answers a silent 404** (all scopes: docs/reference.md).

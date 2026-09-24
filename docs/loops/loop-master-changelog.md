@@ -5,6 +5,24 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-09-24 (Brad-directed: Fable orchestrates, Opus 5.5 works and
+  reviews):** Orchestration rewritten, identical in both fleets'
+  constitutions. The orchestrator runs on the latest Fable (the trigger pin
+  stays `claude-fable-5-1`) at the model's default effort. Workers AND the
+  pre-delivery reviewer are Opus 5.5 at max effort, spawned by name through
+  the repo's `worker` and `adversary` agents, whose frontmatter pins
+  `model: opus` and `effort: max`; no Sonnet or Haiku, and no per-call
+  `model` (it overrides the pin). The same-tier reviewer is retired. Brad:
+  "we need to make sure that the adversarial agents are Opus 5.5 agents. I
+  don't want them to be Fable agents anymore." Effort, checked in the
+  Claude Code 2.1.280 binary: it reads `CLAUDE_CODE_EFFORT_LEVEL`, and the
+  name `CLAUDE_EFFORT_LEVEL` does not occur in it. So the shared cloud
+  environment's `CLAUDE_EFFORT_LEVEL=medium` (2026-09-07 entry below) does
+  nothing, and Brad may delete it. `CLAUDE_ALWAYS_THINKING`, set beside it,
+  does not occur in the binary either. Never set `CLAUDE_CODE_EFFORT_LEVEL`
+  in the cloud environment: it overrides every agent's frontmatter. Each
+  worker's first line states its effort, and the retro records it. Roadmap
+  196→195 lines; business 198→197.
 - **2026-09-07 (Brad-directed — model, effort, thinking):** Orchestration
   rewritten: orchestrator AND workers default to the strongest model at medium
   effort with thinking on; Sonnet only for machine-verified mechanical work;

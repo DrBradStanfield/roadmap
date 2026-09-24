@@ -1,9 +1,10 @@
 # Independent review contract
 
 The shared mandate for every adversarial reviewer in this repo, whichever
-model runs it: the CI reviewer (`claude-review.yml`), the fresh-Fable check,
-and the local Codex reviewer (`tools/codex-review.mjs`). One contract, so
-findings from different models are comparable.
+model runs it: the CI reviewer (`claude-review.yml`), the fresh Opus 5.5
+adversarial check (the `adversary` agent), and the local Codex reviewer
+(`tools/codex-review.mjs`). One contract, so findings from different models
+are comparable.
 
 ## Mandate
 
