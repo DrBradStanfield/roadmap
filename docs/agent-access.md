@@ -152,7 +152,10 @@ someone's medical history, or lose their data at the next device sync.
     on read brought the two level), the merge reads the field stamps instead, your
     field keeps its old stamp, and your edit can lose to another copy's value.
     `update_profile` stamps only the fields it changes, so for the fields it covers
-    (sex, birth year, birth month, height) use it rather than a hand edit.
+    (sex, birth year, birth month, height) use it rather than a hand edit. To clear a
+    field by hand, set it to `null`; never remove the key. A key that is absent, with
+    no field stamp, reads as never written, so the next merge puts back another
+    copy's value. `update_profile` cannot clear a field.
 
 Validate your result against the schema before you write it back.
 

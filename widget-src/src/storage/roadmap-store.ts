@@ -303,6 +303,10 @@ export class RoadmapStore {
    *  load, then every successful save. A failed save marks the pending mirror
    *  from HERE, so everything typed since it survives the merge back up. */
   private lastSyncedAt = new Date().toISOString();
+  /** Local tier: the stored revision this tab last took in, by a load, a
+   *  re-read or its own write. Never a read it did not merge in, such as a
+   *  save's verify-after-write (US-34 AC6). */
+  private seenRevision: string | null = null;
 
   private constructor(
     private readonly sync: SyncManager<RoadmapFile>,
@@ -318,7 +322,9 @@ export class RoadmapStore {
   static async create(adapter: StorageAdapter): Promise<RoadmapStore> {
     const deviceId = getDeviceId();
     const sync = new SyncManager(adapter, deviceId, ROADMAP_DOC);
+    const revision = adapter instanceof LocalStorageAdapter ? adapter.revision(ROADMAP_FILE_NAME) : null;
     const store = new RoadmapStore(sync, adapter, await sync.load(), deviceId);
+    store.seenRevision = revision;
     // A previous cloud session failed to save and mirrored its changes
     // on-device (see persist()'s catch). Merge them in now and schedule a save
     // to lift them up; the marker clears only once a cloud save succeeds.
@@ -824,14 +830,21 @@ export class RoadmapStore {
     // lands — so the test that the working copy did not move is the working
     // copy itself, not whether a write happens to be in flight now.
     const local = this.file;
+    // Taken before the read: a write landing in between costs a second read,
+    // never a missed one.
+    const revision = this.adapter instanceof LocalStorageAdapter ? this.adapter.revision(ROADMAP_DOC.fileName) : null;
     const merged = mergeFiles(local, await this.sync.load(), this.ctx());
     // A merge always bumps the file's own clock, so the comparison is on the
     // CONTENT, not on a version: re-rendering on every poll would count a
     // change nobody made.
-    if (contentOf(merged) === before) return false;
+    if (contentOf(merged) === before) {
+      this.seenRevision = revision;
+      return false;
+    }
     // A local edit that landed during the read would be lost by taking the
     // merge — it merged against a copy taken before the edit existed.
     if (this.file !== local) return false;
+    this.seenRevision = revision;
     // The counting is HealthTool's: it fires `remote_change_applied` when it
     // has actually re-rendered. The store cannot import the API layer — the
     // v2 builds alias `lib/api` to `lib/roadmap-data`, which imports this
@@ -902,7 +915,7 @@ export class RoadmapStore {
         return;
       }
       startWatch();
-      if (this.adapter instanceof LocalStorageAdapter && !this.adapter.movedElsewhere(ROADMAP_DOC.fileName)) return;
+      if (this.adapter instanceof LocalStorageAdapter && this.adapter.revision(ROADMAP_DOC.fileName) === this.seenRevision) return;
       // The return's catch-up waits out the throttle; it is never dropped. Once
       // it has read, a second trigger may be (focus and visibilitychange fire
       // together).
@@ -938,7 +951,7 @@ export class RoadmapStore {
         const ctx = this.ctx();
         const { body, version } = this.adapter.readSync(ROADMAP_DOC.fileName);
         const merged = ROADMAP_DOC.merge(this.file, ROADMAP_DOC.migrate(body, ctx), ctx);
-        this.adapter.writeSync(ROADMAP_DOC.fileName, merged, version);
+        this.seenRevision = this.adapter.writeSync(ROADMAP_DOC.fileName, merged, version).version;
         this.savedChanges = this.changes;
         if (this.adopt(merged)) notify(REMOTE_CHANGED_EVENT);
         return;
@@ -1049,6 +1062,7 @@ export class RoadmapStore {
         this.dirtyDuringPersist = false;
         const saving = this.changes;
         const result = await this.sync.save(this.file);
+        this.seenRevision = result.version; // what it wrote, never what its verify read
         this.savedChanges = saving;
         // Fold remote changes back in without dropping mutations made during the
         // await; merge is the source of truth for combining the two.

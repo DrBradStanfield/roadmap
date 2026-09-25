@@ -37,8 +37,6 @@ function versionKey(fileName: string): string {
 export class LocalStorageAdapter implements StorageAdapter {
   readonly id = 'local' as const;
   readonly label = 'This device only';
-  /** The revision of each file this tab last read or wrote (US-34 AC6). */
-  private readonly seen = new Map<string, string | null>();
 
   async connect(): Promise<void> {
     /* nothing to authorise */
@@ -69,8 +67,6 @@ export class LocalStorageAdapter implements StorageAdapter {
 
   readSync(fileName: string): ReadResult {
     const raw = safeGetItem(fileKey(fileName));
-    const rev = safeGetItem(versionKey(fileName));
-    this.seen.set(fileName, rev);
     if (raw == null) return { body: null, version: null };
     let body: unknown;
     try {
@@ -78,7 +74,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     } catch (error) {
       throw new StorageError('Local data is corrupt and could not be read.', undefined, error);
     }
-    return { body, version: rev ?? '0' };
+    return { body, version: safeGetItem(versionKey(fileName)) ?? '0' };
   }
 
   writeSync(fileName: string, body: object, expectedVersion: string | null): WriteResult {
@@ -92,23 +88,23 @@ export class LocalStorageAdapter implements StorageAdapter {
       // other's write. SyncManager re-reads & re-merges.
       throw new ConflictError(`expected version ${expectedVersion}, but local is ${current}`);
     }
-    const next = String((Number(current) || 0) + 1);
+    // A count and a random suffix: a record removed (a log-off) and made again
+    // must never repeat a revision a tab has already seen (US-34 AC6). Only
+    // equality is ever asked of it, so an older bundle's plain count checks too.
+    const next = `${(parseInt(current ?? '0', 10) || 0) + 1}-${Math.random().toString(36).slice(2, 10)}`;
     try {
       localStorage.setItem(fileKey(fileName), JSON.stringify(body));
     } catch (error) {
       throw new StorageError('Could not save on this device (local storage may be full).', undefined, error);
     }
     safeSetItem(versionKey(fileName), next);
-    this.seen.set(fileName, next);
     return { version: next };
   }
 
-  /** Whether another tab wrote this file since this tab last read or wrote
-   *  it. One getItem, so a tab can ask each time it comes back: a page
-   *  restored from the back-forward cache, or a suspended iOS tab, can miss
-   *  the `storage` event (US-34 AC6). */
-  movedElsewhere(fileName: string): boolean {
-    return safeGetItem(versionKey(fileName)) !== this.seen.get(fileName);
+  /** The file's stored revision, null when there is none. One getItem, so a
+   *  tab can ask each time it comes back (US-34 AC6). */
+  revision(fileName: string): string | null {
+    return safeGetItem(versionKey(fileName));
   }
 
   /** Another tab's save. The browser fires `storage` in every OTHER tab of

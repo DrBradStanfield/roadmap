@@ -30,8 +30,9 @@ const TODAY = '2026-09-25T00:00:00.000Z';
 function stored(): RoadmapFile {
   return JSON.parse(localStorage.getItem(FILE_KEY)!) as RoadmapFile;
 }
+/** The revision's count; since 2026-09-26 a random suffix follows it. */
 function rev(): number {
-  return Number(localStorage.getItem(REV_KEY));
+  return parseInt(localStorage.getItem(REV_KEY) ?? '0', 10);
 }
 /** Every stored row as "metric value status", sorted. */
 function rows(): string[] {
@@ -708,6 +709,74 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
     expect(values(a)).toEqual([1.4, 82, 83]);
   });
 
+  // Codex R1 on d19f4d8: the save's verify-after-write read took the other
+  // tab's newer revision as seen, though only this tab's own write was taken
+  // in. The event's re-read, held by the throttle, was cancelled at hide, and
+  // the return found the stored revision equal to the seen one.
+  it('a save the verify read saw but the tab never took in is read on the return', async () => {
+    const { a, b, adapterA } = await listeningTabs();
+    await otherTabSaves(b, 'weight', 83); // read at once: the throttle's window opens
+    await vi.advanceTimersByTimeAsync(1_000);
+    const write = adapterA.write.bind(adapterA);
+    vi.spyOn(adapterA, 'write').mockImplementationOnce(async (...args) => {
+      const written = await write(...args);
+      // Tab B writes between this tab's write and its verify read.
+      const other = new LocalStorageAdapter();
+      const { body, version } = other.readSync(ROADMAP_FILE_NAME);
+      const file = body as RoadmapFile;
+      file.measurements.push(createMeasurement({ id: 'b-hdl', metricType: 'hdl', value: 1.4, recordedAt: TODAY, createdAt: TODAY }));
+      other.writeSync(ROADMAP_FILE_NAME, file, version);
+      return written;
+    });
+    a.addMeasurement('ldl', 3.1, TODAY);
+    await a.flush();
+    storageEvent(); // B's event: held for the end of the window
+    expect(values(a)).toEqual([3.1, 82, 83]);
+
+    setVisibility('hidden'); // the held re-read is cancelled
+    await vi.advanceTimersByTimeAsync(10_000);
+    setVisibility('visible');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(values(a)).toEqual([1.4, 3.1, 82, 83]);
+  });
+
+  // Codex R2 on d19f4d8: revisions counted up from 1, so a removal (a log-off
+  // in another tab) and a new guest's first save made revision 1 again, and a
+  // hidden tab that had seen the old revision 1 took the new record for it.
+  it('a record removed and made again at the same count is read on the return', async () => {
+    await new LocalStorageAdapter().write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'dev_seed', now: TODAY }), null);
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    const a = await RoadmapStore.create(new LocalStorageAdapter());
+    stops.push(a.startLiveRefresh());
+    setVisibility('hidden');
+
+    await new LocalStorageAdapter().disconnect(); // another tab logs off
+    const next = createEmptyFile({ deviceId: 'dev_next', now: TODAY });
+    next.measurements.push(createMeasurement({ id: 'n1', metricType: 'weight', value: 70, recordedAt: TODAY, createdAt: TODAY }));
+    await new LocalStorageAdapter().write(ROADMAP_FILE_NAME, next, null); // a new guest's first save
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    setVisibility('visible');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(values(a)).toEqual([70]);
+  });
+
+  it('a hide that writes this tab\'s unsaved edit reads nothing on the return', async () => {
+    const { a, adapterA } = await listeningTabs();
+    a.addMeasurement('hdl', 1.4, TODAY); // on the debounce
+    const read = vi.spyOn(adapterA, 'read');
+    const readSync = vi.spyOn(adapterA, 'readSync');
+    setVisibility('hidden');
+    a.flushSync(); // as app.tsx does on hide
+    expect(readSync).toHaveBeenCalledTimes(1); // the hide's own read-merge-write
+    await vi.advanceTimersByTimeAsync(10_000);
+    setVisibility('visible');
+    window.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(read).not.toHaveBeenCalled();
+    expect(readSync).toHaveBeenCalledTimes(1);
+  });
+
   it('a tab opened hidden still hears a save made before it is first shown', async () => {
     await seed();
     const a = await RoadmapStore.create(new LocalStorageAdapter());
@@ -836,6 +905,28 @@ describe('LocalStorageAdapter — the synchronous write keeps write()\'s version
 
     expect(() => adapter.writeSync(ROADMAP_FILE_NAME, { schemaVersion: 1, tab: 'A' }, version)).toThrow(ConflictError);
     expect(adapter.readSync(ROADMAP_FILE_NAME).body).toEqual({ schemaVersion: 1, tab: 'B' });
+  });
+});
+
+describe('LocalStorageAdapter revisions never repeat, and an old tab\'s numeric ones still check (US-34 AC6)', () => {
+  it('a record made again after a removal gets a revision it never had', async () => {
+    const adapter = new LocalStorageAdapter();
+    const first = await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'd', now: TODAY }), null);
+    await adapter.disconnect();
+    const again = await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'd', now: TODAY }), null);
+    expect(again.version).not.toBe(first.version);
+  });
+
+  it('writes over an old tab\'s numeric revision by equality, and refuses a stale one', () => {
+    const adapter = new LocalStorageAdapter();
+    localStorage.setItem(FILE_KEY, JSON.stringify(createEmptyFile({ deviceId: 'd', now: TODAY })));
+    localStorage.setItem(REV_KEY, '3'); // written by a bundle from before 2026-09-26
+    const { version } = adapter.readSync(ROADMAP_FILE_NAME);
+    expect(version).toBe('3');
+    const { version: next } = adapter.writeSync(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'd', now: TODAY }), '3');
+    expect(next).toMatch(/^4-/);
+    expect(() => adapter.writeSync(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'd', now: TODAY }), '3')).toThrow(ConflictError);
+    expect(localStorage.getItem(REV_KEY)).toBe(next);
   });
 });
 

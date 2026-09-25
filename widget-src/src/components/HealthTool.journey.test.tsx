@@ -1596,7 +1596,7 @@ describe('US-34 AC6: another tab of this browser saves', () => {
   it('the page shows it with no reload, counts it once, and saves nothing of its own', async () => {
     const view = await ldlOnRecord(3.9, '2026-08-01');
     await act(async () => { await flushRoadmapStore(); });
-    const rev = Number(localStorage.getItem('health_roadmap_file_v2_rev'));
+    const rev = parseInt(localStorage.getItem('health_roadmap_file_v2_rev')!, 10);
 
     const otherTab = await RoadmapStore.create(new LocalStorageAdapter());
     otherTab.addMeasurement('ldl', 2.1, '2026-09-01T00:00:00.000Z');
@@ -1610,7 +1610,7 @@ describe('US-34 AC6: another tab of this browser saves', () => {
     expect(vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'remote_change_applied'))
       .toEqual([['remote_change_applied', { backend: 'local' }]]);
     await wait(2_000);
-    expect(Number(localStorage.getItem('health_roadmap_file_v2_rev'))).toBe(rev + 1); // the other tab's save alone
+    expect(parseInt(localStorage.getItem('health_roadmap_file_v2_rev')!, 10)).toBe(rev + 1); // the other tab's save alone
   });
 
   it('a change from another device, on a cloud, counts as the cloud\'s', async () => {
