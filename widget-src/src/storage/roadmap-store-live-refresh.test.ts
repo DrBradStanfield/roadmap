@@ -157,15 +157,15 @@ describe('US-34 AC1 — a remote change reaches the open page', () => {
     expect(store.loadLatestMeasurements().inputs.heightCm).toBe(181);
   });
 
-  it('the local tier never re-reads, even after another tab wrote (a known gap, US-10 AC5)', async () => {
+  it('US-34 AC6 — the local tier re-reads too: another tab\'s write is taken in', async () => {
     localStorage.clear();
     const store = await RoadmapStore.create(new LocalStorageAdapter());
     const otherTab = await RoadmapStore.create(new LocalStorageAdapter());
     otherTab.addMeasurement('weight', 83, '2026-09-25T00:00:00.000Z');
     await otherTab.flush();
 
-    expect(await store.refreshFromRemote()).toBe(false);
-    expect(store.loadAllHistory()).toEqual([]);
+    expect(await store.refreshFromRemote()).toBe(true);
+    expect(store.loadAllHistory().map((m) => m.value)).toEqual([83]);
   });
 });
 
@@ -214,6 +214,20 @@ describe('US-34 AC1 — the provider’s own change signal replaces the timer', 
     await vi.advanceTimersByTimeAsync(120_000);
     expect(refresh).not.toHaveBeenCalled();
     stop();
+  });
+
+  it('US-34 AC6 — the local tier runs no timer: the storage event is its change signal', async () => {
+    localStorage.clear();
+    const store = await RoadmapStore.create(new LocalStorageAdapter());
+    const interval = vi.spyOn(globalThis, 'setInterval');
+    const refresh = vi.spyOn(store, 'refreshFromRemote');
+    const stop = store.startLiveRefresh();
+
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(interval).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
+    stop();
+    interval.mockRestore();
   });
 
   it('still polls every minute for a backend with no change signal', async () => {

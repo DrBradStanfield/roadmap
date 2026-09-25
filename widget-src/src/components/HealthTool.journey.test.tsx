@@ -1578,3 +1578,27 @@ describe('US-11: an erase made on another device', () => {
     expect(chat.context?.ldlC).toBeUndefined();
   });
 });
+
+describe('US-34 AC6: another tab of this browser saves', () => {
+  it('the page shows it with no reload, counts it once, and saves nothing of its own', async () => {
+    // The pages earlier tests left behind still listen: hidden, they stop,
+    // as a hidden tab does. This page starts after, and listens.
+    hidePage();
+    showPage();
+    const view = await ldlOnRecord(3.9, '2026-08-01');
+    await act(async () => { await flushRoadmapStore(); });
+    const rev = Number(localStorage.getItem('health_roadmap_file_v2_rev'));
+
+    const otherTab = await RoadmapStore.create(new LocalStorageAdapter());
+    otherTab.addMeasurement('ldl', 2.1, '2026-09-01T00:00:00.000Z');
+    await otherTab.flush();
+    // The browser tells this tab: jsdom fires no storage event at the window
+    // that wrote, and both tabs share this one.
+    act(() => { window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_file_v2' })); });
+
+    await waitFor(() => expect(ldlTile(view.container)).toBe('2.1 mmol/L'));
+    expect(vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'remote_change_applied')).toHaveLength(1);
+    await wait(2_000);
+    expect(Number(localStorage.getItem('health_roadmap_file_v2_rev'))).toBe(rev + 1); // the other tab's save alone
+  });
+});
