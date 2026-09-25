@@ -237,6 +237,42 @@ describe('docs/health-roadmap-file.schema.json (US-29)', () => {
     expect(result.ok).toBe(true);
   });
 
+  // US-10 AC6, US-29 (Codex, 2026-09-26): rule 13 says to clear a field with
+  // null, and the app writes one itself: a blank numeric screening answer is
+  // parsed to NaN, which JSON writes as null. The schema allowed neither.
+  it('validates a cleared profile field and a cleared numeric screening answer', () => {
+    const file = representativeFile();
+    file.profile = stampFields(file.profile, { heightCm: null as unknown as number }, '2026-05-04T00:00:00Z');
+    file.screenings = stampFields(file.screenings, { lungPackYears: parseFloat('') }, '2026-05-04T00:00:00Z');
+    const merged = migrateFile(JSON.parse(JSON.stringify(mergeFiles(file, representativeFile(), OPTS))), OPTS);
+    expect(merged.profile.heightCm).toBeNull();
+    expect(merged.screenings.lungPackYears).toBeNull();
+    const result = check(merged);
+    expect(result.errors).toBe('No errors');
+    expect(result.ok).toBe(true);
+  });
+
+  it('takes null on every field of both objects, and nothing else new', () => {
+    const CLOCKS = new Set(['updatedAt', 'lamport', 'fieldStamps']);
+    for (const [part, def] of [['profile', 'RoadmapProfile'], ['screenings', 'FileScreenings']] as const) {
+      for (const key of Object.keys(schema.$defs[def].properties).filter((k) => !CLOCKS.has(k))) {
+        const file = representativeFile();
+        (file[part] as unknown as Record<string, unknown>)[key] = null;
+        expect(check(file).errors, `${part}.${key}`).toBe('No errors');
+        (file[part] as unknown as Record<string, unknown>)[key] = { not: 'a value' };
+        expect(check(file).ok, `${part}.${key} object`).toBe(false);
+      }
+    }
+  });
+
+  it('never allows null on a clock', () => {
+    for (const key of ['updatedAt', 'lamport', 'fieldStamps'] as const) {
+      const file = representativeFile();
+      (file.profile as unknown as Record<string, unknown>)[key] = null;
+      expect(check(file).ok, key).toBe(false);
+    }
+  });
+
   it('preserves unknown fields, so a newer app version still validates', () => {
     const file = { ...representativeFile(), brandNewSection: [1, 2, 3] };
     expect(check(file).ok).toBe(true);

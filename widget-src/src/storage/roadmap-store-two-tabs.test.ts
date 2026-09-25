@@ -777,6 +777,32 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
     expect(readSync).toHaveBeenCalledTimes(1);
   });
 
+  // Cross-tab adversary on 94627c0: the re-read's revision is taken BEFORE
+  // the read. Taken after, a write landing between the two would be marked
+  // seen without having been read.
+  it('a write that lands just after a re-read\'s read is caught on the return', async () => {
+    const { a, b, adapterA } = await listeningTabs();
+    const read = adapterA.read.bind(adapterA);
+    vi.spyOn(adapterA, 'read').mockImplementationOnce(async (...args) => {
+      const result = await read(...args);
+      const other = new LocalStorageAdapter(); // tab C writes, unheard
+      const { body, version } = other.readSync(ROADMAP_FILE_NAME);
+      const file = body as RoadmapFile;
+      file.measurements.push(createMeasurement({ id: 'c-hdl', metricType: 'hdl', value: 1.4, recordedAt: TODAY, createdAt: TODAY }));
+      other.writeSync(ROADMAP_FILE_NAME, file, version);
+      return result;
+    });
+    await otherTabSaves(b, 'weight', 83); // the re-read
+    await vi.advanceTimersByTimeAsync(0);
+    expect(values(a)).toEqual([82, 83]);
+
+    setVisibility('hidden');
+    await vi.advanceTimersByTimeAsync(10_000);
+    setVisibility('visible');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(values(a)).toEqual([1.4, 82, 83]);
+  });
+
   it('a tab opened hidden still hears a save made before it is first shown', async () => {
     await seed();
     const a = await RoadmapStore.create(new LocalStorageAdapter());

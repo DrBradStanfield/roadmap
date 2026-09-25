@@ -107,24 +107,24 @@
 
     "RoadmapProfile": {
       "type": "object",
-      "description": "Demographics and display preferences. A singleton merged field by field: each field is last-write-wins (see fieldStamps).",
+      "description": "Demographics and display preferences. A singleton merged field by field: each field is last-write-wins (see fieldStamps). Any field may be null, meaning cleared; the clocks (updatedAt, lamport, fieldStamps) never are.",
       "required": ["updatedAt"],
       "properties": {
         "updatedAt": { "type": "string", "description": "When any field last changed." },
         "lamport": { "type": "number" },
         "fieldStamps": { "$ref": "#/$defs/FieldStamps" },
-        "sex": { "enum": ["male", "female"] },
-        "birthYear": { "type": "number" },
-        "birthMonth": { "type": "number", "description": "1–12." },
-        "heightCm": { "type": "number", "description": "Centimetres." },
-        "unitSystem": { "enum": ["si", "conventional"], "description": "Display units only; stored values are always SI." },
+        "sex": { "enum": ["male", "female", null] },
+        "birthYear": { "type": ["number", "null"] },
+        "birthMonth": { "type": ["number", "null"], "description": "1–12." },
+        "heightCm": { "type": ["number", "null"], "description": "Centimetres." },
+        "unitSystem": { "enum": ["si", "conventional", null], "description": "Display units only; stored values are always SI." },
         "unitOverrides": {
-          "type": "object",
+          "type": ["object", "null"],
           "description": "Per-metric display-unit overrides, keyed by metric type.",
           "additionalProperties": { "enum": ["si", "conventional"] }
         },
         "reportEmailCaptured": {
-          "type": "boolean",
+          "type": ["boolean", "null"],
           "description": "Monotonic: set true once the user submits an email for their plan. Never set back to false."
         }
       }
@@ -302,51 +302,51 @@
 
     "FileScreenings": {
       "type": "object",
-      "description": "The cancer- and bone-screening workflow, as one singleton merged field by field: each answer is last-write-wins (see fieldStamps). Every field is optional. Date fields use 'YYYY-MM' (month precision).",
+      "description": "The cancer- and bone-screening workflow, as one singleton merged field by field: each answer is last-write-wins (see fieldStamps). Every field is optional, and any field may be null, meaning cleared (the app writes null for a blank numeric answer); the clocks (updatedAt, lamport, fieldStamps) never are. Date fields use 'YYYY-MM' (month precision).",
       "required": ["updatedAt"],
       "properties": {
         "updatedAt": { "type": "string", "description": "When any answer last changed." },
         "lamport": { "type": "number" },
         "fieldStamps": { "$ref": "#/$defs/FieldStamps" },
 
-        "colorectalMethod": { "enum": ["fit_annual", "colonoscopy_10yr", "other", "not_yet_started"] },
-        "colorectalLastDate": { "type": "string" },
-        "colorectalResult": { "$ref": "#/$defs/ScreeningResult" },
-        "colorectalFollowupStatus": { "$ref": "#/$defs/ScreeningFollowupStatus" },
-        "colorectalFollowupDate": { "type": "string" },
+        "colorectalMethod": { "enum": ["fit_annual", "colonoscopy_10yr", "other", "not_yet_started", null] },
+        "colorectalLastDate": { "type": ["string", "null"] },
+        "colorectalResult": { "anyOf": [{ "$ref": "#/$defs/ScreeningResult" }, { "type": "null" }] },
+        "colorectalFollowupStatus": { "anyOf": [{ "$ref": "#/$defs/ScreeningFollowupStatus" }, { "type": "null" }] },
+        "colorectalFollowupDate": { "type": ["string", "null"] },
 
-        "breastFrequency": { "enum": ["annual", "biennial", "not_yet_started"] },
-        "breastLastDate": { "type": "string" },
-        "breastResult": { "$ref": "#/$defs/ScreeningResult" },
-        "breastFollowupStatus": { "$ref": "#/$defs/ScreeningFollowupStatus" },
-        "breastFollowupDate": { "type": "string" },
+        "breastFrequency": { "enum": ["annual", "biennial", "not_yet_started", null] },
+        "breastLastDate": { "type": ["string", "null"] },
+        "breastResult": { "anyOf": [{ "$ref": "#/$defs/ScreeningResult" }, { "type": "null" }] },
+        "breastFollowupStatus": { "anyOf": [{ "$ref": "#/$defs/ScreeningFollowupStatus" }, { "type": "null" }] },
+        "breastFollowupDate": { "type": ["string", "null"] },
 
-        "cervicalMethod": { "enum": ["hpv_every_5yr", "pap_every_3yr", "other", "not_yet_started"] },
-        "cervicalLastDate": { "type": "string" },
-        "cervicalResult": { "$ref": "#/$defs/ScreeningResult" },
-        "cervicalFollowupStatus": { "$ref": "#/$defs/ScreeningFollowupStatus" },
-        "cervicalFollowupDate": { "type": "string" },
+        "cervicalMethod": { "enum": ["hpv_every_5yr", "pap_every_3yr", "other", "not_yet_started", null] },
+        "cervicalLastDate": { "type": ["string", "null"] },
+        "cervicalResult": { "anyOf": [{ "$ref": "#/$defs/ScreeningResult" }, { "type": "null" }] },
+        "cervicalFollowupStatus": { "anyOf": [{ "$ref": "#/$defs/ScreeningFollowupStatus" }, { "type": "null" }] },
+        "cervicalFollowupDate": { "type": ["string", "null"] },
 
-        "lungSmokingHistory": { "enum": ["never_smoked", "former_smoker", "current_smoker"] },
-        "lungPackYears": { "type": "number" },
-        "lungScreening": { "enum": ["annual_ldct", "not_yet_started"] },
-        "lungLastDate": { "type": "string" },
-        "lungResult": { "$ref": "#/$defs/ScreeningResult" },
-        "lungFollowupStatus": { "$ref": "#/$defs/ScreeningFollowupStatus" },
-        "lungFollowupDate": { "type": "string" },
+        "lungSmokingHistory": { "enum": ["never_smoked", "former_smoker", "current_smoker", null] },
+        "lungPackYears": { "type": ["number", "null"] },
+        "lungScreening": { "enum": ["annual_ldct", "not_yet_started", null] },
+        "lungLastDate": { "type": ["string", "null"] },
+        "lungResult": { "anyOf": [{ "$ref": "#/$defs/ScreeningResult" }, { "type": "null" }] },
+        "lungFollowupStatus": { "anyOf": [{ "$ref": "#/$defs/ScreeningFollowupStatus" }, { "type": "null" }] },
+        "lungFollowupDate": { "type": ["string", "null"] },
 
-        "prostateDiscussion": { "enum": ["not_yet", "elected_not_to", "will_screen"] },
-        "prostatePsaValue": { "type": "number", "description": "ng/mL." },
-        "prostateLastDate": { "type": "string" },
+        "prostateDiscussion": { "enum": ["not_yet", "elected_not_to", "will_screen", null] },
+        "prostatePsaValue": { "type": ["number", "null"], "description": "ng/mL." },
+        "prostateLastDate": { "type": ["string", "null"] },
 
-        "endometrialDiscussion": { "enum": ["not_yet", "discussed"] },
-        "endometrialAbnormalBleeding": { "enum": ["no", "yes_reported", "yes_need_to_report"] },
+        "endometrialDiscussion": { "enum": ["not_yet", "discussed", null] },
+        "endometrialAbnormalBleeding": { "enum": ["no", "yes_reported", "yes_need_to_report", null] },
 
-        "dexaScreening": { "enum": ["dexa_scan", "not_yet_started"] },
-        "dexaLastDate": { "type": "string" },
-        "dexaResult": { "enum": ["normal", "osteopenia", "osteoporosis", "awaiting"] },
-        "dexaFollowupStatus": { "$ref": "#/$defs/ScreeningFollowupStatus" },
-        "dexaFollowupDate": { "type": "string" }
+        "dexaScreening": { "enum": ["dexa_scan", "not_yet_started", null] },
+        "dexaLastDate": { "type": ["string", "null"] },
+        "dexaResult": { "enum": ["normal", "osteopenia", "osteoporosis", "awaiting", null] },
+        "dexaFollowupStatus": { "anyOf": [{ "$ref": "#/$defs/ScreeningFollowupStatus" }, { "type": "null" }] },
+        "dexaFollowupDate": { "type": ["string", "null"] }
       }
     },
 

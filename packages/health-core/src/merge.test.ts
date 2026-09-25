@@ -483,6 +483,34 @@ describe('mergeFiles — the per-field merge gives one answer in any order (US-1
   });
 });
 
+// US-10 AC6, US-29: null is how a field is cleared (agent-access rule 13), and
+// the app writes one for a blank numeric screening answer.
+describe('mergeFiles — a cleared field is a write like any other (US-10 AC6)', () => {
+  const cleared = null as unknown as number;
+  it('a later null beats an older value, a later value beats an older null, and a cleared field survives a re-merge', () => {
+    const base = emptyFile();
+    base.profile = stampFields(base.profile, { heightCm: 178 }, T0);
+    base.screenings = stampFields(base.screenings, { lungPackYears: 20 }, T0);
+    const clearer = structuredClone(base);
+    clearer.profile = stampFields(clearer.profile, { heightCm: cleared }, T1);
+    clearer.screenings = stampFields(clearer.screenings, { lungPackYears: cleared }, T1);
+    for (const merged of [mergeFiles(clearer, base, OPTS), mergeFiles(base, clearer, OPTS)]) {
+      expect(merged.profile.heightCm).toBeNull();
+      expect(merged.screenings.lungPackYears).toBeNull();
+      // Survives a re-merge with the older value, read back off disk.
+      const again = mergeFiles(JSON.parse(JSON.stringify(merged)) as RoadmapFile, base, OPTS);
+      expect(again.profile.heightCm).toBeNull();
+      expect(again.screenings.lungPackYears).toBeNull();
+    }
+
+    const refill = structuredClone(clearer);
+    refill.profile = stampFields(refill.profile, { heightCm: 180 }, T2);
+    for (const merged of [mergeFiles(refill, clearer, OPTS), mergeFiles(clearer, refill, OPTS)]) {
+      expect(merged.profile.heightCm).toBe(180);
+    }
+  });
+});
+
 // US-10 AC6: the empty record `createEmptyFile` makes for a MISSING file stamps
 // its profile and screenings now. A tab or device that made a removed file
 // again merged that empty object over its own copy, and where the copy's
