@@ -54,6 +54,27 @@ describe('SyncManager.save — read-merge-write (US-10)', () => {
   });
 });
 
+describe('SyncManager.save — making a removed file again (US-10 AC6)', () => {
+  // The read of a missing file migrates to the empty record, stamped now. Merged
+  // over this device's copy, its empty profile and screenings used to win
+  // wherever the copy's lamport was 0 or absent, and the save wrote them empty.
+  it('keeps a profile and screenings whose lamport is 0 or absent', async () => {
+    const adapter = new MemoryAdapter(new MemoryCloud());
+    const sync = new SyncManager(adapter, 'device-a', ROADMAP_DOC, { now: () => '2024-06-01T00:00:00.000Z' });
+    const local = makeFile('device-a');
+    local.profile = { sex: 'female', heightCm: 165, updatedAt: '2024-01-01T00:00:00.000Z' };
+    local.screenings = { colorectalMethod: 'fit_annual', updatedAt: '2024-01-01T00:00:00.000Z', lamport: 0 };
+
+    const { file } = await sync.save(local);
+    const written = await sync.load();
+
+    for (const f of [file, written]) {
+      expect(f.profile).toStrictEqual(local.profile);
+      expect(f.screenings).toStrictEqual(local.screenings);
+    }
+  });
+});
+
 describe('SyncManager.save — eraseEpoch wholesale win (US-10 / US-11)', () => {
   // Regression (fixed 2026-08-07): `migrateFile()` used to drop `meta.eraseEpoch`
   // on every read, so the wholesale-win gate in mergeFiles() never saw the

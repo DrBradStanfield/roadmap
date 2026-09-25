@@ -137,6 +137,8 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
           heightCm: { lamport: 2, updatedAt: '2099-01-01T00:00:00Z', note: 'not a clock' },
           sex: 'not a stamp',
           birthYear: { lamport: 1e308, updatedAt: 42 },
+          unitSystem: {}, // no clock at all: the lowest stamp there is
+          birthMonth: { lamport: 1 },
         },
       },
       screenings: { updatedAt: '2026-06-01T00:00:00Z', lamport: 0, fieldStamps: 'not a map' },
@@ -144,6 +146,8 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     expect(f.profile.fieldStamps).toEqual({
       heightCm: { lamport: 2, updatedAt: META.updatedAt },
       birthYear: { lamport: 1e12, updatedAt: '' },
+      unitSystem: { lamport: 0, updatedAt: '' },
+      birthMonth: { lamport: 1, updatedAt: '' },
     });
     expect(f.screenings).not.toHaveProperty('fieldStamps');
     expect(migrateFile(rawFile(), OPTS).profile).not.toHaveProperty('fieldStamps');

@@ -25,6 +25,7 @@ import { sha256Blob } from '../lib/archive-payloads';
 import {
   buildDocumentRef,
   type BulkRow,
+  CLOCK_KEYS,
   bulkAppendValues,
   splitDocumentRef,
   classifyMedicationChange,
@@ -259,8 +260,6 @@ function contentOf(file: RoadmapFile): string {
   return stableStringify(rest);
 }
 
-const RECORD_CLOCKS = new Set(['updatedAt', 'lamport', 'fieldStamps']);
-
 /**
  * What a person would SEE of the record: `contentOf` with each list read as a
  * set and every record's own clocks (`updatedAt`, `lamport`, `fieldStamps`)
@@ -274,9 +273,9 @@ function visibleContentOf(file: RoadmapFile): string {
   const { meta: _clocks, ...rest } = file;
   const seen: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(rest)) {
-    seen[key] = Array.isArray(value) ? value.map((row) => stableStringify(row, RECORD_CLOCKS)).sort() : value;
+    seen[key] = Array.isArray(value) ? value.map((row) => stableStringify(row, CLOCK_KEYS)).sort() : value;
   }
-  return stableStringify(seen, RECORD_CLOCKS);
+  return stableStringify(seen, CLOCK_KEYS);
 }
 
 export class RoadmapStore {
@@ -743,7 +742,7 @@ export class RoadmapStore {
     // save them either. Carry the decision, never the identity: no token, no
     // email address.
     const priorProvider = this.file.reminderOptIn?.provider ?? null;
-    this.file = migrateFile(null, { deviceId: this.deviceId, now: new Date().toISOString() });
+    this.file = migrateFile(null, this.ctx());
     this.file.meta.eraseEpoch = eraseEpoch;
     if (priorProvider) {
       this.file.reminderOptIn = {
@@ -807,10 +806,11 @@ export class RoadmapStore {
    * a local edit is waiting to go up (the debounce timer, or a save in
    * flight), so the working copy is AHEAD of the cloud and merging a stale
    * read over it would fight the pending write; and the file is missing
-   * (another tab's log-off, a file deleted in the cloud), so there is nothing
-   * to take in. The local tier re-reads another tab's save the same way
-   * (US-34 AC6). A re-read never writes, so a removed record is not put back
-   * here.
+   * (another tab's log-off, a file deleted in the cloud): the empty record it
+   * reads as holds nothing the merge takes over this copy (US-10 AC6), so
+   * there is nothing to take in. The local tier re-reads another tab's save
+   * the same way (US-34 AC6). A re-read never writes, so a removed record is
+   * not put back here.
    */
   async refreshFromRemote(): Promise<boolean> {
     if (this.writePending) return false;
@@ -824,14 +824,7 @@ export class RoadmapStore {
     // lands — so the test that the working copy did not move is the working
     // copy itself, not whether a write happens to be in flight now.
     const local = this.file;
-    // SyncManager.load()'s two steps, with a missing file told apart. The
-    // empty record migrate makes for one stamps its profile and screenings
-    // now, and merged in it would beat this copy's wherever their lamport is 0
-    // or absent.
-    const { body } = await this.adapter.read(ROADMAP_DOC.fileName);
-    if (body == null) return false;
-    const ctx = { deviceId: this.deviceId, now: new Date().toISOString() };
-    const merged = mergeFiles(local, ROADMAP_DOC.migrate(body, ctx), ctx);
+    const merged = mergeFiles(local, await this.sync.load(), this.ctx());
     // A merge always bumps the file's own clock, so the comparison is on the
     // CONTENT, not on a version: re-rendering on every poll would count a
     // change nobody made.
@@ -856,11 +849,16 @@ export class RoadmapStore {
    * already happened. A hidden tab watches and polls nothing — it has no
    * screen to keep up to date, and a phone left on a background tab would
    * spend the day holding a connection open. Its return catches up on what
-   * it missed. Returns the stop.
+   * it missed. The local tier's watch holds no connection, so a hidden tab
+   * keeps it and only notes that another tab saved; its return re-reads only
+   * then, and a lone tab never re-reads at all. Returns the stop.
    */
   startLiveRefresh(): () => void {
     const watchable = !!this.adapter.watch;
+    const local = this.adapter.id === 'local';
     let watching: AbortController | null = null;
+    // Local tier only: another tab saved while this one was hidden.
+    let missed = false;
     // The push a throttled window swallowed. A watch fires once per remote
     // change and then goes quiet — the cursor has moved past it — so dropping
     // one on the throttle would lose that change until the user next came
@@ -874,6 +872,10 @@ export class RoadmapStore {
     // next trigger tries again, and nothing here is waiting on the answer.
     const reread = () => void this.refreshFromRemote().catch(() => {});
     const pushed = () => {
+      if (document.visibilityState === 'hidden') {
+        missed = true;
+        return;
+      }
       if (trailing) return;
       const wait = REMOTE_THROTTLE_MS - (Date.now() - this.lastRefresh);
       if (wait <= 0) {
@@ -893,16 +895,23 @@ export class RoadmapStore {
     };
     const run = () => {
       if (document.visibilityState === 'hidden') {
-        watching?.abort();
-        watching = null;
+        if (!local) {
+          watching?.abort();
+          watching = null;
+        }
         // No read while hidden, a queued one included: it would move the
         // throttle on, and the return's catch-up would be dropped (US-34 AC6).
-        if (trailing) clearTimeout(trailing);
+        if (trailing) {
+          clearTimeout(trailing);
+          missed = true;
+        }
         trailing = null;
         hiddenAt = Date.now();
         return;
       }
       startWatch();
+      if (local && !missed) return;
+      missed = false;
       // The return's catch-up waits out the throttle; it is never dropped. Once
       // it has read, a second trigger may be (focus and visibilitychange fire
       // together).
@@ -912,7 +921,7 @@ export class RoadmapStore {
     const timer = watchable ? null : setInterval(run, REMOTE_POLL_MS);
     document.addEventListener('visibilitychange', run);
     window.addEventListener('focus', run);
-    if (document.visibilityState !== 'hidden') startWatch();
+    if (local || document.visibilityState !== 'hidden') startWatch();
     return () => {
       if (timer) clearInterval(timer);
       if (trailing) clearTimeout(trailing);
@@ -935,7 +944,7 @@ export class RoadmapStore {
     this.cancelDebounce();
     if (this.adapter instanceof LocalStorageAdapter) {
       try {
-        const ctx = { deviceId: this.deviceId, now: new Date().toISOString() };
+        const ctx = this.ctx();
         const { body, version } = this.adapter.readSync(ROADMAP_DOC.fileName);
         const merged = ROADMAP_DOC.merge(this.file, ROADMAP_DOC.migrate(body, ctx), ctx);
         this.adapter.writeSync(ROADMAP_DOC.fileName, merged, version);
@@ -952,6 +961,11 @@ export class RoadmapStore {
   }
 
   // =================================================================== private
+
+  /** The merge context: this device, and now. */
+  private ctx(): SyncContext {
+    return { deviceId: this.deviceId, now: new Date().toISOString() };
+  }
 
   private applyProfileChanges(current: Partial<HealthInputs>, previous: Partial<HealthInputs>): void {
     const changes: Record<string, unknown> = {};
@@ -1047,10 +1061,7 @@ export class RoadmapStore {
         this.savedChanges = saving;
         // Fold remote changes back in without dropping mutations made during the
         // await; merge is the source of truth for combining the two.
-        if (this.adopt(mergeFiles(this.file, result.file, {
-          deviceId: this.deviceId,
-          now: new Date().toISOString(),
-        }))) remoteFolded = true;
+        if (this.adopt(mergeFiles(this.file, result.file, this.ctx()))) remoteFolded = true;
       } while (this.dirtyDuringPersist);
       // Ended before anyone hears of it: a listener that saves again starts a
       // new save, instead of joining this finished one.

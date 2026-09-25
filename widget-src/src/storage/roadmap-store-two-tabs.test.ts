@@ -484,9 +484,7 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
     const write = vi.spyOn(adapterA, 'write');
     const writeSync = vi.spyOn(adapterA, 'writeSync');
 
-    b.addMeasurement('weight', 83, TODAY);
-    await b.flush();
-    storageEvent();
+    await otherTabSaves(b, 'weight', 83);
     await vi.advanceTimersByTimeAsync(0);
 
     expect(values(a)).toEqual([82, 83]);
@@ -531,7 +529,7 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
     expect(heard).toHaveBeenCalledTimes(2);
   });
 
-  it('a hidden tab stops listening, re-reads when shown, and listens again', async () => {
+  it('a hidden tab reads nothing, takes the other tab\'s save in when shown, and hears the next', async () => {
     const { a, b, adapterA } = await listeningTabs();
     const read = vi.spyOn(adapterA, 'read');
     setVisibility('hidden');
@@ -589,9 +587,10 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
   });
 
   it('a return reads once, though visibilitychange and focus both fire, in either order', async () => {
-    const { adapterA } = await listeningTabs();
+    const { b, adapterA } = await listeningTabs();
     const read = vi.spyOn(adapterA, 'read');
     setVisibility('hidden');
+    await otherTabSaves(b, 'weight', 83);
     await vi.advanceTimersByTimeAsync(10_000);
     setVisibility('visible');
     window.dispatchEvent(new Event('focus'));
@@ -599,6 +598,7 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
     expect(read).toHaveBeenCalledTimes(1);
 
     setVisibility('hidden');
+    await otherTabSaves(b, 'hdl', 1.4);
     await vi.advanceTimersByTimeAsync(10_000);
     vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
     window.dispatchEvent(new Event('focus'));
@@ -612,9 +612,7 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
     a.addMeasurement('hdl', 1.4, TODAY); // on the 800 ms debounce
     const read = vi.spyOn(adapterA, 'read');
 
-    b.addMeasurement('weight', 83, TODAY);
-    await b.flush();
-    storageEvent();
+    await otherTabSaves(b, 'weight', 83);
     await vi.advanceTimersByTimeAsync(0);
     expect(read).not.toHaveBeenCalled();
     expect(heard).not.toHaveBeenCalled();
@@ -625,21 +623,53 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
     expect(heard).toHaveBeenCalledTimes(1);
   });
 
-  it('a stale tab\'s profile edit keeps the height the other tab saved (US-10 AC5\'s commonest loss)', async () => {
+  it('the other tab\'s profile edit shows here before this tab saves, and this tab\'s next edit keeps it (US-10 AC5\'s commonest loss)', async () => {
     const { a, b } = await listeningTabs();
     b.saveChangedMeasurements({ sex: 'male', heightCm: 180 }, {});
     await b.flush();
     storageEvent();
     await vi.advanceTimersByTimeAsync(0);
 
-    // A second later, the user sets a birth year in tab A. Profile merges as
-    // one object, last write wins: a tab that had not taken B's in would put
-    // back its own profile, with no height.
+    // Taken in by the re-read alone: the page is told, and shows B's height,
+    // with no save in A to have merged it.
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(a.getPrefillInputs()).toMatchObject({ sex: 'male', heightCm: 180 });
+
+    // A second later, the user sets a birth year in tab A.
     vi.setSystemTime(new Date('2026-09-25T10:00:01.000Z'));
     a.saveChangedMeasurements({ birthYear: 1970 }, {});
     await a.flush();
 
     expect(stored().profile).toMatchObject({ sex: 'male', heightCm: 180, birthYear: 1970 });
+  });
+
+  it('a lone tab re-reads nothing when shown or focused, however often', async () => {
+    const { adapterA } = await listeningTabs();
+    const read = vi.spyOn(adapterA, 'read');
+    for (let round = 0; round < 3; round++) {
+      window.dispatchEvent(new Event('focus'));
+      setVisibility('hidden');
+      await vi.advanceTimersByTimeAsync(10_000);
+      setVisibility('visible');
+      window.dispatchEvent(new Event('focus'));
+      await vi.advanceTimersByTimeAsync(10_000);
+    }
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it('a tab opened hidden still hears a save made before it is first shown', async () => {
+    await seed();
+    const a = await RoadmapStore.create(new LocalStorageAdapter());
+    const b = await RoadmapStore.create(new LocalStorageAdapter());
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    stops.push(a.startLiveRefresh());
+    await otherTabSaves(b, 'weight', 83);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(values(a)).toEqual([82]);
+
+    setVisibility('visible');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(values(a)).toEqual([82, 83]);
   });
 
   it('takes the other tab\'s erase in: the drafts go, the page hears it once, and a later edit is kept', async () => {

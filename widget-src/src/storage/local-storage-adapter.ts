@@ -106,8 +106,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     const heard = (event: StorageEvent) => {
       if (event.key === key || event.key === null) onChange();
     };
-    window.addEventListener('storage', heard);
-    signal.addEventListener('abort', () => window.removeEventListener('storage', heard));
+    window.addEventListener('storage', heard, { signal });
   }
 
   async readDocument(ref: string): Promise<Blob> {

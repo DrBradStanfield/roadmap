@@ -273,7 +273,19 @@ async function printedLdl(view: RenderResult) {
   return ldlTile(new DOMParser().parseFromString(printed, 'text/html').body);
 }
 
+/** Each page's live re-read, stopped when its test ends, as a closed page's
+ *  is. A guest page's listener stays on while hidden (US-34 AC6), so a page an
+ *  earlier test left behind would otherwise take in, and announce, every later
+ *  test's other-tab save. */
+const stops: Array<() => void> = [];
+
 beforeEach(() => {
+  const start = RoadmapStore.prototype.startLiveRefresh;
+  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
+    const stop = start.call(this);
+    stops.push(stop);
+    return stop;
+  });
   vi.useFakeTimers({ shouldAdvanceTime: true });
   localStorage.clear();
   sessionStorage.clear();
@@ -288,6 +300,7 @@ beforeEach(() => {
   upload.onComplete = null;
 });
 afterEach(async () => {
+  for (const stop of stops.splice(0)) stop();
   cleanup();
   showPage();
   await flushRoadmapStore();
@@ -1581,10 +1594,6 @@ describe('US-11: an erase made on another device', () => {
 
 describe('US-34 AC6: another tab of this browser saves', () => {
   it('the page shows it with no reload, counts it once, and saves nothing of its own', async () => {
-    // The pages earlier tests left behind still listen: hidden, they stop,
-    // as a hidden tab does. This page starts after, and listens.
-    hidePage();
-    showPage();
     const view = await ldlOnRecord(3.9, '2026-08-01');
     await act(async () => { await flushRoadmapStore(); });
     const rev = Number(localStorage.getItem('health_roadmap_file_v2_rev'));

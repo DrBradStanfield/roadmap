@@ -301,14 +301,13 @@ describe('mergeFiles — singletons (profile, screenings)', () => {
 
 /** A field's clock, in the shape the file stores it. */
 const at = (lamport: number, updatedAt: string) => ({ lamport, updatedAt });
+const T0 = '2026-05-01T00:00:00Z'; // the copy both devices read
+const T1 = '2026-05-02T09:00:00Z'; // B's write
+const T2 = '2026-05-02T09:05:00Z'; // A's write, later, made without seeing B's
 
 // US-10 AC6: the newest edit to ONE field used to carry its writer's copy of
 // every other field, because the two singletons merged as whole objects.
 describe('mergeFiles — profile and screenings merge field by field (US-10 AC6)', () => {
-  const T0 = '2026-05-01T00:00:00Z'; // the copy both devices read
-  const T1 = '2026-05-02T09:00:00Z'; // B's write
-  const T2 = '2026-05-02T09:05:00Z'; // A's write, later, made without seeing B's
-
   it('B saves a height, then stale A saves a birth year: both survive, whichever side merges', () => {
     const a = emptyFile();
     const b = emptyFile();
@@ -445,11 +444,60 @@ describe('mergeFiles — profile and screenings merge field by field (US-10 AC6)
   });
 });
 
-describe('stampFields — a write stamps only the fields it changes (US-10 AC6)', () => {
-  const T0 = '2026-05-01T00:00:00Z';
-  const T1 = '2026-05-02T09:00:00Z';
-  const T2 = '2026-05-02T09:05:00Z';
+// US-10 AC6: the empty record `createEmptyFile` makes for a MISSING file stamps
+// its profile and screenings now. A tab or device that made a removed file
+// again merged that empty object over its own copy, and where the copy's
+// lamport was 0 or absent the fresh stamp won and emptied it.
+describe('mergeFiles — a profile or screenings that holds no field never wins (US-10 AC6)', () => {
+  const LATER = '2026-06-08T12:00:00Z';
+  const blank = () => createEmptyFile({ deviceId: 'dev_new', now: LATER });
 
+  it('a copy with no lamport, or lamport 0, survives the empty record made for a missing file', () => {
+    const legacy = emptyFile();
+    legacy.profile = { sex: 'male', heightCm: 178, updatedAt: T0 };
+    legacy.screenings = { colorectalMethod: 'colonoscopy_10yr', updatedAt: T0, lamport: 0 };
+    for (const merged of [mergeFiles(legacy, blank(), OPTS), mergeFiles(blank(), legacy, OPTS)]) {
+      // Unchanged, stamp included: a legacy copy does not grow field stamps.
+      expect(merged.profile).toStrictEqual(legacy.profile);
+      expect(merged.screenings).toStrictEqual(legacy.screenings);
+    }
+  });
+
+  it('a stamped copy comes back unchanged, its own stamp and field stamps included', () => {
+    const stamped = emptyFile();
+    stamped.profile = stampFields<RoadmapProfile>({ sex: 'female', updatedAt: T0, lamport: 0 }, { heightCm: 165 }, T1);
+    stamped.screenings = stampFields(stamped.screenings, { breastFrequency: 'annual' }, T1);
+    const empty = blank();
+    empty.profile.lamport = 9; // an empty object's clock says nothing, however high
+    for (const merged of [mergeFiles(stamped, empty, OPTS), mergeFiles(empty, stamped, OPTS)]) {
+      expect(merged.profile).toStrictEqual(stamped.profile);
+      expect(merged.screenings).toStrictEqual(stamped.screenings);
+    }
+  });
+
+  it('two that hold no field keep the older stamp, so a fresh empty record changes nothing', () => {
+    const old = emptyFile();
+    for (const merged of [mergeFiles(old, blank(), OPTS), mergeFiles(blank(), old, OPTS)]) {
+      expect(merged.profile).toStrictEqual(old.profile);
+      expect(merged.screenings).toStrictEqual(old.screenings);
+    }
+  });
+
+  it('a field cleared by a stamped write still speaks: its stamp beats the older value', () => {
+    const cleared = emptyFile();
+    cleared.profile = JSON.parse(JSON.stringify(
+      stampFields({ heightCm: 178, updatedAt: T0, lamport: 1 }, { heightCm: undefined }, T2),
+    ));
+    expect(Object.keys(cleared.profile).sort()).toEqual(['fieldStamps', 'lamport', 'updatedAt']);
+    const other = emptyFile();
+    other.profile = { heightCm: 178, updatedAt: T1, lamport: 1 };
+    for (const merged of [mergeFiles(cleared, other, OPTS), mergeFiles(other, cleared, OPTS)]) {
+      expect(merged.profile).not.toHaveProperty('heightCm');
+    }
+  });
+});
+
+describe('stampFields — a write stamps only the fields it changes (US-10 AC6)', () => {
   it('stamps the fields written one past the object, and keeps every other field\'s clock', () => {
     const before: RoadmapProfile = { sex: 'male', heightCm: 178, updatedAt: T0, lamport: 1 };
     const after = stampFields(before, { heightCm: 180 }, T1);

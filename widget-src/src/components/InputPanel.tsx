@@ -1350,7 +1350,7 @@ export function InputPanel({
         } = effectiveInputs;
 
         // Three modes: cascade (the plan's trigger is on), flat, hidden
-        const weightCascadeMode = weightMedTrigger?.on === true;
+        const weightCascadeMode = !!weightMedTrigger?.on;
 
         // Flat mode: any relevant input entered but no cascade trigger
         const hasAnyWeightInput = effectiveHba1c !== undefined || effectiveTrigs !== undefined
@@ -1525,7 +1525,7 @@ export function InputPanel({
         }
 
         // ── Cascade mode: progressive disclosure, in the plan's words ──
-        const reasons = weightMedTrigger?.reasons ?? [];
+        const reasons = weightMedTrigger.reasons;
 
         return (
           <div className="section-card">
