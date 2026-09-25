@@ -84,8 +84,8 @@ export class LocalStorageAdapter implements StorageAdapter {
     if (expectedVersion !== current) {
       // Best-effort multi-tab guard: catches a tab that wrote in between, on its
       // next save. This is NOT a true cross-tab compare-and-swap (localStorage
-      // has none) — full cross-tab coordination (storage events) is deferred;
-      // this is the single-device tier. SyncManager re-reads & re-merges.
+      // has none): two tabs can read one version before either hears the
+      // other's write. SyncManager re-reads & re-merges.
       throw new ConflictError(`expected version ${expectedVersion}, but local is ${current}`);
     }
     const next = String((Number(current) || 0) + 1);
@@ -96,6 +96,18 @@ export class LocalStorageAdapter implements StorageAdapter {
     }
     safeSetItem(versionKey(fileName), next);
     return { version: next };
+  }
+
+  /** Another tab's save. The browser fires `storage` in every OTHER tab of
+   *  this origin when one tab changes a key (US-34 AC6). Only this file's key
+   *  counts, and a clear(), which names no key. */
+  watch(fileName: string, onChange: () => void, signal: AbortSignal): void {
+    const key = fileKey(fileName);
+    const heard = (event: StorageEvent) => {
+      if (event.key === key || event.key === null) onChange();
+    };
+    window.addEventListener('storage', heard);
+    signal.addEventListener('abort', () => window.removeEventListener('storage', heard));
   }
 
   async readDocument(ref: string): Promise<Blob> {

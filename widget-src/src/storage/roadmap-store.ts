@@ -809,12 +809,14 @@ export class RoadmapStore {
    * nothing changed — including every case where re-reading would be wrong:
    * a local edit is waiting to go up (the debounce timer, or a save in
    * flight), so the working copy is AHEAD of the cloud and merging a stale
-   * read over it would fight the pending write. The local tier never
-   * re-reads, a known gap: another tab's write reaches this one only at its
-   * next save (US-10 AC5).
+   * read over it would fight the pending write; and the file is missing
+   * (another tab's log-off, a file deleted in the cloud), so there is nothing
+   * to take in. The local tier re-reads another tab's save the same way
+   * (US-34 AC6). A re-read never writes, so a removed record is not put back
+   * here.
    */
   async refreshFromRemote(): Promise<boolean> {
-    if (this.adapter.id === 'local' || this.writePending) return false;
+    if (this.writePending) return false;
     const at = Date.now();
     if (at - this.lastRefresh < REMOTE_THROTTLE_MS) return false;
     this.lastRefresh = at;
@@ -825,10 +827,14 @@ export class RoadmapStore {
     // lands — so the test that the working copy did not move is the working
     // copy itself, not whether a write happens to be in flight now.
     const local = this.file;
-    const merged = mergeFiles(local, await this.sync.load(), {
-      deviceId: this.deviceId,
-      now: new Date().toISOString(),
-    });
+    // SyncManager.load()'s two steps, with a missing file told apart. The
+    // empty record migrate makes for one stamps its profile and screenings
+    // now, and merged in it would beat this copy's wherever their lamport is 0
+    // or absent.
+    const { body } = await this.adapter.read(ROADMAP_DOC.fileName);
+    if (body == null) return false;
+    const ctx = { deviceId: this.deviceId, now: new Date().toISOString() };
+    const merged = mergeFiles(local, ROADMAP_DOC.migrate(body, ctx), ctx);
     // A merge always bumps the file's own clock, so the comparison is on the
     // CONTENT, not on a version: re-rendering on every poll would count a
     // change nobody made.
@@ -852,7 +858,8 @@ export class RoadmapStore {
    * paying for it anyway would be a round trip a second apart from a push that
    * already happened. A hidden tab watches and polls nothing — it has no
    * screen to keep up to date, and a phone left on a background tab would
-   * spend the day holding a connection open. Returns the stop.
+   * spend the day holding a connection open. Its return catches up on what
+   * it missed. Returns the stop.
    */
   startLiveRefresh(): () => void {
     const watchable = !!this.adapter.watch;
@@ -862,6 +869,9 @@ export class RoadmapStore {
     // one on the throttle would lose that change until the user next came
     // back to the tab. It waits out the window instead.
     let trailing: ReturnType<typeof setTimeout> | null = null;
+    // When the tab last hid. A re-read before then cannot have seen what the
+    // hidden tab missed.
+    let hiddenAt = 0;
 
     // A failed re-read is not the user's problem and not a lost write: the
     // next trigger tries again, and nothing here is waiting on the answer.
@@ -888,10 +898,19 @@ export class RoadmapStore {
       if (document.visibilityState === 'hidden') {
         watching?.abort();
         watching = null;
+        // No read while hidden, a queued one included: it would move the
+        // throttle on, and the return's catch-up would be dropped (US-34 AC6).
+        if (trailing) clearTimeout(trailing);
+        trailing = null;
+        hiddenAt = Date.now();
         return;
       }
       startWatch();
-      reread();
+      // The return's catch-up waits out the throttle; it is never dropped. Once
+      // it has read, a second trigger may be (focus and visibilitychange fire
+      // together).
+      if (this.lastRefresh <= hiddenAt) pushed();
+      else reread();
     };
     const timer = watchable ? null : setInterval(run, REMOTE_POLL_MS);
     document.addEventListener('visibilitychange', run);

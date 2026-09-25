@@ -222,9 +222,9 @@ export interface StorageAdapter {
    * Returns nothing and never rejects — the loop owns its own errors and its
    * own backoff. `signal` is the only way it ends; an aborted signal must stop
    * every request. Backends with no push (GitHub and WebDAV have no cheap
-   * watch) omit it and the store falls back to its slow poll. localStorage
-   * omits it too, a known gap: another tab's write reaches a tab only at its
-   * next save (US-10 AC5).
+   * watch) omit it and the store falls back to its slow poll. localStorage's
+   * watch is the browser's `storage` event, which tells every other tab of
+   * the origin that one tab wrote (US-34 AC6).
    */
   watch?(fileName: string, onChange: () => void, signal: AbortSignal): void;
 }

@@ -430,6 +430,322 @@ describe('US-11 AC7 — an erase beats what it has not seen, and says so only on
   });
 });
 
+/**
+ * What the browser does in every OTHER tab of this origin when one tab
+ * changes a key. jsdom has one window for both stores, and fires no storage
+ * event at the window that made the change, so the test fires it for tab A.
+ * `key` null is a clear().
+ */
+function storageEvent(key: string | null = FILE_KEY, newValue: string | null = localStorage.getItem(FILE_KEY)): void {
+  window.dispatchEvent(new StorageEvent('storage', { key, newValue }));
+}
+
+/** Each listening tab's stop, run after its test, passed or failed. */
+let stops: Array<() => void> = [];
+
+/** Tab A on screen and listening, as `initRoadmapStore` starts it. */
+async function listeningTabs(): Promise<{ a: RoadmapStore; b: RoadmapStore; adapterA: LocalStorageAdapter }> {
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+  const adapterA = new LocalStorageAdapter();
+  const [a, b] = await twoTabs(adapterA);
+  stops.push(a.startLiveRefresh());
+  return { a, b, adapterA };
+}
+
+const values = (store: RoadmapStore) => store.loadAllHistory().map((m) => m.value).sort((x, y) => x - y);
+
+/** The tab hidden, or shown again, as the browser reports it. */
+function setVisibility(state: 'hidden' | 'visible'): void {
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state);
+  document.dispatchEvent(new Event('visibilitychange'));
+}
+
+/** Another tab saves a row, and the browser tells tab A. */
+async function otherTabSaves(b: RoadmapStore, metric: string, value: number): Promise<void> {
+  b.addMeasurement(metric, value, TODAY);
+  await b.flush();
+  storageEvent();
+}
+
+describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () => {
+  let heard: ReturnType<typeof vi.fn>;
+  beforeEach(() => {
+    heard = vi.fn();
+    window.addEventListener(REMOTE_CHANGED_EVENT, heard);
+  });
+  afterEach(() => {
+    window.removeEventListener(REMOTE_CHANGED_EVENT, heard);
+    for (const stop of stops) stop();
+    stops = [];
+  });
+
+  it('takes in a row the other tab saved: the page hears it once, and this tab saves nothing', async () => {
+    const { a, b, adapterA } = await listeningTabs();
+    const write = vi.spyOn(adapterA, 'write');
+    const writeSync = vi.spyOn(adapterA, 'writeSync');
+
+    b.addMeasurement('weight', 83, TODAY);
+    await b.flush();
+    storageEvent();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(values(a)).toEqual([82, 83]);
+    expect(a.loadLatestMeasurements().previousMeasurements.map((m) => m.value)).toEqual([83]);
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(write).not.toHaveBeenCalled();
+    expect(writeSync).not.toHaveBeenCalled();
+    // Nothing is left unsaved by the take-in: a hide writes nothing.
+    const before = rev();
+    a.flushSync();
+    expect(rev()).toBe(before);
+  });
+
+  it('hears only this record\'s key: its version key, another file and a draft cost no read', async () => {
+    const { adapterA } = await listeningTabs();
+    const read = vi.spyOn(adapterA, 'read');
+
+    storageEvent(REV_KEY);
+    storageEvent('health_roadmap_file_v2:chat-history.json');
+    storageEvent(BT_TIMELINE_DRAFT_KEY);
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it('a storm of saves in the other tab costs two re-reads, not one each, and loses none of them', async () => {
+    const { a, b, adapterA } = await listeningTabs();
+    const read = vi.spyOn(adapterA, 'read');
+
+    // A lab import, say: ten saves, one every 100 ms.
+    for (let day = 1; day <= 10; day++) {
+      b.addMeasurement('ldl', 3 + day / 10, `2026-09-${String(day).padStart(2, '0')}T00:00:00.000Z`);
+      await b.flush();
+      storageEvent();
+      await vi.advanceTimersByTimeAsync(100);
+    }
+    expect(read).toHaveBeenCalledTimes(1); // the first, at once
+    await vi.advanceTimersByTimeAsync(5_000);
+
+    expect(read).toHaveBeenCalledTimes(2); // the rest, once the window is out
+    expect(a.loadAllHistory().filter((m) => m.metricType === 'ldl')).toHaveLength(10);
+    expect(heard).toHaveBeenCalledTimes(2);
+  });
+
+  it('a hidden tab stops listening, re-reads when shown, and listens again', async () => {
+    const { a, b, adapterA } = await listeningTabs();
+    const read = vi.spyOn(adapterA, 'read');
+    setVisibility('hidden');
+
+    await otherTabSaves(b, 'weight', 83);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(read).not.toHaveBeenCalled();
+    expect(values(a)).toEqual([82]);
+
+    setVisibility('visible');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(values(a)).toEqual([82, 83]);
+
+    await vi.advanceTimersByTimeAsync(6_000);
+    await otherTabSaves(b, 'hdl', 1.4);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(values(a)).toEqual([1.4, 82, 83]);
+  });
+
+  // Codex review of this AC, round 2: a re-read the throttle had queued ran
+  // after the tab hid. That read moved the throttle on, so the re-read on
+  // return was dropped, and a save made while hidden stayed unseen.
+  it('a re-read queued before the tab hid never runs hidden, and the return still catches up', async () => {
+    const { a, b, adapterA } = await listeningTabs();
+    const read = vi.spyOn(adapterA, 'read');
+    await otherTabSaves(b, 'weight', 83); // read at once
+    await vi.advanceTimersByTimeAsync(1_000);
+    await otherTabSaves(b, 'hdl', 1.4); // queued for the end of the window
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    setVisibility('hidden');
+    await vi.advanceTimersByTimeAsync(4_000);
+    expect(read).toHaveBeenCalledTimes(1);
+    await otherTabSaves(b, 'ldl', 3.1); // unheard: the tab is hidden
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    setVisibility('visible');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(values(a)).toEqual([1.4, 3.1, 82, 83]);
+  });
+
+  it('a tab shown again inside the throttle\'s window catches up when the window runs out', async () => {
+    const { a, b } = await listeningTabs();
+    await otherTabSaves(b, 'weight', 83); // read at once
+    await vi.advanceTimersByTimeAsync(1_000);
+    setVisibility('hidden');
+    await otherTabSaves(b, 'hdl', 1.4); // unheard
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    setVisibility('visible');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(values(a)).toEqual([82, 83]);
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(values(a)).toEqual([1.4, 82, 83]);
+  });
+
+  it('a return reads once, though visibilitychange and focus both fire, in either order', async () => {
+    const { adapterA } = await listeningTabs();
+    const read = vi.spyOn(adapterA, 'read');
+    setVisibility('hidden');
+    await vi.advanceTimersByTimeAsync(10_000);
+    setVisibility('visible');
+    window.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(read).toHaveBeenCalledTimes(1);
+
+    setVisibility('hidden');
+    await vi.advanceTimersByTimeAsync(10_000);
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    window.dispatchEvent(new Event('focus'));
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(read).toHaveBeenCalledTimes(2);
+  });
+
+  it('an edit waiting to be saved here is never merged over: its save takes the row in, and says so once', async () => {
+    const { a, b, adapterA } = await listeningTabs();
+    a.addMeasurement('hdl', 1.4, TODAY); // on the 800 ms debounce
+    const read = vi.spyOn(adapterA, 'read');
+
+    b.addMeasurement('weight', 83, TODAY);
+    await b.flush();
+    storageEvent();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(read).not.toHaveBeenCalled();
+    expect(heard).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1_000); // the debounced save
+    expect(values(a)).toEqual([1.4, 82, 83]);
+    expect(rows()).toEqual(['hdl 1.4 active', 'weight 82 active', 'weight 83 active']);
+    expect(heard).toHaveBeenCalledTimes(1);
+  });
+
+  it('a stale tab\'s profile edit keeps the height the other tab saved (US-10 AC5\'s commonest loss)', async () => {
+    const { a, b } = await listeningTabs();
+    b.saveChangedMeasurements({ sex: 'male', heightCm: 180 }, {});
+    await b.flush();
+    storageEvent();
+    await vi.advanceTimersByTimeAsync(0);
+
+    // A second later, the user sets a birth year in tab A. Profile merges as
+    // one object, last write wins: a tab that had not taken B's in would put
+    // back its own profile, with no height.
+    vi.setSystemTime(new Date('2026-09-25T10:00:01.000Z'));
+    a.saveChangedMeasurements({ birthYear: 1970 }, {});
+    await a.flush();
+
+    expect(stored().profile).toMatchObject({ sex: 'male', heightCm: 180, birthYear: 1970 });
+  });
+
+  it('takes the other tab\'s erase in: the drafts go, the page hears it once, and a later edit is kept', async () => {
+    const { a, b, adapterA } = await listeningTabs();
+    expect((await b.deleteUserData()).success).toBe(true);
+    // A's matrices still hold drafts typed on the old record. One localStorage
+    // and one window serve both tabs here, so B's erase already cleared them:
+    // they are put back, and the listeners attached, after it.
+    localStorage.setItem(BT_TIMELINE_DRAFT_KEY, '{"draft":{"date":"2026-09-25","values":{"ldl":"3.2"}}}');
+    localStorage.setItem(VITALS_DRAFT_KEY, '{"draft":{"date":"2026-09-25","values":{"weight":"84"}}}');
+    const cleared = vi.fn();
+    window.addEventListener(DRAFTS_CLEARED_EVENT, cleared);
+    heard.mockClear();
+    const write = vi.spyOn(adapterA, 'write');
+
+    storageEvent();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(a.loadAllHistory()).toEqual([]);
+    expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
+    expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
+    expect(cleared).toHaveBeenCalledTimes(1);
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(write).not.toHaveBeenCalled();
+    // A now works at the erase's epoch, so its next edit is kept.
+    a.addMeasurement('ldl', 3.1, TODAY);
+    await a.flush();
+    expect(stored().meta.eraseEpoch).toBe(1);
+    expect(rows()).toEqual(['ldl 3.1 active']);
+    window.removeEventListener(DRAFTS_CLEARED_EVENT, cleared);
+  });
+
+  it('another tab removing the record (a log-off) brings nothing in, writes nothing back, and leaves this tab as it was', async () => {
+    const { a, adapterA } = await listeningTabs();
+    const read = vi.spyOn(adapterA, 'read');
+    const write = vi.spyOn(adapterA, 'write');
+
+    await new LocalStorageAdapter().disconnect(); // the other tab logs this device off
+    storageEvent(FILE_KEY, null);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(values(a)).toEqual([82]);
+    expect(localStorage.getItem(FILE_KEY)).toBeNull();
+    expect(write).not.toHaveBeenCalled();
+    expect(heard).not.toHaveBeenCalled();
+
+    // A clear() names no key, and is heard the same way.
+    await vi.advanceTimersByTimeAsync(6_000);
+    localStorage.clear();
+    storageEvent(null, null);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(read).toHaveBeenCalledTimes(2);
+    expect(values(a)).toEqual([82]);
+    expect(localStorage.getItem(FILE_KEY)).toBeNull();
+  });
+
+  // Codex review of this AC, R1: the empty record migrate makes for a missing
+  // file stamps its profile and screenings now, and last write wins on
+  // lamport, then time. Merged in, it beat a profile whose lamport is 0 or
+  // absent, and emptied it here.
+  it('a removal keeps a profile and screenings that carry no clock: a missing record is never merged in as an empty one', async () => {
+    // Written by a direct file edit or an older app: data, no lamport, a week old.
+    const week = '2026-09-18T00:00:00.000Z';
+    const file = createEmptyFile({ deviceId: 'dev_seed', now: week });
+    file.profile = { sex: 'male', heightCm: 178, updatedAt: week };
+    file.screenings = { colorectalMethod: 'colonoscopy_10yr', updatedAt: week, lamport: 0 };
+    await new LocalStorageAdapter().write(ROADMAP_FILE_NAME, file, null);
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    const a = await RoadmapStore.create(new LocalStorageAdapter());
+    stops.push(a.startLiveRefresh());
+
+    await new LocalStorageAdapter().disconnect(); // the other tab logs off
+    storageEvent(FILE_KEY, null);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(a.getPrefillInputs()).toMatchObject({ sex: 'male', heightCm: 178 });
+    expect(a.loadLatestMeasurements().screenings.map((s) => s.value)).toEqual(['colonoscopy_10yr']);
+    expect(heard).not.toHaveBeenCalled();
+  });
+
+  it('an edit this tab could not save survives the removal, and the next hide writes it', async () => {
+    const { a } = await listeningTabs();
+    let full = true;
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (full && key === FILE_KEY) throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+    a.addMeasurement('hdl', 1.4, TODAY);
+    await vi.advanceTimersByTimeAsync(1_000); // the debounced save fails
+    full = false;
+
+    await new LocalStorageAdapter().disconnect(); // the other tab logs off
+    storageEvent(FILE_KEY, null);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(values(a)).toEqual([1.4, 82]);
+    expect(localStorage.getItem(FILE_KEY)).toBeNull();
+
+    // The hide writes this tab's copy, the edit with it: the device file is
+    // made again (the residual US-10 AC5 names), and nothing is lost.
+    a.flushSync();
+    expect(rows()).toEqual(['hdl 1.4 active', 'weight 82 active']);
+  });
+});
+
 describe('LocalStorageAdapter — the synchronous write keeps write()\'s version check (US-10 AC4, AC5)', () => {
   it('refuses a version another tab moved, and leaves that tab\'s bytes alone', () => {
     const adapter = new LocalStorageAdapter();
@@ -439,5 +755,24 @@ describe('LocalStorageAdapter — the synchronous write keeps write()\'s version
 
     expect(() => adapter.writeSync(ROADMAP_FILE_NAME, { schemaVersion: 1, tab: 'A' }, version)).toThrow(ConflictError);
     expect(adapter.readSync(ROADMAP_FILE_NAME).body).toEqual({ schemaVersion: 1, tab: 'B' });
+  });
+});
+
+describe('LocalStorageAdapter.watch — another tab\'s write, heard through the storage event (US-34 AC6)', () => {
+  it('calls for this file\'s key and for a clear(), for nothing else, and stops on abort', () => {
+    const changed = vi.fn();
+    const watching = new AbortController();
+    new LocalStorageAdapter().watch(ROADMAP_FILE_NAME, changed, watching.signal);
+
+    storageEvent(FILE_KEY);
+    storageEvent(null);
+    storageEvent(REV_KEY);
+    storageEvent('health_roadmap_file_v2:chat-history.json');
+    storageEvent(VITALS_DRAFT_KEY);
+    expect(changed).toHaveBeenCalledTimes(2);
+
+    watching.abort();
+    storageEvent(FILE_KEY);
+    expect(changed).toHaveBeenCalledTimes(2);
   });
 });
