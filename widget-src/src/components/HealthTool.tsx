@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode, type SetStateAction } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   calculateHealthResults,
@@ -76,7 +76,6 @@ import type { ApiDocument } from '../lib/api-types';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
-import { recordReread } from '../lib/useMatrixDraft';
 
 // What "Delete all my data" does, said BEFORE the click. The caveats used to
 // arrive in the alert afterwards, which is too late to be a decision, and
@@ -122,13 +121,10 @@ const countedCorrection: CorrectFn = async (id, newValue) => {
 export function HealthTool({ syncControl, remindersSection }: { syncControl?: (ctx: { hasData: boolean }) => ReactNode; remindersSection?: ReactNode } = {}) {
   // The store is ready before render, so returning users see their saved prefill immediately.
   const [inputs, setInputs] = useState<Partial<HealthInputs>>(getInitialInputsSync);
-  // The form replaced from the record: at the first load, after an upload or
-  // a remote change, and after an erase. Each matrix's draft then lends the
-  // plan and the chat nothing until it is typed into again (US-03 AC6).
-  const replaceInputs = useCallback((next: SetStateAction<Partial<HealthInputs>>) => {
-    recordReread();
-    setInputs(next);
-  }, []);
+  // What the matrices' drafts lend the plan and the chat, by field (US-03
+  // AC6). It is kept apart from the form, which a re-read replaces, and only
+  // handleDraftValue writes it, so each matrix knows what it lent.
+  const [lent, setLent] = useState<Partial<HealthInputs>>({});
   const [previousMeasurements, setPreviousMeasurements] = useState<ApiMeasurement[]>([]);
   // Every active measurement, re-read after each save. The blood-test matrix
   // and the vitals matrix (StartingInfoVitals) each read their own metrics.
@@ -294,7 +290,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
           setUnitSystem(unitPref);
           saveUnitPreference(unitPref);
         }
-        replaceInputs(result.inputs);
+        setInputs(result.inputs);
         previousInputsRef.current = { ...result.inputs };
         setPreviousMeasurements(result.previousMeasurements);
         if (result.previousMeasurements.length > 0) {
@@ -319,12 +315,13 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // Fire A/B impression once on mount
   useEffect(() => { trackABImpression(); }, []);
 
-  // Effective inputs for results calculation: form inputs + fallback to
-  // previousMeasurements, which the data layer has already reduced to the newest
-  // active row per metric (US-07 AC4) — so the first match here IS the latest.
+  // Effective inputs for results calculation: form inputs, the drafts' lent
+  // values over them, then a fallback to previousMeasurements, which the data
+  // layer has already reduced to the newest active row per metric (US-07 AC4)
+  // — so the first match here IS the latest.
   const effectiveInputs = useMemo(
-    () => mergeLongitudinalInputs(inputs, previousMeasurements),
-    [inputs, previousMeasurements],
+    () => mergeLongitudinalInputs({ ...inputs, ...lent }, previousMeasurements),
+    [inputs, lent, previousMeasurements],
   );
 
   // Progressive disclosure: compute which stage of the form to show.
@@ -391,7 +388,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     }, 500);
 
     return () => clearTimeout(timeout);
-  }, [inputs, hasApiResponse, effectiveInputs]);
+  }, [inputs, hasApiResponse]);
 
   // The saved-value editor's correction, core or lab (US-04, US-21 AC5),
   // then the page re-reads the record.
@@ -410,12 +407,11 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   const handleSaveLongitudinal = useCallback((tasks?: SaveTask[]): Promise<Refused> => {
     // The first-time vitals fields: a weight, a waist, a blood pressure, each
     // naming the row the page shows for today ("Replaces 82 kg"), in the unit
-    // it was typed in (mmHg either way). What `inputs` holds for a matrix's
-    // cells mirrors its draft (for live suggestions), which only that matrix
-    // saves, on the day the draft is dated: the blood tests always, and the
-    // vitals while their matrix is showing (review of 2026-09-24).
+    // it was typed in (mmHg either way). What a matrix's draft lends the plan
+    // is kept apart (`lent`), and only that matrix saves it, on the day the
+    // draft is dated (review of 2026-09-24). So what `inputs` holds here was
+    // typed into these fields, by the user or the chat.
     const fromForm = (): SaveTask[] => {
-      if (vitalsPrefillRef.current) return [];
       const date = localDay(new Date());
       const shown = activeRowIndex(history);
       return [['weight'], ['waist'], ['systolic_bp', 'diastolic_bp']].flatMap((metrics): SaveTask[] => {
@@ -452,22 +448,26 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         );
         await reloadValues();
 
-        // What was saved leaves the form, in one update. A copy left in
+        // What the fields saved leaves the form, in one update. A copy left in
         // `inputs` outranked the saved row in the plan and the chat, and the
         // next save of the fields wrote it again, under today (2026-09-24).
         // A number typed there while the save ran is not what was saved, and
-        // stays for the next save (US-03 AC3).
-        setInputs(prev => {
-          const next = { ...prev };
-          for (const t of toSave) {
-            for (const [metric, value] of Object.entries(t.values)) {
-              const field = METRIC_TO_FIELD[metric];
-              if (!refused.has(slotOf(t.date, metric)) && next[field] === value) delete next[field];
+        // stays for the next save (US-03 AC3). A matrix's save leaves the form
+        // alone: its values were never in it, and a field's value equal to
+        // one it saved, for another day, is not what it saved.
+        if (!tasks) {
+          setInputs(prev => {
+            const next = { ...prev };
+            for (const t of toSave) {
+              for (const [metric, value] of Object.entries(t.values)) {
+                const field = METRIC_TO_FIELD[metric];
+                if (!refused.has(slotOf(t.date, metric)) && next[field] === value) delete next[field];
+              }
             }
-          }
-          return next;
-        });
-        if (!tasks) setFieldsSaved(n => n + 1);
+            return next;
+          });
+          setFieldsSaved(n => n + 1);
+        }
 
         // Track A/B conversion on the first measurement save.
         if (refused.size === 0) {
@@ -533,12 +533,18 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     longitudinalDebounce.flush();
     const result = await reloadValues();
     if (result) {
-      // The record holds the profile and every saved value. A number being
-      // typed lives only in the form until its save, so the field the user is
-      // typing in rides through (US-34 AC4); nothing else does, or a copy of a
-      // value since corrected would outrank the record.
+      // The record holds the profile and every saved value. A first-time
+      // field's value gets none of a draft's checks: it names the row it
+      // replaces only as it saves (still open), and nothing stops it standing
+      // in once another writer fills its slot. Carried through a re-read, it
+      // would outrank that writer's value in the plan, then correct it. So
+      // only the field the user is typing in rides through, since losing
+      // keystrokes is worse (US-34 AC4). The journey redesign moves these
+      // fields onto the draft model. What the matrices' drafts lend is kept
+      // apart (`lent`): it rides through, and each draft is judged again
+      // against the record read (US-03 AC6).
       const typing = document.activeElement?.id as keyof HealthInputs | undefined;
-      replaceInputs(prev => (typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
+      setInputs(prev => (typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
         ? { ...result.inputs, [typing]: prev[typing] }
         : result.inputs));
       previousInputsRef.current = { ...result.inputs };
@@ -546,7 +552,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setScreenings(result.screenings);
       setDocumentHistory(result.documents);
     }
-  }, [reloadValues, longitudinalDebounce, replaceInputs]);
+  }, [reloadValues, longitudinalDebounce]);
 
   // Something wrote to the record under us — another device, or an AI
   // connector through MCP (US-34). The store has already re-read and merged;
@@ -651,7 +657,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
     if (result.success) {
       clearLocalStorage();
-      replaceInputs({});
+      setInputs({});
       setPreviousMeasurements([]);
       setHistory([]);
       setMedications([]);
@@ -661,7 +667,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     } else {
       window.alert(result.error || 'Failed to delete data. Please try again.');
     }
-  }, [replaceInputs]);
+  }, []);
 
   // One field's new value, from the form or the chat. A weight or waist
   // keeps the unit its caller converted it from (typedIn). One update per
@@ -671,11 +677,14 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     setInputs(prev => ({ ...prev, [field]: value }));
     window.dispatchEvent(new CustomEvent('hr:inputs-changed'));
   }, []);
-  // A matrix's draft value, as the plan and the chat read it (US-03). One
-  // update per field, so several sent at once all land; one that changes
-  // nothing (a draft withdrawn after a re-read) renders nothing.
-  const handleDraftValue = useCallback((field: keyof HealthInputs, value: number | undefined) =>
-    setInputs(prev => (prev[field] === value ? prev : { ...prev, [field]: value })), []);
+  // A matrix's draft value, as the plan and the chat read it (US-03 AC6);
+  // undefined leaves the field to the record. One update per field, so
+  // several sent at once all land.
+  const handleDraftValue = useCallback((field: keyof HealthInputs, value: number | undefined) => setLent(prev => {
+    const next = { ...prev, [field]: value };
+    if (value === undefined) delete next[field];
+    return next;
+  }), []);
 
   const handleMedicationChange = useCallback((
     medicationKey: string,
@@ -864,6 +873,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
   const inputPanelProps = {
     inputs,
+    effectiveInputs,
     onChange: handleInputChange,
     errors,
     unitSystem,

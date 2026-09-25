@@ -99,6 +99,9 @@ function scrNum(scr: ScreeningInputs, dbKey: string): number | undefined {
 
 interface InputPanelProps {
   inputs: Partial<HealthInputs>;
+  /** What the plan reads: the form, the drafts that stand in over it, and
+   *  the record's latest values under both. The medication cascades follow it. */
+  effectiveInputs: Partial<HealthInputs>;
   /** One field's new value; `unit`: the unit a weight or waist was typed in. */
   onChange: <K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => void;
   errors: Record<string, string>;
@@ -176,7 +179,7 @@ function useAutoAdvance(): (opts: { ambiguous: boolean; advance: () => void }) =
 }
 
 export function InputPanel({
-  inputs, onChange: updateField, errors, unitSystem, onUnitSystemChange,
+  inputs, effectiveInputs, onChange: updateField, errors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
   previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectValue, onDraftValue,
@@ -395,10 +398,6 @@ export function InputPanel({
       return next.size === prev.size ? prev : next;
     });
   }, [fieldsSaved]);
-
-  /** Get effective value: current input or fallback to last saved measurement. */
-  const getEffective = (field: keyof HealthInputs, metricType: string): number | undefined =>
-    (inputs[field] as number | undefined) ?? previousMeasurements.find(m => m.metricType === metricType)?.value;
 
   // Shared date constants for screening date pickers
   const now = new Date();
@@ -918,7 +917,7 @@ export function InputPanel({
         unitSystem={unitSystem}
         onSave={onSaveBloodTestBatch}
         onCorrectValue={onCorrectValue}
-        onFieldChange={onDraftValue}
+        onDraftValue={onDraftValue}
         formStage={formStage}
         onAutoFocusEmail={onAutoFocusEmail}
         unitOverrides={unitOverrides}
@@ -1077,7 +1076,7 @@ export function InputPanel({
       onToggleFieldUnit={onToggleFieldUnit}
       onSaveBatch={onSaveBloodTestBatch}
       onCorrectValue={onCorrectValue}
-      onFieldChange={onDraftValue}
+      onDraftValue={onDraftValue}
       isSaving={isSavingLongitudinal}
       sex={inputs.sex}
       onUploadClick={() => setShowUploadModal?.(true)}
@@ -1091,11 +1090,8 @@ export function InputPanel({
     <>
       {/* Cholesterol Medications Section — cascade when elevated/suggested, flat when any lipid entered */}
       {(() => {
-          // Compute effective inputs for cascade visibility (form values + previous measurements fallback)
-          const effectiveApoB = getEffective('apoB', 'apob');
-          const effectiveLdl = getEffective('ldlC', 'ldl');
-          const effectiveTotalChol = getEffective('totalCholesterol', 'total_cholesterol');
-          const effectiveHdl = getEffective('hdlC', 'hdl');
+          // Cascade visibility follows what the plan reads (effectiveInputs)
+          const { apoB: effectiveApoB, ldlC: effectiveLdl, totalCholesterol: effectiveTotalChol, hdlC: effectiveHdl } = effectiveInputs;
           const effectiveNonHdl = (effectiveTotalChol !== undefined && effectiveHdl !== undefined)
             ? effectiveTotalChol - effectiveHdl : undefined;
 
@@ -1349,13 +1345,10 @@ export function InputPanel({
 
       {/* Weight & Diabetes Medications Section — shown when BMI > 28 (unconditional) or BMI 25-28 with secondary criteria */}
       {(() => {
-        // Compute effective values from form inputs + previous measurements fallback
-        const effectiveWeight = getEffective('weightKg', 'weight');
-        const effectiveHeight = getEffective('heightCm', 'height');
-        const effectiveWaist = getEffective('waistCm', 'waist');
-        const effectiveHba1c = getEffective('hba1c', 'hba1c');
-        const effectiveTrigs = getEffective('triglycerides', 'triglycerides');
-        const effectiveSbp = getEffective('systolicBp', 'systolic_bp');
+        const {
+          weightKg: effectiveWeight, heightCm: effectiveHeight, waistCm: effectiveWaist,
+          hba1c: effectiveHba1c, triglycerides: effectiveTrigs, systolicBp: effectiveSbp,
+        } = effectiveInputs;
 
         // Compute BMI and waist-to-height ratio
         const effectiveBmi = (effectiveWeight !== undefined && effectiveHeight !== undefined)

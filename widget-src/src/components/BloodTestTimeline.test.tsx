@@ -10,7 +10,6 @@ import { localDay, toCanonicalValue, type ApiMeasurement } from '@roadmap/health
 import { BloodTestTimeline, ValueCell } from './BloodTestTimeline';
 import { hidePage, pickDraftDate, press, showPage, typeInto, typeWithoutTap } from '../testing/matrix-gestures';
 import { slotOf, type Refused, type SaveTask } from '../lib/matrix-save';
-import { recordReread } from '../lib/useMatrixDraft';
 
 beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => {
@@ -145,17 +144,21 @@ function history(rows: Array<[string, number, string]>): ApiMeasurement[] {
     id: `row${i}`, metricType, value, recordedAt: `${day}T00:00:00.000Z`, createdAt: `${day}T00:00:00.000Z`, status: 'active',
   }));
 }
-/** The matrix on a page, with a control and some text outside it. */
-function matrix(rows: ApiMeasurement[] = [], onSaveBatch: Mock = vi.fn().mockResolvedValue(new Map()), onFieldChange: () => void = noop) {
-  const view = render(
+/** The matrix on a page, with a control and some text outside it.
+ *  `showHistory` renders the page again over another history. */
+function matrix(rows: ApiMeasurement[] = [], onSaveBatch: Mock = vi.fn().mockResolvedValue(new Map()), onDraftValue: () => void = noop) {
+  const onCorrectValue = vi.fn();
+  const page = (recorded: ApiMeasurement[]) => (
     <>
-      <BloodTestTimeline bloodTestHistory={rows} unitSystem="si" unitOverrides={{}} onToggleFieldUnit={noop}
-        onSaveBatch={onSaveBatch} onCorrectValue={vi.fn()} onFieldChange={onFieldChange}
+      <BloodTestTimeline bloodTestHistory={recorded} unitSystem="si" unitOverrides={{}} onToggleFieldUnit={noop}
+        onSaveBatch={onSaveBatch} onCorrectValue={onCorrectValue} onDraftValue={onDraftValue}
         isSaving={false} hasApiResponse/>
       <button type="button">Elsewhere</button>
       <p>Page text</p>
-    </>,
+    </>
   );
+  const view = render(page(rows));
+  const showHistory = (recorded: ApiMeasurement[]) => view.rerender(page(recorded));
   const root = view.container.querySelector('.bt-timeline') as HTMLElement;
   const header = view.container.querySelector('.bt-header-row') as HTMLElement;
   const row = (label: string) => Array.from(view.container.querySelectorAll('.bt-row'))
@@ -172,7 +175,7 @@ function matrix(rows: ApiMeasurement[] = [], onSaveBatch: Mock = vi.fn().mockRes
     fireEvent.pointerDown(text, { pointerId });
     fireEvent.pointerUp(text, { pointerId });
   };
-  return { view, root, header, row, cell, backfill, dateCell, dateInput, elsewhere, text, tapText, onSaveBatch };
+  return { view, root, header, row, cell, backfill, dateCell, dateInput, elsewhere, text, tapText, onSaveBatch, showHistory };
 }
 /** What one save sent: these tasks, in any order, each as far as it is given. */
 function expectSent(onSaveBatch: Mock, call: number, tasks: Array<Partial<SaveTask>>) {
@@ -251,15 +254,7 @@ describe('US-03 — the draft', () => {
     const m = matrix(history([['hdl', 1.4, '2026-08-15']]));
     typeInto(m.backfill('LDL Cholesterol'), '3.1');
     typeInto(m.cell('Triglycerides'), '1.1');
-    m.view.rerender(
-      <>
-        <BloodTestTimeline bloodTestHistory={history([['hdl', 1.4, '2026-08-15'], ['ldl', 2.9, '2026-08-15']])} unitSystem="si"
-          unitOverrides={{}} onToggleFieldUnit={noop} onSaveBatch={m.onSaveBatch} onCorrectValue={vi.fn()} onFieldChange={noop}
-          isSaving={false} hasApiResponse/>
-        <button type="button">Elsewhere</button>
-        <p>Page text</p>
-      </>,
-    );
+    m.showHistory(history([['hdl', 1.4, '2026-08-15'], ['ldl', 2.9, '2026-08-15']]));
     expect(m.backfill('LDL Cholesterol')).toBeNull();
     press(m.elsewhere);
     await wait(0);
@@ -277,15 +272,7 @@ describe('US-03 — the draft', () => {
     const m = matrix(history([['hdl', 1.4, '2026-08-15']]), vi.fn().mockResolvedValueOnce(refusedAsChanged).mockResolvedValue(new Map()));
     pickDraftDate(m.root, '2026-08-15');
     typeInto(m.cell('LDL Cholesterol'), '3.4');
-    m.view.rerender(
-      <>
-        <BloodTestTimeline bloodTestHistory={filled} unitSystem="si"
-          unitOverrides={{}} onToggleFieldUnit={noop} onSaveBatch={m.onSaveBatch} onCorrectValue={vi.fn()} onFieldChange={noop}
-          isSaving={false} hasApiResponse/>
-        <button type="button">Elsewhere</button>
-        <p>Page text</p>
-      </>,
-    );
+    m.showHistory(filled);
     expect(within(m.row('LDL Cholesterol')).getByText(SAME_SLOT)).toBeTruthy();
 
     typeInto(m.cell('LDL Cholesterol'), '3.5'); // typed again
@@ -312,15 +299,7 @@ describe('US-03 — the draft', () => {
     press(m.elsewhere);
     await wait(0);
     expect(m.view.getByText('Some values did not save. Try again.')).toBeTruthy();
-    m.view.rerender(
-      <>
-        <BloodTestTimeline bloodTestHistory={history([['hdl', 1.4, '2026-08-15'], ['ldl', 2.9, '2026-08-15']])} unitSystem="si"
-          unitOverrides={{}} onToggleFieldUnit={noop} onSaveBatch={m.onSaveBatch} onCorrectValue={vi.fn()} onFieldChange={noop}
-          isSaving={false} hasApiResponse/>
-        <button type="button">Elsewhere</button>
-        <p>Page text</p>
-      </>,
-    );
+    m.showHistory(history([['hdl', 1.4, '2026-08-15'], ['ldl', 2.9, '2026-08-15']]));
     expect(m.backfill('LDL Cholesterol')).toBeNull();
     expect(m.view.queryByText('Some values did not save. Try again.')).toBeNull();
   });
@@ -344,7 +323,7 @@ describe('US-03 — the draft', () => {
     expect(first.onSaveBatch).toHaveBeenCalledTimes(1);
     // The same device, read while the save is still running: the draft is there.
     const whileSaving = render(<BloodTestTimeline bloodTestHistory={[]} unitSystem="si" unitOverrides={{}}
-      onToggleFieldUnit={noop} onSaveBatch={vi.fn()} onFieldChange={noop} isSaving={false} hasApiResponse/>);
+      onToggleFieldUnit={noop} onSaveBatch={vi.fn()} onDraftValue={noop} isSaving={false} hasApiResponse/>);
     const ldl = within(whileSaving.container).getByText('LDL Cholesterol').closest('.bt-row')!;
     expect((ldl.querySelector('.bt-cell-draft input') as HTMLInputElement).value).toBe('3.2');
     whileSaving.unmount();
@@ -354,20 +333,20 @@ describe('US-03 — the draft', () => {
     expect(matrix().cell('LDL Cholesterol').value).toBe('');
   });
 
-  // Cleanup review of 2026-09-25: the matrix read the page's read of the
-  // record from state React could not see, so it withdrew what it lent only
-  // when something above it happened to render too.
-  it('US-03 AC6: a re-read of the record takes back what the draft lent, with nothing above the matrix rendering; typing lends it again', () => {
-    const onFieldChange = vi.fn();
-    const m = matrix([], undefined, onFieldChange);
+  // Brad, 2026-09-25: the record read again no longer takes back what the
+  // draft lent. The matrix judges the draft again against each history it is
+  // given, with nothing typed.
+  it('US-03 AC6: a new history judges the draft again, with nothing typed: it lends while its slot holds what it expects, and nothing once another row fills it', () => {
+    const onDraftValue = vi.fn();
+    const m = matrix([], undefined, onDraftValue);
     typeInto(m.cell('LDL Cholesterol'), '3');
-    expect(onFieldChange).toHaveBeenLastCalledWith('ldlC', 3);
+    expect(onDraftValue).toHaveBeenLastCalledWith('ldlC', 3);
 
-    act(() => recordReread());
-    expect(onFieldChange).toHaveBeenLastCalledWith('ldlC', undefined);
+    m.showHistory(history([['hdl', 1.4, TODAY]])); // another test
+    expect(onDraftValue).not.toHaveBeenCalledWith('ldlC', undefined);
 
-    typeWithoutTap(m.cell('LDL Cholesterol'), '3.0');
-    expect(onFieldChange).toHaveBeenLastCalledWith('ldlC', 3);
+    m.showHistory(history([['hdl', 1.4, TODAY], ['ldl', 2.9, TODAY]])); // the draft's slot, filled elsewhere
+    expect(onDraftValue).toHaveBeenLastCalledWith('ldlC', undefined);
   });
 });
 

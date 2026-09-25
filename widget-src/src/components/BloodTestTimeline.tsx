@@ -123,9 +123,9 @@ export interface BloodTestTimelineProps {
   // ValueCell calls this when the user corrects a saved value. A failure
   // leaves the editor open so the user can retry.
   onCorrectValue?: CorrectFn;
-  // The draft values the suggestions engine (which reads `inputs[field]`)
-  // may use, in SI; undefined leaves the field to the record.
-  onFieldChange: (field: keyof HealthInputs, siValue: number | undefined) => void;
+  // The draft values the plan and the chat may read, in SI; undefined leaves
+  // the field to the record.
+  onDraftValue: (field: keyof HealthInputs, siValue: number | undefined) => void;
   isSaving: boolean;
   sex?: 'male' | 'female';
   onUploadClick?: () => void;
@@ -162,7 +162,7 @@ const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
 
 export function BloodTestTimeline({
   bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit,
-  onSaveBatch, onCorrectValue, onFieldChange, isSaving, sex, onUploadClick, uploadDisabled, loginUrl,
+  onSaveBatch, onCorrectValue, onDraftValue, isSaving, sex, onUploadClick, uploadDisabled, loginUrl,
   hasApiResponse, flushRef, prefillRef,
 }: BloodTestTimelineProps) {
   const batches = useMemo(() => groupByBatch(bloodTestHistory), [bloodTestHistory]);
@@ -250,7 +250,7 @@ export function BloodTestTimeline({
   useDraftMirror(ROWS.map(({ metric, field }) => [
     field,
     lends(metric) ? cells.find(c => c.column === null && c.metric === metric)?.si ?? undefined : undefined,
-  ]), onFieldChange);
+  ]), onDraftValue);
 
   const setDraftValue = (metric: MetricType, typed: string) => type([null, metric], typed);
   const setBackfillValue = (batchDate: string, metric: MetricType, typed: string) => type([batchDate, metric], typed);
@@ -280,7 +280,7 @@ export function BloodTestTimeline({
       return cellId;
     }
     if (date) setDraftDate(date);
-    setDraftValue(metric, typed); // mirrors to inputs[field] so suggestions update live
+    setDraftValue(metric, typed); // the plan and the chat read it while it may stand in
     const cellId = `draft.${metric}`;
     setActiveCell(cellId);
     return cellId;

@@ -63,11 +63,12 @@ interface StartingInfoVitalsProps {
    *  Same prop the blood-test matrix uses. BP cells stay display-only (a
    *  sys/dia cell is ambiguous to correct in place). */
   onCorrectValue?: CorrectFn;
-  /** The draft values the suggestions engine (which reads `inputs[field]`)
-   *  may use, in SI; undefined leaves the field to the record. */
-  onFieldChange: (field: keyof HealthInputs, value: number | undefined) => void;
+  /** The draft values the plan and the chat may read, in SI; undefined
+   *  leaves the field to the record. */
+  onDraftValue: (field: keyof HealthInputs, value: number | undefined) => void;
   /** Used to pulse the weight draft cell at stage 2 (the progressive-
-   *  disclosure gate that unlocks the blood-test panel). */
+   *  disclosure gate that unlocks the blood-test panel): no weight in what
+   *  the plan reads, the draft's own included. */
   formStage: 1 | 2 | 3;
   /** Called after the user types a valid weight — continues the
    *  height → weight → email focus chain from the legacy form. */
@@ -161,8 +162,9 @@ function isoOnly(s: string): string { return s.slice(0, 10); }
 
 // ── Blood-pressure helpers (atomic sys+dia pair) ─────────────────────────
 // BP is a two-field value: a save must commit systolic AND diastolic together
-// or neither. These ranges gate both the live `onFieldChange` mirror and the
-// commit, so a half-entered or mid-typed pair (e.g. "120 / 8") never lands.
+// or neither. These ranges gate both what each half lends the plan and the
+// chat (useDraftMirror) and the commit, so a mid-typed half (the "8" of
+// "120 / 80") never stands in, and a half-entered pair never lands.
 const BP_SYS_MIN = 60, BP_SYS_MAX = 250;
 const BP_DIA_MIN = 40, BP_DIA_MAX = 150;
 
@@ -213,7 +215,7 @@ export function buildColumns(rows: ApiMeasurement[]): DateColumn[] {
 /** What is typed in a vitals cell: a weight, a waist, or one half of a
  *  blood pressure (sys and dia share one cell). */
 type VitalsKey = 'weight' | 'waist' | 'sys' | 'dia';
-/** The form field each one stands in for, while it may (useDraftMirror). */
+/** The field each one lends (useDraftMirror). */
 const FIELD_OF = { weight: 'weightKg', waist: 'waistCm', sys: 'systolicBp', dia: 'diastolicBp' } as const;
 
 /** One column's typed vitals (the draft's, or a saved column's empty cells)
@@ -245,7 +247,7 @@ export function vitalsCellsOf(
 
 export function StartingInfoVitals({
   inputs, vitalsHistory, unitSystem, onSave, onCorrectValue,
-  onFieldChange, formStage, onAutoFocusEmail, unitOverrides, onToggleFieldUnit,
+  onDraftValue, formStage, onAutoFocusEmail, unitOverrides, onToggleFieldUnit,
   prefillRef, flushRef,
 }: StartingInfoVitalsProps) {
   const heightCm = inputs.heightCm;
@@ -440,7 +442,7 @@ export function StartingInfoVitals({
     const unit = typedUnit(null, key);
     return validateTypedValue(key, text, unit).error ? undefined : toCanonicalValue(key, n!, unit);
   };
-  useDraftMirror((Object.keys(FIELD_OF) as VitalsKey[]).map(key => [FIELD_OF[key], standsIn(key)]), onFieldChange);
+  useDraftMirror((Object.keys(FIELD_OF) as VitalsKey[]).map(key => [FIELD_OF[key], standsIn(key)]), onDraftValue);
 
   const [saving, setSaving] = useState(false);
 
@@ -535,7 +537,7 @@ export function StartingInfoVitals({
                             value={shownText(null, row.metric)}
                             externalError={clashes(row.metric) || taken(row.metric) ? SAME_SLOT : refusal([null, row.metric])}
                             placeholder="—"
-                            wrapperClass={`bt-cell-input bt-cell-draft${formStage === 2 && row.metric === 'weight' && inputs.weightKg === undefined ? ' field-attention' : ''}`}
+                            wrapperClass={`bt-cell-input bt-cell-draft${formStage === 2 && row.metric === 'weight' ? ' field-attention' : ''}`}
                             active={activeCell === cellId}
                             onChange={v => setSimpleDraft(row.metric, v)}
                             onFocus={() => setActiveCell(cellId)}
