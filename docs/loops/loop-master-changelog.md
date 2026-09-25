@@ -5,6 +5,13 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-09-25 (Brad-directed: Opus 5.5 at high effort):** the `worker` and
+  `adversary` agents' frontmatter moves from `effort: max` to `effort: high`,
+  in both fleets; Brad: "set opus 5.5 effort to high". The orchestrator is
+  unchanged: a one-off probe routine measured the cloud default as
+  `CLAUDE_EFFORT=high` (the environment's `CLAUDE_EFFORT_LEVEL=medium` is a
+  name Claude Code never reads).
+
 - **2026-09-24 (Brad-directed: Fable orchestrates, Opus 5.5 works and
   reviews):** Orchestration rewritten, identical in both fleets'
   constitutions. The orchestrator runs on the latest Fable (the trigger pin

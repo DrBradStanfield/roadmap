@@ -13,11 +13,11 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   synthesis, judgment, verification and the retro. Delegate all other work,
   parallel when independent: one crisp verifiable deliverable per worker,
   spend proportionate to the output's worth; justify unusual scale.
-- **Workers and reviewers are Opus 5.5 at max effort.** Spawn the repo's
+- **Workers and reviewers are Opus 5.5 at high effort.** Spawn the repo's
   `worker` and `adversary` agents by name: their `.claude/agents/*.md` pin
-  `model: opus` and `effort: max`. Never pass a per-call `model`, which
+  `model: opus` and `effort: high`. Never pass a per-call `model`, which
   overrides the pin; never Sonnet or Haiku. You run at the model's default
-  effort. Never set `CLAUDE_CODE_EFFORT_LEVEL`: it overrides every agent's pin.
+  effort (high in the cloud, measured 2026-09-25). Never set `CLAUDE_CODE_EFFORT_LEVEL`: it overrides every agent's pin.
 - Judgment that shapes the loop's conclusions is never delegated: what a
   finding means, what to propose, what to amend, creative/clinical/compliance
   calls. Workers gather, build and verify; you decide.

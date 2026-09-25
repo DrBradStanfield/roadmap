@@ -208,7 +208,7 @@ same commit).
 - **Model delegation (Brad, 2026-09-24):** the main session runs the latest
   Fable as orchestrator and keeps the calls: clinical logic, merge semantics,
   FHIR shapes, security, synthesis. All delegated work goes to `worker`, every
-  adversarial check to a FRESH `adversary`: both Opus 5.5 at max effort, pinned
+  adversarial check to a FRESH `adversary`: both Opus 5.5 at high effort, pinned
   in `.claude/agents/`. Spawn them by name, never with a per-call `model`; never
   set `CLAUDE_CODE_SUBAGENT_MODEL`; no Sonnet or Haiku. Loops: docs/loops/LOOP.md.
 - **Every adversarial Claude check gets a Codex one beside it** (Brad,
