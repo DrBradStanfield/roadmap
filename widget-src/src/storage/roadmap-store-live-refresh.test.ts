@@ -157,9 +157,15 @@ describe('US-34 AC1 — a remote change reaches the open page', () => {
     expect(store.loadLatestMeasurements().inputs.heightCm).toBe(181);
   });
 
-  it('answers false when a re-read of an empty backend finds nothing new', async () => {
-    const store = await RoadmapStore.create(new MemoryAdapter());
+  it('the local tier never re-reads, even after another tab wrote (a known gap, US-10 AC5)', async () => {
+    localStorage.clear();
+    const store = await RoadmapStore.create(new LocalStorageAdapter());
+    const otherTab = await RoadmapStore.create(new LocalStorageAdapter());
+    otherTab.addMeasurement('weight', 83, '2026-09-25T00:00:00.000Z');
+    await otherTab.flush();
+
     expect(await store.refreshFromRemote()).toBe(false);
+    expect(store.loadAllHistory()).toEqual([]);
   });
 });
 

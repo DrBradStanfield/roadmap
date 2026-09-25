@@ -202,6 +202,103 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     expect(stored().measurements).toEqual([]);
   });
 
+  it('after a hide the tab shows what the other tab saved, and its next save runs clean and takes in what came after', async () => {
+    const adapterA = new LocalStorageAdapter();
+    const [a, b] = await twoTabs(adapterA);
+    b.addMeasurement('weight', 83, TODAY);
+    await b.flush();
+    const heard = vi.fn();
+    window.addEventListener(REMOTE_CHANGED_EVENT, heard);
+    a.addMeasurement('hdl', 1.4, TODAY);
+
+    a.flushSync(); // A is hidden; the page lives on
+
+    // The hide took B's row in, and told the page.
+    expect(a.loadAllHistory().map((m) => m.value).sort((x, y) => x - y)).toEqual([1.4, 82, 83]);
+    expect(heard).toHaveBeenCalledTimes(1);
+
+    // jsdom has one window for both tabs: B's own save announces A's row there.
+    window.removeEventListener(REMOTE_CHANGED_EVENT, heard);
+    b.addMeasurement('ldl', 3.1, TODAY); // B saves again after A's hide
+    await b.flush();
+    window.addEventListener(REMOTE_CHANGED_EVENT, heard);
+    const write = vi.spyOn(adapterA, 'write');
+    a.addMeasurement('waist', 90, TODAY);
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(write).toHaveBeenCalledTimes(1); // no conflict retry
+    expect(rows()).toEqual(['hdl 1.4 active', 'ldl 3.1 active', 'waist 90 active', 'weight 82 active', 'weight 83 active']);
+    expect(a.loadAllHistory().map((m) => m.value).sort((x, y) => x - y)).toEqual([1.4, 3.1, 82, 83, 90]);
+    expect(heard).toHaveBeenCalledTimes(2);
+    window.removeEventListener(REMOTE_CHANGED_EVENT, heard);
+  });
+
+  it('a second hide with nothing new writes nothing', async () => {
+    const [a] = await twoTabs();
+    a.addMeasurement('hdl', 1.4, TODAY);
+    a.flushSync();
+    const after = rev();
+
+    a.flushSync();
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(rev()).toBe(after);
+  });
+
+  it('a device that refuses every write reports it once per page load, not on every hide', async () => {
+    const [a] = await twoTabs();
+    a.addMeasurement('hdl', 1.4, TODAY);
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === FILE_KEY) throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+
+    a.flushSync();
+    await vi.advanceTimersByTimeAsync(0);
+    a.flushSync();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    expect(rows()).toEqual(['weight 82 active']);
+  });
+});
+
+
+/** A provider whose every read takes 300 ms, so a save and an erase overlap. */
+class SlowAdapter extends MemoryAdapter {
+  async read(...args: Parameters<MemoryAdapter['read']>) {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    return super.read(...args);
+  }
+}
+
+/** A slow cloud holding one weight, and a page open on it with 83 kg typed. */
+async function slowCloudWithEdit(): Promise<{ cloud: MemoryCloud; adapter: SlowAdapter; store: RoadmapStore }> {
+  const cloud = new MemoryCloud();
+  const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
+  seeded.addMeasurement('weight', 82, '2026-09-18T00:00:00.000Z');
+  await seeded.flush();
+  const adapter = new SlowAdapter(cloud);
+  const opening = RoadmapStore.create(adapter);
+  await vi.advanceTimersByTimeAsync(400);
+  const store = await opening;
+  store.addMeasurement('weight', 83, TODAY); // on the 800 ms debounce
+  return { cloud, adapter, store };
+}
+
+/** Erase, and note what the cloud holds at the moment success is reported. */
+async function eraseAndLook(cloud: MemoryCloud, store: RoadmapStore): Promise<RoadmapFile | null> {
+  let atSuccess: RoadmapFile | null = null;
+  const erase = store.deleteUserData().then((result) => {
+    if (result.success) atSuccess = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
+  });
+  await vi.advanceTimersByTimeAsync(10_000);
+  await erase;
+  return atSuccess;
+}
+
+describe('US-11 AC7 — an erase beats what it has not seen, and says so only once written', () => {
   it('a tab that never hid still erases over the other tab\'s erase and fresh start', async () => {
     const [a, b] = await twoTabs();
     expect((await b.deleteUserData()).success).toBe(true);
@@ -232,25 +329,45 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     expect(file.measurements).toEqual([]);
   });
 
-  it('after a hide, the tab\'s next save runs clean and still takes the other tab in', async () => {
-    const adapterA = new LocalStorageAdapter();
-    const [a, b] = await twoTabs(adapterA);
-    a.addMeasurement('hdl', 1.4, TODAY);
-    a.flushSync(); // A is hidden; the page lives on
-    b.addMeasurement('weight', 83, TODAY);
-    await b.flush();
-    const write = vi.spyOn(adapterA, 'write');
-    const heard = vi.fn();
-    window.addEventListener(REMOTE_CHANGED_EVENT, heard);
+  it('reports success only once the erase is written, though a save was running when it began', async () => {
+    const { cloud, store } = await slowCloudWithEdit();
+    await vi.advanceTimersByTimeAsync(900); // the debounced save has started, and is still reading
 
-    a.addMeasurement('ldl', 3.1, TODAY);
-    await vi.advanceTimersByTimeAsync(1_000);
+    const atSuccess = await eraseAndLook(cloud, store);
 
-    expect(write).toHaveBeenCalledTimes(1); // no conflict retry
-    expect(rows()).toEqual(['hdl 1.4 active', 'ldl 3.1 active', 'weight 82 active', 'weight 83 active']);
-    expect(a.loadAllHistory().map((m) => m.value).sort((x, y) => x - y)).toEqual([1.4, 3.1, 82, 83]);
-    expect(heard).toHaveBeenCalledTimes(1); // the page is told B's row arrived
-    window.removeEventListener(REMOTE_CHANGED_EVENT, heard);
+    expect(atSuccess?.meta.eraseEpoch).toBe(1);
+    expect(atSuccess?.measurements).toEqual([]);
+  });
+
+  it('never saves the change it is about to throw away', async () => {
+    const { cloud, adapter, store } = await slowCloudWithEdit();
+    const write = vi.spyOn(adapter, 'write');
+    await vi.advanceTimersByTimeAsync(700); // the erase begins 100 ms before the debounce fires
+
+    const atSuccess = await eraseAndLook(cloud, store);
+
+    expect(atSuccess?.meta.eraseEpoch).toBe(1);
+    expect(atSuccess?.measurements).toEqual([]);
+    const written = write.mock.calls.map(([, body]) => body as RoadmapFile);
+    expect(written.some((file) => file.measurements.some((m) => m.value === 83))).toBe(false);
+  });
+
+  it('an erase that failed to save is written by the next hide', async () => {
+    const [a] = await twoTabs();
+    let full = true;
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (full && key === FILE_KEY) throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+    expect((await a.deleteUserData()).success).toBe(false);
+    expect(rows()).toEqual(['weight 82 active']);
+
+    full = false;
+    a.flushSync(); // the tab hides
+
+    expect(stored().meta.eraseEpoch).toBe(1);
+    expect(stored().measurements).toEqual([]);
   });
 });
 

@@ -279,7 +279,8 @@ function visibleContentOf(file: RoadmapFile): string {
 export class RoadmapStore {
   private file: RoadmapFile;
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
-  private persisting = false;
+  /** The save in flight, if one is: a persist() call made meanwhile joins it. */
+  private running: Promise<boolean> | null = null;
   private dirtyDuringPersist = false;
   /** True when a pending mirror existed but could not be read/merged at
    *  create() — persist success must then LEAVE the marker so the mirror is
@@ -292,6 +293,8 @@ export class RoadmapStore {
    *  so a failed save leaves its changes unsaved for the next hide to retry. */
   private changes = 0;
   private savedChanges = 0;
+  /** A tab-close write was refused, and reported, once already. */
+  private closeWriteRefused = false;
   private readonly deviceId: string;
   /** The last moment this device's copy and the cloud were known to agree: the
    *  load, then every successful save. A failed save marks the pending mirror
@@ -724,8 +727,11 @@ export class RoadmapStore {
     // resurrect every record from the stored copy (and any other device's).
     // Bump past the STORED epoch as well, read now: another tab or device may
     // have erased and started again since this copy was read, and an erase at
-    // an equal epoch unions with that record instead of beating it (US-10
-    // AC5). An unreadable record leaves this copy's epoch, as before.
+    // an equal epoch unions with that record instead of beating it (US-11
+    // AC7). An unreadable record leaves this copy's epoch, as before. A change
+    // still on the debounce is one the erase throws away: saving it during
+    // the read would only send a pre-erase copy up ahead of the erase.
+    this.cancelDebounce();
     const stored = await this.sync.load().then((file) => file.meta.eraseEpoch ?? 0, () => 0);
     const eraseEpoch = Math.max(stored, this.file.meta.eraseEpoch ?? 0) + 1;
     // An erase must not silently re-consent the user. Under US-17's default-on
@@ -779,10 +785,7 @@ export class RoadmapStore {
 
   /** Force-persist any pending changes (call before navigation). */
   async flush(): Promise<void> {
-    if (this.persistTimer) {
-      clearTimeout(this.persistTimer);
-      this.persistTimer = null;
-    }
+    this.cancelDebounce();
     if (!(await this.persist())) {
       throw new Error('Cloud sync failed — your latest changes are still on this device.');
     }
@@ -791,7 +794,7 @@ export class RoadmapStore {
   /** True while the working copy is AHEAD of the cloud: a save in flight, or
    *  one still sitting on the debounce. */
   private get writePending(): boolean {
-    return this.persisting || this.persistTimer !== null;
+    return this.running !== null || this.persistTimer !== null;
   }
 
   /** True while a change to the working copy has not landed, a failed save's
@@ -912,10 +915,7 @@ export class RoadmapStore {
    */
   flushSync(): void {
     if (!this.unsaved) return;
-    if (this.persistTimer) {
-      clearTimeout(this.persistTimer);
-      this.persistTimer = null;
-    }
+    this.cancelDebounce();
     if (this.adapter instanceof LocalStorageAdapter) {
       try {
         const ctx = { deviceId: this.deviceId, now: new Date().toISOString() };
@@ -927,7 +927,10 @@ export class RoadmapStore {
         return;
       } catch {
         // A newer app's record, unreadable bytes or a full disk: the async
-        // save meets the same refusal, and reports it.
+        // save meets the same refusal and reports it, once per page load,
+        // since every later hide meets it again (US-10 AC5).
+        if (this.closeWriteRefused) return;
+        this.closeWriteRefused = true;
       }
     }
     void this.persist();
@@ -983,22 +986,38 @@ export class RoadmapStore {
   /** Mark dirty + schedule a debounced persist. */
   private touch(): void {
     this.changes += 1;
-    if (this.persisting) this.dirtyDuringPersist = true;
-    if (this.persistTimer) clearTimeout(this.persistTimer);
+    if (this.running) this.dirtyDuringPersist = true;
+    this.cancelDebounce();
     this.persistTimer = setTimeout(() => {
       this.persistTimer = null;
       void this.persist();
     }, PERSIST_DEBOUNCE_MS);
   }
 
-  /** Serialized read-merge-write. Re-runs if mutations land during the await. */
-  /** @returns false when the save failed (already reported to Sentry). */
-  private async persist(): Promise<boolean> {
-    if (this.persisting) {
+  /** Cancel the debounced save: the caller saves now, or throws the change away. */
+  private cancelDebounce(): void {
+    if (this.persistTimer) clearTimeout(this.persistTimer);
+    this.persistTimer = null;
+  }
+
+  /**
+   * Serialized read-merge-write, run by saveLoop(). A call made while a save
+   * runs joins it: the save goes round again for the new changes, and the
+   * call answers when that pass lands or fails. Answering at once let an
+   * awaited flush, and so an erase, report a save that had not happened
+   * (US-11 AC7).
+   * @returns false when the save failed (already reported to Sentry).
+   */
+  private persist(): Promise<boolean> {
+    if (this.running) {
       this.dirtyDuringPersist = true;
-      return true; // the in-flight loop will pick the changes up
+      return this.running;
     }
-    this.persisting = true;
+    return (this.running = this.saveLoop());
+  }
+
+  /** Re-runs while mutations land during the await. */
+  private async saveLoop(): Promise<boolean> {
     // A remote change this save folds in is one refreshFromRemote() will never
     // find: it stands aside while a write is pending, and the merge below has
     // already taken the change into the working copy (US-34 AC1). Announce it
@@ -1062,7 +1081,7 @@ export class RoadmapStore {
       });
       return false;
     } finally {
-      this.persisting = false;
+      this.running = null;
     }
   }
 }
