@@ -92,13 +92,27 @@
       }
     },
 
+    "FieldStamps": {
+      "type": "object",
+      "description": "When each field of this object was last written, keyed by field name: the merge takes each field's newest write, not the newest whole object. These are the sync engine's clocks, so never write them; the app and the MCP tools stamp their own writes. A file written before 2026-09-25 has none, and every field then carries the object's own stamp. A writer that moves the object's own stamp past every one of these (an older app, or a hand edit under agent-access.md) is read as a write to every field, as before field stamps.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["updatedAt"],
+        "properties": {
+          "updatedAt": { "type": "string" },
+          "lamport": { "type": "number" }
+        }
+      }
+    },
+
     "RoadmapProfile": {
       "type": "object",
-      "description": "Demographics and display preferences. A last-write-wins singleton.",
+      "description": "Demographics and display preferences. A singleton merged field by field: each field is last-write-wins (see fieldStamps).",
       "required": ["updatedAt"],
       "properties": {
-        "updatedAt": { "type": "string" },
+        "updatedAt": { "type": "string", "description": "When any field last changed." },
         "lamport": { "type": "number" },
+        "fieldStamps": { "$ref": "#/$defs/FieldStamps" },
         "sex": { "enum": ["male", "female"] },
         "birthYear": { "type": "number" },
         "birthMonth": { "type": "number", "description": "1–12." },
@@ -288,11 +302,12 @@
 
     "FileScreenings": {
       "type": "object",
-      "description": "The cancer- and bone-screening workflow, as one last-write-wins singleton. Every field is optional. Date fields use 'YYYY-MM' (month precision).",
+      "description": "The cancer- and bone-screening workflow, as one singleton merged field by field: each answer is last-write-wins (see fieldStamps). Every field is optional. Date fields use 'YYYY-MM' (month precision).",
       "required": ["updatedAt"],
       "properties": {
-        "updatedAt": { "type": "string" },
+        "updatedAt": { "type": "string", "description": "When any answer last changed." },
         "lamport": { "type": "number" },
+        "fieldStamps": { "$ref": "#/$defs/FieldStamps" },
 
         "colorectalMethod": { "enum": ["fit_annual", "colonoscopy_10yr", "other", "not_yet_started"] },
         "colorectalLastDate": { "type": "string" },

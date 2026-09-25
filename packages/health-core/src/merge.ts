@@ -16,7 +16,8 @@
  *    so a correction seen by one device is never undone by the other.
  *  - medications / supplements / reminderPreferences → current-state, keyed by
  *    their natural key, last-write-wins by LOGICAL clock (lamport), not wall-clock.
- *  - profile / screenings → singletons, same logical-clock LWW.
+ *  - profile / screenings → singletons, the same logical-clock LWW field by
+ *    field (`mergeFields`).
  *  - medicationHistory / supplementHistory / documents → append-only logs, union
  *    by (id, content); documents also OR the `deleted` tombstone.
  *  - recommendationSnapshots → deduped by date.
@@ -52,6 +53,7 @@ import {
   type FileReminderPreference,
   type FileReminderOptIn,
   type FileDocument,
+  type FieldStamped,
   type RoadmapProfile,
   type FileScreenings,
   type RecommendationSnapshot,
@@ -377,6 +379,106 @@ function pickNewerOptional<T extends SyncStamp>(
   return pickNewer(local, remote);
 }
 
+/** The keys of a field-stamped singleton that are its clocks, not its fields. */
+const CLOCK_KEYS = new Set(['updatedAt', 'lamport', 'fieldStamps']);
+
+type Clock = Required<SyncStamp>;
+
+/** A stamp as the merge compares and stores it: the two clocks, nothing else. */
+function clockOf(stamp: SyncStamp): Clock {
+  return { lamport: stamp.lamport ?? 0, updatedAt: stamp.updatedAt };
+}
+
+/**
+ * When each field of a profile or the screening answers was last written, as
+ * the merge reads it: a stamp, or null for a field nobody has written.
+ *
+ * Field stamps count only while the object's own stamp is no newer than the
+ * newest of them. A writer that does not stamp fields (an app from before
+ * 2026-09-25, or a hand edit under the agent rules) moves the object's stamp,
+ * leaves the field stamps as it found them, and cannot say which fields it
+ * changed. Then, and when there are no field stamps at all, every field,
+ * present or absent, carries the object's stamp: the whole-object rule the
+ * merge always had. Otherwise a field with no stamp of its own carries the
+ * object's if it holds a value, and none if it does not.
+ */
+function fieldClock(obj: FieldStamped): (field: string) => Clock | null {
+  const own = clockOf(obj);
+  const stamps = new Map(Object.entries(obj.fieldStamps ?? {}).map(([field, stamp]) => [field, clockOf(stamp)]));
+  let newest: Clock | null = null;
+  for (const clock of stamps.values()) if (!newest || stampIsNewer(clock, newest)) newest = clock;
+  if (!newest || stampIsNewer(own, newest)) return () => own;
+  const values = obj as unknown as Record<string, unknown>;
+  return (field) => stamps.get(field) ?? (values[field] === undefined ? null : own);
+}
+
+/** The keys a clock is read for: every field the object holds or has stamped. */
+function fieldNames(...objs: FieldStamped[]): string[] {
+  const names = new Set(objs.flatMap((obj) => [...Object.keys(obj), ...Object.keys(obj.fieldStamps ?? {})]));
+  return [...names].filter((name) => !CLOCK_KEYS.has(name)).sort();
+}
+
+/**
+ * Merge a profile or the screening answers field by field (US-10 AC6). Each
+ * field takes its newer write, so a copy that changed one field no longer
+ * carries its old copy of every other. The object's own stamp is the newer of
+ * the two, and `fieldStamps` records each field's winner, so the next merge
+ * reads the result the same way. Two copies with no field stamps merge
+ * exactly as they always did: the whole newer object.
+ */
+function mergeFields<T extends FieldStamped>(local: T, remote: T): T {
+  const stamped = (obj: T) => Object.keys(obj.fieldStamps ?? {}).length > 0;
+  if (!stamped(local) && !stamped(remote)) return pickNewer(local, remote);
+  const localAt = fieldClock(local);
+  const remoteAt = fieldClock(remote);
+  const l = local as unknown as Record<string, unknown>;
+  const r = remote as unknown as Record<string, unknown>;
+  const values: Array<[string, unknown]> = [];
+  const stamps: Array<[string, Clock]> = [];
+  for (const field of fieldNames(local, remote)) {
+    const a = localAt(field);
+    const b = remoteAt(field);
+    // Tied stamps are one write seen twice, or a hand edit that moved no
+    // clock: the larger value wins, so both sides pick the same one.
+    const takeLocal = !b || (!!a && (stampIsNewer(a, b) ||
+      (!stampIsNewer(b, a) && (stableStringify(l[field]) ?? '') > (stableStringify(r[field]) ?? ''))));
+    const [value, clock] = takeLocal ? [l[field], a] : [r[field], b];
+    if (value !== undefined) values.push([field, value]);
+    if (clock) stamps.push([field, clock]);
+  }
+  const { updatedAt, lamport } = pickNewer(local, remote);
+  // Built from entries, never by assignment: a field named `__proto__` in a
+  // hand-edited file must stay a field.
+  return {
+    ...Object.fromEntries(values),
+    updatedAt,
+    ...(lamport === undefined ? null : { lamport }),
+    ...(stamps.length > 0 ? { fieldStamps: Object.fromEntries(stamps) } : null),
+  } as T;
+}
+
+/**
+ * A write to some fields of a profile or the screening answers (US-10 AC6).
+ * The fields written take one new stamp, a lamport past every clock the
+ * object holds; every other field keeps the clock the merge reads for it now,
+ * so the object's new stamp is not taken for theirs. Pass only the fields
+ * that changed. Returns a new object; the one given is untouched.
+ */
+export function stampFields<T extends FieldStamped>(obj: T, changes: Partial<T>, now: string): T {
+  const at = fieldClock(obj);
+  const kept = fieldNames(obj).flatMap((field): Array<[string, Clock]> => {
+    const clock = at(field);
+    return clock ? [[field, clock]] : [];
+  });
+  const stamp = { lamport: 1 + Math.max(obj.lamport ?? 0, ...kept.map(([, clock]) => clock.lamport)), updatedAt: now };
+  return {
+    ...obj,
+    ...changes,
+    ...stamp,
+    fieldStamps: Object.fromEntries([...kept, ...Object.keys(changes).map((field): [string, Clock] => [field, stamp])]),
+  };
+}
+
 /**
  * The stamp that says WHEN each append-only row was written, per array. One
  * table, so a new array is added here and nowhere else. `recommendationSnapshots`
@@ -523,8 +625,8 @@ export function mergeFiles(
       eraseEpoch: localEpoch, // equal on both sides in this branch
     },
 
-    profile: pickNewer<RoadmapProfile>(local.profile, remote.profile),
-    screenings: pickNewer<FileScreenings>(local.screenings, remote.screenings),
+    profile: mergeFields<RoadmapProfile>(local.profile, remote.profile),
+    screenings: mergeFields<FileScreenings>(local.screenings, remote.screenings),
     reminderOptIn: pickNewerOptional<FileReminderOptIn>(
       local.reminderOptIn,
       remote.reminderOptIn,

@@ -192,8 +192,6 @@ export function migrateFile(
   // overwrite with a guaranteed-present, well-typed shape.
   const base = createEmptyFile(opts);
   const rawMeta = isObject(raw.meta) ? raw.meta : {};
-  const rawProfile = isObject(raw.profile) ? raw.profile : {};
-  const rawScreenings = isObject(raw.screenings) ? raw.screenings : {};
 
   // Spread rawMeta FIRST (rule 1 applies to meta too): rebuilding only the
   // known fields silently dropped everything else — including `eraseEpoch`,
@@ -221,24 +219,31 @@ export function migrateFile(
   const rowsOf = <T>(rows: unknown): T[] => asArray<T>(rows).filter((r) => isObject(r));
   const stamped = <T>(rows: unknown): T[] => rowsOf<T>(rows).map((r) => sanitizeStamp(r, anchor));
   const dated = <T>(rows: unknown): T[] => rowsOf<T>(rows).map((r) => sanitizeCreatedAt(r, anchor));
+  // Profile and screenings: the object's own stamp, and each field's (US-10
+  // AC6). A field stamp that is not a stamp is dropped, so its field reads the
+  // object's stamp; a map with none left is dropped whole.
+  const singleton = (value: unknown) => {
+    const { fieldStamps, ...rest } = isObject(value) ? value : {};
+    const clocks = Object.entries(isObject(fieldStamps) ? fieldStamps : {})
+      .filter((entry): entry is [string, Record<string, unknown>] => isObject(entry[1]))
+      .map(([field, s]) => [field, sanitizeStamp({ lamport: s.lamport ?? 0, updatedAt: s.updatedAt ?? '' }, anchor)]);
+    return {
+      ...sanitizeStamp({ ...rest, updatedAt: typeof rest.updatedAt === 'string' ? rest.updatedAt : base.profile.updatedAt }, anchor),
+      ...(clocks.length > 0 ? { fieldStamps: Object.fromEntries(clocks) } : null),
+    };
+  };
 
   return {
     ...(raw as Record<string, unknown>),
     schemaVersion: CURRENT_SCHEMA_VERSION,
     meta,
-    profile: sanitizeStamp({
-      ...rawProfile,
-      updatedAt: typeof rawProfile.updatedAt === 'string' ? rawProfile.updatedAt : base.profile.updatedAt,
-    }, anchor),
+    profile: singleton(raw.profile),
     measurements: dated(raw.measurements),
     medications: stamped(raw.medications),
     medicationHistory: stamped(raw.medicationHistory),
     supplements: stamped(raw.supplements),
     supplementHistory: stamped(raw.supplementHistory),
-    screenings: sanitizeStamp({
-      ...rawScreenings,
-      updatedAt: typeof rawScreenings.updatedAt === 'string' ? rawScreenings.updatedAt : base.screenings.updatedAt,
-    }, anchor),
+    screenings: singleton(raw.screenings),
     labValues: withSiCorrections(dated<FileLabValue>(raw.labValues)),
     documents: rowsOf(raw.documents),
     reminderPreferences: stamped(raw.reminderPreferences),

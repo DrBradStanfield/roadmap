@@ -127,6 +127,28 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     expect(merged.medications[0].drugName).toBe('rosuvastatin');
   });
 
+  // US-10 AC6: the per-field clocks on the two singletons are writer-supplied
+  // stamps like any other, and a future one would freeze its field the same way.
+  it('sanitises the field stamps on profile and screenings, and adds none to a file without them', () => {
+    const f = migrateFile(rawFile({
+      profile: {
+        sex: 'male', heightCm: 180, updatedAt: '2026-06-01T00:00:00Z', lamport: 2,
+        fieldStamps: {
+          heightCm: { lamport: 2, updatedAt: '2099-01-01T00:00:00Z', note: 'not a clock' },
+          sex: 'not a stamp',
+          birthYear: { lamport: 1e308, updatedAt: 42 },
+        },
+      },
+      screenings: { updatedAt: '2026-06-01T00:00:00Z', lamport: 0, fieldStamps: 'not a map' },
+    }), OPTS);
+    expect(f.profile.fieldStamps).toEqual({
+      heightCm: { lamport: 2, updatedAt: META.updatedAt },
+      birthYear: { lamport: 1e12, updatedAt: '' },
+    });
+    expect(f.screenings).not.toHaveProperty('fieldStamps');
+    expect(migrateFile(rawFile(), OPTS).profile).not.toHaveProperty('fieldStamps');
+  });
+
   // Defect 4: a future createdAt beats every later genuine entry in the slot,
   // flipping the user's own fresh value to 'entered-in-error'.
   it('clamps a future createdAt so a genuine later entry still wins its slot', () => {

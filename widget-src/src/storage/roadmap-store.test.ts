@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { localDay, measurementsToInputs, type RoadmapFile } from '@roadmap/health-core';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createEmptyFile, localDay, measurementsToInputs, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core';
@@ -330,6 +330,70 @@ describe('RoadmapStore — screening current state (LWW singleton)', () => {
     const matches = rows.filter((r) => r.screeningKey === 'colorectal_method');
     expect(matches).toHaveLength(1); // singleton — no duplicate rows
     expect(matches[0].value).toBe('colonoscopy');
+  });
+});
+
+// US-10 AC6: the profile and the screening answers used to merge as whole
+// objects, so a stale device's edit to one field put back its old copy of every
+// other. Two stores over one cloud, the cloud record from before field stamps.
+describe('RoadmapStore — profile and screenings merge field by field (US-10 AC6)', () => {
+  const EARLIER = '2026-09-25T10:00:00.000Z';
+  const LATER = '2026-09-25T10:00:05.000Z';
+
+  /** Two devices open on one record written before field stamps. */
+  async function twoDevices(): Promise<[MemoryCloud, RoadmapStore, RoadmapStore]> {
+    const cloud = new MemoryCloud();
+    const file = createEmptyFile({ deviceId: 'dev_seed', now: '2026-09-18T00:00:00.000Z' });
+    file.profile = { ...file.profile, sex: 'male', heightCm: 178, birthYear: 1971, unitSystem: 'si', lamport: 1 };
+    await new MemoryAdapter(cloud).write(ROADMAP_FILE_NAME, file, null);
+    vi.setSystemTime(new Date(EARLIER));
+    return [cloud, await RoadmapStore.create(new MemoryAdapter(cloud)), await RoadmapStore.create(new MemoryAdapter(cloud))];
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('B saves a height, then stale A saves a birth year and switches units: the cloud keeps all three', async () => {
+    const [cloud, a, b] = await twoDevices();
+    b.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 });
+    await b.flush();
+
+    vi.setSystemTime(new Date(LATER));
+    a.saveChangedMeasurements({ birthYear: 1972, unitSystem: 'conventional' }, { birthYear: 1971, unitSystem: 'si' });
+    await a.flush();
+
+    expect(readCloudFile(cloud).profile).toMatchObject({ sex: 'male', heightCm: 180, birthYear: 1972, unitSystem: 'conventional' });
+    expect(a.getPrefillInputs()).toMatchObject({ heightCm: 180, birthYear: 1972 });
+  });
+
+  it('a stale device marking the email step done does not put back the old height', async () => {
+    const [cloud, a, b] = await twoDevices();
+    b.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 });
+    await b.flush();
+
+    vi.setSystemTime(new Date(LATER));
+    a.markReportEmailCaptured();
+    await a.flush();
+
+    expect(readCloudFile(cloud).profile).toMatchObject({ heightCm: 180, reportEmailCaptured: true });
+  });
+
+  it('two devices answer different screening questions: the cloud keeps both answers', async () => {
+    const [cloud, a, b] = await twoDevices();
+    a.saveScreening('colorectal_method', 'fit_annual');
+    await a.flush();
+
+    vi.setSystemTime(new Date(LATER));
+    b.saveScreening('breast_frequency', 'annual');
+    await b.flush();
+
+    const reloaded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const answers = Object.fromEntries(reloaded.loadLatestMeasurements().screenings.map((r) => [r.screeningKey, r.value]));
+    expect(answers).toEqual({ colorectal_method: 'fit_annual', breast_frequency: 'annual' });
   });
 });
 

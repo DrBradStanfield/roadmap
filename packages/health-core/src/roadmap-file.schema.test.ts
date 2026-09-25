@@ -17,7 +17,7 @@ import {
   DOCUMENT_TYPES,
   METRIC_TYPES,
 } from './validation';
-import { mergeFiles } from './merge';
+import { mergeFiles, stampFields } from './merge';
 import { migrateFile } from './migrate';
 import {
   createEmptyFile,
@@ -139,6 +139,9 @@ function representativeFile(): RoadmapFile {
     lamport: 2,
     updatedAt: '2026-05-02T00:00:00Z',
   };
+  // Written since, each field stamped the way every writer stamps it (US-10 AC6).
+  phone.profile = stampFields(phone.profile, { heightCm: 166 }, '2026-05-03T00:00:00Z');
+  phone.screenings = stampFields(phone.screenings, { breastLastDate: '2026-04' }, '2026-05-03T00:00:00Z');
   phone.measurements = [
     createMeasurement({
       id: 'm_phone', metricType: 'ldl', value: 2.1,
@@ -224,8 +227,11 @@ describe('docs/health-roadmap-file.schema.json (US-29)', () => {
 
   it('validates a full record built through merge + migrate', () => {
     const file = representativeFile();
-    // Guard the fixture itself: merge really did produce the correction pair.
+    // Guard the fixture itself: merge really did produce the correction pair,
+    // and carried the field stamps through.
     expect(file.measurements.filter((m) => m.status === 'entered-in-error')).toHaveLength(1);
+    expect(file.profile.fieldStamps?.heightCm).toEqual({ lamport: 4, updatedAt: '2026-05-03T00:00:00Z' });
+    expect(file.screenings.fieldStamps?.breastLastDate).toEqual({ lamport: 3, updatedAt: '2026-05-03T00:00:00Z' });
     const result = check(file);
     expect(result.errors).toBe('No errors');
     expect(result.ok).toBe(true);
@@ -263,6 +269,8 @@ describe('docs/health-roadmap-file.schema.json (US-29)', () => {
       ['screening enum typo', (f) => { f.screenings.colorectalResult = 'fine' as never; }],
       ['reminderOptIn without a token', (f) => { delete (f.reminderOptIn as { token?: string }).token; }],
       ['lab value missing its unit', (f) => { delete (f.labValues[0] as { unit?: string }).unit; }],
+      ['field stamp without its time', (f) => { delete (f.profile.fieldStamps!.heightCm as { updatedAt?: string }).updatedAt; }],
+      ['field stamp that is not a stamp', (f) => { (f.screenings.fieldStamps as Record<string, unknown>).breastLastDate = '2026-05-03'; }],
     ];
     for (const [label, corrupt] of cases) {
       const file = representativeFile();

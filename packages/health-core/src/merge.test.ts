@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { baseIdOf, mergeFiles } from './merge';
+import { baseIdOf, mergeFiles, stampFields } from './merge';
 import {
   createEmptyFile,
   stableStringify,
@@ -10,6 +10,7 @@ import {
   type FileReminderPreference,
   type FileLabValue,
   type FileDocument,
+  type RoadmapProfile,
 } from './roadmap-file';
 
 const OPTS = { deviceId: 'dev_merge', now: '2026-06-08T12:00:00Z' };
@@ -295,6 +296,197 @@ describe('mergeFiles — singletons (profile, screenings)', () => {
     a.screenings = { colorectalMethod: 'fit_annual', updatedAt: '2026-05-01T00:00:00Z', lamport: 1 };
     b.screenings = { colorectalMethod: 'colonoscopy_10yr', updatedAt: '2026-04-01T00:00:00Z', lamport: 9 };
     expect(mergeFiles(a, b, OPTS).screenings.colorectalMethod).toBe('colonoscopy_10yr');
+  });
+});
+
+/** A field's clock, in the shape the file stores it. */
+const at = (lamport: number, updatedAt: string) => ({ lamport, updatedAt });
+
+// US-10 AC6: the newest edit to ONE field used to carry its writer's copy of
+// every other field, because the two singletons merged as whole objects.
+describe('mergeFiles — profile and screenings merge field by field (US-10 AC6)', () => {
+  const T0 = '2026-05-01T00:00:00Z'; // the copy both devices read
+  const T1 = '2026-05-02T09:00:00Z'; // B's write
+  const T2 = '2026-05-02T09:05:00Z'; // A's write, later, made without seeing B's
+
+  it('B saves a height, then stale A saves a birth year: both survive, whichever side merges', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    b.profile = {
+      sex: 'male', heightCm: 180, birthYear: 1971, updatedAt: T1, lamport: 2,
+      fieldStamps: { sex: at(1, T0), heightCm: at(2, T1), birthYear: at(1, T0) },
+    };
+    a.profile = {
+      sex: 'male', heightCm: 178, birthYear: 1972, updatedAt: T2, lamport: 2,
+      fieldStamps: { sex: at(1, T0), heightCm: at(1, T0), birthYear: at(2, T2) },
+    };
+    for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS)]) {
+      expect(merged.profile).toMatchObject({ sex: 'male', heightCm: 180, birthYear: 1972 });
+      // The object's own stamp is the newer of the two; each field keeps its winner's.
+      expect(merged.profile).toMatchObject({ updatedAt: T2, lamport: 2 });
+      expect(merged.profile.fieldStamps).toEqual({ sex: at(1, T0), heightCm: at(2, T1), birthYear: at(2, T2) });
+    }
+  });
+
+  it('two devices answer different screening questions: both answers survive', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.screenings = { colorectalMethod: 'fit_annual', updatedAt: T1, lamport: 1, fieldStamps: { colorectalMethod: at(1, T1) } };
+    b.screenings = { breastFrequency: 'biennial', updatedAt: T2, lamport: 1, fieldStamps: { breastFrequency: at(1, T2) } };
+    for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS)]) {
+      expect(merged.screenings).toMatchObject({ colorectalMethod: 'fit_annual', breastFrequency: 'biennial' });
+    }
+  });
+
+  it('the same field changed on both: the newer stamp wins, by lamport first, then by time', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.profile = { heightCm: 181, updatedAt: T2, lamport: 2, fieldStamps: { heightCm: at(2, T2) } };
+    b.profile = { heightCm: 182, updatedAt: T1, lamport: 3, fieldStamps: { heightCm: at(3, T1) } };
+    expect(mergeFiles(a, b, OPTS).profile.heightCm).toBe(182);
+    expect(mergeFiles(b, a, OPTS).profile.heightCm).toBe(182);
+
+    b.profile = { heightCm: 182, updatedAt: T1, lamport: 2, fieldStamps: { heightCm: at(2, T1) } };
+    expect(mergeFiles(a, b, OPTS).profile.heightCm).toBe(181);
+    expect(mergeFiles(b, a, OPTS).profile.heightCm).toBe(181);
+  });
+
+  it('two copies from before field stamps merge exactly as they always did: the whole newer object', () => {
+    const cases: Array<[RoadmapFile['profile'], RoadmapFile['profile'], 'a' | 'b']> = [
+      // Higher lamport, even with the older time.
+      [{ heightCm: 180, birthYear: 1971, updatedAt: T2, lamport: 2 }, { heightCm: 181, updatedAt: T1, lamport: 5 }, 'b'],
+      // Tied lamport: the later time.
+      [{ heightCm: 180, birthYear: 1971, updatedAt: T2, lamport: 2 }, { heightCm: 181, updatedAt: T1, lamport: 2 }, 'a'],
+      // Tied stamps: the larger content, the tiebreak `stampIsNewer` always had.
+      [{ heightCm: 180, updatedAt: T1, lamport: 2 }, { heightCm: 181, updatedAt: T1, lamport: 2 }, 'b'],
+    ];
+    for (const [pa, pb, winner] of cases) {
+      const a = emptyFile();
+      const b = emptyFile();
+      a.profile = pa;
+      b.profile = pb;
+      // Content chosen so the tied case picks the same side as the profile.
+      a.screenings = { breastFrequency: 'annual', updatedAt: pa.updatedAt, lamport: pa.lamport };
+      b.screenings = { colorectalMethod: 'fit_annual', updatedAt: pb.updatedAt, lamport: pb.lamport };
+      const won = winner === 'a' ? a : b;
+      for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS)]) {
+        expect(merged.profile).toStrictEqual(won.profile);
+        expect(merged.screenings).toStrictEqual(won.screenings);
+      }
+    }
+  });
+
+  it('a copy from before field stamps against a stamped one: every field of the old copy carries its object stamp', () => {
+    const a = emptyFile(); // an older app's whole-profile write: it changed the birth year
+    const b = emptyFile(); // this app changed the height, stamping that field alone
+    a.profile = { sex: 'male', heightCm: 178, birthYear: 1972, updatedAt: T2, lamport: 2 };
+    b.profile = {
+      sex: 'male', heightCm: 180, birthYear: 1971, updatedAt: T1, lamport: 3,
+      fieldStamps: { sex: at(1, T0), heightCm: at(3, T1), birthYear: at(1, T0) },
+    };
+    for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS)]) {
+      expect(merged.profile).toMatchObject({ sex: 'male', heightCm: 180, birthYear: 1972, lamport: 3 });
+    }
+
+    // The residual, stated: an old copy stamped after the height was changed
+    // takes the height too, as the whole-object merge always did.
+    a.profile.lamport = 4;
+    for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS)]) {
+      expect(merged.profile).toMatchObject({ heightCm: 178, birthYear: 1972, lamport: 4 });
+    }
+  });
+
+  it('a stamped copy an older app wrote over merges as that app\'s whole-object write', () => {
+    // The older app changed the birth year in place, moved the object's stamp,
+    // and left the field stamps as it found them. Read at face value they would
+    // hand its edit the stale birthYear stamp, which ties with the other copy's
+    // and loses on content.
+    const a = emptyFile();
+    const b = emptyFile();
+    a.profile = {
+      sex: 'male', heightCm: 178, birthYear: 1970, updatedAt: T2, lamport: 2,
+      fieldStamps: { sex: at(1, T0), heightCm: at(1, T0), birthYear: at(1, T0) },
+    };
+    b.profile = {
+      sex: 'male', heightCm: 180, birthYear: 1971, updatedAt: T1, lamport: 2,
+      fieldStamps: { sex: at(1, T0), heightCm: at(2, T1), birthYear: at(1, T0) },
+    };
+    for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS)]) {
+      expect(merged.profile).toMatchObject({ birthYear: 1970, heightCm: 178 });
+      // Stamped at the older app's own stamp, so the next merge reads it the same way.
+      expect(merged.profile.fieldStamps).toMatchObject({ birthYear: at(2, T2), heightCm: at(2, T2) });
+    }
+  });
+
+  it('three devices converge whatever order they merge in, and a merge of a merge changes nothing', () => {
+    const base = emptyFile();
+    base.profile = { sex: 'female', heightCm: 165, birthYear: 1980, updatedAt: T0, lamport: 1 };
+    const one = structuredClone(base);
+    one.profile = stampFields(one.profile, { heightCm: 166 }, '2026-05-03T00:00:00Z');
+    one.screenings = stampFields(one.screenings, { colorectalMethod: 'fit_annual' }, '2026-05-03T00:00:00Z');
+    const two = structuredClone(base);
+    two.profile = stampFields(two.profile, { birthYear: 1981, birthMonth: 4 }, '2026-05-04T00:00:00Z');
+    two.screenings = stampFields(two.screenings, { colorectalMethod: 'colonoscopy_10yr', breastFrequency: 'annual' }, '2026-05-02T00:00:00Z');
+    const three = structuredClone(base);
+    three.profile = stampFields(stampFields(three.profile, { heightCm: 167 }, '2026-05-01T12:00:00Z'), { sex: 'male' }, '2026-05-05T00:00:00Z');
+
+    const singletons = (f: RoadmapFile) => stableStringify({ profile: f.profile, screenings: f.screenings });
+    const orders = [[one, two, three], [three, two, one], [two, three, one], [one, three, two]];
+    const results = orders.map(([x, y, z]) => mergeFiles(mergeFiles(x, y, OPTS), z, OPTS));
+    for (const result of results) expect(singletons(result)).toBe(singletons(results[0]));
+
+    const merged = results[0];
+    // Both heights sit at lamport 2; device one's was written later.
+    expect(merged.profile).toMatchObject({ sex: 'male', heightCm: 166, birthYear: 1981, birthMonth: 4 });
+    expect(merged.screenings).toMatchObject({ colorectalMethod: 'fit_annual', breastFrequency: 'annual' });
+    for (const input of [one, two, three, merged]) {
+      expect(singletons(mergeFiles(merged, input, OPTS))).toBe(singletons(merged));
+    }
+  });
+});
+
+describe('stampFields — a write stamps only the fields it changes (US-10 AC6)', () => {
+  const T0 = '2026-05-01T00:00:00Z';
+  const T1 = '2026-05-02T09:00:00Z';
+  const T2 = '2026-05-02T09:05:00Z';
+
+  it('stamps the fields written one past the object, and keeps every other field\'s clock', () => {
+    const before: RoadmapProfile = { sex: 'male', heightCm: 178, updatedAt: T0, lamport: 1 };
+    const after = stampFields(before, { heightCm: 180 }, T1);
+    expect(after).toEqual({
+      sex: 'male', heightCm: 180, updatedAt: T1, lamport: 2,
+      fieldStamps: { sex: at(1, T0), heightCm: at(2, T1) },
+    });
+    expect(before).not.toHaveProperty('fieldStamps'); // a new object; the one given is untouched
+
+    expect(stampFields(after, { sex: 'female' }, T2).fieldStamps).toEqual({ sex: at(3, T2), heightCm: at(2, T1) });
+  });
+
+  it('the headline case end to end: two writes to one old profile both survive the merge', () => {
+    const a = emptyFile();
+    a.profile = { sex: 'male', heightCm: 178, birthYear: 1971, updatedAt: T0, lamport: 1 };
+    const b = structuredClone(a);
+    b.profile = stampFields(b.profile, { heightCm: 180 }, T1);
+    a.profile = stampFields(a.profile, { birthYear: 1972 }, T2);
+    expect(mergeFiles(a, b, OPTS).profile).toMatchObject({ heightCm: 180, birthYear: 1972 });
+  });
+
+  it('a field this copy never had loses to one another device set, though this copy was written later', () => {
+    const a = emptyFile();
+    a.screenings = stampFields(a.screenings, { breastFrequency: 'annual' }, T2);
+    const b = emptyFile();
+    b.screenings = stampFields(b.screenings, { colorectalMethod: 'fit_annual' }, T1);
+    for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS)]) {
+      expect(merged.screenings).toMatchObject({ colorectalMethod: 'fit_annual', breastFrequency: 'annual' });
+    }
+  });
+
+  it('re-stamps a copy an older app wrote over at that app\'s stamp before writing', () => {
+    const stale = {
+      heightCm: 178, birthYear: 1970, updatedAt: T1, lamport: 3,
+      fieldStamps: { heightCm: at(2, T0), birthYear: at(2, T0) },
+    };
+    expect(stampFields(stale, { heightCm: 180 }, T2).fieldStamps).toEqual({ heightCm: at(4, T2), birthYear: at(3, T1) });
   });
 });
 
@@ -770,6 +962,26 @@ describe('mergeFiles — keepNewerThan (the on-device fallback, US-09 AC13)', ()
     expect(merged.profile).toEqual(cloud.profile);
     expect(merged.screenings).toEqual(cloud.screenings);
     expect(merged.measurements.map((m) => m.id)).toEqual(['during']); // the rows still travel
+  });
+
+  it('US-09 AC14: field stamps carry no singleton past an erase, with the option or without it', () => {
+    const device = emptyFile();
+    // Field-stamped edits made during the fallback, on the pre-erase copy.
+    device.profile = stampFields<RoadmapProfile>({ updatedAt: '2026-05-01T00:00:00Z', lamport: 3, heightCm: 150 }, { birthYear: 1970 }, '2026-05-11T09:00:00Z');
+    device.screenings = stampFields(device.screenings, { colorectalMethod: 'fit_annual' }, '2026-05-11T09:00:00Z');
+    device.measurements = [measurement({ id: 'during', metricType: 'weight', value: 80, createdAt: '2026-05-11T09:00:00Z' })];
+    const cloud = erasedCloud();
+    cloud.profile = stampFields(cloud.profile, { heightCm: 180 }, '2026-05-09T00:00:00Z');
+
+    const kept = mergeFiles(device, cloud, FALLBACK);
+    expect(kept.profile).toEqual(cloud.profile);
+    expect(kept.screenings).toEqual(cloud.screenings);
+    expect(kept.measurements.map((m) => m.id)).toEqual(['during']); // the rows still travel
+
+    const gated = mergeFiles(device, cloud, OPTS);
+    expect(gated.profile).toEqual(cloud.profile);
+    expect(gated.screenings).toEqual(cloud.screenings);
+    expect(gated.measurements).toEqual([]);
   });
 
   it('US-09 AC13: without the option the epoch gate is exactly what it was', () => {

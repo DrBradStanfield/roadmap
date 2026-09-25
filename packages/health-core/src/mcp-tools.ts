@@ -12,7 +12,7 @@
  * Nothing here reads the clock, the filesystem or the network.
  */
 import { deadlineSignal } from './adapter';
-import { dayOf, daysBetween } from './merge';
+import { dayOf, daysBetween, stampFields } from './merge';
 import { displayLabUnit, foldLpa, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
 import { ISO_DATE } from './measurement-history';
 import {
@@ -41,7 +41,7 @@ import {
   stampUpdatedAt,
   type EditRejection,
 } from './record-edits';
-import type { FileDocument, FileLabValue, FileMeasurement, FileReminderOptIn, RoadmapFile } from './roadmap-file';
+import type { FileDocument, FileLabValue, FileMeasurement, FileReminderOptIn, RoadmapFile, RoadmapProfile } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
 import { CANONICAL_UNITS, formatDisplayValue, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
@@ -528,8 +528,14 @@ export function readRecord(file: RoadmapFile, request: z.infer<typeof readRecord
   const since = request.since;
   const keep = (row: { recordedAt?: string | null }) => !since || dayOf(row.recordedAt ?? '') >= since;
 
+  // The per-field clocks are the merge's bookkeeping, not what the record says
+  // (US-10 AC6); an agent writes through the tools, which stamp for it.
+  const { fieldStamps: _profileClocks, ...profile } = record.profile;
+  const { fieldStamps: _screeningClocks, ...screenings } = record.screenings;
   const filtered = {
     ...record,
+    profile,
+    screenings,
     measurements: record.measurements.filter((m) => (!metric || matchesMetric(m.metricType, metric)) && keep(m)),
     labValues: record.labValues.filter((l) => (!metric || matchesMetric(l.metricName, metric)) && keep(l)),
     // A question about one metric is not a question about the user's documents,
@@ -679,14 +685,15 @@ export function correctValueTool(
 /**
  * Change who the record is about: sex, birth year, birth month, height (US-34).
  *
- * The profile is ONE last-write-wins object — `mergeFiles` picks the whole
- * newer copy, never a field of it — so this is a read-modify-write of the
- * object the record already holds: every field it carries survives, named or
- * not, known to this version or not. What makes that safe against a second
- * writer is `expected`: the agent states what it believes it is replacing, and
- * a mismatch writes nothing. Optional here (a person watching their own file);
- * on the hosted server it is required to CHANGE a field the record holds, and
- * not to fill one it does not — there is no earlier value to protect.
+ * Each profile field is last-write-wins: `mergeFiles` picks each field's
+ * newest write (US-10 AC6), and this stamps only the fields it changes. It is
+ * a read-modify-write of the object the record already holds, so every field
+ * it carries survives, named or not, known to this version or not. What makes
+ * that safe against a second writer is `expected`: the agent states what it
+ * believes it is replacing, and a mismatch writes nothing. Optional here (a
+ * person watching their own file); on the hosted server it is required to
+ * CHANGE a field the record holds, and not to fill one it does not — there is
+ * no earlier value to protect.
  */
 export function updateProfile(
   file: RoadmapFile,
@@ -722,17 +729,12 @@ export function updateProfile(
     return { status: 'ok', text: 'The record already says that. Nothing was written.', data: { changed: [] } };
   }
 
-  const profile = {
-    ...stored,
-    ...Object.fromEntries(changed.map((field) => [field, request[field]])),
-    updatedAt: now,
-    // One past the copy it read, which is exactly what the app does on its own
-    // profile writes. Jumping to the FILE's clock instead would make every
-    // connector write beat a concurrent one made in the app, whenever it was
-    // made; tied lamports fall through to wall-clock time, which is the honest
-    // answer to "who wrote last".
-    lamport: (stored.lamport ?? 0) + 1,
-  };
+  // The app's own write rule: the changed fields alone take a new stamp, one
+  // past the copy it read. Jumping to the FILE's clock instead would make every
+  // connector write beat a concurrent one made in the app, whenever it was
+  // made; tied lamports fall through to wall-clock time, which is the honest
+  // answer to "who wrote last".
+  const profile = stampFields(stored, Object.fromEntries(changed.map((field) => [field, request[field]])) as Partial<RoadmapProfile>, now);
   return {
     status: 'ok',
     file: stampUpdatedAt({ ...file, profile }, now),

@@ -17,6 +17,8 @@
  *  - Mutable current-state objects (profile, screenings, medications, supplements,
  *    reminderPreferences) carry a logical-clock `lamport` + `updatedAt` so merge
  *    is last-write-wins by *logical* clock, not wall-clock (avoids device skew).
+ *    Profile and screenings also stamp each field (`fieldStamps`), so they
+ *    merge field by field.
  */
 import type { Suggestion, ScreeningInputs } from './types';
 import type { MeasurementSource, MeasurementStatus, DocumentType } from './validation';
@@ -50,8 +52,19 @@ export interface RoadmapFileMeta {
   eraseEpoch?: number;
 }
 
+/**
+ * A singleton that merges field by field (US-10 AC6). Its own stamp is its
+ * newest write; `fieldStamps` says when each field was written, keyed by field
+ * name. `stampFields` (merge.ts) writes them and `mergeFiles` reads them.
+ * Files written before 2026-09-25 have none, and then every field carries the
+ * object's own stamp.
+ */
+export interface FieldStamped extends SyncStamp {
+  fieldStamps?: Record<string, SyncStamp>;
+}
+
 /** Demographics + preferences (was the `profiles` row + a localStorage override). */
-export interface RoadmapProfile extends SyncStamp {
+export interface RoadmapProfile extends FieldStamped {
   sex?: 'male' | 'female';
   birthYear?: number;
   birthMonth?: number;
@@ -128,8 +141,8 @@ export interface FileSupplement extends SyncStamp {
   changeType?: HistoryChangeType;
 }
 
-/** Flat screening workflow object (the `screenings` table flattened) + sync stamp. */
-export type FileScreenings = ScreeningInputs & SyncStamp;
+/** Flat screening workflow object (the `screenings` table flattened) + sync stamps. */
+export type FileScreenings = ScreeningInputs & FieldStamped;
 
 /** One reminder-category preference (keyed by category). */
 export interface FileReminderPreference extends SyncStamp {

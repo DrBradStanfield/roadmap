@@ -53,7 +53,7 @@ import {
   TOOL_LAYER_VERSION,
 } from './mcp-tools';
 import { REPO_SLUG, REPO_URL, SCHEMA_URL } from './plan';
-import { dayOf, mergeFiles } from './merge';
+import { dayOf, mergeFiles, stampFields } from './merge';
 import { migrateFile } from './migrate';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
 import { METRIC_TYPES } from './validation';
@@ -539,6 +539,39 @@ describe('US-34 — update_profile changes who the record is about', () => {
     };
     expect(mergeFiles(agent, later, ctx).profile.heightCm).toBe(170);
     expect(mergeFiles(later, agent, ctx).profile.heightCm).toBe(170);
+  });
+
+  it('US-10 AC6 — stamps only the fields it changes, so an app edit to another field survives the merge', () => {
+    const file = base();
+    // `sex` is named but unchanged: only the height is a write.
+    const agent = ok(updateProfile(file, { heightCm: 180, sex: 'male' }, NOW)).file!;
+    const read = { lamport: 0, updatedAt: CTX.now }; // the copy it read, from before field stamps
+    expect(agent.profile.fieldStamps).toEqual({
+      sex: read, birthYear: read, unitSystem: read, heightCm: { lamport: 1, updatedAt: NOW },
+    });
+
+    // The app, holding the copy the agent read, changes the birth year a minute later.
+    const app: RoadmapFile = { ...file, profile: stampFields(file.profile, { birthYear: 1972 }, '2026-09-01T09:01:00Z') };
+    for (const merged of [mergeFiles(agent, app, CTX), mergeFiles(app, agent, CTX)]) {
+      expect(merged.profile).toMatchObject({ heightCm: 180, birthYear: 1972 });
+    }
+  });
+});
+
+describe('US-10 AC6 — read_record leaves the merge’s field stamps out', () => {
+  it('shows the profile and the screening answers without their per-field clocks, and keeps them in the file', () => {
+    const file = ok(updateProfile(base(), { heightCm: 180 }, NOW)).file!;
+    file.screenings = stampFields(file.screenings, { colorectalMethod: 'fit_annual' }, NOW);
+    const outcome = readRecord(file, {});
+    if (outcome.status !== 'ok') throw new Error(outcome.text);
+
+    for (const record of [JSON.parse(outcome.text), outcome.data as RoadmapFile]) {
+      expect(record.profile).not.toHaveProperty('fieldStamps');
+      expect(record.screenings).not.toHaveProperty('fieldStamps');
+      expect(record.profile.heightCm).toBe(180);
+      expect(record.screenings.colorectalMethod).toBe('fit_annual');
+    }
+    expect(file.profile.fieldStamps).toBeDefined(); // hidden from the read, still in the file
   });
 });
 

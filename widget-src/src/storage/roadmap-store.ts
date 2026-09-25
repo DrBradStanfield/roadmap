@@ -46,18 +46,21 @@ import {
   SchemaTooNewError,
   screeningFieldName,
   stableStringify,
+  stampFields,
   type ApiMeasurement,
   type ApiMedication,
   type ApiScreening,
   type DocumentType,
   type FileDocument,
   type FileReminderOptIn,
+  type FileScreenings,
   type FileSupplement,
   type HealthInputs,
   type LabUnitRefusal,
   type MeasurementSource,
   type ReminderScheduleItem,
   type RoadmapFile,
+  type RoadmapProfile,
 } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
 import { ROADMAP_DOC, SyncManager, type SyncContext } from '@roadmap/health-core';
@@ -256,16 +259,16 @@ function contentOf(file: RoadmapFile): string {
   return stableStringify(rest);
 }
 
-const RECORD_CLOCKS = new Set(['updatedAt', 'lamport']);
+const RECORD_CLOCKS = new Set(['updatedAt', 'lamport', 'fieldStamps']);
 
 /**
  * What a person would SEE of the record: `contentOf` with each list read as a
- * set and every record's own clock (`updatedAt`, `lamport`) left out. A merge
- * re-sorts rows by id, and against an empty backend it trades one singleton's
- * stamp for the other's; neither is a change anyone made. This decides only
- * what is ANNOUNCED (US-34 AC3). Taking a merge in still goes by `contentOf`:
- * a skipped clock-only lead would leave the profile lamport behind the
- * cloud's, and the next profile edit would lose the merge.
+ * set and every record's own clocks (`updatedAt`, `lamport`, `fieldStamps`)
+ * left out. A merge re-sorts rows by id, and against an empty backend it
+ * trades one singleton's stamp for the other's; neither is a change anyone
+ * made. This decides only what is ANNOUNCED (US-34 AC3). Taking a merge in
+ * still goes by `contentOf`: a skipped clock-only lead would leave the profile
+ * lamport behind the cloud's, and the next profile edit would lose the merge.
  */
 function visibleContentOf(file: RoadmapFile): string {
   const { meta: _clocks, ...rest } = file;
@@ -513,14 +516,11 @@ export class RoadmapStore {
   saveScreening(screeningKey: string, value: string): boolean {
     const field = screeningFieldName(screeningKey);
     const parsed = NUMERIC_SCREENING_KEYS.has(screeningKey) ? parseFloat(value) : value;
-    const s = this.file.screenings;
-    (s as unknown as Record<string, unknown>)[field] = parsed;
-    // Stamp the sync clock so this edit wins last-write-wins against the cloud
-    // copy on the next merge. screenings is an LWW singleton (merge.ts: pickNewer
-    // by lamport); without the bump it stays lamport:0 like the empty remote and
-    // pickNewer can discard the local change — the change silently never persists.
-    s.updatedAt = new Date().toISOString();
-    s.lamport = (s.lamport ?? 0) + 1;
+    // Stamp this answer's clock, and only its own (US-10 AC6). Unstamped it
+    // stays lamport:0 like the empty remote, and the merge can discard it; with
+    // the whole object's stamp it would carry this copy of every other answer.
+    const answer = { [field]: parsed } as Partial<FileScreenings>;
+    this.file.screenings = stampFields(this.file.screenings, answer, new Date().toISOString());
     this.touch();
     return true;
   }
@@ -694,11 +694,8 @@ export class RoadmapStore {
 
   /** Mark the email-capture step done (monotonic, stamped + persisted). */
   markReportEmailCaptured(): void {
-    const p = this.file.profile;
-    if (p.reportEmailCaptured) return; // idempotent — only ever set true
-    p.reportEmailCaptured = true;
-    p.updatedAt = new Date().toISOString();
-    p.lamport = (p.lamport ?? 0) + 1;
+    if (this.file.profile.reportEmailCaptured) return; // idempotent — only ever set true
+    this.file.profile = stampFields(this.file.profile, { reportEmailCaptured: true }, new Date().toISOString());
     this.touch();
   }
 
@@ -938,17 +935,17 @@ export class RoadmapStore {
   // =================================================================== private
 
   private applyProfileChanges(current: Partial<HealthInputs>, previous: Partial<HealthInputs>): void {
-    const p = this.file.profile;
-    let changed = false;
-    if (current.sex !== undefined && current.sex !== previous.sex) { p.sex = current.sex; changed = true; }
-    if (current.birthYear !== undefined && current.birthYear !== previous.birthYear) { p.birthYear = current.birthYear; changed = true; }
-    if (current.birthMonth !== undefined && current.birthMonth !== previous.birthMonth) { p.birthMonth = current.birthMonth; changed = true; }
-    if (current.heightCm !== undefined && current.heightCm !== previous.heightCm) { p.heightCm = current.heightCm; changed = true; }
-    if (current.unitSystem !== undefined && current.unitSystem !== previous.unitSystem) { p.unitSystem = current.unitSystem; changed = true; }
-    // touch() as every other mutation does: a profile-only edit (sex, height,
-    // birth date — no measurement changed with it) scheduled no save at all,
-    // so it sat in memory until the next unrelated edit carried it up.
-    if (changed) { p.updatedAt = new Date().toISOString(); p.lamport = (p.lamport ?? 0) + 1; this.touch(); }
+    const changes: Record<string, unknown> = {};
+    for (const field of [...PREFILL_FIELDS, 'unitSystem'] as const) {
+      if (current[field] !== undefined && current[field] !== previous[field]) changes[field] = current[field];
+    }
+    if (Object.keys(changes).length === 0) return;
+    // Only the fields changed take a new stamp (US-10 AC6). And touch() as
+    // every other mutation does: a profile-only edit (sex, height, birth date —
+    // no measurement changed with it) scheduled no save at all, so it sat in
+    // memory until the next unrelated edit carried it up.
+    this.file.profile = stampFields(this.file.profile, changes as Partial<RoadmapProfile>, new Date().toISOString());
+    this.touch();
   }
 
   /** Upsert a current-state row keyed by `keyField`, stamping the sync clock. */

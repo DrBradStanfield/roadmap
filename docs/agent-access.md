@@ -58,7 +58,9 @@ document has `fileRef: ""`.
      if asked, never treat it as current.
 4. `medications`, `supplements`, `reminderPreferences` hold current state, one row per
    key. `medicationHistory` and `supplementHistory` are the append-only logs behind them.
-   `profile` and `screenings` are singletons.
+   `profile` and `screenings` are singletons. Each may carry `fieldStamps`, the merge's
+   clock for each field; it is not part of what the record says, so skip it when reading.
+   `read_record` leaves it out.
 5. Skip any document with `deleted: true`. The row stays in the file forever; the user
    deleted it.
 
@@ -121,11 +123,12 @@ someone's medical history, or lose their data at the next device sync.
    so read `inputs` when you are computing and `currentValues` when you are quoting.
 9. **Timestamps are ISO 8601, and never in the future.** On every load the app clamps a
    row's write-clocks, `createdAt` on measurements and lab values, `updatedAt`/`lamport`
-   on current-state rows, to the file's own last write (the later of `meta.createdAt`
-   and `meta.updatedAt`), so a future stamp is rewound, not rejected. `recordedAt` is
-   never clamped: it is the clinical date, and a future one still puts a value on a day
-   that has not happened, that mistake is yours to avoid. `recordedAt` may be
-   `YYYY-MM-DD` or a full timestamp, only the day is used for slotting.
+   on current-state rows and on each field stamp, to the file's own last write (the
+   later of `meta.createdAt` and `meta.updatedAt`), so a future stamp is rewound, not
+   rejected. `recordedAt` is never clamped: it is the clinical date, and a future one
+   still puts a value on a day that has not happened, that mistake is yours to avoid.
+   `recordedAt` may be `YYYY-MM-DD` or a full timestamp, only the day is used for
+   slotting.
 10. **Use catalogue keys for `metricName`.** If the test is in
     `packages/health-core/src/lab-catalog.ts` (ferritin, tsh, alt, …), use that `key`.
     Matching happens on those keys. Catalogue spellings, aliases and
@@ -137,6 +140,15 @@ someone's medical history, or lose their data at the next device sync.
     straight back from any other device.
 12. **`reminderOptIn.token` is a capability secret.** Leave it where it is; never copy it
     out of the file.
+13. **Never write `fieldStamps`** on `profile` or `screenings` (US-10 AC6). They say when
+    each field was last written, so the merge can take each field's newest write
+    instead of the newest whole object. To change a field by hand, change it, set that
+    object's `updatedAt` to now, and leave its `lamport` as you found it, as rule 7
+    says for a current-state row. The object's stamp then runs ahead of its field
+    stamps, and the merge reads your edit as a write to every field of it, as it did
+    before field stamps: a change another device made to a different field since you
+    read the file can be undone. `update_profile` stamps only the fields it changes;
+    for the four profile fields it covers, prefer it.
 
 Validate your result against the schema before you write it back.
 
