@@ -14,7 +14,7 @@ import type { ApiDocument, ApiLabValue, ApiSupplement } from '../lib/api-types';
 const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
   if (openHistoryLightbox(metric)) e.preventDefault();
 };
-import type { HealthInputs, ScreeningInputs } from '@roadmap/health-core';
+import type { HealthInputs, ScreeningInputs, WeightMedicationTrigger } from '@roadmap/health-core';
 import {
   type UnitSystem,
   fromCanonicalValue,
@@ -41,7 +41,6 @@ import {
   LIPID_DIET_ADVICE,
   resolveBestLipidMarker,
   calculateAge,
-  calculateBMI,
   cmToFeetInches,
   feetInchesToCm,
   formatHeightDisplay,
@@ -53,9 +52,6 @@ import {
   SGLT2I_NAMES,
   SGLT2I_DRUGS,
   METFORMIN_OPTIONS,
-  HBA1C_THRESHOLDS,
-  TRIGLYCERIDES_THRESHOLDS,
-  BP_THRESHOLDS,
   SCREENING_FOLLOWUP_INFO,
   validateInputValue,
   isBirthYearClearlyInvalid,
@@ -155,6 +151,9 @@ interface InputPanelProps {
   formStage: 1 | 2 | 3;
   setShowUploadModal?: (show: boolean) => void;
   activeSuggestionIds?: Set<string>;
+  /** The plan's weight-medication trigger, from the inputs the plan read.
+   *  Null until there is a plan (no sex or height). */
+  weightMedTrigger: WeightMedicationTrigger | null;
   healthDocuments?: ApiDocument[];
   onDocumentDeleted?: (docId: string) => void;
   onAutoFocusEmail?: () => void;
@@ -190,7 +189,7 @@ export function InputPanel({
   isSavingLongitudinal, fieldsSaved, hasApiResponse,
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   formStage,
-  setShowUploadModal, activeSuggestionIds,
+  setShowUploadModal, activeSuggestionIds, weightMedTrigger,
   healthDocuments, onDocumentDeleted, onAutoFocusEmail,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
@@ -1343,35 +1342,15 @@ export function InputPanel({
           );
         })()}
 
-      {/* Weight & Diabetes Medications Section — shown when BMI > 28 (unconditional) or BMI 25-28 with secondary criteria */}
+      {/* Weight & Diabetes Medications Section — recommends only when the plan's trigger is on (US-06 AC5) */}
       {(() => {
         const {
-          weightKg: effectiveWeight, heightCm: effectiveHeight, waistCm: effectiveWaist,
-          hba1c: effectiveHba1c, triglycerides: effectiveTrigs, systolicBp: effectiveSbp,
+          weightKg: effectiveWeight, heightCm: effectiveHeight,
+          hba1c: effectiveHba1c, triglycerides: effectiveTrigs,
         } = effectiveInputs;
 
-        // Compute BMI and waist-to-height ratio
-        const effectiveBmi = (effectiveWeight !== undefined && effectiveHeight !== undefined)
-          ? calculateBMI(effectiveWeight, effectiveHeight) : undefined;
-        const effectiveWhr = (effectiveWaist !== undefined && effectiveHeight !== undefined)
-          ? effectiveWaist / effectiveHeight : undefined;
-
-        // Elevated flags (computed once, used for both cascade check and reasons)
-        const hba1cElevated = effectiveHba1c !== undefined && effectiveHba1c >= HBA1C_THRESHOLDS.prediabetes;
-        const trigsElevated = effectiveTrigs !== undefined && effectiveTrigs >= TRIGLYCERIDES_THRESHOLDS.borderline;
-        const bpElevated = effectiveSbp !== undefined && effectiveSbp >= BP_THRESHOLDS.stage1Sys;
-        const waistElevated = effectiveWhr !== undefined && effectiveWhr >= 0.5;
-
-        // Check if any suggestion recommends a weight/diabetes medication
-        const hasWeightSuggestion = activeSuggestionIds &&
-          ['weight-med-glp1', 'weight-med-glp1-increase', 'weight-med-glp1-switch', 'weight-med-sglt2i', 'weight-med-metformin']
-            .some(id => activeSuggestionIds.has(id));
-
-        // Three modes: cascade, flat, hidden
-        let weightCascadeMode = !!hasWeightSuggestion;
-        if (!weightCascadeMode && effectiveBmi !== undefined && effectiveBmi > 25) {
-          weightCascadeMode = effectiveBmi > 28 || hba1cElevated || trigsElevated || bpElevated || waistElevated;
-        }
+        // Three modes: cascade (the plan's trigger is on), flat, hidden
+        const weightCascadeMode = weightMedTrigger?.on === true;
 
         // Flat mode: any relevant input entered but no cascade trigger
         const hasAnyWeightInput = effectiveHba1c !== undefined || effectiveTrigs !== undefined
@@ -1545,12 +1524,8 @@ export function InputPanel({
           );
         }
 
-        // ── Cascade mode: progressive disclosure ──
-        const reasons: string[] = [];
-        if (hba1cElevated) reasons.push('prediabetic HbA1c');
-        if (trigsElevated) reasons.push('elevated triglycerides');
-        if (bpElevated) reasons.push('elevated blood pressure');
-        if (waistElevated) reasons.push('elevated waist-to-height ratio');
+        // ── Cascade mode: progressive disclosure, in the plan's words ──
+        const reasons = weightMedTrigger?.reasons ?? [];
 
         return (
           <div className="section-card">

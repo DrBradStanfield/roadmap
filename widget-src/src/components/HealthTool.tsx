@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } fro
 import { createPortal } from 'react-dom';
 import {
   calculateHealthResults,
+  weightMedicationTrigger,
   validateHealthInputs,
   getValidationErrors,
   convertValidationErrorsToUnits,
@@ -574,9 +575,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   }, [remoteRelay, handleUploadComplete]);
 
   // Calculate results using effective inputs (form + fallback to previous)
-  const { results, isValid, validationErrors } = useMemo(() => {
+  const { results, isValid, validationErrors, weightMedTrigger } = useMemo(() => {
     if (!effectiveInputs.heightCm || !effectiveInputs.sex) {
-      return { results: null, isValid: false, validationErrors: null };
+      return { results: null, isValid: false, validationErrors: null, weightMedTrigger: null };
     }
 
     const validation = validateHealthInputs(effectiveInputs);
@@ -591,7 +592,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       // Strip invalid fields (all optional) so remaining suggestions still show
       const invalidFields = new Set(validation.errors.issues.map((i) => i.path[0] as string));
       if (invalidFields.has('heightCm') || invalidFields.has('sex')) {
-        return { results: null, isValid: false, validationErrors: errors };
+        return { results: null, isValid: false, validationErrors: errors, weightMedTrigger: null };
       }
       const sanitized = { ...effectiveInputs };
       for (const field of invalidFields) {
@@ -607,7 +608,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       screeningsToInputs(screenings),
       metricUnitOverrides,
     );
-    return { results: healthResults, isValid: true, validationErrors: errors };
+    // The form's weight-medication section follows the plan's own trigger,
+    // read from the same inputs (US-06 AC5).
+    const weightMedTrigger = weightMedicationTrigger(inputsForCalc as HealthInputs, healthResults);
+    return { results: healthResults, isValid: true, validationErrors: errors, weightMedTrigger };
   }, [effectiveInputs, unitSystem, medications, screenings, metricUnitOverrides]);
 
   useEffect(() => {
@@ -908,6 +912,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     formStage,
     setShowUploadModal,
     activeSuggestionIds,
+    weightMedTrigger,
     healthDocuments: documentHistory,
     onDocumentDeleted: (docId: string) => {
       setDocumentHistory(prev => prev.filter(d => d.id !== docId));

@@ -77,6 +77,36 @@ function fmtLipidMarkerValue(marker: LipidMarker, v: number, us: UnitSystem): st
   return fmtLdl(v, us);
 }
 
+/** Overweight or Obese. getBMICategory counts BMI 25–29.9 with a
+ *  waist-to-height ratio under 0.5 as Normal. */
+function isBmiElevated(category: string | undefined): boolean {
+  return category !== undefined && category !== 'Normal' && category !== 'Underweight';
+}
+
+/** Whether the weight and diabetes medication cascade is on, and why. */
+export interface WeightMedicationTrigger {
+  on: boolean;
+  /** The raised markers beside the BMI, in the plan's words. Empty when off. */
+  reasons: string[];
+}
+
+/**
+ * The cascade's trigger: an elevated BMI category, plus a BMI over 28 or a
+ * raised marker. The plan and the input form both read it, so the form never
+ * recommends what the plan does not (US-06 AC5). Pass the validated inputs
+ * and the results the plan was computed from.
+ */
+export function weightMedicationTrigger(inputs: HealthInputs, results: HealthResults): WeightMedicationTrigger {
+  const { bmi, waistToHeightRatio: whr } = results;
+  if (bmi === undefined || !isBmiElevated(results.bmiCategory)) return { on: false, reasons: [] };
+  const reasons: string[] = [];
+  if (inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) reasons.push('prediabetic HbA1c');
+  if (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) reasons.push('elevated triglycerides');
+  if (inputs.systolicBp !== undefined && inputs.systolicBp >= BP_THRESHOLDS.stage1Sys) reasons.push('elevated blood pressure');
+  if (whr !== undefined && whr >= 0.5) reasons.push('elevated waist-to-height ratio');
+  return { on: bmi > 28 || reasons.length > 0, reasons };
+}
+
 /**
  * Generate personalized health suggestions based on inputs and calculated results.
  *
@@ -94,11 +124,6 @@ export function generateSuggestions(
   const suggestions: Suggestion[] = [];
   /** Resolve effective unit system for a given metric (per-field override or global default) */
   const us = (metric: MetricType): UnitSystem => unitOverrides?.[metric] ?? unitSystem;
-
-  // Whether BMI is classified as elevated (Overweight or Obese).
-  // Accounts for WHtR reclassification: BMI 25-29.9 with healthy WHtR (<0.5) → Normal.
-  const bmiIsElevated = results.bmiCategory !== undefined
-    && results.bmiCategory !== 'Normal' && results.bmiCategory !== 'Underweight';
 
   // === Always-show lifestyle suggestions ===
 
@@ -209,125 +234,112 @@ export function generateSuggestions(
     description: 'Aim for 7-9 hours of sleep per night. Maintain a consistent sleep schedule, limit screens before bed, and keep your bedroom cool and dark.',
   });
 
-  // GLP-1 weight management suggestions
-  // Cascade (when medications tracked) or standalone (when not).
-  // Only when BMI is classified as elevated (Overweight/Obese — accounts for WHtR reclassification).
-  if (results.bmi !== undefined && bmiIsElevated) {
+  // GLP-1 weight management: the cascade when medications are tracked,
+  // one standalone suggestion when they are not.
+  const weightMeds = weightMedicationTrigger(inputs, results);
+  if (medications && weightMeds.on) {
+    // Weight & diabetes medication cascade (GLP-1 → escalate → SGLT2i → Metformin)
+    const glp1 = medications.glp1;
+    const glp1Drug = glp1?.drug;
+    const onGlp1 = glp1 && glp1Drug && glp1Drug !== 'none' && glp1Drug !== 'not_tolerated' && glp1Drug !== 'other';
+    const glp1OnOther = glp1Drug === 'other';
+    const glp1Handled = onGlp1 || glp1OnOther || glp1Drug === 'not_tolerated';
+
+    const sglt2i = medications.sglt2i;
+    const sglt2iDrug = sglt2i?.drug;
+    const onSglt2i = sglt2i && sglt2iDrug && sglt2iDrug !== 'none' && sglt2iDrug !== 'not_tolerated';
+    const sglt2iHandled = onSglt2i || sglt2iDrug === 'not_tolerated';
+
+    // Step 1: GLP-1
+    if (!glp1 || !glp1Drug || glp1Drug === 'none') {
+      const reasonStr = weightMeds.reasons.length > 0
+        ? `an elevated BMI and ${weightMeds.reasons.join(', ')}`
+        : 'an elevated BMI';
+
+      suggestions.push({
+        id: 'weight-med-glp1',
+        category: 'medication',
+        priority: 'attention',
+        title: 'Consider a GLP-1 medication',
+        description: `With ${reasonStr}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor. These medications support weight management and metabolic health.`,
+      });
+    } else if (glp1Handled) {
+      // Step 2: GLP-1 Escalation (dose increase or switch to tirzepatide)
+      const glp1Tolerated = glp1Drug !== 'not_tolerated';
+      let canIncreaseGlp1 = false;
+      let shouldSwitchGlp1 = glp1OnOther;
+      if (onGlp1 && glp1 && glp1Drug) {
+        canIncreaseGlp1 = canIncreaseGlp1Dose(glp1Drug, glp1.dose);
+        shouldSwitchGlp1 = shouldSuggestGlp1Switch(glp1Drug, glp1.dose) || glp1OnOther;
+      }
+      const escalationPossible = glp1Tolerated && (canIncreaseGlp1 || shouldSwitchGlp1);
+
+      if (escalationPossible && (!medications.glp1Escalation || medications.glp1Escalation === 'not_yet')) {
+        if (canIncreaseGlp1) {
+          suggestions.push({
+            id: 'weight-med-glp1-increase',
+            category: 'medication',
+            priority: 'attention',
+            title: 'Consider increasing GLP-1 dose',
+            description: 'You may benefit from a higher dose of your current GLP-1 medication. Discuss increasing your dose with your doctor.',
+          });
+        } else if (shouldSwitchGlp1) {
+          suggestions.push({
+            id: 'weight-med-glp1-switch',
+            category: 'medication',
+            priority: 'attention',
+            title: 'Consider switching to Tirzepatide',
+            description: 'Tirzepatide (Mounjaro/Zepbound) may be more effective for weight management. Discuss switching with your doctor.',
+          });
+        }
+      } else {
+        // Escalation handled/skipped → Step 3: SGLT2i
+        if (!sglt2i || !sglt2iDrug || sglt2iDrug === 'none') {
+          suggestions.push({
+            id: 'weight-med-sglt2i',
+            category: 'medication',
+            priority: 'attention',
+            title: 'Consider adding an SGLT2 inhibitor',
+            description: 'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.',
+          });
+        } else if (sglt2iHandled) {
+          // Step 4: Metformin
+          if (!medications.metformin || medications.metformin === 'none') {
+            suggestions.push({
+              id: 'weight-med-metformin',
+              category: 'medication',
+              priority: 'info',
+              title: 'Consider adding Metformin',
+              description: 'Metformin provides additional glycemic control and has longevity benefits. Extended-release formulations may have fewer GI side effects. Discuss with your doctor.',
+            });
+          }
+        }
+      }
+    }
+  } else if (!medications && results.bmi !== undefined && isBmiElevated(results.bmiCategory)) {
+    // Standalone GLP-1 suggestion (when medications not tracked)
     const whr = results.waistToHeightRatio;
-    const hba1cElevated = inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes;
     const trigsElevated = inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline;
-    const bpElevated = inputs.systolicBp !== undefined && inputs.systolicBp >= BP_THRESHOLDS.stage1Sys;
-    const waistElevated = whr !== undefined && whr >= 0.5;
-    const hasSecondaryCriteria = hba1cElevated || trigsElevated || bpElevated || waistElevated;
-
-    if (medications && (results.bmi > 28 || hasSecondaryCriteria)) {
-      // Weight & diabetes medication cascade (GLP-1 → escalate → SGLT2i → Metformin)
-      const glp1 = medications.glp1;
-      const glp1Drug = glp1?.drug;
-      const onGlp1 = glp1 && glp1Drug && glp1Drug !== 'none' && glp1Drug !== 'not_tolerated' && glp1Drug !== 'other';
-      const glp1OnOther = glp1Drug === 'other';
-      const glp1Handled = onGlp1 || glp1OnOther || glp1Drug === 'not_tolerated';
-
-      const sglt2i = medications.sglt2i;
-      const sglt2iDrug = sglt2i?.drug;
-      const onSglt2i = sglt2i && sglt2iDrug && sglt2iDrug !== 'none' && sglt2iDrug !== 'not_tolerated';
-      const sglt2iHandled = onSglt2i || sglt2iDrug === 'not_tolerated';
-
-      // Step 1: GLP-1
-      if (!glp1 || !glp1Drug || glp1Drug === 'none') {
-        // Build reason string based on which criteria triggered
-        const reasons: string[] = [];
-        if (hba1cElevated) reasons.push('prediabetic HbA1c');
-        if (trigsElevated) reasons.push('elevated triglycerides');
-        if (bpElevated) reasons.push('elevated blood pressure');
-        if (waistElevated) reasons.push('elevated waist-to-height ratio');
-        const reasonStr = reasons.length > 0
-          ? `an elevated BMI and ${reasons.join(', ')}`
-          : 'an elevated BMI';
-
-        suggestions.push({
-          id: 'weight-med-glp1',
-          category: 'medication',
-          priority: 'attention',
-          title: 'Consider a GLP-1 medication',
-          description: `With ${reasonStr}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor. These medications support weight management and metabolic health.`,
-        });
-      } else if (glp1Handled) {
-        // Step 2: GLP-1 Escalation (dose increase or switch to tirzepatide)
-        const glp1Tolerated = glp1Drug !== 'not_tolerated';
-        let canIncreaseGlp1 = false;
-        let shouldSwitchGlp1 = glp1OnOther;
-        if (onGlp1 && glp1 && glp1Drug) {
-          canIncreaseGlp1 = canIncreaseGlp1Dose(glp1Drug, glp1.dose);
-          shouldSwitchGlp1 = shouldSuggestGlp1Switch(glp1Drug, glp1.dose) || glp1OnOther;
-        }
-        const escalationPossible = glp1Tolerated && (canIncreaseGlp1 || shouldSwitchGlp1);
-
-        if (escalationPossible && (!medications.glp1Escalation || medications.glp1Escalation === 'not_yet')) {
-          if (canIncreaseGlp1) {
-            suggestions.push({
-              id: 'weight-med-glp1-increase',
-              category: 'medication',
-              priority: 'attention',
-              title: 'Consider increasing GLP-1 dose',
-              description: 'You may benefit from a higher dose of your current GLP-1 medication. Discuss increasing your dose with your doctor.',
-            });
-          } else if (shouldSwitchGlp1) {
-            suggestions.push({
-              id: 'weight-med-glp1-switch',
-              category: 'medication',
-              priority: 'attention',
-              title: 'Consider switching to Tirzepatide',
-              description: 'Tirzepatide (Mounjaro/Zepbound) may be more effective for weight management. Discuss switching with your doctor.',
-            });
-          }
-        } else {
-          // Escalation handled/skipped → Step 3: SGLT2i
-          if (!sglt2i || !sglt2iDrug || sglt2iDrug === 'none') {
-            suggestions.push({
-              id: 'weight-med-sglt2i',
-              category: 'medication',
-              priority: 'attention',
-              title: 'Consider adding an SGLT2 inhibitor',
-              description: 'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.',
-            });
-          } else if (sglt2iHandled) {
-            // Step 4: Metformin
-            if (!medications.metformin || medications.metformin === 'none') {
-              suggestions.push({
-                id: 'weight-med-metformin',
-                category: 'medication',
-                priority: 'info',
-                title: 'Consider adding Metformin',
-                description: 'Metformin provides additional glycemic control and has longevity benefits. Extended-release formulations may have fewer GI side effects. Discuss with your doctor.',
-              });
-            }
-          }
-        }
-      }
-    } else if (!medications) {
-      // Standalone GLP-1 suggestion (when medications not tracked)
-      if (results.bmi > 28) {
-        suggestions.push({
-          id: 'weight-glp1',
-          category: 'medication',
-          priority: 'attention',
-          title: 'Weight management medication',
-          description: 'With a BMI over 28, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.',
-        });
-      } else if (whr !== undefined || trigsElevated) {
-        // BMI 25-28: waist must be elevated (guaranteed by bmiIsElevated when whr defined) or trigs elevated
-        const reason = whr !== undefined
-          ? 'elevated BMI and waist measurements'
-          : 'elevated BMI and triglycerides';
-        suggestions.push({
-          id: 'weight-glp1',
-          category: 'medication',
-          priority: 'attention',
-          title: 'Weight management medication',
-          description: `With ${reason}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.`,
-        });
-      }
+    if (results.bmi > 28) {
+      suggestions.push({
+        id: 'weight-glp1',
+        category: 'medication',
+        priority: 'attention',
+        title: 'Weight management medication',
+        description: 'With a BMI over 28, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.',
+      });
+    } else if (whr !== undefined || trigsElevated) {
+      // BMI 25-28: an elevated category with a waist on record means WHtR >= 0.5; else the trigs are raised
+      const reason = whr !== undefined
+        ? 'elevated BMI and waist measurements'
+        : 'elevated BMI and triglycerides';
+      suggestions.push({
+        id: 'weight-glp1',
+        category: 'medication',
+        priority: 'attention',
+        title: 'Weight management medication',
+        description: `With ${reason}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.`,
+      });
     }
   }
 
