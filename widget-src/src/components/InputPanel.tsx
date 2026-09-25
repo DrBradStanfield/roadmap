@@ -917,7 +917,7 @@ export function InputPanel({
         unitSystem={unitSystem}
         onSave={onSaveBloodTestBatch}
         onCorrectValue={onCorrectValue}
-        onFieldChange={onDraftValue}
+        onDraftValue={onDraftValue}
         formStage={formStage}
         onAutoFocusEmail={onAutoFocusEmail}
         unitOverrides={unitOverrides}
@@ -1076,7 +1076,7 @@ export function InputPanel({
       onToggleFieldUnit={onToggleFieldUnit}
       onSaveBatch={onSaveBloodTestBatch}
       onCorrectValue={onCorrectValue}
-      onFieldChange={onDraftValue}
+      onDraftValue={onDraftValue}
       isSaving={isSavingLongitudinal}
       sex={inputs.sex}
       onUploadClick={() => setShowUploadModal?.(true)}
@@ -1091,10 +1091,7 @@ export function InputPanel({
       {/* Cholesterol Medications Section — cascade when elevated/suggested, flat when any lipid entered */}
       {(() => {
           // Cascade visibility follows what the plan reads (effectiveInputs)
-          const effectiveApoB = effectiveInputs.apoB;
-          const effectiveLdl = effectiveInputs.ldlC;
-          const effectiveTotalChol = effectiveInputs.totalCholesterol;
-          const effectiveHdl = effectiveInputs.hdlC;
+          const { apoB: effectiveApoB, ldlC: effectiveLdl, totalCholesterol: effectiveTotalChol, hdlC: effectiveHdl } = effectiveInputs;
           const effectiveNonHdl = (effectiveTotalChol !== undefined && effectiveHdl !== undefined)
             ? effectiveTotalChol - effectiveHdl : undefined;
 
@@ -1348,13 +1345,10 @@ export function InputPanel({
 
       {/* Weight & Diabetes Medications Section — shown when BMI > 28 (unconditional) or BMI 25-28 with secondary criteria */}
       {(() => {
-        // Cascade visibility follows what the plan reads (effectiveInputs)
-        const effectiveWeight = effectiveInputs.weightKg;
-        const effectiveHeight = effectiveInputs.heightCm;
-        const effectiveWaist = effectiveInputs.waistCm;
-        const effectiveHba1c = effectiveInputs.hba1c;
-        const effectiveTrigs = effectiveInputs.triglycerides;
-        const effectiveSbp = effectiveInputs.systolicBp;
+        const {
+          weightKg: effectiveWeight, heightCm: effectiveHeight, waistCm: effectiveWaist,
+          hba1c: effectiveHba1c, triglycerides: effectiveTrigs, systolicBp: effectiveSbp,
+        } = effectiveInputs;
 
         // Compute BMI and waist-to-height ratio
         const effectiveBmi = (effectiveWeight !== undefined && effectiveHeight !== undefined)

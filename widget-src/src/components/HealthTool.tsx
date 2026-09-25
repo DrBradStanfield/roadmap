@@ -388,7 +388,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     }, 500);
 
     return () => clearTimeout(timeout);
-  }, [inputs, hasApiResponse, effectiveInputs]);
+  }, [inputs, hasApiResponse]);
 
   // The saved-value editor's correction, core or lab (US-04, US-21 AC5),
   // then the page re-reads the record.
@@ -529,12 +529,16 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     longitudinalDebounce.flush();
     const result = await reloadValues();
     if (result) {
-      // The record holds the profile and every saved value. A number being
-      // typed lives only in the form until its save, so the field the user is
-      // typing in rides through (US-34 AC4); nothing else in the form does, or
-      // a copy of a value since corrected would outrank the record. What the
-      // matrices' drafts lend is kept apart (`lent`): it rides through, and
-      // each draft is judged again against the record read (US-03 AC6).
+      // The record holds the profile and every saved value. A first-time
+      // field's value gets none of a draft's checks: it names the row it
+      // replaces only as it saves (still open), and nothing stops it standing
+      // in once another writer fills its slot. Carried through a re-read, it
+      // would outrank that writer's value in the plan, then correct it. So
+      // only the field the user is typing in rides through, since losing
+      // keystrokes is worse (US-34 AC4). The journey redesign moves these
+      // fields onto the draft model. What the matrices' drafts lend is kept
+      // apart (`lent`): it rides through, and each draft is judged again
+      // against the record read (US-03 AC6).
       const typing = document.activeElement?.id as keyof HealthInputs | undefined;
       setInputs(prev => (typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
         ? { ...result.inputs, [typing]: prev[typing] }
