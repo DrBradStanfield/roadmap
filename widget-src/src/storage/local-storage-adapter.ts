@@ -54,7 +54,18 @@ export class LocalStorageAdapter implements StorageAdapter {
     removeByPrefix(DOC_KEY_PREFIX);
   }
 
+  // localStorage is synchronous, so read and write wrap readSync and writeSync.
+  // The tab-close save calls those directly, so its write lands before the
+  // handler returns (US-10 AC5).
   async read(fileName: string): Promise<ReadResult> {
+    return this.readSync(fileName);
+  }
+
+  async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
+    return this.writeSync(fileName, body, expectedVersion);
+  }
+
+  readSync(fileName: string): ReadResult {
     const raw = safeGetItem(fileKey(fileName));
     if (raw == null) return { body: null, version: null };
     let body: unknown;
@@ -66,7 +77,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     return { body, version: safeGetItem(versionKey(fileName)) ?? '0' };
   }
 
-  async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
+  writeSync(fileName: string, body: object, expectedVersion: string | null): WriteResult {
     // `?? '0'` is defensive: localStorage is externally mutable, so tolerate a
     // present file with a missing version key (treat it as version 0).
     const current = safeGetItem(fileKey(fileName)) == null ? null : safeGetItem(versionKey(fileName)) ?? '0';
@@ -85,17 +96,6 @@ export class LocalStorageAdapter implements StorageAdapter {
     }
     safeSetItem(versionKey(fileName), next);
     return { version: next };
-  }
-
-  /** Synchronous emergency write (tab-close) — see StorageAdapter.writeSync. */
-  writeSync(fileName: string, body: object): void {
-    const next = String((Number(safeGetItem(versionKey(fileName))) || 0) + 1);
-    try {
-      localStorage.setItem(fileKey(fileName), JSON.stringify(body));
-      safeSetItem(versionKey(fileName), next);
-    } catch {
-      /* best effort on unload — nothing more we can do */
-    }
   }
 
   async readDocument(ref: string): Promise<Blob> {

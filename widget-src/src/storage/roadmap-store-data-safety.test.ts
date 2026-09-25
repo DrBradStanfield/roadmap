@@ -677,10 +677,11 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
   });
 
   // Adversarial review (2026-09-01): mergeFiles is the ONLY writer of
-  // meta.updatedAt, and migrate clamps every row clock to it. Both writes that
-  // bypass the merge — this mirror and flushSync — must advance the clock, or
-  // the offline edit they just saved is rewound to a stale anchor on the next
-  // load and loses a slot contest it genuinely won.
+  // meta.updatedAt, and migrate clamps every row clock to it. A copy that
+  // reaches migrate with a stale clock has its offline edit rewound to that
+  // anchor, and the edit loses a slot contest it genuinely won. The mirror
+  // migrates its copy before merging it, so it stamps first; flushSync wrote
+  // raw until it became a merge (US-10 AC5). Both stay pinned.
   it('the mirror keeps the clock of the edit it saves (no rewind to a stale anchor)', async () => {
     const cloud = new MemoryCloud();
     const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
@@ -707,11 +708,48 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
 
     const store = await RoadmapStore.create(new LocalStorageAdapter());
     const row = insertedRow(store.addMeasurement('weight', 80, '2024-06-01T00:00:00.000Z'));
-    store.flushSync(); // raw writeSync — no merge, so nothing else stamps meta
+    store.flushSync(); // the tab-close write
 
     const reloaded = await RoadmapStore.create(new LocalStorageAdapter());
     const saved = reloaded.loadAllHistory().find((m) => m.id === row.id)!;
     expect(saved.createdAt).toBe(row.createdAt);
+  });
+
+  // US-10 AC5: a hide saves only what is unsaved. A save that FAILED is still
+  // unsaved, though nothing sits on the debounce, so the next hide retries it.
+  it('a cloud tab with nothing unsaved reads and writes nothing on hide', async () => {
+    const adapter = new MemoryAdapter(new MemoryCloud());
+    const store = await RoadmapStore.create(adapter);
+    store.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+    await store.flush();
+    const read = vi.spyOn(adapter, 'read');
+    const write = vi.spyOn(adapter, 'write');
+
+    store.flushSync(); // the tab hides
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(read).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it('a hide retries a cloud save that failed, though nothing sits on the debounce', async () => {
+    const cloud = new MemoryCloud();
+    let offline = true;
+    class FlakyAdapter extends MemoryAdapter {
+      async write(...args: Parameters<MemoryAdapter['write']>) {
+        if (offline) throw new StorageError('The network is down.');
+        return super.write(...args);
+      }
+    }
+    const store = await RoadmapStore.create(new FlakyAdapter(cloud));
+    store.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+    await expect(store.flush()).rejects.toThrow();
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
+
+    offline = false;
+    store.flushSync(); // the tab hides
+    await vi.waitFor(() => expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBeNull());
+    expect(readCloudFile(cloud).measurements.map((m) => m.value)).toEqual([80]);
   });
 
   it('without the pending marker, a stale on-device copy is NOT merged into a cloud session', async () => {

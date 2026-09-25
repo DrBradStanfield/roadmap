@@ -157,7 +157,7 @@ describe('US-34 AC1 — a remote change reaches the open page', () => {
     expect(store.loadLatestMeasurements().inputs.heightCm).toBe(181);
   });
 
-  it('a local-only record has no second writer, so it never re-reads', async () => {
+  it('answers false when a re-read of an empty backend finds nothing new', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter());
     expect(await store.refreshFromRemote()).toBe(false);
   });

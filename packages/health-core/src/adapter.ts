@@ -213,16 +213,6 @@ export interface StorageAdapter {
   remove?(fileName: string, signal?: AbortSignal): Promise<void>;
 
   /**
-   * OPTIONAL synchronous last-ditch write, used only on tab-close /
-   * visibilitychange where an async chain may not finish (esp. mobile). Only
-   * backends whose write is genuinely synchronous (localStorage) implement it;
-   * cloud backends omit it (network can't be sync) and fall back to a
-   * best-effort async flush. No version check — it's the emergency
-   * last-write-on-this-device path.
-   */
-  writeSync?(fileName: string, body: object): void;
-
-  /**
    * OPTIONAL change signal (US-34): call `onChange` whenever the provider says
    * this file may have moved — a Dropbox long-poll returning, a Drive changes
    * page naming our id. It is a HINT, never data: the store answers it by
@@ -231,9 +221,10 @@ export interface StorageAdapter {
    *
    * Returns nothing and never rejects — the loop owns its own errors and its
    * own backoff. `signal` is the only way it ends; an aborted signal must stop
-   * every request. Backends with no push (localStorage has no second writer;
-   * GitHub and WebDAV have no cheap watch) omit it and the store falls back to
-   * its slow poll.
+   * every request. Backends with no push (GitHub and WebDAV have no cheap
+   * watch) omit it and the store falls back to its slow poll. localStorage
+   * omits it too, a known gap: another tab's write reaches a tab only at its
+   * next save (US-10 AC5).
    */
   watch?(fileName: string, onChange: () => void, signal: AbortSignal): void;
 }

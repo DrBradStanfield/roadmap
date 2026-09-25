@@ -287,6 +287,11 @@ export class RoadmapStore {
   private mirrorSkipped = false;
   /** Leading-edge throttle for refreshFromRemote(), in epoch millis. */
   private lastRefresh = 0;
+  /** Every change to the working copy counts one (touch). A save moves
+   *  `savedChanges` up to the count it started from, and only when it lands,
+   *  so a failed save leaves its changes unsaved for the next hide to retry. */
+  private changes = 0;
+  private savedChanges = 0;
   private readonly deviceId: string;
   /** The last moment this device's copy and the cloud were known to agree: the
    *  load, then every successful save. A failed save marks the pending mirror
@@ -717,7 +722,12 @@ export class RoadmapStore {
     // Bump the erase epoch so the empty file BEATS the merge — persist goes
     // through read-merge-write, whose never-lose-data semantics would otherwise
     // resurrect every record from the stored copy (and any other device's).
-    const eraseEpoch = (this.file.meta.eraseEpoch ?? 0) + 1;
+    // Bump past the STORED epoch as well, read now: another tab or device may
+    // have erased and started again since this copy was read, and an erase at
+    // an equal epoch unions with that record instead of beating it (US-10
+    // AC5). An unreadable record leaves this copy's epoch, as before.
+    const stored = await this.sync.load().then((file) => file.meta.eraseEpoch ?? 0, () => 0);
+    const eraseEpoch = Math.max(stored, this.file.meta.eraseEpoch ?? 0) + 1;
     // An erase must not silently re-consent the user. Under US-17's default-on
     // model the empty file reads as "never decided", so the next app load would
     // enrol them again — undoing an explicit opt-out (AC4), and for an ENROLLED
@@ -737,6 +747,7 @@ export class RoadmapStore {
         updatedAt: new Date().toISOString(), lamport: 1,
       };
     }
+    this.touch(); // a change like any other: a failed flush leaves it for a hide to retry
     try {
       await this.flush();
       // The erase reached the cloud — wipe the on-device residue too (failure
@@ -783,13 +794,20 @@ export class RoadmapStore {
     return this.persisting || this.persistTimer !== null;
   }
 
+  /** True while a change to the working copy has not landed, a failed save's
+   *  included (US-10 AC5). */
+  private get unsaved(): boolean {
+    return this.changes !== this.savedChanges;
+  }
+
   /**
    * Re-read the record and merge what came back (US-34). Answers false when
    * nothing changed — including every case where re-reading would be wrong:
    * a local edit is waiting to go up (the debounce timer, or a save in
    * flight), so the working copy is AHEAD of the cloud and merging a stale
-   * read over it would fight the pending write; and a localStorage-only
-   * backend has no second writer to hear from.
+   * read over it would fight the pending write. The local tier never
+   * re-reads, a known gap: another tab's write reaches this one only at its
+   * next save (US-10 AC5).
    */
   async refreshFromRemote(): Promise<boolean> {
     if (this.adapter.id === 'local' || this.writePending) return false;
@@ -814,13 +832,12 @@ export class RoadmapStore {
     // A local edit that landed during the read would be lost by taking the
     // merge — it merged against a copy taken before the edit existed.
     if (this.file !== local) return false;
-    this.adopt(merged);
     // The counting is HealthTool's: it fires `remote_change_applied` when it
     // has actually re-rendered. The store cannot import the API layer — the
     // v2 builds alias `lib/api` to `lib/roadmap-data`, which imports this
     // module, and the cycle would be real. A change of clocks alone is taken
-    // in above and announced to nobody: there is nothing new to show.
-    if (visibleContentOf(merged) !== visibleContentOf(local)) notify(REMOTE_CHANGED_EVENT);
+    // in and announced to nobody: there is nothing new to show.
+    if (this.adopt(merged)) notify(REMOTE_CHANGED_EVENT);
     return true;
   }
 
@@ -886,30 +903,34 @@ export class RoadmapStore {
   }
 
   /**
-   * Synchronous last-ditch persist for tab-close / visibilitychange, where an
-   * async flush may not finish (esp. mobile). Uses the adapter's synchronous
-   * write when available (local tier); cloud backends fall back to a best-effort
-   * async flush (network can't be synchronous).
+   * Last-ditch save for tab close and hide, and only of what is unsaved, a
+   * failed save's changes included (US-10 AC5). The local tier merges into
+   * the one file every tab shares, synchronously, so the write has landed
+   * when this returns, whatever the async save may come to await; then it
+   * takes the merge in, as a save does. The cloud tier, and a refused local
+   * write, fall back to the async save.
    */
   flushSync(): void {
+    if (!this.unsaved) return;
     if (this.persistTimer) {
       clearTimeout(this.persistTimer);
       this.persistTimer = null;
     }
-    this.stampWrite();
-    if (this.adapter.writeSync) this.adapter.writeSync(ROADMAP_DOC.fileName, this.file);
-    else void this.persist();
-  }
-
-  /**
-   * Advance the file's own clock before a write that bypasses mergeFiles — the
-   * only other thing that stamps meta.updatedAt. migrateFile clamps every row
-   * timestamp to that stamp, so without this an offline edit is rewound to the
-   * last successful sync on the next load and loses a slot contest it won.
-   */
-  private stampWrite(): void {
-    const now = new Date().toISOString();
-    if (now > this.file.meta.updatedAt) this.file.meta.updatedAt = now;
+    if (this.adapter instanceof LocalStorageAdapter) {
+      try {
+        const ctx = { deviceId: this.deviceId, now: new Date().toISOString() };
+        const { body, version } = this.adapter.readSync(ROADMAP_DOC.fileName);
+        const merged = ROADMAP_DOC.merge(this.file, ROADMAP_DOC.migrate(body, ctx), ctx);
+        this.adapter.writeSync(ROADMAP_DOC.fileName, merged, version);
+        this.savedChanges = this.changes;
+        if (this.adopt(merged)) notify(REMOTE_CHANGED_EVENT);
+        return;
+      } catch {
+        // A newer app's record, unreadable bytes or a full disk: the async
+        // save meets the same refusal, and reports it.
+      }
+    }
+    void this.persist();
   }
 
   // =================================================================== private
@@ -947,16 +968,21 @@ export class RoadmapStore {
     }
   }
 
-  /** Take a merge in as the working copy. One that carries an erase made on
-   *  another device (a higher eraseEpoch than this copy's) clears the drafts
-   *  typed here, as the erase clears them where it is made (US-11). */
-  private adopt(merged: RoadmapFile): void {
+  /** Take a merge in as the working copy, and answer whether it brought in
+   *  something a person would see, for the caller to announce. One that
+   *  carries an erase made on another device (a higher eraseEpoch than this
+   *  copy's) clears the drafts typed here, as the erase clears them where it
+   *  is made (US-11). */
+  private adopt(merged: RoadmapFile): boolean {
+    const seen = visibleContentOf(this.file);
     if ((merged.meta.eraseEpoch ?? 0) > (this.file.meta.eraseEpoch ?? 0)) clearMatrixDrafts();
     this.file = merged;
+    return visibleContentOf(merged) !== seen;
   }
 
   /** Mark dirty + schedule a debounced persist. */
   private touch(): void {
+    this.changes += 1;
     if (this.persisting) this.dirtyDuringPersist = true;
     if (this.persistTimer) clearTimeout(this.persistTimer);
     this.persistTimer = setTimeout(() => {
@@ -981,15 +1007,15 @@ export class RoadmapStore {
     try {
       do {
         this.dirtyDuringPersist = false;
+        const saving = this.changes;
         const result = await this.sync.save(this.file);
+        this.savedChanges = saving;
         // Fold remote changes back in without dropping mutations made during the
         // await; merge is the source of truth for combining the two.
-        const seenBefore = visibleContentOf(this.file);
-        this.adopt(mergeFiles(this.file, result.file, {
+        if (this.adopt(mergeFiles(this.file, result.file, {
           deviceId: this.deviceId,
           now: new Date().toISOString(),
-        }));
-        if (visibleContentOf(this.file) !== seenBefore) remoteFolded = true;
+        }))) remoteFolded = true;
       } while (this.dirtyDuringPersist);
       if (remoteFolded) notify(REMOTE_CHANGED_EVENT);
       this.lastSyncedAt = new Date().toISOString();
@@ -1010,12 +1036,16 @@ export class RoadmapStore {
       // (flush) check the result.
       if (this.adapter.id !== 'local') {
         markSyncPending(this.lastSyncedAt);
-        // Deliberately the merged transfer primitive, NOT writeSync: the local
-        // file may hold guest-era data this session never loaded (no marker
-        // set), and a plain overwrite would destroy its only copy. The merge
+        // Deliberately the merged transfer primitive, NOT a plain overwrite: the
+        // local file may hold guest-era data this session never loaded (no
+        // marker set), and an overwrite would destroy its only copy. The merge
         // preserves it — and lifts it up with the mirror on the next session.
+        // It migrates this copy first, and migrate clamps every row clock to
+        // meta.updatedAt: advance it, or an offline edit is rewound to the
+        // last successful sync and loses a slot contest it won.
         try {
-          this.stampWrite();
+          const now = new Date().toISOString();
+          if (now > this.file.meta.updatedAt) this.file.meta.updatedAt = now;
           await saveRoadmapFileInto(new LocalStorageAdapter(), this.file);
         } catch {
           /* device storage unavailable — memory-only is the best we have */
