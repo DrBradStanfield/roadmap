@@ -448,22 +448,26 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         );
         await reloadValues();
 
-        // What was saved leaves the form, in one update. A copy left in
+        // What the fields saved leaves the form, in one update. A copy left in
         // `inputs` outranked the saved row in the plan and the chat, and the
         // next save of the fields wrote it again, under today (2026-09-24).
         // A number typed there while the save ran is not what was saved, and
-        // stays for the next save (US-03 AC3).
-        setInputs(prev => {
-          const next = { ...prev };
-          for (const t of toSave) {
-            for (const [metric, value] of Object.entries(t.values)) {
-              const field = METRIC_TO_FIELD[metric];
-              if (!refused.has(slotOf(t.date, metric)) && next[field] === value) delete next[field];
+        // stays for the next save (US-03 AC3). A matrix's save leaves the form
+        // alone: its values were never in it, and a field's value equal to
+        // one it saved, for another day, is not what it saved.
+        if (!tasks) {
+          setInputs(prev => {
+            const next = { ...prev };
+            for (const t of toSave) {
+              for (const [metric, value] of Object.entries(t.values)) {
+                const field = METRIC_TO_FIELD[metric];
+                if (!refused.has(slotOf(t.date, metric)) && next[field] === value) delete next[field];
+              }
             }
-          }
-          return next;
-        });
-        if (!tasks) setFieldsSaved(n => n + 1);
+            return next;
+          });
+          setFieldsSaved(n => n + 1);
+        }
 
         // Track A/B conversion on the first measurement save.
         if (refused.size === 0) {

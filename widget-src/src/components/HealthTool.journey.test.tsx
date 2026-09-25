@@ -986,6 +986,48 @@ describe('leftover form state never writes a value', () => {
   });
 });
 
+// A phone turned across 768 px builds the form again. Once a vital is saved,
+// the new form shows the vitals as a matrix, and a first-time value typed but
+// not yet left is on screen nowhere. The user typed it, so the next save of
+// the fields writes it (2026-09-25; it was never written before).
+describe('US-03 AC3: a first-time value the form was built again without', () => {
+  it('is written under today by the next save of the fields', async () => {
+    const turnPhone = rotatablePhone();
+    const view = await firstWeight('82'); // saved: the next form built shows the vitals as a matrix
+    typeInto(await shown<HTMLInputElement>(view.container, '#waistCm'), '90'); // not left
+    await turnPhone(); // portrait: the form is built again
+    await shown(view.container, '.bt-vitals-card');
+    await wait(600);
+    expect(await rowsOf('waist')).toEqual([]);
+
+    savePdf(view);
+    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, TODAY]]));
+  });
+
+  // Only the fields' own save takes a value out of the form. A matrix's save
+  // of the same number, for another day, is not the value typed there.
+  it('survives a matrix saving the same number for another day, and is written by the next save of the fields', async () => {
+    const turnPhone = rotatablePhone();
+    await guest();
+    const view = render(<HealthTool />);
+    await typeAndLeave(await shown<HTMLInputElement>(view.container, '#waistCm'), '90');
+    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, TODAY]]));
+    typeInto(view.container.querySelector('#weightKg') as HTMLInputElement, '84'); // not left
+    await turnPhone(); // portrait: the form is built again, the vitals as a matrix
+    await shown(view.container, '.bt-vitals-card');
+    await wait(600);
+    expect(await rowsOf('weight')).toEqual([]);
+
+    pickDraftDate(vitalsMatrix(view.container), '2026-09-10');
+    typeInto(draftInput(vitalsMatrix(view.container), 'Weight'), '84');
+    leaveVitals(view.container);
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, '2026-09-10']]));
+
+    await uploadStarts(); // saves the fields
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, '2026-09-10'], [84, TODAY]]));
+  });
+});
+
 // Review of 2026-09-24, round 3, and Codex R1: a value on screen can change
 // under the user, another device or a connector writing to the same record.
 describe('another writer changes a value the user is working on', () => {
@@ -1419,6 +1461,28 @@ describe('US-03: what the plan and the chat read of a draft', () => {
     await waitFor(() => expect(ldlTile(view.container)).toBe('3.5 mmol/L'));
     expect(chat.context?.ldlC).toBe(3.5);
     expect(chat.context?.hdlC).toBe(1.2); // still its test's latest, in the slot it expects
+  });
+});
+
+// What the drafts lend lives apart from the form (US-03 AC6), so the erase's
+// reset of the form does not reach it. The erase clears the drafts, and each
+// matrix takes back what it lent.
+describe('US-11: an erase made here', () => {
+  it('takes back what the drafts lent: the plan and the chat read neither, and no draft is left on the device', async () => {
+    const view = await returningGuest(); // 82 kg on 1 Sep
+    typeWithoutTap(draftInput(vitalsMatrix(view.container), 'Weight'), '84');
+    typeWithoutTap(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'), '3');
+    await waitFor(() => expect([chat.context?.weightKg, chat.context?.ldlC]).toEqual([84, 3]));
+    expect(ldlTile(view.container)).toBe('3.0 mmol/L');
+    expect([localStorage.getItem(VITALS_DRAFT_KEY), localStorage.getItem(BT_TIMELINE_DRAFT_KEY)]).not.toContain(null);
+
+    vi.spyOn(window, 'alert').mockImplementation(() => {});
+    fireEvent.click(view.getByRole('button', { name: 'Delete All My Data' }));
+    await waitFor(() => expect(window.alert).toHaveBeenCalled());
+    await wait(50);
+    expect([chat.context?.weightKg, chat.context?.ldlC]).toEqual([undefined, undefined]);
+    expect(ldlTile(view.container)).toBeUndefined();
+    expect([localStorage.getItem(VITALS_DRAFT_KEY), localStorage.getItem(BT_TIMELINE_DRAFT_KEY)]).toEqual([null, null]);
   });
 });
 
