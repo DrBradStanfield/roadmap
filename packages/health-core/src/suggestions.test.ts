@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { generateSuggestions, resolveBestLipidMarker, LIPID_TREATMENT_TARGETS } from './suggestions';
+import { generateSuggestions, resolveBestLipidMarker, LIPID_TREATMENT_TARGETS, weightMedicationTrigger } from './suggestions';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import { canIncreaseGlp1Dose, shouldSuggestGlp1Switch, isOnMaxGlp1Potency, getGlp1EscalationType } from './types';
 import { toCanonicalValue } from './units';
-import { getBMICategory } from './calculations';
+import { calculateHealthResults, getBMICategory } from './calculations';
 
 // Shorthand: convert conventional (US) blood test values to SI for test inputs
 const hba1c = (pct: number) => toCanonicalValue('hba1c', pct, 'conventional');
@@ -1919,6 +1919,79 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
       const glp1 = suggestions.find(s => s.id === 'weight-med-glp1');
       expect(glp1?.description).toContain('blood pressure');
+    });
+  });
+
+  // US-06 AC5: the plan and the input form share one weight-medication trigger.
+  // Each row pins what the plan decided before the trigger moved into its own
+  // function, then checks the function decides the same. Raw values go through
+  // calculateHealthResults, so its rounding is part of the case: 178 cm tall,
+  // BMI to 1 decimal place, waist-to-height ratio to 2.
+  describe('weightMedicationTrigger: one trigger for the plan and the form (US-06 AC5)', () => {
+    interface Row {
+      name: string;
+      weightKg?: number;
+      waistCm?: number;
+      hba1c?: number;
+      triglycerides?: number;
+      systolicBp?: number;
+      on: boolean;
+      reasons: string[];
+      /** The plan's single `weight-glp1` card, when medications are not tracked. */
+      standalone: boolean;
+    }
+    const HBA1C = 'prediabetic HbA1c';
+    const TG = 'elevated triglycerides';
+    const BP = 'elevated blood pressure';
+    const WAIST = 'elevated waist-to-height ratio';
+    const table: Row[] = [
+      { name: 'no weight', on: false, reasons: [], standalone: false },
+      { name: 'BMI 18.0 with every marker raised', weightKg: 57, waistCm: 106.8, hba1c: 48, triglycerides: 2, systolicBp: 140, on: false, reasons: [], standalone: false },
+      { name: 'BMI 24.9 with a raised HbA1c', weightKg: 78.9, hba1c: 48, on: false, reasons: [], standalone: false },
+      { name: 'BMI 25.0 (24.97 raw), no waist, no marker', weightKg: 79.1, on: false, reasons: [], standalone: false },
+      { name: 'BMI 25.0 (24.97 raw), no waist, HbA1c 40', weightKg: 79.1, hba1c: 40, on: true, reasons: [HBA1C], standalone: false },
+      { name: 'BMI 25.0, WHtR 0.47, HbA1c 40', weightKg: 79.1, waistCm: 83.7, hba1c: 40, on: false, reasons: [], standalone: false },
+      { name: 'BMI 26.0, WHtR 0.46, systolic 135 (group 2)', weightKg: 82.4, waistCm: 81.9, systolicBp: 135, on: false, reasons: [], standalone: false },
+      { name: 'BMI 26.0, WHtR 0.4978 (0.50 rounded)', weightKg: 82.4, waistCm: 88.6, on: true, reasons: [WAIST], standalone: true },
+      { name: 'BMI 26.0, WHtR 0.4949 (0.49 rounded)', weightKg: 82.4, waistCm: 88.1, on: false, reasons: [], standalone: false },
+      { name: 'BMI 26.0, WHtR 0.52, TG 2.0', weightKg: 82.4, waistCm: 92.6, triglycerides: 2, on: true, reasons: [TG, WAIST], standalone: true },
+      { name: 'BMI 26.0, no waist, TG 150 mg/dL', weightKg: 82.4, triglycerides: trig(150), on: true, reasons: [TG], standalone: true },
+      { name: 'BMI 26.0, no waist, TG 149 mg/dL', weightKg: 82.4, triglycerides: trig(149), on: false, reasons: [], standalone: false },
+      { name: 'BMI 26.0, no waist, systolic 130', weightKg: 82.4, systolicBp: 130, on: true, reasons: [BP], standalone: false },
+      { name: 'BMI 26.0, no waist, systolic 129', weightKg: 82.4, systolicBp: 129, on: false, reasons: [], standalone: false },
+      { name: 'BMI 26.0, no waist, HbA1c 5.7%', weightKg: 82.4, hba1c: hba1c(5.7), on: true, reasons: [HBA1C], standalone: false },
+      { name: 'BMI 26.0, no waist, HbA1c 5.6%', weightKg: 82.4, hba1c: hba1c(5.6), on: false, reasons: [], standalone: false },
+      { name: 'BMI 28.0 (28.03 raw), no waist, no marker', weightKg: 88.8, on: false, reasons: [], standalone: false },
+      { name: 'BMI 28.1, no waist, no marker', weightKg: 89, on: true, reasons: [], standalone: true },
+      { name: "BMI 28.6, WHtR 0.47, no marker (Brad's ruling 1)", weightKg: 90.6, waistCm: 83.7, on: false, reasons: [], standalone: false },
+      { name: 'BMI 28.6, WHtR 0.47, HbA1c, TG and systolic raised (group 2)', weightKg: 90.6, waistCm: 83.7, hba1c: 48, triglycerides: 2, systolicBp: 140, on: false, reasons: [], standalone: false },
+      { name: 'BMI 29.9, WHtR 0.52', weightKg: 94.7, waistCm: 92.6, on: true, reasons: [WAIST], standalone: true },
+      { name: 'BMI 30.0, WHtR 0.40', weightKg: 95.1, waistCm: 71.2, on: true, reasons: [], standalone: true },
+      { name: 'BMI 35.0 with every marker raised', weightKg: 111, waistCm: 106.8, hba1c: 48, triglycerides: 2, systolicBp: 140, on: true, reasons: [HBA1C, TG, BP, WAIST], standalone: true },
+    ];
+    const inputsOf = ({ weightKg, waistCm, hba1c, triglycerides, systolicBp }: Row): HealthInputs => ({
+      heightCm: 178, sex: 'male', weightKg, waistCm, hba1c, triglycerides, systolicBp,
+    });
+
+    it.each(table)('the plan, medications tracked: $name', (row) => {
+      const glp1 = calculateHealthResults(inputsOf(row), 'si', {}).suggestions.find(s => s.id === 'weight-med-glp1');
+      expect(glp1 !== undefined).toBe(row.on);
+      if (row.on) {
+        const why = row.reasons.length > 0 ? `an elevated BMI and ${row.reasons.join(', ')}` : 'an elevated BMI';
+        expect(glp1!.description).toContain(`With ${why}, you may benefit`);
+      }
+    });
+
+    it.each(table)('the plan, medications not tracked: $name', (row) => {
+      const ids = calculateHealthResults(inputsOf(row), 'si').suggestions.map(s => s.id);
+      expect(ids.includes('weight-glp1')).toBe(row.standalone);
+      expect(ids.some(id => id.startsWith('weight-med-'))).toBe(false);
+    });
+
+    it.each(table)('the trigger: $name', (row) => {
+      const inputs = inputsOf(row);
+      expect(weightMedicationTrigger(inputs, calculateHealthResults(inputs, 'si', {})))
+        .toEqual({ on: row.on, reasons: row.reasons });
     });
   });
 
