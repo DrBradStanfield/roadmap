@@ -293,8 +293,9 @@ export class RoadmapStore {
    *  so a failed save leaves its changes unsaved for the next hide to retry. */
   private changes = 0;
   private savedChanges = 0;
-  /** A tab-close write was refused, and reported, once already. */
-  private closeWriteRefused = false;
+  /** The kinds of device refusal reported this page load: every hide retries
+   *  a refused save, and meets the same refusal (US-10 AC5). */
+  private readonly refusalsReported = new Set<string>();
   private readonly deviceId: string;
   /** The last moment this device's copy and the cloud were known to agree: the
    *  load, then every successful save. A failed save marks the pending mirror
@@ -926,11 +927,9 @@ export class RoadmapStore {
         if (this.adopt(merged)) notify(REMOTE_CHANGED_EVENT);
         return;
       } catch {
-        // A newer app's record, unreadable bytes or a full disk: the async
-        // save meets the same refusal and reports it, once per page load,
-        // since every later hide meets it again (US-10 AC5).
-        if (this.closeWriteRefused) return;
-        this.closeWriteRefused = true;
+        // Another tab's write in between: the async save re-reads, merges and
+        // lands it. A newer app's record, unreadable bytes or a full disk: it
+        // meets the same refusal, and reports it (US-10 AC5).
       }
     }
     void this.persist();
@@ -1003,8 +1002,9 @@ export class RoadmapStore {
   /**
    * Serialized read-merge-write, run by saveLoop(). A call made while a save
    * runs joins it: the save goes round again for the new changes, and the
-   * call answers when that pass lands or fails. Answering at once let an
-   * awaited flush, and so an erase, report a save that had not happened
+   * call answers when the whole save ends. A later pass that fails fails the
+   * call too: a false failure, never a false success. Answering at once let
+   * an awaited flush, and so an erase, report a save that had not happened
    * (US-11 AC7).
    * @returns false when the save failed (already reported to Sentry).
    */
@@ -1036,6 +1036,9 @@ export class RoadmapStore {
           now: new Date().toISOString(),
         }))) remoteFolded = true;
       } while (this.dirtyDuringPersist);
+      // Ended before anyone hears of it: a listener that saves again starts a
+      // new save, instead of joining this finished one.
+      this.running = null;
       if (remoteFolded) notify(REMOTE_CHANGED_EVENT);
       this.lastSyncedAt = new Date().toISOString();
       // A skipped (unreadable) mirror holds data this save did NOT include —
@@ -1043,6 +1046,7 @@ export class RoadmapStore {
       if (this.adapter.id !== 'local' && !this.mirrorSkipped) clearSyncPending();
       return true;
     } catch (error) {
+      this.running = null; // as above: ended before the marker is announced
       // The background cloud save failed — this MUST be observable (unreported,
       // it's silent data-at-risk), and the changes must NOT stay memory-only:
       // mirror the working copy on-device so a tab close can't lose it, and
@@ -1071,17 +1075,20 @@ export class RoadmapStore {
         }
       }
       console.warn('Cloud sync failed');
+      // Only the device tier names its refusal (6M): a cloud failure's cause
+      // is the transport, which `recordFailure` already classifies. A device
+      // refuses every retry the same way, and each hide retries a refused
+      // save, so each kind of refusal is reported once per page load.
+      const cause = this.adapter.id === 'local' ? storageFailureClass(error) : undefined;
+      if (cause) {
+        const kind = `${error instanceof Error ? error.name : ''}/${cause}`;
+        if (this.refusalsReported.has(kind)) return false;
+        this.refusalsReported.add(kind);
+      }
       Sentry.captureException(recordFailure(error, 'Cloud sync failed'), {
-        tags: {
-          area: 'cloud-sync', op: 'persist', backend: this.adapter.id,
-          // Only the device tier names its refusal (6M): a cloud failure's
-          // cause is the transport, which `recordFailure` already classifies.
-          ...(this.adapter.id === 'local' ? { cause: storageFailureClass(error) } : {}),
-        },
+        tags: { area: 'cloud-sync', op: 'persist', backend: this.adapter.id, ...(cause ? { cause } : {}) },
       });
       return false;
-    } finally {
-      this.running = null;
     }
   }
 }

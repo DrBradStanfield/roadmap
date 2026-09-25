@@ -245,12 +245,13 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     expect(rev()).toBe(after);
   });
 
-  it('a device that refuses every write reports it once per page load, not on every hide', async () => {
+  it('a device that refuses every write reports each kind of refusal once per page load, not on every hide', async () => {
     const [a] = await twoTabs();
     a.addMeasurement('hdl', 1.4, TODAY);
+    let full = true;
     const setItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
-      if (key === FILE_KEY) throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+      if (full && key === FILE_KEY) throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
       setItem.call(this, key, value);
     });
 
@@ -261,6 +262,45 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
 
     expect(Sentry.captureException).toHaveBeenCalledTimes(1);
     expect(rows()).toEqual(['weight 82 active']);
+
+    // A new kind of refusal is still reported: another tab's newer app wrote.
+    full = false;
+    localStorage.setItem(FILE_KEY, JSON.stringify({ ...stored(), schemaVersion: 9999 }));
+    a.flushSync();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(Sentry.captureException).toHaveBeenCalledTimes(2);
+  });
+
+  it('a conflict with another tab is retried on every hide, though an earlier one was too', async () => {
+    const adapterA = new LocalStorageAdapter();
+    const [a] = await twoTabs(adapterA);
+    // Another tab saves between this tab's read and its write, once per hide
+    // (read() runs through readSync too, so the retry's own read is spared).
+    const readSync = adapterA.readSync.bind(adapterA);
+    let theirs = 0;
+    let armed = false;
+    vi.spyOn(adapterA, 'readSync').mockImplementation((fileName) => {
+      const read = readSync(fileName);
+      if (!armed) return read;
+      armed = false;
+      theirs += 1;
+      const file = structuredClone(read.body) as RoadmapFile;
+      file.measurements.push(createMeasurement({ id: `theirs-${theirs}`, metricType: 'weight', value: 90 + theirs, recordedAt: `2026-09-0${theirs}T00:00:00.000Z`, createdAt: '2026-09-18T00:00:00.000Z' }));
+      new LocalStorageAdapter().writeSync(fileName, file, read.version);
+      return read;
+    });
+
+    a.addMeasurement('hdl', 1.4, TODAY);
+    armed = true;
+    a.flushSync(); // refused: the version moved; the async save retries and lands
+    await vi.advanceTimersByTimeAsync(0);
+    a.addMeasurement('ldl', 3.1, TODAY);
+    armed = true;
+    a.flushSync(); // refused again
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(rows()).toEqual(['hdl 1.4 active', 'ldl 3.1 active', 'weight 82 active', 'weight 91 active', 'weight 92 active']);
+    expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 });
 
@@ -350,6 +390,25 @@ describe('US-11 AC7 — an erase beats what it has not seen, and says so only on
     expect(atSuccess?.measurements).toEqual([]);
     const written = write.mock.calls.map(([, body]) => body as RoadmapFile);
     expect(written.some((file) => file.measurements.some((m) => m.value === 83))).toBe(false);
+  });
+
+  it('a flush made by a listener to a save that just ended starts a new save', async () => {
+    const [a, b] = await twoTabs();
+    b.addMeasurement('weight', 83, TODAY);
+    await b.flush();
+    let flushed: Promise<void> | null = null;
+    const listener = () => {
+      window.removeEventListener(REMOTE_CHANGED_EVENT, listener);
+      a.addMeasurement('ldl', 3.1, TODAY);
+      flushed = a.flush();
+    };
+    window.addEventListener(REMOTE_CHANGED_EVENT, listener);
+    a.addMeasurement('hdl', 1.4, TODAY);
+
+    await a.flush(); // folds B's row in, and announces it
+    await flushed;
+
+    expect(rows()).toContain('ldl 3.1 active');
   });
 
   it('an erase that failed to save is written by the next hide', async () => {
