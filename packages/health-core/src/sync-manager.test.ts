@@ -68,9 +68,10 @@ describe('SyncManager.save — making a removed file again (US-10 AC6)', () => {
     const { file } = await sync.save(local);
     const written = await sync.load();
 
+    // Values and stamp kept; the merge records each field's clock beside them.
     for (const f of [file, written]) {
-      expect(f.profile).toStrictEqual(local.profile);
-      expect(f.screenings).toStrictEqual(local.screenings);
+      expect(f.profile).toMatchObject(local.profile);
+      expect(f.screenings).toMatchObject(local.screenings);
     }
   });
 });

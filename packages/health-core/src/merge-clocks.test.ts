@@ -138,3 +138,62 @@ describe('the stamp invariant: stampFields and the merge keep the object\'s stam
     expect(checked).toBe(3600);
   });
 });
+
+// US-10 AC6: each field's clock is a pure function of the one object that
+// holds it, and the merge takes the newer per field, so the merge is a join.
+// Codex and an adversary's fuzz found orders that disagreed before.
+describe('the per-field merge is a join: commutative, associative and idempotent, stamps included (US-10 AC6)', () => {
+  it('holds over thousands of seeded triples of stamped, legacy, stale, hand-edited and empty copies', () => {
+    let seed = 20260926;
+    const rand = () => {
+      seed = (seed * 1103515245 + 12345) % 2147483648;
+      return seed / 2147483648;
+    };
+    const pick = <T>(items: readonly T[]): T => items[Math.floor(rand() * items.length)];
+    const FIELDS = ['sex', 'heightCm', 'birthYear'] as const;
+    // Few times and small lamports, so ties are common.
+    const TIMES = ['2026-05-01T00:00:00Z', '2026-05-02T00:00:00Z', '2026-05-03T00:00:00Z'];
+    const VALUES = [1, 2, 50, 'a', null];
+
+    const base = (): Record<string, unknown> => {
+      const obj: Record<string, unknown> = { updatedAt: pick(TIMES) };
+      if (rand() < 0.8) obj.lamport = Math.floor(rand() * 3);
+      if (rand() < 0.15) return obj; // an empty record
+      for (const field of FIELDS) if (rand() < 0.6) obj[field] = pick(VALUES);
+      return obj;
+    };
+    const evolve = (start: Record<string, unknown>): RoadmapProfile => {
+      let obj = start as unknown as RoadmapProfile;
+      for (let step = Math.floor(rand() * 3); step > 0; step--) {
+        const field = pick(FIELDS);
+        const op = rand();
+        if (op < 0.55) obj = stampFields(obj, { [field]: pick(VALUES) } as Partial<RoadmapProfile>, pick(TIMES));
+        else if (op < 0.8) obj = { ...obj, [field]: pick(VALUES), lamport: (obj.lamport ?? 0) + 1, updatedAt: pick(TIMES) }; // an older app
+        else obj = { ...obj, [field]: pick(VALUES), updatedAt: pick(TIMES) }; // a hand edit
+      }
+      return obj;
+    };
+    const merge = (a: RoadmapFile, b: RoadmapFile) => mergeFiles(a, b, OPTS);
+    const key = (file: RoadmapFile) => stableStringify(file.profile);
+
+    const failures: string[] = [];
+    for (let run = 0; run < 3000; run++) {
+      const shared = base();
+      const [a, b, c] = [0, 1, 2].map(() =>
+        withProfile((rand() < 0.3 ? base() : evolve(structuredClone(shared))) as unknown as Record<string, unknown>));
+      const ab = merge(a, b);
+      const checks: Array<[string, string, string]> = [
+        ['commutative', key(ab), key(merge(b, a))],
+        ['associative (ab)c = a(bc)', key(merge(ab, c)), key(merge(a, merge(b, c)))],
+        ['associative (ab)c = (ac)b', key(merge(ab, c)), key(merge(merge(a, c), b))],
+        ['idempotent', key(merge(ab, ab)), key(ab)],
+        ['absorbs', key(merge(ab, b)), key(ab)],
+      ];
+      for (const [law, x, y] of checks) {
+        if (x !== y && failures.length < 3) failures.push(`${law}: ${JSON.stringify([a.profile, b.profile, c.profile])}`);
+      }
+      if (!holdsInvariant(merge(ab, c).profile) && failures.length < 3) failures.push(`invariant: ${key(merge(ab, c))}`);
+    }
+    expect(failures).toEqual([]);
+  });
+});

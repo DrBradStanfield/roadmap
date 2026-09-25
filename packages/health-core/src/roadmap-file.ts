@@ -56,8 +56,8 @@ export interface RoadmapFileMeta {
  * A singleton that merges field by field (US-10 AC6). Its own stamp is its
  * newest write; `fieldStamps` says when each field was written, keyed by field
  * name. `stampFields` (merge.ts) writes them and `mergeFiles` reads them.
- * Files written before 2026-09-25 have none, and then every field carries the
- * object's own stamp.
+ * Files written before 2026-09-25 have none, and then every field the object
+ * holds carries its own stamp.
  */
 export interface FieldStamped extends SyncStamp {
   fieldStamps?: Record<string, SyncStamp>;

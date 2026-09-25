@@ -37,6 +37,8 @@ function versionKey(fileName: string): string {
 export class LocalStorageAdapter implements StorageAdapter {
   readonly id = 'local' as const;
   readonly label = 'This device only';
+  /** The revision of each file this tab last read or wrote (US-34 AC6). */
+  private readonly seen = new Map<string, string | null>();
 
   async connect(): Promise<void> {
     /* nothing to authorise */
@@ -67,6 +69,8 @@ export class LocalStorageAdapter implements StorageAdapter {
 
   readSync(fileName: string): ReadResult {
     const raw = safeGetItem(fileKey(fileName));
+    const rev = safeGetItem(versionKey(fileName));
+    this.seen.set(fileName, rev);
     if (raw == null) return { body: null, version: null };
     let body: unknown;
     try {
@@ -74,7 +78,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     } catch (error) {
       throw new StorageError('Local data is corrupt and could not be read.', undefined, error);
     }
-    return { body, version: safeGetItem(versionKey(fileName)) ?? '0' };
+    return { body, version: rev ?? '0' };
   }
 
   writeSync(fileName: string, body: object, expectedVersion: string | null): WriteResult {
@@ -95,7 +99,16 @@ export class LocalStorageAdapter implements StorageAdapter {
       throw new StorageError('Could not save on this device (local storage may be full).', undefined, error);
     }
     safeSetItem(versionKey(fileName), next);
+    this.seen.set(fileName, next);
     return { version: next };
+  }
+
+  /** Whether another tab wrote this file since this tab last read or wrote
+   *  it. One getItem, so a tab can ask each time it comes back: a page
+   *  restored from the back-forward cache, or a suspended iOS tab, can miss
+   *  the `storage` event (US-34 AC6). */
+  movedElsewhere(fileName: string): boolean {
+    return safeGetItem(versionKey(fileName)) !== this.seen.get(fileName);
   }
 
   /** Another tab's save. The browser fires `storage` in every OTHER tab of

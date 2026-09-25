@@ -62,6 +62,13 @@ describe('trackProductEvent on the Shopify surface', () => {
     const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
     expect(body.metadata).toEqual({ provider: 'dropbox' });
   });
+
+  it('sends the backend a remote change came in on (US-34)', async () => {
+    const { trackProductEvent } = await import('./server-api');
+    trackProductEvent('remote_change_applied', { backend: 'local' });
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.metadata).toEqual({ backend: 'local' });
+  });
 });
 
 describe('trackProductEvent on the Pages build (no Brad server)', () => {

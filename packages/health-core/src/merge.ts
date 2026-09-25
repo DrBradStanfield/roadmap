@@ -364,19 +364,15 @@ function mergeSnapshots(
   return [...map.values()].sort((a, b) => cmpStr(a.date, b.date));
 }
 
-/** Pick the newer of two singleton objects by logical clock. */
-function pickNewer<T extends SyncStamp>(local: T, remote: T): T {
-  return stampIsNewer(local, remote) ? local : remote;
-}
-
-/** pickNewer for OPTIONAL singletons: present always beats absent. */
+/** The newer of two OPTIONAL singletons by logical clock: present always
+ *  beats absent. */
 function pickNewerOptional<T extends SyncStamp>(
   local: T | undefined,
   remote: T | undefined,
 ): T | undefined {
   if (!local) return remote;
   if (!remote) return local;
-  return pickNewer(local, remote);
+  return stampIsNewer(local, remote) ? local : remote;
 }
 
 /** The keys of a field-stamped singleton that are its clocks, not its fields. */
@@ -396,31 +392,38 @@ function cmpClock(a: Clock, b: Clock): number {
   return cmpStr(a.updatedAt, b.updatedAt);
 }
 
+/** A field's value, own properties only: a field named `__proto__` in a
+ *  hand-edited file is a field, and one no object holds is undefined. */
+function fieldValue(obj: FieldStamped, field: string): unknown {
+  return Object.prototype.hasOwnProperty.call(obj, field) ? (obj as unknown as Record<string, unknown>)[field] : undefined;
+}
+
 /**
  * When each field of a profile or the screening answers was last written, as
- * the merge reads it: a stamp, or null for a field nobody has written.
+ * the merge reads it: a clock, or null for a field nobody has written. It is a
+ * pure function of the one object, which is what makes the merge give one
+ * answer in any order (US-10 AC6).
  *
  * The stamp invariant: the object's own stamp is at or above every field
  * stamp. `stampFields` keeps it by stamping a write past every clock the
- * object holds; `mergeFields` keeps it by taking the newer object stamp and
- * each field's stamp from one side, or by returning one side whole. Field
- * stamps count exactly when the object's stamp equals the newest of them.
- * When the object's stamp runs ahead, a writer that does not stamp fields (an
+ * object holds; `mergeFields` by taking the newest winning field clock as the
+ * result's stamp. Field stamps count while the object's stamp is not past the
+ * newest of them. When it runs ahead, a writer that does not stamp fields (an
  * app from before 2026-09-25, or a hand edit under the agent rules) moved it,
  * left the field stamps as it found them, and cannot say which fields it
- * changed. Then, and when there are no field stamps at all, every field,
- * present or absent, carries the object's stamp: the whole-object rule the
- * merge always had. Otherwise a field with no stamp of its own carries the
- * object's if it holds a value, and none if it does not.
+ * changed. Then, and when there are no field stamps at all, every field the
+ * object holds, or has a stamp for, carries the object's stamp. A field it
+ * neither holds nor stamps was never written: no writer deletes a key, so an
+ * absence says nothing.
  */
 function fieldClock(obj: FieldStamped): (field: string) => Clock | null {
   const own = clockOf(obj);
   const stamps = new Map(Object.entries(obj.fieldStamps ?? {}).map(([field, stamp]) => [field, clockOf(stamp)]));
   let newest: Clock | null = null;
   for (const clock of stamps.values()) if (!newest || cmpClock(clock, newest) > 0) newest = clock;
-  if (!newest || cmpClock(own, newest) > 0) return () => own;
-  const values = obj as unknown as Record<string, unknown>;
-  return (field) => stamps.get(field) ?? (values[field] === undefined ? null : own);
+  const stale = !newest || cmpClock(own, newest) > 0;
+  return (field) =>
+    (stale ? undefined : stamps.get(field)) ?? (stamps.has(field) || fieldValue(obj, field) !== undefined ? own : null);
 }
 
 /** The keys a clock is read for: every field the object holds or has stamped. */
@@ -432,50 +435,49 @@ function fieldNames(...objs: FieldStamped[]): string[] {
 /**
  * Merge a profile or the screening answers field by field (US-10 AC6). Each
  * field takes its newer write, so a copy that changed one field no longer
- * carries its old copy of every other. The object's own stamp is the newer of
- * the two, and `fieldStamps` records each field's winner, so the next merge
- * reads the result the same way. Two copies with no field stamps merge
- * exactly as they always did: the whole newer object.
+ * carries its old copy of every other. `fieldStamps` records each field's
+ * winning clock and the object's own stamp is the newest of them, so the
+ * result reads back exactly as it was merged, and the merge is commutative,
+ * associative and idempotent. Two copies from before field stamps merge the
+ * same way: the union of their fields, the newer object's value where both
+ * hold one, and the result gains `fieldStamps`.
  *
- * An object that holds no field, and stamps none, says nothing: the other
- * side comes back whole, stamps and all. The empty record made for a missing
- * file is one, stamped now; merged in, its fresh stamp beat every field of a
- * copy whose lamport was 0 or absent, and emptied it. Of two such objects the
- * older stamp stays, so a fresh empty record changes nothing.
+ * An object that holds no field, and stamps none, says nothing. The empty
+ * record made for a missing file is one, stamped now; its fresh stamp once
+ * beat every field of a copy whose lamport was 0 or absent, and emptied it. Of
+ * two such objects the older stamp stays, so a fresh empty record changes
+ * nothing.
  */
 function mergeFields<T extends FieldStamped>(local: T, remote: T): T {
-  const saysNothing = (obj: T) => fieldNames(obj).length === 0;
-  if (saysNothing(local) && saysNothing(remote)) return pickNewer(local, remote) === local ? remote : local;
-  if (saysNothing(local)) return remote;
-  if (saysNothing(remote)) return local;
-  const stamped = (obj: T) => Object.keys(obj.fieldStamps ?? {}).length > 0;
-  if (!stamped(local) && !stamped(remote)) return pickNewer(local, remote);
   const localAt = fieldClock(local);
   const remoteAt = fieldClock(remote);
-  const l = local as unknown as Record<string, unknown>;
-  const r = remote as unknown as Record<string, unknown>;
   const values: Array<[string, unknown]> = [];
   const stamps: Array<[string, Clock]> = [];
+  let newest: Clock | null = null;
   for (const field of fieldNames(local, remote)) {
     const a = localAt(field);
     const b = remoteAt(field);
-    // Tied stamps are one write seen twice, or a hand edit that moved no
-    // clock: the larger value wins, so both sides pick the same one.
-    const order = a && b ? cmpClock(a, b) : 0;
-    const takeLocal = !b || (!!a && (order > 0 || (order === 0 && l[field] !== r[field] &&
-      (stableStringify(l[field]) ?? '') > (stableStringify(r[field]) ?? ''))));
-    const [value, clock] = takeLocal ? [l[field], a] : [r[field], b];
+    if (!a && !b) continue;
+    const l = fieldValue(local, field);
+    const r = fieldValue(remote, field);
+    // A field never written loses to any write. Tied clocks are one write seen
+    // twice, or a hand edit that moved no clock: the larger value wins, so
+    // every order picks the same one.
+    const order = !b ? 1 : !a ? -1 : cmpClock(a, b);
+    const takeLocal = order > 0 ||
+      (order === 0 && l !== r && (stableStringify(l) ?? '') > (stableStringify(r) ?? ''));
+    const [value, clock] = takeLocal ? [l, a!] : [r, b!];
     if (value !== undefined) values.push([field, value]);
-    if (clock) stamps.push([field, clock]);
+    stamps.push([field, clock]);
+    if (!newest || cmpClock(clock, newest) > 0) newest = clock;
   }
-  const { updatedAt, lamport } = pickNewer(local, remote);
+  const older = cmpClock(clockOf(local), clockOf(remote)) <= 0 ? clockOf(local) : clockOf(remote);
   // Built from entries, never by assignment: a field named `__proto__` in a
   // hand-edited file must stay a field.
   return {
     ...Object.fromEntries(values),
-    updatedAt,
-    ...(lamport === undefined ? null : { lamport }),
-    fieldStamps: Object.fromEntries(stamps),
+    ...(newest ?? older),
+    ...(stamps.length > 0 ? { fieldStamps: Object.fromEntries(stamps) } : null),
   } as T;
 }
 

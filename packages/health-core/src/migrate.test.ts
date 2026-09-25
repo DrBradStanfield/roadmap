@@ -153,6 +153,24 @@ describe('migrateFile — sloppy second writer (US-29; invariants for US-10/US-1
     expect(migrateFile(rawFile(), OPTS).profile).not.toHaveProperty('fieldStamps');
   });
 
+  // US-10 AC6 (adversarial review, 2026-09-25): a profile or screenings with
+  // no `updatedAt`, or a mistyped one, took the migration's own time, so an
+  // agent's unstamped write beat a real edit made before it was read. It is an
+  // unknown time, the bottom, as `sanitizeStamp` reads a mistyped row stamp.
+  it('reads a missing or mistyped profile or screenings updatedAt as the bottom, not as now', () => {
+    for (const updatedAt of [undefined, 1718000000000, null]) {
+      const f = migrateFile(rawFile({
+        profile: { sex: 'female', lamport: 2, ...(updatedAt === undefined ? null : { updatedAt }) },
+        screenings: { colorectalMethod: 'fit_annual', lamport: 0, ...(updatedAt === undefined ? null : { updatedAt }) },
+      }), OPTS);
+      expect(f.profile.updatedAt).toBe('');
+      expect(f.screenings.updatedAt).toBe('');
+      const edited = migrateFile(rawFile({ profile: { sex: 'male', lamport: 2, updatedAt: '2026-05-01T00:00:00Z' } }), OPTS);
+      expect(mergeFiles(f, edited, OPTS).profile.sex).toBe('male');
+      expect(mergeFiles(edited, f, OPTS).profile.sex).toBe('male');
+    }
+  });
+
   // Defect 4: a future createdAt beats every later genuine entry in the slot,
   // flipping the user's own fresh value to 'entered-in-error'.
   it('clamps a future createdAt so a genuine later entry still wins its slot', () => {

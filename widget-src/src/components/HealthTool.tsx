@@ -70,6 +70,7 @@ import {
   saveSupplement,
   deleteSupplementApi,
   deleteUserData,
+  getBackendKind,
 } from '../lib/roadmap-data';
 import { trackABImpression, trackABConversion, trackProductEvent } from '../lib/server-api';
 import { activeRowIndex, routeTasksToSaves, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
@@ -147,7 +148,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   const applyRemoteRef = useRef<() => void>(() => {});
   const remoteRelay = useRef(
     createRemoteChangeRelay(() => {
-      trackProductEvent('remote_change_applied');
+      trackProductEvent('remote_change_applied', { backend: getBackendKind() });
       void applyRemoteRef.current();
     }),
   ).current;

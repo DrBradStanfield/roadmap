@@ -350,27 +350,30 @@ describe('mergeFiles — profile and screenings merge field by field (US-10 AC6)
     expect(mergeFiles(b, a, OPTS).profile.heightCm).toBe(181);
   });
 
-  it('two copies from before field stamps merge exactly as they always did: the whole newer object', () => {
-    const cases: Array<[RoadmapFile['profile'], RoadmapFile['profile'], 'a' | 'b']> = [
+  it('two copies from before field stamps merge field by field: the union, the newer value where both hold one', () => {
+    // Before 2026-09-26 the newer object won whole, which made the result
+    // depend on merge order once a stamped third copy met them.
+    const cases: Array<[RoadmapFile['profile'], RoadmapFile['profile'], RoadmapFile['profile']]> = [
       // Higher lamport, even with the older time.
-      [{ heightCm: 180, birthYear: 1971, updatedAt: T2, lamport: 2 }, { heightCm: 181, updatedAt: T1, lamport: 5 }, 'b'],
+      [{ heightCm: 180, birthYear: 1971, updatedAt: T2, lamport: 2 }, { heightCm: 181, updatedAt: T1, lamport: 5 },
+        { heightCm: 181, birthYear: 1971, updatedAt: T1, lamport: 5, fieldStamps: { heightCm: at(5, T1), birthYear: at(2, T2) } }],
       // Tied lamport: the later time.
-      [{ heightCm: 180, birthYear: 1971, updatedAt: T2, lamport: 2 }, { heightCm: 181, updatedAt: T1, lamport: 2 }, 'a'],
-      // Tied stamps: the larger content, the tiebreak `stampIsNewer` always had.
-      [{ heightCm: 180, updatedAt: T1, lamport: 2 }, { heightCm: 181, updatedAt: T1, lamport: 2 }, 'b'],
+      [{ heightCm: 180, birthYear: 1971, updatedAt: T2, lamport: 2 }, { heightCm: 181, updatedAt: T1, lamport: 2 },
+        { heightCm: 180, birthYear: 1971, updatedAt: T2, lamport: 2, fieldStamps: { heightCm: at(2, T2), birthYear: at(2, T2) } }],
+      // Tied stamps: the larger value, the tiebreak `stampIsNewer` always had.
+      [{ heightCm: 180, updatedAt: T1, lamport: 2 }, { heightCm: 181, updatedAt: T1, lamport: 2 },
+        { heightCm: 181, updatedAt: T1, lamport: 2, fieldStamps: { heightCm: at(2, T1) } }],
     ];
-    for (const [pa, pb, winner] of cases) {
+    for (const [pa, pb, expected] of cases) {
       const a = emptyFile();
       const b = emptyFile();
       a.profile = pa;
       b.profile = pb;
-      // Content chosen so the tied case picks the same side as the profile.
       a.screenings = { breastFrequency: 'annual', updatedAt: pa.updatedAt, lamport: pa.lamport };
       b.screenings = { colorectalMethod: 'fit_annual', updatedAt: pb.updatedAt, lamport: pb.lamport };
-      const won = winner === 'a' ? a : b;
       for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS)]) {
-        expect(merged.profile).toStrictEqual(won.profile);
-        expect(merged.screenings).toStrictEqual(won.screenings);
+        expect(merged.profile).toStrictEqual(expected);
+        expect(merged.screenings).toMatchObject({ breastFrequency: 'annual', colorectalMethod: 'fit_annual' });
       }
     }
   });
@@ -444,6 +447,42 @@ describe('mergeFiles — profile and screenings merge field by field (US-10 AC6)
   });
 });
 
+// US-10 AC6: the merge read an unstamped or stale copy's clock for fields it
+// did not hold, and forgot or kept that absence differently depending on which
+// copies met first. Found by Codex and a fuzz of three-copy merge orders.
+describe('mergeFiles — the per-field merge gives one answer in any order (US-10 AC6)', () => {
+  const profileOf = (profile: Record<string, unknown>): RoadmapFile => {
+    const file = emptyFile();
+    file.profile = profile as unknown as RoadmapProfile;
+    return file;
+  };
+  const orders = (a: RoadmapFile, b: RoadmapFile, c: RoadmapFile) => [
+    mergeFiles(mergeFiles(a, b, OPTS), c, OPTS),
+    mergeFiles(mergeFiles(a, c, OPTS), b, OPTS),
+    mergeFiles(a, mergeFiles(b, c, OPTS), OPTS),
+    mergeFiles(mergeFiles(c, b, OPTS), a, OPTS),
+  ].map((merged) => stableStringify(merged.profile));
+
+  it('Codex\'s case: an unstamped copy\'s clock never reaches a field it does not hold', () => {
+    const a = profileOf({ heightCm: 180, updatedAt: T0, lamport: 2 });
+    const b = profileOf({ heightCm: 181, updatedAt: T1, lamport: 3, fieldStamps: { heightCm: at(3, T1) } });
+    const c = profileOf({ birthYear: 1970, updatedAt: T0, lamport: 1, fieldStamps: { birthYear: at(1, T0) } });
+    const results = orders(a, b, c);
+    for (const result of results) expect(result).toBe(results[0]);
+    expect(mergeFiles(mergeFiles(a, c, OPTS), b, OPTS).profile).toMatchObject({ heightCm: 181, birthYear: 1970 });
+  });
+
+  it('two unstamped copies tied on both clocks, then a stamped third: one answer', () => {
+    const a = profileOf({ heightCm: 180, birthYear: 1970, updatedAt: T1, lamport: 2 });
+    const b = profileOf({ heightCm: 181, updatedAt: T1, lamport: 2 });
+    const c = profileOf({ sex: 'male', updatedAt: T0, lamport: 1, fieldStamps: { sex: at(1, T0) } });
+    const results = orders(a, b, c);
+    for (const result of results) expect(result).toBe(results[0]);
+    // The tied height falls to the larger value; the birth year only one holds.
+    expect(mergeFiles(mergeFiles(a, b, OPTS), c, OPTS).profile).toMatchObject({ heightCm: 181, birthYear: 1970, sex: 'male' });
+  });
+});
+
 // US-10 AC6: the empty record `createEmptyFile` makes for a MISSING file stamps
 // its profile and screenings now. A tab or device that made a removed file
 // again merged that empty object over its own copy, and where the copy's
@@ -457,9 +496,11 @@ describe('mergeFiles — a profile or screenings that holds no field never wins 
     legacy.profile = { sex: 'male', heightCm: 178, updatedAt: T0 };
     legacy.screenings = { colorectalMethod: 'colonoscopy_10yr', updatedAt: T0, lamport: 0 };
     for (const merged of [mergeFiles(legacy, blank(), OPTS), mergeFiles(blank(), legacy, OPTS)]) {
-      // Unchanged, stamp included: a legacy copy does not grow field stamps.
-      expect(merged.profile).toStrictEqual(legacy.profile);
-      expect(merged.screenings).toStrictEqual(legacy.screenings);
+      // Unchanged, stamp included; each field now records the stamp it carried.
+      expect(merged.profile).toStrictEqual({
+        ...legacy.profile, lamport: 0, fieldStamps: { sex: at(0, T0), heightCm: at(0, T0) },
+      });
+      expect(merged.screenings).toStrictEqual({ ...legacy.screenings, fieldStamps: { colorectalMethod: at(0, T0) } });
     }
   });
 
@@ -1007,7 +1048,8 @@ describe('mergeFiles — keepNewerThan (the on-device fallback, US-09 AC13)', ()
     const cloud = erasedCloud();
     cloud.profile = { updatedAt: '2026-05-09T00:00:00Z', lamport: 1, heightCm: 180 };
     const merged = mergeFiles(device, cloud, FALLBACK);
-    expect(merged.profile).toEqual(cloud.profile);
+    // The cloud's profile, its field now stamped at the cloud's own stamp.
+    expect(merged.profile).toEqual({ ...cloud.profile, fieldStamps: { heightCm: at(1, '2026-05-09T00:00:00Z') } });
     expect(merged.screenings).toEqual(cloud.screenings);
     expect(merged.measurements.map((m) => m.id)).toEqual(['during']); // the rows still travel
   });

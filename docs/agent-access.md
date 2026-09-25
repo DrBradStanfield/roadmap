@@ -144,11 +144,15 @@ someone's medical history, or lose their data at the next device sync.
     each field was last written, so the merge can take each field's newest write
     instead of the newest whole object. To change a field by hand, change it, set that
     object's `updatedAt` to now, and leave its `lamport` as you found it, as rule 7
-    says for a current-state row. The object's stamp then runs ahead of its field
-    stamps, and the merge reads your edit as a write to every field of it, as it did
-    before field stamps: a change another device made to a different field since you
-    read the file can be undone. `update_profile` stamps only the fields it changes;
-    for the four profile fields it covers, prefer it.
+    says for a current-state row. The object's stamp then usually runs ahead of its
+    field stamps, and the merge reads your edit as a write to every field of it, as it
+    did before field stamps: a change another device made to a different field since
+    you read the file can be undone. Not always. When a field stamp is as late as your
+    `updatedAt` (a device whose clock runs ahead of yours wrote it, or the clock clamp
+    on read brought the two level), the merge reads the field stamps instead, your
+    field keeps its old stamp, and your edit can lose to another copy's value.
+    `update_profile` stamps only the fields it changes, so for the fields it covers
+    (sex, birth year, birth month, height) use it rather than a hand edit.
 
 Validate your result against the schema before you write it back.
 

@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES, type McpOAuthReason, type McpRefusalReason, type ProductEventName } from '../../packages/health-core/src/product-events';
+import { EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, type McpOAuthReason, type McpRefusalReason, type ProductEventName } from '../../packages/health-core/src/product-events';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
 import { supabaseAdmin } from './supabase.server';
 
@@ -26,6 +26,8 @@ const metadataSchema = z
     fromNudge: z.literal(true).optional(),
     /** US-38: which guide-link surface was clicked. */
     placement: z.enum(GUIDE_PLACEMENTS).optional(),
+    /** US-34: the tier a remote change came in on — another tab, or a cloud. */
+    backend: z.enum(REMOTE_CHANGE_BACKENDS).optional(),
     /**
      * US-21 phase 3: the catalogue key and the unit spelling a refused lab row
      * carried — the signal that says which spelling to add next. The words are

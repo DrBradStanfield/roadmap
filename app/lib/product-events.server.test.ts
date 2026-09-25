@@ -202,6 +202,24 @@ describe('the guide-link counter', () => {
   });
 });
 
+/** US-34 — which tier a live re-read came in on: another tab of this
+ *  browser (local), or another device or an assistant (cloud). */
+describe('the remote-change counter', () => {
+  it('takes a backend from the closed list, from a browser', () => {
+    for (const backend of ['local', 'cloud']) {
+      expect(parseProductEvent({ eventName: 'remote_change_applied', visitorId: VISITOR, metadata: { backend } }), backend)
+        .toEqual({ eventName: 'remote_change_applied', visitorId: VISITOR, metadata: { backend } });
+    }
+  });
+
+  it('refuses a backend the list does not name, a provider name included', () => {
+    for (const backend of ['dropbox', 'Local', '', 1]) {
+      expect(parseProductEvent({ eventName: 'remote_change_applied', visitorId: VISITOR, metadata: { backend } }), String(backend))
+        .toBeNull();
+    }
+  });
+});
+
 /**
  * US-32 AC29 — the "closed allow-list" guarantee has to hold on the SERVER
  * path too: `recordServerEvent` used to insert whatever it was handed.

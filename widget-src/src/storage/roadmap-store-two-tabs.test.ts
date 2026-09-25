@@ -657,6 +657,57 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
     expect(read).not.toHaveBeenCalled();
   });
 
+  // Adversarial review, 2026-09-25: the return re-read only if a `storage`
+  // event was heard while hidden. A page restored from the back-forward cache,
+  // or an iOS tab the system suspended, can miss the event and showed a stale
+  // record until its next write. The return now compares the stored revision
+  // with the last one this tab read or wrote: one getItem.
+  it('a re-read held back at hide runs on the return, with nothing heard while hidden', async () => {
+    const { a, b, adapterA } = await listeningTabs();
+    await otherTabSaves(b, 'weight', 83); // read at once
+    await vi.advanceTimersByTimeAsync(1_000);
+    await otherTabSaves(b, 'hdl', 1.4); // held for the end of the window
+    await vi.advanceTimersByTimeAsync(1_000);
+    const read = vi.spyOn(adapterA, 'read');
+
+    setVisibility('hidden');
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(read).not.toHaveBeenCalled();
+    setVisibility('visible');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(values(a)).toEqual([1.4, 82, 83]);
+  });
+
+  it('a save the tab never heard of (a page back from the back-forward cache) is read on the return', async () => {
+    const { a, b } = await listeningTabs();
+    setVisibility('hidden');
+    b.addMeasurement('weight', 83, TODAY);
+    await b.flush(); // no storage event reaches tab A
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    setVisibility('visible');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(values(a)).toEqual([82, 83]);
+  });
+
+  it('a return with the revision where this tab left it reads nothing, this tab\'s own save and a heard one included', async () => {
+    const { a, b, adapterA } = await listeningTabs();
+    await otherTabSaves(b, 'weight', 83); // heard and read
+    a.addMeasurement('hdl', 1.4, TODAY);
+    await a.flush();
+    await vi.advanceTimersByTimeAsync(10_000);
+    const read = vi.spyOn(adapterA, 'read');
+
+    setVisibility('hidden');
+    await vi.advanceTimersByTimeAsync(10_000);
+    setVisibility('visible');
+    window.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(read).not.toHaveBeenCalled();
+    expect(values(a)).toEqual([1.4, 82, 83]);
+  });
+
   it('a tab opened hidden still hears a save made before it is first shown', async () => {
     await seed();
     const a = await RoadmapStore.create(new LocalStorageAdapter());

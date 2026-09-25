@@ -80,6 +80,14 @@ function planGlp1(container: HTMLElement): string | undefined {
   return title?.parentElement?.querySelector('.suggestion-desc')?.textContent ?? undefined;
 }
 
+/** A plan card whose title is, or (for `weight-med`) is any weight-medication step. */
+function planCard(container: HTMLElement, title: string): Element | undefined {
+  const steps = ['Consider a GLP-1 medication', 'Consider increasing GLP-1 dose', 'Consider switching to Tirzepatide',
+    'Consider adding an SGLT2 inhibitor', 'Consider adding Metformin'];
+  const titles = title === 'weight-med' ? steps : [title];
+  return Array.from(container.querySelectorAll('.suggestion-title')).find((t) => titles.includes(t.textContent ?? ''));
+}
+
 /** The opening sentence of the form's Weight & Diabetes Medications section. */
 function weightMedsIntro(container: HTMLElement): Promise<string> {
   return waitFor(() => {
@@ -128,14 +136,33 @@ describe('US-06 AC5: the form recommends a weight medication only when the plan 
     expect(await weightMedsIntro(view.container)).toBe(recommends('elevated triglycerides, elevated waist-to-height ratio'));
   });
 
-  it('BMI 25.0 with a raised HbA1c keeps the cascade the plan keeps, even once every step is answered', async () => {
+  // Adversarial review, 2026-09-25: with every step answered the trigger is
+  // still on, so the form recommended while the plan showed no card.
+  it('BMI 25.0 with a raised HbA1c and every step answered is neutral: the plan shows no card', async () => {
     // 79.1 kg is BMI 24.97, which the plan rounds to 25.0: Overweight, with no waist on record.
     const view = await guestWith({
       sex: 'male', weight: 79.1, hba1c: 40,
       meds: [['glp1', 'not_tolerated'], ['sglt2i', 'not_tolerated'], ['metformin', 'not_tolerated']],
     });
     await waitFor(() => expect(bmiTile(view.container)).toBe('25'));
-    expect(planGlp1(view.container)).toBeUndefined(); // every step answered, so no card; the trigger is still on
+    expect(planCard(view.container, 'weight-med')).toBeUndefined(); // the trigger is on; every step is answered
+    expect(await weightMedsIntro(view.container)).toBe(NEUTRAL);
+  });
+
+  it('BMI 32 with an HbA1c of 40 and every step not tolerated is neutral, as the plan shows no card', async () => {
+    const view = await guestWith({
+      sex: 'male', weight: 101.4, hba1c: 40, // BMI 32.0
+      meds: [['glp1', 'not_tolerated'], ['sglt2i', 'not_tolerated'], ['metformin', 'not_tolerated']],
+    });
+    await waitFor(() => expect(bmiTile(view.container)).toBe('32'));
+    expect(planCard(view.container, 'weight-med')).toBeUndefined();
+    expect(await weightMedsIntro(view.container)).toBe(NEUTRAL);
+  });
+
+  it('a later step\'s card counts too: GLP-1 not tolerated, the plan suggests an SGLT2 inhibitor, and the form recommends', async () => {
+    const view = await guestWith({ sex: 'male', weight: 101.4, hba1c: 40, meds: [['glp1', 'not_tolerated']] });
+    await waitFor(() => expect(bmiTile(view.container)).toBe('32'));
+    expect(planCard(view.container, 'Consider adding an SGLT2 inhibitor')).toBeDefined();
     expect(await weightMedsIntro(view.container)).toBe(recommends('prediabetic HbA1c'));
   });
 

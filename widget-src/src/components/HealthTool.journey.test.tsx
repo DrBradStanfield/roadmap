@@ -1606,8 +1606,32 @@ describe('US-34 AC6: another tab of this browser saves', () => {
     act(() => { window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_file_v2' })); });
 
     await waitFor(() => expect(ldlTile(view.container)).toBe('2.1 mmol/L'));
-    expect(vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'remote_change_applied')).toHaveLength(1);
+    // Counted as another tab's, apart from another device's or an assistant's.
+    expect(vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'remote_change_applied'))
+      .toEqual([['remote_change_applied', { backend: 'local' }]]);
     await wait(2_000);
     expect(Number(localStorage.getItem('health_roadmap_file_v2_rev'))).toBe(rev + 1); // the other tab's save alone
+  });
+
+  it('a change from another device, on a cloud, counts as the cloud\'s', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    await adapter.connect();
+    await initRoadmapStore(adapter);
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+    await addMeasurement('weight', 82, '2026-09-01');
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await shown(view.container, '.bt-timeline-title');
+
+    const other = await RoadmapStore.create(new MemoryAdapter(cloud));
+    other.addMeasurement('ldl', 2.1, '2026-09-01T00:00:00.000Z');
+    await other.flush();
+    await wait(6000);
+    act(() => { window.dispatchEvent(new Event('focus')); }); // this page comes back, and re-reads
+
+    await waitFor(() => expect(ldlTile(view.container)).toBe('2.1 mmol/L'));
+    expect(vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'remote_change_applied'))
+      .toEqual([['remote_change_applied', { backend: 'cloud' }]]);
   });
 });

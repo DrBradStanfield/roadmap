@@ -29,7 +29,8 @@ export const PRODUCT_EVENT_NAMES = [
   'reminder_sent',
   'chat_opened',
   // US-34: the open page re-read the record and something had changed under it
-  // (another device, or an AI connector). Name only — never what changed.
+  // (another tab, another device, or an AI connector). Metadata: `backend`
+  // only, `local` (another tab of this browser) or `cloud` — never what changed.
   'remote_change_applied',
   // US-21 additional blood tests: phase-1 surfacing + phase-2 manual add.
   'lab_rows_viewed',
@@ -124,6 +125,8 @@ export type McpToolName = (typeof MCP_TOOL_NAMES)[number];
 export const MCP_IMPORT_ROUTES = ['dropbox', 'drive_refused', 'assistant'] as const;
 /** The `guide_opened` counter's surfaces (US-38): the column header, or its mobile foot. */
 export const GUIDE_PLACEMENTS = ['header', 'footer'] as const;
+/** The `remote_change_applied` counter's tiers (US-34): another tab, or a cloud. */
+export const REMOTE_CHANGE_BACKENDS = ['local', 'cloud'] as const;
 /** `nudge`: a read found folder files not in the record and said so (US-37). */
 export const MCP_IMPORT_PHASES = ['extract', 'commit', 'nudge'] as const;
 export const MCP_IMPORT_FILE_BUCKETS = ['0', '1', '2-5', '6-20'] as const;

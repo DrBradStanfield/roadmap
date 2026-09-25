@@ -221,14 +221,16 @@ export function migrateFile(
   const dated = <T>(rows: unknown): T[] => rowsOf<T>(rows).map((r) => sanitizeCreatedAt(r, anchor));
   // Profile and screenings: the object's own stamp, and each field's (US-10
   // AC6). A field stamp that is not a stamp is dropped, so its field reads the
-  // object's stamp; a map with none left is dropped whole.
-  const singleton = (value: unknown, fallback: { updatedAt: string }) => {
+  // object's stamp; a map with none left is dropped whole. A missing or
+  // mistyped `updatedAt` is an unknown time, `""`, as on any row: migration
+  // time would let an agent's unstamped write beat a real edit.
+  const singleton = (value: unknown) => {
     const { fieldStamps, ...rest } = isObject(value) ? value : {};
     const clocks = Object.entries(isObject(fieldStamps) ? fieldStamps : {})
       .filter((entry): entry is [string, Record<string, unknown>] => isObject(entry[1]))
       .map(([field, s]) => [field, sanitizeStamp({ lamport: s.lamport, updatedAt: s.updatedAt }, anchor)]);
     return {
-      ...sanitizeStamp({ ...rest, updatedAt: typeof rest.updatedAt === 'string' ? rest.updatedAt : fallback.updatedAt }, anchor),
+      ...sanitizeStamp({ updatedAt: '', ...rest }, anchor),
       ...(clocks.length > 0 ? { fieldStamps: Object.fromEntries(clocks) } : null),
     };
   };
@@ -237,13 +239,13 @@ export function migrateFile(
     ...(raw as Record<string, unknown>),
     schemaVersion: CURRENT_SCHEMA_VERSION,
     meta,
-    profile: singleton(raw.profile, base.profile),
+    profile: singleton(raw.profile),
     measurements: dated(raw.measurements),
     medications: stamped(raw.medications),
     medicationHistory: stamped(raw.medicationHistory),
     supplements: stamped(raw.supplements),
     supplementHistory: stamped(raw.supplementHistory),
-    screenings: singleton(raw.screenings, base.screenings),
+    screenings: singleton(raw.screenings),
     labValues: withSiCorrections(dated<FileLabValue>(raw.labValues)),
     documents: rowsOf(raw.documents),
     reminderPreferences: stamped(raw.reminderPreferences),

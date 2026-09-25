@@ -1507,15 +1507,15 @@ export function InputPanel({
           </div>
         );
 
+        const neutral = 'Are you currently taking any weight or diabetes medications? Recording these helps track your health over time.';
+
         // ── Flat mode: all fields visible independently ──
         if (!weightCascadeMode) {
           return (
             <div className="section-card">
               <section className="health-section">
                 <h3 className="health-section-title">Weight & Diabetes Medications</h3>
-                <p className="health-section-desc">
-                  Are you currently taking any weight or diabetes medications? Recording these helps track your health over time.
-                </p>
+                <p className="health-section-desc">{neutral}</p>
                 {glp1Dropdown}
                 {sglt2iDropdown}
                 {metforminDropdown}
@@ -1526,13 +1526,18 @@ export function InputPanel({
 
         // ── Cascade mode: progressive disclosure, in the plan's words ──
         const reasons = weightMedTrigger.reasons;
+        // It recommends only while the plan shows a step's card: with every
+        // step answered the trigger stays on and the plan shows none.
+        const planSuggests = [...(activeSuggestionIds ?? [])].some((id) => id.startsWith('weight-med-'));
 
         return (
           <div className="section-card">
           <section className="health-section medication-cascade">
             <h3 className="health-section-title">Weight & Diabetes Medications</h3>
             <p className="health-section-desc">
-              {reasons.length > 0
+              {!planSuggests
+                ? neutral
+                : reasons.length > 0
                 ? `Your BMI and ${reasons.join(', ')} suggest you may benefit from medications that support weight management and metabolic health.`
                 : 'Your BMI suggests you may benefit from medications that support weight management and metabolic health.'}
             </p>

@@ -1,5 +1,5 @@
 /** Shopify services only. Health records are read and written by roadmap-data. */
-import type { GUIDE_PLACEMENTS, ProductEventName } from '@roadmap/health-core';
+import type { GUIDE_PLACEMENTS, ProductEventName, REMOTE_CHANGE_BACKENDS } from '@roadmap/health-core';
 import { safeGetItem, safeSetItem } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
@@ -133,6 +133,7 @@ export interface ProductEventMetadata {
   provider?: 'google-drive' | 'dropbox' | 'github' | 'webdav' | 'local' | 'typed';
   count?: number;
   placement?: (typeof GUIDE_PLACEMENTS)[number];
+  backend?: (typeof REMOTE_CHANGE_BACKENDS)[number];
   /** `lab_unit_refused` (US-21 phase 3): the catalogue key of the test and the
    *  unit spelling the record would not take. Never a value. */
   key?: string;

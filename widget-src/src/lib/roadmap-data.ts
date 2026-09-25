@@ -57,7 +57,12 @@ export function getDocumentArchiveMode(): 'no-prompt' | 'cloud' | 'device-only' 
   // would also dangle after a backend switch (migrateLocalInto moves only the
   // JSON), so the upload UI prompts to connect first and the save path strips
   // the bytes if the user chooses to continue anyway.
-  return store && store.backendId !== 'local' ? 'cloud' : 'device-only';
+  return getBackendKind() === 'cloud' ? 'cloud' : 'device-only';
+}
+
+/** Where the record lives, as the usage counters name it (US-34). */
+export function getBackendKind(): 'local' | 'cloud' {
+  return store && store.backendId !== 'local' ? 'cloud' : 'local';
 }
 
 // --- synchronous prefill seed for HealthTool's initial inputs state ---

@@ -850,15 +850,14 @@ export class RoadmapStore {
    * screen to keep up to date, and a phone left on a background tab would
    * spend the day holding a connection open. Its return catches up on what
    * it missed. The local tier's watch holds no connection, so a hidden tab
-   * keeps it and only notes that another tab saved; its return re-reads only
-   * then, and a lone tab never re-reads at all. Returns the stop.
+   * keeps it and reads nothing; its return re-reads only when the stored
+   * revision moved since this tab last read or wrote it, so a lone tab never
+   * re-reads at all. Returns the stop.
    */
   startLiveRefresh(): () => void {
     const watchable = !!this.adapter.watch;
     const local = this.adapter.id === 'local';
     let watching: AbortController | null = null;
-    // Local tier only: another tab saved while this one was hidden.
-    let missed = false;
     // The push a throttled window swallowed. A watch fires once per remote
     // change and then goes quiet — the cursor has moved past it — so dropping
     // one on the throttle would lose that change until the user next came
@@ -872,11 +871,7 @@ export class RoadmapStore {
     // next trigger tries again, and nothing here is waiting on the answer.
     const reread = () => void this.refreshFromRemote().catch(() => {});
     const pushed = () => {
-      if (document.visibilityState === 'hidden') {
-        missed = true;
-        return;
-      }
-      if (trailing) return;
+      if (document.visibilityState === 'hidden' || trailing) return;
       const wait = REMOTE_THROTTLE_MS - (Date.now() - this.lastRefresh);
       if (wait <= 0) {
         reread();
@@ -901,17 +896,13 @@ export class RoadmapStore {
         }
         // No read while hidden, a queued one included: it would move the
         // throttle on, and the return's catch-up would be dropped (US-34 AC6).
-        if (trailing) {
-          clearTimeout(trailing);
-          missed = true;
-        }
+        if (trailing) clearTimeout(trailing);
         trailing = null;
         hiddenAt = Date.now();
         return;
       }
       startWatch();
-      if (local && !missed) return;
-      missed = false;
+      if (this.adapter instanceof LocalStorageAdapter && !this.adapter.movedElsewhere(ROADMAP_DOC.fileName)) return;
       // The return's catch-up waits out the throttle; it is never dropped. Once
       // it has read, a second trigger may be (focus and visibilitychange fire
       // together).

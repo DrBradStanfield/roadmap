@@ -52,7 +52,8 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   too: a `token-*` word means a client that reached the last door and still
   got no token), then `mcp_tool_call` /
   `mcp_import` / `remote_change_applied` (metadata breakdown by tool, client,
-  route, reason; value-free by design — while n is tiny these are Brad's own
+  route, reason, and `backend` local|cloud, since a guest's second tab counts
+  too; value-free by design — while n is tiny these are Brad's own
   verification, not adoption); `guide_opened` split by `placement`
   (header|footer), read against `results_viewed`;
   `reminder_optin_v2` total by `provider`. Read `mcp_authorize_shown` with a
