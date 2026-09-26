@@ -142,17 +142,19 @@ duplicates.
   charter's probe rule with the refusal and consent rows beside it, or Brad's
   tests count as attacks.
 - **2026-09-26 [fleet]** A GitHub account flag (~09-18, support ticket open a
-  week) removed three sources at once and nothing in the repo said so: Actions
-  (the CI tripwire, Tier 3, deploys — the API just shows zero runs and a
-  truncated history), Pages (the US-38 self-host, 404) and the `loop-issue-notify`
-  relay (#118 never reached Brad). The fact came from Brad's support thread in
-  Gmail. Read "0 Actions runs" as a question about the account before reading it
-  as a quiet week; while the relay is dead a decision issue is not a delivery —
-  the run's push notification is. (Cousin of the 09-19 silent-fleet entry:
-  that one was our routines failing, this one is the platform.)
+  week) removed three sources at once: Actions (the CI tripwire, Tier 3, deploys —
+  the API just shows zero runs and a truncated history), Pages (the US-38
+  self-host, 404) and the `loop-issue-notify` relay (#118 never reached Brad).
+  sentry-fix's 09-20 report had recorded the flag; this loop's Gather never reads
+  sibling reports, so the fact arrived via Brad's Gmail support thread instead.
+  Read the week's sibling-loop reports before the pulls, and read "0 Actions
+  runs" as a question about the account, never a quiet week. While the relay is
+  dead an issue is the durable record, not a delivery. (Cousin of the 09-19
+  silent-fleet entry: that one was our routines, this one is the platform.)
 - **2026-09-26 [usage]** Reach can double in a week with no source we hold able
-  to say why: `results_viewed` 172 → 384, the 09-20 spike (91) across every hour
-  and 259 visitors, while Clarity's 3-day window had already rolled past it and
-  `product_events` carry no referrer. The only correlates were YouTube-bot chat
-  turns (37 → 86) and Clarity's youtube referrer. A referrer HOST on
-  `results_viewed` (no path, no query) is the missing instrument (W39 backlog #3).
+  to say why: `results_viewed` 172 → 384, the 09-20 spike (91 views, 73 visitors,
+  22 of 24 hours), while Clarity's 3-day window had already rolled past it and
+  `product_events` carry no referrer. The tempting correlate was false: the
+  YouTube-bot's rise (37 → 86) came from a video first seen 09-23 (checkable via
+  `router_context.videoId`). A referrer HOST on `results_viewed` (no path, no
+  query) is the missing instrument (W39 backlog #3).
