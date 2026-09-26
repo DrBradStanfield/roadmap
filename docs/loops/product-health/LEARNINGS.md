@@ -141,3 +141,18 @@ duplicates.
   own re-test (AC34 commits 01:04Z/02:38Z, his OpenAI reply 02:20Z). Read the
   charter's probe rule with the refusal and consent rows beside it, or Brad's
   tests count as attacks.
+- **2026-09-26 [fleet]** A GitHub account flag (~09-18, support ticket open a
+  week) removed three sources at once and nothing in the repo said so: Actions
+  (the CI tripwire, Tier 3, deploys — the API just shows zero runs and a
+  truncated history), Pages (the US-38 self-host, 404) and the `loop-issue-notify`
+  relay (#118 never reached Brad). The fact came from Brad's support thread in
+  Gmail. Read "0 Actions runs" as a question about the account before reading it
+  as a quiet week; while the relay is dead a decision issue is not a delivery —
+  the run's push notification is. (Cousin of the 09-19 silent-fleet entry:
+  that one was our routines failing, this one is the platform.)
+- **2026-09-26 [usage]** Reach can double in a week with no source we hold able
+  to say why: `results_viewed` 172 → 384, the 09-20 spike (91) across every hour
+  and 259 visitors, while Clarity's 3-day window had already rolled past it and
+  `product_events` carry no referrer. The only correlates were YouTube-bot chat
+  turns (37 → 86) and Clarity's youtube referrer. A referrer HOST on
+  `results_viewed` (no path, no query) is the missing instrument (W39 backlog #3).
