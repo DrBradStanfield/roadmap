@@ -2833,22 +2833,33 @@
     "notes": "2026-09-19 chat-health loop (W38 run, covering W37+W38): real Shopify turn 2026-09-07 (the turn after the liver one), paraphrased on ingest. Asks to derive ApoB from the user's non-HDL; four index entries cover ApoB and rule 7 keeps only read-back/correction empty, so by the prompt's own rules this routes; router returned empty in production. Re-bucketed from \"own-labs derivation\" to routing miss by the W38 adversarial review. KNOWN-FAIL at W38 baseline: stolen 3/3 by cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects (selection-side; fifth documented attractor — see docs/loops/chat-health/2026-W38.md). 2026-09-24 router second pass (issue #63 option 2, Brad-authorized; final prompt measured on two full-suite arms vs two original arms): ∅ 3/3 on every arm (the cholesterol-lowering-supplements steal is gone). A knowledge-shaped twin (\"ApoB vs non-HDL, which matters more?\") routes to hyperlipidaemia 3/3 while the derivation shape returns ∅, so the residue is the derivation SHAPE; a derive/estimate clause was drafted, measured (no effect) and dropped."
   },
   {
-    "query": "Liver hypodensities too small to characterise can safely be ignored unless something else develops.",
+    "query": "Small liver hypodensities too tiny to characterise are best left alone unless something else shows up.",
     "expected": [
       "incidental-liver-lesions"
     ],
     "category": "gi",
     "source": "production",
-    "notes": "2026-09-26 chat-health loop (W39 run): real YouTube comment 2026-09-20 on the longevity-clinic overdiagnosis video, paraphrased on ingest. Claim-shaped statement (no question mark) about an incidental liver imaging finding; the incidental-liver-lesions pathway covers exactly this but its summary did not contain 'hypodensity'. Router returned empty in production (companion blog in context). BASELINE 2026-09-26: ∅ 3/3 as typed and ∅ 3/3 paraphrased (gi run), and ∅ 3/3 on full-suite arm A. REVERTED: the edit passed this fixture 3/3 and lifted gi 5/7 → 6/7, but full-suite arms on the edited index went 281 (pre-edit) → 278 → 279, with \"toddler stomach ache with green vomit\", \"I snore loudly and wake up tired\" and \"Can you review that cardiologist's big study on taking omega 3s?\" failing on both edited arms after passing pre-edit; reverted under the measure-then-revert rule. Arm A2 on the reverted index the same hour: toddler/snoring/omega-3 all passed, so the arm-B/B2 failures are attributable to the edit."
+    "notes": "2026-09-26 chat-health loop (W39 run): real YouTube comment 2026-09-20 on the longevity-clinic overdiagnosis video, paraphrased on ingest (re-paraphrased after adversarial review). Claim-shaped statement (no question mark) about an incidental liver imaging finding; the incidental-liver-lesions pathway covers exactly this but its summary does not contain 'hypodensity'. Router returned empty in production (companion blog in context). BASELINE 2026-09-26: as typed ∅ 3/3; first paraphrase ∅ 3/3 (gi run) and ∅ on full-suite arms A and A2. A pre-registered summary edit adding '(hypodensities, haemangioma, FNH, adenoma, cyst)' to the summary passed this fixture 3/3 and lifted gi 5/7 → 6/7, but full-suite arms on the edited index went 278 and 279 of 303 vs 281 and 280 on the original, with the toddler-green-vomit, snoring and omega-3-review fixtures ∅ 3/3 on both edited arms and passing on both original arms — REVERTED under the measure-then-revert rule (see docs/loops/chat-health/2026-W39.md). KNOWN-FAIL. RE-PARAPHRASE 2026-09-26: a heavier paraphrase ('Tiny liver hypodensities that the radiologist can't characterise don't need any follow-up unless something new turns up.') PASSED 3/3 on the unedited index (wording sensitivity); this third wording fails ∅ 3/3 and is kept because it still tests the failing shape."
   },
   {
-    "query": "Which begs the question: why does the PCSK9 enzyme exist in nature at all? Is it an aberration, or was it selected for some evolutionary purpose?",
+    "query": "Makes you wonder why humans evolved the PCSK9 enzyme in the first place. Is it just a genetic mistake, or does it serve some purpose?",
     "expected": [
       "pcsk9i-breakthrough-cuts-heart-disease",
       "soon-well-forget-what-heart-attacks-are"
     ],
     "category": "cardiovascular",
     "source": "production",
-    "notes": "2026-09-26 chat-health loop (W39 run): real YouTube comment 2026-09-24 on the heart-attack prevention video, paraphrased on ingest. Mechanism-depth question naming PCSK9; two entries name PCSK9 inside the visible 150 chars of their summary, so under rule 6 (second pass, 2026-09-24) this routes. Router returned empty in production (companion blog in context). BASELINE 2026-09-26: ∅ 3/3 paraphrased (cardiovascular run) and ∅ 3/3 on both full-suite arms. As typed, the router picked hyperlipidaemia 3/3, which is not an expected handle. Known-fail: refusal with PCSK9 visible in two summaries."
+    "notes": "2026-09-26 chat-health loop (W39 run): real YouTube comment 2026-09-24 on the heart-attack prevention video, paraphrased on ingest (re-paraphrased after adversarial review). Mechanism-depth question naming PCSK9; two entries name PCSK9 inside the visible 150 chars of their summary, so under rule 6 (second pass, 2026-09-24) this routes. Router returned empty in production (companion blog in context). BASELINE 2026-09-26: as typed the router picked hyperlipidaemia 3/3 (a theme neighbour over the two PCSK9-named entries); first paraphrase ∅ 3/3 in the cardiovascular run and on all four full-suite arms. KNOWN-FAIL: refusal or theme-neighbour pick with PCSK9 visible in two summaries. RE-PARAPHRASE BASELINE 2026-09-26 (this wording): hyperlipidaemia 1 / ∅ 2 of 3 runs (cardiovascular run) — still failing."
+  },
+  {
+    "query": "Looking at what I've entered, how would you rate my overall health right now?",
+    "expected": [
+      "diet",
+      "exercise",
+      "sleep"
+    ],
+    "category": "lifestyle",
+    "source": "production",
+    "notes": "2026-09-26 chat-health loop (W39 run): real widget turn 2026-09-22, paraphrased on ingest. An own-data assessment ask with no named topic; rule 7's own example ('Based on my data, what should I improve first?') says this ROUTES to the diet/exercise guideline, and the classifier's MEASUREMENT label is read-back only, so the classifier (ROUTE) was right and the empty was a router miss. Re-bucketed from in-context to routing miss by the W39 adversarial review. BASELINE 2026-09-26: ∅ 3/3 as typed and ∅ 3/3 with this paraphrase (lifestyle run 14/15). The guideline summaries already carry the natural words ('what should I eat', 'how much per week'), so no summary edit applies — router territory, KNOWN-FAIL."
   }
 ]

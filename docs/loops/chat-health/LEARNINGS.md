@@ -8,14 +8,12 @@ Read before appending — no duplicates.
 Tags: `[retrieval] [classifier] [latency] [content] [loop]`
 
 - **2026-08-07 [retrieval]** The router receives ONE string per entry:
-  `[type] handle: summary`. The `keywords` frontmatter is read by nothing at
-  runtime. Discoverability fixes must edit the **summary** — verified when
-  adding `ncah` to two pathways' keywords changed nothing and the query only
-  started routing once the acronym went into the summary.
+  `[type] handle: summary`; `keywords` frontmatter is read by nothing at
+  runtime. Discoverability fixes edit the **summary** — `ncah` in two
+  pathways' keywords changed nothing; in the summary it routed.
 - **2026-08-07 [retrieval]** Appending the curated `keywords` to the router
-  index was the WORST configuration tested — 88.9% vs 96.3% — at 2.3× the
-  tokens. More terms is not more signal; a 224-char term dump per line buries
-  the discriminating sentence.
+  index was the WORST configuration tested — 88.9% vs 96.3% at 2.3× the
+  tokens: a 224-char term dump per line buries the discriminating sentence.
 - **2026-08-07 [retrieval]** Longer summaries are worse, not better:
   150 chars → 96.3%, 250 → 92.6%, uncapped 269 → 92.6%. There is an optimum
   near 150. Past it the marginal sentence is usually generic scaffolding
@@ -150,10 +148,11 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   Rules: selection guidance sits BELOW rules 1 and 2 and never empties a
   match; score like-for-like on ONE fixture file (no widening); one 3-run
   arm is weak — the same prompt flips 1–2% of fixtures per arm. W39 (first
-  run on the shipped prompt): steals are suppressed, not dead — Lp(a)-diet
-  went to `chronic-non-cancer-pain` 3/3 in one category arm and ∅ 3/3 in
-  the full arm; an as-typed PCSK9 mechanism question picked
-  `hyperlipidaemia` 3/3 over two entries naming PCSK9 (its paraphrase ∅).
+  run on the shipped prompt): the pain-family steal is NOT gone — Lp(a)-diet
+  went to `chronic-non-cancer-pain` 3/3 on both original-index full arms and
+  the category arm (9/9; ∅ only on the edited index); an as-typed PCSK9
+  mechanism question picked `hyperlipidaemia` 3/3 over two PCSK9-named
+  entries. The 09-24 "every documented steal is gone" held on its arms only.
 - **2026-09-05 [loop]** The cloud runner is uid 0 (root): chmod-based tests
   can't fail writes, so health-core's US-31 AC8 (`file-adapter.test.ts`)
   fails in this env on a CLEAN tree — verify on clean tree before blaming
@@ -163,8 +162,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   literal `SKIP_NO_REPLY` 1-word assistant row (W36 3, W37 20/45, W39 8/41) —
   exclude these sentinels from reply-length stats or the median reads low
   (W37: 66 words without, 52 with). Proposal filed W36 to stop persisting it.
-  Every real reply also ends with the 6-word `[written by Brad AI for
-  testing]` tag the prompt requires; raw counts have always included it.
+  Real replies end with the 6-word `[written by Brad AI for testing]` tag
+  the prompt requires (in the prompt before 08-10; W39 raw counts include it).
 - **2026-09-19 [latency]** The cache-hit rate is an inter-arrival metric, not
   a router property: every hit in W36–W38 fell within 300 s of the previous
   router call (13/13, 10/13, 2/2) and none beyond it (0/28, 0/34, 0/16) —
