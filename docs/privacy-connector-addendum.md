@@ -219,17 +219,26 @@ router's raw output and the error text once a row is 30 days old; the match reco
 stays: the articles, the classification, the ids. A guest session row holds a hashed
 address, not an IP.
 
-The chat bubble on blog pages and the chatbot embed both send and keep more than the
-widget does. Each one reads the inputs the widget cached in your browser and sends them
-as context with every message you type (`loadGuestInputs()` in
-`widget-src/src/site-chat.tsx` and `widget-src/src/chatbot-embed.tsx`). Neither is built
-as a local-first surface, so the server keeps the transcript: your question and the
-reply are written to `chat_messages`, and the reply can quote the values it was sent.
+The chat bubble on blog pages and the chatbot embed both send less than the widget's
+chat, and keep more. Each one reads the copy of your saved record that the widget keeps
+in your browser and sends it as context with every message you type
+(`loadGuestInputs()` in `widget-src/src/lib/storage.ts`, called from
+`widget-src/src/site-chat.tsx` and `widget-src/src/chatbot-embed.tsx`). That context is
+your saved profile (sex, height, birth year and month, and unit system); the latest
+saved value of each measurement, with its date; the medications on record, with drug
+names and doses; and every screening answer on record: methods, results, dates and
+follow-ups, your smoking history and pack-years, your PSA value, your answers on
+discussing prostate and endometrial screening, and your answer about abnormal bleeding.
+It holds nothing you typed and did not save. The widget's own chat sends all of that,
+plus up to 24 dated values for each measurement and anything typed on the page but not
+saved yet. Neither bundle is built as a local-first surface, so the server keeps the
+transcript: your question and the reply are written to `chat_messages`, and the reply
+can quote the values it was sent.
 Brad decided on 10 September 2026 to keep sending those cached values, because the
 answer is worse without them, and to put the transcripts under the same 30-day window as
-the router audit (`app/lib/chat-purge-cron.server.ts`). Once a row is 30 days old the
-daily job blanks the message text and the conversation title, which is made of the first
-words of your question. The shape of the thread stays and the words go: row ids, the
+the router audit (`app/lib/chat-purge-cron.server.ts`). Once a message is 30 days old the
+daily job blanks its text. The conversation title, which is made of the first words of your
+first question, is blanked 30 days after your last message in that conversation. The shape of the thread stays and the words go: row ids, the
 role, the timestamps, the model, the token counts and the fallback flags remain, and a
 blanked turn reads back as `[removed after 30 days]`. The Discord bot's transcripts are
 blanked on the same clock. Brad decided that on the evening of 10 September 2026,
@@ -241,13 +250,23 @@ retention.
 folder: your health record and your chat history. The chat file cannot simply be emptied,
 because the merge that keeps your devices in step would put the conversations back from
 any other copy, so each one is tombstoned instead: no messages, no title, and marked
-deleted for good. Four copies the button cannot reach, and the confirm dialog now names
+deleted for good. Six copies the button cannot reach, and the confirm dialog now names
 them before you click: documents you uploaded that are already in your folder stay;
 candidate files from a connector import (`imports/pending-*.json`) stay until your next
 import; your cloud provider keeps its own version history, and GitHub keeps every past
-commit; and backups the command-line tool made sit beside the file, until that tool
-next writes it. Reminders are turned off by the erase, and stay off on your own
-devices. The row on our server keeps your address for 90 days, as it does for any
+commit; backups the command-line tool made sit beside the file, until that tool next
+writes it; and the copy of your record that the widget keeps in the browser on each of
+your other devices. The button empties that copy on the device you press it on. It
+cannot reach another device's browser storage, so there the copy stays until the widget
+on that device reads the erased record: when the widget next loads there, or, if it is
+already open, when it picks up the change. Until then, the blog chat bubble and the
+chatbot embed on that device keep sending your record as it was before the erase, with
+every message. If that open widget holds a profile edit typed and not yet saved, the
+copy is emptied only once that edit is saved or the page is loaded again. The sixth is
+on our server: your chat questions (the widget, the blog chat bubble and the chatbot
+embed) and the bubble's and embed's replies are kept for 30 days after your last message in that chat,
+and the button does not reach them. Reminders are
+turned off by the erase, and stay off on your own devices. The row on our server keeps your address for 90 days, as it does for any
 switch-off, so a later enrolment of that address does not send a second welcome email;
 it does not stop the schedule being refilled. Anyone who enrols that address again
 restarts the schedule, and every reminder carries its own off link. A cancel that

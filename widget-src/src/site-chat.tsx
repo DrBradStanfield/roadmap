@@ -146,10 +146,9 @@ function useFabLift(fab: HTMLButtonElement | null) {
 interface ChatBubbleProps {
   isLoggedIn: boolean;
   fabLabel: string;
-  guestInputs: Record<string, unknown> | null;
 }
 
-function ChatBubble({ isLoggedIn, fabLabel, guestInputs }: ChatBubbleProps) {
+function ChatBubble({ isLoggedIn, fabLabel }: ChatBubbleProps) {
   const [open, setOpen] = useState(false);
   const [widgetChatOpen, setWidgetChatOpen] = useState(false);
   // Callback-ref state (not useRef): the button remounts after every chat
@@ -176,12 +175,13 @@ function ChatBubble({ isLoggedIn, fabLabel, guestInputs }: ChatBubbleProps) {
   }, []);
 
   if (open) {
+    // The chat context, read as each message is sent: see useChatState.
     return (
       <ChatSection
         isLoggedIn={isLoggedIn}
         startExpanded
         onClose={() => setOpen(false)}
-        guestInputs={guestInputs}
+        guestInputs={loadGuestInputs}
       />
     );
   }
@@ -220,11 +220,6 @@ function mount() {
     ? `Questions about ${productTitle}?`
     : (container.dataset.fabLabel || 'Need help? Ask here');
 
-  // Always send the cached plan as chat context — local-first (v2) means the
-  // server has no health data for logged-in customers either (the v1 tables
-  // were purged June 2026), so the client payload is the only possible source.
-  const guestInputs = loadGuestInputs();
-
   container.style.display = '';
   const root = createRoot(container);
   root.render(
@@ -232,7 +227,6 @@ function mount() {
       <ChatBubble
         isLoggedIn={isLoggedIn}
         fabLabel={fabLabel}
-        guestInputs={guestInputs}
       />
     </ErrorBoundary>,
   );

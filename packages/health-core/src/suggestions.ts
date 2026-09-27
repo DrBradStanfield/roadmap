@@ -1,10 +1,13 @@
 import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
-import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, STATIN_DRUGS, canIncreaseDose, shouldSuggestSwitch, canIncreaseGlp1Dose, shouldSuggestGlp1Switch, getScreeningNextDueDate } from './types';
+import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate } from './types';
+import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
 import {
   type UnitSystem,
   type MetricType,
   formatDisplayValue,
+  formatTargetLine,
+  formatGradedValue,
   getDisplayLabel,
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
@@ -14,16 +17,13 @@ import {
   NON_HDL_THRESHOLDS,
   BP_THRESHOLDS,
   APOB_THRESHOLDS,
+  APOB_RISK_ENHANCING,
+  LIPID_TREATMENT_TARGETS,
+  isWaistToHeightElevated,
+  bpTargetFor,
   EGFR_THRESHOLDS,
   LPA_THRESHOLDS,
 } from './units';
-
-/** On-treatment lipid targets (SI canonical units) */
-export const LIPID_TREATMENT_TARGETS = {
-  apobGl: 0.5,       // g/L (50 mg/dL)
-  ldlMmol: 1.4,      // mmol/L (~54 mg/dL)
-  nonHdlMmol: 1.6,   // mmol/L (~62 mg/dL)
-} as const;
 
 /** Dietary advice for elevated lipids — shared between suggestion card and InputPanel medication cascade */
 export const LIPID_DIET_ADVICE = 'Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don\'t have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk is a soluble fibre that is well-tolerated even with IBS or IBD; discuss with your doctor whether it fits your routine.';
@@ -41,41 +41,85 @@ const fmtTrig = (v: number, us: UnitSystem) => fmtMetric('triglycerides', v, us)
 const fmtTotalChol = (v: number, us: UnitSystem) => fmtMetric('total_cholesterol', v, us);
 const fmtApoB = (v: number, us: UnitSystem) => fmtMetric('apob', v, us);
 const fmtWeight = (v: number, us: UnitSystem) => fmtMetric('weight', v, us);
+/** A lipid target as a "<X" statement prints it: the first value, at the
+ *  display step, that the plan grades at or above it (US-07 AC5). */
+const fmtLipidTarget = (metric: MetricType, target: number, us: UnitSystem) =>
+  `${formatTargetLine(metric, target, us)} ${getDisplayLabel(metric, us)}`;
 
 /** Resolved lipid marker from the ApoB > non-HDL > LDL-c hierarchy */
 export interface LipidMarker {
   kind: 'apoB' | 'nonHdl' | 'ldl';
   label: string;
   value: number;
+  /** The on-treatment target: the value should be below it. */
   target: number;
+  /** At or above the target (Brad, 2026-09-28: the target itself is above target, US-07 AC5). */
   elevated: boolean;
 }
 
-/** Resolve best available lipid marker using ApoB > non-HDL > LDL-c hierarchy.
- *  Uses on-treatment targets from LIPID_TREATMENT_TARGETS.
- *  Returns null if no lipid data is available. */
-export function resolveBestLipidMarker(
-  apoB: number | undefined,
-  nonHdl: number | undefined,
-  ldl: number | undefined,
-): LipidMarker | null {
-  if (apoB !== undefined) return { kind: 'apoB', label: 'ApoB', value: apoB, target: LIPID_TREATMENT_TARGETS.apobGl, elevated: apoB > LIPID_TREATMENT_TARGETS.apobGl };
-  if (nonHdl !== undefined) return { kind: 'nonHdl', label: 'non-HDL cholesterol', value: nonHdl, target: LIPID_TREATMENT_TARGETS.nonHdlMmol, elevated: nonHdl > LIPID_TREATMENT_TARGETS.nonHdlMmol };
-  if (ldl !== undefined) return { kind: 'ldl', label: 'LDL-c', value: ldl, target: LIPID_TREATMENT_TARGETS.ldlMmol, elevated: ldl > LIPID_TREATMENT_TARGETS.ldlMmol };
-  return null;
+/** A lipid value at or above its on-treatment target: the target itself is
+ *  above target (US-07 AC5). The plan's marker and its lipid-diet card both
+ *  read this one test. */
+function atOrAboveTarget(value: number | undefined, target: number): boolean {
+  return value !== undefined && value >= target;
 }
 
-/** Map lipid marker kind to its MetricType for unit resolution */
+/** Map lipid marker kind to its MetricType for unit resolution and display
+ *  (non-HDL shares LDL's units) */
 function lipidMarkerMetric(marker: LipidMarker): MetricType {
   return marker.kind === 'apoB' ? 'apob' : 'ldl';
 }
 
-/** Format a resolved lipid marker's value or target for display */
-function fmtLipidMarkerValue(marker: LipidMarker, v: number, us: UnitSystem): string {
-  if (marker.kind === 'apoB') return fmtApoB(v, us);
-  if (marker.kind === 'nonHdl') return `${formatDisplayValue('ldl', v, us)} ${getDisplayLabel('ldl', us)}`;
-  return fmtLdl(v, us);
+/** The marker's value as it prints beside its "<X" target: on the side of X
+ *  the plan grades it, whatever unit it was entered in (US-07 AC5). */
+function fmtMarkerValue(marker: LipidMarker, us: UnitSystem): string {
+  const metric = lipidMarkerMetric(marker);
+  return `${formatGradedValue(metric, marker.value, us, marker.target)} ${getDisplayLabel(metric, us)}`;
 }
+
+/** The plan's one lipid marker (ApoB, else non-HDL, else LDL), judged
+ *  against its on-treatment target, from the validated inputs and the results
+ *  the plan was computed from. Null with no lipid on record. */
+export function lipidMarkerFor(
+  inputs: Pick<HealthInputs, 'apoB' | 'ldlC'>,
+  results: Pick<HealthResults, 'nonHdlCholesterol'>,
+): LipidMarker | null {
+  const mk = (kind: LipidMarker['kind'], label: string, value: number, target: number): LipidMarker =>
+    ({ kind, label, value, target, elevated: atOrAboveTarget(value, target) });
+  const T = LIPID_TREATMENT_TARGETS;
+  if (inputs.apoB !== undefined) return mk('apoB', 'ApoB', inputs.apoB, T.apobGl);
+  if (results.nonHdlCholesterol !== undefined) return mk('nonHdl', 'non-HDL cholesterol', results.nonHdlCholesterol, T.nonHdlMmol);
+  if (inputs.ldlC !== undefined) return mk('ldl', 'LDL-c', inputs.ldlC, T.ldlMmol);
+  return null;
+}
+
+/** "Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L." The
+ *  plan's cholesterol cards and the form's cholesterol intro both say it. */
+export function lipidTargetSentence(marker: LipidMarker, unitFor: (metric: MetricType) => UnitSystem): string {
+  const metric = lipidMarkerMetric(marker);
+  const u = unitFor(metric);
+  return `Your ${marker.label} is ${fmtMarkerValue(marker, u)}; the treatment target is below ${fmtLipidTarget(metric, marker.target, u)}.`;
+}
+
+/** Join a list the way the plan writes it: "a, b and c". */
+export function joinWithAnd(items: string[]): string {
+  return items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+/** Raised blood pressure: systolic ≥130 or diastolic >80. Either half counts
+ *  on its own; the BP card checks separately that it has both to display. */
+function isBpRaised(systolic: number | undefined, diastolic: number | undefined): boolean {
+  return (systolic !== undefined && systolic >= BP_THRESHOLDS.stage1Sys)
+    || (diastolic !== undefined && diastolic > BP_THRESHOLDS.stage1Dia);
+}
+
+/** A lipid marker at its 2018 AHA/ACC risk-enhancing line (Table 6): ApoB
+ *  ≥130 mg/dL, LDL-C ≥160 mg/dL, non-HDL-C ≥190 mg/dL. */
+const LIPID_RISK_ENHANCING: Record<LipidMarker['kind'], { line: number; reason: string }> = {
+  apoB: { line: APOB_RISK_ENHANCING, reason: 'elevated ApoB' },
+  nonHdl: { line: NON_HDL_THRESHOLDS.high, reason: 'elevated non-HDL cholesterol' },
+  ldl: { line: LDL_THRESHOLDS.high, reason: 'elevated LDL cholesterol' },
+};
 
 /** Overweight or Obese. getBMICategory counts BMI 25–29.9 with a
  *  waist-to-height ratio under 0.5 as Normal. */
@@ -91,20 +135,36 @@ export interface WeightMedicationTrigger {
 }
 
 /**
- * The cascade's trigger: an elevated BMI category, plus a BMI over 28 or a
- * raised marker. The plan and the input form both read it, so the form never
+ * The cascade's trigger (US-06 AC6): BMI 25 or more with a raised marker, or
+ * an elevated BMI category with a BMI over 28. A healthy waist does not block
+ * a raised marker. The plan and the input form both read it, so the form never
  * recommends what the plan does not (US-06 AC5). Pass the validated inputs
  * and the results the plan was computed from.
  */
 export function weightMedicationTrigger(inputs: HealthInputs, results: HealthResults): WeightMedicationTrigger {
   const { bmi, waistToHeightRatio: whr } = results;
-  if (bmi === undefined || !isBmiElevated(results.bmiCategory)) return { on: false, reasons: [] };
+  if (bmi === undefined || bmi < 25) return { on: false, reasons: [] };
   const reasons: string[] = [];
   if (inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) reasons.push('prediabetic HbA1c');
   if (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) reasons.push('elevated triglycerides');
-  if (inputs.systolicBp !== undefined && inputs.systolicBp >= BP_THRESHOLDS.stage1Sys) reasons.push('elevated blood pressure');
-  if (whr !== undefined && whr >= 0.5) reasons.push('elevated waist-to-height ratio');
-  return { on: bmi > 28 || reasons.length > 0, reasons };
+  if (isBpRaised(inputs.systolicBp, inputs.diastolicBp)) reasons.push('elevated blood pressure');
+  const lipid = lipidMarkerFor(inputs, results);
+  if (lipid && lipid.value >= LIPID_RISK_ENHANCING[lipid.kind].line) reasons.push(LIPID_RISK_ENHANCING[lipid.kind].reason);
+  if (whr !== undefined && isWaistToHeightElevated(whr)) reasons.push('elevated waist-to-height ratio');
+  return { on: reasons.length > 0 || (isBmiElevated(results.bmiCategory) && bmi > 28), reasons };
+}
+
+/** The GLP-1 card's text, shared by the cascade's first step and the standalone card. */
+function glp1Description(bmi: number, reasons: string[]): string {
+  const and = reasons.length > 0 ? ` and ${joinWithAnd(reasons)}` : '';
+  return `With a BMI of ${bmi}${and}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
+}
+
+/** The form's weight-medication intro, in the plan's words: the BMI and the
+ *  trigger's reasons, as the GLP-1 card names them (US-06 AC5). */
+export function weightMedIntro(bmi: number, reasons: string[]): string {
+  const and = reasons.length > 0 ? ` and ${joinWithAnd(reasons)} suggest` : ' suggests';
+  return `Your BMI of ${bmi}${and} you may benefit from medications that support weight management and metabolic health.`;
 }
 
 /**
@@ -139,9 +199,8 @@ export function generateSuggestions(
       : `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`,
   });
 
-  // Low salt — age-dependent threshold (matches BP target age cutoff)
-  const saltThreshold = results.age !== undefined && results.age >= 65 ? 130 : 120;
-  if (inputs.systolicBp !== undefined && inputs.systolicBp > saltThreshold) {
+  // Low salt — above the age-dependent BP target
+  if (inputs.systolicBp !== undefined && inputs.systolicBp > bpTargetFor(results.age)) {
     suggestions.push({
       id: 'low-salt',
       category: 'nutrition',
@@ -151,10 +210,11 @@ export function generateSuggestions(
     });
   }
 
-  // Whether any atherogenic marker is borderline or above (used for lipid-diet and fiber suppression)
-  const hasElevatedLipids = (inputs.apoB !== undefined && inputs.apoB >= APOB_THRESHOLDS.borderline)
-    || (results.nonHdlCholesterol !== undefined && results.nonHdlCholesterol >= NON_HDL_THRESHOLDS.borderline)
-    || (inputs.ldlC !== undefined && inputs.ldlC >= LDL_THRESHOLDS.borderline);
+  // Whether any atherogenic marker is at or above its on-treatment target, the
+  // marker's own test (used for lipid-diet and fiber suppression, US-07 AC5)
+  const hasElevatedLipids = atOrAboveTarget(inputs.apoB, LIPID_TREATMENT_TARGETS.apobGl)
+    || atOrAboveTarget(results.nonHdlCholesterol, LIPID_TREATMENT_TARGETS.nonHdlMmol)
+    || atOrAboveTarget(inputs.ldlC, LIPID_TREATMENT_TARGETS.ldlMmol);
 
   // Fiber — show when lipid-diet is not active (lipid-diet covers fiber advice more specifically)
   if (!hasElevatedLipids) {
@@ -204,7 +264,7 @@ export function generateSuggestions(
   const whrForAlcohol = results.waistToHeightRatio;
   if (
     (results.bmi !== undefined && results.bmi >= 30) ||
-    (results.bmi !== undefined && results.bmi > 25 && whrForAlcohol !== undefined && whrForAlcohol >= 0.5) ||
+    (results.bmi !== undefined && results.bmi > 25 && whrForAlcohol !== undefined && isWaistToHeightElevated(whrForAlcohol)) ||
     (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline)
   ) {
     suggestions.push({
@@ -235,111 +295,25 @@ export function generateSuggestions(
   });
 
   // GLP-1 weight management: the cascade when medications are tracked,
-  // one standalone suggestion when they are not.
+  // one standalone suggestion when they are not. Both read one trigger.
   const weightMeds = weightMedicationTrigger(inputs, results);
-  if (medications && weightMeds.on) {
-    // Weight & diabetes medication cascade (GLP-1 → escalate → SGLT2i → Metformin)
-    const glp1 = medications.glp1;
-    const glp1Drug = glp1?.drug;
-    const onGlp1 = glp1 && glp1Drug && glp1Drug !== 'none' && glp1Drug !== 'not_tolerated' && glp1Drug !== 'other';
-    const glp1OnOther = glp1Drug === 'other';
-    const glp1Handled = onGlp1 || glp1OnOther || glp1Drug === 'not_tolerated';
-
-    const sglt2i = medications.sglt2i;
-    const sglt2iDrug = sglt2i?.drug;
-    const onSglt2i = sglt2i && sglt2iDrug && sglt2iDrug !== 'none' && sglt2iDrug !== 'not_tolerated';
-    const sglt2iHandled = onSglt2i || sglt2iDrug === 'not_tolerated';
-
-    // Step 1: GLP-1
-    if (!glp1 || !glp1Drug || glp1Drug === 'none') {
-      const reasonStr = weightMeds.reasons.length > 0
-        ? `an elevated BMI and ${weightMeds.reasons.join(', ')}`
-        : 'an elevated BMI';
-
-      suggestions.push({
-        id: 'weight-med-glp1',
-        category: 'medication',
-        priority: 'attention',
-        title: 'Consider a GLP-1 medication',
-        description: `With ${reasonStr}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor. These medications support weight management and metabolic health.`,
-      });
-    } else if (glp1Handled) {
-      // Step 2: GLP-1 Escalation (dose increase or switch to tirzepatide)
-      const glp1Tolerated = glp1Drug !== 'not_tolerated';
-      let canIncreaseGlp1 = false;
-      let shouldSwitchGlp1 = glp1OnOther;
-      if (onGlp1 && glp1 && glp1Drug) {
-        canIncreaseGlp1 = canIncreaseGlp1Dose(glp1Drug, glp1.dose);
-        shouldSwitchGlp1 = shouldSuggestGlp1Switch(glp1Drug, glp1.dose) || glp1OnOther;
+  if (weightMeds.on) {
+    const glp1Text = glp1Description(results.bmi!, weightMeds.reasons);
+    if (!medications) {
+      suggestions.push({ id: 'weight-glp1', category: 'medication', priority: 'attention', title: 'Weight management medication', description: glp1Text });
+    } else {
+      // Weight & diabetes medication cascade (GLP-1 → escalate → SGLT2i → Metformin)
+      const stepCards: Record<WeightStep, [priority: Suggestion['priority'], title: string, text: string]> = {
+        glp1: ['attention', 'Consider a GLP-1 medication', glp1Text],
+        'glp1-increase': ['attention', 'Consider increasing GLP-1 dose', 'You may benefit from a higher dose of your current GLP-1 medication. Discuss increasing your dose with your doctor.'],
+        'glp1-switch': ['attention', 'Consider switching to Tirzepatide', 'Tirzepatide (Mounjaro/Zepbound) may be more effective for weight management. Discuss switching with your doctor.'],
+        sglt2i: ['attention', 'Consider adding an SGLT2 inhibitor', 'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.'],
+        metformin: ['info', 'Consider adding Metformin', 'Metformin provides additional glycemic control and has longevity benefits. Extended-release formulations may have fewer GI side effects. Discuss with your doctor.'],
+      };
+      for (const step of weightCascade(medications).suggest) {
+        const [priority, title, description] = stepCards[step];
+        suggestions.push({ id: `weight-med-${step}`, category: 'medication', priority, title, description });
       }
-      const escalationPossible = glp1Tolerated && (canIncreaseGlp1 || shouldSwitchGlp1);
-
-      if (escalationPossible && (!medications.glp1Escalation || medications.glp1Escalation === 'not_yet')) {
-        if (canIncreaseGlp1) {
-          suggestions.push({
-            id: 'weight-med-glp1-increase',
-            category: 'medication',
-            priority: 'attention',
-            title: 'Consider increasing GLP-1 dose',
-            description: 'You may benefit from a higher dose of your current GLP-1 medication. Discuss increasing your dose with your doctor.',
-          });
-        } else if (shouldSwitchGlp1) {
-          suggestions.push({
-            id: 'weight-med-glp1-switch',
-            category: 'medication',
-            priority: 'attention',
-            title: 'Consider switching to Tirzepatide',
-            description: 'Tirzepatide (Mounjaro/Zepbound) may be more effective for weight management. Discuss switching with your doctor.',
-          });
-        }
-      } else {
-        // Escalation handled/skipped → Step 3: SGLT2i
-        if (!sglt2i || !sglt2iDrug || sglt2iDrug === 'none') {
-          suggestions.push({
-            id: 'weight-med-sglt2i',
-            category: 'medication',
-            priority: 'attention',
-            title: 'Consider adding an SGLT2 inhibitor',
-            description: 'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.',
-          });
-        } else if (sglt2iHandled) {
-          // Step 4: Metformin
-          if (!medications.metformin || medications.metformin === 'none') {
-            suggestions.push({
-              id: 'weight-med-metformin',
-              category: 'medication',
-              priority: 'info',
-              title: 'Consider adding Metformin',
-              description: 'Metformin provides additional glycemic control and has longevity benefits. Extended-release formulations may have fewer GI side effects. Discuss with your doctor.',
-            });
-          }
-        }
-      }
-    }
-  } else if (!medications && results.bmi !== undefined && isBmiElevated(results.bmiCategory)) {
-    // Standalone GLP-1 suggestion (when medications not tracked)
-    const whr = results.waistToHeightRatio;
-    const trigsElevated = inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline;
-    if (results.bmi > 28) {
-      suggestions.push({
-        id: 'weight-glp1',
-        category: 'medication',
-        priority: 'attention',
-        title: 'Weight management medication',
-        description: 'With a BMI over 28, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.',
-      });
-    } else if (whr !== undefined || trigsElevated) {
-      // BMI 25-28: an elevated category with a waist on record means WHtR >= 0.5; else the trigs are raised
-      const reason = whr !== undefined
-        ? 'elevated BMI and waist measurements'
-        : 'elevated BMI and triglycerides';
-      suggestions.push({
-        id: 'weight-glp1',
-        category: 'medication',
-        priority: 'attention',
-        title: 'Weight management medication',
-        description: `With ${reason}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.`,
-      });
     }
   }
 
@@ -388,7 +362,7 @@ export function generateSuggestions(
   // atherogenic particle burden; non-HDL is next best; LDL-c is fallback.
   const hasApoBData = inputs.apoB !== undefined;
   const hasNonHdlData = results.nonHdlCholesterol !== undefined;
-  const lipidMarker = resolveBestLipidMarker(inputs.apoB, results.nonHdlCholesterol, inputs.ldlC);
+  const lipidMarker = lipidMarkerFor(inputs, results);
 
   // Track whether medication cascade will absorb lipid context,
   // so we can suppress standalone atherogenic marker cards and total cholesterol.
@@ -425,7 +399,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high ApoB',
-        description: `Your ApoB of ${fmtApoB(inputs.apoB!, us('apob'))} is borderline. Optimal is <${formatDisplayValue('apob', APOB_THRESHOLDS.borderline, us('apob'))} ${getDisplayLabel('apob', us('apob'))}.`,
+        description: `Your ApoB of ${fmtApoB(inputs.apoB!, us('apob'))} is borderline. Optimal is <${fmtLipidTarget('apob', APOB_THRESHOLDS.borderline, us('apob'))}.`,
       });
     }
   }
@@ -456,7 +430,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high LDL cholesterol',
-        description: `Your LDL-c of ${fmtLdl(inputs.ldlC, us('ldl'))} is borderline high. Optimal is <${formatDisplayValue('ldl', 2.59, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} for most adults.`,
+        description: `Your LDL-c of ${fmtLdl(inputs.ldlC, us('ldl'))} is borderline high. Optimal is <${fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.ldlMmol, us('ldl'))}.`,
       });
     }
   }
@@ -488,7 +462,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high non-HDL cholesterol',
-        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is borderline. Optimal is <${formatDisplayValue('ldl', NON_HDL_THRESHOLDS.borderline, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))}.`,
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is borderline. Optimal is <${fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.nonHdlMmol, us('ldl'))}.`,
       });
     }
   }
@@ -503,15 +477,18 @@ export function generateSuggestions(
       // Lipids (ApoB > non-HDL > LDL hierarchy, using on-treatment targets)
       if (lipidMarker) {
         const icon = lipidMarker.elevated ? '\u26A0\uFE0F' : '\u2705';
-        checklist.push(`${icon} ${lipidMarker.label}: ${fmtLipidMarkerValue(lipidMarker, lipidMarker.value, us(lipidMarkerMetric(lipidMarker)))} \u2014 target \u2264${fmtLipidMarkerValue(lipidMarker, lipidMarker.target, us(lipidMarkerMetric(lipidMarker)))}`);
+        const metric = lipidMarkerMetric(lipidMarker);
+        const u = us(metric);
+        checklist.push(`${icon} ${lipidMarker.label}: ${fmtMarkerValue(lipidMarker, u)} \u2014 target <${fmtLipidTarget(metric, lipidMarker.target, u)}`);
       } else {
         checklist.push('\u2753 Lipids \u2014 not tested (consider getting ApoB or a lipid panel)');
       }
 
-      // Blood pressure
+      // Blood pressure, against the plan's age-dependent target
       if (inputs.systolicBp !== undefined && inputs.diastolicBp !== undefined) {
-        const onTarget = inputs.systolicBp < 120 && inputs.diastolicBp < 80;
-        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} Blood pressure: ${inputs.systolicBp}/${inputs.diastolicBp} mmHg \u2014 target <120/80`);
+        const sysTarget = bpTargetFor(results.age);
+        const onTarget = inputs.systolicBp < sysTarget && inputs.diastolicBp < 80;
+        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} Blood pressure: ${inputs.systolicBp}/${inputs.diastolicBp} mmHg \u2014 target <${sysTarget}/80`);
       } else {
         checklist.push('\u2753 Blood pressure \u2014 not entered');
       }
@@ -519,7 +496,7 @@ export function generateSuggestions(
       // BMI — consider healthy if <25 or if 25-29.9 with healthy waist-to-height ratio
       if (results.bmi !== undefined) {
         const lpaWhr = results.waistToHeightRatio;
-        const onTarget = results.bmi < 25 || (results.bmi < 30 && lpaWhr !== undefined && lpaWhr < 0.5);
+        const onTarget = results.bmi < 25 || (results.bmi < 30 && lpaWhr !== undefined && !isWaistToHeightElevated(lpaWhr));
         checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} BMI: ${results.bmi} \u2014 target <25`);
       }
 
@@ -645,9 +622,8 @@ export function generateSuggestions(
     if (results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased) {
       bpExtraParagraphs.push('Increase potassium-rich foods (3,500–5,000mg/day).');
     }
-    const bpWhr = results.waistToHeightRatio;
-    if (results.bmi !== undefined && (results.bmi >= 30 || (results.bmi >= 25 && bpWhr !== undefined && bpWhr >= 0.5))) {
-      bpExtraParagraphs.push('Weight loss is one of the most effective ways to lower blood pressure — even a 5% reduction can make a meaningful difference. GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.');
+    if (weightMeds.on) {
+      bpExtraParagraphs.push('Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.');
     }
     const bpExtra = bpExtraParagraphs.length > 0 ? '\n\n' + bpExtraParagraphs.join('\n\n') : '';
 
@@ -667,107 +643,35 @@ export function generateSuggestions(
         title: 'Stage 2 hypertension',
         description: `Your BP of ${sys}/${dia} mmHg indicates stage 2 hypertension. Medication is typically recommended at this level.\n\nLifestyle measures that also help: reduce sodium intake (<1,500mg/day), exercise regularly, and prioritize quality sleep.${bpExtra}`,
       });
-    } else if (sys >= BP_THRESHOLDS.stage1Sys || dia > BP_THRESHOLDS.stage1Dia) {
-      const bpTarget = results.age !== undefined && results.age >= 65 ? '<130/80' : '<120/80';
+    } else if (isBpRaised(sys, dia)) {
       suggestions.push({
         id: 'bp-stage1',
         category: 'blood_pressure',
         priority: 'attention',
         title: 'Stage 1 hypertension',
-        description: `Your BP of ${sys}/${dia} mmHg indicates stage 1 hypertension. Target is ${bpTarget}.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).${bpExtra}`,
+        description: `Your BP of ${sys}/${dia} mmHg indicates stage 1 hypertension. Target is <${bpTargetFor(results.age)}/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).${bpExtra}`,
       });
     }
   }
 
   // === Medication cascade suggestions ===
-  // Only when lipids are above on-treatment targets (using resolved hierarchy marker)
+  // Only when lipids are at or above on-treatment targets (using resolved hierarchy marker)
   if (medications && lipidMarker?.elevated) {
-    const lipidReason = `Your ${lipidMarker.label} of ${fmtLipidMarkerValue(lipidMarker, lipidMarker.value, us(lipidMarkerMetric(lipidMarker)))} is above target (\u2264${fmtLipidMarkerValue(lipidMarker, lipidMarker.target, us(lipidMarkerMetric(lipidMarker)))}).`;
+    const lipidReason = lipidTargetSentence(lipidMarker, us);
 
-    const statin = medications.statin;
-    const statinDrug = statin?.drug;
-    // Check if drug is a known valid statin (handles old tier-based values like 'tier_1')
-    // hasOwnProperty.call, not Object.hasOwn: the widget must run on iOS WebKit
-    // < 15.4, which lacks the ES2022 API (esbuild transpiles syntax, never APIs).
-    const isValidStatinDrug = statinDrug && Object.prototype.hasOwnProperty.call(STATIN_DRUGS, statinDrug);
-    const isNotTolerated = statinDrug === 'not_tolerated';
-    const statinTolerated = !isNotTolerated;
-    const onStatin = statin && isValidStatinDrug;
-
-    // Step 1: Statin (handle null/undefined/invalid drug from migration or missing data)
-    // 'not_tolerated' is valid - user tried statins but can't take them
-    if (!statin || !statinDrug || statinDrug === 'none' || (!isValidStatinDrug && !isNotTolerated)) {
-      suggestions.push({
-        id: 'med-statin',
-        category: 'medication',
-        priority: 'attention',
-        title: 'Consider starting a statin',
-        description: `${lipidReason} Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.`,
-      });
-    } else {
-      // On a statin or not tolerated — Step 2: Ezetimibe
-      const ezetimibeNotHandled = !medications.ezetimibe || medications.ezetimibe === 'no' || medications.ezetimibe === 'not_yet';
-      if (ezetimibeNotHandled) {
-        suggestions.push({
-          id: 'med-ezetimibe',
-          category: 'medication',
-          priority: 'attention',
-          title: 'Consider adding Ezetimibe',
-          description: `${lipidReason} Discuss adding Ezetimibe 10mg with your doctor.`,
-        });
-      } else {
-        // Ezetimibe handled (yes or not tolerated) — Step 2b: Bempedoic acid
-        const bempedoicNotHandled = !medications.bempedoicAcid || medications.bempedoicAcid === 'not_yet' || medications.bempedoicAcid === 'none';
-        if (bempedoicNotHandled) {
-          suggestions.push({
-            id: 'med-bempedoic-acid',
-            category: 'medication',
-            priority: 'attention',
-            title: 'Consider adding bempedoic acid',
-            description: `${lipidReason} Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor.`,
-          });
-        }
-
-        // Step 3: Escalate statin
-        const canIncrease = onStatin && canIncreaseDose(statin.drug, statin.dose);
-        const shouldSwitch = onStatin && shouldSuggestSwitch(statin.drug, statin.dose);
-
-        // Step 3: Escalate statin (only if tolerated, can escalate, and not yet tried)
-        let escalationHandled = false;
-        if (statinTolerated && (canIncrease || shouldSwitch) &&
-            (!medications.statinEscalation || medications.statinEscalation === 'not_yet')) {
-          escalationHandled = true;
-          if (canIncrease) {
-            suggestions.push({
-              id: 'med-statin-increase',
-              category: 'medication',
-              priority: 'attention',
-              title: 'Consider increasing statin dose',
-              description: `${lipidReason} Discuss increasing your statin dose with your doctor.`,
-            });
-          } else if (shouldSwitch) {
-            const drugName = statin.drug.charAt(0).toUpperCase() + statin.drug.slice(1);
-            suggestions.push({
-              id: 'med-statin-switch',
-              category: 'medication',
-              priority: 'attention',
-              title: 'Consider switching to a more potent statin',
-              description: `${lipidReason} You're on the maximum dose of ${drugName}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor.`,
-            });
-          }
-        }
-
-        // Step 4: PCSK9i — when escalation isn't an option or was already tried
-        if (!escalationHandled && (!medications.pcsk9i || medications.pcsk9i === 'no' || medications.pcsk9i === 'not_yet')) {
-          suggestions.push({
-            id: 'med-pcsk9i',
-            category: 'medication',
-            priority: 'attention',
-            title: 'Consider a PCSK9 inhibitor',
-            description: `${lipidReason} Discuss a PCSK9 inhibitor with your doctor.`,
-          });
-        }
-      }
+    const statinDrug = medications.statin?.drug ?? '';
+    const stepCards: Record<LipidStep, [title: string, text: string]> = {
+      statin: ['Consider starting a statin', 'Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.'],
+      ezetimibe: ['Consider adding Ezetimibe', 'Discuss adding Ezetimibe 10mg with your doctor.'],
+      'bempedoic-acid': ['Consider adding bempedoic acid', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor.'],
+      'statin-increase': ['Consider increasing statin dose', 'Discuss increasing your statin dose with your doctor.'],
+      'statin-switch': ['Consider switching to a more potent statin', `You're on the maximum dose of ${statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1)}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor.`],
+      pcsk9i: ['Consider a PCSK9 inhibitor', 'Discuss a PCSK9 inhibitor with your doctor.'],
+    };
+    // Statin → ezetimibe → bempedoic acid, then escalate the statin or a PCSK9 inhibitor
+    for (const step of lipidCascade(medications).suggest) {
+      const [title, text] = stepCards[step];
+      suggestions.push({ id: `med-${step}`, category: 'medication', priority: 'attention', title, description: `${lipidReason} ${text}` });
     }
   }
 

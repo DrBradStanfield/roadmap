@@ -28,6 +28,14 @@ describe('US-06 AC4: medication chart annotations', () => {
       .toBe('Recorded start: Ezetimibe');
   });
 
+  // A hand-edited medicationHistory row can carry a number or an object where
+  // the drug name belongs. It once threw (name.charAt) and took the chart
+  // down. The row names its category, as a stop does, rather than guess.
+  it.each([['a number', 42], ['an object', { nested: 'x' }]])('US-06 AC4: %s for a drug name names the category, never throws', (_what, drugName) => {
+    const annotations = medicationAnnotations([event({ drugName: drugName as unknown as string }), event({ id: 'ok', drugName: 'rosuvastatin' })]);
+    expect(annotations.ldl.map(a => a.label)).toEqual(['Recorded start: Statin 20mg', 'Recorded start: Rosuvastatin 20mg']);
+  });
+
   it('preserves stable event IDs and exact times independently of list order', () => {
     const rows = [event({ id: 'later', recordedAt: '2026-09-07T13:00:00Z' }), event({ id: 'earlier', recordedAt: '2026-09-07T12:00:00Z' })];
     expect(medicationAnnotations(rows).ldl.map(a => [a.id, a.date])).toEqual([

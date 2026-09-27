@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   calculateHealthResults,
   weightMedicationTrigger,
+  lipidMarkerFor,
   validateHealthInputs,
   getValidationErrors,
   convertValidationErrorsToUnits,
@@ -11,11 +12,12 @@ import {
   hasUnsavedProfileEdits,
   LONGITUDINAL_FIELDS,
   BLOOD_TEST_METRICS,
+  VITAL_METRICS,
   FIELD_TO_METRIC,
   medicationsToInputs,
   mergeLongitudinalInputs,
   screeningsToInputs,
-  buildMeasurementHistory,
+  chatContextOf,
   computeFormStage,
   FIELD_METRIC_MAP,
   METRIC_TO_FIELD,
@@ -28,6 +30,7 @@ import {
   type ApiMeasurement,
   type ApiMedication,
   type ApiScreening,
+  type ChatContextPayload,
   type ProposedEdit,
   type ProposedFieldEdit,
   type ProposedMedicationEdit,
@@ -35,7 +38,7 @@ import {
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
 import type { ApiSupplement, ApiLabValue } from '../lib/api-types';
-import { InputPanel } from './InputPanel';
+import { InputPanel, type PlanBasis } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { ChatEmbed } from './ChatEmbed';
@@ -50,6 +53,7 @@ import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
 import {
   saveToLocalStorage,
+  patchMirror,
   clearLocalStorage,
   saveUnitPreference,
   loadUnitPreference,
@@ -87,11 +91,20 @@ export const ERASE_CONFIRM =
   'Delete all your data?\n\n' +
   'Your health record and your chat history are erased, on this device and in your cloud file. ' +
   'This cannot be undone.\n\n' +
-  'Four things this cannot reach:\n' +
+  `${SHOPIFY_SURFACE ? 'Six' : 'Four'} things this cannot reach:\n` +
   '1. Documents you uploaded that are already in your cloud folder. They stay.\n' +
   '2. Candidate files from a connector import (imports/pending-*.json). They stay until your next import.\n' +
   '3. Your cloud provider keeps version history, and GitHub keeps every past commit.\n' +
-  '4. Backups made by the command-line tool stay beside the file until that tool next writes it.\n\n' +
+  '4. Backups made by the command-line tool stay beside the file until that tool next writes it.\n' +
+  // Only the Shopify build has a blog bubble and an embed (US-11), and a
+  // server chat: it keeps every question 30 days, and the bubble's and
+  // embed's replies too (US-15 AC7/AC8).
+  (SHOPIFY_SURFACE
+    ? '5. On another device, the blog chat bubble and the chatbot embed keep sending your old record until the widget next loads there.\n' +
+      "6. Your chat questions (the widget, the blog chat bubble and the chatbot embed) and the bubble's and embed's replies. " +
+      'Our server keeps them for 30 days after your last message in that chat.\n'
+    : '') +
+  '\n' +
   'Reminders are turned off. The row on our server keeps your address for 90 days, so a later ' +
   'enrolment of that address does not send a second welcome email; anyone who enrols the address ' +
   'again restarts the schedule, and each email carries the off link. ' +
@@ -100,7 +113,12 @@ export const ERASE_CONFIRM =
 const ERASE_DONE_TAIL =
   '\n\nStill in your cloud folder: the documents you uploaded, any pending import files, ' +
   'your provider\'s version history, and any command-line backups until that tool next writes the file. ' +
-  'Delete those in your cloud account if you want them gone.';
+  'Delete those in your cloud account if you want them gone.' +
+  // Items 5 and 6 of the confirm, shorter (US-11 AC5).
+  (SHOPIFY_SURFACE
+    ? '\n\nOn another device, the blog chat bubble and the chatbot embed send your old record until the widget loads there. ' +
+      "Our server keeps your chat questions, and the bubble's and embed's replies, for 30 days after your last message."
+    : '');
 
 export const ERASE_DONE = 'Your health record and chat history are deleted.' + ERASE_DONE_TAIL;
 
@@ -120,6 +138,15 @@ const countedCorrection: CorrectFn = async (id, newValue) => {
   return status;
 };
 
+/** After a medication or screening save, failed or not, the chat copy takes
+ *  the lists the store holds (US-15 AC10). Never the form's: a failed save
+ *  would leave a row the record lacks, and a re-read inside the debounce
+ *  would put the old list back with nothing to undo it. */
+async function mirrorSavedLists(): Promise<void> {
+  const result = await loadLatestMeasurements();
+  if (result) patchMirror({ medications: result.medications, screenings: result.screenings });
+}
+
 export function HealthTool({ syncControl, remindersSection }: { syncControl?: (ctx: { hasData: boolean }) => ReactNode; remindersSection?: ReactNode } = {}) {
   // The store is ready before render, so returning users see their saved prefill immediately.
   const [inputs, setInputs] = useState<Partial<HealthInputs>>(getInitialInputsSync);
@@ -133,7 +160,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   const [history, setHistory] = useState<ApiMeasurement[]>([]);
   const bloodTestHistory = useMemo(() => history.filter(r => BLOOD_TEST_METRICS.includes(r.metricType)), [history]);
   const vitalsHistory = useMemo(
-    () => history.filter(r => ['weight', 'waist', 'systolic_bp', 'diastolic_bp'].includes(r.metricType)),
+    () => history.filter(r => VITAL_METRICS.includes(r.metricType)),
     [history],
   );
   const [documentHistory, setDocumentHistory] = useState<ApiDocument[]>([]);
@@ -307,6 +334,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         loadHistory();
         // Keep the legacy mirror available to the separate storefront chat embed.
         saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings);
+      } else {
+        // Nothing on record: a new visitor, or another device erased it. The
+        // bubble and the embed must not keep sending the old copy (US-11).
+        saveToLocalStorage({}, [], [], []);
       }
       setHasApiResponse(true);
     }
@@ -326,15 +357,12 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     [inputs, lent, previousMeasurements],
   );
 
-  // Progressive disclosure: compute which stage of the form to show.
-  // Override to stage 3 if user has saved blood test data (e.g. from lab import).
-  const formStage = useMemo(() => {
-    const stage = computeFormStage(effectiveInputs);
-    if (stage < 3 && previousMeasurements.some(m => BLOOD_TEST_METRICS.includes(m.metricType))) {
-      return 3 as const;
-    }
-    return stage;
-  }, [effectiveInputs, previousMeasurements]);
+  // Progressive disclosure: which stage of the form to show. The chatbot
+  // embed reads the same rule.
+  const formStage = useMemo(
+    () => computeFormStage(effectiveInputs, previousMeasurements),
+    [effectiveInputs, previousMeasurements],
+  );
 
   // Pre-fetch chat conversations in background when chat becomes visible (stage 3)
   // So messages are ready instantly when the user clicks the chat bubble
@@ -369,6 +397,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       for (const field of autoSaveFields) {
         (previousInputsRef.current as any)[field] = inputs[field];
       }
+      // The chat copy holds the saved profile beside the saved values it
+      // already has (US-15 AC10).
+      patchMirror({ profile: { ...previousInputsRef.current } });
       // The form is clean again — apply any remote change held back while it
       // was dirty (US-34 AC4).
       remoteRelay.saved();
@@ -576,9 +607,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   }, [remoteRelay, handleUploadComplete]);
 
   // Calculate results using effective inputs (form + fallback to previous)
-  const { results, isValid, validationErrors, weightMedTrigger } = useMemo(() => {
+  const { results, isValid, validationErrors, planBasis } = useMemo(() => {
     if (!effectiveInputs.heightCm || !effectiveInputs.sex) {
-      return { results: null, isValid: false, validationErrors: null, weightMedTrigger: null };
+      return { results: null, isValid: false, validationErrors: null, planBasis: null };
     }
 
     const validation = validateHealthInputs(effectiveInputs);
@@ -593,7 +624,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       // Strip invalid fields (all optional) so remaining suggestions still show
       const invalidFields = new Set(validation.errors.issues.map((i) => i.path[0] as string));
       if (invalidFields.has('heightCm') || invalidFields.has('sex')) {
-        return { results: null, isValid: false, validationErrors: errors, weightMedTrigger: null };
+        return { results: null, isValid: false, validationErrors: errors, planBasis: null };
       }
       const sanitized = { ...effectiveInputs };
       for (const field of invalidFields) {
@@ -602,28 +633,28 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       inputsForCalc = sanitized;
     }
 
+    const calcInputs = inputsForCalc as HealthInputs;
     const healthResults = calculateHealthResults(
-      inputsForCalc as HealthInputs,
+      calcInputs,
       unitSystem,
       medicationsToInputs(medications),
       screeningsToInputs(screenings),
       metricUnitOverrides,
     );
-    // The form's weight-medication section follows the plan's own trigger,
-    // read from the same inputs (US-06 AC5).
-    const weightMedTrigger = weightMedicationTrigger(inputsForCalc as HealthInputs, healthResults);
-    return { results: healthResults, isValid: true, validationErrors: errors, weightMedTrigger };
+    // The form follows the plan: its recommendations, targets and cascade
+    // steps read what the plan was computed from (US-06 AC5): its age, BMI,
+    // weight target and validated height, its trigger and its lipid marker.
+    const planBasis: PlanBasis = {
+      ...healthResults,
+      weightMedTrigger: weightMedicationTrigger(calcInputs, healthResults),
+      lipidMarker: lipidMarkerFor(calcInputs, healthResults),
+    };
+    return { results: healthResults, isValid: true, validationErrors: errors, planBasis };
   }, [effectiveInputs, unitSystem, medications, screenings, metricUnitOverrides]);
 
   useEffect(() => {
     setErrors(validationErrors ?? {});
   }, [validationErrors]);
-
-  // Active suggestion IDs for cascade trigger logic
-  const activeSuggestionIds = useMemo(() =>
-    new Set(results?.suggestions?.map(s => s.id) ?? []),
-    [results?.suggestions],
-  );
 
   // Mobile tab state
   const isMobile = useIsMobile();
@@ -680,7 +711,6 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   const handleInputChange = useCallback(<K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem) => {
     if (unit) typedIn.current[field] = { value, unit };
     setInputs(prev => ({ ...prev, [field]: value }));
-    window.dispatchEvent(new CustomEvent('hr:inputs-changed'));
   }, []);
   // A matrix's draft value, as the plan and the chat read it (US-03 AC6);
   // undefined leaves the field to the record. One update per field, so
@@ -708,12 +738,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         doseUnit,
         updatedAt: new Date().toISOString(),
       };
-      const next = idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
-
-      // Cache to localStorage
-      saveToLocalStorage(inputs, previousMeasurements, next, screenings);
-
-      return next;
+      return idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
     });
 
     // Debounce cloud save per medication_key to prevent race conditions
@@ -722,9 +747,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     if (existing) clearTimeout(existing);
     medSaveTimers.current.set(medicationKey, setTimeout(() => {
       medSaveTimers.current.delete(medicationKey);
-      saveMedication(medicationKey, drugName, doseValue, doseUnit);
+      void saveMedication(medicationKey, drugName, doseValue, doseUnit).then(mirrorSavedLists);
     }, 300));
-  }, [inputs, previousMeasurements, screenings]);
+  }, []);
 
   const handleScreeningChange = useCallback((screeningKey: string, value: string) => {
     setScreenings(prev => {
@@ -735,20 +760,16 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         value,
         updatedAt: new Date().toISOString(),
       };
-      const next = idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
-
-      saveToLocalStorage(inputs, previousMeasurements, medications, next);
-
-      return next;
+      return idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
     });
 
     const existing = screeningSaveTimers.current.get(screeningKey);
     if (existing) clearTimeout(existing);
     screeningSaveTimers.current.set(screeningKey, setTimeout(() => {
       screeningSaveTimers.current.delete(screeningKey);
-      saveScreening(screeningKey, value);
+      void saveScreening(screeningKey, value).then(mirrorSavedLists);
     }, 300));
-  }, [inputs, previousMeasurements, medications]);
+  }, []);
 
   const supSaveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   useEffect(() => () => { for (const t of supSaveTimers.current.values()) clearTimeout(t); }, []);
@@ -912,8 +933,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     vitalsPrefillRef,
     formStage,
     setShowUploadModal,
-    activeSuggestionIds,
-    weightMedTrigger,
+    planBasis,
     healthDocuments: documentHistory,
     onDocumentDeleted: (docId: string) => {
       setDocumentHistory(prev => prev.filter(d => d.id !== docId));
@@ -937,19 +957,19 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     formStage,
   };
 
-  // Dated blood-test + vitals time series for the chat context (local-first
-  // only — see chatSectionProps). Keyed by metricType, chronological, SI values,
-  // capped at HISTORY_CAP_PER_METRIC points/metric to bound the prompt.
-  const chatMeasurementHistory = useMemo(() => {
-    const out = buildMeasurementHistory([...bloodTestHistory, ...vitalsHistory]);
-    return Object.keys(out).length > 0 ? out : undefined;
-  }, [bloodTestHistory, vitalsHistory]);
+  // The chat reads its context as each message is sent (useChatState), through
+  // one reader that never changes, so the chat's send handler is not rebuilt
+  // on every keystroke. chatContextOf builds it here as it does for the blog
+  // bubble and the chatbot embed: the plan's inputs and the dated history.
+  const chatContextRef = useRef<() => ChatContextPayload | null>(() => null);
+  chatContextRef.current = () => chatContextOf(
+    effectiveInputs, unitSystem, medications, screenings, [...bloodTestHistory, ...vitalsHistory],
+  );
+  const readChatContext = useCallback(() => chatContextRef.current(), []);
 
   const chatSectionProps = {
     isLoggedIn: true,
-    // The server has no health record to read. Send the current plan and dated
-    // history as context; chat-api independently owns the guest session identity.
-    guestInputs: { ...effectiveInputs, unitSystem, medications, screenings, ...(chatMeasurementHistory ? { measurementHistory: chatMeasurementHistory } : {}) },
+    guestInputs: readChatContext,
     prefetchedData: chatPrefetch,
     onProposeEdit: handleProposeEdit,
   };
@@ -1034,7 +1054,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         onStart={handleUploadStart}
         onClose={() => setShowUploadModal(false)}
         onScreeningUpdate={handleScreeningChange}
-        birthYear={inputs.birthYear ? Number(inputs.birthYear) : undefined}
+        age={planBasis?.age}
         sex={inputs.sex === 'male' || inputs.sex === 'female' ? inputs.sex : undefined}
       />
 

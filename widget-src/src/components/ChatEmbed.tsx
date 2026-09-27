@@ -9,7 +9,7 @@ import React, { useState, useEffect, useRef, useCallback, useReducer } from 'rea
 import type { ProposedEdit } from '@roadmap/health-core';
 import { getChatGate } from '../lib/chat-api';
 import { observeVisibility } from '../lib/observe-visibility';
-import { useChatState, THINKING_MESSAGES, MAX_CHARS } from '../hooks/useChatState';
+import { useChatState, THINKING_MESSAGES, MAX_CHARS, type ChatContextSource } from '../hooks/useChatState';
 import { ChatKeyGate } from './ChatKeyGate';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { ChatThreadList } from './ChatThreadList';
@@ -18,7 +18,7 @@ import { ChatHeaderTitle } from './ChatHeaderTitle';
 
 interface ChatEmbedProps {
   isLoggedIn: boolean;
-  guestInputs?: Record<string, unknown> | null;
+  guestInputs?: ChatContextSource;
   muted?: boolean;
   onProposeEdit?: (edits: ProposedEdit[]) => void;
 }

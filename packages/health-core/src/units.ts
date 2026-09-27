@@ -293,6 +293,62 @@ export function formatDisplayValue(
   return display.toFixed(dp);
 }
 
+/**
+ * The number a "<X" target prints: the first value, at the metric's display
+ * step, that the plan grades at or past `line` (canonical). A displayed value
+ * then reads on the side of X the plan grades it: 54 mg/dL of LDL is 1.396
+ * mmol/L, below the 1.4 target, so the target prints as 55 (US-07 AC5).
+ * `graded` is the plan's own test on a canonical value, for a line the plan
+ * does not compare directly (the waist, US-06 AC5).
+ */
+export function formatTargetLine(
+  metric: MetricType,
+  line: number,
+  system: UnitSystem,
+  graded: (canonical: number) => boolean = (v) => v >= line,
+): string {
+  // No step is past a line that is not finite: the walk would never end.
+  if (!Number.isFinite(line)) return formatDisplayValue(metric, line, system);
+  const dp = UNIT_DEFS[metric].decimalPlaces[system];
+  const scale = 10 ** dp;
+  // Start a step below the line's own display value and walk up.
+  let steps = Math.floor(fromCanonicalValue(metric, line, system) * scale) - 1;
+  while (!graded(toCanonicalValue(metric, steps / scale, system))) steps++;
+  return (steps / scale).toFixed(dp);
+}
+
+/**
+ * A value as it prints beside its "<X" line (`formatTargetLine`, same
+ * `line` and `graded`): rounded as `formatDisplayValue` rounds it, unless
+ * that puts it on the other side of X from the plan's grade. A value graded
+ * at or past the line then shows X: 1.40 mmol/L of LDL is 54.1 mg/dL, so 55
+ * beside "<55". A value graded below it shows one more decimal place,
+ * rounded down: 54 mg/dL is 1.3964 mmol/L, so 1.39 beside "<1.4". A value on
+ * the display grid, as typed in the shown unit, shows as typed (US-07 AC5,
+ * US-06 AC5).
+ */
+export function formatGradedValue(
+  metric: MetricType,
+  canonical: number,
+  system: UnitSystem,
+  line: number,
+  graded: (canonical: number) => boolean = (v) => v >= line,
+): string {
+  const shown = formatDisplayValue(metric, canonical, system);
+  const dp = UNIT_DEFS[metric].decimalPlaces[system];
+  const scale = 10 ** dp;
+  // In display steps: X, and the value as rounded.
+  const x = Math.round(Number(formatTargetLine(metric, line, system, graded)) * scale);
+  const past = graded(canonical);
+  if (past === Math.round(Number(shown) * scale) >= x) return shown;
+  if (past) return (x / scale).toFixed(dp);
+  // Floor at the finer step; toPrecision strips float noise (1.39 * 100 is
+  // 138.99…), and the cap keeps a value a hair under the line below X.
+  const fine = scale * 10;
+  const floored = Math.floor(Number((fromCanonicalValue(metric, canonical, system) * fine).toPrecision(12)));
+  return (Math.min(floored, x * 10 - 1) / fine).toFixed(dp + 1);
+}
+
 /** Get the display unit label for a metric (e.g. "mg/dL" or "mmol/L"). */
 export function getDisplayLabel(metric: MetricType, system: UnitSystem): string {
   return UNIT_DEFS[metric].label[system];
@@ -471,8 +527,16 @@ export const HBA1C_THRESHOLDS = {
   diabetes: hba1cNgspToIfcc(6.5),     // ~47.5 mmol/mol
 } as const;
 
-/** LDL thresholds in mmol/L */
+/** On-treatment lipid targets (SI canonical units) */
+export const LIPID_TREATMENT_TARGETS = {
+  apobGl: 0.5,       // g/L (50 mg/dL)
+  ldlMmol: 1.4,      // mmol/L (~54 mg/dL)
+  nonHdlMmol: 1.6,   // mmol/L (~62 mg/dL)
+} as const;
+
+/** LDL thresholds in mmol/L. Optimal only below the plan's target (US-07 AC5). */
 export const LDL_THRESHOLDS = {
+  optimal: LIPID_TREATMENT_TARGETS.ldlMmol,
   borderline: 130 / CHOLESTEROL_FACTOR,  // ~3.36
   high: 160 / CHOLESTEROL_FACTOR,        // ~4.14
   veryHigh: 190 / CHOLESTEROL_FACTOR,    // ~4.91
@@ -484,8 +548,10 @@ export const TOTAL_CHOLESTEROL_THRESHOLDS = {
   high: 240 / CHOLESTEROL_FACTOR,       // ~6.21
 } as const;
 
-/** Non-HDL cholesterol thresholds in mmol/L (LDL thresholds + 30 mg/dL for VLDL) */
+/** Non-HDL cholesterol thresholds in mmol/L (LDL thresholds + 30 mg/dL for VLDL).
+ *  Optimal only below the plan's target (US-07 AC5). */
 export const NON_HDL_THRESHOLDS = {
+  optimal: LIPID_TREATMENT_TARGETS.nonHdlMmol,
   borderline: 160 / CHOLESTEROL_FACTOR, // ~4.14
   high: 190 / CHOLESTEROL_FACTOR,       // ~4.91
   veryHigh: 220 / CHOLESTEROL_FACTOR,   // ~5.69
@@ -529,6 +595,32 @@ export const APOB_THRESHOLDS = {
   high: 70 / APOB_FACTOR,        // 0.7
   veryHigh: 100 / APOB_FACTOR,   // 1.0
 } as const;
+
+/** ApoB risk-enhancing line in g/L: ≥130 mg/dL, 2018 AHA/ACC cholesterol guideline, Table 6. */
+export const APOB_RISK_ENHANCING = 130 / APOB_FACTOR; // 1.3
+
+/** The waist-to-height ratio as the plan grades it: to 2 decimal places. */
+export function waistToHeightRatio(waistCm: number, heightCm: number): number {
+  return Math.round((waistCm / heightCm) * 100) / 100;
+}
+
+/** Central adiposity: the plan's rounded ratio at 0.5 or more. The plan and
+ *  the vitals matrix both grade the waist by this (US-06 AC5). */
+export function isWaistToHeightElevated(ratio: number): boolean {
+  return ratio >= 0.5;
+}
+
+/** The waist, in cm, from which the plan counts the ratio as elevated at this
+ *  height: it rounds to 0.50 from 0.495. */
+export function elevatedWaistFromCm(heightCm: number): number {
+  return 0.495 * heightCm;
+}
+
+/** The plan's systolic target in mmHg, by age: under 130 at 65 or older,
+ *  otherwise under 120 (SPRINT, ESPRIT). The diastolic target is 80 at any age. */
+export function bpTargetFor(age: number | undefined): number {
+  return age !== undefined && age >= 65 ? 130 : 120;
+}
 
 /** PSA thresholds in ng/mL (same in both unit systems) */
 export const PSA_THRESHOLDS = {

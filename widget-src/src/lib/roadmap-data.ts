@@ -1,11 +1,6 @@
 /** Local-first health records and client-side reports, on every widget surface. */
 import {
-  buildMeasurementHistory,
-  measurementsToInputs,
-  type MeasurementHistoryMap,
   type ApiMeasurement,
-  type ApiMedication,
-  type ApiScreening,
   type FileReminderOptIn,
   type HealthInputs,
   type ReminderScheduleItem,
@@ -155,34 +150,6 @@ export async function bulkSaveDocuments(
 export async function deleteDocument(documentId: string): Promise<boolean> {
   return store ? store.deleteDocument(documentId) : false;
 }
-/**
- * Data snapshot for the BYOK chat's system-prompt context (byok-chat.ts).
- * Mirrors the website chat's guest-context shape: prefill inputs + the newest
- * active value per metric (US-07 AC4) + the raw medication/screening rows
- * (byok-chat converts them with health-core) + the dated blood-test/vitals
- * time series (chronological per metric, capped — same shape the storefront
- * build sends as guestInputs.measurementHistory).
- */
-export function getByokChatInputs():
-  | (Record<string, unknown> & {
-      medications: ApiMedication[];
-      screenings: ApiScreening[];
-      measurementHistory?: MeasurementHistoryMap;
-    })
-  | null {
-  if (!store) return null;
-  const latest = store.loadLatestMeasurements();
-  const measurementHistory = buildMeasurementHistory(store.loadAllHistory());
-  return {
-    ...latest.inputs,
-    ...measurementsToInputs(latest.previousMeasurements),
-    unitSystem: latest.inputs.unitSystem ?? 'si',
-    medications: latest.medications,
-    screenings: latest.screenings,
-    ...(Object.keys(measurementHistory).length > 0 ? { measurementHistory } : {}),
-  };
-}
-
 /** Standalone: history opens as a lightbox (host listens in standalone/app.tsx). */
 export function openHistoryLightbox(metric: string | null): boolean {
   window.dispatchEvent(new CustomEvent('hr:open-history', { detail: { metric } }));

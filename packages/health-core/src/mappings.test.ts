@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   hasUnsavedProfileEdits,
   FIELD_TO_METRIC,
@@ -352,6 +352,16 @@ describe('medicationsToInputs', () => {
   });
 });
 
+describe('medicationsToInputs: a drug name that is not a string (US-06 AC5, US-15 AC11)', () => {
+  const KEYS = ['statin', 'ezetimibe', 'statin_escalation', 'pcsk9i', 'bempedoic_acid', 'glp1', 'glp1_escalation', 'sglt2i', 'metformin'];
+  it.each(KEYS)('%s: a null, numeric or object name is unanswered, as if no row were recorded', (medicationKey) => {
+    for (const drugName of [null, 42, { nested: 'x' }]) {
+      const row = { id: '1', medicationKey, drugName: drugName as unknown as string, doseValue: 20, doseUnit: 'mg', updatedAt: '' };
+      expect(medicationsToInputs([row]), JSON.stringify(drugName)).toEqual({});
+    }
+  });
+});
+
 describe('screeningsToInputs', () => {
   it('returns empty object for empty array', () => {
     expect(screeningsToInputs([])).toEqual({});
@@ -508,6 +518,70 @@ describe('screeningsToInputs', () => {
     expect(inputs.dexaFollowupDate).toBe('2025-03');
   });
 
+  it('US-06/US-15 AC11: drops a date that is not a real calendar date, so the widget plan and the chat agree', () => {
+    const row = (value: string): ApiScreening[] => [{ id: '1', screeningKey: 'colorectal_last_date', value, updatedAt: '' }];
+    for (const bad of ['2020-99', '2020-00', '2023-02-29', '2024-02-30', '2024-06-31', 'not-a-date', '2024-6']) {
+      expect(screeningsToInputs(row(bad)).colorectalLastDate, bad).toBeUndefined();
+    }
+    for (const good of ['2024-02-29', '2000-02-29', '2024-06', '2024-12-31']) {
+      expect(screeningsToInputs(row(good)).colorectalLastDate, good).toBe(good);
+    }
+    // A cleared date stays cleared: the form writes '' to clear it.
+    expect(screeningsToInputs(row('')).colorectalLastDate).toBeFalsy();
+  });
+
+  // A "last done" date cannot be after the current month: the form offers
+  // only past months, and a future one read "up to date" for years. A
+  // follow-up date may be future: the form asks when a follow-up is scheduled.
+  // "Current month" is the month at UTC+14 (screeningDate), so each case pins
+  // the clock and names its months outright; no expectation reads the local
+  // clock, which failed at every month end in UTC (the cloud loops).
+  afterEach(() => { vi.useRealTimers(); });
+  const pin = (iso: string) => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date(iso)); };
+  const CLOCKS: Array<[string, string, string]> = [
+    // [now, this month at UTC+14, next month]
+    ['2026-06-15T12:00:00Z', '2026-06', '2026-07'],
+    ['2026-09-30T09:59:00Z', '2026-09', '2026-10'], // 23:59 on 30 Sep at UTC+14
+    ['2026-09-30T12:00:00Z', '2026-10', '2026-11'], // already 1 Oct at UTC+14
+    ['2026-12-31T12:00:00Z', '2027-01', '2027-02'], // the year turns at UTC+14
+  ];
+  const LAST: Array<[string, keyof ReturnType<typeof screeningsToInputs>]> = [
+    ['colorectal_last_date', 'colorectalLastDate'], ['breast_last_date', 'breastLastDate'],
+    ['cervical_last_date', 'cervicalLastDate'], ['lung_last_date', 'lungLastDate'],
+    ['prostate_last_date', 'prostateLastDate'], ['dexa_last_date', 'dexaLastDate'],
+  ];
+  const FOLLOWUP: Array<[string, keyof ReturnType<typeof screeningsToInputs>]> = [
+    ['colorectal_followup_date', 'colorectalFollowupDate'], ['breast_followup_date', 'breastFollowupDate'],
+    ['cervical_followup_date', 'cervicalFollowupDate'], ['lung_followup_date', 'lungFollowupDate'],
+    ['dexa_followup_date', 'dexaFollowupDate'],
+  ];
+  const one = (screeningKey: string, value: string) => screeningsToInputs([{ screeningKey, value }]);
+
+  it.each(LAST)('US-06/US-15 AC11: %s drops a date after the current month and keeps this month', (key, field) => {
+    for (const [now, thisMonth, nextMonth] of CLOCKS) {
+      pin(now);
+      for (const future of [nextMonth, `${nextMonth}-01`, '2028-06', '9999-01']) expect(one(key, future)[field], `${now} ${future}`).toBeUndefined();
+      expect(one(key, thisMonth)[field], now).toBe(thisMonth);
+      expect(one(key, '2020-01')[field], now).toBe('2020-01');
+    }
+  });
+
+  it.each(FOLLOWUP)('US-06/US-15 AC11: %s keeps a future date (a scheduled follow-up) and a past one', (key, field) => {
+    for (const [now, , nextMonth] of CLOCKS) {
+      pin(now);
+      expect(one(key, '2028-06')[field], now).toBe('2028-06');
+      expect(one(key, nextMonth)[field], now).toBe(nextMonth);
+      expect(one(key, '2020-01')[field], now).toBe('2020-01');
+      expect(one(key, '2020-99')[field], now).toBeUndefined();
+    }
+  });
+
+  it('covers every date key: six "last done", five follow-up', async () => {
+    const { SCREENING_KEYS } = await import('./validation');
+    const dates = SCREENING_KEYS.filter(k => k.endsWith('_date')).sort();
+    expect([...LAST, ...FOLLOWUP].map(([k]) => k).sort()).toEqual(dates);
+  });
+
   it('converts breast/cervical follow-up fields', () => {
     const screenings: ApiScreening[] = [
       { id: '1', screeningKey: 'breast_followup_status', value: 'completed', updatedAt: '' },
@@ -655,6 +729,24 @@ describe('computeFormStage', () => {
   it('treats out-of-range values as not entered (height > 250, weight > 300)', () => {
     expect(computeFormStage({ sex: 'male', heightCm: 1800 })).toBe(1);
     expect(computeFormStage({ sex: 'male', heightCm: 180, weightKg: 750 })).toBe(2);
+  });
+
+  // US-15 AC10: the widget and the chatbot embed read one rule, with the
+  // saved rows beside the form.
+  const saved = (metricType: string, value: number) => ({ metricType, value });
+
+  it('US-15 AC10: a saved weight fills an empty weight field', () => {
+    expect(computeFormStage({ sex: 'male', heightCm: 180 }, [saved('weight', 82)])).toBe(3);
+    expect(computeFormStage({}, [saved('weight', 82)])).toBe(3);
+  });
+
+  it('US-15 AC10: a typed weight wins over the saved one, so a half-typed weight holds stage 2', () => {
+    expect(computeFormStage({ sex: 'male', heightCm: 180, weightKg: 7 }, [saved('weight', 82)])).toBe(2);
+  });
+
+  it('US-15 AC10: any saved blood test opens the whole form, even with no weight', () => {
+    expect(computeFormStage({}, [saved('ldl', 3.1)])).toBe(3);
+    expect(computeFormStage({ sex: 'male', heightCm: 180 }, [saved('waist', 90)])).toBe(2);
   });
 });
 

@@ -227,15 +227,18 @@ to both — deploy twice, see "Shopify app configs".**)
 Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
 
 - **Shared keys**: SUPABASE_*, SESSION_DATABASE_URL, SENTRY_*, RESEND_*,
-  ANTHROPIC_API_KEY, SHOPIFY_*, KLAVIYO_API_KEY/KLAVIYO_LIST_ID (per app).
+  ANTHROPIC_API_KEY, SHOPIFY_*, KLAVIYO_API_KEY/KLAVIYO_LIST_ID (the same
+  MicroVitamin pair on both apps, by decision 2026-09-28).
 - **Fly-only**: MCP_ISSUER, MCP_SEAL_KEYS, MCP_CLIENT_HMAC_KEY,
   OPENAI_APPS_CHALLENGE, GITHUB_ISSUES_TOKEN (edu; the connector files bug
   reports with it, and without it hands the user a link), DROPBOX_APP_KEY/SECRET,
   GOOGLE_DRIVE_CLIENT_ID/SECRET (BOTH Fly apps: `health-tool-app` for the
   widget's Google exchange, edu for the MCP's Drive leg). Setup and rotation:
   [deploy-runbook-mcp.md](deploy-runbook-mcp.md).
-- **Per-app secrets diverge post-split**: each app has its own SHOPIFY_ and
-  KLAVIYO_ pairs; edu omits the Discord and YouTube bot tokens.
+- **Per-app secrets diverge post-split**: each app has its own SHOPIFY_ pair;
+  KLAVIYO_ is shared (every sign-up joins the MicroVitamin list; the drstanfield
+  Klaviyo account is shut down, Brad 2026-09-28); edu omits the Discord and
+  YouTube bot tokens.
 - **GitHub Actions**: deploy secrets live ONLY in the gated `production`
   environment; ANTHROPIC_API_KEY (spend-capped) is the only repo secret.
 

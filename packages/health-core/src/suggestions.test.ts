@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { generateSuggestions, resolveBestLipidMarker, LIPID_TREATMENT_TARGETS, weightMedicationTrigger } from './suggestions';
+import { generateSuggestions, weightMedicationTrigger, lipidMarkerFor, joinWithAnd } from './suggestions';
+import { LIPID_TREATMENT_TARGETS, NON_HDL_THRESHOLDS, type UnitSystem } from './units';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
-import { canIncreaseGlp1Dose, shouldSuggestGlp1Switch, isOnMaxGlp1Potency, getGlp1EscalationType } from './types';
+import { canIncreaseGlp1Dose, shouldSuggestGlp1Switch } from './types';
 import { toCanonicalValue } from './units';
-import { calculateHealthResults, getBMICategory } from './calculations';
+import { calculateHealthResults, getBMICategory, getLipidStatus } from './calculations';
 
 // Shorthand: convert conventional (US) blood test values to SI for test inputs
 const hba1c = (pct: number) => toCanonicalValue('hba1c', pct, 'conventional');
@@ -133,6 +134,20 @@ describe('generateSuggestions', () => {
       expect(ldlSuggestion?.priority).toBe('info');
     });
 
+    // In mg/dL the line prints as 55: 54 mg/dL is 1.396 mmol/L, which the plan calls optimal.
+    it('ldl-borderline names the 1.4 optimal line (US-07 AC5)', () => {
+      const { inputs, results } = createTestData({ ldlC: 3.5 });
+      expect(generateSuggestions(inputs, results).find(s => s.id === 'ldl-borderline')?.description)
+        .toBe('Your LDL-c of 3.5 mmol/L is borderline high. Optimal is <1.4 mmol/L.');
+      expect(generateSuggestions(inputs, results, 'conventional').find(s => s.id === 'ldl-borderline')?.description)
+        .toBe('Your LDL-c of 135 mg/dL is borderline high. Optimal is <55 mg/dL.');
+    });
+
+    it('LDL 3.2 is above optimal but below borderline: no LDL card (US-07 AC5)', () => {
+      const { inputs, results } = createTestData({ ldlC: 3.2 });
+      expect(generateSuggestions(inputs, results).filter(s => s.id.startsWith('ldl-'))).toEqual([]);
+    });
+
     it('does not generate suggestion for optimal LDL < 130 mg/dL (<3.36 mmol/L)', () => {
       const { inputs, results } = createTestData({ ldlC: ldl(90) });
       const suggestions = generateSuggestions(inputs, results);
@@ -193,6 +208,12 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'non-hdl-borderline')).toBeDefined();
       expect(suggestions.find(s => s.id === 'non-hdl-borderline')?.priority).toBe('info');
+    });
+
+    it('non-hdl-borderline names the 1.6 optimal line (US-07 AC5)', () => {
+      const { inputs, results } = createTestData({}, { nonHdlCholesterol: 4.5 });
+      expect(generateSuggestions(inputs, results).find(s => s.id === 'non-hdl-borderline')?.description)
+        .toBe('Your non-HDL cholesterol of 4.5 mmol/L is borderline. Optimal is <1.6 mmol/L.');
     });
 
     it('does not generate suggestion for optimal non-HDL < 160 mg/dL', () => {
@@ -444,20 +465,20 @@ describe('generateSuggestions', () => {
       expect(bpSuggestion?.description).toContain('Weight loss');
     });
 
-    it('stage 1 does not mention weight loss when BMI 25-29.9 and WHtR < 0.5', () => {
+    it('stage 1 mentions weight loss when BMI 25-29.9 and WHtR < 0.5: the raised BP turns the trigger on (US-06 AC6)', () => {
       const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { bmi: 27, waistToHeightRatio: 0.45 });
       const suggestions = generateSuggestions(inputs, results);
 
       const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
-      expect(bpSuggestion?.description).not.toContain('Weight loss');
+      expect(bpSuggestion?.description).toContain('Weight loss');
     });
 
-    it('stage 1 does not mention weight loss when BMI 25-29.9 and WHtR unavailable', () => {
+    it('stage 1 mentions weight loss when BMI 25-29.9 and WHtR unavailable (US-06 AC6)', () => {
       const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { bmi: 27 });
       const suggestions = generateSuggestions(inputs, results);
 
       const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
-      expect(bpSuggestion?.description).not.toContain('Weight loss');
+      expect(bpSuggestion?.description).toContain('Weight loss');
     });
 
     it('stage 1 does not mention weight loss when BMI < 25', () => {
@@ -810,10 +831,28 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'lipid-diet')).toBeDefined();
     });
 
-    it('does not show lipid-diet when all lipid markers are below borderline', () => {
-      const { inputs, results } = createTestData({ apoB: 0.4, ldlC: 2.5 }, { nonHdlCholesterol: 3.5 });
+    it('does not show lipid-diet when every lipid marker is below its optimal line (US-07 AC5)', () => {
+      const { inputs, results } = createTestData({ apoB: 0.4, ldlC: 1.39 }, { nonHdlCholesterol: 1.5 });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'lipid-diet')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'fiber')).toBeDefined();
+    });
+
+    it('shows lipid-diet and hides fiber at LDL 2.0, above the 1.4 optimal line (US-07 AC5)', () => {
+      const { inputs, results } = createTestData({ ldlC: 2.0 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'lipid-diet')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'fiber')).toBeUndefined();
+    });
+
+    it.each([
+      { name: 'LDL 1.39', ldlC: 1.39, shows: false },
+      { name: 'LDL 1.4', ldlC: 1.4, shows: true },
+      { name: 'non-HDL 1.5', nonHdl: 1.5, shows: false },
+      { name: 'non-HDL 1.6', nonHdl: 1.6, shows: true },
+    ])('lipid-diet at $name: $shows (US-07 AC5)', ({ ldlC, nonHdl, shows }) => {
+      const { inputs, results } = createTestData({ ldlC }, { nonHdlCholesterol: nonHdl });
+      expect(generateSuggestions(inputs, results).some(s => s.id === 'lipid-diet')).toBe(shows);
     });
 
     it('does not show lipid-diet when no lipid data present', () => {
@@ -863,13 +902,13 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'measure-waist')).toBeDefined();
     });
 
-    it('does NOT suggest GLP-1 when BMI 25-28 with elevated trigs but healthy waist (reclassified Normal)', () => {
+    it('suggests GLP-1 when BMI 25-28 with elevated trigs and a healthy waist: a raised marker counts (US-06 AC6)', () => {
       const { inputs, results } = createTestData(
         { triglycerides: trig(160) },  // borderline elevated
         { bmi: 26, waistToHeightRatio: 0.45 }  // normal waist → bmiCategory = 'Normal'
       );
       const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeDefined();
     });
 
     it('does not suggest GLP-1 when BMI 25-28 with normal trigs and normal waist', () => {
@@ -1125,7 +1164,7 @@ describe('generateSuggestions', () => {
       const statin = suggestions.find(s => s.id === 'med-statin');
       expect(statin).toBeDefined();
       expect(statin!.description).toContain('ApoB');
-      expect(statin!.description).toContain('above target');
+      expect(statin!.description).toContain('the treatment target is below');
     });
 
     it('med-statin description uses non-HDL when ApoB unavailable', () => {
@@ -1138,7 +1177,7 @@ describe('generateSuggestions', () => {
       const statin = suggestions.find(s => s.id === 'med-statin');
       expect(statin).toBeDefined();
       expect(statin!.description).toContain('non-HDL');
-      expect(statin!.description).toContain('above target');
+      expect(statin!.description).toContain('the treatment target is below');
     });
 
     it('med-statin description uses LDL as fallback', () => {
@@ -1148,7 +1187,7 @@ describe('generateSuggestions', () => {
       const statin = suggestions.find(s => s.id === 'med-statin');
       expect(statin).toBeDefined();
       expect(statin!.description).toContain('LDL-c');
-      expect(statin!.description).toContain('above target');
+      expect(statin!.description).toContain('the treatment target is below');
     });
 
     it('med-ezetimibe description includes specific lipid reason', () => {
@@ -1158,7 +1197,31 @@ describe('generateSuggestions', () => {
       const eze = suggestions.find(s => s.id === 'med-ezetimibe');
       expect(eze).toBeDefined();
       expect(eze!.description).toContain('ApoB');
-      expect(eze!.description).toContain('above target');
+      expect(eze!.description).toContain('the treatment target is below');
+    });
+
+    // US-07 AC5: the sentence reads true at exactly the target.
+    it.each([
+      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L; the treatment target is below 1.4 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.' },
+      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L; the treatment target is below 0.50 g/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.' },
+    ])('med-statin at exactly the target, $name, shows and reads true (US-07 AC5)', ({ values, text }) => {
+      const { inputs, results } = createTestData(values);
+      expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description).toBe(text);
+    });
+
+    it('med-statin at exactly the non-HDL target of 1.6 shows (US-07 AC5)', () => {
+      const { inputs, results } = createTestData({}, { nonHdlCholesterol: 1.6 });
+      expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description)
+        .toBe('Your non-HDL cholesterol is 1.6 mmol/L; the treatment target is below 1.6 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.');
+    });
+
+    it.each([
+      { name: 'LDL 1.39', values: { ldlC: 1.39 }, results: {} },
+      { name: 'ApoB 0.49', values: { apoB: 0.49 }, results: {} },
+      { name: 'non-HDL 1.5', values: {}, results: { nonHdlCholesterol: 1.5 } },
+    ])('no statin card just below the target, $name (US-07 AC5)', ({ values, results: r }) => {
+      const { inputs, results } = createTestData(values, r);
+      expect(generateSuggestions(inputs, results, 'si', {}).some(s => s.id.startsWith('med-'))).toBe(false);
     });
 
     it('med-pcsk9i description includes specific lipid reason', () => {
@@ -1171,7 +1234,7 @@ describe('generateSuggestions', () => {
       const pcsk9i = suggestions.find(s => s.id === 'med-pcsk9i');
       expect(pcsk9i).toBeDefined();
       expect(pcsk9i!.description).toContain('ApoB');
-      expect(pcsk9i!.description).toContain('above target');
+      expect(pcsk9i!.description).toContain('the treatment target is below');
     });
   });
 
@@ -1652,7 +1715,9 @@ describe('generateSuggestions', () => {
   });
 
   describe('Weight & diabetes medication cascade', () => {
-    // Trigger: BMI > 28 (unconditional) OR BMI 25-28 with (HbA1c prediabetic OR trigs >= 150 OR SBP >= 130 OR WHR >= 0.5)
+    // Trigger (US-06 AC6): BMI >= 25 with a raised marker (HbA1c prediabetic, trigs >= 150,
+    // BP >= 130 systolic or > 80 diastolic, the plan's lipid marker at its risk-enhancing
+    // line, WHtR >= 0.5), or an elevated BMI category with BMI > 28
     it('shows GLP-1 suggestion when BMI > 25 AND HbA1c prediabetic', () => {
       const { inputs, results } = createTestData(
         { hba1c: hba1c(5.8) },
@@ -1675,7 +1740,7 @@ describe('generateSuggestions', () => {
 
     it('shows GLP-1 suggestion when BMI > 25 AND SBP >= 130', () => {
       const { inputs, results } = createTestData(
-        { systolicBp: 135 },
+        { systolicBp: 135, diastolicBp: 75 },
         { bmi: 26 },
       );
       const meds: MedicationInputs = {};
@@ -1744,15 +1809,15 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined();
     });
 
-    it('does NOT show cascade when BMI 25-28 with healthy WHtR even with elevated BP', () => {
+    it('shows cascade when BMI 25-28 with healthy WHtR and elevated BP (US-06 AC6)', () => {
       const { inputs, results } = createTestData(
-        { systolicBp: 140 },
+        { systolicBp: 140, diastolicBp: 85 },
         { bmi: 26, waistToHeightRatio: 0.4 },
       );
       expect(results.bmiCategory).toBe('Normal');
       const meds: MedicationInputs = {};
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
-      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeDefined();
     });
 
     it('shows cascade when BMI 25-28 with elevated WHtR and elevated BP', () => {
@@ -1912,7 +1977,7 @@ describe('generateSuggestions', () => {
 
     it('mentions blood pressure in description when BP is a trigger', () => {
       const { inputs, results } = createTestData(
-        { systolicBp: 140 },
+        { systolicBp: 140, diastolicBp: 85 },
         { bmi: 26 },
       );
       const meds: MedicationInputs = {};
@@ -1923,11 +1988,13 @@ describe('generateSuggestions', () => {
   });
 
   // US-06 AC5: the plan and the input form share one weight-medication trigger.
-  // Each row pins what the plan decided before the trigger moved into its own
-  // function, then checks the function decides the same. Raw values go through
-  // calculateHealthResults, so its rounding is part of the case: 178 cm tall,
-  // BMI to 1 decimal place, waist-to-height ratio to 2.
-  describe('weightMedicationTrigger: one trigger for the plan and the form (US-06 AC5)', () => {
+  // US-06 AC6: the trigger rule Brad set on 2026-09-26 and 2026-09-28. From
+  // BMI 25 a raised marker turns it on, even with a healthy waist; above BMI
+  // 28 an elevated BMI category turns it on alone; below 25 it is always off.
+  // Raw values go through calculateHealthResults, so its rounding is part of
+  // the case: 178 cm tall, BMI to 1 decimal place, waist-to-height ratio to 2,
+  // non-HDL unrounded.
+  describe('weightMedicationTrigger: one trigger for the plan and the form (US-06 AC5, US-06 AC6)', () => {
     interface Row {
       name: string;
       weightKg?: number;
@@ -1935,56 +2002,82 @@ describe('generateSuggestions', () => {
       hba1c?: number;
       triglycerides?: number;
       systolicBp?: number;
+      diastolicBp?: number;
+      apoB?: number;
+      ldlC?: number;
+      totalCholesterol?: number;
+      hdlC?: number;
       on: boolean;
       reasons: string[];
-      /** The plan's single `weight-glp1` card, when medications are not tracked. */
-      standalone: boolean;
     }
     const HBA1C = 'prediabetic HbA1c';
     const TG = 'elevated triglycerides';
     const BP = 'elevated blood pressure';
+    const APOB = 'elevated ApoB';
+    const NON_HDL = 'elevated non-HDL cholesterol';
+    const LDL = 'elevated LDL cholesterol';
     const WAIST = 'elevated waist-to-height ratio';
     const table: Row[] = [
-      { name: 'no weight', on: false, reasons: [], standalone: false },
-      { name: 'BMI 18.0 with every marker raised', weightKg: 57, waistCm: 106.8, hba1c: 48, triglycerides: 2, systolicBp: 140, on: false, reasons: [], standalone: false },
-      { name: 'BMI 24.9 with a raised HbA1c', weightKg: 78.9, hba1c: 48, on: false, reasons: [], standalone: false },
-      { name: 'BMI 25.0 (24.97 raw), no waist, no marker', weightKg: 79.1, on: false, reasons: [], standalone: false },
-      { name: 'BMI 25.0 (24.97 raw), no waist, HbA1c 40', weightKg: 79.1, hba1c: 40, on: true, reasons: [HBA1C], standalone: false },
-      { name: 'BMI 25.0, WHtR 0.47, HbA1c 40', weightKg: 79.1, waistCm: 83.7, hba1c: 40, on: false, reasons: [], standalone: false },
-      { name: 'BMI 26.0, WHtR 0.46, systolic 135 (group 2)', weightKg: 82.4, waistCm: 81.9, systolicBp: 135, on: false, reasons: [], standalone: false },
-      { name: 'BMI 26.0, WHtR 0.4978 (0.50 rounded)', weightKg: 82.4, waistCm: 88.6, on: true, reasons: [WAIST], standalone: true },
-      { name: 'BMI 26.0, WHtR 0.4949 (0.49 rounded)', weightKg: 82.4, waistCm: 88.1, on: false, reasons: [], standalone: false },
-      { name: 'BMI 26.0, WHtR 0.52, TG 2.0', weightKg: 82.4, waistCm: 92.6, triglycerides: 2, on: true, reasons: [TG, WAIST], standalone: true },
-      { name: 'BMI 26.0, no waist, TG 150 mg/dL', weightKg: 82.4, triglycerides: trig(150), on: true, reasons: [TG], standalone: true },
-      { name: 'BMI 26.0, no waist, TG 149 mg/dL', weightKg: 82.4, triglycerides: trig(149), on: false, reasons: [], standalone: false },
-      { name: 'BMI 26.0, no waist, systolic 130', weightKg: 82.4, systolicBp: 130, on: true, reasons: [BP], standalone: false },
-      { name: 'BMI 26.0, no waist, systolic 129', weightKg: 82.4, systolicBp: 129, on: false, reasons: [], standalone: false },
-      { name: 'BMI 26.0, no waist, HbA1c 5.7%', weightKg: 82.4, hba1c: hba1c(5.7), on: true, reasons: [HBA1C], standalone: false },
-      { name: 'BMI 26.0, no waist, HbA1c 5.6%', weightKg: 82.4, hba1c: hba1c(5.6), on: false, reasons: [], standalone: false },
-      { name: 'BMI 28.0 (28.03 raw), no waist, no marker', weightKg: 88.8, on: false, reasons: [], standalone: false },
-      { name: 'BMI 28.1, no waist, no marker', weightKg: 89, on: true, reasons: [], standalone: true },
-      { name: "BMI 28.6, WHtR 0.47, no marker (Brad's ruling 1)", weightKg: 90.6, waistCm: 83.7, on: false, reasons: [], standalone: false },
-      { name: 'BMI 28.6, WHtR 0.47, HbA1c, TG and systolic raised (group 2)', weightKg: 90.6, waistCm: 83.7, hba1c: 48, triglycerides: 2, systolicBp: 140, on: false, reasons: [], standalone: false },
-      { name: 'BMI 29.9, WHtR 0.52', weightKg: 94.7, waistCm: 92.6, on: true, reasons: [WAIST], standalone: true },
-      { name: 'BMI 30.0, WHtR 0.40', weightKg: 95.1, waistCm: 71.2, on: true, reasons: [], standalone: true },
-      { name: 'BMI 35.0 with every marker raised', weightKg: 111, waistCm: 106.8, hba1c: 48, triglycerides: 2, systolicBp: 140, on: true, reasons: [HBA1C, TG, BP, WAIST], standalone: true },
+      { name: 'no weight', on: false, reasons: [] },
+      { name: 'BMI 18.0 with every marker raised', weightKg: 57, waistCm: 106.8, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, apoB: 1.5, on: false, reasons: [] },
+      { name: 'BMI 24.9 with every marker raised', weightKg: 78.9, waistCm: 106.8, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, apoB: 1.5, on: false, reasons: [] },
+      { name: 'BMI 24.9 with a raised HbA1c', weightKg: 78.9, hba1c: 48, on: false, reasons: [] },
+      { name: 'BMI 25.0 (24.97 raw), no waist, no marker', weightKg: 79.1, on: false, reasons: [] },
+      { name: 'BMI 25.0 (24.97 raw), no waist, HbA1c 40', weightKg: 79.1, hba1c: 40, on: true, reasons: [HBA1C] },
+      { name: 'BMI 25.0, healthy waist (WHtR 0.47), HbA1c 40', weightKg: 79.1, waistCm: 83.7, hba1c: 40, on: true, reasons: [HBA1C] },
+      { name: 'BMI 26.0, healthy waist (WHtR 0.46), BP 135/85 (group 2)', weightKg: 82.4, waistCm: 81.9, systolicBp: 135, diastolicBp: 85, on: true, reasons: [BP] },
+      { name: 'BMI 26.0, healthy waist, BP 125/85 only', weightKg: 82.4, waistCm: 81.9, systolicBp: 125, diastolicBp: 85, on: true, reasons: [BP] },
+      { name: 'BMI 26.0, healthy waist, BP 129/80', weightKg: 82.4, waistCm: 81.9, systolicBp: 129, diastolicBp: 80, on: false, reasons: [] },
+      { name: 'BMI 26.0, healthy waist, BP 129/81', weightKg: 82.4, waistCm: 81.9, systolicBp: 129, diastolicBp: 81, on: true, reasons: [BP] },
+      { name: 'BMI 26.0, healthy waist, systolic 135 with no diastolic (either half counts)', weightKg: 82.4, waistCm: 81.9, systolicBp: 135, on: true, reasons: [BP] },
+      { name: 'BMI 26.0, healthy waist, systolic 129 with no diastolic', weightKg: 82.4, waistCm: 81.9, systolicBp: 129, on: false, reasons: [] },
+      { name: 'BMI 26.0, healthy waist, diastolic 85 with no systolic (either half counts)', weightKg: 82.4, waistCm: 81.9, diastolicBp: 85, on: true, reasons: [BP] },
+      { name: 'BMI 26.0, healthy waist, diastolic 80 with no systolic', weightKg: 82.4, waistCm: 81.9, diastolicBp: 80, on: false, reasons: [] },
+      { name: 'BMI 26.0, healthy waist, LDL 4.2 alone', weightKg: 82.4, waistCm: 81.9, ldlC: 4.2, on: true, reasons: [LDL] },
+      { name: 'BMI 26.0, healthy waist, LDL 4.0 alone', weightKg: 82.4, waistCm: 81.9, ldlC: 4.0, on: false, reasons: [] },
+      { name: 'BMI 26.0, healthy waist, LDL 160 mg/dL', weightKg: 82.4, waistCm: 81.9, ldlC: ldl(160), on: true, reasons: [LDL] },
+      { name: 'BMI 26.0, healthy waist, ApoB 1.3', weightKg: 82.4, waistCm: 81.9, apoB: 1.3, on: true, reasons: [APOB] },
+      { name: 'BMI 26.0, healthy waist, ApoB 1.29', weightKg: 82.4, waistCm: 81.9, apoB: 1.29, on: false, reasons: [] },
+      { name: 'BMI 26.0, healthy waist, ApoB 1.0 with LDL 4.5 (ApoB is the plan\'s marker)', weightKg: 82.4, waistCm: 81.9, apoB: 1.0, ldlC: 4.5, on: false, reasons: [] },
+      { name: 'BMI 26.0, healthy waist, non-HDL 5.0 (TC 6.2, HDL 1.2)', weightKg: 82.4, waistCm: 81.9, totalCholesterol: 6.2, hdlC: 1.2, on: true, reasons: [NON_HDL] },
+      { name: 'BMI 26.0, healthy waist, non-HDL 4.9 (TC 6.1, HDL 1.2): under the 4.91 line', weightKg: 82.4, waistCm: 81.9, totalCholesterol: 6.1, hdlC: 1.2, on: false, reasons: [] },
+      { name: 'BMI 26.0, healthy waist, non-HDL 4.9 with LDL 4.5 (non-HDL is the plan\'s marker)', weightKg: 82.4, waistCm: 81.9, totalCholesterol: 6.1, hdlC: 1.2, ldlC: 4.5, on: false, reasons: [] },
+      { name: 'BMI 26.0, WHtR 0.4978 (0.50 rounded)', weightKg: 82.4, waistCm: 88.6, on: true, reasons: [WAIST] },
+      { name: 'BMI 26.0, WHtR 0.4949 (0.49 rounded)', weightKg: 82.4, waistCm: 88.1, on: false, reasons: [] },
+      { name: 'BMI 26.0, WHtR 0.52, TG 2.0', weightKg: 82.4, waistCm: 92.6, triglycerides: 2, on: true, reasons: [TG, WAIST] },
+      { name: 'BMI 26.0, no waist, TG 150 mg/dL', weightKg: 82.4, triglycerides: trig(150), on: true, reasons: [TG] },
+      { name: 'BMI 26.0, no waist, TG 149 mg/dL', weightKg: 82.4, triglycerides: trig(149), on: false, reasons: [] },
+      { name: 'BMI 26.0, no waist, BP 130/75', weightKg: 82.4, systolicBp: 130, diastolicBp: 75, on: true, reasons: [BP] },
+      { name: 'BMI 26.0, no waist, BP 129/75', weightKg: 82.4, systolicBp: 129, diastolicBp: 75, on: false, reasons: [] },
+      { name: 'BMI 26.0, no waist, HbA1c 5.7%', weightKg: 82.4, hba1c: hba1c(5.7), on: true, reasons: [HBA1C] },
+      { name: 'BMI 26.0, no waist, HbA1c 5.6%', weightKg: 82.4, hba1c: hba1c(5.6), on: false, reasons: [] },
+      { name: 'BMI 27.0, unknown waist, no marker', weightKg: 85.5, on: false, reasons: [] },
+      { name: 'BMI 28.0 (28.03 raw), no waist, no marker', weightKg: 88.8, on: false, reasons: [] },
+      { name: 'BMI 28.1, no waist, no marker', weightKg: 89, on: true, reasons: [] },
+      { name: 'BMI 28.5, unknown waist, no marker', weightKg: 90.3, on: true, reasons: [] },
+      { name: 'BMI 28.5, healthy waist, no marker', weightKg: 90.3, waistCm: 83.7, on: false, reasons: [] },
+      { name: "BMI 28.6, WHtR 0.47, no marker (Brad's ruling 1)", weightKg: 90.6, waistCm: 83.7, on: false, reasons: [] },
+      { name: 'BMI 28.6, WHtR 0.47, HbA1c, TG and BP raised (group 2)', weightKg: 90.6, waistCm: 83.7, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, on: true, reasons: [HBA1C, TG, BP] },
+      { name: 'BMI 29.9, WHtR 0.52', weightKg: 94.7, waistCm: 92.6, on: true, reasons: [WAIST] },
+      { name: 'BMI 30.0, WHtR 0.40', weightKg: 95.1, waistCm: 71.2, on: true, reasons: [] },
+      { name: 'BMI 30.5, healthy waist, no marker', weightKg: 96.6, waistCm: 83.7, on: true, reasons: [] },
+      { name: 'BMI 35.0 with every marker raised', weightKg: 111, waistCm: 106.8, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, apoB: 1.5, on: true, reasons: [HBA1C, TG, BP, APOB, WAIST] },
     ];
-    const inputsOf = ({ weightKg, waistCm, hba1c, triglycerides, systolicBp }: Row): HealthInputs => ({
-      heightCm: 178, sex: 'male', weightKg, waistCm, hba1c, triglycerides, systolicBp,
-    });
+    const inputsOf = ({ name: _n, on: _o, reasons: _r, ...values }: Row): HealthInputs => ({ heightCm: 178, sex: 'male', ...values });
 
     it.each(table)('the plan, medications tracked: $name', (row) => {
-      const glp1 = calculateHealthResults(inputsOf(row), 'si', {}).suggestions.find(s => s.id === 'weight-med-glp1');
+      const results = calculateHealthResults(inputsOf(row), 'si', {});
+      const glp1 = results.suggestions.find(s => s.id === 'weight-med-glp1');
       expect(glp1 !== undefined).toBe(row.on);
       if (row.on) {
-        const why = row.reasons.length > 0 ? `an elevated BMI and ${row.reasons.join(', ')}` : 'an elevated BMI';
-        expect(glp1!.description).toContain(`With ${why}, you may benefit`);
+        const and = row.reasons.length > 0 ? ` and ${joinWithAnd(row.reasons)}` : '';
+        expect(glp1!.description).toBe(`With a BMI of ${results.bmi}${and}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`);
       }
     });
 
-    it.each(table)('the plan, medications not tracked: $name', (row) => {
+    it.each(table)('the plan, medications not tracked, shows the standalone card on the same trigger: $name', (row) => {
       const ids = calculateHealthResults(inputsOf(row), 'si').suggestions.map(s => s.id);
-      expect(ids.includes('weight-glp1')).toBe(row.standalone);
+      expect(ids.includes('weight-glp1')).toBe(row.on);
       expect(ids.some(id => id.startsWith('weight-med-'))).toBe(false);
     });
 
@@ -1992,6 +2085,76 @@ describe('generateSuggestions', () => {
       const inputs = inputsOf(row);
       expect(weightMedicationTrigger(inputs, calculateHealthResults(inputs, 'si', {})))
         .toEqual({ on: row.on, reasons: row.reasons });
+    });
+
+    it('non-HDL 4.95, at or above the 190 mg/dL (4.91) line, is a marker at BMI 26 with a healthy waist', () => {
+      const { inputs, results } = createTestData({}, { bmi: 26, waistToHeightRatio: 0.46, nonHdlCholesterol: 4.95 });
+      expect(weightMedicationTrigger(inputs, results)).toEqual({ on: true, reasons: [NON_HDL] });
+    });
+  });
+
+  describe('Weight medication card wording (US-06 AC6)', () => {
+    const TAIL = ', you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.';
+    const cases: { name: string; bmi: number; whr?: number; inputs: Partial<HealthInputs>; text: string }[] = [
+      { name: 'no reason', bmi: 30.5, inputs: {}, text: `With a BMI of 30.5${TAIL}` },
+      { name: 'a whole-number BMI prints as the tile shows it', bmi: 31, inputs: {}, text: `With a BMI of 31${TAIL}` },
+      { name: 'one reason', bmi: 26, whr: 0.46, inputs: { hba1c: 40 }, text: `With a BMI of 26 and prediabetic HbA1c${TAIL}` },
+      {
+        name: 'three reasons',
+        bmi: 26,
+        whr: 0.46,
+        inputs: { hba1c: 40, triglycerides: 2, systolicBp: 135, diastolicBp: 85 },
+        text: `With a BMI of 26 and prediabetic HbA1c, elevated triglycerides and elevated blood pressure${TAIL}`,
+      },
+    ];
+
+    it.each(cases)('step 1 card, $name', ({ bmi, whr, inputs: values, text }) => {
+      const { inputs, results } = createTestData(values, { bmi, waistToHeightRatio: whr });
+      const card = generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'weight-med-glp1');
+      expect(card?.title).toBe('Consider a GLP-1 medication');
+      expect(card?.description).toBe(text);
+    });
+
+    it.each(cases)('standalone card, $name', ({ bmi, whr, inputs: values, text }) => {
+      const { inputs, results } = createTestData(values, { bmi, waistToHeightRatio: whr });
+      const card = generateSuggestions(inputs, results).find(s => s.id === 'weight-glp1');
+      expect(card?.title).toBe('Weight management medication');
+      expect(card?.description).toBe(text);
+    });
+
+    it('joinWithAnd joins "a, b and c"', () => {
+      expect(joinWithAnd([])).toBe('');
+      expect(joinWithAnd(['a'])).toBe('a');
+      expect(joinWithAnd(['a', 'b'])).toBe('a and b');
+      expect(joinWithAnd(['a', 'b', 'c'])).toBe('a, b and c');
+    });
+  });
+
+  describe('The BP weight paragraph follows the weight-medication trigger (US-06 AC6)', () => {
+    const PARAGRAPH = 'Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.';
+
+    it('shows at BMI 26 with a healthy waist and BP 135/85', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { bmi: 26, waistToHeightRatio: 0.46 });
+      const card = generateSuggestions(inputs, results).find(s => s.id === 'bp-stage1');
+      expect(card?.description).toContain(PARAGRAPH);
+      expect(card?.description).not.toContain('\u2014');
+    });
+
+    it('does not show at BMI 24 with BP 135/85', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { bmi: 24 });
+      const card = generateSuggestions(inputs, results).find(s => s.id === 'bp-stage1');
+      expect(card).toBeDefined();
+      expect(card?.description).not.toContain('Weight loss');
+    });
+  });
+
+  describe('lipidMarkerFor: the plan\'s one lipid marker (US-06 AC6)', () => {
+    it('reads ApoB, then the computed non-HDL, then LDL', () => {
+      const { inputs, results } = createTestData({ apoB: 0.9, ldlC: 3 }, { nonHdlCholesterol: 3.5 });
+      expect(lipidMarkerFor(inputs, results)?.kind).toBe('apoB');
+      expect(lipidMarkerFor({ ...inputs, apoB: undefined }, results)?.kind).toBe('nonHdl');
+      expect(lipidMarkerFor({ ...inputs, apoB: undefined }, { ...results, nonHdlCholesterol: undefined })?.kind).toBe('ldl');
+      expect(lipidMarkerFor({}, { ...results, nonHdlCholesterol: undefined })).toBeNull();
     });
   });
 
@@ -2146,22 +2309,6 @@ describe('generateSuggestions', () => {
 
     it('shouldSuggestGlp1Switch returns false for sub-max dose', () => {
       expect(shouldSuggestGlp1Switch('semaglutide_injection', 1)).toBe(false);
-    });
-
-    it('isOnMaxGlp1Potency returns true only for tirzepatide max dose', () => {
-      expect(isOnMaxGlp1Potency('tirzepatide', 15)).toBe(true);
-      expect(isOnMaxGlp1Potency('tirzepatide', 5)).toBe(false);
-      expect(isOnMaxGlp1Potency('semaglutide_injection', 2.4)).toBe(false);
-    });
-
-    it('getGlp1EscalationType returns correct type', () => {
-      expect(getGlp1EscalationType('semaglutide_injection', 1)).toBe('increase_dose');
-      expect(getGlp1EscalationType('semaglutide_injection', 2.4)).toBe('switch_glp1');
-      expect(getGlp1EscalationType('tirzepatide', 5)).toBe('increase_dose');
-      expect(getGlp1EscalationType('tirzepatide', 15)).toBe('none');
-      expect(getGlp1EscalationType('other', null)).toBe('switch_glp1');
-      expect(getGlp1EscalationType('none', null)).toBe('none');
-      expect(getGlp1EscalationType('not_tolerated', null)).toBe('none');
     });
   });
 
@@ -2484,6 +2631,26 @@ describe('generateSuggestions', () => {
   });
 
   describe('Lp(a) suggestions', () => {
+    it('the checklist marks a lipid at exactly its target as above it, and names the target as "<" (US-07 AC5)', () => {
+      const { inputs, results } = createTestData({ lpa: 150, ldlC: 1.4 });
+      const text = generateSuggestions(inputs, results).find(s => s.id === 'lpa-elevated')?.description;
+      expect(text).toContain('\u26A0\uFE0F LDL-c: 1.4 mmol/L \u2014 target <1.4 mmol/L');
+      const below = createTestData({ lpa: 150, ldlC: 1.3 });
+      expect(generateSuggestions(below.inputs, below.results).find(s => s.id === 'lpa-elevated')?.description)
+        .toContain('\u2705 LDL-c: 1.3 mmol/L \u2014 target <1.4 mmol/L');
+    });
+
+    // US-07 AC1: the checklist's BP target is the plan's age-dependent one, as on the stage 1 card
+    it.each([
+      [68, 125, '✅ Blood pressure: 125/75 mmHg — target <130/80'],
+      [68, 131, '⚠️ Blood pressure: 131/75 mmHg — target <130/80'],
+      [50, 125, '⚠️ Blood pressure: 125/75 mmHg — target <120/80'],
+      [undefined, 118, '✅ Blood pressure: 118/75 mmHg — target <120/80'],
+    ])('the checklist grades BP against the target for age %s (systolic %s)', (age, systolicBp, line) => {
+      const { inputs, results } = createTestData({ lpa: 150, systolicBp, diastolicBp: 75 }, { age });
+      expect(generateSuggestions(inputs, results).find(s => s.id === 'lpa-elevated')?.description).toContain(line);
+    });
+
     it('generates normal suggestion for Lp(a) < 75 nmol/L', () => {
       const { inputs, results } = createTestData({ lpa: 30 });
       const suggestions = generateSuggestions(inputs, results);
@@ -2652,9 +2819,12 @@ describe('generateSuggestions', () => {
   });
 });
 
-describe('resolveBestLipidMarker', () => {
+describe('lipidMarkerFor: the ApoB > non-HDL > LDL-c hierarchy', () => {
+  const markerOf = (apoB: number | undefined, nonHdlCholesterol: number | undefined, ldlC: number | undefined) =>
+    lipidMarkerFor({ apoB, ldlC }, { nonHdlCholesterol });
+
   it('returns ApoB when all markers available', () => {
-    const result = resolveBestLipidMarker(0.6, 2.0, 1.5);
+    const result = markerOf(0.6, 2.0, 1.5);
     expect(result).not.toBeNull();
     expect(result!.kind).toBe('apoB');
     expect(result!.label).toBe('ApoB');
@@ -2662,7 +2832,7 @@ describe('resolveBestLipidMarker', () => {
   });
 
   it('returns non-HDL when ApoB unavailable', () => {
-    const result = resolveBestLipidMarker(undefined, 2.0, 1.5);
+    const result = markerOf(undefined, 2.0, 1.5);
     expect(result).not.toBeNull();
     expect(result!.kind).toBe('nonHdl');
     expect(result!.label).toBe('non-HDL cholesterol');
@@ -2670,7 +2840,7 @@ describe('resolveBestLipidMarker', () => {
   });
 
   it('returns LDL when ApoB and non-HDL unavailable', () => {
-    const result = resolveBestLipidMarker(undefined, undefined, 1.5);
+    const result = markerOf(undefined, undefined, 1.5);
     expect(result).not.toBeNull();
     expect(result!.kind).toBe('ldl');
     expect(result!.label).toBe('LDL-c');
@@ -2678,29 +2848,37 @@ describe('resolveBestLipidMarker', () => {
   });
 
   it('returns null when no lipid data', () => {
-    expect(resolveBestLipidMarker(undefined, undefined, undefined)).toBeNull();
+    expect(markerOf(undefined, undefined, undefined)).toBeNull();
   });
 
   it('reports not elevated when below target', () => {
-    const result = resolveBestLipidMarker(0.4, undefined, undefined);
+    const result = markerOf(0.4, undefined, undefined);
     expect(result!.kind).toBe('apoB');
     expect(result!.elevated).toBe(false);
   });
 
-  it('reports not elevated at exact target boundary', () => {
-    // ApoB at exactly 0.5 g/L — NOT elevated (> not >=)
-    const result = resolveBestLipidMarker(LIPID_TREATMENT_TARGETS.apobGl, undefined, undefined);
-    expect(result!.elevated).toBe(false);
-  });
+  // US-07 AC5 (Brad, 2026-09-28): the target itself is above target; the
+  // treatment target is BELOW 0.5 / 1.6 / 1.4.
+  it.each([
+    { name: 'ApoB 0.5', args: [0.5, undefined, undefined], elevated: true },
+    { name: 'ApoB 0.49', args: [0.49, undefined, undefined], elevated: false },
+    { name: 'non-HDL 1.6', args: [undefined, 1.6, undefined], elevated: true },
+    { name: 'non-HDL 1.59', args: [undefined, 1.59, undefined], elevated: false },
+    { name: 'LDL 1.4', args: [undefined, undefined, 1.4], elevated: true },
+    { name: 'LDL 1.39', args: [undefined, undefined, 1.39], elevated: false },
+  ] as { name: string; args: [number | undefined, number | undefined, number | undefined]; elevated: boolean }[])(
+    'at the target boundary, $name is elevated: $elevated (US-07 AC5)', ({ args, elevated }) => {
+      expect(markerOf(...args)!.elevated).toBe(elevated);
+    });
 
   it('includes correct target values', () => {
-    const apob = resolveBestLipidMarker(0.6, undefined, undefined);
+    const apob = markerOf(0.6, undefined, undefined);
     expect(apob!.target).toBe(LIPID_TREATMENT_TARGETS.apobGl);
 
-    const nonHdl = resolveBestLipidMarker(undefined, 2.0, undefined);
+    const nonHdl = markerOf(undefined, 2.0, undefined);
     expect(nonHdl!.target).toBe(LIPID_TREATMENT_TARGETS.nonHdlMmol);
 
-    const ldlResult = resolveBestLipidMarker(undefined, undefined, 1.5);
+    const ldlResult = markerOf(undefined, undefined, 1.5);
     expect(ldlResult!.target).toBe(LIPID_TREATMENT_TARGETS.ldlMmol);
   });
 });
@@ -2771,5 +2949,115 @@ describe('Evidence attachment', () => {
     expect(apobBorderline).toBeDefined();
     expect(apobBorderline!.reason).toContain('PESA');
     expect(apobBorderline!.references!.some(r => r.label.includes('PESA'))).toBe(true);
+  });
+});
+
+// US-07 AC5 and US-06 AC6 (adversarial review, 2026-09-28): the plan compares
+// non-HDL unrounded and rounds it only to show it. A rounded 1.6 once put a
+// real 1.56 at the target, and 190 mg/dL never reached its 4.91 line. Typed
+// total cholesterol and HDL go through calculateHealthResults, as in the widget.
+describe('non-HDL is compared unrounded and rounded only for display (US-07 AC5, US-06 AC6)', () => {
+  const planOf = (totalCholesterol: number, hdlC: number, unitSystem: UnitSystem = 'si') =>
+    calculateHealthResults({ heightCm: 178, sex: 'male', totalCholesterol, hdlC }, unitSystem, {});
+  const ids = (results: HealthResults) => results.suggestions.map(s => s.id);
+  const statinCard = (results: HealthResults) => results.suggestions.find(s => s.id === 'med-statin')?.description;
+
+  it('keeps the difference to 4 decimal places: 3.76 minus 2.20 is 1.56', () => {
+    expect(planOf(3.76, 2.2).nonHdlCholesterol).toBe(1.56);
+  });
+
+  it.each([
+    ['3.76 and 2.20 (1.56)', 3.76, 2.2, false],
+    ['3.79 and 2.20 (1.59)', 3.79, 2.2, false],
+    ['3.80 and 2.20 (1.60, a float a hair under it)', 3.8, 2.2, true],
+    ['3.84 and 2.20 (1.64)', 3.84, 2.2, true],
+  ])('mmol/L, total and HDL %s (%s, %s): at or above the target %s', (_name, total, hdlC, above) => {
+    const results = planOf(total, hdlC);
+    expect(ids(results).includes('med-statin')).toBe(above);
+    expect(ids(results).includes('lipid-diet')).toBe(above);
+    expect(ids(results).includes('fiber')).toBe(!above);
+  });
+
+  it.each([
+    [90, 60, false],
+    [89, 61, false],
+    [88, 62, true],
+  ])('mg/dL, total 150 and HDL %s (non-HDL %s): at or above the target %s', (hdlMg, _nonHdl, above) => {
+    expect(ids(planOf(totalChol(150), hdl(hdlMg), 'conventional')).includes('med-statin')).toBe(above);
+  });
+
+  it('the statin card shows the value rounded, and the first value above the target', () => {
+    expect(statinCard(planOf(3.84, 2.2)))
+      .toMatch(/^Your non-HDL cholesterol is 1\.6 mmol\/L; the treatment target is below 1\.6 mmol\/L\. /);
+    expect(statinCard(planOf(totalChol(150), hdl(88), 'conventional')))
+      .toMatch(/^Your non-HDL cholesterol is 62 mg\/dL; the treatment target is below 62 mg\/dL\. /);
+  });
+
+  it.each([
+    [250, true],
+    [249, false],
+  ])('total %s mg/dL and HDL 60 at BMI 26 with a healthy waist: the weight trigger is on %s', (total, on) => {
+    const inputs: HealthInputs = { heightCm: 178, sex: 'male', weightKg: 82.4, waistCm: 81.9, totalCholesterol: totalChol(total), hdlC: hdl(60) };
+    expect(weightMedicationTrigger(inputs, calculateHealthResults(inputs, 'conventional', {})))
+      .toEqual(on ? { on: true, reasons: ['elevated non-HDL cholesterol'] } : { on: false, reasons: [] });
+  });
+
+  it.each([
+    [160, 'Borderline', 'Above optimal'],
+    [190, 'High', 'Borderline'],
+    [220, 'Very High', 'High'],
+  ])('mg/dL: non-HDL %s is %s, one below is %s', (line, at, below) => {
+    const status = (nonHdlMg: number) => getLipidStatus(planOf(totalChol(nonHdlMg + 50), hdl(50), 'conventional').nonHdlCholesterol!, NON_HDL_THRESHOLDS);
+    expect(status(line)).toBe(at);
+    expect(status(line - 1)).toBe(below);
+  });
+});
+
+// US-07 AC5: every "<X" statement of a lipid target prints the first value,
+// at the unit's display step, that the plan grades above it. In mg/dL the LDL
+// target is 55: 54 mg/dL is 1.396 mmol/L, which the plan calls optimal.
+describe('lipid targets print the first value graded above them (US-07 AC5)', () => {
+  const conv = (inputs: Partial<HealthInputs>, meds?: MedicationInputs) =>
+    calculateHealthResults({ heightCm: 178, sex: 'male', ...inputs }, 'conventional', meds).suggestions;
+  const card = (suggestions: ReturnType<typeof conv>, id: string) => suggestions.find(s => s.id === id)?.description;
+
+  it('the statin card in mg/dL: LDL below 55', () => {
+    expect(card(conv({ ldlC: ldl(116) }, {}), 'med-statin'))
+      .toMatch(/^Your LDL-c is 116 mg\/dL; the treatment target is below 55 mg\/dL\. /);
+  });
+
+  it('the borderline cards in mg/dL: LDL <55, non-HDL <62, ApoB <50', () => {
+    expect(card(conv({ ldlC: ldl(140) }), 'ldl-borderline')).toBe('Your LDL-c of 140 mg/dL is borderline high. Optimal is <55 mg/dL.');
+    expect(card(conv({ totalCholesterol: totalChol(220), hdlC: hdl(50) }), 'non-hdl-borderline'))
+      .toBe('Your non-HDL cholesterol of 170 mg/dL is borderline. Optimal is <62 mg/dL.');
+    expect(card(conv({ apoB: apoB(60) }), 'apob-borderline')).toBe('Your ApoB of 60 mg/dL is borderline. Optimal is <50 mg/dL.');
+  });
+
+  it('the Lp(a) checklist in mg/dL: LDL target <55', () => {
+    expect(card(conv({ ldlC: ldl(116), lpa: 200 }), 'lpa-elevated')).toContain('LDL-c: 116 mg/dL \u2014 target <55 mg/dL');
+  });
+
+  // A value off the display grid reads on the side of the target the plan grades it.
+  it('LDL 1.40 mmol/L shown in mg/dL: the statin card and the checklist say 55, at the target', () => {
+    const suggestions = conv({ ldlC: 1.4, lpa: 200 }, {});
+    expect(card(suggestions, 'med-statin')).toMatch(/^Your LDL-c is 55 mg\/dL; the treatment target is below 55 mg\/dL\. /);
+    expect(card(suggestions, 'lpa-elevated')).toContain('\u26A0\uFE0F LDL-c: 55 mg/dL \u2014 target <55 mg/dL');
+  });
+
+  it('LDL 54 mg/dL shown in mmol/L: the checklist says 1.39, below the target', () => {
+    const si = calculateHealthResults({ heightCm: 178, sex: 'male', ldlC: ldl(54), lpa: 200 }, 'si', {}).suggestions;
+    expect(card(si, 'lpa-elevated')).toContain('\u2705 LDL-c: 1.39 mmol/L \u2014 target <1.4 mmol/L');
+  });
+
+  it('non-HDL 1.56 (total 3.76, HDL 2.20): the checklist says 1.56, below the 1.6 target', () => {
+    const si = calculateHealthResults({ heightCm: 178, sex: 'male', totalCholesterol: 3.76, hdlC: 2.2, lpa: 200 }, 'si', {}).suggestions;
+    expect(card(si, 'lpa-elevated')).toContain('\u2705 non-HDL cholesterol: 1.56 mmol/L \u2014 target <1.6 mmol/L');
+  });
+
+  it('SI is unchanged: 1.4, 1.6 and 0.50', () => {
+    const si = (inputs: Partial<HealthInputs>) => calculateHealthResults({ heightCm: 178, sex: 'male', ...inputs }, 'si', {}).suggestions;
+    expect(card(si({ ldlC: 3 }), 'med-statin')).toMatch(/the treatment target is below 1\.4 mmol\/L\. /);
+    expect(card(si({ totalCholesterol: 5, hdlC: 1.2 }), 'med-statin')).toMatch(/the treatment target is below 1\.6 mmol\/L\. /);
+    expect(card(si({ apoB: 0.8 }), 'med-statin')).toMatch(/the treatment target is below 0\.50 g\/L\. /);
   });
 });

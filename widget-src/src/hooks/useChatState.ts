@@ -14,7 +14,7 @@ import {
   type ChatMessage,
 } from '../lib/chat-api';
 import { postSync, postInputSync, subscribeSync, generateInstanceId } from '../lib/chat-sync';
-import type { ProposedEdit } from '@roadmap/health-core';
+import type { ChatContextPayload, ProposedEdit } from '@roadmap/health-core';
 
 export interface ChatPrefetchData {
   conversations: ChatConversation[];
@@ -22,9 +22,12 @@ export interface ChatPrefetchData {
   activeConversationId: string | null;
 }
 
+/** Reads the health context sent with each message, as it is sent (US-15 AC10). */
+export type ChatContextSource = () => ChatContextPayload | null;
+
 interface UseChatStateOptions {
   isLoggedIn: boolean;
-  guestInputs?: Record<string, unknown> | null;
+  guestInputs?: ChatContextSource;
   prefetchedData?: ChatPrefetchData | null;
   onRemoteConversationSelected?: () => void;
   /** Called when the model proposes form edits via tool_use (pre-fill / med update). */
@@ -231,13 +234,17 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       ts: Date.now(),
     });
 
-    // HealthTool already decides when guestInputs is populated (true guests +
-    // every local-first build). Pass it straight through; in the production
-    // widget it's null for logged-in users, so the server uses DB context.
+    // Always send the plan as chat context: local-first (v2) means the server
+    // has no health data for logged-in customers either (the v1 tables were
+    // purged June 2026), so this is the only context the answer gets. Every
+    // surface builds it with chatContextOf: the widget from its own state, the
+    // blog bubble and the chatbot embed from the widget's saved copy. The
+    // reader runs here, so each message carries what is saved now, even a save
+    // made after the page loaded (US-15 AC10). None degrades to the empty context.
     const { result, error: sendError } = await sendMessage(
       trimmed,
       currentConvId,
-      guestInputs ?? null,
+      guestInputs?.() ?? null,
       messagesRef.current,
     );
 

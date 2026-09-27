@@ -147,14 +147,23 @@ network tab recording and use the widget.
   text, the router's raw output and the error text once a row is 30 days old;
   the match record stays: the articles, the classification, the ids. A guest
   session row holds a hashed address, not an IP.
-- The chat bubble on blog pages and the chatbot embed send more, and keep more.
-  Both read the widget's cached inputs out of `localStorage` and send them as
-  chat context on every message (`loadGuestInputs()` in
-  `widget-src/src/site-chat.tsx` and `widget-src/src/chatbot-embed.tsx`).
-  Neither bundle sets `VITE_LOCAL_FIRST`, so the server takes them for a stored
-  surface: it writes your question and the reply into `chat_messages`, and the
-  reply can quote the values you were sent with. Those cached values are still
-  sent as context; Brad chose on 2026-09-10 to keep that, because the answer is
+- The chat bubble on blog pages and the chatbot embed send less than the
+  widget's chat, and keep more. Both read the widget's copy of your saved
+  record out of `localStorage` and send it as chat context on every message
+  (`loadGuestInputs()` in `widget-src/src/lib/storage.ts`, called from
+  `widget-src/src/site-chat.tsx` and `widget-src/src/chatbot-embed.tsx`). That
+  context is your saved profile (sex, height, birth year and month, unit
+  system); the latest saved value of each measurement, with its date; the
+  medications on record, with drug names and doses; and every screening answer
+  on record: methods, results, dates and follow-ups, your smoking history and
+  pack-years, your PSA value, your answers on discussing prostate and
+  endometrial screening, and your answer about abnormal bleeding. Nothing you
+  typed without saving is in it. The widget's own chat sends all of that, plus
+  up to 24 dated values per measurement and whatever is typed on the page but
+  not yet saved. Neither bundle sets `VITE_LOCAL_FIRST`, so the server takes
+  them for a stored surface: it writes your question and the reply into
+  `chat_messages`, and the reply can quote the values you were sent with. Those
+  cached values are still sent as context; Brad chose on 2026-09-10 to keep that, because the answer is
   worse without them. The transcripts now join the same 30-day purge
   (`app/lib/chat-purge-cron.server.ts`): once a row is 30 days old the job
   blanks the message text and the conversation title, which is the first words

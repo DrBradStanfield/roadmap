@@ -1,9 +1,15 @@
-import type { HealthInputs, ApiMeasurement, ApiMedication, ApiScreening } from '@roadmap/health-core';
+import type { HealthInputs, ApiMeasurement, ApiMedication, ApiScreening, ChatContextPayload } from '@roadmap/health-core';
 import type { UnitSystem } from '@roadmap/health-core';
-import { sanitizeInputs } from '@roadmap/health-core';
+import { sanitizeInputs, mergeLongitudinalInputs, chatContextOf, detectUnitSystem, PREFILL_FIELDS } from '@roadmap/health-core';
 import type { ApiReminderPreference } from './api-types';
 
-const STORAGE_KEY = 'health_roadmap_data';
+/** The mirror: HealthTool's copy of the saved record, which the chatbot embed
+ *  and the blog bubble read (US-15 AC10). It holds what is saved, never a
+ *  value typed into the form and not yet saved. */
+export const MIRROR_KEY = 'health_roadmap_data';
+/** Fired on this page by every write to the mirror. Another tab's write
+ *  arrives as a `storage` event for MIRROR_KEY instead. */
+export const MIRROR_CHANGED_EVENT = 'hr:inputs-changed';
 const UNIT_PREF_KEY = 'health_roadmap_unit_system';
 
 interface StoredData {
@@ -24,7 +30,8 @@ export interface LoadedData {
 }
 
 /**
- * Save health inputs (and optionally previousMeasurements) to localStorage.
+ * Write the mirror: the saved profile as `inputs`, the newest saved row per
+ * metric, and the medications and screenings on record. Tells the page.
  */
 export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[], medications?: ApiMedication[], screenings?: ApiScreening[], reminderPreferences?: ApiReminderPreference[]): void {
   try {
@@ -36,10 +43,26 @@ export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasur
       reminderPreferences,
       savedAt: new Date().toISOString(),
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(MIRROR_KEY, JSON.stringify(data));
+    window.dispatchEvent(new Event(MIRROR_CHANGED_EVENT));
   } catch (error) {
     console.warn('Failed to save to localStorage:', error);
   }
+}
+
+/**
+ * Replace one part of the mirror (the saved profile, the medications or the
+ * screenings) and keep the rest, so no saver can write form inputs into it.
+ */
+export function patchMirror(patch: { profile?: Partial<HealthInputs> } & Partial<Pick<LoadedData, 'medications' | 'screenings'>>): void {
+  const cached = loadFromLocalStorage();
+  saveToLocalStorage(
+    patch.profile ?? cached?.inputs ?? {},
+    cached?.previousMeasurements ?? [],
+    patch.medications ?? cached?.medications ?? [],
+    patch.screenings ?? cached?.screenings ?? [],
+    cached?.reminderPreferences ?? [],
+  );
 }
 
 /**
@@ -47,7 +70,7 @@ export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasur
  */
 export function loadFromLocalStorage(): LoadedData | null {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(MIRROR_KEY);
     if (!stored) return null;
 
     const data: StoredData = JSON.parse(stored);
@@ -55,11 +78,18 @@ export function loadFromLocalStorage(): LoadedData | null {
     // Validate ALL input fields against the Zod schema (single source of truth).
     // localStorage is an untrusted boundary — extensions, corrupted writes, or
     // stale data can inject NaN, Infinity, or out-of-range values that crash
-    // the widget. Invalid fields are stripped; unknown fields pass through.
-    const sanitizedInputs = sanitizeInputs(data.inputs);
+    // the widget. Invalid fields are stripped.
+    const sanitizedInputs = sanitizeInputs(data.inputs ?? {});
+    // `inputs` is the saved profile. Any other field there is a stale form
+    // value an older bundle wrote, which must not outrank a saved value
+    // (US-15 AC10), so only the profile and the unit system are kept.
+    const inputs: Partial<HealthInputs> = {};
+    for (const field of [...PREFILL_FIELDS, 'unitSystem'] as const) {
+      if (sanitizedInputs[field] !== undefined) (inputs as Record<string, unknown>)[field] = sanitizedInputs[field];
+    }
 
     return {
-      inputs: sanitizedInputs,
+      inputs,
       // Coerce measurement values to numbers and filter out non-finite values.
       // Stale localStorage may contain PostgREST NUMERIC strings (e.g. "5.2")
       // or corrupted NaN/Infinity values.
@@ -81,8 +111,10 @@ export function loadFromLocalStorage(): LoadedData | null {
  */
 export function clearLocalStorage(): void {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(MIRROR_KEY);
     localStorage.removeItem('health_roadmap_authenticated');
+    // An embed on this page mutes after an erase (US-11).
+    window.dispatchEvent(new Event(MIRROR_CHANGED_EVENT));
   } catch (error) {
     console.warn('Failed to clear localStorage:', error);
   }
@@ -190,13 +222,23 @@ export function setJson(key: string, value: unknown): void {
 }
 
 
-/** Assemble guest health inputs from localStorage for chat context. Returns null if no data. */
-export function loadGuestInputs(): Record<string, unknown> | null {
+/**
+ * The chat context for the bundles outside the widget (blog bubble, chatbot
+ * embed), built as the widget builds its own (chatContextOf): the saved
+ * profile, the latest saved values and their dates, the medications and
+ * screenings on record, and the unit system the widget shows (US-15 AC10).
+ * Null if there is no data.
+ */
+export function loadGuestInputs(): ChatContextPayload | null {
   const cached = loadFromLocalStorage();
-  if (!cached || Object.keys(cached.inputs).length === 0) return null;
-  return {
-    ...cached.inputs,
-    medications: cached.medications ?? [],
-    screenings: cached.screenings ?? [],
-  };
+  if (!cached) return null;
+  const inputs = mergeLongitudinalInputs(cached.inputs, cached.previousMeasurements);
+  if (Object.keys(inputs).length === 0) return null;
+  return chatContextOf(inputs, chatUnitSystem(cached.inputs.unitSystem), cached.medications, cached.screenings, cached.previousMeasurements);
+}
+
+/** The unit system a chat sends, as HealthTool picks it: the saved
+ *  preference, else the record's, else the locale's (US-15 AC10). */
+function chatUnitSystem(recorded: UnitSystem | undefined): UnitSystem {
+  return loadUnitPreference() ?? recorded ?? detectUnitSystem();
 }

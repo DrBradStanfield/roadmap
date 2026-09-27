@@ -69,8 +69,8 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({
-  ChatEmbed: ({ guestInputs, onProposeEdit }: { guestInputs: Record<string, unknown>; onProposeEdit: (edits: ProposedEdit[]) => void }) => {
-    chat.context = guestInputs;
+  ChatEmbed: ({ guestInputs, onProposeEdit }: { guestInputs: () => Record<string, unknown> | null; onProposeEdit: (edits: ProposedEdit[]) => void }) => {
+    chat.context = guestInputs(); // what a message sent now would carry
     chat.proposeEdit = onProposeEdit;
     return null;
   },
@@ -1633,5 +1633,76 @@ describe('US-34 AC6: another tab of this browser saves', () => {
     await waitFor(() => expect(ldlTile(view.container)).toBe('2.1 mmol/L'));
     expect(vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'remote_change_applied'))
       .toEqual([['remote_change_applied', { backend: 'cloud' }]]);
+  });
+});
+
+// Codex (2026-09-28, blocking): the matrices showed a value graded against
+// its "<X" line, while the draft router asked "changes nothing" of the plain
+// rounding. A saved LDL of 1.40 mmol/L read 55 mg/dL, and 55 typed for that
+// day wrote a correction nobody meant; a saved 1.3964 read 1.39 mmol/L, and
+// 1.4 typed for that day was dropped. Each value here was entered in one unit
+// and is viewed in the other, just below or just above its line.
+describe('US-03 AC3, US-04 AC1, US-07 AC5: the number a matrix shows, typed again beside its line', () => {
+  const cases = [
+    ['LDL just below its line, entered in mg/dL, viewed in mmol/L', 'ldl', 'LDL Cholesterol', toCanonicalValue('ldl', 54, 'conventional'), 'si'],
+    ['LDL at its line, entered in mmol/L, viewed in mg/dL', 'ldl', 'LDL Cholesterol', 1.4, 'conventional'],
+    ['ApoB just below its line, entered in g/L, viewed in mg/dL', 'apob', 'ApoB', 0.498, 'conventional'],
+    ['ApoB just above its line, entered in g/L, viewed in mg/dL', 'apob', 'ApoB', 0.503, 'conventional'],
+    ['a waist just below its line at 178 cm tall, entered in cm, viewed in inches', 'waist', 'Waist Circumference', 88.1, 'conventional'],
+    ['a waist just above its line at 178 cm tall, entered in inches, viewed in cm', 'waist', 'Waist Circumference', toCanonicalValue('waist', 34.7, 'conventional'), 'si'],
+  ] as const;
+
+  /** The guest's one saved value on RIGHT_DAY, its matrix in the unit to view. */
+  async function savedBesideItsLine(metric: string, label: string, value: number, unit: 'si' | 'conventional') {
+    await guest({ weight: 82 });
+    await addMeasurement(metric, value, RIGHT_DAY);
+    const view = await secondVisit();
+    const matrix = () => (metric === 'waist' ? vitalsMatrix : bloodMatrix)(view.container);
+    if (unit === 'conventional') { toggleChip(matrix(), label); await wait(50); }
+    const shownNow = () => row(matrix(), label).querySelector('.bt-cell-clickable .bt-value-num')!.textContent!;
+    const shownNumber = shownNow();
+    /** Type into the New column, dated the saved value's day, and leave the matrix. */
+    const typeForThatDay = async (typed: string) => {
+      pickDraftDate(matrix(), RIGHT_DAY);
+      typeInto(draftInput(matrix(), label), typed);
+      if (metric === 'waist') leaveVitals(view.container); else tapOutside(view.container);
+      await wait(1000);
+    };
+    /** Open the saved value's editor, type, and press Enter. */
+    const typeInEditor = async (typed: string) => {
+      const shown = shownNow();
+      const editor = openEditor(row(matrix(), label));
+      expect(editor.value).toBe(shown); // the editor opens on the number shown
+      fireEvent.change(editor, { target: { value: typed } });
+      fireEvent.keyDown(editor, { key: 'Enter' });
+      await wait(1000);
+    };
+    /** The number shown now, one display step up. */
+    const stepUp = () => {
+      const shown = shownNow();
+      const dp = (shown.split('.')[1] ?? '').length;
+      return (Number(shown) + 1 / 10 ** dp).toFixed(dp);
+    };
+    return { shownNumber, typeForThatDay, typeInEditor, stepUp };
+  }
+
+  it.each(cases)('%s: re-entered in the New column for its day, or in its editor, writes nothing', async (_, metric, label, value, unit) => {
+    const { shownNumber, typeForThatDay, typeInEditor } = await savedBesideItsLine(metric, label, value, unit);
+    await typeForThatDay(shownNumber);
+    expect(await rowsOf(metric)).toEqual([expect.objectContaining({ value, status: 'active' })]);
+    await typeInEditor(shownNumber);
+    expect(await rowsOf(metric)).toEqual([expect.objectContaining({ value, status: 'active' })]);
+  });
+
+  it.each(cases)('%s: a different number, in the New column for its day or in its editor, is a correction, exactly', async (_, metric, label, value, unit) => {
+    const { typeForThatDay, typeInEditor, stepUp } = await savedBesideItsLine(metric, label, value, unit);
+    const next = stepUp();
+    await typeForThatDay(next);
+    await waitFor(async () => expect(await activeOn(metric)).toEqual([[toCanonicalValue(metric as 'ldl', Number(next), unit), RIGHT_DAY]]));
+
+    const after = stepUp(); // over the corrected value
+    await typeInEditor(after);
+    await waitFor(async () => expect(await activeOn(metric)).toEqual([[toCanonicalValue(metric as 'ldl', Number(after), unit), RIGHT_DAY]]));
+    expect((await rowsOf(metric)).map((m) => m.status).sort()).toEqual(['active', 'entered-in-error', 'entered-in-error']);
   });
 });

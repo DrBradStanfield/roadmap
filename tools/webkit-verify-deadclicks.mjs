@@ -6,12 +6,16 @@ import { webkit, devices } from 'playwright';
 const browser = await webkit.launch();
 const ctx = await browser.newContext({ ...devices['iPhone 13'] });
 const page = await ctx.newPage();
-// Seed sex+height so stage 2 (Birth Month + plan bar) renders.
+// Seed sex+height so stage 2 (Birth Month + plan bar) renders. The copy holds
+// what the widget writes: the saved profile, and the weight as a saved row
+// (US-15 AC10), which opens the vitals matrix at mount.
 await page.addInitScript(() => {
+  const now = new Date().toISOString();
   localStorage.setItem('health_roadmap_data', JSON.stringify({
-    inputs: { sex: 'male', heightCm: 178, weightKg: 80, unitSystem: 'si' },
-    previousMeasurements: [], medications: [], screenings: [], reminderPreferences: [],
-    savedAt: new Date().toISOString(),
+    inputs: { sex: 'male', heightCm: 178, unitSystem: 'si' },
+    previousMeasurements: [{ id: 'seed-weight', metricType: 'weight', value: 80, recordedAt: now, createdAt: now }],
+    medications: [], screenings: [], reminderPreferences: [],
+    savedAt: now,
   }));
 });
 await page.goto('https://drstanfield.com/pages/roadmap', { waitUntil: 'domcontentloaded' });

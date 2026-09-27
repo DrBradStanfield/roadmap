@@ -3,7 +3,6 @@ import {
   calculateIBW,
   calculateProteinTarget,
   calculateBMI,
-  calculateWaistToHeight,
   calculateAge,
   getBMICategory,
   calculateHealthResults,
@@ -14,6 +13,8 @@ import {
   getProteinRate,
 } from './calculations';
 import { generateSuggestions } from './suggestions';
+import { getBmiEvidence } from './evidence';
+import { LDL_THRESHOLDS, NON_HDL_THRESHOLDS, waistToHeightRatio, isWaistToHeightElevated, elevatedWaistFromCm } from './units';
 
 describe('calculateIBW (Ideal Body Weight — Peterson 2016)', () => {
   it('calculates correctly for average height male', () => {
@@ -89,19 +90,19 @@ describe('calculateBMI', () => {
   });
 });
 
-describe('calculateWaistToHeight', () => {
-  it('calculates ratio correctly', () => {
-    expect(calculateWaistToHeight(80, 175)).toBeCloseTo(0.457, 2);
-    expect(calculateWaistToHeight(90, 175)).toBeCloseTo(0.514, 2);
+describe('waistToHeightRatio', () => {
+  it('calculates the ratio to 2 decimal places', () => {
+    expect(waistToHeightRatio(80, 175)).toBe(0.46);
+    expect(waistToHeightRatio(90, 175)).toBe(0.51);
   });
 
   it('identifies healthy ratio (< 0.5)', () => {
-    const ratio = calculateWaistToHeight(80, 170);
+    const ratio = waistToHeightRatio(80, 170);
     expect(ratio).toBeLessThan(0.5);
   });
 
   it('identifies elevated ratio (> 0.5)', () => {
-    const ratio = calculateWaistToHeight(95, 170);
+    const ratio = waistToHeightRatio(95, 170);
     expect(ratio).toBeGreaterThan(0.5);
   });
 });
@@ -181,6 +182,26 @@ describe('getBMICategory', () => {
     expect(getBMICategory(35)).toBe('Obese (Class II)');
     expect(getBMICategory(40)).toBe('Obese (Class III)');
     expect(getBMICategory(45)).toBe('Obese (Class III)');
+  });
+});
+
+// US-07 AC1: the BMI tile's evidence asks for a waist at BMI 25–29.9 when
+// there is none. It never states a reclassification: that note was
+// unreachable before 2026-09-28, uncited, and contradicted the GLP-1 card for
+// a raised marker at BMI 26 with a healthy waist, so it was deleted.
+describe('getBmiEvidence', () => {
+  it.each([[26, 0.45], [29.9, 0.49], [26, 0.5], [22, 0.45], [31, 0.45]])(
+    'BMI %s with a ratio of %s: no reclassification note', (bmi, whr) => {
+      const evidence = getBmiEvidence(bmi, 'male', whr);
+      expect(evidence.reason).not.toContain('reclassifies you as Normal');
+      expect(evidence.guidelines).toEqual([]);
+    });
+
+  it('asks for a waist at BMI 25–29.9 with none on record, and only then', () => {
+    expect(getBmiEvidence(26, 'female').reason).toContain('Measuring your waist circumference');
+    expect(getBmiEvidence(24, 'female').reason).not.toContain('Measuring your waist circumference');
+    expect(getBmiEvidence(26, 'female').guidelines).toEqual(['AACE 2025']);
+    expect(getBmiEvidence(24, 'female').guidelines).toEqual([]);
   });
 });
 
@@ -481,6 +502,24 @@ describe('getLipidStatus', () => {
   it('returns High (not Very High) when veryHigh threshold is absent', () => {
     expect(getLipidStatus(5.0, thresholds2)).toBe('High');
   });
+
+  // US-07 AC5: the LDL and non-HDL tiles call a value optimal only below the
+  // plan's targets (1.4 and 1.6 mmol/L); up to Borderline they say "Above optimal".
+  it.each([
+    [1.39, 'Optimal'], [1.4, 'Above optimal'], [3.2, 'Above optimal'],
+    // The Borderline line is 130 mg/dL, 3.3618 mmol/L: 3.36 falls just under it.
+    [3.36, 'Above optimal'], [LDL_THRESHOLDS.borderline, 'Borderline'], [3.37, 'Borderline'],
+    [LDL_THRESHOLDS.high, 'High'], [LDL_THRESHOLDS.veryHigh, 'Very High'],
+  ])('LDL %s is %s (US-07 AC5)', (value, status) => {
+    expect(getLipidStatus(value, LDL_THRESHOLDS)).toBe(status);
+  });
+
+  it.each([
+    [1.5, 'Optimal'], [1.59, 'Optimal'], [1.6, 'Above optimal'], [4.1, 'Above optimal'], [4.14, 'Borderline'],
+    [NON_HDL_THRESHOLDS.high, 'High'], [NON_HDL_THRESHOLDS.veryHigh, 'Very High'],
+  ])('non-HDL %s is %s (US-07 AC5)', (value, status) => {
+    expect(getLipidStatus(value, NON_HDL_THRESHOLDS)).toBe(status);
+  });
 });
 
 describe('getProteinRate', () => {
@@ -497,5 +536,26 @@ describe('getProteinRate', () => {
   it('returns 1.2 when eGFR is undefined', () => {
     expect(getProteinRate(undefined)).toBe(1.2);
     expect(getProteinRate()).toBe(1.2);
+  });
+});
+
+// US-06 AC5: the vitals matrix grades the waist by the plan's own rule. The
+// plan rounds the waist-to-height ratio to 2 decimals, then counts 0.50 and
+// above as elevated, so at 178 cm a waist of 88.6 cm (0.4978) is elevated.
+describe('the waist-to-height rule the plan and the matrix share (US-06 AC5)', () => {
+  it('rounds to 2 decimals before comparing with 0.5', () => {
+    expect(waistToHeightRatio(88.6, 178)).toBe(0.5);
+    expect(isWaistToHeightElevated(waistToHeightRatio(88.6, 178))).toBe(true);
+    expect(isWaistToHeightElevated(waistToHeightRatio(88.1, 178))).toBe(false);
+    expect(calculateHealthResults({ heightCm: 178, sex: 'male', waistCm: 88.6 }).waistToHeightRatio).toBe(0.5);
+  });
+
+  it('elevatedWaistFromCm is where the rule turns, at every height', () => {
+    for (let h = 120; h <= 230; h += 0.5) {
+      const from = elevatedWaistFromCm(h);
+      expect(isWaistToHeightElevated(waistToHeightRatio(from + 0.001, h)), `${h} cm`).toBe(true);
+      expect(isWaistToHeightElevated(waistToHeightRatio(from - 0.001, h)), `${h} cm`).toBe(false);
+    }
+    expect(elevatedWaistFromCm(178)).toBeCloseTo(88.11, 2);
   });
 });

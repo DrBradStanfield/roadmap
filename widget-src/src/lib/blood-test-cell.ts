@@ -9,6 +9,7 @@ import {
   getDisplayRange,
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
+  getLipidStatus,
   TOTAL_CHOLESTEROL_THRESHOLDS,
   HDL_THRESHOLDS,
   TRIGLYCERIDES_THRESHOLDS,
@@ -111,10 +112,11 @@ export function statusOf(metric: MetricType, siValue: number, sex?: 'male' | 'fe
       if (siValue >= HBA1C_THRESHOLDS.diabetes) return 'bad';
       if (siValue >= HBA1C_THRESHOLDS.prediabetes) return 'warn';
       return 'ok';
-    case 'ldl':
-      if (siValue >= LDL_THRESHOLDS.high) return 'bad';
-      if (siValue >= LDL_THRESHOLDS.borderline) return 'warn';
-      return 'ok';
+    case 'ldl': {
+      // The LDL tile's grade: amber from the plan's target, as ApoB is from its 0.5 (US-07 AC5)
+      const s = getLipidStatus(siValue, LDL_THRESHOLDS);
+      return s === 'Optimal' ? 'ok' : s === 'High' || s === 'Very High' ? 'bad' : 'warn';
+    }
     case 'total_cholesterol':
       if (siValue >= TOTAL_CHOLESTEROL_THRESHOLDS.high) return 'bad';
       if (siValue >= TOTAL_CHOLESTEROL_THRESHOLDS.borderline) return 'warn';

@@ -1,6 +1,6 @@
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import type { UnitSystem, MetricType } from './units';
-import { EGFR_THRESHOLDS, LPA_THRESHOLDS, HBA1C_THRESHOLDS } from './units';
+import { EGFR_THRESHOLDS, LPA_THRESHOLDS, HBA1C_THRESHOLDS, waistToHeightRatio, isWaistToHeightElevated } from './units';
 import { generateSuggestions } from './suggestions';
 
 /**
@@ -33,14 +33,6 @@ export function calculateProteinTarget(ibwKg: number): number {
 export function calculateBMI(weightKg: number, heightCm: number): number {
   const heightM = heightCm / 100;
   return weightKg / (heightM * heightM);
-}
-
-/**
- * Calculate waist-to-height ratio
- * Values > 0.5 indicate increased metabolic risk
- */
-export function calculateWaistToHeight(waistCm: number, heightCm: number): number {
-  return waistCm / heightCm;
 }
 
 /**
@@ -89,7 +81,7 @@ export function getBMICategory(bmi: number, waistToHeightRatio?: number): string
   if (bmi < 18.5) return 'Underweight';
   if (bmi < 25) return 'Normal';
   if (bmi < 30) {
-    if (waistToHeightRatio !== undefined && waistToHeightRatio < 0.5) return 'Normal';
+    if (waistToHeightRatio !== undefined && !isWaistToHeightElevated(waistToHeightRatio)) return 'Normal';
     return 'Overweight';
   }
   if (bmi < 35) return 'Obese (Class I)';
@@ -134,11 +126,14 @@ export function getHba1cStatus(hba1c: number): string {
 /**
  * Get lipid status label from a value and its thresholds.
  * Works for ApoB (2-tier), Non-HDL, LDL, triglycerides (3-tier with veryHigh).
+ * With an `optimal` line, values from it up to Borderline are "Above optimal"
+ * (LDL and non-HDL carry the plan's treatment targets, US-07 AC5).
  */
-export function getLipidStatus(value: number, thresholds: { borderline: number; high: number; veryHigh?: number }): string {
+export function getLipidStatus(value: number, thresholds: { optimal?: number; borderline: number; high: number; veryHigh?: number }): string {
   if (thresholds.veryHigh !== undefined && value >= thresholds.veryHigh) return 'Very High';
   if (value >= thresholds.high) return 'High';
   if (value >= thresholds.borderline) return 'Borderline';
+  if (thresholds.optimal !== undefined && value >= thresholds.optimal) return 'Above optimal';
   return 'Optimal';
 }
 
@@ -173,8 +168,7 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
 
   // Calculate waist-to-height ratio if waist is provided
   if (inputs.waistCm) {
-    const ratio = calculateWaistToHeight(inputs.waistCm, inputs.heightCm);
-    results.waistToHeightRatio = Math.round(ratio * 100) / 100;
+    results.waistToHeightRatio = waistToHeightRatio(inputs.waistCm, inputs.heightCm);
   }
 
   // Classify BMI (accounts for WHtR reclassification of BMI 25-29.9)
@@ -184,10 +178,13 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
 
   // Calculate non-HDL cholesterol if both total and HDL are provided
   // Guard: HDL > total is a data-entry error — don't store a negative result
+  // Kept to 4 decimal places, which only strips float noise (3.80 − 2.20 is
+  // 1.5999…): the plan compares it unrounded and rounds it only to display
+  // it (US-07 AC5, US-06 AC6).
   if (inputs.totalCholesterol !== undefined && inputs.hdlC !== undefined) {
     const nonHdl = inputs.totalCholesterol - inputs.hdlC;
     if (nonHdl > 0) {
-      results.nonHdlCholesterol = Math.round(nonHdl * 10) / 10;
+      results.nonHdlCholesterol = Math.round(nonHdl * 1e4) / 1e4;
     }
   }
 

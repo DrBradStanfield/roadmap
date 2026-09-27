@@ -39,8 +39,9 @@ export function medicationAnnotations(history: ApiMedicationHistory[]): Record<s
     const date = chartTimestamp(h.recordedAt);
     if (!Array.isArray(metrics) || typeof action !== 'string' || !Number.isFinite(date)) continue;
     // Stops saved as 'none' do not retain the old drug. Name the category
-    // instead of guessing which merged row preceded it.
-    const name = !isTakingDrug(h.drugName) || h.drugName === 'yes' ? h.medicationKey : h.drugName;
+    // instead of guessing which merged row preceded it. A name that is not a
+    // string (a hand-edited file) is unknown, so it names the category too.
+    const name = typeof h.drugName !== 'string' || !isTakingDrug(h.drugName) || h.drugName === 'yes' ? h.medicationKey : h.drugName;
     const displayName = name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, ' ');
     const hasDose = Number.isFinite(h.doseValue) && (h.doseValue as number) > 0 && typeof h.doseUnit === 'string' && h.doseUnit !== '';
     const dose = h.changeType !== 'stopped' && hasDose ? ` ${h.doseValue}${h.doseUnit}` : '';

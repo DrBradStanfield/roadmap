@@ -9,12 +9,13 @@ import { isLabArchiveDocument } from '../lib/archive-payloads';
 import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance } from '../lib/blood-test-cell';
 import type { ApiDocument, ApiLabValue, ApiSupplement } from '../lib/api-types';
+import { loadFromLocalStorage } from '../lib/storage';
 
 /** Every surface opens metric history in the local lightbox. */
 const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
   if (openHistoryLightbox(metric)) e.preventDefault();
 };
-import type { HealthInputs, ScreeningInputs, WeightMedicationTrigger } from '@roadmap/health-core';
+import type { HealthInputs, HealthResults, ScreeningInputs, WeightMedicationTrigger, LipidMarker } from '@roadmap/health-core';
 import {
   type UnitSystem,
   fromCanonicalValue,
@@ -35,20 +36,19 @@ import {
   BEMPEDOIC_ACID_OPTIONS,
   SUPPLEMENT_OPTIONS,
   FEATURED_SUPPLEMENTS,
-  canIncreaseDose,
-  shouldSuggestSwitch,
-  isOnMaxPotency,
   LIPID_DIET_ADVICE,
-  resolveBestLipidMarker,
-  calculateAge,
   cmToFeetInches,
   feetInchesToCm,
   formatHeightDisplay,
   GLP1_NAMES,
   GLP1_DRUGS,
-  canIncreaseGlp1Dose,
-  shouldSuggestGlp1Switch,
-  isOnMaxGlp1Potency,
+  weightCascade,
+  lipidCascade,
+  lipidTargetSentence,
+  weightMedIntro,
+  bpTargetFor,
+  METRIC_TO_FIELD,
+  VITAL_METRICS,
   SGLT2I_NAMES,
   SGLT2I_DRUGS,
   METFORMIN_OPTIONS,
@@ -92,6 +92,42 @@ function scrStr(scr: ScreeningInputs, dbKey: string): string | undefined {
 function scrNum(scr: ScreeningInputs, dbKey: string): number | undefined {
   return scrVal(scr, dbKey) as number | undefined;
 }
+
+/** A medication select's options, showing what the record holds (US-06 AC5):
+ *  an empty value, which the plan reads as unanswered, reads `unrecorded`
+ *  ("Not recorded"), and a value the list lacks (a legacy 'tier_1', an
+ *  agent's 'yes') reads "Other (recorded)", never the first option. A name
+ *  that is not a string never gets here: medicationsToInputs skips its row. */
+function optionsShowing(options: ReadonlyArray<{ value: string; label: string }>, recorded: string, unrecorded = 'Not recorded') {
+  const list = options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>);
+  if (options.some(opt => opt.value === recorded)) return list;
+  const blank = recorded === '';
+  return [<option key="recorded" value={recorded} disabled={blank}>{blank ? unrecorded : 'Other (recorded)'}</option>, ...list];
+}
+/** An escalation answer's options: the plan's words while it asks the
+ *  question (`step`); neutral when it does not, so a recorded answer never
+ *  pitches a step up the plan is not suggesting (US-06 AC5, AC7). */
+function escalationOptions(step: 'increase' | 'switch' | null) {
+  return [
+    { value: 'not_yet', label: step ? 'Not yet' : 'Not tried' },
+    { value: 'not_tolerated', label: step === 'increase' ? "Didn't tolerate a higher dose" : step === 'switch' ? "Didn't tolerate switching" : "Didn't tolerate" },
+  ];
+}
+/** An escalation field's label when the plan asks no step-up question. */
+const ESCALATION_RECORDED = 'Higher dose or switch (recorded answer)';
+/** A dose select's options, in mg. */
+const doseOptions = (doses: number[]) => doses.map(dose => ({ value: String(dose), label: `${dose}mg` }));
+
+/** What the form reads from the plan, so it never recommends, targets or
+ *  steps through what the plan does not (US-06 AC5). HealthTool computes it
+ *  beside the plan, from the same validated inputs and results: the plan's
+ *  age, BMI, weight target (kg) and validated height (cm), which sets the
+ *  vitals matrix's waist line. */
+export type PlanBasis = Pick<HealthResults, 'age' | 'bmi' | 'idealBodyWeight' | 'heightCm'> & {
+  weightMedTrigger: WeightMedicationTrigger;
+  /** The plan's lipid marker: ApoB, then non-HDL, then LDL-c. */
+  lipidMarker: LipidMarker | null;
+};
 
 interface InputPanelProps {
   inputs: Partial<HealthInputs>;
@@ -150,10 +186,9 @@ interface InputPanelProps {
   vitalsPrefillRef?: MutableRefObject<VitalsPrefillFn | null>;
   formStage: 1 | 2 | 3;
   setShowUploadModal?: (show: boolean) => void;
-  activeSuggestionIds?: Set<string>;
-  /** The plan's weight-medication trigger, from the inputs the plan read.
-   *  Null until there is a plan (no sex or height). */
-  weightMedTrigger: WeightMedicationTrigger | null;
+  /** What the plan was computed from. Null until there is a plan (no valid
+   *  sex or height). */
+  planBasis: PlanBasis | null;
   healthDocuments?: ApiDocument[];
   onDocumentDeleted?: (docId: string) => void;
   onAutoFocusEmail?: () => void;
@@ -189,7 +224,7 @@ export function InputPanel({
   isSavingLongitudinal, fieldsSaved, hasApiResponse,
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   formStage,
-  setShowUploadModal, activeSuggestionIds, weightMedTrigger,
+  setShowUploadModal, planBasis,
   healthDocuments, onDocumentDeleted, onAutoFocusEmail,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
@@ -209,28 +244,13 @@ export function InputPanel({
   // Expand/collapse state for display-first longitudinal fields.
   // (Blood tests have their own matrix UI in BloodTestTimeline; no expand state here.)
   const [expandedVitals, setExpandedVitals] = useState<Set<string>>(new Set());
-  // Latched synchronously at mount from raw localStorage. Avoids the
-  // flash of the legacy form before async data hydrates. localStorage
-  // holds both guest inputs AND the cached `previousMeasurements` for
-  // logged-in users (HealthTool's load writes both), so a single check
-  // covers both auth states. First-time-ever users (no localStorage
-  // entry at all) get 'legacy'; everyone returning gets 'matrix'.
-  const [vitalsViewMode] = useState<'legacy' | 'matrix'>(() => {
-    try {
-      const raw = JSON.parse(localStorage.getItem('health_roadmap_data') || '{}');
-      const i = raw.inputs ?? {};
-      const hasInputs = i.weightKg !== undefined
-        || i.waistCm !== undefined
-        || i.systolicBp !== undefined
-        || i.diastolicBp !== undefined;
-      const VITAL_TYPES = new Set(['weight', 'waist', 'systolic_bp', 'diastolic_bp']);
-      const hasMeasurements = (raw.previousMeasurements ?? [])
-        .some((r: { metricType?: string }) => r.metricType && VITAL_TYPES.has(r.metricType));
-      return (hasInputs || hasMeasurements) ? 'matrix' : 'legacy';
-    } catch {
-      return 'legacy';
-    }
-  });
+  // Latched synchronously at mount from the mirror. Avoids the flash of the
+  // legacy form before async data hydrates. The mirror keeps saved vitals
+  // only as `previousMeasurements` rows (its `inputs` hold the profile
+  // fields), so one check covers every returning user. First-time users (no
+  // saved vitals) get 'legacy'; everyone returning gets 'matrix'.
+  const [vitalsViewMode] = useState<'legacy' | 'matrix'>(() =>
+    loadFromLocalStorage()?.previousMeasurements.some(r => VITAL_METRICS.includes(r.metricType)) ? 'matrix' : 'legacy');
   const [bpExpanded, setBpExpanded] = useState(false);
   const focusFieldRef = useRef<string | null>(null);
 
@@ -679,9 +699,8 @@ export function InputPanel({
     return { sysVal, diaVal, latestDate };
   };
 
-  /** BP target text based on age. */
-  const getBpTargetText = () =>
-    `Target: <${(inputs.birthYear && inputs.birthMonth && calculateAge(inputs.birthYear, inputs.birthMonth) >= 65) ? '130/80' : '120/80'} mmHg`;
+  /** BP target text based on the plan's age; none with no plan (US-06 AC5). */
+  const bpTargetText = planBasis ? `Target: <${bpTargetFor(planBasis.age)}/80 mmHg` : null;
 
   /** Render collapsed BP display. */
   const renderCollapsedBp = (data: { sysVal: number; diaVal: number; latestDate: string }) => {
@@ -706,9 +725,11 @@ export function InputPanel({
           <span className="collapsed-field-date">{formatShortDate(data.latestDate)}</span>
           <button type="button" className="collapsed-field-add" onClick={() => { focusFieldRef.current = 'systolicBp'; setBpExpanded(true); }} title="Add new value">+</button>
         </div>
-        <div className="field-meta">
-          <span className="field-hint">{getBpTargetText()}</span>
-        </div>
+        {bpTargetText && (
+          <div className="field-meta">
+            <span className="field-hint">{bpTargetText}</span>
+          </div>
+        )}
       </div>
     );
   };
@@ -750,7 +771,7 @@ export function InputPanel({
                 ? `${formatHeightDisplay(Number(inputs.heightCm), unitSystem)} tall`
                 : null,
               inputs.birthYear && inputs.birthMonth
-                ? `Born ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][inputs.birthMonth - 1]} ${inputs.birthYear} (Age ${calculateAge(inputs.birthYear, inputs.birthMonth)})`
+                ? `Born ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][inputs.birthMonth - 1]} ${inputs.birthYear}${planBasis?.age !== undefined ? ` (Age ${planBasis.age})` : ''}`
                 : null,
             ].filter(Boolean).join(' · ')}
           </p>
@@ -918,6 +939,7 @@ export function InputPanel({
         onCorrectValue={onCorrectValue}
         onDraftValue={onDraftValue}
         formStage={formStage}
+        plan={planBasis}
         onAutoFocusEmail={onAutoFocusEmail}
         unitOverrides={unitOverrides}
         onToggleFieldUnit={onToggleFieldUnit}
@@ -1006,7 +1028,7 @@ export function InputPanel({
             {errors.systolicBp && <span className="error-message">{errors.systolicBp}</span>}
             {errors.diastolicBp && <span className="error-message">{errors.diastolicBp}</span>}
             <div className="field-meta">
-              <span className="field-hint">{getBpTargetText()}</span>
+              {bpTargetText && <span className="field-hint">{bpTargetText}</span>}
               {!bpExpanded && bpLabel && (
                 <a className="previous-value"
                    href="#health-history"
@@ -1087,25 +1109,16 @@ export function InputPanel({
 
   const renderMedications = () => (
     <>
-      {/* Cholesterol Medications Section — cascade when elevated/suggested, flat when any lipid entered */}
+      {/* Cholesterol Medications Section — cascade when the plan's lipid marker is elevated (US-06 AC5), flat when any lipid entered */}
       {(() => {
-          // Cascade visibility follows what the plan reads (effectiveInputs)
           const { apoB: effectiveApoB, ldlC: effectiveLdl, totalCholesterol: effectiveTotalChol, hdlC: effectiveHdl } = effectiveInputs;
-          const effectiveNonHdl = (effectiveTotalChol !== undefined && effectiveHdl !== undefined)
-            ? effectiveTotalChol - effectiveHdl : undefined;
-
-          const lipidMarker = resolveBestLipidMarker(effectiveApoB, effectiveNonHdl, effectiveLdl);
-
-          // Check if any suggestion recommends a cholesterol medication
-          const hasCholesterolSuggestion = activeSuggestionIds &&
-            ['med-statin', 'med-ezetimibe', 'med-bempedoic-acid', 'med-statin-increase', 'med-statin-switch', 'med-pcsk9i']
-              .some(id => activeSuggestionIds.has(id));
+          const lipidMarker = planBasis?.lipidMarker;
 
           // Three modes:
-          // 1. Cascade: lipids elevated OR suggestion recommends medication
+          // 1. Cascade: the plan's lipid marker is at or above its target
           // 2. Flat: any lipid value entered (allows recording meds when values are controlled)
           // 3. Hidden: no lipid values entered
-          const cascadeMode = lipidMarker?.elevated || hasCholesterolSuggestion;
+          const cascadeMode = !!lipidMarker?.elevated;
           const hasAnyLipidInput = effectiveApoB !== undefined || effectiveLdl !== undefined
             || effectiveTotalChol !== undefined || effectiveHdl !== undefined;
 
@@ -1115,8 +1128,6 @@ export function InputPanel({
           const statin = medInputs.statin;
           const statinDrug = statin?.drug ?? 'none';
           const statinDose = statin?.dose ?? null;
-          const statinTolerated = statinDrug !== 'not_tolerated';
-          const onStatin = statin && statinDrug !== 'none' && statinDrug !== 'not_tolerated';
 
           // Get available doses for current statin
           const availableDoses = STATIN_DRUGS[statinDrug]?.doses ?? [];
@@ -1133,12 +1144,10 @@ export function InputPanel({
                   value={statinDrug}
                   onChange={(e) => {
                     const newDrug = e.target.value;
-                    if (cascadeMode) {
-                      // Reset downstream cascade steps
-                      if (medInputs.ezetimibe) onMedicationChange('ezetimibe', 'not_yet', null, null);
-                      if (medInputs.statinEscalation) onMedicationChange('statin_escalation', 'not_yet', null, null);
-                      if (medInputs.pcsk9i) onMedicationChange('pcsk9i', 'not_yet', null, null);
-                    }
+                    // In cascade mode only the statin's own escalation answer
+                    // depends on it; no other medication is ever written, and
+                    // flat mode, which hides that answer, writes none (US-06 AC7).
+                    if (cascadeMode && medInputs.statinEscalation) onMedicationChange('statin_escalation', 'not_yet', null, null);
                     if (newDrug === 'none' || newDrug === 'not_tolerated') {
                       onMedicationChange('statin', newDrug, null, null);
                     } else {
@@ -1147,9 +1156,7 @@ export function InputPanel({
                     }
                   }}
                 >
-                  {STATIN_NAMES.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
+                  {optionsShowing(STATIN_NAMES, statinDrug)}
                 </select>
                 {availableDoses.length > 0 && (
                   <select
@@ -1157,17 +1164,11 @@ export function InputPanel({
                     value={statinDose ?? ''}
                     onChange={(e) => {
                       const newDose = parseInt(e.target.value, 10);
-                      if (cascadeMode) {
-                        if (medInputs.ezetimibe) onMedicationChange('ezetimibe', 'not_yet', null, null);
-                        if (medInputs.statinEscalation) onMedicationChange('statin_escalation', 'not_yet', null, null);
-                        if (medInputs.pcsk9i) onMedicationChange('pcsk9i', 'not_yet', null, null);
-                      }
+                      if (cascadeMode && medInputs.statinEscalation) onMedicationChange('statin_escalation', 'not_yet', null, null);
                       onMedicationChange('statin', statinDrug, newDose, 'mg');
                     }}
                   >
-                    {availableDoses.map(dose => (
-                      <option key={dose} value={dose}>{dose}mg</option>
-                    ))}
+                    {optionsShowing(doseOptions(availableDoses), statinDose === null ? '' : String(statinDose), 'Dose not recorded')}
                   </select>
                 )}
               </div>
@@ -1189,9 +1190,7 @@ export function InputPanel({
                   }
                 }}
               >
-                {EZETIMIBE_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+                {optionsShowing(EZETIMIBE_OPTIONS, medInputs.ezetimibe || 'not_yet')}
               </select>
             </div>
           );
@@ -1211,9 +1210,7 @@ export function InputPanel({
                   }
                 }}
               >
-                {PCSK9I_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+                {optionsShowing(PCSK9I_OPTIONS, medInputs.pcsk9i || 'not_yet')}
               </select>
             </div>
           );
@@ -1235,12 +1232,12 @@ export function InputPanel({
                   }
                 }}
               >
-                {BEMPEDOIC_ACID_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+                {optionsShowing(BEMPEDOIC_ACID_OPTIONS, medInputs.bempedoicAcid || 'not_yet')}
               </select>
             </div>
           );
+
+          const neutral = 'Are you currently taking any cholesterol medications? Recording these helps track your health over time.';
 
           // ── Flat mode: all fields visible independently (no cascade gating) ──
           if (!cascadeMode) {
@@ -1248,9 +1245,7 @@ export function InputPanel({
               <div className="section-card">
                 <section className="health-section">
                   <h3 className="health-section-title">Cholesterol Medications</h3>
-                  <p className="health-section-desc">
-                    Are you currently taking any cholesterol medications? Recording these helps track your health over time.
-                  </p>
+                  <p className="health-section-desc">{neutral}</p>
                   {statinDropdown}
                   {ezetimibeDropdown}
                   {bempedoicAcidDropdown}
@@ -1260,78 +1255,62 @@ export function InputPanel({
             );
           }
 
-          // ── Cascade mode: progressive disclosure (existing logic) ──
-          const showEzetimibe = onStatin || statinDrug === 'not_tolerated';
-          const ezetimibeHandled = medInputs.ezetimibe === 'yes' || medInputs.ezetimibe === 'not_tolerated';
-
-          const canIncrease = onStatin && canIncreaseDose(statinDrug, statinDose);
-          const shouldSwitch = onStatin && shouldSuggestSwitch(statinDrug, statinDose);
-          const atMaxPotency = onStatin && isOnMaxPotency(statinDrug, statinDose);
-
-          const showStatinEscalation = showEzetimibe && ezetimibeHandled && statinTolerated && (canIncrease || shouldSwitch);
-          const escalationHandled = medInputs.statinEscalation === 'not_tolerated';
-          const showPcsk9i = (showEzetimibe && ezetimibeHandled) &&
-            ((!statinTolerated || atMaxPotency) || (showStatinEscalation && escalationHandled));
-
-          const lipidName = lipidMarker?.label ?? 'LDL-c';
-
-          // Intro text for cascade mode
-          let introText = '';
-          if (lipidMarker?.elevated) {
-            const metricKey = lipidMarker.kind === 'apoB' ? 'apoB' : 'ldlC';
-            const unitKey = lipidMarker.kind === 'apoB' ? 'apob' : 'ldl';
-            const val = toDisplay(metricKey, lipidMarker.value);
-            const target = toDisplay(metricKey, lipidMarker.target);
-            const unit = getDisplayLabel(unitKey, fieldUnit(metricKey));
-            introText = `Your ${lipidMarker.label} is ${val} ${unit}, which is above the treatment target of ${target} ${unit}. `;
-          }
+          // ── Cascade mode: progressive disclosure, the plan's own steps ──
+          // Progressive disclosure opens the plan's next step; a step that
+          // holds a recorded value always shows (US-06 AC7).
+          const cascade = lipidCascade(medInputs);
+          const lipidName = lipidMarker.label;
+          const step = cascade.escalation;
+          const showEscalation = !!step || medInputs.statinEscalation !== undefined;
+          const introText = lipidTargetSentence(lipidMarker, (metric) => fieldUnit(METRIC_TO_FIELD[metric]));
 
           return (
             <div className="section-card">
             <section className="health-section medication-cascade">
               <h3 className="health-section-title">Cholesterol Medications</h3>
               <p className="health-section-desc">
-                {introText}{LIPID_DIET_ADVICE} Medications can also be added in steps.
+                {/* It recommends only while the plan shows a step's card: with every
+                    step answered the marker stays elevated and the plan shows none. */}
+                {cascade.suggest.length === 0 ? neutral : `${introText} ${LIPID_DIET_ADVICE} Medications can also be added in steps.`}
               </p>
 
               {statinDropdown}
 
-              {showEzetimibe && (
+              {(cascade.ezetimibeReached || medInputs.ezetimibe !== undefined) && (
                 <div className="med-step-enter">
                   <p className="med-step-hint">{`Ezetimibe works differently — it blocks cholesterol absorption in the intestine, adding ~20% more ${lipidName} reduction.`}</p>
                   {ezetimibeDropdown}
                 </div>
               )}
 
-              {showEzetimibe && ezetimibeHandled && (
+              {(cascade.bempedoicAcidReached || medInputs.bempedoicAcid !== undefined) && (
                 <div className="med-step-enter">
                   <p className="med-step-hint">Bempedoic acid lowers cholesterol production via a different pathway than statins, and can be used alongside them.</p>
                   {bempedoicAcidDropdown}
                 </div>
               )}
 
-              {showStatinEscalation && (
+              {showEscalation && (
                 <div className="health-field med-step-enter">
                   <label htmlFor="statin-escalation">
-                    {canIncrease ? 'Tried increasing statin dose?' : 'Tried switching to a more potent statin?'}
+                    {step === 'increase' ? 'Tried increasing statin dose?' : step === 'switch' ? 'Tried switching to a more potent statin?' : ESCALATION_RECORDED}
                   </label>
-                  <p className="med-step-hint">
-                    {canIncrease ? `A higher dose may lower your ${lipidName} further.` : `A more potent statin can provide greater ${lipidName} reduction at the same or lower dose.`}
-                  </p>
+                  {step && (
+                    <p className="med-step-hint">
+                      {step === 'increase' ? `A higher dose may lower your ${lipidName} further.` : `A more potent statin can provide greater ${lipidName} reduction at the same or lower dose.`}
+                    </p>
+                  )}
                   <select
                     id="statin-escalation"
                     value={medInputs.statinEscalation || 'not_yet'}
                     onChange={e => onMedicationChange('statin_escalation', e.target.value, null, null)}
                   >
-                    <option value="not_yet">Not yet</option>
-                    <option value="not_tolerated">
-                      {canIncrease ? "Didn't tolerate a higher dose" : "Didn't tolerate switching"}
-                    </option>
+                    {optionsShowing(escalationOptions(step), medInputs.statinEscalation || 'not_yet')}
                   </select>
                 </div>
               )}
 
-              {showPcsk9i && (
+              {(cascade.pcsk9iReached || medInputs.pcsk9i !== undefined) && (
                 <div className="med-step-enter">
                   <p className="med-step-hint">{`PCSK9 inhibitors are injectable medications that help your body clear ${lipidName} from the blood. They can reduce ${lipidName} by ~50%.`}</p>
                   {pcsk9iDropdown}
@@ -1350,6 +1329,7 @@ export function InputPanel({
         } = effectiveInputs;
 
         // Three modes: cascade (the plan's trigger is on), flat, hidden
+        const weightMedTrigger = planBasis?.weightMedTrigger;
         const weightCascadeMode = !!weightMedTrigger?.on;
 
         // Flat mode: any relevant input entered but no cascade trigger
@@ -1360,50 +1340,12 @@ export function InputPanel({
 
         const medInputs = medicationsToInputs(medications);
 
-        // GLP-1 state
-        const glp1 = medInputs.glp1;
-        const glp1Drug = glp1?.drug ?? 'none';
-        const glp1Dose = glp1?.dose ?? null;
-        const onGlp1 = glp1 && glp1Drug !== 'none' && glp1Drug !== 'not_tolerated' && glp1Drug !== 'other';
-        const glp1OnOther = glp1Drug === 'other';
-        const glp1Handled = onGlp1 || glp1OnOther || glp1Drug === 'not_tolerated';
+        const glp1Drug = medInputs.glp1?.drug ?? 'none';
+        const glp1Dose = medInputs.glp1?.dose ?? null;
         const availableGlp1Doses = GLP1_DRUGS[glp1Drug]?.doses ?? [];
-
-        // GLP-1 escalation state
-        const glp1Tolerated = glp1Drug !== 'not_tolerated';
-        const canIncreaseGlp1 = onGlp1 && canIncreaseGlp1Dose(glp1Drug, glp1Dose);
-        const shouldSwitchGlp1 = (onGlp1 && shouldSuggestGlp1Switch(glp1Drug, glp1Dose)) || glp1OnOther;
-        const atMaxGlp1 = onGlp1 && isOnMaxGlp1Potency(glp1Drug, glp1Dose);
-        const showGlp1Escalation = glp1Handled && glp1Tolerated && (canIncreaseGlp1 || shouldSwitchGlp1);
-        const glp1EscalationHandled = medInputs.glp1Escalation === 'not_tolerated';
-
-        // SGLT2i state
-        const showSglt2i = glp1Handled && (
-          !glp1Tolerated || atMaxGlp1 || (showGlp1Escalation && glp1EscalationHandled)
-        );
-        const sglt2i = medInputs.sglt2i;
-        const sglt2iDrug = sglt2i?.drug ?? 'none';
-        const sglt2iDose = sglt2i?.dose ?? null;
-        const onSglt2i = sglt2i && sglt2iDrug !== 'none' && sglt2iDrug !== 'not_tolerated';
-        const sglt2iHandled = onSglt2i || sglt2iDrug === 'not_tolerated';
+        const sglt2iDrug = medInputs.sglt2i?.drug ?? 'none';
+        const sglt2iDose = medInputs.sglt2i?.dose ?? null;
         const availableSglt2iDoses = SGLT2I_DRUGS[sglt2iDrug]?.doses ?? [];
-
-        // Metformin state
-        const showMetformin = showSglt2i && sglt2iHandled;
-
-        // Downstream reset helper
-        const resetWeightDownstream = (from: 'glp1' | 'glp1_escalation' | 'sglt2i') => {
-          if (from === 'glp1') {
-            if (medInputs.glp1Escalation) onMedicationChange('glp1_escalation', 'not_yet', null, null);
-            if (medInputs.sglt2i) onMedicationChange('sglt2i', 'none', null, null);
-            if (medInputs.metformin) onMedicationChange('metformin', 'none', null, null);
-          } else if (from === 'glp1_escalation') {
-            if (medInputs.sglt2i) onMedicationChange('sglt2i', 'none', null, null);
-            if (medInputs.metformin) onMedicationChange('metformin', 'none', null, null);
-          } else if (from === 'sglt2i') {
-            if (medInputs.metformin) onMedicationChange('metformin', 'none', null, null);
-          }
-        };
 
         // ── Shared medication dropdowns ──
 
@@ -1417,7 +1359,10 @@ export function InputPanel({
                 value={glp1Drug}
                 onChange={(e) => {
                   const newDrug = e.target.value;
-                  if (weightCascadeMode) resetWeightDownstream('glp1');
+                  // In cascade mode only the GLP-1's own escalation answer
+                  // depends on it; no other medication is ever written, and
+                  // flat mode, which hides that answer, writes none (US-06 AC7).
+                  if (weightCascadeMode && medInputs.glp1Escalation) onMedicationChange('glp1_escalation', 'not_yet', null, null);
                   if (newDrug === 'none' || newDrug === 'not_tolerated' || newDrug === 'other') {
                     onMedicationChange('glp1', newDrug, null, null);
                   } else {
@@ -1426,9 +1371,7 @@ export function InputPanel({
                   }
                 }}
               >
-                {GLP1_NAMES.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+                {optionsShowing(GLP1_NAMES, glp1Drug)}
               </select>
               {availableGlp1Doses.length > 0 && (
                 <select
@@ -1436,13 +1379,11 @@ export function InputPanel({
                   value={glp1Dose ?? ''}
                   onChange={(e) => {
                     const newDose = parseLocalisedNumber(e.target.value) ?? null;
-                    if (weightCascadeMode) resetWeightDownstream('glp1');
+                    if (weightCascadeMode && medInputs.glp1Escalation) onMedicationChange('glp1_escalation', 'not_yet', null, null);
                     onMedicationChange('glp1', glp1Drug, newDose, 'mg');
                   }}
                 >
-                  {availableGlp1Doses.map(dose => (
-                    <option key={dose} value={dose}>{dose}mg</option>
-                  ))}
+                  {optionsShowing(doseOptions(availableGlp1Doses), glp1Dose === null ? '' : String(glp1Dose), 'Dose not recorded')}
                 </select>
               )}
             </div>
@@ -1459,7 +1400,6 @@ export function InputPanel({
                 value={sglt2iDrug}
                 onChange={(e) => {
                   const newDrug = e.target.value;
-                  if (weightCascadeMode) resetWeightDownstream('sglt2i');
                   if (newDrug === 'none' || newDrug === 'not_tolerated') {
                     onMedicationChange('sglt2i', newDrug, null, null);
                   } else {
@@ -1468,23 +1408,15 @@ export function InputPanel({
                   }
                 }}
               >
-                {SGLT2I_NAMES.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+                {optionsShowing(SGLT2I_NAMES, sglt2iDrug)}
               </select>
               {availableSglt2iDoses.length > 0 && (
                 <select
                   id="sglt2i-dose"
                   value={sglt2iDose ?? ''}
-                  onChange={(e) => {
-                    const newDose = parseLocalisedNumber(e.target.value) ?? null;
-                    if (weightCascadeMode) resetWeightDownstream('sglt2i');
-                    onMedicationChange('sglt2i', sglt2iDrug, newDose, 'mg');
-                  }}
+                  onChange={(e) => onMedicationChange('sglt2i', sglt2iDrug, parseLocalisedNumber(e.target.value) ?? null, 'mg')}
                 >
-                  {availableSglt2iDoses.map(dose => (
-                    <option key={dose} value={dose}>{dose}mg</option>
-                  ))}
+                  {optionsShowing(doseOptions(availableSglt2iDoses), sglt2iDose === null ? '' : String(sglt2iDose), 'Dose not recorded')}
                 </select>
               )}
             </div>
@@ -1500,9 +1432,7 @@ export function InputPanel({
               value={medInputs.metformin || 'none'}
               onChange={(e) => onMedicationChange('metformin', e.target.value, null, null)}
             >
-              {METFORMIN_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
+              {optionsShowing(METFORMIN_OPTIONS, medInputs.metformin || 'none')}
             </select>
           </div>
         );
@@ -1524,57 +1454,52 @@ export function InputPanel({
           );
         }
 
-        // ── Cascade mode: progressive disclosure, in the plan's words ──
-        const reasons = weightMedTrigger.reasons;
-        // It recommends only while the plan shows a step's card: with every
-        // step answered the trigger stays on and the plan shows none.
-        const planSuggests = [...(activeSuggestionIds ?? [])].some((id) => id.startsWith('weight-med-'));
+        // ── Cascade mode: progressive disclosure, the plan's own steps and words ──
+        // Progressive disclosure opens the plan's next step; a step that
+        // holds a recorded value always shows (US-06 AC7).
+        const cascade = weightCascade(medInputs);
+        const step = cascade.escalation;
+        const showEscalation = !!step || medInputs.glp1Escalation !== undefined;
 
         return (
           <div className="section-card">
           <section className="health-section medication-cascade">
             <h3 className="health-section-title">Weight & Diabetes Medications</h3>
             <p className="health-section-desc">
-              {!planSuggests
-                ? neutral
-                : reasons.length > 0
-                ? `Your BMI and ${reasons.join(', ')} suggest you may benefit from medications that support weight management and metabolic health.`
-                : 'Your BMI suggests you may benefit from medications that support weight management and metabolic health.'}
+              {/* It recommends only while the plan shows a step's card: with every
+                  step answered the trigger stays on and the plan shows none. */}
+              {cascade.suggest.length === 0 ? neutral : weightMedIntro(planBasis!.bmi!, weightMedTrigger.reasons)}
             </p>
 
             {glp1Dropdown}
 
-            {showGlp1Escalation && (
+            {showEscalation && (
               <div className="health-field med-step-enter">
                 <label htmlFor="glp1-escalation">
-                  {canIncreaseGlp1 ? 'Tried increasing GLP-1 dose?' : 'Tried switching to Tirzepatide?'}
+                  {step === 'increase' ? 'Tried increasing GLP-1 dose?' : step === 'switch' ? 'Tried switching to Tirzepatide?' : ESCALATION_RECORDED}
                 </label>
-                <p className="med-step-hint">
-                  {canIncreaseGlp1 ? 'A higher dose may improve results.' : 'Tirzepatide targets two hormones (GIP + GLP-1) and may be more effective for weight loss.'}
-                </p>
+                {step && (
+                  <p className="med-step-hint">
+                    {step === 'increase' ? 'A higher dose may improve results.' : 'Tirzepatide targets two hormones (GIP + GLP-1) and may be more effective for weight loss.'}
+                  </p>
+                )}
                 <select
                   id="glp1-escalation"
                   value={medInputs.glp1Escalation || 'not_yet'}
-                  onChange={e => {
-                    resetWeightDownstream('glp1_escalation');
-                    onMedicationChange('glp1_escalation', e.target.value, null, null);
-                  }}
+                  onChange={e => onMedicationChange('glp1_escalation', e.target.value, null, null)}
                 >
-                  <option value="not_yet">Not yet</option>
-                  <option value="not_tolerated">
-                    {canIncreaseGlp1 ? "Didn't tolerate a higher dose" : "Didn't tolerate switching"}
-                  </option>
+                  {optionsShowing(escalationOptions(step), medInputs.glp1Escalation || 'not_yet')}
                 </select>
               </div>
             )}
 
-            {showSglt2i && (
+            {(cascade.sglt2iReached || medInputs.sglt2i !== undefined) && (
               <div className="med-step-enter">
                 {sglt2iDropdown}
               </div>
             )}
 
-            {showMetformin && (
+            {(cascade.metforminReached || medInputs.metformin !== undefined) && (
               <div className="med-step-enter">
                 {metforminDropdown}
               </div>
@@ -1590,10 +1515,8 @@ export function InputPanel({
     <>
       {/* Cancer Screening Section — shown when birth year is available */}
       {(() => {
-        // Default to January if birthMonth not set (gives conservative age estimate)
-        const age = inputs.birthYear
-          ? calculateAge(inputs.birthYear, inputs.birthMonth ?? 1)
-          : undefined;
+        // The plan's age, from the validated birth year (January when no month)
+        const age = planBasis?.age;
         if (age === undefined) return null;
 
         const sex = inputs.sex;
@@ -2036,9 +1959,7 @@ export function InputPanel({
   const renderBoneDensity = () => (
     <>
       {(() => {
-        const age = inputs.birthYear
-          ? calculateAge(inputs.birthYear, inputs.birthMonth ?? 1)
-          : undefined;
+        const age = planBasis?.age;
         if (age === undefined) return null;
 
         const sex = inputs.sex;
@@ -2133,6 +2054,7 @@ export function InputPanel({
                     renderScreeningDateInput(scr,
                       'dexa_followup_date',
                       followupStatus === 'completed' ? 'When was the treatment review completed?' : 'When is the treatment review scheduled?',
+                      { futureOnly: followupStatus === 'scheduled' }
                     )
                   )}
                 </>

@@ -39,9 +39,11 @@ const SEED = () => {
   };
   localStorage.setItem(FILE_KEY, JSON.stringify(file));
   localStorage.setItem(FILE_KEY + '_rev', '1');
-  // Legacy cache so vitalsViewMode picks 'matrix' on the very first render.
+  // Legacy cache so vitalsViewMode picks 'matrix' on the very first render:
+  // the saved profile, and the saved vitals rows in previousMeasurements, the
+  // shape the widget writes (US-15 AC10).
   localStorage.setItem('health_roadmap_data', JSON.stringify({
-    inputs: { sex: 'male', heightCm: 178, weightKg: 80, waistCm: 89, unitSystem: 'conventional' },
+    inputs: { sex: 'male', heightCm: 178, unitSystem: 'conventional' },
     previousMeasurements: m, medications: [], screenings: [], reminderPreferences: [],
     savedAt: now,
   }));

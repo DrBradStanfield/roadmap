@@ -154,6 +154,9 @@ export const BLOOD_TEST_METRICS: ReadonlyArray<string> = [
   'hba1c', 'creatinine', 'psa', 'apob', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'lpa',
 ];
 
+/** Metric types for the vitals (the body measurements the vitals matrix shows). */
+export const VITAL_METRICS: ReadonlyArray<string> = ['weight', 'waist', 'systolic_bp', 'diastolic_bp'];
+
 /** API measurement record shape (camelCase, as returned by API endpoints). */
 export interface ApiMeasurement {
   id: string;
@@ -183,10 +186,13 @@ export interface ApiMedication {
  * Handles FHIR-compliant data (actual drug names) and converts to UI format.
  */
 export function medicationsToInputs(
-  medications: ApiMedication[],
+  medications: ReadonlyArray<Pick<ApiMedication, 'medicationKey' | 'drugName' | 'doseValue'>>,
 ): import('./types').MedicationInputs {
   const inputs: import('./types').MedicationInputs = {};
   for (const m of medications) {
+    // A name that is not a string (null, a number or an object in a
+    // hand-edited file) is unanswered, as if no row were recorded.
+    if (typeof m.drugName !== 'string') continue;
     switch (m.medicationKey) {
       case 'statin':
         inputs.statin = {
@@ -247,6 +253,24 @@ function castEnum<T extends string>(value: string, valid: readonly T[]): T | und
   return valid.includes(value as T) ? (value as T) : undefined;
 }
 
+/** A screening date as stored (YYYY-MM, or YYYY-MM-DD), or undefined unless it
+ *  is a real calendar date: `Date` would roll '2020-99' forward into the future
+ *  and call the screening up to date. A `lastDone` date must also fall in the
+ *  current month or before it (the form offers only past months); a follow-up
+ *  date may be future, since the form asks when one is scheduled. "Current
+ *  month" is the one at UTC+14, the earliest time zone, so the widget (local
+ *  time) and the chat server (UTC) agree for every user. */
+function screeningDate(value: string, lastDone = false): string | undefined {
+  const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(value);
+  if (!m) return undefined;
+  const [year, month, day] = [Number(m[1]), Number(m[2]), m[3] === undefined ? 1 : Number(m[3])];
+  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
+  if (days === undefined || day < 1 || day > days) return undefined;
+  const now = new Date(Date.now() + 14 * 3600_000);
+  return lastDone && year * 12 + month > now.getUTCFullYear() * 12 + now.getUTCMonth() + 1 ? undefined : value;
+}
+
 // Valid values for each screening enum field (derived from ScreeningInputs in types.ts)
 const COLORECTAL_METHODS = ['fit_annual', 'colonoscopy_10yr', 'other', 'not_yet_started'] as const;
 const BREAST_FREQUENCIES = ['annual', 'biennial', 'not_yet_started'] as const;
@@ -265,7 +289,7 @@ const DEXA_RESULTS = ['normal', 'osteopenia', 'osteoporosis', 'awaiting'] as con
  * Convert API screening records into a ScreeningInputs object.
  */
 export function screeningsToInputs(
-  screenings: ApiScreening[],
+  screenings: ReadonlyArray<Pick<ApiScreening, 'screeningKey' | 'value'>>,
 ): import('./types').ScreeningInputs {
   const inputs: import('./types').ScreeningInputs = {};
   for (const s of screenings) {
@@ -274,7 +298,7 @@ export function screeningsToInputs(
         inputs.colorectalMethod = castEnum(s.value, COLORECTAL_METHODS);
         break;
       case 'colorectal_last_date':
-        inputs.colorectalLastDate = s.value;
+        inputs.colorectalLastDate = screeningDate(s.value, true);
         break;
       case 'colorectal_result':
         inputs.colorectalResult = castEnum(s.value, SCREENING_RESULTS);
@@ -283,13 +307,13 @@ export function screeningsToInputs(
         inputs.colorectalFollowupStatus = castEnum(s.value, FOLLOWUP_STATUSES);
         break;
       case 'colorectal_followup_date':
-        inputs.colorectalFollowupDate = s.value;
+        inputs.colorectalFollowupDate = screeningDate(s.value);
         break;
       case 'breast_frequency':
         inputs.breastFrequency = castEnum(s.value, BREAST_FREQUENCIES);
         break;
       case 'breast_last_date':
-        inputs.breastLastDate = s.value;
+        inputs.breastLastDate = screeningDate(s.value, true);
         break;
       case 'breast_result':
         inputs.breastResult = castEnum(s.value, SCREENING_RESULTS);
@@ -298,13 +322,13 @@ export function screeningsToInputs(
         inputs.breastFollowupStatus = castEnum(s.value, FOLLOWUP_STATUSES);
         break;
       case 'breast_followup_date':
-        inputs.breastFollowupDate = s.value;
+        inputs.breastFollowupDate = screeningDate(s.value);
         break;
       case 'cervical_method':
         inputs.cervicalMethod = castEnum(s.value, CERVICAL_METHODS);
         break;
       case 'cervical_last_date':
-        inputs.cervicalLastDate = s.value;
+        inputs.cervicalLastDate = screeningDate(s.value, true);
         break;
       case 'cervical_result':
         inputs.cervicalResult = castEnum(s.value, SCREENING_RESULTS);
@@ -313,7 +337,7 @@ export function screeningsToInputs(
         inputs.cervicalFollowupStatus = castEnum(s.value, FOLLOWUP_STATUSES);
         break;
       case 'cervical_followup_date':
-        inputs.cervicalFollowupDate = s.value;
+        inputs.cervicalFollowupDate = screeningDate(s.value);
         break;
       case 'lung_smoking_history':
         inputs.lungSmokingHistory = castEnum(s.value, SMOKING_HISTORIES);
@@ -325,7 +349,7 @@ export function screeningsToInputs(
         inputs.lungScreening = castEnum(s.value, LUNG_SCREENINGS);
         break;
       case 'lung_last_date':
-        inputs.lungLastDate = s.value;
+        inputs.lungLastDate = screeningDate(s.value, true);
         break;
       case 'lung_result':
         inputs.lungResult = castEnum(s.value, SCREENING_RESULTS);
@@ -334,7 +358,7 @@ export function screeningsToInputs(
         inputs.lungFollowupStatus = castEnum(s.value, FOLLOWUP_STATUSES);
         break;
       case 'lung_followup_date':
-        inputs.lungFollowupDate = s.value;
+        inputs.lungFollowupDate = screeningDate(s.value);
         break;
       case 'prostate_discussion':
         inputs.prostateDiscussion = castEnum(s.value, PROSTATE_DISCUSSIONS);
@@ -343,7 +367,7 @@ export function screeningsToInputs(
         inputs.prostatePsaValue = parseFloat(s.value);
         break;
       case 'prostate_last_date':
-        inputs.prostateLastDate = s.value;
+        inputs.prostateLastDate = screeningDate(s.value, true);
         break;
       case 'endometrial_discussion':
         inputs.endometrialDiscussion = castEnum(s.value, ENDOMETRIAL_DISCUSSIONS);
@@ -355,7 +379,7 @@ export function screeningsToInputs(
         inputs.dexaScreening = castEnum(s.value, DEXA_SCREENINGS);
         break;
       case 'dexa_last_date':
-        inputs.dexaLastDate = s.value;
+        inputs.dexaLastDate = screeningDate(s.value, true);
         break;
       case 'dexa_result':
         inputs.dexaResult = castEnum(s.value, DEXA_RESULTS);
@@ -364,7 +388,7 @@ export function screeningsToInputs(
         inputs.dexaFollowupStatus = castEnum(s.value, FOLLOWUP_STATUSES);
         break;
       case 'dexa_followup_date':
-        inputs.dexaFollowupDate = s.value;
+        inputs.dexaFollowupDate = screeningDate(s.value);
         break;
     }
   }
@@ -503,22 +527,32 @@ export function diffProfileFields(
 }
 
 /**
- * Compute the progressive disclosure stage (1–3) based on which inputs are filled.
+ * The progressive disclosure stage (1–3). The widget shows it, and the
+ * chatbot embed unmutes at 3, so both read this one rule (US-15 AC10).
  *
  * Stage 1: Always (units, sex, height shown)
  * Stage 2: sex AND a plausible heightCm (weight, waist, BP, birth month/year shown)
- * Stage 3: a plausible weightKg (blood tests, medications, screening shown)
+ * Stage 3: a plausible weightKg (blood tests, medications, screening shown),
+ *          or any saved blood test (a lab import with no weight still opens
+ *          the whole form)
  *
+ * `saved` holds the newest saved row per metric; they fill the fields the
+ * inputs leave empty (mergeLongitudinalInputs), so a typed value wins.
  * "Plausible" = inside the canonical SI validation range (UNIT_DEFS in
  * units.ts) — a half-typed "1" of "180" must NOT open the next stage; the
  * gate opens only once the value could be a real measurement.
  *
  * Checks from stage 3 downward so returning users with data skip to full form.
  */
-export function computeFormStage(inputs: Partial<HealthInputs>): 1 | 2 | 3 {
+export function computeFormStage(
+  inputs: Partial<HealthInputs>,
+  saved: ReadonlyArray<Pick<ApiMeasurement, 'metricType' | 'value'>> = [],
+): 1 | 2 | 3 {
+  const merged = mergeLongitudinalInputs(inputs, saved);
   const plausible = (v: number | undefined, r: { min: number; max: number }) =>
     v !== undefined && v >= r.min && v <= r.max;
-  if (plausible(inputs.weightKg, UNIT_DEFS.weight.validationRange.si)) return 3;
-  if (inputs.sex !== undefined && plausible(inputs.heightCm, UNIT_DEFS.height.validationRange.si)) return 2;
+  if (plausible(merged.weightKg, UNIT_DEFS.weight.validationRange.si)) return 3;
+  if (saved.some(m => BLOOD_TEST_METRICS.includes(m.metricType))) return 3;
+  if (merged.sex !== undefined && plausible(merged.heightCm, UNIT_DEFS.height.validationRange.si)) return 2;
   return 1;
 }

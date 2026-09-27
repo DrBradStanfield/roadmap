@@ -39,7 +39,8 @@ interface UploadModalProps {
   onStart?: () => Promise<void>;
   onClose: () => void;
   onScreeningUpdate?: (screeningKey: string, value: string) => void;
-  birthYear?: number;
+  /** The plan's age, for the review's screening eligibility (US-06 AC5). */
+  age?: number;
   sex?: 'male' | 'female';
   /** Visibility does not end the session or discard review drafts. */
   open: boolean;
@@ -108,7 +109,7 @@ interface HealthUploadAPI {
 const MAX_FILES = 200;
 const MAX_FILE_SIZE = IMPORT_LIMITS.websiteFileMb * 1024 * 1024; // the connector's hint names this number
 
-export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, birthYear, sex, open, onOpen }: UploadModalProps) {
+export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, age, sex, open, onOpen }: UploadModalProps) {
   const [state, setState] = useState<ModalState>('select');
   const [files, setFiles] = useState<File[]>([]);
   // Connect-first gate (decision record: encourage, don't block). 'device-only'
@@ -754,7 +755,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               unitSystem={unitSystem}
               metricUnitOverrides={metricUnitOverrides}
               onToggleFieldUnit={onToggleFieldUnit}
-              birthYear={birthYear}
+              age={age}
               sex={sex}
               onSave={handleSave}
               onCancel={handleDiscard}

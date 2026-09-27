@@ -41,6 +41,8 @@ import {
 import { dayOf, localDay } from './merge';
 import { ISO_DATE } from './measurement-history';
 import type { RoadmapFile } from './roadmap-file';
+import { screeningsToInputs } from './mappings';
+import { fileScreeningRows } from './file-inputs';
 
 // ===== Types =====
 
@@ -288,13 +290,17 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
     if (!prev || day > prev) measurementDates[m.metricType] = day;
   }
 
-  const medications: MedicationRecord[] = file.medications.map((m) => ({
+  // A name that is not a string is unanswered, as medicationsToInputs reads it.
+  const medications: MedicationRecord[] = file.medications.filter((m) => typeof m.drugName === 'string').map((m) => ({
     medicationKey: m.medicationKey,
     drugName: m.drugName,
     updatedAt: m.updatedAt,
   }));
 
-  return computeNextDueDates({ sex, age }, file.screenings, measurementDates, medications);
+  // The screenings the plan reads (US-06/US-15 AC11): a date that is not a
+  // real calendar date, or a "last done" date after this month, is dropped.
+  const screenings = screeningsToInputs(fileScreeningRows(file.screenings));
+  return computeNextDueDates({ sex, age }, screenings, measurementDates, medications);
 }
 
 function disabledCategories(file: RoadmapFile): Set<string> {

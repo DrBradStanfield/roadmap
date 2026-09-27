@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { refHintFor } from './reference-hints';
 import {
   resolveUnitSystem,
   reportedToCanonical,
@@ -17,7 +18,14 @@ import {
   feetInchesToCm,
   formatHeightDisplay,
   CANONICAL_UNITS,
+  LIPID_TREATMENT_TARGETS,
+  formatTargetLine,
+  formatGradedValue,
+  waistToHeightRatio,
+  isWaistToHeightElevated,
+  elevatedWaistFromCm,
   type MetricType,
+  type UnitSystem,
 } from './units';
 import { METRIC_TYPES } from './validation';
 
@@ -386,5 +394,170 @@ describe('US-32 AC35 — the SI unit every stored measurement is in', () => {
     // Every metric with a unit definition, height included: it is a profile
     // field, so METRIC_TYPES does not list it, but a read still states its unit.
     expect(Object.keys(CANONICAL_UNITS).sort()).toEqual(Object.keys(UNIT_DEFS).sort());
+  });
+});
+
+// US-07 AC5: a "<X" target prints the first value, at the unit's display step,
+// that the plan grades at or past the line, so a displayed value on either
+// side of X reads the way the plan grades it.
+describe('formatTargetLine (US-07 AC5, US-06 AC5)', () => {
+  it.each([
+    ['LDL 1.4 mmol/L', 'ldl', LIPID_TREATMENT_TARGETS.ldlMmol, '1.4', '55'], // 54 mg/dL is 1.396: below the target
+    ['non-HDL 1.6 mmol/L', 'ldl', LIPID_TREATMENT_TARGETS.nonHdlMmol, '1.6', '62'], // 61 mg/dL is 1.577
+    ['ApoB 0.5 g/L', 'apob', LIPID_TREATMENT_TARGETS.apobGl, '0.50', '50'],
+  ] as const)('%s (%s at %s) prints %s in SI and %s in US units', (_name, metric, line, si, conv) => {
+    expect(formatTargetLine(metric, line, 'si')).toBe(si);
+    expect(formatTargetLine(metric, line, 'conventional')).toBe(conv);
+  });
+
+  it('the printed value is at or above the line, and one display step below it is not', () => {
+    for (const metric of ['ldl', 'apob'] as MetricType[]) {
+      for (const line of [0.5, 1.4, 1.6, 130 / 38.67, 160 / 38.67, 190 / 38.67]) {
+        for (const unit of ['si', 'conventional'] as const) {
+          const step = 10 ** -UNIT_DEFS[metric].decimalPlaces[unit];
+          const x = Number(formatTargetLine(metric, line, unit));
+          expect(toCanonicalValue(metric, x, unit), `${metric} ${line} ${unit}`).toBeGreaterThanOrEqual(line);
+          expect(toCanonicalValue(metric, x - step, unit), `${metric} ${line} ${unit}`).toBeLessThan(line);
+        }
+      }
+    }
+  });
+
+  it('takes the plan\'s own test when the grade is not a plain comparison', () => {
+    // A waist the plan grades elevated at 178 cm: its ratio rounds to 0.50 from 88.11 cm.
+    const elevated = (cm: number) => Math.round((cm / 178) * 100) / 100 >= 0.5;
+    expect(formatTargetLine('waist', 0.495 * 178, 'si', elevated)).toBe('89');
+    expect(formatTargetLine('waist', 0.495 * 178, 'conventional', elevated)).toBe('34.7');
+  });
+});
+
+// US-07 AC5, US-06 AC5: a line that is not a finite number (a NaN height makes
+// a NaN waist line) has no first step past it. The walk used to loop forever
+// and hang the page; it now prints the line as formatDisplayValue does, and a
+// value beside it prints plain.
+describe('formatTargetLine on a line that is not finite (US-07 AC5, US-06 AC5)', () => {
+  it.each([NaN, Infinity, -Infinity])('returns for a line of %s', (line) => {
+    expect(formatTargetLine('ldl', line, 'si')).toBe(formatDisplayValue('ldl', line, 'si'));
+    expect(formatTargetLine('waist', line, 'conventional', (v) => v > line)).toBe(formatDisplayValue('waist', line, 'conventional'));
+    expect(formatGradedValue('ldl', 1.4, 'conventional', line)).toBe('54');
+  });
+});
+
+// US-07 AC5, US-06 AC5: a value printed beside its "<X" line reads on the side
+// of X the plan grades it. Rounded to the nearest display step, a value off the
+// display grid (typed in the other unit) could land on the wrong side: 1.40
+// mmol/L of LDL is 54.1 mg/dL beside "<55", and 54 mg/dL is 1.396 mmol/L,
+// "1.4" beside "<1.4". Graded at or past the line, such a value shows X;
+// graded below it, one more decimal place, rounded down.
+describe('formatGradedValue (US-07 AC5, US-06 AC5)', () => {
+  const T = LIPID_TREATMENT_TARGETS;
+  const ldlMg = (mg: number) => toCanonicalValue('ldl', mg, 'conventional');
+
+  it('LDL 1.40 mmol/L, graded at the target, shows 55 mg/dL, not 54', () => {
+    expect(formatGradedValue('ldl', 1.4, 'conventional', T.ldlMmol)).toBe('55');
+  });
+
+  it('LDL 54 mg/dL (1.3964), graded below the target, shows 1.39 mmol/L, not 1.4', () => {
+    expect(formatGradedValue('ldl', ldlMg(54), 'si', T.ldlMmol)).toBe('1.39');
+    for (const [v, shown] of [[1.36, '1.36'], [1.38, '1.38'], [1.39, '1.39'], [1.395, '1.39'], [1.3999, '1.39']] as const) {
+      expect(formatGradedValue('ldl', v, 'si', T.ldlMmol), `${v}`).toBe(shown);
+    }
+  });
+
+  it('non-HDL 1.56 (total 3.76, HDL 2.20) shows 1.56, below the 1.6 line', () => {
+    expect(formatGradedValue('ldl', 1.56, 'si', T.nonHdlMmol)).toBe('1.56');
+  });
+
+  it('a waist typed in cm, shown in inches, reads on its graded side of the line', () => {
+    // 178 cm: the plan grades 88.11 cm and up elevated; the label is "<34.7 in".
+    const graded = (cm: number) => isWaistToHeightElevated(waistToHeightRatio(cm, 178));
+    const line = elevatedWaistFromCm(178);
+    expect(formatTargetLine('waist', line, 'conventional', graded)).toBe('34.7');
+    expect(formatDisplayValue('waist', 88.1, 'conventional')).toBe('34.7'); // healthy, yet at the label
+    expect(formatGradedValue('waist', 88.1, 'conventional', line, graded)).toBe('34.68');
+    expect(formatGradedValue('waist', 88.11, 'conventional', line, graded)).toBe('34.7');
+  });
+
+  it('a value on the display grid shows as it always has', () => {
+    for (const [metric, line] of [['ldl', T.ldlMmol], ['ldl', T.nonHdlMmol], ['apob', T.apobGl]] as const) {
+      for (const unit of ['si', 'conventional'] as UnitSystem[]) {
+        const dp = UNIT_DEFS[metric].decimalPlaces[unit];
+        const center = Math.round(fromCanonicalValue(metric, line, unit) * 10 ** dp);
+        for (let k = center - 30; k <= center + 30; k++) {
+          const v = toCanonicalValue(metric, k / 10 ** dp, unit);
+          expect(formatGradedValue(metric, v, unit, line), `${metric} ${k} ${unit}`).toBe(formatDisplayValue(metric, v, unit));
+        }
+      }
+    }
+  });
+
+  /** Every value near the line, from a fine sweep and from both units' grids. */
+  function near(metric: MetricType, line: number): number[] {
+    const values: number[] = [];
+    for (let i = -500; i <= 500; i++) values.push(line * (1 + i / 5000));
+    for (const unit of ['si', 'conventional'] as UnitSystem[]) {
+      const dp = UNIT_DEFS[metric].decimalPlaces[unit] + 1; // one decimal finer than shown
+      const center = Math.round(fromCanonicalValue(metric, line, unit) * 10 ** dp);
+      for (let k = center - 300; k <= center + 300; k++) values.push(toCanonicalValue(metric, k / 10 ** dp, unit));
+    }
+    return values;
+  }
+
+  /** Rounded as usual; else, graded below the line, one more decimal place
+   *  and at most one fine step under the true value; else, graded at or past
+   *  it, at most one display step over it. */
+  function expectClose(metric: MetricType, v: number, unit: UnitSystem, shown: string, past: boolean) {
+    const dp = UNIT_DEFS[metric].decimalPlaces[unit];
+    const off = Number(shown) - fromCanonicalValue(metric, v, unit);
+    const why = `${metric} ${v} in ${unit}: ${shown}`;
+    if (shown === formatDisplayValue(metric, v, unit)) return;
+    if (past) {
+      expect(off, why).toBeGreaterThanOrEqual(0);
+      expect(off, why).toBeLessThanOrEqual(10 ** -dp + 1e-9);
+    } else {
+      expect(shown.split('.')[1]?.length ?? 0, why).toBe(dp + 1);
+      expect(off, why).toBeLessThanOrEqual(1e-9);
+      expect(-off, why).toBeLessThan(10 ** -(dp + 1) + 1e-9);
+    }
+  }
+
+  it('no displayed lipid value contradicts its grade, in either unit, around each line', () => {
+    for (const [metric, line] of [['ldl', T.ldlMmol], ['ldl', T.nonHdlMmol], ['apob', T.apobGl]] as const) {
+      for (const unit of ['si', 'conventional'] as UnitSystem[]) {
+        const x = Number(formatTargetLine(metric, line, unit));
+        for (const v of near(metric, line)) {
+          const text = formatGradedValue(metric, v, unit, line);
+          expect(Number(text) >= x, `${metric} ${v} in ${unit}: ${text} beside <${x}`).toBe(v >= line);
+          expectClose(metric, v, unit, text, v >= line);
+        }
+      }
+    }
+  });
+
+  it('no displayed waist contradicts its grade, in either unit, at any height', () => {
+    for (let h = 120; h <= 230; h += 0.5) {
+      const graded = (cm: number) => isWaistToHeightElevated(waistToHeightRatio(cm, h));
+      const line = elevatedWaistFromCm(h);
+      for (const unit of ['si', 'conventional'] as UnitSystem[]) {
+        const x = Number(formatTargetLine('waist', line, unit, graded));
+        for (const v of near('waist', line)) {
+          const text = formatGradedValue('waist', v, unit, line, graded);
+          expect(Number(text) >= x, `${h} cm tall, waist ${v} cm in ${unit}: ${text} beside <${x}`).toBe(graded(v));
+          expectClose('waist', v, unit, text, graded(v));
+        }
+      }
+    }
+  });
+});
+
+// US-07 AC5: the reference hints state each lipid target the way the plan's
+// cards do: the first value, at the display step, graded above it.
+describe('lipid reference hints (US-07 AC5)', () => {
+  it.each([
+    ['ldl', 'Optimal: <1.4 mmol/L', 'Optimal: <55 mg/dL'],
+    ['apob', 'Optimal: <0.50 g/L', 'Optimal: <50 mg/dL'],
+  ] as const)('%s', (metric, si, conv) => {
+    expect(refHintFor(metric, 'si')).toBe(si);
+    expect(refHintFor(metric, 'conventional')).toBe(conv);
   });
 });

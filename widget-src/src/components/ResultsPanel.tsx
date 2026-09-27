@@ -1,15 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { HealthResults, Suggestion } from '@roadmap/health-core';
+import type { HealthResults, Suggestion, LipidMarker } from '@roadmap/health-core';
 import {
   type UnitSystem,
   type MetricType,
   type SuggestionEvidence,
   formatDisplayValue,
+  formatGradedValue,
   getDisplayLabel,
   formatHeightDisplay,
   APOB_THRESHOLDS,
   NON_HDL_THRESHOLDS,
   LDL_THRESHOLDS,
+  lipidMarkerFor,
+  isWaistToHeightElevated,
   getEgfrStatus,
   getLpaStatus,
   getHba1cStatus,
@@ -61,14 +64,21 @@ function getBmiStatus(bmiCategory: string, waistToHeightRatio?: number): { label
   return { label: bmiCategory, className: classMap[bmiCategory] || '' };
 }
 
+/** The lipid tile for each kind of the plan's lipid marker. */
+const LIPID_TILES: Record<LipidMarker['kind'], { label: string; thresholds: Parameters<typeof getLipidStatus>[1]; metric: MetricType; evidence: string }> = {
+  apoB: { label: 'ApoB', thresholds: APOB_THRESHOLDS, metric: 'apob', evidence: 'apob' },
+  nonHdl: { label: 'Non-HDL Cholesterol', thresholds: NON_HDL_THRESHOLDS, metric: 'ldl', evidence: 'non-hdl' },
+  ldl: { label: 'LDL Cholesterol', thresholds: LDL_THRESHOLDS, metric: 'ldl', evidence: 'ldl' },
+};
+
 function getWaistToHeightStatus(ratio: number): { label: string; className: string } | null {
-  if (ratio >= 0.5) return { label: 'Elevated', className: 'status-attention' };
+  if (isWaistToHeightElevated(ratio)) return { label: 'Elevated', className: 'status-attention' };
   return { label: 'Healthy', className: 'status-normal' };
 }
 
 const statusClassMap: Record<string, string> = {
   'Normal': 'status-normal', 'Optimal': 'status-normal', 'Healthy': 'status-normal',
-  'Low Normal': 'status-info', 'Borderline': 'status-info', 'Overweight': 'status-info',
+  'Low Normal': 'status-info', 'Borderline': 'status-info', 'Above optimal': 'status-info', 'Overweight': 'status-info',
   'Mildly Decreased': 'status-attention', 'High': 'status-attention', 'Elevated': 'status-attention',
   'Moderately Decreased': 'status-attention', 'Underweight': 'status-attention',
   'Prediabetic': 'status-attention',
@@ -610,7 +620,7 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
               label="BMI"
               value={results.bmi}
               status={getBmiStatus(results.bmiCategory!, results.waistToHeightRatio)}
-              evidence={sex ? getBmiEvidence(results.bmiCategory!, sex, results.waistToHeightRatio) : undefined}
+              evidence={sex ? getBmiEvidence(results.bmi, sex, results.waistToHeightRatio) : undefined}
             />
           )}
           <StatCard
@@ -626,17 +636,16 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
             evidence={getProteinEvidence(results.idealBodyWeight, getProteinRate(results.eGFR), results.eGFR)}
           />
 
-          {/* Lipid tile: ApoB → Non-HDL → LDL cascade */}
-          {results.apoB !== undefined ? (() => {
-            const s = getLipidStatus(results.apoB, APOB_THRESHOLDS);
-            return <StatCard label="ApoB" value={<>{formatDisplayValue('apob', results.apoB, usFor('apob'))} {getDisplayLabel('apob', usFor('apob'))}</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['apob']} />;
-          })() : results.nonHdlCholesterol !== undefined ? (() => {
-            const s = getLipidStatus(results.nonHdlCholesterol, NON_HDL_THRESHOLDS);
-            return <StatCard label="Non-HDL Cholesterol" value={<>{formatDisplayValue('ldl', results.nonHdlCholesterol, usFor('ldl'))} {getDisplayLabel('ldl', usFor('ldl'))}</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['non-hdl']} />;
-          })() : results.ldlC !== undefined ? (() => {
-            const s = getLipidStatus(results.ldlC, LDL_THRESHOLDS);
-            return <StatCard label="LDL Cholesterol" value={<>{formatDisplayValue('ldl', results.ldlC, usFor('ldl'))} {getDisplayLabel('ldl', usFor('ldl'))}</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['ldl']} />;
-          })() : null}
+          {/* Lipid tile: the plan's marker, ApoB → Non-HDL → LDL (results carry ApoB and LDL through from the inputs) */}
+          {(() => {
+            const marker = lipidMarkerFor(results, results);
+            if (!marker) return null;
+            const tile = LIPID_TILES[marker.kind];
+            const s = getLipidStatus(marker.value, tile.thresholds);
+            const u = usFor(tile.metric);
+            // The value reads on the side of the tile's optimal line, the marker's target, that its status grades it (US-07 AC5)
+            return <StatCard label={tile.label} value={<>{formatGradedValue(tile.metric, marker.value, u, marker.target)} {getDisplayLabel(tile.metric, u)}</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE[tile.evidence]} />;
+          })()}
 
           {results.eGFR !== undefined && (() => {
             const s = getEgfrStatus(results.eGFR);

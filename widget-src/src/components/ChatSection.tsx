@@ -13,7 +13,7 @@ import { trackProductEvent } from '../lib/server-api';
 import { getChatGate } from '../lib/chat-api';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ChatKeyGate } from './ChatKeyGate';
-import { useChatState, THINKING_MESSAGES, MAX_CHARS } from '../hooks/useChatState';
+import { useChatState, THINKING_MESSAGES, MAX_CHARS, type ChatContextSource } from '../hooks/useChatState';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { ChatThreadList } from './ChatThreadList';
 import { ChatHeaderTitle } from './ChatHeaderTitle';
@@ -28,7 +28,7 @@ interface ChatSectionProps {
   inline?: boolean;
   onClose?: () => void;
   onExpand?: () => void;
-  guestInputs?: Record<string, unknown> | null;
+  guestInputs?: ChatContextSource;
   prefetchedData?: ChatPrefetchData | null;
   onProposeEdit?: (edits: ProposedEdit[]) => void;
 }

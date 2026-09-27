@@ -9,17 +9,8 @@ import * as Sentry from '@sentry/react-router';
 import fs from 'fs';
 import path from 'path';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
-import type { HealthInputs } from '../../packages/health-core/src/types';
-import { calculateHealthResults } from '../../packages/health-core/src/calculations';
 import { SUGGESTION_EVIDENCE } from '../../packages/health-core/src/evidence';
-import { LONGITUDINAL_FIELDS } from '../../packages/health-core/src/mappings';
-import {
-  latestFromHistory,
-  HISTORY_CAP_PER_METRIC,
-  ISO_DATE,
-  type MeasurementHistoryMap,
-} from '../../packages/health-core/src/measurement-history';
-import { healthInputSchema, sanitizeInputs, excludedInputFields } from '../../packages/health-core/src/validation';
+import { buildChatContextJson } from '../../packages/health-core/src/chat-context';
 import { CHAT_EDIT_TOOLS, PREFILL_ACK_MESSAGE, parseProposedEdits, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
 import { callAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicUsage } from './anthropic.server';
 
@@ -224,136 +215,13 @@ export const EMPTY_CHAT_CONTEXT: ChatContext = Object.freeze({
  * Inputs that are absent or fail schema validation (an empty form — v2 invites
  * chat before any data entry — or a malformed payload) degrade to the empty
  * context, never an error. (Regression: Sentry 7563968375 — the logged-in
- * path used to read the purged tables and 500 on every message.)
+ * path used to read the purged tables and 500 on every message.) The Pages
+ * BYOK chat builds the same JSON with the same function, which is also the
+ * anti-injection boundary: see health-core chat-context.ts (US-15 AC11).
  */
 export function resolveChatContext(guestInputs: unknown): ChatContext {
-  return (guestInputs ? assembleGuestChatContext(guestInputs) : null) ?? EMPTY_CHAT_CONTEXT;
-}
-
-/**
- * Build chat context from client-supplied health inputs.
- * Returns null if inputs fail validation.
- */
-export function assembleGuestChatContext(guestInputs: unknown): ChatContext | null {
-  const raw = (guestInputs && typeof guestInputs === 'object' ? guestInputs : {}) as Record<string, unknown>;
-  // Sanitize per field first: one out-of-range number used to collapse the
-  // WHOLE context to "no data entered", and the model then answered as if the
-  // user had entered nothing. The snapshot inputs below are still read from
-  // parsed.data, so Zod's key stripping stands between an unknown field and
-  // the model; unitSystem, medications, screenings and measurementHistory come
-  // off `raw` and carry their own sanitizers.
-  const parsed = healthInputSchema.safeParse(sanitizeInputs(raw as Partial<HealthInputs>));
-  if (!parsed.success) return null;
-
-  const inputs = parsed.data as HealthInputs;
-  const excludedFields = excludedInputFields(raw as Partial<HealthInputs>);
-  const unitSystem = raw.unitSystem === 'conventional' ? 'conventional' : 'si';
-
-  // Sanitize medications/screenings — only allow plain objects with string/number values
-  // to prevent prompt injection via crafted nested objects
-  const medications = sanitizeFlatObject(raw.medications);
-  const screenings = sanitizeFlatObject(raw.screenings);
-
-  const results = calculateHealthResults(inputs, unitSystem, medications, screenings);
-
-  const latestValues = buildLatestValues(inputs);
-
-  // Local-first builds (Health Plan v2) send the full dated blood-test/vitals
-  // time series, which the snapshot inputs don't carry. Two uses:
-  //  1. Expose the trend so "what's changed since last time" works.
-  //  2. Override each metric's latestValues entry with the most-recent dated
-  //     reading — the client's single snapshot field can be ambiguous (it
-  //     reported LDL 2.0 where the newest dated lab was 1.2), so the dated
-  //     series is the source of truth for "most recent".
-  const measurementHistory = sanitizeMeasurementHistory(raw.measurementHistory);
-  const hasHistory = Object.keys(measurementHistory).length > 0;
-  if (hasHistory) {
-    for (const [field, value] of Object.entries(latestFromHistory(measurementHistory))) {
-      latestValues[field] = `${value}`;
-    }
-  }
-
-  const userContext = {
-    profile: {
-      sex: inputs.sex,
-      age: results.age,
-      heightCm: inputs.heightCm,
-      unitSystem,
-    },
-    latestValues,
-    // Field names only — the user HAS a value here, it was out of range and
-    // unusable. Without it the model reads the gap as "never entered". The
-    // invalid values themselves never enter the prompt.
-    ...(excludedFields.length > 0 ? { excludedFields } : {}),
-    // Chronological per metric; the LAST entry is the most recent. SI values,
-    // same units as latestValues. Omitted (undefined) when no history was sent.
-    ...(hasHistory ? { measurementHistory } : {}),
-    medications,
-    screenings,
-    currentSuggestions: results.suggestions.map(s => ({
-      id: s.id,
-      category: s.category,
-      priority: s.priority,
-      title: s.title,
-    })),
-    uploadedDocuments: [],
-  };
-
-  return {
-    userContextJson: JSON.stringify(userContext, null, 2),
-    healthDocuments: [],
-  };
-}
-
-/**
- * Validate client-supplied dated measurement history: an object mapping metric
- * key → chronological array of {date: YYYY-MM-DD, value: number}. Hard caps
- * (HISTORY_CAP_PER_METRIC points/metric, 400 total) bound the payload + prompt
- * size; anything malformed is dropped, so a crafted object can't inject prose
- * into the prompt.
- */
-function sanitizeMeasurementHistory(obj: unknown): MeasurementHistoryMap {
-  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return {};
-  const out: MeasurementHistoryMap = {};
-  let total = 0;
-  for (const [metric, series] of Object.entries(obj as Record<string, unknown>)) {
-    if (metric.length > 40 || !Array.isArray(series)) continue;
-    const clean: Array<{ date: string; value: number }> = [];
-    for (const entry of series) {
-      if (clean.length >= HISTORY_CAP_PER_METRIC || total >= 400) break;
-      const date = (entry as { date?: unknown })?.date;
-      const value = (entry as { value?: unknown })?.value;
-      if (typeof date === 'string' && ISO_DATE.test(date) && typeof value === 'number' && Number.isFinite(value)) {
-        clean.push({ date, value });
-        total++;
-      }
-    }
-    if (clean.length > 0) out[metric] = clean;
-  }
-  return out;
-}
-
-/** Sanitize an object to only contain string/number/boolean/null values (no nested objects). */
-function sanitizeFlatObject(obj: unknown): Record<string, unknown> {
-  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return {};
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === null) {
-      result[key] = value;
-    }
-  }
-  return result;
-}
-
-function buildLatestValues(inputs: HealthInputs): Record<string, string> {
-  const result: Record<string, string> = {};
-  for (const field of LONGITUDINAL_FIELDS) {
-    const value = inputs[field as keyof HealthInputs];
-    if (value !== undefined && value !== null) {
-      result[field] = `${value}`;
-    }
-  }
-  return result;
+  const userContextJson = guestInputs ? buildChatContextJson(guestInputs) : null;
+  return userContextJson === null ? EMPTY_CHAT_CONTEXT : { userContextJson, healthDocuments: [] };
 }
 
 // ---------------------------------------------------------------------------

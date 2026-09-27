@@ -124,3 +124,37 @@ describe('ReviewTable — archiving the original behind a connector row (US-13 A
     expect(renderReview([{ ...connectorLetter, contentHash: null }], letterResults).button.disabled).toBe(true);
   });
 });
+
+// US-06 AC5: the upload review offers a screening-date update by the plan's
+// age, not the birth year alone. Born December 1981, the plan says 44 until
+// the birthday; the year alone said 45, old enough for prostate screening.
+describe('ReviewTable — screening eligibility reads the plan\'s age (US-06 AC5)', () => {
+  const psaLetter: FileResult[] = [{
+    fileName: 'urology.pdf',
+    reportDate: null,
+    values: [],
+    additionalValues: [],
+    document: { classification: 'clinic_letter', title: 'Urology', documentDate: '2026-09-01', contentMarkdown: '# PSA', metadata: { screeningType: 'prostate' } },
+  }];
+  const renderAt = (age: number | undefined) => render(
+    <ReviewTable
+      results={psaLetter}
+      history={{ bloodTests: [], labValues: [], documents: [] }}
+      unitSystem="si"
+      age={age}
+      sex="male"
+      onSave={() => {}}
+      onCancel={() => {}}
+      isSaving={false}
+      error={null}
+    />,
+  ).container.querySelector('.review-screening-update input');
+
+  it('at 44 there is no prostate screening update to tick', () => {
+    expect(renderAt(44)).toBeNull();
+  });
+
+  it('at 45 it is offered, ticked', () => {
+    expect((renderAt(45) as HTMLInputElement | null)?.checked).toBe(true);
+  });
+});

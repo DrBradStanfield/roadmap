@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { toCanonicalValue, type ApiMeasurement, type UnitSystem } from '@roadmap/health-core';
-import { buildColumns, bpPairReady, vitalsCellsOf, routeVitalsEdit } from './StartingInfoVitals';
+import { toCanonicalValue, waistToHeightRatio, isWaistToHeightElevated, type ApiMeasurement, type UnitSystem } from '@roadmap/health-core';
+import { buildColumns, bpPairReady, vitalsCellsOf, routeVitalsEdit, healthyWaistBelow } from './StartingInfoVitals';
 
 // `buildColumns` is the one genuinely new pure helper introduced when the
 // vitals section was unified onto the blood-test matrix's column grid: it
@@ -178,5 +178,28 @@ describe('vitalsCellsOf', () => {
       { keys: ['weight'], values: { weight: 82 } },
       { keys: ['sys', 'dia'], values: { systolic_bp: 128, diastolic_bp: 82 } },
     ]);
+  });
+});
+
+// US-06 AC5: the matrix's waist label follows the plan's own rule. The plan
+// rounds the ratio to 2 decimals, so at 178 cm it turns elevated at 88.11 cm.
+// The label prints the first waist, at the display step, that the plan grades
+// elevated: 88 cm (0.494) is healthy and 89 cm (0.500) is not, so "<89 cm".
+describe('healthyWaistBelow (US-06 AC5)', () => {
+  it('at 178 cm reads 89 cm and 34.7 in', () => {
+    expect(healthyWaistBelow(178, 'si')).toBe('89');
+    expect(healthyWaistBelow(178, 'conventional')).toBe('34.7');
+  });
+
+  it('the label is graded elevated and one display step below it is healthy, at any height, in either unit', () => {
+    const elevated = (cm: number, h: number) => isWaistToHeightElevated(waistToHeightRatio(cm, h));
+    for (let h = 120; h <= 230; h += 0.5) {
+      for (const unit of ['si', 'conventional'] as UnitSystem[]) {
+        const label = Number(healthyWaistBelow(h, unit));
+        const step = unit === 'si' ? 1 : 0.1;
+        expect(elevated(toCanonicalValue('waist', label, unit), h), `${h} cm, ${unit}`).toBe(true);
+        expect(elevated(toCanonicalValue('waist', label - step, unit), h), `${h} cm, ${unit}`).toBe(false);
+      }
+    }
   });
 });

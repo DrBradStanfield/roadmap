@@ -28,8 +28,13 @@ import {
   formatDisplayValue,
   getDisplayLabel,
   parseLocalisedNumber,
-  calculateIBW,
+  formatTargetLine,
+  waistToHeightRatio,
+  isWaistToHeightElevated,
+  elevatedWaistFromCm,
+  bpTargetFor,
 } from '@roadmap/health-core';
+import type { PlanBasis } from './InputPanel';
 import { slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import {
   type Status,
@@ -70,6 +75,10 @@ interface StartingInfoVitalsProps {
    *  disclosure gate that unlocks the blood-test panel): no weight in what
    *  the plan reads, the draft's own included. */
   formStage: 1 | 2 | 3;
+  /** What the plan was computed from (US-06 AC5): its age sets the
+   *  blood-pressure target, its weight target (kg) the weight line and its
+   *  validated height (cm) the waist line. Null until there is a plan. */
+  plan: Pick<PlanBasis, 'age' | 'idealBodyWeight' | 'heightCm'> | null;
   /** Called after the user types a valid weight — continues the
    *  height → weight → email focus chain from the legacy form. */
   onAutoFocusEmail?: () => void;
@@ -130,30 +139,37 @@ const ROWS: RowConfig[] = [
 
 // ── Status thresholds (demographic-dependent — live here) ────────────────
 
-function weightStatus(siKg: number | null | undefined, heightCm?: number, sex?: 'male' | 'female'): Status {
-  if (siKg == null || Number.isNaN(siKg) || heightCm == null || !sex) return null;
-  const ibw = calculateIBW(heightCm, sex);
+function weightStatus(siKg: number | null | undefined, ibw?: number): Status {
+  if (siKg == null || Number.isNaN(siKg) || ibw == null) return null;
   if (siKg >= ibw - 5 && siKg <= ibw + 2) return 'ok';
   if (siKg <= ibw + 5) return 'warn';
   return 'bad';
 }
+/** The waist target's number, in the display unit: the first waist, at the
+ *  unit's display step, that the plan grades elevated at this height. A waist
+ *  shown below "<X" reads healthy, and X itself elevated (US-06 AC5). */
+export function healthyWaistBelow(heightCm: number, unit: UnitSystem): string {
+  const elevated = (cm: number) => isWaistToHeightElevated(waistToHeightRatio(cm, heightCm));
+  return formatTargetLine('waist', elevatedWaistFromCm(heightCm), unit, elevated);
+}
+
+/** 'ok' exactly when the plan counts the waist as healthy (US-06 AC5). */
 function waistStatus(siCm: number | null | undefined, heightCm?: number): Status {
   if (siCm == null || Number.isNaN(siCm) || heightCm == null) return null;
-  const target = heightCm * 0.5;
-  if (siCm <= target) return 'ok';
-  if (siCm <= target + 8) return 'warn';
+  if (!isWaistToHeightElevated(waistToHeightRatio(siCm, heightCm))) return 'ok';
+  if (siCm <= heightCm * 0.5 + 8) return 'warn';
   return 'bad';
 }
-function bpStatus(sys?: number | null, dia?: number | null, age?: number): Status {
-  if (sys == null || dia == null || Number.isNaN(sys) || Number.isNaN(dia)) return null;
-  const sysTarget = age != null && age >= 65 ? 130 : 120;
+/** Neutral with no systolic target: there is no plan (US-06 AC5). */
+function bpStatus(sys: number | null | undefined, dia: number | null | undefined, sysTarget: number | undefined): Status {
+  if (sys == null || dia == null || Number.isNaN(sys) || Number.isNaN(dia) || sysTarget === undefined) return null;
   const diaTarget = 80;
   if (sys < sysTarget && dia < diaTarget) return 'ok';
   if (sys < sysTarget + 10 && dia < diaTarget + 5) return 'warn';
   return 'bad';
 }
-function simpleStatus(metric: 'weight' | 'waist', si: number | null | undefined, heightCm?: number, sex?: 'male' | 'female'): Status {
-  return metric === 'weight' ? weightStatus(si, heightCm, sex) : waistStatus(si, heightCm);
+function simpleStatus(metric: 'weight' | 'waist', si: number | null | undefined, ibwKg?: number, planHeightCm?: number): Status {
+  return metric === 'weight' ? weightStatus(si, ibwKg) : waistStatus(si, planHeightCm);
 }
 
 // ── Date helpers ─────────────────────────────────────────────────────────
@@ -247,30 +263,20 @@ export function vitalsCellsOf(
 
 export function StartingInfoVitals({
   inputs, vitalsHistory, unitSystem, onSave, onCorrectValue,
-  onDraftValue, formStage, onAutoFocusEmail, unitOverrides, onToggleFieldUnit,
+  onDraftValue, formStage, plan, onAutoFocusEmail, unitOverrides, onToggleFieldUnit,
   prefillRef, flushRef,
 }: StartingInfoVitalsProps) {
-  const heightCm = inputs.heightCm;
   const sex = inputs.sex;
-  const age = useMemo(() => {
-    if (!inputs.birthYear) return undefined;
-    const now = new Date();
-    const m = inputs.birthMonth ?? 1;
-    let a = now.getFullYear() - inputs.birthYear;
-    if (now.getMonth() + 1 < m) a -= 1;
-    return a;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inputs.birthYear, inputs.birthMonth]);
-
-  const ibwKg = useMemo(() => (heightCm && sex ? calculateIBW(heightCm, sex) : undefined), [heightCm, sex]);
-  const waistTargetCm = useMemo(() => (heightCm ? heightCm * 0.5 : undefined), [heightCm]);
-  const bpSysTarget = age != null && age >= 65 ? 130 : 120;
+  // The plan's systolic target; none, and no BP colours, with no plan.
+  const bpSysTarget = plan ? bpTargetFor(plan.age) : undefined;
+  const ibwKg = plan?.idealBodyWeight;
+  const planHeightCm = plan?.heightCm;
 
   const fieldUnit = (field: 'weightKg' | 'waistCm'): UnitSystem => unitOverrides[field] ?? unitSystem;
 
   // Reference labels (per row, in the row's display unit).
   const refLabel = (row: RowConfig): string => {
-    if (row.kind === 'bp') return `Target: <${bpSysTarget}/80 mmHg`;
+    if (row.kind === 'bp') return bpSysTarget !== undefined ? `Target: <${bpSysTarget}/80 mmHg` : 'Set sex + height to see target';
     if (row.metric === 'weight') {
       const u = fieldUnit('weightKg');
       return ibwKg != null
@@ -278,9 +284,9 @@ export function StartingInfoVitals({
         : 'Set sex + height to see target';
     }
     const u = fieldUnit('waistCm');
-    return waistTargetCm != null
-      ? `Target: <${formatDisplayValue('waist', waistTargetCm, u)} ${getDisplayLabel('waist', u)}`
-      : 'Set height to see target';
+    return planHeightCm != null
+      ? `Target: <${healthyWaistBelow(planHeightCm, u)} ${getDisplayLabel('waist', u)}`
+      : 'Set sex + height to see target';
   };
 
   const dateColumns = useMemo(() => buildColumns(vitalsHistory), [vitalsHistory]);
@@ -521,7 +527,7 @@ export function StartingInfoVitals({
                 const sparkPoints = (row.metric === 'weight' ? trend.weight : trend.waist)
                   .map(si => fromCanonicalValue(row.metric, si, display));
                 const lastSi = row.metric === 'weight' ? trend.lastW : trend.lastWa;
-                const lastStatus = lastSi != null ? simpleStatus(row.metric, lastSi, heightCm, sex) : null;
+                const lastStatus = lastSi != null ? simpleStatus(row.metric, lastSi, ibwKg, planHeightCm) : null;
                 return (
                   <div key={row.metric} className={`bt-row${last}`}>
                     {nameCell}
@@ -578,7 +584,7 @@ export function StartingInfoVitals({
                           sex={sex}
                           value={v}
                           rowId={id}
-                          status={simpleStatus(row.metric, v, heightCm, sex)}
+                          status={simpleStatus(row.metric, v, ibwKg, planHeightCm)}
                           pinned={isPinned}
                           onActivate={() => setActiveCell(`${c.col.date}.${row.metric}`)}
                           onDeactivate={() => setActiveCell(null)}
@@ -597,7 +603,7 @@ export function StartingInfoVitals({
 
               // BP row.
               const bpSpark = trend.sysSeries;
-              const lastBpStatus = trend.lastSys != null ? bpStatus(trend.lastSys, trend.lastDia, age) : null;
+              const lastBpStatus = trend.lastSys != null ? bpStatus(trend.lastSys, trend.lastDia, bpSysTarget) : null;
               return (
                 <div key="bp" className={`bt-row${last}`}>
                   {nameCell}
@@ -611,7 +617,7 @@ export function StartingInfoVitals({
                           dia={dia}
                           clash={bpClashes || bpTaken ? SAME_SLOT : refusal([null, 'sys']) ?? undefined}
                           active={activeCell === 'draft.bp'}
-                          previewStatus={bpStatus(parseLocalisedNumber(sys), parseLocalisedNumber(dia), age)}
+                          previewStatus={bpStatus(parseLocalisedNumber(sys), parseLocalisedNumber(dia), bpSysTarget)}
                           onSysChange={v => setBpDraft('sys', v)}
                           onDiaChange={v => setBpDraft('dia', v)}
                           onEnter={saveNow}
@@ -633,7 +639,7 @@ export function StartingInfoVitals({
                           dia={dia}
                           clash={c.col.date === draft.date && bpClashes ? SAME_SLOT : refusal([c.col.date, 'sys']) ?? undefined}
                           active={activeCell === `${c.col.date}.bp`}
-                          previewStatus={bpStatus(parseLocalisedNumber(sys), parseLocalisedNumber(dia), age)}
+                          previewStatus={bpStatus(parseLocalisedNumber(sys), parseLocalisedNumber(dia), bpSysTarget)}
                           pinned={isPinned}
                           backfill
                           onSysChange={v => setBackfill(c.col.date, 'sys', v)}
@@ -645,7 +651,7 @@ export function StartingInfoVitals({
                     // A saved reading, or the half of one a column holds, shown
                     // as it is ("130/—"): a pair is never typed over a value
                     // the user cannot see (US-03 AC2).
-                    const status = bpStatus(c.col.sys, c.col.dia, age);
+                    const status = bpStatus(c.col.sys, c.col.dia, bpSysTarget);
                     return (
                       <div key={`${c.col.date}.bp`} className={`bt-cell-value${isPinned ? ' bt-cell-pinned' : ''}`}>
                         <span className="bt-value-num bt-value-num--bp num">{c.col.sys ?? '—'}/{c.col.dia ?? '—'}</span>

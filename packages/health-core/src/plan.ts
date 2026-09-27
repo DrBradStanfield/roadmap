@@ -20,10 +20,13 @@ import {
 } from './mappings';
 import { latestActivePerMetric } from './measurement-history';
 import { cmpStr, localDay } from './merge';
+import { refLineFor } from './reference-hints';
 import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-schedule';
 import { CURRENT_SCHEMA_VERSION, type FileLabValue, type RoadmapFile } from './roadmap-file';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
-import { CANONICAL_UNITS, UNIT_DEFS, formatDisplayValue, getDisplayLabel, type MetricType, type UnitSystem } from './units';
+import {
+  CANONICAL_UNITS, UNIT_DEFS, formatDisplayValue, formatGradedValue, getDisplayLabel, type MetricType, type UnitSystem,
+} from './units';
 import { getValidationErrors, validateHealthInputs } from './validation';
 
 /** This project, named once. Every URL that points at the code derives from it. */
@@ -207,11 +210,15 @@ export function currentValues(plan: Plan) {
     .filter((row) => row.metricType in UNIT_DEFS)
     .map((row) => {
       const metric = row.metricType as MetricType;
+      // A lipid with a "<X" line prints on the side the cards grade it (US-07 AC5).
+      const line = refLineFor(metric);
       return {
         id: row.id,
         metric: row.metricType,
         label: METRIC_LABELS[row.metricType] ?? row.metricType,
-        value: formatDisplayValue(metric, row.value, plan.unitSystem),
+        value: line === undefined
+          ? formatDisplayValue(metric, row.value, plan.unitSystem)
+          : formatGradedValue(metric, row.value, plan.unitSystem, line),
         unit: getDisplayLabel(metric, plan.unitSystem),
         date: String(row.recordedAt ?? '').slice(0, 10),
         excluded: excluded.has(METRIC_TO_FIELD[row.metricType]) || undefined,

@@ -60,7 +60,7 @@ function fixture(): RoadmapFile {
     { id: 'med2', medicationKey: 'ezetimibe', drugName: 'not_yet', doseValue: null, doseUnit: null, updatedAt: '2026-07-20T09:00:00Z', lamport: 1 },
   );
   Object.assign(file.screenings, {
-    colorectalMethod: 'fit', colorectalLastDate: '2023-05-02', colorectalResult: 'normal',
+    colorectalMethod: 'fit_annual', colorectalLastDate: '2023-05-02', colorectalResult: 'normal',
     prostateDiscussion: 'yes', prostatePsaValue: 1.4, prostateLastDate: '2026-07-14',
     updatedAt: '2026-08-20T09:00:00Z', lamport: 2,
   });

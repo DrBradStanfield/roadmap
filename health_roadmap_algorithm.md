@@ -26,7 +26,7 @@ All values are stored and compared in **SI canonical units**. Conversion to disp
 
 ## 1. Health Calculations
 
-Source: `calculations.ts`de
+Source: `calculations.ts`
 
 ### Ideal Body Weight (Peterson Formula, 2016)
 
@@ -59,16 +59,16 @@ Per AACE 2025 and NICE guidelines, BMI classification in the 25–29.9 range is 
 | 18.5–24.9 | any | Normal | — |
 | 25.0–29.9 | < 0.5 | Normal | No central adiposity — body composition is healthy |
 | 25.0–29.9 | >= 0.5 | Overweight | Central adiposity confirmed |
-| 25.0–29.9 | unknown | *(no label)* | Prompt to measure waist circumference |
+| 25.0–29.9 | unknown | Overweight | The BMI tile shows no label; the plan prompts for a waist measurement |
 | 30.0–34.9 | any | Obese (Class I) | — |
 | 35.0–39.9 | any | Obese (Class II) | — |
 | >= 40.0 | any | Obese (Class III) | — |
 
-**Key principle:** BMI 25–29.9 with normal WHtR (< 0.5) and no metabolic risk factors should NOT trigger weight management suggestions.
+**Key principle:** BMI 25–29.9 with normal WHtR (< 0.5) and no raised marker does NOT trigger weight management suggestions. A raised marker does, even with a healthy waist (see section 6).
 
 ### Waist-to-Height Ratio
 
-`waistCm / heightCm` — rounded to 2 decimal places. Values >= 0.5 indicate increased metabolic risk. When BMI is 25–29.9 and waist data is missing, a "Measure your waist circumference" suggestion is shown.
+`waistCm / heightCm` — rounded to 2 decimal places first, then graded: a rounded ratio >= 0.5 indicates increased metabolic risk. Because of the rounding, the ratio counts as elevated from about 0.495 × height (about 88.1 cm at 178 cm). Exactly on that line, floating-point rounding decides which side a waist falls. The plan and the vitals matrix grade the waist by this one rule (`isWaistToHeightElevated`). The matrix's "Target: <X" prints the first waist, at the display step, that the plan grades elevated (`formatTargetLine`): at 178 cm, 88 cm (0.494) is healthy and 89 cm (0.500) elevated, so "<89 cm". The matrix is editable, so a saved waist shows its plain value, coloured by the plan's grade (section 5): 88.1 cm at 178 cm is healthy, and shows as 34.7 in beside "<34.7 in", coloured healthy. When BMI is 25–29.9 and waist data is missing, a "Measure your waist circumference" suggestion is shown.
 
 ### Age
 
@@ -92,7 +92,7 @@ Rounded to nearest integer (mL/min/1.73m^2).
 
 ### Non-HDL Cholesterol
 
-`totalCholesterol - HDL` (mmol/L) — rounded to 1 decimal place.
+`totalCholesterol - HDL` (mmol/L), kept to 4 decimal places only to strip float noise (3.80 − 2.20 is 1.5999… in floating point). Every threshold compares it unrounded; it is rounded only for display (1 decimal place in mmol/L, whole mg/dL). So 1.56 is below the 1.6 target, and 190 mg/dL reaches the 190 mg/dL line. Beside its target (section 5), 1.56 shows as 1.56, not 1.6: see `formatGradedValue` there. BMI and waist-to-height, which are unitless, keep their rounded rule.
 
 ---
 
@@ -299,6 +299,8 @@ All thresholds stored and compared in SI canonical units.
 
 | Level | mmol/L | mg/dL |
 |-------|--------|-------|
+| Optimal | < 1.4 | < 55 |
+| Above optimal | 1.4 | 55 |
 | Borderline | 3.36 | 130 |
 | High | 4.14 | 160 |
 | Very high | 4.91 | 190 |
@@ -316,9 +318,13 @@ LDL thresholds + 30 mg/dL for VLDL.
 
 | Level | mmol/L | mg/dL |
 |-------|--------|-------|
+| Optimal | < 1.6 | < 62 |
+| Above optimal | 1.6 | 62 |
 | Borderline | 4.14 | 160 |
 | High | 4.91 | 190 |
 | Very high | 5.69 | 220 |
+
+The Optimal line for LDL and non-HDL is the plan's on-treatment target (below). The tiles say "Optimal" below it and "Above optimal" (amber) from it up to Borderline; the history matrix colours LDL amber from 1.4 and red from High. Borderline, High and Very high are unchanged, and the `ldl-borderline` and `non-hdl-borderline` cards still show only in the Borderline band, naming the optimal line (<1.4 and <1.6 mmol/L; <55 and <62 mg/dL). ApoB needs no Above-optimal tier: its Borderline already starts at its 0.5 g/L target.
 
 ### HDL Cholesterol (mmol/L)
 
@@ -344,7 +350,9 @@ LDL thresholds + 30 mg/dL for VLDL.
 | Stage 2 | 140 | 90 |
 | Crisis | 180 | 120 |
 
-**Age-dependent target** (based on SPRINT 2015 + ESPRIT 2024):
+**Raised blood pressure** means one thing everywhere (the `bp-stage1` card and the weight-medication trigger): systolic >= 130 OR diastolic > 80. Either half counts on its own; the stage cards still need both halves to show.
+
+**Age-dependent target** (based on SPRINT 2015 + ESPRIT 2024; `bpTargetFor` in `units.ts`, which the stage 1 card, the low-salt card, the Lp(a) checklist and the form's BP targets all read):
 - Age < 65: < 120/80
 - Age >= 65: < 130/80
 
@@ -381,13 +389,13 @@ Mass → molar is approximate: nmol/L ≈ 2.4 × mg/dL, so 0.24 × mg/L (NZ/AU/U
 
 ### On-Treatment Lipid Targets
 
-Used when medications are tracked and lipids exceed these targets.
+Used when medications are tracked and a lipid is at or above its target: the value should be below it, so the target itself counts as above target (Brad, 2026-09-28). Cards and the form say "the treatment target is below X". Every "<X" statement of a lipid target (these cards, the borderline cards, the Lp(a) checklist and the reference hints) prints X as the first value, at the unit's display step, that the plan grades at or above the target (`formatTargetLine`): 0.50, 1.4 and 1.6 in SI; 50, 55 and 62 in mg/dL. 54 mg/dL of LDL is 1.396 mmol/L, which the plan grades below 1.4, so the mg/dL target reads 55. The LDL and non-HDL targets are also the tiles' Optimal line and the `lipid-diet` trigger, which use the same `>=` comparison. In the read-only summaries, a value printed beside its target (the cards' "Your LDL-c is…" sentence, the form's cholesterol intro, the Lp(a) checklist, the lipid tile and the MCP `get_plan` currentValues) shows on the side of X the plan grades it (`formatGradedValue`). It rounds to the display step as everywhere else, unless that would put it on the other side of X. Then a value graded at or above the target shows X, and a value graded below it shows one more decimal place, rounded down, which is always below X. So 1.40 mmol/L of LDL, at the target, shows as 55 mg/dL, not 54; 54 mg/dL (1.3964 mmol/L), below it, shows as 1.39 mmol/L, not 1.4; a non-HDL of 1.56 shows as 1.56. A value typed in the shown unit, on the display step, shows as typed. The history matrices (blood tests and vitals) are editable, so they show plain values, rounded to the display step: the number a typed value is compared against, so re-entering the shown number writes nothing (US-03 AC3). Their colour is the plan's grade. So a value within one display step of its line, entered in the other unit, can read on the other side of the hint there: 1.40 mmol/L of LDL shows as 54 mg/dL beside "<55", coloured above optimal.
 
 | Marker | Target | Conventional |
 |--------|--------|-------------|
-| ApoB | <= 0.5 g/L | <= 50 mg/dL |
-| LDL | <= 1.4 mmol/L | <= ~54 mg/dL |
-| Non-HDL | <= 1.6 mmol/L | <= ~62 mg/dL |
+| ApoB | < 0.5 g/L | < 50 mg/dL |
+| LDL | < 1.4 mmol/L | < 55 mg/dL |
+| Non-HDL | < 1.6 mmol/L | < 62 mg/dL |
 
 ---
 
@@ -410,8 +418,8 @@ Source: `suggestions.ts` -> `generateSuggestions()`
 |----|-----------|----------|-------|
 | `low-salt` | systolicBp > 120 (age < 65) or > 130 (age >= 65) | info | Target: <1,500 mg/day (ACC/AHA 2017) |
 | `high-potassium` | eGFR >= 45 (safe kidney function) | info | |
-| `trig-nutrition` | triglycerides >= 1.69 mmol/L | attention | |
-| `reduce-alcohol` | BMI >= 30, OR (BMI > 25 AND WHtR >= 0.5), OR triglycerides >= 1.69 mmol/L | attention | |
+| `trig-nutrition` | triglycerides 150 mg/dL (about 1.7 mmol/L) or more | attention | |
+| `reduce-alcohol` | BMI >= 30, OR (BMI > 25 AND WHtR >= 0.5), OR triglycerides 150 mg/dL (about 1.7 mmol/L) or more | attention | |
 
 ### HbA1c Tiers
 
@@ -444,8 +452,8 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 | `lpa-normal` | < 75 nmol/L | info |
 
 **Elevated Lp(a) checklist** (modifiable risk factors):
-- Lipids (ApoB > non-HDL > LDL, on-treatment targets)
-- Blood pressure (target < 120/80)
+- Lipids (ApoB > non-HDL > LDL, on-treatment targets; ⚠️ at or above the target, shown as "target <X")
+- Blood pressure (the age-dependent target: < 120/80 under 65, < 130/80 at 65 or older)
 - BMI (target < 25; shows ✅ when BMI 25–29.9 with WHtR < 0.5)
 - HbA1c (target < 38.8 mmol/mol)
 - Medication status (statin, ezetimibe, PCSK9i — when tracked)
@@ -470,7 +478,7 @@ Stage 1 shows age-dependent target: < 120/80 for age < 65, < 130/80 for age >= 6
 
 Stage 1 and 2 include conditional extra paragraphs:
 - If eGFR >= 45: potassium recommendation
-- If BMI >= 30, or BMI >= 25 with WHtR >= 0.5: weight loss + GLP-1 mention
+- If the weight-medication trigger is on (section 6): weight loss + GLP-1 mention
 
 ---
 
@@ -480,10 +488,10 @@ Source: `suggestions.ts` (nutrition section) + `evidence.ts`
 
 ### Trigger
 
-Any atherogenic marker at borderline or above:
+Any atherogenic marker at or above its optimal line (each marker checked on its own, not through the hierarchy):
 - ApoB ≥ 0.5 g/L (50 mg/dL), OR
-- Non-HDL ≥ 4.14 mmol/L (160 mg/dL), OR
-- LDL-C ≥ 3.36 mmol/L (130 mg/dL)
+- Non-HDL ≥ 1.6 mmol/L (62 mg/dL), OR
+- LDL-C ≥ 1.4 mmol/L (55 mg/dL)
 
 **NOT suppressed by medication cascade** — diet is always complementary to medications.
 
@@ -518,16 +526,16 @@ Beans, lentils, chickpeas, and mixed vegetables — high in soluble fibre but al
 
 ## 5. Cholesterol Medication Cascade
 
-Source: `suggestions.ts` (lipids section) + `types.ts` (statin helpers)
+Source: `suggestions.ts` (lipids section) + `medication-cascades.ts` (`lipidCascade`, the step decisions) + `types.ts` (statin helpers)
 
 ### Trigger
 
-All three conditions must hold:
+Both conditions must hold:
 1. `medications` object is provided (user is tracking medications)
-2. At least one lipid marker exceeds on-treatment targets:
-   - ApoB > 0.5 g/L, OR
-   - LDL > 1.4 mmol/L, OR
-   - Non-HDL > 1.6 mmol/L
+2. The plan's lipid marker (ApoB, else non-HDL, else LDL) is at or above its on-treatment target:
+   - ApoB >= 0.5 g/L, OR
+   - Non-HDL >= 1.6 mmol/L, OR
+   - LDL >= 1.4 mmol/L
 
 ### Step 1: Start Statin (`med-statin`)
 
@@ -543,11 +551,14 @@ All three conditions must hold:
 
 - `canIncreaseDose(drug, dose)`: Higher dose available for current statin
 - `shouldSuggestSwitch(drug, dose)`: On max dose of current statin, potency > 0, potency < 63%
-- `isOnMaxPotency(drug, dose)`: Potency >= 63% (rosuvastatin 40mg)
 
 ### Step 4: PCSK9 Inhibitor (`med-pcsk9i`)
 
 **Condition:** Statin escalation not tolerated, or already at max potency, or no escalation possible. AND pcsk9i is `undefined`, `'no'`, or `'not_yet'`.
+
+### The input form (both cascades, US-06 AC5 and AC7)
+
+The form's medication sections step through the same `lipidCascade` and `weightCascade` decisions as the cards. Progressive disclosure opens only the next empty step: a step that holds a recorded value always shows. Changing a drug or its dose may reset only that drug's own escalation answer, since the question depends on the dose; it never writes another medication (a GLP-1 dose change once wrote "not taking" rows for an SGLT2 inhibitor and metformin the person still took, and rows are permanent). A dose never recorded reads "Dose not recorded", and a recorded value the form has no option for (a legacy `tier_1`, a raw `ezetimibe` row, an agent's escalation `yes`) reads "Other (recorded)".
 
 ### Statin Potency Table (BPAC 2021)
 
@@ -581,24 +592,39 @@ Atorvastatin and simvastatin are fat-soluble; higher doses carry more myopathy r
 
 ## 6. Weight & Diabetes Medication Cascade
 
-Source: `suggestions.ts` (weight section) + `types.ts` (GLP-1 helpers)
+Source: `suggestions.ts` (`weightMedicationTrigger`, weight section) + `medication-cascades.ts` (`weightCascade`, the step decisions) + `types.ts` (GLP-1 helpers)
 
-### Trigger
+### Trigger (`weightMedicationTrigger`)
 
-All conditions:
-1. `medications` object is provided
-2. BMI classified as elevated (`bmiCategory` is Overweight or Obese — **not** Normal after WHtR reclassification)
-3. BMI > 28 (unconditional) OR at least one secondary criterion:
-   - HbA1c >= 38.8 mmol/mol (prediabetic)
-   - Triglycerides >= 1.69 mmol/L
-   - Systolic BP >= 130 mmHg
-   - Waist-to-height >= 0.5
+On when either holds:
+1. BMI >= 25 AND at least one raised marker, OR
+2. BMI classified as elevated (`bmiCategory` is Overweight or Obese after the WHtR reclassification) AND BMI > 28.
 
-**Note:** BMI 25-29.9 with healthy waist-to-height ratio (< 0.5) is reclassified as Normal by `getBMICategory()` and does NOT trigger the cascade.
+So: BMI >= 30 is always on; 28 < BMI < 30 is on unless the waist is healthy and no marker is raised; 25 <= BMI <= 28 needs a marker; BMI < 25 is always off. BMI is the rounded value the tile shows.
+
+Raised markers, each named in the card in the plan's words:
+- HbA1c >= 38.8 mmol/mol (prediabetic) → "prediabetic HbA1c"
+- Triglycerides 150 mg/dL (about 1.7 mmol/L) or more → "elevated triglycerides"
+- Raised blood pressure: systolic >= 130 OR diastolic > 80, either half on its own (section 3) → "elevated blood pressure"
+- The plan's lipid marker (ApoB, else non-HDL, else LDL: `lipidMarkerFor`) at or above its risk-enhancing line → "elevated ApoB", "elevated non-HDL cholesterol" or "elevated LDL cholesterol":
+  - ApoB >= 1.3 g/L (130 mg/dL)
+  - Non-HDL >= 190 mg/dL (4.913 mmol/L), compared unrounded (section 1)
+  - LDL-C >= 160 mg/dL (4.138 mmol/L)
+- Waist-to-height >= 0.5 → "elevated waist-to-height ratio"
+
+The cholesterol lines are the lower bounds of the risk-enhancing factors in the 2018 AHA/ACC/AACVPR/AAPA/ABC/ACPM/ADA/AGS/APhA/ASPC/NLA/PCNA Guideline on the Management of Blood Cholesterol (Grundy et al., Circulation 2019;139:e1082–e1143, DOI: 10.1161/CIR.0000000000000625), Table 6: primary hypercholesterolemia (LDL-C 160–189 mg/dL; non-HDL-C 190–219 mg/dL) and elevated apoB (>= 130 mg/dL). The trigger counts every value at or above the lower bound.
+
+**Note:** a healthy waist-to-height ratio (< 0.5) no longer blocks a raised marker. It reclassifies BMI 25–29.9 as Normal, which only stops BMI 28–29.9 turning the trigger on by itself.
+
+**Beyond the guidelines (Brad, 2026-09-26):** guidelines consider weight-loss medication at BMI > 30, or > 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan is more proactive: from BMI 25 with a raised marker, and with no waiting period, alongside diet, exercise and sleep. No guideline supports the lower BMI lines.
+
+The same trigger drives the cascade (medications tracked), the standalone `weight-glp1` card (medications not tracked), the BP cards' weight paragraph, and the input form's weight section, which steps through the cascade as section 5's form rules say.
 
 ### Step 1: Start GLP-1 (`weight-med-glp1`)
 
 **Condition:** GLP-1 is null, undefined, or drug is `'none'`.
+
+**Text:** "With a BMI of {bmi}{ and {reasons}}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health." The reasons join as "a, b and c".
 
 ### Step 2: GLP-1 Escalation (`weight-med-glp1-increase` or `weight-med-glp1-switch`)
 
@@ -606,7 +632,6 @@ All conditions:
 
 - `canIncreaseGlp1Dose(drug, dose)`: Higher dose available for current drug
 - `shouldSuggestGlp1Switch(drug, dose)`: On `'other'`, OR on max dose of non-tirzepatide GLP-1
-- `isOnMaxGlp1Potency(drug, dose)`: tirzepatide at max dose (15mg)
 
 ### Step 3: SGLT2i (`weight-med-sglt2i`)
 
@@ -618,11 +643,7 @@ All conditions:
 
 ### Standalone GLP-1 Suggestion (`weight-glp1`)
 
-When the cascade is NOT active (medications not provided or conditions not met) AND BMI is classified as elevated:
-- BMI > 28: Always suggest
-- BMI 25-28: Suggest if waist-to-height >= 0.5 OR triglycerides >= 1.69 mmol/L (do NOT assume risk when waist data missing)
-
-Same WHtR reclassification applies: BMI 25-29.9 with healthy WHtR (< 0.5) = Normal → no standalone GLP-1 suggestion.
+When medications are not tracked, one card replaces the cascade. It shows when the same trigger is on, with the same text as Step 1, built by one function. Title: "Weight management medication". A missing waist is not assumed to be raised: BMI 25–28 with no waist and no marker shows no card, and the plan prompts for a waist measurement instead.
 
 ---
 
@@ -790,17 +811,21 @@ naming/linking a branded product is advertising a therapeutic good).
 
 ## 10. Progressive Disclosure
 
-Source: `mappings.ts` -> `computeFormStage()`
+Source: `mappings.ts` -> `computeFormStage(inputs, saved)`
 
-New users see fields revealed in 3 stages. Returning users with data skip to stage 3.
+New users see fields revealed in 3 stages. Returning users with a saved weight or any saved blood test skip to stage 3. The widget shows this stage, and the storefront chatbot embed stays muted below stage 3; both call the same function, the embed on the widget's saved copy (US-15 AC10).
+
+`saved` is the newest saved row per metric. Its values fill the longitudinal fields the form leaves empty (`mergeLongitudinalInputs`), so a value typed in the form wins over the saved one.
+
+A value opens a stage only when it is plausible: inside its SI validation range in `UNIT_DEFS` (height 50–250 cm, weight 20–300 kg). A half-typed "1" of "180" does not open stage 2.
 
 | Stage | Gate Condition | Fields Visible | Attention Glow |
 |-------|---------------|----------------|----------------|
 | 1 | Always | Units, Sex, Height | Sex |
-| 2 | `sex !== undefined AND heightCm !== undefined` | Weight, Waist, BP, Birth Month/Year | Weight |
-| 3 | `weightKg !== undefined` | Blood Tests, Medications, Screening, Bone Density, Supplements | None (Email for guests) |
+| 2 | `sex` set AND a plausible `heightCm` | Weight, Waist, BP, Birth Month/Year | Weight |
+| 3 | a plausible `weightKg`, typed or saved; OR any saved blood test (`BLOOD_TEST_METRICS`) | Blood Tests, Medications, Screening, Bone Density, Supplements | None (Email for guests) |
 
-Logic checks from stage 3 down (short-circuit), so returning users skip to full form.
+Logic checks from stage 3 down (short-circuit), so returning users skip to full form. The blood-test rule lets a lab import with no weight open the whole form.
 
 ### Field Categories
 

@@ -158,23 +158,6 @@ export function shouldSuggestSwitch(drug: string | undefined, dose: number | nul
 }
 
 /**
- * Check if user is on maximum possible potency (rosuvastatin 40mg).
- */
-export function isOnMaxPotency(drug: string | undefined, dose: number | null): boolean {
-  return getCurrentPotency(drug, dose) >= MAX_STATIN_POTENCY;
-}
-
-/**
- * Get the appropriate escalation suggestion type.
- */
-export function getStatinEscalationType(drug: string | undefined, dose: number | null): 'increase_dose' | 'switch_statin' | 'none' {
-  if (!drug || drug === 'none' || drug === 'not_tolerated' || dose === null) return 'none';
-  if (canIncreaseDose(drug, dose)) return 'increase_dose';
-  if (shouldSuggestSwitch(drug, dose)) return 'switch_statin';
-  return 'none';
-}
-
-/**
  * Ezetimibe options for dropdown.
  */
 export const EZETIMIBE_OPTIONS = [
@@ -259,22 +242,6 @@ export function shouldSuggestGlp1Switch(drug: string | undefined, dose: number |
   if (dose === null) return false;
   if (drug === MAX_GLP1_DRUG) return false;
   return !canIncreaseGlp1Dose(drug, dose);
-}
-
-/** Check if user is on maximum GLP-1 potency (tirzepatide at max dose). */
-export function isOnMaxGlp1Potency(drug: string | undefined, dose: number | null): boolean {
-  if (dose === null) return false;
-  return drug === MAX_GLP1_DRUG && !canIncreaseGlp1Dose(drug, dose);
-}
-
-/** Get the appropriate GLP-1 escalation action. */
-export function getGlp1EscalationType(drug: string | undefined, dose: number | null): 'increase_dose' | 'switch_glp1' | 'none' {
-  if (!drug || drug === 'none' || drug === 'not_tolerated') return 'none';
-  if (drug === 'other') return 'switch_glp1';
-  if (dose === null) return 'none';
-  if (canIncreaseGlp1Dose(drug, dose)) return 'increase_dose';
-  if (shouldSuggestGlp1Switch(drug, dose)) return 'switch_glp1';
-  return 'none';
 }
 
 // ===== SGLT2i Configuration =====

@@ -32,8 +32,6 @@ export {
   getCurrentPotency,
   canIncreaseDose,
   shouldSuggestSwitch,
-  isOnMaxPotency,
-  getStatinEscalationType,
   // Ezetimibe, bempedoic acid & PCSK9i options
   EZETIMIBE_OPTIONS,
   BEMPEDOIC_ACID_OPTIONS,
@@ -45,8 +43,6 @@ export {
   MAX_GLP1_DRUG,
   canIncreaseGlp1Dose,
   shouldSuggestGlp1Switch,
-  isOnMaxGlp1Potency,
-  getGlp1EscalationType,
   // SGLT2i configuration
   SGLT2I_DRUGS,
   SGLT2I_NAMES,
@@ -76,7 +72,6 @@ export {
   calculateIBW,
   calculateProteinTarget,
   calculateBMI,
-  calculateWaistToHeight,
   calculateAge,
   getBMICategory,
   getEgfrStatus,
@@ -89,8 +84,9 @@ export {
 } from './calculations';
 
 // Suggestions
-export { generateSuggestions, LIPID_TREATMENT_TARGETS, LIPID_DIET_ADVICE, resolveBestLipidMarker, weightMedicationTrigger } from './suggestions';
+export { generateSuggestions, LIPID_DIET_ADVICE, lipidMarkerFor, lipidTargetSentence, weightMedicationTrigger, weightMedIntro } from './suggestions';
 export type { LipidMarker, WeightMedicationTrigger } from './suggestions';
+export { weightCascade, lipidCascade } from './medication-cascades';
 
 // Validation
 export {
@@ -140,6 +136,7 @@ export {
   hasUnsavedProfileEdits,
   LONGITUDINAL_FIELDS,
   BLOOD_TEST_METRICS,
+  VITAL_METRICS,
   measurementsToInputs,
   mergeLongitudinalInputs,
   diffInputsToMeasurements,
@@ -190,9 +187,16 @@ export {
   NON_HDL_THRESHOLDS,
   BP_THRESHOLDS,
   APOB_THRESHOLDS,
+  LIPID_TREATMENT_TARGETS,
   EGFR_THRESHOLDS,
   PSA_THRESHOLDS,
   LPA_THRESHOLDS,
+  waistToHeightRatio,
+  isWaistToHeightElevated,
+  elevatedWaistFromCm,
+  bpTargetFor,
+  formatTargetLine,
+  formatGradedValue,
   // Feet/inches height conversion helpers
   inchesToFeetInches,
   feetInchesToInches,
@@ -227,7 +231,7 @@ export { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence 
 
 // Reference-range hints (blood-test matrix + legacy form labels)
 export type { RefHint, SexedRefHint } from './reference-hints';
-export { REFERENCE_HINTS, refHintFor } from './reference-hints';
+export { REFERENCE_HINTS, refHintFor, refLineFor } from './reference-hints';
 
 // Sentry PII/PHI scrubbing
 export {
@@ -295,6 +299,10 @@ export {
   type DatedMeasurement,
   type MeasurementHistoryMap,
 } from './measurement-history';
+
+// The chat's plan context: what a client sends, and the sanitizing builder
+// both chats read it through (US-15 AC11)
+export { chatContextOf, buildChatContextJson, type ChatContextPayload } from './chat-context';
 
 // Product funnel events — anonymous behavioral counters (client tracker + server enum)
 export { PRODUCT_EVENT_NAMES, GUIDE_PLACEMENTS, REMOTE_CHANGE_BACKENDS, type ProductEventName } from './product-events';

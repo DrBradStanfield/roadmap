@@ -140,21 +140,20 @@ describe('safe storage accessors', () => {
       expect(loaded.inputs.diastolicBp).toBeUndefined();
     });
 
-    it('preserves valid values alongside invalid ones', () => {
+    it('preserves valid profile values alongside invalid ones', () => {
       mockWithInputs({
         sex: 'male',
         heightCm: 175,
-        weightKg: 80,
-        hba1c: NaN,          // invalid — stripped
-        ldlC: 3.5,           // valid — kept
-        systolicBp: 120,     // valid — kept
+        birthYear: 1970,     // valid — kept
+        birthMonth: 13,      // invalid — stripped
       });
       const loaded = loadFromLocalStorage()!;
-      expect(loaded.inputs.heightCm).toBe(175);
-      expect(loaded.inputs.weightKg).toBe(80);
-      expect(loaded.inputs.hba1c).toBeUndefined();
-      expect(loaded.inputs.ldlC).toBe(3.5);
-      expect(loaded.inputs.systolicBp).toBe(120);
+      expect(loaded.inputs).toEqual({ sex: 'male', heightCm: 175, birthYear: 1970 });
+    });
+
+    it('US-15 AC10: keeps only the profile and the unit system: a longitudinal value there is a stale form value', () => {
+      mockWithInputs({ sex: 'male', heightCm: 175, unitSystem: 'si', weightKg: 80, ldlC: 3.5, notes: 'x' });
+      expect(loadFromLocalStorage()!.inputs).toEqual({ sex: 'male', heightCm: 175, unitSystem: 'si' });
     });
 
     it('passes through unknown fields like unitSystem', () => {

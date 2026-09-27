@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { computeReminderSchedule, computeNextDueDates, SCHEDULE_LABELS } from './reminder-schedule';
 import { computeDueReminders, REMINDER_CATEGORIES, type ReminderProfile } from './reminders';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
 import type { ScreeningInputs } from './types';
+import { computePlan } from './plan';
 
 /** The shape the server's scheduleSchema accepts — a NaN date fails the push. */
 const ISO_DATE_SHAPE = /^\d{4}-\d{2}-\d{2}$/;
@@ -217,6 +218,62 @@ describe('computeReminderSchedule — RoadmapFile adapter', () => {
     expect(items[0]).toMatchObject({ dueAt: '2030-01-01' });
   });
 
+});
+
+// US-06/US-15 AC11 + US-23: the reminder emails and get_plan's `due` list read
+// the same sanitized screenings the plan reads. A raw '2020-99' rolled forward
+// into a due date the plan itself had dropped.
+describe('computeReminderSchedule — screening dates agree with the plan', () => {
+  afterEach(() => { vi.useRealTimers(); });
+
+  const withDate = (colorectalLastDate: string) => file({
+    profile: { sex: 'male', birthYear: 1966, heightCm: 180, updatedAt: '2026-01-01T00:00:00Z', lamport: 1 } as RoadmapFile['profile'],
+    screenings: {
+      colorectalMethod: 'colonoscopy_10yr',
+      colorectalLastDate,
+      updatedAt: '2026-01-01T00:00:00Z',
+      lamport: 1,
+    } as RoadmapFile['screenings'],
+  });
+
+  it.each(['2020-99', '2030-01', '2024-02-30'])('US-06/US-15 AC11, US-23: %s schedules nothing the plan drops', (bad) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+    const plan = computePlan(withDate(bad), NOW);
+    expect(plan.screenings.colorectalLastDate).toBeUndefined();
+    expect(plan.due.map((i) => i.category)).not.toContain('screening_colorectal');
+    expect(computeReminderSchedule(withDate(bad), NOW)).toEqual(plan.due);
+  });
+
+  it('US-06/US-15 AC11, US-23: a valid date still schedules, in the plan and the reminders alike', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+    const plan = computePlan(withDate('2020-01'), NOW);
+    expect(plan.screenings.colorectalLastDate).toBe('2020-01');
+    expect(plan.due.find((i) => i.category === 'screening_colorectal')).toMatchObject({ dueAt: '2030-01-01' });
+    expect(computeReminderSchedule(withDate('2020-01'), NOW)).toEqual(plan.due);
+  });
+});
+
+// US-23 + US-06 AC7: a medication row whose name is not a string is unanswered
+// to the plan, the form and the chat (medicationsToInputs), so it schedules no
+// medication review either.
+describe('computeReminderSchedule — medication rows agree with the plan', () => {
+  const withStatin = (drugName: unknown) => file({
+    profile: { sex: 'male', birthYear: 1966, updatedAt: '2026-01-01T00:00:00Z', lamport: 1 } as RoadmapFile['profile'],
+    medications: [
+      { id: 'med1', medicationKey: 'statin', drugName, doseValue: 20, doseUnit: 'mg', updatedAt: '2026-01-01T00:00:00Z', lamport: 1 },
+    ] as RoadmapFile['medications'],
+  });
+  const categories = (drugName: unknown) => computeReminderSchedule(withStatin(drugName), NOW).map((i) => i.category);
+
+  it('US-23, US-06 AC7: a numeric drug name schedules no medication review', () => {
+    expect(categories(20)).not.toContain('medication_review');
+  });
+
+  it('US-23, US-06 AC7: a real drug name still schedules one', () => {
+    expect(categories('atorvastatin')).toContain('medication_review');
+  });
 });
 
 // US-23 AC6 — the annual floor (Brad, 2026-08-14): every enrolled person gets

@@ -82,6 +82,15 @@ const REFS_GLP1: SuggestionReference[] = [
   { label: 'Wilding 2022 – Weight regain after semaglutide withdrawal (Diabetes Obes Metab)', url: 'https://doi.org/10.1111/dom.14725' },
 ];
 
+/** Where the weight-medication trigger's cholesterol lines come from (Table 6, risk-enhancing factors). */
+const REF_CHOLESTEROL_2018: SuggestionReference = {
+  label: 'Grundy 2018 – AHA/ACC cholesterol guideline: risk-enhancing factors (Circulation)',
+  url: 'https://doi.org/10.1161/CIR.0000000000000625',
+};
+
+/** When the plan suggests a weight medication, and how that differs from the guidelines (US-06 AC6). */
+const WEIGHT_MED_TRIGGER_NOTE = '\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.';
+
 const REFS_SGLT2I: SuggestionReference[] = [
   { label: 'Zinman 2015 – EMPA-REG OUTCOME: empagliflozin CV outcomes (NEJM)', url: 'https://doi.org/10.1056/NEJMoa1504720' },
   { label: 'McMurray 2019 – DAPA-HF: dapagliflozin in heart failure (NEJM)', url: 'https://doi.org/10.1056/NEJMoa1911303' },
@@ -182,9 +191,9 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Weight & Diabetes Medications ──────────────────────────
 
   'weight-med-glp1': {
-    reason: 'GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. Tirzepatide is preferred due to its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.',
+    reason: 'GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. Tirzepatide is preferred due to its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.' + WEIGHT_MED_TRIGGER_NOTE,
     guidelines: [],
-    references: REFS_GLP1,
+    references: [...REFS_GLP1, REF_CHOLESTEROL_2018],
   },
 
   'weight-med-glp1-increase': {
@@ -214,9 +223,9 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'weight-glp1': {
-    reason: 'GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant weight loss alongside improvements in metabolic health. These medications work best as part of a comprehensive approach including diet, exercise, and sleep.',
+    reason: 'GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant weight loss alongside improvements in metabolic health. These medications work best as part of a comprehensive approach including diet, exercise, and sleep.' + WEIGHT_MED_TRIGGER_NOTE,
     guidelines: [],
-    references: REFS_GLP1,
+    references: [...REFS_GLP1, REF_CHOLESTEROL_2018],
   },
 
   // ── General ────────────────────────────────────────────────
@@ -258,13 +267,13 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Blood Work: Atherogenic Lipids ─────────────────────────
 
   'apob-very-high': {
-    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood and is considered the most accurate predictor of cardiovascular risk by the European Atherosclerosis Society. Each LDL, VLDL, and Lp(a) particle carries exactly one ApoB molecule, making it a superior marker to LDL cholesterol, which only estimates particle concentration. A very high ApoB indicates significantly elevated cardiovascular risk, and statin therapy is typically recommended.\n\nSome doctors use on-treatment targets of ≤50 mg/dL (≤0.5 g/L) based on the ESC/EAS guidelines and the PESA study, which demonstrated that subclinical atherosclerosis progression is driven by cumulative LDL/ApoB exposure over time — even in young, apparently healthy adults.',
+    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood and is considered the most accurate predictor of cardiovascular risk by the European Atherosclerosis Society. Each LDL, VLDL, and Lp(a) particle carries exactly one ApoB molecule, making it a superior marker to LDL cholesterol, which only estimates particle concentration. A very high ApoB indicates significantly elevated cardiovascular risk, and statin therapy is typically recommended.\n\nSome doctors use on-treatment targets below 50 mg/dL (0.5 g/L) based on the ESC/EAS guidelines and the PESA study, which demonstrated that subclinical atherosclerosis progression is driven by cumulative LDL/ApoB exposure over time — even in young, apparently healthy adults.',
     guidelines: [...GUIDELINES_LIPIDS, 'EAS Consensus'],
     references: [...REFS_LIPID_EVIDENCE, ...REFS_PESA, ...REFS_LDL_SAFETY],
   },
 
   'apob-high': {
-    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood. It is considered a more accurate predictor of cardiovascular risk than LDL cholesterol by the European Atherosclerosis Society. Your level is elevated and lifestyle modifications and/or medication should be discussed with your doctor.\n\nSome doctors use on-treatment targets of ≤50 mg/dL (≤0.5 g/L) based on ESC/EAS guidelines and the PESA study, which showed that early ApoB/LDL exposure drives atherosclerosis even in young, healthy adults.',
+    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood. It is considered a more accurate predictor of cardiovascular risk than LDL cholesterol by the European Atherosclerosis Society. Your level is elevated and lifestyle modifications and/or medication should be discussed with your doctor.\n\nSome doctors use on-treatment targets below 50 mg/dL (0.5 g/L) based on ESC/EAS guidelines and the PESA study, which showed that early ApoB/LDL exposure drives atherosclerosis even in young, healthy adults.',
     guidelines: [...GUIDELINES_LIPIDS, 'EAS Consensus'],
     references: [...REFS_LIPID_EVIDENCE, ...REFS_PESA, ...REFS_LDL_SAFETY],
   },
@@ -372,7 +381,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'bp-stage1': {
-    reason: 'Stage 1 hypertension (130–139/80–89 mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.',
+    reason: 'Stage 1 hypertension (130–139 systolic or 80–89 diastolic mmHg; this plan flags a diastolic above 80) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.',
     guidelines: [...GUIDELINES_BP, 'SPRINT 2015', 'ESPRIT 2024'],
     references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS],
   },
@@ -380,7 +389,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Cholesterol Medication Cascade ─────────────────────────
 
   'med-statin': {
-    reason: 'Statins are the cornerstone of cholesterol-lowering therapy. Both the AHA/ACC and ESC/EAS guidelines recommend statins as first-line treatment when lipid levels exceed targets. Statins reduce LDL/ApoB by inhibiting cholesterol synthesis in the liver, and large clinical trials consistently show they reduce cardiovascular events and mortality.\n\nSome doctors use more aggressive on-treatment lipid targets (ApoB ≤50 mg/dL, LDL ≤54 mg/dL) based on the PESA study, which showed that even young, healthy adults develop subclinical atherosclerosis when exposed to elevated lipids over time. Multiple studies confirm that very low LDL levels are safe.',
+    reason: 'Statins are the cornerstone of cholesterol-lowering therapy. Both the AHA/ACC and ESC/EAS guidelines recommend statins as first-line treatment when lipid levels exceed targets. Statins reduce LDL/ApoB by inhibiting cholesterol synthesis in the liver, and large clinical trials consistently show they reduce cardiovascular events and mortality.\n\nSome doctors use more aggressive on-treatment lipid targets (ApoB below 50 mg/dL, LDL below 55 mg/dL) based on the PESA study, which showed that even young, healthy adults develop subclinical atherosclerosis when exposed to elevated lipids over time. Multiple studies confirm that very low LDL levels are safe.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [...REFS_LIPID_GUIDELINES, ...REFS_PESA, ...REFS_LDL_SAFETY],
   },
@@ -609,13 +618,13 @@ export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'non-hdl': {
-    reason: 'Non-HDL cholesterol (total cholesterol minus HDL) captures all atherogenic lipoproteins. It is the second-best predictor of cardiovascular risk after ApoB. The 2026 ACC/AHA guideline establishes non-HDL-C goals aligned with LDL-C targets (approximately 30 mg/dL higher). Note: ApoB is the most accurate single marker — if available, ask your doctor about testing ApoB.',
+    reason: 'Non-HDL cholesterol (total cholesterol minus HDL) captures all atherogenic lipoproteins. It is the second-best predictor of cardiovascular risk after ApoB. The 2026 ACC/AHA guideline establishes non-HDL-C goals aligned with LDL-C targets (approximately 30 mg/dL higher). This tool calls non-HDL-C optimal only below its on-treatment target of 1.6 mmol/L (62 mg/dL); from there up to Borderline (160 mg/dL) the tile reads "Above optimal". Note: ApoB is the most accurate single marker — if available, ask your doctor about testing ApoB.',
     guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
     references: REFS_LIPID_EVIDENCE,
   },
 
   'ldl': {
-    reason: 'LDL-cholesterol measures the cholesterol carried by low-density lipoproteins. The 2026 ACC/AHA Dyslipidemia Guideline reinstates explicit LDL-C treatment targets based on cardiovascular risk category: below 100 mg/dL for borderline-intermediate risk, below 70 mg/dL for high risk, and below 55 mg/dL for very high risk. Note: LDL-C can underestimate risk in people with high triglycerides or metabolic syndrome. ApoB or Non-HDL are preferred when available.',
+    reason: 'LDL-cholesterol measures the cholesterol carried by low-density lipoproteins. The 2026 ACC/AHA Dyslipidemia Guideline reinstates explicit LDL-C treatment targets based on cardiovascular risk category: below 100 mg/dL for borderline-intermediate risk, below 70 mg/dL for high risk, and below 55 mg/dL for very high risk. This tool calls LDL-C optimal only below its on-treatment target of 1.4 mmol/L (55 mg/dL); from there up to Borderline (130 mg/dL) the tile reads "Above optimal". Note: LDL-C can underestimate risk in people with high triglycerides or metabolic syndrome. ApoB or Non-HDL are preferred when available.',
     guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
     references: REFS_LIPID_EVIDENCE,
   },
@@ -670,15 +679,13 @@ export function getProteinEvidence(ibwKg: number, proteinRate: number, eGFR?: nu
   };
 }
 
-/** Build BMI stat card evidence with WHtR-aware detail. */
-export function getBmiEvidence(bmiCategory: string, sex: 'male' | 'female', waistToHeightRatio?: number): SuggestionEvidence {
+/** Build BMI stat card evidence: at BMI 25–29.9 with no waist on record, it asks for one. */
+export function getBmiEvidence(bmi: number, sex: 'male' | 'female', waistToHeightRatio?: number): SuggestionEvidence {
   const range = sex === 'male' ? '23-26' : '20-23';
-  let whtrNote = '';
-  if (bmiCategory === 'Overweight' && waistToHeightRatio !== undefined && waistToHeightRatio < 0.5) {
-    whtrNote = '\n\nAlthough your BMI is 25-29.9, your waist-to-height ratio is below 0.5, which reclassifies you as Normal per AACE 2025 guidelines. This is because central adiposity (measured by WHtR) is a better predictor of metabolic risk than BMI alone.';
-  } else if (bmiCategory === 'Overweight' && waistToHeightRatio === undefined) {
-    whtrNote = '\n\nMeasuring your waist circumference would help refine this — a waist-to-height ratio <0.5 can reclassify Overweight BMI as Normal per AACE 2025.';
-  }
+  // BMI 25–29.9 is the band a healthy waist reclassifies as Normal (getBMICategory)
+  const whtrNote = bmi >= 25 && bmi < 30 && waistToHeightRatio === undefined
+    ? '\n\nMeasuring your waist circumference would help refine this — a waist-to-height ratio <0.5 can reclassify Overweight BMI as Normal per AACE 2025.'
+    : '';
   const guidelines = whtrNote ? ['AACE 2025'] : [];
   return {
     reason: `Body Mass Index = weight (kg) / height (m)². Sex-specific optimal BMI ranges based on mortality meta-analyses: males 23-26, females 20-23. Your optimal range is ${range}.${whtrNote}`,

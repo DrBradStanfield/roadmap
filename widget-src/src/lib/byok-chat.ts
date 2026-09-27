@@ -18,22 +18,13 @@
  * data; for the full cited experience the copy points at drstanfield.com.
  */
 import {
-  healthInputSchema,
-  excludedInputFields,
-  sanitizeInputs,
-  calculateHealthResults,
-  medicationsToInputs,
-  screeningsToInputs,
-  latestFromHistory,
+  buildChatContextJson,
   CHAT_EDIT_TOOLS,
   MAX_HISTORY_MESSAGES,
   PREFILL_ACK_MESSAGE,
   parseProposedEdits,
-  type HealthInputs,
-  type UnitSystem,
   type ProposedEdit,
 } from '@roadmap/health-core';
-import { getByokChatInputs } from './roadmap-data';
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import { getChatHistory } from './chat-history-access';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
@@ -179,56 +170,10 @@ Updating the user's form (tools):
 - For \`propose_medication_edit\`: medications save immediately. After the tool call, state plainly what changed (e.g. "Done — set your statin to atorvastatin 20mg") and tell them they can undo it.
 - You can answer normally without any tool when no edit is requested. Use tools only when the user is clearly giving you a value/medication to record.`;
 
-function buildUserContextJson(): string | null {
-  const raw = getByokChatInputs();
-  if (!raw) return null;
-  // The user's own file is an untrusted boundary too — a hand edit or a corrupt
-  // sync must cost its own field, not the whole context. Sanitize per field
-  // first, or one bad number tells the model "none entered yet". The prompt is
-  // built from parsed.data below, never the sanitized raw, so Zod's key
-  // stripping still stands between an unknown field and the model.
-  const parsed = healthInputSchema.safeParse(sanitizeInputs(raw as Partial<HealthInputs>));
-  if (!parsed.success) return null;
-  const inputs = parsed.data as HealthInputs;
-  const excludedFields = excludedInputFields(raw as Partial<HealthInputs>);
-  const unitSystem: UnitSystem = raw.unitSystem === 'conventional' ? 'conventional' : 'si';
-  const medications = medicationsToInputs(raw.medications ?? []);
-  const screenings = screeningsToInputs(raw.screenings ?? []);
-  const results = calculateHealthResults(inputs, unitSystem, medications, screenings);
-
-  // Dated per-metric time series (chronological; LAST entry = most recent).
-  // Mirrors the website chat: suggestions come from the snapshot, but the
-  // REPORTED values are overridden with each series' newest dated reading —
-  // the dated series is the source of truth for "most recent X".
-  const history = raw.measurementHistory;
-  const hasHistory = !!history && Object.keys(history).length > 0;
-  const contextInputs = hasHistory ? { ...inputs, ...latestFromHistory(history) } : inputs;
-
-  return JSON.stringify(
-    {
-      profile: { sex: inputs.sex, age: results.age, heightCm: inputs.heightCm, unitSystem },
-      inputs: contextInputs,
-      // Field names only — a value IS there, it was out of range and unusable.
-      // Without it the model reads the gap as "never entered".
-      ...(excludedFields.length > 0 ? { excludedFields } : {}),
-      ...(hasHistory ? { measurementHistory: history } : {}),
-      medications,
-      screenings,
-      currentSuggestions: results.suggestions.map((s) => ({
-        category: s.category,
-        priority: s.priority,
-        title: s.title,
-      })),
-    },
-    null,
-    2,
-  );
-}
-
 export async function sendMessage(
   message: string,
   conversationId?: string | null,
-  _guestInputs?: Record<string, unknown> | null,
+  guestInputs?: Record<string, unknown> | null,
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
   const apiKey = getAnthropicKey();
   if (!apiKey) {
@@ -243,7 +188,11 @@ export async function sendMessage(
     -MAX_HISTORY_MESSAGES,
   );
 
-  const contextJson = buildUserContextJson();
+  // The widget supplies its current context (unsaved typed values, lent
+  // drafts), as it does to the website chat (US-15 AC10), and the same
+  // builder as the website chat sanitizes it, so both chats plan from the
+  // same rows (US-15 AC11).
+  const contextJson = buildChatContextJson(guestInputs);
   const system = contextJson
     ? `${SYSTEM_PROMPT}\n\nUser data:\n${contextJson}`
     : `${SYSTEM_PROMPT}\n\nUser data: none entered yet — encourage them to fill in the form for tailored answers.`;

@@ -121,6 +121,12 @@ someone's medical history, or lose their data at the next device sync.
    `get_plan` one keyed by its own `inputs` field names. `get_plan.inputs` is SI
    canonical; `currentValues` is the same values converted to the record's `unitSystem`,
    so read `inputs` when you are computing and `currentValues` when you are quoting.
+   One exception to "converted": LDL and ApoB, the lipids with a target line, print on
+   the side of their line the plan grades them (US-07 AC5). A value within one display
+   step of the line can differ from a plain conversion: one step up to the line when the
+   plan grades it at or above, or one more decimal place when it grades it below.
+   `get_plan`'s tool description in `mcp-tools.ts` should say this too; it stays frozen
+   while OpenAI reviews the app, so add it once that review is done.
 9. **Timestamps are ISO 8601, and never in the future.** On every load the app clamps a
    row's write-clocks, `createdAt` on measurements and lab values, `updatedAt`/`lamport`
    on current-state rows and on each field stamp, to the file's own last write (the

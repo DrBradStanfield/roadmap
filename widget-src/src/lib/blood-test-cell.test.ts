@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type React from 'react';
 import { formatDisplayValue, fromCanonicalValue, parseLocalisedNumber, toCanonicalValue } from '@roadmap/health-core';
-import { formatLabValue, sameAsSaved, validateTypedValue } from './blood-test-cell';
+import { formatLabValue, sameAsSaved, statusOf, validateTypedValue } from './blood-test-cell';
 
 // ---------------------------------------------------------------------------
 // Bug: user typed a value in the Lp(a) text box, hit Enter, the value
@@ -207,5 +207,21 @@ describe('sameAsSaved — a typed value that changes nothing', () => {
   it('a change the other unit would round away is a change', () => {
     const typed = 130; // mg/dL, over a shown 131 (3.4 mmol/L); both read 3.4 mmol/L
     expect(sameAsSaved(typed, formatDisplayValue('ldl', 3.4, 'conventional'), toCanonicalValue('ldl', typed, 'conventional'), 3.4)).toBe(false);
+  });
+});
+
+// US-07 AC5: the history matrix colours LDL amber from the plan's 1.4 mmol/L
+// target, as it colours ApoB from 0.5; red stays at High (160 mg/dL).
+describe('statusOf — LDL cells (US-07 AC5)', () => {
+  it.each([
+    [1.39, 'ok'], [1.4, 'warn'], [3.2, 'warn'], [3.37, 'warn'], [4.13, 'warn'], [4.14, 'bad'],
+  ])('LDL %s is %s', (value, status) => {
+    expect(statusOf('ldl', value)).toBe(status);
+  });
+
+  it('ApoB is unchanged: warn from 0.5, bad from 0.7', () => {
+    expect(statusOf('apob', 0.49)).toBe('ok');
+    expect(statusOf('apob', 0.5)).toBe('warn');
+    expect(statusOf('apob', 0.7)).toBe('bad');
   });
 });

@@ -71,7 +71,8 @@ interface ReviewTableProps {
   unitSystem: UnitSystem;
   metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>;
   onToggleFieldUnit?: (field: string) => void;
-  birthYear?: number;
+  /** The plan's age, which sets screening eligibility (US-06 AC5). Unset with no plan or no valid birth year. */
+  age?: number;
   sex?: 'male' | 'female';
   onSave: (payload: {
     values: ReviewedValue[];
@@ -397,14 +398,13 @@ export function ReviewTable({
   unitSystem,
   metricUnitOverrides,
   onToggleFieldUnit,
-  birthYear,
+  age: userAge,
   sex,
   onSave,
   onCancel,
   isSaving,
   error,
 }: ReviewTableProps) {
-  const userAge = birthYear ? new Date().getFullYear() - birthYear : undefined;
   const docHistoryIndex = useMemo(() => buildDocHistoryIndex(history.documents), [history.documents]);
 
   // Per-file full date state (day/month/year)
@@ -459,12 +459,13 @@ export function ReviewTable({
     return map;
   });
 
-  // Per-document: whether to update screening date (when screeningType is present AND user is old enough)
+  // Per-document: whether to update screening date (when screeningType is present AND user is old enough).
+  // No age (no plan) starts unticked: eligibility is unknown (US-06 AC5). The user can still tick it.
   const [screeningChecked, setScreeningChecked] = useState<Record<number, boolean>>(() => {
     const map: Record<number, boolean> = {};
     results.forEach((r, fi) => {
       const st = r.document?.metadata?.screeningType as string | undefined;
-      if (st && isScreeningEligible(st, userAge, sex)) {
+      if (st && userAge !== undefined && isScreeningEligible(st, userAge, sex)) {
         map[fi] = true;
       }
     });

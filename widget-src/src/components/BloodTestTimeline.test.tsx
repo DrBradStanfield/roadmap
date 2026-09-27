@@ -510,3 +510,33 @@ describe('US-03 AC5 — the matrix commits when you leave it', () => {
     expectSent(m.onSaveBatch, 0, [{ date: '2026-08-15', values: { ldl: 3.2 } }]);
   });
 });
+
+// US-07 AC5: an editable cell shows the plain value, the number the draft
+// router and the editor compare a typed value against (US-03 AC3). Its colour
+// is the plan's grade, so a value within one display step of its line,
+// entered in the other unit, can read on the other side of its hint.
+describe('US-07 AC5: a lipid cell shows its plain value, coloured by the plan\'s grade', () => {
+  const cellOf = (metric: string, value: number, unitOverrides: Record<string, 'si' | 'conventional'> = {}) => {
+    const view = render(
+      <BloodTestTimeline bloodTestHistory={history([[metric, value, '2026-09-01']])} unitSystem="si" unitOverrides={unitOverrides}
+        onToggleFieldUnit={noop} onSaveBatch={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={noop} isSaving={false} hasApiResponse/>,
+    );
+    const r = Array.from(view.container.querySelectorAll('.bt-row')).find((row) => row.querySelector('.bt-cell-value .bt-value-num'))!;
+    return [r.querySelector('.bt-ref-label')?.textContent, r.querySelector('.bt-value-num')?.textContent, r.querySelector('.bt-cell-value .bt-status-tick')?.className];
+  };
+
+  it('LDL 54 mg/dL shown in mmol/L reads 1.4 beside "<1.4", and is graded optimal', () => {
+    expect(cellOf('ldl', toCanonicalValue('ldl', 54, 'conventional')))
+      .toEqual(['Optimal: <1.4 mmol/L', '1.4', 'bt-status-tick bt-status-ok']);
+  });
+
+  it('LDL 1.40 mmol/L shown in mg/dL reads 54 beside "<55", and is graded above optimal', () => {
+    expect(cellOf('ldl', 1.4, { ldlC: 'conventional' }))
+      .toEqual(['Optimal: <55 mg/dL', '54', 'bt-status-tick bt-status-warn']);
+  });
+
+  it('a value typed in the shown unit reads as typed', () => {
+    expect(cellOf('ldl', 1.4)[1]).toBe('1.4');
+    expect(cellOf('apob', 0.49)[1]).toBe('0.49');
+  });
+});
