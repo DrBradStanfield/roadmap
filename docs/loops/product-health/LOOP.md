@@ -23,8 +23,18 @@ unacted for a quarter, say so in the retro and propose the fleet review.
    (`scripts/build-user-stories-html.ts`) refuses such a source in CI now.
 2. The two most recent reports here + `LEARNINGS.md` + `metrics.csv`.
 3. `docs/usage-audit-2026-08.md` §6 — the baseline backlog.
+4. The week's sibling-loop reports (`docs/loops/*/` files changed in the last
+   8 days, sentry-fix and chat-health first): they often already hold the
+   week's platform facts (W39: sentry-fix had recorded the GitHub account flag
+   on 09-20; this loop learned it from Gmail a week later).
 
 ## Gather (fan out workers; every unreachable source is a NAMED gap)
+- **GitHub account status, before any GitHub read**: zero Actions runs in 8
+  days, a 404 fleet dashboard, or empty repo search is an account or platform
+  question (check Gmail for a GitHub Support thread) before it is a quiet week
+  — a flag silently removes Actions, Pages and the `loop-issue-notify` relay
+  at once (W39). While the relay is down, a decision issue is the durable
+  record, not the delivery: say so in the report.
 - **Feedback emails** (Gmail MCP): `subject:"Health Roadmap Feedback" newer_than:8d`.
 - **Supabase** (env: `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
   `SUPABASE_PRODUCT_HEALTH_KEY` — a READ-ONLY role, SELECT-only on the 8
@@ -74,10 +84,10 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   connector files a user's bug report as a public issue (US-32 AC9, live
   2026-09-03); organic ones are feedback, Brad's own path tests are not.
 - **OpenAI app review status** (Gmail MCP; the portal needs a login):
-  search for a verdict on submission `C-Ggl3RkPf6el6` ("Health Roadmap"
-  v1.0.0, in Review since 2026-09-02). If it has moved (approved or
-  rejected), surface issue #60 — the staged v1.0.1 resubmission — as the
-  next action in the report.
+  search for a verdict on submission `C-udsciSnH0UNo` ("Health by Dr Brad"
+  v1.0.1, receipt 2026-09-17T20:30Z; v1.0.0 `C-Ggl3RkPf6el6` was rejected
+  2026-09-15). If it has moved (approved or rejected), surface issue #60 as
+  the next action in the report.
 
 Conventions: the report/metrics week label is the COMPLETED ISO data week (the
 7d window ending at run time). Any funnel event reporting 0 must be classified

@@ -4,6 +4,14 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-09-27 (Brad-directed, after the W39 run): three edits from the W39
+  retro. Orient 4 reads the week's sibling-loop reports first (sentry-fix had
+  the GitHub account flag on 09-20; this loop learned it from Gmail a week
+  later). Gather opens with a GitHub account-status check (a flag silently
+  removes Actions, Pages and the notify relay together; while the relay is
+  down a decision issue is the record, not the delivery). The OpenAI item now
+  tracks the v1.0.1 tag `C-udsciSnH0UNo`, not the rejected v1.0.0 one.
+  Net +10 lines (`wc -l -c`: 118 7440 → 128 8179; cap 200 / 25KB).
 - 2026-09-06 (Brad-directed, after the W36 run): Orient 1 now counts the
   spec's `### US-` sections week-over-week (a vanished story = CRITICAL; the
   09-01 loss of US-12–US-28); Gather adds the new event families
