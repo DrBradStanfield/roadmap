@@ -8,14 +8,12 @@ Read before appending — no duplicates.
 Tags: `[retrieval] [classifier] [latency] [content] [loop]`
 
 - **2026-08-07 [retrieval]** The router receives ONE string per entry:
-  `[type] handle: summary`. The `keywords` frontmatter is read by nothing at
-  runtime. Discoverability fixes must edit the **summary** — verified when
-  adding `ncah` to two pathways' keywords changed nothing and the query only
-  started routing once the acronym went into the summary.
+  `[type] handle: summary`; `keywords` frontmatter is read by nothing at
+  runtime. Discoverability fixes edit the **summary** — `ncah` in two
+  pathways' keywords changed nothing; in the summary it routed.
 - **2026-08-07 [retrieval]** Appending the curated `keywords` to the router
-  index was the WORST configuration tested — 88.9% vs 96.3% — at 2.3× the
-  tokens. More terms is not more signal; a 224-char term dump per line buries
-  the discriminating sentence.
+  index was the WORST configuration tested — 88.9% vs 96.3% at 2.3× the
+  tokens: a 224-char term dump per line buries the discriminating sentence.
 - **2026-08-07 [retrieval]** Longer summaries are worse, not better:
   150 chars → 96.3%, 250 → 92.6%, uncapped 269 → 92.6%. There is an optimum
   near 150. Past it the marginal sentence is usually generic scaffolding
@@ -48,16 +46,12 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   scoped narrowly to read-back and correction; interpretation ("is my Lp(a) a
   concern?") deliberately still routes, because that is exactly the question
   the reference content exists to answer.
-- **2026-08-07 [latency]** Every doc said the router took ~250–400ms. Measured
-  over 200 `chat_match_events` rows it is **median 1,615ms** (cache hit 1,311 /
-  miss 1,889), p90 3,063ms — 4–6× the documented figure, which was a pre-launch
-  estimate never re-checked. This makes the pre-router classifier ~4–6× more
-  valuable than its own spec claimed.
-- **2026-08-07 [loop]** Corroboration count is not evidence. An audit flagged a
-  measured production number as wrong because a stale estimate appeared in four
-  places and the real figure in two. A number repeated in four places can be one
-  mistake propagated four times. Prefer one measurement over any number of
-  citations.
+- **2026-08-07 [latency]** Every doc said the router took ~250–400ms; measured
+  over 200 rows it was **median 1,615ms**, p90 3,063ms — a pre-launch estimate
+  never re-checked, making the pre-router classifier 4–6× more valuable.
+- **2026-08-07 [loop]** Corroboration count is not evidence: a stale estimate
+  in four places outvoted the measured figure in two. One number repeated four
+  times can be one mistake propagated; prefer one measurement to citations.
 - **2026-08-07 [loop]** Four separate production/harness divergences were found
   in one day: the harness didn't truncate summaries, didn't substitute
   `{{ENTRY_COUNT}}`, kept its own copy of the valid classifier labels, and kept
@@ -100,7 +94,11 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   summary-immune from both sides; the lever is the router prompt or model.
   Same run: summary edits shift selection boundaries index-wide (two
   unrelated fixtures flipped state under the edit pair and flipped back on
-  revert) — never attribute a distant fixture flip to your target edit.
+  revert). W39 proved it with four full arms: ONE pathway summary line
+  (liver lesions + "hypodensities") sent a toddler-vomit, a snoring and an
+  omega-3 fixture to ∅ 6/6 on the edited index while both original-index
+  arms passed them — a category before/after cannot see this; only a
+  full-suite arm can. Attribute distant flips only with paired arms.
   W38 extended this to ADDITIONS: two unrelated blog entries (1022 → 1024)
   turned the natto and K2-variables known-fails into 6/6 passes, and
   `--index` pinned to the W36-era file fails them 6/6 in the same minutes;
@@ -124,9 +122,6 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   **`ANTHROPIC_TEST_API_KEY`**, which they already check first. A missing key
   is a named data gap and a proposal-only run, never an excuse to fabricate
   harness numbers.
-- **2026-08-10 [meta]** W33 run graded **A** by a build session: exemplary
-  measure-before/after. Dings: misreported line-count vitals (correction
-  commit) and a Gmail draft contradicting the no-email rule (reconciled).
 - **2026-08-22 [retrieval]** The router refused PRACTICAL/CONSUMER-shaped
   inputs while routing knowledge-shaped twins of the same topics (W35 shape
   probe; every instance ∅ 3/3 with the right terms visible in the summary).
@@ -152,18 +147,23 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   inside a fixture that fails before AND after, ambiguous "MI" → cardiac).
   Rules: selection guidance sits BELOW rules 1 and 2 and never empties a
   match; score like-for-like on ONE fixture file (no widening); one 3-run
-  arm is weak — the same prompt flips 1–2% of fixtures per arm.
+  arm is weak — the same prompt flips 1–2% of fixtures per arm. W39 (first
+  run on the shipped prompt): the pain-family steal is NOT gone — Lp(a)-diet
+  went to `chronic-non-cancer-pain` 3/3 on both original-index full arms and
+  the category arm (9/9; ∅ only on the edited index); an as-typed PCSK9
+  mechanism question picked `hyperlipidaemia` 3/3 over two PCSK9-named
+  entries. The 09-24 "every documented steal is gone" held on its arms only.
 - **2026-09-05 [loop]** The cloud runner is uid 0 (root): chmod-based tests
   can't fail writes, so health-core's US-31 AC8 (`file-adapter.test.ts`)
   fails in this env on a CLEAN tree — verify on clean tree before blaming
   your changes. Same class: `npm install` here strips `"dev": true` flags in
   package-lock.json (npm-version artifact) — revert it, don't commit it.
 - **2026-09-05 [content]** The YouTube bot persists its skip decision as a
-  literal `SKIP_NO_REPLY` 1-word assistant message (3 rows in W36) —
-  exclude these sentinels when computing reply-length stats, or the median
-  reads low. Proposal filed W36 to stop persisting the sentinel as content.
-  Confirmed again W37: 20/45 assistant rows were sentinels (11/21 on one
-  hostile video thread); median 66 words excluding them, 52 including.
+  literal `SKIP_NO_REPLY` 1-word assistant row (W36 3, W37 20/45, W39 8/41) —
+  exclude these sentinels from reply-length stats or the median reads low
+  (W37: 66 words without, 52 with). Proposal filed W36 to stop persisting it.
+  Real replies end with the 6-word `[written by Brad AI for testing]` tag
+  the prompt requires (in the prompt before 08-10; W39 raw counts include it).
 - **2026-09-19 [latency]** The cache-hit rate is an inter-arrival metric, not
   a router property: every hit in W36–W38 fell within 300 s of the previous
   router call (13/13, 10/13, 2/2) and none beyond it (0/28, 0/34, 0/16) —

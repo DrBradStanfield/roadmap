@@ -28,8 +28,10 @@ const medicationReminder: DueReminder = {
 };
 
 const sampleBloodTestDates: BloodTestDate[] = [
-  { type: 'lipids', label: 'Lipid panel', lastDate: '2024-12-01T00:00:00.000Z', isOverdue: true },
-  { type: 'hba1c', label: 'HbA1c', lastDate: '2025-10-01T00:00:00.000Z', isOverdue: false },
+  // Noon UTC: formatReminderDate uses local getMonth(); midnight UTC on the 1st
+  // is the previous local day west of UTC (US-17 reminder email copy).
+  { type: 'lipids', label: 'Lipid panel', lastDate: '2024-12-01T12:00:00.000Z', isOverdue: true },
+  { type: 'hba1c', label: 'HbA1c', lastDate: '2025-10-01T12:00:00.000Z', isOverdue: false },
 ];
 
 const preferencesUrl = 'https://drstanfield.com/apps/health-tool-1/api/reminders?token=abc123';
