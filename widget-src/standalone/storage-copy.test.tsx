@@ -119,6 +119,19 @@ describe('US-09 AC5 — the picker', () => {
     expect(dialog.textContent).toContain('Any WebDAV server you run, such as Nextcloud or ownCloud.');
   });
 
+  // Both send the account email to reminders (reminders.ts identityFor); the
+  // advanced options, which give no email unless the token allows it, say nothing.
+  it('US-09 AC17: Google Drive and Dropbox each say they share the email, and what it is for', () => {
+    const notes = [...open().querySelectorAll('.hr-opt-note')];
+    expect(notes.map((n) => n.textContent)).toEqual([
+      'Google also shares your email address. We use it only to remind you when a check-up or blood test is due.',
+      'Dropbox also shares your email address. We use it only to remind you when a check-up or blood test is due.',
+    ]);
+    // Each under its option's blurb, inside that option.
+    expect(notes.map((n) => n.previousElementSibling?.className)).toEqual(['hr-opt-blurb', 'hr-opt-blurb']);
+    expect(notes.map((n) => n.closest('button')?.querySelector('.hr-opt-name')?.textContent)).toEqual(['Google Drive', 'Dropbox']);
+  });
+
   it('carries no em dash and never mentions Dr Brad’s servers', () => {
     const text = open().textContent ?? '';
     expect(text).not.toMatch(/—/);

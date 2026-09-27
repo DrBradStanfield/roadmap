@@ -552,13 +552,17 @@ Both conditions must hold:
 - `canIncreaseDose(drug, dose)`: Higher dose available for current statin
 - `shouldSuggestSwitch(drug, dose)`: On max dose of current statin, potency > 0, potency < 63%
 
+**No dose recorded (`med-statin-dose`, US-06 AC8, Brad 2026-09-28):** on a listed statin whose dose is not recorded, the next step depends on the dose, so once ezetimibe is handled the plan asks for it. The dose card takes the slot the escalation or PCSK9 inhibitor card would have taken, whatever `statinEscalation` or `pcsk9i` says; bempedoic acid still shows first while unanswered. Before ezetimibe is handled nothing changes. Title "Add your statin dose"; text, after the lipid reason sentence: "Your statin dose isn't recorded, and your next step depends on it. A higher dose or a more potent statin may help. Add your current dose to see which." On rosuvastatin, whose highest dose moves on to the PCSK9 inhibitor, the middle sentence reads "A higher dose may help, or you may already take the highest." Each card names only the steps its drug can take next.
+
 ### Step 4: PCSK9 Inhibitor (`med-pcsk9i`)
 
-**Condition:** Statin escalation not tolerated, or already at max potency, or no escalation possible. AND pcsk9i is `undefined`, `'no'`, or `'not_yet'`.
+**Condition:** Statin dose recorded (or statin not tolerated) AND statin escalation not tolerated, or already at max potency, or no escalation possible. AND pcsk9i is `undefined`, `'no'`, or `'not_yet'`.
+
+**Note:** When every step is answered and the marker is still at or above its target, the plan shows no further card. Brad decided not to flag it (2026-09-28): "there's nothing else that clinically can be done if taking statin, ezetimibe, and PCSK9i" (US-06 AC9).
 
 ### The input form (both cascades, US-06 AC5 and AC7)
 
-The form's medication sections step through the same `lipidCascade` and `weightCascade` decisions as the cards. Progressive disclosure opens only the next empty step: a step that holds a recorded value always shows. Changing a drug or its dose may reset only that drug's own escalation answer, since the question depends on the dose; it never writes another medication (a GLP-1 dose change once wrote "not taking" rows for an SGLT2 inhibitor and metformin the person still took, and rows are permanent). A dose never recorded reads "Dose not recorded", and a recorded value the form has no option for (a legacy `tier_1`, a raw `ezetimibe` row, an agent's escalation `yes`) reads "Other (recorded)".
+The form's medication sections step through the same `lipidCascade` and `weightCascade` decisions as the cards. Progressive disclosure opens only the next empty step: a step that holds a recorded value always shows. Changing a drug or its dose may reset only that drug's own escalation answer, since the question depends on the dose (adding a missing dose resets it too); it never writes another medication (a GLP-1 dose change once wrote "not taking" rows for an SGLT2 inhibitor and metformin the person still took, and rows are permanent). A dose never recorded reads "Add dose" (it read "Dose not recorded" until 2026-09-28, which a 390 px phone cut to "Dose not re"), and while the plan asks for it (`med-statin-dose`, `weight-med-glp1-dose`) the hint under the drug's label reads "Add your dose: your next step depends on it." in place of the drug's description. A recorded value the form has no option for (a legacy `tier_1`, a raw `ezetimibe` row, an agent's escalation `yes`) reads "Other (recorded)".
 
 ### Statin Potency Table (BPAC 2021)
 
@@ -633,9 +637,11 @@ The same trigger drives the cascade (medications tracked), the standalone `weigh
 - `canIncreaseGlp1Dose(drug, dose)`: Higher dose available for current drug
 - `shouldSuggestGlp1Switch(drug, dose)`: On `'other'`, OR on max dose of non-tirzepatide GLP-1
 
+**No dose recorded (`weight-med-glp1-dose`, US-06 AC8, Brad 2026-09-28):** on a listed GLP-1 (tirzepatide, semaglutide injection or oral, dulaglutide) whose dose is not recorded, the next step depends on the dose, so the plan asks for it, whatever `glp1Escalation` says, and holds the later steps. `'other'` keeps its switch card, and an unlisted name, which the form cannot give a dose, moves on as before. Title "Add your GLP-1 dose"; text: "Your GLP-1 dose isn't recorded, and your next step depends on it. A higher dose or a switch to Tirzepatide may help. Add your current dose to see which." On tirzepatide, whose highest dose moves on to the SGLT2 inhibitor, the middle sentence reads "A higher dose may help, or you may already take the highest."
+
 ### Step 3: SGLT2i (`weight-med-sglt2i`)
 
-**Condition:** GLP-1 escalation handled or not possible AND sglt2i is null, undefined, or drug is `'none'`.
+**Condition:** GLP-1 dose recorded (when listed) AND GLP-1 escalation handled or not possible AND sglt2i is null, undefined, or drug is `'none'`.
 
 ### Step 4: Metformin (`weight-med-metformin`)
 

@@ -6,7 +6,7 @@
  * wrote "not taking" for a drug the person still takes was a false record.
  *
  * US-06 AC5: a select shows what the record holds. A dose never recorded
- * reads "Dose not recorded"; an answer the form has no option for reads
+ * reads "Add dose"; an answer the form has no option for reads
  * "Other (recorded)", not the first option.
  *
  * The whole widget renders over a real RoadmapStore on jsdom's localStorage.
@@ -142,6 +142,25 @@ describe('US-06 AC7: changing one medication never records a change to another',
   });
 });
 
+// US-06 AC8 (adversarial review, 2026-09-28): adding a missing dose resets the
+// drug's escalation answer, as any dose change does (AC7), so the question is
+// asked again. Keeping it was tried and reverted: a chat edit can switch the
+// drug without a dose, so the answer on record may belong to another drug, and
+// keeping it would skip that drug's step up. A re-ask costs one click.
+describe('US-06 AC8: adding a missing dose asks the escalation question again', () => {
+  it('a GLP-1 with no dose and "didn\'t tolerate a higher dose": choosing 1 mg resets the answer', async () => {
+    const view = await pageWith(WEIGHT, [['glp1', 'semaglutide_injection'], ['glp1_escalation', 'not_tolerated']], '#glp1-dose');
+    await choose(view.container, '#glp1-dose', '1');
+    expect(await recorded()).toMatchObject({ glp1: 'semaglutide_injection@1', glp1_escalation: 'not_yet@null' });
+  });
+
+  it('a statin with no dose and "didn\'t tolerate a higher dose": choosing 20 mg resets the answer', async () => {
+    const view = await pageWith(LDL_3, [['statin', 'atorvastatin'], ['ezetimibe', 'ezetimibe', 10], ['statin_escalation', 'not_tolerated']], '#statin-dose');
+    await choose(view.container, '#statin-dose', '20');
+    expect(await recorded()).toMatchObject({ statin: 'atorvastatin@20', statin_escalation: 'not_yet@null' });
+  });
+});
+
 // US-06 AC7 (final review, 2026-09-28): flat mode shows no escalation field,
 // so a drug or dose change there must not reset an answer the user cannot
 // see; every change writes a permanent row. Only the drug's own row is written.
@@ -175,9 +194,9 @@ describe('US-06 AC7: in flat mode a change writes only the drug\'s own row', () 
 });
 
 describe('US-06 AC5: a select shows what the record holds', () => {
-  it('tirzepatide with no dose recorded reads "Dose not recorded", not 2.5 mg', async () => {
+  it('tirzepatide with no dose recorded reads "Add dose", not 2.5 mg', async () => {
     const view = await pageWith(WEIGHT, [['glp1', 'tirzepatide']], '#glp1-dose');
-    expect(shown(view.container, '#glp1-dose')).toBe('Dose not recorded');
+    expect(shown(view.container, '#glp1-dose')).toBe('Add dose');
   });
 
   it('a raw "ezetimibe" row with no dose reads "Other (recorded)"', async () => {

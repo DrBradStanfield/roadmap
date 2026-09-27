@@ -65,6 +65,8 @@ interface Option {
   id: Backend;
   name: string;
   blurb: string;
+  /** A quieter second line under the blurb. */
+  note?: string;
   advanced?: boolean;
   local?: boolean;
 }
@@ -74,11 +76,16 @@ const OPTIONS: Option[] = [
     id: 'google-drive',
     name: 'Google Drive',
     blurb: 'One file in your own Google Drive, in a private "Health Plan by Dr Brad" folder.',
+    // US-09 AC17: Google's consent screen lists the email permission (openid
+    // email, google-config.ts); only the reminders opt-in uses the address.
+    note: 'Google also shares your email address. We use it only to remind you when a check-up or blood test is due.',
   },
   {
     id: 'dropbox',
     name: 'Dropbox',
     blurb: 'One file in your own Dropbox, in a private "Health Plan by Dr Brad" folder.',
+    // The account email reaches reminders the same way (identityFor in reminders.ts).
+    note: 'Dropbox also shares your email address. We use it only to remind you when a check-up or blood test is due.',
   },
   {
     id: 'github',
@@ -182,6 +189,7 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
                       )}
                     </span>
                     <span className="hr-opt-blurb">{o.blurb}</span>
+                    {o.note && <span className="hr-opt-note">{o.note}</span>}
                   </span>
                 </button>
               </React.Fragment>

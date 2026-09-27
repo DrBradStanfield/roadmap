@@ -10,10 +10,11 @@
  * the control asks for the address once. The capability token lives in the
  * user's cloud file.
  *
- * Turning on opens a small inline step that also offers Dr Brad's email list
- * as an OPT-IN with a TYPED email (§10: no harvesting at cloud-connect — the
- * deliberate act of typing + ticking is the consent). The typed address goes
- * to Klaviyo only; the reminder row never stores it.
+ * Turning on opens a small inline step that also offers the MicroVitamin
+ * mailing list (Dr Brad's supplement company; US-23 AC11) as an OPT-IN with a
+ * TYPED email (§10: no harvesting at cloud-connect — the deliberate act of
+ * typing + ticking is the consent). The typed address goes to Klaviyo only;
+ * the reminder row never stores it.
  */
 import { useEffect, useState } from 'react';
 import { getReminderOptIn } from '../src/lib/roadmap-data';
@@ -128,13 +129,13 @@ export function RemindersControl({ backend }: { backend: Backend }) {
               checked={wantsUpdates}
               onChange={(e) => setWantsUpdates(e.target.checked)}
             />{' '}
-            Also send me Dr Brad’s evidence-based health emails (unsubscribe anytime)
+            Also add me to the MicroVitamin mailing list (Dr Brad’s supplement company). Unsubscribe anytime.
           </label>
           {wantsUpdates && (
             <input
               type="email"
-              placeholder="Type your email for Dr Brad’s emails"
-              aria-label="Email for Dr Brad’s health emails"
+              placeholder="Your email for the MicroVitamin list"
+              aria-label="Email for the MicroVitamin mailing list"
               value={typedEmail}
               onChange={(e) => setTypedEmail(e.target.value)}
             />

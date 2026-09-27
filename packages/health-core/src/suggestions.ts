@@ -1,6 +1,6 @@
 import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
-import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate } from './types';
+import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
 import {
   type UnitSystem,
@@ -160,6 +160,15 @@ function glp1Description(bmi: number, reasons: string[]): string {
   return `With a BMI of ${bmi}${and}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
 }
 
+/** A dose card's text (US-06 AC8): the steps the missing dose decides
+ *  between, for this drug. `switchTo` names the stronger drug its highest dose
+ *  would move to; null when the highest dose moves on to the next medication
+ *  (tirzepatide, rosuvastatin). */
+function doseCardText(kind: string, switchTo: string | null): string {
+  const choice = switchTo ? `A higher dose or ${switchTo} may help.` : 'A higher dose may help, or you may already take the highest.';
+  return `Your ${kind} dose isn't recorded, and your next step depends on it. ${choice} Add your current dose to see which.`;
+}
+
 /** The form's weight-medication intro, in the plan's words: the BMI and the
  *  trigger's reasons, as the GLP-1 card names them (US-06 AC5). */
 export function weightMedIntro(bmi: number, reasons: string[]): string {
@@ -302,9 +311,10 @@ export function generateSuggestions(
     if (!medications) {
       suggestions.push({ id: 'weight-glp1', category: 'medication', priority: 'attention', title: 'Weight management medication', description: glp1Text });
     } else {
-      // Weight & diabetes medication cascade (GLP-1 → escalate → SGLT2i → Metformin)
+      // Weight & diabetes medication cascade (GLP-1 → its dose if not recorded → escalate → SGLT2i → Metformin)
       const stepCards: Record<WeightStep, [priority: Suggestion['priority'], title: string, text: string]> = {
         glp1: ['attention', 'Consider a GLP-1 medication', glp1Text],
+        'glp1-dose': ['attention', 'Add your GLP-1 dose', doseCardText('GLP-1', medications.glp1?.drug === MAX_GLP1_DRUG ? null : 'a switch to Tirzepatide')],
         'glp1-increase': ['attention', 'Consider increasing GLP-1 dose', 'You may benefit from a higher dose of your current GLP-1 medication. Discuss increasing your dose with your doctor.'],
         'glp1-switch': ['attention', 'Consider switching to Tirzepatide', 'Tirzepatide (Mounjaro/Zepbound) may be more effective for weight management. Discuss switching with your doctor.'],
         sglt2i: ['attention', 'Consider adding an SGLT2 inhibitor', 'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.'],
@@ -660,15 +670,18 @@ export function generateSuggestions(
     const lipidReason = lipidTargetSentence(lipidMarker, us);
 
     const statinDrug = medications.statin?.drug ?? '';
+    const statinDoses = STATIN_DRUGS[statinDrug]?.doses;
+    const switchesAtTop = !!statinDoses && shouldSuggestSwitch(statinDrug, statinDoses[statinDoses.length - 1]);
     const stepCards: Record<LipidStep, [title: string, text: string]> = {
       statin: ['Consider starting a statin', 'Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.'],
       ezetimibe: ['Consider adding Ezetimibe', 'Discuss adding Ezetimibe 10mg with your doctor.'],
       'bempedoic-acid': ['Consider adding bempedoic acid', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor.'],
+      'statin-dose': ['Add your statin dose', doseCardText('statin', switchesAtTop ? 'a more potent statin' : null)],
       'statin-increase': ['Consider increasing statin dose', 'Discuss increasing your statin dose with your doctor.'],
       'statin-switch': ['Consider switching to a more potent statin', `You're on the maximum dose of ${statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1)}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor.`],
       pcsk9i: ['Consider a PCSK9 inhibitor', 'Discuss a PCSK9 inhibitor with your doctor.'],
     };
-    // Statin → ezetimibe → bempedoic acid, then escalate the statin or a PCSK9 inhibitor
+    // Statin → ezetimibe → bempedoic acid, then the statin's dose if not recorded, a step up or a PCSK9 inhibitor
     for (const step of lipidCascade(medications).suggest) {
       const [title, text] = stepCards[step];
       suggestions.push({ id: `med-${step}`, category: 'medication', priority: 'attention', title, description: `${lipidReason} ${text}` });

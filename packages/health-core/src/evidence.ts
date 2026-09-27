@@ -51,9 +51,11 @@ const REFS_EXERCISE: SuggestionReference[] = [
   { label: 'Kodama 2009 – Cardiorespiratory fitness & mortality (JAMA)', url: 'https://doi.org/10.1001/jama.2009.681' },
 ];
 
+const REF_ESC_EAS_2019: SuggestionReference = { label: 'Mach 2020 – ESC/EAS Dyslipidaemia Guidelines (Eur Heart J)', url: 'https://doi.org/10.1093/eurheartj/ehz455' };
+
 const REFS_LIPID_GUIDELINES: SuggestionReference[] = [
   { label: '2026 ACC/AHA Dyslipidemia Guideline (JACC)', url: 'https://doi.org/10.1016/j.jacc.2025.11.016' },
-  { label: 'Mach 2020 – ESC/EAS Dyslipidaemia Guidelines (Eur Heart J)', url: 'https://doi.org/10.1093/eurheartj/ehz455' },
+  REF_ESC_EAS_2019,
 ];
 
 const REFS_LIPID_EVIDENCE: SuggestionReference[] = [
@@ -106,6 +108,8 @@ const REFS_SCREENING_ACS: SuggestionReference[] = [
 ];
 
 const GUIDELINES_LIPIDS = ['ACC/AHA 2026', 'ESC/EAS 2019'];
+/** The statin's own steps: its dose, a higher dose, a more potent statin. */
+const GUIDELINES_STATIN_STEPS = ['ESC/EAS 2019', 'BPAC 2021'];
 const GUIDELINES_BP = ['ISH/ESH 2023'];
 
 // ============================================================
@@ -194,6 +198,12 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     reason: 'GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. Tirzepatide is preferred due to its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.' + WEIGHT_MED_TRIGGER_NOTE,
     guidelines: [],
     references: [...REFS_GLP1, REF_CHOLESTEROL_2018],
+  },
+
+  'weight-med-glp1-dose': {
+    reason: 'GLP-1 medications are started at a low dose and stepped up gradually; clinical trials used this dose escalation to improve tolerability. Which step comes next depends on the dose you take now.',
+    guidelines: [],
+    references: REFS_GLP1,
   },
 
   'weight-med-glp1-increase': {
@@ -411,20 +421,22 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     ],
   },
 
+  'med-statin-dose': {
+    reason: 'Statin strength depends on both the drug and the dose. Doubling a statin dose typically lowers LDL by a further 6–7% (the "rule of 6"), and rosuvastatin 40mg gives the largest reduction (~63%). Which step comes next depends on the dose you take now.',
+    guidelines: [...GUIDELINES_STATIN_STEPS],
+    references: [REF_ESC_EAS_2019],
+  },
+
   'med-statin-increase': {
     reason: 'Doubling the statin dose typically provides an additional 6–7% LDL reduction (the "rule of 6"). While each dose increase has diminishing returns, the cumulative benefit of reaching lower lipid targets is supported by guidelines and the PESA study evidence.',
-    guidelines: ['ESC/EAS 2019', 'BPAC 2021'],
-    references: [
-      { label: 'Mach 2020 – ESC/EAS Dyslipidaemia Guidelines (Eur Heart J)', url: 'https://doi.org/10.1093/eurheartj/ehz455' },
-    ],
+    guidelines: [...GUIDELINES_STATIN_STEPS],
+    references: [REF_ESC_EAS_2019],
   },
 
   'med-statin-switch': {
     reason: 'Different statins vary in potency. Rosuvastatin 40mg provides the highest LDL reduction (~63%), while some other statins max out at lower potencies. Switching to a more potent statin is recommended by ESC/EAS guidelines before adding additional medications.',
-    guidelines: ['ESC/EAS 2019', 'BPAC 2021'],
-    references: [
-      { label: 'Mach 2020 – ESC/EAS Dyslipidaemia Guidelines (Eur Heart J)', url: 'https://doi.org/10.1093/eurheartj/ehz455' },
-    ],
+    guidelines: [...GUIDELINES_STATIN_STEPS],
+    references: [REF_ESC_EAS_2019],
   },
 
   'med-pcsk9i': {

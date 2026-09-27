@@ -579,18 +579,21 @@ input[type="number"] {
   gap: 12px;
 }
 
-/* Statin selection: drug name + dose side by side */
+/* A drug name and its dose. The name keeps room for its longest label
+   ("Semaglutide injection (Ozempic/Wegovy)"); a panel too narrow for both
+   puts the dose on its own line instead of cutting either off. */
 .statin-selection-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .statin-selection-row select:first-child {
-  flex: 2;
+  flex: 2 1 22em;
 }
 
 .statin-selection-row select:last-child {
-  flex: 1;
+  flex: 1 1 7em;
 }
 
 .date-picker-row {
@@ -1228,6 +1231,11 @@ input[type="number"] {
   font-size: 12px;
   line-height: 1.45;
   margin: 8px 0 0;
+}
+
+.email-capture-disclosure strong {
+  font-weight: 600;
+  color: var(--color-gray-dark);
 }
 
 .action-btn-small {

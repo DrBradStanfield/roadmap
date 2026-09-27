@@ -6,6 +6,11 @@
  * calls those same functions, so they cannot catch a change of behaviour;
  * this record can, because it came from the old code.
  *
+ * US-06 AC8 (2026-09-28) changed it on purpose: a listed GLP-1 or statin with
+ * no dose now asks for the dose. The record was regenerated from the working
+ * tree after a script compared HEAD's plan with the new one over both sets:
+ * only rows under that rule changed, and only as the rule says.
+ *
  * Each cascade has an `explicit` set, stored row by row in
  * medication-cascades.golden.json, and a `full` cross product, stored as one
  * SHA-256 over its rows (about 81,000 combinations, too many to keep).

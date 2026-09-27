@@ -115,6 +115,8 @@ function escalationOptions(step: 'increase' | 'switch' | null) {
 }
 /** An escalation field's label when the plan asks no step-up question. */
 const ESCALATION_RECORDED = 'Higher dose or switch (recorded answer)';
+/** A drug field's hint while the plan asks for its dose (US-06 AC8). */
+const DOSE_HINT = 'Add your dose: your next step depends on it.';
 /** A dose select's options, in mg. */
 const doseOptions = (doses: number[]) => doses.map(dose => ({ value: String(dose), label: `${dose}mg` }));
 
@@ -1125,6 +1127,7 @@ export function InputPanel({
           if (!cascadeMode && !hasAnyLipidInput) return null;
 
           const medInputs = medicationsToInputs(medications);
+          const cascade = lipidCascade(medInputs);
           const statin = medInputs.statin;
           const statinDrug = statin?.drug ?? 'none';
           const statinDose = statin?.dose ?? null;
@@ -1137,7 +1140,7 @@ export function InputPanel({
           const statinDropdown = (
             <div className="health-field">
               <label htmlFor="statin-name">Statin</label>
-              {cascadeMode && <p className="med-step-hint">Statins are the most effective first step. They reduce cholesterol production in the liver.</p>}
+              {cascadeMode && <p className="med-step-hint">{cascade.suggest.includes('statin-dose') ? DOSE_HINT : 'Statins are the most effective first step. They reduce cholesterol production in the liver.'}</p>}
               <div className="statin-selection-row">
                 <select
                   id="statin-name"
@@ -1168,7 +1171,7 @@ export function InputPanel({
                       onMedicationChange('statin', statinDrug, newDose, 'mg');
                     }}
                   >
-                    {optionsShowing(doseOptions(availableDoses), statinDose === null ? '' : String(statinDose), 'Dose not recorded')}
+                    {optionsShowing(doseOptions(availableDoses), statinDose === null ? '' : String(statinDose), 'Add dose')}
                   </select>
                 )}
               </div>
@@ -1258,7 +1261,6 @@ export function InputPanel({
           // ── Cascade mode: progressive disclosure, the plan's own steps ──
           // Progressive disclosure opens the plan's next step; a step that
           // holds a recorded value always shows (US-06 AC7).
-          const cascade = lipidCascade(medInputs);
           const lipidName = lipidMarker.label;
           const step = cascade.escalation;
           const showEscalation = !!step || medInputs.statinEscalation !== undefined;
@@ -1339,6 +1341,7 @@ export function InputPanel({
         if (!weightCascadeMode && !hasAnyWeightInput) return null;
 
         const medInputs = medicationsToInputs(medications);
+        const cascade = weightCascade(medInputs);
 
         const glp1Drug = medInputs.glp1?.drug ?? 'none';
         const glp1Dose = medInputs.glp1?.dose ?? null;
@@ -1352,7 +1355,7 @@ export function InputPanel({
         const glp1Dropdown = (
           <div className="health-field">
             <label htmlFor="glp1-name">GLP-1 Medication</label>
-            {weightCascadeMode && <p className="med-step-hint">GLP-1 medications reduce appetite and improve blood sugar control, often leading to significant weight loss.</p>}
+            {weightCascadeMode && <p className="med-step-hint">{cascade.suggest.includes('glp1-dose') ? DOSE_HINT : 'GLP-1 medications reduce appetite and improve blood sugar control, often leading to significant weight loss.'}</p>}
             <div className="statin-selection-row">
               <select
                 id="glp1-name"
@@ -1383,7 +1386,7 @@ export function InputPanel({
                     onMedicationChange('glp1', glp1Drug, newDose, 'mg');
                   }}
                 >
-                  {optionsShowing(doseOptions(availableGlp1Doses), glp1Dose === null ? '' : String(glp1Dose), 'Dose not recorded')}
+                  {optionsShowing(doseOptions(availableGlp1Doses), glp1Dose === null ? '' : String(glp1Dose), 'Add dose')}
                 </select>
               )}
             </div>
@@ -1416,7 +1419,7 @@ export function InputPanel({
                   value={sglt2iDose ?? ''}
                   onChange={(e) => onMedicationChange('sglt2i', sglt2iDrug, parseLocalisedNumber(e.target.value) ?? null, 'mg')}
                 >
-                  {optionsShowing(doseOptions(availableSglt2iDoses), sglt2iDose === null ? '' : String(sglt2iDose), 'Dose not recorded')}
+                  {optionsShowing(doseOptions(availableSglt2iDoses), sglt2iDose === null ? '' : String(sglt2iDose), 'Add dose')}
                 </select>
               )}
             </div>
@@ -1457,7 +1460,6 @@ export function InputPanel({
         // ── Cascade mode: progressive disclosure, the plan's own steps and words ──
         // Progressive disclosure opens the plan's next step; a step that
         // holds a recorded value always shows (US-06 AC7).
-        const cascade = weightCascade(medInputs);
         const step = cascade.escalation;
         const showEscalation = !!step || medInputs.glp1Escalation !== undefined;
 

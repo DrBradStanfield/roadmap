@@ -72,11 +72,6 @@ describe('US-06 AC5: weightCascade agrees with the plan on every medication comb
     expect(checked).toBeGreaterThan(3000);
   });
 
-  it('a GLP-1 with no dose recorded moves on to the SGLT2 inhibitor, as the plan does', () => {
-    expect(weightCascade({ glp1: { drug: 'semaglutide_injection', dose: null } }))
-      .toEqual({ escalation: null, sglt2iReached: true, metforminReached: false, suggest: ['sglt2i'] });
-  });
-
   it("an escalation answer other than 'not_yet' moves on to the SGLT2 inhibitor, as the plan does", () => {
     const meds: MedicationInputs = { glp1: { drug: 'semaglutide_injection', dose: 1 }, glp1Escalation: 'yes' as MedicationInputs['glp1Escalation'] };
     expect(weightCascade(meds)).toMatchObject({ escalation: 'increase', sglt2iReached: true, suggest: ['sglt2i'] });
@@ -106,8 +101,8 @@ describe('US-06 AC5: lipidCascade agrees with the plan on every medication combi
         expect(cascade.suggest, label).toEqual(steps(meds));
         expect(cascade.ezetimibeReached, label).toBe(!cascade.suggest.includes('statin'));
         expect(cascade.bempedoicAcidReached, label).toBe(cascade.ezetimibeReached && !cascade.suggest.includes('ezetimibe'));
-        expect(cascade.pcsk9iReached, label).toBe(cascade.bempedoicAcidReached
-          && !cascade.suggest.includes('statin-increase') && !cascade.suggest.includes('statin-switch'));
+        expect(cascade.pcsk9iReached, label).toBe(cascade.bempedoicAcidReached && !cascade.suggest.includes('statin-increase')
+          && !cascade.suggest.includes('statin-switch') && !cascade.suggest.includes('statin-dose'));
         // The escalation question applies when the plan, with it unanswered, asks it.
         const unanswered = steps({ statin, ezetimibe });
         expect(cascade.escalation, label).toBe(unanswered.includes('statin-increase') ? 'increase'
@@ -117,23 +112,84 @@ describe('US-06 AC5: lipidCascade agrees with the plan on every medication combi
     expect(checked).toBeGreaterThan(10000);
   });
 
-  it('a statin with no dose recorded opens the PCSK9 inhibitor step, as the plan does', () => {
-    expect(lipidCascade({ statin: { drug: 'rosuvastatin', dose: null }, ezetimibe: 'yes' })).toEqual({
-      ezetimibeReached: true, bempedoicAcidReached: true, escalation: null, pcsk9iReached: true,
-      suggest: ['bempedoic-acid', 'pcsk9i'],
-    });
-  });
-
   it('a legacy statin value the plan does not know is still the statin step', () => {
     expect(lipidCascade({ statin: { drug: 'tier_1', dose: null } })).toMatchObject({ ezetimibeReached: false, suggest: ['statin'] });
   });
 });
 
+// US-06 AC8 (Brad, 2026-09-28): a listed GLP-1 or statin with no dose
+// recorded asks for the dose. The next step depends on it: a higher dose, a
+// switch, or the next drug. Before, the plan skipped straight to the next drug.
+describe('US-06 AC8: a listed GLP-1 or statin with no dose recorded asks for the dose', () => {
+  const answers = withUnset(['not_yet', 'not_tolerated', 'yes'] as MedicationInputs['glp1Escalation'][]);
+  const asksForGlp1Dose = { escalation: null, sglt2iReached: false, metforminReached: false, suggest: ['glp1-dose'] };
+
+  it.each(Object.keys(GLP1_DRUGS))('%s with no dose: the GLP-1 dose step, whatever the escalation answer', (drug) => {
+    for (const glp1Escalation of answers) {
+      expect(weightCascade({ glp1: { drug, dose: null }, glp1Escalation }), String(glp1Escalation)).toEqual(asksForGlp1Dose);
+    }
+  });
+
+  it('tirzepatide with no dose asks for it too, though no switch follows (before, the SGLT2 inhibitor step)', () => {
+    expect(weightCascade({ glp1: { drug: 'tirzepatide', dose: null } })).toEqual(asksForGlp1Dose);
+  });
+
+  it('asks for the GLP-1 dose even with an SGLT2 inhibitor and metformin recorded', () => {
+    expect(weightCascade({
+      glp1: { drug: 'semaglutide_injection', dose: null },
+      sglt2i: { drug: 'empagliflozin', dose: 10 }, metformin: 'xr_1000',
+    })).toEqual(asksForGlp1Dose);
+  });
+
+  it("'Other GLP-1' with no dose is still the switch step", () => {
+    expect(weightCascade({ glp1: { drug: 'other', dose: null } }))
+      .toEqual({ escalation: 'switch', sglt2iReached: false, metforminReached: false, suggest: ['glp1-switch'] });
+  });
+
+  it('an unlisted name such as liraglutide, which the form cannot give a dose, still moves on to the SGLT2 inhibitor', () => {
+    expect(weightCascade({ glp1: { drug: 'liraglutide', dose: null } }))
+      .toEqual({ escalation: null, sglt2iReached: true, metforminReached: false, suggest: ['sglt2i'] });
+  });
+
+  const statinAnswers = withUnset(['not_yet', 'not_tolerated', 'yes'] as MedicationInputs['statinEscalation'][]);
+
+  it.each(Object.keys(STATIN_DRUGS))('%s with no dose, before ezetimibe is answered: the ezetimibe step, as before', (drug) => {
+    for (const ezetimibe of withUnset(['not_yet', 'no'] as MedicationInputs['ezetimibe'][])) {
+      expect(lipidCascade({ statin: { drug, dose: null }, ezetimibe }), String(ezetimibe)).toEqual({
+        ezetimibeReached: true, bempedoicAcidReached: false, escalation: null, pcsk9iReached: false, suggest: ['ezetimibe'],
+      });
+    }
+  });
+
+  it.each(Object.keys(STATIN_DRUGS))('%s with no dose, ezetimibe answered: bempedoic acid, then the statin dose step', (drug) => {
+    for (const ezetimibe of ['yes', 'not_tolerated', 'ezetimibe'] as MedicationInputs['ezetimibe'][])
+      for (const statinEscalation of statinAnswers) {
+        const label = `${ezetimibe} ${statinEscalation}`;
+        expect(lipidCascade({ statin: { drug, dose: null }, ezetimibe, statinEscalation }), label).toEqual({
+          ezetimibeReached: true, bempedoicAcidReached: true, escalation: null, pcsk9iReached: false,
+          suggest: ['bempedoic-acid', 'statin-dose'],
+        });
+        expect(lipidCascade({ statin: { drug, dose: null }, ezetimibe, statinEscalation, bempedoicAcid: 'bempedoic_acid' }).suggest, label)
+          .toEqual(['statin-dose']);
+      }
+  });
+
+  it('a statin with no dose and a PCSK9 inhibitor recorded still asks for the dose', () => {
+    for (const pcsk9i of ['yes', 'not_tolerated'] as MedicationInputs['pcsk9i'][]) {
+      expect(lipidCascade({ statin: { drug: 'atorvastatin', dose: null }, ezetimibe: 'yes', pcsk9i }), String(pcsk9i))
+        .toMatchObject({ escalation: null, pcsk9iReached: false, suggest: ['bempedoic-acid', 'statin-dose'] });
+      expect(lipidCascade({ statin: { drug: 'atorvastatin', dose: null }, ezetimibe: 'yes', pcsk9i, bempedoicAcid: 'not_tolerated' }).suggest)
+        .toEqual(['statin-dose']);
+    }
+  });
+});
+
 // The tables above compare the step functions with a plan that now calls
 // them, so they cannot see a change of behaviour. This record came from the
-// plan before the refactor (medication-cascades.golden.ts says how to
-// regenerate it), so today's plan must match it card for card.
-describe('US-06 AC5: the plan\'s cascade cards match the pre-refactor plan exactly', () => {
+// plan before the refactor, with only US-06 AC8's dose rows changed since
+// (medication-cascades.golden.ts says how to regenerate it), so today's plan
+// must match it card for card.
+describe('US-06 AC5: the plan\'s cascade cards match the golden record exactly', () => {
   const golden = JSON.parse(readFileSync(new URL('./medication-cascades.golden.json', import.meta.url), 'utf8')) as GoldenRecord;
   const now = goldenRecord(calculateHealthResults as unknown as CalculateHealthResults, golden.source);
 
@@ -150,11 +206,11 @@ describe('US-06 AC5: the plan\'s cascade cards match the pre-refactor plan exact
   // switch to tirzepatide for a semaglutide or dulaglutide row with no dose
   // field at all, but the next step for one with a null dose. Today both are
   // "no dose recorded", as a statin's always were.
-  it('a GLP-1 row with no dose field reads as no dose recorded: the SGLT2 inhibitor step', () => {
+  it('a GLP-1 row with no dose field reads as no dose recorded: the plan asks for the dose (US-06 AC8)', () => {
     const ids = (meds: MedicationInputs) => calculateHealthResults({ heightCm: 178, sex: 'male', weightKg: 101.4 }, 'si', meds)
       .suggestions.map((s) => s.id).filter((id) => id.startsWith('weight-med-'));
     const noField = { drug: 'semaglutide_injection' } as MedicationInputs['glp1'];
-    expect(ids({ glp1: noField })).toEqual(['weight-med-sglt2i']);
+    expect(ids({ glp1: noField })).toEqual(['weight-med-glp1-dose']);
     expect(ids({ glp1: noField })).toEqual(ids({ glp1: { drug: 'semaglutide_injection', dose: null } }));
   });
 });

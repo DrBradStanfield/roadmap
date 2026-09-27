@@ -100,7 +100,7 @@ function planGlp1(container: HTMLElement): string | undefined {
 
 /** A plan card whose title is, or (for `weight-med`) is any weight-medication step. */
 function planCard(container: HTMLElement, title: string): Element | undefined {
-  const steps = ['Consider a GLP-1 medication', 'Consider increasing GLP-1 dose', 'Consider switching to Tirzepatide',
+  const steps = ['Consider a GLP-1 medication', 'Add your GLP-1 dose', 'Consider increasing GLP-1 dose', 'Consider switching to Tirzepatide',
     'Consider adding an SGLT2 inhibitor', 'Consider adding Metformin'];
   const titles = title === 'weight-med' ? steps : [title];
   return Array.from(container.querySelectorAll('.suggestion-title')).find((t) => titles.includes(t.textContent ?? ''));
@@ -230,13 +230,6 @@ describe('US-06 AC5: the weight sentence names the plan\'s BMI', () => {
 });
 
 describe('US-06 AC5: the weight cascade steps through what the plan does', () => {
-  it('on a GLP-1 with no dose recorded, the plan suggests an SGLT2 inhibitor and the form shows its field', async () => {
-    const view = await guestWith({ sex: 'male', weight: 101.4, meds: [['glp1', 'semaglutide_injection']] }); // BMI 32
-    await waitFor(() => expect(planCard(view.container, 'Consider adding an SGLT2 inhibitor')).toBeDefined());
-    expect(await weightMedsIntro(view.container)).toBe(recommends('32'));
-    expect(view.container.querySelector('#sglt2i-name')).not.toBeNull();
-  });
-
   it("an escalation answer other than 'not yet' moves on in both places", async () => {
     const view = await guestWith({
       sex: 'male', weight: 101.4, meds: [['glp1', 'semaglutide_injection', 1], ['glp1_escalation', 'yes']],
@@ -244,6 +237,61 @@ describe('US-06 AC5: the weight cascade steps through what the plan does', () =>
     await waitFor(() => expect(planCard(view.container, 'Consider adding an SGLT2 inhibitor')).toBeDefined());
     await weightMedsIntro(view.container);
     expect(view.container.querySelector('#sglt2i-name')).not.toBeNull();
+  });
+});
+
+// US-06 AC8 (Brad, 2026-09-28): a listed GLP-1 or statin with no dose
+// recorded asks for the dose, in the plan and in the form. Before, both moved
+// on to the next drug.
+describe('US-06 AC8: with no dose recorded, the plan and the form ask for it', () => {
+  const DOSE_HINT = 'Add your dose: your next step depends on it.';
+  const GLP1_HINT = 'GLP-1 medications reduce appetite and improve blood sugar control, often leading to significant weight loss.';
+  const STATIN_HINT = 'Statins are the most effective first step. They reduce cholesterol production in the liver.';
+  /** A medication field's hint, the line under its label: the dose hint takes it while the plan asks. */
+  const fieldHint = (container: HTMLElement, selectId: string) =>
+    container.querySelector(`#${selectId}`)?.closest('.health-field')?.querySelector('.med-step-hint')?.textContent ?? null;
+
+  it('a GLP-1 with no dose: the dose card, the form\'s hint, no SGLT2 inhibitor field; a dose opens the escalation step', async () => {
+    const view = await guestWith({ sex: 'male', weight: 101.4, meds: [['glp1', 'semaglutide_injection']] }); // BMI 32
+    await waitFor(() => expect(planCard(view.container, 'Add your GLP-1 dose')).toBeDefined());
+    expect(planCard(view.container, 'Consider adding an SGLT2 inhibitor')).toBeUndefined();
+    expect(await weightMedsIntro(view.container)).toBe(recommends('32'));
+    expect(fieldHint(view.container, 'glp1-name')).toBe(DOSE_HINT);
+    expect(view.container.querySelector('#sglt2i-name')).toBeNull();
+    expect(view.container.querySelector('#glp1-escalation')).toBeNull();
+
+    fireEvent.change(view.container.querySelector('#glp1-dose')!, { target: { value: '1' } });
+    await waitFor(() => expect(view.container.querySelector('label[for="glp1-escalation"]')?.textContent).toBe('Tried increasing GLP-1 dose?'));
+    await waitFor(() => expect(planCard(view.container, 'Consider increasing GLP-1 dose')).toBeDefined());
+    expect(planCard(view.container, 'Add your GLP-1 dose')).toBeUndefined();
+    expect(fieldHint(view.container, 'glp1-name')).toBe(GLP1_HINT);
+    expect(view.container.querySelector('#sglt2i-name')).toBeNull();
+  });
+
+  it('a statin with no dose and ezetimibe: the dose card, the form\'s hint, no PCSK9 inhibitor field; rosuvastatin 40 mg opens it', async () => {
+    const view = await guestWith({
+      sex: 'male', weight: 80, lipids: { ldl: 3 }, meds: [['statin', 'rosuvastatin'], ['ezetimibe', 'ezetimibe', 10]],
+    });
+    await waitFor(() => expect(planCard(view.container, 'Add your statin dose')).toBeDefined());
+    expect(planCard(view.container, 'Consider a PCSK9 inhibitor')).toBeUndefined();
+    await cholesterolIntro(view.container);
+    expect(fieldHint(view.container, 'statin-name')).toBe(DOSE_HINT);
+    expect(view.container.querySelector('#pcsk9i')).toBeNull();
+    expect(view.container.querySelector('#statin-escalation')).toBeNull();
+
+    fireEvent.change(view.container.querySelector('#statin-dose')!, { target: { value: '40' } });
+    await waitFor(() => expect(view.container.querySelector('#pcsk9i')).not.toBeNull());
+    await waitFor(() => expect(planCard(view.container, 'Consider a PCSK9 inhibitor')).toBeDefined());
+    expect(planCard(view.container, 'Add your statin dose')).toBeUndefined();
+    expect(fieldHint(view.container, 'statin-name')).toBe(STATIN_HINT);
+  });
+
+  it('before ezetimibe is answered, a statin with no dose shows no hint: the plan asks for ezetimibe', async () => {
+    const view = await guestWith({ sex: 'male', weight: 80, lipids: { ldl: 3 }, meds: [['statin', 'rosuvastatin']] });
+    await waitFor(() => expect(planCard(view.container, 'Consider adding Ezetimibe')).toBeDefined());
+    await cholesterolIntro(view.container);
+    expect(planCard(view.container, 'Add your statin dose')).toBeUndefined();
+    expect(fieldHint(view.container, 'statin-name')).toBe(STATIN_HINT);
   });
 });
 
@@ -292,15 +340,6 @@ describe('US-06 AC5: the form recommends a cholesterol medication only when the 
     expect(planCard(view.container, 'Consider starting a statin')!.parentElement!.querySelector('.suggestion-desc')!.textContent)
       .toMatch(new RegExp(`^${sentence.replace(/\./g, '\\.')} `));
     expect(await cholesterolIntro(view.container)).toMatch(new RegExp(`^${sentence.replace(/\./g, '\\.')} `));
-  });
-
-  it('on a statin with no dose recorded and ezetimibe, the plan suggests a PCSK9 inhibitor and the form shows its field', async () => {
-    const view = await guestWith({
-      sex: 'male', weight: 80, lipids: { ldl: 3 }, meds: [['statin', 'rosuvastatin'], ['ezetimibe', 'ezetimibe', 10]],
-    });
-    await waitFor(() => expect(planCard(view.container, 'Consider a PCSK9 inhibitor')).toBeDefined());
-    await cholesterolIntro(view.container);
-    expect(view.container.querySelector('#pcsk9i')).not.toBeNull();
   });
 
   it('with every step answered the plan shows no cholesterol card, so the form states no target', async () => {

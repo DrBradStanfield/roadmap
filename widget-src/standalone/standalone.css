@@ -130,6 +130,7 @@
 .hr-opt-text { display: flex; flex-direction: column; gap: 2px; }
 .hr-opt-name { font-size: 14.5px; font-weight: 600; }
 .hr-opt-blurb { font-size: 12.5px; color: #5a6b73; }
+.hr-opt-note { font-size: 11.5px; line-height: 1.4; color: #5a6b73; margin-top: 2px; }
 .hr-opt-connected {
   margin-left: 8px; font-size: 11px; font-weight: 700; color: #0a7a5f;
   background: #e6f6f1; border-radius: 10px; padding: 2px 8px; vertical-align: 1px;

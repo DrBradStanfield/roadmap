@@ -3061,3 +3061,57 @@ describe('lipid targets print the first value graded above them (US-07 AC5)', ()
     expect(card(si({ apoB: 0.8 }), 'med-statin')).toMatch(/the treatment target is below 0\.50 g\/L\. /);
   });
 });
+
+// US-06 AC8 (Brad, 2026-09-28): a listed GLP-1 or statin with no dose recorded
+// asks for the dose, since the next step depends on it.
+describe('US-06 AC8: the dose cards', () => {
+  const card = (inputs: HealthInputs, meds: MedicationInputs, id: string) =>
+    calculateHealthResults(inputs, 'si', meds).suggestions.find(s => s.id === id);
+
+  it('weight-med-glp1-dose: its title, text and evidence', () => {
+    const glp1Dose = card({ heightCm: 178, sex: 'male', weightKg: 101.4 }, { glp1: { drug: 'dulaglutide', dose: null } }, 'weight-med-glp1-dose');
+    expect(glp1Dose).toMatchObject({
+      category: 'medication',
+      priority: 'attention',
+      title: 'Add your GLP-1 dose',
+      description: "Your GLP-1 dose isn't recorded, and your next step depends on it. A higher dose or a switch to Tirzepatide may help. Add your current dose to see which.",
+      reason: 'GLP-1 medications are started at a low dose and stepped up gradually; clinical trials used this dose escalation to improve tolerability. Which step comes next depends on the dose you take now.',
+      guidelines: [],
+    });
+    expect(glp1Dose!.references).toEqual(card({ heightCm: 178, sex: 'male', weightKg: 101.4 },
+      { glp1: { drug: 'dulaglutide', dose: 1.5 } }, 'weight-med-glp1-increase')!.references);
+  });
+
+  it('med-statin-dose: the lipid reason sentence, then its text, and its evidence', () => {
+    const statinDose = card({ heightCm: 178, sex: 'male', weightKg: 70, ldlC: 3.0 },
+      { statin: { drug: 'pravastatin', dose: null }, ezetimibe: 'yes', bempedoicAcid: 'not_tolerated' }, 'med-statin-dose');
+    const increase = card({ heightCm: 178, sex: 'male', weightKg: 70, ldlC: 3.0 },
+      { statin: { drug: 'pravastatin', dose: 20 }, ezetimibe: 'yes' }, 'med-statin-increase');
+    expect(statinDose).toMatchObject({
+      category: 'medication',
+      priority: 'attention',
+      title: 'Add your statin dose',
+      description: "Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L. Your statin dose isn't recorded, and your next step depends on it. A higher dose or a more potent statin may help. Add your current dose to see which.",
+      reason: 'Statin strength depends on both the drug and the dose. Doubling a statin dose typically lowers LDL by a further 6–7% (the "rule of 6"), and rosuvastatin 40mg gives the largest reduction (~63%). Which step comes next depends on the dose you take now.',
+    });
+    expect(statinDose!.guidelines).toEqual(increase!.guidelines);
+    expect(statinDose!.references).toEqual(increase!.references);
+  });
+
+  // Each card names only the steps its drug can take next (adversarial review,
+  // 2026-09-28): rosuvastatin's highest dose and tirzepatide's move on to the
+  // next medication; every other listed drug's highest dose switches.
+  it('names the switch only for a drug whose highest dose switches', () => {
+    const weight: HealthInputs = { heightCm: 178, sex: 'male', weightKg: 101.4 };
+    const lipid: HealthInputs = { heightCm: 178, sex: 'male', weightKg: 70, ldlC: 3.0 };
+    const HIGHEST = 'A higher dose may help, or you may already take the highest.';
+    for (const drug of ['tirzepatide', 'semaglutide_injection', 'semaglutide_oral', 'dulaglutide']) {
+      const text = card(weight, { glp1: { drug, dose: null } }, 'weight-med-glp1-dose')!.description;
+      expect(text, drug).toContain(drug === 'tirzepatide' ? HIGHEST : 'A higher dose or a switch to Tirzepatide may help.');
+    }
+    for (const drug of ['rosuvastatin', 'atorvastatin', 'pitavastatin', 'pravastatin', 'simvastatin']) {
+      const text = card(lipid, { statin: { drug, dose: null }, ezetimibe: 'yes' }, 'med-statin-dose')!.description;
+      expect(text, drug).toContain(drug === 'rosuvastatin' ? HIGHEST : 'A higher dose or a more potent statin may help.');
+    }
+  });
+});

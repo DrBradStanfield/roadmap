@@ -422,10 +422,13 @@ export function GuestEmailCapture({ hook, formStage }: {
       {emailError && <span className="email-capture-error">{emailError}</span>}
       {/* US-23 AC4 — typing the email IS the reminders enrolment (opt-out
           model), so the disclosure sits beside the box, not behind a click.
-          Names what crosses (check-up names + dates) and the way out. */}
+          Names what crosses (check-up names + dates) and the way out.
+          US-23 AC11 — it also names the list: the server records marketing
+          consent, and every sign-up joins MicroVitamin's list. */}
       <p className="email-capture-disclosure">
-        We'll also email you when a check-up or blood test comes due — only the check-up names and
-        dates are stored, never your results. One-click unsubscribe in every email.
+        Getting your plan adds you to the <strong>MicroVitamin mailing list</strong> (Dr Brad's
+        supplement company), and we'll email you when a check-up or blood test is due. We store only
+        check-up names and dates, never your results. Every email has a one-click unsubscribe.
       </p>
       <StorageNotice surface="email" className="email-guest-helper" />
     </div>
