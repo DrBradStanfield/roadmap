@@ -401,9 +401,12 @@ describe('getCategoryGroup', () => {
 });
 
 describe('formatReminderDate', () => {
-  it('formats ISO date to Mon YYYY', () => {
-    expect(formatReminderDate('2025-01-15T00:00:00.000Z')).toBe('Jan 2025');
-    expect(formatReminderDate('2024-12-01T00:00:00.000Z')).toBe('Dec 2024');
+  it('formats ISO date to Mon YYYY (US-17)', () => {
+    // Noon UTC so getMonth()/getFullYear() name the same month in every IANA
+    // zone. Midnight UTC on the 1st is the previous local day west of UTC, so
+    // the old 00:00Z fixtures failed in US timezones and passed on UTC CI.
+    expect(formatReminderDate('2025-01-15T12:00:00.000Z')).toBe('Jan 2025');
+    expect(formatReminderDate('2024-12-01T12:00:00.000Z')).toBe('Dec 2024');
   });
 });
 
