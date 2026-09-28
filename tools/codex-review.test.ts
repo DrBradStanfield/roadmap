@@ -21,7 +21,7 @@ let fakeDir: string;
 const sh = (cwd: string, cmd: string) => execFileSync('sh', ['-c', cmd], { cwd, encoding: 'utf8' });
 
 /** A fake codex: records argv, env and stdin; emits configured JSONL; writes the -o file; exits as told. */
-function fake(config: { output?: unknown; exit?: number; events?: string[]; stderr?: string }) {
+function fake(config: { output?: unknown; exit?: number; events?: string[]; stderr?: string; during?: string }) {
   const dir = mkdtempSync(join(tmpdir(), 'fake-codex-'));
   writeFileSync(join(dir, 'config.json'), JSON.stringify({ exit: 0, events: [], stderr: '', ...config }));
   const bin = join(dir, 'codex');
@@ -40,6 +40,7 @@ if (cfg.output !== undefined) {
   const o = typeof cfg.output === 'object' && cfg.output && cfg.output.target === 'FILLED' ? { ...cfg.output, target: id } : cfg.output;
   fs.writeFileSync(out, typeof o === 'string' ? o : JSON.stringify(o));
 }
+if (cfg.during) require('child_process').execSync(cfg.during);
 for (const e of cfg.events) process.stdout.write(e + '\\n');
 if (cfg.stderr) process.stderr.write(cfg.stderr);
 process.exit(cfg.exit);
@@ -994,5 +995,225 @@ describe('US-40 AC11 — round 3: known shapes, the parser, public shapes, --loo
     expect(newWorkDirs(before)).toEqual([]);
     expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
     expect([...idxDirs()].filter((d) => !beforeIdx.has(d))).toEqual([]);
+  });
+});
+
+describe('US-40 AC12 — pinned symlinks are materialised from the reviewed revision or a committed blob; every other symlink is dropped', () => {
+  let links: typeof import('./codex-review-links.mjs');
+  let isSecretPath: (p: string) => boolean;
+  let ext: string, reviewed: string, outside: string;
+  const gitRepo = (files: Record<string, string>) => {
+    const d = mkdtempSync(join(tmpdir(), 'cr-links-'));
+    sh(d, 'git init -q && git config user.email t@t && git config user.name t');
+    for (const [p, c] of Object.entries(files)) { mkdirSync(join(d, p, '..'), { recursive: true }); writeFileSync(join(d, p), c); }
+    sh(d, 'git add -A && git commit -q -m base');
+    return d;
+  };
+  beforeAll(async () => {
+    links = await import('./codex-review-links.mjs');
+    ({ isSecretPath } = await import('./codex-review-names.mjs'));
+    ext = gitRepo({ 'docs/products.md': 'PRODUCT MASTER v9\n', 'docs/other.md': 'ANOTHER TRACKED FILE\n', 'config/prod.env': 'X=1\n', 'big.md': 'x'.repeat(2048) });
+    writeFileSync(join(ext, 'docs', 'untracked.md'), 'local only\n');
+    reviewed = gitRepo({ 'memory/overages.md': 'OVERAGES AT REVIEWED REVISION\n' });
+    outside = mkdtempSync(join(tmpdir(), 'cr-links-outside-'));
+    writeFileSync(join(outside, 'private.md'), 'OUTSIDE\n');
+  });
+  const pin = (link: string, target: string, path: string) => ({ reviewed: 'rev', link, target, path });
+  const policy = (...entries: ReturnType<typeof pin>[]) => ({ repos: { rev: reviewed, ext }, links: entries });
+  /** A fresh snapshot dir holding `memory/overages.md` as a regular file (the snapshot's copy) plus the given links. */
+  const snapshot = (ls: Record<string, string>) => {
+    const src = mkdtempSync(join(tmpdir(), 'cr-links-src-'));
+    mkdirSync(join(src, 'memory')); mkdirSync(join(src, 'docs'));
+    writeFileSync(join(src, 'memory', 'overages.md'), 'OVERAGES AT REVIEWED REVISION\n');
+    for (const [p, t] of Object.entries(ls)) { mkdirSync(join(src, p, '..'), { recursive: true }); symlinkSync(t, join(src, p)); }
+    return src;
+  };
+  const listLinks = (src: string) => sh(src, 'find . -type l | sed "s|^\\./||" | sort').trim().split('\n').filter(Boolean);
+  const run = (src: string, pol: ReturnType<typeof policy>, root = reviewed) => links.materialiseLinks({ src, root, links: listLinks(src), policy: pol, maxBytes: 1024 });
+  const reasons = (r: { refused: { rel: string; reason: string }[] }) => Object.fromEntries(r.refused.map((x) => [x.rel, x.reason]));
+  const E = (p: string) => join(ext, p);
+
+  it('uses the real credential-name rule, exported side-effect free', () => {
+    expect(isSecretPath('claude-integration/.env')).toBe(true);
+    expect(isSecretPath('config/prod.env.js')).toBe(true);
+    expect(isSecretPath('src/env.ts')).toBe(false);
+  });
+  it('a pinned link into another repo becomes a regular file holding the COMMITTED blob, with provenance; an unlisted link is dropped', () => {
+    writeFileSync(E('docs/products.md'), 'UNCOMMITTED EDIT\n');
+    const src = snapshot({ 'docs/products.md': E('docs/products.md'), 'docs/stray.md': E('docs/products.md') });
+    const r = run(src, policy(pin('docs/products.md', 'ext', 'docs/products.md')));
+    expect(readFileSync(join(src, 'docs', 'products.md'), 'utf8')).toBe('PRODUCT MASTER v9\n');
+    expect(sh(src, 'test -L docs/products.md && echo link || echo file').trim()).toBe('file');
+    expect(r.materialised).toEqual([{ link: 'docs/products.md', source: 'ext', path: 'docs/products.md', commit: sh(ext, 'git rev-parse HEAD').trim(), blob: sh(ext, 'git rev-parse HEAD:docs/products.md').trim(), sha256: sh(src, 'shasum -a 256 docs/products.md').split(' ')[0] }]);
+    expect(r.removed).toEqual(['docs/stray.md']);
+    expect(existsSync(join(src, 'docs', 'stray.md'))).toBe(false);
+    sh(ext, 'git checkout -q -- docs/products.md');
+  });
+  it('a pinned link inside the reviewed repo is copied from the SNAPSHOT (the reviewed revision), not the live checkout', () => {
+    writeFileSync(join(reviewed, 'memory', 'overages.md'), 'UNCOMMITTED LIVE EDIT\n');
+    const src = snapshot({ 'docs/products-overages.md': '../memory/overages.md' });
+    const r = run(src, policy(pin('docs/products-overages.md', 'rev', 'memory/overages.md')));
+    expect(r.materialised.map((m) => [m.link, m.source, m.path])).toEqual([['docs/products-overages.md', 'snapshot', 'memory/overages.md']]);
+    expect(readFileSync(join(src, 'docs', 'products-overages.md'), 'utf8')).toBe('OVERAGES AT REVIEWED REVISION\n');
+    sh(reviewed, 'git checkout -q -- memory/overages.md');
+  });
+  it('refuses a retargeted link: another tracked file in the same repo, a path outside, or a `../` climb', () => {
+    const src = snapshot({ 'docs/a.md': E('docs/other.md'), 'docs/b.md': join(outside, 'private.md'), 'docs/c.md': '../../../../../../../../../..' + join(outside, 'private.md') });
+    const r = run(src, policy(pin('docs/a.md', 'ext', 'docs/products.md'), pin('docs/b.md', 'ext', 'docs/products.md'), pin('docs/c.md', 'ext', 'docs/products.md')));
+    expect(r.materialised).toEqual([]);
+    expect(reasons(r)).toEqual({ 'docs/a.md': 'the link does not point at its pinned target', 'docs/b.md': 'the link does not point at its pinned target', 'docs/c.md': 'the link does not point at its pinned target' });
+    expect(readdirSync(join(src, 'docs'))).toEqual([]);
+  });
+  it('treats paths literally: a glob in the link text is not the pinned target, and a glob or magic pinned path matches nothing', () => {
+    const src = snapshot({ 'docs/a.md': E('docs/product*.md'), 'docs/b.md': E('docs/product*.md'), 'docs/c.md': E(':(glob)docs/*.md') });
+    const r = run(src, policy(pin('docs/a.md', 'ext', 'docs/products.md'), pin('docs/b.md', 'ext', 'docs/product*.md'), pin('docs/c.md', 'ext', ':(glob)docs/*.md')));
+    expect(r.materialised).toEqual([]);
+    expect(reasons(r)).toEqual({
+      'docs/a.md': 'the link does not point at its pinned target',
+      'docs/b.md': "the pinned target is not committed at the target repo's HEAD",
+      'docs/c.md': "the pinned target is not committed at the target repo's HEAD",
+    });
+  });
+  it('refuses a directory target (either repo), an untracked file, an over-cap file, and anything through .git', () => {
+    const src = snapshot({ 'docs/d.md': E('docs'), 'docs/m.md': '../memory', 'docs/u.md': E('docs/untracked.md'), 'docs/big.md': E('big.md'), 'docs/g.md': E('.git/config'), 'docs/h.md': `${ext}/.git/../docs/products.md` });
+    const r = run(src, policy(pin('docs/d.md', 'ext', 'docs'), pin('docs/m.md', 'rev', 'memory'), pin('docs/u.md', 'ext', 'docs/untracked.md'), pin('docs/big.md', 'ext', 'big.md'), pin('docs/g.md', 'ext', '.git/config'), pin('docs/h.md', 'ext', 'docs/products.md')));
+    expect(r.materialised).toEqual([]);
+    expect(reasons(r)).toEqual({
+      'docs/d.md': 'the pinned target is not a regular file (mode 040000)',
+      'docs/m.md': 'the target in the snapshot is not a regular file',
+      'docs/u.md': "the pinned target is not committed at the target repo's HEAD",
+      'docs/big.md': 'the target is over 1024 bytes',
+      'docs/g.md': 'the link path or the pinned target is credential-named or inside .git',
+      'docs/h.md': 'the link target is credential-named or inside .git',
+    });
+  });
+  it('refuses a credential-named link path or pinned target, even one git tracks', () => {
+    const src = snapshot({ '.env': E('docs/products.md'), 'docs/cfg.md': E('config/prod.env') });
+    const r = run(src, policy(pin('.env', 'ext', 'docs/products.md'), pin('docs/cfg.md', 'ext', 'config/prod.env')));
+    expect(r.materialised).toEqual([]);
+    expect(Object.keys(reasons(r)).sort()).toEqual(['.env', 'docs/cfg.md']);
+    expect(existsSync(join(src, '.env'))).toBe(false);
+  });
+  it('a checkout the policy does not name materialises nothing; the shipped policy pins exactly the two product files', () => {
+    const src = snapshot({ 'docs/products.md': E('docs/products.md') });
+    const r = run(src, policy(pin('docs/products.md', 'ext', 'docs/products.md')), ext);
+    expect(r.materialised).toEqual([]);
+    expect(r.removed).toEqual(['docs/products.md']);
+    expect(links.LINK_POLICY.links).toEqual([
+      { reviewed: 'claude_business', link: 'docs/products.md', target: 'roadmap', path: 'docs/products.md' },
+      { reviewed: 'claude_business', link: 'docs/products-overages.md', target: 'claude_business', path: 'memory/products-overages.md' },
+    ]);
+  });
+
+  // Through the wrapper, with a fixture policy (honoured only under a test runner).
+  const wrapRepo = (source: string, notes = 'nothing here\n') => {
+    const dir = mkdtempSync(join(tmpdir(), 'cr-links-wrap-'));
+    writeFileSync(join(dir, 'notes.md'), notes);
+    sh(dir, 'git init -q && git config user.email t@t && git config user.name t && mkdir docs memory && echo "BASE CONTRACT" > docs/review-format.md && echo x > a.txt && echo OVERAGES > memory/overages.md');
+    symlinkSync(join(source, 'docs', 'products.md'), join(dir, 'docs', 'products.md'));
+    symlinkSync('../memory/overages.md', join(dir, 'docs', 'products-overages.md'));
+    symlinkSync(join(source, 'docs', 'products.md'), join(dir, 'docs', 'stray.md'));
+    writeFileSync(join(dir, '.env'), 'WRAP_TEST_TOKEN=SECRETVAL-WRAP-0901\n');
+    sh(dir, 'git add -A && git commit -q -m base && echo y > a.txt');
+    const pol = join(mkdtempSync(join(tmpdir(), 'cr-links-pol-')), 'policy.json');
+    writeFileSync(pol, JSON.stringify({ repos: { rev: dir, src: source }, links: [{ reviewed: 'rev', link: 'docs/products.md', target: 'src', path: 'docs/products.md' }, { reviewed: 'rev', link: 'docs/products-overages.md', target: 'rev', path: 'memory/overages.md' }] }));
+    return { dir, pol };
+  };
+  const wrap = (bin: string, dir: string, pol: string, extra: string[] = []) =>
+    spawnSync('node', [WRAPPER, '--codex', bin, ...extra, '--out', outJson], { cwd: dir, encoding: 'utf8', env: { ...process.env, VITEST: 'true', CODEX_REVIEW_TEST_LINK_POLICY: pol } });
+  const sourceRepo = (products: string, envFile: string) => {
+    const d = gitRepo({ 'docs/products.md': products });
+    writeFileSync(join(d, '.env'), envFile); // untracked, as in the real roadmap checkout
+    return d;
+  };
+
+  it('materialises end to end: committed content, provenance in the report, the prompt and the snapshot id; unlisted links and .env stay out', () => {
+    const source = sourceRepo('PRODUCT MASTER v9\nContact team@example.test at shop.example-store.test, server 123456789012345678\n', 'SRC_API_TOKEN=Zq7genericcredential0value\nSRC_CONTACT_EMAIL=team@example.test\nSRC_SHOP_DOMAIN=shop.example-store.test\nSRC_SERVER_ID=123456789012345678\n');
+    // A public-identifier value of its shape in the committed copy is exempt, as at base (AC11). The source's values are searched for in the copies only: the reviewed repo's own files are not the source's to leak.
+    const { dir, pol } = wrapRepo(source, 'id Zq7genericcredential0value\n');
+    const f = fake({ output: CLEAN });
+    const r = wrap(f.bin, dir, pol, ['--keep']);
+    expect(r.status).toBe(0);
+    const commit = sh(source, 'git rev-parse HEAD').trim(), blob = sh(source, 'git rev-parse HEAD:docs/products.md').trim();
+    expect(r.stderr).toContain(`materialised 2 allowlisted symlink(s) as regular files: docs/products-overages.md <- memory/overages.md in this snapshot, docs/products.md <- src commit ${commit.slice(0, 12)}:docs/products.md (blob ${blob.slice(0, 12)}`);
+    const work = r.stderr.match(/work dir kept at (\S+)/)![1];
+    expect(readFileSync(join(work, 'src', 'docs', 'products.md'), 'utf8')).toBe(sh(source, 'git show HEAD:docs/products.md'));
+    expect(existsSync(join(work, 'src', 'docs', 'stray.md'))).toBe(false);
+    expect(existsSync(join(work, 'src', '.env'))).toBe(false);
+    rmSync(work, { recursive: true, force: true });
+    const prompt = f.read('stdin.txt');
+    expect(prompt).toContain('Symlinks were removed from the snapshot (docs/stray.md)');
+    const sha256 = sh(source, 'git show HEAD:docs/products.md | shasum -a 256').split(' ')[0];
+    expect(prompt).toContain(`docs/products.md = src commit ${commit.slice(0, 12)}:docs/products.md (blob ${blob.slice(0, 12)}, content sha256 ${sha256}, that repo's HEAD at review time)`);
+    const report = JSON.parse(readFileSync(outJson, 'utf8'));
+    expect(report.link_policy).toBe('test');
+    expect(report.symlinks_materialised.find((m: { link: string }) => m.link === 'docs/products.md')).toMatchObject({ source: 'src', commit, blob });
+    expect(report.target.split('+')).toHaveLength(3); // base + patch + external inputs
+    expect(report.drift).toBeNull();
+    expect(report.secret_values.checked_sources).toEqual({ src: 4 });
+    expect(report.secret_values.exempt_in_copies).toEqual(['SRC_CONTACT_EMAIL', 'SRC_SERVER_ID', 'SRC_SHOP_DOMAIN']);
+    expect(report.symlinks_materialised.find((m: { link: string }) => m.link === 'docs/products.md').sha256).toBe(sha256);
+  });
+  it('a generic credential (no provider prefix) from the SOURCE repo\'s .env, committed into the pinned file, stops the run: E_SECRET_VALUE', () => {
+    const source = sourceRepo('Contact: Zq7genericcredential0value\n', 'SRC_API_TOKEN=Zq7genericcredential0value\n');
+    const { dir, pol } = wrapRepo(source);
+    const before = workDirsNow();
+    const f = fake({ output: CLEAN });
+    const r = wrap(f.bin, dir, pol, ['--keep']);
+    expect(r.status).toBe(3);
+    expect(r.stdout).toContain('E_SECRET_VALUE');
+    expect(r.stdout).toContain('src/docs/products.md');
+    expect(r.stdout).toContain('from key(s) SRC_API_TOKEN');
+    expect(r.stdout).not.toContain('Zq7genericcredential0value');
+    expect(existsSync(join(f.dir, 'stdin.txt'))).toBe(false);
+    expect(r.stderr).not.toContain('work dir kept'); // purged even with --keep
+    // Other runs on this machine may create work dirs meanwhile: none of them may hold the value.
+    for (const d of newWorkDirs(before)) { try { expect(grepTree(d, 'Zq7genericcredential0value')).toBe(''); } catch (e) { if (existsSync(d)) throw e; } }
+  });
+  it('a known credential shape committed into the pinned file stops the run: E_SECRET_PATTERN', () => {
+    const source = sourceRepo(`token ${'ghp_'}${'A1'.repeat(18)}\n`, 'NOTHING=here\n');
+    const { dir, pol } = wrapRepo(source);
+    const f = fake({ output: CLEAN });
+    const r = wrap(f.bin, dir, pol);
+    expect(r.status).toBe(3);
+    expect(r.stdout).toContain('E_SECRET_PATTERN');
+    expect(r.stdout).toContain('src/docs/products.md: github_token');
+    expect(existsSync(join(f.dir, 'stdin.txt'))).toBe(false);
+  });
+  it('the source moving on during review is reported as drift; the reviewed bytes are the recorded blob', () => {
+    const source = sourceRepo('PRODUCT MASTER v9\n', 'NOTHING=here\n');
+    const { dir, pol } = wrapRepo(source);
+    const f = fake({ output: CLEAN, during: `cd ${JSON.stringify(source)} && echo v10 > docs/products.md && git commit -qam v10` });
+    const r = wrap(f.bin, dir, pol);
+    expect(r.status).toBe(0);
+    expect(JSON.parse(readFileSync(outJson, 'utf8')).drift).toContain('external input(s) changed at their source during review: docs/products.md');
+  });
+  it('inside a copy, a token-shaped value under a public-identifier key is NOT exempt: JWT host, bare 32/40-hex ID, token email local part, token word', () => {
+    const jwt = ['eyJhbGciOiJIUzI1NiJ9', 'eyJzdWIiOiIxMjM0NTY3ODkwIn0', 'dozjgNryP4J3jVmNHl0w5N'].join('.');
+    for (const [k, v] of [['SRC_SHOP', jwt], ['SRC_ACCOUNT_ID', '0123456789abcdef0123456789abcdef'], ['SRC_ACCOUNT_ID', '0123456789abcdef0123456789abcdef01234567'], ['SRC_CONTACT_EMAIL', 'a1b2c3d4e5f6@example.test'], ['SRC_REGION', 'eu west k9x8c7v6b5']]) {
+      const { dir, pol } = wrapRepo(sourceRepo(`value ${v} here\n`, `${k}=${v}\n`));
+      const f = fake({ output: CLEAN });
+      const r = wrap(f.bin, dir, pol);
+      expect(r.status, `${k}`).toBe(3);
+      expect(r.stdout).toContain(`credential value(s) of the source repo found in copied file(s) (src/docs/products.md), from key(s) ${k};`);
+      expect(r.stdout).not.toContain(v);
+      expect(existsSync(join(f.dir, 'stdin.txt'))).toBe(false);
+    }
+  });
+  it('the fixture policy is ignored unless a test runner AND an explicit --codex binary in the temp dir are both present', () => {
+    const source = sourceRepo('PRODUCT MASTER v9\n', 'NOTHING=here\n');
+    const { dir, pol } = wrapRepo(source);
+    const f = fake({ output: CLEAN });
+    const noRunner = { ...process.env, CODEX_REVIEW_TEST_LINK_POLICY: pol };
+    delete noRunner.VITEST;
+    for (const [args, env] of [[['--codex', f.bin], noRunner], [[], { ...process.env, VITEST: 'true', CODEX_REVIEW_TEST_LINK_POLICY: pol, CODEX_BIN: f.bin }]] as const) {
+      const r = spawnSync('node', [WRAPPER, ...args, '--out', outJson], { cwd: dir, encoding: 'utf8', env });
+      expect(r.status).toBe(0);
+      expect(r.stderr).not.toContain('TEST link policy');
+      const report = JSON.parse(readFileSync(outJson, 'utf8'));
+      expect(report.symlinks_materialised).toEqual([]);
+      expect(report.symlinks_removed).toBe(3);
+      expect(report.link_policy).toBe('default');
+    }
   });
 });

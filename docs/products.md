@@ -453,13 +453,13 @@ Three versions are currently shipping: **v8 in the USA**, **v8.5 in Australia** 
 | Peppermint Leaf Extract | 50 mg | — (removed) | Removed; not load-bearing for the formula |
 | L-Leucine (flow agent) | — | Added | Manufacturing-only — not a bioactive ingredient |
 
-**Ingredient counts:** v7 = 25 listed ingredients (capsules) / 29 (powder). v8 = 26 listed ingredients (capsules) / 30 (powder). The +1 is Zeaxanthin. v8.5 (AU) = 26 (same set as v8; TMG appears under "other ingredients" on the AU label rather than the actives panel).
+**Ingredient counts:** v7 = 25 listed ingredients (capsules) / 29 (powder). v8 = 26 listed ingredients (capsules) / 30 (powder). The +1 is Zeaxanthin. v8.5 (AU) = 26 (same set as v8; TMG is not on the AU actives panel: betaine hydrochloride is an excipient on the ARTG listing and in spec PC2921.01. Draft AU labels 1–3 listed it under "Other ingredients"; the final label (file 7, LOT 45727) carries no other-ingredients line at all).
 
 **What stayed the same in v8:** Choline Bitartrate 181.5mg, TMG 500mg, Hyaluronic Acid 200mg, Magnesium Taurate 126mg, Methylated Folate 200mcg DFE, Methylated B12 12mcg, B1/B2/B5/B6/Biotin (75% RDA), Selenium 27.5mcg glycinate, Manganese 1.15mg glycinate, Chromium 17.5mcg glycinate, Boron 1mg glycinate, Potassium 99mg.
 
 ### v8.5 (Australia only, from 2026-08) — differences vs v8 USA
 
-Source of truth: BJP Laboratories product spec PC2921.00 (signed 2026-02-03); all doses per daily serving (5 capsules). v8.5 keeps the full v8 ingredient set (26 ingredients, including Lutein 10mg + Zeaxanthin 2mg from Lutemax® 2020, Lycopene 10mg from LycoBeads®, encapsulated AlgeD3™ D3 1,000IU and K2VITAL® MK-7 90mcg) and raises most vitamin and mineral doses:
+Source of truth: the final AU label (`multivitamin/Manufacturing Australia/BJP laboratories/1 label v8.5/7 MicroVitamin v8.5 With Bleed Area copy.pdf`, LOT 45727, AUST L 524572) and BJP Laboratories product spec **PC2921.01** (`multivitamin/Manufacturing Australia/BJP laboratories/1 4th Nov 2025 v8.5/PC2921.01 - Welllife Health Distribution Co Pty Ltd - MicroVitamin v8.5.pdf`; authorised 2026-03-04, customer-signed 2026-03-05; supersedes PC2921.00 of 2026-02-03). All doses per daily serving (5 capsules; the label states per capsule). v8.5 keeps the full v8 ingredient set (26 ingredients, including Lutein 10mg + Zeaxanthin 2mg from Lutemax® 2020, Lycopene 10mg from LycoBeads®, encapsulated AlgeD3™ D3 1,000IU and K2VITAL® MK-7 90mcg) and raises most vitamin and mineral doses:
 
 | Ingredient | v8 (USA) | v8.5 (Australia) | Notes |
 |---|---|---|---|
@@ -470,16 +470,19 @@ Source of truth: BJP Laboratories product spec PC2921.00 (signed 2026-02-03); al
 | Biotin | 22.5 mcg | **30 mcg** | Raised |
 | Folate | 200 mcg DFE (≈118 mcg levomefolate mass) | **400 mcg levomefolic acid by mass** (≈680 mcg DFE) | ≈3.4× increase — don't call it a doubling; still methylated (Quatrefolic® levomefolate glucosamine) |
 | Vitamin C | 45 mg | **90 mg** | Doubled; still calcium ascorbate |
-| Magnesium | 126 mg elemental | **260 mg elemental** | Still magnesium taurate — roughly double the US dose |
+| Magnesium | 126 mg elemental (magnesium taurinate on the US label) | **260 mg elemental** | Roughly double the US dose. **Declared name** (AU label + ARTG 524572): "Magnesium (as Magnesium Amino Acid Chelate)", 52 mg per capsule (RM4466, 260 mg input at 20% Mg). **Raw material:** BJP quote Q#07114 and spec PC2921.00 called RM4466 "Magnesium Taurate (DC granular)"; PC2921.01 revision 01 (2026-03-04) changed only its Australian Approved Name (same code, mass, 20%). Pure magnesium taurate is ~9% Mg, so this is not pure taurate; its identity and taurine content are not in our files (needs the supplier raw-material spec/CoA). AU v7 was also declared magnesium amino acid chelate, but Lavida quote RD3216 records "Magnesium amino acid chelate (Magnesium taurinate)" 315 mg at ~8% Mg, so the v7 and v8.5 raw materials differ. **Customer answers (AU):** use only the declared name; never call it magnesium taurate; never state whether it contains taurine |
 | Boron | 1 mg glycinate | **3 mg** (as borax) | Dose and form change |
 | Chromium | 17.5 mcg glycinate | **35 mcg** (picolinate) | Dose and form change |
 | Selenium | 27.5 mcg glycinate | **55 mcg** (selenomethionine) | Dose and form change |
 | Iodine | 75 mcg | **150 mcg** | Doubled (potassium iodide); 150 mcg = 100% AU RDI |
 | Manganese | 1.15 mg | **2.3 mg** | Still glycinate |
-| TMG | 500 mg betaine anhydrous (listed active) | **500 mg betaine hydrochloride** (label "other ingredient") | Regulatory placement: TGA listing carries betaine HCl as an excipient with no label claim — never attach a therapeutic claim to TMG in AU-facing copy |
-| Capsule | White TiO2-free | **Dark green HPMC** (chlorophyllin-coloured) | Customers may notice the colour difference vs US bottles |
+| TMG | 500 mg betaine anhydrous (listed active) | **500 mg betaine hydrochloride** (100 mg per capsule, excipient) | Regulatory placement: the ARTG listing and spec PC2921.01 carry betaine HCl as an excipient with no label claim — never attach a therapeutic claim to TMG in AU-facing copy. The final AU label (file 7) shows no dose and no other-ingredients line; draft labels 1–3 had "Other ingredients: Betaine hydrochloride, Silicon Dioxide, NuMAG, Vegetable Capsule Shell" |
+| Flow agents | L-leucine | **NuMAG + colloidal anhydrous silica (silicon dioxide)**; no L-leucine | Spec PC2921.01 excipients: betaine hydrochloride 100 mg, NuMAG 62.98 mg (rice bran extract, rice hull, acacia, sunflower oil), colloidal anhydrous silica; the ARTG v8.5 public summary lists silicon dioxide and colloidal anhydrous silica. Manufacturing-only |
+| Capsule | White TiO2-free | **Dark green HPMC** (chlorophyllin-coloured) | Customers may notice the colour difference vs US bottles. Not a change for AU customers: AU v7 was already a green HPMC capsule coloured with sodium copper chlorophyllin (Lavida v7 spec + allergen declaration, CAP049) |
 
 Unchanged from v8: Choline 181.5mg, Hyaluronic Acid 200mg (sodium hyaluronate), Nicotinamide 16mg, B12 12mcg (mecobalamin), D3 1,000IU, K2 90mcg, Zinc 11mg glycinate, Copper 0.9mg glycinate, Potassium 99mg, Lutein 10mg + Zeaxanthin 2mg, Lycopene 10mg. Made in Australia by BJP Laboratories (TGA-licensed); 24-month shelf life. v8.5 carries **AUST L 524572** on the label (the v7 number L 509250 does not carry over). AU pricing is unchanged with v8.5: **$75 AUD one-time / $67.50 AUD on subscription**.
+
+**v8.5 vs the v7 sold in Australia (AUST L 509250, Lavida).** The public changelog compares v8.5 with AU v7, not with US v8, and AU v7 was not the international v7. Per the AU v7 label (`multivitamin/Manufacturing Australia/la-vida/2 label v7/2 MicroVitamin v7 With Bleed Area.pdf`), Lavida bulk spec VCH-RD3216-BLK v01 and ARTG record 509250, AU v7 already used borax (1 mg boron), chromium picolinate, selenomethionine, copper (II) glycinate, magnesium declared as amino acid chelate (126 mg; a different raw material from v8.5, see the Magnesium row), potassium iodide, betaine hydrochloride as an excipient, and a green chlorophyllin capsule. What actually changed for AU customers: B1 0.9→1.2 mg, B2 0.975→1.3 mg, B3 35→16 mg, B5 3.75→5 mg, B6 (P5P) 1.275→1.7 mg, biotin 22.5→30 mcg, levomefolic acid 200→400 mcg (both as levomefolate glucosamine), vitamin C 45→90 mg with ascorbic acid → calcium ascorbate dihydrate, D3 lichen-sourced premix → AlgeD3™ (25 mcg both), K2 MaiggicTM powder → K2VITAL® (90 mcg both), boron 1→3 mg, chromium 17.5→35 mcg, copper 0.45→0.9 mg, iodine 112.5→150 mcg, magnesium 126→260 mg, manganese 1.15→2.3 mg with manganese amino acid chelate → manganese (II) glycinate, selenium 27.5→55 mcg, zinc 8.25→11 mg, lutein 0.25→10 mg, zeaxanthin added 2 mg, lycopene 0.3→10 mg, peppermint leaf extract (50 mg) removed, flow agents Nu-Flow + NuMAG + leucine → NuMAG + silicon dioxide. Unchanged: choline 181.5 mg, B12 12 mcg, potassium 99 mg, sodium hyaluronate 200 mg, betaine hydrochloride 100 mg per capsule.
 
 **For powder:** the 4 Plus additions (Collagen 12.5g, Creatine 5g, Psyllium 2.5g, Taurine 1g) are unchanged between v7 and v8. There is no v8.5 powder — the powder is USA-only.
 
@@ -665,13 +668,14 @@ Australia-specific release manufactured by BJP Laboratories (Yatala, QLD; TGA-li
 - **Increased** B1 to 1.2 mg, B2 to 1.3 mg, B5 to 5 mg, B6 (P5P) to 1.7 mg, Biotin to 30 mcg
 - **Increased** Folate from 200 mcg DFE (≈118 mcg levomefolate mass) to 400 mcg levomefolic acid by mass (≈680 mcg DFE) — Quatrefolic® levomefolate glucosamine
 - **Increased** Vitamin C from 45 to 90 mg (calcium ascorbate)
-- **Increased** Magnesium from 126 to 260 mg elemental (magnesium taurate)
+- **Increased** Magnesium from 126 to 260 mg elemental (declared as magnesium amino acid chelate; raw-material identity unconfirmed, see the Regional Formula Differences table)
 - **Increased** Iodine from 75 to 150 mcg, Manganese from 1.15 to 2.3 mg
 - **Increased + form change** Boron 1 mg glycinate → 3 mg (borax); Chromium 17.5 mcg glycinate → 35 mcg (picolinate); Selenium 27.5 mcg glycinate → 55 mcg (selenomethionine)
 - **TMG** 500 mg as betaine **hydrochloride**, formally an excipient on the AU listing (no label claim) — the US v8 lists 500 mg betaine anhydrous as an active
 - **Kept** (unlike v9): Choline bitartrate 181.5 mg choline, Potassium 99 mg
+- **Flow agents** NuMAG + colloidal anhydrous silica (silicon dioxide); **no L-leucine** (unlike US v8)
 - Dark green HPMC capsules (chlorophyllin), size 00; 24-month shelf life
-- Spec file: `multivitamin/Manufacturing Australia/BJP laboratories/1 4th Nov 2025 v8.5/PC2921.00 - MicroVitamin v8.5.pdf`; formula file: `multivitamin/formulas/15 formula v8.5 AUS.xlsx`
+- Spec file: `multivitamin/Manufacturing Australia/BJP laboratories/1 4th Nov 2025 v8.5/PC2921.01 - Welllife Health Distribution Co Pty Ltd - MicroVitamin v8.5.pdf` (PC2921.01, customer-signed 2026-03-05); final label: `multivitamin/Manufacturing Australia/BJP laboratories/1 label v8.5/7 MicroVitamin v8.5 With Bleed Area copy.pdf`; formula file: `multivitamin/formulas/15 formula v8.5 AUS.xlsx` (the workbook still shows magnesium 126 mg and an L-leucine note; the label and spec win)
 
 #### Version 9 (not yet on public changelog)
 

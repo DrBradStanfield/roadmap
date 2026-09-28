@@ -47,6 +47,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat } from './model-arm';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,10 +59,7 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 
 const args = process.argv.slice(2);
 
-function getArg(flag: string, defaultValue: string): string {
-  const idx = args.indexOf(flag);
-  return idx >= 0 && args[idx + 1] ? args[idx + 1] : defaultValue;
-}
+const getArg = (flag: string, defaultValue: string) => getArgOf(args, flag, defaultValue);
 
 const runs = Math.max(1, parseInt(getArg('--runs', '3'), 10));
 const varianceThreshold = parseFloat(getArg('--variance-threshold', '0.05'));
@@ -121,7 +119,12 @@ if (answerCheckMode) {
 // Shared sources — read the same files chat-router.server.ts uses
 // ---------------------------------------------------------------------------
 
-const ROUTER_MODEL = 'claude-haiku-4-5-20251001';
+// --model A/Bs a candidate against this default; --thinking-off applies to
+// Sonnet 5.5 only (see tools/model-arm.ts for its request-shape rules).
+// Stats cover suite calls only; the warmup call is excluded.
+const ROUTER_MODEL = getArg('--model', 'claude-haiku-4-5-20251001');
+const thinkingOff = args.includes('--thinking-off');
+const callStats: CallStat[] = [];
 
 interface BlogIndexEntry {
   title: string;
@@ -242,11 +245,10 @@ interface RouteResult {
   rateLimited: boolean;
 }
 
-async function routeQuery(currentMessage: string, retryOnRateLimit = true): Promise<RouteResult> {
+async function routeQuery(currentMessage: string, retryOnRateLimit = true, record = true): Promise<RouteResult> {
+  const t0 = Date.now();
   const body = {
-    model: ROUTER_MODEL,
-    max_tokens: 200,
-    temperature: 0,
+    ...modelParams(ROUTER_MODEL, 200, thinkingOff),
     system: [
       { type: 'text', text: ROUTER_PROMPT, cache_control: { type: 'ephemeral' } },
       { type: 'text', text: ROUTER_INDEX_BLOCK, cache_control: { type: 'ephemeral' } },
@@ -271,7 +273,7 @@ async function routeQuery(currentMessage: string, retryOnRateLimit = true): Prom
     const retryAfter = parseInt(res.headers.get('retry-after') ?? '30', 10);
     process.stdout.write(` [429, waiting ${retryAfter}s]`);
     await new Promise(r => setTimeout(r, retryAfter * 1000));
-    return routeQuery(currentMessage, false);
+    return routeQuery(currentMessage, false, record);
   }
 
   if (!res.ok) {
@@ -283,7 +285,8 @@ async function routeQuery(currentMessage: string, retryOnRateLimit = true): Prom
     return { handles: [], rateLimited: res.status === 429 };
   }
 
-  const data = await res.json() as { content?: Array<{ type: string; text?: string }> };
+  const data = await res.json() as { content?: Array<{ type: string; text?: string }>; usage?: Parameters<typeof toStat>[1] };
+  if (record) callStats.push(toStat(Date.now() - t0, data.usage));
   const text = data.content?.find(c => c.type === 'text')?.text ?? '';
 
   // Haiku sometimes adds prose after the JSON (esp. on urgent-sounding symptom
@@ -494,7 +497,7 @@ console.log(`Threshold:   ≤${(varianceThreshold * 100).toFixed(0)}% variance\n
 // reduced ITPM rate. Without the warmup, Tier 1 accounts hit the 50K ITPM
 // limit on the first real query.
 console.log('Warming prompt cache...');
-const warmResult = await routeQuery('health');
+const warmResult = await routeQuery('health', true, false);
 if (warmResult.rateLimited) {
   console.error('\nWarmup rate-limited. If on Anthropic Tier 1 (50K ITPM), wait 60s and retry.');
   process.exit(1);
@@ -526,6 +529,7 @@ const passOk = passRate >= 0.9;
 const varOk = varRate <= varianceThreshold;
 console.log(`Pass rate:   ${BOLD}${(passRate * 100).toFixed(1)}%${RESET} ${passOk ? `${GREEN}✓${RESET}` : `${RED}✗ need ≥90%${RESET}`}`);
 console.log(`Variance:    ${BOLD}${(varRate * 100).toFixed(1)}%${RESET} ${varOk ? `${GREEN}✓${RESET}` : `${RED}✗ max ${(varianceThreshold * 100).toFixed(0)}%${RESET}`}`);
+console.log(summaryLine('router', ROUTER_MODEL, thinkingOff, passed.length, results.length, callStats, apiErrorCount));
 
 console.log(`\n${BOLD}--- By category ---${RESET}`);
 for (const [cat, stats] of Object.entries(byCategory).sort((a, b) => b[1].fail - a[1].fail)) {

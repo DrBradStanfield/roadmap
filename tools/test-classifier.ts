@@ -19,6 +19,8 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat } from './model-arm';
+const getArg = (flag: string, defaultValue: string) => getArgOf(args, flag, defaultValue);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,8 +30,8 @@ const __dirname = path.dirname(__filename);
 // ---------------------------------------------------------------------------
 
 const args = process.argv.slice(2);
-const runs = Math.max(1, parseInt(args[args.indexOf('--runs') + 1] ?? '3', 10));
-const concurrency = Math.max(1, parseInt(args[args.indexOf('--concurrency') + 1] ?? '2', 10));
+const runs = Math.max(1, parseInt(getArg('--runs', '3'), 10));
+const concurrency = Math.max(1, parseInt(getArg('--concurrency', '2'), 10));
 
 // Prefer ANTHROPIC_TEST_API_KEY if set — keeps harness spend isolated from
 // the prod key. Falls back to ANTHROPIC_API_KEY otherwise (matches
@@ -46,7 +48,12 @@ console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 
 // Prompt + model — loaded from the same file the server module reads.
 // ---------------------------------------------------------------------------
 
-const CLASSIFIER_MODEL = 'claude-haiku-4-5-20251001';
+// --model A/Bs a candidate against this default; --thinking-off applies to
+// Sonnet 5.5 only (see tools/model-arm.ts for its request-shape rules).
+const CLASSIFIER_MODEL = getArg('--model', 'claude-haiku-4-5-20251001');
+const thinkingOff = args.includes('--thinking-off');
+const callStats: CallStat[] = [];
+const apiErrors: string[] = [];
 
 const PROMPT_PATH = path.join(__dirname, '..', 'app', 'lib', 'chat-classifier-prompt.md');
 const CLASSIFIER_PROMPT = fs.readFileSync(PROMPT_PATH, 'utf-8');
@@ -74,9 +81,9 @@ function parseClassification(raw: string): Classification {
 async function callClassifier(query: string): Promise<{ classification: Classification; raw: string; latencyMs: number }> {
   const t0 = Date.now();
   const body = {
-    model: CLASSIFIER_MODEL,
-    max_tokens: 5,
-    temperature: 0,
+    // 8, as production sends (app/lib/chat-classifier.server.ts): 5 truncates
+    // 'MEASUREMENT' on Sonnet 5.5 and measures the cap, not the classifier.
+    ...modelParams(CLASSIFIER_MODEL, 8, thinkingOff),
     system: [
       { type: 'text', text: CLASSIFIER_PROMPT, cache_control: { type: 'ephemeral' } },
     ],
@@ -98,10 +105,12 @@ async function callClassifier(query: string): Promise<{ classification: Classifi
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
+    apiErrors.push(`${res.status}: ${text.slice(0, 200)}`);
     throw new Error(`Anthropic ${res.status}: ${text.slice(0, 200)}`);
   }
 
-  const data = await res.json() as { content?: Array<{ type: string; text?: string }> };
+  const data = await res.json() as { content?: Array<{ type: string; text?: string }>; usage?: Parameters<typeof toStat>[1] };
+  callStats.push(toStat(Date.now() - t0, data.usage));
   const raw = data.content?.find(c => c.type === 'text')?.text ?? '';
   return { classification: parseClassification(raw), raw, latencyMs: Date.now() - t0 };
 }
@@ -191,6 +200,8 @@ const fail = results.length - pass;
 console.log(`${BOLD}=== Results ===${RESET}`);
 console.log(`${GREEN}Passing: ${pass}/${results.length}${RESET}`);
 console.log(`${fail > 0 ? RED : GREEN}Failing: ${fail}${RESET}\n`);
+for (const e of apiErrors) console.log(`${RED}API error ${e}${RESET}`);
+console.log(summaryLine('classifier', CLASSIFIER_MODEL, thinkingOff, pass, results.length, callStats, apiErrors.length) + '\n');
 
 if (fail > 0) {
   console.log(`${BOLD}${RED}--- Failures ---${RESET}`);
