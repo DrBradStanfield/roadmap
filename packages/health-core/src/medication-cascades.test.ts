@@ -254,8 +254,10 @@ describe('US-06 AC5: the plan\'s cascade cards match the golden record exactly',
 });
 
 // US-06 AC12: the chat's Undo writes UNANSWERED_OF[key] for a key that had no
-// row (a row is never removed), so each value must read exactly as no row.
-describe('US-06 AC12: each UNANSWERED_OF value reads as no row', () => {
+// row (a row is never removed), so each value must leave the medication steps
+// where no row would. Elsewhere a row still differs from none: any statin row
+// turns the plan's cholesterol cascade on, and the form shows a recorded step.
+describe('US-06 AC12: each UNANSWERED_OF value leaves the medication steps as no row would', () => {
   const row = (medicationKey: string, drugName: string, doseValue: number | null = null) => ({ medicationKey, drugName, doseValue });
   const bases = [
     [],
