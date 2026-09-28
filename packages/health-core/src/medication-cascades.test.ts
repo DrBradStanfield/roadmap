@@ -14,6 +14,8 @@ import { calculateHealthResults } from './calculations';
 import { generateSuggestions } from './suggestions';
 import { weightCascade, lipidCascade } from './medication-cascades';
 import { goldenRecord, type CalculateHealthResults, type GoldenRecord } from './medication-cascades.golden';
+import { MEDICATION_KEYS, UNANSWERED_OF } from './validation';
+import { medicationsToInputs } from './mappings';
 import {
   GLP1_DRUGS, STATIN_DRUGS, METFORMIN_OPTIONS, EZETIMIBE_OPTIONS, BEMPEDOIC_ACID_OPTIONS, PCSK9I_OPTIONS,
   type HealthInputs, type MedicationInputs,
@@ -184,9 +186,45 @@ describe('US-06 AC8: a listed GLP-1 or statin with no dose recorded asks for the
   });
 });
 
+// US-06 AC10 (Brad, 2026-09-28): a dose the form does not list is graded as
+// that drug's nearest listed dose, the lower on a tie, so a step up is never
+// skipped. Before, rosuvastatin 2.5 mg went straight to the PCSK9 inhibitor.
+describe('US-06 AC10: a dose the form does not list is graded as the nearest listed dose', () => {
+  const lipidSteps = planSteps({ heightCm: 178, weightKg: 80, sex: 'male', ldlC: 3.0 }, 'med-');
+  const weightSteps = planSteps({ heightCm: 178, weightKg: 101.4, sex: 'male' }, 'weight-med-');
+
+  // Ezetimibe and bempedoic acid answered, the step up not: one card, the dose's own.
+  it.each([
+    ['rosuvastatin', 2.5, 'statin-increase'],
+    ['pravastatin', 10, 'statin-increase'],
+    ['atorvastatin', 30, 'statin-increase'], // a tie: graded 20 mg, not 40
+    ['rosuvastatin', 30, 'statin-increase'], // a tie: graded 20 mg, not 40
+    ['simvastatin', 80, 'statin-switch'],
+    ['pravastatin', 80, 'statin-switch'],
+    ['atorvastatin', 99, 'statin-switch'],
+    ['rosuvastatin', 99, 'pcsk9i'],
+  ] as const)('%s %s mg: %s', (drug, dose, step) => {
+    const meds: MedicationInputs = { statin: { drug, dose }, ezetimibe: 'yes', bempedoicAcid: 'bempedoic_acid' };
+    expect(lipidCascade(meds).suggest).toEqual([step]);
+    expect(lipidSteps(meds)).toEqual([step]);
+  });
+
+  it.each([
+    ['semaglutide_injection', 2.0, 'glp1-increase'], // graded 1.7 mg
+    ['tirzepatide', 3, 'glp1-increase'],
+    ['tirzepatide', 99, 'sglt2i'],
+    ['dulaglutide', 99, 'glp1-switch'],
+    ['liraglutide', 1, 'glp1-switch'], // an unlisted name: unchanged
+  ] as const)('%s %s mg: %s', (drug, dose, step) => {
+    const meds: MedicationInputs = { glp1: { drug, dose } };
+    expect(weightCascade(meds).suggest).toEqual([step]);
+    expect(weightSteps(meds)).toEqual([step]);
+  });
+});
+
 // The tables above compare the step functions with a plan that now calls
 // them, so they cannot see a change of behaviour. This record came from the
-// plan before the refactor, with only US-06 AC8's dose rows changed since
+// plan before the refactor, with only US-06 AC8's and AC10's dose rows changed since
 // (medication-cascades.golden.ts says how to regenerate it), so today's plan
 // must match it card for card.
 describe('US-06 AC5: the plan\'s cascade cards match the golden record exactly', () => {
@@ -212,5 +250,27 @@ describe('US-06 AC5: the plan\'s cascade cards match the golden record exactly',
     const noField = { drug: 'semaglutide_injection' } as MedicationInputs['glp1'];
     expect(ids({ glp1: noField })).toEqual(['weight-med-glp1-dose']);
     expect(ids({ glp1: noField })).toEqual(ids({ glp1: { drug: 'semaglutide_injection', dose: null } }));
+  });
+});
+
+// US-06 AC12: the chat's Undo writes UNANSWERED_OF[key] for a key that had no
+// row (a row is never removed), so each value must read exactly as no row.
+describe('US-06 AC12: each UNANSWERED_OF value reads as no row', () => {
+  const row = (medicationKey: string, drugName: string, doseValue: number | null = null) => ({ medicationKey, drugName, doseValue });
+  const bases = [
+    [],
+    [row('statin', 'atorvastatin', 20)],
+    [row('statin', 'atorvastatin', 20), row('ezetimibe', 'ezetimibe', 10)],
+    [row('statin', 'rosuvastatin', 40), row('ezetimibe', 'not_tolerated'), row('bempedoic_acid', 'bempedoic_acid'), row('statin_escalation', 'not_tolerated'), row('pcsk9i', 'no')],
+    [row('glp1', 'semaglutide_injection', 1)],
+    [row('glp1', 'tirzepatide', 15), row('glp1_escalation', 'not_tolerated'), row('sglt2i', 'empagliflozin', 10), row('metformin', 'xr_1000')],
+  ];
+  it.each([...MEDICATION_KEYS])('%s', (key) => {
+    for (const base of bases) {
+      const without = base.filter((r) => r.medicationKey !== key);
+      const a = medicationsToInputs(without), b = medicationsToInputs([...without, row(key, UNANSWERED_OF[key])]);
+      expect(lipidCascade(b), JSON.stringify(base)).toEqual(lipidCascade(a));
+      expect(weightCascade(b), JSON.stringify(base)).toEqual(weightCascade(a));
+    }
   });
 });

@@ -12,7 +12,8 @@
  * The whole widget renders over a real RoadmapStore on jsdom's localStorage.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { render, waitFor, fireEvent } from '@testing-library/react';
+import { render, waitFor, fireEvent, act } from '@testing-library/react';
+import type { ProposedMedicationEdit } from '@roadmap/health-core';
 import { flushRoadmapStore, loadLatestMeasurements, loadMedicationHistory } from '../lib/roadmap-data';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 
@@ -24,7 +25,10 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
   trackABConversion: vi.fn(),
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
-vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
+// The chat's edits reach the page through the embed's onProposeEdit.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const chat = vi.hoisted(() => ({ props: null as null | Record<string, any> }));
+vi.mock('./ChatEmbed', () => ({ ChatEmbed: (props: Record<string, unknown>) => { chat.props = props; return null; } }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 
@@ -60,11 +64,16 @@ async function rowCounts(): Promise<Record<string, number>> {
   return counts;
 }
 
-/** Change a select, then let the form's 300 ms save debounce and the store finish. */
-async function choose(container: HTMLElement, selector: string, value: string): Promise<void> {
-  fireEvent.change(container.querySelector(selector)!, { target: { value } });
+/** Let the form's 300 ms save debounce and the store finish. */
+async function settle(): Promise<void> {
   await new Promise((r) => setTimeout(r, 400));
   await flushRoadmapStore();
+}
+
+/** Change a select, then let the saves land. */
+async function choose(container: HTMLElement, selector: string, value: string): Promise<void> {
+  fireEvent.change(container.querySelector(selector)!, { target: { value } });
+  await settle();
 }
 
 /** The text of the option a select shows. */
@@ -271,5 +280,118 @@ describe('US-06 AC5, AC7: an escalation question the plan is not asking stays ne
   it('a question the plan is asking keeps its pitch', async () => {
     const view = await pageWith(LDL_3, [['statin', 'atorvastatin', 20], ['ezetimibe', 'ezetimibe', 10], ['statin_escalation', 'not_tolerated']], '#statin-escalation');
     expect(field(view.container, 'statin-escalation')).toMatchObject({ label: 'Tried increasing statin dose?', shown: "Didn't tolerate a higher dose" });
+  });
+});
+
+// US-06 AC12 (adversarial review, 2026-09-28): a chat edit that changes the
+// statin or the GLP-1, the drug or its dose, resets that drug's escalation
+// answer to "not yet", as the form's changes do (AC7). It applies in flat
+// mode too: the chat changes the drug on purpose, and the answer was about the
+// old one. Since AC11 no reset writes a history row.
+describe('US-06 AC12: a chat edit resets the drug\'s escalation answer', () => {
+  /** LDL 1.0 mmol/L at BMI 25: both sections show flat, no cascade. */
+  const FLAT: Array<[string, number]> = [['weight', 80], ['ldl', 1]];
+
+  /** Apply one medication edit the chat proposed, then let the saves land. */
+  async function chatProposes(medicationKey: ProposedMedicationEdit['medicationKey'], drugName: string, doseValue: number | null) {
+    act(() => chat.props!.onProposeEdit([{ kind: 'medication', medicationKey, drugName, doseValue, doseUnit: doseValue === null ? null : 'mg' }]));
+    await settle();
+  }
+
+  it('rosuvastatin 20 with "didn\'t tolerate", switched to atorvastatin 20: the answer resets, and Undo restores both', async () => {
+    await pageWith(LDL_3, [['statin', 'rosuvastatin', 20], ['statin_escalation', 'not_tolerated']], '#statin-name');
+    const before = await rowCounts();
+    await chatProposes('statin', 'atorvastatin', 20);
+    expect(await recorded()).toMatchObject({ statin: 'atorvastatin@20', statin_escalation: 'not_yet@null' });
+    expect(await rowCounts()).toEqual({ ...before, statin: before.statin + 1 });
+
+    fireEvent.click(document.querySelector('.chat-med-undo-btn')!);
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'rosuvastatin@20', statin_escalation: 'not_tolerated@null' });
+    expect(document.querySelector('.chat-med-undo')).toBeNull();
+  });
+
+  it.each([
+    ['a dose change 20 to 40', 20, 40],
+    ['a dose added where none was recorded', undefined, 20],
+  ])('%s resets the answer', async (_what, fromDose, toDose) => {
+    await pageWith(LDL_3, [['statin', 'atorvastatin', fromDose], ['statin_escalation', 'not_tolerated']], '#statin-name');
+    await chatProposes('statin', 'atorvastatin', toDose);
+    expect(await recorded()).toMatchObject({ statin: `atorvastatin@${toDose}`, statin_escalation: 'not_yet@null' });
+  });
+
+  it('an agent\'s "yes" resets to "not yet" and writes no escalation history row', async () => {
+    await pageWith(LDL_3, [['statin', 'atorvastatin', 20], ['statin_escalation', 'yes']], '#statin-name');
+    const before = await rowCounts();
+    await chatProposes('statin', 'rosuvastatin', 10);
+    expect(await recorded()).toMatchObject({ statin: 'rosuvastatin@10', statin_escalation: 'not_yet@null' });
+    expect(await rowCounts()).toEqual({ ...before, statin: before.statin + 1 });
+    expect(before.statin_escalation).toBeUndefined();
+  });
+
+  it('the same drug and dose re-proposed resets nothing', async () => {
+    await pageWith(LDL_3, [['statin', 'atorvastatin', 20], ['statin_escalation', 'not_tolerated']], '#statin-name');
+    const before = await rowCounts();
+    await chatProposes('statin', 'atorvastatin', 20);
+    expect(await recorded()).toMatchObject({ statin: 'atorvastatin@20', statin_escalation: 'not_tolerated@null' });
+    expect(await rowCounts()).toEqual(before);
+  });
+
+  it('an ezetimibe edit resets nothing', async () => {
+    await pageWith(LDL_3, [['statin', 'atorvastatin', 20], ['statin_escalation', 'not_tolerated'], ['ezetimibe', 'not_yet']], '#statin-name');
+    await chatProposes('ezetimibe', 'ezetimibe', 10);
+    expect(await recorded()).toMatchObject({ ezetimibe: 'ezetimibe@10', statin_escalation: 'not_tolerated@null' });
+  });
+
+  it('with the weight cascade off (flat), a GLP-1 switch still resets the answer, and Undo restores both', async () => {
+    const view = await pageWith(FLAT, [['glp1', 'semaglutide_injection', 1], ['glp1_escalation', 'not_tolerated']], '#glp1-name');
+    expect(view.container.querySelector('#glp1-escalation')).toBeNull();
+    await chatProposes('glp1', 'tirzepatide', 5);
+    expect(await recorded()).toMatchObject({ glp1: 'tirzepatide@5', glp1_escalation: 'not_yet@null' });
+
+    fireEvent.click(document.querySelector('.chat-med-undo-btn')!);
+    await settle();
+    expect(await recorded()).toMatchObject({ glp1: 'semaglutide_injection@1', glp1_escalation: 'not_tolerated@null' });
+  });
+
+  // One reply that switches the statin and states the answer: the stated
+  // answer wins in either order, and Undo restores the whole reply.
+  const reply = (order: 'answer first' | 'switch first'): ProposedMedicationEdit[] => {
+    const statin: ProposedMedicationEdit = { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 40, doseUnit: 'mg' };
+    const answer: ProposedMedicationEdit = { kind: 'medication', medicationKey: 'statin_escalation', drugName: 'not_tolerated', doseValue: null, doseUnit: null };
+    return order === 'answer first' ? [answer, statin] : [statin, answer];
+  };
+  // Codex and adversarial review, 2026-09-28: a key that had no row went back
+  // as 'none', which reads as an answer for ezetimibe or an escalation, so the
+  // plan skipped that step. Undo now writes the key's unanswered value.
+  it('Undo of a reply that added an escalation answer where none was recorded restores "not yet"', async () => {
+    await pageWith(LDL_3, [['statin', 'rosuvastatin', 20], ['ezetimibe', 'ezetimibe', 10]], '#statin-name');
+    act(() => chat.props!.onProposeEdit(reply('switch first')));
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'atorvastatin@40', statin_escalation: 'not_tolerated@null' });
+    fireEvent.click(document.querySelector('.chat-med-undo-btn')!);
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'rosuvastatin@20', statin_escalation: 'not_yet@null' });
+  });
+
+  it('Undo of an ezetimibe added where none was recorded restores "not yet", not "none"', async () => {
+    await pageWith(LDL_3, [['statin', 'atorvastatin', 20]], '#statin-name');
+    await chatProposes('ezetimibe', 'ezetimibe', 10);
+    expect(await recorded()).toMatchObject({ ezetimibe: 'ezetimibe@10' });
+    fireEvent.click(document.querySelector('.chat-med-undo-btn')!);
+    await settle();
+    expect(await recorded()).toMatchObject({ ezetimibe: 'not_yet@null' });
+  });
+
+  it.each(['answer first', 'switch first'] as const)('a reply that also states the answer keeps it (%s), and Undo restores both edits', async (order) => {
+    // An agent's "yes" on record: a reset would change it, so the test sees the rule.
+    await pageWith(LDL_3, [['statin', 'rosuvastatin', 20], ['statin_escalation', 'yes']], '#statin-name');
+    act(() => chat.props!.onProposeEdit(reply(order)));
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'atorvastatin@40', statin_escalation: 'not_tolerated@null' });
+
+    fireEvent.click(document.querySelector('.chat-med-undo-btn')!);
+    await settle();
+    expect(await recorded()).toMatchObject({ statin: 'rosuvastatin@20', statin_escalation: 'yes@null' });
   });
 });

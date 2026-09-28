@@ -11,6 +11,13 @@
  * tree after a script compared HEAD's plan with the new one over both sets:
  * only rows under that rule changed, and only as the rule says.
  *
+ * US-06 AC10 (2026-09-28) changed it again: a dose off the drug's list is
+ * graded as its nearest listed dose. The full set gained two off-list doses
+ * below each drug's highest (a tie between the two lowest, and one nearer the
+ * top), and the record was regenerated. A comparison over the new set found
+ * that only off-list rows changed, each now reading as HEAD read it at the
+ * graded dose.
+ *
  * Each cascade has an `explicit` set, stored row by row in
  * medication-cascades.golden.json, and a `full` cross product, stored as one
  * SHA-256 over its rows (about 81,000 combinations, too many to keep).
@@ -41,8 +48,14 @@ interface Cascade {
 
 const drug = (name: string, doses: Array<number | null | undefined>) =>
   doses.map((dose) => (dose === undefined ? { drug: name } : { drug: name, dose }));
-/** Every listed dose, a null dose, one off the list and (`absent`) a row with no dose field. */
-const allDoses = (name: string, doses: number[], absent = true) => drug(name, [null, ...(absent ? [undefined] : []), ...doses, 99]);
+/** Every listed dose, a null dose, three off the list and (`absent`) a row
+ *  with no dose field. The three off the list: the midpoint of the two lowest
+ *  (a tie), three quarters of the way up the top pair (nearer the highest),
+ *  and 99, past every list (US-06 AC10). */
+const allDoses = (name: string, doses: number[], absent = true) => {
+  const [low, next] = doses, [belowTop, top] = doses.slice(-2);
+  return drug(name, [null, ...(absent ? [undefined] : []), ...doses, (low + next) / 2, belowTop + (top - belowTop) * 0.75, 99]);
+};
 const answers = (...values: string[]) => [undefined, '', ...values];
 
 const GLP1_DOSES: Record<string, number[]> = {

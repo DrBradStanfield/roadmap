@@ -116,6 +116,33 @@ describe('RoadmapStore — medication history (append-only change log)', () => {
     expect(readCloudFile(cloud).medicationHistory).toEqual([]);
   });
 
+  it('US-06 AC11: an escalation answer updates its current row but appends no history row', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+
+    store.saveMedication('statin_escalation', 'yes', null, null);
+    store.saveMedication('statin_escalation', 'not_yet', null, null);
+    await store.flush();
+
+    const file = readCloudFile(cloud);
+    expect(file.medicationHistory).toEqual([]);
+    expect(file.medications.find((m) => m.medicationKey === 'statin_escalation')?.drugName).toBe('not_yet');
+  });
+
+  it('US-06 AC11: an escalation row an earlier build wrote stays in the file but not in the history view', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.saveMedication('statin', 'atorvastatin', 20, 'mg');
+    await store.flush();
+    const file = readCloudFile(cloud);
+    const row = file.medicationHistory[0];
+    file.medicationHistory.push({ ...row, id: 'old-escalation', medicationKey: 'glp1_escalation', drugName: 'not_yet', doseValue: null, doseUnit: null, changeType: 'stopped' });
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(file), version: 10 });
+    const reloaded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect(reloaded.loadMedicationHistory().map(h => h.id)).toEqual([row.id]);
+    expect(readCloudFile(cloud).medicationHistory).toHaveLength(2);
+  });
+
   it('history survives a reload (rides the sync loop, merged by id union)', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));

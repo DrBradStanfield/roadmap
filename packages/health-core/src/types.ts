@@ -136,25 +136,41 @@ export function getCurrentPotency(drug: string | undefined, dose: number | null)
 }
 
 /**
- * Check if user can increase dose (has higher dose available for current statin).
+ * The listed dose a recorded dose is graded as (US-06 AC10): the dose itself
+ * when listed, else the drug's nearest listed dose, the lower on a tie so a
+ * step up is never skipped. Null with no finite dose, or for a drug with no
+ * dose list (a prototype name such as 'constructor' has none). Sorts a copy,
+ * so it does not rely on the list's order.
+ */
+export function gradedDose(drugs: Record<string, { doses: number[] }>, drug: string | undefined, dose: number | null): number | null {
+  const listed = drug ? drugs[drug]?.doses : undefined;
+  if (!listed || dose === null || !Number.isFinite(dose)) return null;
+  const doses = listed.slice().sort((a, b) => a - b);
+  const above = doses.findIndex((d) => d >= dose);
+  if (above === -1) return doses.length ? doses[doses.length - 1] : null;
+  if (above === 0) return doses[0];
+  const lower = doses[above - 1], upper = doses[above];
+  // Doubled, so a decimal tie stays a tie (1.35 between 1 and 1.7).
+  return 2 * dose <= lower + upper ? lower : upper;
+}
+
+/**
+ * Check if user can increase dose (a higher dose is listed above the graded one).
  */
 export function canIncreaseDose(drug: string | undefined, dose: number | null): boolean {
-  if (!drug || drug === 'none' || drug === 'not_tolerated' || dose === null) return false;
-  const doses = STATIN_DRUGS[drug]?.doses;
-  if (!doses) return false;
-  const currentIndex = doses.indexOf(dose);
-  return currentIndex >= 0 && currentIndex < doses.length - 1;
+  const graded = gradedDose(STATIN_DRUGS, drug, dose);
+  return graded !== null && graded < Math.max(...getStatinDoses(drug!));
 }
 
 /**
  * Check if user should be suggested to switch to a higher potency statin.
- * Returns true if on max dose of current statin but not at max overall potency.
+ * Returns true if the graded dose is the statin's max but not the max overall potency.
  */
 export function shouldSuggestSwitch(drug: string | undefined, dose: number | null): boolean {
-  if (!drug || drug === 'none' || drug === 'not_tolerated' || dose === null) return false;
-  const currentPotency = getCurrentPotency(drug, dose);
-  const isOnMaxDose = !canIncreaseDose(drug, dose);
-  return isOnMaxDose && currentPotency > 0 && currentPotency < MAX_STATIN_POTENCY;
+  const graded = gradedDose(STATIN_DRUGS, drug, dose);
+  if (graded === null || canIncreaseDose(drug, graded)) return false;
+  const currentPotency = getCurrentPotency(drug, graded);
+  return currentPotency > 0 && currentPotency < MAX_STATIN_POTENCY;
 }
 
 /**
@@ -226,13 +242,10 @@ export type Glp1NameValue = typeof GLP1_NAMES[number]['value'];
 /** The most potent GLP-1 drug — used as the switch target in escalation. */
 export const MAX_GLP1_DRUG = 'tirzepatide';
 
-/** Check if user can increase their current GLP-1 dose (higher dose available). */
+/** Check if user can increase their current GLP-1 dose (a higher dose is listed above the graded one). */
 export function canIncreaseGlp1Dose(drug: string | undefined, dose: number | null): boolean {
-  if (!drug || drug === 'none' || drug === 'not_tolerated' || drug === 'other' || dose === null) return false;
-  const doses = GLP1_DRUGS[drug]?.doses;
-  if (!doses) return false;
-  const currentIndex = doses.indexOf(dose);
-  return currentIndex >= 0 && currentIndex < doses.length - 1;
+  const graded = gradedDose(GLP1_DRUGS, drug, dose);
+  return graded !== null && graded < Math.max(...GLP1_DRUGS[drug as string].doses);
 }
 
 /** Check if user should switch to tirzepatide (on max dose of a less potent GLP-1). */

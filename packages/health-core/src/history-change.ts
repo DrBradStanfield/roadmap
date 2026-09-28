@@ -6,15 +6,18 @@
  * represents — or null when no history row is warranted. The store appends one
  * `medicationHistory`/`supplementHistory` row per non-null result, so:
  *
- *  - re-saving an identical record is a no-op (no duplicate rows), and
+ *  - re-saving an identical record is a no-op (no duplicate rows),
  *  - flipping between non-taking statuses (none ↔ not_yet ↔ not_tolerated) is
- *    a form-state correction, not a clinical event — no row.
+ *    a form-state correction, not a clinical event — no row, and
+ *  - an escalation answer is not a medication — no row, whatever its value
+ *    (US-06 AC11).
  *
  * Mirrors v1's server-side `recordMedicationChange`/`recordSupplementChange`
  * (pre-teardown app/lib/supabase.server.ts) with one refinement: the first
  * save of a non-taking status records nothing (v1 logged it as 'initial').
  */
 import type { FileMedication, FileSupplement, HistoryChangeType } from './roadmap-file';
+import { isEscalationKey } from './validation';
 
 /**
  * Status placeholders stored in `drugName` that mean "not currently taking"
@@ -28,11 +31,16 @@ export function isTakingDrug(drugName: string | null | undefined): boolean {
   return !!drugName && !NON_TAKING_DRUG_NAMES.has(drugName);
 }
 
-/** Classify a medication save against the current record. Null = no history row. */
+/**
+ * Classify a medication save against the current record. Null = no history
+ * row. `next.medicationKey` is the key being saved: an escalation key never
+ * records one.
+ */
 export function classifyMedicationChange(
   prev: Pick<FileMedication, 'drugName' | 'doseValue' | 'doseUnit'> | undefined,
-  next: Pick<FileMedication, 'drugName' | 'doseValue' | 'doseUnit'>,
+  next: Pick<FileMedication, 'medicationKey' | 'drugName' | 'doseValue' | 'doseUnit'>,
 ): HistoryChangeType | null {
+  if (isEscalationKey(next.medicationKey)) return null; // an answer, not a drug (US-06 AC11)
   const wasTaking = prev !== undefined && isTakingDrug(prev.drugName);
   const nowTaking = isTakingDrug(next.drugName);
   if (!wasTaking && !nowTaking) return null; // none ↔ not_yet ↔ not_tolerated: no event

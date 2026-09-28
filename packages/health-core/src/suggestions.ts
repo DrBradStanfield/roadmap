@@ -678,7 +678,7 @@ export function generateSuggestions(
       'bempedoic-acid': ['Consider adding bempedoic acid', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor.'],
       'statin-dose': ['Add your statin dose', doseCardText('statin', switchesAtTop ? 'a more potent statin' : null)],
       'statin-increase': ['Consider increasing statin dose', 'Discuss increasing your statin dose with your doctor.'],
-      'statin-switch': ['Consider switching to a more potent statin', `You're on the maximum dose of ${statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1)}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor.`],
+      'statin-switch': ['Consider switching to a more potent statin', `You're at or near the maximum dose of ${statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1)}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor.`],
       pcsk9i: ['Consider a PCSK9 inhibitor', 'Discuss a PCSK9 inhibitor with your doctor.'],
     };
     // Statin → ezetimibe → bempedoic acid, then the statin's dose if not recorded, a step up or a PCSK9 inhibitor

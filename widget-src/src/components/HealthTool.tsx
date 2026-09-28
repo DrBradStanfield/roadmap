@@ -24,6 +24,8 @@ import {
   localDay,
   toCanonicalValue,
   VITALS_INPUT_FIELDS,
+  ESCALATION_KEY_OF,
+  UNANSWERED_OF,
   type HealthInputs,
   type UnitSystem,
   type MetricType,
@@ -814,9 +816,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // Chatbot-driven form edits (the chat proposes; this routes to the real form)
   // ---------------------------------------------------------------------------
   // A one-shot undo for a medication change the chat just applied (meds
-  // auto-save, so the chat states the change + offers Undo).
+  // auto-save, so the chat states the change + offers Undo): every row the
+  // change wrote, as it was before.
   const [medUndo, setMedUndo] = useState<
-    | { key: string; drugName: string; doseValue: number | null; doseUnit: string | null }
+    | Array<{ key: string; drugName: string; doseValue: number | null; doseUnit: string | null }>
     | null
   >(null);
   const medicationsRef = useRef(medications);
@@ -845,24 +848,45 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     bloodTestPrefillRef.current?.(metric, edit.displayValue, edit.unitSystem, edit.date);
   }, [handleInputChange]);
 
-  const applyMedicationEdit = useCallback((edit: ProposedMedicationEdit) => {
-    // Snapshot the prior value FIRST so Undo can restore it.
+  /** Apply one chat medication edit; returns the rows it wrote, as they were
+   *  before, for Undo. `stated` holds every key the same reply names. */
+  const applyMedicationEdit = useCallback((edit: ProposedMedicationEdit, stated: ReadonlySet<string>) => {
+    // Snapshot the prior values FIRST so Undo can restore them.
     const prior = medicationsRef.current.find(m => m.medicationKey === edit.medicationKey);
-    setMedUndo({
+    // A key that had no row goes back to its unanswered value: 'none' would
+    // read as an answer for a step such as ezetimibe or an escalation.
+    const undo: NonNullable<typeof medUndo> = [{
       key: edit.medicationKey,
-      drugName: prior?.drugName ?? 'none',
+      drugName: prior?.drugName ?? UNANSWERED_OF[edit.medicationKey],
       doseValue: prior?.doseValue ?? null,
       doseUnit: prior?.doseUnit ?? null,
-    });
+    }];
+    // A new drug or dose resets the drug's escalation answer, as the form does,
+    // escalation first. Flat mode too: the chat changes the drug on purpose,
+    // and the answer was about the old one (US-06 AC12). An answer the same
+    // reply states wins, whatever its order in the reply.
+    const escalationKey = (ESCALATION_KEY_OF as Partial<Record<string, string>>)[edit.medicationKey];
+    const answer = escalationKey && !stated.has(escalationKey) && medicationsRef.current.find(m => m.medicationKey === escalationKey);
+    if (answer && answer.drugName !== 'not_yet'
+      && (edit.drugName !== undo[0].drugName || edit.doseValue !== undo[0].doseValue)) {
+      undo.unshift({ key: answer.medicationKey, drugName: answer.drugName, doseValue: answer.doseValue, doseUnit: answer.doseUnit });
+      handleMedicationChange(answer.medicationKey, 'not_yet', null, null);
+    }
     handleMedicationChange(edit.medicationKey, edit.drugName, edit.doseValue, edit.doseUnit);
+    return undo;
   }, [handleMedicationChange]);
 
   const handleProposeEdit = useCallback((edits: ProposedEdit[]) => {
     let hasFieldEdit = false;
+    const stated = new Set(edits.flatMap(e => (e.kind === 'medication' ? [e.medicationKey] : [])));
+    // Undo restores every medication row the reply changed, the last edit
+    // first. Field edits are drafts the person saves or discards.
+    const undo: NonNullable<typeof medUndo> = [];
     for (const edit of edits) {
       if (edit.kind === 'field') { applyFieldEdit(edit); hasFieldEdit = true; }
-      else applyMedicationEdit(edit);
+      else undo.unshift(...applyMedicationEdit(edit, stated));
     }
+    if (undo.length > 0) setMedUndo(undo);
     // Mobile hand-off: bring the user to the form so they SEE the pre-filled
     // cell + Save button (they were on the chat tab). Mirror handleAutoFocusEmail.
     if (hasFieldEdit && isMobileRef.current) {
@@ -873,7 +897,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
   const undoMedEdit = useCallback(() => {
     if (!medUndo) return;
-    handleMedicationChange(medUndo.key, medUndo.drugName, medUndo.doseValue, medUndo.doseUnit);
+    for (const m of medUndo) handleMedicationChange(m.key, m.drugName, m.doseValue, m.doseUnit);
     setMedUndo(null);
   }, [medUndo, handleMedicationChange]);
 

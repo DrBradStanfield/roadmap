@@ -8,9 +8,7 @@ const MED_CHART_MAP: Record<string, string[]> = {
   ezetimibe: ['ldl', 'apob', 'total_cholesterol'],
   bempedoic_acid: ['ldl', 'apob', 'total_cholesterol'],
   pcsk9i: ['ldl', 'apob', 'total_cholesterol'],
-  statin_escalation: ['ldl', 'apob', 'total_cholesterol'],
   glp1: ['hba1c', 'weight', 'triglycerides'],
-  glp1_escalation: ['hba1c', 'weight', 'triglycerides'],
   sglt2i: ['hba1c', 'weight'],
   metformin: ['hba1c'],
 };

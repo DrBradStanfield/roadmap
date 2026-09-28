@@ -36,6 +36,21 @@ describe('US-06 AC4: medication chart annotations', () => {
     expect(annotations.ldl.map(a => a.label)).toEqual(['Recorded start: Statin 20mg', 'Recorded start: Rosuvastatin 20mg']);
   });
 
+  // US-06 AC11: an escalation answer is not a medication. A row an earlier
+  // build wrote for one stays in the file but draws no pin.
+  it('US-06 AC11: a stored escalation row draws no pin; a statin row still does', () => {
+    const annotations = medicationAnnotations([
+      event({ id: 'esc', medicationKey: 'glp1_escalation', drugName: 'not_yet', doseValue: null, changeType: 'stopped' }),
+      event({ id: 'esc2', medicationKey: 'statin_escalation', drugName: 'yes', doseValue: null }),
+      event({ id: 'statin' }),
+    ]);
+    expect(annotations).toEqual({
+      ldl: [expect.objectContaining({ id: 'statin' })],
+      apob: [expect.objectContaining({ id: 'statin' })],
+      total_cholesterol: [expect.objectContaining({ id: 'statin' })],
+    });
+  });
+
   it('preserves stable event IDs and exact times independently of list order', () => {
     const rows = [event({ id: 'later', recordedAt: '2026-09-07T13:00:00Z' }), event({ id: 'earlier', recordedAt: '2026-09-07T12:00:00Z' })];
     expect(medicationAnnotations(rows).ldl.map(a => [a.id, a.date])).toEqual([

@@ -30,6 +30,7 @@ import {
   splitDocumentRef,
   classifyMedicationChange,
   classifySupplementChange,
+  isEscalationKey,
   computeReminderSchedule,
   correctValue as correctRecordValue,
   createMeasurement,
@@ -399,9 +400,11 @@ export class RoadmapStore {
   }
 
   loadMedicationHistory(): ApiMedicationHistory[] {
+    // An escalation row an earlier build wrote is an answer, not a medication
+    // change (US-06 AC11): the file keeps it, the history view does not show it.
     return this.file.medicationHistory
       .filter(h => ['started', 'stopped', 'dose_changed', 'switched'].includes(h.changeType ?? '')
-        && typeof h.medicationKey === 'string' && typeof h.drugName === 'string'
+        && typeof h.medicationKey === 'string' && !isEscalationKey(h.medicationKey) && typeof h.drugName === 'string'
         && Number.isFinite(Date.parse(h.updatedAt)))
       .map(h => ({
         id: h.id, medicationKey: h.medicationKey, drugName: h.drugName,
@@ -471,7 +474,7 @@ export class RoadmapStore {
     // deleted — merges across devices by id union). Identical re-saves and
     // non-taking ↔ non-taking flips classify null, so no duplicate rows.
     const prev = this.file.medications.find((m) => m.medicationKey === medicationKey);
-    const changeType = classifyMedicationChange(prev, { drugName, doseValue, doseUnit });
+    const changeType = classifyMedicationChange(prev, { medicationKey, drugName, doseValue, doseUnit });
     this.upsertByKey(this.file.medications, 'medicationKey', medicationKey, () => ({
       id: newId(), medicationKey, drugName, doseValue, doseUnit,
     }), (existing) => { existing.drugName = drugName; existing.doseValue = doseValue; existing.doseUnit = doseUnit; });

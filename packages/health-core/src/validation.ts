@@ -259,6 +259,25 @@ export const MEDICATION_KEYS = [
   'glp1', 'glp1_escalation', 'sglt2i', 'metformin',
 ] as const;
 
+/** Each drug's escalation key: the answer to the plan's "tried a higher dose or a switch?" question, not a medication (US-06 AC11). */
+export const ESCALATION_KEY_OF = { statin: 'statin_escalation', glp1: 'glp1_escalation' } as const;
+
+/** The value each medication key reads as unanswered: a drug's "haven't tried
+ *  yet" ('none') or a step's "not yet". A row is never removed, so this is what
+ *  the chat's Undo writes for a key that had no row (US-06 AC12). */
+export const UNANSWERED_OF: Record<(typeof MEDICATION_KEYS)[number], string> = {
+  statin: 'none', glp1: 'none', sglt2i: 'none', metformin: 'none',
+  ezetimibe: 'not_yet', pcsk9i: 'not_yet', bempedoic_acid: 'not_yet',
+  statin_escalation: 'not_yet', glp1_escalation: 'not_yet',
+};
+
+const ESCALATION_KEYS = new Set<string>(Object.values(ESCALATION_KEY_OF));
+/** An escalation key holds an answer, not a medication: no history event, no
+ *  chart pin, no medication review (US-06 AC11). */
+export function isEscalationKey(key: string): boolean {
+  return ESCALATION_KEYS.has(key);
+}
+
 /**
  * Schema for validating a medication upsert request (FHIR-compatible).
  */

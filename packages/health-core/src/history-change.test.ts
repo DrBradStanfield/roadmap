@@ -21,20 +21,20 @@ describe('isTakingDrug', () => {
 describe('classifyMedicationChange', () => {
   it('no previous record + real drug → started', () => {
     expect(
-      classifyMedicationChange(undefined, { drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }),
+      classifyMedicationChange(undefined, { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }),
     ).toBe('started');
   });
 
   it('no previous record + non-taking status → no history row', () => {
-    expect(classifyMedicationChange(undefined, { drugName: 'not_yet', doseValue: null, doseUnit: null })).toBeNull();
-    expect(classifyMedicationChange(undefined, { drugName: 'none', doseValue: null, doseUnit: null })).toBeNull();
+    expect(classifyMedicationChange(undefined, { medicationKey: 'statin', drugName: 'not_yet', doseValue: null, doseUnit: null })).toBeNull();
+    expect(classifyMedicationChange(undefined, { medicationKey: 'statin', drugName: 'none', doseValue: null, doseUnit: null })).toBeNull();
   });
 
   it('non-taking → real drug → started', () => {
     expect(
       classifyMedicationChange(
         { drugName: 'not_yet', doseValue: null, doseUnit: null },
-        { drugName: 'rosuvastatin', doseValue: 5, doseUnit: 'mg' },
+        { medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 5, doseUnit: 'mg' },
       ),
     ).toBe('started');
   });
@@ -43,13 +43,13 @@ describe('classifyMedicationChange', () => {
     expect(
       classifyMedicationChange(
         { drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
-        { drugName: 'none', doseValue: null, doseUnit: null },
+        { medicationKey: 'statin', drugName: 'none', doseValue: null, doseUnit: null },
       ),
     ).toBe('stopped');
     expect(
       classifyMedicationChange(
         { drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
-        { drugName: 'not_tolerated', doseValue: null, doseUnit: null },
+        { medicationKey: 'statin', drugName: 'not_tolerated', doseValue: null, doseUnit: null },
       ),
     ).toBe('stopped');
   });
@@ -58,13 +58,13 @@ describe('classifyMedicationChange', () => {
     expect(
       classifyMedicationChange(
         { drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
-        { drugName: 'atorvastatin', doseValue: 40, doseUnit: 'mg' },
+        { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 40, doseUnit: 'mg' },
       ),
     ).toBe('dose_changed');
     expect(
       classifyMedicationChange(
         { drugName: 'semaglutide', doseValue: 1, doseUnit: 'mg' },
-        { drugName: 'semaglutide', doseValue: 1, doseUnit: 'mcg' },
+        { medicationKey: 'glp1', drugName: 'semaglutide', doseValue: 1, doseUnit: 'mcg' },
       ),
     ).toBe('dose_changed');
   });
@@ -73,7 +73,7 @@ describe('classifyMedicationChange', () => {
     expect(
       classifyMedicationChange(
         { drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
-        { drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg' },
+        { medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg' },
       ),
     ).toBe('switched');
   });
@@ -82,13 +82,13 @@ describe('classifyMedicationChange', () => {
     expect(
       classifyMedicationChange(
         { drugName: 'none', doseValue: null, doseUnit: null },
-        { drugName: 'not_yet', doseValue: null, doseUnit: null },
+        { medicationKey: 'statin', drugName: 'not_yet', doseValue: null, doseUnit: null },
       ),
     ).toBeNull();
     expect(
       classifyMedicationChange(
         { drugName: 'not_yet', doseValue: null, doseUnit: null },
-        { drugName: 'not_tolerated', doseValue: null, doseUnit: null },
+        { medicationKey: 'statin', drugName: 'not_tolerated', doseValue: null, doseUnit: null },
       ),
     ).toBeNull();
   });
@@ -97,15 +97,39 @@ describe('classifyMedicationChange', () => {
     expect(
       classifyMedicationChange(
         { drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
-        { drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
+        { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
       ),
     ).toBeNull();
     expect(
       classifyMedicationChange(
         { drugName: 'not_tolerated', doseValue: null, doseUnit: null },
-        { drugName: 'not_tolerated', doseValue: null, doseUnit: null },
+        { medicationKey: 'statin', drugName: 'not_tolerated', doseValue: null, doseUnit: null },
       ),
     ).toBeNull();
+  });
+});
+
+// US-06 AC11: an escalation answer is not a medication. A "yes" once counted
+// as taking, so its first save drew a start and a reset to "not yet" a stop.
+describe('US-06 AC11: an escalation answer records no history row', () => {
+  const answer = (drugName: string | undefined) =>
+    drugName === undefined ? undefined : { drugName, doseValue: null, doseUnit: null };
+
+  it.each(['statin_escalation', 'glp1_escalation'])('%s: every transition gives null', (medicationKey) => {
+    const transitions: Array<[string | undefined, string]> = [
+      [undefined, 'yes'], [undefined, 'not_yet'], [undefined, 'not_tolerated'],
+      ['yes', 'not_yet'], ['not_yet', 'yes'], ['not_tolerated', 'yes'],
+      ['yes', 'not_tolerated'], ['yes', 'none'], ['none', 'yes'], ['yes', 'yes'],
+    ];
+    for (const [from, to] of transitions) {
+      expect(classifyMedicationChange(answer(from), { medicationKey, drugName: to, doseValue: null, doseUnit: null })).toBeNull();
+    }
+  });
+
+  it('other keys are unchanged: the same "yes" answer still records a start and a stop', () => {
+    expect(classifyMedicationChange(undefined, { medicationKey: 'ezetimibe', drugName: 'yes', doseValue: null, doseUnit: null })).toBe('started');
+    expect(classifyMedicationChange(answer('yes'), { medicationKey: 'pcsk9i', drugName: 'not_yet', doseValue: null, doseUnit: null })).toBe('stopped');
+    expect(classifyMedicationChange(undefined, { medicationKey: 'glp1', drugName: 'tirzepatide', doseValue: 5, doseUnit: 'mg' })).toBe('started');
   });
 });
 

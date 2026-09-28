@@ -274,6 +274,19 @@ describe('computeReminderSchedule — medication rows agree with the plan', () =
   it('US-23, US-06 AC7: a real drug name still schedules one', () => {
     expect(categories('atorvastatin')).toContain('medication_review');
   });
+
+  // US-06 AC11: an escalation answer is not a medication. An agent's "yes"
+  // left after the drug stopped schedules no review on its own.
+  it('US-06 AC11: an escalation "yes" with no drug taken schedules no medication review', () => {
+    const escalationOnly = file({
+      profile: { sex: 'male', birthYear: 1966, updatedAt: '2026-01-01T00:00:00Z', lamport: 1 } as RoadmapFile['profile'],
+      medications: [
+        { id: 'med1', medicationKey: 'glp1', drugName: 'none', doseValue: null, doseUnit: null, updatedAt: '2026-01-01T00:00:00Z', lamport: 1 },
+        { id: 'med2', medicationKey: 'glp1_escalation', drugName: 'yes', doseValue: null, doseUnit: null, updatedAt: '2026-01-01T00:00:00Z', lamport: 2 },
+      ] as RoadmapFile['medications'],
+    });
+    expect(computeReminderSchedule(escalationOnly, NOW).map((i) => i.category)).not.toContain('medication_review');
+  });
 });
 
 // US-23 AC6 — the annual floor (Brad, 2026-08-14): every enrolled person gets

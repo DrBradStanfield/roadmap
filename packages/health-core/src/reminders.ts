@@ -7,6 +7,8 @@
  */
 import type { ScreeningInputs } from './types';
 import { getPostFollowupDueDate, getScreeningNextDueDate } from './types';
+import { isTakingDrug } from './history-change';
+import { isEscalationKey } from './validation';
 
 // ===== Types =====
 
@@ -57,9 +59,10 @@ export const MEDICATION_REVIEW_STALE_MONTHS = 12;
 /** Lipid metric types that count as "lipids" for blood_test_lipids reminders (shared with v2). */
 export const LIPID_METRICS = ['ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'apob'];
 
-/** Active = a real drug, not one of the "no/none/not yet" sentinels (shared with v2). */
-export function isActiveMedication(m: { drugName: string }): boolean {
-  return !!m.drugName && !['none', 'not_yet', 'not_tolerated', 'no'].includes(m.drugName);
+/** Active = a real drug, not a "no/none/not yet" sentinel, and not an
+ *  escalation answer (US-06 AC11; shared with v2). */
+export function isActiveMedication(m: { medicationKey: string; drugName: string }): boolean {
+  return !isEscalationKey(m.medicationKey) && isTakingDrug(m.drugName);
 }
 
 // ===== Profile info needed for reminder eligibility =====

@@ -1,5 +1,5 @@
 {
- "source": "6b47168 + US-06 AC8 (2026-09-28)",
+ "source": "bb5fcaa + US-06 AC10, off-list doses below the highest (2026-09-28)",
  "fields": {
   "weight": [
    "glp1",
@@ -1611,12 +1611,12 @@
  },
  "full": {
   "weight": {
-   "rows": 19800,
-   "sha256": "3af4816c2c5e4b642e1ef59e2c4b4139b21f2dfa327a6686c3eb1f7092960e9c"
+   "rows": 24600,
+   "sha256": "c745e82009d9c3ce3e73f2fc7dce1447ea84976b082510b58d46206ec56183e7"
   },
   "lipid": {
-   "rows": 61740,
-   "sha256": "bb0a95af928581d36471de5f2cbcd26a736226576e9eb8ebcff40a65edf41ad3"
+   "rows": 78890,
+   "sha256": "87391c07dd9066f5f7db9e43433103a0e95b5e9682fb2e50325667255e224a17"
   }
  }
 }

@@ -2,7 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { generateSuggestions, weightMedicationTrigger, lipidMarkerFor, joinWithAnd } from './suggestions';
 import { LIPID_TREATMENT_TARGETS, NON_HDL_THRESHOLDS, type UnitSystem } from './units';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
-import { canIncreaseGlp1Dose, shouldSuggestGlp1Switch } from './types';
+import {
+  canIncreaseGlp1Dose, shouldSuggestGlp1Switch, canIncreaseDose, shouldSuggestSwitch, getCurrentPotency, gradedDose,
+  GLP1_DRUGS, STATIN_DRUGS,
+} from './types';
 import { toCanonicalValue } from './units';
 import { calculateHealthResults, getBMICategory, getLipidStatus } from './calculations';
 
@@ -3113,5 +3116,117 @@ describe('US-06 AC8: the dose cards', () => {
       const text = card(lipid, { statin: { drug, dose: null }, ezetimibe: 'yes' }, 'med-statin-dose')!.description;
       expect(text, drug).toContain(drug === 'rosuvastatin' ? HIGHEST : 'A higher dose or a more potent statin may help.');
     }
+  });
+});
+
+// US-06 AC10 (Brad, 2026-09-28): a dose the form does not list is graded as
+// that drug's nearest listed dose, the lower on a tie, so a step up is never
+// skipped. Before, the helpers treated it as the drug's highest.
+describe('US-06 AC10: gradedDose and the dose helpers', () => {
+  it('a listed dose is graded as itself, for every drug and dose', () => {
+    for (const drugs of [STATIN_DRUGS, GLP1_DRUGS])
+      for (const [drug, { doses }] of Object.entries(drugs))
+        for (const dose of doses) expect(gradedDose(drugs, drug, dose), `${drug} ${dose}`).toBe(dose);
+  });
+
+  it('a dose between two listed doses is graded as the nearer', () => {
+    expect(gradedDose(STATIN_DRUGS, 'rosuvastatin', 2.5)).toBe(5);
+    expect(gradedDose(STATIN_DRUGS, 'pravastatin', 10)).toBe(20);
+    expect(gradedDose(STATIN_DRUGS, 'atorvastatin', 70)).toBe(80);
+    expect(gradedDose(GLP1_DRUGS, 'semaglutide_injection', 2.0)).toBe(1.7);
+    expect(gradedDose(GLP1_DRUGS, 'tirzepatide', 3)).toBe(2.5);
+  });
+
+  it('a tie takes the lower dose, a decimal tie included', () => {
+    expect(gradedDose(STATIN_DRUGS, 'atorvastatin', 30)).toBe(20);
+    expect(gradedDose(STATIN_DRUGS, 'rosuvastatin', 30)).toBe(20);
+    expect(gradedDose(GLP1_DRUGS, 'tirzepatide', 3.75)).toBe(2.5);
+    // In binary floats 1.35 sits nearer 1.7; in the mg a person types it is a tie.
+    expect(gradedDose(GLP1_DRUGS, 'semaglutide_injection', 1.35)).toBe(1);
+    expect(gradedDose(GLP1_DRUGS, 'semaglutide_injection', 2.05)).toBe(1.7);
+  });
+
+  it('a dose past either end is graded as that end, however far', () => {
+    expect(gradedDose(STATIN_DRUGS, 'simvastatin', 80)).toBe(40);
+    expect(gradedDose(STATIN_DRUGS, 'atorvastatin', 1e20)).toBe(80);
+    expect(gradedDose(STATIN_DRUGS, 'atorvastatin', 0)).toBe(10);
+    expect(gradedDose(GLP1_DRUGS, 'dulaglutide', -1)).toBe(0.75);
+  });
+
+  it('does not depend on the dose list being sorted', () => {
+    const drugs = { x: { doses: [40, 10, 20] } };
+    expect(gradedDose(drugs, 'x', 30)).toBe(20);
+    expect(gradedDose(drugs, 'x', 99)).toBe(40);
+    expect(gradedDose(drugs, 'x', 1)).toBe(10);
+  });
+
+  it('is null with no dose, a dose that is not finite, or a drug with no dose list', () => {
+    for (const dose of [null, NaN, Infinity, -Infinity]) expect(gradedDose(STATIN_DRUGS, 'atorvastatin', dose), String(dose)).toBeNull();
+    for (const drug of [undefined, '', 'none', 'not_tolerated', 'other', 'liraglutide', 'constructor', '__proto__', 'hasOwnProperty', 'toString']) {
+      expect(gradedDose(STATIN_DRUGS, drug, 10), String(drug)).toBeNull();
+      expect(gradedDose(GLP1_DRUGS, drug, 1), String(drug)).toBeNull();
+    }
+  });
+
+  it('listed doses give the same answers as before: a step up below the highest, a switch at it', () => {
+    for (const [drug, { doses }] of Object.entries(STATIN_DRUGS)) doses.forEach((dose, i) => {
+      const top = i === doses.length - 1;
+      expect(canIncreaseDose(drug, dose), `${drug} ${dose}`).toBe(!top);
+      expect(shouldSuggestSwitch(drug, dose), `${drug} ${dose}`).toBe(top && drug !== 'rosuvastatin');
+    });
+    for (const [drug, { doses }] of Object.entries(GLP1_DRUGS)) doses.forEach((dose, i) => {
+      const top = i === doses.length - 1;
+      expect(canIncreaseGlp1Dose(drug, dose), `${drug} ${dose}`).toBe(!top);
+      expect(shouldSuggestGlp1Switch(drug, dose), `${drug} ${dose}`).toBe(top && drug !== 'tirzepatide');
+    });
+  });
+
+  it('statins: an unlisted dose steps up or switches as its graded dose does', () => {
+    expect(canIncreaseDose('rosuvastatin', 2.5)).toBe(true);
+    expect(canIncreaseDose('pravastatin', 10)).toBe(true);
+    expect(canIncreaseDose('atorvastatin', 30)).toBe(true);
+    expect(canIncreaseDose('rosuvastatin', 30)).toBe(true);
+    expect(canIncreaseDose('simvastatin', 80)).toBe(false);
+    expect(shouldSuggestSwitch('simvastatin', 80)).toBe(true);
+    expect(shouldSuggestSwitch('pravastatin', 80)).toBe(true);
+    expect(shouldSuggestSwitch('atorvastatin', 99)).toBe(true);
+    expect(shouldSuggestSwitch('rosuvastatin', 99)).toBe(false); // graded 40 mg: the most potent already
+    expect(shouldSuggestSwitch('rosuvastatin', 2.5)).toBe(false); // a step up comes first
+  });
+
+  it('GLP-1s: an unlisted dose steps up or switches as its graded dose does', () => {
+    expect(canIncreaseGlp1Dose('semaglutide_injection', 2.0)).toBe(true);
+    expect(shouldSuggestGlp1Switch('semaglutide_injection', 2.0)).toBe(false);
+    expect(canIncreaseGlp1Dose('tirzepatide', 3)).toBe(true);
+    expect(canIncreaseGlp1Dose('tirzepatide', 99)).toBe(false);
+    expect(shouldSuggestGlp1Switch('tirzepatide', 99)).toBe(false);
+    expect(canIncreaseGlp1Dose('dulaglutide', 99)).toBe(false);
+    expect(shouldSuggestGlp1Switch('dulaglutide', 99)).toBe(true);
+    // An unlisted name with a dose keeps its switch, as before.
+    expect(shouldSuggestGlp1Switch('liraglutide', 1)).toBe(true);
+  });
+
+  it('prototype keys are not drugs', () => {
+    for (const drug of ['constructor', '__proto__']) {
+      expect(canIncreaseDose(drug, 10)).toBe(false);
+      expect(shouldSuggestSwitch(drug, 10)).toBe(false);
+      expect(canIncreaseGlp1Dose(drug, 1)).toBe(false);
+    }
+  });
+
+  it('getCurrentPotency stays an exact lookup', () => {
+    expect(getCurrentPotency('rosuvastatin', 2.5)).toBe(0);
+    expect(getCurrentPotency('rosuvastatin', 5)).toBe(40);
+  });
+});
+
+// US-06 AC10: a dose graded up to the highest may sit just below it, so the
+// switch card says "at or near" (atorvastatin 70 mg grades as 80 mg).
+describe('US-06 AC10: the statin switch card', () => {
+  it('atorvastatin 70 mg: "at or near the maximum dose of Atorvastatin"', () => {
+    const switchCard = calculateHealthResults({ heightCm: 178, sex: 'male', weightKg: 70, ldlC: 3.0 }, 'si',
+      { statin: { drug: 'atorvastatin', dose: 70 }, ezetimibe: 'yes', bempedoicAcid: 'not_tolerated' }).suggestions
+      .find((s) => s.id === 'med-statin-switch');
+    expect(switchCard?.description).toContain("You're at or near the maximum dose of Atorvastatin. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor.");
   });
 });
