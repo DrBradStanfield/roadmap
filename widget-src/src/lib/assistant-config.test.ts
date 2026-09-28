@@ -4,6 +4,7 @@ import {
   getAssistantName,
   setAssistantName,
   DEFAULT_ASSISTANT_NAME,
+  resolveChatSurface,
 } from './assistant-config';
 
 // `resolveAssistantName` only touches `root.dataset.assistantName`, so a minimal
@@ -46,5 +47,22 @@ describe('getAssistantName / setAssistantName', () => {
   it('returns the value set at boot', () => {
     setAssistantName('MicroVitamin');
     expect(getAssistantName()).toBe('MicroVitamin');
+  });
+});
+
+// US-15 AC12: `data-surface` from the shop metafield `health_roadmap.chat_surface`.
+describe('resolveChatSurface', () => {
+  const root = (surface?: string) => ({ dataset: surface === undefined ? {} : { surface } }) as unknown as HTMLElement;
+
+  it('reads "brand" from the data attribute', () => {
+    expect(resolveChatSurface(root('brand'))).toBe('brand');
+    expect(resolveChatSurface(root(' brand '))).toBe('brand');
+  });
+
+  it('defaults to "doctor" when absent, blank, unknown or rootless', () => {
+    expect(resolveChatSurface(root())).toBe('doctor');
+    expect(resolveChatSurface(root(''))).toBe('doctor');
+    expect(resolveChatSurface(root('Brand!'))).toBe('doctor');
+    expect(resolveChatSurface(null)).toBe('doctor');
   });
 });

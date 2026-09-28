@@ -3526,17 +3526,49 @@ a.action-btn-small.action-btn-small:hover {
   }
 }
 
-/* Thinking text (replaces dots during loading) */
+/* Live thinking summary while the answer streams (US-15 AC16/AC17), and
+   the toggle it folds into once the answer lands. */
 
-.chat-thinking-text {
-  font-size: 13px;
-  color: var(--color-gray-medium);
-  animation: chat-thinking-fade 1.5s ease-in-out infinite;
+.chat-thinking-panel {
+  flex-direction: column;
+  gap: 4px;
 }
 
-@keyframes chat-thinking-fade {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+.chat-thinking-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-gray-medium);
+}
+
+.chat-thinking-summary {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-gray-medium);
+  white-space: pre-wrap;
+}
+
+.chat-pending-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.chat-thinking-toggle {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--color-gray-medium);
+}
+
+.chat-thinking-toggle summary {
+  cursor: pointer;
+}
+
+.chat-thinking-toggle .chat-thinking-summary {
+  margin-top: 4px;
 }
 
 /* Scroll-to-bottom button */

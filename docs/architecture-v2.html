@@ -482,7 +482,7 @@
     <ul>
       <li>React Router 7 on <code>node:22-alpine</code>, two Fly.io apps from one image — <code>health-tool-app</code> (commerce/microvitamin) + <code>health-tool-edu</code> (education/drstanfield), iad, 1 machine min each</li>
       <li><code>@shopify/shopify-app-react-router</code> — app proxy + HMAC for the AI endpoints; Shopify Admin API <code>2026-04</code></li>
-      <li>Anthropic (Claude Haiku 4.5) for chat + lab extraction</li>
+      <li>Anthropic: Claude Sonnet 5.5 answers chat; Haiku 4.5 classifies, routes and extracts labs (pins in <code>packages/health-core/src/models.ts</code>)</li>
       <li>Supabase (chat history + A/B only), Resend (reminders + ops digests), Klaviyo (email list)</li>
       <li>discord.js gateway; admin app on <strong>Polaris web components</strong> (not Polaris React)</li>
     </ul>

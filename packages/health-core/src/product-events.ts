@@ -28,6 +28,9 @@ export const PRODUCT_EVENT_NAMES = [
   // were invisible until the first real one (2026-08-28) surfaced the gap.
   'reminder_sent',
   'chat_opened',
+  // US-15 AC17: the "Show how I approached this" toggle was opened. Name only,
+  // fired once per answer (the client throttle then keeps one per tab session).
+  'chat_thinking_opened',
   // US-34: the open page re-read the record and something had changed under it
   // (another tab, another device, or an AI connector). Metadata: `backend`
   // only, `local` (another tab of this browser) or `cloud` — never what changed.

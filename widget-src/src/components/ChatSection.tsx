@@ -13,14 +13,35 @@ import { trackProductEvent } from '../lib/server-api';
 import { getChatGate } from '../lib/chat-api';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ChatKeyGate } from './ChatKeyGate';
-import { useChatState, THINKING_MESSAGES, MAX_CHARS, type ChatContextSource } from '../hooks/useChatState';
+import { useChatState, MAX_CHARS, type ChatContextSource } from '../hooks/useChatState';
 import { ChatMessageBubble } from './ChatMessageBubble';
+import { ChatPendingReply } from './ChatPendingReply';
 import { ChatThreadList } from './ChatThreadList';
 import { ChatHeaderTitle } from './ChatHeaderTitle';
+import { getAssistantName, getChatSurface } from '../lib/assistant-config';
 
 export type { ChatPrefetchData } from '../hooks/useChatState';
 import type { ChatPrefetchData } from '../hooks/useChatState';
 import type { ProposedEdit } from '@roadmap/health-core';
+
+// US-15 AC12: the brand store has no plan, so its chat names products. The
+// brand title reads the metafield-set assistant name at render, not import.
+const SURFACE_COPY = {
+  doctor: {
+    label: 'Health by Dr Brad Chat',
+    title: 'Discuss your health',
+    subtitle: 'Answers cite your plan & the guidelines above',
+    empty: 'Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm.',
+    collapsed: 'Ask about your health suggestions',
+  },
+  brand: {
+    get label() { return `${getAssistantName()} chat`; },
+    get title() { return `Ask ${getAssistantName()}`; },
+    subtitle: 'Products, ingredients, and the research behind them',
+    empty: "Ask what's in a product, how to take it, or what the evidence says about an ingredient. For orders and subscriptions, sign in to your account.",
+    collapsed: 'Ask about our products',
+  },
+};
 
 interface ChatSectionProps {
   isLoggedIn: boolean;
@@ -41,6 +62,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
   // BYOK gate (standalone build only — null on the Shopify widget).
   const [, refreshGate] = useReducer((x: number) => x + 1, 0);
   const gate = getChatGate();
+  const copy = SURFACE_COPY[getChatSurface()];
 
   const closeThreadsPanel = useCallback(() => setShowThreads(false), []);
   const { state, actions, refs } = useChatState({
@@ -66,7 +88,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
     if (!el) return;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
     if (nearBottom) el.scrollTop = el.scrollHeight;
-  }, [state.messages, messagesContainerRef]);
+  }, [state.messages, state.streamingThinking, state.streamingText, messagesContainerRef]);
 
   const handleMessagesScroll = useCallback(() => {
     const el = messagesContainerRef.current;
@@ -102,7 +124,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
         <div className="chat-collapsed-row">
           <div className="chat-collapsed" onClick={handleExpand} role="button" tabIndex={0}>
             <span className="chat-icon">💬</span>
-            <span className="chat-placeholder">Ask about your health suggestions</span>
+            <span className="chat-placeholder">{copy.collapsed}</span>
           </div>
           {/* Feedback posts to Brad's server; the Pages build has none. */}
           {!isLoggedIn && SHOPIFY_SURFACE && (
@@ -124,12 +146,12 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
 
   // ----- EXPANDED STATE -----
   return (
-    <div className={`chat-section chat-expanded${inline ? ' chat-expanded--inline' : ''} no-print`} role="dialog" aria-label="Health by Dr Brad Chat" data-clarity-mask="true">
+    <div className={`chat-section chat-expanded${inline ? ' chat-expanded--inline' : ''} no-print`} role="dialog" aria-label={copy.label} data-clarity-mask="true">
       <div className="chat-header">
         <button className="chat-threads-btn" onClick={() => setShowThreads(!showThreads)}>
           {showThreads ? 'Back' : 'History'}
         </button>
-        <ChatHeaderTitle subtitle="Answers cite your plan & the guidelines above" />
+        <ChatHeaderTitle title={copy.title} subtitle={copy.subtitle} />
         {!inline && (
           <button className="chat-close-btn" aria-label="Close chat" onClick={() => { setIsExpanded(false); onClose?.(); }}>✕</button>
         )}
@@ -154,22 +176,14 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
           <div className="chat-messages" ref={messagesContainerRef} onScroll={handleMessagesScroll}>
             {state.messages.length === 0 && !state.isLoading && (
               <div className="chat-empty">
-                <p>Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm.</p>
+                <p>{copy.empty}</p>
               </div>
             )}
             {state.messages.map(msg => (
-              <ChatMessageBubble key={msg.id} msg={msg} />
+              <ChatMessageBubble key={msg.id} msg={msg} thinking={state.thinkingById[msg.id]} />
             ))}
             {state.isLoading && (
-              <div className="chat-message chat-message--assistant">
-                <div className="chat-loading">
-                  {state.isLocalSender ? (
-                    <span className="chat-thinking-text">{THINKING_MESSAGES[state.thinkingIndex]}</span>
-                  ) : (
-                    <span className="chat-thinking-dots" />
-                  )}
-                </div>
-              </div>
+              <ChatPendingReply isLocalSender={state.isLocalSender} thinking={state.streamingThinking} text={state.streamingText} />
             )}
             {state.error && <div className="chat-error">{state.error}</div>}
             {showScrollBtn && (

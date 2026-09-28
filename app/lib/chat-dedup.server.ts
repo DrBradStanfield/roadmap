@@ -3,7 +3,7 @@
  *
  * If a user re-sends a message that is byte-identical to their previous turn
  * AND the matching assistant reply was issued within DEDUP_WINDOW_MS AND that
- * reply was not a fallback, the chat handler skips classifier/router/main LLM
+ * reply was not a fallback or a refusal line, the chat handler skips classifier/router/main LLM
  * and re-serves the previous reply instead. Prevents wasted token spend on
  * double-sends (browser glitch, accidental resend, intentional retype) and
  * keeps the audit log clean.
@@ -29,6 +29,8 @@ export interface DedupHistoryItem {
   created_at: string;
   /** Only set on assistant messages; missing from older rows is treated as false. */
   is_fallback?: boolean | null;
+  /** 'refusal' marks a refusal line (US-15 AC14), never re-served either. */
+  failure_mode?: string | null;
 }
 
 export interface DuplicateMatch {
@@ -59,7 +61,7 @@ export function findDuplicateReply(
   if (lastMsg.role !== 'assistant') return null;
   if (prevUserMsg.role !== 'user') return null;
   if (prevUserMsg.content !== newMessage) return null;
-  if (lastMsg.is_fallback === true) return null;
+  if (lastMsg.is_fallback === true || lastMsg.failure_mode === 'refusal') return null;
   const ageMs = Date.now() - new Date(lastMsg.created_at).getTime();
   if (ageMs >= DEDUP_WINDOW_MS) return null;
   return { content: lastMsg.content, assistantCreatedAt: lastMsg.created_at, ageMs };

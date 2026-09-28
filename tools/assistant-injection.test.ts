@@ -21,7 +21,7 @@ vi.mock('node:dns/promises', () => ({ default: { lookup: async () => [{ address:
 import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../packages/health-core/src/roadmap-file';
-import { EXTRACTION_MODEL } from '../packages/health-core/src/lab-extraction';
+import { EXTRACTION_MODEL } from '../packages/health-core/src/models';
 import { MCP_TOOLS } from '../packages/health-core/src/mcp-tools';
 import { resetMcpMemory } from '../app/lib/mcp-grants.server';
 import { mcpEndpoint, setAdapterFactory } from '../app/lib/mcp.server';

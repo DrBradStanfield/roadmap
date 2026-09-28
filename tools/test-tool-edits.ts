@@ -21,15 +21,16 @@
  * and the assertion (structured-intent vs router-handle) differ.
  *
  * Each query runs N times; a case passes if a MAJORITY of runs match the
- * expectation (Haiku is mildly stochastic at temperature 0.3 — the production
- * temperature — so one blip shouldn't flip a case).
+ * expectation (the answer model thinks adaptively and is stochastic, so one
+ * blip shouldn't flip a case).
  *
  * Usage:
  *   npx tsx tools/test-tool-edits.ts
  *   npx tsx tools/test-tool-edits.ts --runs 3 --verbose
  *   npx tsx tools/test-tool-edits.ts --name medication-statin
+ *   npx tsx tools/test-tool-edits.ts --model <candidate id>   # default: CHAT_MODEL
  *
- * COST DISCIPLINE: this calls the real Haiku API. Keep the fixture small and
+ * COST DISCIPLINE: this calls the real production answer model. Keep the fixture small and
  * prefer --name <case> when iterating on one case.
  *
  * Exit code 0 if every case passes, 1 otherwise.
@@ -43,28 +44,23 @@ import {
   parseProposedEdits,
   type ProposedEdit,
 } from '../packages/health-core/src/chat-edits';
+import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, getArg as getArgOf, modelParams } from '../packages/health-core/src/models';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, '..');
-
-// Same model + temperature as production chat (app/lib/chat.server.ts).
-const CHAT_MODEL = 'claude-haiku-4-5-20251001';
-const CHAT_MAX_TOKENS = 2048;
-const CHAT_TEMPERATURE = 0.3;
 
 // ---------------------------------------------------------------------------
 // CLI args (mirrors test-chatbot-matching.ts)
 // ---------------------------------------------------------------------------
 
 const args = process.argv.slice(2);
-function getArg(flag: string, defaultValue: string): string {
-  const idx = args.indexOf(flag);
-  return idx >= 0 && args[idx + 1] ? args[idx + 1] : defaultValue;
-}
+const getArg = (flag: string, defaultValue: string) => getArgOf(args, flag, defaultValue);
+// Production's answer model by default; --model qualifies a candidate with its family's body shape.
+const MODEL = getArg('--model', CHAT_MODEL);
 
 const runs = Math.max(1, parseInt(getArg('--runs', '3'), 10));
-// Concurrency 2 keeps us under Haiku Tier-1 ITPM (see CLAUDE.md/memory).
+// Concurrency 2 keeps us under the Tier-1 ITPM limit (see CLAUDE.md/memory).
 const concurrency = Math.max(1, parseInt(getArg('--concurrency', '2'), 10));
 const verbose = args.includes('--verbose');
 const nameFilter = args.includes('--name') ? getArg('--name', '') : null;
@@ -128,7 +124,7 @@ if (CASES.length === 0) {
 }
 
 // ---------------------------------------------------------------------------
-// Anthropic call — same body shape as getChatCompletion (tools enabled)
+// Anthropic call — same model fields as getChatCompletion (tools enabled)
 // ---------------------------------------------------------------------------
 
 interface ContentBlock { type: string; name?: string; input?: unknown; text?: string }
@@ -140,9 +136,7 @@ interface ChatRunResult {
 
 async function runChat(query: string, retryOnRateLimit = true): Promise<ChatRunResult> {
   const body = {
-    model: CHAT_MODEL,
-    max_tokens: CHAT_MAX_TOKENS,
-    temperature: CHAT_TEMPERATURE,
+    ...modelParams(MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
     tools: CHAT_EDIT_TOOLS,
     messages: [{ role: 'user', content: query }],
@@ -156,7 +150,7 @@ async function runChat(query: string, retryOnRateLimit = true): Promise<ChatRunR
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(60_000), // as production: adaptive thinking takes 10-20 s
   });
 
   if (res.status === 429 && retryOnRateLimit) {
@@ -171,7 +165,9 @@ async function runChat(query: string, retryOnRateLimit = true): Promise<ChatRunR
     throw new Error(`API error ${res.status}: ${detail}`);
   }
 
-  const data = await res.json() as { content?: ContentBlock[] };
+  const data = await res.json() as { content?: ContentBlock[]; stop_reason?: string };
+  // A refusal proposes nothing: score it as a failed run, not a crash.
+  if (data.stop_reason === 'refusal') return { edits: [], text: '[refusal]' };
   const blocks = data.content ?? [];
   const edits = parseProposedEdits(blocks);
   const text = blocks.filter(b => b.type === 'text').map(b => b.text ?? '').join(' ').trim();
@@ -309,7 +305,7 @@ const GREY = '\x1b[90m';
 const RESET = '\x1b[0m';
 
 console.log(`\n${BOLD}=== Chat Tool-Use (Form-Edit) Harness ===${RESET}\n`);
-console.log(`Model:       ${CHAT_MODEL}`);
+console.log(`Model:       ${MODEL}`);
 console.log(`Cases:       ${CASES.length}`);
 console.log(`Runs each:   ${runs} (majority pass)`);
 console.log(`Concurrency: ${concurrency}\n`);

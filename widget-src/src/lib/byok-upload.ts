@@ -20,13 +20,13 @@
  */
 import {
   EXTRACTION_MAX_TOKENS,
-  EXTRACTION_MODEL,
   UNIFIED_SYSTEM_PROMPT,
   extractJsonObject,
   pagesToContentBlocks,
   parseUnifiedResult,
   toUnifiedResult,
 } from '@roadmap/health-core/lab-extraction';
+import { EXTRACTION_MODEL } from '@roadmap/health-core/models';
 import { getAnthropicKey } from './byok-chat';
 import { ByokAnthropicError, callAnthropicDirect, type ByokErrorCode } from './byok-anthropic';
 import type { BatchPollResponse, LabImportResult, PageContent, UploadErrorCode } from './api-types';

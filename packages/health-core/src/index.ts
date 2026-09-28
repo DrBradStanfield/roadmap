@@ -219,7 +219,7 @@ export {
   PROPOSE_FIELD_EDIT_TOOL,
   PROPOSE_MEDICATION_EDIT_TOOL,
   CHAT_EDIT_TOOLS,
-  PREFILL_ACK_MESSAGE,
+  toolOnlyAck,
   parseProposedEdit,
   parseProposedEdits,
   type EditableField,

@@ -36,10 +36,12 @@ import {
   buildSystemBlocks,
   buildConversationMessages,
   getChatCompletion,
+  reportChatFallback,
   loadBlogArticle,
   loadMatchedArticlesFromHandles,
   DOCTOR_POSTURE,
   CHAT_MODEL,
+  type ChatCompletionResult,
 } from './chat.server';
 import type { AnthropicUsage } from './anthropic.server';
 
@@ -650,6 +652,7 @@ async function persistYouTubeTurn(p: {
       classification: outcome.classification ?? 'ERROR',
       router_skipped: outcome.routerSkipped ?? false,
       is_fallback: outcome.isFallback ?? false,
+      failure_mode: outcome.failureMode ?? null,
     });
     if (evtErr) {
       Sentry.captureException(new Error('YouTube: match-event insert failed'), {
@@ -849,9 +852,37 @@ interface PipelineOutcome {
   llmOutput?: string;
   usage?: AnthropicUsage;
   isFallback?: boolean;
+  failureMode?: string;
 }
 
-async function runPipeline(
+/**
+ * How the main answer ends a turn. A fallback is transient (shouldUnclaim);
+ * a refusal is a decision (US-15 AC15): unclaiming it would, by the code,
+ * re-run the same comment every tick for up to 7 days, three model calls each
+ * time. A refusal sends the web chat's bounded Sentry warning.
+ */
+export function completionOutcome(completion: ChatCompletionResult, latencyMs: number): Pick<PipelineOutcome, 'posted' | 'skipReason' | 'isFallback' | 'failureMode' | 'replyText' | 'llmOutput'> {
+  if (completion.isRefusal) {
+    reportChatFallback({ completion, platform: 'youtube', latencyMs });
+    return { posted: false, skipReason: `main-LLM refusal (${completion.refusalCategory ?? 'other'})`, failureMode: 'refusal' };
+  }
+  if (completion.isFallback) {
+    const failureMode = completion.failureMode ?? 'unknown';
+    return { posted: false, skipReason: `main-LLM failure (${failureMode})`, isFallback: true, failureMode };
+  }
+  const replyText = completion.content.trim();
+  // SKIP_NO_REPLY is still a real, deliberate model decision — worth keeping as training signal.
+  if (replyText === 'SKIP_NO_REPLY') return { posted: false, skipReason: 'main-LLM returned SKIP_NO_REPLY', llmOutput: replyText };
+  return { posted: true, replyText, llmOutput: replyText };
+}
+
+/** Only a main-LLM failure is retried next tick; skips, GREETING and refusals keep the claim. */
+export function shouldUnclaim(outcome: Pick<PipelineOutcome, 'isFallback'>): boolean {
+  return outcome.isFallback === true;
+}
+
+/** Exported for tests. */
+export async function runPipeline(
   thread: YouTubeThread,
   entry: BlogIndexEntry,
   body: string,
@@ -885,37 +916,18 @@ async function runPipeline(
   // YouTube is a doctor-family surface (Brad's public channel) → strict doctor posture.
   const systemBlocks = buildSystemBlocks(platformContext, { surfaceContext: DOCTOR_POSTURE, blogArticles });
   const conversationMessages = buildConversationMessages(history, thread.text);
-  const completion = await getChatCompletion(systemBlocks, conversationMessages);
+  const tBeforeLlm = Date.now();
+  // No form here to apply an edit to, so no tools (US-15 AC19).
+  const completion = await getChatCompletion(systemBlocks, conversationMessages, false);
 
-  const base = {
+  return {
     classification: classifierResult.classification,
     routerHandles,
     routerResult,
     routerSkipped,
     usage: completion.usage,
+    ...completionOutcome(completion, Date.now() - tBeforeLlm),
   };
-
-  if (completion.isFallback) {
-    return {
-      ...base,
-      posted: false,
-      skipReason: `main-LLM failure (${completion.failureMode ?? 'unknown'})`,
-      isFallback: true,
-    };
-  }
-
-  const replyText = completion.content.trim();
-  if (replyText === 'SKIP_NO_REPLY') {
-    // Still a real, deliberate model decision — worth keeping as training signal.
-    return {
-      ...base,
-      posted: false,
-      skipReason: 'main-LLM returned SKIP_NO_REPLY',
-      llmOutput: replyText,
-    };
-  }
-
-  return { ...base, posted: true, replyText, llmOutput: replyText };
 }
 
 // ---------------------------------------------------------------------------
@@ -1011,7 +1023,7 @@ async function processFollowUps(
 
     if (!outcome.posted) {
       await persistYouTubeTurn({ thread: pseudoThread, outcome, postedYoutubeId: null, followUpCommentId: reply.id });
-      if (outcome.skipReason?.startsWith('main-LLM failure')) await unclaimComment(reply.id);
+      if (shouldUnclaim(outcome)) await unclaimComment(reply.id);
       skipped++;
       continue;
     }
@@ -1137,10 +1149,9 @@ async function tick(): Promise<void> {
 
       // Main-LLM failure (fallback path inside getChatCompletion) is transient —
       // un-claim so the next tick can retry once Anthropic recovers. Genuine
-      // SKIP_NO_REPLY / GREETING / blog-missing cases leave the claim intact so
-      // we don't waste LLM tokens re-evaluating the same comment.
-      const isTransient = outcome.skipReason?.startsWith('main-LLM failure');
-      if (isTransient) await unclaimComment(thread.topLevelCommentId);
+      // SKIP_NO_REPLY / GREETING / blog-missing / refusal cases leave the claim
+      // intact so we don't waste LLM tokens re-evaluating the same comment.
+      if (shouldUnclaim(outcome)) await unclaimComment(thread.topLevelCommentId);
       skippedThisTick++;
       continue;
     }

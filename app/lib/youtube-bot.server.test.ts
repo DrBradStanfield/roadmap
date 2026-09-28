@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as Sentry from '@sentry/react-router';
 import {
   assessThreadFollowUp,
   buildThreadHistory,
   addressReply,
   readPostingCaps,
+  completionOutcome,
+  shouldUnclaim,
   type YouTubeReply,
 } from './youtube-bot.server';
 
@@ -14,6 +17,7 @@ const supa = vi.hoisted(() => ({
   listRes: { data: [] as Array<{ video_id: string | null }> | null, error: null as unknown },
 }));
 
+vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('./supabase.server', () => ({
   supabaseAdmin: {
     from: () => ({
@@ -221,5 +225,49 @@ describe('US-27: posting-cap reads fail closed', () => {
       dailyCount: 7,
       videoPostCounts: new Map([['a', 2], ['b', 1]]),
     });
+  });
+});
+
+// US-15 AC15 (chat audit 2026-09-29 F2): a refusal is a decision, not a
+// transient failure. Read from the code, not observed in the logs: unclaiming
+// it would re-run the same comment every 30-minute tick for up to 7 days,
+// three model calls each time.
+describe('US-15 AC15: a refusal skips the comment and keeps the claim', () => {
+  const usage = { inputTokens: 1, outputTokens: 1, cacheCreationTokens: 0, cacheReadTokens: 0 };
+
+  it('a refusal is not posted, records its category, and is not unclaimed', () => {
+    const line = "I can't help with that here. Please raise it with your doctor or pharmacist.";
+    const outcome = completionOutcome({
+      content: line,
+      usage, isFallback: false, isRefusal: true, refusalCategory: 'general_harms', failureMode: 'refusal', stopReason: 'refusal',
+    }, 42);
+    expect(outcome.posted).toBe(false);
+    expect(outcome.failureMode).toBe('refusal');
+    // Adversary R11: the same bounded Sentry warning the web chat sends.
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('Chat: main-LLM refusal', {
+      level: 'warning',
+      tags: { feature: 'chat', subsystem: 'main-llm', platform: 'youtube', stopReason: 'refusal', refusalCategory: 'general_harms' },
+      extra: { latencyMs: 42, conversationId: null },
+    });
+    expect(JSON.stringify(vi.mocked(Sentry.captureMessage).mock.calls)).not.toContain(line);
+    expect(outcome.skipReason).toBe('main-LLM refusal (general_harms)');
+    expect(outcome.llmOutput).toBeUndefined();
+    expect(outcome.replyText).toBeUndefined();
+    expect(shouldUnclaim(outcome)).toBe(false);
+  });
+
+  it('a fallback is still unclaimed for retry next tick', () => {
+    const outcome = completionOutcome({ content: 'Sorry', usage, isFallback: true, failureMode: 'api-error' }, 1);
+    expect(outcome.posted).toBe(false);
+    expect(outcome.skipReason).toBe('main-LLM failure (api-error)');
+    expect(shouldUnclaim(outcome)).toBe(true);
+  });
+
+  it('SKIP_NO_REPLY keeps the claim; an answer is posted', () => {
+    const skip = completionOutcome({ content: ' SKIP_NO_REPLY ', usage, isFallback: false }, 1);
+    expect(skip).toMatchObject({ posted: false, llmOutput: 'SKIP_NO_REPLY' });
+    expect(shouldUnclaim(skip)).toBe(false);
+    expect(completionOutcome({ content: 'An answer. ', usage, isFallback: false }, 1))
+      .toMatchObject({ posted: true, replyText: 'An answer.', llmOutput: 'An answer.' });
   });
 });

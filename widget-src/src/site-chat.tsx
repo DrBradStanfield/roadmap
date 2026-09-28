@@ -12,7 +12,7 @@ import { ChatSection } from './components/ChatSection';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { loadGuestInputs } from './lib/storage';
 import { observeVisibility } from './lib/observe-visibility';
-import { resolveAssistantName, setAssistantName } from './lib/assistant-config';
+import { resolveAssistantName, setAssistantName, resolveChatSurface, setChatSurface } from './lib/assistant-config';
 import { initSentry } from './lib/sentry';
 import './styles.css';
 
@@ -212,6 +212,7 @@ function mount() {
   if (document.getElementById('health-tool-root')) return;
 
   setAssistantName(resolveAssistantName(container));
+  setChatSurface(resolveChatSurface(container));
 
   const isLoggedIn = container.dataset.loggedIn === 'true';
   const productTitle = container.dataset.productTitle;

@@ -136,7 +136,7 @@ describe('US-15 AC10: the chat reads the inputs the plan reads', () => {
     context = { weightKg: 82, unitSystem: 'si', medications: [], screenings: [] };
     act(() => result.current.actions.handleInputChange('What does my weight mean?'));
     await act(async () => { await result.current.actions.handleSend(); });
-    expect(vi.mocked(sendMessage)).toHaveBeenCalledWith('What does my weight mean?', null, context, []);
+    expect(vi.mocked(sendMessage)).toHaveBeenCalledWith('What does my weight mean?', null, context, [], expect.any(Function), false);
   });
 
   it('US-15 AC10: the blog chat bubble sends the saved values', async () => {

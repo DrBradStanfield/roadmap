@@ -21,7 +21,7 @@ import {
   shouldFireRouter,
   type Classification,
 } from './chat-classifier.server';
-import type { AnthropicUsage } from './anthropic.server';
+import type { AnthropicUsage, RefusalCategory } from './anthropic.server';
 
 export interface PlatformCompletionResult {
   content: string;
@@ -30,6 +30,10 @@ export interface PlatformCompletionResult {
    *  Callers must propagate to their persistence layer (chat_messages.is_fallback) AND
    *  to reportChatFallback() for the Sentry alert. */
   isFallback: boolean;
+  /** The model declined: content is the refusal line, which the caller posts as is. */
+  isRefusal?: boolean;
+  refusalCategory?: RefusalCategory;
+  stopReason?: string;
   failureMode?: ChatFailureMode;
   errorDetail?: string;
   /** Router-call result. null when the classifier said SKIP (router never ran). */
@@ -45,8 +49,7 @@ export interface PlatformCompletionResult {
 const DISCORD_PLATFORM_CONTEXT = `Platform: Discord — you are Dr Brad's AI assistant, running in Dr Brad Stanfield's Discord server.
 
 No individual health data is available for this user — they are chatting from
-Discord, not the Health Roadmap app. There is NO form to edit here — never call
-the propose_field_edit or propose_medication_edit tools; answer in words only.
+Discord, not the Health Roadmap app.
 
 Override the following default system prompt behaviours:
 - Refer to yourself as "Dr Brad's AI assistant" — NOT as "Health Roadmap community chat" or any community-chat phrasing.
@@ -89,12 +92,16 @@ export async function platformChatCompletion(params: {
   // Discord is a doctor-family surface (Brad's community) → strict doctor posture.
   const systemBlocks = buildSystemBlocks(DISCORD_PLATFORM_CONTEXT, { surfaceContext: DOCTOR_POSTURE, blogArticles });
   const conversationMessages = buildConversationMessages(history, message);
-  const completion = await getChatCompletion(systemBlocks, conversationMessages);
+  // No form here to apply an edit to, so no tools (US-15 AC19).
+  const completion = await getChatCompletion(systemBlocks, conversationMessages, false);
 
   return {
     content: completion.content,
     usage: completion.usage,
     isFallback: completion.isFallback,
+    isRefusal: completion.isRefusal,
+    refusalCategory: completion.refusalCategory,
+    stopReason: completion.stopReason,
     failureMode: completion.failureMode,
     errorDetail: completion.errorDetail,
     routerResult,

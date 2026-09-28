@@ -33,6 +33,9 @@ import path from 'path';
 // CLI args
 // ---------------------------------------------------------------------------
 
+/** The user saw a substituted line: a fallback, or a refusal (US-15 AC14: `is_fallback` false, `failure_mode` 'refusal'). */
+const servedFallback = (m: { is_fallback: boolean | null; failure_mode: string | null }) => m.is_fallback === true || m.failure_mode === 'refusal';
+
 const args = process.argv.slice(2);
 function getArg(flag: string, defaultValue: string): string {
   const idx = args.indexOf(flag);
@@ -78,8 +81,9 @@ interface Message {
    *  Column is NOT NULL DEFAULT FALSE (migration 2026-05-15), so SELECT always returns a boolean. */
   is_fallback: boolean;
   /** Fallback cause: 'api-error' (call threw — 5xx/timeout/network/no-text) or
-   *  'empty-response' (200 with whitespace-only content). Null on success and on
-   *  rows from before the 2026-06-11 column-add. */
+   *  'empty-response' (200 with whitespace-only content), or 'refusal' (the model
+   *  declined; `is_fallback` false, US-15 AC14). Null on success and on rows from
+   *  before the 2026-06-11 column-add. */
   failure_mode: string | null;
   /** Raw error string (truncated 500 chars) for api-error fallbacks. Null otherwise. */
   error_detail: string | null;
@@ -281,10 +285,10 @@ function renderConversations(messages: Message[], routingById: Map<string, Routi
 
     for (const msg of msgs) {
       const ts = new Date(msg.created_at).toISOString().slice(11, 19);
-      const isFallback = msg.role === 'assistant' && msg.is_fallback;
+      const isFallback = msg.role === 'assistant' && servedFallback(msg);
       const role = msg.role === 'user'
         ? '**User**'
-        : isFallback ? '**Assistant** · ⚠️ FALLBACK' : '**Assistant**';
+        : isFallback ? `**Assistant** · ⚠️ ${msg.failure_mode === 'refusal' ? 'REFUSAL' : 'FALLBACK'}` : '**Assistant**';
 
       // Truncate very long responses for readability
       const content = msg.content.length > 2000
@@ -494,7 +498,8 @@ function renderHtml(messages: Message[], routingById: Map<string, RoutingEvent>)
       const r = routingById.get(m.message_id);
       return r && r.router_error;
     });
-    const hasFallback = msgs.some(m => m.role === 'assistant' && m.is_fallback);
+    // Routing rows too: a YouTube refusal writes no assistant row, only its match event.
+    const hasFallback = msgs.some(servedFallback) || routing.some(r => r.conversation_id === convId && servedFallback(r));
     const hasRouterSkipped = msgs.some(m => {
       const r = routingById.get(m.message_id);
       return r && r.router_skipped === true;
@@ -504,7 +509,7 @@ function renderHtml(messages: Message[], routingById: Map<string, RoutingEvent>)
       const ts = new Date(msg.created_at).toISOString().slice(11, 19);
       const isUser = msg.role === 'user';
       const route = isUser ? routingById.get(msg.message_id) : null;
-      const isFallback = !isUser && msg.is_fallback;
+      const isFallback = !isUser && servedFallback(msg);
 
       let routerLine = '';
       if (route) {
@@ -535,7 +540,7 @@ function renderHtml(messages: Message[], routingById: Map<string, RoutingEvent>)
       }
 
       const fallbackBadge = isFallback
-        ? `<span class="fallback-badge" title="Main LLM failed or returned empty — this is the substituted fallback message">FALLBACK</span>`
+        ? `<span class="fallback-badge" title="Main LLM failed, returned empty or declined — this is the substituted line">${msg.failure_mode === 'refusal' ? 'REFUSAL' : 'FALLBACK'}</span>`
         : '';
 
       // Surface the captured cause so the reason is visible in the audit email
@@ -965,7 +970,7 @@ function renderHtml(messages: Message[], routingById: Map<string, RoutingEvent>)
         <span><strong>${webTurns}</strong> web user turns</span>
         <span><strong>${discordTurns}</strong> Discord user turns</span>
         <span><strong>${youtubeTurns}</strong> YouTube user turns</span>
-        ${messages.some(m => m.is_fallback) ? `<span><strong>${messages.filter(m => m.is_fallback).length}</strong> fallbacks</span>` : ''}
+        ${routing.some(servedFallback) ? `<span><strong>${routing.filter(servedFallback).length}</strong> fallbacks or refusals</span>` : ''}
         ${routing.some(r => r.router_skipped) ? `<span><strong>${routing.filter(r => r.router_skipped).length}</strong> router-skipped</span>` : ''}
       </span></p>
       <p class="triage-counter" id="counter">Reviewed: <strong>0 / ${messages.filter(m => m.role === 'assistant').length}</strong></p>
@@ -985,7 +990,7 @@ function renderHtml(messages: Message[], routingById: Map<string, RoutingEvent>)
           <option value="fail">Has ✗ failure</option>
         </select>
         <label><input type="checkbox" id="router-err-only"> Router errors only</label>
-        <label><input type="checkbox" id="fallback-only"> Fallbacks only</label>
+        <label><input type="checkbox" id="fallback-only"> Fallbacks and refusals only</label>
         <label><input type="checkbox" id="router-skipped-only"> Router-skipped only</label>
         <button type="button" class="export-btn" id="export-btn">Copy triage as markdown</button>
       </div>

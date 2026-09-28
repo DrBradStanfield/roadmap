@@ -36,6 +36,9 @@ export interface ChatFileMessage {
   role: 'user' | 'assistant';
   content: string;
   createdAt: string; // ISO
+  /** Assistant turns: a fallback or refusal line, never re-served. Optional and
+   *  set once at write: messages are immutable per id, so merge needs no rule. */
+  isFallback?: true;
 }
 
 export interface ChatFileConversation {

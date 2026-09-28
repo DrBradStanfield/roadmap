@@ -19,7 +19,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat } from './model-arm';
+import { CLASSIFIER_MODEL as PRODUCTION_CLASSIFIER_MODEL, getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat } from '../packages/health-core/src/models';
 const getArg = (flag: string, defaultValue: string) => getArgOf(args, flag, defaultValue);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -48,10 +48,12 @@ console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 
 // Prompt + model — loaded from the same file the server module reads.
 // ---------------------------------------------------------------------------
 
-// --model A/Bs a candidate against this default; --thinking-off applies to
-// Sonnet 5.5 only (see tools/model-arm.ts for its request-shape rules).
-const CLASSIFIER_MODEL = getArg('--model', 'claude-haiku-4-5-20251001');
-const thinkingOff = args.includes('--thinking-off');
+// --model A/Bs a candidate against the production pin. Thinking is off by
+// default, as production; --effort-low is the candidate arm (Sonnet 5 family
+// only, modelParams in health-core models.ts; --thinking-off is the default,
+// kept as an explicit flag).
+const CLASSIFIER_MODEL = getArg('--model', PRODUCTION_CLASSIFIER_MODEL);
+const thinkingOff = !args.includes('--effort-low');
 const callStats: CallStat[] = [];
 const apiErrors: string[] = [];
 
@@ -83,7 +85,7 @@ async function callClassifier(query: string): Promise<{ classification: Classifi
   const body = {
     // 8, as production sends (app/lib/chat-classifier.server.ts): 5 truncates
     // 'MEASUREMENT' on Sonnet 5.5 and measures the cap, not the classifier.
-    ...modelParams(CLASSIFIER_MODEL, 8, thinkingOff),
+    ...modelParams(CLASSIFIER_MODEL, 8, thinkingOff ? 'off' : 'low'),
     system: [
       { type: 'text', text: CLASSIFIER_PROMPT, cache_control: { type: 'ephemeral' } },
     ],

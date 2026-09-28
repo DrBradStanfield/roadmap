@@ -33,6 +33,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
 import { loadBlogIndex, findBlogByVideoId, type BlogIndexEntry } from '../app/lib/blog-index.server';
+import {
+  CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MODEL, ROUTER_MODEL, getArg as getArgOf, modelParams,
+} from '../packages/health-core/src/models';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,10 +47,7 @@ const CLAUDE_BUSINESS_TOOLS = '/Users/bradstanfield/Library/CloudStorage/Dropbox
 // ---------------------------------------------------------------------------
 
 const args = process.argv.slice(2);
-function getArg(flag: string, defaultValue: string): string {
-  const idx = args.indexOf(flag);
-  return idx >= 0 && args[idx + 1] ? args[idx + 1] : defaultValue;
-}
+const getArg = (flag: string, defaultValue: string) => getArgOf(args, flag, defaultValue);
 
 const videoArg = args.find(a => !a.startsWith('--')) ?? '';
 const limit = parseInt(getArg('--limit', '50'), 10);
@@ -85,10 +85,6 @@ const usingTestKey = !!process.env.ANTHROPIC_TEST_API_KEY;
 // ---------------------------------------------------------------------------
 // Load prompts + cached blocks (same files production reads)
 // ---------------------------------------------------------------------------
-
-const CLASSIFIER_MODEL = 'claude-haiku-4-5-20251001';
-const ROUTER_MODEL = 'claude-haiku-4-5-20251001';
-const MAIN_LLM_MODEL = 'claude-haiku-4-5-20251001';
 
 const CLASSIFIER_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-classifier-prompt.md'), 'utf-8');
 const ROUTER_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-router-prompt.md'), 'utf-8');
@@ -211,16 +207,17 @@ async function callAnthropic(body: object): Promise<{ ok: boolean; text: string;
     const errBody = await res.text().catch(() => '');
     return { ok: false, text: '', raw: { status: res.status, error: errBody.slice(0, 300) } };
   }
-  const data = await res.json() as { content?: Array<{ type: string; text?: string }> };
-  const text = data.content?.find(c => c.type === 'text')?.text ?? '';
+  const data = await res.json() as { content?: Array<{ type: string; text?: string }>; stop_reason?: string };
+  // A refusal is not an answer (US-15 AC14): production skips the comment.
+  if (data.stop_reason === 'refusal') return { ok: false, text: '', raw: { stop_reason: 'refusal' } };
+  // Thinking blocks come first on Sonnet; join every text block, as production does.
+  const text = (data.content ?? []).filter(c => c.type === 'text').map(c => c.text ?? '').join('');
   return { ok: true, text, raw: data };
 }
 
 async function classify(comment: string): Promise<{ classification: string; raw: string }> {
   const body = {
-    model: CLASSIFIER_MODEL,
-    max_tokens: 5,
-    temperature: 0,
+    ...modelParams(CLASSIFIER_MODEL, 8), // 8, as production: 5 truncates MEASUREMENT
     system: [{ type: 'text', text: CLASSIFIER_PROMPT, cache_control: { type: 'ephemeral' } }],
     messages: [{ role: 'user', content: `(new conversation, no prior turns)\n\nCurrent message: ${comment}\n\nClassification:` }],
   };
@@ -233,9 +230,7 @@ async function classify(comment: string): Promise<{ classification: string; raw:
 
 async function routeQuery(comment: string): Promise<{ handles: string[]; raw: string; error: string | null }> {
   const body = {
-    model: ROUTER_MODEL,
-    max_tokens: 200,
-    temperature: 0,
+    ...modelParams(ROUTER_MODEL, 200),
     system: [
       { type: 'text', text: ROUTER_PROMPT, cache_control: { type: 'ephemeral' } },
       { type: 'text', text: ROUTER_INDEX_BLOCK, cache_control: { type: 'ephemeral' } },
@@ -313,9 +308,7 @@ async function callMainLLM(comment: string, blogPost: BlogPost, matchedHandles: 
   }
 
   const body = {
-    model: MAIN_LLM_MODEL,
-    max_tokens: 800,
-    temperature: 0.3,
+    ...modelParams(CHAT_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: [...cachedBlocks, ...perRequestBlocks],
     messages: [{ role: 'user', content: comment }],
   };
@@ -497,7 +490,7 @@ function renderHTML(results: DryRunResult[], blogPost: BlogPost): string {
 </style>
 </head><body>
 <h1>YouTube comment dry-run</h1>
-<div class="subtitle">Video: <a href="https://youtu.be/${VIDEO_ID}">${escapeHtml(blogPost.title)}</a> · Blog: <code>${escapeHtml(blogPost.slug)}.md</code> · Model: ${MAIN_LLM_MODEL}</div>
+<div class="subtitle">Video: <a href="https://youtu.be/${VIDEO_ID}">${escapeHtml(blogPost.title)}</a> · Blog: <code>${escapeHtml(blogPost.slug)}.md</code> · Model: ${CHAT_MODEL}</div>
 
 <div class="summary">
   <strong>Summary</strong>
@@ -543,7 +536,7 @@ async function main() {
   const RESET = '\x1b[0m', BOLD = '\x1b[1m', GREY = '\x1b[90m';
   console.log(`${BOLD}=== YouTube comment dry-run ===${RESET}`);
   console.log(`Video ID:     ${VIDEO_ID}`);
-  console.log(`Anthropic key: ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY' : 'ANTHROPIC_API_KEY (prod-shared)'}`);
+  console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 'ANTHROPIC_API_KEY (production key — billing shared with prod)'}`);
 
   console.log(`${GREY}Looking up blog post...${RESET}`);
   const blogPost = loadBlogPostForVideo(VIDEO_ID);

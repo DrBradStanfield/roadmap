@@ -854,6 +854,8 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 --    daily audit email is self-diagnosing instead of requiring a Sentry lookup.
 --    failure_mode ∈ {'api-error','empty-response'}; error_detail is the raw error
 --    (truncated to 500 chars in the app before insert). Both NULL on success.
+--    'refusal' (2026-09-29, US-15 AC14): the model declined; is_fallback stays
+--    FALSE and the row holds the fixed refusal line. Free text, no migration.
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_fallback BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS failure_mode TEXT;
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS error_detail TEXT;

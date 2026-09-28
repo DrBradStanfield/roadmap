@@ -96,6 +96,27 @@ describe('chat-api on the local-first widget (US-15 AC7)', () => {
     expect(result?.isFallback).toBe(true);
   });
 
+  it('treats the server\'s refusal line like a fallback: never re-served (US-15 AC14)', async () => {
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ success: true, conversationId: 'c1', messageId: null, content: "I can't help with that request.", isRefusal: true, isFallback: true }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    const { result } = await sendMessage('q', 'c1', null, []);
+    expect(result?.content).toBe("I can't help with that request.");
+    expect(result?.isFallback).toBe(true);
+  });
+
+  // Codex R1 / adversary R10: the flag must survive a reload from the cloud file.
+  it('records a fallback or refusal turn as isFallback in the cloud history; an answer carries no flag', async () => {
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ success: true, conversationId: 'c1', messageId: null, content: 'Sorry', isFallback: true }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    await sendMessage('q', 'c1', null, []);
+    await sendMessage('q2', 'c1', null, []);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(store.recordExchange).toHaveBeenCalledWith(expect.objectContaining({ assistantText: 'Sorry', isFallback: true }));
+    store.recordExchange.mockClear();
+    fetchMock.mockImplementation(async () => ok());
+    await sendMessage('q3', 'c1', null, []);
+    await new Promise((r) => setTimeout(r, 0));
+    expect((store.recordExchange.mock.calls[0] as unknown[])[0]).not.toHaveProperty('isFallback');
+  });
+
   it('deletes in the user\'s own file only — the server holds nothing to delete', async () => {
     expect(await deleteConversation('c1')).toBe(true);
     expect(store.deleteConversation).toHaveBeenCalledWith('c1');

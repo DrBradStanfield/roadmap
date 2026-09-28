@@ -19,9 +19,10 @@
  *   npx tsx tools/test-chatbot-matching.ts --category cardiovascular
  *   npx tsx tools/test-chatbot-matching.ts --variance-threshold 0.1
  *   npx tsx tools/test-chatbot-matching.ts --answer-check   # also test generated answers
+ *   npx tsx tools/test-chatbot-matching.ts --model <router id> [--thinking-off | --effort-low] --answer-model <answer id>
  *
  * --answer-check: for entries with must_mention/must_not_mention/max_length_chars,
- * also calls the main LLM (Haiku) with the full production context: blocks 1-3
+ * also calls the main LLM (CHAT_MODEL; --answer-model overrides) with the full production context: blocks 1-3
  * (system prompt + algorithm + products knowledge) PLUS matched pathway/blog content
  * loaded from the handles the router returned (block 4). The check runs N times
  * (matching --answer-check-runs, default = --runs) and requires majority pass so
@@ -47,7 +48,11 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat } from './model-arm';
+import {
+  CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, ROUTER_MODEL as PRODUCTION_ROUTER_MODEL,
+  getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat,
+} from '../packages/health-core/src/models';
+import { CHAT_EDIT_TOOLS } from '../packages/health-core/src/chat-edits';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -97,7 +102,8 @@ console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 
 // Does NOT load user data (per-user, would require a fake profile).
 // ---------------------------------------------------------------------------
 
-const ANSWER_MODEL = 'claude-haiku-4-5-20251001';
+// --answer-model qualifies a candidate answer model; the body shape follows its family.
+const ANSWER_MODEL = getArg('--answer-model', CHAT_MODEL);
 let ANSWER_SYSTEM_CONTEXT = '';
 let apiErrorCount = 0;
 
@@ -119,11 +125,13 @@ if (answerCheckMode) {
 // Shared sources — read the same files chat-router.server.ts uses
 // ---------------------------------------------------------------------------
 
-// --model A/Bs a candidate against this default; --thinking-off applies to
-// Sonnet 5.5 only (see tools/model-arm.ts for its request-shape rules).
-// Stats cover suite calls only; the warmup call is excluded.
-const ROUTER_MODEL = getArg('--model', 'claude-haiku-4-5-20251001');
-const thinkingOff = args.includes('--thinking-off');
+// --model A/Bs a candidate router against the production pin. Thinking is
+// off by default, as production; --effort-low is the candidate arm (Sonnet 5
+// family only, modelParams in health-core models.ts; --thinking-off is the
+// default, kept as an explicit flag). Stats cover suite calls only; the
+// warmup call is excluded.
+const ROUTER_MODEL = getArg('--model', PRODUCTION_ROUTER_MODEL);
+const thinkingOff = !args.includes('--effort-low');
 const callStats: CallStat[] = [];
 
 interface BlogIndexEntry {
@@ -248,7 +256,7 @@ interface RouteResult {
 async function routeQuery(currentMessage: string, retryOnRateLimit = true, record = true): Promise<RouteResult> {
   const t0 = Date.now();
   const body = {
-    ...modelParams(ROUTER_MODEL, 200, thinkingOff),
+    ...modelParams(ROUTER_MODEL, 200, thinkingOff ? 'off' : 'low'),
     system: [
       { type: 'text', text: ROUTER_PROMPT, cache_control: { type: 'ephemeral' } },
       { type: 'text', text: ROUTER_INDEX_BLOCK, cache_control: { type: 'ephemeral' } },
@@ -366,10 +374,9 @@ async function checkAnswer(query: string, mustMention: string[], mustNotMention:
     ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
     : ANSWER_SYSTEM_CONTEXT;
   const body = {
-    model: ANSWER_MODEL,
-    max_tokens: 800,
-    temperature: 0,
+    ...modelParams(ANSWER_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system,
+    tools: CHAT_EDIT_TOOLS, // as production: the tools change what the model writes
     messages: [{ role: 'user', content: query }],
   };
 
@@ -381,7 +388,8 @@ async function checkAnswer(query: string, mustMention: string[], mustNotMention:
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(30_000),
+    // As production (callAnthropicWithUsage): thinking makes an answer take 10-20 s.
+    signal: AbortSignal.timeout(60_000),
   });
 
   if (res.status === 429 && retryOnRateLimit) {
@@ -397,8 +405,12 @@ async function checkAnswer(query: string, mustMention: string[], mustNotMention:
     return { passed: false, failures: [`API error ${res.status}: ${detail}`], response: '' };
   }
 
-  const data = await res.json() as { content?: Array<{ type: string; text?: string }> };
-  const response = data.content?.find(c => c.type === 'text')?.text ?? '';
+  const data = await res.json() as { content?: Array<{ type: string; text?: string }>; stop_reason?: string; stop_details?: { category?: string } | null };
+  if (data.stop_reason === 'refusal') {
+    return { passed: false, failures: [`refusal (${data.stop_details?.category ?? 'no category'})`], response: '' };
+  }
+  // Thinking blocks come first on Sonnet; join every text block, as production does.
+  const response = (data.content ?? []).filter(c => c.type === 'text').map(c => c.text ?? '').join('');
   const lower = response.toLowerCase();
 
   const failures: string[] = [];
@@ -490,6 +502,7 @@ console.log(`Index:       ${BLOG_INDEX.length} entries`);
 console.log(`Queries:     ${filtered.length}`);
 console.log(`Runs each:   ${runs}`);
 console.log(`Concurrency: ${concurrency}`);
+if (answerCheckMode) console.log(`Answer model: ${ANSWER_MODEL}`);
 console.log(`Threshold:   ≤${(varianceThreshold * 100).toFixed(0)}% variance\n`);
 
 // Warm the prompt cache with one call before running the suite. First call

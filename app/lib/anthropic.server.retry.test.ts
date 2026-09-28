@@ -327,3 +327,61 @@ describe('extraction failures carry no document text', () => {
     expect(JSON.stringify(error, Object.getOwnPropertyNames(error))).not.toContain(SENTINEL);
   });
 });
+
+// US-15 AC14 (chat audit 2026-09-29 F2): a 200 can carry stop_reason "refusal"
+// with partial or no text. It is its own outcome, never "No text in Anthropic
+// response"; the partial text is dropped; the category is a closed set.
+describe('US-15 AC14: stop_reason is returned; a refusal is a distinct result', () => {
+  afterEach(() => {
+    global.fetch = REAL_FETCH;
+    vi.clearAllMocks();
+  });
+
+  function stopped(stop_reason: string, content: unknown[], stop_details: unknown = null) {
+    return okResponse({ content, stop_reason, stop_details, usage: { input_tokens: 10, output_tokens: 5 } });
+  }
+
+  it('returns a refusal with its category and drops any partial text', async () => {
+    global.fetch = vi.fn().mockResolvedValue(stopped(
+      'refusal',
+      [{ type: 'text', text: 'Partial answer that must not reach anyone' }],
+      { type: 'refusal', category: 'bio', explanation: 'free text that must not leave the process' },
+    )) as unknown as typeof fetch;
+
+    const result = await callAnthropicWithUsage({ model: 'x' });
+    expect(result.stopReason).toBe('refusal');
+    expect(result.refusalCategory).toBe('bio');
+    expect(result.content).toBe('');
+    expect(result.contentBlocks).toEqual([]);
+    expect(JSON.stringify(result)).not.toContain('free text');
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it('returns an empty refusal (the usual shape) instead of throwing "No text"', async () => {
+    global.fetch = vi.fn().mockResolvedValue(stopped('refusal', [], { type: 'refusal', category: 'general_harms' })) as unknown as typeof fetch;
+    const result = await callAnthropicWithUsage({ model: 'x' });
+    expect(result.stopReason).toBe('refusal');
+    expect(result.refusalCategory).toBe('general_harms');
+  });
+
+  it('bounds the category: unknown or missing becomes "other"', async () => {
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce(stopped('refusal', [], { type: 'refusal', category: 'something-new <script>' }))
+      .mockResolvedValueOnce(stopped('refusal', [], null)) as unknown as typeof fetch;
+    expect((await callAnthropicWithUsage({ model: 'x' })).refusalCategory).toBe('other');
+    expect((await callAnthropicWithUsage({ model: 'x' })).refusalCategory).toBe('other');
+  });
+
+  it('returns a max_tokens stop with its text and the stop reason', async () => {
+    global.fetch = vi.fn().mockResolvedValue(stopped('max_tokens', [{ type: 'text', text: 'cut off mid' }])) as unknown as typeof fetch;
+    const result = await callAnthropicWithUsage({ model: 'x' });
+    expect(result.stopReason).toBe('max_tokens');
+    expect(result.content).toBe('cut off mid');
+    expect(result.refusalCategory).toBeUndefined();
+  });
+
+  it('extraction treats a refusal as a failed call, not a document', async () => {
+    global.fetch = vi.fn().mockResolvedValue(stopped('refusal', [], { type: 'refusal', category: 'other' })) as unknown as typeof fetch;
+    await expect(extractOrClassify([{ type: 'text', content: 'doc' }], { attempts: 1 })).rejects.toThrow('Anthropic refusal');
+  });
+});

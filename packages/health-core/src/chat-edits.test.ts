@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import {
   parseProposedEdit,
   parseProposedEdits,
+  toolOnlyAck,
   EDITABLE_FIELDS,
   PROPOSE_FIELD_EDIT_TOOL,
   PROPOSE_MEDICATION_EDIT_TOOL,
@@ -195,5 +196,23 @@ describe('tools/test-tool-edits.json fixture is self-consistent', () => {
         }
       }
     }
+  });
+});
+
+// US-16 / chat audit F5: a tool-only turn gets a line that matches what happened.
+// Medication edits save at once (undo banner); measurements wait for Save.
+describe('toolOnlyAck', () => {
+  const field = parseProposedEdit(FIELD, { field: 'ldlC', value: 2.1, unit: 'mmol/L' })!;
+  const med = parseProposedEdit(MED, { medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg' })!;
+  it('measurements only: review the highlighted value and press Save', () => {
+    expect(toolOnlyAck([field])).toBe("I've pre-filled that in your form — review the highlighted value and press Save.");
+  });
+  it('medication only: says it is done and points at the undo banner, never "press Save"', () => {
+    expect(toolOnlyAck([med])).toBe("Done — I've updated your medications. You can undo this from the banner.");
+  });
+  it('mixed: covers both the Save and the undo', () => {
+    const line = toolOnlyAck([field, med]);
+    expect(line).toContain('press Save');
+    expect(line).toContain('undo');
   });
 });

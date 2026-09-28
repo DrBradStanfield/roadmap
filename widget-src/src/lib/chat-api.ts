@@ -28,7 +28,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   createdAt: string;
-  /** Assistant turns only: the server substituted its fallback text. */
+  /** Assistant turns only: the server substituted its own text (a fallback or a refusal line), never re-served. */
   isFallback?: boolean;
 }
 
@@ -38,9 +38,16 @@ export interface SendMessageResult {
   content: string;
   sessionToken?: string;
   isGuest?: boolean;
+  /** A fallback or refusal line: what streamed was not the answer; drop its thinking too. */
   isFallback?: boolean;
   /** Form edits the model proposed via tool_use (pre-fill the form / update meds). */
   proposedEdits?: ProposedEdit[];
+}
+
+/** A streamed delta (US-15 AC16/AC17): the model's thinking summary or the answer text. */
+export interface ChatDelta {
+  type: 'thinking' | 'text';
+  text: string;
 }
 
 export interface ChatListResult {
@@ -250,6 +257,48 @@ export async function loadConversation(conversationId: string): Promise<ChatMess
   }
 }
 
+/**
+ * Read an NDJSON answer (US-15 AC16): hand each delta to `onDelta` and return
+ * the `done` line, which is the JSON the non-streamed reply would have been.
+ * The body decides, not the header (a proxy can rewrite it): a first line
+ * that is not `{"type":…` returns null, as a non-JSON reply always has.
+ * A stream that ends without `done` throws, so the caller reports a network error.
+ */
+async function readChatStream(response: Response, onDelta: (delta: ChatDelta) => void): Promise<any> {
+  if (!response.body) return null;
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let first = true;
+  for (;;) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done }) + (done ? '\n' : '');
+    let newline: number;
+    while ((newline = buffer.indexOf('\n')) >= 0) {
+      const line = buffer.slice(0, newline).trim();
+      buffer = buffer.slice(newline + 1);
+      if (!line) continue;
+      if (first && !/^\{\s*"type"\s*:/.test(line)) {
+        await reader.cancel().catch(() => {});
+        return null;
+      }
+      first = false;
+      // A fixed message: V8 quotes the offending input in its SyntaxError, and
+      // a corrupted line can hold answer or thinking text, which must not
+      // reach the Sentry capture below (the server scrubs the same case).
+      let event;
+      try { event = JSON.parse(line); } catch { throw new Error('Chat stream line was not JSON'); }
+      if (event.type === 'done') {
+        await reader.cancel().catch(() => {});
+        const { type: _type, ...reply } = event;
+        return reply;
+      }
+      if (event.type === 'thinking' || event.type === 'text') onDelta({ type: event.type, text: String(event.text) });
+    }
+    if (done) throw new Error('Chat stream ended without an answer');
+  }
+}
+
 /** Same window as the server's chat-dedup.server.ts. */
 const DEDUP_WINDOW_MS = 60_000;
 
@@ -266,6 +315,9 @@ export async function sendMessage(
   conversationId?: string | null,
   guestInputs?: Record<string, unknown> | null,
   history: ChatMessage[] = [],
+  onDelta: (delta: ChatDelta) => void = () => {},
+  // Only the widget's own chat applies form edits, so only it asks for the tools (US-15 AC19).
+  canApplyEdits = false,
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
   if (LOCAL_FIRST && conversationId) {
     const [prevUser, prevAssistant] = history.slice(-2);
@@ -286,12 +338,21 @@ export async function sendMessage(
           ...(guestInputs ? { guestInputs } : {}),
           ...(LOCAL_FIRST ? { history: history.slice(-MAX_HISTORY_MESSAGES).map(({ role, content }) => ({ role, content })) } : {}),
           ...chatBodyParts(),
+          stream: true,
+          ...(canApplyEdits ? { canApplyEdits: true } : {}),
         }),
       },
       Boolean(conversationId),
     );
 
-    const data = await parseJsonResponse<any>(response);
+    // The server streams when it can; a JSON reply (an older server, an
+    // error status) takes the unstreamed path unchanged. Any other 200 is
+    // read by its body: a proxy may have rewritten the type. A stream cut
+    // off before `done` is not retried (US-15 AC16): the server finishes and
+    // stores the turn after a disconnect, so a retry would store it twice.
+    const data = response.ok && !(response.headers.get('content-type') ?? '').includes('application/json')
+      ? await readChatStream(response, onDelta)
+      : await parseJsonResponse<any>(response);
 
     // Persist guest session token if returned
     if (data?.sessionToken) setGuestSessionToken(data.sessionToken);
@@ -331,6 +392,7 @@ export async function sendMessage(
           userText: message,
           assistantText: data.content,
           assistantMessageId: data.messageId,
+          ...(data.isFallback === true ? { isFallback: true } : {}),
         }),
       )
       .catch(() => {});

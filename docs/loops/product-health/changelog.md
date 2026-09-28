@@ -4,6 +4,12 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-09-29 (orchestrator session, chat audit §4.3): Gather adds the
+  newer-Sonnet check. `tools/check-newer-model.ts` exits 10 when a Sonnet
+  newer than the `models.ts` pin exists; the run qualifies it with the four
+  harnesses and opens the pin-bump `claude/` PR (its one Tier 3 PR). Replaces
+  a boot-time "newest Sonnet" pick, rejected in the audit. Net +9 lines
+  (`wc -l -c`: 128 8179 → 137 8825; cap 200 / 25KB).
 - 2026-09-27 (Brad-directed, after the W39 run): three edits from the W39
   retro. Orient 4 reads the week's sibling-loop reports first (sentry-fix had
   the GitHub account flag on 09-20; this loop learned it from Gmail a week

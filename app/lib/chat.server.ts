@@ -11,37 +11,32 @@ import path from 'path';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { SUGGESTION_EVIDENCE } from '../../packages/health-core/src/evidence';
 import { buildChatContextJson } from '../../packages/health-core/src/chat-context';
-import { CHAT_EDIT_TOOLS, PREFILL_ACK_MESSAGE, parseProposedEdits, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
-import { callAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicUsage } from './anthropic.server';
+import { CHAT_EDIT_TOOLS, parseProposedEdits, toolOnlyAck, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
+import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicStreamEvent, type AnthropicUsage, type RefusalCategory } from './anthropic.server';
+import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, modelParams } from '../../packages/health-core/src/models';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-// The main answer runs on Sonnet 5; the classifier and router stay on Haiku 4.5
-// (a 1-token label and a handle list — exactly Haiku's job). The failures the
-// 2026-08-06 audit found were reasoning/self-check failures in the ANSWER —
-// fabricated citation identifiers, an invented acronym expansion — which is the
-// hop worth upgrading. At this volume the delta is ~$2/month.
+// The main answer runs on Sonnet 5.5 (CHAT_MODEL, pinned in health-core
+// models.ts with every other hop); the classifier and router stay on Haiku 4.5.
+// The 2026-08-06 audit's failures were self-check failures in the ANSWER
+// (fabricated citation ids), so the answer is the hop worth the better model;
+// 5.5 reasons better than Sonnet 5 at the same price and tokenizer.
 //
-// Sonnet 5 request-shape rules (differ from Haiku — do not copy between them):
-//   • NO `temperature`/`top_p`/`top_k` — non-default sampling params return 400.
-//   • Adaptive thinking is ON by default. Kept on deliberately: thinking is
-//     where the self-check happens ("do I actually have a DOI for this in
-//     context?"), and disabling it also makes Sonnet 5 less likely to reach for
-//     tools — this bot proposes medication/measurement edits via tools.
-//     `effort: medium` keeps latency sane (default is `high`).
-//   • `max_tokens` caps thinking + answer TOGETHER, so it is raised: replies run
-//     ~440 median / ~1230 max output tokens, and 2048 left no room to think.
-/**
- * Exported so every persistence path tags rows with the model that ACTUALLY
- * answered. Discord previously hard-coded its own `CHAT_MODEL_TAG` constant,
- * which silently kept saying 'claude-haiku-4-5-20251001' after the Sonnet 5
- * cutover — mislabelling exactly the data we want to train on. Never re-declare
- * this string locally; import it.
- */
-const CHAT_MODEL = 'claude-sonnet-5';
-const CHAT_MAX_TOKENS = 4096;
+// Request shape (modelParams; differs from Haiku, never copy between them):
+//   • No `temperature`/`top_p`/`top_k`: non-default sampling params return 400.
+//   • Adaptive thinking at effort medium: thinking is the self-check ("do I
+//     have a DOI for this in context?"). `display: 'summarized'` lets a stream
+//     show it later. `max_tokens` caps thinking plus answer together.
+//   • On 5.5, text written before a tool call can come back as a `thinking`
+//     block, not `text` (with `display: 'summarized'` that block carries a
+//     summary; it is not empty): a form-edit turn with no `text` then shows
+//     toolOnlyAck (below).
+//   • A refusal returns 200 with `stop_reason: 'refusal'`: its own outcome.
+// Persistence paths tag rows with CHAT_MODEL re-exported from here; never
+// re-declare the string locally (Discord once did, and mislabelled its rows).
 const MAX_MESSAGE_LENGTH = 500;
 const HISTORY_TOKEN_BUDGET = 8000;
 const MAX_BLOG_CHARS = 80_000; // ~20K tokens — cap on combined blog articles in context
@@ -454,7 +449,20 @@ export function buildConversationMessages(
 export const FALLBACK_RESPONSE =
   "Sorry — I'm having trouble responding right now. Please try again, or email brad@drstanfield.com if it keeps happening.";
 
-export type ChatFailureMode = 'api-error' | 'empty-response';
+/**
+ * User-facing line when the model declines (US-15 AC14). Health-adjacent
+ * categories point to a clinician; the rest just decline. Fixed text: the
+ * model's partial answer is never shown.
+ */
+export const REFUSAL_RESPONSES = {
+  clinical: "I can't help with that here. Please raise it with your doctor or pharmacist.",
+  request: "I can't help with that request.",
+} as const;
+
+const refusalLine = (category: RefusalCategory) =>
+  category === 'bio' || category === 'general_harms' || category === 'other' ? REFUSAL_RESPONSES.clinical : REFUSAL_RESPONSES.request;
+
+export type ChatFailureMode = 'api-error' | 'empty-response' | 'refusal';
 
 /** Closed set for the Sentry `errorKind` tag. Derived from the error's shape, never its text. */
 export type ChatErrorKind = 'timeout' | 'http_5xx' | 'overloaded_529' | 'parse' | 'other';
@@ -463,7 +471,7 @@ export function classifyChatError(err: unknown): ChatErrorKind {
   if (isNetworkOrTimeoutError(err)) return 'timeout';
   if (err instanceof SyntaxError) return 'parse';
   const message = err instanceof Error ? err.message : '';
-  if (/\(status 529\)/.test(message)) return 'overloaded_529';
+  if (/\(status 529\)|\(overloaded_error\)/.test(message)) return 'overloaded_529';
   if (/\(status 5\d\d\)/.test(message)) return 'http_5xx';
   if (message === 'No text in Anthropic response') return 'parse';
   return 'other';
@@ -474,7 +482,12 @@ export interface ChatCompletionResult {
   usage: AnthropicUsage;
   /** True when the LLM call failed or returned empty and we substituted the fallback message. */
   isFallback: boolean;
-  /** Populated only when isFallback is true. */
+  /** True when the model declined: content is a REFUSAL_RESPONSES line. Not a fallback. */
+  isRefusal?: boolean;
+  refusalCategory?: RefusalCategory;
+  /** The API's stop_reason; absent when the call failed. */
+  stopReason?: string;
+  /** Set on a fallback, and 'refusal' on a refusal. */
   failureMode?: ChatFailureMode;
   /** Error detail for the conversation failure record; never sent to Sentry. */
   errorDetail?: string;
@@ -484,23 +497,46 @@ export interface ChatCompletionResult {
   proposedEdits?: ProposedEdit[];
 }
 
+/**
+ * With `onEvent` the answer streams (the web chat, US-15 AC16/AC17); the
+ * result is the same either way. Deltas already sent are not the answer on a
+ * refusal or a fallback: the reply goes out with `isFallback: true`, and the
+ * client replaces them with its content.
+ *
+ * `canApplyEdits`: the form tools go only to a client that applies them (the
+ * widget's own chat, US-15 AC19). `tools` render before `system`, so the two
+ * request shapes share no prompt-cache prefix and cache separately.
+ */
 export async function getChatCompletion(
   systemBlocks: SystemBlock[],
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+  canApplyEdits: boolean,
+  onEvent?: (event: AnthropicStreamEvent) => void,
 ): Promise<ChatCompletionResult> {
   const body = {
-    model: CHAT_MODEL,
-    max_tokens: CHAT_MAX_TOKENS,
-    // No `temperature` — Sonnet 5 rejects non-default sampling params with a 400.
-    thinking: { type: 'adaptive' },
-    output_config: { effort: 'medium' },
+    ...modelParams(CHAT_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: systemBlocks,
-    tools: CHAT_EDIT_TOOLS,
+    ...(canApplyEdits ? { tools: CHAT_EDIT_TOOLS } : {}),
     messages,
   };
 
   try {
-    const result = await callAnthropicWithUsage(body);
+    const result = onEvent ? await streamAnthropicWithUsage(body, onEvent) : await callAnthropicWithUsage(body);
+    const { stopReason } = result;
+    if (stopReason === 'refusal') {
+      const refusalCategory = result.refusalCategory ?? 'other';
+      return {
+        content: refusalLine(refusalCategory),
+        usage: result.usage,
+        isFallback: false,
+        isRefusal: true,
+        refusalCategory,
+        stopReason,
+        failureMode: 'refusal',
+      };
+    }
+    // Truncated: keep the answer, add nothing the user sees, log the stop only.
+    if (stopReason === 'max_tokens') console.warn(JSON.stringify({ evt: 'chat_truncated', stopReason }));
     const proposedEdits = parseProposedEdits(result.contentBlocks);
     // Empty-response check: API returned 200 but no usable text. A tool-only
     // response (model proposed an edit with no prose) is NOT empty — give the
@@ -508,9 +544,10 @@ export async function getChatCompletion(
     if (!result.content || result.content.trim().length === 0) {
       if (proposedEdits.length > 0) {
         return {
-          content: PREFILL_ACK_MESSAGE,
+          content: toolOnlyAck(proposedEdits),
           usage: result.usage,
           isFallback: false,
+          stopReason,
           proposedEdits,
         };
       }
@@ -518,6 +555,7 @@ export async function getChatCompletion(
         content: FALLBACK_RESPONSE,
         usage: result.usage,
         isFallback: true,
+        stopReason,
         failureMode: 'empty-response',
       };
     }
@@ -525,6 +563,7 @@ export async function getChatCompletion(
       content: result.content,
       usage: result.usage,
       isFallback: false,
+      stopReason,
       ...(proposedEdits.length > 0 ? { proposedEdits } : {}),
     };
   } catch (err) {
@@ -553,18 +592,28 @@ const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  */
 export function reportChatFallback(params: {
   completion: ChatCompletionResult;
-  platform: 'shopify' | 'discord';
+  platform: 'shopify' | 'discord' | 'youtube';
   latencyMs: number;
   conversationId?: string | null;
 }): void {
-  if (!params.completion.isFallback) return;
-  const failureMode = params.completion.failureMode === 'api-error' ? 'api-error' : 'empty-response';
-  const tags = { feature: 'chat', subsystem: 'main-llm', failureMode, platform: params.platform };
+  const { completion } = params;
   // Accept only a UUID shape: anything else is not a join key and must not leave the process.
   const conversationId = UUID_SHAPE.test(params.conversationId ?? '') ? params.conversationId : null;
   const extra = { latencyMs: params.latencyMs, conversationId };
+  if (completion.isRefusal) {
+    // Bounded tags only: never the question, the partial answer or the API's explanation.
+    Sentry.captureMessage('Chat: main-LLM refusal', {
+      level: 'warning',
+      tags: { feature: 'chat', subsystem: 'main-llm', platform: params.platform, stopReason: 'refusal', refusalCategory: completion.refusalCategory ?? 'other' },
+      extra,
+    });
+    return;
+  }
+  if (!completion.isFallback) return;
+  const failureMode = completion.failureMode === 'api-error' ? 'api-error' : 'empty-response';
+  const tags = { feature: 'chat', subsystem: 'main-llm', failureMode, platform: params.platform };
   if (failureMode === 'api-error') {
-    const errorKind = params.completion.errorKind ?? 'other';
+    const errorKind = completion.errorKind ?? 'other';
     Sentry.captureException(new Error(`Chat: main-LLM API failure (${errorKind})`), {
       level: 'error', tags: { ...tags, errorKind }, extra,
     });

@@ -61,7 +61,7 @@ describe('chat failure telemetry', () => {
   it('does not log a provider error body in the lower-level chat request', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(secret, { status: 400 })));
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const completion = await getChatCompletion([], [{ role: 'user', content: secret }]);
+    const completion = await getChatCompletion([], [{ role: 'user', content: secret }], false);
     reportChatFallback({ completion, platform: 'discord', latencyMs: 10 });
     await Sentry.flush();
     expect(completion.isFallback).toBe(true);

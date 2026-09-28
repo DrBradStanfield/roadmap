@@ -7,6 +7,7 @@
 <div id="health-chat-root"
   data-logged-in="{% if customer %}true{% else %}false{% endif %}"
   data-assistant-name="{{ shop.metafields.health_roadmap.chat_assistant_name | default: 'Brad AI' | escape }}"
+  data-surface="{{ shop.metafields.health_roadmap.chat_surface | default: 'doctor' | escape }}"
   data-fab-label="{{ block.settings.fab_label | default: 'Need help? Ask here' | escape }}"
   {% if routes.account_login_url %}data-login-url="{{ routes.account_login_url }}"{% endif %}
   {% if product %}data-product-title="{{ product.title | escape }}"{% endif %}

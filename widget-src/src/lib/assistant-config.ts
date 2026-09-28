@@ -34,3 +34,25 @@ export function setAssistantName(name: string): void {
 export function getAssistantName(): string {
   return assistantName;
 }
+
+/**
+ * Which store the chat speaks for (US-15 AC12): `doctor` (drstanfield.com, the
+ * roadmap's plan wording) or `brand` (microvitamin.com, product wording). Read
+ * from `data-surface`, set by shop metafield `health_roadmap.chat_surface`;
+ * anything else is `doctor`. Same resolve/set/get pattern as the name above.
+ */
+export type ChatSurface = 'doctor' | 'brand';
+
+let chatSurface: ChatSurface = 'doctor';
+
+export function resolveChatSurface(root: HTMLElement | null): ChatSurface {
+  return root?.dataset.surface?.trim() === 'brand' ? 'brand' : 'doctor';
+}
+
+export function setChatSurface(surface: ChatSurface): void {
+  chatSurface = surface;
+}
+
+export function getChatSurface(): ChatSurface {
+  return chatSurface;
+}

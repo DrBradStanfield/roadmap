@@ -93,6 +93,8 @@ export class ChatHistoryStore {
     assistantText: string;
     /** Server-issued assistant message id, when there is one. */
     assistantMessageId?: string | null;
+    /** A fallback or refusal line: stored so the dedup never re-serves it after a reload. */
+    isFallback?: boolean;
   }): Promise<void> {
     const now = new Date().toISOString();
     const messages: ChatFileMessage[] = [
@@ -102,6 +104,7 @@ export class ChatHistoryStore {
         role: 'assistant',
         content: opts.assistantText,
         createdAt: now,
+        ...(opts.isFallback ? { isFallback: true as const } : {}),
       },
     ];
 

@@ -21,6 +21,7 @@ import {
   BRAND_POSTURE,
   getChatCompletion,
   reportChatFallback,
+  type ChatCompletionResult,
   generateTitle,
   CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
@@ -59,6 +60,33 @@ function readClientHistory(value: unknown): Turn[] {
     && typeof t.content === 'string' && t.content.length > 0)
     .map((t) => ({ role: t.role, content: t.content.slice(0, MAX_HISTORY_TURN_CHARS) }));
   return turns.slice(Math.max(0, turns.findIndex((t) => t.role === 'user')));
+}
+
+/**
+ * An NDJSON reply (US-15 AC16): one JSON object per line, written as `run`
+ * produces them. The status is sent before the answer exists, so a failure
+ * inside `run` ends the stream with an error `done` line instead. A reader
+ * that went away does not stop the turn: `run` still finishes and persists.
+ * `no-transform` keeps proxies from buffering the stream to compress it.
+ */
+function streamTurn(run: (write: (line: object) => void) => Promise<void>): Response {
+  const encoder = new TextEncoder();
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const write = (line: object) => {
+        try { controller.enqueue(encoder.encode(JSON.stringify(line) + '\n')); } catch { /* reader gone */ }
+      };
+      void run(write)
+        .catch(() => {
+          reportChatError('Chat: Action failed');
+          write({ type: 'done', success: false, error: 'Failed to process message' });
+        })
+        .finally(() => { try { controller.close(); } catch { /* reader gone */ } });
+    },
+  });
+  return new Response(body, {
+    headers: { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-store, no-transform', 'X-Accel-Buffering': 'no' },
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -324,7 +352,7 @@ export async function action({ request }: ActionFunctionArgs) {
     if (conversationId && !widget) {
       const { data: historyRows, error: historyError } = await auth.client
         .from('chat_messages')
-        .select('role, content, created_at, is_fallback')
+        .select('role, content, created_at, is_fallback, failure_mode')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
       if (historyError) reportChatError('Chat: Failed to load conversation history');
@@ -461,144 +489,174 @@ export async function action({ request }: ActionFunctionArgs) {
     const systemBlocks = buildSystemBlocks(context.userContextJson, { surfaceContext, documentContent, orderSummary, blogArticles });
     const conversationMessages = buildConversationMessages(history, message);
     const tBeforeLlm = Date.now();
-    const completion = await getChatCompletion(systemBlocks, conversationMessages);
-    const tAfterLlm = Date.now();
 
-    // The assistant message id doubles as the telemetry row's message_id on
-    // the stored surfaces; the widget has no message row, so null there.
-    const assistantMessageId = widget ? null : crypto.randomUUID();
+    // Everything after the answer, for both paths: telemetry, persistence,
+    // chat_timing, and the reply JSON. The streamed path runs it once the
+    // stream has completed and sends the JSON as its `done` line.
+    const finishTurn = (completion: ChatCompletionResult, streamed: boolean, firstTokenMs: number | null) => {
+      const tAfterLlm = Date.now();
 
-    reportChatFallback({
-      completion,
-      platform: 'shopify',
-      latencyMs: tAfterLlm - tBeforeLlm,
-      conversationId: activeConversationId,
-    });
+      // The assistant message id doubles as the telemetry row's message_id on
+      // the stored surfaces; the widget has no message row, so null there.
+      const assistantMessageId = widget ? null : crypto.randomUUID();
 
-    // Router telemetry, one row per answered turn. On the widget it is the ONLY
-    // row, trimmed to its whitelist in one place (redactForWidget).
-    const matchEvent = {
-      message_id: assistantMessageId,
-      conversation_id: activeConversationId,
-      user_id: auth.userId,
-      message: sanitizedCurrent,
-      router_context: {
+      reportChatFallback({
+        completion,
         platform: 'shopify',
-        first: sanitizedFirst ?? null,
-        recent: sanitizedRecent,
-      },
-      matched_handles: effectiveHandles,
-      router_version: routerResult ? ROUTER_VERSION : null,
-      router_latency_ms: routerResult?.latencyMs ?? null,
-      router_cache_hit: routerResult?.cacheHit ?? null,
-      router_input_tokens: routerResult?.usage.inputTokens ?? null,
-      router_cache_read_tokens: routerResult?.usage.cacheReadTokens ?? null,
-      router_raw: routerResult?.error ? (routerResult.rawJson?.slice(0, 500) ?? null) : null,
-      router_error: routerResult?.error ?? null,
-      classification: classifierResult.classification,
-      router_skipped: routerSkipped,
-      is_fallback: completion.isFallback,
-      failure_mode: completion.failureMode ?? null,
+        latencyMs: tAfterLlm - tBeforeLlm,
+        conversationId: activeConversationId,
+      });
+
+      // Router telemetry, one row per answered turn. On the widget it is the ONLY
+      // row, trimmed to its whitelist in one place (redactForWidget).
+      const matchEvent = {
+        message_id: assistantMessageId,
+        conversation_id: activeConversationId,
+        user_id: auth.userId,
+        message: sanitizedCurrent,
+        router_context: {
+          platform: 'shopify',
+          first: sanitizedFirst ?? null,
+          recent: sanitizedRecent,
+        },
+        matched_handles: effectiveHandles,
+        router_version: routerResult ? ROUTER_VERSION : null,
+        router_latency_ms: routerResult?.latencyMs ?? null,
+        router_cache_hit: routerResult?.cacheHit ?? null,
+        router_input_tokens: routerResult?.usage.inputTokens ?? null,
+        router_cache_read_tokens: routerResult?.usage.cacheReadTokens ?? null,
+        router_raw: routerResult?.error ? (routerResult.rawJson?.slice(0, 500) ?? null) : null,
+        router_error: routerResult?.error ?? null,
+        classification: classifierResult.classification,
+        router_skipped: routerSkipped,
+        is_fallback: completion.isFallback,
+        failure_mode: completion.failureMode ?? null,
+      };
+      const logMatchEvent = () => auth.client
+        .from('chat_match_events')
+        .insert(widget ? redactForWidget(matchEvent) : matchEvent)
+        .then(({ error: matchError }: { error: { message: string } | null }) => {
+          if (matchError) {
+            reportChatError('Chat: Match-event insert failed');
+          }
+        }).catch(() => reportChatError('Chat: Match-event insert failed'));
+
+      if (widget) {
+        logMatchEvent();
+      } else {
+        // Fire-and-forget: save the assistant message, then log the match event
+        // once its message_id names a row that exists.
+        auth.client
+          .from('chat_messages')
+          .insert({
+            id: assistantMessageId,
+            conversation_id: activeConversationId,
+            user_id: auth.userId,
+            role: 'assistant',
+            content: completion.content,
+            input_tokens: completion.usage.inputTokens,
+            output_tokens: completion.usage.outputTokens,
+            model: CHAT_MODEL,
+            is_fallback: completion.isFallback,
+            // Persist the fallback cause so the daily audit email is self-diagnosing
+            // (previously only sent to Sentry via reportChatFallback). Null on success.
+            failure_mode: completion.failureMode ?? null,
+            error_detail: completion.errorDetail?.slice(0, 500) ?? null,
+          })
+          .then(({ error: msgError }: { error: { message: string } | null }) => {
+            if (msgError) {
+              reportChatError('Chat: Failed to save assistant message');
+              return;
+            }
+            logMatchEvent();
+          }).catch(() => reportChatError('Chat: Failed to save assistant message'));
+
+        auth.client
+          .from('chat_conversations')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', activeConversationId)
+          .then(({ error: tsError }: { error: { message: string } | null }) => {
+            if (tsError) {
+              reportChatError('Chat: Failed to update conversation timestamp');
+            }
+          }).catch(() => reportChatError('Chat: Failed to update conversation timestamp'));
+      }
+
+      logAudit(auth.userId, 'CHAT_MESSAGE', 'chat', activeConversationId, {
+        cacheRead: completion.usage.cacheReadTokens,
+        cacheCreation: completion.usage.cacheCreationTokens,
+      });
+
+      console.log(JSON.stringify({
+        evt: 'chat_timing',
+        totalMs: Date.now() - t0,
+        contextMs: tAfterContext - t0,
+        preLlmMs: tBeforeLlm - t0,
+        llmMs: tAfterLlm - tBeforeLlm,
+        // Bounded: the API's stop_reason and, on a refusal, the closed category.
+        stopReason: completion.stopReason ?? null,
+        refusalCategory: completion.refusalCategory ?? null,
+        inputTokens: completion.usage.inputTokens,
+        outputTokens: completion.usage.outputTokens,
+        cacheReadTokens: completion.usage.cacheReadTokens,
+        cacheCreationTokens: completion.usage.cacheCreationTokens,
+        // Share of the prompt served from cache, 0–1. The three counters are
+        // DISJOINT — Anthropic's `input_tokens` excludes cache reads and cache
+        // writes — so the denominator is their sum, not inputTokens alone.
+        // (Dividing by inputTokens alone reported 8.63 on 2026-08-06.)
+        cacheHitRatio: Math.round(100 * completion.usage.cacheReadTokens / Math.max(1,
+          completion.usage.inputTokens + completion.usage.cacheReadTokens + completion.usage.cacheCreationTokens)) / 100,
+        routerMs: routerResult?.latencyMs ?? null,
+        routerCacheHit: routerResult?.cacheHit ?? null,
+        routerInputTokens: routerResult?.usage.inputTokens ?? null,
+        routerCacheReadTokens: routerResult?.usage.cacheReadTokens ?? null,
+        handleCount: routerResult?.handles.length ?? 0,
+        effectiveHandleCount: effectiveHandles.length,
+        routerError: !!routerResult?.error,
+        classifierMs: classifierResult.latencyMs,
+        classification: classifierResult.classification,
+        routerSkipped,
+        classifierError: !!classifierResult.error,
+        isGuest: auth.isGuest,
+        streamed,
+        // Ms from the LLM call to the first answer text; null when not streamed or no text came.
+        firstTokenMs,
+      }));
+
+      return {
+        success: true,
+        conversationId: activeConversationId,
+        messageId: null,
+        content: completion.content,
+        // The widget's own dedup never re-serves a fallback (US-15 AC3) or a
+        // refusal line (AC14): on the wire a refusal is a fallback too, and
+        // the client drops what streamed for either (AC16).
+        isFallback: completion.isFallback || completion.isRefusal === true,
+        ...(completion.isRefusal ? { isRefusal: true } : {}),
+        // Form edits the model proposed via tool_use (already validated server-side).
+        // Omitted on normal turns — additive, no impact on existing clients.
+        ...(completion.proposedEdits && completion.proposedEdits.length > 0
+          ? { proposedEdits: completion.proposedEdits }
+          : {}),
+        ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
+      };
     };
-    const logMatchEvent = () => auth.client
-      .from('chat_match_events')
-      .insert(widget ? redactForWidget(matchEvent) : matchEvent)
-      .then(({ error: matchError }: { error: { message: string } | null }) => {
-        if (matchError) {
-          reportChatError('Chat: Match-event insert failed');
-        }
-      }).catch(() => reportChatError('Chat: Match-event insert failed'));
 
-    if (widget) {
-      logMatchEvent();
-    } else {
-      // Fire-and-forget: save the assistant message, then log the match event
-      // once its message_id names a row that exists.
-      auth.client
-        .from('chat_messages')
-        .insert({
-          id: assistantMessageId,
-          conversation_id: activeConversationId,
-          user_id: auth.userId,
-          role: 'assistant',
-          content: completion.content,
-          input_tokens: completion.usage.inputTokens,
-          output_tokens: completion.usage.outputTokens,
-          model: CHAT_MODEL,
-          is_fallback: completion.isFallback,
-          // Persist the fallback cause so the daily audit email is self-diagnosing
-          // (previously only sent to Sentry via reportChatFallback). Null on success.
-          failure_mode: completion.failureMode ?? null,
-          error_detail: completion.errorDetail?.slice(0, 500) ?? null,
-        })
-        .then(({ error: msgError }: { error: { message: string } | null }) => {
-          if (msgError) {
-            reportChatError('Chat: Failed to save assistant message');
-            return;
-          }
-          logMatchEvent();
-        }).catch(() => reportChatError('Chat: Failed to save assistant message'));
-
-      auth.client
-        .from('chat_conversations')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', activeConversationId)
-        .then(({ error: tsError }: { error: { message: string } | null }) => {
-          if (tsError) {
-            reportChatError('Chat: Failed to update conversation timestamp');
-          }
-        }).catch(() => reportChatError('Chat: Failed to update conversation timestamp'));
+    // Only the widget's own chat applies form edits, so only it gets the tools (US-15 AC19).
+    const canApplyEdits = body.canApplyEdits === true;
+    // CHAT_STREAMING=false is the off switch: the client reads a JSON reply unchanged (AC16).
+    if (body.stream === true && process.env.CHAT_STREAMING !== 'false') {
+      return streamTurn(async (write) => {
+        let firstTokenMs: number | null = null;
+        const completion = await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, (event) => {
+          if (event.type === 'text' && firstTokenMs === null) firstTokenMs = Date.now() - tBeforeLlm;
+          write(event);
+        });
+        write({ type: 'done', ...finishTurn(completion, true, firstTokenMs) });
+      });
     }
 
-    logAudit(auth.userId, 'CHAT_MESSAGE', 'chat', activeConversationId, {
-      cacheRead: completion.usage.cacheReadTokens,
-      cacheCreation: completion.usage.cacheCreationTokens,
-    });
-
-    console.log(JSON.stringify({
-      evt: 'chat_timing',
-      totalMs: Date.now() - t0,
-      contextMs: tAfterContext - t0,
-      preLlmMs: tBeforeLlm - t0,
-      llmMs: tAfterLlm - tBeforeLlm,
-      inputTokens: completion.usage.inputTokens,
-      outputTokens: completion.usage.outputTokens,
-      cacheReadTokens: completion.usage.cacheReadTokens,
-      cacheCreationTokens: completion.usage.cacheCreationTokens,
-      // Share of the prompt served from cache, 0–1. The three counters are
-      // DISJOINT — Anthropic's `input_tokens` excludes cache reads and cache
-      // writes — so the denominator is their sum, not inputTokens alone.
-      // (Dividing by inputTokens alone reported 8.63 on 2026-08-06.)
-      cacheHitRatio: Math.round(100 * completion.usage.cacheReadTokens / Math.max(1,
-        completion.usage.inputTokens + completion.usage.cacheReadTokens + completion.usage.cacheCreationTokens)) / 100,
-      routerMs: routerResult?.latencyMs ?? null,
-      routerCacheHit: routerResult?.cacheHit ?? null,
-      routerInputTokens: routerResult?.usage.inputTokens ?? null,
-      routerCacheReadTokens: routerResult?.usage.cacheReadTokens ?? null,
-      handleCount: routerResult?.handles.length ?? 0,
-      effectiveHandleCount: effectiveHandles.length,
-      routerError: !!routerResult?.error,
-      classifierMs: classifierResult.latencyMs,
-      classification: classifierResult.classification,
-      routerSkipped,
-      classifierError: !!classifierResult.error,
-      isGuest: auth.isGuest,
-    }));
-
-    return Response.json({
-      success: true,
-      conversationId: activeConversationId,
-      messageId: null,
-      content: completion.content,
-      // The widget's own dedup never re-serves a fallback (US-15 AC3).
-      isFallback: completion.isFallback,
-      // Form edits the model proposed via tool_use (already validated server-side).
-      // Omitted on normal turns — additive, no impact on existing clients.
-      ...(completion.proposedEdits && completion.proposedEdits.length > 0
-        ? { proposedEdits: completion.proposedEdits }
-        : {}),
-      ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
-    });
+    return Response.json(finishTurn(await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits), false, null));
   } catch (error) {
     if (error instanceof Response) throw error; // see the loader's catch (US-15 AC9)
     if (error instanceof GuestRateLimitError) {

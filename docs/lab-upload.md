@@ -86,7 +86,7 @@ Raw files never leave the browser on the website route. Only extracted text (via
 
 Blood test extraction is structured parsing (find metric names, read adjacent numbers, identify units), not complex reasoning. Haiku handles this accurately at ~$0.003-0.005 per report. With vision support, it reads both text-based and scanned PDFs.
 
-- **Model ID**: `EXTRACTION_MODEL = 'claude-haiku-4-5-20251001'` (`lab-extraction.ts`)
+- **Model ID**: `EXTRACTION_MODEL = 'claude-haiku-4-5-20251001'` (`models.ts`, with every other model pin)
 - **Cost per report**: ~$0.003 (text PDF, ~2K tokens) to ~$0.005 (scanned, ~3.5K tokens with images)
 - **Upgrade path**: Swap the constant to Sonnet if accuracy issues surface — same API, no code changes
 

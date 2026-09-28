@@ -14,6 +14,8 @@ import path from 'path';
 import { z } from 'zod';
 import { callAnthropicWithUsage, extractJsonObject, type AnthropicUsage } from './anthropic.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+// The router's model lives with the other pins; modelParams gives its family's body shape.
+import { ROUTER_MODEL, modelParams } from '../../packages/health-core/src/models';
 
 // ---------------------------------------------------------------------------
 // Version — bump when router prompt or index format changes so chat_match_events
@@ -21,12 +23,6 @@ import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 // ---------------------------------------------------------------------------
 
 export const ROUTER_VERSION = 1;
-
-// ---------------------------------------------------------------------------
-// Model — same as main LLM (Haiku 4.5), faster and cheaper for classification
-// ---------------------------------------------------------------------------
-
-const ROUTER_MODEL = 'claude-haiku-4-5-20251001';
 
 const BLOG_INDEX = loadBlogIndex();
 
@@ -302,9 +298,7 @@ export async function routeQuery(
   const routerPrompt = getRouterPrompt();
 
   const body = {
-    model: ROUTER_MODEL,
-    max_tokens: 200,
-    temperature: 0,
+    ...modelParams(ROUTER_MODEL, 200),
     system: [
       {
         type: 'text',

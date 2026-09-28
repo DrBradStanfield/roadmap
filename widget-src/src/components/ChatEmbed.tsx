@@ -9,9 +9,10 @@ import React, { useState, useEffect, useRef, useCallback, useReducer } from 'rea
 import type { ProposedEdit } from '@roadmap/health-core';
 import { getChatGate } from '../lib/chat-api';
 import { observeVisibility } from '../lib/observe-visibility';
-import { useChatState, THINKING_MESSAGES, MAX_CHARS, type ChatContextSource } from '../hooks/useChatState';
+import { useChatState, MAX_CHARS, type ChatContextSource } from '../hooks/useChatState';
 import { ChatKeyGate } from './ChatKeyGate';
 import { ChatMessageBubble } from './ChatMessageBubble';
+import { ChatPendingReply } from './ChatPendingReply';
 import { ChatThreadList } from './ChatThreadList';
 import { ColumnHeader } from './ColumnHeader';
 import { ChatHeaderTitle } from './ChatHeaderTitle';
@@ -57,7 +58,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
     if (!el) return;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
     if (nearBottom) el.scrollTop = el.scrollHeight;
-  }, [state.messages, messagesContainerRef]);
+  }, [state.messages, state.streamingThinking, state.streamingText, messagesContainerRef]);
 
   const handleMessagesScroll = useCallback(() => {
     const el = messagesContainerRef.current;
@@ -138,18 +139,10 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
             </div>
           )}
           {state.messages.map(msg => (
-            <ChatMessageBubble key={msg.id} msg={msg} />
+            <ChatMessageBubble key={msg.id} msg={msg} thinking={state.thinkingById[msg.id]} />
           ))}
           {state.isLoading && (
-            <div className="chat-message chat-message--assistant">
-              <div className="chat-loading">
-                {state.isLocalSender ? (
-                  <span className="chat-thinking-text">{THINKING_MESSAGES[state.thinkingIndex]}</span>
-                ) : (
-                  <span className="chat-thinking-dots" />
-                )}
-              </div>
-            </div>
+            <ChatPendingReply isLocalSender={state.isLocalSender} thinking={state.streamingThinking} text={state.streamingText} />
           )}
           {state.error && <div className="chat-error">{state.error}</div>}
           {showScrollBtn && (

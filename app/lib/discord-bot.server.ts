@@ -443,6 +443,7 @@ type ChatHistoryEntry = {
   content: string;
   created_at: string;
   is_fallback: boolean | null;
+  failure_mode: string | null;
 };
 
 /** Which stored conversation (if any) an incoming message continues. */
@@ -451,7 +452,7 @@ type ConversationLookup = { conversationId: string | null; history: ChatHistoryE
 /**
  * Load the last HISTORY_MSG_LIMIT turns of a stored conversation.
  *
- * `created_at` and `is_fallback` feed the shared content-based dedup check
+ * `created_at`, `is_fallback` and `failure_mode` feed the shared content-based dedup check
  * (chat-dedup.server.ts findDuplicateReply); the LLM itself uses only role and
  * content. Turns whose text the 30-day purge has already removed are skipped.
  * A read failure degrades to empty history rather than dropping the reply —
@@ -462,7 +463,7 @@ async function loadConversationHistory(conversationId: string): Promise<ChatHist
 
   const { data, error } = await supabaseAdmin
     .from('chat_messages')
-    .select('role, content, created_at, is_fallback')
+    .select('role, content, created_at, is_fallback, failure_mode')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
     .limit(HISTORY_MSG_LIMIT);
@@ -483,6 +484,7 @@ async function loadConversationHistory(conversationId: string): Promise<ChatHist
       content: r.content as string,
       created_at: r.created_at as string,
       is_fallback: r.is_fallback as boolean | null,
+      failure_mode: r.failure_mode as string | null,
     }));
 }
 
@@ -764,6 +766,7 @@ async function persistConversation(p: PersistParams): Promise<void> {
       classification: p.classifier.classification,
       router_skipped: p.classifier.routerSkipped,
       is_fallback: p.isFallback,
+      failure_mode: p.failureMode ?? null,
     });
   if (evtErr) {
     Sentry.captureException(new Error('Discord: match-event insert failed'), {

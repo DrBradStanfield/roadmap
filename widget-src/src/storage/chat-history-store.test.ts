@@ -25,6 +25,27 @@ async function seed(cloud: MemoryCloud): Promise<ChatHistoryStore> {
   return store;
 }
 
+// US-15 AC14 (Codex R1): a fallback or refusal turn keeps its flag through the
+// cloud file, so the client dedup never re-serves it after a reload.
+describe('ChatHistoryStore fallback flag (US-15 AC14)', () => {
+  it('persists isFallback on the assistant turn, restores it on read, and keeps it through a merge', async () => {
+    const cloud = new MemoryCloud();
+    const store = await ChatHistoryStore.create(new MemoryAdapter(cloud));
+    await store.recordExchange({ conversationId: 'c1', isNew: true, userText: 'q', assistantText: 'Sorry', isFallback: true });
+    await store.recordExchange({ conversationId: 'c2', isNew: true, userText: 'q2', assistantText: 'An answer' });
+
+    const reloaded = await ChatHistoryStore.create(new MemoryAdapter(cloud));
+    const byText = (text: string) => [...reloaded.getMessages('c1'), ...reloaded.getMessages('c2')].find((m) => m.content === text);
+    expect(byText('Sorry')).toMatchObject({ role: 'assistant', isFallback: true });
+    expect(byText('An answer')).not.toHaveProperty('isFallback');
+    expect(byText('q')).not.toHaveProperty('isFallback');
+
+    const file = readCloud(cloud);
+    const merged = mergeChatHistoryFiles(file, { ...file, conversations: [] }, { deviceId: 'b', now: new Date().toISOString() });
+    expect(merged.conversations.find((c) => c.id === 'c1')!.messages.find((m) => m.content === 'Sorry')).toMatchObject({ isFallback: true });
+  });
+});
+
 describe('ChatHistoryStore.eraseAll (US-11)', () => {
   it('tombstones every conversation, drops the messages and blanks the titles', async () => {
     const cloud = new MemoryCloud();

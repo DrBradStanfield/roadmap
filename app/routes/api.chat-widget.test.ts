@@ -9,7 +9,11 @@ const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   auth: vi.fn(),
   buildConversationMessages: vi.fn(() => []),
-  completion: { content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 }, isFallback: false as boolean, failureMode: undefined as string | undefined },
+  completion: {
+    content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 },
+    isFallback: false as boolean, failureMode: undefined as string | undefined,
+    isRefusal: undefined as boolean | undefined, refusalCategory: undefined as string | undefined, stopReason: 'end_turn' as string | undefined,
+  },
 }));
 vi.mock('../lib/route-helpers.server', async (original) => ({
   ...await original<typeof import('../lib/route-helpers.server')>(),
@@ -52,6 +56,10 @@ beforeEach(() => {
   envelopes = [];
   mocks.completion.isFallback = false;
   mocks.completion.failureMode = undefined;
+  mocks.completion.isRefusal = undefined;
+  mocks.completion.refusalCategory = undefined;
+  mocks.completion.stopReason = 'end_turn';
+  mocks.completion.content = 'Synthetic answer';
   mocks.buildConversationMessages.mockClear();
   mocks.auth.mockResolvedValue({ client: { from: mocks.from }, userId: id, customerId: null, admin: null });
   mocks.from.mockReset().mockImplementation((table: string) => {
@@ -156,6 +164,32 @@ describe('US-15 AC7 — widget turns store no message content', () => {
       await post({ message: 'next', localFirst: true, history: junk });
       expect(mocks.buildConversationMessages).toHaveBeenCalledWith([], 'next');
     }
+  });
+
+  // US-15 AC14: a refusal is shown as an assistant turn, flagged so the widget
+  // never re-serves it from its own dedup; telemetry carries only bounded fields.
+  it('returns a refusal as the reply with isRefusal and isFallback, and logs only its stop reason and category', async () => {
+    const line = "I can't help with that here. Please raise it with your doctor or pharmacist.";
+    Object.assign(mocks.completion, { content: line, isRefusal: true, refusalCategory: 'bio', stopReason: 'refusal', failureMode: 'refusal' });
+    const res = await post({ message: 'hello', localFirst: true });
+    const body = await res.json();
+    expect(body.content).toBe(line);
+    expect(body.isRefusal).toBe(true);
+    expect(body.isFallback).toBe(true); // the wire flag the client dedup reads
+    expect(matchEvent().failure_mode).toBe('refusal');
+    expect(matchEvent().is_fallback).toBe(false);
+    const timing = consoleLog.mock.calls.map((c) => JSON.parse(String(c[0]))).find((l) => l.evt === 'chat_timing');
+    expect(timing.stopReason).toBe('refusal');
+    expect(timing.refusalCategory).toBe('bio');
+    expect(JSON.stringify(consoleLog.mock.calls)).not.toContain(line);
+  });
+
+  it('an ordinary answer carries no isRefusal and logs its stop reason', async () => {
+    const res = await post({ message: 'hello', localFirst: true });
+    expect(await res.json()).not.toHaveProperty('isRefusal');
+    const timing = consoleLog.mock.calls.map((c) => JSON.parse(String(c[0]))).find((l) => l.evt === 'chat_timing');
+    expect(timing.stopReason).toBe('end_turn');
+    expect(timing.refusalCategory).toBeNull();
   });
 
   it('never lets the question reach Sentry or the console', async () => {

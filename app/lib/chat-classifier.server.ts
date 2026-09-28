@@ -30,12 +30,11 @@ import path from 'path';
 import * as Sentry from '@sentry/react-router';
 import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
 import { sanitizeForRouter } from './chat-router.server';
+import { CLASSIFIER_MODEL, modelParams } from '../../packages/health-core/src/models';
 
 // Bump when the classifier prompt or rules change so chat_match_events can
 // segment pre/post-change analytics.
 export const CLASSIFIER_VERSION = 1;
-
-const CLASSIFIER_MODEL = 'claude-haiku-4-5-20251001';
 
 // ---------------------------------------------------------------------------
 // Classification taxonomy
@@ -159,13 +158,11 @@ export async function classifyMessage(
   if (contextLines.length === 0) contextLines.push('(new conversation, no prior turns)');
 
   const body = {
-    model: CLASSIFIER_MODEL,
     // 8, not 5: 'MEASUREMENT' (added 2026-08-07) is the longest label and a
     // truncated word fails the exact-match parse, degrading to ERROR — which
     // fail-safes to firing the router, i.e. silently undoing the saving this
     // label exists to create. Unused output tokens are not billed.
-    max_tokens: 8,
-    temperature: 0,
+    ...modelParams(CLASSIFIER_MODEL, 8),
     system: [
       {
         type: 'text',

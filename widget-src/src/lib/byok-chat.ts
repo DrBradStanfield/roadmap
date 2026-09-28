@@ -21,13 +21,14 @@ import {
   buildChatContextJson,
   CHAT_EDIT_TOOLS,
   MAX_HISTORY_MESSAGES,
-  PREFILL_ACK_MESSAGE,
+  toolOnlyAck,
   parseProposedEdits,
   type ProposedEdit,
 } from '@roadmap/health-core';
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import { getChatHistory } from './chat-history-access';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
+import type { ChatDelta } from './chat-api';
 
 // ---------------------------------------------------------------------------
 // Types — byte-compatible with chat-api.ts (chat-sync + the chat components
@@ -146,9 +147,9 @@ export async function deleteConversation(conversationId: string): Promise<boolea
 // Direct Anthropic call
 // ---------------------------------------------------------------------------
 
-// Match the website chat's model choice (chat.server.ts CHAT_MODEL) so both
-// surfaces answer with the same voice — the user pays, but extraction-style
-// haiku pricing keeps a typical chat under a cent.
+// Deliberately NOT the website chat's model (health-core models.ts CHAT_MODEL,
+// a Sonnet): here the user pays with their own key, and Haiku keeps a typical
+// chat under a cent.
 const CHAT_MODEL = 'claude-haiku-4-5-20251001';
 
 const SYSTEM_PROMPT = `You are the chat assistant inside "Health Plan by Dr Brad", a preventative-health planning app by Dr Brad Stanfield (GP, drstanfield.com). The user runs this app on their own infrastructure with their own AI key.
@@ -174,6 +175,12 @@ export async function sendMessage(
   message: string,
   conversationId?: string | null,
   guestInputs?: Record<string, unknown> | null,
+  // The shared hook's history, delta callback and edit flag: this transport
+  // reads its own history, does not stream (US-15 AC16 is the Shopify
+  // widget's), and always sends its tools, since it runs only inside the app.
+  _history?: unknown,
+  _onDelta?: (delta: ChatDelta) => void,
+  _canApplyEdits?: boolean,
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
   const apiKey = getAnthropicKey();
   if (!apiKey) {
@@ -215,7 +222,7 @@ export async function sendMessage(
     // Tool-only response (the model proposed an edit with no prose): give the
     // chat thread something to show. The confirmation card carries the detail.
     if (!content && proposedEdits.length > 0) {
-      content = PREFILL_ACK_MESSAGE;
+      content = toolOnlyAck(proposedEdits);
     }
   } catch (error) {
     if (error instanceof ByokAnthropicError) return { result: null, error: { error: error.message } };

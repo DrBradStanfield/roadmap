@@ -88,6 +88,20 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   v1.0.1, receipt 2026-09-17T20:30Z; v1.0.0 `C-Ggl3RkPf6el6` was rejected
   2026-09-15). If it has moved (approved or rejected), surface issue #60 as
   the next action in the report.
+- **Newer-Sonnet check** (audit `docs/chat-audit-2026-09-29.md` §4.3, US-15
+  AC18). Needs `ANTHROPIC_TEST_API_KEY` in this loop's environment, which Brad
+  must grant before the step can run; until then, name it as a gap. Run
+  `npx tsx tools/check-newer-model.ts`. Exit 0 = nothing newer; 1 = a named
+  gap. On exit 10, run the answer-hop commands it prints (`--answer-model …
+  --answer-check`, `test-tool-edits.ts --model …`) against the candidate; the
+  router and classifier lines only if the PR also changes those pins. Then open
+  a `claude/` PR that bumps `CHAT_MODEL` in `packages/health-core/src/models.ts`,
+  labelled `hold` so auto-ship never merges it: it is for Brad's merge. Why: the
+  bump changes clinical answer behaviour, and the harness cannot catch a
+  fabricated citation. The numbers go in the PR body; a harness that cannot run
+  is named there, never skipped silently. Never edit the pin on main directly.
+  Signal: a newer Sonnet is qualified or rejected within one week of release,
+  evidenced by the PR.
 
 Conventions: the report/metrics week label is the COMPLETED ISO data week (the
 7d window ending at run time). Any funnel event reporting 0 must be classified

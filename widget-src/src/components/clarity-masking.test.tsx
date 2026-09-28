@@ -22,12 +22,12 @@ vi.mock('./ChatMessageBubble', () => ({ ChatMessageBubble: () => null }));
 vi.mock('./ChatThreadList', () => ({ ChatThreadList: () => null }));
 vi.mock('./ChatHeaderTitle', () => ({ ChatHeaderTitle: () => null }));
 vi.mock('../hooks/useChatState', () => ({
-  THINKING_MESSAGES: ['Thinking…'],
   MAX_CHARS: 2000,
   useChatState: () => ({
     state: {
       conversations: [], activeConversationId: null, messages: [], inputText: '',
-      isLoading: false, isLocalSender: false, error: null, thinkingIndex: 0, isOffline: false,
+      isLoading: false, isLocalSender: false, error: null, isOffline: false,
+      streamingThinking: '', streamingText: '', thinkingById: {},
     },
     actions: {
       handleInputChange: vi.fn(), selectConversation: vi.fn(), startNewChat: vi.fn(),

@@ -143,10 +143,16 @@ export const CHAT_EDIT_TOOLS = [PROPOSE_FIELD_EDIT_TOOL, PROPOSE_MEDICATION_EDIT
 
 /**
  * Shown in the chat thread when the model proposed a form edit but returned no
- * prose. Shared by both transports so the two surfaces can't drift.
+ * prose. Shared by both transports so the two surfaces can't drift. A
+ * measurement waits for Save; a medication saves at once with an undo banner.
  */
-export const PREFILL_ACK_MESSAGE =
-  "I've pre-filled that in your form — review the highlighted value and press Save.";
+export function toolOnlyAck(edits: ProposedEdit[]): string {
+  const fields = edits.some((e) => e.kind === 'field');
+  const meds = edits.some((e) => e.kind === 'medication');
+  if (meds && !fields) return "Done — I've updated your medications. You can undo this from the banner.";
+  if (meds) return "I've updated your medications (undo from the banner) and pre-filled your form — review the highlighted value and press Save.";
+  return "I've pre-filled that in your form — review the highlighted value and press Save.";
+}
 
 // ---------------------------------------------------------------------------
 // Parsed-intent shapes — what the widget receives + acts on

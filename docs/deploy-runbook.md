@@ -207,6 +207,11 @@ to both — deploy twice, see "Shopify app configs".**)
   **Live state: `drstanfield.com` has no metafield → `"Brad AI"`; `microvitamin.com` metafield set
   to `"MicroVitamin"`.** To change a store's name, set the metafield via the Admin API (`metafieldsSet`,
   owner = the Shop GID, type `single_line_text_field`) — no redeploy needed.
+  **Chat surface (2026-09-29):** the site-chat FAB's title, subtitle and empty state come from a
+  second shop metafield, `health_roadmap.chat_surface` (`doctor` default | `brand`), emitted as
+  `data-surface` by `chat-embed.liquid` and read by `resolveChatSurface` in `assistant-config.ts`.
+  `microvitamin.com` is set to `brand` ("Ask MicroVitamin", products copy); `drstanfield.com` is
+  unset. Same `metafieldsSet` call as the name; no redeploy needed after the extension is live.
 
 **Important deploy notes:**
 - **`docs/products.md` is a real tracked file (since 2026-08-10)** — the old pre-deploy symlink dance is retired. The master lives HERE; `claude_business/docs/products.md` is now the symlink pointing back at this repo. If a claude_business session edits product content through that symlink, the change appears as an uncommitted modification in THIS repo — commit it (sweep rule) before deploying, or `fly deploy` ships it uncommitted.
@@ -239,6 +244,9 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
   KLAVIYO_ is shared (every sign-up joins the MicroVitamin list; the drstanfield
   Klaviyo account is shut down, Brad 2026-09-28); edu omits the Discord and
   YouTube bot tokens.
+- **Chat switches** (optional, both default on): `CHAT_ENABLED=false` answers
+  every chat POST 503; `CHAT_STREAMING=false` makes `/api/chat` ignore
+  `stream: true` and answer JSON, which the widget reads unchanged (US-15 AC16).
 - **GitHub Actions**: deploy secrets live ONLY in the gated `production`
   environment; ANTHROPIC_API_KEY (spend-capped) is the only repo secret.
 

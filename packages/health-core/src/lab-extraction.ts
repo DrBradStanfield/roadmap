@@ -295,8 +295,6 @@ export function unifiedSystemPrompt(mode: DocumentPromptMode): string {
 /** The website's prompt: classification plus the whole document as markdown. */
 export const UNIFIED_SYSTEM_PROMPT = unifiedSystemPrompt('full');
 
-/** The extraction model — matches the website chat / server pipeline. */
-export const EXTRACTION_MODEL = 'claude-haiku-4-5-20251001';
 export const EXTRACTION_MAX_TOKENS = 8192; // Higher limit for markdown conversion
 
 // ---------------------------------------------------------------------------

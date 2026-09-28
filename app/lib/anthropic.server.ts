@@ -10,7 +10,6 @@ import * as Sentry from '@sentry/react-router';
 import {
   UNIFIED_SYSTEM_PROMPT,
   unifiedSystemPrompt,
-  EXTRACTION_MODEL,
   EXTRACTION_MAX_TOKENS,
   parseUnifiedResult,
   toUnifiedResult,
@@ -20,6 +19,7 @@ import {
   type PageContent,
   type UnifiedExtractionResult,
 } from '../../packages/health-core/src/lab-extraction';
+import { EXTRACTION_MODEL } from '../../packages/health-core/src/models';
 import { sleep } from './cron-helpers.server';
 
 // The pure extraction pieces (prompt, schema parsing, unit resolution) live in
@@ -158,7 +158,28 @@ export interface AnthropicContentBlock {
 }
 
 /**
+ * `stop_details.category` on a refusal, bounded so it can go to telemetry.
+ * Anthropic's set is open; anything new or missing is 'other'.
+ */
+const REFUSAL_CATEGORIES = ['cyber', 'bio', 'frontier_llm', 'reasoning_extraction', 'general_harms', 'other'] as const;
+export type RefusalCategory = typeof REFUSAL_CATEGORIES[number];
+
+export interface AnthropicResult {
+  content: string;
+  usage: AnthropicUsage;
+  contentBlocks: AnthropicContentBlock[];
+  /** `stop_reason` as sent: 'end_turn', 'tool_use', 'max_tokens', 'refusal', … */
+  stopReason?: string;
+  /** Set only on a refusal. */
+  refusalCategory?: RefusalCategory;
+}
+
+/**
  * Shared fetch + error handling. Returns text content + usage metrics.
+ *
+ * A refusal (HTTP 200, `stop_reason: 'refusal'`, usually no text) is its own
+ * result, not "No text in Anthropic response": content and blocks come back
+ * empty, because text written before the model declined is not an answer.
  *
  * Retry policy: one retry with 1s backoff on transient infrastructure errors
  * (HTTP 502, 503, 504, 529, plus network/timeout failures from fetch()). These
@@ -221,11 +242,62 @@ async function parseJsonBody(response: Response): Promise<any> {
   }
 }
 
-/** `maxAttempts` below the default turns the inner retry off for a caller whose own deadline cannot absorb it (US-35 AC5). */
+/** Refusal handling and the empty-answer check, shared by the JSON and streamed reads. */
+function toResult(
+  blocks: AnthropicContentBlock[], usage: AnthropicUsage, stopReason: string | undefined, category: unknown,
+): AnthropicResult {
+  if (stopReason === 'refusal') {
+    const refusalCategory = (REFUSAL_CATEGORIES as readonly string[]).includes(category as string) ? category as RefusalCategory : 'other';
+    return { content: '', contentBlocks: [], usage, stopReason, refusalCategory };
+  }
+  const text = blocks
+    .filter(b => b.type === 'text')
+    .map(b => b.text ?? '')
+    .join('');
+  const hasToolUse = blocks.some(b => b.type === 'tool_use');
+  // A response carrying ONLY tool_use blocks (the model proposed a form
+  // edit with no prose) is valid — don't treat it as an empty failure. Nor is
+  // a max_tokens stop with no text (thinking used the budget): the caller
+  // logs its stop reason and answers with the fallback.
+  if (!text && !hasToolUse && stopReason !== 'max_tokens') throw new Error('No text in Anthropic response');
+
+  return { content: text, contentBlocks: blocks, usage, stopReason };
+}
+
+function toUsage(u: Record<string, number | undefined> | undefined): AnthropicUsage {
+  return {
+    inputTokens: u?.input_tokens ?? 0,
+    outputTokens: u?.output_tokens ?? 0,
+    cacheCreationTokens: u?.cache_creation_input_tokens ?? 0,
+    cacheReadTokens: u?.cache_read_input_tokens ?? 0,
+  };
+}
+
+async function readJson(response: Response): Promise<AnthropicResult> {
+  const data = await parseJsonBody(response);
+  return toResult((data.content as AnthropicContentBlock[]) ?? [], toUsage(data.usage), data.stop_reason ?? undefined, data.stop_details?.category);
+}
+
+/**
+ * How a read tells the retry loop it has started consuming a stream (after
+ * which nothing is retried), and the abort it uses for its idle timeout.
+ */
+interface ReadControl { began(): void; idle: AbortController }
+
+/**
+ * The one POST to /v1/messages: auth headers, the overall timeout, body
+ * discard on error, and the retry policy above. `read` turns a 200 into the
+ * result; a retryable network or timeout error is retried only while nothing
+ * has been read (`began` not called).
+ * `maxAttempts` below the default turns the inner retry off for a caller whose own deadline cannot absorb it (US-35 AC5).
+ */
 async function fetchAnthropicRaw(
   apiKey: string, body: Record<string, unknown>, timeoutMs = 60_000, maxAttempts = RETRY_MAX_ATTEMPTS,
-): Promise<{ content: string; usage: AnthropicUsage; contentBlocks: AnthropicContentBlock[] }> {
+  read: (response: Response, control: ReadControl) => Promise<AnthropicResult> = readJson,
+): Promise<AnthropicResult> {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    let began = false;
+    const idle = new AbortController();
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -235,7 +307,7 @@ async function fetchAnthropicRaw(
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(timeoutMs),
+        signal: AbortSignal.any([AbortSignal.timeout(timeoutMs), idle.signal]),
       });
 
       if (!response.ok) {
@@ -256,29 +328,9 @@ async function fetchAnthropicRaw(
         throw err;
       }
 
-      const data = await parseJsonBody(response);
-      const contentBlocks = (data.content as AnthropicContentBlock[]) ?? [];
-      const text = contentBlocks
-        .filter(b => b.type === 'text')
-        .map(b => b.text ?? '')
-        .join('');
-      const hasToolUse = contentBlocks.some(b => b.type === 'tool_use');
-      // A response carrying ONLY tool_use blocks (the model proposed a form
-      // edit with no prose) is valid — don't treat it as an empty failure.
-      if (!text && !hasToolUse) throw new Error('No text in Anthropic response');
-
-      return {
-        content: text,
-        contentBlocks,
-        usage: {
-          inputTokens: data.usage?.input_tokens ?? 0,
-          outputTokens: data.usage?.output_tokens ?? 0,
-          cacheCreationTokens: data.usage?.cache_creation_input_tokens ?? 0,
-          cacheReadTokens: data.usage?.cache_read_input_tokens ?? 0,
-        },
-      };
+      return await read(response, { began: () => { began = true; }, idle });
     } catch (err) {
-      if (isNetworkOrTimeoutError(err) && attempt < maxAttempts) {
+      if (!began && isNetworkOrTimeoutError(err) && attempt < maxAttempts) {
         const e = err as Error;
         console.warn(`Anthropic API ${e.name} on attempt ${attempt}/${maxAttempts}: ${e.message} — retrying after ${RETRY_DELAY_MS}ms`);
         await sleep(RETRY_DELAY_MS);
@@ -294,9 +346,128 @@ async function fetchAnthropicRaw(
   throw new Error('fetchAnthropicRaw: retry loop exited unexpectedly');
 }
 
-/** Text-only wrapper — existing callers unchanged. */
+// ---------------------------------------------------------------------------
+// Streaming (US-15 AC16/AC17): the web chat shows the answer and the thinking
+// summary as they are written. Discord and YouTube stay on the JSON call.
+// ---------------------------------------------------------------------------
+
+/** A delta the web chat forwards: the thinking summary or the answer text. */
+export interface AnthropicStreamEvent { type: 'thinking' | 'text'; text: string }
+
+/** Longest silence between chunks once a stream has begun. */
+const STREAM_IDLE_TIMEOUT_MS = 30_000;
+
+/**
+ * Read the SSE body into the same result the JSON read returns: text,
+ * thinking and tool_use blocks (tool input parsed at its block's end), usage
+ * from message_start merged with message_delta, and the stop reason. A
+ * refusal returns the empty refusal result even though text already went to
+ * `onEvent` — the client replaces it with the refusal line. A tool input that
+ * is not whole JSON (max_tokens cut it) drops that block. An `error` event, a
+ * malformed line, or a stream that ends before message_stop throws; none of
+ * them quote the provider's text.
+ */
+async function readEventStream(
+  response: Response, onEvent: (event: AnthropicStreamEvent) => void, control: ReadControl,
+): Promise<AnthropicResult> {
+  const blocks: Array<AnthropicContentBlock & Record<string, any>> = [];
+  const toolJson = new Map<number, string>();
+  let rawUsage: Record<string, number> = {};
+  let stopReason: string | undefined;
+  let category: unknown;
+  let stopped = false;
+
+  const handle = (event: any) => {
+    switch (event.type) {
+      case 'message_start':
+        rawUsage = { ...event.message?.usage };
+        break;
+      case 'content_block_start':
+        blocks[event.index] = { ...event.content_block };
+        if (event.content_block?.type === 'tool_use') toolJson.set(event.index, '');
+        break;
+      case 'content_block_delta': {
+        const block = blocks[event.index];
+        const delta = event.delta ?? {};
+        if (!block) break;
+        if (delta.type === 'text_delta') {
+          block.text = (block.text ?? '') + delta.text;
+          onEvent({ type: 'text', text: delta.text });
+        } else if (delta.type === 'thinking_delta') {
+          block.thinking = (block.thinking ?? '') + delta.thinking;
+          onEvent({ type: 'thinking', text: delta.thinking });
+        } else if (delta.type === 'signature_delta') {
+          block.signature = (block.signature ?? '') + delta.signature;
+        } else if (delta.type === 'input_json_delta') {
+          toolJson.set(event.index, (toolJson.get(event.index) ?? '') + delta.partial_json);
+        }
+        break;
+      }
+      case 'content_block_stop': {
+        const json = toolJson.get(event.index);
+        if (json === undefined || !blocks[event.index]) break;
+        // max_tokens can cut a tool's input mid-JSON: drop that block, keep the text.
+        try { blocks[event.index].input = json ? JSON.parse(json) : {}; } catch { delete blocks[event.index]; }
+        break;
+      }
+      case 'message_delta':
+        Object.assign(rawUsage, event.usage);
+        stopReason = event.delta?.stop_reason ?? undefined;
+        category = event.delta?.stop_details?.category;
+        break;
+      case 'message_stop':
+        stopped = true;
+        break;
+      case 'error': {
+        // The type only, bounded: the message can echo the conversation.
+        const type = String(event.error?.type ?? '').replace(/[^a-z_]/g, '').slice(0, 40) || 'unknown';
+        throw new Error(`Anthropic stream error (${type})`);
+      }
+    }
+  };
+
+  if (!response.body) throw new Error('Anthropic stream ended early');
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let idleTimer: ReturnType<typeof setTimeout> | undefined;
+  const armIdle = () => {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => control.idle.abort(new DOMException('Anthropic stream idle', 'TimeoutError')), STREAM_IDLE_TIMEOUT_MS);
+  };
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      control.began();
+      armIdle();
+      buffer += decoder.decode(value, { stream: true });
+      let newline: number;
+      while ((newline = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, newline).replace(/\r$/, '');
+        buffer = buffer.slice(newline + 1);
+        // One JSON object per `data:` line; `event:` names repeat its type.
+        if (!line.startsWith('data:')) continue;
+        handle(JSON.parse(line.slice(5)));
+      }
+    }
+  } catch (err) {
+    await reader.cancel().catch(() => {});
+    // A `data:` line that failed JSON.parse: same fixed message as parseJsonBody.
+    if (err instanceof SyntaxError) throw new SyntaxError('Anthropic response was not JSON');
+    throw err;
+  } finally {
+    clearTimeout(idleTimer);
+  }
+  if (!stopped) throw new Error('Anthropic stream ended early');
+
+  return toResult(blocks.filter(Boolean), toUsage(rawUsage), stopReason, category);
+}
+
+/** Text-only wrapper for extraction, where a refusal is a failed call. */
 async function callAnthropic(apiKey: string, body: Record<string, unknown>, timeoutMs?: number, maxAttempts?: number): Promise<string> {
   const result = await fetchAnthropicRaw(apiKey, body, timeoutMs, maxAttempts);
+  if (result.stopReason === 'refusal') throw new Error('Anthropic refusal');
   return result.content;
 }
 
@@ -304,10 +475,20 @@ async function callAnthropic(apiKey: string, body: Record<string, unknown>, time
  *  metrics + tool_use parsing). */
 export async function callAnthropicWithUsage(
   body: Record<string, unknown>, timeoutMs = 60_000,
-): Promise<{ content: string; usage: AnthropicUsage; contentBlocks: AnthropicContentBlock[] }> {
+): Promise<AnthropicResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
   return fetchAnthropicRaw(apiKey, body, timeoutMs);
+}
+
+/** callAnthropicWithUsage, streamed: deltas go to `onEvent`, the result is the same shape. */
+export async function streamAnthropicWithUsage(
+  body: Record<string, unknown>, onEvent: (event: AnthropicStreamEvent) => void, timeoutMs = 60_000,
+): Promise<AnthropicResult> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
+  return fetchAnthropicRaw(apiKey, { ...body, stream: true }, timeoutMs, undefined,
+    (response, control) => readEventStream(response, onEvent, control));
 }
 
 // stripCodeFences / extractJsonObject moved to health-core/lab-extraction.ts
