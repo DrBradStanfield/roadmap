@@ -216,6 +216,8 @@ That is four to five Brad actions per PR. The Tier 3 path Brad approved on 2026-
 
 ## Interaction with loops (question 3)
 
+*Superseded 2026-09-28 (US-40 AC10): loops now run the Codex review with `--loop`, per docs/loops/LOOP.md § Orchestration. Kept below as the reasoning of the time.*
+
 Keep loops out of the pilot. They run in the cloud on Claude, ship via `claude/*`, and have their own reviewer and veto window. Codex is not available in that environment. If the pilot shows Codex-unique value, the follow-up is a Brad-only edit that swaps the reviewer in `claude-review.yml` for a Codex action, and nothing else in the loop pipeline changes. The plan's "define how loops participate" should read "loops do not participate in the pilot".
 
 ## Smallest implementation (question 4)
@@ -319,7 +321,7 @@ Only this discussion document was changed for this response. Net production LOC:
 ## On the six corrections
 
 1. **Merge preference.** Accepted. Brad said Claude merges; the contract now states it as an instruction, not a credential boundary, and leaves auto-ship as a separate Brad-authorised path.
-2. **Read-only is not isolation.** Accepted, and the sharpest point in the response. `~/.codex/config.toml` mounts the hosted health MCP (Brad's real record) and Chrome; a reviewer must not have those. The wrapper runs with `--ignore-user-config` (no MCP, no hooks, auth still loads), `--sandbox read-only`, `--ephemeral`, and a wall-clock timeout, inside a `git archive` snapshot. `.env` and every ignored file are absent by construction, not by policy.
+2. **Read-only is not isolation.** Accepted, and the sharpest point in the response. `~/.codex/config.toml` mounts the hosted health MCP (Brad's real record) and Chrome; a reviewer must not have those. The wrapper runs with `--ignore-user-config` (no MCP, no hooks, auth still loads), `--sandbox read-only`, `--ephemeral`, and a wall-clock timeout, inside a `git archive` snapshot. `.env` and every ignored file are absent by construction, not by policy. *(Superseded 2026-09-28: false for a tracked `.env`, which `git archive` does include; claude_business's `claude-integration/.env` reached review patches. Credential withholding is now its own layer, specified in docs/user-stories.md US-40 AC11.)*
 3. **Adapt the CI prompt.** Accepted. `docs/review-format.md` separates eight universal checks from the Tier 3 red-line rule, and adds three repo invariants the CI prompt lacked: three-file clinical sync, the seven-step screening round-trip, and deletion-first.
 4. **A disputed blocker stays blocking.** Accepted verbatim into the contract.
 5. **Immutable target.** Accepted. The wrapper reviews base sha plus patch applied in a scratch dir, prints a snapshot id (base sha + patch hash), requires the reviewer to echo it, and re-hashes the tree afterwards to report drift. Codex's observation that the checkout has substantial uncommitted work was correct: another session's change set was in flight while this was written, and it was left untouched.
@@ -766,11 +768,19 @@ reviewer reads is in its context, and its context goes to OpenAI.
 
 **So the control is what it can READ, and "read-only" does not restrict
 reads.** A read-only run still reads the whole disk, verified earlier with a
-canary outside the workspace. Three things do restrict it, and the wrapper
-already does all three: a five-variable environment (a `CANARY_SECRET` in the
-parent never reaches the child, pinned by a test), a `git archive` snapshot
-instead of the live checkout (no `.env`, no untracked files), and
-`--ignore-user-config` (no MCP servers).
+canary outside the workspace. Three things restrict what the reviewer is
+handed, and the wrapper does all three: a five-variable environment (a
+`CANARY_SECRET` in the parent never reaches the child, pinned by a test), a
+`git archive` snapshot instead of the live checkout (no untracked files;
+credential files and their values withheld from the snapshot and patch since
+US-40 AC11, 2026-09-28), and `--ignore-user-config` (no MCP servers). None of
+them stops the model from reading the disk: the read-only sandbox can still
+read it, so a checkout that holds live credentials is exposed to a
+prompt-injected reviewer.
+
+*Superseded 2026-09-28 (US-40 AC10): loops now run the review with an
+API-key login in a temporary `CODEX_HOME` and `--loop`, per
+docs/loops/LOOP.md § Orchestration. Kept below as the analysis of the time.*
 
 **What a cloud loop would still need.** Its environment holds real keys as
 environment variables (`SUPABASE_*` including the read-only product-health

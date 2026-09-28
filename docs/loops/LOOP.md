@@ -7,31 +7,30 @@ research citations: [loop-master-architecture-explanation.html](loop-master-arch
 The fleet index is [REGISTRY.md](REGISTRY.md).
 
 ## Orchestration
-- You run as the ORCHESTRATOR on the latest Fable, thinking on (currently
-  Fable 5.1: the trigger pins the model id and needs a bump when a newer Fable
-  ships; running on anything else → say so in the retro). Spend your tokens on
-  synthesis, judgment, verification and the retro. Delegate all other work,
-  parallel when independent: one crisp verifiable deliverable per worker,
-  spend proportionate to the output's worth; justify unusual scale.
-- **Workers and reviewers are Opus 5.5 at high effort.** Spawn the repo's
-  `worker` and `adversary` agents by name: their `.claude/agents/*.md` pin
-  `model: opus` and `effort: high`. Never pass a per-call `model`, which
-  overrides the pin; never Sonnet or Haiku. You run at the model's default
-  effort (high in the cloud, measured 2026-09-25). Never set `CLAUDE_CODE_EFFORT_LEVEL`: it overrides every agent's pin.
-- Judgment that shapes the loop's conclusions is never delegated: what a
-  finding means, what to propose, what to amend, creative/clinical/compliance
-  calls. Workers gather, build and verify; you decide.
-- **Adversarial review before delivery**: after the report is drafted and
-  before the issue opens, spawn ONE fresh `adversary`, never yourself, briefed
-  to REFUTE the run. Given the report, the diffs and the ledgers, it re-checks
-  everything the run touched, each in the way it can actually fail: recompute
-  reported numbers from the CSVs; re-derive verdicts from raw ledger rows;
-  check every external action against the grant and its ledger row; re-judge
-  customer-facing output through its full compliance and quality gates with
-  fresh eyes; and hunt for the claim whose evidence is missing. One round: the
-  orchestrator fixes or rebuts every finding by name in the retro; the
-  reviewer has no write authority; "no findings" must state what was checked.
-
+- You run as the ORCHESTRATOR on the newest Opus with thinking on (Opus 5.5, Brad 2026-09-28; the trigger pins
+  the id, so bump it when a newer Opus ships; running on anything else → say so in the retro). Spend your tokens
+  on synthesis, judgment, verification and the retro. Delegate all other work, parallel when independent: one
+  crisp verifiable deliverable per worker, spend proportionate to the output's worth; justify unusual scale.
+- **Workers and reviewers are Opus at high effort**: spawn `worker` and `adversary` by name (their
+  `.claude/agents/*.md` pin `model: opus`, `effort: high`); never a per-call `model` (it overrides the pin),
+  never Sonnet or Haiku. You run at high effort: the cloud environment sets `CLAUDE_CODE_EFFORT_LEVEL=high`
+  (Brad, 2026-09-28; the Opus default was medium). It overrides every agent's pin, which is also high; never set
+  it lower.
+- Judgment that shapes the loop's conclusions is never delegated: what a finding means, what to propose, what to
+  amend, creative/clinical/compliance calls. Workers gather, build and verify; you decide.
+- **Adversarial review before delivery**: after the report is drafted and before the issue opens, spawn ONE
+  fresh `adversary`, never yourself, briefed to REFUTE the run. Given the report, the diffs and the ledgers, it
+  re-checks everything the run touched, each in the way it can actually fail: recompute reported numbers from
+  the CSVs; re-derive verdicts from raw ledger rows; check every external action against the grant and its
+  ledger row; re-judge customer-facing output through its full compliance and quality gates with fresh eyes; and
+  hunt for the claim whose evidence is missing. One round: the orchestrator fixes or rebuts every finding by
+  name in the retro; the reviewer has no write authority; "no findings" must state what was checked.
+- **Codex beside the adversary** (Brad, 2026-09-28): commit the deliverable first, then in ONE background Bash
+  call run `npm i -g @openai/codex@0.157.1 && export CODEX_HOME=$(mktemp -d) && printenv OPENAI_API_KEY | codex
+  login --with-api-key && node tools/codex-review.mjs --loop --range <run's first commit>^..HEAD --timeout-min
+  9` (`OPENAI_API_KEY` is not yet in the cloud environment; until it is, the login fails). Handle its findings
+  like the adversary's and re-run after any substantive fix. `incomplete` is never a pass, and nor is a missing
+  wrapper, a run with no commits, or 'Nothing to review': record why in the retro.
 ## The entropy constitution (anti-sprawl — the numbers are sourced, not vibes)
 - **Every operative instruction file — this constitution, every charter, every
   LEARNINGS.md — is capped at 200 lines / 25KB** (past it, models silently drop rules).

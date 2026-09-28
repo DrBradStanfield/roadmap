@@ -5,6 +5,30 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-09-28 (Brad-directed: loop effort high):** Brad: "set to high". The cloud environment
+  now sets `CLAUDE_CODE_EFFORT_LEVEL=high` (replacing the unread `CLAUDE_EFFORT_LEVEL`), reversing
+  the earlier "never set it" rule; Orchestration says so. Probe run `cse_01Vam9JbCqtMu36cb81DkHf1`
+  printed `CLAUDE_CODE_EFFORT_LEVEL=high` on `claude-opus-5-5`. Supersedes "medium on Opus" below.
+- **2026-09-28 (Brad-directed: Codex beside the adversary; effort corrected):**
+  Brad: "add a codex check to each loop". Orchestration gains a Codex bullet: install
+  the CLI, sign in with `$OPENAI_API_KEY` (not yet in the cloud environment, so this fleet records `incomplete` until Brad provisions it) in a temporary `CODEX_HOME`, run
+  `tools/codex-review.mjs` on the run's commit range, and record `incomplete` in the
+  retro rather than treating it as a pass. A cloud probe (trigger
+  `trig_01J1zQmKTCdqwe7mUMAh6dmx`, disabled) proved install, API-key login, wrapper
+  discovery and network reach; the review itself stopped on "Quota exceeded" on the
+  OpenAI account, so every loop records `incomplete` until Brad adds billing credit.
+  The same probe measured the Opus orchestrator's cloud default effort as MEDIUM
+  (Fable's was high), so "high in the cloud" became "medium on Opus"; whether to raise
+  it is Brad's call. Orchestration bullets were rewrapped to keep the line budget.
+- **2026-09-28 (Brad-directed: the fleet moves to Opus; models live only in the
+  constitution):** Brad: "move the loops to the latest opus 5.5 model" and "this
+  should all be in the loop constitution, and not the charters. clean".
+  Orchestration now reads "the newest Opus (currently Opus 5.5)"; the five
+  REGISTRY Orchestrator cells (repo-health and connector-smoke included) and the product-health, chat-health and sentry-fix triggers are
+  `claude-opus-5-5`, and every trigger prompt now defers models, delegation and
+  reviews to this section instead of naming a model. The business fleet made the
+  same move the same day; both run through claude_business's `tools/fleet-doctor.js`.
+
 - **2026-09-25 (Brad-directed: Opus 5.5 at high effort):** the `worker` and
   `adversary` agents' frontmatter moves from `effort: max` to `effort: high`,
   in both fleets; Brad: "set opus 5.5 effort to high". The orchestrator is

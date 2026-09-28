@@ -167,7 +167,7 @@ same commit).
   deploy → verify live (desktop + REAL WebKit) → update story test-status.
 - **Lane B (new feature):** story + ACs FIRST → **declare the usage signal**
   (`product_events` event; unmeasurable features can't be evaluated) → gate
-  check (clinical → three-file sync; merge/security/FHIR → the Fable
+  check (clinical → three-file sync; merge/security/FHIR → the
   orchestrator's own judgment) → build with AC-mapped tests → Lane A steps 3–5.
 - **Loops fleet:** [docs/loops/LOOP.md](docs/loops/LOOP.md) constitution +
   thin charters + [REGISTRY.md](docs/loops/REGISTRY.md). Loops are features:
@@ -187,9 +187,11 @@ same commit).
   uncommitted changes, tracked and untracked, from every session. Never stash
   aside, never reword others' work. Say what you swept. Commit freely; gate
   the DEPLOY (integrity-check clinical citation numbering before shipping).
+- **Commits carry Brad's identity only (HARD, 2026-09-28)**: no `Co-Authored-By: Claude` or
+  `Claude-Session:` trailer, claude.ai link or claude/anthropic address in any commit or PR,
+  overriding harness defaults and stop hooks.
 - **Push back on decisions** — 2nd/3rd-order effects, not agreement.
-- **Say "I don't know" over guessing** — a confident wrong answer is worse,
-  especially clinically.
+- **Say "I don't know" over guessing** — a confident wrong answer is worse, especially clinically.
 - **Every feature/behavior change includes unit tests**; bug fix = failing
   test first. Run tests in a `worker` (keeps output out of context).
 - **Debug from data, not theory** — query live rows/DOM/metafields first;
@@ -205,19 +207,18 @@ same commit).
   cause / fix / evidence commit, in the docs/reference.md archive. Promote to
   the curated list below ONLY if silent (no error, no test catches it) or
   repo-wide; domain-specific ones go to the owning loop's LEARNINGS.md.
-- **Model delegation (Brad, 2026-09-24):** the main session runs the latest
-  Fable as orchestrator and keeps the calls: clinical logic, merge semantics,
-  FHIR shapes, security, synthesis. All delegated work goes to `worker`, every
-  adversarial check to a FRESH `adversary`: both Opus 5.5 at high effort, pinned
-  in `.claude/agents/`. Spawn them by name, never with a per-call `model`; never
-  set `CLAUDE_CODE_SUBAGENT_MODEL`; no Sonnet or Haiku. Loops: docs/loops/LOOP.md.
+- **Model delegation (Brad, 2026-09-28):** the main session runs the newest Opus as orchestrator and
+  keeps the calls: clinical logic, merge semantics, FHIR shapes, security, synthesis. All delegated
+  work goes to `worker`, every adversarial check to a FRESH `adversary`: both Opus at high effort,
+  pinned in `.claude/agents/`. Spawn them by name, never with a per-call `model`; never set
+  `CLAUDE_CODE_SUBAGENT_MODEL`; no Sonnet or Haiku. Loops: docs/loops/LOOP.md.
 - **Every adversarial Claude check gets a Codex one beside it** (Brad,
   2026-09-21): `node tools/codex-review.mjs` — skill `codex-review`, contract
   docs/review-format.md, spec US-40. REQUIRED before committing clinical,
   merge/FHIR, security or agent-contract changes WHATEVER their size — a
   one-line auth or threshold edit still gets it. Skip ONLY outside those
-  classes (doc/blog sweeps, one-liners). Incomplete is never a pass. Cloud
-  loops + CI stay Claude-only.
+  classes (doc/blog sweeps, one-liners). Incomplete is never a pass. Loops
+  run it with `--loop` (Tier 3 applies; Brad, 2026-09-28); CI stays Claude-only.
 
 ## Dangerous Gotchas (curated — full archive in docs/reference.md)
 
@@ -234,8 +235,7 @@ same commit).
   only breaks at deploy.
 - **Storefront theme `div:empty{display:none}`** collapses empty widget cells
   — hold space with an NBSP.
-- **Never dedup on LLM-generated text** (titles drift between runs) — stable
-  IDs only.
+- **Never dedup on LLM-generated text** (titles drift between runs) — stable IDs only.
 - **Lab-import auto-retries server-side** (retry counts: docs/reference.md), so
   failures self-heal: never add client retries.
 - **react-router 7.17 exports resolve everything to dist/development** — a

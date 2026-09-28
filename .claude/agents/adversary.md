@@ -1,6 +1,6 @@
 ---
 name: adversary
-description: Fresh Opus 5.5 adversarial reviewer at high effort. Spawn one on finished work before it ships (a patch, a plan, a doc rewrite, a loop report) to refute it against docs/review-format.md, CLAUDE.md and the story's acceptance criteria. It hunts broken invariants (local-first, FHIR rows, merge semantics, three-file clinical sync, security rules), deleted load-bearing content and claims without evidence. It never edits. In local sessions, run the codex-review skill beside it.
+description: Fresh Opus adversarial reviewer at high effort. Spawn one on finished work before it ships (a patch, a plan, a doc rewrite, a loop report) to refute it against docs/review-format.md, CLAUDE.md and the story's acceptance criteria. It hunts broken invariants (local-first, FHIR rows, merge semantics, three-file clinical sync, security rules), deleted load-bearing content and claims without evidence. It never edits. In local sessions, run the codex-review skill beside it.
 model: opus
 effort: high
 tools: Read, Bash, WebFetch
