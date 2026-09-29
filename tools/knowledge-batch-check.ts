@@ -174,9 +174,9 @@ const UNIT = "mL/min/1\\.73m2|mmol/mol|mmol/L|mg/mmol|mg/dL|mg/kg|mL/min|pmol/L|
 const NUM = "\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+(?:\\.\\d+)?|\\.\\d+";
 const CMP_PRE = "(?:(≥|≤|>=|<=|>|<|\\bat least|\\bmore than|\\bless than)\\s*)?";
 const CMP_POST = "or more|or less";
-// Groups: 1 leading comparator, 2 and 3 numbers, 4 trailing comparator, 5 unit, 6 trailing comparator.
+// Groups: 1 leading comparator, 2 and 3 numbers, 4 trailing comparator, 5 unit, 6 unit suffix (/day, per dose ...), 7 trailing comparator.
 const TOKEN_RE = () => new RegExp(
-  `${CMP_PRE}(?<![A-Za-z0-9.,]|[A-Za-z]-)(${NUM})(?:\\s*[–-]\\s*(${NUM}))?(?:\\s+(${CMP_POST})\\b)?(?:[\\s-]*(${UNIT})(?![A-Za-z]))?(?:\\s+(${CMP_POST})\\b)?`, "gi");
+  `${CMP_PRE}(?<![A-Za-z0-9.,]|[A-Za-z]-)(${NUM})(?:\\s*[–-]\\s*(${NUM}))?(?:\\s+(${CMP_POST})\\b)?(?:[\\s-]*(${UNIT})(?![A-Za-z])(?:(?:\\s*/\\s*|\\s+per\\s+)(day|dose|week|kg)(?![A-Za-z]))?)?(?:\\s+(${CMP_POST})\\b)?`, "gi");
 
 const CMP_CANON: Record<string, string> = { ">=": "≥", "≥": "≥", "at least": "≥", "or more": "≥", "<=": "≤", "≤": "≤", "or less": "≤",
   ">": ">", "more than": ">", "<": "<", "less than": "<" };
@@ -229,11 +229,11 @@ export function tokenCounts(text: string, opts: { keepRefs?: boolean } = {}): Ma
     const s = stripNoise(opts.keepRefs ? line : line.replace(/^\s*>+ /, ""));
     for (const m of s.matchAll(TOKEN_RE())) {
       const unit = m[5] ? normUnit(m[5]) : "";
-      const cmp = canonCmp(m[1] ?? m[4] ?? m[6]);
+      const cmp = canonCmp(m[1] ?? m[4] ?? m[7]);
       for (const n of [m[2], m[3]].filter(Boolean) as string[]) {
         if (!unit && !cmp && !n.includes(",") && !n.includes(".") && /^(19|20)\d\d$/.test(n)) continue;
         const { value, unit: u } = normNumber(n, unit);
-        const key = `${cmp}${u ? `${value} ${u}` : value}`;
+        const key = `${cmp}${u ? `${value} ${u}${m[6] ? `/${m[6].toLowerCase()}` : ""}` : value}`;
         out.set(key, (out.get(key) ?? 0) + 1);
       }
     }
@@ -419,6 +419,12 @@ function checkAc1(o: Options, base: string, ctxs: Ctx[], ac1: Check) {
     const noSummary = (f: string) => f.split(/\r?\n/).filter((l) => !/^summary:/.test(l)).join("\n");
     if (corrections.has(c.handle)) {
       if (noSummary(bf) !== noSummary(nf)) ac1.fails.push(`${c.rel}: frontmatter differs beyond the summary line`);
+      const summaryOf = (f: string) => {
+        const v = /^summary:\s*(.*)$/m.exec(f)?.[1]?.trim() ?? "";
+        try { return v.startsWith('"') ? (JSON.parse(v) as string) : v.replace(/^'|'$/g, ""); } catch { return v; }
+      };
+      const squash = (t: string) => t.replace(/\s+/g, " ").trim();
+      if (squash(summaryOf(nf)) !== squash(c.rep!.proposed_summary_correction!)) ac1.fails.push(`${c.rel}: summary line differs from proposed_summary_correction`);
     } else if (bf !== nf) ac1.fails.push(`${c.rel}: frontmatter changed and no proposed_summary_correction`);
   }
 }
@@ -441,7 +447,11 @@ function defaultRawRoots(): string[] {
   return j.roots.filter((r) => r.includes("knowledge-map-raw"));
 }
 
-interface RawSet { main: { norm: string; rel: string } | null; extras: { path: string; norm: string }[] }
+interface RawSet {
+  main: { norm: string; rel: string } | null; extras: { path: string; norm: string }[];
+  /** Files under a pubmed/ folder headed "# PubMed <pmid>": the only raw that verifies a primary reference. */
+  abstracts: { pmid: string; norm: string }[];
+}
 
 /** Open a report's raw files: each must resolve (realpath) under an allowed raw root, never inside the repo, with the sha256 the report gives. */
 function loadRaw(rep: Report, o: Options, tag: string, ac2: Check): RawSet {
@@ -455,15 +465,21 @@ function loadRaw(rep: Report, o: Options, tag: string, ac2: Check): RawSet {
     if (!hit) { ac2.fails.push(`${tag} ${label} is outside the allowed raw roots: ${path}`); return null; }
     const buf = readFileSync(real);
     if (sha256(buf) !== sha) { ac2.fails.push(`${tag} ${label} sha256 mismatch for ${path} (file ${sha256(buf)}, report ${sha})`); return null; }
-    return { norm: normQuote(buf.toString("utf8")), rel: real.slice(hit[0].replace(/[^/]+\/$/, "").length) };
+    const text = buf.toString("utf8");
+    const pmid = /\/pubmed\//.test(real) ? /^\s*#\s*PubMed\s+(\d+)/i.exec(text)?.[1] ?? null : null;
+    return { norm: normQuote(text), rel: real.slice(hit[0].replace(/[^/]+\/$/, "").length), pmid };
   };
   const main = open(rep.raw_path, rep.raw_sha256, "raw");
   const extras: { path: string; norm: string }[] = [];
+  const abstracts: { pmid: string; norm: string }[] = [];
+  if (main?.pmid) abstracts.push({ pmid: main.pmid, norm: main.norm });
   for (const x of rep.extra_raw ?? []) {
     const e = open(x.path, x.sha256, "extra_raw");
-    if (e) extras.push({ path: x.path, norm: e.norm });
+    if (!e) continue;
+    extras.push({ path: x.path, norm: e.norm });
+    if (e.pmid) abstracts.push({ pmid: e.pmid, norm: e.norm });
   }
-  return { main, extras };
+  return { main, extras, abstracts };
 }
 
 /** Find `q` in `hay`, then re-tokenise the whole words around each hit: the token must be a whole token there ("7 mmol/L" is not "1.7 mmol/L"). */
@@ -485,14 +501,44 @@ function linesWith(body: string, tok: string): string {
   return hits.length ? `; found in: ${hits.join(" | ")}` : "";
 }
 
-function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet): number {
+/** Number tokens that grew between each new sentence and its nearest base sentence: a dose swap between sentences shows here even when the whole-body counts are equal. */
+function pairTokenChanges(c: Ctx): Map<string, string[]> {
+  const bs = new Set(sentences(ac4Body(c.baseBody, c.type))), ns = new Set(sentences(ac4Body(c.newBody, c.type)));
+  const baseOnly = [...bs].filter((x) => !ns.has(x));
+  const out = new Map<string, string[]>();
+  for (const n of [...ns].filter((x) => !bs.has(x))) {
+    const b = nearest(n, baseOnly);
+    if (!b) continue;
+    const before = tokenCounts(b, { keepRefs: true });
+    for (const [tok, cnt] of tokenCounts(n, { keepRefs: true })) {
+      if (cnt > (before.get(tok) ?? 0)) out.set(tok, [...(out.get(tok) ?? []), n]);
+    }
+  }
+  return out;
+}
+
+const relates = (bodyLine: string, sentence: string) => {
+  const b = cleanSentence(bodyLine);
+  return b.length > 0 && (b.includes(sentence) || sentence.includes(b));
+};
+
+function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, pairs: Map<string, string[]>): number {
   const rep = c.rep!, tag = `${c.handle}:`;
   let quoted = 0;
-  for (const tok of added) {
+  for (const tok of new Set([...added, ...pairs.keys()])) {
+    const sents = pairs.get(tok) ?? [];
     const named = rep.changed_tokens.filter((e) => tokenise(e.token, { keepRefs: true }).has(tok));
-    if (!named.length) { ac2.fails.push(`${tag} token "${tok}" is new in the body and has no changed_tokens entry${linesWith(c.newBody, tok)}`); continue; }
-    const entry = named.find((e) => tokenise(e.body_line, { keepRefs: true }).has(tok));
-    if (!entry) { ac2.fails.push(`${tag} token "${tok}": body_line does not contain it${linesWith(c.newBody, tok)}`); continue; }
+    if (!named.length) {
+      ac2.fails.push(added.includes(tok)
+        ? `${tag} token "${tok}" is new in the body and has no changed_tokens entry${linesWith(c.newBody, tok)}`
+        : `${tag} token "${tok}" changed between paired sentences and has no changed_tokens entry: ${clip(sents[0], 120)}`);
+      continue;
+    }
+    const holding = named.filter((e) => tokenise(e.body_line, { keepRefs: true }).has(tok));
+    if (!holding.length) { ac2.fails.push(`${tag} token "${tok}": body_line does not contain it${linesWith(c.newBody, tok)}`); continue; }
+    const missing = sents.filter((sn) => !holding.some((e) => relates(e.body_line, sn)));
+    if (missing.length) { for (const sn of missing) ac2.fails.push(`${tag} token "${tok}" changed between paired sentences: no changed_tokens entry has this sentence as its body_line: ${clip(sn, 120)}`); continue; }
+    const entry = (sents.length && holding.find((e) => relates(e.body_line, sents[0]))) || holding[0];
     if (!entry.raw_quote.trim()) { ac2.fails.push(`${tag} token "${tok}" has an empty raw_quote`); continue; }
     const prefixed = /^\s*(?:NIH|EXTRA):\s*/.exec(entry.raw_quote);
     const quote = prefixed ? entry.raw_quote.slice(prefixed[0].length) : entry.raw_quote;
@@ -585,6 +631,16 @@ function checkAc4(c: Ctx, ac4: Check): number {
     if (j === undefined) ac4.fails.push(`${tag} sentence removed and not in deleted_sentences: ${clip(s)}`);
     else if (!j.trim()) ac4.fails.push(`${tag} deleted sentence has an empty justification: ${clip(s, 80)}`);
   }
+  const baseSet = new Set(sentences(ac4Body(c.baseBody, c.type)));
+  const newOnly = [...nowS].filter((x) => !baseSet.has(x));
+  const cite = /\[\d+(?:\s*[,–-]\s*\d+)*\]/;
+  for (const b of baseSet) {
+    if (nowS.has(b) || !cite.test(b)) continue;
+    const nums = tokenCounts(b, { keepRefs: true });
+    const n = nearest(b, newOnly);
+    if (n && !cite.test(n) && nums.size && [...nums.keys()].some((k) => tokenCounts(n, { keepRefs: true }).has(k)))
+      ac4.warns.push(`${tag} claim lost its citation base: ${clip(b, 160)} -> new: ${clip(n, 160)}`);
+  }
   const nowH = new Set(headings(c.newBody));
   for (const h of headings(c.baseBody)) if (!nowH.has(h)) ac4.fails.push(`${tag} heading missing from new body: ${h}`);
   ac4.infos.push(`${tag} ${deleted} sentences removed (${byPattern} justified by pattern), ${headings(c.baseBody).length} base headings`);
@@ -669,7 +725,7 @@ function primaryIds(line: string): PrimaryId[] {
   return [...out.values()];
 }
 
-function checkAc7(c: Ctx, ac7: Check, pw: Check, raws: string[], idsOut: Map<string, PrimaryId & { handle: string }>) {
+function checkAc7(c: Ctx, ac7: Check, pw: Check, abstracts: RawSet["abstracts"], idsOut: Map<string, PrimaryId & { handle: string }>) {
   const tag = `${c.handle}:`, rep = c.rep;
   const lines = normChars(c.newBody).split(/\r?\n/);
   for (const l of lines) {
@@ -692,7 +748,8 @@ function checkAc7(c: Ctx, ac7: Check, pw: Check, raws: string[], idsOut: Map<str
     for (const line of refLines(c.newBody).filter((l) => !baseLines.has(l))) {
       const ids = primaryIds(line);
       for (const x of ids) idsOut.set(`${x.kind}:${x.id.toLowerCase()}`, { ...x, handle: c.handle });
-      if (ids.some((x) => !raws.some((r) => r.includes(x.id.toLowerCase())))) ac7.warns.push(`${tag} unverified primary: ${clip(line, 140)}`);
+      const verified = (x: PrimaryId) => (x.kind === "pmid" ? abstracts.some((a) => a.pmid === x.id) : abstracts.some((a) => a.norm.includes(x.id.toLowerCase())));
+      if (ids.some((x) => !verified(x))) ac7.warns.push(`${tag} unverified primary: ${clip(line, 140)}`);
     }
   }
   if (c.type === "pathway") {
@@ -755,10 +812,10 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
     let quoted = 0, deleted = 0;
     const raw = c.rep ? loadRaw(c.rep, o, `${c.handle}:`, ac2) : null;
     if (c.newText !== null) {
-      if (c.rep && raw) quoted = checkAc2(c, added, ac2, raw);
+      if (c.rep && raw) quoted = checkAc2(c, added, ac2, raw, c.baseText !== null ? pairTokenChanges(c) : new Map());
       checkAc3(c, hedgeBefore, hedgeAfter, ac3);
       if (c.baseText !== null) deleted = checkAc4(c, ac4);
-      checkAc7(c, ac7, pw, raw ? [raw.main?.norm, ...raw.extras.map((x) => x.norm)].filter((x): x is string => !!x) : [], ids);
+      checkAc7(c, ac7, pw, raw ? raw.abstracts : [], ids);
     }
     rows.push({ handle: c.handle, type: c.type ?? "?", file: c.rel, rawRel: raw?.main?.rel ?? "-", rawSha: c.rep?.raw_sha256 ?? "-",
       bodySha: sha256(c.newBody), tokensNew: added.length, quoted, deleted, hedgeBefore, hedgeAfter,
@@ -783,6 +840,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
     ...git(o.root, ["ls-files", "--others", "--exclude-standard"]).split("\n"),
   ].filter(Boolean));
   const allowed = new Set<string>(o.outRel ? [o.outRel] : []);
+  if (!ac1.fails.length) { allowed.add("docs/blog/index.json"); allowed.add("docs/blog/categories.json"); } // AC1 accepted them
   for (const c of ctxs) {
     const mine = (c.type ? [DIR_FOR[c.type]] : ["pathway", "blog", "guideline"]).map((d) => `docs/${d}/${c.handle}.md`);
     mine.forEach((f) => allowed.add(f));
