@@ -1,7 +1,7 @@
 ---
 title: "Alpha"
 type: "reference"
-summary: "Alpha summary, 200 mg daily."
+summary: "Alpha summary, 200 mg in adults."
 ---
 
 # Alpha

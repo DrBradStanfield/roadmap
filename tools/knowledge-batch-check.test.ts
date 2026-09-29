@@ -70,8 +70,8 @@ describe("US-42 AC4/AC7 sentences and products", () => {
       "Take it, e.g. at lunch.", "Dr. Smith saw 0.5 mg vs. placebo.", "Done?"]);
   });
   it("skips table separator rows and prints cell text without the leading pipe", () => {
-    expect(sentences("| a | b |\n|---|---|\n| :-: | --- |\n| Take 5 mg daily. | ok |")).toEqual([
-      "a | b |", "Take 5 mg daily.", "ok |"]);
+    expect(sentences("| a | b |\n|---|---|\n| :-: | --- |\n| Take 5 mg in adults. | ok |")).toEqual([
+      "a | b |", "Take 5 mg in adults.", "ok |"]);
   });
   it("treats generic omega-3 as not a product, bare Omega-3 as one", () => {
     expect(productMentions("Omega-3")).toBe(1);
@@ -110,7 +110,7 @@ describe("US-42 AC2/AC11 report schema and CLI", () => {
 let root: string, reports: string, exclusions: string;
 const sh = (args: string[]) => execFileSync("git", args, { cwd: root, stdio: "pipe" });
 const put = (rel: string, text: string) => { mkdirSync(dirname(join(root, rel)), { recursive: true }); writeFileSync(join(root, rel), text); };
-const INDEX = JSON.stringify([{ handle: "alpha", summary: "Alpha summary, 200 mg daily.", title: "Alpha", type: "reference" },
+const INDEX = JSON.stringify([{ handle: "alpha", summary: "Alpha summary, 200 mg in adults.", title: "Alpha", type: "reference" },
   { handle: "beta", summary: "Clinical pathway for beta.", title: "Beta", type: "pathway" }, { handle: "other", summary: "x", title: "O" }], null, 2);
 
 interface Reps { alpha: Report; beta: Report }
@@ -143,7 +143,7 @@ beforeEach(() => {
   const base = { old_raw_path: null, headings_before: [], headings_after: [], proposed_summary_correction: null, notes: "" };
   reps = {
     alpha: { ...base, handle: "alpha", type: "reference", raw_path: alphaRaw, raw_sha256: sha256(fx("alpha.raw.txt")),
-      changed_tokens: [{ token: "300 mg", body_line: "Trials used 300 mg in adults [1].", raw_quote: "participants took 300 mg daily" }],
+      changed_tokens: [{ token: "300 mg", body_line: "Trials used 300 mg in adults [1].", raw_quote: "participants took 300 mg in adults" }],
       deleted_sentences: [{ sentence: "Trials used 200 mg in adults [1].", justification: "The new raw says 300 mg." }],
       product_mentions_before: 1, product_mentions_after: 1 },
     beta: { ...base, handle: "beta", type: "pathway", raw_path: betaRaw, raw_sha256: sha256(fx("beta.raw.txt")),
@@ -169,27 +169,27 @@ describe("US-42 AC1 index and frontmatter", () => {
     expect(fails(run().AC1).join()).toContain('"other"');
   });
   it("fails on a batch summary change without a proposed correction", () => {
-    put("docs/blog/index.json", INDEX.replace("200 mg daily", "300 mg daily"));
+    put("docs/blog/index.json", INDEX.replace("200 mg in adults", "300 mg in adults"));
     expect(fails(run().AC1).join()).toContain('"alpha"');
   });
   it("allows a summary-only change when the report proposes a correction", () => {
-    put("docs/blog/index.json", INDEX.replace("200 mg daily", "300 mg daily"));
-    reps.alpha.proposed_summary_correction = "Alpha summary, 300 mg daily.";
-    put("docs/blog/alpha.md", fx("alpha.new.md").replace("200 mg daily", "300 mg daily"));
+    put("docs/blog/index.json", INDEX.replace("200 mg in adults", "300 mg in adults"));
+    reps.alpha.proposed_summary_correction = "Alpha summary, 300 mg in adults.";
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("200 mg in adults", "300 mg in adults"));
     const r = run();
     expect(fails(r.AC1)).toEqual([]);
     expect(fails(r.AC6)).toEqual([]); // AC6 lets an AC1-accepted index change through
   });
   it("requires the new summary line to equal the proposed correction after whitespace collapse", () => {
-    put("docs/blog/index.json", INDEX.replace("200 mg daily", "300 mg daily"));
-    reps.alpha.proposed_summary_correction = "Alpha summary,   300 mg daily.";
-    put("docs/blog/alpha.md", fx("alpha.new.md").replace("200 mg daily", "300 mg daily"));
+    put("docs/blog/index.json", INDEX.replace("200 mg in adults", "300 mg in adults"));
+    reps.alpha.proposed_summary_correction = "Alpha summary,   300 mg in adults.";
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("200 mg in adults", "300 mg in adults"));
     expect(fails(run().AC1)).toEqual([]);
-    put("docs/blog/alpha.md", fx("alpha.new.md").replace("200 mg daily", "300 mg twice daily"));
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("200 mg in adults", "300 mg twice daily"));
     expect(fails(run().AC1).join()).toContain("summary line differs from proposed_summary_correction");
   });
   it("does not require the proposed correction when the summary line is unchanged", () => {
-    reps.alpha.proposed_summary_correction = "Alpha summary, 300 mg daily.";
+    reps.alpha.proposed_summary_correction = "Alpha summary, 300 mg in adults.";
     expect(fails(run().AC1)).toEqual([]);
   });
   it("AC6 still flags an index change AC1 rejected", () => {
@@ -197,9 +197,9 @@ describe("US-42 AC1 index and frontmatter", () => {
     expect(fails(run().AC6).join()).toContain("docs/blog/index.json");
   });
   it("allows only the summary line to differ when a correction is proposed", () => {
-    reps.alpha.proposed_summary_correction = "Alpha summary, 300 mg daily.";
-    put("docs/blog/index.json", INDEX.replace("200 mg daily", "300 mg daily"));
-    put("docs/blog/alpha.md", fx("alpha.new.md").replace("200 mg daily", "300 mg daily").replace('title: "Alpha"', 'title: "Alpha 2"'));
+    reps.alpha.proposed_summary_correction = "Alpha summary, 300 mg in adults.";
+    put("docs/blog/index.json", INDEX.replace("200 mg in adults", "300 mg in adults"));
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("200 mg in adults", "300 mg in adults").replace('title: "Alpha"', 'title: "Alpha 2"'));
     expect(fails(run().AC1).join()).toContain("frontmatter differs beyond the summary line");
   });
   it("fails on frontmatter drift and on categories.json changes", () => {
@@ -241,7 +241,7 @@ describe("US-42 AC2 raw fidelity", () => {
     expect(results.find((r) => r.id === "AC2")!.evidence.join()).toContain("diff report missing");
   });
   it("matches a plain-text quote against a raw with no-break spaces and non-breaking hyphens", () => {
-    const raw = "In the trial, participants took 300\u00a0mg daily for a 1\u2011year period.";
+    const raw = "In the trial, participants took 300\u00a0mg in adults for a 1\u2011year period.";
     writeFileSync(join(reports, "alpha.raw.txt"), raw);
     reps.alpha.raw_sha256 = sha256(readFileSync(join(reports, "alpha.raw.txt")));
     expect(fails(run().AC2)).toEqual([]);
@@ -251,7 +251,7 @@ describe("US-42 AC2 raw fidelity", () => {
     reps.alpha.changed_tokens.push({ token: "1 g", body_line: "Take 1 g.", raw_quote: "Doses above 2,000 mg were not studied" });
     expect(fails(run().AC2).join()).toContain('"1000 mg"'); // 2,000 mg is not 1 g: quote lacks the token
     reps.alpha.changed_tokens[1].raw_quote = "Doses above 1,000 mg were not studied";
-    writeFileSync(join(reports, "alpha.raw.txt"), "In the trial, participants took 300 mg daily. Doses above 1,000 mg were not studied.");
+    writeFileSync(join(reports, "alpha.raw.txt"), "In the trial, participants took 300 mg in adults. Doses above 1,000 mg were not studied.");
     reps.alpha.raw_sha256 = sha256(readFileSync(join(reports, "alpha.raw.txt")));
     expect(fails(run().AC2)).toEqual([]);
   });
@@ -267,7 +267,7 @@ describe("US-42 AC2 multiset and body_line", () => {
     reps.alpha.changed_tokens = [];
     const f = fails(run().AC2).find((x) => x.includes('token "300 mg"'))!;
     expect(f).toContain("found in: \"Trials used 300 mg in adults [1].");
-    reps.alpha.changed_tokens = [{ token: "300 mg", body_line: "An unrelated line.", raw_quote: "participants took 300 mg daily" }];
+    reps.alpha.changed_tokens = [{ token: "300 mg", body_line: "An unrelated line.", raw_quote: "participants took 300 mg in adults" }];
     expect(fails(run().AC2).find((x) => x.includes("body_line does not contain"))).toContain("found in: \"Trials used 300 mg in adults [1].");
   });
   it("matches a comparator token declared with its '>'", () => {
@@ -619,7 +619,7 @@ describe("US-42 AC2/AC7 reference batch rules", () => {
     expect(r.evidence.join()).toContain("matched in extra_raw " + nih);
     reps.alpha.changed_tokens[0].raw_quote = "EXTRA: adults need 300 mg in adults";
     expect(fails(run().AC2)).toEqual([]);
-    reps.alpha.changed_tokens[0].raw_quote = "NIH: participants took 300 mg daily"; // only in the main raw
+    reps.alpha.changed_tokens[0].raw_quote = "NIH: participants took 300 mg in adults"; // only in the main raw
     expect(fails(run().AC2).join()).toContain("not in the raw file");
     reps.alpha.changed_tokens[0].raw_quote = "NIH: adults need 300 mg in adults";
     reps.alpha.extra_raw = [{ path: nih, sha256: "0".repeat(64) }];
@@ -679,17 +679,17 @@ describe("US-42 AC2 raw roots (R2)", () => {
 
 describe("US-42 AC2 quote matching (R3)", () => {
   it("fails a quote shorter than 6 words and 30 characters", () => {
-    reps.alpha.changed_tokens[0].raw_quote = "300 mg daily";
+    reps.alpha.changed_tokens[0].raw_quote = "300 mg in adults";
     expect(fails(run().AC2).join()).toContain("raw_quote too short");
   });
   it("fails a token that only matches inside a longer number in the raw", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("300 mg in adults", "7 mg in adults"));
-    const raw = "In the study participants took 1.7 mg daily for a while now and more.";
+    const raw = "In the study participants took 1.7 mg in adults for a while now and more.";
     writeFileSync(join(reports, "alpha.raw.txt"), raw);
     reps.alpha.raw_sha256 = sha256(raw);
-    reps.alpha.changed_tokens = [{ token: "7 mg", body_line: "Trials used 7 mg in adults [1].", raw_quote: "7 mg daily for a while now and more" }];
+    reps.alpha.changed_tokens = [{ token: "7 mg", body_line: "Trials used 7 mg in adults [1].", raw_quote: "7 mg in adults for a while now and more" }];
     expect(fails(run().AC2).join()).toContain("not a whole token");
-    const ok = "In the study participants took 7 mg daily for a while now and more.";
+    const ok = "In the study participants took 7 mg in adults for a while now and more.";
     writeFileSync(join(reports, "alpha.raw.txt"), ok);
     reps.alpha.raw_sha256 = sha256(ok);
     expect(fails(run().AC2)).toEqual([]);
@@ -757,7 +757,19 @@ describe("US-42 AC2 tokeniser units and comparators (R7)", () => {
     expect(t("2 mg/kg/day")).toEqual(["2 mg/kg/day"]);
     expect(t("5 mg per week")).toEqual(["5 mg/week"]);
     expect(t("10 mg per kg")).toEqual(["10 mg/kg"]);
-    expect(t("500 mg daily")).toEqual(["500 mg"]);
+    expect(t("500 mg daily")).toEqual(["500 mg/day"]);
+  });
+  it("reads daily, a day, each day and per day after a unit as /day, and weekly or a week as /week", () => {
+    expect(t("45,000 mcg daily")).toEqual(["45000 mcg/day"]);
+    expect(t("3,000 mg per day for people")).toEqual(["3000 mg/day"]);
+    expect(t("2 g a day")).toEqual(["2000 mg/day"]);
+    expect(t("50 mg each day")).toEqual(["50 mg/day"]);
+    expect(t("500 mg daily")).toEqual(t("500 mg/day"));
+    expect(t("10 mg weekly")).toEqual(["10 mg/week"]);
+    expect(t("10 mg a week")).toEqual(["10 mg/week"]);
+    expect(t("10 mg each week")).toEqual(t("10 mg per week"));
+    expect(t("500 mg in adultsish")).toEqual(["500 mg"]);
+    expect(t("500 mg and daily")).toEqual(["500 mg"]);
   });
   it("keeps a leading comparator in a token or quote, and strips '> ' only from body lines", () => {
     expect([...tokenise(">6 week", { keepRefs: true })]).toEqual([">6 week"]);
@@ -838,9 +850,81 @@ describe("US-42 AC7 identifier link text (R13)", () => {
   });
 });
 
+describe("US-42 AC2 every entry sharing a token (R14a)", () => {
+  const second = (over = {}) => reps.alpha.changed_tokens.push({ token: "300 mg", body_line: "Trials used 300 mg in adults [1].", raw_quote: "participants took 300 mg in adults", ...over });
+  it("validates each entry, not the first", () => {
+    second();
+    expect(fails(run().AC2)).toEqual([]);
+    reps.alpha.changed_tokens.pop();
+    second({ raw_quote: "participants took 300 mg in nobody at all" });
+    expect(fails(run().AC2).join()).toContain("not in the raw file");
+    reps.alpha.changed_tokens.pop();
+    second({ body_line: "An unrelated line." });
+    expect(fails(run().AC2).join()).toContain("body_line does not contain it");
+    reps.alpha.changed_tokens.pop();
+    second({ raw_quote: " " });
+    expect(fails(run().AC2).join()).toContain("empty raw_quote");
+  });
+});
+
+describe("US-42 AC4 body hyperlink lines (R14b)", () => {
+  it("counts a whole-line hyperlink in the body as a sentence, but not one in the References section", () => {
+    put("docs/blog/alpha.md", fx("alpha.base.md").replace("## Safety", "[Some resource](https://example.org/x)\n\n## Safety"));
+    sh(["add", "docs/blog/alpha.md"]); sh(["commit", "-q", "-m", "link line", "--", "docs/blog/alpha.md"]);
+    put("docs/blog/alpha.md", fx("alpha.new.md"));
+    expect(fails(run().AC4).join()).toContain("sentence removed and not in deleted_sentences: [Some resource](https://example.org/x)");
+  });
+});
+
+describe("US-42 AC2 primary study cited without its abstract (R14d)", () => {
+  const pm = "12345678";
+  const abstract = (id: string, name = `${id}.md`) => {
+    const dir = join(reports, "pubmed");
+    mkdirSync(dir, { recursive: true });
+    const f = join(dir, name);
+    writeFileSync(f, `# PubMed ${id}\n\nIn the trial, participants took 300 mg in adults every day.\n`);
+    return { path: f, sha256: sha256(readFileSync(f)) };
+  };
+  beforeEach(() => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("[1] Smith A. Synthetic trial. 2019.", `[1] Smith A. Synthetic trial. PMID: ${pm} https://pubmed.ncbi.nlm.nih.gov/${pm}/`));
+  });
+  const flagged = () => fails(run().AC2).join("\n");
+  it("accepts a quote from the main raw (ConsumerLab) or from the cited PMID's abstract", () => {
+    expect(flagged()).not.toContain("without its abstract");
+    reps.alpha.extra_raw = [abstract(pm)];
+    reps.alpha.changed_tokens[0].raw_quote = "EXTRA: participants took 300 mg in adults every day";
+    expect(flagged()).toBe("");
+  });
+  it("fails a quote found only in another study's abstract", () => {
+    reps.alpha.extra_raw = [abstract("87654321")];
+    reps.alpha.changed_tokens[0].raw_quote = "EXTRA: participants took 300 mg in adults every day";
+    expect(flagged()).toContain("number cited to a primary study without its abstract in reach");
+  });
+  it("does not apply when the cited reference is not a PubMed record", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md"));
+    reps.alpha.extra_raw = [abstract("87654321")];
+    reps.alpha.changed_tokens[0].raw_quote = "EXTRA: participants took 300 mg in adults every day";
+    expect(flagged()).not.toContain("without its abstract");
+  });
+});
+
+describe("US-42 AC9 pathway source line (R14c)", () => {
+  it("requires Last reviewed: <month> <year> on the source line", () => {
+    const src = (line: string) => put("docs/pathway/beta.md", fx("beta.new.md").replace(/^\*Source:.*$/m, line));
+    src("*Source: Auckland Region HealthPathways*");
+    expect(fails(run().PATHWAY).join()).toContain('Last reviewed: <month> <year>');
+    src("*Source: Auckland Region HealthPathways. Last reviewed: 2026*");
+    expect(fails(run().PATHWAY).join()).toContain('Last reviewed: <month> <year>');
+    src("*Source: Auckland Region HealthPathways. Last reviewed: March 2026*");
+    expect(fails(run().PATHWAY)).toEqual([]);
+    src("*Source: Auckland Region HealthPathways. Last reviewed: Mar 2026*");
+    expect(fails(run().PATHWAY)).toEqual([]);
+  });
+});
+
 describe("US-42 AC9 pathway rules", () => {
   it("fails without the source line or deferral blockquote", () => {
-    put("docs/pathway/beta.md", fx("beta.new.md").replace("*Source: Auckland Region HealthPathways, reviewed 2026-01-01*", "Source elsewhere").replace(/^>.*$/m, ""));
+    put("docs/pathway/beta.md", fx("beta.new.md").replace("*Source: Auckland Region HealthPathways. Last reviewed: January 2026*", "Source elsewhere").replace(/^>.*$/m, ""));
     const f = fails(run().PATHWAY).join();
     expect(f).toContain("missing \"*Source: Auckland Region HealthPathways\"");
     expect(f).toContain("missing doctor-deferral blockquote");

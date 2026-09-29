@@ -6,7 +6,7 @@ summary: "Clinical pathway for beta."
 
 # Beta
 
-*Source: Auckland Region HealthPathways, reviewed 2026-01-01*
+*Source: Auckland Region HealthPathways. Last reviewed: January 2026*
 
 > Your doctor will guide your treatment. This is not a substitute for medical care.
 

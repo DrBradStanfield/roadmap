@@ -6,6 +6,16 @@
  *
  *   npx tsx tools/knowledge-batch-check.ts --batch <name> --handles <file> \
  *     [--reports <dir>] [--base <git ref>] [--out <file>]
+ * Decisions reviewers have disputed and Brad kept (do not "fix" them):
+ *  - Numbers that only MOVED between sentences (whole-body count equal, token already in the base) are a WARN,
+ *    not a FAIL. AC4's deleted-sentence list already puts the reworded sentence in front of Brad; the pair
+ *    FAIL is for true substitutions and additions.
+ *  - A reference body that shrank and lost hedge tokens is a WARN. Deleting unsupported hedged sentences must
+ *    not fail a de-citation batch; the per-sentence hedge list stays for Brad. Pathways keep the FAIL.
+ *  - An unchanged (frozen) summary passes even with a proposed correction: the orchestrator applies
+ *    corrections later under the paired-arm rule. A summary that changed must equal the proposal.
+ *  - AC6 allows the --out report path inside the repo: the batch report commits with the batch.
+ *
  *   npx tsx tools/knowledge-batch-check.ts --print-schema
  *   npx tsx tools/knowledge-batch-check.ts --example <handle>
  */
@@ -174,9 +184,12 @@ const UNIT = "mL/min/1\\.73m2|mmol/mol|mmol/L|mg/mmol|mg/dL|mg/kg|mL/min|pmol/L|
 const NUM = "\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+(?:\\.\\d+)?|\\.\\d+";
 const CMP_PRE = "(?:(≥|≤|>=|<=|>|<|\\bat least|\\bmore than|\\bless than)\\s*)?";
 const CMP_POST = "or more|or less";
+// "/day", "per dose", "a day", "each week", "daily", "weekly" straight after a unit.
+const SUFFIX = "(?:\\s*/\\s*|\\s+per\\s+)(?:day|dose|week|kg)|\\s+(?:a|each)\\s+(?:day|week)|\\s+(?:daily|weekly)";
+const suffixOf = (raw: string | undefined) => (!raw ? "" : /week/i.test(raw) ? "/week" : /dose/i.test(raw) ? "/dose" : /kg/i.test(raw) ? "/kg" : "/day");
 // Groups: 1 leading comparator, 2 and 3 numbers, 4 trailing comparator, 5 unit, 6 unit suffix (/day, per dose ...), 7 trailing comparator.
 const TOKEN_RE = () => new RegExp(
-  `${CMP_PRE}(?<![A-Za-z0-9.,]|[A-Za-z]-)(${NUM})(?:\\s*[–-]\\s*(${NUM}))?(?:\\s+(${CMP_POST})\\b)?(?:[\\s-]*(${UNIT})(?![A-Za-z])(?:(?:\\s*/\\s*|\\s+per\\s+)(day|dose|week|kg)(?![A-Za-z]))?)?(?:\\s+(${CMP_POST})\\b)?`, "gi");
+  `${CMP_PRE}(?<![A-Za-z0-9.,]|[A-Za-z]-)(${NUM})(?:\\s*[–-]\\s*(${NUM}))?(?:\\s+(${CMP_POST})\\b)?(?:[\\s-]*(${UNIT})(?![A-Za-z])(?:(${SUFFIX})(?![A-Za-z]))?)?(?:\\s+(${CMP_POST})\\b)?`, "gi");
 
 const CMP_CANON: Record<string, string> = { ">=": "≥", "≥": "≥", "at least": "≥", "or more": "≥", "<=": "≤", "≤": "≤", "or less": "≤",
   ">": ">", "more than": ">", "<": "<", "less than": "<" };
@@ -233,7 +246,7 @@ export function tokenCounts(text: string, opts: { keepRefs?: boolean } = {}): Ma
       for (const n of [m[2], m[3]].filter(Boolean) as string[]) {
         if (!unit && !cmp && !n.includes(",") && !n.includes(".") && /^(19|20)\d\d$/.test(n)) continue;
         const { value, unit: u } = normNumber(n, unit);
-        const key = `${cmp}${u ? `${value} ${u}${m[6] ? `/${m[6].toLowerCase()}` : ""}` : value}`;
+        const key = `${cmp}${u ? `${value} ${u}${suffixOf(m[6])}` : value}`;
         out.set(key, (out.get(key) ?? 0) + 1);
       }
     }
@@ -449,7 +462,7 @@ function defaultRawRoots(): string[] {
 }
 
 interface RawSet {
-  main: { norm: string; rel: string } | null; extras: { path: string; norm: string }[];
+  main: { norm: string; rel: string; pmid: string | null } | null; extras: { path: string; norm: string; pmid: string | null }[];
   /** Files under a pubmed/ folder headed "# PubMed <pmid>": the only raw that verifies a primary reference. */
   abstracts: { pmid: string; norm: string }[];
 }
@@ -471,13 +484,13 @@ function loadRaw(rep: Report, o: Options, tag: string, ac2: Check): RawSet {
     return { norm: normQuote(text), rel: real.slice(hit[0].replace(/[^/]+\/$/, "").length), pmid };
   };
   const main = open(rep.raw_path, rep.raw_sha256, "raw");
-  const extras: { path: string; norm: string }[] = [];
+  const extras: { path: string; norm: string; pmid: string | null }[] = [];
   const abstracts: { pmid: string; norm: string }[] = [];
   if (main?.pmid) abstracts.push({ pmid: main.pmid, norm: main.norm });
   for (const x of rep.extra_raw ?? []) {
     const e = open(x.path, x.sha256, "extra_raw");
     if (!e) continue;
-    extras.push({ path: x.path, norm: e.norm });
+    extras.push({ path: x.path, norm: e.norm, pmid: e.pmid });
     if (e.pmid) abstracts.push({ pmid: e.pmid, norm: e.norm });
   }
   return { main, extras, abstracts };
@@ -494,6 +507,29 @@ function findWhole(hay: string, q: string, tok: string): "ok" | "partial" | "abs
     if (tokenise(hay.slice(a, b), { keepRefs: true }).has(tok)) return "ok";
   }
   return found ? "partial" : "absent";
+}
+
+/** PMIDs of the PubMed-record references a body line cites ([n] markers), or null when it cites none. */
+function citedPubmedIds(body: string, bodyLine: string): Set<string> | null {
+  const byNumber = new Map<number, string>();
+  for (const line of refLines(body)) {
+    const m = /^\s*(?:[-*]\s*)?(?:\[(\d+)\]|(\d+)[.)])\s/.exec(line);
+    if (m) byNumber.set(Number(m[1] ?? m[2]), line);
+  }
+  const pmids = new Set<string>();
+  let any = false;
+  for (const m of bodyLine.matchAll(/\[(\d+(?:\s*[,–-]\s*\d+)*)\](?!\()/g)) {
+    for (const part of m[1].split(",")) {
+      const r = part.split(/[–-]/).map((x) => Number(x.trim()));
+      for (let n = r[0]; n <= (r[1] ?? r[0]); n++) {
+        const line = byNumber.get(n);
+        if (!line || !/pubmed\.ncbi\.nlm\.nih\.gov|PMID/i.test(line)) continue;
+        any = true;
+        for (const x of primaryIds(line)) if (x.kind === "pmid") pmids.add(x.id);
+      }
+    }
+  }
+  return any ? pmids : null;
 }
 
 /** Body lines where the checker finds `tok`, for the writer to locate. */
@@ -528,6 +564,41 @@ const relates = (bodyLine: string, sentence: string) => {
 function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, pairs: Map<string, string[]>): number {
   const rep = c.rep!, tag = `${c.handle}:`;
   let quoted = 0;
+  const verifyEntry = (tok: string, entry: { body_line: string; raw_quote: string }, moved: boolean): boolean => {
+    if (!moved && !tokenise(entry.body_line, { keepRefs: true }).has(tok)) { ac2.fails.push(`${tag} token "${tok}": body_line does not contain it${linesWith(c.newBody, tok)}`); return false; }
+    if (!entry.raw_quote.trim()) { ac2.fails.push(`${tag} token "${tok}" has an empty raw_quote`); return false; }
+    if (/\.\.\.|\u2026/.test(entry.raw_quote)) { ac2.fails.push(`${tag} token "${tok}": raw_quote contains an ellipsis (a paraphrase marker); quote the raw verbatim`); return false; }
+    const prefixed = /^\s*(?:NIH|EXTRA):\s*/.exec(entry.raw_quote);
+    const quote = prefixed ? entry.raw_quote.slice(prefixed[0].length) : entry.raw_quote;
+    if (!tokenise(quote, { keepRefs: true }).has(tok)) { ac2.fails.push(`${tag} token "${tok}" does not occur in its raw_quote`); return false; }
+    const q = normQuote(quote);
+    if (q.length < 30 && q.split(" ").length < 6) { ac2.fails.push(`${tag} raw_quote too short for "${tok}" (need 6 words or 30 characters)`); return false; }
+    const matches: { pmid: string | null; path: string }[] = [];
+    let partial = false;
+    if (prefixed) {
+      for (const x of raw.extras) {
+        const r = findWhole(x.norm, q, tok);
+        if (r === "ok") matches.push({ pmid: x.pmid, path: x.path }); else if (r === "partial") partial = true;
+      }
+    } else {
+      if (raw.main === null) return false;
+      const r = findWhole(raw.main.norm, q, tok);
+      if (r === "ok") matches.push({ pmid: raw.main.pmid, path: "" }); else if (r === "partial") partial = true;
+    }
+    if (!matches.length) {
+      ac2.fails.push(partial ? `${tag} raw_quote for "${tok}": the token is not a whole token in the raw` : `${tag} raw_quote for "${tok}" is not in the raw file`);
+      return false;
+    }
+    const cited = c.type === "reference" ? citedPubmedIds(c.newBody, entry.body_line) : null;
+    // A number cited to a primary study needs that study's abstract, or a ConsumerLab or NIH quote that states it.
+    if (cited && !matches.some((m) => (m.pmid ? cited.has(m.pmid) : true))) {
+      ac2.fails.push(`${tag} token "${tok}": number cited to a primary study without its abstract in reach: ${clip(entry.body_line, 100)}`);
+      return false;
+    }
+    const where = matches.find((m) => m.path);
+    if (where) ac2.infos.push(`${tag} "${tok}" matched in extra_raw ${where.path}`);
+    return true;
+  };
   for (const tok of new Set([...added, ...pairs.keys()])) {
     const sents = pairs.get(tok) ?? [];
     const named = rep.changed_tokens.filter((e) => tokenise(e.token, { keepRefs: true }).has(tok));
@@ -543,29 +614,10 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, pairs: Map<s
     if (!moved && !holding.length) { ac2.fails.push(`${tag} token "${tok}": body_line does not contain it${linesWith(c.newBody, tok)}`); continue; }
     const missing = moved ? [] : sents.filter((sn) => !holding.some((e) => relates(e.body_line, sn)));
     if (missing.length) { for (const sn of missing) ac2.fails.push(`${tag} token "${tok}" changed between paired sentences: no changed_tokens entry has this sentence as its body_line: ${clip(sn, 120)}`); continue; }
-    const entry = (sents.length && holding.find((e) => relates(e.body_line, sents[0]))) || holding[0] || named[0];
-    if (!entry.raw_quote.trim()) { ac2.fails.push(`${tag} token "${tok}" has an empty raw_quote`); continue; }
-    if (/\.\.\.|\u2026/.test(entry.raw_quote)) { ac2.fails.push(`${tag} token "${tok}": raw_quote contains an ellipsis (a paraphrase marker); quote the raw verbatim`); continue; }
-    const prefixed = /^\s*(?:NIH|EXTRA):\s*/.exec(entry.raw_quote);
-    const quote = prefixed ? entry.raw_quote.slice(prefixed[0].length) : entry.raw_quote;
-    if (!tokenise(quote, { keepRefs: true }).has(tok)) { ac2.fails.push(`${tag} token "${tok}" does not occur in its raw_quote`); continue; }
-    const q = normQuote(quote);
-    if (q.length < 30 && q.split(" ").length < 6) { ac2.fails.push(`${tag} raw_quote too short for "${tok}" (need 6 words or 30 characters)`); continue; }
-    let where = "";
-    let res: "ok" | "partial" | "absent";
-    if (prefixed) {
-      const hits = raw.extras.map((x) => ({ x, r: findWhole(x.norm, q, tok) }));
-      const hit = hits.find((h) => h.r === "ok") ?? hits.find((h) => h.r === "partial");
-      res = hit ? hit.r : "absent";
-      where = hit?.r === "ok" ? hit.x.path : "";
-    } else {
-      if (raw.main === null) continue;
-      res = findWhole(raw.main.norm, q, tok);
-    }
-    if (res === "absent") { ac2.fails.push(`${tag} raw_quote for "${tok}" is not in the raw file`); continue; }
-    if (res === "partial") { ac2.fails.push(`${tag} raw_quote for "${tok}": the token is not a whole token in the raw`); continue; }
-    if (where) ac2.infos.push(`${tag} "${tok}" matched in extra_raw ${where}`);
-    quoted++;
+    // Every entry that names the token is checked, not just the first.
+    let ok = true;
+    for (const entry of named) if (!verifyEntry(tok, entry, moved)) ok = false;
+    if (ok) quoted++;
   }
   ac2.infos.push(`${tag} ${added.length} new tokens, ${quoted} verified against raw`);
   return quoted;
@@ -607,10 +659,10 @@ function checkAc3(c: Ctx, hedgeBefore: number, hedgeAfter: number, ac3: Check) {
   }
 }
 
-/** Body text for AC4: for references and videos the reference list and bare link lines belong to AC7. */
+/** Body text for AC4: for references and videos the reference list (a "## References" section and "[n] ..." lines) belongs to AC7. A whole-line hyperlink in the body is a sentence. */
 function ac4Body(body: string, type: string | null): string {
   if (type === "pathway" || type === "guideline") return body;
-  return classifyLines(body).filter(({ line, ref }) => !ref && !/^\s*\[[^\]]+\]\([^)]*\)\s*$/.test(line)).map((x) => x.line).join("\n");
+  return classifyLines(body).filter(({ ref }) => !ref).map((x) => x.line).join("\n");
 }
 
 function checkAc4(c: Ctx, ac4: Check): number {
@@ -783,7 +835,10 @@ function checkAc7(c: Ctx, ac7: Check, pw: Check, abstracts: RawSet["abstracts"],
     }
   }
   if (c.type === "pathway") {
-    if (!/^\*Source: Auckland Region HealthPathways/m.test(normChars(c.newBody))) pw.fails.push(`${tag} missing "*Source: Auckland Region HealthPathways" line`);
+    const nb = normChars(c.newBody);
+    if (!/^\*Source: Auckland Region HealthPathways/m.test(nb)) pw.fails.push(`${tag} missing "*Source: Auckland Region HealthPathways" line`);
+    else if (!/^\*Source: Auckland Region HealthPathways[^\n]*Last reviewed:\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}/im.test(nb))
+      pw.fails.push(`${tag} source line lacks "Last reviewed: <month> <year>"`);
     if (!lines.some((l) => /^>/.test(l) && /doctor|healthcare provider|general practitioner|\bGP\b/i.test(l)))
       pw.fails.push(`${tag} missing doctor-deferral blockquote`);
     for (const l of lines) {
