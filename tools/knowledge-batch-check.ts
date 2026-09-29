@@ -11,9 +11,9 @@
  */
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 export type Status = "PASS" | "FAIL" | "WARN";
@@ -26,13 +26,15 @@ export interface Report {
   raw_sha256: string;
   old_raw_path: string | null;
   changed_tokens: { token: string; body_line: string; raw_quote: string }[];
-  deleted_sentences: { sentence: string; justification: string }[];
+  deleted_sentences: { sentence: string; justification: string; pattern?: boolean }[];
   headings_before: string[];
   headings_after: string[];
   proposed_summary_correction: string | null;
   product_mentions_before: number;
   product_mentions_after: number;
   notes: string;
+  /** True when the handle is not in docs/blog/index.json yet; the type then comes from the frontmatter. */
+  new?: boolean;
   /** Optional further raw sources; a raw_quote prefixed "NIH: " or "EXTRA: " is matched in these. */
   extra_raw?: { path: string; sha256: string }[];
 }
@@ -62,7 +64,11 @@ export const REPORT_SCHEMA = {
       type: "array",
       items: {
         type: "object", additionalProperties: false, required: ["sentence", "justification"],
-        properties: { sentence: { type: "string" }, justification: { type: "string" } },
+        properties: {
+          sentence: { type: "string", description: "verbatim removed sentence, or a regex when pattern is true" },
+          justification: { type: "string" },
+          pattern: { type: "boolean", description: "true: `sentence` is a regex; every removed base sentence it matches counts as justified" },
+        },
       },
     },
     headings_before: { type: "array", items: { type: "string" } },
@@ -71,6 +77,7 @@ export const REPORT_SCHEMA = {
     product_mentions_before: { type: "number" },
     product_mentions_after: { type: "number" },
     notes: { type: "string" },
+    new: { type: "boolean", description: "true for a handle absent from docs/blog/index.json" },
     extra_raw: {
       type: "array",
       items: { type: "object", required: ["path", "sha256"], properties: { path: { type: "string" }, sha256: { type: "string" } } },
@@ -116,6 +123,10 @@ export function validateReport(o: unknown): string[] {
   strArr("headings_before"); strArr("headings_after");
   objArr("changed_tokens", ["token", "body_line", "raw_quote"]);
   objArr("deleted_sentences", ["sentence", "justification"]);
+  if (Array.isArray(r.deleted_sentences)) (r.deleted_sentences as { pattern?: unknown }[]).forEach((x, i) => {
+    if (x && x.pattern !== undefined && typeof x.pattern !== "boolean") e.push(`deleted_sentences[${i}].pattern: boolean expected`);
+  });
+  if (r.new !== undefined && typeof r.new !== "boolean") e.push("new: boolean expected");
   if (r.extra_raw !== undefined) {
     if (!Array.isArray(r.extra_raw)) e.push("extra_raw: array expected");
     else (r.extra_raw as unknown[]).forEach((x, i) => {
@@ -158,13 +169,26 @@ function classifyLines(body: string): { line: string; ref: boolean }[] {
 }
 
 // Tokeniser: units, longest first; the lookahead stops "mg" matching inside "mgs" etc.
-const UNIT = "mmol/L|mg/dL|mmHg|x/day|times daily|percent|%|mcg|[µμ]g|mg|IU|mL|kg|cm|g|hours?|days?|weeks?|months?|years?";
-const NUM = "\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+(?:\\.\\d+)?";
+// Compound units come first so "2 mg/kg" is not "2 mg".
+const UNIT = "mL/min/1\\.73m2|mmol/mol|mmol/L|mg/mmol|mg/dL|mg/kg|mL/min|pmol/L|[µμ]mol/L|umol/L|micromol/L|micromole/L|nanogram/L|ng/L|mmHg|x/day|times daily|percent|%|mcg|[µμ]g|mg|IU|mL|kg|cm|g|hours?|days?|weeks?|months?|years?";
+const NUM = "\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+(?:\\.\\d+)?|\\.\\d+";
+const CMP_PRE = "(?:(≥|≤|>=|<=|>|<|\\bat least|\\bmore than|\\bless than)\\s*)?";
+const CMP_POST = "or more|or less";
+// Groups: 1 leading comparator, 2 and 3 numbers, 4 trailing comparator, 5 unit, 6 trailing comparator.
 const TOKEN_RE = () => new RegExp(
-  `(?<![A-Za-z0-9.,]|[A-Za-z]-)(${NUM})(?:\\s*[–-]\\s*(${NUM}))?(?:[\\s-]*(${UNIT})(?![A-Za-z]))?`, "gi");
+  `${CMP_PRE}(?<![A-Za-z0-9.,]|[A-Za-z]-)(${NUM})(?:\\s*[–-]\\s*(${NUM}))?(?:\\s+(${CMP_POST})\\b)?(?:[\\s-]*(${UNIT})(?![A-Za-z]))?(?:\\s+(${CMP_POST})\\b)?`, "gi");
+
+const CMP_CANON: Record<string, string> = { ">=": "≥", "≥": "≥", "at least": "≥", "or more": "≥", "<=": "≤", "≤": "≤", "or less": "≤",
+  ">": ">", "more than": ">", "<": "<", "less than": "<" };
+const canonCmp = (c: string | undefined) => (c ? CMP_CANON[c.toLowerCase()] ?? "" : "");
+
+const COMPOUND_UNITS: Record<string, string> = { "mmol/l": "mmol/L", "mg/dl": "mg/dL", "ml/min": "mL/min", "ng/l": "ng/L", "pmol/l": "pmol/L",
+  "µmol/l": "umol/L", "μmol/l": "umol/L", "umol/l": "umol/L", "micromol/l": "umol/L", "micromole/l": "umol/L", "nanogram/l": "ng/L",
+  "ml/min/1.73m2": "mL/min/1.73m2", "mmol/mol": "mmol/mol", "mg/mmol": "mg/mmol", "mg/kg": "mg/kg" };
 
 function normUnit(u: string): string {
   const l = u.toLowerCase();
+  if (COMPOUND_UNITS[l]) return COMPOUND_UNITS[l];
   if (l === "percent" || l === "%") return "%";
   if (l === "µg" || l === "μg" || l === "mcg") return "mcg";
   if (l === "times daily" || l === "x/day") return "x/day";
@@ -185,6 +209,7 @@ function normNumber(n: string, unit: string): { value: string; unit: string } {
 /** Strip everything the tokeniser must ignore, line by line. */
 function stripNoise(line: string): string {
   return unescapeMd(line)
+    .replace(/^\s*>+\s?/, "")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/https?:\/\/\S+/g, " ")
     .replace(/\b10\.\d{4,9}\/\S+/g, " ")
@@ -203,11 +228,12 @@ export function tokenCounts(text: string, opts: { keepRefs?: boolean } = {}): Ma
     if (ref) continue;
     const s = stripNoise(line);
     for (const m of s.matchAll(TOKEN_RE())) {
-      const unit = m[3] ? normUnit(m[3]) : "";
-      for (const n of [m[1], m[2]].filter(Boolean) as string[]) {
-        if (!unit && !n.includes(",") && !n.includes(".") && /^(19|20)\d\d$/.test(n)) continue;
+      const unit = m[5] ? normUnit(m[5]) : "";
+      const cmp = canonCmp(m[1] ?? m[4] ?? m[6]);
+      for (const n of [m[2], m[3]].filter(Boolean) as string[]) {
+        if (!unit && !cmp && !n.includes(",") && !n.includes(".") && /^(19|20)\d\d$/.test(n)) continue;
         const { value, unit: u } = normNumber(n, unit);
-        const key = u ? `${value} ${u}` : value;
+        const key = `${cmp}${u ? `${value} ${u}` : value}`;
         out.set(key, (out.get(key) ?? 0) + 1);
       }
     }
@@ -246,24 +272,28 @@ const phraseRe = (p: string) => new RegExp(`\\b${p.replace(/ /g, "\\s+")}\\b`, "
 const countIn = (text: string, p: string) => (text.match(phraseRe(p)) ?? []).length;
 const totalIn = (text: string, list: string[]) => list.reduce((n, p) => n + countIn(text, p), 0);
 
-export const PRODUCT_NAMES = ["MicroVitamin+", "MicroVitamin", "Sleep by Dr Brad", "Omega-3", "Potassium Fiber"];
-const PRODUCT_RE = new RegExp(PRODUCT_NAMES.map((n) => n.replace(/[+]/g, "\\+")).join("|"), "gi");
-// Generic omega-3 (fatty acids, fish oil, leaflets, link text) is not the product.
+export const PRODUCT_NAMES = ["MicroVitamin+", "MicroVitamin", "Sleep by Dr. Brad", "Sleep by Dr Brad", "Omega-3", "Potassium Fibre", "Potassium Fiber"];
+const PRODUCT_RE = new RegExp(PRODUCT_NAMES.map((n) => n.replace(/[+.]/g, "\\$&")).join("|"), "gi");
+// Generic omega-3 (fatty acids, fish oil, leaflets, link text) is not the product, unless the brand is within 40 characters.
 const OMEGA = "omega[- ]?3";
 const OMEGA_GENERIC = new RegExp(`${OMEGA}(?=[\\s\\S]{0,30}?(?:fatty acid|fish oil|leaflet|and cardiovascular))`, "gi");
 const OMEGA_IN_LINK = /\[[^\]]*\](?=\()/g;
+const BRAND_NEAR = /dr\.? brad|microvitamin/i;
+const brandNear = (str: string, at: number, len: number) => BRAND_NEAR.test(str.slice(Math.max(0, at - 40), at + len + 40));
 export const productMentions = (body: string) =>
   (body
-    .replace(OMEGA_IN_LINK, (m) => m.replace(new RegExp(OMEGA, "gi"), ""))
-    .replace(OMEGA_GENERIC, "")
+    .replace(OMEGA_IN_LINK, (m, at: number, str: string) => (brandNear(str, at, m.length) ? m : m.replace(new RegExp(OMEGA, "gi"), "")))
+    .replace(OMEGA_GENERIC, (m, at: number, str: string) => (brandNear(str, at, m.length) ? m : ""))
     .match(PRODUCT_RE) ?? []).length;
 
 const BANNED = ["Top Pick", "What CL Found", "ConsumerLab approved", "CL Approved", "Approved Quality"];
 const BRAND_RANKING = /\b(?:best|top|#1|number one|top[- ]rated|highest[- ]rated)\s+brands?\b|\bbrand rankings?\b|\bbrands?,? ranked\b|\branked (?:the )?brands?\b/i;
 const PATHWAY_FORBIDDEN: [string, RegExp][] = [
-  ["Awanui", /awanui/i], ["0508", /0508/], ["0800", /0800/], ["eReferral", /\be-?referral\b/i],
-  ["POAC", /\bPOAC\b/], ["DHB", /\bDHB\b/], ["Te Whatu Ora", /te whatu ora/i],
+  ["Awanui", /awanui/i], ["0508", /0508/], ["0800", /0800/], ["eReferral", /\be-?referral/i],
+  ["POAC", /\bPOAC/], ["DHB", /\bDHB/], ["Te Whatu Ora", /te\s+whatu\s+ora/i],
 ];
+const PHONE = /\b0[3-9]\d{2}[- ]?\d{3}[- ]?\d{3,4}\b|\b0[3-9][- ]?\d{3}[- ]?\d{4}\b/;
+const stripUrls = (l: string) => l.replace(/\]\([^)]*\)/g, "]").replace(/https?:\/\/\S+/g, " ");
 
 // ---------- git helpers ----------
 
@@ -278,12 +308,14 @@ const readOpt = (p: string) => (existsSync(p) ? readFileSync(p, "utf8") : null);
 // ---------- the checks ----------
 
 export interface Options {
-  root: string; batch: string; handles: string[]; reportsDir: string; base?: string; outRel?: string;
+  root: string; batch: string; handles: string[]; reportsDir: string; base: string; outRel?: string;
+  /** Allowed raw roots (default: the knowledge-map-raw roots of tools/codex-review-includes.json). */
+  rawRoots?: string[];
   exclusionsPath?: string; exceptions?: Exception[]; noExclusions?: boolean;
   checkIds?: boolean; headStatus?: (url: string) => number; delayMs?: number;
 }
 export interface Row {
-  handle: string; type: string; file: string; rawSha: string; bodySha: string; tokensNew: number; quoted: number;
+  handle: string; type: string; file: string; rawRel: string; rawSha: string; bodySha: string; tokensNew: number; quoted: number;
   deleted: number; hedgeBefore: number; hedgeAfter: number; productsBefore: number; productsAfter: number;
 }
 
@@ -293,12 +325,17 @@ const clip = (l: string, n = 120) => { const t = l.trim(); return t.length > n ?
 class Check {
   fails: string[] = []; warns: string[] = []; infos: string[] = [];
   constructor(readonly id: string, readonly title: string) {}
-  result(exceptions: Exception[] = []): Result {
+  /** An exception matches only the FAIL's full text after "<handle>: " (or that text's sha256). */
+  result(exceptions: Exception[] = [], used: Set<Exception> = new Set()): Result {
     const excepted: Exception[] = [], notes: string[] = [];
     const fails = this.fails.filter((f) => {
-      const ex = exceptions.find((x) => x.check === this.id && f.startsWith(`${x.handle}:`) && f.includes(x.match));
+      const ex = exceptions.find((x) => {
+        if (x.check !== this.id || !f.startsWith(`${x.handle}: `)) return false;
+        const rest = f.slice(x.handle.length + 2);
+        return rest === x.match || sha256(rest) === x.match;
+      });
       if (!ex) return true;
-      excepted.push(ex); notes.push(`EXCEPTION (${ex.by}, ${ex.date}): ${ex.reason}: ${f}`);
+      used.add(ex); excepted.push(ex); notes.push(`EXCEPTION (${ex.by}, ${ex.date}): ${ex.reason}: ${f}`);
       return false;
     });
     const status: Status = fails.length ? "FAIL" : this.warns.length || notes.length ? "WARN" : "PASS";
@@ -309,10 +346,12 @@ class Check {
 
 interface Ctx {
   handle: string; rep: Report | null; rel: string; newText: string | null; baseText: string | null;
-  newBody: string; baseBody: string;
+  newBody: string; baseBody: string; type: string | null;
 }
 
-function loadCtx(o: Options, base: string, handle: string, ac2: Check): Ctx {
+const fmType = (text: string | null) => (text && /^type:\s*"?([A-Za-z]+)"?\s*$/m.exec(splitFrontmatter(text).front)?.[1]) || "video";
+
+function loadCtx(o: Options, base: string, handle: string, ac2: Check, index: Map<string, { type?: string }>): Ctx {
   const rp = join(o.reportsDir, `${handle}.json`);
   let rep: Report | null = null;
   if (!existsSync(rp)) ac2.fails.push(`${handle}: diff report missing at ${rp}`);
@@ -325,7 +364,10 @@ function loadCtx(o: Options, base: string, handle: string, ac2: Check): Ctx {
       else rep = parsed as Report;
     } catch (e) { ac2.fails.push(`${handle}: report is not JSON: ${(e as Error).message}`); }
   }
-  const dirs = rep ? [DIR_FOR[rep.type]] : ["pathway", "blog", "guideline"];
+  // The type comes from the index, never from the report; a handle absent from the index must say "new".
+  const entry = index.get(handle);
+  let type: string | null = entry ? entry.type ?? "video" : null;
+  const dirs = type ? [DIR_FOR[type]] : ["pathway", "blog", "guideline"];
   let rel = `docs/${dirs[0]}/${handle}.md`;
   for (const d of dirs) {
     const cand = `docs/${d}/${handle}.md`;
@@ -334,7 +376,13 @@ function loadCtx(o: Options, base: string, handle: string, ac2: Check): Ctx {
   const newText = readOpt(join(o.root, rel));
   const baseText = gitShow(o.root, base, rel);
   if (newText === null) ac2.fails.push(`${handle}: body file missing (${rel})`);
-  return { handle, rep, rel, newText, baseText,
+  let source = "index";
+  if (!entry) {
+    if (rep?.new === true && newText !== null) { type = fmType(newText); source = "frontmatter"; }
+    else ac2.fails.push(`${handle}: not in docs/blog/index.json; declare "new": true in the report`);
+  }
+  if (rep && type && rep.type !== type) ac2.fails.push(`${handle}: report type "${rep.type}" does not match ${source} type "${type}"`);
+  return { handle, rep, rel, newText, baseText, type,
     newBody: splitFrontmatter(newText ?? "").body, baseBody: splitFrontmatter(baseText ?? "").body };
 }
 
@@ -375,22 +423,64 @@ function checkAc1(o: Options, base: string, ctxs: Ctx[], ac1: Check) {
   }
 }
 
-function checkAc2(c: Ctx, added: string[], ac2: Check): number {
-  const { rep, handle: tag } = { rep: c.rep!, handle: `${c.handle}:` };
-  let rawNorm: string | null = null;
-  if (!existsSync(rep.raw_path)) ac2.fails.push(`${tag} raw file not found: ${rep.raw_path}`);
-  else {
-    const buf = readFileSync(rep.raw_path);
-    if (sha256(buf) !== rep.raw_sha256) ac2.fails.push(`${tag} raw sha256 mismatch (file ${sha256(buf)}, report ${rep.raw_sha256})`);
-    else rawNorm = normQuote(buf.toString("utf8"));
-  }
+function rootRegexes(roots: string[]): RegExp[] {
+  return roots.map((r) => {
+    const p = r.startsWith("~/") ? join(homedir(), r.slice(2)) : r;
+    const segs = p.replace(/\/+$/, "").split("/");
+    const star = segs.findIndex((x) => x.includes("*"));
+    const prefix = segs.slice(0, star < 0 ? segs.length : star).join("/") || "/";
+    let real = prefix;
+    try { real = realpathSync(prefix); } catch { /* a missing root matches nothing real */ }
+    const full = [real === "/" ? "" : real, ...(star < 0 ? [] : segs.slice(star))].join("/");
+    return new RegExp(`^${full.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^/]*")}/`);
+  });
+}
+
+function defaultRawRoots(): string[] {
+  const j = JSON.parse(readFileSync(new URL("./codex-review-includes.json", import.meta.url), "utf8")) as { roots: string[] };
+  return j.roots.filter((r) => r.includes("knowledge-map-raw"));
+}
+
+interface RawSet { main: { norm: string; rel: string } | null; extras: { path: string; norm: string }[] }
+
+/** Open a report's raw files: each must resolve (realpath) under an allowed raw root, never inside the repo, with the sha256 the report gives. */
+function loadRaw(rep: Report, o: Options, tag: string, ac2: Check): RawSet {
+  const roots = rootRegexes(o.rawRoots ?? defaultRawRoots());
+  const repoReal = realpathSync(o.root);
+  const open = (path: string, sha: string, label: string) => {
+    if (!existsSync(path)) { ac2.fails.push(`${tag} ${label} file not found: ${path}`); return null; }
+    const real = realpathSync(path);
+    if (real === repoReal || real.startsWith(`${repoReal}/`)) { ac2.fails.push(`${tag} ${label} is inside the repo: ${path}`); return null; }
+    const hit = roots.map((r) => r.exec(real)).find((m) => m);
+    if (!hit) { ac2.fails.push(`${tag} ${label} is outside the allowed raw roots: ${path}`); return null; }
+    const buf = readFileSync(real);
+    if (sha256(buf) !== sha) { ac2.fails.push(`${tag} ${label} sha256 mismatch for ${path} (file ${sha256(buf)}, report ${sha})`); return null; }
+    return { norm: normQuote(buf.toString("utf8")), rel: real.slice(hit[0].replace(/[^/]+\/$/, "").length) };
+  };
+  const main = open(rep.raw_path, rep.raw_sha256, "raw");
   const extras: { path: string; norm: string }[] = [];
   for (const x of rep.extra_raw ?? []) {
-    if (!existsSync(x.path)) { ac2.fails.push(`${tag} extra_raw file not found: ${x.path}`); continue; }
-    const buf = readFileSync(x.path);
-    if (sha256(buf) !== x.sha256) ac2.fails.push(`${tag} extra_raw sha256 mismatch for ${x.path}`);
-    else extras.push({ path: x.path, norm: normQuote(buf.toString("utf8")) });
+    const e = open(x.path, x.sha256, "extra_raw");
+    if (e) extras.push({ path: x.path, norm: e.norm });
   }
+  return { main, extras };
+}
+
+/** Find `q` in `hay`, then re-tokenise the whole words around each hit: the token must be a whole token there ("7 mmol/L" is not "1.7 mmol/L"). */
+function findWhole(hay: string, q: string, tok: string): "ok" | "partial" | "absent" {
+  let found = false;
+  for (let i = hay.indexOf(q); i >= 0; i = hay.indexOf(q, i + 1)) {
+    found = true;
+    let a = i, b = i + q.length;
+    while (a > 0 && !/\s/.test(hay[a - 1])) a--;
+    while (b < hay.length && !/\s/.test(hay[b])) b++;
+    if (tokenise(hay.slice(a, b), { keepRefs: true }).has(tok)) return "ok";
+  }
+  return found ? "partial" : "absent";
+}
+
+function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet): number {
+  const rep = c.rep!, tag = `${c.handle}:`;
   let quoted = 0;
   for (const tok of added) {
     const named = rep.changed_tokens.filter((e) => tokenise(e.token, { keepRefs: true }).has(tok));
@@ -402,14 +492,21 @@ function checkAc2(c: Ctx, added: string[], ac2: Check): number {
     const quote = prefixed ? entry.raw_quote.slice(prefixed[0].length) : entry.raw_quote;
     if (!tokenise(quote, { keepRefs: true }).has(tok)) { ac2.fails.push(`${tag} token "${tok}" does not occur in its raw_quote`); continue; }
     const q = normQuote(quote);
+    if (q.length < 30 && q.split(" ").length < 6) { ac2.fails.push(`${tag} raw_quote too short for "${tok}" (need 6 words or 30 characters)`); continue; }
+    let where = "";
+    let res: "ok" | "partial" | "absent";
     if (prefixed) {
-      const hit = extras.find((x) => x.norm.includes(q));
-      if (!hit) { ac2.fails.push(`${tag} raw_quote for "${tok}" is not in the raw file`); continue; }
-      ac2.infos.push(`${tag} "${tok}" matched in extra_raw ${hit.path}`);
+      const hits = raw.extras.map((x) => ({ x, r: findWhole(x.norm, q, tok) }));
+      const hit = hits.find((h) => h.r === "ok") ?? hits.find((h) => h.r === "partial");
+      res = hit ? hit.r : "absent";
+      where = hit?.r === "ok" ? hit.x.path : "";
     } else {
-      if (rawNorm === null) continue;
-      if (!rawNorm.includes(q)) { ac2.fails.push(`${tag} raw_quote for "${tok}" is not in the raw file`); continue; }
+      if (raw.main === null) continue;
+      res = findWhole(raw.main.norm, q, tok);
     }
+    if (res === "absent") { ac2.fails.push(`${tag} raw_quote for "${tok}" is not in the raw file`); continue; }
+    if (res === "partial") { ac2.fails.push(`${tag} raw_quote for "${tok}": the token is not a whole token in the raw`); continue; }
+    if (where) ac2.infos.push(`${tag} "${tok}" matched in extra_raw ${where}`);
     quoted++;
   }
   ac2.infos.push(`${tag} ${added.length} new tokens, ${quoted} verified against raw`);
@@ -432,7 +529,11 @@ function nearest(sent: string, cands: string[]): string | null {
 
 function checkAc3(c: Ctx, hedgeBefore: number, hedgeAfter: number, ac3: Check) {
   const tag = `${c.handle}:`;
-  if (hedgeAfter < hedgeBefore) ac3.fails.push(`${tag} hedge tokens fell ${hedgeBefore} -> ${hedgeAfter}`);
+  if (hedgeAfter < hedgeBefore) {
+    // A shrinking reference may lose hedges with the text that carried them; pathways keep the hard FAIL.
+    const soft = c.type !== "pathway" && c.type !== "guideline" && c.newBody.length < c.baseBody.length;
+    (soft ? ac3.warns : ac3.fails).push(`${tag} hedge tokens fell ${hedgeBefore} -> ${hedgeAfter}${soft ? " (body shrank)" : ""}`);
+  }
   const bs = sentences(c.baseBody), ns = sentences(c.newBody);
   const bset = new Set(bs), nset = new Set(ns);
   const baseOnly = [...bset].filter((x) => !nset.has(x)), newOnly = [...nset].filter((x) => !bset.has(x));
@@ -448,21 +549,39 @@ function checkAc3(c: Ctx, hedgeBefore: number, hedgeAfter: number, ac3: Check) {
   }
 }
 
+/** Body text for AC4: for references and videos the reference list and bare link lines belong to AC7. */
+function ac4Body(body: string, type: string | null): string {
+  if (type === "pathway" || type === "guideline") return body;
+  return classifyLines(body).filter(({ line, ref }) => !ref && !/^\s*\[[^\]]+\]\([^)]*\)\s*$/.test(line)).map((x) => x.line).join("\n");
+}
+
 function checkAc4(c: Ctx, ac4: Check): number {
   const tag = `${c.handle}:`;
-  const nowS = new Set(sentences(c.newBody));
-  const declared = new Map((c.rep?.deleted_sentences ?? []).map((d) => [cleanSentence(d.sentence), d.justification]));
-  let deleted = 0;
-  for (const s of new Set(sentences(c.baseBody))) {
+  const nowS = new Set(sentences(ac4Body(c.newBody, c.type)));
+  const entries = c.rep?.deleted_sentences ?? [];
+  const declared = new Map(entries.filter((d) => !d.pattern).map((d) => [cleanSentence(d.sentence), d.justification]));
+  const patterns: { re: RegExp; justification: string }[] = [];
+  for (const d of entries.filter((x) => x.pattern)) {
+    try { patterns.push({ re: new RegExp(d.sentence, "i"), justification: d.justification }); }
+    catch { ac4.fails.push(`${tag} deleted_sentences pattern is not a valid regex: ${clip(d.sentence, 80)}`); }
+  }
+  let deleted = 0, byPattern = 0;
+  for (const s of new Set(sentences(ac4Body(c.baseBody, c.type)))) {
     if (nowS.has(s)) continue;
     deleted++;
+    const p = patterns.find((x) => x.re.test(s));
+    if (p) {
+      if (!p.justification.trim()) ac4.fails.push(`${tag} deleted sentence pattern has an empty justification: ${clip(s, 80)}`);
+      else byPattern++;
+      continue;
+    }
     const j = declared.get(s);
     if (j === undefined) ac4.fails.push(`${tag} sentence removed and not in deleted_sentences: ${clip(s)}`);
     else if (!j.trim()) ac4.fails.push(`${tag} deleted sentence has an empty justification: ${clip(s, 80)}`);
   }
   const nowH = new Set(headings(c.newBody));
   for (const h of headings(c.baseBody)) if (!nowH.has(h)) ac4.fails.push(`${tag} heading missing from new body: ${h}`);
-  ac4.infos.push(`${tag} ${deleted} sentences removed, ${headings(c.baseBody).length} base headings`);
+  ac4.infos.push(`${tag} ${deleted} sentences removed (${byPattern} justified by pattern), ${headings(c.baseBody).length} base headings`);
   return deleted;
 }
 
@@ -504,8 +623,9 @@ function referenceSourceCheck(newBody: string, baseBody: string, tag: string, ac
     if (urls.length && !/[A-Za-z]{2}/.test(title)) ac7.fails.push(`${tag} reference line is a bare URL without a title: ${clip(line, 100)}`);
     for (const u of urls) {
       const h = hostOf(u);
-      if (!h || ALLOWED_HOSTS.some((a) => h === a || h.endsWith(`.${a}`)) || known.has(h)) continue;
-      ac7.fails.push(`${tag} reference line has unknown host ${h || u}: ${clip(line, 100)}`);
+      if (!h) { ac7.fails.push(`${tag} reference line has an unparseable URL ${clip(u, 60)}: ${clip(line, 100)}`); continue; }
+      if (ALLOWED_HOSTS.some((a) => h === a || h.endsWith(`.${a}`)) || known.has(h)) continue;
+      ac7.fails.push(`${tag} reference line has unknown host ${h}: ${clip(line, 100)}`);
     }
   }
 }
@@ -545,16 +665,20 @@ function primaryIds(line: string): PrimaryId[] {
 
 function checkAc7(c: Ctx, ac7: Check, pw: Check, raws: string[], idsOut: Map<string, PrimaryId & { handle: string }>) {
   const tag = `${c.handle}:`, rep = c.rep;
-  for (const l of c.newBody.split(/\r?\n/)) {
+  const lines = normChars(c.newBody).split(/\r?\n/);
+  for (const l of lines) {
     if (/grokipedia/i.test(l)) ac7.fails.push(`${tag} "grokipedia" in body: ${clip(l, 100)}`);
     for (const b of BANNED) if (l.toLowerCase().includes(b.toLowerCase())) ac7.fails.push(`${tag} banned phrase "${b}": ${clip(l, 100)}`);
     if (BRAND_RANKING.test(l)) ac7.fails.push(`${tag} brand ranking phrase: ${clip(l, 100)}`);
   }
   const pb = productMentions(c.baseBody), pa = productMentions(c.newBody);
   if (pa > pb) ac7.fails.push(`${tag} product mentions rose ${pb} -> ${pa}`);
-  if (rep && (rep.product_mentions_before !== pb || rep.product_mentions_after !== pa))
-    ac7.fails.push(`${tag} report says product mentions ${rep.product_mentions_before} -> ${rep.product_mentions_after}, recomputed ${pb} -> ${pa}`);
-  if (rep?.type === "reference") {
+  if (rep && (rep.product_mentions_before !== pb || rep.product_mentions_after !== pa)) {
+    // No rise is the invariant; a report that counted differently but saw no change either way is a note.
+    const flat = pb === pa && rep.product_mentions_before === rep.product_mentions_after;
+    (flat ? ac7.warns : ac7.fails).push(`${tag} ${flat ? "count differs from report: " : ""}report says product mentions ${rep.product_mentions_before} -> ${rep.product_mentions_after}, recomputed ${pb} -> ${pa}`);
+  }
+  if (c.type === "reference") {
     referenceCheck(c.newBody, tag, ac7);
     referenceSourceCheck(c.newBody, c.baseBody, tag, ac7);
     productSectionCheck(c.newBody, c.baseBody, tag, ac7);
@@ -565,12 +689,14 @@ function checkAc7(c: Ctx, ac7: Check, pw: Check, raws: string[], idsOut: Map<str
       if (ids.some((x) => !raws.some((r) => r.includes(x.id.toLowerCase())))) ac7.warns.push(`${tag} unverified primary: ${clip(line, 140)}`);
     }
   }
-  if (rep?.type === "pathway") {
-    const lines = c.newBody.split(/\r?\n/);
-    if (!/^\*Source: Auckland Region HealthPathways/m.test(c.newBody)) pw.fails.push(`${tag} missing "*Source: Auckland Region HealthPathways" line`);
+  if (c.type === "pathway") {
+    if (!/^\*Source: Auckland Region HealthPathways/m.test(normChars(c.newBody))) pw.fails.push(`${tag} missing "*Source: Auckland Region HealthPathways" line`);
     if (!lines.some((l) => /^>/.test(l) && /doctor|healthcare provider|general practitioner|\bGP\b/i.test(l)))
       pw.fails.push(`${tag} missing doctor-deferral blockquote`);
-    for (const l of lines) for (const [name, re] of PATHWAY_FORBIDDEN) if (re.test(l)) pw.fails.push(`${tag} forbidden term "${name}": ${clip(l, 100)}`);
+    for (const l of lines) {
+      for (const [name, re] of PATHWAY_FORBIDDEN) if (re.test(l)) pw.fails.push(`${tag} forbidden term "${name}": ${clip(l, 100)}`);
+      if (PHONE.test(stripUrls(l))) pw.fails.push(`${tag} forbidden phone number: ${clip(l, 100)}`);
+    }
   }
 }
 
@@ -598,7 +724,7 @@ function verifyIds(ids: Map<string, PrimaryId & { handle: string }>, o: Options,
 const EXCLUSIONS_PATH = "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/tools/healthpathways-exclusions.json";
 
 export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha: string } {
-  const base = o.base ?? "HEAD";
+  const base = o.base;
   const baseSha = git(o.root, ["rev-parse", base]).trim();
   const ac1 = new Check("AC1", "index.json and categories.json unchanged (except approved summary corrections)");
   const ac2 = new Check("AC2", "raw fidelity of every new number token");
@@ -608,7 +734,11 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
   const ac7 = new Check("AC7", "grokipedia, products, references, banned phrases, exclusions");
   const pw = new Check("PATHWAY", "source line, deferral blockquote, no NZ logistics");
   const rows: Row[] = [];
-  const ctxs = o.handles.map((h) => loadCtx(o, base, h, ac2));
+  let index = new Map<string, { type?: string }>();
+  try {
+    index = new Map((JSON.parse(readOpt(join(o.root, "docs/blog/index.json")) ?? "[]") as { handle: string; type?: string }[]).map((e) => [e.handle, e]));
+  } catch { /* AC1 reports an unparseable index */ }
+  const ctxs = o.handles.map((h) => loadCtx(o, base, h, ac2, index));
   const ids = new Map<string, PrimaryId & { handle: string }>();
 
   checkAc1(o, base, ctxs, ac1);
@@ -617,14 +747,14 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
     const added = [...newTokens].filter(([t, n]) => n > (baseTokens.get(t) ?? 0)).map(([t]) => t);
     const hedgeBefore = totalIn(c.baseBody, HEDGES), hedgeAfter = totalIn(c.newBody, HEDGES);
     let quoted = 0, deleted = 0;
+    const raw = c.rep ? loadRaw(c.rep, o, `${c.handle}:`, ac2) : null;
     if (c.newText !== null) {
-      if (c.rep) quoted = checkAc2(c, added, ac2);
+      if (c.rep && raw) quoted = checkAc2(c, added, ac2, raw);
       checkAc3(c, hedgeBefore, hedgeAfter, ac3);
       if (c.baseText !== null) deleted = checkAc4(c, ac4);
-      const raws = c.rep ? [c.rep.raw_path, ...(c.rep.extra_raw ?? []).map((x) => x.path)].filter(existsSync).map((f) => normQuote(readFileSync(f, "utf8"))) : [];
-      checkAc7(c, ac7, pw, raws, ids);
+      checkAc7(c, ac7, pw, raw ? [raw.main?.norm, ...raw.extras.map((x) => x.norm)].filter((x): x is string => !!x) : [], ids);
     }
-    rows.push({ handle: c.handle, type: c.rep?.type ?? "?", file: c.rel, rawSha: c.rep?.raw_sha256 ?? "-",
+    rows.push({ handle: c.handle, type: c.type ?? "?", file: c.rel, rawRel: raw?.main?.rel ?? "-", rawSha: c.rep?.raw_sha256 ?? "-",
       bodySha: sha256(c.newBody), tokensNew: added.length, quoted, deleted, hedgeBefore, hedgeAfter,
       productsBefore: productMentions(c.baseBody), productsAfter: productMentions(c.newBody) });
   }
@@ -641,13 +771,17 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
   } else ac7.fails.push(`exclusions file not found (${exPath}); pass --no-exclusions to skip the excluded-handle check`);
   for (const h of o.handles) if (excluded.has(h)) ac7.fails.push(`${h}: handle is on the HealthPathways exclusion list`);
 
-  // AC6, and new files against the exclusion list.
+  // AC6 (only the directory of each entry's type), nothing-to-check, and new files against the exclusion list.
   const changed = new Set([
     ...git(o.root, ["diff", "--name-only", "--no-renames", base]).split("\n"),
     ...git(o.root, ["ls-files", "--others", "--exclude-standard"]).split("\n"),
   ].filter(Boolean));
   const allowed = new Set<string>(o.outRel ? [o.outRel] : []);
-  for (const h of o.handles) for (const d of ["pathway", "blog", "guideline"]) allowed.add(`docs/${d}/${h}.md`);
+  for (const c of ctxs) {
+    const mine = (c.type ? [DIR_FOR[c.type]] : ["pathway", "blog", "guideline"]).map((d) => `docs/${d}/${c.handle}.md`);
+    mine.forEach((f) => allowed.add(f));
+    if (!mine.some((f) => changed.has(f))) ac6.fails.push(`nothing to check for ${c.handle}: the diff against ${base} touches none of its files`);
+  }
   for (const f of changed) {
     if (!allowed.has(f)) ac6.fails.push(`unexpected change: ${f}`);
     const m = f.match(/^docs\/(?:pathway|blog|guideline)\/(.+)\.md$/);
@@ -656,11 +790,39 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
   ac6.infos.push(`${changed.size} changed paths versus ${base}`);
   ac6.infos.push("Shopify updated_at snapshot: separate tool, NOT checked here");
 
-  return { results: [ac1, ac2, ac3, ac4, ac6, ac7, pw].map((c) => c.result(o.exceptions)), rows, baseSha };
+  const used = new Set<Exception>();
+  const results = [ac1, ac2, ac3, ac4, ac6, ac7, pw].map((c) => c.result(o.exceptions, used));
+  for (const x of o.exceptions ?? []) {
+    if (used.has(x)) continue;
+    const r = results.find((y) => y.id === x.check) ?? results[results.length - 1];
+    r.evidence.unshift(`FAIL unused exception (${x.check}, ${x.handle}): ${clip(x.match, 80)}`);
+    r.status = "FAIL";
+  }
+  return { results, rows, baseSha };
+}
+
+const EXCEPTION_CHECKS = ["AC2", "AC4", "AC7", "PATHWAY"];
+export function validateExceptions(x: unknown): string[] {
+  if (!Array.isArray(x)) return ["exceptions file must be a JSON array"];
+  const e: string[] = [];
+  x.forEach((v, i) => {
+    const r = (v ?? {}) as Record<string, unknown>;
+    if (!EXCEPTION_CHECKS.includes(r.check as string)) e.push(`[${i}].check must be one of ${EXCEPTION_CHECKS.join("|")}`);
+    for (const k of ["handle", "match", "reason", "date"]) if (typeof r[k] !== "string" || !(r[k] as string).trim()) e.push(`[${i}].${k} must be a non-empty string`);
+    if (r.by !== "orchestrator" && r.by !== "Brad") e.push(`[${i}].by must be "orchestrator" or "Brad"`);
+  });
+  return e;
+}
+
+/** A batch report must not sit under docs/blog or on any file the batch checks. */
+export function validateOut(outRel: string, handles: string[]): string | null {
+  if (outRel.startsWith("docs/blog/")) return `--out ${outRel} is under docs/blog`;
+  const checked = handles.flatMap((h) => ["pathway", "blog", "guideline"].map((d) => `docs/${d}/${h}.md`));
+  return checked.includes(outRel) ? `--out ${outRel} is a checked file` : null;
 }
 
 /** Markdown batch report: counts and hashes only, under 150 lines. */
-export function renderReport(batch: string, base: string, baseSha: string, results: Result[], rows: Row[]): string {
+export function renderReport(batch: string, base: string, baseSha: string, results: Result[], rows: Row[], checkIds: boolean): string {
   const L: string[] = [`# Knowledge batch report: ${batch}`, "", `Base: ${base} (${baseSha})`, `Handles: ${rows.length}`, "",
     "Counts and hashes only. Raw text never enters this repo.", "", "## Checks", "", "| Check | Status | FAIL | WARN |", "|---|---|---|---|"];
   for (const r of results) {
@@ -669,10 +831,10 @@ export function renderReport(batch: string, base: string, baseSha: string, resul
   }
   const cap = 100;
   L.push("", "## Handles", "",
-    "| handle | type | raw sha256 | body sha256 | new tokens | quoted | sentences removed | hedge | products |",
-    "|---|---|---|---|---|---|---|---|---|");
+    "| handle | type | raw (relative) | raw sha256 | body sha256 | new tokens | quoted | sentences removed | hedge | products |",
+    "|---|---|---|---|---|---|---|---|---|---|");
   for (const r of rows.slice(0, cap)) {
-    L.push(`| ${r.handle} | ${r.type} | ${r.rawSha.slice(0, 16)} | ${r.bodySha.slice(0, 16)} | ${r.tokensNew} | ${r.quoted} | ${r.deleted} | ${r.hedgeBefore}>${r.hedgeAfter} | ${r.productsBefore}>${r.productsAfter} |`);
+    L.push(`| ${r.handle} | ${r.type} | ${r.rawRel} | ${r.rawSha} | ${r.bodySha.slice(0, 16)} | ${r.tokensNew} | ${r.quoted} | ${r.deleted} | ${r.hedgeBefore}>${r.hedgeAfter} | ${r.productsBefore}>${r.productsAfter} |`);
   }
   if (rows.length > cap) L.push("", `${rows.length - cap} more handles omitted to stay under the line cap.`);
   const ex = results.flatMap((r) => r.excepted ?? []);
@@ -680,8 +842,13 @@ export function renderReport(batch: string, base: string, baseSha: string, resul
     L.push("", "## Accepted exceptions", "", "| check | handle | by | date | reason | match sha256 |", "|---|---|---|---|---|---|");
     for (const x of ex) L.push(`| ${x.check} | ${x.handle} | ${x.by} | ${x.date} | ${x.reason.replace(/\|/g, "/")} | ${sha256(x.match).slice(0, 16)} |`);
   }
-  L.push("", "Hashes are the first 16 hex characters of sha256.", "",
-    "AC5 (answer quality) and the Shopify updated_at snapshot: not covered here.", "", "AC8 sign-off (Brad): PENDING");
+  L.push("", "Body hashes are the first 16 hex characters of sha256; raw hashes are in full.", "", "## Not covered by this script", "",
+    "- AC5 answer checks (harness)",
+    "- AC6 Shopify updated_at snapshot (separate tool)",
+    checkIds ? "- DOI/PMID resolution: checked with --check-ids (cap 60; see the run output)" : "- DOI/PMID resolution: NOT checked (run with --check-ids)",
+    "- section placement of edits (R8)",
+    "- primary-study abstract presence (only the WARN \"unverified primary\" lines)",
+    "", "AC8 sign-off (Brad): PENDING");
   return `${L.join("\n")}\n`;
 }
 
@@ -697,30 +864,46 @@ function parseArgs(argv: string[]): Record<string, string | true> {
   return a;
 }
 
-export function main(argv: string[]): number {
+/** realpath of the nearest existing ancestor plus the rest, so it compares equal to the repo's real top level. */
+function realPath(p: string): string {
+  const rest: string[] = [];
+  let cur = p;
+  while (!existsSync(cur) && dirname(cur) !== cur) { rest.unshift(basename(cur)); cur = dirname(cur); }
+  return join(realpathSync(cur), ...rest);
+}
+
+/** `overrides` lets tests point the raw roots elsewhere; there is no flag for it. */
+export function main(argv: string[], overrides: Partial<Options> = {}): number {
   const a = parseArgs(argv);
   if (a["print-schema"]) { console.log(JSON.stringify(REPORT_SCHEMA, null, 2)); return 0; }
   if (typeof a.example === "string") { console.log(JSON.stringify(exampleReport(a.example), null, 2)); return 0; }
-  if (typeof a.batch !== "string" || typeof a.handles !== "string") {
-    console.error("usage: knowledge-batch-check.ts --batch <name> --handles <file> [--reports <dir>] [--base <ref>] [--out <file>] [--exceptions <file>] [--no-exclusions] [--check-ids]");
-    return 2;
-  }
+  const usage = (msg: string) => { console.error(`${msg}\nusage: knowledge-batch-check.ts --batch <name> --handles <file> --base <git ref> [--reports <dir>] [--out <file>] [--exceptions <file>] [--no-exclusions] [--check-ids]`); return 2; };
+  if (typeof a.batch !== "string" || typeof a.handles !== "string") return usage("--batch and --handles are required");
+  if (typeof a.base !== "string") return usage("--base is required (no default)");
   const root = git(process.cwd(), ["rev-parse", "--show-toplevel"]).trim();
   const handles = readFileSync(a.handles, "utf8").split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
   const reportsDir = typeof a.reports === "string" ? resolve(a.reports) : join(homedir(), ".codex-review", "diff-reports", a.batch);
-  const out = typeof a.out === "string" ? resolve(a.out) : undefined;
-  const base = typeof a.base === "string" ? a.base : "HEAD";
+  const out = typeof a.out === "string" ? realPath(resolve(a.out)) : undefined;
   const rel = out ? relative(root, out) : "";
   const outRel = out && !rel.startsWith("..") && !isAbsolute(rel) ? rel : undefined;
-  const exceptions: Exception[] = typeof a.exceptions === "string" && existsSync(a.exceptions)
-    ? JSON.parse(readFileSync(a.exceptions, "utf8")) : [];
-  const { results, rows, baseSha } = runBatch({ root, batch: a.batch, handles, reportsDir, base, outRel, exceptions,
-    noExclusions: a["no-exclusions"] === true, checkIds: a["check-ids"] === true });
+  if (outRel) { const bad = validateOut(outRel, handles); if (bad) return usage(bad); }
+  let exceptions: Exception[] = [];
+  if (a.exceptions !== undefined) {
+    if (typeof a.exceptions !== "string" || !existsSync(a.exceptions)) return usage(`--exceptions file not found: ${String(a.exceptions)}`);
+    let parsed: unknown;
+    try { parsed = JSON.parse(readFileSync(a.exceptions, "utf8")); } catch (e) { return usage(`--exceptions is not JSON: ${(e as Error).message}`); }
+    const errs = validateExceptions(parsed);
+    if (errs.length) return usage(`--exceptions invalid: ${errs.join("; ")}`);
+    exceptions = parsed as Exception[];
+  }
+  const checkIds = a["check-ids"] === true;
+  const { results, rows, baseSha } = runBatch({ root, batch: a.batch, handles, reportsDir, base: a.base, outRel, exceptions,
+    noExclusions: a["no-exclusions"] === true, checkIds, ...overrides });
   for (const r of results) {
     console.log(`${r.status} ${r.id} ${r.title}`);
     for (const e of r.evidence) console.log(`    ${e}`);
   }
-  if (out) { mkdirSync(dirname(out), { recursive: true }); writeFileSync(out, renderReport(a.batch, base, baseSha, results, rows)); }
+  if (out) { mkdirSync(dirname(out), { recursive: true }); writeFileSync(out, renderReport(a.batch, a.base, baseSha, results, rows, checkIds)); }
   return results.some((r) => r.status === "FAIL") ? 1 : 0;
 }
 

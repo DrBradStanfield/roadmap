@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  type Report, type Result, exampleReport, main, normQuote, productMentions, renderReport, runBatch,
+  type Report, type Result, exampleReport, main, normQuote, productMentions, renderReport, runBatch, validateExceptions,
   sentences, sha256, tokenise, validateReport,
 } from "./knowledge-batch-check";
 
@@ -76,7 +76,7 @@ describe("US-42 AC4/AC7 sentences and products", () => {
   it("treats generic omega-3 as not a product, bare Omega-3 as one", () => {
     expect(productMentions("Omega-3")).toBe(1);
     expect(productMentions("omega-3 fatty acids help. Omega 3 and Cardiovascular Disease")).toBe(0);
-    expect(productMentions("Try omega-3 from fish oil, or Omega-3 by Dr Brad.")).toBe(1);
+    expect(productMentions("Try omega-3 from fish oil, or Omega-3.")).toBe(1);
     expect(productMentions("See [Omega-3 in heart care](https://x.org) now.")).toBe(0);
     expect(productMentions("omega-3 is fine, and much later than thirty characters comes fatty acid")).toBe(1);
   });
@@ -110,8 +110,8 @@ describe("US-42 AC2/AC11 report schema and CLI", () => {
 let root: string, reports: string, exclusions: string;
 const sh = (args: string[]) => execFileSync("git", args, { cwd: root, stdio: "pipe" });
 const put = (rel: string, text: string) => { mkdirSync(dirname(join(root, rel)), { recursive: true }); writeFileSync(join(root, rel), text); };
-const INDEX = JSON.stringify([{ handle: "alpha", summary: "Alpha summary, 200 mg daily.", title: "Alpha" },
-  { handle: "beta", summary: "Clinical pathway for beta.", title: "Beta" }, { handle: "other", summary: "x", title: "O" }], null, 2);
+const INDEX = JSON.stringify([{ handle: "alpha", summary: "Alpha summary, 200 mg daily.", title: "Alpha", type: "reference" },
+  { handle: "beta", summary: "Clinical pathway for beta.", title: "Beta", type: "pathway" }, { handle: "other", summary: "x", title: "O" }], null, 2);
 
 interface Reps { alpha: Report; beta: Report }
 let reps: Reps;
@@ -121,7 +121,7 @@ function writeReports() {
 }
 const run = (over: Partial<Parameters<typeof runBatch>[0]> = {}) => {
   writeReports();
-  const { results } = runBatch({ root, batch: "t", handles: ["alpha", "beta"], reportsDir: reports, exclusionsPath: exclusions, ...over });
+  const { results } = runBatch({ root, batch: "t", handles: ["alpha", "beta"], reportsDir: reports, exclusionsPath: exclusions, base: "HEAD", rawRoots: [reports], ...over });
   return Object.fromEntries(results.map((r) => [r.id, r])) as Record<string, Result>;
 };
 const fails = (r: Result) => r.evidence.filter((e) => e.startsWith("FAIL "));
@@ -147,7 +147,7 @@ beforeEach(() => {
       deleted_sentences: [{ sentence: "Trials used 200 mg per day [1].", justification: "The new raw says 300 mg." }],
       product_mentions_before: 1, product_mentions_after: 1 },
     beta: { ...base, handle: "beta", type: "pathway", raw_path: betaRaw, raw_sha256: sha256(fx("beta.raw.txt")),
-      changed_tokens: [{ token: "6 weeks", body_line: "Review again in 6 weeks.", raw_quote: "review again in 6 weeks" }],
+      changed_tokens: [{ token: "6 weeks", body_line: "Review again in 6 weeks.", raw_quote: "please review again in 6 weeks if symptoms persist" }],
       deleted_sentences: [{ sentence: "Source: Auckland Region HealthPathways", justification: "Review date added." }],
       product_mentions_before: 0, product_mentions_after: 0 },
   };
@@ -219,7 +219,7 @@ describe("US-42 AC2 raw fidelity", () => {
     expect(fails(run().AC2).join()).toContain("raw file not found");
     rmSync(join(reports, "beta.json"), { force: true });
     writeFileSync(join(reports, "alpha.json"), JSON.stringify(reps.alpha));
-    const { results } = runBatch({ root, batch: "t", handles: ["beta"], reportsDir: join(reports, "none"), exclusionsPath: exclusions });
+    const { results } = runBatch({ root, batch: "t", handles: ["beta"], reportsDir: join(reports, "none"), exclusionsPath: exclusions, base: "HEAD", rawRoots: [reports] });
     expect(results.find((r) => r.id === "AC2")!.evidence.join()).toContain("diff report missing");
   });
   it("matches a plain-text quote against a raw with no-break spaces and non-breaking hyphens", () => {
@@ -230,10 +230,10 @@ describe("US-42 AC2 raw fidelity", () => {
   });
   it("accepts 1,000 mg in the raw as 1 g in the body", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("2 g may", "2 g may").replace("Take it", "Take 1 g. Take it"));
-    reps.alpha.changed_tokens.push({ token: "1 g", body_line: "Take 1 g.", raw_quote: "Doses above 2,000 mg" });
+    reps.alpha.changed_tokens.push({ token: "1 g", body_line: "Take 1 g.", raw_quote: "Doses above 2,000 mg were not studied" });
     expect(fails(run().AC2).join()).toContain('"1000 mg"'); // 2,000 mg is not 1 g: quote lacks the token
-    reps.alpha.changed_tokens[1].raw_quote = "Doses above 1,000 mg";
-    writeFileSync(join(reports, "alpha.raw.txt"), "In the trial, participants took 300 mg daily. Doses above 1,000 mg.");
+    reps.alpha.changed_tokens[1].raw_quote = "Doses above 1,000 mg were not studied";
+    writeFileSync(join(reports, "alpha.raw.txt"), "In the trial, participants took 300 mg daily. Doses above 1,000 mg were not studied.");
     reps.alpha.raw_sha256 = sha256(readFileSync(join(reports, "alpha.raw.txt")));
     expect(fails(run().AC2)).toEqual([]);
   });
@@ -264,6 +264,7 @@ describe("US-42 AC7 identifiers", () => {
     const extra = join(reports, "x.txt");
     writeFileSync(extra, "see 10.1000/ABC.DEF");
     writeFileSync(join(reports, "alpha.raw.txt"), fx("alpha.raw.txt") + "PMID 99999999");
+    reps.alpha.raw_sha256 = sha256(readFileSync(join(reports, "alpha.raw.txt")));
     reps.alpha.extra_raw = [{ path: extra, sha256: sha256(readFileSync(extra)) }];
     expect(run().AC7.evidence.some((e) => e.includes("unverified primary"))).toBe(false);
   });
@@ -292,12 +293,20 @@ describe("US-42 AC7 exclusions file", () => {
 });
 
 describe("US-42 AC3 hedging", () => {
-  it("fails when the hedge count falls and lists the line", () => {
+  it("warns when a shrinking reference loses hedges, and fails when it does not shrink", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Some evidence suggests benefit. ", ""));
     reps.alpha.deleted_sentences.push({ sentence: "Some evidence suggests benefit.", justification: "Not in raw." });
     const r = run().AC3;
-    expect(r.status).toBe("FAIL");
-    expect(r.evidence.join()).toContain("hedge tokens fell");
+    expect(r.status).toBe("WARN");
+    expect(r.evidence.join()).toContain("hedge tokens fell 3 -> 1 (body shrank)");
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Some evidence suggests benefit. ", "Benefit was reported in the synthetic trial population overall. "));
+    expect(fails(run().AC3).join()).toContain("hedge tokens fell 3 -> 1");
+  });
+  it("keeps the hard FAIL for a pathway", () => {
+    put("docs/pathway/beta.md", fx("beta.base.md").replace("severe.", "severe. It may help."));
+    sh(["add", "docs/pathway/beta.md"]); sh(["commit", "-q", "-m", "beta hedge", "--", "docs/pathway/beta.md"]);
+    put("docs/pathway/beta.md", fx("beta.new.md"));
+    expect(fails(run().AC3).join()).toContain("hedge tokens fell 1 -> 0");
   });
   it("lists hedge loss per sentence pair, still as WARN", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Some evidence suggests benefit.", "Benefit is shown. It may help. It might help."));
@@ -331,6 +340,38 @@ describe("US-42 AC4 deleted sentences and headings", () => {
   });
 });
 
+describe("US-42 AC4 references and patterns", () => {
+  const withPlaceholder = () => {
+    put("docs/blog/alpha.md", fx("alpha.base.md").replace("## Safety", "[See Grokipedia source 3]\n\n## Safety"));
+    sh(["add", "docs/blog/alpha.md"]); sh(["commit", "-q", "-m", "placeholder", "--", "docs/blog/alpha.md"]);
+    put("docs/blog/alpha.md", fx("alpha.new.md"));
+    reps.alpha.product_mentions_before = 1;
+  };
+  it("leaves the reference list to AC7 for a reference", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("[1] Smith A. Synthetic trial. 2019.", "[1] Smith A. Synthetic trial, revised edition. 2019.\n\n[PubMed](https://pubmed.ncbi.nlm.nih.gov/1/)"));
+    expect(fails(run().AC4)).toEqual([]);
+  });
+  it("still checks body sentences of a pathway, references section aside", () => {
+    put("docs/pathway/beta.md", fx("beta.new.md").replace("Go to the emergency department if symptoms are severe. ", ""));
+    expect(fails(run().AC4).join()).toContain("sentence removed and not in deleted_sentences");
+  });
+  it("counts base sentences matching a pattern entry as justified and prints how many", () => {
+    withPlaceholder();
+    expect(fails(run().AC4).join()).toContain("not in deleted_sentences");
+    reps.alpha.deleted_sentences.push({ sentence: "Grokipedia source \\d+", justification: "Placeholder marker.", pattern: true });
+    const r = run().AC4;
+    expect(fails(r)).toEqual([]);
+    expect(r.evidence.join()).toContain("(1 justified by pattern)");
+  });
+  it("fails a pattern with an empty justification or an invalid regex", () => {
+    withPlaceholder();
+    reps.alpha.deleted_sentences.push({ sentence: "Grokipedia source \\d+", justification: " ", pattern: true });
+    expect(fails(run().AC4).join()).toContain("pattern has an empty justification");
+    reps.alpha.deleted_sentences[1] = { sentence: "([", justification: "x", pattern: true };
+    expect(fails(run().AC4).join()).toContain("not a valid regex");
+  });
+});
+
 describe("US-42 AC6 diff scope", () => {
   it("fails on a change outside the batch and allows the report path", () => {
     put("docs/blog/other.md", "x");
@@ -357,6 +398,12 @@ describe("US-42 AC7 reference hygiene", () => {
     reps.alpha.product_mentions_after = 0;
     expect(fails(run().AC7).join()).toContain("recomputed 1 -> 1");
   });
+  it("warns, not fails, when the report's product counts differ but nothing rose", () => {
+    reps.alpha.product_mentions_before = 2; reps.alpha.product_mentions_after = 2;
+    const r = run().AC7;
+    expect(fails(r).filter((f) => f.includes("report says"))).toEqual([]);
+    expect(r.evidence.join()).toContain("count differs from report: report says product mentions 2 -> 2, recomputed 1 -> 1");
+  });
   it("fails on a dangling citation and an uncited reference", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("upset [2]", "upset [3]"));
     const f = fails(run().AC7).join();
@@ -373,41 +420,68 @@ describe("US-42 AC7 reference hygiene", () => {
     put("docs/pathway/excluded-page.md", "# x");
     const f = fails(run().AC7).join();
     expect(f).toContain("excluded-page: excluded handle gained a file");
-    const { results } = runBatch({ root, batch: "t", handles: ["legacy-slug"], reportsDir: reports, exclusionsPath: exclusions });
+    const { results } = runBatch({ root, batch: "t", handles: ["legacy-slug"], reportsDir: reports, exclusionsPath: exclusions, base: "HEAD", rawRoots: [reports] });
     expect(results.find((r) => r.id === "AC7")!.evidence.join()).toContain("legacy-slug: handle is on the HealthPathways exclusion list");
   });
 });
 
 describe("US-42 AC11 exceptions", () => {
-  const exc = (over = {}) => ({ check: "AC7", handle: "alpha", match: "grokipedia", reason: "quoted source name", by: "Brad", date: "2026-09-30", ...over });
   const dirty = () => put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it", "See Grokipedia. Take it"));
-  it("turns a matched FAIL into a WARN and lists it", () => {
+  const failText = () => fails(run().AC7).find((f) => f.includes("grokipedia"))!.replace(/^FAIL alpha: /, "");
+  const exc = (match: string, over = {}) => ({ check: "AC7", handle: "alpha", match, reason: "quoted source name", by: "Brad", date: "2026-09-30", ...over });
+  it("turns a FAIL matched by its full text into a WARN and lists it", () => {
     dirty();
-    const r = run({ exceptions: [exc()] });
+    const r = run({ exceptions: [exc(failText())] });
     expect(r.AC7.status).toBe("WARN");
     expect(r.AC7.evidence.join()).toContain("EXCEPTION (Brad, 2026-09-30): quoted source name");
     expect(r.AC7.excepted?.length).toBe(1);
   });
-  it("does not match another handle, check or substring", () => {
+  it("accepts the sha256 of the full text", () => {
     dirty();
-    for (const o of [{ handle: "beta" }, { check: "AC4" }, { match: "nothing" }]) expect(run({ exceptions: [exc(o)] }).AC7.status).toBe("FAIL");
+    expect(run({ exceptions: [exc(sha256(failText()))] }).AC7.status).toBe("WARN");
   });
-  it("ignores a missing file and applies a file through the CLI", () => {
+  it("does not match a substring, and a non-matching exception is itself a FAIL", () => {
+    dirty();
+    const r = run({ exceptions: [exc("grokipedia")] }).AC7;
+    expect(r.status).toBe("FAIL");
+    expect(fails(r).join("\n")).toContain("unused exception");
+    expect(fails(r).join("\n")).toContain('"grokipedia" in body');
+  });
+  it("fails an exception for another handle or check, or when nothing fails", () => {
+    dirty();
+    const text = failText();
+    for (const o of [{ handle: "beta" }, { check: "AC4" }]) {
+      const r = run({ exceptions: [exc(text, o)] });
+      expect([...r.AC7.evidence, ...r.AC4.evidence].join("\n")).toContain("unused exception");
+    }
+    put("docs/blog/alpha.md", fx("alpha.new.md"));
+    expect(fails(run({ exceptions: [exc("anything at all")] }).AC7).join()).toContain("unused exception");
+  });
+  it("validates the exceptions file shape and rejects an empty match", () => {
+    expect(validateExceptions([exc("x")])).toEqual([]);
+    expect(validateExceptions([exc("")]).join()).toContain("match");
+    expect(validateExceptions([exc("x", { check: "AC1" })]).join()).toContain("check");
+    expect(validateExceptions({}).length).toBeGreaterThan(0);
+  });
+  it("is a usage error (exit 2) when the file is missing or holds an empty match; applies a valid file", () => {
     dirty();
     writeReports();
     writeFileSync(join(reports, "handles.txt"), "alpha\nbeta\n");
     const cwd = process.cwd();
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
     process.chdir(root);
     try {
       const out = join(root, "docs", "b.md");
-      const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--out", out, "--no-exclusions"];
-      main([...args, "--exceptions", join(reports, "missing.json")]);
-      expect(log.mock.calls.flat().join("\n")).toContain("FAIL AC7");
-      writeFileSync(join(reports, "exc.json"), JSON.stringify([exc()]));
-      main([...args, "--exceptions", join(reports, "exc.json")]);
+      const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--out", out, "--no-exclusions", "--base", "HEAD"];
+      const ov = { rawRoots: [reports] };
+      expect(main([...args, "--exceptions", join(reports, "missing.json")], ov)).toBe(2);
+      writeFileSync(join(reports, "exc.json"), JSON.stringify([exc("")]));
+      expect(main([...args, "--exceptions", join(reports, "exc.json")], ov)).toBe(2);
+      writeFileSync(join(reports, "exc.json"), JSON.stringify([exc(failText())]));
+      main([...args, "--exceptions", join(reports, "exc.json")], ov);
       expect(readFileSync(out, "utf8")).toContain("Accepted exceptions");
-    } finally { process.chdir(cwd); log.mockRestore(); }
+    } finally { process.chdir(cwd); log.mockRestore(); err.mockRestore(); }
   });
 });
 
@@ -461,12 +535,140 @@ describe("US-42 AC2/AC7 reference batch rules", () => {
   });
 });
 
+describe("US-42 AC2 raw roots (R2)", () => {
+  const useRaw = (path: string, text: string) => {
+    writeFileSync(path, text);
+    reps.alpha.raw_path = path;
+    reps.alpha.raw_sha256 = sha256(text);
+  };
+  it("fails a raw_path outside the allowed roots", () => {
+    expect(fails(run({ rawRoots: [join(reports, "elsewhere")] }).AC2).join()).toContain("outside the allowed raw roots");
+  });
+  it("fails a raw_path inside the repo even when the repo is listed as a root", () => {
+    useRaw(join(root, "raw.txt"), fx("alpha.raw.txt"));
+    expect(fails(run({ rawRoots: [root, reports] }).AC2).join()).toContain("inside the repo");
+  });
+  it("fails a symlink that escapes the roots, and an extra_raw outside them", () => {
+    const outside = mkdtempSync(join(tmpdir(), "kb-out-"));
+    writeFileSync(join(outside, "t.txt"), fx("alpha.raw.txt"));
+    symlinkSync(join(outside, "t.txt"), join(reports, "link.txt"));
+    reps.alpha.raw_path = join(reports, "link.txt");
+    expect(fails(run().AC2).join()).toContain("outside the allowed raw roots");
+    reps.alpha.raw_path = join(reports, "alpha.raw.txt");
+    reps.alpha.extra_raw = [{ path: join(outside, "t.txt"), sha256: sha256(fx("alpha.raw.txt")) }];
+    expect(fails(run().AC2).join()).toContain("extra_raw");
+    rmSync(outside, { recursive: true, force: true });
+  });
+});
+
+describe("US-42 AC2 quote matching (R3)", () => {
+  it("fails a quote shorter than 6 words and 30 characters", () => {
+    reps.alpha.changed_tokens[0].raw_quote = "300 mg daily";
+    expect(fails(run().AC2).join()).toContain("raw_quote too short");
+  });
+  it("fails a token that only matches inside a longer number in the raw", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("300 mg per day", "7 mg per day"));
+    const raw = "In the study participants took 1.7 mg daily for a while now and more.";
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.changed_tokens = [{ token: "7 mg", body_line: "Trials used 7 mg per day [1].", raw_quote: "7 mg daily for a while now and more" }];
+    expect(fails(run().AC2).join()).toContain("not a whole token");
+    const ok = "In the study participants took 7 mg daily for a while now and more.";
+    writeFileSync(join(reports, "alpha.raw.txt"), ok);
+    reps.alpha.raw_sha256 = sha256(ok);
+    expect(fails(run().AC2)).toEqual([]);
+  });
+});
+
+describe("US-42 AC6 and AC2 batch scope (R5, R6, R12)", () => {
+  it("fails a handle the diff does not touch", () => {
+    writeFileSync(join(reports, "ghost.json"), JSON.stringify({ ...reps.alpha, handle: "ghost" }));
+    const r = run({ handles: ["alpha", "beta", "ghost"] });
+    expect(fails(r.AC6).join()).toContain("nothing to check for ghost");
+  });
+  it("allows only the directory matching the entry's type", () => {
+    put("docs/pathway/alpha.md", "# x");
+    expect(fails(run().AC6).join()).toContain("docs/pathway/alpha.md");
+  });
+  it("takes the type from the index and fails a report that disagrees", () => {
+    reps.alpha.type = "video";
+    expect(fails(run().AC2).join()).toContain('report type "video" does not match index type "reference"');
+  });
+  it("fails a handle absent from the index unless the report says new, then uses the frontmatter type", () => {
+    put("docs/blog/gamma.md", fx("alpha.new.md"));
+    const g = { ...reps.alpha, handle: "gamma" };
+    writeFileSync(join(reports, "gamma.json"), JSON.stringify(g));
+    expect(fails(run({ handles: ["gamma"] }).AC2).join()).toContain("not in docs/blog/index.json");
+    writeFileSync(join(reports, "gamma.json"), JSON.stringify({ ...g, new: true }));
+    const f = fails(run({ handles: ["gamma"] }).AC2).join();
+    expect(f).not.toContain("not in docs/blog/index.json");
+    expect(f).not.toContain("does not match");
+    writeFileSync(join(reports, "gamma.json"), JSON.stringify({ ...g, new: true, type: "pathway" }));
+    expect(fails(run({ handles: ["gamma"] }).AC2).join()).toContain("does not match frontmatter type");
+  });
+  it("fails an unparseable reference URL", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("upset [2].", "upset [2] [3].").trimEnd() + "\n\n[3] Foo B. Study. http://[bad\n");
+    expect(fails(run().AC7).join()).toContain("unparseable URL");
+  });
+});
+
+describe("US-42 AC2 tokeniser units and comparators (R7)", () => {
+  const t = (s: string) => [...tokenise(s)].sort();
+  it("keeps compound units whole", () => {
+    expect(t("2 mg/kg")).toEqual(["2 mg/kg"]);
+    expect(t("40 mL/min")).toEqual(["40 mL/min"]);
+    expect(t("90 mL/min/1.73m2")).toEqual(["90 mL/min/1.73m2"]);
+    expect(t("7 mmol/mol, 5 ng/L, 3 pmol/L")).toEqual(["3 pmol/L", "5 ng/L", "7 mmol/mol"]);
+    expect(t("10 µmol/L")).toEqual(t("10 umol/L"));
+    expect(t("10 micromol/L")).toEqual(t("10 micromole/L"));
+    expect(t("5 nanogram/L")).toEqual(["5 ng/L"]);
+  });
+  it("makes a leading or trailing comparator part of the token", () => {
+    expect(t("≥ 30 mg/mmol")).toEqual(["≥30 mg/mmol"]);
+    expect(t("≥ 30 mg/mmol")).not.toEqual(t("30 mg/mmol"));
+    expect(t("at least 3 hours")).toEqual(["≥3 hour"]);
+    expect(t("more than 3 months")).toEqual([">3 month"]);
+    expect(t("less than 5 kg")).toEqual(["<5 kg"]);
+    expect(t("5 or more years")).toEqual(["≥5 year"]);
+    expect(t("10 or less days")).toEqual(["≤10 day"]);
+    expect(t("<= 7 mg")).toEqual(["≤7 mg"]);
+  });
+  it("reads .5 mg as 0.5 mg and ignores a blockquote marker", () => {
+    expect(t("take .5 mg")).toEqual(["0.5 mg"]);
+    expect(t("> 30 mg")).toEqual(["30 mg"]);
+  });
+});
+
+describe("US-42 AC7 product counting (R9)", () => {
+  it("keeps the omega-3 carve-out off when the brand is within 40 characters", () => {
+    expect(productMentions("omega-3 fatty acids, made by MicroVitamin")).toBe(2);
+    expect(productMentions("Omega-3 leaflet by Dr. Brad")).toBe(1);
+    expect(productMentions("Omega 3 fish oil by Dr Brad")).toBe(0); // "Omega 3" with a space is never the product name
+    expect(productMentions("omega-3 fatty acids help. ".padEnd(80, "x") + " MicroVitamin")).toBe(1);
+  });
+  it("counts Potassium Fibre and Sleep by Dr. Brad as products", () => {
+    expect(productMentions("Potassium Fibre and Sleep by Dr. Brad and Potassium Fiber")).toBe(3);
+  });
+});
+
 describe("US-42 AC9 pathway rules", () => {
   it("fails without the source line or deferral blockquote", () => {
     put("docs/pathway/beta.md", fx("beta.new.md").replace("*Source: Auckland Region HealthPathways, reviewed 2026-01-01*", "Source elsewhere").replace(/^>.*$/m, ""));
     const f = fails(run().PATHWAY).join();
     expect(f).toContain("missing \"*Source: Auckland Region HealthPathways\"");
     expect(f).toContain("missing doctor-deferral blockquote");
+  });
+  it("normalises no-break spaces, matches plural and prefix forms, and finds phone numbers outside URLs", () => {
+    put("docs/pathway/beta.md", fx("beta.new.md").replace("Review again", "Ask Te\u00a0Whatu\u00a0Ora about DHBs and eReferrals. Ring 09 373 1599 or 0508 123 456.\n\nSee [x](https://a.org/0900123456789).\n\nReview again"));
+    const f = fails(run().PATHWAY).join("\n");
+    for (const t of ["Te Whatu Ora", "DHB", "eReferral", "phone number"]) expect(f).toContain(t);
+    expect(f).not.toContain("a.org");
+    put("docs/pathway/beta.md", fx("beta.new.md").replace("*Source: Auckland Region HealthPathways", "*Source:\u00a0Auckland Region HealthPathways"));
+    expect(fails(run().PATHWAY)).toEqual([]);
+  });
+  it("normalises no-break spaces before the banned-phrase check", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it", "Our Top\u00a0Pick. Take it"));
+    expect(fails(run().AC7).join()).toContain('banned phrase "Top Pick"');
   });
   it("fails on NZ logistics", () => {
     put("docs/pathway/beta.md", fx("beta.new.md").replace("Review again", "Call 0800 123 456 or send an eReferral to POAC at Te Whatu Ora. Review again"));
@@ -478,18 +680,27 @@ describe("US-42 AC9 pathway rules", () => {
 describe("US-42 AC8 batch report", () => {
   it("holds counts and hashes only, under 150 lines", () => {
     writeReports();
-    const { results, rows, baseSha } = runBatch({ root, batch: "t", handles: ["alpha", "beta"], reportsDir: reports, exclusionsPath: exclusions });
-    const md = renderReport("t", "HEAD", baseSha, results, rows);
+    const { results, rows, baseSha } = runBatch({ root, batch: "t", handles: ["alpha", "beta"], reportsDir: reports, exclusionsPath: exclusions, base: "HEAD", rawRoots: [reports] });
+    const md = renderReport("t", "HEAD", baseSha, results, rows, false);
     expect(md.split("\n").length).toBeLessThan(150);
     expect(md).toContain("AC8 sign-off (Brad): PENDING");
     expect(md).not.toContain("participants took");
     expect(md).not.toContain("Trials used");
-    expect(md).toContain(sha256(readFileSync(join(reports, "alpha.raw.txt"))).slice(0, 16));
+    expect(md).toContain(sha256(readFileSync(join(reports, "alpha.raw.txt")))); // the full sha256
+    expect(rows[0].rawRel.startsWith("/")).toBe(false);
+    expect(rows[0].rawRel.endsWith("/alpha.raw.txt")).toBe(true);
+    expect(md).toContain(rows[0].rawRel);
+  });
+  it("lists what it does not cover, and how DOI/PMID resolution depends on --check-ids", () => {
+    const off = renderReport("t", "HEAD", "abc", [], [], false), on = renderReport("t", "HEAD", "abc", [], [], true);
+    for (const t of ["AC5", "Shopify", "section placement", "primary-study abstract"]) expect(off).toContain(t);
+    expect(off).toContain("DOI/PMID resolution: NOT checked");
+    expect(on).toContain("DOI/PMID resolution: checked with --check-ids");
   });
   it("stays under the cap with many handles", () => {
-    const rows = Array.from({ length: 300 }, (_, i) => ({ handle: `h${i}`, type: "reference", file: "f", rawSha: "a".repeat(64), bodySha: "b".repeat(64),
+    const rows = Array.from({ length: 300 }, (_, i) => ({ handle: `h${i}`, type: "reference", file: "f", rawRel: "refresh-x/f.md", rawSha: "a".repeat(64), bodySha: "b".repeat(64),
       tokensNew: 1, quoted: 1, deleted: 0, hedgeBefore: 1, hedgeAfter: 1, productsBefore: 0, productsAfter: 0 }));
-    expect(renderReport("big", "HEAD", "abc", [], rows).split("\n").length).toBeLessThan(150);
+    expect(renderReport("big", "HEAD", "abc", [], rows, false).split("\n").length).toBeLessThan(150);
   });
 });
 
@@ -502,14 +713,28 @@ describe("US-42 AC1-AC7 CLI end to end", () => {
     process.chdir(root);
     try {
       const out = join(root, "docs", "batch-t.md");
-      const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--out", out, "--no-exclusions"];
-      // The real exclusions file is optional; a missing one only warns. Only AC7 could FAIL on it.
-      expect([0, 1]).toContain(main(args));
+      const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--out", out, "--no-exclusions", "--base", "HEAD"];
+      const ov = { rawRoots: [reports] };
+      expect(main(args, ov)).toBe(0);
       expect(readFileSync(out, "utf8")).toContain("# Knowledge batch report: t");
       reps.alpha.changed_tokens = [];
       writeReports();
-      expect(main(args)).toBe(1);
+      expect(main(args, ov)).toBe(1);
       expect(log.mock.calls.flat().join("\n")).toContain("FAIL AC2");
     } finally { process.chdir(cwd); log.mockRestore(); }
+  });
+  it("is a usage error without --base, or with --out under docs/blog or on a checked file", () => {
+    writeReports();
+    writeFileSync(join(reports, "handles.txt"), "alpha\nbeta\n");
+    const cwd = process.cwd();
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    process.chdir(root);
+    try {
+      const base = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--no-exclusions"];
+      const ov = { rawRoots: [reports] };
+      expect(main(base, ov)).toBe(2);
+      expect(main([...base, "--base", "HEAD", "--out", join(root, "docs/blog/report.md")], ov)).toBe(2);
+      expect(main([...base, "--base", "HEAD", "--out", join(root, "docs/pathway/beta.md")], ov)).toBe(2);
+    } finally { process.chdir(cwd); err.mockRestore(); }
   });
 });
