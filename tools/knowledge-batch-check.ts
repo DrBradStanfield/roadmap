@@ -7,11 +7,14 @@
  *   npx tsx tools/knowledge-batch-check.ts --batch <name> --handles <file> \
  *     [--reports <dir>] [--base <git ref>] [--out <file>]
  * Decisions reviewers have disputed and Brad kept (do not "fix" them):
- *  - Numbers that only MOVED between sentences (whole-body count equal, token already in the base) are a WARN,
- *    not a FAIL. AC4's deleted-sentence list already puts the reworded sentence in front of Brad; the pair
- *    FAIL is for true substitutions and additions.
- *  - A reference body that shrank and lost hedge tokens is a WARN. Deleting unsupported hedged sentences must
- *    not fail a de-citation batch; the per-sentence hedge list stays for Brad. Pathways keep the FAIL.
+ *  - A number that RELOCATED into a restructured sentence (whole-body count equal, token already in the base,
+ *    the sentence wording around it changed) is a WARN. A number changed IN PLACE (same wording, a different
+ *    value: a dose swap between two sentences) is a FAIL without a changed_tokens entry.
+ *  - A reference body that shrank and lost hedge tokens is a WARN in total. Deleting unsupported hedged
+ *    sentences must not fail a de-citation batch; the per-sentence hedge list stays for Brad. A hedge lost from
+ *    a sentence that SURVIVES (not declared deleted, its other words still present) is a FAIL. Pathways keep
+ *    the total-count FAIL.
+ *  - Comparator words are matched longest-first ("no more than" is <=, never ">" from "more than").
  *  - An unchanged (frozen) summary passes even with a proposed correction: the orchestrator applies
  *    corrections later under the paired-arm rule. A summary that changed must equal the proposal.
  *  - AC6 allows the --out report path inside the repo: the batch report commits with the batch.
@@ -165,6 +168,7 @@ export const normChars = (s: string) => s.replace(/\u00a0/g, " ").replace(/[\u20
 /** Normal form for substring matching of raw quotes. */
 export const normQuote = (s: string) => unescapeMd(normChars(s)).replace(/\s+/g, " ").trim().toLowerCase();
 
+const squash = (t: string) => t.replace(/\s+/g, " ").trim();
 const REFS_HEADING = /^#{1,4}\s*(?:\d+[.)]?\s*)?(?:references|sources|citations|bibliography)\b/i;
 const REF_LINE = /^\s*\[(\d+)\]\s+\S/;
 
@@ -179,36 +183,56 @@ function classifyLines(body: string): { line: string; ref: boolean }[] {
 }
 
 // Tokeniser: units, longest first; the lookahead stops "mg" matching inside "mgs" etc.
-// Compound units come first so "2 mg/kg" is not "2 mg".
-const UNIT = "mL/min/1\\.73m2|mmol/mol|mmol/L|mg/mmol|mg/dL|mg/kg|mL/min|pmol/L|[µμ]mol/L|umol/L|micromol/L|micromole/L|nanogram/L|ng/L|mmHg|x/day|times daily|percent|%|mcg|[µμ]g|mg|IU|mL|kg|cm|g|hours?|days?|weeks?|months?|years?";
+// Compound units come first so "2 mg/kg" is not "2 mg", and "90 g/L" is not "90 g/dL".
+const UNIT = [
+  "mL/min/1\\.73m2", "mmol/mol", "mmol/L", "nmol/L", "pmol/L", "[µμ]mol/L", "umol/L", "micromol/L", "micromole/L", "mg/mmol", "mg/dL", "mg/kg", "mg/L",
+  "mL/min", "L/min", "breaths/min", "IU/L", "U/L", "g/dL", "g/L", "ng/mL", "ng/dL", "ng/L", "nanogram/L", "[µμ]g/dL", "mcg/dL", "[µμ]g/L", "mcg/L",
+  "mmHg", "bpm", "x/day", "times daily", "percent", "%",
+  "kilograms?", "milligrams?", "micrograms?", "millilitres?", "milliliters?", "litres?", "liters?", "grams?",
+  "mcg", "[µμ]g", "mg", "IU", "mL", "kg", "cm", "g", "hours?", "days?", "weeks?", "months?", "years?", "minutes?", "mins?", "seconds?", "secs?",
+].join("|");
 const NUM = "\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+(?:\\.\\d+)?|\\.\\d+";
-const CMP_PRE = "(?:(≥|≤|>=|<=|>|<|\\bat least|\\bmore than|\\bless than)\\s*)?";
-const CMP_POST = "or more|or less";
+// Comparator words, longest first, so "no more than" never falls through to "more than".
+const CMP_WORDS = ["no more than", "not more than", "no less than", "not less than", "maximum of", "maximum", "up to", "at least", "more than",
+  "greater than", "less than", "lower than", "over", "above", "below", "under"].map((w) => w.replace(/ /g, "\\s+")).join("|");
+const CMP_PRE = `(?:(≥|≤|>=|<=|>|<|\\b(?:${CMP_WORDS}))\\s*)?`;
+const CMP_POST = "or more|or higher|or above|or less";
 // "/day", "per dose", "a day", "each week", "daily", "weekly" straight after a unit.
 const SUFFIX = "(?:\\s*/\\s*|\\s+per\\s+)(?:day|dose|week|kg)|\\s+(?:a|each)\\s+(?:day|week)|\\s+(?:daily|weekly)";
 const suffixOf = (raw: string | undefined) => (!raw ? "" : /week/i.test(raw) ? "/week" : /dose/i.test(raw) ? "/dose" : /kg/i.test(raw) ? "/kg" : "/day");
-// Groups: 1 leading comparator, 2 and 3 numbers, 4 trailing comparator, 5 unit, 6 unit suffix (/day, per dose ...), 7 trailing comparator.
+// Groups: 1 leading comparator, 2 and 3 numbers, 4 trailing comparator, 5 unit, 6 unit suffix (/day, per dose ...),
+// 7 any other attached "/x" (kept: "5 mg/m2" is not "5 mg"), 8 trailing comparator.
 const TOKEN_RE = () => new RegExp(
-  `${CMP_PRE}(?<![A-Za-z0-9.,]|[A-Za-z]-)(${NUM})(?:\\s*[–-]\\s*(${NUM}))?(?:\\s+(${CMP_POST})\\b)?(?:[\\s-]*(${UNIT})(?![A-Za-z])(?:(${SUFFIX})(?![A-Za-z]))?)?(?:\\s+(${CMP_POST})\\b)?`, "gi");
+  `${CMP_PRE}(?<![A-Za-z0-9.,]|[A-Za-z]-)(${NUM})(?:\\s*[–-]\\s*(${NUM}))?(?:\\s+(${CMP_POST})\\b)?(?:[\\s-]*(${UNIT})(?![A-Za-z])(?:(${SUFFIX})(?![A-Za-z]))?(?:/([A-Za-z][A-Za-z0-9.]*)(?![A-Za-z0-9]))?)?(?:\\s+(${CMP_POST})\\b)?`, "gi");
 
-const CMP_CANON: Record<string, string> = { ">=": "≥", "≥": "≥", "at least": "≥", "or more": "≥", "<=": "≤", "≤": "≤", "or less": "≤",
-  ">": ">", "more than": ">", "<": "<", "less than": "<" };
-const canonCmp = (c: string | undefined) => (c ? CMP_CANON[c.toLowerCase()] ?? "" : "");
+const CMP_CANON: Record<string, string> = {
+  "<=": "≤", "≤": "≤", "no more than": "≤", "not more than": "≤", "up to": "≤", "maximum": "≤", "maximum of": "≤", "or less": "≤",
+  ">=": "≥", "≥": "≥", "no less than": "≥", "not less than": "≥", "at least": "≥", "or more": "≥", "or higher": "≥", "or above": "≥",
+  ">": ">", "more than": ">", "greater than": ">", "over": ">", "above": ">",
+  "<": "<", "less than": "<", "lower than": "<", "below": "<", "under": "<",
+};
+const canonCmp = (c: string | undefined) => (c ? CMP_CANON[c.toLowerCase().replace(/\s+/g, " ")] ?? "" : "");
 
-const COMPOUND_UNITS: Record<string, string> = { "mmol/l": "mmol/L", "mg/dl": "mg/dL", "ml/min": "mL/min", "ng/l": "ng/L", "pmol/l": "pmol/L",
+const COMPOUND_UNITS: Record<string, string> = { "mmol/l": "mmol/L", "mg/dl": "mg/dL", "ml/min": "mL/min", "ng/l": "ng/L", "pmol/l": "pmol/L", "nmol/l": "nmol/L",
   "µmol/l": "umol/L", "μmol/l": "umol/L", "umol/l": "umol/L", "micromol/l": "umol/L", "micromole/l": "umol/L", "nanogram/l": "ng/L",
-  "ml/min/1.73m2": "mL/min/1.73m2", "mmol/mol": "mmol/mol", "mg/mmol": "mg/mmol", "mg/kg": "mg/kg" };
+  "ml/min/1.73m2": "mL/min/1.73m2", "mmol/mol": "mmol/mol", "mg/mmol": "mg/mmol", "mg/kg": "mg/kg", "mg/l": "mg/L", "l/min": "L/min",
+  "breaths/min": "breaths/min", "g/dl": "g/dL", "g/l": "g/L", "ng/ml": "ng/mL", "ng/dl": "ng/dL", "iu/l": "IU/L", "u/l": "U/L",
+  "µg/l": "mcg/L", "μg/l": "mcg/L", "mcg/l": "mcg/L", "µg/dl": "mcg/dL", "μg/dl": "mcg/dL", "mcg/dl": "mcg/dL" };
 
 function normUnit(u: string): string {
   const l = u.toLowerCase();
   if (COMPOUND_UNITS[l]) return COMPOUND_UNITS[l];
   if (l === "percent" || l === "%") return "%";
-  if (l === "µg" || l === "μg" || l === "mcg") return "mcg";
+  if (/^(µg|μg|mcg|micrograms?)$/.test(l)) return "mcg";
+  if (/^milligrams?$/.test(l)) return "mg";
+  if (/^kilograms?$/.test(l)) return "kg";
+  if (/^grams?$/.test(l)) return "g";
+  if (/^(litres?|liters?)$/.test(l)) return "L";
+  if (/^(millilitres?|milliliters?|ml)$/.test(l)) return "mL";
+  if (/^(minutes?|mins?)$/.test(l)) return "min";
+  if (/^(seconds?|secs?)$/.test(l)) return "sec";
   if (l === "times daily" || l === "x/day") return "x/day";
   if (l === "iu") return "IU";
-  if (l === "ml") return "mL";
-  if (l === "mmol/l") return "mmol/L";
-  if (l === "mg/dl") return "mg/dL";
   if (l === "mmhg") return "mmHg";
   return l.replace(/s$/, "");
 }
@@ -242,11 +266,11 @@ export function tokenCounts(text: string, opts: { keepRefs?: boolean } = {}): Ma
     const s = stripNoise(opts.keepRefs ? line : line.replace(/^\s*>+ /, ""));
     for (const m of s.matchAll(TOKEN_RE())) {
       const unit = m[5] ? normUnit(m[5]) : "";
-      const cmp = canonCmp(m[1] ?? m[4] ?? m[7]);
+      const cmp = canonCmp(m[1] ?? m[4] ?? m[8]);
       for (const n of [m[2], m[3]].filter(Boolean) as string[]) {
         if (!unit && !cmp && !n.includes(",") && !n.includes(".") && /^(19|20)\d\d$/.test(n)) continue;
         const { value, unit: u } = normNumber(n, unit);
-        const key = `${cmp}${u ? `${value} ${u}${suffixOf(m[6])}` : value}`;
+        const key = `${cmp}${u ? `${value} ${u}${suffixOf(m[6])}${m[7] ? `/${m[7].toLowerCase()}` : ""}` : value}`;
         out.set(key, (out.get(key) ?? 0) + 1);
       }
     }
@@ -401,7 +425,7 @@ function loadCtx(o: Options, base: string, handle: string, ac2: Check, index: Ma
 
 function checkAc1(o: Options, base: string, ctxs: Ctx[], ac1: Check) {
   const batch = new Set(o.handles);
-  const corrections = new Set(ctxs.filter((c) => c.rep?.proposed_summary_correction != null).map((c) => c.handle));
+  const corrections = new Map(ctxs.filter((c) => c.rep?.proposed_summary_correction != null).map((c) => [c.handle, c.rep!.proposed_summary_correction!]));
   const idxRel = "docs/blog/index.json";
   const idxBase = gitShow(o.root, base, idxRel), idxNew = readOpt(join(o.root, idxRel));
   if (idxBase === idxNew) ac1.infos.push(`${idxRel} byte-identical to ${base}`);
@@ -414,7 +438,8 @@ function checkAc1(o: Options, base: string, ctxs: Ctx[], ac1: Check) {
         if (JSON.stringify(x) === JSON.stringify(y)) continue;
         const ok = batch.has(h) && corrections.has(h) && x && y &&
           Object.keys({ ...x, ...y }).every((k) => k === "summary" || JSON.stringify(x[k]) === JSON.stringify(y[k]));
-        if (ok) ac1.infos.push(`allowed summary correction: ${h}`);
+        if (ok && squash(String(y.summary ?? "")) !== squash(corrections.get(h)!)) ac1.fails.push(`${idxRel}: index.json summary for "${h}" differs from proposed_summary_correction`);
+        else if (ok) ac1.infos.push(`allowed summary correction: ${h}`);
         else ac1.fails.push(`${idxRel}: ${!x ? "entry added" : !y ? "entry removed" : "entry changed"} for "${h}"${batch.has(h) ? " (no proposed_summary_correction, or fields beyond summary changed)" : " (not in batch)"}`);
       }
       if (!ac1.fails.length && !ac1.infos.length) ac1.warns.push(`${idxRel} bytes differ but every entry is equal (formatting only)`);
@@ -436,7 +461,6 @@ function checkAc1(o: Options, base: string, ctxs: Ctx[], ac1: Check) {
         const v = /^summary:\s*(.*)$/m.exec(f)?.[1]?.trim() ?? "";
         try { return v.startsWith('"') ? (JSON.parse(v) as string) : v.replace(/^'|'$/g, ""); } catch { return v; }
       };
-      const squash = (t: string) => t.replace(/\s+/g, " ").trim();
       // A frozen summary is fine: the orchestrator applies the correction later. A changed one must be the correction.
       if (squash(summaryOf(nf)) !== squash(summaryOf(bf)) && squash(summaryOf(nf)) !== squash(c.rep!.proposed_summary_correction!)) ac1.fails.push(`${c.rel}: summary line differs from proposed_summary_correction`);
     } else if (bf !== nf) ac1.fails.push(`${c.rel}: frontmatter changed and no proposed_summary_correction`);
@@ -532,6 +556,18 @@ function citedPubmedIds(body: string, bodyLine: string): Set<string> | null {
   return any ? pmids : null;
 }
 
+/** PMIDs of the PubMed records cited by the body sentences that hold `tok`, or null when none of those sentences cites one. */
+function citedForToken(body: string, tok: string): Set<string> | null {
+  const text = classifyLines(body).filter((x) => !x.ref).map((x) => x.line).join("\n");
+  let out: Set<string> | null = null;
+  for (const sn of sentences(text)) {
+    if (!tokenCounts(sn, { keepRefs: true }).has(tok)) continue;
+    const ids = citedPubmedIds(body, sn);
+    if (ids) { out = out ?? new Set(); ids.forEach((i) => out!.add(i)); }
+  }
+  return out;
+}
+
 /** Body lines where the checker finds `tok`, for the writer to locate. */
 function linesWith(body: string, tok: string): string {
   const hits = body.split(/\r?\n/).filter((l) => tokenCounts(l).has(tok)).slice(0, 3).map((l) => `"${clip(l, 120)}"`);
@@ -539,18 +575,23 @@ function linesWith(body: string, tok: string): string {
 }
 
 /** Number tokens that grew between each new sentence and its nearest base sentence: a dose swap between sentences shows here even when the whole-body counts are equal. */
-function pairTokenChanges(c: Ctx): Map<string, string[]> {
+type PairSentence = { sentence: string; inPlace: boolean };
+/** The sentence with its numbers masked: two sentences with the same frame differ only in their values. */
+const frame = (t: string) => t.toLowerCase().replace(TOKEN_RE(), "#").replace(/\s+/g, " ").trim();
+
+function pairTokenChanges(c: Ctx): Map<string, PairSentence[]> {
   const bs = new Set(sentences(ac4Body(c.baseBody, c.type))), ns = new Set(sentences(ac4Body(c.newBody, c.type)));
   const baseOnly = [...bs].filter((x) => !ns.has(x));
-  const out = new Map<string, string[]>();
+  const out = new Map<string, PairSentence[]>();
   for (const n of [...ns].filter((x) => !bs.has(x))) {
     const b = nearest(n, baseOnly);
     if (!b) continue;
     const before = tokenCounts(b, { keepRefs: true });
+    const inPlace = frame(b) === frame(n);
     for (const [tok, cnt] of tokenCounts(n, { keepRefs: true })) {
       // Bare one- or two-digit integers ("type 2", "1 in 36") are identifiers or counts; AC4 covers their sentences.
       const carriesValue = /^[≥≤><]/.test(tok) || tok.includes(" ") || tok.includes(".") || /^\d{3,}/.test(tok);
-      if (carriesValue && cnt > (before.get(tok) ?? 0)) out.set(tok, [...(out.get(tok) ?? []), n]);
+      if (carriesValue && cnt > (before.get(tok) ?? 0)) out.set(tok, [...(out.get(tok) ?? []), { sentence: n, inPlace }]);
     }
   }
   return out;
@@ -561,7 +602,7 @@ const relates = (bodyLine: string, sentence: string) => {
   return b.length > 0 && (b.includes(sentence) || sentence.includes(b));
 };
 
-function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, pairs: Map<string, string[]>): number {
+function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, pairs: Map<string, PairSentence[]>): number {
   const rep = c.rep!, tag = `${c.handle}:`;
   let quoted = 0;
   const verifyEntry = (tok: string, entry: { body_line: string; raw_quote: string }, moved: boolean): boolean => {
@@ -589,9 +630,9 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, pairs: Map<s
       ac2.fails.push(partial ? `${tag} raw_quote for "${tok}": the token is not a whole token in the raw` : `${tag} raw_quote for "${tok}" is not in the raw file`);
       return false;
     }
-    const cited = c.type === "reference" ? citedPubmedIds(c.newBody, entry.body_line) : null;
-    // A number cited to a primary study needs that study's abstract, or a ConsumerLab or NIH quote that states it.
-    if (cited && !matches.some((m) => (m.pmid ? cited.has(m.pmid) : true))) {
+    const cited = c.type === "reference" ? citedForToken(c.newBody, tok) : null;
+    // A number whose own sentence cites a PubMed record must be quoted from that record's abstract, not ConsumerLab or NIH text.
+    if (cited && !matches.some((m) => m.pmid !== null && cited.has(m.pmid))) {
       ac2.fails.push(`${tag} token "${tok}": number cited to a primary study without its abstract in reach: ${clip(entry.body_line, 100)}`);
       return false;
     }
@@ -600,14 +641,19 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, pairs: Map<s
     return true;
   };
   for (const tok of new Set([...added, ...pairs.keys()])) {
-    const sents = pairs.get(tok) ?? [];
+    const pl = pairs.get(tok) ?? [];
     const named = rep.changed_tokens.filter((e) => tokenise(e.token, { keepRefs: true }).has(tok));
-    // The whole-body count did not rise and the token is already in the base: the number only moved between sentences.
-    const moved = !added.includes(tok);
-    if (moved) for (const sn of sents) ac2.warns.push(`${tag} number moved between sentences: "${tok}" in: ${clip(sn, 120)}`);
+    // A token new to the body, or changed in place in a paired sentence (same wording, another value), needs an entry.
+    // One that only relocated into a restructured sentence (count unchanged, already in the base) is a WARN.
+    const isNew = added.includes(tok);
+    const sents = (isNew ? pl : pl.filter((x) => x.inPlace)).map((x) => x.sentence);
+    const moved = !isNew && sents.length === 0;
+    for (const x of pl) if (!sents.includes(x.sentence)) ac2.warns.push(`${tag} number moved between sentences: "${tok}" in: ${clip(x.sentence, 120)}`);
     if (!named.length) {
       if (moved) continue;
-      ac2.fails.push(`${tag} token "${tok}" is new in the body and has no changed_tokens entry${linesWith(c.newBody, tok)}`);
+      ac2.fails.push(isNew
+        ? `${tag} token "${tok}" is new in the body and has no changed_tokens entry${linesWith(c.newBody, tok)}`
+        : `${tag} token "${tok}" changed between paired sentences and has no changed_tokens entry: ${clip(sents[0], 120)}`);
       continue;
     }
     const holding = named.filter((e) => tokenise(e.body_line, { keepRefs: true }).has(tok));
@@ -647,10 +693,22 @@ function checkAc3(c: Ctx, hedgeBefore: number, hedgeAfter: number, ac3: Check) {
   const bs = sentences(c.baseBody), ns = sentences(c.newBody);
   const bset = new Set(bs), nset = new Set(ns);
   const baseOnly = [...bset].filter((x) => !nset.has(x)), newOnly = [...nset].filter((x) => !bset.has(x));
+  const entries = c.rep?.deleted_sentences ?? [];
+  const declared = (b: string) => entries.some((d) => {
+    if (!d.pattern) return cleanSentence(d.sentence) === b;
+    try { return new RegExp(d.sentence, "i").test(b); } catch { return false; }
+  });
+  const hedgeWords = new Set(HEDGES.flatMap((h) => h.split(" ")));
+  const wordsOf = (t: string) => new Set(t.toLowerCase().match(/[a-z]+/g) ?? []);
   for (const b of baseOnly) {
     const n = nearest(b, newOnly);
-    for (const p of HEDGES) if (countIn(b, p) > (n ? countIn(n, p) : 0))
-      ac3.warns.push(`${tag} lost hedge "${p}" base: ${clip(b, 160)} -> new: ${n ? clip(n, 160) : "(no matching sentence)"}`);
+    // The sentence lives on (not declared deleted, its other words still there): losing a hedge from it is a FAIL.
+    const survives = !!n && !declared(b) && [...wordsOf(b)].filter((w) => !hedgeWords.has(w)).every((w) => wordsOf(n).has(w));
+    for (const p of HEDGES) {
+      if (countIn(b, p) <= (n ? countIn(n, p) : 0)) continue;
+      if (survives) ac3.fails.push(`${tag} hedge lost from a surviving sentence "${p}" base: ${clip(b, 160)} -> new: ${clip(n!, 160)}`);
+      else ac3.warns.push(`${tag} lost hedge "${p}" base: ${clip(b, 160)} -> new: ${n ? clip(n, 160) : "(no matching sentence)"}`);
+    }
   }
   for (const n of newOnly) {
     const b = nearest(n, baseOnly);
