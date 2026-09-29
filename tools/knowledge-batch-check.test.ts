@@ -52,6 +52,12 @@ describe("tokeniser", () => {
     expect(t("[145] Dedichen HG. Vitamin C. 1973;21:1320-6.")).toEqual([]);
     expect(t("## References\n\n1. Smith A. 45 mg trial.")).toEqual([]);
   });
+  it("treats no-break spaces and Unicode hyphens as plain ones", () => {
+    expect(t("7\u00a0mg")).toEqual(["7 mg"]);
+    expect(t("a 1\u2011year plan")).toEqual(["1 year"]);
+    expect(t("5\u201010\u00a0mg")).toEqual(["10 mg", "5 mg"]);
+    expect(normQuote("took 7\u00a0mg for 1\u2011year")).toBe("took 7 mg for 1-year");
+  });
   it("unescapes turndown markdown in quotes", () => {
     expect(normQuote("5\\.5 mg  \n **daily**")).toBe("5.5 mg **daily**");
   });
@@ -208,6 +214,12 @@ describe("AC2", () => {
     writeFileSync(join(reports, "alpha.json"), JSON.stringify(reps.alpha));
     const { results } = runBatch({ root, batch: "t", handles: ["beta"], reportsDir: join(reports, "none"), exclusionsPath: exclusions });
     expect(results.find((r) => r.id === "AC2")!.evidence.join()).toContain("diff report missing");
+  });
+  it("matches a plain-text quote against a raw with no-break spaces and non-breaking hyphens", () => {
+    const raw = "In the trial, participants took 300\u00a0mg daily for a 1\u2011year period.";
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(readFileSync(join(reports, "alpha.raw.txt")));
+    expect(fails(run().AC2)).toEqual([]);
   });
   it("accepts 1,000 mg in the raw as 1 g in the body", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("2 g may", "2 g may").replace("Take it", "Take 1 g. Take it"));

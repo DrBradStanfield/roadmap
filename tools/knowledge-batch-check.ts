@@ -126,8 +126,11 @@ export function splitFrontmatter(text: string): { front: string; body: string } 
 /** Undo turndown's backslash escapes. */
 export const unescapeMd = (s: string) => s.replace(/\\([\\`*_{}[\]()#+\-.!|>~<])/g, "$1");
 
+/** Raw text uses no-break spaces and Unicode hyphens; writers type plain ones. */
+export const normChars = (s: string) => s.replace(/\u00a0/g, " ").replace(/[\u2010\u2011\u2012\u2013]/g, "-");
+
 /** Normal form for substring matching of raw quotes. */
-export const normQuote = (s: string) => unescapeMd(s).replace(/\s+/g, " ").trim().toLowerCase();
+export const normQuote = (s: string) => unescapeMd(normChars(s)).replace(/\s+/g, " ").trim().toLowerCase();
 
 const REFS_HEADING = /^#{1,4}\s*(?:references|sources|citations|bibliography)\b/i;
 const REF_LINE = /^\s*\[(\d+)\]\s+\S/;
@@ -182,6 +185,7 @@ function stripNoise(line: string): string {
 /** Number tokens of a text, unit-normalised ("1 g" -> "1000 mg"). Reference lines are skipped unless keepRefs. */
 export function tokenise(text: string, opts: { keepRefs?: boolean } = {}): Set<string> {
   const out = new Set<string>();
+  text = normChars(text);
   const lines = opts.keepRefs ? text.split(/\r?\n/).map((line) => ({ line, ref: false })) : classifyLines(text);
   for (const { line, ref } of lines) {
     if (ref) continue;
