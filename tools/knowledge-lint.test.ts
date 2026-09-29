@@ -40,6 +40,11 @@ describe('splitReferences (AC1: every [n] resolves)', () => {
     const collapsed = '## **Reference List**\n\n1\\.  [https://a.org/1/](https://a.org/1/)2\\.  [https://a.org/2/](https://a.org/2/)';
     expect([...splitReferences(collapsed).refs.keys()]).toEqual([1, 2]);
   });
+  it('reads "3.[https" with no space and a list collapsed after a no-break space (adversary R5)', () => {
+    expect([...splitReferences('## References\n\n3.[https://a.org](https://a.org)').refs.keys()]).toEqual([3]);
+    const collapsed = '## References\n\n13\\. [https://a.org/1/](https://a.org/1/)\u00a014\\. [https://a.org/2/](https://a.org/2/)';
+    expect([...splitReferences(collapsed).refs.keys()]).toEqual([13, 14]);
+  });
   it('treats a bold or plain "References:" line as a section that ends at any heading', () => {
     const { refs, text } = splitReferences('Body [1].\n\n**References**\n\n1. First\n\n### Next\n2. not a ref');
     expect([...refs.keys()]).toEqual([1]);
@@ -88,10 +93,24 @@ describe('ruleIdentifiers (AC7: DOI and PMID shape)', () => {
     ].join('\n'));
     const items = ruleIdentifiers(e).map(f => `${f.rule} ${f.item}`);
     expect(items).toEqual(expect.arrayContaining([
-      'doi-shape doi: N/A', 'doi-shape 10.12/abc', 'id-mismatch 10.1000/aaa -> 10.1000/bbb',
-      'pmid-shape NBK564301', 'id-mismatch PMID 12345 -> 54321', 'pmid-shape 1234567890',
+      'doi-shape doi: N/A', 'doi-shape 10.12/abc', 'id-mismatch 10.1000/aaa -> https://doi.org/10.1000/bbb',
+      'pmid-shape NBK564301', 'id-mismatch 12345 -> https://pubmed.ncbi.nlm.nih.gov/54321/', 'pmid-shape 1234567890',
     ]));
     expect(items.some(i => i.includes('9996371'))).toBe(false);
+  });
+  it('compares link text and target for any link whose text is a URL or an identifier (adversary R11)', () => {
+    const e = ref([
+      '[https://pmc.ncbi.nlm.nih.gov/articles/PMC111/](https://pmc.ncbi.nlm.nih.gov/articles/PMC222/)',
+      '[PMC7539343](https://pmc.ncbi.nlm.nih.gov/articles/PMC7539344/)',
+      '[https://www.a.org/x/](http://a.org/x) [PMC333](https://pmc.ncbi.nlm.nih.gov/articles/PMC333/) [PubMed](https://pubmed.ncbi.nlm.nih.gov/1/)',
+      'Cited [3](https://b.org/study) and [2023](https://c.org/report).',
+      // First corrected run: a DOI linked to its PMC or PubMed page, and nested link text, are not mismatches.
+      '[10.3390/nu7095388](https://pmc.ncbi.nlm.nih.gov/articles/PMC7749242/) [[https://x.org/a](https://x.org/a)](https://x.org/a)',
+    ].join('\n'));
+    expect(ruleIdentifiers(e).map(f => f.item)).toEqual([
+      'https://pmc.ncbi.nlm.nih.gov/articles/PMC111/ -> https://pmc.ncbi.nlm.nih.gov/articles/PMC222/',
+      'PMC7539343 -> https://pmc.ncbi.nlm.nih.gov/articles/PMC7539344/',
+    ]);
   });
   it('passes the real corpus shapes the first run over-reported: parentheses, query strings, URL encoding, turndown escapes', () => {
     const e = ref([
@@ -139,6 +158,15 @@ describe('doseTokens (AC2 tokeniser rules)', () => {
   it('ignores citation markers, numbers glued to letters, years and bare numbers', () => {
     expect(keys('Vitamin B12 in 2021 [3] with 12 people')).toEqual([]);
     expect(keys('B12 1000 mcg')).toEqual(['ug:1000']);
+  });
+  it('reads mm Hg with or without the space, pmol/L, kg and %, ranges included (adversary R5)', () => {
+    expect(keys('a 5–10 mm Hg drop')).toEqual(['mmhg:10', 'mmhg:5']);
+    expect(keys('120 mmHg')).toEqual(keys('120 mm Hg'));
+    expect(keys('20 pmol/L, 5 kg and 45%')).toEqual(['%:45', 'kg:5', 'pmol/l:20']);
+    expect(keys('20-30% lower')).toEqual(['%:20', '%:30']);
+    // First corrected run: "thresholds at 110 and 170 pmol/L" read as 170 missing.
+    expect(keys('thresholds at 110 and 170 pmol/L')).toEqual(['pmol/l:110', 'pmol/l:170']);
+    expect(keys('45 percent')).toEqual(keys('45%'));
   });
   it('keeps lab units apart from mass units', () => {
     expect(keys('LDL 1.4 mmol/L or 55 mg/dL')).toEqual(['mg/dl:55', 'mmol/l:1.4']);
@@ -356,6 +384,27 @@ describe('main on a scratch corpus', () => {
     expect(q1.items[0].id).toMatch(/^[0-9a-f]{12}$/);
     expect((await capture(['--queue'], root)).code).toBe(0);
     expect(JSON.parse(readFileSync(file, 'utf8')).items).toHaveLength(2);
+    rmSync(root, { recursive: true });
+  });
+  it('--queue reopens a fixed item that recurs as regressed, resolves one no longer seen, and refreshes the Grokipedia count (adversary R4)', async () => {
+    const root = setup();
+    const file = join(root, 'docs/loops/chat-health/lint-fix-queue.json');
+    await capture(['--queue'], root);
+    const q = JSON.parse(readFileSync(file, 'utf8'));
+    const grok = q.items.find((i: { rule: string }) => i.rule === 'grokipedia');
+    expect(grok.detail).toMatch(/^1 reference entries/);
+    grok.status = 'fixed abc123';
+    writeFileSync(file, JSON.stringify(q));
+    // The dose now matches the summary, and a second Grokipedia entry appears.
+    writeFileSync(join(root, 'docs/blog/r1.md'), '---\ntitle: "R1"\n---\nClaim [1]. More [2]. Take 5 mg.\n\n## References\n[1] Grokipedia. https://grokipedia.com/page/R1\n[2] Grokipedia. https://grokipedia.com/page/R2\n');
+    const { out } = await capture(['--queue'], root);
+    const q2 = JSON.parse(readFileSync(file, 'utf8'));
+    const byRule = Object.fromEntries(q2.items.map((i: { rule: string }) => [i.rule, i]));
+    expect(byRule.grokipedia.status).toBe('regressed');
+    expect(byRule.grokipedia.detail).toMatch(/^2 reference entries/);
+    expect(byRule['dose-mismatch']).toMatchObject({ status: 'resolved' });
+    expect(byRule['dose-mismatch'].resolved).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(out).toMatch(/open 0, regressed 1, resolved 1/);
     rmSync(root, { recursive: true });
   });
   it('an allow-listed finding is suppressed and counted', async () => {

@@ -160,10 +160,9 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   package-lock.json (npm-version artifact) — revert it, don't commit it.
 - **2026-09-05 [content]** The YouTube bot persists its skip decision as a
   literal `SKIP_NO_REPLY` 1-word assistant row (W36 3, W37 20/45, W39 8/41) —
-  exclude these sentinels from reply-length stats or the median reads low
-  (W37: 66 words without, 52 with). Proposal filed W36 to stop persisting it.
-  Real replies end with the 6-word `[written by Brad AI for testing]` tag
-  the prompt requires (in the prompt before 08-10; W39 raw counts include it).
+  exclude them from reply-length stats or the median reads low (W37: 66 words
+  without, 52 with); proposal filed W36. Real replies end with the 6-word
+  `[written by Brad AI for testing]` tag (prompt before 08-10; in W39 raw counts).
 - **2026-09-19 [latency]** The cache-hit rate is an inter-arrival metric, not
   a router property: every hit in W36–W38 fell within 300 s of the previous
   router call (13/13, 10/13, 2/2) and none beyond it (0/28, 0/34, 0/16) —
@@ -178,3 +177,4 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   with and without error rows (nearest-rank from W37 on). Classifier ERROR
   fails open to the router by design; router failures reach Sentry only as
   `warning`-level events (`reportRouterFailure`), so a burst raises no alert.
+- **2026-09-29 [content]** Weekly knowledge lint (US-43): steps, rules, schemas, cost and baseline in [notes/weekly-lint.md](notes/weekly-lint.md).

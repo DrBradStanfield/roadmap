@@ -10,7 +10,10 @@ the archive). Exempt from the 200-line operative cap.
   a 1-in-13 slice. The loop reports and queues every knowledge-side finding;
   a build session fixes them under US-42's batch protocol and Brad signs
   each batch. Algorithm side report-only; allow-list Brad's. Report sections
-  compact to stay ≤150 lines. Steps and schemas: `notes/weekly-lint.md`;
+  compact to stay ≤150 lines. After the adversarial review: the first `--run`
+  waits for Brad's written yes on the cost line, the `diet` allow-list entry
+  is gone (Brad's file), and fixes run under "the orchestrator", not a named
+  model. Steps and schemas: `notes/weekly-lint.md`;
   story US-43. To stay one-in-one-out at 186 lines,
   eight passages were reworded shorter with no rule dropped (ground truth 6,
   Orient 3, YouTube reply length, the router-pick check, the paraphrase rule,
