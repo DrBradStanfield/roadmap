@@ -10,7 +10,9 @@ import fs, { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadBlogIndex } from '../app/lib/blog-index.server';
+import ABBREVIATIONS from './search-knowledge-abbreviations.json';
 import {
+  bestSection,
   buildIndex,
   DEFAULT_EXCERPT_CHARS,
   MAX_K,
@@ -49,6 +51,18 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
 
   it('folds British spellings onto American ones, both ways', () => {
     expect(tokenize('anaemia haemoglobin oedema')).toEqual(tokenize('anemia hemoglobin edema'));
+  });
+
+  it('expands a clinical abbreviation from the map before ranking', () => {
+    const corpus = [...CORPUS, { handle: 'hypertension-in-adults', title: 'Hypertension', summary: 'High blood pressure in adults.' }];
+    expect(search(buildIndex(corpus), 'What does HTN mean?')[0].handle).toBe('hypertension-in-adults');
+  });
+
+  it('keeps the abbreviation map small: under 60 single-token keys', () => {
+    const keys = Object.keys(ABBREVIATIONS);
+    expect(keys.length).toBeGreaterThan(0);
+    expect(keys.length).toBeLessThan(60);
+    for (const key of keys) expect(key).toMatch(/^[a-z0-9]+$/);
   });
 
   it('ranks the entry whose summary and keywords carry the query first', () => {
@@ -98,7 +112,7 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
     const specifiers = [...source.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
     expect(specifiers.length).toBeGreaterThan(0);
     for (const spec of specifiers) {
-      expect(spec).toMatch(/^(node:(url)|\.\.\/app\/lib\/(blog-index\.server|matched-content))$/);
+      expect(spec).toMatch(/^(node:(url)|\.\.\/app\/lib\/(blog-index\.server|matched-content)|\.\/search-knowledge-abbreviations\.json)$/);
     }
     expect(source).not.toMatch(/\b(fetch|XMLHttpRequest|WebSocket|anthropic)\b/i);
   });
@@ -150,18 +164,28 @@ describe('US-41 AC3/AC4 — posture first, bodies under a cap', () => {
     expect(stdout).not.toMatch(/^3\. /m);
   });
 
-  it('adds a body excerpt under the default cap, frontmatter stripped', () => {
-    const { stdout } = captureRun(['vitamin c', '--excerpt', '--k', '1']);
+  it('picks the section whose heading and text share the most query terms', () => {
+    const body = '# Iron\n\nIntro text.\n\n## Dosing\n\nTake 65 mg elemental iron.\n\n## Side effects\n\nConstipation and nausea are common side effects.\n';
+    expect(bestSection(body, 'iron side effects constipation', 1000)).toBe('## Side effects\n\nConstipation and nausea are common side effects.');
+    expect(bestSection(body, 'iron side effects constipation', 10)).toBe('## Side ef');
+    expect(bestSection(body, 'zebra', 13)).toBe('# Iron\n\nIntro');
+  });
+
+  it('adds the best-matching section under the default cap, frontmatter stripped', () => {
+    const { stdout } = captureRun(['chest pain red flags', '--excerpt', '--k', '1']);
     const excerpt = stdout.split('--- excerpt ')[1];
     expect(excerpt).toBeDefined();
     expect(excerpt).not.toMatch(/^keywords:/m);
+    expect(excerpt.split('\n')[1]).toMatch(/^## Red Flags/);
     expect(excerpt.length).toBeLessThan(DEFAULT_EXCERPT_CHARS + 200);
-    expect(stdout).toMatch(/--- excerpt \(6,000 of [\d,]+ chars\) ---/);
+    expect(stdout).toMatch(/--- excerpt \([\d,]+ of [\d,]+ chars\) ---/);
   });
 
   it('honours --max-chars', () => {
     const { stdout } = captureRun(['vitamin c', '--excerpt', '--k', '1', '--max-chars', '500']);
-    expect(stdout).toMatch(/--- excerpt \(500 of [\d,]+ chars\) ---/);
+    const shown = Number(stdout.match(/--- excerpt \(([\d,]+) of [\d,]+ chars\) ---/)?.[1].replace(/,/g, ''));
+    expect(shown).toBeGreaterThan(0);
+    expect(shown).toBeLessThanOrEqual(500);
   });
 
   it('--json gives the posture and the hits as data', () => {

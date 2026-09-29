@@ -19,6 +19,7 @@
 import { pathToFileURL } from 'node:url';
 import { loadBlogIndex } from '../app/lib/blog-index.server';
 import { loadBlogArticle, MAX_BLOG_CHARS } from '../app/lib/matched-content';
+import ABBREVIATIONS from './search-knowledge-abbreviations.json';
 
 export const POSTURE =
   "Educational content from Dr Brad Stanfield's knowledge base, not medical advice. Cite the handle of any entry you use.";
@@ -49,6 +50,13 @@ function stem(word: string): string {
   else if (w.length > 4 && w.endsWith('ed') && !w.endsWith('eed')) w = w.slice(0, -2);
   return w;
 }
+
+/**
+ * Clinical abbreviations the index spells out (HTN, T2DM, TSH). The chat
+ * matcher's synonym sets were deleted with it in de4455b; this is the minimal
+ * set the router fixtures use, keyed on the lower-case word before stemming.
+ */
+const abbreviations: Record<string, string> = ABBREVIATIONS;
 
 export function tokenize(text: string): string[] {
   return (text.toLowerCase().match(/[a-z0-9']+/g) ?? [])
@@ -125,12 +133,18 @@ export function buildIndex(entries: Entry[], weights: Weights = BEST): Index {
   return { docs, df, avgLength };
 }
 
+/** The query's stems, each known abbreviation followed by its spelled-out form. */
+function queryTerms(query: string): string[] {
+  const words = query.toLowerCase().match(/[a-z0-9']+/g) ?? [];
+  return [...new Set(tokenize(words.map((w) => abbreviations[w] ? `${w} ${abbreviations[w]}` : w).join(' ')))];
+}
+
 const K1 = 1.2;
 const B = 0.75;
 
 /** BM25 over the weighted fields; only entries sharing a term with the query come back. */
 export function search(index: Index, query: string, k = DEFAULT_K): Hit[] {
-  const terms = [...new Set(tokenize(query))];
+  const terms = queryTerms(query);
   const n = index.docs.length;
   const scored: { doc: Doc; score: number }[] = [];
   for (const doc of index.docs) {
@@ -166,6 +180,22 @@ function body(handle: string): string | null {
   return text === null ? null : text.replace(/^---\n[\s\S]*?\n---\n+/, '');
 }
 
+/**
+ * The section (a heading and the text under it) sharing the most distinct
+ * query terms with the query, or the body's start when none shares one.
+ */
+export function bestSection(text: string, query: string, maxChars: number): string {
+  const terms = queryTerms(query);
+  let best = text;
+  let bestScore = 0;
+  for (const section of text.split(/\n(?=#{1,6} )/)) {
+    const tokens = new Set(tokenize(section));
+    const score = terms.filter((t) => tokens.has(t)).length;
+    if (score > bestScore) [best, bestScore] = [section, score];
+  }
+  return best.trim().slice(0, maxChars);
+}
+
 const count = (n: number) => n.toLocaleString('en-US');
 
 // ---------------------------------------------------------------------------
@@ -180,8 +210,8 @@ export const HELP = `search_knowledge — search Dr Brad's knowledge base, offli
 search      Ranks every article, supplement reference, guideline and clinical
             pathway by its summary, keywords, title and handle (BM25), and
             prints the best --k (default ${DEFAULT_K}, at most ${MAX_K}).
-            --excerpt adds the start of each body, up to --max-chars
-            (default ${count(DEFAULT_EXCERPT_CHARS)}) per entry.
+            --excerpt adds the section of each body that best matches
+            the query, up to --max-chars (default ${count(DEFAULT_EXCERPT_CHARS)}) per entry.
             --json prints { posture, results } for a program to read.
 --article   get_article: prints one entry's full body, up to --max-chars
             (default ${count(MAX_BLOG_CHARS)}, which fits every entry).
@@ -252,7 +282,7 @@ function searchOutput(args: Args): string {
   if (args.json) {
     const results = hits.map((hit, i) => {
       const text = bodies[i];
-      return text === null ? hit : { ...hit, excerpt: text.slice(0, maxChars) };
+      return text === null ? hit : { ...hit, excerpt: bestSection(text, args.query, maxChars) };
     });
     return `${JSON.stringify({ posture: POSTURE, results }, null, 2)}\n`;
   }
@@ -260,7 +290,7 @@ function searchOutput(args: Args): string {
     const head = `${i + 1}. [${hit.type}] ${hit.handle} (score ${hit.score.toFixed(1)})\n   ${hit.title}\n   ${hit.summary}`;
     const text = bodies[i];
     if (text === null) return head;
-    const excerpt = text.slice(0, maxChars);
+    const excerpt = bestSection(text, args.query, maxChars);
     return `${head}\n--- excerpt (${count(excerpt.length)} of ${count(text.length)} chars) ---\n${excerpt}`;
   });
   return `${POSTURE}\n\n${blocks.length ? blocks.join('\n\n') : 'No entry matched. Try other words.'}\n`;

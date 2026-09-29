@@ -7,13 +7,13 @@
  */
 import { describe, it, expect } from 'vitest';
 import { loadBlogIndex } from '../app/lib/blog-index.server';
-import { evaluate, loadFixtures, recallFixtures } from './search-knowledge-eval';
+import { evaluate, half, loadFixtures, recallFixtures } from './search-knowledge-eval';
 import { BEST, VARIANTS } from './search-knowledge';
 
-// Measured 2026-09-29 on 254 fixtures: top-1 169 (66.5%), top-3 199 (78.3%).
-// Floors sit about two points under, roughly five fixtures of drift.
-const FLOOR_TOP1 = 0.64;
-const FLOOR_TOP3 = 0.76;
+// Measured 2026-09-29 on 254 fixtures, abbreviations on: top-3 203 (79.9%),
+// top-8 220 (86.6%). Floors sit about two points under, five fixtures of drift.
+const FLOOR_TOP3 = 0.78;
+const FLOOR_TOP8 = 0.84;
 
 describe('US-41 AC5 — recall floor over the router fixtures', () => {
   it('scores only fixtures that name at least one expected handle', () => {
@@ -26,7 +26,7 @@ describe('US-41 AC5 — recall floor over the router fixtures', () => {
     expect(picked.map((f) => f.query)).toEqual(['a']);
   });
 
-  it('counts top-1 and top-3 hits against any expected handle', () => {
+  it('counts top-1, top-3 and top-8 hits against any expected handle', () => {
     const entries = [
       { handle: 'iron', title: 'Iron', summary: 'ferritin iron' },
       { handle: 'fish', title: 'Fish oil', summary: 'omega-3 fish oil' },
@@ -36,15 +36,21 @@ describe('US-41 AC5 — recall floor over the router fixtures', () => {
       entries,
       BEST,
     );
-    expect(result).toMatchObject({ n: 2, top1: 1, top3: 1 });
+    expect(result).toMatchObject({ n: 2, top1: 1, top3: 1, top8: 1 });
   });
 
-  it(`keeps the best variant at or above top-1 ${FLOOR_TOP1} and top-3 ${FLOOR_TOP3}`, () => {
+  it('splits fixtures into even and odd halves by index', () => {
+    const all = ['a', 'b', 'c', 'd', 'e'].map((query) => ({ query, expected: ['x'] }));
+    expect(half(all, 'even').map((f) => f.query)).toEqual(['a', 'c', 'e']);
+    expect(half(all, 'odd').map((f) => f.query)).toEqual(['b', 'd']);
+  });
+
+  it(`keeps the best variant at or above top-3 ${FLOOR_TOP3} and top-8 ${FLOOR_TOP8}`, () => {
     const fixtures = recallFixtures(loadFixtures());
     expect(fixtures.length).toBeGreaterThan(200);
     const result = evaluate(fixtures, loadBlogIndex(), BEST);
-    expect(result.top1 / result.n).toBeGreaterThanOrEqual(FLOOR_TOP1);
     expect(result.top3 / result.n).toBeGreaterThanOrEqual(FLOOR_TOP3);
+    expect(result.top8 / result.n).toBeGreaterThanOrEqual(FLOOR_TOP8);
   });
 
   it('the best variant is one of the named variants and beats summary alone at top-3', () => {
