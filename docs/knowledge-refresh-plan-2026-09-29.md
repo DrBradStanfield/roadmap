@@ -109,6 +109,16 @@ Batch close (about 20): AC1 to AC7 scripts; summary corrections applied by the o
 6. PENDING: whether the chat-health charter gains a monthly lint step (a report of contradictions between pathways, the algorithm and references, dead links, Grokipedia-only claims; reports only). Explained in chat.
 7. ACCEPTED. Jev: park.
 
+## 4b. Night of 2026-09-29: what ran (orchestrator log)
+
+Batches written by Opus 5.5 workers (one per article), checked by `tools/knowledge-batch-check.ts` (branch, US-42), reviewed by fresh Opus adversaries and Codex with the raw in reach, fixes applied, checks at exit 0:
+- Pathways pilot (10, by chat traffic): two adversary rounds, two Codex passes. Real source changes found: HbA1c thresholds (48 / 42 to 47) and waist cutoffs in diabetes screening; Coversyl salt change; new second-line rule in hypertension; digoxin 0.0625 (an April typo); troponin timing rules withdrawn in ACS. Drift fixed: unsupported claims, lost hedges, funding criteria, device brands, clinician voice. Emergency actions made explicit (US-42 AC10). Five entries had wrong or no emergency action after the source's clinician text changed.
+- Pathways batch 2 (20 more with traffic): one adversary round (1,401 numbers verified against raw), one Codex pass. Cardiac drugs page gained six drugs; eye-disease page fully rewritten by the source (July 2026 HbA1c screening rules); vitamin D in children doses changed at source.
+- New pathways (41 of the 42 triaged; one excluded as a product and funding page): written under the new-entry addendum (authored frontmatter); adversary and Codex running at the time of writing.
+- References pilot (5: vitamin K, lithium, magnesium, taurine, creatine): Grokipedia de-cited claim by claim (301 claims); PubMed abstracts fetched for 149 studies (`claude_business/tools/fetch-pubmed.mjs`); safety cautions that rested only on Grokipedia are removed and listed in each report's SAFETY line for Brad; the adversary caught four PMIDs corrupted by a renumbering script (fixed; checker now verifies link text against URLs) and eleven pre-existing wrong PMIDs in vitamin K (fixed or de-linked).
+- Answer checks pre-registered from the diffs: 20 + 26 + 41 + 10 fixtures, to run after 2026-10-01 (AC5).
+- Not done tonight: AC8 (Brad's sign-off), AC5 runs, index summary corrections (proposed in reports, held for the paired arm), keyword additions for new drug names, deploy.
+
 ## 5. What this plan deliberately does not do
 
 - No summary rewrite beyond number-and-unit fact corrections under F2's split; no keyword edits.
