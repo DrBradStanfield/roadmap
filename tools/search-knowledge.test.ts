@@ -12,6 +12,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadBlogIndex } from '../app/lib/blog-index.server';
 import ABBREVIATIONS from './search-knowledge-abbreviations.json';
+import * as tool from './search-knowledge';
 import {
   bestSection,
   buildIndex,
@@ -46,9 +47,27 @@ const CORPUS = [
 
 describe('US-41 AC1 — a lexical ranker, no model', () => {
   it('tokenizes to lower-case stems, dropping stopwords and splitting on punctuation', () => {
-    expect(tokenize('What are the STATINS doing to my GLP-1?')).toEqual(['statin', 'do', 'glp', '1']);
+    expect(tokenize('What are the STATINS doing to my GLP-1?')).toEqual(['statin', 'do', 'glp']);
     expect(tokenize('bleeding gums')).toEqual(tokenize('bleed gum'));
     expect(tokenize('allergies')).toEqual(tokenize('allergy'));
+  });
+
+  it('drops numbers, single letters and unit words, so a value never steers the ranking', () => {
+    expect(tokenize('ldl 4.2 mmol/L, bp 150/95 mm Hg, 5 mg, 10 mcg, 1000 iu')).toEqual(['ldl', 'bp']);
+  });
+
+  it('keeps vitamin C apart from vitamin D though single letters are dropped', () => {
+    expect(tokenize('vitamin c')).toEqual(['vitamin', 'vitaminc']);
+    expect(tokenize('vitamin C')).not.toEqual(tokenize('vitamin D'));
+  });
+
+  it('lets a rare term outrank a common one (IDF decides, not raw counts)', () => {
+    const corpus = [
+      { handle: 'rare', title: 'One', summary: 'zinc' },
+      { handle: 'common', title: 'Two', summary: 'fatigue fatigue' },
+      ...['a', 'b', 'c', 'd', 'e'].map((x) => ({ handle: `f-${x}`, title: x, summary: `fatigue ${x}word` })),
+    ];
+    expect(search(buildIndex(corpus), 'zinc fatigue')[0].handle).toBe('rare');
   });
 
   it('folds British spellings onto American ones, both ways', () => {
@@ -60,8 +79,9 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
     expect(search(buildIndex(corpus), 'What does HTN mean?')[0].handle).toBe('hypertension-in-adults');
   });
 
-  it('keeps the abbreviation map small: under 60 single-token keys', () => {
+  it('keeps the abbreviation map small and unambiguous: under 60 single-token keys', () => {
     const keys = Object.keys(ABBREVIATIONS);
+    for (const ambiguous of ['hg', 'als', 'af', 'mi', 'me', 'ed']) expect(keys).not.toContain(ambiguous);
     expect(keys.length).toBeGreaterThan(0);
     expect(keys.length).toBeLessThan(60);
     for (const key of keys) expect(key).toMatch(/^[a-z0-9]+$/);
@@ -96,6 +116,22 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
     const index = buildIndex(many);
     expect(search(index, 'vitamin d')).toHaveLength(3);
     expect(search(index, 'vitamin d', 50)).toHaveLength(MAX_K);
+  });
+
+  it('a blood pressure reading in mm Hg does not pull in hyperemesis gravidarum', () => {
+    const hits = search(buildIndex(loadBlogIndex()), 'my blood pressure is 150/95 mm Hg').map((h) => h.handle);
+    expect(hits).not.toContain('nausea-and-vomiting-in-pregnancy');
+  });
+
+  it('value-bearing questions find the clinical entry', () => {
+    const index = buildIndex(loadBlogIndex());
+    const top = (q: string, k = 3) => search(index, q, k).map((h) => h.handle);
+    expect(top('ldl 4.2 mmol/L')).toContain('hyperlipidaemia');
+    expect(top('hba1c 48 mmol/mol')).toContain('diabetes-screening-and-diagnosis-in-adults');
+    // The values change nothing; the lay "blood pressure" miss is the ranker's
+    // own (the pathway sits 8th behind Brad's blood pressure videos).
+    expect(top('blood pressure 150/95')).toEqual(top('blood pressure'));
+    expect(top('blood pressure 150/95', 8)).toContain('hypertension-in-adults');
   });
 
   it('indexes every entry in docs/blog/index.json', () => {
@@ -227,6 +263,23 @@ describe('US-41 AC3/AC4 — posture first, bodies under a cap', () => {
     expect(bytes).toBe(expected);
   }, 30_000);
 
+  it('--article --json prints the posture, handle, title and body as data', () => {
+    const { code, stdout } = captureRun(['--article', 'hypertension-in-adults', '--json', '--max-chars', '400']);
+    expect(code).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(Object.keys(parsed).sort()).toEqual(['body', 'handle', 'posture', 'title']);
+    expect(parsed).toMatchObject({ posture: POSTURE, handle: 'hypertension-in-adults' });
+    expect(parsed.body.startsWith('# ')).toBe(true);
+  });
+
+  it('--article refuses --k and --excerpt with a usage line', () => {
+    for (const flag of [['--k', '2'], ['--excerpt']]) {
+      const result = captureRun(['--article', 'hypertension-in-adults', ...flag]);
+      expect(result.code).toBe(1);
+      expect(result.stderr).toMatch(/^search_knowledge: --article takes only --max-chars and --json\n/);
+    }
+  });
+
   it('--article caps a long body and says so', () => {
     const { stdout } = captureRun(['--article', 'hypertension-in-adults', '--max-chars', '1000']);
     expect(stdout).toMatch(/\[truncated: 1,000 of [\d,]+ chars; raise --max-chars for more\]/);
@@ -246,7 +299,14 @@ describe('US-41 AC3/AC4 — posture first, bodies under a cap', () => {
     expect(captureRun(['iron', '--max-chars', '-5']).code).toBe(1);
   });
 
-  it('prints help and exits 0', () => {
-    expect(captureRun(['--help']).stdout).toMatch(/search_knowledge/);
+  it('prints help and exits 0, saying where the query does and does not go', () => {
+    const { code, stdout } = captureRun(['--help']);
+    expect(code).toBe(0);
+    expect(stdout).toContain('This tool writes your query nowhere. Your shell or assistant may keep its own command history.');
+  });
+
+  it('exports only what its callers use', () => {
+    expect(tool).not.toHaveProperty('HELP');
+    expect(tool).not.toHaveProperty('DEFAULT_K');
   });
 });

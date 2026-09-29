@@ -1,0 +1,1688 @@
+[
+  {
+    "query": "I have high blood pressure, what does the algorithm suggest?",
+    "expected": [
+      "hypertension-in-adults"
+    ]
+  },
+  {
+    "query": "What does HTN mean?",
+    "expected": [
+      "hypertension-in-adults"
+    ]
+  },
+  {
+    "query": "My chest hurts when I walk up stairs",
+    "expected": [
+      "chest-pain",
+      "acute-coronary-syndromes-acs"
+    ]
+  },
+  {
+    "query": "I think I might be having a heart attack",
+    "expected": [
+      "acute-coronary-syndromes-acs",
+      "chest-pain"
+    ]
+  },
+  {
+    "query": "My LDL cholesterol is too high",
+    "expected": [
+      "hyperlipidaemia",
+      "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "HbA1c of 6.5 — what does that mean?",
+    "expected": [
+      "diabetes-screening-and-diagnosis-in-adults",
+      "cardiovascular-risk-assessment-cvra"
+    ]
+  },
+  {
+    "query": "Type 2 diabetes treatment options",
+    "expected": [
+      "type-2-diabetes",
+      "diabetes-screening-and-diagnosis-in-adults"
+    ]
+  },
+  {
+    "query": "T2DM diagnosis criteria",
+    "expected": [
+      "type-2-diabetes",
+      "diabetes-screening-and-diagnosis-in-adults"
+    ]
+  },
+  {
+    "query": "My TSH came back abnormal",
+    "expected": [
+      "hypothyroidism",
+      "hyperthyroidism",
+      "impalpable-thyroid-nodule",
+      "palpable-thyroid-nodule",
+      "thyroid-disease-in-pregnancy",
+      "goitre-in-adults"
+    ]
+  },
+  {
+    "query": "I feel cold all the time and gained weight",
+    "expected": [
+      "fatigue",
+      "weight-related-concerns-in-adults",
+      "hypothyroidism"
+    ]
+  },
+  {
+    "query": "I've been feeling depressed for months",
+    "expected": [
+      "depression-in-adults-and-older-persons"
+    ]
+  },
+  {
+    "query": "I feel anxious all the time",
+    "expected": [
+      "adult-mental-health-counselling-and-therapy"
+    ],
+    "must_not_route": [
+      "anxiety-distress-and-agitation-in-palliative-care",
+      "anxiety-in-children-and-youth",
+      "general-mental-health-in-youth"
+    ]
+  },
+  {
+    "query": "I think I have ADHD",
+    "expected": [
+      "adhd-in-adults"
+    ]
+  },
+  {
+    "query": "I can't fall asleep at night",
+    "expected": [
+      "insomnia"
+    ]
+  },
+  {
+    "query": "I snore loudly and wake up tired",
+    "expected": [
+      "obstructive-sleep-apnoea-osa-in-adults",
+      "snoring-and-sleep-apnoea-in-children"
+    ]
+  },
+  {
+    "query": "Do I have sleep apnea?",
+    "expected": [
+      "obstructive-sleep-apnoea-osa-in-adults"
+    ]
+  },
+  {
+    "query": "Knee pain going up stairs",
+    "expected": [
+      "knee-injuries",
+      "osteoarthritis-oa",
+      "hip-and-knee-joint-replacement"
+    ]
+  },
+  {
+    "query": "Chronic lower back pain",
+    "expected": [
+      "back-and-neck-pain"
+    ]
+  },
+  {
+    "query": "Tennis elbow pain",
+    "expected": [
+      "tennis-and-golfer-s-elbow"
+    ]
+  },
+  {
+    "query": "Frozen shoulder treatment",
+    "expected": [
+      "shoulder-pain"
+    ]
+  },
+  {
+    "query": "Heartburn after meals",
+    "expected": [
+      "nsaids-and-dyspepsia-heartburn",
+      "reflux-and-gord-in-children"
+    ]
+  },
+  {
+    "query": "Acid reflux keeping me awake",
+    "expected": [
+      "nsaids-and-dyspepsia-heartburn",
+      "reflux-and-gord-in-children"
+    ]
+  },
+  {
+    "query": "IBS symptoms and treatment",
+    "expected": [
+      "irritable-bowel-syndrome-ibs"
+    ]
+  },
+  {
+    "query": "Chronic constipation",
+    "expected": [
+      "constipation-in-adults"
+    ]
+  },
+  {
+    "query": "Severe stomach pain",
+    "expected": [
+      "acute-abdominal-pain-in-adults"
+    ]
+  },
+  {
+    "query": "Chronic cough for weeks",
+    "expected": [
+      "chronic-cough-in-adults"
+    ]
+  },
+  {
+    "query": "I think I have asthma",
+    "expected": [
+      "non-acute-asthma-in-adults-and-young-people",
+      "acute-asthma-in-adults-and-young-people"
+    ]
+  },
+  {
+    "query": "COPD exacerbation symptoms",
+    "expected": [
+      "acute-exacerbation-of-copd",
+      "copd-diagnosis-and-initial-management"
+    ]
+  },
+  {
+    "query": "Shortness of breath on exertion",
+    "expected": [
+      "dyspnoea",
+      "chest-pain",
+      "acute-exacerbation-of-copd"
+    ]
+  },
+  {
+    "query": "Bleeding after menopause",
+    "expected": [
+      "postmenopausal-bleeding"
+    ]
+  },
+  {
+    "query": "Hot flashes menopause",
+    "expected": [
+      "menopause-hormone-therapy-mht"
+    ]
+  },
+  {
+    "query": "PCOS diagnosis",
+    "expected": [
+      "polycystic-ovary-syndrome-pcos"
+    ]
+  },
+  {
+    "query": "Trouble peeing at night",
+    "expected": [
+      "lower-urinary-tract-symptoms-in-men-luts",
+      "benign-prostatic-hyperplasia"
+    ]
+  },
+  {
+    "query": "BPH treatment options",
+    "expected": [
+      "benign-prostatic-hyperplasia",
+      "lower-urinary-tract-symptoms-in-men-luts"
+    ]
+  },
+  {
+    "query": "Erectile dysfunction",
+    "expected": [
+      "erectile-dysfunction"
+    ]
+  },
+  {
+    "query": "Prostate cancer screening",
+    "expected": [
+      "prostate-cancer-testing",
+      "prostate-cancer-diagnosis"
+    ]
+  },
+  {
+    "query": "Acne treatment",
+    "expected": [
+      "acne"
+    ]
+  },
+  {
+    "query": "Headache for days",
+    "expected": [
+      "headaches-in-adults"
+    ]
+  },
+  {
+    "query": "Migraine treatment",
+    "expected": [
+      "headaches-in-adults"
+    ]
+  },
+  {
+    "query": "Osteoporosis treatment",
+    "expected": [
+      "medications-for-osteoporosis",
+      "calcium-supplementation-in-osteoporosis"
+    ]
+  },
+  {
+    "query": "Should I take vitamin D every day?",
+    "expected": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects",
+      "vitamin-d-supplementation"
+    ]
+  },
+  {
+    "query": "Best omega-3 dose",
+    "expected": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "Creatine for muscle growth",
+    "expected": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "Magnesium glycinate for sleep",
+    "expected": [
+      "magnesium-benefits-best-forms-dosing"
+    ]
+  },
+  {
+    "query": "Berberine blood sugar",
+    "expected": [
+      "berberine-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "Is protein powder worth taking?",
+    "expected": [
+      "protein-powders-benefits-types-dosing-and-side-effects",
+      "diet"
+    ]
+  },
+  {
+    "query": "Benefits of choline",
+    "expected": [
+      "choline-benefits-best-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "Zone 2 cardio training",
+    "expected": [
+      "exercise"
+    ]
+  },
+  {
+    "query": "How much sodium per day",
+    "expected": [
+      "diet"
+    ]
+  },
+  {
+    "query": "Intermittent fasting for weight loss",
+    "expected": [
+      "doctor-recommended-intermittent-fasting-hack-that-actually-works",
+      "new-studies-reveal-the-best-type-of-intermittent-fasting",
+      "longevity-experts-warning-fasting",
+      "diet",
+      "weight-related-concerns-in-adults"
+    ]
+  },
+  {
+    "query": "I keep getting bruises all over my legs and I haven't bumped into anything",
+    "expected": [
+      "abnormal-bleeding-or-bruising"
+    ]
+  },
+  {
+    "query": "I had a tooth pulled last week and the bleeding just won't stop",
+    "expected": [
+      "abnormal-bleeding-or-bruising",
+      "antiplatelet-medication-and-dental-procedures",
+      "thrombocytopenia-low-platelets"
+    ]
+  },
+  {
+    "query": "I've noticed tiny red and purple dots appearing on my arms",
+    "expected": [
+      "abnormal-bleeding-or-bruising"
+    ]
+  },
+  {
+    "query": "my pain is really bad and the paracetamol isn't helping",
+    "expected": [
+      "analgesia-in-adults-with-acute-pain"
+    ]
+  },
+  {
+    "query": "can you take ibuprofen and paracetamol at the same time",
+    "expected": [
+      "analgesia-in-adults-with-acute-pain"
+    ]
+  },
+  {
+    "query": "how long should I stay on strong painkillers after an injury",
+    "expected": [
+      "analgesia-in-adults-with-acute-pain"
+    ]
+  },
+  {
+    "query": "I have a stabbing pain in my chest every time I take a deep breath",
+    "expected": [
+      "chest-pain"
+    ]
+  },
+  {
+    "query": "my chest has been hurting and it's spreading up to my jaw and I feel sweaty",
+    "expected": [
+      "chest-pain"
+    ]
+  },
+  {
+    "query": "sudden tearing chest pain between my shoulder blades",
+    "expected": [
+      "chest-pain"
+    ]
+  },
+  {
+    "query": "I've had constant pain in my back for the last 6 months and nothing helps",
+    "expected": [
+      "chronic-non-cancer-pain",
+      "back-and-neck-pain"
+    ]
+  },
+  {
+    "query": "my nerve pain is burning all the time and it's ruining my life",
+    "expected": [
+      "chronic-non-cancer-pain",
+      "peripheral-neuropathy",
+      "postherpetic-neuralgia"
+    ]
+  },
+  {
+    "query": "I feel depressed because of my pain and I can't exercise anymore",
+    "expected": [
+      "chronic-non-cancer-pain",
+      "depression-in-adults-and-older-persons"
+    ]
+  },
+  {
+    "query": "I haven't been able to poo in four days and my belly feels really full",
+    "expected": [
+      "constipation-in-adults"
+    ]
+  },
+  {
+    "query": "my stools come out like dry hard pellets and it's really painful",
+    "expected": [
+      "constipation-in-adults"
+    ]
+  },
+  {
+    "query": "I'm totally backed up pushing really hard on the toilet but nothing comes out",
+    "expected": [
+      "constipation-in-adults"
+    ]
+  },
+  {
+    "query": "I have really bad bone pain and a high fever after coming back from Thailand",
+    "expected": [
+      "dengue-fever",
+      "fever-in-returning-travellers"
+    ]
+  },
+  {
+    "query": "my eyes hurt and I have a fever just got back from Fiji last week",
+    "expected": [
+      "dengue-fever",
+      "fever-in-returning-travellers"
+    ]
+  },
+  {
+    "query": "I have an itchy rash and low platelets after a trip to Indonesia",
+    "expected": [
+      "dengue-fever",
+      "fever-in-returning-travellers",
+      "thrombocytopenia-low-platelets"
+    ]
+  },
+  {
+    "query": "what are the best chronic pain pills",
+    "expected": [
+      "medications-in-chronic-pain"
+    ]
+  },
+  {
+    "query": "my pain tablets aren't working anymore what can I try",
+    "expected": [
+      "medications-in-chronic-pain",
+      "chronic-non-cancer-pain",
+      "analgesia-in-adults-with-acute-pain"
+    ]
+  },
+  {
+    "query": "can I take an antidepressant for chronic pain",
+    "expected": [
+      "medications-in-chronic-pain",
+      "chronic-non-cancer-pain"
+    ]
+  },
+  {
+    "query": "I keep waking up at night with acid burning my throat",
+    "expected": [
+      "nsaids-and-dyspepsia-heartburn"
+    ]
+  },
+  {
+    "query": "feel like there's a lump stuck in my throat after eating",
+    "expected": [
+      "nsaids-and-dyspepsia-heartburn"
+    ]
+  },
+  {
+    "query": "my stomach is full and burning after every meal and I've been on ibuprofen",
+    "expected": [
+      "nsaids-and-dyspepsia-heartburn"
+    ]
+  },
+  {
+    "query": "I have burning pain in my legs but I can't feel them after spinal cord injury",
+    "expected": [
+      "pain-in-spinal-cord-impairment-sci"
+    ]
+  },
+  {
+    "query": "my shoulder really hurts from using my wheelchair all day",
+    "expected": [
+      "pain-in-spinal-cord-impairment-sci",
+      "shoulder-pain"
+    ]
+  },
+  {
+    "query": "I've got a syrinx after my spinal injury now getting new pain",
+    "expected": [
+      "pain-in-spinal-cord-impairment-sci"
+    ]
+  },
+  {
+    "query": "I'm changing my pad every hour is that normal",
+    "expected": [
+      "abnormal-uterine-bleeding"
+    ]
+  },
+  {
+    "query": "I had bleeding after sex and I'm worried",
+    "expected": [
+      "post-coital-bleeding",
+      "abnormal-uterine-bleeding"
+    ]
+  },
+  {
+    "query": "my period has been going on for three weeks",
+    "expected": [
+      "abnormal-uterine-bleeding"
+    ]
+  },
+  {
+    "query": "I have sudden stabbing pain in my lower left belly",
+    "expected": [
+      "acute-lower-abdominal-and-pelvic-pain-in-women",
+      "acute-abdominal-pain-in-adults"
+    ]
+  },
+  {
+    "query": "sharp pain in my lower stomach and I missed my period",
+    "expected": [
+      "acute-lower-abdominal-and-pelvic-pain-in-women"
+    ]
+  },
+  {
+    "query": "pain during sex and cramping in my pelvis",
+    "expected": [
+      "acute-lower-abdominal-and-pelvic-pain-in-women",
+      "chronic-pelvic-pain",
+      "acute-abdominal-pain-in-adults"
+    ]
+  },
+  {
+    "query": "my heel kills every morning when I get out of bed",
+    "expected": [
+      "ankle-and-foot-pain-in-adults",
+      "plantar-fasciitis"
+    ]
+  },
+  {
+    "query": "I twisted my ankle a few weeks ago and it's still swollen",
+    "expected": [
+      "ankle-and-foot-pain-in-adults"
+    ]
+  },
+  {
+    "query": "burning pain between my toes in tight shoes",
+    "expected": [
+      "ankle-and-foot-pain-in-adults",
+      "metatarsalgia"
+    ]
+  },
+  {
+    "query": "my bones feel sore all over and I don't know why",
+    "expected": [
+      "bone-pain"
+    ]
+  },
+  {
+    "query": "bone pain waking me up at night",
+    "expected": [
+      "bone-pain"
+    ]
+  },
+  {
+    "query": "my rib bones are tender to touch with no injury",
+    "expected": [
+      "bone-pain",
+      "all-acute-fractures-and-injuries"
+    ]
+  },
+  {
+    "query": "my breasts ache and feel heavy before my period",
+    "expected": [
+      "breast-pain-mastalgia"
+    ]
+  },
+  {
+    "query": "shooting pain in one breast not related to my cycle",
+    "expected": [
+      "breast-pain-mastalgia"
+    ]
+  },
+  {
+    "query": "my breasts are really tender and sore since starting the pill",
+    "expected": [
+      "breast-pain-mastalgia",
+      "combined-oral-contraceptive-pill"
+    ]
+  },
+  {
+    "query": "I've had pelvic pain for months and nothing is fixing it",
+    "expected": [
+      "chronic-pelvic-pain"
+    ]
+  },
+  {
+    "query": "constant dull ache in my pelvis not related to my period",
+    "expected": [
+      "chronic-pelvic-pain"
+    ]
+  },
+  {
+    "query": "pelvic pain that keeps coming back for years",
+    "expected": [
+      "chronic-pelvic-pain"
+    ]
+  },
+  {
+    "query": "I have MND and I'm getting short of breath at night",
+    "expected": [
+      "dyspnoea-in-mnd",
+      "dyspnoea"
+    ]
+  },
+  {
+    "query": "my husband has ALS and is having trouble breathing and coughing up mucus",
+    "expected": [
+      "dyspnoea-in-mnd"
+    ]
+  },
+  {
+    "query": "motor neurone disease struggling to breathe what can the doctor give",
+    "expected": [
+      "dyspnoea-in-mnd"
+    ]
+  },
+  {
+    "query": "I got a fever a week after coming back from holiday in Thailand",
+    "expected": [
+      "fever-in-returning-travellers",
+      "dengue-fever"
+    ]
+  },
+  {
+    "query": "sweating and shaking since I got back from Africa worried it's malaria",
+    "expected": [
+      "fever-in-returning-travellers"
+    ]
+  },
+  {
+    "query": "went on safari mosquito bit me loads now I feel terrible with a fever",
+    "expected": [
+      "fever-in-returning-travellers",
+      "dengue-fever",
+      "malaria"
+    ]
+  },
+  {
+    "query": "I had COVID and now I'm exhausted all the time and crash after any activity",
+    "expected": [
+      "myalgic-encephalomyelitis-chronic-fatigue-syndrome-me-cfs",
+      "fatigue",
+      "covid-19"
+    ]
+  },
+  {
+    "query": "I'm always tired no matter how much I sleep and get dizzy when I stand up",
+    "expected": [
+      "myalgic-encephalomyelitis-chronic-fatigue-syndrome-me-cfs",
+      "fatigue"
+    ]
+  },
+  {
+    "query": "ME CFS pacing and energy envelope",
+    "expected": [
+      "myalgic-encephalomyelitis-chronic-fatigue-syndrome-me-cfs"
+    ]
+  },
+  {
+    "query": "I have a bump on the side of my neck that's been there for a month",
+    "expected": [
+      "neck-lumps-in-adults",
+      "acute-adult-orl-head-and-neck-surgery-assessment"
+    ]
+  },
+  {
+    "query": "painless hard lump under my jaw not going away",
+    "expected": [
+      "neck-lumps-in-adults",
+      "soft-tissue-lumps-in-adults",
+      "fine-needle-aspiration-fna"
+    ]
+  },
+  {
+    "query": "my neck gland has been swollen for weeks and won't go down",
+    "expected": [
+      "neck-lumps-in-adults",
+      "acute-adult-orl-head-and-neck-surgery-assessment"
+    ]
+  },
+  {
+    "query": "my baby has been coughing for weeks and makes a whooping sound",
+    "expected": [
+      "pertussis-whooping-cough",
+      "cough-in-children",
+      "persistent-wet-cough-in-children"
+    ]
+  },
+  {
+    "query": "child coughs so hard they vomit and goes blue",
+    "expected": [
+      "pertussis-whooping-cough",
+      "cough-in-children"
+    ]
+  },
+  {
+    "query": "I was near someone with whooping cough while pregnant do I need antibiotics",
+    "expected": [
+      "pertussis-whooping-cough"
+    ]
+  },
+  {
+    "query": "I keep getting blood after sex is that normal",
+    "expected": [
+      "post-coital-bleeding"
+    ]
+  },
+  {
+    "query": "why do I have light spotting after intercourse",
+    "expected": [
+      "post-coital-bleeding"
+    ]
+  },
+  {
+    "query": "pink discharge after sex worried about cervical cancer",
+    "expected": [
+      "post-coital-bleeding"
+    ]
+  },
+  {
+    "query": "I had my last period 3 years ago but I'm bleeding again",
+    "expected": [
+      "postmenopausal-bleeding"
+    ]
+  },
+  {
+    "query": "noticed some brown spotting and I went through menopause two years ago",
+    "expected": [
+      "postmenopausal-bleeding",
+      "menopause-hormone-therapy-mht",
+      "low-risk-endometrial-cancer-follow-up"
+    ]
+  },
+  {
+    "query": "I'm on HRT and getting unexpected bleeding",
+    "expected": [
+      "postmenopausal-bleeding",
+      "menopause-hormone-therapy-mht"
+    ]
+  },
+  {
+    "query": "my child had strep throat and now has swollen knees and a limp",
+    "expected": [
+      "rheumatic-fever-and-rheumatic-heart-disease",
+      "sore-throat",
+      "bone-and-joint-infections-in-children"
+    ]
+  },
+  {
+    "query": "my daughter's handwriting is getting worse and she's making jerky movements",
+    "expected": [
+      "rheumatic-fever-and-rheumatic-heart-disease"
+    ]
+  },
+  {
+    "query": "doctor said I have a heart murmur after a throat infection could it be rheumatic fever",
+    "expected": [
+      "rheumatic-fever-and-rheumatic-heart-disease"
+    ]
+  },
+  {
+    "query": "I found a hard lump on my testicle",
+    "expected": [
+      "scrotal-lumps-in-adults"
+    ]
+  },
+  {
+    "query": "my ball sac feels like a bag of worms",
+    "expected": [
+      "scrotal-lumps-in-adults"
+    ]
+  },
+  {
+    "query": "painless swelling on one testicle no pain",
+    "expected": [
+      "scrotal-lumps-in-adults"
+    ]
+  },
+  {
+    "query": "my shin hurts when I run",
+    "expected": [
+      "shin-pain"
+    ]
+  },
+  {
+    "query": "pain in the front of my lower leg after exercise",
+    "expected": [
+      "shin-pain"
+    ]
+  },
+  {
+    "query": "sore shins and a numb big toe",
+    "expected": [
+      "shin-pain"
+    ]
+  },
+  {
+    "query": "I have a painless lump under my skin on my thigh that seems to be getting bigger",
+    "expected": [
+      "soft-tissue-lumps-in-adults"
+    ]
+  },
+  {
+    "query": "soft fatty lump on my back had it for years is it a lipoma",
+    "expected": [
+      "soft-tissue-lumps-in-adults"
+    ]
+  },
+  {
+    "query": "hard bump under skin that feels fixed and is about 6cm",
+    "expected": [
+      "soft-tissue-lumps-in-adults"
+    ]
+  },
+  {
+    "query": "my wrist hurts when I type at work",
+    "expected": [
+      "wrist-pain-in-adults"
+    ]
+  },
+  {
+    "query": "I fell and now my wrist is sore and swollen",
+    "expected": [
+      "wrist-pain-in-adults",
+      "wrist-fractures-in-adults"
+    ]
+  },
+  {
+    "query": "numbness and tingling in my fingers coming from wrist",
+    "expected": [
+      "wrist-pain-in-adults"
+    ]
+  },
+  {
+    "query": "my child's tummy hurts really bad and he can't walk",
+    "expected": [
+      "acute-abdominal-pain-in-children"
+    ]
+  },
+  {
+    "query": "toddler stomach ache with green vomit",
+    "expected": [
+      "acute-abdominal-pain-in-children"
+    ]
+  },
+  {
+    "query": "kid with right side belly pain and fever",
+    "expected": [
+      "acute-abdominal-pain-in-children"
+    ]
+  },
+  {
+    "query": "my 8 year old keeps getting tummy aches every week",
+    "expected": [
+      "chronic-abdominal-pain-in-children-and-youth"
+    ]
+  },
+  {
+    "query": "child missing school because of stomach pain",
+    "expected": [
+      "chronic-abdominal-pain-in-children-and-youth"
+    ]
+  },
+  {
+    "query": "doctor says nothing wrong but my kid always has belly pain",
+    "expected": [
+      "chronic-abdominal-pain-in-children-and-youth",
+      "acute-abdominal-pain-in-children"
+    ]
+  },
+  {
+    "query": "my toddler hasn't pooed in 4 days what do I do",
+    "expected": [
+      "constipation-in-children"
+    ]
+  },
+  {
+    "query": "my kid keeps holding in their poo and is scared of the toilet",
+    "expected": [
+      "constipation-in-children"
+    ]
+  },
+  {
+    "query": "there is poo leaking in my child's underpants",
+    "expected": [
+      "constipation-in-children"
+    ]
+  },
+  {
+    "query": "my toddler has been coughing for 2 weeks and it's worse at night",
+    "expected": [
+      "cough-in-children",
+      "persistent-wet-cough-in-children"
+    ]
+  },
+  {
+    "query": "my 3 year old has a barking cough and sounds like a seal",
+    "expected": [
+      "cough-in-children"
+    ]
+  },
+  {
+    "query": "baby coughing so hard they vomit after a cold",
+    "expected": [
+      "cough-in-children",
+      "pertussis-whooping-cough"
+    ]
+  },
+  {
+    "query": "my child keeps getting headaches what should I do",
+    "expected": [
+      "headaches-in-children"
+    ]
+  },
+  {
+    "query": "toddler waking up crying with headache",
+    "expected": [
+      "headaches-in-children"
+    ]
+  },
+  {
+    "query": "my daughter has a headache every day at school",
+    "expected": [
+      "headaches-in-children"
+    ]
+  },
+  {
+    "query": "my kid has a lump on the side of their neck",
+    "expected": [
+      "neck-lumps-in-children"
+    ]
+  },
+  {
+    "query": "toddler neck swelling not going away after cold",
+    "expected": [
+      "neck-lumps-in-children"
+    ]
+  },
+  {
+    "query": "hard bump on baby's neck worried about lymphoma",
+    "expected": [
+      "neck-lumps-in-children"
+    ]
+  },
+  {
+    "query": "my toddler has had a wet cough for 6 weeks",
+    "expected": [
+      "persistent-wet-cough-in-children",
+      "cough-in-children"
+    ]
+  },
+  {
+    "query": "child keeps coughing up green phlegm after every cold",
+    "expected": [
+      "persistent-wet-cough-in-children",
+      "cough-in-children"
+    ]
+  },
+  {
+    "query": "kid finished antibiotics but wet cough came straight back",
+    "expected": [
+      "persistent-wet-cough-in-children",
+      "cough-in-children"
+    ]
+  },
+  {
+    "query": "my preemie is not meeting milestones",
+    "expected": [
+      "preterm-and-low-birth-weight-infants"
+    ]
+  },
+  {
+    "query": "baby born at 32 weeks coming home from NICU",
+    "expected": [
+      "preterm-and-low-birth-weight-infants"
+    ]
+  },
+  {
+    "query": "iron drops making my premature baby constipated",
+    "expected": [
+      "preterm-and-low-birth-weight-infants"
+    ]
+  },
+  {
+    "query": "my son woke up crying his testicle hurts",
+    "expected": [
+      "scrotal-pain-and-swelling-in-children"
+    ]
+  },
+  {
+    "query": "toddler has one swollen ball no pain",
+    "expected": [
+      "scrotal-pain-and-swelling-in-children"
+    ]
+  },
+  {
+    "query": "8 year old boy swollen red scrotum with vomiting",
+    "expected": [
+      "scrotal-pain-and-swelling-in-children"
+    ]
+  },
+  {
+    "query": "my toddler started shaking during a fever",
+    "expected": [
+      "seizures-with-fever-in-children"
+    ]
+  },
+  {
+    "query": "child had a fit with a temperature will they get epilepsy",
+    "expected": [
+      "seizures-with-fever-in-children",
+      "epilepsy-in-children-and-young-people"
+    ]
+  },
+  {
+    "query": "baby convulsed with high fever when to call ambulance",
+    "expected": [
+      "seizures-with-fever-in-children",
+      "febrile-illness-in-children"
+    ]
+  },
+  {
+    "query": "my child is gaining too much weight",
+    "expected": [
+      "weight-management-in-children"
+    ]
+  },
+  {
+    "query": "overweight toddler",
+    "expected": [
+      "weight-management-in-children"
+    ]
+  },
+  {
+    "query": "my daughter is overweight and won't stop eating",
+    "expected": [
+      "weight-management-in-children"
+    ]
+  },
+  {
+    "query": "I'm 8 weeks pregnant and throwing up everything I eat",
+    "expected": [
+      "nausea-and-vomiting-in-pregnancy"
+    ]
+  },
+  {
+    "query": "Is all day sickness normal in pregnancy or just morning",
+    "expected": [
+      "nausea-and-vomiting-in-pregnancy"
+    ]
+  },
+  {
+    "query": "I've been diagnosed with HG and can't keep anything down",
+    "expected": [
+      "nausea-and-vomiting-in-pregnancy"
+    ]
+  },
+  {
+    "query": "my nipples are burning after breastfeeding",
+    "expected": [
+      "nipple-pain-in-breastfeeding"
+    ]
+  },
+  {
+    "query": "breastfeeding hurts every time baby latches",
+    "expected": [
+      "nipple-pain-in-breastfeeding"
+    ]
+  },
+  {
+    "query": "white blister on nipple while breastfeeding",
+    "expected": [
+      "nipple-pain-in-breastfeeding"
+    ]
+  },
+  {
+    "query": "I'm 7 weeks pregnant and started spotting",
+    "expected": [
+      "pain-and-bleeding-in-early-pregnancy"
+    ]
+  },
+  {
+    "query": "sharp pain on one side early pregnancy with light bleeding",
+    "expected": [
+      "pain-and-bleeding-in-early-pregnancy"
+    ]
+  },
+  {
+    "query": "passed a clot at 9 weeks am I having a miscarriage",
+    "expected": [
+      "pain-and-bleeding-in-early-pregnancy"
+    ]
+  },
+  {
+    "query": "I'm pregnant and so itchy at night especially my hands and feet",
+    "expected": [
+      "rash-and-itch-in-pregnancy"
+    ]
+  },
+  {
+    "query": "itchy bumpy rash on my stretch marks 36 weeks pregnant",
+    "expected": [
+      "rash-and-itch-in-pregnancy"
+    ]
+  },
+  {
+    "query": "blisters appearing around my belly button during pregnancy",
+    "expected": [
+      "rash-and-itch-in-pregnancy"
+    ]
+  },
+  {
+    "query": "my mum is on morphine for cancer and hasn't had a bowel movement in 5 days",
+    "expected": [
+      "constipation-in-palliative-care-and-oncology",
+      "pain-management-in-palliative-care"
+    ]
+  },
+  {
+    "query": "constipation in hospice patient on fentanyl patch",
+    "expected": [
+      "constipation-in-palliative-care-and-oncology",
+      "fentanyl-guide",
+      "constipation-in-adults"
+    ]
+  },
+  {
+    "query": "dad is dying and completely blocked up can't go to the toilet",
+    "expected": [
+      "constipation-in-palliative-care-and-oncology"
+    ]
+  },
+  {
+    "query": "my mum has terminal cancer and she can't stop coughing",
+    "expected": [
+      "cough-in-palliative-care"
+    ]
+  },
+  {
+    "query": "how do you suppress cough in a dying person",
+    "expected": [
+      "cough-in-palliative-care"
+    ]
+  },
+  {
+    "query": "cough relief for someone in palliative care",
+    "expected": [
+      "cough-in-palliative-care"
+    ]
+  },
+  {
+    "query": "my mum is dying and can't catch her breath",
+    "expected": [
+      "dyspnoea-in-palliative-care"
+    ]
+  },
+  {
+    "query": "terminal breathlessness morphine dose",
+    "expected": [
+      "dyspnoea-in-palliative-care"
+    ]
+  },
+  {
+    "query": "breathless end of life what to expect at home",
+    "expected": [
+      "dyspnoea-in-palliative-care"
+    ]
+  },
+  {
+    "query": "my dad is on morphine for cancer and keeps feeling sick",
+    "expected": [
+      "nausea-and-vomiting-in-palliative-care",
+      "pain-management-in-palliative-care"
+    ]
+  },
+  {
+    "query": "she's in hospice and can't keep anything down",
+    "expected": [
+      "nausea-and-vomiting-in-palliative-care",
+      "bowel-obstruction-in-palliative-care"
+    ]
+  },
+  {
+    "query": "constant nausea and vomiting after chemotherapy palliative patient",
+    "expected": [
+      "nausea-and-vomiting-in-palliative-care"
+    ]
+  },
+  {
+    "query": "what can I give my dad for cancer pain at end of life",
+    "expected": [
+      "pain-management-in-palliative-care"
+    ]
+  },
+  {
+    "query": "morphine side effects constipation nausea palliative",
+    "expected": [
+      "pain-management-in-palliative-care",
+      "constipation-in-palliative-care-and-oncology"
+    ],
+    "must_not_route": [
+      "constipation-in-adults"
+    ]
+  },
+  {
+    "query": "burning nerve pain cancer not controlled by morphine",
+    "expected": [
+      "pain-management-in-palliative-care"
+    ]
+  },
+  {
+    "query": "my mum has cancer and is too tired to get out of bed",
+    "expected": [
+      "weakness-and-fatigue-in-palliative-care",
+      "hypercalcaemia-of-malignancy",
+      "dexamethasone-in-palliative-care-and-oncology"
+    ]
+  },
+  {
+    "query": "chemo fatigue getting worse what can we do",
+    "expected": [
+      "weakness-and-fatigue-in-palliative-care"
+    ]
+  },
+  {
+    "query": "dad is bedbound and has no strength left palliative",
+    "expected": [
+      "weakness-and-fatigue-in-palliative-care"
+    ]
+  },
+  {
+    "query": "How often should I workout?",
+    "expected": [
+      "exercise"
+    ]
+  },
+  {
+    "query": "what exercise should I do?",
+    "expected": [
+      "exercise"
+    ]
+  },
+  {
+    "query": "what is the best diet for me?",
+    "expected": [
+      "diet"
+    ]
+  },
+  {
+    "query": "what is the best diet?",
+    "expected": [
+      "diet"
+    ]
+  },
+  {
+    "query": "What is the best way to eat",
+    "expected": [
+      "diet"
+    ]
+  },
+  {
+    "query": "What does the evidence say about the DASH diet for blood pressure?",
+    "expected": [
+      "diet",
+      "blood-pressure-targets-just-changed",
+      "the-fastest-way-to-lower-your-blood-pressure-naturally"
+    ]
+  },
+  {
+    "query": "how can I build a workout routine for my life based on this?",
+    "expected": [
+      "exercise"
+    ]
+  },
+  {
+    "query": "I'm thinking about becoming Vegan, should I?",
+    "expected": [
+      "diet",
+      "suspected-b12-deficiency"
+    ]
+  },
+  {
+    "query": "I'm thinking about trying CrossFit. How healthy would that be?",
+    "expected": [
+      "exercise"
+    ]
+  },
+  {
+    "query": "What age is DEXA scan recommended?",
+    "expected": [
+      "bone-density-scan-dexa",
+      "medications-for-osteoporosis"
+    ]
+  },
+  {
+    "query": "I've been having chest pain. What are the red flags?",
+    "expected": [
+      "chest-pain",
+      "angina",
+      "acute-coronary-syndromes-acs"
+    ]
+  },
+  {
+    "query": "Pravastatin VS rosuvastatin",
+    "expected": [
+      "hyperlipidaemia",
+      "ezetimibe-is-the-most-underrated-weapon-against-heart-disease",
+      "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "Which statin to take with ezitimibe",
+    "expected": [
+      "hyperlipidaemia",
+      "ezetimibe-is-the-most-underrated-weapon-against-heart-disease"
+    ]
+  },
+  {
+    "query": "Should I take magnesium? What form is best?",
+    "expected": [
+      "magnesium-benefits-best-forms-dosing"
+    ]
+  },
+  {
+    "query": "What is my protein target and why?",
+    "expected": [
+      "protein-powders-benefits-types-dosing-and-side-effects",
+      "exercise"
+    ]
+  },
+  {
+    "query": "if im an athlete should I not have a higher protein target",
+    "expected": [
+      "protein-powders-benefits-types-dosing-and-side-effects",
+      "exercise"
+    ]
+  },
+  {
+    "query": "Magnesium glycinate for sleep",
+    "expected": [
+      "magnesium-benefits-best-forms-dosing",
+      "melatonin-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "Is MicroVitamin safe to take with blood thinners?",
+    "expected": [
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_not_route": [
+      "direct-oral-anticoagulants",
+      "warfarin-starting-and-monitoring",
+      "warfarin-over-anticoagulation",
+      "warfarin-monitoring-requests",
+      "peri-procedural-management-of-warfarin-doacs-and-antiplatelets",
+      "warfarin-dental-extractions",
+      "antiplatelet-medication-and-dental-procedures"
+    ]
+  },
+  {
+    "query": "Is there any issue taking Sleep and the magnesium dosage within it along with either the microvitamin pill or powder, which also has magnesium in it?",
+    "expected": [
+      "magnesium-benefits-best-forms-dosing",
+      "best-worst-forms-magnesium"
+    ]
+  },
+  {
+    "query": "is creatine safe?",
+    "expected": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "what vitamins help with sleep?",
+    "expected": [
+      "magnesium-benefits-best-forms-dosing",
+      "melatonin-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "does melatonin actually help me fall asleep faster?",
+    "expected": [
+      "melatonin-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "how much magnesium per day?",
+    "expected": [
+      "magnesium-benefits-best-forms-dosing"
+    ]
+  },
+  {
+    "query": "do I need omega 3?",
+    "expected": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "what causes high cholesterol?",
+    "expected": [
+      "hyperlipidaemia",
+      "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "which statin has the lowest side effects",
+    "expected": [
+      "ezetimibe-is-the-most-underrated-weapon-against-heart-disease",
+      "hyperlipidaemia"
+    ]
+  },
+  {
+    "query": "what is the best statin",
+    "expected": [
+      "ezetimibe-is-the-most-underrated-weapon-against-heart-disease",
+      "hyperlipidaemia"
+    ]
+  },
+  {
+    "query": "I take Lixiana, can I take MicroVitamin with it?",
+    "expected": [
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_not_route": [
+      "direct-oral-anticoagulants",
+      "warfarin-starting-and-monitoring",
+      "warfarin-over-anticoagulation",
+      "warfarin-monitoring-requests",
+      "peri-procedural-management-of-warfarin-doacs-and-antiplatelets",
+      "warfarin-dental-extractions",
+      "antiplatelet-medication-and-dental-procedures"
+    ]
+  },
+  {
+    "query": "What is eGFR? What is the ideal level?",
+    "expected": [
+      "chronic-kidney-disease-ckd"
+    ]
+  },
+  {
+    "query": "Here is my homemade protein shake — 40g whey, organic berries, monk fruit, spring water. What do you think?",
+    "expected": [
+      "protein-powders-benefits-types-dosing-and-side-effects",
+      "diet"
+    ]
+  },
+  {
+    "query": "I use Johns Killer Protein powder, what do you think of it?",
+    "expected": [
+      "protein-powders-benefits-types-dosing-and-side-effects",
+      "what-they-re-hiding-about-lead-found-in-protein-powders"
+    ]
+  },
+  {
+    "query": "Is there a test to know if my LDL problem is genetic?",
+    "expected": [
+      "hyperlipidaemia"
+    ]
+  },
+  {
+    "query": "Does creatine help with mental performance? What's the evidence?",
+    "expected": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "How much omega-3 should I take?",
+    "expected": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "What wellness routine does Brad recommend?",
+    "expected": [
+      "diet",
+      "sleep",
+      "exercise"
+    ]
+  },
+  {
+    "query": "How does MicroVitamin help with anti-aging?",
+    "expected": [
+      "multivitamins-benefits-evidence-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "I notice that there is a small amount of D3 in the ingredients. Given the latest research, is there any plans to increase the D3 and k2 dosage?",
+    "expected": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects",
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "Methylsulfonylmethan",
+    "expected": [
+      "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "A family member was started on a statin and developed cognitive decline shortly afterwards - could the statin be the cause?",
+    "expected": [
+      "the-30-year-statin-panic-is-finally-over"
+    ]
+  },
+  {
+    "query": "Short term is it really harmful for eca",
+    "expected": [
+      "weight-loss-supplements-benefits-evidence-and-safety"
+    ]
+  },
+  {
+    "query": "K2 is NOT involved in blood clotting. Show me a reference.",
+    "expected": [
+      "vitamin-k-benefits-forms-dosing-and-side-effects",
+      "vitamin-k2-d3-together",
+      "does-vitamin-k2-actually-protect-your-heart-new-trial"
+    ]
+  },
+  {
+    "query": "Which company of Tirzepatide should I use",
+    "expected": [
+      "why-i-take-low-dose-tirzepatide-zepbound",
+      "microdosing-tirzepatide-ozempic-glp1-for-longevity",
+      "should-you-use-ozempic-glp-1-weight-loss-meds-nuanced-answer"
+    ]
+  },
+  {
+    "query": "Can you look up the testostrone dossage trials?",
+    "expected": [
+      "men-over-50-read-this-before-using-trt-testosterone-therapy",
+      "experts-were-wrong-about-testosterone-shocking-new-proof",
+      "testosterone-undecanoate-reandron-injections"
+    ]
+  },
+  {
+    "query": "Based on the information in this article, are there any recommendations on which potassium chloride salt substitute to get?",
+    "expected": [
+      "salt-substitutes-can-slash-your-death-risk-by-12",
+      "completely-wrong-about-salt-new-study",
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "Could you use a salt pig and combine salt and potassium? What would the best ratio be?",
+    "expected": [
+      "salt-substitutes-can-slash-your-death-risk-by-12",
+      "completely-wrong-about-salt-new-study"
+    ]
+  },
+  {
+    "query": "Isn't there a test to measure the amount of lithium in our bodies or blood?",
+    "expected": [
+      "lithium-benefits-forms-dosing-and-side-effects",
+      "scientists-just-found-an-easy-way-to-cut-dementia-risk-by-15"
+    ]
+  },
+  {
+    "query": "Does Lp(a) penetrate into the arterial wall and if yes, why?",
+    "expected": [
+      "lipoproteina",
+      "99-of-heart-attacks-had-this-prior-warning"
+    ]
+  },
+  {
+    "query": "1. Does Lp(a) respond to diet, if the diet calms chronic bowl diseases? 2. Could you please explain this part more?: \"through areas of endothelial dysfunction or via transcytosis\"",
+    "expected": [
+      "lipoproteina"
+    ]
+  },
+  {
+    "query": "Could there be other variables affected by K2 that would reduce risks of cardiac related incidents? CAC is only one and nit even the most reliable",
+    "expected": [
+      "why-arent-cardiologists-prescribing-vitamin-k2",
+      "does-vitamin-k2-actually-protect-your-heart-new-trial",
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "A vascular surgeon on YouTube recommends vitamin K2, so why do you two see things differently?",
+    "expected": [
+      "why-arent-cardiologists-prescribing-vitamin-k2",
+      "does-vitamin-k2-actually-protect-your-heart-new-trial"
+    ]
+  },
+  {
+    "query": "But I took natto almost everyday, that is like 350-600 mcg of vitamin k2. Should I stop my natto?",
+    "expected": [
+      "why-arent-cardiologists-prescribing-vitamin-k2",
+      "vitamin-k-benefits-forms-dosing-and-side-effects",
+      "does-vitamin-k2-actually-protect-your-heart-new-trial"
+    ]
+  },
+  {
+    "query": "I'd like to have microdose trazepatide. How do I start the process",
+    "expected": [
+      "microdosing-tirzepatide-ozempic-glp1-for-longevity",
+      "why-i-take-low-dose-tirzepatide-zepbound",
+      "should-you-use-ozempic-glp-1-weight-loss-meds-nuanced-answer"
+    ]
+  },
+  {
+    "query": "I have taken your multivitamin capsules for years and bought creatine separately. I switched to your multivitamin powder, the one with the creatine already in it, in my protein shake, and got unbearable headaches both times, so I went back to the capsules.",
+    "expected": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "Can you review that cardiologist's big study on taking omega 3s?",
+    "expected": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "It was more about whether omega 3 is safe alongside blood thinners, and there not being enough evidence for him to tell patients to stop taking it.",
+    "expected": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+    ]
+  },
+  {
+    "query": "how is the liver health",
+    "expected": [
+      "abnormal-liver-function-tests"
+    ]
+  },
+  {
+    "query": "can you estimate my apob from my non hdl cholesterol",
+    "expected": [
+      "99-of-heart-attacks-had-this-prior-warning",
+      "soon-well-forget-what-heart-attacks-are",
+      "lean-mass-hyper-responders-see-rapid-plaque-progression",
+      "5-livesaving-blog-tests"
+    ]
+  },
+  {
+    "query": "Small liver hypodensities too tiny to characterise are best left alone unless something else shows up.",
+    "expected": [
+      "incidental-liver-lesions"
+    ]
+  },
+  {
+    "query": "Makes you wonder why humans evolved the PCSK9 enzyme in the first place. Is it just a genetic mistake, or does it serve some purpose?",
+    "expected": [
+      "pcsk9i-breakthrough-cuts-heart-disease",
+      "soon-well-forget-what-heart-attacks-are"
+    ]
+  },
+  {
+    "query": "Looking at what I've entered, how would you rate my overall health right now?",
+    "expected": [
+      "diet",
+      "exercise",
+      "sleep"
+    ]
+  }
+]

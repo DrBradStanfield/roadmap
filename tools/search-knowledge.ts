@@ -23,7 +23,7 @@ import ABBREVIATIONS from './search-knowledge-abbreviations.json';
 
 export const POSTURE =
   "Educational content from Dr Brad Stanfield's knowledge base, not medical advice. Cite the handle of any entry you use.";
-export const DEFAULT_K = 3;
+const DEFAULT_K = 3;
 export const MAX_K = 8;
 export const DEFAULT_EXCERPT_CHARS = 6_000;
 
@@ -36,6 +36,9 @@ const STOPWORDS = new Set((
   "i'm if im in into is it its just me my of on or our should so than that the their them then there these they " +
   'this those to too was we were what when where which who why will with would you your'
 ).split(' '));
+
+/** Units and the numbers they carry say nothing about the topic ("ldl 4.2 mmol/L", "150/95 mm Hg"). */
+const UNITS = new Set('mmol mmhg mm hg mg mcg iu ml dl kg cm mol nmol pmol umol'.split(' '));
 
 /**
  * A light stemmer: plurals, -ing and -ed, and British "ae"/"oe" folded to the
@@ -59,9 +62,10 @@ function stem(word: string): string {
 const abbreviations: Record<string, string> = ABBREVIATIONS;
 
 export function tokenize(text: string): string[] {
-  return (text.toLowerCase().match(/[a-z0-9']+/g) ?? [])
+  // Single letters are dropped, so "vitamin c" also yields "vitaminc" to keep C apart from D.
+  return (text.toLowerCase().replace(/\b(vitamin|hepatitis)\s+([a-z])\b/g, '$1 $1$2').match(/[a-z0-9']+/g) ?? [])
     .map((t) => t.replace(/^'+|'+$/g, ''))
-    .filter((t) => t && !STOPWORDS.has(t))
+    .filter((t) => t.length > 1 && !/^\d+$/.test(t) && !STOPWORDS.has(t) && !UNITS.has(t))
     .map(stem);
 }
 
@@ -202,10 +206,10 @@ const count = (n: number) => n.toLocaleString('en-US');
 // CLI
 // ---------------------------------------------------------------------------
 
-export const HELP = `search_knowledge — search Dr Brad's knowledge base, offline, no model.
+const HELP = `search_knowledge — search Dr Brad's knowledge base, offline, no model.
 
   npx tsx tools/search-knowledge.ts "<question or keywords>" [--k 3] [--excerpt] [--max-chars 6000] [--json]
-  npx tsx tools/search-knowledge.ts --article <handle> [--max-chars 120000]
+  npx tsx tools/search-knowledge.ts --article <handle> [--max-chars 120000] [--json]
 
 search      Ranks every article, supplement reference, guideline and clinical
             pathway by its summary, keywords, title and handle (BM25), and
@@ -215,9 +219,10 @@ search      Ranks every article, supplement reference, guideline and clinical
             --json prints { posture, results } for a program to read.
 --article   get_article: prints one entry's full body, up to --max-chars
             (default ${count(MAX_BLOG_CHARS)}, which fits every entry).
+            --json prints { posture, handle, title, body }.
 
-Educational content, not medical advice. Cite the handle. Your query is not
-logged or saved anywhere. Run from the repo root.
+Educational content, not medical advice. Cite the handle. Run from the repo root.
+This tool writes your query nowhere. Your shell or assistant may keep its own command history.
 `;
 
 class Refusal extends Error {}
@@ -227,7 +232,7 @@ const BOOL_FLAGS = ['--excerpt', '--json'] as const;
 
 interface Args {
   query: string;
-  k: number;
+  k?: number;
   maxChars?: number;
   article?: string;
   excerpt: boolean;
@@ -242,7 +247,7 @@ function positiveInt(flag: string, raw: string): number {
 /** Every refusal names the flag, never the query: the query goes nowhere but the ranker. */
 function parseArgs(argv: string[]): Args {
   const words: string[] = [];
-  const args: Args = { query: '', k: DEFAULT_K, excerpt: false, json: false };
+  const args: Args = { query: '', excerpt: false, json: false };
   for (let i = 0; i < argv.length; i++) {
     const token = argv[i];
     if ((BOOL_FLAGS as readonly string[]).includes(token)) {
@@ -262,21 +267,23 @@ function parseArgs(argv: string[]): Args {
   args.query = words.join(' ').trim();
   if (!args.article && !args.query) throw new Refusal('No query given');
   if (args.article && args.query) throw new Refusal('--article takes a handle, not a query');
+  if (args.article && (args.k !== undefined || args.excerpt)) throw new Refusal('--article takes only --max-chars and --json');
   return args;
 }
 
-function article(handle: string, maxChars = MAX_BLOG_CHARS): string {
+function article(handle: string, json: boolean, maxChars = MAX_BLOG_CHARS): string {
   const entry = loadBlogIndex().find((e) => e.handle === handle);
   const text = entry ? body(handle) : null;
   if (!entry || text === null) throw new Refusal('No entry has that handle');
   const cut = text.length > maxChars
     ? `${text.slice(0, maxChars)}\n\n[truncated: ${count(maxChars)} of ${count(text.length)} chars; raise --max-chars for more]\n`
     : text;
+  if (json) return `${JSON.stringify({ posture: POSTURE, handle, title: entry.title, body: cut }, null, 2)}\n`;
   return `${POSTURE}\n\n[${entry.type ?? 'article'}] ${handle}: ${entry.title}\n\n${cut}`;
 }
 
 function searchOutput(args: Args): string {
-  const hits = search(buildIndex(loadBlogIndex()), args.query, args.k);
+  const hits = search(buildIndex(loadBlogIndex()), args.query, args.k ?? DEFAULT_K);
   const maxChars = args.maxChars ?? DEFAULT_EXCERPT_CHARS;
   const bodies = hits.map((hit) => (args.excerpt ? body(hit.handle) : null));
   if (args.json) {
@@ -304,7 +311,7 @@ export function run(argv: string[]): number {
   try {
     const args = parseArgs(argv);
     if (loadBlogIndex().length === 0) throw new Refusal('docs/blog/index.json did not load; run from the repo root');
-    process.stdout.write(args.article ? article(args.article, args.maxChars) : searchOutput(args));
+    process.stdout.write(args.article ? article(args.article, args.json, args.maxChars) : searchOutput(args));
     return 0;
   } catch (error) {
     if (!(error instanceof Refusal)) throw error;

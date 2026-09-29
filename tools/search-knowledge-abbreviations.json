@@ -22,14 +22,11 @@
   "luts": "lower urinary tract symptoms",
   "adhd": "attention deficit hyperactivity disorder",
   "mnd": "motor neurone disease",
-  "als": "motor neurone disease",
   "cfs": "chronic fatigue syndrome",
   "hrt": "menopause hormone therapy",
   "mht": "menopause hormone therapy",
   "nicu": "neonatal intensive care",
-  "hg": "hyperemesis gravidarum",
   "dexa": "bone density osteoporosis",
   "ckd": "chronic kidney disease",
-  "uti": "urinary tract infection",
-  "af": "atrial fibrillation"
+  "uti": "urinary tract infection"
 }
