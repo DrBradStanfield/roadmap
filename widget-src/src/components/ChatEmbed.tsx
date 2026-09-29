@@ -52,13 +52,13 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
     }, { threshold: 0.1 });
   }, [actions.loadConversationsIfNeeded]);
 
-  // Auto-scroll messages to bottom on new message
+  // Auto-scroll messages to bottom on a new message or any pending-reply change
   useEffect(() => {
     const el = messagesContainerRef.current;
     if (!el) return;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
     if (nearBottom) el.scrollTop = el.scrollHeight;
-  }, [state.messages, state.streamingThinking, state.streamingText, messagesContainerRef]);
+  }, [state.messages, state.pending, messagesContainerRef]);
 
   const handleMessagesScroll = useCallback(() => {
     const el = messagesContainerRef.current;
@@ -139,10 +139,10 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
             </div>
           )}
           {state.messages.map(msg => (
-            <ChatMessageBubble key={msg.id} msg={msg} thinking={state.thinkingById[msg.id]} />
+            <ChatMessageBubble key={msg.id} msg={msg} approach={state.approachById[msg.id]} />
           ))}
           {state.isLoading && (
-            <ChatPendingReply isLocalSender={state.isLocalSender} thinking={state.streamingThinking} text={state.streamingText} />
+            <ChatPendingReply isLocalSender={state.isLocalSender} pending={state.pending} />
           )}
           {state.error && <div className="chat-error">{state.error}</div>}
           {showScrollBtn && (

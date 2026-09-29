@@ -4,12 +4,17 @@
  * Spec: US-40 (docs/user-stories.md). Each block names its AC and the Codex
  * finding that wrote it (docs/reviews/2026-09-19-codex-reviewer-wiring.md).
  */
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, symlinkSync, existsSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
+// The suite's own temp dir, inherited by every child through childEnv: other sessions' reviews share the system one (their
+// work dirs broke the "nothing kept" checks), and macOS's per-user TMPDIR (/var/folders/jb/7ypw…0000gn/T) holds a
+// token-shaped run, which rightly denies a path fixture its exemption.
+process.env.TMPDIR = mkdtempSync('/tmp/cr-suite-');
+afterAll(() => rmSync(process.env.TMPDIR!, { recursive: true, force: true }));
 const WRAPPER = resolve(__dirname, 'codex-review.mjs');
 const CLEAN = { status: 'complete', target: 'FILLED', summary: 'clean', findings: [] };
 const SCRATCH_CREATED_AT = '2026-09-17T20:06:27.965Z';
@@ -19,6 +24,8 @@ let repo: string;
 let marker: string;
 let fakeDir: string;
 const sh = (cwd: string, cmd: string) => execFileSync('sh', ['-c', cmd], { cwd, encoding: 'utf8' });
+/** A wrapper child's whole environment: the system minimum plus the case's own keys. `--loop` collects every variable, so the runner's shell must never reach it. */
+const childEnv = (extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv => ({ ...Object.fromEntries(['PATH', 'HOME', 'TMPDIR', 'LANG'].filter((k) => process.env[k]).map((k) => [k, process.env[k]])), ...extra });
 
 /** A fake codex: records argv, env and stdin; emits configured JSONL; writes the -o file; exits as told. */
 function fake(config: { output?: unknown; exit?: number; events?: string[]; stderr?: string; during?: string }) {
@@ -52,7 +59,7 @@ process.exit(cfg.exit);
 let outJson: string;
 function runWrapper(bin: string, extra: string[] = [], cwd = repo) {
   extra = [...extra, '--out', outJson];
-  return spawnSync('node', [WRAPPER, '--codex', bin, ...extra], { cwd, encoding: 'utf8', env: { ...process.env, CANARY_SECRET: 'canary-value' } });
+  return spawnSync('node', [WRAPPER, '--codex', bin, ...extra], { cwd, encoding: 'utf8', env: childEnv({ CANARY_SECRET: 'canary-value' }) });
 }
 
 beforeAll(() => {
@@ -293,7 +300,7 @@ describe('US-40 AC6 — only the designated scratch record is ever served, verif
   });
   it('the copy is gone even when the wrapper itself throws after the run (unwritable --out)', () => {
     const f = fake({ output: CLEAN });
-    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--record', '--record-file', scratchFile, '--keep', '--out', '/nonexistent-dir-4471/out.json'], { cwd: repo, encoding: 'utf8' });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--record', '--record-file', scratchFile, '--keep', '--out', '/nonexistent-dir-4471/out.json'], { cwd: repo, encoding: 'utf8', env: childEnv() });
     expect(r.status).not.toBe(0);
     const argv: string[] = JSON.parse(f.read('argv.json'));
     const args = JSON.parse(argv.find((a) => a.startsWith('mcp_servers.health.args='))!.slice('mcp_servers.health.args='.length));
@@ -453,7 +460,7 @@ describe('US-40 AC11 — credential files are withheld from the snapshot and pat
     writeFileSync(join(dir, 'leak.env'), 'SECRET-MARKER-LEAK\n');
     const before = new Set(readdirSync(tmpdir()).filter((d) => d.startsWith('codex-review-')));
     const f = fake({ output: CLEAN });
-    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--keep', '--out', outJson], { cwd: dir, encoding: 'utf8', env: { ...process.env, PATH: `${shimDir}:${process.env.PATH}` } });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--keep', '--out', outJson], { cwd: dir, encoding: 'utf8', env: childEnv({ PATH: `${shimDir}:${process.env.PATH}` }) });
     expect(r.status).toBe(3);
     expect(r.stdout).toContain('E_SECRET_FILE');
     // Both checks fired on their own: the work-dir scan saw the applied file, the patch check saw its header.
@@ -480,7 +487,7 @@ esac
 exec ${JSON.stringify(realGit)} "$@"
 `);
   chmodSync(join(shimDir, 'git'), 0o755);
-  return { env: { ...process.env, PATH: `${shimDir}:${process.env.PATH}` }, bypassed: () => existsSync(mark) };
+  return { env: childEnv({ PATH: `${shimDir}:${process.env.PATH}` }), bypassed: () => existsSync(mark) };
 }
 const newWorkDirs = (before: Set<string>) => readdirSync(tmpdir()).filter((d) => d.startsWith('codex-review-') && !before.has(d)).map((d) => join(tmpdir(), d));
 const workDirsNow = () => new Set(readdirSync(tmpdir()).filter((d) => d.startsWith('codex-review-')));
@@ -636,7 +643,7 @@ describe('US-40 AC11 — credential VALUES never reach the reviewer under anothe
 
 describe('US-40 AC11 — where values are read from, and every stop that cannot check them (2026-09-28, round 2)', () => {
   /** Runs the wrapper and checks a stop happened before Codex, with no work dir kept. */
-  const expectStop = (dir: string, code: string, extra: string[] = [], env = process.env) => {
+  const expectStop = (dir: string, code: string, extra: string[] = [], env = childEnv()) => {
     const before = workDirsNow();
     const f = fake({ output: CLEAN });
     const r = spawnSync('node', [WRAPPER, '--codex', f.bin, ...extra, '--keep', '--out', outJson], { cwd: dir, encoding: 'utf8', env });
@@ -701,7 +708,7 @@ describe('US-40 AC11 — where values are read from, and every stop that cannot 
     chmodSync(join(shimDir, 'git'), 0o755);
     const dir = freshRepo({ '.env': 'API_TOKEN=SECRETVAL-GITFAIL-0015\n' });
     writeFileSync(join(dir, 'a.txt'), 'two\n');
-    const r = expectStop(dir, 'E_SECRET_SCAN_FAILED', [], { ...process.env, PATH: `${shimDir}:${process.env.PATH}` });
+    const r = expectStop(dir, 'E_SECRET_SCAN_FAILED', [], childEnv({ PATH: `${shimDir}:${process.env.PATH}` }));
     expect(r.stdout).toContain('credential collection');
     expect(r.stdout + readFileSync(outJson, 'utf8')).not.toContain('SYNTHETIC-GIT-ERROR-0015');
   });
@@ -748,7 +755,7 @@ describe('US-40 AC10 — --loop applies the Tier 3 restrictions (2026-09-28)', (
 
 describe('US-40 AC11 — round 3: known shapes, the parser, public shapes, --loop values, one exit path (2026-09-28)', () => {
   /** Runs the wrapper (--keep) and checks it stopped before Codex with nothing kept; returns the result. */
-  const stop = (dir: string, code: string, extra: string[] = [], env: NodeJS.ProcessEnv = process.env) => {
+  const stop = (dir: string, code: string, extra: string[] = [], env: NodeJS.ProcessEnv = childEnv()) => {
     const before = workDirsNow();
     const f = fake({ output: CLEAN });
     const r = spawnSync('node', [WRAPPER, '--codex', f.bin, ...extra, '--keep', '--out', outJson], { cwd: dir, encoding: 'utf8', env });
@@ -758,7 +765,7 @@ describe('US-40 AC11 — round 3: known shapes, the parser, public shapes, --loo
     expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
     return r;
   };
-  const clean = (dir: string, extra: string[] = [], env: NodeJS.ProcessEnv = process.env) => {
+  const clean = (dir: string, extra: string[] = [], env: NodeJS.ProcessEnv = childEnv()) => {
     const f = fake({ output: CLEAN });
     const r = spawnSync('node', [WRAPPER, '--codex', f.bin, ...extra, '--out', outJson], { cwd: dir, encoding: 'utf8', env });
     expect([r.status, r.stdout.split('\n').find((l) => l.startsWith('E_')) ?? '']).toEqual([0, '']);
@@ -857,7 +864,10 @@ describe('US-40 AC11 — round 3: known shapes, the parser, public shapes, --loo
     const spaced = mkdtempSync(join(tmpdir(), 'cr-env path-'));
     const listed = [mkdtempSync(join(tmpdir(), 'cr-man-')), mkdtempSync(join(tmpdir(), 'cr-man-'))].join(':');
     writeFileSync(join(dir, 'paths.md'), `${spaced} and ${listed}\n`);
-    const env = { ...process.env, LOOP_API_TOKEN: 'SVloop08', LOOP_LONG_SETTING: 'SECRETVAL-ENVLONG-0301', NODE_ENV: 'SECRETVAL-NODEENV-0302', npm_package_description: 'SECRETVAL-NPMPKG-0303', OLDPWD: spaced, MANPATH: listed };
+    // The suite's temp dir (top of file) keeps these free of a token-shaped run on any machine.
+    const tokenRuns = (s: string) => (s.match(/[A-Za-z0-9]{16,}/g) ?? []).filter((r) => /\d/.test(r) && /[A-Za-z]/.test(r));
+    expect(tokenRuns(`${spaced}:${listed}`)).toEqual([]);
+    const env = childEnv({ LOOP_API_TOKEN: 'SVloop08', LOOP_LONG_SETTING: 'SECRETVAL-ENVLONG-0301', NODE_ENV: 'SECRETVAL-NODEENV-0302', npm_package_description: 'SECRETVAL-NPMPKG-0303', OLDPWD: spaced, MANPATH: listed });
     clean(dir, [], env); // a session run does not read the environment
     const r = stop(dir, 'E_SECRET_VALUE', ['--loop'], env);
     expect(r.stdout).toContain('from key(s) LOOP_API_TOKEN, LOOP_LONG_SETTING;');
@@ -869,6 +879,16 @@ describe('US-40 AC11 — round 3: known shapes, the parser, public shapes, --loo
       writeFileSync(join(dir, 'probe.md'), `${v}\n`);
       expect(stop(dir, 'E_SECRET_VALUE', ['--loop'], { ...env, [k]: v }).stdout).toContain(`from key(s) ${k};`);
     }
+  });
+  it('a --loop case sees only the environment it sets: the runner\'s shell never reaches the child', () => {
+    const dir = freshRepo();
+    writeFileSync(join(dir, 'notes.md'), 'SECRETVAL-POLLUTED-0399\n');
+    process.env.CR_TEST_POLLUTION_API_KEY = 'SECRETVAL-POLLUTED-0399';
+    try {
+      const { r } = clean(dir, ['--loop']);
+      expect(r.stdout).not.toContain('CR_TEST_POLLUTION_API_KEY');
+      expect(runWrapper(fake({ output: CLEAN }).bin, ['--loop'], dir).stdout).not.toContain('CR_TEST_POLLUTION_API_KEY');
+    } finally { delete process.env.CR_TEST_POLLUTION_API_KEY; }
   });
   it('an unwalkable directory stops the run naming it; a symlinked directory is followed, loops and all', () => {
     const dir = freshRepo({ '.gitignore': 'secrets/\nlinked\n' });
@@ -968,7 +988,7 @@ describe('US-40 AC11 — round 3: known shapes, the parser, public shapes, --loo
     writeFileSync(join(dir, 'a.txt'), 'two\n');
     const before = workDirsNow();
     const f = fake({ output: CLEAN });
-    const child = spawn('node', [WRAPPER, '--codex', f.bin, '--out', outJson], { cwd: dir, env: { ...process.env, PATH: `${shimDir}:${process.env.PATH}` }, stdio: 'ignore' });
+    const child = spawn('node', [WRAPPER, '--codex', f.bin, '--out', outJson], { cwd: dir, env: childEnv({ PATH: `${shimDir}:${process.env.PATH}` }), stdio: 'ignore' });
     while (!existsSync(mark)) await new Promise((r) => setTimeout(r, 20));
     child.kill('SIGINT');
     const code = await new Promise((r) => child.on('close', (c, sig) => r(c ?? sig)));
@@ -989,7 +1009,7 @@ describe('US-40 AC11 — round 3: known shapes, the parser, public shapes, --loo
     chmodSync(join(shimDir, 'git'), 0o755);
     const before = workDirsNow();
     const f = fake({ output: CLEAN });
-    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--keep'], { cwd: dir, encoding: 'utf8', env: { ...process.env, PATH: `${shimDir}:${process.env.PATH}` } });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--keep'], { cwd: dir, encoding: 'utf8', env: childEnv({ PATH: `${shimDir}:${process.env.PATH}` }) });
     expect(r.status).toBe(1);
     expect(r.stderr).toContain('patch did not apply');
     expect(newWorkDirs(before)).toEqual([]);
@@ -1120,7 +1140,7 @@ describe('US-40 AC12 — pinned symlinks are materialised from the reviewed revi
     return { dir, pol };
   };
   const wrap = (bin: string, dir: string, pol: string, extra: string[] = []) =>
-    spawnSync('node', [WRAPPER, '--codex', bin, ...extra, '--out', outJson], { cwd: dir, encoding: 'utf8', env: { ...process.env, VITEST: 'true', CODEX_REVIEW_TEST_LINK_POLICY: pol } });
+    spawnSync('node', [WRAPPER, '--codex', bin, ...extra, '--out', outJson], { cwd: dir, encoding: 'utf8', env: childEnv({ VITEST: 'true', CODEX_REVIEW_TEST_LINK_POLICY: pol }) });
   const sourceRepo = (products: string, envFile: string) => {
     const d = gitRepo({ 'docs/products.md': products });
     writeFileSync(join(d, '.env'), envFile); // untracked, as in the real roadmap checkout
@@ -1204,9 +1224,8 @@ describe('US-40 AC12 — pinned symlinks are materialised from the reviewed revi
     const source = sourceRepo('PRODUCT MASTER v9\n', 'NOTHING=here\n');
     const { dir, pol } = wrapRepo(source);
     const f = fake({ output: CLEAN });
-    const noRunner = { ...process.env, CODEX_REVIEW_TEST_LINK_POLICY: pol };
-    delete noRunner.VITEST;
-    for (const [args, env] of [[['--codex', f.bin], noRunner], [[], { ...process.env, VITEST: 'true', CODEX_REVIEW_TEST_LINK_POLICY: pol, CODEX_BIN: f.bin }]] as const) {
+    const noRunner = childEnv({ CODEX_REVIEW_TEST_LINK_POLICY: pol });
+    for (const [args, env] of [[['--codex', f.bin], noRunner], [[], childEnv({ VITEST: 'true', CODEX_REVIEW_TEST_LINK_POLICY: pol, CODEX_BIN: f.bin })]] as const) {
       const r = spawnSync('node', [WRAPPER, ...args, '--out', outJson], { cwd: dir, encoding: 'utf8', env });
       expect(r.status).toBe(0);
       expect(r.stderr).not.toContain('TEST link policy');

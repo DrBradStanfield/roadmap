@@ -6,8 +6,10 @@ import {
   resolveChatContext,
   EMPTY_CHAT_CONTEXT,
   MAX_MESSAGE_LENGTH,
+  loadMatchedArticlesFromHandles,
 } from './chat.server';
 import { chatContextOf } from '../../packages/health-core/src/chat-context';
+import { loadBlogIndex } from './blog-index.server';
 
 describe('buildConversationMessages', () => {
   it('adds new message to empty history', () => {
@@ -69,8 +71,9 @@ describe('buildSystemBlocks', () => {
     const blocks = buildSystemBlocks('{"test": true}');
     expect(blocks).toHaveLength(baseCount);
     // Algorithm + evidence (+ products if present) should be cached
-    expect(blocks[0].cache_control).toEqual({ type: 'ephemeral' });
-    expect(blocks[1].cache_control).toEqual({ type: 'ephemeral' });
+    // 1-hour TTL (US-15): chat turns are spread across the day, so a 5-minute
+    // entry was usually gone by the next turn.
+    for (const b of blocks.slice(0, baseCount - 1)) expect(b.cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
     // User context block (last base block) should NOT be cached
     expect(blocks[baseCount - 1].cache_control).toBeUndefined();
   });
@@ -315,5 +318,26 @@ describe('matchDocumentTitle', () => {
 describe('constants', () => {
   it('has correct message length limit', () => {
     expect(MAX_MESSAGE_LENGTH).toBe(500);
+  });
+});
+
+// US-15 AC20: the titles the chat shows as sources come from the blog index,
+// for the articles actually loaded, never from model output.
+describe('loadMatchedArticlesFromHandles', () => {
+  const article = loadBlogIndex().find((a) => !a.type || a.type === 'article')!;
+
+  it('returns the loaded content with each article\'s index title', () => {
+    const loaded = loadMatchedArticlesFromHandles([article.handle]);
+    expect(loaded?.titles).toEqual([article.title]);
+    expect(loaded?.content.length).toBeGreaterThan(0);
+  });
+
+  it('a handle with no file adds no title', () => {
+    expect(loadMatchedArticlesFromHandles(['no-such-article-xyz'])).toBeNull();
+    expect(loadMatchedArticlesFromHandles([article.handle, 'no-such-article-xyz'])?.titles).toEqual([article.title]);
+  });
+
+  it('no handles, no articles', () => {
+    expect(loadMatchedArticlesFromHandles([])).toBeNull();
   });
 });

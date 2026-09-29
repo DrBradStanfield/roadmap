@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, getArg, modelParams, summaryLine, toStat } from './models';
+import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg, modelParams, summaryLine, toStat } from './models';
 
 // Request shapes per model family (docs/chat-audit-2026-09-29.md F1, US-15 AC13).
 // Sonnet 5 and 5.5 400 on the Haiku body shape; 5.5 also 400s on `disabled` thinking.
@@ -43,6 +43,10 @@ describe('modelParams', () => {
       output_config: { effort: 'medium' },
     });
   });
+  it('the production router body: Sonnet 5.5 with thinking off, as chat-router.server.ts sends it', () => {
+    expect(modelParams(ROUTER_MODEL, 200))
+      .toEqual({ model: 'claude-sonnet-5-5', max_tokens: 200, thinking: { type: 'between_tools' } });
+  });
 });
 
 describe('summaryLine', () => {
@@ -54,6 +58,19 @@ describe('summaryLine', () => {
     expect(haiku).toContain('cost=$0.1050'); // 1M cache reads at $0.10 + 1K output at $5
     const sonnet = summaryLine('router', 'claude-sonnet-5-5', true, 9, 10, stats, 0);
     expect(sonnet).toContain('cost=$0.2100'); // $0.20 + $0.01
+  });
+  // US-15: the chat hops cache for 1 hour, and a 1-hour write bills at 2x base
+  // input (5-minute writes were 1.25x), so the harness cost line must too.
+  it('prices cache writes at 2x base input, the 1-hour TTL rate', () => {
+    const stats = [toStat(100, { cache_creation_input_tokens: 1_000_000 })];
+    expect(summaryLine('router', 'claude-haiku-4-5-20251001', false, 1, 1, stats, 0)).toContain('cost=$2.0000');
+    expect(summaryLine('router', 'claude-sonnet-5-5', true, 1, 1, stats, 0)).toContain('cost=$4.0000');
+  });
+});
+
+describe('PROMPT_CACHE', () => {
+  it('is the 1-hour ephemeral marker every chat hop and harness sends (US-15)', () => {
+    expect(PROMPT_CACHE).toEqual({ type: 'ephemeral', ttl: '1h' });
   });
 });
 

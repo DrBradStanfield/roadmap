@@ -20,7 +20,7 @@ vi.mock('../lib/supabase.server', () => ({
 vi.mock('../lib/chat.server', () => ({
   resolveChatContext: () => ({ healthDocuments: [], userContextJson: '{}' }),
   buildSystemBlocks: () => [], buildConversationMessages: mocks.buildConversationMessages,
-  matchDocumentTitle: () => null, loadMatchedArticlesFromHandles: () => [],
+  matchDocumentTitle: () => null, loadMatchedArticlesFromHandles: () => null,
   DOCTOR_POSTURE: '', BRAND_POSTURE: '',
   getChatCompletion: async () => ({ content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 }, isFallback: false }),
   reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test', MAX_MESSAGE_LENGTH: 4000,

@@ -10,9 +10,11 @@ import {
   loadConversation,
   sendMessage,
   deleteConversation,
+  type ChatApproach,
   type ChatConversation,
   type ChatDelta,
   type ChatMessage,
+  type ChatPending,
 } from '../lib/chat-api';
 import { postSync, postInputSync, subscribeSync, generateInstanceId } from '../lib/chat-sync';
 import type { ChatContextPayload, ProposedEdit } from '@roadmap/health-core';
@@ -36,6 +38,7 @@ interface UseChatStateOptions {
 }
 
 export const MAX_CHARS = 500;
+const NO_PENDING: ChatPending = { thinking: '', text: '', status: '', sources: [] };
 
 export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected, onProposeEdit }: UseChatStateOptions) {
   const [instanceId] = useState(generateInstanceId);
@@ -49,15 +52,14 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   const [isLocalSender, setIsLocalSender] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasLoadedRef = useRef(!!prefetchedData);
-  // The answer and the model's thinking summary as they stream in (US-15
-  // AC16/AC17), on the sending instance only; other tabs show the dots.
-  const [streamingThinking, setStreamingThinking] = useState('');
-  const [streamingText, setStreamingText] = useState('');
-  // A landed answer's thinking summary, by message id, for this session only.
-  // It is never persisted: not in `messages` (so not synced to other tabs or
-  // written to the user's cloud chat history) and never sent to the server.
-  const [thinkingById, setThinkingById] = useState<Record<string, string>>({});
-  const streamRef = useRef({ thinking: '', text: '', frame: 0 });
+  // The reply as it streams in (US-15 AC16/AC17/AC20), on the sending
+  // instance only; other tabs show the dots.
+  const [pending, setPending] = useState(NO_PENDING);
+  // A landed answer's thinking summary and articles read, by message id, for
+  // this session only (AC17/AC22). Never persisted: not in `messages` (so not synced
+  // to other tabs or written to the user's cloud chat history) and never sent to the server.
+  const [approachById, setApproachById] = useState<Record<string, ChatApproach>>({});
+  const streamRef = useRef({ ...NO_PENDING, frame: 0 });
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -91,24 +93,24 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   // Deltas collect in a ref and render at most once per animation frame.
   const handleDelta = useCallback((delta: ChatDelta) => {
     const stream = streamRef.current;
-    stream[delta.type] += delta.text;
+    if (delta.type === 'sources') stream.sources = delta.titles;
+    else if (delta.type === 'status') stream.status = delta.text;
+    else stream[delta.type] += delta.text;
     if (stream.frame) return;
     stream.frame = requestAnimationFrame(() => {
       stream.frame = 0;
-      setStreamingThinking(stream.thinking);
-      setStreamingText(stream.text);
+      setPending({ thinking: stream.thinking, text: stream.text, status: stream.status, sources: stream.sources });
     });
   }, []);
 
-  /** Ends the stream; returns the thinking summary it collected. */
-  const endStream = useCallback(() => {
+  /** Ends the stream; returns the thinking summary and the articles read it collected. */
+  const endStream = useCallback((): ChatApproach => {
     const stream = streamRef.current;
     cancelAnimationFrame(stream.frame);
-    const { thinking } = stream;
-    streamRef.current = { thinking: '', text: '', frame: 0 };
-    setStreamingThinking('');
-    setStreamingText('');
-    return thinking;
+    const { thinking, sources } = stream;
+    streamRef.current = { ...NO_PENDING, frame: 0 };
+    setPending(NO_PENDING);
+    return { thinking, sources };
   }, []);
 
   // BroadcastChannel subscription — sync state from other instances
@@ -253,7 +255,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       handleDelta,
       Boolean(onProposeEditRef.current),
     );
-    const thinking = endStream();
+    const approach = endStream();
 
     if (sendError) {
       const withoutOptimistic = optimisticMessages.filter(m => m.id !== optimisticMsg.id);
@@ -286,7 +288,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       };
       const finalMessages = [...optimisticMessages, assistantMsg];
       setMessages(finalMessages);
-      if (thinking && !result.isFallback) setThinkingById(prev => ({ ...prev, [assistantMsg.id]: thinking }));
+      if ((approach.thinking || approach.sources.length > 0) && !result.isFallback) {
+        setApproachById(prev => ({ ...prev, [assistantMsg.id]: approach }));
+      }
 
       // Apply any form edits the model proposed. Only the local sender reaches
       // here (handleSend runs on the instance that sent), so the pre-fill /
@@ -354,9 +358,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       isLoading,
       isLocalSender,
       error,
-      streamingThinking,
-      streamingText,
-      thinkingById,
+      pending,
+      approachById,
       isOffline,
     },
     actions: {

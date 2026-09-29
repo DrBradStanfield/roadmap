@@ -912,7 +912,7 @@ export async function runPipeline(
   }
 
   const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body, isFollowUp);
-  const blogArticles = loadMatchedArticlesFromHandles(routerHandles);
+  const blogArticles = loadMatchedArticlesFromHandles(routerHandles)?.content ?? null;
   // YouTube is a doctor-family surface (Brad's public channel) → strict doctor posture.
   const systemBlocks = buildSystemBlocks(platformContext, { surfaceContext: DOCTOR_POSTURE, blogArticles });
   const conversationMessages = buildConversationMessages(history, thread.text);

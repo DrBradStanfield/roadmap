@@ -15,14 +15,15 @@ import { z } from 'zod';
 import { callAnthropicWithUsage, extractJsonObject, type AnthropicUsage } from './anthropic.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 // The router's model lives with the other pins; modelParams gives its family's body shape.
-import { ROUTER_MODEL, modelParams } from '../../packages/health-core/src/models';
+import { PROMPT_CACHE, ROUTER_MODEL, modelParams } from '../../packages/health-core/src/models';
 
 // ---------------------------------------------------------------------------
 // Version — bump when router prompt or index format changes so chat_match_events
 // can segment pre/post-change analytics.
 // ---------------------------------------------------------------------------
 
-export const ROUTER_VERSION = 1;
+// 2: router model Haiku 4.5 -> Sonnet 5.5 and the rule 7 rework (2026-09-29).
+export const ROUTER_VERSION = 2;
 
 const BLOG_INDEX = loadBlogIndex();
 
@@ -293,8 +294,10 @@ export async function routeQuery(
     : '';
 
   // The prompt file ends with "Knowledge base index:" — the index entries go in
-  // the second system block so both cache independently (prompt changes don't
-  // bust the 37K index cache).
+  // the second system block, each with its own cache marker. The cache is by
+  // prefix, so an index change keeps the prompt entry, but a prompt edit also
+  // rewrites the index entry behind it (about 75K tokens on Sonnet 5.5 by
+  // count_tokens, 2026-09-29).
   const routerPrompt = getRouterPrompt();
 
   const body = {
@@ -303,12 +306,12 @@ export async function routeQuery(
       {
         type: 'text',
         text: routerPrompt,
-        cache_control: { type: 'ephemeral' },
+        cache_control: PROMPT_CACHE,
       },
       {
         type: 'text',
         text: ROUTER_INDEX_BLOCK,
-        cache_control: { type: 'ephemeral' },
+        cache_control: PROMPT_CACHE,
       },
     ],
     messages: [

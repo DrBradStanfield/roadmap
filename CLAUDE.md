@@ -39,9 +39,9 @@ A/B + product events, reminders, Klaviyo, hosted MCP (mcp.drstanfield.com).
   reminders, feedback, audit, cron lock, Shopify sessions; table list:
   docs/reference.md). No health values, ever.
 - Two builds, same source: Shopify storefront (`build:shopify-prod`, both
-  stores) and GitHub Pages self-host (`build:pages`, no Brad server, BYOK).
-  Flags: `VITE_LOCAL_FIRST` (all v2), `VITE_SHOPIFY_SURFACE` (Shopify only —
-  gates Brad-server features). Detail: docs/deploy-runbook.md.
+  stores; tool page on drstanfield.com only, microvitamin.com runs the chat)
+  and GitHub Pages self-host (`build:pages`, no Brad server, BYOK). Flags:
+  `VITE_LOCAL_FIRST` (all v2), `VITE_SHOPIFY_SURFACE` (Shopify only — gates Brad-server features). Detail: docs/deploy-runbook.md.
 
 ## Clinical Content — three-file sync (HARD RULE)
 

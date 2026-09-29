@@ -135,7 +135,7 @@ to both — deploy twice, see "Shopify app configs".**)
   defined in `vite.config.shopify-prod.ts`.
 - **Shopify app configs (one per app registration — TWO exist).** PRODUCTION =
   `shopify.app.toml` ("Health Roadmap", client_id `94c365…`, extensions
-  `extensions/*`, embedded on `/pages/roadmap`, Fly app `health-tool-app`,
+  `extensions/*`, chat bubble only (no `/pages/roadmap`, see below), Fly app `health-tool-app`,
   store `microvitamin` → **`microvitamin.com` (commerce, post-split)**).
   EDUCATION = `shopify.app.edu.toml` (a separate app in org `222927919`, Fly app
   `health-tool-edu`, store `sz5utw-1r`/"brad-stanfield" → **`drstanfield.com`

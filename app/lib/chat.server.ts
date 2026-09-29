@@ -13,14 +13,15 @@ import { SUGGESTION_EVIDENCE } from '../../packages/health-core/src/evidence';
 import { buildChatContextJson } from '../../packages/health-core/src/chat-context';
 import { CHAT_EDIT_TOOLS, parseProposedEdits, toolOnlyAck, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
 import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicStreamEvent, type AnthropicUsage, type RefusalCategory } from './anthropic.server';
-import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, modelParams } from '../../packages/health-core/src/models';
+import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, modelParams } from '../../packages/health-core/src/models';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 // The main answer runs on Sonnet 5.5 (CHAT_MODEL, pinned in health-core
-// models.ts with every other hop); the classifier and router stay on Haiku 4.5.
+// models.ts with every other hop); the router is Sonnet 5.5 with thinking off,
+// the classifier Haiku 4.5.
 // The 2026-08-06 audit's failures were self-check failures in the ANSWER
 // (fabricated citation ids), so the answer is the hop worth the better model;
 // 5.5 reasons better than Sonnet 5 at the same price and tokenizer.
@@ -300,11 +301,14 @@ export function loadBlogArticle(handle: string): string | null {
 /**
  * Load and concatenate blog article content for the handles returned by the LLM router.
  * Reuses the existing path-traversal-safe, memoized loadBlogArticle().
+ * `titles` names the articles actually loaded, from the blog index (never
+ * model output), for the web chat's sources line (US-15 AC20).
  */
-export function loadMatchedArticlesFromHandles(handles: string[]): string | null {
+export function loadMatchedArticlesFromHandles(handles: string[]): { content: string; titles: string[] } | null {
   if (handles.length === 0) return null;
 
   const parts: string[] = [];
+  const titles: string[] = [];
   let totalChars = 0;
   for (const handle of handles) {
     const content = loadBlogArticle(handle);
@@ -315,8 +319,10 @@ export function loadMatchedArticlesFromHandles(handles: string[]): string | null
     if (totalChars + content.length > MAX_BLOG_CHARS) break;
     parts.push(content);
     totalChars += content.length;
+    const title = BLOG_INDEX.find(a => a.handle === handle)?.title;
+    if (title) titles.push(title);
   }
-  return parts.length > 0 ? parts.join('\n\n---\n\n') : null;
+  return parts.length > 0 ? { content: parts.join('\n\n---\n\n'), titles } : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -326,7 +332,7 @@ export function loadMatchedArticlesFromHandles(handles: string[]): string | null
 interface SystemBlock {
   type: 'text';
   text: string;
-  cache_control?: { type: 'ephemeral' };
+  cache_control?: typeof PROMPT_CACHE;
 }
 
 export function buildSystemBlocks(
@@ -335,27 +341,29 @@ export function buildSystemBlocks(
 ): SystemBlock[] {
   // Cached blocks first (shared across all users AND all surfaces — keep
   // byte-identical so the prompt cache is shared), then the per-surface posture
-  // block (uncached), then per-user blocks.
+  // block (uncached), then per-user blocks. All four markers are 1-hour
+  // (PROMPT_CACHE): in chat_timing only 170 of 456 turns (37%) came within
+  // 5 minutes of the one before (router calls: 38 of 169, 22%; audit F9).
   const blocks: SystemBlock[] = [
     {
       type: 'text',
       text: SYSTEM_PROMPT_WITH_ALGORITHM,
-      cache_control: { type: 'ephemeral' },
+      cache_control: PROMPT_CACHE,
     },
     {
       type: 'text',
       text: EVIDENCE_DOC,
-      cache_control: { type: 'ephemeral' },
+      cache_control: PROMPT_CACHE,
     },
     ...(PRODUCTS_DOC ? [{
       type: 'text' as const,
       text: `## Dr Stanfield's Products\n\n${PRODUCTS_DOC}`,
-      cache_control: { type: 'ephemeral' as const },
+      cache_control: PROMPT_CACHE,
     }] : []),
     ...(KNOWLEDGE_OVERVIEW ? [{
       type: 'text' as const,
       text: KNOWLEDGE_OVERVIEW,
-      cache_control: { type: 'ephemeral' as const },
+      cache_control: PROMPT_CACHE,
     }] : []),
     ...(opts?.surfaceContext ? [{
       type: 'text' as const,

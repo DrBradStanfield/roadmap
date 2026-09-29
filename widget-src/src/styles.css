@@ -3571,6 +3571,24 @@ a.action-btn-small.action-btn-small:hover {
   margin-top: 4px;
 }
 
+/* The articles the answer drew on (US-15 AC21/AC22): small, muted, wraps. */
+.chat-sources {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-gray-medium);
+  overflow-wrap: anywhere;
+}
+
+.chat-thinking-toggle .chat-sources {
+  margin-top: 4px;
+}
+
+/* Above a streaming answer with no summary panel: pull it to its answer against the list's 14-16px gap. */
+.chat-messages > .chat-sources {
+  margin-bottom: -10px;
+}
+
 /* Scroll-to-bottom button */
 
 .chat-scroll-btn {

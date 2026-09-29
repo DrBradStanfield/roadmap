@@ -169,6 +169,7 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   router call (13/13, 10/13, 2/2) and none beyond it (0/28, 0/34, 0/16) —
   the 5-minute prompt-cache TTL. Its rise and fall is traffic burstiness;
   W33's "mix-shift" and three later "watch" notes were chasing that.
+  (2026-09-29: the TTL is now 1 hour and the router is Sonnet 5.5; the window is 3,600 s from that deploy on.)
 - **2026-09-19 [loop]** Production brownout signature (09-11 04:45–06:18Z):
   5 router timeouts at 11,006–11,013 ms — the router's 5 s call + 1 s backoff
   + 5 s retry (`callAnthropicWithUsage(body, 5_000)`, `RETRY_MAX_ATTEMPTS`

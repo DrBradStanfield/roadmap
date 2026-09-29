@@ -9,8 +9,13 @@
 
 /** Main chat answer (web, Discord, YouTube). */
 export const CHAT_MODEL = 'claude-sonnet-5-5';
-/** Retrieval router: a handle list. */
-export const ROUTER_MODEL = 'claude-haiku-4-5-20251001';
+/**
+ * Retrieval router: a handle list, thinking off (modelParams' default).
+ * Sonnet 5.5 since 2026-09-29: 297/304 on tools/test-queries.json (Haiku 281/304 on the
+ * audit-day prompt, 276/304 on this one),
+ * at about 3x the cost (~$15.3 vs ~$5.1 per 1000 calls, warm cache).
+ */
+export const ROUTER_MODEL = 'claude-sonnet-5-5';
 /** Pre-router classifier: a one-word label. */
 export const CLASSIFIER_MODEL = 'claude-haiku-4-5-20251001';
 /** Lab/document extraction, server and BYOK upload paths alike. */
@@ -21,6 +26,15 @@ export const CHAT_MAX_TOKENS = 4096;
 export const CHAT_EFFORT: Effort = 'medium';
 
 export type Effort = 'low' | 'medium' | 'high';
+
+/**
+ * The cache marker on every cached system block of the chat hops and their
+ * harnesses. 1 hour, not the 5-minute default: chat turns are spread across the
+ * day: in chat_timing only 38 of 169 router calls (22%) and 170 of 456 turns
+ * (37%) came within 5 minutes of the one before (audit F9, 2026-09-29). Writes
+ * bill at 2x base input (PRICES below); a read refreshes the hour for free.
+ */
+export const PROMPT_CACHE = { type: 'ephemeral', ttl: '1h' } as const;
 
 const isSonnet55 = (model: string) => model.startsWith('claude-sonnet-5-5');
 // Sonnet 5 and later 400 on non-default sampling params; only Haiku 4.5 and
@@ -81,9 +95,10 @@ interface Usage {
 }
 
 // $ per million tokens. Figures supplied with the 2026-09-29 comparison task.
+// cacheWrite is the 1-hour rate, 2x input (PROMPT_CACHE); 5-minute writes are 1.25x.
 const PRICES = {
-  haiku: { input: 1, output: 5, cacheRead: 0.10, cacheWrite: 1.25 },
-  sonnet55: { input: 2, output: 10, cacheRead: 0.20, cacheWrite: 2.50 },
+  haiku: { input: 1, output: 5, cacheRead: 0.10, cacheWrite: 2 },
+  sonnet55: { input: 2, output: 10, cacheRead: 0.20, cacheWrite: 4 },
 };
 
 export function toStat(ms: number, u: Usage | undefined): CallStat {

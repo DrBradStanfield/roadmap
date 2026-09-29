@@ -31,7 +31,7 @@ vi.mock('../lib/supabase.server', () => ({
 vi.mock('../lib/chat.server', () => ({
   resolveChatContext: () => ({ healthDocuments: [], userContextJson: '{}' }),
   buildSystemBlocks: () => [], buildConversationMessages: mocks.buildConversationMessages,
-  matchDocumentTitle: () => null, loadMatchedArticlesFromHandles: () => [],
+  matchDocumentTitle: () => null, loadMatchedArticlesFromHandles: () => null,
   DOCTOR_POSTURE: '', BRAND_POSTURE: '',
   getChatCompletion: async () => mocks.completion,
   reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test', MAX_MESSAGE_LENGTH: 500,

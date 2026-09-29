@@ -44,10 +44,25 @@ export interface SendMessageResult {
   proposedEdits?: ProposedEdit[];
 }
 
-/** A streamed delta (US-15 AC16/AC17): the model's thinking summary or the answer text. */
-export interface ChatDelta {
-  type: 'thinking' | 'text';
+/**
+ * A streamed delta: the model's thinking summary or the answer text (US-15
+ * AC16/AC17), a fixed server progress line, or the titles of the articles
+ * loaded for the answer (AC20).
+ */
+export type ChatDelta =
+  | { type: 'thinking' | 'text' | 'status'; text: string }
+  | { type: 'sources'; titles: string[] };
+
+/** How a streamed answer was reached, kept for this session only (US-15 AC17/AC22). */
+export interface ChatApproach {
+  thinking: string;
+  sources: string[];
+}
+
+/** A reply as it streams in: its approach so far, the answer text and the server's latest progress line. */
+export interface ChatPending extends ChatApproach {
   text: string;
+  status: string;
 }
 
 export interface ChatListResult {
@@ -293,7 +308,10 @@ async function readChatStream(response: Response, onDelta: (delta: ChatDelta) =>
         const { type: _type, ...reply } = event;
         return reply;
       }
-      if (event.type === 'thinking' || event.type === 'text') onDelta({ type: event.type, text: String(event.text) });
+      if (event.type === 'thinking' || event.type === 'text' || event.type === 'status') onDelta({ type: event.type, text: String(event.text) });
+      if (event.type === 'sources') {
+        onDelta({ type: 'sources', titles: Array.isArray(event.titles) ? event.titles.filter((t: unknown) => typeof t === 'string') : [] });
+      }
     }
     if (done) throw new Error('Chat stream ended without an answer');
   }

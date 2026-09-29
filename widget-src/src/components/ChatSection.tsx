@@ -82,13 +82,13 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
     }
   }, [startExpanded, actions.loadConversationsIfNeeded]);
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom when messages or any part of the pending reply change
   useEffect(() => {
     const el = messagesContainerRef.current;
     if (!el) return;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
     if (nearBottom) el.scrollTop = el.scrollHeight;
-  }, [state.messages, state.streamingThinking, state.streamingText, messagesContainerRef]);
+  }, [state.messages, state.pending, messagesContainerRef]);
 
   const handleMessagesScroll = useCallback(() => {
     const el = messagesContainerRef.current;
@@ -180,10 +180,10 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
               </div>
             )}
             {state.messages.map(msg => (
-              <ChatMessageBubble key={msg.id} msg={msg} thinking={state.thinkingById[msg.id]} />
+              <ChatMessageBubble key={msg.id} msg={msg} approach={state.approachById[msg.id]} />
             ))}
             {state.isLoading && (
-              <ChatPendingReply isLocalSender={state.isLocalSender} thinking={state.streamingThinking} text={state.streamingText} />
+              <ChatPendingReply isLocalSender={state.isLocalSender} pending={state.pending} />
             )}
             {state.error && <div className="chat-error">{state.error}</div>}
             {showScrollBtn && (

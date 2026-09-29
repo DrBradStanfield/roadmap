@@ -30,7 +30,7 @@ import path from 'path';
 import * as Sentry from '@sentry/react-router';
 import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
 import { sanitizeForRouter } from './chat-router.server';
-import { CLASSIFIER_MODEL, modelParams } from '../../packages/health-core/src/models';
+import { CLASSIFIER_MODEL, PROMPT_CACHE, modelParams } from '../../packages/health-core/src/models';
 
 // Bump when the classifier prompt or rules change so chat_match_events can
 // segment pre/post-change analytics.
@@ -167,7 +167,7 @@ export async function classifyMessage(
       {
         type: 'text',
         text: getClassifierPrompt(),
-        cache_control: { type: 'ephemeral' },
+        cache_control: PROMPT_CACHE,
       },
     ],
     messages: [

@@ -34,9 +34,8 @@ vi.mock('../hooks/useChatState', () => ({
       isLoading: false,
       isLocalSender: false,
       error: null,
-      streamingThinking: '',
-      streamingText: '',
-      thinkingById: {},
+      pending: { thinking: '', text: '', status: '', sources: [] },
+      approachById: {},
       isOffline: false,
     },
     actions: {

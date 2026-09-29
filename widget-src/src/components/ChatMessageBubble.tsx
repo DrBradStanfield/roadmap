@@ -1,12 +1,12 @@
 import React, { useMemo, useRef } from 'react';
-import { type ChatMessage } from '../lib/chat-api';
+import { type ChatApproach, type ChatMessage } from '../lib/chat-api';
 import { trackProductEvent } from '../lib/server-api';
 import { renderMarkdown } from '../lib/markdown';
 import { getAssistantName } from '../lib/assistant-config';
 
 /** Memoized message bubble — avoids re-parsing markdown on every render */
-/** `thinking`: the model's summary for this answer, this session only (US-15 AC17), folded above it. */
-export const ChatMessageBubble = React.memo(function ChatMessageBubble({ msg, thinking }: { msg: ChatMessage; thinking?: string }) {
+/** `approach`: the articles read and the model's summary for this answer, this session only (US-15 AC17/AC22), folded above it. */
+export const ChatMessageBubble = React.memo(function ChatMessageBubble({ msg, approach }: { msg: ChatMessage; approach?: ChatApproach }) {
   const html = useMemo(
     () => msg.role === 'assistant' ? renderMarkdown(msg.content) : null,
     [msg.content, msg.role],
@@ -15,7 +15,7 @@ export const ChatMessageBubble = React.memo(function ChatMessageBubble({ msg, th
   return (
     <div className={`chat-message chat-message--${msg.role}`}>
       {msg.role === 'assistant' && <div className="chat-message-name">{getAssistantName()}</div>}
-      {thinking && (
+      {approach && (
         <details
           className="chat-thinking-toggle"
           onToggle={(e) => {
@@ -26,7 +26,8 @@ export const ChatMessageBubble = React.memo(function ChatMessageBubble({ msg, th
           }}
         >
           <summary>Show how I approached this</summary>
-          <p className="chat-thinking-summary">{thinking}</p>
+          {approach.sources.length > 0 && <p className="chat-sources">Articles read: {approach.sources.join(' · ')}</p>}
+          {approach.thinking && <p className="chat-thinking-summary">{approach.thinking}</p>}
         </details>
       )}
       {html ? (

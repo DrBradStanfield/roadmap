@@ -44,7 +44,7 @@ import {
   parseProposedEdits,
   type ProposedEdit,
 } from '../packages/health-core/src/chat-edits';
-import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, getArg as getArgOf, modelParams } from '../packages/health-core/src/models';
+import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, getArg as getArgOf, modelParams } from '../packages/health-core/src/models';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -137,7 +137,7 @@ interface ChatRunResult {
 async function runChat(query: string, retryOnRateLimit = true): Promise<ChatRunResult> {
   const body = {
     ...modelParams(MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
-    system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+    system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: PROMPT_CACHE }],
     tools: CHAT_EDIT_TOOLS,
     messages: [{ role: 'user', content: query }],
   };

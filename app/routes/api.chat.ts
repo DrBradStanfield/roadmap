@@ -21,7 +21,6 @@ import {
   BRAND_POSTURE,
   getChatCompletion,
   reportChatFallback,
-  type ChatCompletionResult,
   generateTitle,
   CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
@@ -394,106 +393,127 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     }
 
-    const firstUserMsg = history.find(m => m.role === 'user')?.content;
-    const recentUserMsgs = history.filter(m => m.role === 'user').slice(-3).map(m => m.content);
-    const sanitizedFirst = firstUserMsg ? sanitizeForRouter(firstUserMsg) : undefined;
-    const sanitizedRecent = recentUserMsgs.map(sanitizeForRouter);
+    // Only the widget's own chat applies form edits, so only it gets the tools (US-15 AC19).
+    const canApplyEdits = body.canApplyEdits === true;
+    // The streamed turn opens its stream here, before stage 1, so the user
+    // sees progress while the classifier, router and content load (US-15
+    // AC20). From here on a failure is a `done` line there and an HTTP 500
+    // on the JSON path. CHAT_STREAMING=false is the off switch: the client
+    // reads a JSON reply unchanged (AC16).
+    const streaming = body.stream === true && process.env.CHAT_STREAMING !== 'false';
 
-    // Stage 1: classifier + (logged-in) orders fetch dispatch first so their
-    // network round-trips overlap the synchronous context assembly below.
-    // Health context is client-supplied on every v2 surface — the v1
-    // server-side health tables were purged June 2026 — so it's built from
-    // body.guestInputs for guests and logged-in customers alike
-    // (missing/invalid inputs degrade to the empty context).
-    const ordersPromise = !auth.isGuest && auth.admin
-      ? getCachedOrders(auth.admin, auth.customerId!)
-      : Promise.resolve('');
-    const classifierPromise = classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent);
-    const context = resolveChatContext(body.guestInputs);
-    const [orderSummary, classifierResult] = await Promise.all([ordersPromise, classifierPromise]);
+    /** Stages 1–3 and the answer. `write` is the stream's; a no-op on the JSON path. */
+    const runTurn = async (write: (line: object) => void): Promise<{ status?: number; reply: object }> => {
+      write({ type: 'status', text: 'Reading your question' });
 
-    // Stage 2: router fires ONLY when the classifier didn't bypass it.
-    // Trade-off: +150-300ms on ROUTE turns vs the previous parallel design,
-    // since the router now waits for the classifier to return. See
-    // chat-architecture.md § Pre-router classifier for the timing analysis.
-    const routerResult = shouldFireRouter(classifierResult)
-      ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
-      : null;
+      const firstUserMsg = history.find(m => m.role === 'user')?.content;
+      const recentUserMsgs = history.filter(m => m.role === 'user').slice(-3).map(m => m.content);
+      const sanitizedFirst = firstUserMsg ? sanitizeForRouter(firstUserMsg) : undefined;
+      const sanitizedRecent = recentUserMsgs.map(sanitizeForRouter);
 
-    const tAfterContext = Date.now();
+      // Stage 1: classifier + (logged-in) orders fetch dispatch first so their
+      // network round-trips overlap the synchronous context assembly below.
+      // Health context is client-supplied on every v2 surface — the v1
+      // server-side health tables were purged June 2026 — so it's built from
+      // body.guestInputs for guests and logged-in customers alike
+      // (missing/invalid inputs degrade to the empty context).
+      const ordersPromise = !auth.isGuest && auth.admin
+        ? getCachedOrders(auth.admin, auth.customerId!)
+        : Promise.resolve('');
+      const classifierPromise = classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent);
+      const context = resolveChatContext(body.guestInputs);
+      const [orderSummary, classifierResult] = await Promise.all([ordersPromise, classifierPromise]);
 
-    const routerSkipped = classifierResult.routerSkipped;
-    const effectiveHandles = routerResult?.handles ?? [];
+      // Stage 2: router fires ONLY when the classifier didn't bypass it.
+      // Trade-off: +150-300ms on ROUTE turns vs the previous parallel design,
+      // since the router now waits for the classifier to return. See
+      // chat-architecture.md § Pre-router classifier for the timing analysis.
+      const fireRouter = shouldFireRouter(classifierResult);
+      if (fireRouter) write({ type: 'status', text: 'Finding relevant articles' });
+      const routerResult = fireRouter
+        ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
+        : null;
 
-    reportRouterFailure(routerResult);
+      const tAfterContext = Date.now();
 
-    // Create or validate conversation. A widget conversation exists only in the
-    // user's file; the id here is a grouping key for its telemetry rows.
-    let activeConversationId = conversationId;
-    if (!activeConversationId && widget) activeConversationId = crypto.randomUUID();
-    if (!activeConversationId) {
-      const title = generateTitle(message);
-      const { data: conv, error: convError } = await auth.client
-        .from('chat_conversations')
-        .insert({ user_id: auth.userId, title })
-        .select('id')
-        .single();
+      const routerSkipped = classifierResult.routerSkipped;
+      const effectiveHandles = routerResult?.handles ?? [];
 
-      if (convError || !conv) {
-        reportChatError('Chat: Failed to create conversation');
-        return Response.json({ success: false, error: 'Failed to create conversation' }, { status: 500 });
+      reportRouterFailure(routerResult);
+
+      // Create or validate conversation. A widget conversation exists only in the
+      // user's file; the id here is a grouping key for its telemetry rows.
+      let activeConversationId = conversationId;
+      if (!activeConversationId && widget) activeConversationId = crypto.randomUUID();
+      if (!activeConversationId) {
+        const title = generateTitle(message);
+        const { data: conv, error: convError } = await auth.client
+          .from('chat_conversations')
+          .insert({ user_id: auth.userId, title })
+          .select('id')
+          .single();
+
+        if (convError || !conv) {
+          reportChatError('Chat: Failed to create conversation');
+          return { status: 500, reply: { success: false, error: 'Failed to create conversation' } };
+        }
+        activeConversationId = conv.id;
       }
-      activeConversationId = conv.id;
-    }
 
-    // Insert user message (history already loaded above for existing convs)
-    if (!widget) {
-      const { error: userMsgError } = await auth.client
-        .from('chat_messages')
-        .insert({
-          conversation_id: activeConversationId,
-          user_id: auth.userId,
-          role: 'user',
-          content: message,
-        });
+      // Insert user message (history already loaded above for existing convs)
+      if (!widget) {
+        const { error: userMsgError } = await auth.client
+          .from('chat_messages')
+          .insert({
+            conversation_id: activeConversationId,
+            user_id: auth.userId,
+            role: 'user',
+            content: message,
+          });
 
-      if (userMsgError) {
-        reportChatError('Chat: Failed to save user message');
-        return Response.json({ success: false, error: 'Failed to save message' }, { status: 500 });
+        if (userMsgError) {
+          reportChatError('Chat: Failed to save user message');
+          return { status: 500, reply: { success: false, error: 'Failed to save message' } };
+        }
       }
-    }
 
-    // Check for document content match (uses full docs from context, no extra DB call)
-    let documentContent: string | null = null;
-    const docTitles = context.healthDocuments.map(d => ({
-      title: d.title,
-      documentDate: d.document_date,
-      documentType: d.document_type,
-    }));
-    const matchedTitle = matchDocumentTitle(message, docTitles);
-    if (matchedTitle) {
-      const matchedDoc = context.healthDocuments.find(d => d.title === matchedTitle);
-      if (matchedDoc) {
-        documentContent = matchedDoc.content_md;
+      // Check for document content match (uses full docs from context, no extra DB call)
+      let documentContent: string | null = null;
+      const docTitles = context.healthDocuments.map(d => ({
+        title: d.title,
+        documentDate: d.document_date,
+        documentType: d.document_type,
+      }));
+      const matchedTitle = matchDocumentTitle(message, docTitles);
+      if (matchedTitle) {
+        const matchedDoc = context.healthDocuments.find(d => d.title === matchedTitle);
+        if (matchedDoc) {
+          documentContent = matchedDoc.content_md;
+        }
       }
-    }
 
-    // Load content from router handles — [] when classifier said SKIP (router never ran).
-    const blogArticles = loadMatchedArticlesFromHandles(effectiveHandles);
+      // Load content from router handles — [] when classifier said SKIP (router never ran).
+      // The stream names the articles loaded, by their index titles (US-15 AC20).
+      const articles = loadMatchedArticlesFromHandles(effectiveHandles);
+      if (articles?.titles.length) write({ type: 'sources', titles: articles.titles });
 
-    // Build system blocks + messages, call LLM
-    // Surface posture: the brand store (microvitamin.com) sets CHAT_SURFACE=brand;
-    // everything else (drstanfield.com education) defaults to the strict doctor
-    // posture — a config slip can never silently produce a selling bot.
-    const surfaceContext = process.env.CHAT_SURFACE === 'brand' ? BRAND_POSTURE : DOCTOR_POSTURE;
-    const systemBlocks = buildSystemBlocks(context.userContextJson, { surfaceContext, documentContent, orderSummary, blogArticles });
-    const conversationMessages = buildConversationMessages(history, message);
-    const tBeforeLlm = Date.now();
+      // Build system blocks + messages, call LLM
+      // Surface posture: the brand store (microvitamin.com) sets CHAT_SURFACE=brand;
+      // everything else (drstanfield.com education) defaults to the strict doctor
+      // posture — a config slip can never silently produce a selling bot.
+      const surfaceContext = process.env.CHAT_SURFACE === 'brand' ? BRAND_POSTURE : DOCTOR_POSTURE;
+      const systemBlocks = buildSystemBlocks(context.userContextJson, { surfaceContext, documentContent, orderSummary, blogArticles: articles?.content ?? null });
+      const conversationMessages = buildConversationMessages(history, message);
+      const tBeforeLlm = Date.now();
 
-    // Everything after the answer, for both paths: telemetry, persistence,
-    // chat_timing, and the reply JSON. The streamed path runs it once the
-    // stream has completed and sends the JSON as its `done` line.
-    const finishTurn = (completion: ChatCompletionResult, streamed: boolean, firstTokenMs: number | null) => {
+      write({ type: 'status', text: 'Writing the answer' });
+      let firstTokenMs: number | null = null;
+      const completion = streaming
+        ? await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, (event) => {
+          if (event.type === 'text' && firstTokenMs === null) firstTokenMs = Date.now() - tBeforeLlm;
+          write(event);
+        })
+        : await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits);
       const tAfterLlm = Date.now();
 
       // The assistant message id doubles as the telemetry row's message_id on
@@ -618,45 +638,38 @@ export async function action({ request }: ActionFunctionArgs) {
         routerSkipped,
         classifierError: !!classifierResult.error,
         isGuest: auth.isGuest,
-        streamed,
+        streamed: streaming,
         // Ms from the LLM call to the first answer text; null when not streamed or no text came.
         firstTokenMs,
       }));
 
+      // The streamed path sends this as its `done` line.
       return {
-        success: true,
-        conversationId: activeConversationId,
-        messageId: null,
-        content: completion.content,
-        // The widget's own dedup never re-serves a fallback (US-15 AC3) or a
-        // refusal line (AC14): on the wire a refusal is a fallback too, and
-        // the client drops what streamed for either (AC16).
-        isFallback: completion.isFallback || completion.isRefusal === true,
-        ...(completion.isRefusal ? { isRefusal: true } : {}),
-        // Form edits the model proposed via tool_use (already validated server-side).
-        // Omitted on normal turns — additive, no impact on existing clients.
-        ...(completion.proposedEdits && completion.proposedEdits.length > 0
-          ? { proposedEdits: completion.proposedEdits }
-          : {}),
-        ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
+        reply: {
+          success: true,
+          conversationId: activeConversationId,
+          messageId: null,
+          content: completion.content,
+          // The widget's own dedup never re-serves a fallback (US-15 AC3) or a
+          // refusal line (AC14): on the wire a refusal is a fallback too, and
+          // the client drops what streamed for either (AC16).
+          isFallback: completion.isFallback || completion.isRefusal === true,
+          ...(completion.isRefusal ? { isRefusal: true } : {}),
+          // Form edits the model proposed via tool_use (already validated server-side).
+          // Omitted on normal turns — additive, no impact on existing clients.
+          ...(completion.proposedEdits && completion.proposedEdits.length > 0
+            ? { proposedEdits: completion.proposedEdits }
+            : {}),
+          ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
+        },
       };
     };
 
-    // Only the widget's own chat applies form edits, so only it gets the tools (US-15 AC19).
-    const canApplyEdits = body.canApplyEdits === true;
-    // CHAT_STREAMING=false is the off switch: the client reads a JSON reply unchanged (AC16).
-    if (body.stream === true && process.env.CHAT_STREAMING !== 'false') {
-      return streamTurn(async (write) => {
-        let firstTokenMs: number | null = null;
-        const completion = await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, (event) => {
-          if (event.type === 'text' && firstTokenMs === null) firstTokenMs = Date.now() - tBeforeLlm;
-          write(event);
-        });
-        write({ type: 'done', ...finishTurn(completion, true, firstTokenMs) });
-      });
+    if (streaming) {
+      return streamTurn(async (write) => write({ type: 'done', ...(await runTurn(write)).reply }));
     }
-
-    return Response.json(finishTurn(await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits), false, null));
+    const { status, reply } = await runTurn(() => {});
+    return Response.json(reply, status ? { status } : undefined);
   } catch (error) {
     if (error instanceof Response) throw error; // see the loader's catch (US-15 AC9)
     if (error instanceof GuestRateLimitError) {

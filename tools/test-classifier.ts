@@ -19,7 +19,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { CLASSIFIER_MODEL as PRODUCTION_CLASSIFIER_MODEL, getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat } from '../packages/health-core/src/models';
+import { CLASSIFIER_MODEL as PRODUCTION_CLASSIFIER_MODEL, PROMPT_CACHE, getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat } from '../packages/health-core/src/models';
 const getArg = (flag: string, defaultValue: string) => getArgOf(args, flag, defaultValue);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -87,7 +87,7 @@ async function callClassifier(query: string): Promise<{ classification: Classifi
     // 'MEASUREMENT' on Sonnet 5.5 and measures the cap, not the classifier.
     ...modelParams(CLASSIFIER_MODEL, 8, thinkingOff ? 'off' : 'low'),
     system: [
-      { type: 'text', text: CLASSIFIER_PROMPT, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: CLASSIFIER_PROMPT, cache_control: PROMPT_CACHE },
     ],
     messages: [
       { role: 'user', content: `(new conversation, no prior turns)\n\nCurrent message: ${query}\n\nClassification:` },
@@ -107,8 +107,7 @@ async function callClassifier(query: string): Promise<{ classification: Classifi
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    apiErrors.push(`${res.status}: ${text.slice(0, 200)}`);
-    throw new Error(`Anthropic ${res.status}: ${text.slice(0, 200)}`);
+    throw new Error(`${res.status}: ${text.slice(0, 200)}`);
   }
 
   const data = await res.json() as { content?: Array<{ type: string; text?: string }>; usage?: Parameters<typeof toStat>[1] };
@@ -159,7 +158,12 @@ async function runOne(t: TestEntry): Promise<RunResult> {
     try {
       results.push(await callClassifier(t.query));
     } catch (err) {
-      results.push({ classification: 'ERROR', raw: String(err).slice(0, 100), latencyMs: 0 });
+      // A non-2xx, a timeout, a DNS failure or a reset: every thrown call is an
+      // API error in the summary, not only a failed row (2026-09-29).
+      const label = err instanceof Error && err.name === 'TimeoutError' ? 'timeout'
+        : String((err as { cause?: { code?: string } }).cause?.code ?? (err as Error).message ?? err);
+      apiErrors.push(label);
+      results.push({ classification: 'ERROR', raw: label.slice(0, 100), latencyMs: 0 });
     }
   }
   // Pass criterion: ALL runs match expected (temperature 0, should be deterministic).

@@ -281,7 +281,7 @@
 
 <h1 id="intro">Health by Dr Brad — Architecture (v2, local-first)</h1>
 <div class="meta">
-  Last updated 2026-09-07. <span class="pill">Live in production</span> — both storefronts serve the v2 local-first build on <code>/pages/roadmap</code>, and the thin server runs React Router 7 on Fly (<code>v361+</code>). As of the <strong>§12 split (2026-06-24)</strong> the tool runs on <strong>two domains / two Shopify apps / two Fly apps from one codebase &amp; one widget bundle</strong>: <code>drstanfield.com</code> is the <strong>education</strong> store (app <code>shopify.app.edu.toml</code>, Fly <code>health-tool-edu</code>) and <code>microvitamin.com</code> is the <strong>commerce</strong> store (app <code>shopify.app.toml</code>, Fly <code>health-tool-app</code>). This page is the single, self-contained source of truth for v2 architecture. The legacy v1 shape and migration log live in <strong>git history</strong>. See <a href="reference.md#document-import-decisions">the reference</a> for retained rationale and how to retrieve retired designs.
+  Last updated 2026-09-29. <span class="pill">Live in production</span> — drstanfield.com serves the v2 local-first build on <code>/pages/roadmap</code>; microvitamin.com has no roadmap page (<code>/pages/roadmap</code> answered 404 on 2026-09-29) and runs the chat bubble alone, in brand posture. Whether microvitamin.com gets a roadmap page is Brad's open decision. The thin server runs React Router 7 on Fly (<code>v361+</code>). As of the <strong>§12 split (2026-06-24)</strong> the tool runs on <strong>two domains / two Shopify apps / two Fly apps from one codebase &amp; one widget bundle</strong>: <code>drstanfield.com</code> is the <strong>education</strong> store (app <code>shopify.app.edu.toml</code>, Fly <code>health-tool-edu</code>) and <code>microvitamin.com</code> is the <strong>commerce</strong> store (app <code>shopify.app.toml</code>, Fly <code>health-tool-app</code>). This page is the single, self-contained source of truth for v2 architecture. The legacy v1 shape and migration log live in <strong>git history</strong>. See <a href="reference.md#document-import-decisions">the reference</a> for retained rationale and how to retrieve retired designs.
 </div>
 
 <div class="card">
@@ -333,8 +333,8 @@
   <rect x="20" y="20" width="250" height="200" rx="12" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5" stroke-dasharray="4 3"/>
   <text x="35" y="42" font-size="13" font-weight="600" fill="#00695c">Front doors (delivery)</text>
   <rect x="35" y="52" width="220" height="68" rx="8" fill="#ffffff" stroke="#00a38b" stroke-width="1.5"/>
-  <text x="145" y="70" font-size="11" font-weight="600" text-anchor="middle" fill="#111">2 Shopify stores · /pages/roadmap</text>
-  <text x="145" y="85" font-size="9.5" text-anchor="middle" fill="#666">drstanfield.com (education) + microvitamin.com (commerce)</text>
+  <text x="145" y="70" font-size="11" font-weight="600" text-anchor="middle" fill="#111">2 Shopify stores</text>
+  <text x="145" y="85" font-size="9.5" text-anchor="middle" fill="#666">drstanfield.com/pages/roadmap + microvitamin.com (chat only)</text>
   <text x="145" y="98" font-size="9.5" text-anchor="middle" fill="#666">SAME health-plan-v2.js bundle</text>
   <text x="145" y="111" font-size="9.5" text-anchor="middle" fill="#666">(LOCAL_FIRST + SHOPIFY_SURFACE)</text>
   <rect x="35" y="130" width="220" height="62" rx="8" fill="#ffffff" stroke="#00a38b" stroke-width="1.5"/>
@@ -449,7 +449,7 @@
   <div class="card">
     <h3 style="margin-top:0">Delivery (front door)</h3>
     <ul>
-      <li><strong>Two Shopify stores</strong> — the same theme extension on <code>/pages/roadmap</code> for both <strong>drstanfield.com</strong> (education) and <strong>microvitamin.com</strong> (commerce). The mainstream door; AI runs on Brad's server (free to the user). Each store is a separate Shopify app + Fly app but serves the <em>identical</em> widget bundle — see <a href="#deployment-topology">deployment topology</a>.</li>
+      <li><strong>Two Shopify stores</strong> — the same theme extension on both: the tool on <code>drstanfield.com/pages/roadmap</code> (education); only the chat bubble on <strong>microvitamin.com</strong> (commerce, no roadmap page, Brad's open decision). The mainstream door; AI runs on Brad's server (free to the user). Each store is a separate Shopify app + Fly app but serves the <em>identical</em> widget bundle — see <a href="#deployment-topology">deployment topology</a>.</li>
       <li><strong>GitHub Pages / self-host</strong> — the same app, statically hosted. The "works if Brad goes dark" door; AI is bring-your-own-key. Also the primary dev/test surface.</li>
     </ul>
   </div>
@@ -482,7 +482,7 @@
     <ul>
       <li>React Router 7 on <code>node:22-alpine</code>, two Fly.io apps from one image — <code>health-tool-app</code> (commerce/microvitamin) + <code>health-tool-edu</code> (education/drstanfield), iad, 1 machine min each</li>
       <li><code>@shopify/shopify-app-react-router</code> — app proxy + HMAC for the AI endpoints; Shopify Admin API <code>2026-04</code></li>
-      <li>Anthropic: Claude Sonnet 5.5 answers chat; Haiku 4.5 classifies, routes and extracts labs (pins in <code>packages/health-core/src/models.ts</code>)</li>
+      <li>Anthropic: Claude Sonnet 5.5 answers chat (streamed to the web as NDJSON) and routes; Haiku 4.5 classifies and extracts labs; 1-hour prompt cache (pins in <code>packages/health-core/src/models.ts</code>)</li>
       <li>Supabase (chat history + A/B only), Resend (reminders + ops digests), Klaviyo (email list)</li>
       <li>discord.js gateway; admin app on <strong>Polaris web components</strong> (not Polaris React)</li>
     </ul>
@@ -720,10 +720,10 @@ Chat / uploads → Shopify transport OR Pages BYOK transport</code></pre>
     <h4>Server pipeline (storefront)</h4>
     <ul>
       <li><a class="file-link" href="../app/lib/chat-classifier.server.ts">chat-classifier.server.ts</a> — short-circuits ~59% of turns past the router</li>
-      <li><a class="file-link" href="../app/lib/chat-router.server.ts">chat-router.server.ts</a> — LLM retrieval over the ~991-entry blog index (prompt-cached), returns 0–3 content handles</li>
+      <li><a class="file-link" href="../app/lib/chat-router.server.ts">chat-router.server.ts</a> — Sonnet 5.5 retrieval over the 1,024-entry blog index (prompt-cached, 1 hour), returns 0–3 content handles</li>
       <li><a class="file-link" href="../app/lib/chat.server.ts">chat.server.ts</a> — context assembly, system blocks, <code>getChatCompletion</code>, titles</li>
       <li><a class="file-link" href="../app/lib/platform-chat.server.ts">platform-chat.server.ts</a> — reuses the pipeline for Discord + YouTube</li>
-      <li>Client: <a class="file-link" href="../widget-src/src/lib/chat-api.ts">chat-api.ts</a> sends the <code>LOCAL_FIRST</code> flag so the server treats the user as a guest-with-context</li>
+      <li>Client: <a class="file-link" href="../widget-src/src/lib/chat-api.ts">chat-api.ts</a> sends the <code>LOCAL_FIRST</code> flag so the server treats the user as a guest-with-context, and <code>stream: true</code> for an NDJSON reply (status, sources, thinking and text lines, then <code>done</code>; US-15 AC16, AC20)</li>
     </ul>
   </div>
   <div class="card">
@@ -860,7 +860,7 @@ Chat / uploads → Shopify transport OR Pages BYOK transport</code></pre>
 <table>
   <thead><tr><th></th><th>Education</th><th>Commerce</th></tr></thead>
   <tbody>
-    <tr><td><strong>Domain</strong></td><td><code>drstanfield.com/pages/roadmap</code></td><td><code>microvitamin.com/pages/roadmap</code></td></tr>
+    <tr><td><strong>Domain</strong></td><td><code>drstanfield.com/pages/roadmap</code></td><td><code>microvitamin.com</code> (chat bubble; <code>/pages/roadmap</code> is a 404)</td></tr>
     <tr><td><strong>Shopify app config</strong></td><td><code>shopify.app.edu.toml</code> (org 222927919)</td><td><code>shopify.app.toml</code> (client_id 94c365…)</td></tr>
     <tr><td><strong>Fly app</strong></td><td><code>health-tool-edu</code></td><td><code>health-tool-app</code></td></tr>
     <tr><td><strong>Widget bundle</strong></td><td colspan="2" style="text-align:center"><code>health-plan-v2.js</code> — <strong>same prod build deployed to both</strong></td></tr>
@@ -908,7 +908,7 @@ Chat / uploads → Shopify transport OR Pages BYOK transport</code></pre>
   <text x="485" y="90" font-size="11" text-anchor="middle" fill="#666">build:pages · push main → Actions → /roadmap/</text>
   <rect x="690" y="45" width="270" height="60" rx="10" fill="#fef5e7" stroke="#fd7e14" stroke-width="1.5"/>
   <text x="825" y="68" font-size="13" font-weight="700" text-anchor="middle" fill="#9a3412">3 · Shopify (both stores)</text>
-  <text x="825" y="84" font-size="10" text-anchor="middle" fill="#666">build:shopify-prod + deploy --force → /pages/roadmap</text>
+  <text x="825" y="84" font-size="10" text-anchor="middle" fill="#666">build:shopify-prod + deploy --force → both stores</text>
   <text x="825" y="98" font-size="9.5" text-anchor="middle" fill="#666">same bundle → commerce + education apps</text>
   <line x1="290" y1="75" x2="346" y2="75" stroke="#16a34a" stroke-width="2.5" marker-end="url(#pp)"/>
   <line x1="620" y1="75" x2="686" y2="75" stroke="#fd7e14" stroke-width="2.5" marker-end="url(#pg)"/>
@@ -934,7 +934,7 @@ Chat / uploads → Shopify transport OR Pages BYOK transport</code></pre>
   <text x="235" y="44" font-size="13" font-weight="700" text-anchor="middle" fill="#9a3412">COMMERCE — microvitamin org</text>
   <rect x="45" y="60" width="380" height="52" rx="8" fill="#ffffff" stroke="#fd7e14"/>
   <text x="235" y="80" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Private app · shopify.app.toml</text>
-  <text x="235" y="98" font-size="10" text-anchor="middle" fill="#666">client_id 94c365… · microvitamin.com/pages/roadmap</text>
+  <text x="235" y="98" font-size="10" text-anchor="middle" fill="#666">client_id 94c365… · microvitamin.com (chat only)</text>
   <rect x="45" y="124" width="380" height="48" rx="8" fill="#ffffff" stroke="#fd7e14"/>
   <text x="235" y="143" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Fly app · health-tool-app · bots ON</text>
   <text x="235" y="160" font-size="10" text-anchor="middle" fill="#666">own SHOPIFY_API_KEY / _SECRET / APP_URL · microvitamin Klaviyo</text>

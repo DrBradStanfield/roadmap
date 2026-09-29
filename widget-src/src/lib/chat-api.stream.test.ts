@@ -61,6 +61,33 @@ describe('chat-api streaming (US-15 AC16/AC17)', () => {
     expect(JSON.stringify(store.recordExchange.mock.calls)).not.toContain('Weighing');
   });
 
+  // US-15 AC20: progress lines reach onDelta; malformed ones are coerced, never trusted.
+  it('forwards status and sources lines, and a status-first stream still streams', async () => {
+    fetchMock.mockResolvedValue(ndjson([
+      { type: 'status', text: 'Reading your question' },
+      { type: 'status', text: 'Finding relevant articles' },
+      { type: 'sources', titles: ['ApoB explained', 7, 'Statins'] },
+      { type: 'sources', titles: 'not a list' },
+      { type: 'status', text: 'Writing the answer' },
+      { type: 'text', text: 'Final answer' },
+      done,
+    ], 5, 'text/plain'));
+    const { seen, onDelta } = deltas();
+    const { result } = await sendMessage('q', null, null, [], onDelta);
+    expect(seen).toEqual([
+      { type: 'status', text: 'Reading your question' },
+      { type: 'status', text: 'Finding relevant articles' },
+      { type: 'sources', titles: ['ApoB explained', 'Statins'] },
+      { type: 'sources', titles: [] },
+      { type: 'status', text: 'Writing the answer' },
+      { type: 'text', text: 'Final answer' },
+    ]);
+    expect(result?.content).toBe('Final answer');
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(JSON.stringify(store.recordExchange.mock.calls)).not.toContain('ApoB explained');
+  });
+
   // US-15 AC19: only the widget's own chat, which applies edits, asks for the tools.
   it('sends canApplyEdits only when the caller applies edits', async () => {
     fetchMock.mockImplementation(async () => ndjson([done]));

@@ -50,10 +50,10 @@ describe('US-15 AC16/AC17 — streaming state in useChatState', () => {
     expect(hook.result.current.state.isLoading).toBe(true);
     expect(hook.result.current.state.isLocalSender).toBe(true);
     act(() => { send.onDelta!({ type: 'thinking', text: 'Checking ' }); send.onDelta!({ type: 'thinking', text: 'the ApoB entry' }); });
-    await waitFor(() => expect(hook.result.current.state.streamingThinking).toBe(THINKING));
-    expect(hook.result.current.state.streamingText).toBe('');
+    await waitFor(() => expect(hook.result.current.state.pending.thinking).toBe(THINKING));
+    expect(hook.result.current.state.pending.text).toBe('');
     act(() => { send.onDelta!({ type: 'text', text: 'ApoB ' }); send.onDelta!({ type: 'text', text: 'counts' }); });
-    await waitFor(() => expect(hook.result.current.state.streamingText).toBe('ApoB counts'));
+    await waitFor(() => expect(hook.result.current.state.pending.text).toBe('ApoB counts'));
   });
 
   it('on done: the final answer replaces the stream, the summary stays with it, and none of it is synced', async () => {
@@ -62,12 +62,12 @@ describe('US-15 AC16/AC17 — streaming state in useChatState', () => {
     await act(async () => { send.resolve!({ result: { conversationId: 'c1', messageId: null, content: 'ApoB counts more.' }, error: null }); await sending; });
     const { state } = hook.result.current;
     expect(state.isLoading).toBe(false);
-    expect(state.streamingThinking).toBe('');
-    expect(state.streamingText).toBe('');
+    expect(state.pending.thinking).toBe('');
+    expect(state.pending.text).toBe('');
     const answer = state.messages.at(-1)!;
     expect(answer).toMatchObject({ role: 'assistant', content: 'ApoB counts more.' });
     expect(answer).not.toHaveProperty('thinking');
-    expect(state.thinkingById[answer.id]).toBe(THINKING);
+    expect(state.approachById[answer.id]).toEqual({ thinking: THINKING, sources: [] });
     expect(JSON.stringify(postSync.mock.calls)).not.toContain(THINKING);
   });
 
@@ -80,7 +80,39 @@ describe('US-15 AC16/AC17 — streaming state in useChatState', () => {
     });
     const { state } = hook.result.current;
     expect(state.messages.at(-1)!.content).toBe("I can't help with that request.");
-    expect(state.thinkingById).toEqual({});
+    expect(state.approachById).toEqual({});
+  });
+
+  // US-15 AC20/AC21: progress before the answer, and the articles read.
+  it('status and sources deltas show while pending, and the sources stay with the answer', async () => {
+    const { hook, sending } = await startSend();
+    act(() => { send.onDelta!({ type: 'status', text: 'Reading your question' }); });
+    await waitFor(() => expect(hook.result.current.state.pending.status).toBe('Reading your question'));
+    act(() => {
+      send.onDelta!({ type: 'status', text: 'Finding relevant articles' });
+      send.onDelta!({ type: 'sources', titles: ['ApoB explained', 'Statins'] });
+      send.onDelta!({ type: 'status', text: 'Writing the answer' });
+    });
+    await waitFor(() => expect(hook.result.current.state.pending.status).toBe('Writing the answer'));
+    expect(hook.result.current.state.pending.sources).toEqual(['ApoB explained', 'Statins']);
+    await act(async () => { send.resolve!({ result: { conversationId: 'c1', messageId: null, content: 'ApoB counts more.' }, error: null }); await sending; });
+    const { state } = hook.result.current;
+    expect(state.pending.status).toBe('');
+    expect(state.pending.sources).toEqual([]);
+    const answer = state.messages.at(-1)!;
+    expect(state.approachById[answer.id]).toEqual({ thinking: '', sources: ['ApoB explained', 'Statins'] });
+    expect(answer).not.toHaveProperty('sources');
+    expect(JSON.stringify(postSync.mock.calls)).not.toContain('ApoB explained');
+  });
+
+  it('a fallback keeps no sources either', async () => {
+    const { hook, sending } = await startSend();
+    act(() => { send.onDelta!({ type: 'sources', titles: ['ApoB explained'] }); });
+    await act(async () => {
+      send.resolve!({ result: { conversationId: 'c1', messageId: null, content: 'Sorry', isFallback: true }, error: null });
+      await sending;
+    });
+    expect(hook.result.current.state.approachById).toEqual({});
   });
 
   it('an error clears the stream and restores the pre-send state', async () => {
@@ -88,7 +120,7 @@ describe('US-15 AC16/AC17 — streaming state in useChatState', () => {
     act(() => { send.onDelta!({ type: 'text', text: 'partial' }); });
     await act(async () => { send.resolve!({ result: null, error: { error: 'Network error' } }); await sending; });
     const { state } = hook.result.current;
-    expect(state.streamingText).toBe('');
+    expect(state.pending.text).toBe('');
     expect(state.messages).toEqual([]);
     expect(state.error).toBe('Network error');
   });

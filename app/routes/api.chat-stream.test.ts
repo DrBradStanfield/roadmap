@@ -10,6 +10,9 @@ const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
   getChatCompletion: vi.fn(),
   completion: {} as Record<string, unknown>,
+  articles: null as null | { content: string; titles: string[] },
+  fireRouter: false,
+  classifierGate: Promise.resolve(),
 }));
 vi.mock('../lib/route-helpers.server', async (original) => ({
   ...await original<typeof import('../lib/route-helpers.server')>(),
@@ -25,16 +28,17 @@ vi.mock('../lib/supabase.server', () => ({
 vi.mock('../lib/chat.server', () => ({
   resolveChatContext: () => ({ healthDocuments: [], userContextJson: '{}' }),
   buildSystemBlocks: () => [], buildConversationMessages: () => [],
-  matchDocumentTitle: () => null, loadMatchedArticlesFromHandles: () => [],
+  matchDocumentTitle: () => null, loadMatchedArticlesFromHandles: () => mocks.articles,
   DOCTOR_POSTURE: '', BRAND_POSTURE: '',
   getChatCompletion: mocks.getChatCompletion,
   reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test', MAX_MESSAGE_LENGTH: 500,
 }));
 vi.mock('../lib/chat-router.server', async (original) => ({
   ...await original<typeof import('../lib/chat-router.server')>(),
-  routeQuery: vi.fn(), reportRouterFailure: vi.fn(),
+  routeQuery: vi.fn(async () => ({ handles: ['apob'], latencyMs: 0, cacheHit: false, usage: { inputTokens: 0, cacheReadTokens: 0 } })),
+  reportRouterFailure: vi.fn(),
 }));
-vi.mock('../lib/chat-classifier.server', () => ({ classifyMessage: async () => ({ routerSkipped: true, classification: 'SKIP', latencyMs: 0 }), shouldFireRouter: () => false }));
+vi.mock('../lib/chat-classifier.server', () => ({ classifyMessage: async () => { await mocks.classifierGate; return { routerSkipped: true, classification: 'SKIP', latencyMs: 0 }; }, shouldFireRouter: () => mocks.fireRouter }));
 
 import { action } from './api.chat';
 
@@ -44,6 +48,9 @@ let consoleLog: { mock: { calls: unknown[][] } };
 
 beforeEach(() => {
   inserts = [];
+  mocks.articles = null;
+  mocks.fireRouter = false;
+  mocks.classifierGate = Promise.resolve();
   mocks.completion = {
     content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 },
     isFallback: false, stopReason: 'end_turn',
@@ -91,7 +98,7 @@ describe('US-15 AC16/AC17 — streamed answers', () => {
     expect(res.headers.get('content-type')).toBe('application/x-ndjson');
     expect(res.headers.get('cache-control')).toContain('no-store');
     expect(res.headers.get('x-accel-buffering')).toBe('no');
-    const out = await lines(res);
+    const out = (await lines(res)).filter((l) => l.type !== 'status');
     expect(out.slice(0, 3)).toEqual([
       { type: 'thinking', text: THINKING },
       { type: 'text', text: 'Synthetic ' },
@@ -150,6 +157,62 @@ describe('US-15 AC16/AC17 — streamed answers', () => {
     });
     const out = await lines(await post({ message: 'hello', localFirst: true, stream: true }));
     expect(out.at(-1)).toEqual({ type: 'done', success: false, error: 'Failed to process message' });
+  });
+});
+
+// US-15 AC20: progress lines before the answer, from the moment the stream opens.
+describe('US-15 AC20 — status and sources while the answer is prepared', () => {
+  it('a routed turn: status, status, sources, status, then the answer and done', async () => {
+    mocks.fireRouter = true;
+    mocks.articles = { content: 'Article body', titles: ['ApoB explained', 'Statins'] };
+    const out = await lines(await post({ message: 'what is the ideal ApoB', localFirst: true, stream: true }));
+    expect(out.map((l) => l.type)).toEqual(['status', 'status', 'sources', 'status', 'thinking', 'text', 'text', 'done']);
+    expect(out.slice(0, 4)).toEqual([
+      { type: 'status', text: 'Reading your question' },
+      { type: 'status', text: 'Finding relevant articles' },
+      { type: 'sources', titles: ['ApoB explained', 'Statins'] },
+      { type: 'status', text: 'Writing the answer' },
+    ]);
+  });
+
+  it('a turn the router skips: no "Finding" line and no sources', async () => {
+    const out = await lines(await post({ message: 'hello', localFirst: true, stream: true }));
+    expect(out.slice(0, 2)).toEqual([
+      { type: 'status', text: 'Reading your question' },
+      { type: 'status', text: 'Writing the answer' },
+    ]);
+    expect(out.map((l) => l.type)).not.toContain('sources');
+  });
+
+  it('the stream opens before the classifier finishes', async () => {
+    let release!: () => void;
+    mocks.classifierGate = new Promise<void>((r) => { release = r; });
+    const res = await post({ message: 'hello', localFirst: true, stream: true });
+    const reader = res.body!.getReader();
+    const first = new TextDecoder().decode((await reader.read()).value);
+    expect(JSON.parse(first.split('\n')[0])).toEqual({ type: 'status', text: 'Reading your question' });
+    release();
+    await reader.cancel();
+  });
+
+  it('a stage failure after the stream opened is an error done line, not a 500', async () => {
+    mocks.from.mockImplementation((table: string) => {
+      const query: any = {};
+      for (const method of ['select', 'eq', 'order', 'limit', 'single', 'update', 'delete', 'insert']) query[method] = () => query;
+      query.then = (resolve: any, reject: any) =>
+        Promise.resolve(table === 'chat_conversations' ? { data: null, error: { message: 'db down' } } : { data: [], error: null }).then(resolve, reject);
+      return query;
+    });
+    const res = await post({ message: 'hello', stream: true });
+    expect(res.status).toBe(200);
+    const out = await lines(res);
+    expect(out[0]).toEqual({ type: 'status', text: 'Reading your question' });
+    expect(out.at(-1)).toEqual({ type: 'done', success: false, error: 'Failed to create conversation' });
+    expect(mocks.getChatCompletion).not.toHaveBeenCalled();
+    // The unstreamed path keeps its HTTP 500.
+    const plain = await post({ message: 'hello' });
+    expect(plain.status).toBe(500);
+    expect(await plain.json()).toEqual({ success: false, error: 'Failed to create conversation' });
   });
 });
 

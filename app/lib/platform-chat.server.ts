@@ -87,7 +87,7 @@ export async function platformChatCompletion(params: {
     ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
     : null;
 
-  const blogArticles = loadMatchedArticlesFromHandles(routerResult?.handles ?? []);
+  const blogArticles = loadMatchedArticlesFromHandles(routerResult?.handles ?? [])?.content ?? null;
 
   // Discord is a doctor-family surface (Brad's community) → strict doctor posture.
   const systemBlocks = buildSystemBlocks(DISCORD_PLATFORM_CONTEXT, { surfaceContext: DOCTOR_POSTURE, blogArticles });

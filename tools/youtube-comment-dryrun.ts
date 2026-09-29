@@ -34,7 +34,7 @@ import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
 import { loadBlogIndex, findBlogByVideoId, type BlogIndexEntry } from '../app/lib/blog-index.server';
 import {
-  CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MODEL, ROUTER_MODEL, getArg as getArgOf, modelParams,
+  CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg as getArgOf, modelParams,
 } from '../packages/health-core/src/models';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -218,7 +218,7 @@ async function callAnthropic(body: object): Promise<{ ok: boolean; text: string;
 async function classify(comment: string): Promise<{ classification: string; raw: string }> {
   const body = {
     ...modelParams(CLASSIFIER_MODEL, 8), // 8, as production: 5 truncates MEASUREMENT
-    system: [{ type: 'text', text: CLASSIFIER_PROMPT, cache_control: { type: 'ephemeral' } }],
+    system: [{ type: 'text', text: CLASSIFIER_PROMPT, cache_control: PROMPT_CACHE }],
     messages: [{ role: 'user', content: `(new conversation, no prior turns)\n\nCurrent message: ${comment}\n\nClassification:` }],
   };
   const result = await callAnthropic(body);
@@ -232,8 +232,8 @@ async function routeQuery(comment: string): Promise<{ handles: string[]; raw: st
   const body = {
     ...modelParams(ROUTER_MODEL, 200),
     system: [
-      { type: 'text', text: ROUTER_PROMPT, cache_control: { type: 'ephemeral' } },
-      { type: 'text', text: ROUTER_INDEX_BLOCK, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: ROUTER_PROMPT, cache_control: PROMPT_CACHE },
+      { type: 'text', text: ROUTER_INDEX_BLOCK, cache_control: PROMPT_CACHE },
     ],
     messages: [{ role: 'user', content: `Current query: ${comment}` }],
   };
@@ -296,9 +296,9 @@ async function callMainLLM(comment: string, blogPost: BlogPost, matchedHandles: 
   // System block construction mirrors production: cached blocks 1-3 (system prompt
   // + algorithm + products), then per-request platform context + matched content.
   const cachedBlocks = [
-    { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
-    { type: 'text', text: ALGORITHM_DOC, cache_control: { type: 'ephemeral' } },
-    { type: 'text', text: PRODUCTS_DOC, cache_control: { type: 'ephemeral' } },
+    { type: 'text', text: SYSTEM_PROMPT, cache_control: PROMPT_CACHE },
+    { type: 'text', text: ALGORITHM_DOC, cache_control: PROMPT_CACHE },
+    { type: 'text', text: PRODUCTS_DOC, cache_control: PROMPT_CACHE },
   ];
   const perRequestBlocks: { type: 'text'; text: string }[] = [
     { type: 'text', text: platformContext },

@@ -1,5 +1,30 @@
-import { describe, it, expect } from 'vitest';
-import { sanitizeRawHandles, RouterOutput } from './chat-router.server';
+import { describe, it, expect, vi } from 'vitest';
+import { sanitizeRawHandles, RouterOutput, routeQuery } from './chat-router.server';
+import { classifyMessage } from './chat-classifier.server';
+import { callAnthropicWithUsage } from './anthropic.server';
+
+vi.mock('./anthropic.server', async (orig) => ({
+  ...(await orig<typeof import('./anthropic.server')>()),
+  callAnthropicWithUsage: vi.fn(async () => ({
+    content: '{"handles":[]}',
+    usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 },
+  })),
+}));
+
+// US-15: chat turns are spread across the day, so a 5-minute entry was usually
+// gone by the next turn: only 38 of 169 router calls (22%) and 170 of 456 turns
+// (37%) came within 5 minutes of the one before (audit F9). Every cached block is 1h.
+describe('prompt cache TTL on the router and classifier hops', () => {
+  it('marks every system block ephemeral with a 1-hour TTL', async () => {
+    await routeQuery('vitamin d');
+    await classifyMessage('vitamin d');
+    const bodies = vi.mocked(callAnthropicWithUsage).mock.calls.map(c => c[0] as { system: Array<{ cache_control?: unknown }> });
+    expect(bodies).toHaveLength(2);
+    for (const body of bodies) {
+      for (const block of body.system) expect(block.cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
+    }
+  });
+});
 
 describe('sanitizeRawHandles', () => {
   it('soft-truncates >3 handles so a 4th match cannot void the first three (W33 router_error defect)', () => {

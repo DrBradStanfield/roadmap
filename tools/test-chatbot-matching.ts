@@ -13,6 +13,18 @@
  * the intersection of all runs (consistently returned across retries).
  * Acceptance bar: pass rate ≥ 90%, variance ≤ 5%.
  *
+ * Fixture fields (tools/test-queries.json; router entries carry `expected`):
+ *   expected: string[]        handles; any one in the intersection passes ([] = must route nothing)
+ *   must_not_route?: string[] handles the case must NEVER get: one in ANY run fails the case,
+ *                             reported "✗ routed forbidden handle X". `expected` cannot fail an
+ *                             extra handle (2026-09-29: anticoagulant pathways leaked next to the
+ *                             vitamin K reference and the run still scored 299/304). Each must be
+ *                             a real index handle, or the harness exits before any API call.
+ *   category, source?, notes?, must_mention?, must_not_mention?, max_length_chars? (below)
+ *
+ * A fetch that throws (timeout, DNS, reset) counts as an API error, like a non-2xx:
+ * visible, scored as ∅, and the run continues but never exits green.
+ *
  * Usage:
  *   npx tsx tools/test-chatbot-matching.ts
  *   npx tsx tools/test-chatbot-matching.ts --runs 3 --verbose
@@ -38,8 +50,8 @@
  *   - READ THE BOT'S RESPONSE BEFORE RE-EDITING TESTS. Use --verbose and look at
  *     what the bot actually produced. Rewriting must_mention/must_not_mention
  *     blindly leads to multiple re-runs that each cost real money.
- *   - EDITING THE SYSTEM PROMPT INVALIDATES THE 5-MIN ANTHROPIC PROMPT CACHE.
- *     Every re-run after a prompt edit pays cache-write price (1.25x base) instead
+ *   - EDITING THE SYSTEM PROMPT INVALIDATES THE 1-HOUR ANTHROPIC PROMPT CACHE.
+ *     Every re-run after a prompt edit pays cache-write price (2x base) instead
  *     of cache-read (0.10x base). Batch prompt edits where possible.
  *
  * Exit code 0 if acceptance bar met, 1 otherwise.
@@ -50,7 +62,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import {
   CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, ROUTER_MODEL as PRODUCTION_ROUTER_MODEL,
-  getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat,
+  PROMPT_CACHE, getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat,
 } from '../packages/health-core/src/models';
 import { CHAT_EDIT_TOOLS } from '../packages/health-core/src/chat-edits';
 
@@ -253,27 +265,44 @@ interface RouteResult {
   rateLimited: boolean;
 }
 
+// A timeout, DNS failure or reset throws instead of returning a status. Return
+// it as a label so each caller scores it like a non-2xx: one slow call must not
+// kill a 304-case run (2026-09-29).
+async function postMessages(body: object, timeoutMs: number): Promise<Response | string> {
+  try {
+    return await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey!,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'TimeoutError') return 'timeout';
+    return String((err as { cause?: { code?: string } }).cause?.code ?? err).slice(0, 100);
+  }
+}
+
 async function routeQuery(currentMessage: string, retryOnRateLimit = true, record = true): Promise<RouteResult> {
   const t0 = Date.now();
   const body = {
     ...modelParams(ROUTER_MODEL, 200, thinkingOff ? 'off' : 'low'),
     system: [
-      { type: 'text', text: ROUTER_PROMPT, cache_control: { type: 'ephemeral' } },
-      { type: 'text', text: ROUTER_INDEX_BLOCK, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: ROUTER_PROMPT, cache_control: PROMPT_CACHE },
+      { type: 'text', text: ROUTER_INDEX_BLOCK, cache_control: PROMPT_CACHE },
     ],
     messages: [{ role: 'user', content: `Current query: ${currentMessage}` }],
   };
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey!,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(30_000),
-  });
+  const res = await postMessages(body, 30_000);
+  if (typeof res === 'string') {
+    apiErrorCount++;
+    process.stdout.write(` [api-error ${res}]`);
+    return { handles: [], rateLimited: false };
+  }
 
   // Rate-limited: wait for the reset window and retry once. Anthropic returns
   // retry-after header; default to 30s which matches a typical ITPM refill window.
@@ -328,6 +357,7 @@ interface TestQuery {
   category: string;
   source?: string;
   notes?: string;
+  must_not_route?: string[];   // handles no run may return (see the header)
   must_mention?: string[];     // answer must contain ALL of these (case-insensitive)
   must_not_mention?: string[]; // answer must contain NONE of these (case-insensitive)
   max_length_chars?: number;   // answer must be at most this many characters
@@ -340,6 +370,12 @@ const ALL_QUERIES: TestQuery[] = JSON.parse(
 // Classifier-only entries (test-classifier.ts) live in the same file but
 // have no `expected` handles array — exclude them from the router suite.
 let filtered = ALL_QUERIES.filter(q => Array.isArray(q.expected));
+// A mistyped forbidden handle can never be returned, so the guard would pass forever.
+const unknownForbidden = filtered.flatMap(q => (q.must_not_route ?? []).filter(h => !VALID_HANDLES.has(h)));
+if (unknownForbidden.length > 0) {
+  console.error(`must_not_route names handles not in the index: ${unknownForbidden.join(', ')}`);
+  process.exit(1);
+}
 if (categoryFilter) filtered = filtered.filter(q => q.category === categoryFilter);
 if (sourceFilter) filtered = filtered.filter(q => q.source === sourceFilter);
 
@@ -364,6 +400,7 @@ interface QueryResult {
   allRuns: string[][];
   intersection: string[];
   routingPassed: boolean;
+  forbidden: string[];                   // must_not_route handles any run returned
   answerCheck: AnswerCheckResult | null; // null if not checked
   passed: boolean;
 }
@@ -380,17 +417,14 @@ async function checkAnswer(query: string, mustMention: string[], mustNotMention:
     messages: [{ role: 'user', content: query }],
   };
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey!,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify(body),
-    // As production (callAnthropicWithUsage): thinking makes an answer take 10-20 s.
-    signal: AbortSignal.timeout(60_000),
-  });
+  // As production (callAnthropicWithUsage): thinking makes an answer take 10-20 s.
+  const res = await postMessages(body, 60_000);
+  if (typeof res === 'string') {
+    // Count it: a majority vote could otherwise hide one timeout and exit green.
+    apiErrorCount++;
+    process.stdout.write(` [api-error ${res}]`);
+    return { passed: false, failures: [`API error ${res}`], response: '' };
+  }
 
   if (res.status === 429 && retryOnRateLimit) {
     const retryAfter = parseInt(res.headers.get('retry-after') ?? '30', 10);
@@ -402,6 +436,8 @@ async function checkAnswer(query: string, mustMention: string[], mustNotMention:
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     const detail = body.slice(0, 200).replace(/\s+/g, ' ');
+    apiErrorCount++;
+    process.stdout.write(` [api-error ${res.status}]`);
     return { passed: false, failures: [`API error ${res.status}: ${detail}`], response: '' };
   }
 
@@ -441,6 +477,8 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
   } else {
     routingPassed = q.expected.some(e => intersection.includes(e));
   }
+  const forbidden = (q.must_not_route ?? []).filter(h => allRuns.some(run => run.includes(h)));
+  if (forbidden.length > 0) routingPassed = false;
 
   let answerCheck: AnswerCheckResult | null = null;
   if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || typeof q.max_length_chars === 'number')) {
@@ -461,7 +499,7 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
   }
 
   const passed = routingPassed && (answerCheck === null || answerCheck.passed);
-  return { query: q, allRuns, intersection, routingPassed, answerCheck, passed };
+  return { query: q, allRuns, intersection, routingPassed, forbidden, answerCheck, passed };
 }
 
 async function runAll(): Promise<QueryResult[]> {
@@ -556,6 +594,7 @@ if (failed.length > 0) {
   console.log(`\n${BOLD}${RED}--- Failing queries ---${RESET}`);
   for (const r of failed) {
     console.log(`\n${RED}✗${RESET} ${BOLD}[${r.query.category}]${RESET} "${r.query.query}"`);
+    for (const h of r.forbidden) console.log(`    ${RED}✗ routed forbidden handle ${h}${RESET}`);
     if (!r.routingPassed) {
       if (r.query.expected.length > 0) {
         console.log(`    Expected:     ${r.query.expected.join(' | ')}`);

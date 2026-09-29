@@ -27,7 +27,7 @@ vi.mock('../hooks/useChatState', () => ({
     state: {
       conversations: [], activeConversationId: null, messages: [], inputText: '',
       isLoading: false, isLocalSender: false, error: null, isOffline: false,
-      streamingThinking: '', streamingText: '', thinkingById: {},
+      pending: { thinking: '', text: '', status: '', sources: [] }, approachById: {},
     },
     actions: {
       handleInputChange: vi.fn(), selectConversation: vi.fn(), startNewChat: vi.fn(),
