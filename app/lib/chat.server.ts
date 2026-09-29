@@ -9,6 +9,7 @@ import * as Sentry from '@sentry/react-router';
 import fs from 'fs';
 import path from 'path';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { loadBlogArticle, loadMatchedContent } from './matched-content';
 import { SUGGESTION_EVIDENCE } from '../../packages/health-core/src/evidence';
 import { buildChatContextJson } from '../../packages/health-core/src/chat-context';
 import { CHAT_EDIT_TOOLS, parseProposedEdits, toolOnlyAck, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
@@ -40,7 +41,6 @@ import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, modelParams } f
 // re-declare the string locally (Discord once did, and mislabelled its rows).
 const MAX_MESSAGE_LENGTH = 500;
 const HISTORY_TOKEN_BUDGET = 8000;
-const MAX_BLOG_CHARS = 80_000; // ~20K tokens — cap on combined blog articles in context
 
 // ---------------------------------------------------------------------------
 // Algorithm document — read once at module load from project root
@@ -265,64 +265,16 @@ export function matchDocumentTitle(
 }
 
 /**
- * Load the full markdown content of a blog article by handle.
- * Caches in memory after first read — articles don't change at runtime.
- * Returns null if the file doesn't exist.
- */
-const blogArticleCache = new Map<string, string | null>();
-
-function getContentDir(handle: string): string {
-  const entry = BLOG_INDEX.find(a => a.handle === handle);
-  if (entry?.type === 'guideline') return 'docs/guideline';
-  if (entry?.type === 'pathway') return 'docs/pathway';
-  return 'docs/blog';
-}
-
-export function loadBlogArticle(handle: string): string | null {
-  // Validate handle to prevent path traversal
-  if (!/^[a-z0-9-]+$/.test(handle)) return null;
-
-  const cached = blogArticleCache.get(handle);
-  if (cached !== undefined) return cached;
-
-  try {
-    const dir = getContentDir(handle);
-    const content = fs.readFileSync(
-      path.join(process.cwd(), dir, `${handle}.md`), 'utf-8',
-    );
-    blogArticleCache.set(handle, content);
-    return content;
-  } catch {
-    blogArticleCache.set(handle, null);
-    return null;
-  }
-}
-
-/**
- * Load and concatenate blog article content for the handles returned by the LLM router.
- * Reuses the existing path-traversal-safe, memoized loadBlogArticle().
- * `titles` names the articles actually loaded, from the blog index (never
- * model output), for the web chat's sources line (US-15 AC20).
+ * The router's handles as answer context (loadMatchedContent in
+ * matched-content.ts), plus a Sentry warning for a handle with no file.
+ * Null when nothing loaded.
  */
 export function loadMatchedArticlesFromHandles(handles: string[]): { content: string; titles: string[] } | null {
-  if (handles.length === 0) return null;
-
-  const parts: string[] = [];
-  const titles: string[] = [];
-  let totalChars = 0;
   for (const handle of handles) {
-    const content = loadBlogArticle(handle);
-    if (!content) {
-      Sentry.captureMessage(`Router picked handle with no content: ${handle}`, { level: 'warning' });
-      continue;
-    }
-    if (totalChars + content.length > MAX_BLOG_CHARS) break;
-    parts.push(content);
-    totalChars += content.length;
-    const title = BLOG_INDEX.find(a => a.handle === handle)?.title;
-    if (title) titles.push(title);
+    if (!loadBlogArticle(handle)) Sentry.captureMessage(`Router picked handle with no content: ${handle}`, { level: 'warning' });
   }
-  return parts.length > 0 ? { content: parts.join('\n\n---\n\n'), titles } : null;
+  const { content, titles } = loadMatchedContent(handles);
+  return content ? { content, titles } : null;
 }
 
 // ---------------------------------------------------------------------------

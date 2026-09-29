@@ -33,6 +33,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
 import { loadBlogIndex, findBlogByVideoId, type BlogIndexEntry } from '../app/lib/blog-index.server';
+import { loadMatchedContent } from '../app/lib/matched-content';
 import {
   CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg as getArgOf, modelParams,
 } from '../packages/health-core/src/models';
@@ -255,33 +256,6 @@ async function routeQuery(comment: string): Promise<{ handles: string[]; raw: st
   }
 }
 
-const MAX_BLOG_CHARS = 80_000;
-function loadHandleContent(handle: string): string | null {
-  const entry = BLOG_INDEX.find(a => a.handle === handle);
-  const dir = entry?.type === 'guideline' ? 'docs/guideline' : entry?.type === 'pathway' ? 'docs/pathway' : 'docs/blog';
-  const filepath = path.join(REPO_ROOT, dir, `${handle}.md`);
-  try {
-    const content = fs.readFileSync(filepath, 'utf-8');
-    return content.replace(/^---[\s\S]*?---\n\n?/, ''); // strip frontmatter
-  } catch {
-    return null;
-  }
-}
-
-function loadMatchedContent(handles: string[]): string {
-  if (handles.length === 0) return '';
-  const parts: string[] = [];
-  let totalChars = 0;
-  for (const h of handles) {
-    const content = loadHandleContent(h);
-    if (!content) continue;
-    if (totalChars + content.length > MAX_BLOG_CHARS) break;
-    parts.push(`### ${h}\n\n${content}`);
-    totalChars += content.length;
-  }
-  return parts.join('\n\n---\n\n');
-}
-
 function buildYouTubePlatformContext(blogPost: BlogPost): string {
   return YOUTUBE_PROMPT_TEMPLATE
     .replace('{{VIDEO_TITLE}}', blogPost.title)
@@ -291,7 +265,7 @@ function buildYouTubePlatformContext(blogPost: BlogPost): string {
 
 async function callMainLLM(comment: string, blogPost: BlogPost, matchedHandles: string[]): Promise<{ text: string; error: string | null }> {
   const platformContext = buildYouTubePlatformContext(blogPost);
-  const matchedContent = loadMatchedContent(matchedHandles);
+  const matchedContent = loadMatchedContent(matchedHandles).content;
 
   // System block construction mirrors production: cached blocks 1-3 (system prompt
   // + algorithm + products), then per-request platform context + matched content.

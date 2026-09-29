@@ -42,6 +42,8 @@ tmp/
 **/health_roadmap_file*
 **/*.map
 widget-src/dist-pages/
+# Raw ConsumerLab and other fetched source text: never in the Fly image.
+docs/wiki/research/
 **/_*.mjs
 **/_*.ts
 **/_*.js

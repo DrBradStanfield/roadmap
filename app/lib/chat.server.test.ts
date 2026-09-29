@@ -1,4 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import fs from 'fs';
+import path from 'path';
 import {
   buildConversationMessages,
   buildSystemBlocks,
@@ -339,5 +341,55 @@ describe('loadMatchedArticlesFromHandles', () => {
 
   it('no handles, no articles', () => {
     expect(loadMatchedArticlesFromHandles([])).toBeNull();
+  });
+});
+
+// US-15 AC23: every routed entry that fits the 120,000-char cap loads; one that
+// does not fit is skipped, never the rest of the list. The old 80,000 cap with a
+// `break` loaded nothing when vitamin C (83,150 chars) or omega-3 (81,830) came first.
+describe('loadMatchedArticlesFromHandles cap (US-15 AC23)', () => {
+  const sizes: Record<string, number> = { 'cap-test-a': 83_000, 'cap-test-b': 30_000, 'cap-test-c': 30_000, 'cap-test-x': 40_000 };
+  const realRead = fs.readFileSync;
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  function fakeArticles() {
+    vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {
+      const handle = path.basename(String(p), '.md');
+      if (handle in sizes) return handle.slice(-1).repeat(sizes[handle]);
+      return (realRead as (...a: unknown[]) => unknown)(p, ...rest);
+    }) as typeof fs.readFileSync);
+  }
+
+  // Which fake articles made it into the context (booleans keep failure diffs short).
+  function loaded(handles: string[]) {
+    const content = loadMatchedArticlesFromHandles(handles)?.content ?? '';
+    const has = (ch: string) => content.includes(ch.repeat(sizes[`cap-test-${ch}`]));
+    return { a: has('a'), b: has('b'), c: has('c'), x: has('x') };
+  }
+
+  it('an 83K entry first no longer blocks the 30K entry after it: both load (113K < 120K)', () => {
+    fakeArticles();
+    expect(loaded(['cap-test-a', 'cap-test-b'])).toEqual({ a: true, b: true, c: false, x: false });
+  });
+
+  it('an entry that does not fit is skipped; nothing before it is dropped', () => {
+    fakeArticles();
+    expect(loaded(['cap-test-a', 'cap-test-b', 'cap-test-c'])).toEqual({ a: true, b: true, c: false, x: false });
+  });
+
+  it('an entry that does not fit is skipped, not the rest of the list (only `continue` passes)', () => {
+    fakeArticles();
+    // 83K + 40K = 123K overflows, so x is skipped; 83K + 30K = 113K fits, so b still loads.
+    expect(loaded(['cap-test-a', 'cap-test-x', 'cap-test-b'])).toEqual({ a: true, b: true, c: false, x: false });
+  });
+
+  it('the largest entry in the corpus loads on its own', () => {
+    const dirOf = (t?: string) => (t === 'guideline' ? 'docs/guideline' : t === 'pathway' ? 'docs/pathway' : 'docs/blog');
+    const sized = loadBlogIndex().flatMap((e) => {
+      try { return [{ e, n: fs.readFileSync(path.join(process.cwd(), dirOf(e.type), `${e.handle}.md`), 'utf-8').length }]; } catch { return []; }
+    });
+    const largest = sized.reduce((a, b) => (b.n > a.n ? b : a));
+    expect(largest.n).toBeGreaterThan(80_000); // vitamin C today: the case the old cap lost
+    expect(loadMatchedArticlesFromHandles([largest.e.handle])?.titles).toEqual([largest.e.title]);
   });
 });

@@ -32,12 +32,12 @@ import { supabaseAdmin } from './supabase.server';
 import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
 import { routeQuery, sanitizeForRouter, ROUTER_VERSION, type RouterResult } from './chat-router.server';
 import { findBlogByVideoId, type BlogIndexEntry } from './blog-index.server';
+import { loadBlogArticle } from './matched-content';
 import {
   buildSystemBlocks,
   buildConversationMessages,
   getChatCompletion,
   reportChatFallback,
-  loadBlogArticle,
   loadMatchedArticlesFromHandles,
   DOCTOR_POSTURE,
   CHAT_MODEL,

@@ -7,7 +7,10 @@
  * directly. Kept self-contained (no import of chat-router.server.ts) because
  * tsx can't resolve the health-core workspace package through the Remix
  * server-module import chain. The prompt + index + model fully determine
- * routing behavior, so sharing those files catches any drift.
+ * routing behavior, so sharing those files catches any drift. The one server
+ * import is app/lib/matched-content.ts, the Sentry-free loader production uses
+ * for matched articles (its only dependency is blog-index.server.ts, so tsx can
+ * follow it). It reads from process.cwd(): run from the repo root.
  *
  * Each query runs N times; pass = at least one expected handle appears in
  * the intersection of all runs (consistently returned across retries).
@@ -21,6 +24,15 @@
  *                             vitamin K reference and the run still scored 299/304). Each must be
  *                             a real index handle, or the harness exits before any API call.
  *   category, source?, notes?, must_mention?, must_not_mention?, max_length_chars? (below)
+ *   answer_handles?: string[] fixed-handle answer check, on an entry with NO `expected`: under
+ *                             --answer-check the answer is scored against context built from
+ *                             exactly these handles (in order, via the production loader),
+ *                             with no router call. Such entries never join the router suite
+ *                             or its pass rate; they report on their own line. They gate the
+ *                             exit code only under --fixed-handles-only, so a plain
+ *                             --answer-check (the model-bump qualification) never goes red on
+ *                             them before a live baseline exists. Each handle must load and the list
+ *                             must fit the 120K cap, or the harness exits before any API call.
  *
  * A fetch that throws (timeout, DNS, reset) counts as an API error, like a non-2xx:
  * visible, scored as ∅, and the run continues but never exits green.
@@ -31,12 +43,13 @@
  *   npx tsx tools/test-chatbot-matching.ts --category cardiovascular
  *   npx tsx tools/test-chatbot-matching.ts --variance-threshold 0.1
  *   npx tsx tools/test-chatbot-matching.ts --answer-check   # also test generated answers
+ *   npx tsx tools/test-chatbot-matching.ts --fixed-handles-only   # only the answer_handles checks (implies --answer-check)
  *   npx tsx tools/test-chatbot-matching.ts --model <router id> [--thinking-off | --effort-low] --answer-model <answer id>
  *
  * --answer-check: for entries with must_mention/must_not_mention/max_length_chars,
  * also calls the main LLM (CHAT_MODEL; --answer-model overrides) with the full production context: blocks 1-3
  * (system prompt + algorithm + products knowledge) PLUS matched pathway/blog content
- * loaded from the handles the router returned (block 4). The check runs N times
+ * loaded from the handles the router returned, or from `answer_handles` (block 4). The check runs N times
  * (matching --answer-check-runs, default = --runs) and requires majority pass so
  * a single stochastic blip doesn't flip the test. Does not load user data.
  *
@@ -65,10 +78,13 @@ import {
   PROMPT_CACHE, getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat,
 } from '../packages/health-core/src/models';
 import { CHAT_EDIT_TOOLS } from '../packages/health-core/src/chat-edits';
+import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, '..');
+// app/lib/matched-content.ts reads articles from process.cwd().
+if (path.resolve(process.cwd()) !== REPO_ROOT) { console.error(`Run from the repo root (${REPO_ROOT}): the article loader reads from the working directory.`); process.exit(1); }
 
 // ---------------------------------------------------------------------------
 // CLI args
@@ -93,7 +109,8 @@ const sourceFilter = args.includes('--source') ? getArg('--source', '') : null;
 // algorithm + products) AND matched pathway/blog content (block 4) so the bot has
 // the same context production does. Runs --answer-check-runs times (default = --runs,
 // usually 3) and requires majority pass. Set --answer-check-runs 1 to cut API spend.
-const answerCheckMode = args.includes('--answer-check');
+const fixedHandlesOnly = args.includes('--fixed-handles-only');
+const answerCheckMode = args.includes('--answer-check') || fixedHandlesOnly;
 const answerCheckRuns = Math.max(1, parseInt(getArg('--answer-check-runs', String(runs)), 10));
 
 // Prefer ANTHROPIC_TEST_API_KEY if set — keeps harness spend isolated from
@@ -110,7 +127,8 @@ console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 
 // Answer-check context — loaded only when --answer-check is set
 // Static portion: prompt cache blocks 1-3 (system prompt + algorithm + products).
 // Dynamic portion (per-query, in checkAnswer): block 4 matched pathway/blog
-// content, loaded via loadMatchedContent() from the routing intersection.
+// content, loaded via loadMatchedContent() from the routing intersection
+// (or a fixture's answer_handles).
 // Does NOT load user data (per-user, would require a fake profile).
 // ---------------------------------------------------------------------------
 
@@ -196,46 +214,6 @@ function repairHandle(h: string): string {
     }
   }
   return h;
-}
-
-// Mirrors chat.server.ts loadMatchedArticlesFromHandles. Cap matches production (80K chars ≈ 20K tokens).
-const MAX_BLOG_CHARS = 80_000;
-const matchedContentCache = new Map<string, string | null>();
-
-function getContentDir(handle: string): string {
-  const entry = BLOG_INDEX.find(a => a.handle === handle);
-  if (entry?.type === 'guideline') return 'docs/guideline';
-  if (entry?.type === 'pathway') return 'docs/pathway';
-  return 'docs/blog';
-}
-
-function loadHandleContent(handle: string): string | null {
-  if (!/^[a-z0-9-]+$/.test(handle)) return null;
-  if (matchedContentCache.has(handle)) return matchedContentCache.get(handle) ?? null;
-  try {
-    const content = fs.readFileSync(
-      path.join(REPO_ROOT, getContentDir(handle), `${handle}.md`), 'utf-8',
-    );
-    matchedContentCache.set(handle, content);
-    return content;
-  } catch {
-    matchedContentCache.set(handle, null);
-    return null;
-  }
-}
-
-function loadMatchedContent(handles: string[]): string | null {
-  if (handles.length === 0) return null;
-  const parts: string[] = [];
-  let totalChars = 0;
-  for (const handle of handles) {
-    const content = loadHandleContent(handle);
-    if (!content) continue;
-    if (totalChars + content.length > MAX_BLOG_CHARS) break;
-    parts.push(content);
-    totalChars += content.length;
-  }
-  return parts.length > 0 ? parts.join('\n\n---\n\n') : null;
 }
 
 const TYPE_ORDER: Record<string, number> = { pathway: 0, guideline: 1, reference: 2, article: 3 };
@@ -361,6 +339,7 @@ interface TestQuery {
   must_mention?: string[];     // answer must contain ALL of these (case-insensitive)
   must_not_mention?: string[]; // answer must contain NONE of these (case-insensitive)
   max_length_chars?: number;   // answer must be at most this many characters
+  answer_handles?: string[];   // fixed-handle answer check, no `expected` (see the header)
 }
 
 const ALL_QUERIES: TestQuery[] = JSON.parse(
@@ -369,7 +348,19 @@ const ALL_QUERIES: TestQuery[] = JSON.parse(
 
 // Classifier-only entries (test-classifier.ts) live in the same file but
 // have no `expected` handles array — exclude them from the router suite.
-let filtered = ALL_QUERIES.filter(q => Array.isArray(q.expected));
+let filtered = fixedHandlesOnly ? [] : ALL_QUERIES.filter(q => Array.isArray(q.expected));
+// Fixed-handle answer checks never join the router suite: no `expected`, so the
+// filter above skips them; they run only under --answer-check.
+let fixedHandle = answerCheckMode ? ALL_QUERIES.filter(q => !Array.isArray(q.expected) && Array.isArray(q.answer_handles)) : [];
+// A handle that fails to load, or a list over the cap, would score a context the fixture never meant.
+const badFixed = fixedHandle.flatMap(q => [
+  ...q.answer_handles!.filter(h => !loadBlogArticle(h)).map(h => `${h} (no file)`),
+  ...loadMatchedContent(q.answer_handles!).skipped.map(h => `${h} (over the cap)`),
+]);
+if (badFixed.length > 0) {
+  console.error(`answer_handles that would not load: ${badFixed.join(', ')}`);
+  process.exit(1);
+}
 // A mistyped forbidden handle can never be returned, so the guard would pass forever.
 const unknownForbidden = filtered.flatMap(q => (q.must_not_route ?? []).filter(h => !VALID_HANDLES.has(h)));
 if (unknownForbidden.length > 0) {
@@ -378,8 +369,11 @@ if (unknownForbidden.length > 0) {
 }
 if (categoryFilter) filtered = filtered.filter(q => q.category === categoryFilter);
 if (sourceFilter) filtered = filtered.filter(q => q.source === sourceFilter);
+if (categoryFilter) fixedHandle = fixedHandle.filter(q => q.category === categoryFilter);
+if (sourceFilter) fixedHandle = fixedHandle.filter(q => q.source === sourceFilter);
+const suite = [...filtered, ...fixedHandle];
 
-if (filtered.length === 0) {
+if (suite.length === 0) {
   const desc = [categoryFilter && `category "${categoryFilter}"`, sourceFilter && `source "${sourceFilter}"`].filter(Boolean).join(' AND ');
   console.error(`No queries match ${desc}`);
   process.exit(1);
@@ -406,7 +400,7 @@ interface QueryResult {
 }
 
 async function checkAnswer(query: string, mustMention: string[], mustNotMention: string[], maxLengthChars: number | undefined, matchedHandles: string[] = [], retryOnRateLimit = true): Promise<AnswerCheckResult> {
-  const matchedContent = loadMatchedContent(matchedHandles);
+  const matchedContent = loadMatchedContent(matchedHandles).content;
   const system = matchedContent
     ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
     : ANSWER_SYSTEM_CONTEXT;
@@ -464,15 +458,19 @@ async function checkAnswer(query: string, mustMention: string[], mustNotMention:
 }
 
 async function runOne(q: TestQuery): Promise<QueryResult> {
+  // A fixed-handle answer check skips the router and answers from its own handles.
+  const fixed = !Array.isArray(q.expected);
   const allRuns: string[][] = [];
-  for (let i = 0; i < runs; i++) {
+  for (let i = 0; !fixed && i < runs; i++) {
     const { handles } = await routeQuery(q.query);
     allRuns.push(handles);
   }
-  const intersection = allRuns[0].filter(h => allRuns.every(run => run.includes(h)));
+  const intersection = fixed ? q.answer_handles! : allRuns[0].filter(h => allRuns.every(run => run.includes(h)));
 
   let routingPassed: boolean;
-  if (q.expected.length === 0) {
+  if (fixed) {
+    routingPassed = true;
+  } else if (q.expected.length === 0) {
     routingPassed = allRuns.every(run => run.length === 0);
   } else {
     routingPassed = q.expected.some(e => intersection.includes(e));
@@ -504,7 +502,7 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
 
 async function runAll(): Promise<QueryResult[]> {
   const results: QueryResult[] = [];
-  const queue = [...filtered];
+  const queue = [...suite];
   let completed = 0;
 
   async function worker() {
@@ -512,12 +510,12 @@ async function runAll(): Promise<QueryResult[]> {
       const q = queue.shift()!;
       results.push(await runOne(q));
       completed++;
-      process.stdout.write(`\r  ${completed}/${filtered.length} queries`);
+      process.stdout.write(`\r  ${completed}/${suite.length} queries`);
     }
   }
 
   await Promise.all(
-    Array.from({ length: Math.min(concurrency, filtered.length) }, () => worker())
+    Array.from({ length: Math.min(concurrency, suite.length) }, () => worker())
   );
   process.stdout.write('\n');
 
@@ -537,7 +535,7 @@ const RESET = '\x1b[0m';
 
 console.log(`\n${BOLD}=== LLM Router Test Harness ===${RESET}\n`);
 console.log(`Index:       ${BLOG_INDEX.length} entries`);
-console.log(`Queries:     ${filtered.length}`);
+console.log(`Queries:     ${filtered.length}${fixedHandle.length ? ` + ${fixedHandle.length} fixed-handle answer checks` : ''}`);
 console.log(`Runs each:   ${runs}`);
 console.log(`Concurrency: ${concurrency}`);
 if (answerCheckMode) console.log(`Answer model: ${ANSWER_MODEL}`);
@@ -547,17 +545,25 @@ console.log(`Threshold:   ≤${(varianceThreshold * 100).toFixed(0)}% variance\n
 // creates the 80K-token cache block; subsequent calls read from it at a
 // reduced ITPM rate. Without the warmup, Tier 1 accounts hit the 50K ITPM
 // limit on the first real query.
-console.log('Warming prompt cache...');
-const warmResult = await routeQuery('health', true, false);
-if (warmResult.rateLimited) {
-  console.error('\nWarmup rate-limited. If on Anthropic Tier 1 (50K ITPM), wait 60s and retry.');
-  process.exit(1);
+if (filtered.length > 0) {
+  console.log('Warming prompt cache...');
+  const warmResult = await routeQuery('health', true, false);
+  if (warmResult.rateLimited) {
+    console.error('\nWarmup rate-limited. If on Anthropic Tier 1 (50K ITPM), wait 60s and retry.');
+    process.exit(1);
+  }
+  console.log('Cache warmed. Running test suite.\n');
 }
-console.log('Cache warmed. Running test suite.\n');
 
 const t0 = Date.now();
-const results = await runAll();
+const allResults = await runAll();
 const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+// The router numbers cover the router suite only; fixed-handle checks report on their own line.
+const results = allResults.filter(r => Array.isArray(r.query.expected));
+const fixedResults = allResults.filter(r => !Array.isArray(r.query.expected));
+const fixedOk = fixedResults.every(r => r.passed);
+// Fixed-handle checks gate the exit code only when run on their own (see the header).
+const fixedGateOk = !fixedHandlesOnly || fixedOk;
 
 const passed = results.filter(r => r.passed);
 const failed = results.filter(r => !r.passed);
@@ -576,11 +582,17 @@ console.log(`Total:       ${results.length}`);
 console.log(`${GREEN}Passing:     ${passed.length}${RESET}`);
 console.log(`${RED}Failing:     ${failed.length}${RESET}`);
 
-const passOk = passRate >= 0.9;
-const varOk = varRate <= varianceThreshold;
-console.log(`Pass rate:   ${BOLD}${(passRate * 100).toFixed(1)}%${RESET} ${passOk ? `${GREEN}✓${RESET}` : `${RED}✗ need ≥90%${RESET}`}`);
-console.log(`Variance:    ${BOLD}${(varRate * 100).toFixed(1)}%${RESET} ${varOk ? `${GREEN}✓${RESET}` : `${RED}✗ max ${(varianceThreshold * 100).toFixed(0)}%${RESET}`}`);
-console.log(summaryLine('router', ROUTER_MODEL, thinkingOff, passed.length, results.length, callStats, apiErrorCount));
+const passOk = results.length === 0 || passRate >= 0.9;
+const varOk = results.length === 0 || varRate <= varianceThreshold;
+if (results.length > 0) {
+  console.log(`Pass rate:   ${BOLD}${(passRate * 100).toFixed(1)}%${RESET} ${passOk ? `${GREEN}✓${RESET}` : `${RED}✗ need ≥90%${RESET}`}`);
+  console.log(`Variance:    ${BOLD}${(varRate * 100).toFixed(1)}%${RESET} ${varOk ? `${GREEN}✓${RESET}` : `${RED}✗ max ${(varianceThreshold * 100).toFixed(0)}%${RESET}`}`);
+  console.log(summaryLine('router', ROUTER_MODEL, thinkingOff, passed.length, results.length, callStats, apiErrorCount));
+}
+if (fixedResults.length > 0) {
+  const n = fixedResults.filter(r => r.passed).length;
+  console.log(`Fixed-handle answer checks: ${BOLD}${n}/${fixedResults.length}${RESET} ${fixedOk ? `${GREEN}✓${RESET}` : fixedHandlesOnly ? `${RED}✗ all must pass${RESET}` : `${YELLOW}✗ reported, not gating (gates under --fixed-handles-only)${RESET}`}`);
+}
 
 console.log(`\n${BOLD}--- By category ---${RESET}`);
 for (const [cat, stats] of Object.entries(byCategory).sort((a, b) => b[1].fail - a[1].fail)) {
@@ -590,9 +602,10 @@ for (const [cat, stats] of Object.entries(byCategory).sort((a, b) => b[1].fail -
   console.log(`  ${colour}${cat.padEnd(20)} ${stats.pass}/${total} (${rate}%)${RESET}`);
 }
 
-if (failed.length > 0) {
+const failedAll = [...failed, ...fixedResults.filter(r => !r.passed)];
+if (failedAll.length > 0) {
   console.log(`\n${BOLD}${RED}--- Failing queries ---${RESET}`);
-  for (const r of failed) {
+  for (const r of failedAll) {
     console.log(`\n${RED}✗${RESET} ${BOLD}[${r.query.category}]${RESET} "${r.query.query}"`);
     for (const h of r.forbidden) console.log(`    ${RED}✗ routed forbidden handle ${h}${RESET}`);
     if (!r.routingPassed) {
@@ -626,7 +639,7 @@ if (failed.length > 0) {
 
 if (verbose) {
   console.log(`\n${BOLD}${GREEN}--- Passing queries ---${RESET}`);
-  for (const r of passed) {
+  for (const r of [...passed, ...fixedResults.filter(r => r.passed)]) {
     const top = r.intersection[0] ?? r.allRuns[0]?.[0] ?? '(router-empty)';
     console.log(`${GREEN}✓${RESET} [${r.query.category}] "${r.query.query}" → ${top}`);
   }
@@ -634,4 +647,4 @@ if (verbose) {
 
 console.log();
 // Any errored API call makes the run's numbers untrustworthy — never exit green.
-process.exit(passOk && varOk && apiErrorCount === 0 ? 0 : 1);
+process.exit(passOk && varOk && fixedGateOk && apiErrorCount === 0 ? 0 : 1);
