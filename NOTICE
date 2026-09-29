@@ -1,0 +1,24 @@
+Notice
+
+The MIT licence in LICENSE covers the software in this repository.
+
+It does not cover the clinical and educational content listed below. That content
+is derived from third-party sources, including Auckland Region HealthPathways,
+ConsumerLab.com, the NIH Office of Dietary Supplements, and guidelines from the
+American Heart Association, the World Health Organization and the American
+Academy of Sleep Medicine.
+
+Third-party-derived content:
+- docs/pathway/
+- docs/guideline/
+- the supplement reference articles in docs/blog/ (those with type: "reference"
+  in their frontmatter)
+
+This content is provided for reference within this application only. It is not
+licensed for reuse, redistribution or derivative works outside it. The original
+sources keep their own rights and terms.
+
+The video articles in docs/blog/ are Dr Brad Stanfield's own writing. All rights
+are reserved.
+
+Nothing here is medical advice.
