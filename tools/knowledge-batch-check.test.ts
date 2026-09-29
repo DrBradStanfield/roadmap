@@ -64,7 +64,7 @@ describe("sentences and products", () => {
   });
   it("skips table separator rows and prints cell text without the leading pipe", () => {
     expect(sentences("| a | b |\n|---|---|\n| :-: | --- |\n| Take 5 mg daily. | ok |")).toEqual([
-      "a | b |", "Take 5 mg daily. | ok |"]);
+      "a | b |", "Take 5 mg daily.", "ok |"]);
   });
   it("treats generic omega-3 as not a product, bare Omega-3 as one", () => {
     expect(productMentions("Omega-3")).toBe(1);
