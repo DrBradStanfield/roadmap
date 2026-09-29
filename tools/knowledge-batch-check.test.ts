@@ -9,11 +9,12 @@ import {
   sentences, sha256, tokenise, validateReport,
 } from "./knowledge-batch-check";
 
+// Story: US-42 "Knowledge refresh" (docs/user-stories.md); each describe names its AC.
 // Synthetic fixtures only (tools/fixtures/knowledge-batch/). No real raw text, no model calls.
 const FIX = join(dirname(fileURLToPath(import.meta.url)), "fixtures", "knowledge-batch");
 const fx = (n: string) => readFileSync(join(FIX, n), "utf8");
 
-describe("tokeniser", () => {
+describe("US-42 AC2 tokeniser", () => {
   const t = (s: string) => [...tokenise(s)].sort();
   it("normalises 1 g, 1,000 mg and 1000 mg to one token", () => {
     expect(t("1 g")).toEqual(["1000 mg"]);
@@ -63,7 +64,7 @@ describe("tokeniser", () => {
   });
 });
 
-describe("sentences and products", () => {
+describe("US-42 AC4/AC7 sentences and products", () => {
   it("does not split on abbreviations or decimals", () => {
     expect(sentences("Take it, e.g. at lunch. Dr. Smith saw 0.5 mg vs. placebo. Done?")).toEqual([
       "Take it, e.g. at lunch.", "Dr. Smith saw 0.5 mg vs. placebo.", "Done?"]);
@@ -84,7 +85,7 @@ describe("sentences and products", () => {
   });
 });
 
-describe("report schema", () => {
+describe("US-42 AC2/AC11 report schema and CLI", () => {
   it("accepts the example and rejects a broken one", () => {
     expect(validateReport(exampleReport("x"))).toEqual([]);
     expect(validateReport({ ...exampleReport("x"), type: "blog" }).length).toBeGreaterThan(0);
@@ -153,7 +154,7 @@ beforeEach(() => {
 });
 afterEach(() => { rmSync(root, { recursive: true, force: true }); rmSync(reports, { recursive: true, force: true }); });
 
-describe("clean batch", () => {
+describe("US-42 AC1-AC7 clean batch", () => {
   it("passes every check", () => {
     const r = run();
     for (const id of ["AC1", "AC2", "AC3", "AC4", "AC6", "AC7", "PATHWAY"]) expect(fails(r[id]), id).toEqual([]);
@@ -162,7 +163,7 @@ describe("clean batch", () => {
   });
 });
 
-describe("AC1", () => {
+describe("US-42 AC1 index and frontmatter", () => {
   it("fails when another handle's index entry changes", () => {
     put("docs/blog/index.json", INDEX.replace('"x"', '"y"'));
     expect(fails(run().AC1).join()).toContain('"other"');
@@ -177,6 +178,12 @@ describe("AC1", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("200 mg daily", "300 mg daily"));
     expect(fails(run().AC1)).toEqual([]);
   });
+  it("allows only the summary line to differ when a correction is proposed", () => {
+    reps.alpha.proposed_summary_correction = "Alpha summary, 300 mg daily.";
+    put("docs/blog/index.json", INDEX.replace("200 mg daily", "300 mg daily"));
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("200 mg daily", "300 mg daily").replace('title: "Alpha"', 'title: "Alpha 2"'));
+    expect(fails(run().AC1).join()).toContain("frontmatter differs beyond the summary line");
+  });
   it("fails on frontmatter drift and on categories.json changes", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Alpha summary", "Altered summary"));
     expect(fails(run().AC1).join()).toContain("frontmatter changed");
@@ -187,7 +194,7 @@ describe("AC1", () => {
   });
 });
 
-describe("AC2", () => {
+describe("US-42 AC2 raw fidelity", () => {
   it("fails naming a new token with no report entry", () => {
     reps.alpha.changed_tokens = [];
     expect(fails(run().AC2).join()).toContain('"300 mg"');
@@ -232,13 +239,74 @@ describe("AC2", () => {
   });
 });
 
-describe("AC3", () => {
+describe("US-42 AC2 multiset and body_line", () => {
+  it("fails a changed dose whose new value already occurs elsewhere in the body", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("300 mg per day", "2 g per day")); // "2 g" was already in the base once
+    reps.alpha.changed_tokens = [];
+    expect(fails(run().AC2).join()).toContain('"2000 mg"');
+  });
+  it("requires the entry's body_line to contain the token", () => {
+    reps.alpha.changed_tokens[0].body_line = "An unrelated line.";
+    expect(fails(run().AC2).join()).toContain("body_line does not contain");
+  });
+});
+
+describe("US-42 AC7 identifiers", () => {
+  const cited = () => put("docs/blog/alpha.md", fx("alpha.new.md").replace("upset [2].", "upset [2] [3].").trimEnd() + "\n\n[3] Foo B. Study. PMID: 99999999 doi:10.1000/abc.def\n");
+  it("warns on a new reference line whose PMID or DOI is in no raw file", () => {
+    cited();
+    const r = run().AC7;
+    expect(r.evidence.filter((e) => e.includes("unverified primary")).length).toBe(1);
+    expect(fails(r).filter((f) => f.includes("unverified"))).toEqual([]);
+  });
+  it("is quiet when the raw files carry both identifiers, extra_raw included", () => {
+    cited();
+    const extra = join(reports, "x.txt");
+    writeFileSync(extra, "see 10.1000/ABC.DEF");
+    writeFileSync(join(reports, "alpha.raw.txt"), fx("alpha.raw.txt") + "PMID 99999999");
+    reps.alpha.extra_raw = [{ path: extra, sha256: sha256(readFileSync(extra)) }];
+    expect(run().AC7.evidence.some((e) => e.includes("unverified primary"))).toBe(false);
+  });
+  it("--check-ids is off by default, FAILs on 404, and caps at 60", () => {
+    cited();
+    const seen: string[] = [];
+    run({ headStatus: (u) => { seen.push(u); return 404; }, delayMs: 0 });
+    expect(seen).toEqual([]);
+    const r = run({ checkIds: true, headStatus: (u) => { seen.push(u); return u.includes("doi.org") ? 404 : 200; }, delayMs: 0 }).AC7;
+    expect(seen.sort()).toEqual(["https://doi.org/10.1000/abc.def", "https://pubmed.ncbi.nlm.nih.gov/99999999/"]);
+    expect(fails(r).join()).toContain("doi 10.1000/abc.def returned 404");
+    const many = Array.from({ length: 65 }, (_, i) => `[${i + 3}] R. T. PMID: ${10000000 + i}`);
+    put("docs/blog/alpha.md", fx("alpha.new.md").trimEnd() + "\n\n" + many.join("\n\n") + "\n");
+    seen.length = 0;
+    const c = run({ checkIds: true, headStatus: (u) => { seen.push(u); return 200; }, delayMs: 0 }).AC7;
+    expect(seen.length).toBe(60);
+    expect(c.evidence.join()).toContain("5 identifiers not checked");
+  });
+});
+
+describe("US-42 AC7 exclusions file", () => {
+  it("FAILs when the exclusions file is missing unless --no-exclusions", () => {
+    expect(fails(run({ exclusionsPath: join(reports, "none.json") }).AC7).join()).toContain("exclusions file not found");
+    expect(fails(run({ exclusionsPath: join(reports, "none.json"), noExclusions: true }).AC7)).toEqual([]);
+  });
+});
+
+describe("US-42 AC3 hedging", () => {
   it("fails when the hedge count falls and lists the line", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Some evidence suggests benefit. ", ""));
     reps.alpha.deleted_sentences.push({ sentence: "Some evidence suggests benefit.", justification: "Not in raw." });
     const r = run().AC3;
     expect(r.status).toBe("FAIL");
     expect(r.evidence.join()).toContain("hedge tokens fell");
+  });
+  it("lists hedge loss per sentence pair, still as WARN", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Some evidence suggests benefit.", "Benefit is shown. It may help. It might help."));
+    const r = run().AC3;
+    expect(r.status).toBe("WARN");
+    const w = r.evidence.filter((e) => e.includes('lost hedge "suggests"'));
+    expect(w.length).toBe(1);
+    expect(w[0]).toContain("base: Some evidence suggests benefit.");
+    expect(w[0]).toContain("new: Benefit is shown.");
   });
   it("warns on a gained hardening token without failing", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("300 mg per day", "300 mg per day and must be taken"));
@@ -248,7 +316,7 @@ describe("AC3", () => {
   });
 });
 
-describe("AC4", () => {
+describe("US-42 AC4 deleted sentences and headings", () => {
   it("fails when a removed sentence is not declared", () => {
     reps.alpha.deleted_sentences = [];
     expect(fails(run().AC4).join()).toContain("not in deleted_sentences");
@@ -263,7 +331,7 @@ describe("AC4", () => {
   });
 });
 
-describe("AC6", () => {
+describe("US-42 AC6 diff scope", () => {
   it("fails on a change outside the batch and allows the report path", () => {
     put("docs/blog/other.md", "x");
     put("docs/reference.md", "x");
@@ -277,7 +345,7 @@ describe("AC6", () => {
   });
 });
 
-describe("AC7", () => {
+describe("US-42 AC7 reference hygiene", () => {
   it("fails on grokipedia in any case", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it", "See GrokiPedia. Take it"));
     expect(fails(run().AC7).join()).toContain("grokipedia");
@@ -310,7 +378,7 @@ describe("AC7", () => {
   });
 });
 
-describe("exceptions", () => {
+describe("US-42 AC11 exceptions", () => {
   const exc = (over = {}) => ({ check: "AC7", handle: "alpha", match: "grokipedia", reason: "quoted source name", by: "Brad", date: "2026-09-30", ...over });
   const dirty = () => put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it", "See Grokipedia. Take it"));
   it("turns a matched FAIL into a WARN and lists it", () => {
@@ -333,7 +401,7 @@ describe("exceptions", () => {
     process.chdir(root);
     try {
       const out = join(root, "docs", "b.md");
-      const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--out", out];
+      const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--out", out, "--no-exclusions"];
       main([...args, "--exceptions", join(reports, "missing.json")]);
       expect(log.mock.calls.flat().join("\n")).toContain("FAIL AC7");
       writeFileSync(join(reports, "exc.json"), JSON.stringify([exc()]));
@@ -343,7 +411,7 @@ describe("exceptions", () => {
   });
 });
 
-describe("reference batch rules", () => {
+describe("US-42 AC2/AC7 reference batch rules", () => {
   const withRefs = (extra: string, cite = " [3]") =>
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("upset [2].", `upset [2]${cite}.`).trimEnd() + `\n\n${extra}\n`);
   it("ignores extra top-level report keys", () => {
@@ -393,7 +461,7 @@ describe("reference batch rules", () => {
   });
 });
 
-describe("pathway rules", () => {
+describe("US-42 AC9 pathway rules", () => {
   it("fails without the source line or deferral blockquote", () => {
     put("docs/pathway/beta.md", fx("beta.new.md").replace("*Source: Auckland Region HealthPathways, reviewed 2026-01-01*", "Source elsewhere").replace(/^>.*$/m, ""));
     const f = fails(run().PATHWAY).join();
@@ -407,7 +475,7 @@ describe("pathway rules", () => {
   });
 });
 
-describe("batch report", () => {
+describe("US-42 AC8 batch report", () => {
   it("holds counts and hashes only, under 150 lines", () => {
     writeReports();
     const { results, rows, baseSha } = runBatch({ root, batch: "t", handles: ["alpha", "beta"], reportsDir: reports, exclusionsPath: exclusions });
@@ -425,7 +493,7 @@ describe("batch report", () => {
   });
 });
 
-describe("CLI end to end", () => {
+describe("US-42 AC1-AC7 CLI end to end", () => {
   it("exits 1 on FAIL, 0 on PASS, and writes --out", () => {
     writeReports();
     writeFileSync(join(reports, "handles.txt"), "# batch\nalpha\nbeta\n");
@@ -434,7 +502,7 @@ describe("CLI end to end", () => {
     process.chdir(root);
     try {
       const out = join(root, "docs", "batch-t.md");
-      const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--out", out];
+      const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--out", out, "--no-exclusions"];
       // The real exclusions file is optional; a missing one only warns. Only AC7 could FAIL on it.
       expect([0, 1]).toContain(main(args));
       expect(readFileSync(out, "utf8")).toContain("# Knowledge batch report: t");

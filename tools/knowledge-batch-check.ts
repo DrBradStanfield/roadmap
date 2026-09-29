@@ -1,6 +1,6 @@
 /**
  * Batch acceptance checks for the knowledge refresh (plan 2026-09-29, Phase 0
- * step 5, AC1-AC4, AC6, AC7). No model calls. Raw third-party text is read from
+ * step 5; story US-42 in docs/user-stories.md: AC1-AC4, AC6, AC7, AC9, AC11). No model calls. Raw third-party text is read from
  * the paths named in the diff reports and never written anywhere: the markdown
  * batch report holds counts and hashes only.
  *
@@ -195,8 +195,8 @@ function stripNoise(line: string): string {
 }
 
 /** Number tokens of a text, unit-normalised ("1 g" -> "1000 mg"). Reference lines are skipped unless keepRefs. */
-export function tokenise(text: string, opts: { keepRefs?: boolean } = {}): Set<string> {
-  const out = new Set<string>();
+export function tokenCounts(text: string, opts: { keepRefs?: boolean } = {}): Map<string, number> {
+  const out = new Map<string, number>();
   text = normChars(text);
   const lines = opts.keepRefs ? text.split(/\r?\n/).map((line) => ({ line, ref: false })) : classifyLines(text);
   for (const { line, ref } of lines) {
@@ -207,12 +207,15 @@ export function tokenise(text: string, opts: { keepRefs?: boolean } = {}): Set<s
       for (const n of [m[1], m[2]].filter(Boolean) as string[]) {
         if (!unit && !n.includes(",") && !n.includes(".") && /^(19|20)\d\d$/.test(n)) continue;
         const { value, unit: u } = normNumber(n, unit);
-        out.add(u ? `${value} ${u}` : value);
+        const key = u ? `${value} ${u}` : value;
+        out.set(key, (out.get(key) ?? 0) + 1);
       }
     }
   }
   return out;
 }
+
+export const tokenise = (text: string, opts: { keepRefs?: boolean } = {}): Set<string> => new Set(tokenCounts(text, opts).keys());
 
 const ABBREV = /\b(e\.g|i\.e|vs|Dr|mg|etc|approx|Mr|Mrs|Ms|Prof|al|Fig)\./gi;
 export const cleanSentence = (s: string) =>
@@ -276,7 +279,8 @@ const readOpt = (p: string) => (existsSync(p) ? readFileSync(p, "utf8") : null);
 
 export interface Options {
   root: string; batch: string; handles: string[]; reportsDir: string; base?: string; outRel?: string;
-  exclusionsPath?: string; exceptions?: Exception[];
+  exclusionsPath?: string; exceptions?: Exception[]; noExclusions?: boolean;
+  checkIds?: boolean; headStatus?: (url: string) => number; delayMs?: number;
 }
 export interface Row {
   handle: string; type: string; file: string; rawSha: string; bodySha: string; tokensNew: number; quoted: number;
@@ -362,9 +366,12 @@ function checkAc1(o: Options, base: string, ctxs: Ctx[], ac1: Check) {
     else ac1.infos.push(`${catRel} byte-identical`);
   }
   for (const c of ctxs) {
-    if (c.baseText === null || c.newText === null || corrections.has(c.handle)) continue;
-    if (splitFrontmatter(c.baseText).front !== splitFrontmatter(c.newText).front)
-      ac1.fails.push(`${c.rel}: frontmatter changed and no proposed_summary_correction`);
+    if (c.baseText === null || c.newText === null) continue;
+    const bf = splitFrontmatter(c.baseText).front, nf = splitFrontmatter(c.newText).front;
+    const noSummary = (f: string) => f.split(/\r?\n/).filter((l) => !/^summary:/.test(l)).join("\n");
+    if (corrections.has(c.handle)) {
+      if (noSummary(bf) !== noSummary(nf)) ac1.fails.push(`${c.rel}: frontmatter differs beyond the summary line`);
+    } else if (bf !== nf) ac1.fails.push(`${c.rel}: frontmatter changed and no proposed_summary_correction`);
   }
 }
 
@@ -386,8 +393,10 @@ function checkAc2(c: Ctx, added: string[], ac2: Check): number {
   }
   let quoted = 0;
   for (const tok of added) {
-    const entry = rep.changed_tokens.find((e) => tokenise(e.token, { keepRefs: true }).has(tok));
-    if (!entry) { ac2.fails.push(`${tag} token "${tok}" is new in the body and has no changed_tokens entry`); continue; }
+    const named = rep.changed_tokens.filter((e) => tokenise(e.token, { keepRefs: true }).has(tok));
+    if (!named.length) { ac2.fails.push(`${tag} token "${tok}" is new in the body and has no changed_tokens entry`); continue; }
+    const entry = named.find((e) => tokenise(e.body_line, { keepRefs: true }).has(tok));
+    if (!entry) { ac2.fails.push(`${tag} token "${tok}": body_line does not contain it`); continue; }
     if (!entry.raw_quote.trim()) { ac2.fails.push(`${tag} token "${tok}" has an empty raw_quote`); continue; }
     const prefixed = /^\s*(?:NIH|EXTRA):\s*/.exec(entry.raw_quote);
     const quote = prefixed ? entry.raw_quote.slice(prefixed[0].length) : entry.raw_quote;
@@ -407,19 +416,35 @@ function checkAc2(c: Ctx, added: string[], ac2: Check): number {
   return quoted;
 }
 
+const wordSet = (t: string) => new Set(t.toLowerCase().match(/[a-z]{4,}/g) ?? []);
+/** The candidate sharing the most words with `sent` (Jaccard), or null when none shares a word. */
+function nearest(sent: string, cands: string[]): string | null {
+  const a = wordSet(sent);
+  let best: string | null = null, score = 0;
+  for (const c of cands) {
+    const b = wordSet(c);
+    const inter = [...a].filter((w) => b.has(w)).length;
+    const j = inter / (a.size + b.size - inter || 1);
+    if (inter > 0 && j > score) { best = c; score = j; }
+  }
+  return best;
+}
+
 function checkAc3(c: Ctx, hedgeBefore: number, hedgeAfter: number, ac3: Check) {
   const tag = `${c.handle}:`;
   if (hedgeAfter < hedgeBefore) ac3.fails.push(`${tag} hedge tokens fell ${hedgeBefore} -> ${hedgeAfter}`);
-  const bl = c.baseBody.split(/\r?\n/), nl = c.newBody.split(/\r?\n/);
-  const nset = new Set(nl.map((l) => l.trim())), bset = new Set(bl.map((l) => l.trim()));
-  const baseOnly = bl.filter((l) => l.trim() && !nset.has(l.trim()));
-  const newOnly = nl.filter((l) => l.trim() && !bset.has(l.trim()));
-  const sum = (ls: string[], p: string) => ls.reduce((n, l) => n + countIn(l, p), 0);
-  for (const p of HEDGES) {
-    if (sum(baseOnly, p) > sum(newOnly, p)) for (const l of baseOnly.filter((l) => countIn(l, p))) ac3.warns.push(`${tag} lost hedge "${p}": ${clip(l, 160)}`);
+  const bs = sentences(c.baseBody), ns = sentences(c.newBody);
+  const bset = new Set(bs), nset = new Set(ns);
+  const baseOnly = [...bset].filter((x) => !nset.has(x)), newOnly = [...nset].filter((x) => !bset.has(x));
+  for (const b of baseOnly) {
+    const n = nearest(b, newOnly);
+    for (const p of HEDGES) if (countIn(b, p) > (n ? countIn(n, p) : 0))
+      ac3.warns.push(`${tag} lost hedge "${p}" base: ${clip(b, 160)} -> new: ${n ? clip(n, 160) : "(no matching sentence)"}`);
   }
-  for (const p of HARDENERS) {
-    if (sum(newOnly, p) > sum(baseOnly, p)) for (const l of newOnly.filter((l) => countIn(l, p))) ac3.warns.push(`${tag} gained hardening "${p}": ${clip(l, 160)}`);
+  for (const n of newOnly) {
+    const b = nearest(n, baseOnly);
+    for (const p of HARDENERS) if (countIn(n, p) > (b ? countIn(b, p) : 0))
+      ac3.warns.push(`${tag} gained hardening "${p}" new: ${clip(n, 160)} <- base: ${b ? clip(b, 160) : "(no matching sentence)"}`);
   }
 }
 
@@ -507,7 +532,18 @@ function productSectionCheck(newBody: string, baseBody: string, tag: string, ac7
   for (const h of b.keys()) if (!a.has(h)) ac7.fails.push(`${tag} product section added: ${h}`);
 }
 
-function checkAc7(c: Ctx, ac7: Check, pw: Check) {
+interface PrimaryId { kind: "pmid" | "doi"; id: string }
+function primaryIds(line: string): PrimaryId[] {
+  const out = new Map<string, PrimaryId>();
+  for (const m of line.matchAll(/PMID:?\s*(\d{5,9})|pubmed\.ncbi\.nlm\.nih\.gov\/(\d{5,9})/gi)) out.set(`pmid:${m[1] ?? m[2]}`, { kind: "pmid", id: (m[1] ?? m[2]) });
+  for (const m of line.matchAll(/\b(10\.\d{4,9}\/[^\s)\]>,;"]+)/g)) {
+    const id = m[1].replace(/[.,;:]+$/, "");
+    out.set(`doi:${id.toLowerCase()}`, { kind: "doi", id });
+  }
+  return [...out.values()];
+}
+
+function checkAc7(c: Ctx, ac7: Check, pw: Check, raws: string[], idsOut: Map<string, PrimaryId & { handle: string }>) {
   const tag = `${c.handle}:`, rep = c.rep;
   for (const l of c.newBody.split(/\r?\n/)) {
     if (/grokipedia/i.test(l)) ac7.fails.push(`${tag} "grokipedia" in body: ${clip(l, 100)}`);
@@ -522,6 +558,12 @@ function checkAc7(c: Ctx, ac7: Check, pw: Check) {
     referenceCheck(c.newBody, tag, ac7);
     referenceSourceCheck(c.newBody, c.baseBody, tag, ac7);
     productSectionCheck(c.newBody, c.baseBody, tag, ac7);
+    const baseLines = new Set(refLines(c.baseBody));
+    for (const line of refLines(c.newBody).filter((l) => !baseLines.has(l))) {
+      const ids = primaryIds(line);
+      for (const x of ids) idsOut.set(`${x.kind}:${x.id.toLowerCase()}`, { ...x, handle: c.handle });
+      if (ids.some((x) => !raws.some((r) => r.includes(x.id.toLowerCase())))) ac7.warns.push(`${tag} unverified primary: ${clip(line, 140)}`);
+    }
   }
   if (rep?.type === "pathway") {
     const lines = c.newBody.split(/\r?\n/);
@@ -530,6 +572,27 @@ function checkAc7(c: Ctx, ac7: Check, pw: Check) {
       pw.fails.push(`${tag} missing doctor-deferral blockquote`);
     for (const l of lines) for (const [name, re] of PATHWAY_FORBIDDEN) if (re.test(l)) pw.fails.push(`${tag} forbidden term "${name}": ${clip(l, 100)}`);
   }
+}
+
+function curlHead(url: string): number {
+  try {
+    return parseInt(execFileSync("curl", ["-sS", "-I", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "15", url], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }), 10) || 0;
+  } catch { return 0; }
+}
+const sleepMs = (ms: number) => { if (ms > 0) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); };
+const ID_CAP = 60;
+
+function verifyIds(ids: Map<string, PrimaryId & { handle: string }>, o: Options, ac7: Check) {
+  const head = o.headStatus ?? curlHead;
+  const list = [...ids.values()];
+  list.slice(0, ID_CAP).forEach((x, i) => {
+    if (i) sleepMs(o.delayMs ?? 1000);
+    const url = x.kind === "doi" ? `https://doi.org/${x.id}` : `https://pubmed.ncbi.nlm.nih.gov/${x.id}/`;
+    const st = head(url);
+    if (st === 404) ac7.fails.push(`${x.handle}: ${x.kind} ${x.id} returned 404`);
+    else if (st === 0 || st >= 400) ac7.warns.push(`${x.handle}: ${x.kind} ${x.id} returned ${st || "no response"} (not verified)`);
+  });
+  if (list.length > ID_CAP) ac7.warns.push(`${list.length - ID_CAP} identifiers not checked (cap ${ID_CAP})`);
 }
 
 const EXCLUSIONS_PATH = "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/tools/healthpathways-exclusions.json";
@@ -546,31 +609,36 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
   const pw = new Check("PATHWAY", "source line, deferral blockquote, no NZ logistics");
   const rows: Row[] = [];
   const ctxs = o.handles.map((h) => loadCtx(o, base, h, ac2));
+  const ids = new Map<string, PrimaryId & { handle: string }>();
 
   checkAc1(o, base, ctxs, ac1);
   for (const c of ctxs) {
-    const newTokens = tokenise(c.newBody), baseTokens = tokenise(c.baseBody);
-    const added = [...newTokens].filter((t) => !baseTokens.has(t));
+    const newTokens = tokenCounts(c.newBody), baseTokens = tokenCounts(c.baseBody);
+    const added = [...newTokens].filter(([t, n]) => n > (baseTokens.get(t) ?? 0)).map(([t]) => t);
     const hedgeBefore = totalIn(c.baseBody, HEDGES), hedgeAfter = totalIn(c.newBody, HEDGES);
     let quoted = 0, deleted = 0;
     if (c.newText !== null) {
       if (c.rep) quoted = checkAc2(c, added, ac2);
       checkAc3(c, hedgeBefore, hedgeAfter, ac3);
       if (c.baseText !== null) deleted = checkAc4(c, ac4);
-      checkAc7(c, ac7, pw);
+      const raws = c.rep ? [c.rep.raw_path, ...(c.rep.extra_raw ?? []).map((x) => x.path)].filter(existsSync).map((f) => normQuote(readFileSync(f, "utf8"))) : [];
+      checkAc7(c, ac7, pw, raws, ids);
     }
     rows.push({ handle: c.handle, type: c.rep?.type ?? "?", file: c.rel, rawSha: c.rep?.raw_sha256 ?? "-",
       bodySha: sha256(c.newBody), tokensNew: added.length, quoted, deleted, hedgeBefore, hedgeAfter,
       productsBefore: productMentions(c.baseBody), productsAfter: productMentions(c.newBody) });
   }
 
+  if (o.checkIds) verifyIds(ids, o, ac7);
+
   // Exclusions (claude_business list; slugs are handles).
   let excluded = new Set<string>();
   const exPath = o.exclusionsPath ?? EXCLUSIONS_PATH;
-  if (existsSync(exPath)) {
+  if (o.noExclusions) ac7.infos.push("exclusions check skipped (--no-exclusions)");
+  else if (existsSync(exPath)) {
     const ex = JSON.parse(readFileSync(exPath, "utf8")) as { excluded?: string[]; excludedReasons?: Record<string, { slug?: string }> };
     excluded = new Set([...(ex.excluded ?? []), ...Object.values(ex.excludedReasons ?? {}).map((r) => r.slug).filter((s): s is string => !!s)]);
-  } else ac7.warns.push(`exclusions file not found; excluded-handle check skipped (${exPath})`);
+  } else ac7.fails.push(`exclusions file not found (${exPath}); pass --no-exclusions to skip the excluded-handle check`);
   for (const h of o.handles) if (excluded.has(h)) ac7.fails.push(`${h}: handle is on the HealthPathways exclusion list`);
 
   // AC6, and new files against the exclusion list.
@@ -634,7 +702,7 @@ export function main(argv: string[]): number {
   if (a["print-schema"]) { console.log(JSON.stringify(REPORT_SCHEMA, null, 2)); return 0; }
   if (typeof a.example === "string") { console.log(JSON.stringify(exampleReport(a.example), null, 2)); return 0; }
   if (typeof a.batch !== "string" || typeof a.handles !== "string") {
-    console.error("usage: knowledge-batch-check.ts --batch <name> --handles <file> [--reports <dir>] [--base <ref>] [--out <file>] [--exceptions <file>]");
+    console.error("usage: knowledge-batch-check.ts --batch <name> --handles <file> [--reports <dir>] [--base <ref>] [--out <file>] [--exceptions <file>] [--no-exclusions] [--check-ids]");
     return 2;
   }
   const root = git(process.cwd(), ["rev-parse", "--show-toplevel"]).trim();
@@ -646,7 +714,8 @@ export function main(argv: string[]): number {
   const outRel = out && !rel.startsWith("..") && !isAbsolute(rel) ? rel : undefined;
   const exceptions: Exception[] = typeof a.exceptions === "string" && existsSync(a.exceptions)
     ? JSON.parse(readFileSync(a.exceptions, "utf8")) : [];
-  const { results, rows, baseSha } = runBatch({ root, batch: a.batch, handles, reportsDir, base, outRel, exceptions });
+  const { results, rows, baseSha } = runBatch({ root, batch: a.batch, handles, reportsDir, base, outRel, exceptions,
+    noExclusions: a["no-exclusions"] === true, checkIds: a["check-ids"] === true });
   for (const r of results) {
     console.log(`${r.status} ${r.id} ${r.title}`);
     for (const e of r.evidence) console.log(`    ${e}`);
