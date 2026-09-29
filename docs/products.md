@@ -37,7 +37,7 @@ The COSMOS (COcoa Supplement and Multivitamin Outcomes Study) trial randomized 2
 **Is MicroVitamin third-party tested?**
 Yes. MicroVitamin is manufactured at GMP-certified facilities in five regions for local supply, each third-party testing every batch for heavy metals (lead, mercury, arsenic, cadmium) and purity; certificates of analysis are available. **Third-party tested by Labdoor — Labdoor Score 99.7 out of 100 (lot 2512062, tested 24 Apr 2026; laboratory analysis by Eurofins; Labdoor's certification program, not an off-the-shelf purchase). The same public page lists per-ingredient results (e.g. vitamin C 32.8 of 45mg, vitamin D 60.3 of 25mcg on that lot), so quote the overall score, never "what's on the label is what's in the bottle". Public review page: https://labdoor.com/review/dr-brad-stanfield-microvitamin** (use this link whenever referencing third-party testing in customer-facing copy). Per-region facilities:
 - **USA — Makers Nutrition:** FDA-registered, GMP-audited, Natural Products Association certified, Dun & Bradstreet Verified.
-- **Canada — Canadian Premier Supplements:** cGMP-certified, FDA-registered, NSF-licensed, Health Canada site-licensed, every batch third-party tested. Product licence **NPN 80144032** (the Canadian formula carries **0.7mg boron**, the licensed amount — Brad, 2026-09-28; not the 1mg in the v7 table below) (Health Canada LNHPD, licensed 2025-09-11, Dr Brad, Inc.) — Canadian claims must come from that licence's approved purposes; never say "FDA-registered" to Canadian buyers.
+- **Canada — Canadian Premier Supplements:** cGMP-certified, FDA-registered, NSF-licensed, Health Canada site-licensed, every batch third-party tested. Product licence **NPN 80144032** (the Canadian formula carries **0.7 mg boron per serving (5 capsules)**, the licensed amount; Brad 2026-09-28, confirmed 2026-09-29) (Health Canada LNHPD, licensed 2025-09-11, Dr Brad, Inc.) — Canadian claims must come from that licence's approved purposes; never say "FDA-registered" to Canadian buyers.
 - **Australia, UK, Germany:** GMP-compliant facilities, every batch third-party tested. (Facility-specific certifications not yet itemised here — listing copy says "GMP-compliant". **"Third-party tested" is a US-only claim on every customer surface, Amazon listings included (Brad, 2026-09-14 for ads; 2026-09-28 for listings): international copy names the facility instead.** The batch testing itself happens in every market; this is a claim-substantiation rule, not a fact.)
 
 **How much does MicroVitamin cost compared to buying the ingredients separately?**
@@ -267,7 +267,7 @@ Use this guide to match a shopper's primary concern to the right product.
 | Cognitive decline / brain fog | MicroVitamin or MicroVitamin+ Powder | COSMOS trial-aligned: choline, B-complex, methylated folate/B12. 30 customers report improved mental clarity |
 | Skin aging / wrinkles | MicroVitamin+ Powder (best) or MicroVitamin | Powder: Collagen 12.5g + Hyaluronic Acid 200mg (two complementary mechanisms). Capsules: HA 200mg only |
 | Muscle loss / exercise performance | MicroVitamin+ Powder | Creatine 5g (clinical dose) + Taurine 1g in one scoop. No separate creatine needed |
-| Bone density concerns | MicroVitamin or MicroVitamin+ Powder | Combination of encapsulated Vitamin K2 MK-7 90mcg as K2VITAL® DELTA (USA; Australia: K2VITAL® Vitamin K2) (directs calcium to bones via osteocalcin activation) + encapsulated Vitamin D3 1,000IU as AlgeD3™ (calcium absorption) + Boron 1mg (USA capsules, and MicroVitamin+ Powder in every market; Australian capsules 3 mg as borax; other countries: check the bottle label) (bone metabolism). Meta-analyses of K+D combination supplementation show increased BMD and improved bone turnover markers (Kuang 2020; Zhang 2025) |
+| Bone density concerns | MicroVitamin or MicroVitamin+ Powder | Combination of encapsulated Vitamin K2 MK-7 90mcg as K2VITAL® DELTA (USA; Australia: K2VITAL® Vitamin K2) (directs calcium to bones via osteocalcin activation) + encapsulated Vitamin D3 1,000IU as AlgeD3™ (calcium absorption) + Boron 1mg (USA and UK capsules, and MicroVitamin+ Powder in every market; Canadian capsules 0.7 mg per serving (5 capsules); if your bottle shows NPN 80132012, go by the label or contact us; EU capsules 0.5 mg per serving; Australian capsules 3 mg as borax) (UK, EU and Canada: give the dose only and attach no bone benefit to boron; content map §7) (bone metabolism). Meta-analyses of K+D combination supplementation show increased BMD and improved bone turnover markers (Kuang 2020; Zhang 2025) |
 | Vision / macular health | MicroVitamin or MicroVitamin+ Powder | Lutein 10mg + Zeaxanthin 2mg as Lutemax® 2020 (encapsulated) — RCTs show this dose increases macular pigment optical density |
 | Heart health / cardiovascular risk | MicroVitamin or MicroVitamin+ Powder | Magnesium Taurate (USA; for Australian MicroVitamin capsules never give the magnesium form as a heart-health reason, see Regional Formula Differences), chosen specifically for cardiovascular benefit, plus encapsulated Lycopene 10mg (LycoBeads®). Meta-analysis of 21 RCTs found lycopene ≥12mg/day reduced SBP 5.66 mmHg, ≥25mg/day reduced LDL 7.55 mg/dL (Cheng 2017). Powder adds extra Taurine 1g — reduces FBG, lipids, and BP per 34-RCT meta-analysis (Nie 2025) |
 | Gut health / cholesterol | MicroVitamin+ Powder | Psyllium Husk 2.5g — soluble fiber that feeds gut bacteria and helps maintain healthy cholesterol. Cochrane review confirmed cardiovascular risk reduction |
@@ -330,7 +330,7 @@ The opposite — MicroVitamin is deliberately low-dose. Most ingredients are at 
 
 ### Bone density
 
-MicroVitamin contains four bone-supportive nutrients designed to work through complementary mechanisms: encapsulated Vitamin K2 MK-7 90mcg (K2VITAL® DELTA; USA; Australia: K2VITAL® Vitamin K2), encapsulated Vitamin D3 1,000IU (AlgeD3™), Magnesium Taurate 126mg (USA; Australia: see Regional Formula Differences), and Boron 1mg (USA; Australian capsules 3 mg as borax; other countries: check the bottle label). The encapsulated forms protect potency through shelf life. Especially relevant for women 50+ and men 60+ concerned about osteoporosis. (See the Bone Density entry in the ingredient list at the top of this file for full RCT and meta-analysis citations.)
+MicroVitamin contains four bone-supportive nutrients designed to work through complementary mechanisms: encapsulated Vitamin K2 MK-7 90mcg (K2VITAL® DELTA; USA; Australia: K2VITAL® Vitamin K2), encapsulated Vitamin D3 1,000IU (AlgeD3™), Magnesium Taurate 126mg (USA; Australia: see Regional Formula Differences), and Boron 1mg (USA and UK; Canada 0.7 mg per serving (5 capsules); if your bottle shows NPN 80132012, go by the label or contact us; EU 0.5 mg per serving; Australian capsules 3 mg as borax) (UK, EU and Canada: give the dose only and attach no bone benefit to boron; content map §7). The encapsulated forms protect potency through shelf life. Especially relevant for women 50+ and men 60+ concerned about osteoporosis. (See the Bone Density entry in the ingredient list at the top of this file for full RCT and meta-analysis citations.)
 
 **Honest note on the combination evidence:** Most direct factorial RCTs use vitamin K2 as MK-4 at pharmacological doses (45mg/day), whereas MicroVitamin uses MK-7 at 90 μg. The largest modern MK-7 + D3 RCT (Rønn et al., 2020) was null on BMD. The combination is biologically rational and supported by combination meta-analyses, but synergy specifically using MK-7 at nutritional doses is not definitively proven.
 
@@ -449,6 +449,7 @@ Three versions are currently shipping: **v8 in the USA**, **v8.5 in Australia** 
 | Copper | 0.45 mg bisglycinate | 0.9 mg bisglycinate (100% RDA) | Doubled to RDA-aligned dose |
 | Iodine | 112.5 mcg | 75 mcg | Reduced (75% → 50% RDA) |
 | Zinc | 8.25 mg glycinate | 11 mg glycinate (100% RDA) | Increased to RDA-aligned dose |
+| Boron | UK 1 mg (sodium borate); EU 0.5 mg (boric acid); Canada 0.7 mg (boron glycinate, NPN 80144032) | 1 mg glycinate | Differs by market; quote that market's figure |
 | Lutein | 0.25 mg | **10 mg** (encapsulated, Lutemax® 2020) | Major upgrade — dose used in MPOD trials (Stringham 2017, Bovier & Hammond 2015) |
 | Zeaxanthin | — (not present) | **2 mg** (encapsulated, Lutemax® 2020) | Newly added — paired with Lutein in same trials |
 | Lycopene | 0.3 mg | **10 mg** (encapsulated, LycoBeads®) | Major upgrade — clinically relevant cardiovascular dose |
@@ -457,7 +458,7 @@ Three versions are currently shipping: **v8 in the USA**, **v8.5 in Australia** 
 
 **Ingredient counts:** v7 = 25 listed ingredients (capsules) / 29 (powder). v8 = 26 listed ingredients (capsules) / 30 (powder). The +1 is Zeaxanthin. v8.5 (AU) = 26 (same set as v8; TMG is not on the AU actives panel: betaine hydrochloride is an excipient on the ARTG listing and in spec PC2921.01. Draft AU labels 1–3 listed it under "Other ingredients"; the final label (file 7, LOT 45727) carries no other-ingredients line at all).
 
-**What stayed the same in v8:** Choline Bitartrate 181.5mg, TMG 500mg, Hyaluronic Acid 200mg, Magnesium Taurate 126mg, Methylated Folate 200mcg DFE, Methylated B12 12mcg, B1/B2/B5/B6/Biotin (75% RDA), Selenium 27.5mcg glycinate, Manganese 1.15mg glycinate, Chromium 17.5mcg glycinate, Boron 1mg glycinate, Potassium 99mg.
+**What stayed the same in v8:** Choline Bitartrate 181.5mg, TMG 500mg, Hyaluronic Acid 200mg, Magnesium Taurate 126mg, Methylated Folate 200mcg DFE, Methylated B12 12mcg, B1/B2/B5/B6/Biotin (75% RDA), Selenium 27.5mcg glycinate, Manganese 1.15mg glycinate, Chromium 17.5mcg glycinate, Boron 1mg glycinate (US v7 → v8; international v7 boron differs by market, see the Boron row above), Potassium 99mg.
 
 ### v8.5 (Australia only, from 2026-08) — differences vs v8 USA
 
@@ -486,7 +487,7 @@ Unchanged from v8: Choline 181.5mg, Hyaluronic Acid 200mg (sodium hyaluronate), 
 
 **v8.5 vs the v7 sold in Australia (AUST L 509250, Lavida).** The public changelog compares v8.5 with AU v7, not with US v8, and AU v7 was not the international v7. Per the AU v7 label (`multivitamin/Manufacturing Australia/la-vida/2 label v7/2 MicroVitamin v7 With Bleed Area.pdf`), Lavida bulk spec VCH-RD3216-BLK v01 and ARTG record 509250, AU v7 already used borax (1 mg boron), chromium picolinate, selenomethionine, copper (II) glycinate, magnesium taurate declared as magnesium amino acid chelate (126 mg; a different supplier grade from v8.5, see the Magnesium row), potassium iodide, betaine hydrochloride as an excipient, and a green chlorophyllin capsule. What actually changed for AU customers: B1 0.9→1.2 mg, B2 0.975→1.3 mg, B3 35→16 mg, B5 3.75→5 mg, B6 (P5P) 1.275→1.7 mg, biotin 22.5→30 mcg, levomefolic acid 200→400 mcg (both as levomefolate glucosamine), vitamin C 45→90 mg with ascorbic acid → calcium ascorbate dihydrate, D3 lichen-sourced premix → AlgeD3™ (25 mcg both), K2 MaiggicTM powder → K2VITAL® (90 mcg both), boron 1→3 mg, chromium 17.5→35 mcg, copper 0.45→0.9 mg, iodine 112.5→150 mcg, magnesium 126→260 mg, manganese 1.15→2.3 mg with manganese amino acid chelate → manganese (II) glycinate, selenium 27.5→55 mcg, zinc 8.25→11 mg, lutein 0.25→10 mg, zeaxanthin added 2 mg, lycopene 0.3→10 mg, peppermint leaf extract (50 mg) removed, flow agents Nu-Flow + NuMAG + leucine → NuMAG + silicon dioxide. Unchanged: choline 181.5 mg, B12 12 mcg, potassium 99 mg, sodium hyaluronate 200 mg, betaine hydrochloride 100 mg per capsule.
 
-**For powder:** the 4 Plus additions (Collagen 12.5g, Creatine 5g, Psyllium 2.5g, Taurine 1g) are unchanged between v7 and v8. There is no v8.5 powder — the powder is USA-only.
+**For powder:** the 4 Plus additions (Collagen 12.5g, Creatine 5g, Psyllium 2.5g, Taurine 1g) are unchanged between v7 and v8. There is no v8.5 powder; MicroVitamin+ is the US formula in every market.
 
 If a USA customer asks about a dose, use the v8 column. If an Australian customer asks, use the v8.5 column. If a UK/Canada/EU customer asks (or you don't know their region), default to giving the v7 dose with a note that upgraded formulas are rolling out region by region. v9 (in development) is internal-only — never reference v9 to customers.
 
@@ -549,7 +550,7 @@ All doses per daily serving. Dash (—) = not present in that version. (The Aust
 | Potassium (KCl) | 99 mg | **360 mg** | 360 mg | 360 mg | **200 mg** | **99 mg** | 99 mg | 99 mg | **Removed** |
 | Selenium | — | — | 41.25 mcg selenocysteine | 41.25 mcg selenocysteine | 41.25 mcg selenocysteine | **27.5 mcg** selenocysteine | 27.5 mcg **glycinate** | 27.5 mcg glycinate | **55 mcg glycinate (100%)** |
 | Zinc | 5.5 mg citrate | 5.5 mg citrate | 5.5 mg citrate | **8.25 mg (75%)** citrate | 8.25 mg **glycinate** | 8.25 mg glycinate | 8.25 mg glycinate | **11 mg glycinate (100%)** | 11 mg glycinate |
-| Boron | — | — | — | **1 mg citrate** | 1 mg **glycinate** | 1 mg glycinate | 1 mg glycinate | 1 mg glycinate | **3 mg glycinate** |
+| Boron | — | — | — | **1 mg citrate** | 1 mg **glycinate** | 1 mg glycinate | 1 mg glycinate (US; UK/EU/Canada v7 differ, see Regional Formula Differences) | 1 mg glycinate | **3 mg glycinate** |
 
 #### Other Ingredients
 
@@ -647,7 +648,7 @@ Initial formula. Tablets, serving size TBD (moved to 5/serving at v3).
 - Website changelog: Matches (also mentions "Changed Stevia to Monk Fruit Extract for MicroVitamin+ Mixed Berry" — powder-only change)
 - Note: Website says "selenium nicotinate glycinate chelate" — spreadsheet just says "selenium glycinate"
 
-#### Version 8 (not yet on public changelog)
+#### Version 8 (on the public changelog since 2026-09-29; AU v8.5 entry too)
 
 - **Decreased** Niacin from 35 mg to 16 mg (100% RDA)
 - **Changed** Vitamin C form from ascorbic acid to calcium ascorbate (dose unchanged at 45 mg)
