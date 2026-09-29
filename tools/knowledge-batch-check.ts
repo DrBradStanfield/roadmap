@@ -424,7 +424,8 @@ function checkAc1(o: Options, base: string, ctxs: Ctx[], ac1: Check) {
         try { return v.startsWith('"') ? (JSON.parse(v) as string) : v.replace(/^'|'$/g, ""); } catch { return v; }
       };
       const squash = (t: string) => t.replace(/\s+/g, " ").trim();
-      if (squash(summaryOf(nf)) !== squash(c.rep!.proposed_summary_correction!)) ac1.fails.push(`${c.rel}: summary line differs from proposed_summary_correction`);
+      // A frozen summary is fine: the orchestrator applies the correction later. A changed one must be the correction.
+      if (squash(summaryOf(nf)) !== squash(summaryOf(bf)) && squash(summaryOf(nf)) !== squash(c.rep!.proposed_summary_correction!)) ac1.fails.push(`${c.rel}: summary line differs from proposed_summary_correction`);
     } else if (bf !== nf) ac1.fails.push(`${c.rel}: frontmatter changed and no proposed_summary_correction`);
   }
 }
@@ -511,7 +512,9 @@ function pairTokenChanges(c: Ctx): Map<string, string[]> {
     if (!b) continue;
     const before = tokenCounts(b, { keepRefs: true });
     for (const [tok, cnt] of tokenCounts(n, { keepRefs: true })) {
-      if (cnt > (before.get(tok) ?? 0)) out.set(tok, [...(out.get(tok) ?? []), n]);
+      // Bare one- or two-digit integers ("type 2", "1 in 36") are identifiers or counts; AC4 covers their sentences.
+      const carriesValue = /^[≥≤><]/.test(tok) || tok.includes(" ") || tok.includes(".") || /^\d{3,}/.test(tok);
+      if (carriesValue && cnt > (before.get(tok) ?? 0)) out.set(tok, [...(out.get(tok) ?? []), n]);
     }
   }
   return out;
@@ -540,6 +543,7 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, pairs: Map<s
     if (missing.length) { for (const sn of missing) ac2.fails.push(`${tag} token "${tok}" changed between paired sentences: no changed_tokens entry has this sentence as its body_line: ${clip(sn, 120)}`); continue; }
     const entry = (sents.length && holding.find((e) => relates(e.body_line, sents[0]))) || holding[0];
     if (!entry.raw_quote.trim()) { ac2.fails.push(`${tag} token "${tok}" has an empty raw_quote`); continue; }
+    if (/\.\.\.|\u2026/.test(entry.raw_quote)) { ac2.fails.push(`${tag} token "${tok}": raw_quote contains an ellipsis (a paraphrase marker); quote the raw verbatim`); continue; }
     const prefixed = /^\s*(?:NIH|EXTRA):\s*/.exec(entry.raw_quote);
     const quote = prefixed ? entry.raw_quote.slice(prefixed[0].length) : entry.raw_quote;
     if (!tokenise(quote, { keepRefs: true }).has(tok)) { ac2.fails.push(`${tag} token "${tok}" does not occur in its raw_quote`); continue; }
@@ -616,6 +620,10 @@ function checkAc4(c: Ctx, ac4: Check): number {
   for (const d of entries.filter((x) => x.pattern)) {
     try { patterns.push({ re: new RegExp(d.sentence, "i"), justification: d.justification }); }
     catch { ac4.fails.push(`${tag} deleted_sentences pattern is not a valid regex: ${clip(d.sentence, 80)}`); }
+  }
+  const allNow = new Set(sentences(c.newBody));
+  for (const d of entries) {
+    if (!d.pattern && allNow.has(cleanSentence(d.sentence))) ac4.fails.push(`${tag} claimed deletion still in body: ${clip(cleanSentence(d.sentence))}`);
   }
   let deleted = 0, byPattern = 0;
   for (const s of new Set(sentences(ac4Body(c.baseBody, c.type)))) {

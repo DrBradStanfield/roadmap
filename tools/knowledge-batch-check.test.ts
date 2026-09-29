@@ -188,6 +188,10 @@ describe("US-42 AC1 index and frontmatter", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("200 mg daily", "300 mg twice daily"));
     expect(fails(run().AC1).join()).toContain("summary line differs from proposed_summary_correction");
   });
+  it("does not require the proposed correction when the summary line is unchanged", () => {
+    reps.alpha.proposed_summary_correction = "Alpha summary, 300 mg daily.";
+    expect(fails(run().AC1)).toEqual([]);
+  });
   it("AC6 still flags an index change AC1 rejected", () => {
     put("docs/blog/index.json", INDEX.replace('"x"', '"y"'));
     expect(fails(run().AC6).join()).toContain("docs/blog/index.json");
@@ -273,6 +277,12 @@ describe("US-42 AC2 multiset and body_line", () => {
     reps.alpha.raw_sha256 = sha256(raw);
     reps.alpha.changed_tokens = [{ token: ">6 week", body_line: "Trials used more than 6 weeks in adults [1].", raw_quote: "lasted more than 6 weeks for the whole group" }];
     expect(fails(run().AC2)).toEqual([]);
+  });
+  it("fails a raw_quote holding an ellipsis, which marks a paraphrase", () => {
+    for (const q of ["participants took 300 mg ... daily for a while", "participants took 300 mg\u2026 daily for a while"]) {
+      reps.alpha.changed_tokens[0].raw_quote = q;
+      expect(fails(run().AC2).join()).toContain("raw_quote contains an ellipsis");
+    }
   });
   it("requires the entry's body_line to contain the token", () => {
     reps.alpha.changed_tokens[0].body_line = "An unrelated line.";
@@ -402,6 +412,14 @@ describe("US-42 AC4 references and patterns", () => {
     expect(fails(r)).toEqual([]);
     expect(r.evidence.join()).toContain("(1 justified by pattern)");
   });
+  it("fails a claimed deletion that is still in the body, but not a pattern entry", () => {
+    reps.alpha.deleted_sentences.push({ sentence: "Some evidence suggests benefit.", justification: "claimed gone" });
+    expect(fails(run().AC4).join()).toContain("claimed deletion still in body: Some evidence suggests benefit.");
+    reps.alpha.deleted_sentences[1] = { sentence: "Some evidence suggests", justification: "regex, kept on purpose", pattern: true };
+    expect(fails(run().AC4).join()).not.toContain("claimed deletion still in body");
+    reps.alpha.deleted_sentences[1] = { sentence: "**Some** evidence  suggests benefit.", justification: "normalised match", pattern: false };
+    expect(fails(run().AC4).join()).toContain("claimed deletion still in body");
+  });
   it("fails a pattern with an empty justification or an invalid regex", () => {
     withPlaceholder();
     reps.alpha.deleted_sentences.push({ sentence: "Grokipedia source \\d+", justification: " ", pattern: true });
@@ -430,6 +448,13 @@ describe("US-42 AC2/AC4 sentence pairs", () => {
     const f = fails(run().AC2).join("\n");
     expect(f).toContain('token "2000 mg" changed between paired sentences');
     expect(f).toContain('token "200 mg" changed between paired sentences');
+  });
+  it("ignores bare one- or two-digit integers in the pair check (type 1 and type 2 are identifiers)", () => {
+    const tail = (a: string, b: string) => `\nType ${a} diabetes is rarer.\n\nType ${b} diabetes is common.\n`;
+    put("docs/blog/alpha.md", fx("alpha.base.md").trimEnd() + tail("1", "2"));
+    sh(["add", "docs/blog/alpha.md"]); sh(["commit", "-q", "-m", "types", "--", "docs/blog/alpha.md"]);
+    put("docs/blog/alpha.md", fx("alpha.new.md").trimEnd() + tail("2", "1"));
+    expect(fails(run().AC2).join()).not.toContain("changed between paired sentences");
   });
   it("accepts the swap once each new sentence has its entry and quote", () => {
     put("docs/blog/alpha.md", swapped());
