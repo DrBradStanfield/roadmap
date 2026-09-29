@@ -815,6 +815,21 @@ describe("US-42 AC7 identifier link text (R13)", () => {
     withRef("[3] Foo B. Study. [10.1000/ABC](https://doi.org/10.1000/abc)");
     expect(idFails()).toBe("");
   });
+  it("reads a DOI with balanced parentheses whole, in the URL, the link text and --check-ids", () => {
+    const dois = ["10.1016/s0168-0102(02)00007-x", "10.1016/S0006-3223(99)00103-7", "10.1016/0006-2952(90)90227-x", "10.1093/jn/nxab012"];
+    for (const d of dois) {
+      withRef(`[3] Foo B. Study. [${d}](https://doi.org/${d})`);
+      expect(idFails(), d).toBe("");
+      withRef(`[3] Foo B. Study. [doi:${d}](https://doi.org/${d}).`);
+      expect(idFails(), d).toBe("");
+    }
+    withRef("[3] Foo B. Study. [10.1016/s0168-0102(02)00007-y](https://doi.org/10.1016/s0168-0102(02)00007-x)");
+    expect(idFails()).toContain("differs from its URL DOI 10.1016/s0168-0102(02)00007-x");
+    withRef(`[3] Foo B. Study. [x](https://doi.org/${dois[0]})`);
+    const seen: string[] = [];
+    run({ checkIds: true, headStatus: (u) => { seen.push(u); return 200; }, delayMs: 0 });
+    expect(seen).toEqual([`https://doi.org/${dois[0]}`]);
+  });
   it("fails a printed PMID that differs from a pubmed URL id on the same line", () => {
     withRef("[3] Foo B. Study. PMID: 22222222 https://pubmed.ncbi.nlm.nih.gov/33333333/");
     expect(idFails()).toContain("PMID 22222222 differs from the pubmed URL id 33333333");

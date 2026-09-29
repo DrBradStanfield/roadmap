@@ -707,11 +707,11 @@ function linkTextCheck(body: string, tag: string, ac7: Check) {
   const trim = (d: string) => d.replace(/[.,;:]+$/, "").toLowerCase();
   for (const line of refLines(body)) {
     const pmidUrls = [...line.matchAll(/pubmed\.ncbi\.nlm\.nih\.gov\/(\d{5,9})/gi)].map((m) => m[1]);
-    for (const m of line.matchAll(/\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g)) {
+    for (const m of line.matchAll(/\[([^\]]*)\]\((https?:\/\/(?:[^\s()]|\([^\s()]*\))+)\)/g)) {
       const [, text, url] = m;
       const pm = /pubmed\.ncbi\.nlm\.nih\.gov\/(\d{5,9})/i.exec(url);
       if (pm) for (const t of text.match(/\b\d{5,9}\b/g) ?? []) if (t !== pm[1]) ac7.fails.push(`${tag} reference line: PMID link text ${t} differs from its URL id ${pm[1]}: ${clip(line, 100)}`);
-      const dm = /doi\.org\/(10\.\d{4,9}\/[^\s)]+)/i.exec(url);
+      const dm = /doi\.org\/(10\.\d{4,9}\/.+)$/i.exec(url);
       const dt = /\b(10\.\d{4,9}\/[^\s\]]+)/.exec(text);
       if (dm && dt && trim(dt[1]) !== trim(dm[1])) ac7.fails.push(`${tag} reference line: DOI link text ${trim(dt[1])} differs from its URL DOI ${trim(dm[1])}: ${clip(line, 100)}`);
     }
@@ -747,7 +747,7 @@ interface PrimaryId { kind: "pmid" | "doi"; id: string }
 function primaryIds(line: string): PrimaryId[] {
   const out = new Map<string, PrimaryId>();
   for (const m of line.matchAll(/PMID:?\s*(\d{5,9})|pubmed\.ncbi\.nlm\.nih\.gov\/(\d{5,9})/gi)) out.set(`pmid:${m[1] ?? m[2]}`, { kind: "pmid", id: (m[1] ?? m[2]) });
-  for (const m of line.matchAll(/\b(10\.\d{4,9}\/[^\s)\]>,;"]+)/g)) {
+  for (const m of line.matchAll(/\b(10\.\d{4,9}\/(?:[^\s()\]>,;"]|\([^\s()]*\))+)/g)) {
     const id = m[1].replace(/[.,;:]+$/, "");
     out.set(`doi:${id.toLowerCase()}`, { kind: "doi", id });
   }
