@@ -1,0 +1,9 @@
+{
+  "_about": "US-40 AC13: the only roots tools/codex-review.mjs --include may copy from (the folder, or one inside it). A leading ~/ is the home directory; a * may stand in the last part. Only the copy committed at HEAD counts. Brad's ruling 2026-09-29: the Codex reviewer reads the knowledge-base raw sources and diff reports Claude reads; narrowed the same day to the dated refresh folders and the pathway raw; the supplements raw added once Brad took decision 3c (ConsumerLab proceeds at full scope).",
+  "roots": [
+    "~/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-*/",
+    "~/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/health_pathways/",
+    "~/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/supplements/",
+    "~/.codex-review/diff-reports/"
+  ]
+}

@@ -91,6 +91,7 @@ node tools/codex-review.mjs --commit <sha> --out "$SCRATCH/codex-review.json"
 node tools/codex-review.mjs --range main..HEAD --out "$SCRATCH/codex-review.json"
 node tools/codex-review.mjs --record --out "$SCRATCH/codex-review.json"     # + live scratch record, read-only
 node tools/codex-review.mjs --loop --range <first>^..HEAD --out "$SCRATCH/codex-review.json"  # loop-authored: Tier 3 applies
+node tools/codex-review.mjs --include <dir> --out "$SCRATCH/codex-review.json"  # + a read-only source folder under a root pinned in tools/codex-review-includes.json (repeatable; 64 MB cap, --include-limit-mb; never with --loop; US-40 AC13)
 ```
 
 Run it in a Bash subagent or in the background; a review takes minutes. Exit
