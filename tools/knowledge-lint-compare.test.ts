@@ -4,9 +4,9 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { appendFixQueue, entryFrom, validateAllowList, type Topic } from './knowledge-lint';
+import { appendFixQueue, contentHash, entryFrom, nextState, validateAllowList, type LintState, type Topic } from './knowledge-lint';
 import {
-  buildJobs, buildPrompt, estimate, parseFindings, runJobs, main,
+  buildJobs, buildPrompt, estimate, parseFindings, runJobs, pendingJobs, settleState, algorithmLines, main,
   DETECT_MODEL, type Job,
 } from './knowledge-lint-compare';
 
@@ -146,6 +146,77 @@ describe('runJobs and the fix queue', () => {
     expect(q.items).toHaveLength(1);
     expect(q.items[0]).toMatchObject({ id: 'abc123abc123', status: 'open', first_seen: '2026-10-04', last_seen: '2026-10-11' });
     rmSync(dir, { recursive: true });
+  });
+});
+
+describe('state settles only on usable answers, and capped runs rotate (Codex review)', () => {
+  const oldPathway = mk('hyperlipidaemia', 'pathway', 'An older body. Red yeast rice x. Red yeast rice y.', ['cholesterol']);
+  const inputs = { entries: [pathway, ryr], topics, algo };
+  const base = (): LintState => nextState([oldPathway, ryr], null, topics, algo, 'init', false);
+  const jobs = buildJobs([pathway, ryr], [{ handle: 'hyperlipidaemia', reasons: ['changed'] }], topics, algo, []);
+  const reply = (body: object, status = 200) => ({ ok: status < 400, status, json: async () => body }) as unknown as Response;
+  const good = { content: [{ type: 'text', text: '{"findings": []}' }], usage: { input_tokens: 10, output_tokens: 5 }, stop_reason: 'end_turn' };
+  const t1 = '2026-10-04T00:00:00.000Z';
+  const t2 = '2026-10-11T00:00:00.000Z';
+
+  it('an unusable answer (no JSON, refusal, truncation, HTTP error) marks the pair retry and leaves cursor, hashes and lastRun alone', async () => {
+    expect(jobs).toHaveLength(2);
+    const bads = [
+      reply({ ...good, content: [{ type: 'text', text: 'no json' }] }),
+      reply({ ...good, stop_reason: 'refusal' }),
+      reply({ ...good, stop_reason: 'max_tokens' }),
+      reply({}, 529),
+    ];
+    for (const bad of bads) {
+      let n = 0;
+      const fetchImpl = async () => (n++ === 0 ? bad : reply(good));
+      const r = await runJobs(jobs, { apiKey: 'k', fetchImpl, maxCalls: 5, maxUsd: 5, date: t1 });
+      expect(r.outcomes.map(o => o.status)).toEqual(['retry', 'done']);
+      const s0 = base();
+      const s1 = settleState(inputs, s0, jobs, r.outcomes, t1);
+      expect(s1).toMatchObject({ cursor: s0.cursor, lastRun: s0.lastRun, entries: s0.entries });
+      expect(s1.pairs![jobs[0].id]).toEqual({ last_attempted: t1, status: 'retry' });
+      expect(pendingJobs(jobs, s1).map(j => j.id)).toEqual([jobs[0].id]);
+    }
+  });
+  it('advances the cursor and the entry hashes once every due pair has a usable answer', async () => {
+    const r = await runJobs(jobs, { apiKey: 'k', fetchImpl: async () => reply(good), maxCalls: 5, maxUsd: 5, date: t1 });
+    const s0 = base();
+    const s1 = settleState(inputs, s0, jobs, r.outcomes, t1);
+    expect(s1).toMatchObject({ cursor: s0.cursor + 1, lastRun: t1 });
+    expect(s1.entries.hyperlipidaemia.hash).toBe(contentHash(pathway.raw));
+    expect(pendingJobs(jobs, s1)).toHaveLength(2);
+  });
+  it('a capped run takes the next pair the following week instead of repeating the first', async () => {
+    const sent: string[] = [];
+    const fetchImpl = async (_u: string, init: RequestInit) => { sent.push(JSON.parse(String(init.body)).messages[0].content); return reply(good); };
+    let s = base();
+    let r = await runJobs(pendingJobs(jobs, s), { apiKey: 'k', fetchImpl, maxCalls: 1, maxUsd: 5, date: t1 });
+    s = settleState(inputs, s, jobs, r.outcomes, t1);
+    expect(s.cursor).toBe(0);
+    expect(pendingJobs(jobs, s).map(j => j.id)).toEqual([jobs[1].id]);
+    r = await runJobs(pendingJobs(jobs, s), { apiKey: 'k', fetchImpl, maxCalls: 1, maxUsd: 5, date: t2 });
+    s = settleState(inputs, s, jobs, r.outcomes, t2);
+    expect(sent[0]).not.toBe(sent[1]);
+    expect(s.cursor).toBe(1);
+  });
+  it('orders pending pairs never tried first, then by oldest attempt, then slice order', () => {
+    const s = { ...base(), pairs: { [jobs[0].id]: { last_attempted: t1, status: 'retry' as const } } };
+    expect(pendingJobs(jobs, s).map(j => j.id)).toEqual([jobs[1].id, jobs[0].id]);
+  });
+});
+
+describe('algorithmLines (the report carries Brad\'s evidence)', () => {
+  it('prints both quotes for an algorithm-side finding, each cut to 200 characters, never dropped', () => {
+    const f = { id: 'x', kind: 'entry-vs-algorithm' as const, side: 'algorithm' as const, handles: ['algorithm:lipids', 'p'], fix_handle: 'algorithm:lipids',
+      quote_a: 'A'.repeat(500), quote_b: 'Short B quote.', severity: 'high' as const, summary: 'LDL targets differ', suggested_fix: 'f', found: 'd' };
+    const lines = algorithmLines(f);
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).toContain('LDL targets differ');
+    const quoteA = lines[1].match(/"(.*)"/)![1];
+    expect(quoteA.length).toBe(200);
+    expect(quoteA.endsWith('...')).toBe(true);
+    expect(lines[2]).toContain('"Short B quote."');
   });
 });
 

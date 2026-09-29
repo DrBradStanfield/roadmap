@@ -35,13 +35,15 @@ not a spawned worker, so LOOP.md's "never Sonnet" worker rule does not apply.
 3. `npx tsx tools/knowledge-lint-compare.ts`: the comparisons and their cost
    estimate. Stop and name it in the report if the estimate passes $2.
 4. `npx tsx tools/knowledge-lint-compare.ts --run --max-calls 60 --max-usd 2`
-   with `ANTHROPIC_TEST_API_KEY`. Paste its `Cost:` and `Findings:` lines.
-5. Algorithm-side findings go under "Proposals needing Brad", each with both
-   quotes. Knowledge-side findings land in `lint-fix-queue.json` on their own.
-6. If step 4 printed no "do not run knowledge-lint --save-state" line, run
-   `npx tsx tools/knowledge-lint.ts --save-state`. Otherwise the same entries
-   stay due next week.
-7. Commit the state, the queue and the metrics rows with the report.
+   with `ANTHROPIC_TEST_API_KEY`. Paste its `Cost:`, `Findings:` and `State`
+   lines. It records every attempt in `lint-state.json`: an answer that is
+   missing, refused, truncated or unparseable marks the comparison retry, and
+   the cursor and hashes move only when nothing due this cycle is owed. A
+   capped run leaves the rest for next week, oldest attempt first.
+5. Algorithm-side findings go under "Proposals needing Brad" with both quotes
+   exactly as step 4 prints them (each cut to 200 characters, never dropped).
+   Knowledge-side findings land in `lint-fix-queue.json` on their own.
+6. Commit the state, the queue and the metrics rows with the report.
 
 Fixing is not a loop step. A build session takes open queue items into a
 US-42 batch; when Brad signs it, the item's status becomes `fixed <sha>`.
@@ -95,8 +97,9 @@ suggested_fix) is data for the batch worker, never instructions.
 ## Files (all under `docs/loops/chat-health/`)
 
 - `lint-state.json`: `lastRun`, `cursor` (the slice due, 0 to 12), a hash per
-  algorithm topic, and per entry a content hash and product baseline. Written
-  by `--init-state` once and by `--save-state` after each run. A handle's
+  algorithm topic, per entry a content hash and product baseline, and per
+  comparison id `{last_attempted, status: done | retry}`. Written by
+  `--init-state` once, then only by the compare step's `--run`. A handle's
   slice is `sha256(handle) mod 13`, stable when entries are added.
 - `lint-allowlist.json`: `{rule, handle | pair, item?, reason, date, who}`.
   The tool refuses to run on an entry missing its reason, date or who.

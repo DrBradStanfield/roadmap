@@ -23,6 +23,12 @@
  *   npx tsx tools/knowledge-lint-compare.ts --all          the same for a full pass
  *   npx tsx tools/knowledge-lint-compare.ts --show 3       print comparison 3's prompt
  *   npx tsx tools/knowledge-lint-compare.ts --run --max-calls 150 [--max-usd 5] [--out findings.json]
+ *
+ * State: --run records each comparison's attempt in lint-state.json `pairs`. A
+ * comparison with no usable answer (an HTTP error, a refusal, a truncated or
+ * unparseable answer) is marked retry. The cursor and entry hashes advance
+ * only when every comparison due this cycle has a usable answer, so capped
+ * runs work through the backlog, oldest attempt first, over several weeks.
  */
 import { createHash } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
@@ -30,8 +36,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { PRICES, getArg, modelParams } from '../packages/health-core/src/models';
 import {
-  PATHS, algorithmExcerpt, appendFixQueue, loadInputs, normalise, pairAllowances, selectDue, splitReferences,
-  type AllowEntry, type DueItem, type Entry, type EntryType, type Topic,
+  PATHS, algorithmExcerpt, appendFixQueue, loadInputs, nextState, normalise, pairAllowances, selectDue, splitReferences,
+  type AllowEntry, type DueItem, type Entry, type EntryType, type LintState, type Topic,
 } from './knowledge-lint';
 
 export const DETECT_MODEL = 'claude-sonnet-5-5';
@@ -172,7 +178,7 @@ const SEVERITIES = ['high', 'medium', 'low'];
 
 /** Keep a finding only if its quotes are verbatim in their excerpts and it names one of the two handles. */
 export function parseFindings(job: Job, text: string, date: string) {
-  const none = (rejected: number) => ({ findings: [] as LintFinding[], rejected, instructionTextSeen: false });
+  const none = (rejected: number) => ({ findings: [] as LintFinding[], rejected, instructionTextSeen: false, usable: false });
   let parsed: { findings?: unknown; instruction_text_seen?: unknown };
   try { parsed = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1)); } catch { return none(1); }
   if (!Array.isArray(parsed.findings)) return none(1);
@@ -194,17 +200,20 @@ export function parseFindings(job: Job, text: string, date: string) {
       summary: str('summary'), suggested_fix: str('suggested_fix'), found: date,
     });
   }
-  return { findings, rejected, instructionTextSeen: parsed.instruction_text_seen === true };
+  return { findings, rejected, instructionTextSeen: parsed.instruction_text_seen === true, usable: true };
 }
 
 type Fetch = (url: string, init: RequestInit) => Promise<Response>;
 
+export interface Outcome { id: string; status: 'done' | 'retry' }
+
 export async function runJobs(jobs: Job[], o: { apiKey: string; fetchImpl: Fetch; maxCalls: number; maxUsd: number; date: string }) {
   const p = PRICES.sonnet55;
-  const r = { calls: 0, deferred: 0, usd: 0, tokensIn: 0, tokensOut: 0, errors: 0, rejected: 0, instructionText: [] as string[], findings: [] as LintFinding[] };
+  const r = { calls: 0, deferred: 0, usd: 0, tokensIn: 0, tokensOut: 0, errors: 0, rejected: 0, instructionText: [] as string[], findings: [] as LintFinding[], outcomes: [] as Outcome[] };
   for (const job of jobs) {
     if (r.calls >= o.maxCalls || r.usd >= o.maxUsd) break;
     r.calls++;
+    const retry = () => { r.errors++; r.outcomes.push({ id: job.id, status: 'retry' }); };
     const { system, user } = buildPrompt(job);
     let res: Response;
     try {
@@ -213,13 +222,16 @@ export async function runJobs(jobs: Job[], o: { apiKey: string; fetchImpl: Fetch
         headers: { 'Content-Type': 'application/json', 'x-api-key': o.apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({ ...modelParams(DETECT_MODEL, MAX_OUTPUT_TOKENS, 'off'), system, messages: [{ role: 'user', content: user }] }),
       });
-    } catch { r.errors++; continue; }
-    if (!res.ok) { r.errors++; continue; }
-    const data = await res.json() as { content?: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number } };
+    } catch { retry(); continue; }
+    if (!res.ok) { retry(); continue; }
+    const data = await res.json() as { content?: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number }; stop_reason?: string };
     r.tokensIn += data.usage?.input_tokens ?? 0;
     r.tokensOut += data.usage?.output_tokens ?? 0;
     r.usd = (r.tokensIn * p.input + r.tokensOut * p.output) / 1e6;
+    if (data.stop_reason === 'refusal' || data.stop_reason === 'max_tokens') { retry(); continue; }
     const parsed = parseFindings(job, (data.content ?? []).filter(c => c.type === 'text').map(c => c.text).join(''), o.date);
+    if (!parsed.usable) { retry(); continue; }
+    r.outcomes.push({ id: job.id, status: 'done' });
     r.findings.push(...parsed.findings);
     r.rejected += parsed.rejected;
     if (parsed.instructionTextSeen) r.instructionText.push(`${job.a.handle} / ${job.b.handle}`);
@@ -227,6 +239,31 @@ export async function runJobs(jobs: Job[], o: { apiKey: string; fetchImpl: Fetch
   r.deferred = jobs.length - r.calls;
   return r;
 }
+
+/** The comparisons still owed this cycle: never tried first, then oldest attempt, then slice order. */
+export function pendingJobs(jobs: Job[], state: LintState | null): Job[] {
+  const since = state?.lastRun ?? '';
+  const seen = (j: Job) => state?.pairs?.[j.id];
+  return jobs.map((j, i) => ({ j, i }))
+    .filter(({ j }) => !(seen(j)?.status === 'done' && seen(j)!.last_attempted > since))
+    .sort((x, y) => (seen(x.j)?.last_attempted ?? '').localeCompare(seen(y.j)?.last_attempted ?? '') || x.i - y.i)
+    .map(({ j }) => j);
+}
+
+/** Records the attempts; advances cursor and hashes only when nothing due this cycle is left. */
+export function settleState(inputs: { entries: Entry[]; topics: Topic[]; algo: string }, state: LintState, jobs: Job[], outcomes: Outcome[], now: string): LintState {
+  const pairs = { ...state.pairs };
+  for (const o of outcomes) pairs[o.id] = { last_attempted: now, status: o.status };
+  const next = { ...state, pairs };
+  return pendingJobs(jobs, next).length ? next : nextState(inputs.entries, next, inputs.topics, inputs.algo, now, true);
+}
+
+const cut = (s: string) => s.length > 200 ? `${s.slice(0, 197)}...` : s;
+
+/** An algorithm-side finding for the report: both quotes are Brad's evidence, so they are cut, never dropped. */
+export const algorithmLines = (f: LintFinding) => [
+  `ALGORITHM [${f.severity}] ${f.handles.join(' / ')}: ${f.summary}`, `  A: "${cut(f.quote_a)}"`, `  B: "${cut(f.quote_b)}"`,
+];
 
 const usd = (n: number) => `$${n.toFixed(2)}`;
 
@@ -239,11 +276,13 @@ export async function main(argv: string[], root: string, log: (s: string) => voi
   }
   try {
     const { entries, state, allow, topics, nouns, algo } = loadInputs(root);
-    const due = argv.includes('--all') ? entries.map(e => ({ handle: e.handle, reasons: ['all'] })) : selectDue(entries, state, topics, algo);
-    const jobs = buildJobs(entries, due, topics, algo, allow, nouns);
+    const all = argv.includes('--all');
+    const due = all ? entries.map(e => ({ handle: e.handle, reasons: ['all'] })) : selectDue(entries, state, topics, algo);
+    const cycle = buildJobs(entries, due, topics, algo, allow, nouns);
+    const jobs = all ? cycle : pendingJobs(cycle, state);
     const kinds = (k: Kind) => jobs.filter(j => j.kind === k).length;
     const e = estimate(jobs);
-    log(`${jobs.length} comparisons for ${due.length} due entries: entry-vs-algorithm ${kinds('entry-vs-algorithm')}, ` +
+    log(`${jobs.length} comparisons still owed for ${due.length} due entries: entry-vs-algorithm ${kinds('entry-vs-algorithm')}, ` +
       `pathway-vs-reference ${kinds('pathway-vs-reference')}, reference-vs-reference ${kinds('reference-vs-reference')}.`);
     log(`Cost estimate (${DETECT_MODEL}, $${PRICES.sonnet55.input}/M input, $${PRICES.sonnet55.output}/M output, ~${CHARS_PER_TOKEN} chars per token): ` +
       `${e.inputTokens.toLocaleString()} input tokens, ${e.outputExpected.toLocaleString()} output expected (${e.outputMax.toLocaleString()} at the cap): ` +
@@ -256,18 +295,26 @@ export async function main(argv: string[], root: string, log: (s: string) => voi
       log(`--- ${j.kind} ${j.a.handle} / ${j.b.handle}\n--- system\n${p.system}\n--- user\n${p.user}`);
     }
     if (!run) return 0;
+    if (!state) { log(`No ${PATHS.state}: run knowledge-lint.ts --init-state first.`); return 1; }
 
     const apiKey = process.env.ANTHROPIC_TEST_API_KEY || process.env.ANTHROPIC_API_KEY;
     if (!apiKey) { log('ANTHROPIC_TEST_API_KEY or ANTHROPIC_API_KEY must be set.'); return 1; }
     log(`Using ${process.env.ANTHROPIC_TEST_API_KEY ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 'ANTHROPIC_API_KEY (production key, billing shared with prod)'}.`);
-    const date = new Date().toISOString().slice(0, 10);
+    const now = new Date().toISOString();
+    const date = now.slice(0, 10);
     const r = await runJobs(jobs, { apiKey, fetchImpl: fetch, maxCalls, maxUsd: Number(getArg(argv, '--max-usd', '5')), date });
     const added = appendFixQueue(join(root, PATHS.queue), r.findings, date);
-    log(`Cost: ${usd(r.usd)} over ${r.calls} calls (${r.tokensIn.toLocaleString()} input, ${r.tokensOut.toLocaleString()} output tokens); ${r.errors} API errors.`);
+    log(`Cost: ${usd(r.usd)} over ${r.calls} calls (${r.tokensIn.toLocaleString()} input, ${r.tokensOut.toLocaleString()} output tokens); ${r.errors} without a usable answer, marked retry.`);
     log(`Findings: ${r.findings.length} kept (${added} new in the fix queue), ${r.rejected} rejected for a quote not in its excerpt or a malformed field.`);
-    for (const f of r.findings.filter(x => x.side === 'algorithm')) log(`ALGORITHM [${f.severity}] ${f.handles.join(' / ')}: ${f.summary}`);
+    for (const f of r.findings.filter(x => x.side === 'algorithm')) for (const line of algorithmLines(f)) log(line);
     if (r.instructionText.length) log(`Instruction-shaped text seen in: ${r.instructionText.join('; ')}. Read those excerpts before the batch.`);
-    if (r.deferred || r.errors) log(`${r.deferred} comparisons deferred by the caps and ${r.errors} failed: do not run knowledge-lint --save-state this week.`);
+    if (!all) {
+      const next = settleState({ entries, topics, algo }, state, cycle, r.outcomes, now);
+      writeFileSync(join(root, PATHS.state), `${JSON.stringify(next, null, 1)}\n`);
+      log(next.cursor === state.cursor
+        ? `State held: ${pendingJobs(cycle, next).length} comparisons still owed (${r.deferred} deferred by the caps, ${r.errors} to retry); they go first next week.`
+        : `State advanced: next slice ${next.cursor + 1}.`);
+    }
     const out = getArg(argv, '--out', '');
     if (out) writeFileSync(resolve(root, out), `${JSON.stringify(r, null, 1)}\n`);
     return 0;

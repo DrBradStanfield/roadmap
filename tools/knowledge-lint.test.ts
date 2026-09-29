@@ -255,6 +255,18 @@ describe('checkLinks (--check-links)', () => {
     expect(r.dead.map(f => f.item)).toEqual(['10.1000/dead']);
     expect(r).toMatchObject({ checked: 3, unchecked: 1 });
   });
+  it('checks an identifier two entries share once, and reports a dead one against each entry (Codex review)', async () => {
+    const calls: string[] = [];
+    const fetchImpl = async (url: string) => { calls.push(url); return { status: 404 } as Response; };
+    const ids = [
+      { kind: 'doi' as const, id: '10.1000/dead', handle: 'a' },
+      { kind: 'doi' as const, id: '10.1000/dead', handle: 'b' },
+      { kind: 'doi' as const, id: '10.1000/dead', handle: 'b' },
+    ];
+    const r = await checkLinks(ids, { fetchImpl, delayMs: 0, cap: 5 });
+    expect(calls).toHaveLength(1);
+    expect(r.dead.map(f => `${f.handle} ${f.item}`)).toEqual(['a 10.1000/dead', 'b 10.1000/dead']);
+  });
 });
 
 describe('renderReport (LOOP.md: reports ≤150 lines, counts first)', () => {
@@ -311,16 +323,17 @@ describe('main on a scratch corpus', () => {
     expect(readFileSync(outFile, 'utf8')).toContain('## Counts');
     rmSync(root, { recursive: true });
   });
-  it('--init-state writes the baseline once and refuses a second time; --save-state advances it', async () => {
+  it('--init-state writes the baseline once and refuses a second time; only the compare run advances it', async () => {
     const root = setup();
     const stateFile = join(root, 'docs/loops/chat-health/lint-state.json');
     expect((await capture(['--init-state'], root)).code).toBe(0);
     const s0 = JSON.parse(readFileSync(stateFile, 'utf8'));
-    expect(s0).toMatchObject({ cursor: 0, lastRun: null });
+    expect(s0).toMatchObject({ cursor: 0, lastRun: null, pairs: {} });
     expect(Object.keys(s0.entries).sort()).toEqual(['p1', 'r1']);
     expect((await capture(['--init-state'], root)).code).toBe(1);
-    expect((await capture(['--save-state'], root)).code).toBe(0);
-    expect(JSON.parse(readFileSync(stateFile, 'utf8')).cursor).toBe(1);
+    // --save-state is gone: advancing without the model answers would skip their pairs (Codex review).
+    await capture(['--save-state'], root);
+    expect(JSON.parse(readFileSync(stateFile, 'utf8')).cursor).toBe(0);
     rmSync(root, { recursive: true });
   });
   it('--append-metrics adds one lint_* row per rule to metrics.csv, with the prior count and delta', async () => {

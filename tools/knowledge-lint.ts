@@ -24,8 +24,8 @@
  *                             HEAD the DOIs and PMIDs of this week's due entries
  *     --append-metrics <YYYY-Www>   append the counts to chat-health/metrics.csv
  *     --queue                 add each finding to lint-fix-queue.json (knowledge side, once)
- *     --init-state            write the first lint-state.json (refuses if one exists)
- *     --save-state            advance the state; run it after the compare step
+ *     --init-state            write the first lint-state.json (refuses if one exists); after
+ *                             that only knowledge-lint-compare.ts --run advances it
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from 'node:fs';
@@ -58,6 +58,8 @@ export interface LintState {
   version: 1; lastRun: string | null; cursor: number;
   algorithm: Record<string, string>;
   entries: Record<string, { hash: string; products: number }>;
+  /** Per comparison id: the last attempt and whether its answer was usable (knowledge-lint-compare.ts). */
+  pairs?: Record<string, { last_attempted: string; status: 'done' | 'retry' }>;
 }
 export interface DueItem { handle: string; reasons: string[] }
 interface Meta { handle: string; type?: string; title?: string; summary?: string; keywords?: string[] }
@@ -196,8 +198,10 @@ export function ruleIdentifiers(e: Entry): Finding[] {
 type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
 export interface LinkId { kind: 'doi' | 'pmid'; id: string; handle: string }
 
-/** HEAD each identifier once, up to `cap`. Only a 404 is dead; anything else unexpected is unverified. */
+/** HEAD each identifier once, up to `cap`. Only a 404 is dead, reported against every entry citing it; anything else unexpected is unverified. */
 export async function checkLinks(ids: LinkId[], opts: { fetchImpl: Fetch; delayMs: number; cap: number }) {
+  const citing = new Map<string, Set<string>>();
+  for (const i of ids) (citing.get(`${i.kind}:${i.id}`) ?? citing.set(`${i.kind}:${i.id}`, new Set()).get(`${i.kind}:${i.id}`)!).add(i.handle);
   const unique = [...new Map(ids.map(i => [`${i.kind}:${i.id}`, i])).values()];
   const dead: Finding[] = [];
   let checked = 0, unverified = 0;
@@ -207,7 +211,7 @@ export async function checkLinks(ids: LinkId[], opts: { fetchImpl: Fetch; delayM
     checked++;
     try {
       const { status } = await opts.fetchImpl(url, { method: 'HEAD', redirect: i.kind === 'doi' ? 'manual' : 'follow' });
-      if (status === 404) dead.push({ rule: 'link-dead', handle: i.handle, item: i.id });
+      if (status === 404) for (const handle of citing.get(`${i.kind}:${i.id}`)!) dead.push({ rule: 'link-dead', handle, item: i.id });
       else if (status >= 400) unverified++;
     } catch { unverified++; }
   }
@@ -385,6 +389,7 @@ export function nextState(entries: Entry[], prev: LintState | null, topics: Topi
     version: 1,
     lastRun: advance ? date : prev?.lastRun ?? null,
     cursor: advance ? (cursor + 1) % SLICE_WEEKS : cursor,
+    pairs: prev?.pairs ?? {},
     algorithm: Object.fromEntries(topics.map(t => [t.topic, contentHash(algorithmExcerpt(algo, t.headings))])),
     entries: Object.fromEntries(entries.map(e => {
       const products = productMentions(e.body);
@@ -514,10 +519,10 @@ export async function main(argv: string[], root: string, log: (s: string) => voi
   const has = (f: string) => argv.includes(f);
   const stateFile = join(root, PATHS.state);
   try {
-    if (has('--init-state') || has('--save-state')) {
+    if (has('--init-state')) {
       const { entries, state, topics, algo } = loadInputs(root);
-      if (has('--init-state') && state) { log(`${PATHS.state} exists; --init-state writes only the first one.`); return 1; }
-      const next = nextState(entries, state, topics, algo, new Date().toISOString().slice(0, 10), has('--save-state'));
+      if (state) { log(`${PATHS.state} exists; --init-state writes only the first one.`); return 1; }
+      const next = nextState(entries, null, topics, algo, '', false);
       writeFileSync(stateFile, `${JSON.stringify(next, null, 1)}\n`);
       log(`Wrote ${PATHS.state}: ${Object.keys(next.entries).length} entries, next slice ${next.cursor + 1} of ${SLICE_WEEKS}.`);
       return 0;
