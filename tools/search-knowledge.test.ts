@@ -7,6 +7,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import fs, { readFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadBlogIndex } from '../app/lib/blog-index.server';
@@ -21,6 +22,7 @@ import {
   search,
   tokenize,
 } from './search-knowledge';
+import { REPO_ROOT, tsxSpawn } from './test-helpers';
 
 /** Run the CLI with stdio captured; the spies are always restored. */
 function captureRun(argv: string[]): { code: number; stdout: string; stderr: string } {
@@ -206,6 +208,24 @@ describe('US-41 AC3/AC4 — posture first, bodies under a cap', () => {
     expect(stdout).toContain('[pathway] hypertension-in-adults: ');
     expect(stdout).not.toMatch(/truncated/);
   });
+
+  it('--article through a pipe arrives whole: the process waits for stdout to drain', async () => {
+    const argv = ['--article', 'vitamin-c-benefits-forms-dosing-and-side-effects'];
+    const expected = Buffer.byteLength(captureRun(argv).stdout);
+    expect(expected).toBeGreaterThan(80_000);
+    const [bin, args] = tsxSpawn(['tools/search-knowledge.ts', ...argv]);
+    const child = spawn(bin, args, { cwd: REPO_ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
+    let bytes = 0;
+    // A slow reader: the pipe fills, so an exit before the drain would cut the output short.
+    child.stdout.on('data', (chunk: Buffer) => {
+      bytes += chunk.length;
+      child.stdout.pause();
+      setTimeout(() => child.stdout.resume(), 5);
+    });
+    const code = await new Promise((resolve) => child.on('close', resolve));
+    expect(code).toBe(0);
+    expect(bytes).toBe(expected);
+  }, 30_000);
 
   it('--article caps a long body and says so', () => {
     const { stdout } = captureRun(['--article', 'hypertension-in-adults', '--max-chars', '1000']);

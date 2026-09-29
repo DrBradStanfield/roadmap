@@ -314,5 +314,6 @@ export function run(argv: string[]): number {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  process.exit(run(process.argv.slice(2)));
+  // exitCode, not exit(): a piped stdout drains before the process ends.
+  process.exitCode = run(process.argv.slice(2));
 }
