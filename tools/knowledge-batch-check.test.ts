@@ -442,12 +442,22 @@ describe("US-42 AC2/AC4 sentence pairs", () => {
       { token: "200 mg", body_line: "Doses above 200 mg may cause upset [2].", raw_quote: "Doses above 200 mg were not studied at all" },
     ];
   };
-  it("fails a dose swap between two sentences when no entry names the changed sentence", () => {
+  it("warns, not fails, on numbers that only moved between sentences (whole-body counts equal)", () => {
     put("docs/blog/alpha.md", swapped());
     reps.alpha.changed_tokens = [];
-    const f = fails(run().AC2).join("\n");
-    expect(f).toContain('token "2000 mg" changed between paired sentences');
-    expect(f).toContain('token "200 mg" changed between paired sentences');
+    const r = run().AC2;
+    expect(fails(r)).toEqual([]);
+    const w = r.evidence.filter((e) => e.startsWith("WARN")).join("\n");
+    expect(w).toContain('number moved between sentences: "2000 mg"');
+    expect(w).toContain('number moved between sentences: "200 mg"');
+    expect(r.status).toBe("WARN");
+  });
+  it("still fails a value that entered a sentence and raised the whole-body count, or is absent from the base", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Trials used 300 mg in adults [1].", "Trials used 2 g in adults [1]."));
+    reps.alpha.changed_tokens = [];
+    expect(fails(run().AC2).join()).toContain('token "2000 mg" is new in the body');
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Doses above 2 g may", "Doses above 4 g may"));
+    expect(fails(run().AC2).join()).toContain('token "4000 mg" is new in the body');
   });
   it("ignores bare one- or two-digit integers in the pair check (type 1 and type 2 are identifiers)", () => {
     const tail = (a: string, b: string) => `\nType ${a} diabetes is rarer.\n\nType ${b} diabetes is common.\n`;
@@ -463,7 +473,9 @@ describe("US-42 AC2/AC4 sentence pairs", () => {
     reps.alpha.changed_tokens[0].body_line = "Trials used 2 g in adults [1]. Some evidence suggests benefit."; // a line holding the sentence
     expect(fails(run().AC2)).toEqual([]);
     reps.alpha.changed_tokens[1].body_line = "An unrelated line about 200 mg.";
-    expect(fails(run().AC2).join()).toContain('token "200 mg" changed between paired sentences');
+    expect(fails(run().AC2)).toEqual([]); // moved numbers need no sentence match, but an entry's quote is still checked
+    reps.alpha.changed_tokens[1].raw_quote = "Doses above 200 mg were never studied at all";
+    expect(fails(run().AC2).join()).toContain("not in the raw file");
   });
   it("warns when a claim keeps its number but loses its citation", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Doses above 2 g may cause upset [2].", "Doses above 2 g may cause upset."));
@@ -783,6 +795,31 @@ describe("US-42 AC4/AC7 numbered references heading", () => {
     expect(f).not.toContain("reference lines never cited");
     expect([...tokenise(numbered)]).not.toContain("2019");
     expect([...tokenise(numbered.replace("Trials used", "Trials used 5 mg"))]).toContain("5 mg");
+  });
+});
+
+describe("US-42 AC7 identifier link text (R13)", () => {
+  const withRef = (line: string) => put("docs/blog/alpha.md", fx("alpha.new.md").replace("upset [2].", "upset [2] [3].").trimEnd() + `\n\n${line}\n`);
+  const idFails = () => fails(run().AC7).filter((f) => f.includes("differs from")).join("\n");
+  it("fails a PMID link text that differs from the PMID in its pubmed URL", () => {
+    withRef("[3] Foo B. Study. [PMID 11111111](https://pubmed.ncbi.nlm.nih.gov/11111112/)");
+    expect(idFails()).toContain("PMID link text 11111111 differs from its URL id 11111112");
+    withRef("[3] Foo B. Study. [11111112](https://pubmed.ncbi.nlm.nih.gov/11111112/)");
+    expect(idFails()).toBe("");
+    withRef("[3] Foo B. Study. [PubMed](https://pubmed.ncbi.nlm.nih.gov/11111112/)");
+    expect(idFails()).toBe("");
+  });
+  it("fails a DOI link text that differs from the DOI in its doi.org URL", () => {
+    withRef("[3] Foo B. Study. [10.1000/abc](https://doi.org/10.1000/abd)");
+    expect(idFails()).toContain("DOI link text 10.1000/abc differs from its URL DOI 10.1000/abd");
+    withRef("[3] Foo B. Study. [10.1000/ABC](https://doi.org/10.1000/abc)");
+    expect(idFails()).toBe("");
+  });
+  it("fails a printed PMID that differs from a pubmed URL id on the same line", () => {
+    withRef("[3] Foo B. Study. PMID: 22222222 https://pubmed.ncbi.nlm.nih.gov/33333333/");
+    expect(idFails()).toContain("PMID 22222222 differs from the pubmed URL id 33333333");
+    withRef("[3] Foo B. Study. PMID: 33333333 https://pubmed.ncbi.nlm.nih.gov/33333333/");
+    expect(idFails()).toBe("");
   });
 });
 

@@ -531,17 +531,19 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, pairs: Map<s
   for (const tok of new Set([...added, ...pairs.keys()])) {
     const sents = pairs.get(tok) ?? [];
     const named = rep.changed_tokens.filter((e) => tokenise(e.token, { keepRefs: true }).has(tok));
+    // The whole-body count did not rise and the token is already in the base: the number only moved between sentences.
+    const moved = !added.includes(tok);
+    if (moved) for (const sn of sents) ac2.warns.push(`${tag} number moved between sentences: "${tok}" in: ${clip(sn, 120)}`);
     if (!named.length) {
-      ac2.fails.push(added.includes(tok)
-        ? `${tag} token "${tok}" is new in the body and has no changed_tokens entry${linesWith(c.newBody, tok)}`
-        : `${tag} token "${tok}" changed between paired sentences and has no changed_tokens entry: ${clip(sents[0], 120)}`);
+      if (moved) continue;
+      ac2.fails.push(`${tag} token "${tok}" is new in the body and has no changed_tokens entry${linesWith(c.newBody, tok)}`);
       continue;
     }
     const holding = named.filter((e) => tokenise(e.body_line, { keepRefs: true }).has(tok));
-    if (!holding.length) { ac2.fails.push(`${tag} token "${tok}": body_line does not contain it${linesWith(c.newBody, tok)}`); continue; }
-    const missing = sents.filter((sn) => !holding.some((e) => relates(e.body_line, sn)));
+    if (!moved && !holding.length) { ac2.fails.push(`${tag} token "${tok}": body_line does not contain it${linesWith(c.newBody, tok)}`); continue; }
+    const missing = moved ? [] : sents.filter((sn) => !holding.some((e) => relates(e.body_line, sn)));
     if (missing.length) { for (const sn of missing) ac2.fails.push(`${tag} token "${tok}" changed between paired sentences: no changed_tokens entry has this sentence as its body_line: ${clip(sn, 120)}`); continue; }
-    const entry = (sents.length && holding.find((e) => relates(e.body_line, sents[0]))) || holding[0];
+    const entry = (sents.length && holding.find((e) => relates(e.body_line, sents[0]))) || holding[0] || named[0];
     if (!entry.raw_quote.trim()) { ac2.fails.push(`${tag} token "${tok}" has an empty raw_quote`); continue; }
     if (/\.\.\.|\u2026/.test(entry.raw_quote)) { ac2.fails.push(`${tag} token "${tok}": raw_quote contains an ellipsis (a paraphrase marker); quote the raw verbatim`); continue; }
     const prefixed = /^\s*(?:NIH|EXTRA):\s*/.exec(entry.raw_quote);
@@ -700,6 +702,25 @@ function referenceSourceCheck(newBody: string, baseBody: string, tag: string, ac
   }
 }
 
+/** A renumbering script can change the visible id and leave the URL right: link text and printed ids must match their URLs. */
+function linkTextCheck(body: string, tag: string, ac7: Check) {
+  const trim = (d: string) => d.replace(/[.,;:]+$/, "").toLowerCase();
+  for (const line of refLines(body)) {
+    const pmidUrls = [...line.matchAll(/pubmed\.ncbi\.nlm\.nih\.gov\/(\d{5,9})/gi)].map((m) => m[1]);
+    for (const m of line.matchAll(/\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g)) {
+      const [, text, url] = m;
+      const pm = /pubmed\.ncbi\.nlm\.nih\.gov\/(\d{5,9})/i.exec(url);
+      if (pm) for (const t of text.match(/\b\d{5,9}\b/g) ?? []) if (t !== pm[1]) ac7.fails.push(`${tag} reference line: PMID link text ${t} differs from its URL id ${pm[1]}: ${clip(line, 100)}`);
+      const dm = /doi\.org\/(10\.\d{4,9}\/[^\s)]+)/i.exec(url);
+      const dt = /\b(10\.\d{4,9}\/[^\s\]]+)/.exec(text);
+      if (dm && dt && trim(dt[1]) !== trim(dm[1])) ac7.fails.push(`${tag} reference line: DOI link text ${trim(dt[1])} differs from its URL DOI ${trim(dm[1])}: ${clip(line, 100)}`);
+    }
+    if (pmidUrls.length) for (const m of line.matchAll(/PMID:?\s*(\d{5,9})/gi)) {
+      if (!pmidUrls.includes(m[1])) ac7.fails.push(`${tag} reference line: PMID ${m[1]} differs from the pubmed URL id ${pmidUrls.join(", ")}: ${clip(line, 100)}`);
+    }
+  }
+}
+
 const PRODUCT_HEADING = /product|microvitamin|sleep by dr brad/i;
 function sectionsMatching(body: string): Map<string, string> {
   const lines = body.split(/(?<=\n)/), out = new Map<string, string>();
@@ -751,6 +772,7 @@ function checkAc7(c: Ctx, ac7: Check, pw: Check, abstracts: RawSet["abstracts"],
   if (c.type === "reference") {
     referenceCheck(c.newBody, tag, ac7);
     referenceSourceCheck(c.newBody, c.baseBody, tag, ac7);
+    linkTextCheck(c.newBody, tag, ac7);
     productSectionCheck(c.newBody, c.baseBody, tag, ac7);
     const baseLines = new Set(refLines(c.baseBody));
     for (const line of refLines(c.newBody).filter((l) => !baseLines.has(l))) {
