@@ -13,9 +13,9 @@ import { evaluate, half, loadSnapshot, recallFixtures, skipCounts, snapshotOf } 
 import { BEST, VARIANTS } from './search-knowledge';
 
 // Measured 2026-09-29 on the 254-fixture snapshot: top-3 204 (80.3%), top-8
-// 219 (86.2%). The floors leave 5 fixtures of headroom at top-3 (199) and 6 at
-// top-8 (213): room for a neutral ranker change, not for fixture drift, which
-// the snapshot removes.
+// 218 (85.8%). The floors need 199 and 214, so 5 and 4 fixtures of headroom:
+// room for a neutral ranker change, not for fixture drift, which the snapshot
+// removes.
 const FLOOR_TOP3 = 0.78;
 const FLOOR_TOP8 = 0.84;
 

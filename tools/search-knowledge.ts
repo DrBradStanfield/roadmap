@@ -64,7 +64,9 @@ const abbreviations: Record<string, string> = ABBREVIATIONS;
 export function tokenize(text: string): string[] {
   // Single letters are dropped, so "vitamin c" also yields "vitaminc" to keep C apart from D.
   return (text.toLowerCase().replace(/\b(vitamin|hepatitis)\s+([a-z])\b/g, '$1 $1$2').match(/[a-z0-9']+/g) ?? [])
-    .map((t) => t.replace(/^'+|'+$/g, ''))
+    // "4.2mmol" arrives as "2mmol": a number glued to its unit loses the number,
+    // and the unit then drops. Letters first ("hba1c", "t2dm", "b12") are kept whole.
+    .map((t) => t.replace(/^'+|'+$/g, '').replace(/^\d+(?=[a-z]+$)/, ''))
     .filter((t) => t.length > 1 && !/^\d+$/.test(t) && !STOPWORDS.has(t) && !UNITS.has(t))
     .map(stem);
 }

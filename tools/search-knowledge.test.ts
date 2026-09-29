@@ -56,6 +56,14 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
     expect(tokenize('ldl 4.2 mmol/L, bp 150/95 mm Hg, 5 mg, 10 mcg, 1000 iu')).toEqual(['ldl', 'bp']);
   });
 
+  it('drops a number glued to its unit, and keeps abbreviations that carry digits', () => {
+    expect(tokenize('ldl 4.2mmol/l')).toEqual(tokenize('ldl'));
+    expect(tokenize('bp 150/95')).toEqual(tokenize('bp'));
+    expect(tokenize('hba1c 48mmol/mol')).toEqual(tokenize('hba1c'));
+    expect(tokenize('1000mg 5,000iu 2.5ml')).toEqual([]);
+    expect(tokenize('t2dm b12 hba1c pcsk9 k2 d3')).toEqual(['t2dm', 'b12', 'hba1c', 'pcsk9', 'k2', 'd3']);
+  });
+
   it('keeps vitamin C apart from vitamin D though single letters are dropped', () => {
     expect(tokenize('vitamin c')).toEqual(['vitamin', 'vitaminc']);
     expect(tokenize('vitamin C')).not.toEqual(tokenize('vitamin D'));
