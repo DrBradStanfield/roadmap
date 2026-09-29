@@ -98,6 +98,22 @@ Before every write, the record is copied next to itself as `health-roadmap.json.
 
 The write itself goes to a temporary file and is then renamed over the original, so an interrupted run leaves your record whole rather than half rewritten. If the file changed between being read and being written, by another device or by the app in a browser tab, the command notices, reads it again and merges the two edits rather than writing one of them away. Two commands running at the same moment take turns through a `.lock` file beside the record, so the second waits, re-reads and merges instead of overwriting the first. After every write the command re-reads the file and checks its new rows are really there, so a lost edit is reported rather than confirmed.
 
+## Search Dr Brad's knowledge base
+
+This command needs no record. It searches the articles, supplement references, guidelines and clinical pathways the chatbot reads, on your machine, with no AI model:
+
+```
+npx tsx tools/search-knowledge.ts "statins and muscle pain"
+```
+
+It prints the three best matches, each with its handle, title and summary. Add `--k 8` for more, `--excerpt` for the part of each entry that best matches your words, or `--json` for a program to read. To read one entry in full, pass its handle:
+
+```
+npx tsx tools/search-knowledge.ts --article hypertension-in-adults
+```
+
+Everything it prints is educational, not medical advice, and names the handle so you or your assistant can cite it. The tool writes your query nowhere. Your shell or assistant may keep its own command history.
+
 ## What these commands will not do
 
 They never delete anything. There is no delete command, and no row is ever removed or edited in place. Erasing your data stays something you do in the app.

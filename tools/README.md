@@ -1,8 +1,9 @@
 # tools
 
 Most of this directory is internal: test harnesses and verification scripts
-for other parts of the app. Three files are the actual product, shipped for
-users and agents to run against their own `health-roadmap.json`:
+for other parts of the app. Four files are the actual product, shipped for
+users and agents: three run against their own `health-roadmap.json`, and one
+searches the knowledge base:
 
 - **`mcp-server.ts`**: a stdio MCP server. Point Claude Desktop or Claude
   Code at it and it exposes the record as named tools (read, compute plan,
@@ -15,8 +16,13 @@ users and agents to run against their own `health-roadmap.json`:
   `correct`, one value per call.
 - **`get-plan.ts`**: the CLI that reads the record and prints the plan,
   offline, in prose, JSON or HTML.
+- **`search-knowledge.ts`**: the CLI that searches Dr Brad's articles,
+  references, guidelines and pathways (`search-knowledge "<query>"`) and
+  prints one entry (`--article <handle>`, the get-article command). Lexical,
+  offline, no model; the tool writes the query nowhere. No MCP tool yet (US-41).
+  `search-knowledge-eval.ts` measures its recall over the router fixtures.
 
-Both CLIs are documented in
+All three CLIs are documented in
 [docs/guides/command-line.md](../docs/guides/command-line.md).
 
 Everything else here is internal, not part of the shipped surface. A few
