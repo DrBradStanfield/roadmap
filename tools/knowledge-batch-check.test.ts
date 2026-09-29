@@ -245,6 +245,21 @@ describe("US-42 AC2 multiset and body_line", () => {
     reps.alpha.changed_tokens = [];
     expect(fails(run().AC2).join()).toContain('"2000 mg"');
   });
+  it("prints the body lines where the checker found a token nobody declared", () => {
+    reps.alpha.changed_tokens = [];
+    const f = fails(run().AC2).find((x) => x.includes('token "300 mg"'))!;
+    expect(f).toContain("found in: \"Trials used 300 mg per day [1].");
+    reps.alpha.changed_tokens = [{ token: "300 mg", body_line: "An unrelated line.", raw_quote: "participants took 300 mg daily" }];
+    expect(fails(run().AC2).find((x) => x.includes("body_line does not contain"))).toContain("found in: \"Trials used 300 mg per day [1].");
+  });
+  it("matches a comparator token declared with its '>'", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("300 mg per day", "more than 6 weeks per day"));
+    const raw = "In the study the course lasted more than 6 weeks for the whole group.";
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.changed_tokens = [{ token: ">6 week", body_line: "Trials used more than 6 weeks per day [1].", raw_quote: "lasted more than 6 weeks for the whole group" }];
+    expect(fails(run().AC2)).toEqual([]);
+  });
   it("requires the entry's body_line to contain the token", () => {
     reps.alpha.changed_tokens[0].body_line = "An unrelated line.";
     expect(fails(run().AC2).join()).toContain("body_line does not contain");
@@ -633,6 +648,12 @@ describe("US-42 AC2 tokeniser units and comparators (R7)", () => {
     expect(t("10 or less days")).toEqual(["≤10 day"]);
     expect(t("<= 7 mg")).toEqual(["≤7 mg"]);
   });
+  it("keeps a leading comparator in a token or quote, and strips '> ' only from body lines", () => {
+    expect([...tokenise(">6 week", { keepRefs: true })]).toEqual([">6 week"]);
+    expect([...tokenise("> 6 week", { keepRefs: true })]).toEqual([">6 week"]);
+    expect(t("> more than 6 weeks")).toEqual([">6 week"]);
+    expect(t("> 6 weeks")).toEqual(["6 week"]);
+  });
   it("reads .5 mg as 0.5 mg and ignores a blockquote marker", () => {
     expect(t("take .5 mg")).toEqual(["0.5 mg"]);
     expect(t("> 30 mg")).toEqual(["30 mg"]);
@@ -648,6 +669,21 @@ describe("US-42 AC7 product counting (R9)", () => {
   });
   it("counts Potassium Fibre and Sleep by Dr. Brad as products", () => {
     expect(productMentions("Potassium Fibre and Sleep by Dr. Brad and Potassium Fiber")).toBe(3);
+  });
+});
+
+describe("US-42 AC4/AC7 numbered references heading", () => {
+  it.each(["## 8. References", "## 8) Sources", "### 12. Citations", "## Bibliography"])("treats %s as the reference section", (h) => {
+    const numbered = fx("alpha.new.md")
+      .replace("## References", h)
+      .replace("[1] Smith A. Synthetic trial. 2019.", "1. Smith A. Synthetic trial. 2019.")
+      .replace("[2] Jones B. Synthetic safety review. 2020.", "2. Jones B. Synthetic safety review. 2020.");
+    put("docs/blog/alpha.md", numbered);
+    const f = fails(run().AC7).join("\n");
+    expect(f).not.toContain("citations with no reference line");
+    expect(f).not.toContain("reference lines never cited");
+    expect([...tokenise(numbered)]).not.toContain("2019");
+    expect([...tokenise(numbered.replace("Trials used", "Trials used 5 mg"))]).toContain("5 mg");
   });
 });
 

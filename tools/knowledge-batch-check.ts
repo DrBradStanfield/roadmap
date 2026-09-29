@@ -155,7 +155,7 @@ export const normChars = (s: string) => s.replace(/\u00a0/g, " ").replace(/[\u20
 /** Normal form for substring matching of raw quotes. */
 export const normQuote = (s: string) => unescapeMd(normChars(s)).replace(/\s+/g, " ").trim().toLowerCase();
 
-const REFS_HEADING = /^#{1,4}\s*(?:references|sources|citations|bibliography)\b/i;
+const REFS_HEADING = /^#{1,4}\s*(?:\d+[.)]?\s*)?(?:references|sources|citations|bibliography)\b/i;
 const REF_LINE = /^\s*\[(\d+)\]\s+\S/;
 
 /** Lines of a body with their reference-section status. */
@@ -209,7 +209,6 @@ function normNumber(n: string, unit: string): { value: string; unit: string } {
 /** Strip everything the tokeniser must ignore, line by line. */
 function stripNoise(line: string): string {
   return unescapeMd(line)
-    .replace(/^\s*>+\s?/, "")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/https?:\/\/\S+/g, " ")
     .replace(/\b10\.\d{4,9}\/\S+/g, " ")
@@ -226,7 +225,8 @@ export function tokenCounts(text: string, opts: { keepRefs?: boolean } = {}): Ma
   const lines = opts.keepRefs ? text.split(/\r?\n/).map((line) => ({ line, ref: false })) : classifyLines(text);
   for (const { line, ref } of lines) {
     if (ref) continue;
-    const s = stripNoise(line);
+    // "> " is a blockquote marker only on body lines; a token or quote may start with a ">" comparator.
+    const s = stripNoise(opts.keepRefs ? line : line.replace(/^\s*>+ /, ""));
     for (const m of s.matchAll(TOKEN_RE())) {
       const unit = m[5] ? normUnit(m[5]) : "";
       const cmp = canonCmp(m[1] ?? m[4] ?? m[6]);
@@ -479,14 +479,20 @@ function findWhole(hay: string, q: string, tok: string): "ok" | "partial" | "abs
   return found ? "partial" : "absent";
 }
 
+/** Body lines where the checker finds `tok`, for the writer to locate. */
+function linesWith(body: string, tok: string): string {
+  const hits = body.split(/\r?\n/).filter((l) => tokenCounts(l).has(tok)).slice(0, 3).map((l) => `"${clip(l, 120)}"`);
+  return hits.length ? `; found in: ${hits.join(" | ")}` : "";
+}
+
 function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet): number {
   const rep = c.rep!, tag = `${c.handle}:`;
   let quoted = 0;
   for (const tok of added) {
     const named = rep.changed_tokens.filter((e) => tokenise(e.token, { keepRefs: true }).has(tok));
-    if (!named.length) { ac2.fails.push(`${tag} token "${tok}" is new in the body and has no changed_tokens entry`); continue; }
+    if (!named.length) { ac2.fails.push(`${tag} token "${tok}" is new in the body and has no changed_tokens entry${linesWith(c.newBody, tok)}`); continue; }
     const entry = named.find((e) => tokenise(e.body_line, { keepRefs: true }).has(tok));
-    if (!entry) { ac2.fails.push(`${tag} token "${tok}": body_line does not contain it`); continue; }
+    if (!entry) { ac2.fails.push(`${tag} token "${tok}": body_line does not contain it${linesWith(c.newBody, tok)}`); continue; }
     if (!entry.raw_quote.trim()) { ac2.fails.push(`${tag} token "${tok}" has an empty raw_quote`); continue; }
     const prefixed = /^\s*(?:NIH|EXTRA):\s*/.exec(entry.raw_quote);
     const quote = prefixed ? entry.raw_quote.slice(prefixed[0].length) : entry.raw_quote;
