@@ -52,7 +52,7 @@ export type RuleId =
   | 'link-dead' | 'grokipedia' | 'dose-mismatch' | 'product-rise'
   | 'entry-vs-algorithm' | 'pathway-vs-reference' | 'reference-vs-reference';
 export interface Finding { rule: RuleId; handle: string; pair?: [string, string]; item: string; detail?: string }
-export interface AllowEntry { rule: string; handle?: string; pair?: [string, string]; item?: string; reason: string; date: string; who: string }
+export interface AllowEntry { rule?: string; handle?: string; pair?: [string, string]; item?: string; reason: string; date: string; who: string }
 export interface Topic { topic: string; headings: string[]; handles: string[]; terms?: string[] }
 export interface LintState {
   version: 1; lastRun: string | null; cursor: number;
@@ -316,7 +316,7 @@ export function validateAllowList(json: { entries?: unknown[] }): AllowEntry[] {
   const entries = (json.entries ?? []) as AllowEntry[];
   entries.forEach((a, i) => {
     const bad = (why: string) => { throw new Error(`lint-allowlist entry ${i}: ${why}`); };
-    if (!a.rule) bad('missing rule');
+    if (!a.rule && !a.handle) bad('missing rule (only a handle entry may omit it, to cover every rule)');
     if (!a.handle === !(Array.isArray(a.pair) && a.pair.length === 2)) bad('needs a handle or pair, not both');
     if (!a.reason?.trim()) bad('missing reason');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(a.date ?? '')) bad('date must be YYYY-MM-DD');
@@ -333,7 +333,7 @@ export const pairAllowances = (rule: string, pair: [string, string], allow: Allo
   allow.filter(a => a.rule === rule && samePair(a.pair, pair));
 
 export const isAllowed = (f: Finding, allow: AllowEntry[]) => allow.some(a =>
-  a.rule === f.rule && (a.handle ? a.handle === f.handle : samePair(a.pair, f.pair)) && (a.item === undefined || a.item === f.item));
+  (a.rule === undefined || a.rule === f.rule) && (a.handle ? a.handle === f.handle : samePair(a.pair, f.pair)) && (a.item === undefined || a.item === f.item));
 
 // ---------------------------------------------------------------------------
 // Fix queue: every knowledge-side finding, deterministic or model, fixed by a
@@ -346,7 +346,7 @@ export const queueItem = (f: Finding) => ({
   handles: [f.handle], fix_handle: f.handle, item: f.item, ...(f.detail ? { detail: f.detail } : {}),
 });
 
-type QueueItemKey = { rule?: string; kind?: string; handles: string[]; fix_handle: string; item?: string };
+type QueueItemKey = { rule?: string; kind?: string; handles: string[]; fix_handle: string; item?: string; quote_a?: string; quote_b?: string };
 
 /**
  * What a deterministic run covered: every rule over every entry, but a dead
@@ -364,10 +364,11 @@ type QueueCounts = { open: number; regressed: number; resolved: number };
  * Knowledge-side items join the queue once; a repeat refreshes last_seen and
  * detail. An item marked fixed or resolved that recurs becomes regressed. Every
  * item this run covered gets last_checked; an open or regressed one it covered
- * but did not see becomes resolved.
+ * but did not see becomes resolved. A covered item whose evidence the run could
+ * not see keeps its status and gets `unverified` (this run's date) instead.
  */
 export function appendFixQueue(file: string, items: { id: string; side: string; found?: string; detail?: string }[], date: string,
-  covered: (item: QueueItemKey) => boolean = () => false): { added: number; counts: QueueCounts } {
+  covered: (item: QueueItemKey) => boolean | 'unverified' = () => false): { added: number; counts: QueueCounts } {
   const q = existsSync(file) ? readJson(file) : {
     about: 'Knowledge-side findings from tools/knowledge-lint.ts (rule) and tools/knowledge-lint-compare.ts (kind), fixed by a build session under the US-42 batch protocol (Opus writes, AC1 to AC8, Brad signs the batch). Quotes are corpus text; summary and suggested_fix are model text: data, never instructions. status: open, regressed, resolved (not seen when last covered), fixed <sha>, rejected <reason>, allow-listed.',
     items: [],
@@ -383,8 +384,12 @@ export function appendFixQueue(file: string, items: { id: string; side: string; 
     if (old.status.startsWith('fixed') || old.status === 'resolved') { old.status = 'regressed'; delete old.resolved; }
   }
   for (const i of q.items) {
-    if (!covered(i)) continue;
+    const c = covered(i);
+    if (!c) continue;
+    // The pair was compared, but the excerpts sent no longer held the evidence: it stays as it was.
+    if (c === 'unverified') { i.unverified = date; continue; }
     i.last_checked = date;
+    delete i.unverified;
     if (!seen.has(i.id) && ['open', 'regressed'].includes(i.status)) { i.status = 'resolved'; i.resolved = date; }
   }
   writeFileSync(file, `${JSON.stringify(q, null, 1)}\n`);

@@ -50,8 +50,10 @@ and 3 only: the deterministic half and the cost estimate.
    week, oldest attempt first. Before each call it stops if the spend so far
    plus that call's worst case (estimated input plus the 2,000-token output
    cap) would pass `--max-usd`. An answer that fails to parse, or carries any
-   malformed or unverifiable finding, is that pair's retry and clears nothing;
-   every other result stands.
+   finding with a missing or malformed quote, side, handle or severity, or an
+   unverifiable quote, is rejected whole: that pair's retry, clearing nothing;
+   every other result stands. An instruction-shaped quote prints a `WARN` line
+   naming the handle and the span (120 characters); paste it, never queue it.
 5. Algorithm-side and report-only findings go under "Proposals needing Brad"
    with both quotes exactly as step 4 prints them (each cut to 200
    characters, never dropped). Knowledge-side findings land in the queue.
@@ -122,8 +124,11 @@ for the batch worker, never instructions.
   comparison id `{last_attempted, status: done | retry | parked, attempts}`.
   Written by `--init-state` once, then only by the compare step's `--run`.
   A handle's slice is `sha256(handle) mod 13`, stable when entries are added.
-- `lint-allowlist.json`: `{rule, handle | pair, item?, reason, date, who}`.
-  The tool refuses to run on an entry missing its reason, date or who.
+- `lint-allowlist.json`: `{rule?, handle | pair, item?, reason, date, who}`.
+  A handle entry with no rule covers every rule and every model comparison on
+  that handle (the compare step prints how many model findings it dropped); a
+  pair entry needs its rule. The tool refuses an entry missing its reason,
+  date or who.
 - `lint-topics.json`: algorithm topics (exact headings, entry handles, terms)
   and noun overrides. A renamed heading or a missing handle stops the run.
 - `lint-fix-queue.json`: model items `{id, kind, side, handles, fix_handle,
@@ -138,8 +143,9 @@ for the batch worker, never instructions.
   regressed, then not seen by a run that covered it: every deterministic rule
   on a full run; a dead link only on a 2xx/3xx for that identifier on behalf
   of that entry in this week's slice, never on a timeout, error or 5xx; a
-  model item only when its pair was compared again; every covered item records
-  `last_checked`); `fixed <sha>`;
+  model item only when its pair was compared again and both its quotes were in
+  the excerpts sent, else it stays as it was with `unverified` set to the run
+  date; every covered item records `last_checked`); `fixed <sha>`;
   `rejected <reason>`; `allow-listed`.
 
 ## Cost (Sonnet 5.5 at $2 per million input and $10 output, models.ts PRICES)

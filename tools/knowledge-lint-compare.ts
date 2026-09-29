@@ -212,19 +212,27 @@ const INSTRUCTION_LIKE = /\b(ignore|disregard|forget|override)\b.{0,40}\b(instru
 
 /** Keep a finding only if its quotes are verbatim in their excerpts and it names one of the two handles. */
 export function parseFindings(job: Job, text: string, date: string) {
-  const none = (rejected: number) => ({ findings: [] as LintFinding[], rejected, instructionTextSeen: false, usable: false });
+  const none = (rejected: number) => ({ findings: [] as LintFinding[], rejected, instructionTextSeen: false, usable: false, warnings: [] as string[] });
   let parsed: { findings?: unknown; instruction_text_seen?: unknown };
   try { parsed = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1)); } catch { return none(1); }
   if (!Array.isArray(parsed.findings)) return none(1);
   const [a, b] = [normalise(job.a.text), normalise(job.b.text)];
   const findings: LintFinding[] = [];
-  let rejected = 0, planted = false;
+  let rejected = 0;
+  const warnings: string[] = [];
   for (const f of parsed.findings as Record<string, unknown>[]) {
     if (!f || typeof f !== 'object') { rejected++; continue; }
     const str = (k: string) => typeof f[k] === 'string' ? normalise(f[k] as string) : '';
     const [qa, qb, fix] = [str('quote_a'), str('quote_b'), str('fix_handle')];
-    if (INSTRUCTION_LIKE.test(qa) || INSTRUCTION_LIKE.test(qb)) { rejected++; planted = true; continue; }
-    if (!qa || !qb || !a.includes(qa) || !b.includes(qb) || !SEVERITIES.includes(str('severity')) || ![job.a.handle, job.b.handle].includes(fix)) {
+    const shaped = [[qa, job.a.handle], [qb, job.b.handle]].filter(([q]) => INSTRUCTION_LIKE.test(q));
+    if (shaped.length) {
+      // Brad sees the attempt in the report; it is never queued.
+      warnings.push(...shaped.map(([q, h]) => `WARN instruction-shaped quote in ${h}: "${q.slice(0, 120)}"`));
+      rejected++;
+      continue;
+    }
+    if (!qa || !qb || !a.includes(qa) || !b.includes(qb) || !SEVERITIES.includes(str('severity')) || ![job.a.handle, job.b.handle].includes(fix)
+      || !['knowledge', 'algorithm'].includes(str('side'))) {
       rejected++;
       continue;
     }
@@ -238,7 +246,8 @@ export function parseFindings(job: Job, text: string, date: string) {
       summary: str('summary'), suggested_fix: str('suggested_fix'), found: date,
     });
   }
-  return { findings, rejected, instructionTextSeen: parsed.instruction_text_seen === true || planted, usable: true };
+  // One malformed or unverifiable finding rejects the answer whole: nothing from it is kept.
+  return { findings: rejected ? [] : findings, rejected, instructionTextSeen: parsed.instruction_text_seen === true || warnings.length > 0, usable: true, warnings };
 }
 
 type Fetch = (url: string, init: RequestInit) => Promise<Response>;
@@ -252,7 +261,7 @@ export const projectedUsd = (job: Job) => (promptTokens(job) * PRICES.sonnet55.i
 
 export async function runJobs(jobs: Job[], o: { apiKey: string; fetchImpl: Fetch; maxCalls: number; maxUsd: number; date: string }) {
   const p = PRICES.sonnet55;
-  const r = { calls: 0, deferred: 0, usd: 0, tokensIn: 0, tokensOut: 0, errors: 0, rejected: 0, instructionText: [] as string[], findings: [] as LintFinding[], outcomes: [] as Outcome[] };
+  const r = { calls: 0, deferred: 0, usd: 0, tokensIn: 0, tokensOut: 0, errors: 0, rejected: 0, instructionText: [] as string[], warnings: [] as string[], findings: [] as LintFinding[], outcomes: [] as Outcome[] };
   for (const job of jobs) {
     // Checked before the call: the spend so far plus this call's worst case must stay within --max-usd.
     if (r.calls >= o.maxCalls || r.usd + projectedUsd(job) > o.maxUsd) break;
@@ -273,10 +282,11 @@ export async function runJobs(jobs: Job[], o: { apiKey: string; fetchImpl: Fetch
       const parsed = parseFindings(job, (data.content ?? []).filter(c => c.type === 'text').map(c => c.text).join(''), o.date);
       // A malformed or unverifiable finding makes the whole answer suspect: it must not clear an open contradiction.
       r.rejected += parsed.rejected;
+      r.warnings.push(...parsed.warnings);
+      if (parsed.instructionTextSeen) r.instructionText.push(`${job.a.handle} / ${job.b.handle}`);
       if (!parsed.usable || parsed.rejected) throw new Error('unparseable');
       r.outcomes.push({ id: job.id, status: 'done' });
       r.findings.push(...parsed.findings);
-      if (parsed.instructionTextSeen) r.instructionText.push(`${job.a.handle} / ${job.b.handle}`);
     } catch {
       // Any failure with one answer is that pair's retry; every other pair's result stands.
       r.errors++;
@@ -308,6 +318,27 @@ export function settleState(inputs: { entries: Entry[]; topics: Topic[]; algo: s
   }
   const next = { ...state, pairs };
   return pendingJobs(jobs, next).length ? next : nextState(inputs.entries, next, inputs.topics, inputs.algo, now, true);
+}
+
+/**
+ * What a model run covered: a pair with a usable answer. Its item resolves only
+ * if both quotes were in the excerpts sent; if a cut dropped them, 'unverified'.
+ */
+export function modelCovered(jobs: Job[], outcomes: Outcome[]) {
+  const byId = new Map(jobs.map(j => [j.id, j]));
+  const sent = new Map(outcomes.filter(o => o.status === 'done').map(o => byId.get(o.id)!).map(j => [`${j.kind}|${j.a.handle}|${j.b.handle}`, j]));
+  return (i: { rule?: string; kind?: string; handles: string[]; fix_handle?: string; quote_a?: string; quote_b?: string }): boolean | 'unverified' => {
+    const j = i.kind ? sent.get(`${i.kind}|${i.handles.join('|')}`) : undefined;
+    if (!j) return false;
+    return normalise(j.a.text).includes(normalise(i.quote_a ?? '')) && normalise(j.b.text).includes(normalise(i.quote_b ?? '')) ? true : 'unverified';
+  };
+}
+
+/** Findings on a handle Brad allow-listed (for this kind, or for every rule when the entry names none) are dropped and counted. */
+export function suppressModel(findings: LintFinding[], allow: AllowEntry[]) {
+  const hit = (f: LintFinding) => allow.some(a => a.handle && a.item === undefined && f.handles.includes(a.handle) && (a.rule === undefined || a.rule === f.kind));
+  const kept = findings.filter(f => !hit(f));
+  return { kept, suppressed: findings.length - kept.length };
 }
 
 const cut = (s: string) => s.length > 200 ? `${s.slice(0, 197)}...` : s;
@@ -363,13 +394,14 @@ export async function main(argv: string[], root: string, log: (s: string) => voi
     const now = new Date().toISOString();
     const date = now.slice(0, 10);
     const r = await runJobs(jobs, { apiKey, fetchImpl: fetch, maxCalls, maxUsd, date });
-    const byId = new Map(jobs.map(j => [j.id, j]));
-    const compared = new Set(r.outcomes.filter(o => o.status === 'done').map(o => byId.get(o.id)!).map(j => `${j.kind}|${j.a.handle}|${j.b.handle}`));
-    const queued = appendFixQueue(join(root, PATHS.queue), r.findings, date, i => !!i.kind && compared.has(`${i.kind}|${i.handles.join('|')}`));
+    const { kept, suppressed } = suppressModel(r.findings, allow);
+    const queued = appendFixQueue(join(root, PATHS.queue), kept, date, modelCovered(jobs, r.outcomes));
     log(`Cost: ${usd(r.usd)} over ${r.calls} calls (${r.tokensIn.toLocaleString()} input, ${r.tokensOut.toLocaleString()} output tokens); ${r.errors} without a usable answer, marked retry.`);
-    log(`Findings: ${r.findings.length} kept, ${r.rejected} rejected (a quote not in its excerpt, an instruction-shaped quote, or a malformed field; their comparisons are retried).`);
+    log(`Allow-list: ${allow.length} entries, ${suppressed} model findings suppressed.`);
+    log(`Findings: ${kept.length} kept, ${r.rejected} rejected (a quote not in its excerpt, an instruction-shaped quote, or a malformed field; their comparisons are retried).`);
     log(queueLine(queued));
-    for (const f of r.findings.filter(x => x.side !== 'knowledge')) for (const line of evidenceLines(f)) log(line);
+    for (const f of kept.filter(x => x.side !== 'knowledge')) for (const line of evidenceLines(f)) log(line);
+    for (const w of r.warnings) log(w);
     if (r.instructionText.length) log(`Instruction-shaped text seen in: ${r.instructionText.join('; ')}. Read those excerpts before the batch.`);
     if (!all) {
       const next = settleState({ entries, topics, algo }, state, cycle, r.outcomes, now);

@@ -201,6 +201,12 @@ describe('allow-list (deliberate divergences)', () => {
     expect(() => validateAllowList({ entries: [{ ...entry, date: 'soon' }] })).toThrow(/date/);
     expect(() => validateAllowList({ entries: [{ ...entry, handle: undefined }] })).toThrow(/handle or pair/);
   });
+  it('takes a handle entry with no rule, covering every rule on that handle; a pair entry still needs its rule (Codex round 4, finding 4)', () => {
+    const allow = validateAllowList({ entries: [{ handle: 'diet', reason: 'r', date: '2026-09-29', who: 'Brad' }] });
+    expect(isAllowed({ rule: 'dose-mismatch', handle: 'diet', item: '5 mg' }, allow)).toBe(true);
+    expect(isAllowed({ rule: 'dose-mismatch', handle: 'sleep', item: '5 mg' }, allow)).toBe(false);
+    expect(() => validateAllowList({ entries: [{ pair: ['a', 'b'], reason: 'r', date: '2026-09-29', who: 'Brad' }] })).toThrow(/rule/);
+  });
   it('matches by rule and handle, by an unordered pair, and by item when one is given', () => {
     const allow = validateAllowList({ entries: [
       entry,
@@ -336,6 +342,19 @@ describe('checkLinks conclusiveness (Codex round 3, finding 2)', () => {
     const r = await checkLinks(ids, { fetchImpl: (u: string) => replies[u](), delayMs: 0, cap: 10 });
     expect(r.conclusive).toEqual(['a|10.1000/alive', 'a|10.1000/moved']);
     expect(r.unverified).toBe(3);
+  });
+});
+
+describe('appendFixQueue unverified (Codex round 4, finding 1)', () => {
+  it('keeps an item open and marks it unverified this run when the covering run could not see its evidence', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'kqueue-'));
+    const file = join(dir, 'q.json');
+    const f = { id: 'model0000001', kind: 'pathway-vs-reference', side: 'knowledge', handles: ['a', 'b'], fix_handle: 'b', quote_a: 'x', quote_b: 'y' };
+    appendFixQueue(file, [f], '2026-10-04');
+    const r = appendFixQueue(file, [], '2026-10-11', () => 'unverified');
+    expect(r.counts).toEqual({ open: 1, regressed: 0, resolved: 0 });
+    expect(JSON.parse(readFileSync(file, 'utf8')).items[0]).toMatchObject({ status: 'open', unverified: '2026-10-11' });
+    rmSync(dir, { recursive: true });
   });
 });
 
