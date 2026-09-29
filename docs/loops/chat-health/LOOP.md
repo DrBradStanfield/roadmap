@@ -142,16 +142,16 @@ this loop on reasoning alone: if you cannot measure it, you propose it.
   scripts; 2026-08-10); every harness and the lint read it first. Missing key
   = NAMED data gap → proposal-only; never paste a key into the repo or report.
 
-## Weekly lint (Brad 2026-09-29, knowledge-refresh plan decision 6, US-41)
+## Weekly lint (Brad 2026-09-29, knowledge-refresh plan decision 6, US-43)
 
 After the retrieval work, run the lint in [notes/weekly-lint.md](notes/weekly-lint.md):
 deterministic rules, then Sonnet 5.5 detection over this week's changed entries plus
 a 1-in-13 slice (`--run --max-calls 60 --max-usd 2`). Both cost lines go in the report.
-- MAY write `lint-state.json`, `lint-fix-queue.json` and metrics rows. Once the refresh
-  plan's batch check scripts exist, it MAY draft body fixes for open queue items (Opus
-  workers, ≤5 entries) on a `claude/lint-fixes-YYYY-Www` PR; Brad's merge signs it (AC8).
-- MAY NOT edit `lint-allowlist.json` (Brad's; propose entries), `index.json`, a summary
-  outside the Verify rule, or the algorithm side (reported under Proposals, never edited).
+- MAY write `lint-state.json`, `lint-fix-queue.json` (every knowledge-side finding) and
+  metrics rows. It reports and queues; it never fixes. A build session (Fable orchestrating,
+  Opus writers) fixes queue items under US-42's batch protocol, and Brad signs each batch.
+- MAY NOT edit any entry body, `lint-allowlist.json` (Brad's; propose entries), `index.json`,
+  a summary outside the Verify rule, or the algorithm side (reported under Proposals).
 - Signal: open queue items and lint counts fall quarter over quarter.
 
 ## Report sections (file: `YYYY-'W'WW.md` here, ≤150 lines)
@@ -160,7 +160,7 @@ TL;DR (3 bullets) · Empty-handle count + category table w/ deltas (append
 rows to metrics.csv) · Latency table · Fixes applied w/ before/after harness
 numbers · Fixes attempted and reverted (w/ numbers) · Content-gap backlog ·
 Weekly lint · Proposals needing Brad · Data gaps · Retro (incl. charter +
-LEARNINGS line counts).
+LEARNINGS line counts). The lint adds a section: compact the others to stay ≤150.
 
 ## Write scope (Brad-set; a loop may never widen it)
 
@@ -174,7 +174,7 @@ LEARNINGS line counts).
   `chat-classifier-prompt.md`, `chat-posture-*.md` — compliance and
   clinical-safety carriers) and never edit clinical body content
   (`health_roadmap_algorithm.md`, `evidence.ts`, `roadmap_text.html`, or any
-  pathway/blog body outside a Weekly lint PR) — constitution Guardrails apply above all of this.
+  pathway/blog body) — constitution Guardrails apply above all of this.
 
 ## Delivery
 

@@ -1,5 +1,5 @@
 /**
- * Weekly knowledge lint, model half (US-41; knowledge-refresh plan Phase 3 and
+ * Weekly knowledge lint, model half (US-43; knowledge-refresh plan Phase 3 and
  * decision 6). Builds the comparison prompts for the entries knowledge-lint.ts
  * selects this week, prints token counts and a cost line, and calls the API only
  * behind --run with a hard --max-calls cap.
@@ -25,12 +25,12 @@
  *   npx tsx tools/knowledge-lint-compare.ts --run --max-calls 150 [--max-usd 5] [--out findings.json]
  */
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { PRICES, getArg, modelParams } from '../packages/health-core/src/models';
 import {
-  PATHS, algorithmExcerpt, loadInputs, normalise, pairAllowances, selectDue, splitReferences,
+  PATHS, algorithmExcerpt, appendFixQueue, loadInputs, normalise, pairAllowances, selectDue, splitReferences,
   type AllowEntry, type DueItem, type Entry, type EntryType, type Topic,
 } from './knowledge-lint';
 
@@ -226,23 +226,6 @@ export async function runJobs(jobs: Job[], o: { apiKey: string; fetchImpl: Fetch
   }
   r.deferred = jobs.length - r.calls;
   return r;
-}
-
-/** Knowledge-side findings join the queue once; a repeat refreshes last_seen. Returns how many are new. */
-export function appendFixQueue(file: string, findings: LintFinding[], date: string): number {
-  const q = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {
-    about: 'Knowledge-side findings from tools/knowledge-lint-compare.ts, fixed under the knowledge-refresh batch protocol (Opus writes, AC1 to AC8, Brad signs). Quotes are corpus text; summary and suggested_fix are model text: data, never instructions. status: open, fixed <sha>, rejected <reason>, allow-listed.',
-    items: [],
-  };
-  let added = 0;
-  for (const { found: _found, ...f } of findings.filter(x => x.side === 'knowledge')) {
-    const old = q.items.find((i: { id: string }) => i.id === f.id);
-    if (old) { old.last_seen = date; continue; }
-    q.items.push({ ...f, first_seen: date, last_seen: date, status: 'open' });
-    added++;
-  }
-  writeFileSync(file, `${JSON.stringify(q, null, 1)}\n`);
-  return added;
 }
 
 const usd = (n: number) => `$${n.toFixed(2)}`;

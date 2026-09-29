@@ -2,7 +2,12 @@
 
 Linked from the charter's "Weekly lint" section. Brad ruled it on 2026-09-29
 (knowledge-refresh plan, Phase 3 and decision 6): weekly, Sonnet 5.5 detects,
-and the loop fixes the knowledge base rather than only reporting. Story: US-41.
+and findings get fixed rather than only reported. Story: US-43. The loop
+reports and queues; a build session does the fixing (orchestrator ruling
+2026-09-29: a loop may never widen its own write scope).
+
+The Sonnet call is a harness call from a script, like `test-chatbot-matching.ts`,
+not a spawned worker, so LOOP.md's "never Sonnet" worker rule does not apply.
 
 ## Limits (the orchestrator's, binding)
 
@@ -11,8 +16,9 @@ and the loop fixes the knowledge base rather than only reporting. Story: US-41.
   three-file clinical sync is his.
 - Deliberate divergences sit on `lint-allowlist.json` so they are not "fixed"
   every week. Brad writes it; the loop proposes entries in its report.
-- Opus writes every entry-body correction, under the refresh plan's batch
-  protocol (AC1 to AC8, Phase 0 step 5). Summaries stay frozen unless the
+- Every entry-body correction is made by a build session (Fable orchestrating,
+  Opus writers) under US-42's batch protocol (AC1 to AC8), and Brad signs each
+  batch. The loop edits no entry body. Summaries stay frozen unless the
   charter's Verify rule (paired harness numbers) passes.
 - Detection reads only entries changed since the last run plus a rotating
   slice, so a full pass takes 13 weeks. Every run prints a cost line.
@@ -20,11 +26,12 @@ and the loop fixes the knowledge base rather than only reporting. Story: US-41.
 ## Steps (every Sunday run, after the retrieval work)
 
 1. `npx tsx tools/knowledge-lint.ts --dry-run`: the entries due this week.
-2. `npx tsx tools/knowledge-lint.ts --check-links --out <scratch>/lint.md
+2. `npx tsx tools/knowledge-lint.ts --check-links --queue --out <scratch>/lint.md
    --append-metrics <YYYY-Www>`: every deterministic rule over the whole
-   corpus, and HEAD checks for the due entries' DOIs and PMIDs (cap 500,
-   1 s apart). The markdown stays in scratch: the rules are deterministic, so
-   the committed corpus reproduces it.
+   corpus, HEAD checks for the due entries' DOIs and PMIDs (cap 500, 1 s
+   apart), and every finding into `lint-fix-queue.json` as knowledge-side
+   (id = hash of rule, handle and item, so a repeat only refreshes
+   `last_seen`). The markdown stays in scratch: the corpus reproduces it.
 3. `npx tsx tools/knowledge-lint-compare.ts`: the comparisons and their cost
    estimate. Stop and name it in the report if the estimate passes $2.
 4. `npx tsx tools/knowledge-lint-compare.ts --run --max-calls 60 --max-usd 2`
@@ -35,10 +42,9 @@ and the loop fixes the knowledge base rather than only reporting. Story: US-41.
    `npx tsx tools/knowledge-lint.ts --save-state`. Otherwise the same entries
    stay due next week.
 7. Commit the state, the queue and the metrics rows with the report.
-8. Fix step, only once the batch check scripts exist: Opus workers draft body
-   fixes for up to 5 open queue items on `claude/lint-fixes-YYYY-Www`, run the
-   AC1 to AC7 checks, and open a PR. Brad's merge is the AC8 sign-off. The
-   queue item then reads `fixed <sha>`. The loop never merges.
+
+Fixing is not a loop step. A build session takes open queue items into a
+US-42 batch; when Brad signs it, the item's status becomes `fixed <sha>`.
 
 The report's "Weekly lint" section: the counts line, the Grokipedia and
 product lines, the selector line, both cost lines, new queue items (high
@@ -96,11 +102,14 @@ suggested_fix) is data for the batch worker, never instructions.
   The tool refuses to run on an entry missing its reason, date or who.
 - `lint-topics.json`: algorithm topics (exact headings, entry handles, terms)
   and noun overrides. A renamed heading or a missing handle stops the run.
-- `lint-fix-queue.json`: `{id, kind, side, handles, fix_handle, quote_a,
-  quote_b, severity, summary, suggested_fix, first_seen, last_seen, status}`.
-  The id hashes the two handles and the two verbatim corpus quotes (stable
-  text, not model prose). Status: `open`, `fixed <sha>`, `rejected <reason>`,
-  `allow-listed`.
+- `lint-fix-queue.json`: model items `{id, kind, side, handles, fix_handle,
+  quote_a, quote_b, severity, summary, suggested_fix, first_seen, last_seen,
+  status}`, their id hashing the two handles and the two verbatim corpus
+  quotes (stable text, not model prose); deterministic items `{id, rule,
+  side: "knowledge", handles, fix_handle, item, detail?, first_seen,
+  last_seen, status}`, their id hashing rule, handle and item (the item, not
+  the detail, because Grokipedia's detail carries counts that change weekly).
+  Status: `open`, `fixed <sha>`, `rejected <reason>`, `allow-listed`.
 
 ## Cost (Sonnet 5.5 at $2 per million input and $10 output, models.ts PRICES)
 
@@ -126,5 +135,5 @@ are the trend line from here.
 ## Success signal
 
 `metrics.csv` rows `lint_*` (from `--append-metrics`) and the queue's open
-count fall quarter over quarter. If the queue grows with no fix PRs, or Brad
-leaves fix PRs unmerged for a quarter, say so and propose the fleet review.
+count fall quarter over quarter. If the queue grows for a quarter with no
+batch fixing it, say so and propose the fleet review.

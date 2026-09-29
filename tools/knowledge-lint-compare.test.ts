@@ -1,12 +1,12 @@
-// US-41: the weekly knowledge lint, model half. Designed and tested here; no
+// US-43: the weekly knowledge lint, model half. Designed and tested here; no
 // test calls the API (every fetch is a stub).
 import { describe, it, expect } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { entryFrom, validateAllowList, type Topic } from './knowledge-lint';
+import { appendFixQueue, entryFrom, validateAllowList, type Topic } from './knowledge-lint';
 import {
-  buildJobs, buildPrompt, estimate, parseFindings, runJobs, appendFixQueue, main,
+  buildJobs, buildPrompt, estimate, parseFindings, runJobs, main,
   DETECT_MODEL, type Job,
 } from './knowledge-lint-compare';
 

@@ -1,4 +1,4 @@
-// US-41: the weekly knowledge lint, deterministic half (knowledge-refresh plan
+// US-43: the weekly knowledge lint, deterministic half (knowledge-refresh plan
 // Phase 3 and decision 6). Every rule runs on fixtures here; the real corpus
 // run is the baseline in the build report, not a test.
 import { describe, it, expect } from 'vitest';
@@ -331,6 +331,18 @@ describe('main on a scratch corpus', () => {
     const rows = readFileSync(csv, 'utf8').trim().split('\n');
     expect(rows).toContain('2026-W40,lint_grokipedia,1,2,-50,tools/knowledge-lint.ts,weekly lint');
     expect(rows).toContain('2026-W40,lint_dose_mismatch,1,,,tools/knowledge-lint.ts,weekly lint');
+    rmSync(root, { recursive: true });
+  });
+  it('--queue writes deterministic findings to lint-fix-queue.json as knowledge-side, once across weeks', async () => {
+    const root = setup();
+    const file = join(root, 'docs/loops/chat-health/lint-fix-queue.json');
+    expect((await capture(['--queue'], root)).code).toBe(0);
+    const q1 = JSON.parse(readFileSync(file, 'utf8'));
+    expect(q1.items.map((i: { rule: string }) => i.rule).sort()).toEqual(['dose-mismatch', 'grokipedia']);
+    expect(q1.items[0]).toMatchObject({ side: 'knowledge', handles: ['r1'], fix_handle: 'r1', status: 'open' });
+    expect(q1.items[0].id).toMatch(/^[0-9a-f]{12}$/);
+    expect((await capture(['--queue'], root)).code).toBe(0);
+    expect(JSON.parse(readFileSync(file, 'utf8')).items).toHaveLength(2);
     rmSync(root, { recursive: true });
   });
   it('an allow-listed finding is suppressed and counted', async () => {

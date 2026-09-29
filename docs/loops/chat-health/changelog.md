@@ -7,9 +7,11 @@ the archive). Exempt from the 200-line operative cap.
 - 2026-09-29 (Brad, knowledge-refresh plan decision 6): the weekly lint
   joins the loop. Deterministic rules (`tools/knowledge-lint.ts`) and Sonnet
   5.5 detection (`tools/knowledge-lint-compare.ts`) over changed entries plus
-  a 1-in-13 slice; knowledge-side findings queue for Opus fixes on a PR Brad
-  merges; algorithm side report-only; allow-list Brad's. Steps and schemas:
-  `notes/weekly-lint.md`; story US-41. To stay one-in-one-out at 186 lines,
+  a 1-in-13 slice. The loop reports and queues every knowledge-side finding;
+  a build session fixes them under US-42's batch protocol and Brad signs
+  each batch. Algorithm side report-only; allow-list Brad's. Report sections
+  compact to stay ≤150 lines. Steps and schemas: `notes/weekly-lint.md`;
+  story US-43. To stay one-in-one-out at 186 lines,
   eight passages were reworded shorter with no rule dropped (ground truth 6,
   Orient 3, YouTube reply length, the router-pick check, the paraphrase rule,
   the harness key, the sibling line and Delivery); the paraphrase rule no
