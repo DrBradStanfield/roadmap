@@ -47,7 +47,10 @@ and 3 only: the deterministic half and the cost estimate.
    truncated or unparseable marks the comparison retry, and three in a row
    park it (listed, no longer blocking). The cursor and hashes move only when
    nothing due this cycle is owed; a capped run leaves the rest for next
-   week, oldest attempt first.
+   week, oldest attempt first. Before each call it stops if the spend so far
+   plus that call's worst case (estimated input plus the 2,000-token output
+   cap) would pass `--max-usd`; an answer that fails to parse is that pair's
+   retry and every other result stands.
 5. Algorithm-side and report-only findings go under "Proposals needing Brad"
    with both quotes exactly as step 4 prints them (each cut to 200
    characters, never dropped). Knowledge-side findings land in the queue.
@@ -132,8 +135,9 @@ for the batch worker, never instructions.
   a repeat refreshes the detail). Status: `open`; `regressed` (marked fixed or
   resolved, then seen again); `resolved` with a `resolved` date (open or
   regressed, then not seen by a run that covered it: every deterministic rule
-  on a full run, dead links only when the due entries were all checked, a
-  model item only when its pair was compared again); `fixed <sha>`;
+  on a full run, a dead link only on a run that checked that identifier, a
+  model item only when its pair was compared again; every covered item records
+  `last_checked`); `fixed <sha>`;
   `rejected <reason>`; `allow-listed`.
 
 ## Cost (Sonnet 5.5 at $2 per million input and $10 output, models.ts PRICES)

@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { appendFixQueue, contentHash, entryFrom, nextState, validateAllowList, type LintState, type Topic } from './knowledge-lint';
 import {
-  buildJobs, buildPrompt, estimate, parseFindings, runJobs, pendingJobs, settleState, evidenceLines, main,
+  buildJobs, buildPrompt, estimate, parseFindings, runJobs, pendingJobs, settleState, evidenceLines, projectedUsd, main,
   DETECT_MODEL, type Job,
 } from './knowledge-lint-compare';
 
@@ -159,10 +159,32 @@ describe('runJobs and the fix queue', () => {
     expect(JSON.parse(readFileSync(file, 'utf8')).items[0]).toMatchObject({ status: 'resolved', resolved: '2026-10-18' });
     rmSync(dir, { recursive: true });
   });
-  it('stops at --max-usd (adversary R10)', async () => {
-    const fetchImpl = async () => answer('{"findings": []}');
-    const r = await runJobs(jobs, { apiKey: 'k', fetchImpl, maxCalls: 10, maxUsd: 0.001, date: 'd' });
+  it('checks the projected cost (input estimate plus the output cap) before each call, never after (Codex round 2, finding 3)', async () => {
+    let n = 0;
+    const fetchImpl = async () => { n++; return answer('{"findings": []}'); };
+    // Too little for even one call at its worst case: nothing is sent.
+    expect(await runJobs(jobs, { apiKey: 'k', fetchImpl, maxCalls: 10, maxUsd: projectedUsd(jobs[0]) - 1e-6, date: 'd' }))
+      .toMatchObject({ calls: 0, deferred: 2 });
+    expect(n).toBe(0);
+    // Room for one worst case, but not for the spend so far plus the next worst case.
+    const r = await runJobs(jobs, { apiKey: 'k', fetchImpl, maxCalls: 10, maxUsd: projectedUsd(jobs[0]) + 1e-6, date: 'd' });
     expect(r).toMatchObject({ calls: 1, deferred: 1 });
+    expect(r.usd).toBeLessThanOrEqual(projectedUsd(jobs[0]));
+  });
+  it('a response that fails to parse records a retry for that pair and keeps every other result (Codex round 2, finding 2)', async () => {
+    const p2 = mk('hyperlipidaemia', 'pathway', `${pathway.body}\n\nPsyllium may help. Psyllium again.`, ['cholesterol', 'ldl', 'statin']);
+    const psy = mk('psyllium', 'reference', 'Psyllium lowers LDL cholesterol.', ['psyllium']);
+    const three = buildJobs([p2, ryr, psy], [{ handle: 'hyperlipidaemia', reasons: ['slice'] }], topics, algo, []);
+    expect(three).toHaveLength(3);
+    const bodies = [
+      answer('{"findings": []}'),
+      { ok: true, status: 200, json: async () => { throw new SyntaxError('Unexpected token < in JSON'); } } as unknown as Response,
+      answer('{"findings": [null, 3]}'),
+    ];
+    let i = 0;
+    const r = await runJobs(three, { apiKey: 'k', fetchImpl: async () => bodies[i++] ?? answer('{"findings": []}'), maxCalls: 10, maxUsd: 5, date: 'd' });
+    expect(r.outcomes.map(o => o.status).slice(0, 3)).toEqual(['done', 'retry', 'done']);
+    expect(r.outcomes).toHaveLength(three.length);
   });
 });
 

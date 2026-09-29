@@ -195,7 +195,7 @@ export function buildPrompt(job: Job): { system: string; user: string } {
 }
 
 export function estimate(jobs: Job[]) {
-  const inputTokens = jobs.reduce((t, j) => { const p = buildPrompt(j); return t + Math.ceil((p.system.length + p.user.length) / CHARS_PER_TOKEN); }, 0);
+  const inputTokens = jobs.reduce((t, j) => t + promptTokens(j), 0);
   const p = PRICES.sonnet55;
   const outputExpected = jobs.length * EXPECTED_OUTPUT_TOKENS;
   const outputMax = jobs.length * MAX_OUTPUT_TOKENS;
@@ -220,6 +220,7 @@ export function parseFindings(job: Job, text: string, date: string) {
   const findings: LintFinding[] = [];
   let rejected = 0, planted = false;
   for (const f of parsed.findings as Record<string, unknown>[]) {
+    if (!f || typeof f !== 'object') { rejected++; continue; }
     const str = (k: string) => typeof f[k] === 'string' ? normalise(f[k] as string) : '';
     const [qa, qb, fix] = [str('quote_a'), str('quote_b'), str('fix_handle')];
     if (INSTRUCTION_LIKE.test(qa) || INSTRUCTION_LIKE.test(qb)) { rejected++; planted = true; continue; }
@@ -244,34 +245,42 @@ type Fetch = (url: string, init: RequestInit) => Promise<Response>;
 
 export interface Outcome { id: string; status: 'done' | 'retry' }
 
+const promptTokens = (job: Job) => { const p = buildPrompt(job); return Math.ceil((p.system.length + p.user.length) / CHARS_PER_TOKEN); };
+
+/** The worst case for one call: its estimated input plus the full output cap. */
+export const projectedUsd = (job: Job) => (promptTokens(job) * PRICES.sonnet55.input + MAX_OUTPUT_TOKENS * PRICES.sonnet55.output) / 1e6;
+
 export async function runJobs(jobs: Job[], o: { apiKey: string; fetchImpl: Fetch; maxCalls: number; maxUsd: number; date: string }) {
   const p = PRICES.sonnet55;
   const r = { calls: 0, deferred: 0, usd: 0, tokensIn: 0, tokensOut: 0, errors: 0, rejected: 0, instructionText: [] as string[], findings: [] as LintFinding[], outcomes: [] as Outcome[] };
   for (const job of jobs) {
-    if (r.calls >= o.maxCalls || r.usd >= o.maxUsd) break;
+    // Checked before the call: the spend so far plus this call's worst case must stay within --max-usd.
+    if (r.calls >= o.maxCalls || r.usd + projectedUsd(job) > o.maxUsd) break;
     r.calls++;
-    const retry = () => { r.errors++; r.outcomes.push({ id: job.id, status: 'retry' }); };
     const { system, user } = buildPrompt(job);
-    let res: Response;
     try {
-      res = await o.fetchImpl('https://api.anthropic.com/v1/messages', {
+      const res = await o.fetchImpl('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': o.apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({ ...modelParams(DETECT_MODEL, MAX_OUTPUT_TOKENS, 'off'), system, messages: [{ role: 'user', content: user }] }),
       });
-    } catch { retry(); continue; }
-    if (!res.ok) { retry(); continue; }
-    const data = await res.json() as { content?: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number }; stop_reason?: string };
-    r.tokensIn += data.usage?.input_tokens ?? 0;
-    r.tokensOut += data.usage?.output_tokens ?? 0;
-    r.usd = (r.tokensIn * p.input + r.tokensOut * p.output) / 1e6;
-    if (data.stop_reason === 'refusal' || data.stop_reason === 'max_tokens') { retry(); continue; }
-    const parsed = parseFindings(job, (data.content ?? []).filter(c => c.type === 'text').map(c => c.text).join(''), o.date);
-    if (!parsed.usable) { retry(); continue; }
-    r.outcomes.push({ id: job.id, status: 'done' });
-    r.findings.push(...parsed.findings);
-    r.rejected += parsed.rejected;
-    if (parsed.instructionTextSeen) r.instructionText.push(`${job.a.handle} / ${job.b.handle}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json() as { content?: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number }; stop_reason?: string };
+      r.tokensIn += data.usage?.input_tokens ?? 0;
+      r.tokensOut += data.usage?.output_tokens ?? 0;
+      r.usd = (r.tokensIn * p.input + r.tokensOut * p.output) / 1e6;
+      if (data.stop_reason === 'refusal' || data.stop_reason === 'max_tokens') throw new Error(data.stop_reason);
+      const parsed = parseFindings(job, (data.content ?? []).filter(c => c.type === 'text').map(c => c.text).join(''), o.date);
+      if (!parsed.usable) throw new Error('unparseable');
+      r.outcomes.push({ id: job.id, status: 'done' });
+      r.findings.push(...parsed.findings);
+      r.rejected += parsed.rejected;
+      if (parsed.instructionTextSeen) r.instructionText.push(`${job.a.handle} / ${job.b.handle}`);
+    } catch {
+      // Any failure with one answer is that pair's retry; every other pair's result stands.
+      r.errors++;
+      r.outcomes.push({ id: job.id, status: 'retry' });
+    }
   }
   r.deferred = jobs.length - r.calls;
   return r;

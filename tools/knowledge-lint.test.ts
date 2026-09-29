@@ -9,7 +9,7 @@ import {
   SLICE_WEEKS, entryFrom, splitReferences, findMarkers, ruleMarkers, ruleIdentifiers,
   ruleGrokipedia, doseTokens, ruleDose, productMentions, lintEntry, validateAllowList,
   isAllowed, bucketOf, contentHash, selectDue, nextState, algorithmExcerpt, checkLinks,
-  renderReport, runLint, main, type Finding, type LintState, type Topic,
+  renderReport, runLint, main, appendFixQueue, queueCovered, type Finding, type LintState, type Topic,
 } from './knowledge-lint';
 
 const ref = (body: string, summary = '', handle = 'x-ref') =>
@@ -282,6 +282,7 @@ describe('checkLinks (--check-links)', () => {
     expect(calls).toEqual(['https://doi.org/10.1000/ok', 'https://doi.org/10.1000/dead', 'https://pubmed.ncbi.nlm.nih.gov/123/']);
     expect(r.dead.map(f => f.item)).toEqual(['10.1000/dead']);
     expect(r).toMatchObject({ checked: 3, unchecked: 1 });
+    expect(r.checkedIds).toEqual(['10.1000/ok', '10.1000/dead', '123']);
   });
   it('checks an identifier two entries share once, and reports a dead one against each entry (Codex review)', async () => {
     const calls: string[] = [];
@@ -294,6 +295,28 @@ describe('checkLinks (--check-links)', () => {
     const r = await checkLinks(ids, { fetchImpl, delayMs: 0, cap: 5 });
     expect(calls).toHaveLength(1);
     expect(r.dead.map(f => `${f.handle} ${f.item}`)).toEqual(['a 10.1000/dead', 'b 10.1000/dead']);
+  });
+});
+
+describe('queueCovered (Codex round 2, finding 1)', () => {
+  it('resolves a dead-link item only on a run that checked that identifier, and records last_checked', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'kqueue-'));
+    const file = join(dir, 'q.json');
+    const dead = { id: 'deadlink0001', rule: 'link-dead', side: 'knowledge', handles: ['a'], fix_handle: 'a', item: '10.1000/dead' };
+    const links = (ids: string[]) => ({ links: { checked: ids.length, unchecked: 0, unverified: 0, checkedIds: ids } });
+    const item = () => JSON.parse(readFileSync(file, 'utf8')).items[0];
+    appendFixQueue(file, [dead], '2026-10-04', queueCovered({ links: null }));
+    expect(appendFixQueue(file, [], '2026-10-11', queueCovered({ links: null })).counts.open).toBe(1);
+    expect(item().last_checked).toBeUndefined();
+    expect(appendFixQueue(file, [], '2026-10-18', queueCovered(links(['10.1000/other']))).counts.open).toBe(1);
+    expect(appendFixQueue(file, [], '2026-10-25', queueCovered(links(['10.1000/dead']))).counts.resolved).toBe(1);
+    expect(item()).toMatchObject({ status: 'resolved', resolved: '2026-10-25', last_checked: '2026-10-25' });
+    rmSync(dir, { recursive: true });
+  });
+  it('covers every other deterministic rule on a full run, and no model item', () => {
+    const covered = queueCovered({ links: null });
+    expect(covered({ rule: 'dose-mismatch', handles: ['a'], fix_handle: 'a', item: '5 mg' })).toBe(true);
+    expect(covered({ kind: 'pathway-vs-reference', handles: ['a', 'b'], fix_handle: 'b' })).toBe(false);
   });
 });
 
