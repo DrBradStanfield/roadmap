@@ -33,13 +33,15 @@ export interface Report {
   product_mentions_before: number;
   product_mentions_after: number;
   notes: string;
+  /** Optional further raw sources; a raw_quote prefixed "NIH: " or "EXTRA: " is matched in these. */
+  extra_raw?: { path: string; sha256: string }[];
 }
 
 export const REPORT_SCHEMA = {
   $schema: "http://json-schema.org/draft-07/schema#",
   title: "knowledge-batch diff report (one <handle>.json per article)",
   type: "object",
-  additionalProperties: false,
+  additionalProperties: true, // extra keys (grokipedia_claims, needs_pubmed, ...) are ignored
   required: ["handle", "type", "raw_path", "raw_sha256", "old_raw_path", "changed_tokens", "deleted_sentences",
     "headings_before", "headings_after", "proposed_summary_correction", "product_mentions_before",
     "product_mentions_after", "notes"],
@@ -69,6 +71,10 @@ export const REPORT_SCHEMA = {
     product_mentions_before: { type: "number" },
     product_mentions_after: { type: "number" },
     notes: { type: "string" },
+    extra_raw: {
+      type: "array",
+      items: { type: "object", required: ["path", "sha256"], properties: { path: { type: "string" }, sha256: { type: "string" } } },
+    },
   },
 };
 
@@ -110,6 +116,12 @@ export function validateReport(o: unknown): string[] {
   strArr("headings_before"); strArr("headings_after");
   objArr("changed_tokens", ["token", "body_line", "raw_quote"]);
   objArr("deleted_sentences", ["sentence", "justification"]);
+  if (r.extra_raw !== undefined) {
+    if (!Array.isArray(r.extra_raw)) e.push("extra_raw: array expected");
+    else (r.extra_raw as unknown[]).forEach((x, i) => {
+      for (const key of ["path", "sha256"]) if (!x || typeof (x as Record<string, unknown>)[key] !== "string") e.push(`extra_raw[${i}].${key}: string expected`);
+    });
+  }
   if (!["pathway", "reference", "video", "guideline"].includes(r.type as string)) e.push("type: pathway|reference|video|guideline expected");
   return e;
 }
@@ -365,14 +377,30 @@ function checkAc2(c: Ctx, added: string[], ac2: Check): number {
     if (sha256(buf) !== rep.raw_sha256) ac2.fails.push(`${tag} raw sha256 mismatch (file ${sha256(buf)}, report ${rep.raw_sha256})`);
     else rawNorm = normQuote(buf.toString("utf8"));
   }
+  const extras: { path: string; norm: string }[] = [];
+  for (const x of rep.extra_raw ?? []) {
+    if (!existsSync(x.path)) { ac2.fails.push(`${tag} extra_raw file not found: ${x.path}`); continue; }
+    const buf = readFileSync(x.path);
+    if (sha256(buf) !== x.sha256) ac2.fails.push(`${tag} extra_raw sha256 mismatch for ${x.path}`);
+    else extras.push({ path: x.path, norm: normQuote(buf.toString("utf8")) });
+  }
   let quoted = 0;
   for (const tok of added) {
     const entry = rep.changed_tokens.find((e) => tokenise(e.token, { keepRefs: true }).has(tok));
     if (!entry) { ac2.fails.push(`${tag} token "${tok}" is new in the body and has no changed_tokens entry`); continue; }
     if (!entry.raw_quote.trim()) { ac2.fails.push(`${tag} token "${tok}" has an empty raw_quote`); continue; }
-    if (!tokenise(entry.raw_quote, { keepRefs: true }).has(tok)) { ac2.fails.push(`${tag} token "${tok}" does not occur in its raw_quote`); continue; }
-    if (rawNorm === null) continue;
-    if (!rawNorm.includes(normQuote(entry.raw_quote))) { ac2.fails.push(`${tag} raw_quote for "${tok}" is not in the raw file`); continue; }
+    const prefixed = /^\s*(?:NIH|EXTRA):\s*/.exec(entry.raw_quote);
+    const quote = prefixed ? entry.raw_quote.slice(prefixed[0].length) : entry.raw_quote;
+    if (!tokenise(quote, { keepRefs: true }).has(tok)) { ac2.fails.push(`${tag} token "${tok}" does not occur in its raw_quote`); continue; }
+    const q = normQuote(quote);
+    if (prefixed) {
+      const hit = extras.find((x) => x.norm.includes(q));
+      if (!hit) { ac2.fails.push(`${tag} raw_quote for "${tok}" is not in the raw file`); continue; }
+      ac2.infos.push(`${tag} "${tok}" matched in extra_raw ${hit.path}`);
+    } else {
+      if (rawNorm === null) continue;
+      if (!rawNorm.includes(q)) { ac2.fails.push(`${tag} raw_quote for "${tok}" is not in the raw file`); continue; }
+    }
     quoted++;
   }
   ac2.infos.push(`${tag} ${added.length} new tokens, ${quoted} verified against raw`);
@@ -435,6 +463,50 @@ function referenceCheck(body: string, tag: string, ac7: Check) {
   ac7.infos.push(`${tag} ${defs.size} references, ${cited.size} cited`);
 }
 
+const ALLOWED_HOSTS = ["consumerlab.com", "ods.od.nih.gov", "pubmed.ncbi.nlm.nih.gov", "doi.org"];
+const URL_RE = /https?:\/\/[^\s)\]>]+/g;
+const hostOf = (u: string) => { try { return new URL(u.replace(/[.,;]+$/, "")).hostname.toLowerCase().replace(/^www\./, ""); } catch { return ""; } };
+
+function refLines(body: string): string[] {
+  return classifyLines(body).filter(({ line, ref }) => ref && (REF_LINE.test(line) || /^\s*(?:[-*]\s*)?\d+[.)]\s+\S/.test(line))).map((x) => x.line);
+}
+
+function referenceSourceCheck(newBody: string, baseBody: string, tag: string, ac7: Check) {
+  const known = new Set(refLines(baseBody).flatMap((l) => (l.match(URL_RE) ?? []).map(hostOf)));
+  for (const line of refLines(newBody)) {
+    const urls = line.match(URL_RE) ?? [];
+    const title = line.replace(/\[([^\]]*)\]\([^)]*\)/g, (_, t: string) => (/^https?:/i.test(t) ? "" : t)).replace(URL_RE, "").replace(/^\s*(?:[-*]\s*)?(?:\[\d+\]|\d+[.)])/, "");
+    if (urls.length && !/[A-Za-z]{2}/.test(title)) ac7.fails.push(`${tag} reference line is a bare URL without a title: ${clip(line, 100)}`);
+    for (const u of urls) {
+      const h = hostOf(u);
+      if (!h || ALLOWED_HOSTS.some((a) => h === a || h.endsWith(`.${a}`)) || known.has(h)) continue;
+      ac7.fails.push(`${tag} reference line has unknown host ${h || u}: ${clip(line, 100)}`);
+    }
+  }
+}
+
+const PRODUCT_HEADING = /product|microvitamin|sleep by dr brad/i;
+function sectionsMatching(body: string): Map<string, string> {
+  const lines = body.split(/(?<=\n)/), out = new Map<string, string>();
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^(#{1,6})\s/);
+    if (!m || !PRODUCT_HEADING.test(lines[i])) continue;
+    let j = i + 1;
+    while (j < lines.length && !(/^#{1,6}\s/.test(lines[j]) && lines[j].match(/^(#+)/)![1].length <= m[1].length)) j++;
+    out.set(lines[i].trim(), lines.slice(i, j).join(""));
+  }
+  return out;
+}
+
+function productSectionCheck(newBody: string, baseBody: string, tag: string, ac7: Check) {
+  const a = sectionsMatching(baseBody), b = sectionsMatching(newBody);
+  for (const [h, text] of a) {
+    if (!b.has(h)) ac7.fails.push(`${tag} product section missing: ${h}`);
+    else if (b.get(h) !== text) ac7.fails.push(`${tag} product section changed: ${h}`);
+  }
+  for (const h of b.keys()) if (!a.has(h)) ac7.fails.push(`${tag} product section added: ${h}`);
+}
+
 function checkAc7(c: Ctx, ac7: Check, pw: Check) {
   const tag = `${c.handle}:`, rep = c.rep;
   for (const l of c.newBody.split(/\r?\n/)) {
@@ -446,7 +518,11 @@ function checkAc7(c: Ctx, ac7: Check, pw: Check) {
   if (pa > pb) ac7.fails.push(`${tag} product mentions rose ${pb} -> ${pa}`);
   if (rep && (rep.product_mentions_before !== pb || rep.product_mentions_after !== pa))
     ac7.fails.push(`${tag} report says product mentions ${rep.product_mentions_before} -> ${rep.product_mentions_after}, recomputed ${pb} -> ${pa}`);
-  if (rep?.type === "reference") referenceCheck(c.newBody, tag, ac7);
+  if (rep?.type === "reference") {
+    referenceCheck(c.newBody, tag, ac7);
+    referenceSourceCheck(c.newBody, c.baseBody, tag, ac7);
+    productSectionCheck(c.newBody, c.baseBody, tag, ac7);
+  }
   if (rep?.type === "pathway") {
     const lines = c.newBody.split(/\r?\n/);
     if (!/^\*Source: Auckland Region HealthPathways/m.test(c.newBody)) pw.fails.push(`${tag} missing "*Source: Auckland Region HealthPathways" line`);

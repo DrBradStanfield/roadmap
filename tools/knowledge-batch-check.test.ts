@@ -343,6 +343,56 @@ describe("exceptions", () => {
   });
 });
 
+describe("reference batch rules", () => {
+  const withRefs = (extra: string, cite = " [3]") =>
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("upset [2].", `upset [2]${cite}.`).trimEnd() + `\n\n${extra}\n`);
+  it("ignores extra top-level report keys", () => {
+    expect(validateReport({ ...exampleReport("x"), grokipedia_claims: ["a"], needs_pubmed: [] })).toEqual([]);
+    reps.alpha = { ...reps.alpha, grokipedia_claims: ["c"], needs_pubmed: ["d"] } as Report;
+    expect(fails(run().AC2)).toEqual([]);
+  });
+  it("finds NIH:/EXTRA: quotes in extra_raw, checks their sha, and names the file", () => {
+    const nih = join(reports, "nih.txt");
+    writeFileSync(nih, "NIH says adults need 300 mg per day.");
+    reps.alpha.changed_tokens[0].raw_quote = "NIH: adults need 300 mg per day";
+    reps.alpha.extra_raw = [{ path: nih, sha256: sha256(readFileSync(nih)) }];
+    const r = run().AC2;
+    expect(fails(r)).toEqual([]);
+    expect(r.evidence.join()).toContain("matched in extra_raw " + nih);
+    reps.alpha.changed_tokens[0].raw_quote = "EXTRA: adults need 300 mg per day";
+    expect(fails(run().AC2)).toEqual([]);
+    reps.alpha.changed_tokens[0].raw_quote = "NIH: participants took 300 mg daily"; // only in the main raw
+    expect(fails(run().AC2).join()).toContain("not in the raw file");
+    reps.alpha.changed_tokens[0].raw_quote = "NIH: adults need 300 mg per day";
+    reps.alpha.extra_raw = [{ path: nih, sha256: "0".repeat(64) }];
+    expect(fails(run().AC2).join()).toContain("extra_raw sha256 mismatch");
+  });
+  it("fails on a bare-URL reference line and on unknown hosts", () => {
+    withRefs("[3] https://pubmed.ncbi.nlm.nih.gov/123/");
+    expect(fails(run().AC7).join()).toContain("reference line is a bare URL without a title: [3]");
+    withRefs("[3] Foo B. Study. https://evil.example.com/x");
+    expect(fails(run().AC7).join()).toContain("unknown host evil.example.com");
+  });
+  it("allows the listed hosts and hosts already in the base references", () => {
+    withRefs("[3] Foo B. Study. [link](https://www.consumerlab.com/x) https://doi.org/10.1/x https://ods.od.nih.gov/y");
+    expect(fails(run().AC7).filter((f) => /host|bare/.test(f))).toEqual([]);
+    put("docs/blog/alpha.md", fx("alpha.base.md").replace("[2] Jones B. Synthetic safety review. 2020.", "[2] Jones B. Review. https://known.example.org/a"));
+    sh(["add", "-A"]); sh(["commit", "-q", "-m", "base2"]);
+    put("docs/blog/alpha.md", fx("alpha.base.md").replace("[2] Jones B. Synthetic safety review. 2020.", "[2] Jones B. Review. https://known.example.org/a\n\n[3] Foo B. Study. https://known.example.org/b").replace("upset [2]", "upset [2] [3]"));
+    expect(fails(run().AC7).filter((f) => /host|bare/.test(f))).toEqual([]);
+  });
+  it("requires product sections to stay byte-identical", () => {
+    const base = fx("alpha.base.md").replace("## Safety", "## MicroVitamin and this topic\n\nOur product is locked.\n\n## Safety");
+    put("docs/blog/alpha.md", base); sh(["add", "-A"]); sh(["commit", "-q", "-m", "base2"]);
+    put("docs/blog/alpha.md", base);
+    expect(fails(run().AC7).filter((f) => f.includes("product section"))).toEqual([]);
+    put("docs/blog/alpha.md", base.replace("locked.", "changed."));
+    expect(fails(run().AC7).join()).toContain("product section changed: ## MicroVitamin and this topic");
+    put("docs/blog/alpha.md", base.replace("## MicroVitamin and this topic\n\nOur product is locked.\n\n", ""));
+    expect(fails(run().AC7).join()).toContain("product section missing");
+  });
+});
+
 describe("pathway rules", () => {
   it("fails without the source line or deferral blockquote", () => {
     put("docs/pathway/beta.md", fx("beta.new.md").replace("*Source: Auckland Region HealthPathways, reviewed 2026-01-01*", "Source elsewhere").replace(/^>.*$/m, ""));
