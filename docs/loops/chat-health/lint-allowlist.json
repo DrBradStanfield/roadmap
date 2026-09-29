@@ -1,0 +1,28 @@
+{
+ "about": "Deliberate divergences the weekly knowledge lint must not report (tools/knowledge-lint.ts and knowledge-lint-compare.ts). Brad owns this file: the loop proposes entries in its report and never edits it. Each entry: rule, then handle (one entry) or pair (two handles, any order; the algorithm is algorithm:<topic>), optional item (the finding's exact item; without it the entry covers the whole handle or pair), reason, date (YYYY-MM-DD), who. For the model rules an entry with an item is shown to the model as a known divergence; one without an item skips the comparison.",
+ "entries": [
+  {
+   "rule": "unresolved-marker",
+   "handle": "diet",
+   "reason": "The bracketed numbers point to the AHA 2026 paper's own reference list, as the note under the title says (DOI 10.1161/CIR.0000000000001435).",
+   "date": "2026-09-29",
+   "who": "build session 2026-09-29 (mechanical; Brad to confirm)"
+  },
+  {
+   "rule": "entry-vs-algorithm",
+   "pair": ["hyperlipidaemia", "algorithm:lipids"],
+   "item": "LDL target",
+   "reason": "Deliberate: the algorithm's LDL target (below 1.4 mmol/L, 55 mg/dL) sits below guideline targets.",
+   "date": "2026-09-29",
+   "who": "Brad (knowledge-refresh plan decision 6)"
+  },
+  {
+   "rule": "entry-vs-algorithm",
+   "pair": ["cardiovascular-risk-assessment-cvra", "algorithm:lipids"],
+   "item": "LDL target",
+   "reason": "Deliberate: the algorithm's LDL target (below 1.4 mmol/L, 55 mg/dL) sits below guideline targets.",
+   "date": "2026-09-29",
+   "who": "Brad (knowledge-refresh plan decision 6)"
+  }
+ ]
+}

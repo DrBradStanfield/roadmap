@@ -4,6 +4,17 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-09-29 (Brad, knowledge-refresh plan decision 6): the weekly lint
+  joins the loop. Deterministic rules (`tools/knowledge-lint.ts`) and Sonnet
+  5.5 detection (`tools/knowledge-lint-compare.ts`) over changed entries plus
+  a 1-in-13 slice; knowledge-side findings queue for Opus fixes on a PR Brad
+  merges; algorithm side report-only; allow-list Brad's. Steps and schemas:
+  `notes/weekly-lint.md`; story US-41. To stay one-in-one-out at 186 lines,
+  eight passages were reworded shorter with no rule dropped (ground truth 6,
+  Orient 3, YouTube reply length, the router-pick check, the paraphrase rule,
+  the harness key, the sibling line and Delivery); the paraphrase rule no
+  longer lists what the privacy test checks (the test does).
+
 - 2026-09-10 (Brad): production failures are paraphrased on ingest into
   `tools/test-queries.json`, never copied verbatim — the file is public and a
   failure is a real person's words (the youtube-dryrun leak, US-09, is the

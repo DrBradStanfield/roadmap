@@ -96,7 +96,7 @@ interface Usage {
 
 // $ per million tokens. Figures supplied with the 2026-09-29 comparison task.
 // cacheWrite is the 1-hour rate, 2x input (PROMPT_CACHE); 5-minute writes are 1.25x.
-const PRICES = {
+export const PRICES = {
   haiku: { input: 1, output: 5, cacheRead: 0.10, cacheWrite: 2 },
   sonnet55: { input: 2, output: 10, cacheRead: 0.20, cacheWrite: 4 },
 };

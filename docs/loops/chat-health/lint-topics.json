@@ -1,0 +1,52 @@
+{
+ "about": "Which entries the weekly lint compares with which sections of health_roadmap_algorithm.md (tools/knowledge-lint-compare.ts, entry-vs-algorithm). headings are exact heading text without the #s; a renamed heading stops the run. terms pick paragraphs from entries longer than 24,000 characters. nouns overrides a reference's first keyword as the word pathways and other references must name for a pairing (whole word, plural allowed; case-sensitive if it has a capital). A pairing choice, not clinical content: the loop may propose changes here in its report.",
+ "nouns": {
+  "weight-loss-supplements-benefits-evidence-and-safety": "weight loss supplement",
+  "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects": "cholesterol-lowering supplement",
+  "same-benefits-forms-dosing-and-side-effects": "SAMe"
+ },
+ "topics": [
+  {
+   "topic": "lipids",
+   "headings": ["LDL Cholesterol (mmol/L)", "Total Cholesterol (mmol/L)", "Non-HDL Cholesterol (mmol/L)", "HDL Cholesterol (mmol/L)", "Triglycerides (mmol/L)", "ApoB (g/L)", "Lp(a) (nmol/L)", "On-Treatment Lipid Targets", "Atherogenic Lipid Hierarchy", "Lp(a)", "HDL and Triglycerides", "4b. Dietary Interventions for Elevated Lipids (`lipid-diet`)", "5. Cholesterol Medication Cascade"],
+   "handles": ["hyperlipidaemia", "cardiovascular-risk-assessment-cvra", "red-yeast-rice-benefits-forms-dosing-and-side-effects", "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects", "psyllium-benefits-forms-dosing-and-side-effects"],
+   "terms": ["cholesterol", "ldl", "lipid", "statin", "apob", "triglyceride", "dose", "dosing"]
+  },
+  {
+   "topic": "glycaemia",
+   "headings": ["HbA1c (mmol/mol IFCC)", "HbA1c Tiers", "6. Weight & Diabetes Medication Cascade"],
+   "handles": ["type-2-diabetes", "prediabetes", "diabetes-screening-and-diagnosis-in-adults", "non-insulin-diabetes-medications"],
+   "terms": ["hba1c", "diabetes", "glucose", "glp-1", "metformin", "sglt2"]
+  },
+  {
+   "topic": "weight",
+   "headings": ["BMI", "Waist-to-Height Ratio", "Ideal Body Weight (Peterson Formula, 2016)", "Daily Protein Target", "6. Weight & Diabetes Medication Cascade"],
+   "handles": ["weight-related-concerns-in-adults", "protein-powders-benefits-types-dosing-and-side-effects"],
+   "terms": ["bmi", "weight", "waist", "obesity", "glp-1", "protein", "per kg"]
+  },
+  {
+   "topic": "blood-pressure",
+   "headings": ["Blood Pressure (mmHg)", "Blood Pressure Tiers"],
+   "handles": ["hypertension-in-adults", "cardiovascular-risk-assessment-cvra"],
+   "terms": ["blood pressure", "hypertension", "mmhg"]
+  },
+  {
+   "topic": "kidney",
+   "headings": ["eGFR (CKD-EPI 2021, Race-Free)", "eGFR (mL/min/1.73m^2)"],
+   "handles": ["chronic-kidney-disease-ckd"],
+   "terms": ["egfr", "kidney", "ckd"]
+  },
+  {
+   "topic": "screening",
+   "headings": ["8. Cancer Screening", "PSA (ng/mL)"],
+   "handles": ["national-bowel-screening-programme", "bowel-polyp-surveillance", "breast-screening-and-surveillance", "lung-cancer", "prostate-cancer-testing", "bone-density-scan-dexa"],
+   "terms": ["screening", "colonoscopy", "mammogra", "psa", "dexa", "interval"]
+  },
+  {
+   "topic": "supplements",
+   "headings": ["Supplements (always shown)"],
+   "handles": ["creatine-benefits-best-forms-dosing-and-side-effects", "collagen-benefits-best-forms-dosing-and-side-effects", "omega-3-fish-oil-benefits-forms-dosing-and-side-effects", "melatonin-benefits-forms-dosing-and-side-effects", "glycine-benefits-forms-dosing-and-side-effects", "magnesium-benefits-best-forms-dosing", "vitamin-d-benefits-forms-dosing-and-side-effects", "vitamin-d-supplementation"],
+   "terms": ["dose", "dosing", "daily", "mg", "g/day", "evidence", "trial"]
+  }
+ ]
+}

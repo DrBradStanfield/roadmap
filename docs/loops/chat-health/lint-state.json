@@ -1,0 +1,4112 @@
+{
+ "version": 1,
+ "lastRun": null,
+ "cursor": 0,
+ "algorithm": {
+  "lipids": "834534ae59d23027",
+  "glycaemia": "c04f19fc731f2872",
+  "weight": "f276151ef934555a",
+  "blood-pressure": "23da883e6a833045",
+  "kidney": "33989a63506d6f50",
+  "screening": "497e525afaea6912",
+  "supplements": "1ede274c1a9969ef"
+ },
+ "entries": {
+  "soon-well-forget-what-heart-attacks-are": {
+   "hash": "b4db039c6a2cdd50",
+   "products": 0
+  },
+  "we-are-witnessing-cancers-downfall": {
+   "hash": "31671b000cc7bd53",
+   "products": 0
+  },
+  "why-arent-cardiologists-prescribing-vitamin-k2": {
+   "hash": "463baa15817068c4",
+   "products": 0
+  },
+  "our-iq-will-start-dropping-soon-new-evidence": {
+   "hash": "9fc842d1c9fa1e88",
+   "products": 0
+  },
+  "this-vaccine-just-changed-cancer-forever": {
+   "hash": "c24aa7f40fd79d35",
+   "products": 0
+  },
+  "david-sinclair-says-popular-peptide-causes-blindness": {
+   "hash": "96ac0fdebf3980c3",
+   "products": 0
+  },
+  "multivitamins-are-no-longer-expensive-urine": {
+   "hash": "a7e6b5827706a13f",
+   "products": 0
+  },
+  "wrong-about-inflammation-heart-disease-new-study": {
+   "hash": "d9ac26f998b66ecc",
+   "products": 0
+  },
+  "nasa-found-how-to-stop-osteoporosis": {
+   "hash": "fb23b843040528b9",
+   "products": 0
+  },
+  "lose-visceral-fat-without-starving-yourself": {
+   "hash": "eb4e3d1a4cc7c675",
+   "products": 0
+  },
+  "debunked-6-pill-found-to-reduce-heart-disease": {
+   "hash": "8ef0ca09bb8abea9",
+   "products": 0
+  },
+  "did-the-fda-just-approve-bpc-157": {
+   "hash": "40dd3108a93f9422",
+   "products": 0
+  },
+  "jeremy-clarkson-says-to-lie-to-your-doctor": {
+   "hash": "1440a078884d8d43",
+   "products": 0
+  },
+  "what-should-your-blood-pressure-actually-be": {
+   "hash": "0c786bed8b212569",
+   "products": 0
+  },
+  "shrink-the-fat-around-your-heart": {
+   "hash": "9441f1f75447f6e2",
+   "products": 0
+  },
+  "fix-gout-without-giving-up-meat": {
+   "hash": "7b6dc7d30bc00428",
+   "products": 0
+  },
+  "more-vitamins-worse-health-new-trial": {
+   "hash": "da2872999c4e5a82",
+   "products": 0
+  },
+  "the-anti-aging-supplement-everyone-took-never-worked": {
+   "hash": "a9ed1228b980ecea",
+   "products": 0
+  },
+  "does-vitamin-k2-actually-protect-your-heart-new-trial": {
+   "hash": "187e647408d58b4c",
+   "products": 0
+  },
+  "12-product-beats-every-anti-aging-cream": {
+   "hash": "34734c1776fa18ea",
+   "products": 0
+  },
+  "were-all-about-to-become-lean-and-ripped-new-evidence": {
+   "hash": "502e605079fafbe4",
+   "products": 0
+  },
+  "ive-never-seen-anything-like-this-in-cancer-research": {
+   "hash": "036b6c9a0be33e9f",
+   "products": 0
+  },
+  "did-one-tiny-tweak-just-solve-heart-disease": {
+   "hash": "ad7b3c24e8da1aaa",
+   "products": 0
+  },
+  "the-grad-student-who-broke-microplastics-research": {
+   "hash": "d8d21277815dd4ed",
+   "products": 0
+  },
+  "why-i-take-low-dose-tirzepatide-zepbound": {
+   "hash": "d148573a03fa55bd",
+   "products": 6
+  },
+  "this-vaccine-is-quietly-doing-something-to-your-heart": {
+   "hash": "4e480d19368a4fe0",
+   "products": 0
+  },
+  "concerning-omega-3-brain-study": {
+   "hash": "d2805a1a7e8a61da",
+   "products": 1
+  },
+  "the-truth-about-seed-oil-toxicity": {
+   "hash": "567a667be64f58cb",
+   "products": 0
+  },
+  "whats-causing-colon-cancer-to-rise-so-fast": {
+   "hash": "98f79b7c80f41915",
+   "products": 0
+  },
+  "we-were-wrong-about-aspirin-new-evidence": {
+   "hash": "e987a0d91b1e7979",
+   "products": 0
+  },
+  "the-30-year-statin-panic-is-finally-over": {
+   "hash": "2decb744fff6c19f",
+   "products": 0
+  },
+  "99-of-heart-attacks-had-this-prior-warning": {
+   "hash": "900e2d0ba176f0a9",
+   "products": 0
+  },
+  "lizard-venom-regrows-irreplaceable-cartilage": {
+   "hash": "18c9800d22d0084c",
+   "products": 0
+  },
+  "the-cholesterol-war-is-over-heres-who-won": {
+   "hash": "115d63026517c9b0",
+   "products": 0
+  },
+  "this-2-remedy-beats-every-cold-medicine": {
+   "hash": "fc3804c35ff6c47e",
+   "products": 0
+  },
+  "new-study-says-i-was-wrong-about-nmn-and-nr": {
+   "hash": "69af88f6039339a2",
+   "products": 1
+  },
+  "the-anti-aging-supplement-scam-new-evidence": {
+   "hash": "42800534e5dde554",
+   "products": 0
+  },
+  "i-got-a-full-body-mri-heres-why-you-shouldnt": {
+   "hash": "457f4341243384fc",
+   "products": 0
+  },
+  "completely-wrong-about-salt-new-study": {
+   "hash": "79177a5208d1b819",
+   "products": 0
+  },
+  "best-diet-confirmed-by-5248916-person-year-study": {
+   "hash": "4ddaf1c8996f4004",
+   "products": 0
+  },
+  "your-skin-loses-hyaluronic-acid-with-age": {
+   "hash": "d96c51f908534c04",
+   "products": 2
+  },
+  "this-2-food-beats-every-nitric-oxide-supplement": {
+   "hash": "3ce49be7ddf1446a",
+   "products": 0
+  },
+  "surprising-heart-results-from-this-huge-melatonin-study": {
+   "hash": "f3a881e7508dd2d8",
+   "products": 0
+  },
+  "more-exercise-more-plaque": {
+   "hash": "325ff6945124859e",
+   "products": 0
+  },
+  "ridiculously-cheap-ways-to-treat-skin-aging": {
+   "hash": "37f34103f32eb7b6",
+   "products": 0
+  },
+  "what-coffee-actually-does-to-your-brain-131821-person-study": {
+   "hash": "2c79a07949544f1d",
+   "products": 0
+  },
+  "what-microneedling-really-does-for-skin-aging": {
+   "hash": "0b43cfd0adfe77d0",
+   "products": 0
+  },
+  "the-truth-about-nitric-oxide-supplements-nitralis": {
+   "hash": "d6fc5a6e587890ee",
+   "products": 0
+  },
+  "the-truth-about-saturated-fat-and-heart-disease": {
+   "hash": "87662ed4fd513d38",
+   "products": 0
+  },
+  "the-unexpected-cause-of-the-scary-cancer-surge": {
+   "hash": "0dd59660e5ad7463",
+   "products": 0
+  },
+  "1-394-person-study-on-taurine-proves-what-we-suspected": {
+   "hash": "e1278236265bfa12",
+   "products": 4
+  },
+  "almost-all-turmeric-curcumin-brands-are-a-scam": {
+   "hash": "92acba65ab2d2d46",
+   "products": 0
+  },
+  "coronary-heart-disease-is-almost-eliminated": {
+   "hash": "88af0dc00a2596a0",
+   "products": 0
+  },
+  "the-most-important-antioxidant-study-i-ve-ever-read": {
+   "hash": "e821c79ee1714a5a",
+   "products": 2
+  },
+  "peanut-allergies": {
+   "hash": "4766a782fe680c7a",
+   "products": 0
+  },
+  "weapon-against-alzheimer-s-just-got-fda-approved": {
+   "hash": "3ccd8fe86a631583",
+   "products": 0
+  },
+  "do-what-to-your-balls-to-increase-lifespan": {
+   "hash": "80cde21c373a366d",
+   "products": 0
+  },
+  "eat-real-food-i-was-wrong": {
+   "hash": "319a4680080d067c",
+   "products": 0
+  },
+  "cancer-tests-you-need-right-now": {
+   "hash": "03ce9ef4aa3295c1",
+   "products": 0
+  },
+  "hrt-just-changed": {
+   "hash": "18271f2bd10fdb6e",
+   "products": 0
+  },
+  "new-study-reveals-the-best-exercise-to-treat-knee-arthritis": {
+   "hash": "38d12378e2ee11f1",
+   "products": 0
+  },
+  "nmn-nad-supplements-for-anti-aging-just-changed": {
+   "hash": "5d8f7d9d87dc0731",
+   "products": 1
+  },
+  "shingles-vaccine-dementia": {
+   "hash": "cfcd89edaa79eafe",
+   "products": 1
+  },
+  "the-coffee-evidence-just-changed": {
+   "hash": "aa6ef05db1f8c693",
+   "products": 0
+  },
+  "weight-loss-in-new-retatrutide-study": {
+   "hash": "aa401ce5b0978272",
+   "products": 0
+  },
+  "pcsk9i-breakthrough-cuts-heart-disease": {
+   "hash": "ad80e02f768566d1",
+   "products": 1
+  },
+  "vitamin-k-benefits-forms-dosing-and-side-effects": {
+   "hash": "e2a8fe9eefd1eeb0",
+   "products": 3
+  },
+  "exercise-snacks-are-a-longevity-cheat-code": {
+   "hash": "51a329c10604c198",
+   "products": 0
+  },
+  "omega-3-breakthrough-cuts-major-heart-events-by-43": {
+   "hash": "a6b1d175aa07585a",
+   "products": 0
+  },
+  "this-vitamin-d-study-forced-me-to-change-my-view": {
+   "hash": "d9593036e3b2bcdb",
+   "products": 1
+  },
+  "blood-pressure-targets-just-changed": {
+   "hash": "9b137e7e0d842571",
+   "products": 1
+  },
+  "why-healthy-people-still-have-heart-attacks": {
+   "hash": "acfc85eb5121e97d",
+   "products": 0
+  },
+  "shocking-study-links-melatonin-to-89-heart-failure-spike": {
+   "hash": "79833dd383173ec2",
+   "products": 0
+  },
+  "popular-longevity-treatment-makes-you-sick": {
+   "hash": "1d5bc4bc8ac40414",
+   "products": 1
+  },
+  "vitamin-a-benefits-forms-dosing-and-side-effects": {
+   "hash": "4d777100f5958ffa",
+   "products": 0
+  },
+  "experts-were-wrong-about-testosterone-shocking-new-proof": {
+   "hash": "2a2f53363809a760",
+   "products": 1
+  },
+  "dementia-rates-plunged-in-study-of-1-million-people": {
+   "hash": "2e60f109f4d932f4",
+   "products": 1
+  },
+  "this-study-destroys-what-we-thought-about-exercise": {
+   "hash": "cda260eac193d14a",
+   "products": 0
+  },
+  "what-they-re-hiding-about-lead-found-in-protein-powders": {
+   "hash": "8ae918c9c332fb03",
+   "products": 0
+  },
+  "fatty-liver-treatment-breakthrough": {
+   "hash": "b36b30337497edfe",
+   "products": 1
+  },
+  "surprising-microbiome-effects-from-artificial-sweeteners": {
+   "hash": "ae33bb2c8ec59a46",
+   "products": 0
+  },
+  "when-your-meds-start-making-you-sick": {
+   "hash": "ed83fdaeb97cbeae",
+   "products": 0
+  },
+  "microdosing-tirzepatide-ozempic-glp1-for-longevity": {
+   "hash": "bf34f8f4e56abe5f",
+   "products": 0
+  },
+  "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects": {
+   "hash": "13ff682492937094",
+   "products": 0
+  },
+  "new-vitamin-d-study-on-telomeres-and-aging": {
+   "hash": "e642b6ab85f80093",
+   "products": 1
+  },
+  "ashwagandha-supplement-fails-in-new-study": {
+   "hash": "288ab4b382b599c9",
+   "products": 1
+  },
+  "spirulina-significantly-improves-weight-in-new-study": {
+   "hash": "45ede2fe44dd9b53",
+   "products": 0
+  },
+  "5-supplements-that-actually-work": {
+   "hash": "5e2ce408751af522",
+   "products": 0
+  },
+  "same-benefits-forms-dosing-and-side-effects": {
+   "hash": "5d77a7acb963a16f",
+   "products": 2
+  },
+  "supplement-not-melatonin-improved-sleep-in-155-person-study": {
+   "hash": "0e0306383b67c8f9",
+   "products": 0
+  },
+  "the-protein-obsession-is-going-horribly-wrong": {
+   "hash": "90e492edba6ed463",
+   "products": 0
+  },
+  "saffron-benefits-forms-dosing-and-side-effects": {
+   "hash": "11329f1e301fa1c8",
+   "products": 0
+  },
+  "rhodiola-benefits-forms-dosing-and-side-effects": {
+   "hash": "ec2122dbee09728b",
+   "products": 0
+  },
+  "sleep-apnea-brain-aging": {
+   "hash": "32d44501b78297d2",
+   "products": 2
+  },
+  "the-most-underrated-exercise-for-overall-health-and-performance": {
+   "hash": "fe8e1bef45e54069",
+   "products": 0
+  },
+  "120-years-of-exercise-history": {
+   "hash": "173cda4c98f25f79",
+   "products": 1
+  },
+  "the-diet-my-patients-use-to-crush-visceral-fat": {
+   "hash": "1f4e00e161b0042f",
+   "products": 0
+  },
+  "low-dose-lithium-crushes-dementia": {
+   "hash": "19e8228cbc7ac601",
+   "products": 1
+  },
+  "an-evidence-based-anti-aging-skincare-routine": {
+   "hash": "d8d4ea4df5c16477",
+   "products": 1
+  },
+  "current-evidence-does-not-support-zone-2-training": {
+   "hash": "5abbdac363d38804",
+   "products": 0
+  },
+  "this-mineral-deficiency-is-causing-strokes": {
+   "hash": "e7fb8abc7dba4f57",
+   "products": 1
+  },
+  "no-evidence-to-support-the-use-of-collagen-supplements": {
+   "hash": "a6f7125f04ac5d86",
+   "products": 0
+  },
+  "this-amino-acid-was-accidentally-found-to-improve-our-sleep": {
+   "hash": "b7c5680c181b9ef1",
+   "products": 0
+  },
+  "harvard-says-this-is-the-healthiest-way-to-eat": {
+   "hash": "9e012503304e137b",
+   "products": 1
+  },
+  "if-we-re-wearing-sunscreen-why-are-skin-cancer-rates-still-rising": {
+   "hash": "fa3ba488d1af682d",
+   "products": 0
+  },
+  "are-we-wrong-about-the-perfect-protein-intake": {
+   "hash": "22dc52cc61c76f6d",
+   "products": 0
+  },
+  "the-only-three-supplements-doctor-brad-takes": {
+   "hash": "7471ed5c2f65529c",
+   "products": 12
+  },
+  "the-longevity-craze-is-actually-making-you-sicker": {
+   "hash": "eef799c8f0201b64",
+   "products": 0
+  },
+  "pqq-benefits-forms-dosing-and-side-effects": {
+   "hash": "db524e076a0c51b0",
+   "products": 0
+  },
+  "exercise-is-the-closest-thing-we-have-to-the-fountain-of-youth": {
+   "hash": "d847a6e8c9f18abc",
+   "products": 1
+  },
+  "lipoproteina": {
+   "hash": "e307242601233671",
+   "products": 0
+  },
+  "this-cheap-anti-inflammatory-cuts-heart-disease-by-12": {
+   "hash": "a54f54ce9652eb66",
+   "products": 0
+  },
+  "hard-to-believe-dementia-effects-found": {
+   "hash": "8db6aad2ebf1dd55",
+   "products": 1
+  },
+  "taurine-time-to-throw-it-away-two-new-studies": {
+   "hash": "3fa3bbbca02315b3",
+   "products": 5
+  },
+  "do-this-daily-to-stop-bone-loss-after-40": {
+   "hash": "26162e0edec69b59",
+   "products": 0
+  },
+  "what-is-the-best-magnesium-dose-form-14-studies-later": {
+   "hash": "ee519201479c261d",
+   "products": 2
+  },
+  "do-this-now-to-lower-your-heart-disease-risk-by-21": {
+   "hash": "5eaafad3c2faeafb",
+   "products": 0
+  },
+  "lithium-benefits-forms-dosing-and-side-effects": {
+   "hash": "bd32fcbd5c155641",
+   "products": 0
+  },
+  "when-dosed-correctly-vitamin-d-cuts-sick-days-by-17": {
+   "hash": "70544a1f59b5e18d",
+   "products": 2
+  },
+  "the-food-pyramids-replacement-is-a-huge-upgrade": {
+   "hash": "5c0ccf0b1427c609",
+   "products": 1
+  },
+  "25-reduction-in-skin-wrinkles-after-8-weeks-new-collagen-study": {
+   "hash": "6854873d4245aefa",
+   "products": 3
+  },
+  "aloe-vera-benefits-forms-dosing-and-side-effects": {
+   "hash": "9518fe282c328d7b",
+   "products": 0
+  },
+  "if-you-re-struggling-to-find-time-to-exercise-read-this": {
+   "hash": "2ae8a29b99546003",
+   "products": 1
+  },
+  "arthritis-breakthrough-from-a-common-6-drug": {
+   "hash": "2e913b739393fb99",
+   "products": 1
+  },
+  "huperzine-a-benefits-forms-dosing-and-side-effects": {
+   "hash": "a60a5cec557f609c",
+   "products": 0
+  },
+  "doctor-reveals-why-he-takes-glycine-every-day": {
+   "hash": "ae59304b577cc67c",
+   "products": 0
+  },
+  "ezetimibe-is-the-most-underrated-weapon-against-heart-disease": {
+   "hash": "686fd87e0aee5b55",
+   "products": 0
+  },
+  "new-study-just-crushed-the-coffee-health-controversy": {
+   "hash": "cfc22d27ae828b8c",
+   "products": 0
+  },
+  "scientists-just-found-an-easy-way-to-cut-dementia-risk-by-15": {
+   "hash": "f0be58330ffbe142",
+   "products": 1
+  },
+  "avocado-oil-benefits-forms-dosing-and-side-effects": {
+   "hash": "ed74d41612586da1",
+   "products": 0
+  },
+  "holy-basil-benefits-forms-dosing-and-side-effects": {
+   "hash": "84e6edeede9eb2a0",
+   "products": 0
+  },
+  "l-citrulline-benefits-forms-dosing-and-side-effects": {
+   "hash": "79416f39eb6da70a",
+   "products": 0
+  },
+  "maca-benefits-forms-dosing-and-side-effects": {
+   "hash": "0c99bb5282d18e75",
+   "products": 0
+  },
+  "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects": {
+   "hash": "921b9f3e2e9233a1",
+   "products": 0
+  },
+  "st-johns-wort-benefits-forms-dosing-and-side-effects": {
+   "hash": "194596ef091e3cc1",
+   "products": 0
+  },
+  "this-incredibly-popular-supplement-damages-your-blood-vessels": {
+   "hash": "49833d5f695f3ef3",
+   "products": 0
+  },
+  "these-tiny-changes-massively-upgrade-your-sleep-quality": {
+   "hash": "22163a062e9fdb75",
+   "products": 0
+  },
+  "ginger-benefits-best-forms-dosing-and-side-effects": {
+   "hash": "78527a45e8003f84",
+   "products": 0
+  },
+  "probiotics-benefits-strains-dosing-and-side-effects": {
+   "hash": "b7a68d7ba48db439",
+   "products": 2
+  },
+  "psyllium-benefits-forms-dosing-and-side-effects": {
+   "hash": "8b72872d3c5a96de",
+   "products": 2
+  },
+  "taurine-benefits-forms-dosing-and-side-effects": {
+   "hash": "5a20e9ebb3ecff67",
+   "products": 4
+  },
+  "amla-benefits-forms-dosing-and-side-effects": {
+   "hash": "71ba1f5119c071e9",
+   "products": 0
+  },
+  "b-vitamins-benefits-forms-dosing-and-side-effects": {
+   "hash": "cda940eef766c13f",
+   "products": 2
+  },
+  "beetroot-benefits-forms-dosing-and-side-effects": {
+   "hash": "9dc5ded9a9741141",
+   "products": 0
+  },
+  "black-seed-oil-benefits-forms-dosing-and-side-effects": {
+   "hash": "b5a2ccedd2c56e75",
+   "products": 0
+  },
+  "bone-broth-benefits-forms-dosing-and-side-effects": {
+   "hash": "c152d03abf303494",
+   "products": 4
+  },
+  "calcium-benefits-best-forms-dosing-and-side-effects": {
+   "hash": "b7828662b7011615",
+   "products": 2
+  },
+  "cocoa-flavanols-benefits-forms-dosing-and-side-effects": {
+   "hash": "6a0a63377a7a7808",
+   "products": 0
+  },
+  "coconut-water-benefits-nutrition-hydration-and-side-effects": {
+   "hash": "b5d72c65b21b1597",
+   "products": 3
+  },
+  "coq10-benefits-best-forms-dosing-and-side-effects": {
+   "hash": "45c92646ef906881",
+   "products": 0
+  },
+  "creatine-benefits-best-forms-dosing-and-side-effects": {
+   "hash": "7792b9742fa0fa6b",
+   "products": 3
+  },
+  "dhea-benefits-dosing-and-side-effects": {
+   "hash": "269b0e64aaddd2a2",
+   "products": 0
+  },
+  "echinacea-benefits-dosing-and-side-effects": {
+   "hash": "a74234411e9089e8",
+   "products": 0
+  },
+  "electrolytes-benefits-dosing-and-side-effects": {
+   "hash": "86782697bd484648",
+   "products": 3
+  },
+  "extra-virgin-olive-oil-benefits-dosing-and-side-effects": {
+   "hash": "9ce9c7bc94278e1f",
+   "products": 0
+  },
+  "gaba-benefits-dosing-and-side-effects": {
+   "hash": "0bdfbdc264d51e51",
+   "products": 0
+  },
+  "garlic-benefits-best-forms-dosing-and-side-effects": {
+   "hash": "2382b8040cb3b3c5",
+   "products": 0
+  },
+  "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects": {
+   "hash": "fd2c232ca535277a",
+   "products": 4
+  },
+  "glycine-benefits-forms-dosing-and-side-effects": {
+   "hash": "64e174c1c4624425",
+   "products": 1
+  },
+  "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects": {
+   "hash": "185d13298cbb6004",
+   "products": 0
+  },
+  "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects": {
+   "hash": "880e2c14203fbe3b",
+   "products": 2
+  },
+  "lycopene-benefits-forms-dosing-and-side-effects": {
+   "hash": "2a54e315a9de23a3",
+   "products": 2
+  },
+  "melatonin-benefits-forms-dosing-and-side-effects": {
+   "hash": "483503b1042556ba",
+   "products": 1
+  },
+  "milk-thistle-benefits-best-forms-dosing-and-side-effects": {
+   "hash": "06ff414fc74c0ee4",
+   "products": 0
+  },
+  "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects": {
+   "hash": "457395100a05ebea",
+   "products": 0
+  },
+  "prebiotics-benefits-types-dosing-and-side-effects": {
+   "hash": "3c594334062071d5",
+   "products": 2
+  },
+  "protein-powders-benefits-types-dosing-and-side-effects": {
+   "hash": "888fd0a644716bd8",
+   "products": 4
+  },
+  "quercetin-benefits-forms-dosing-and-side-effects": {
+   "hash": "d62782879d879d8c",
+   "products": 3
+  },
+  "red-yeast-rice-benefits-forms-dosing-and-side-effects": {
+   "hash": "56f78f4cb58a19d2",
+   "products": 2
+  },
+  "resveratrol-benefits-forms-dosing-and-side-effects": {
+   "hash": "208a7c00fb2adad2",
+   "products": 0
+  },
+  "selenium-benefits-forms-dosing-and-side-effects": {
+   "hash": "623330b451101b1b",
+   "products": 2
+  },
+  "shilajit-benefits-forms-dosing-and-side-effects": {
+   "hash": "ae6e9d98562b9155",
+   "products": 0
+  },
+  "turmeric-curcumin-benefits-best-forms-dosing-and-side-effects": {
+   "hash": "ff4b1d6394d076b8",
+   "products": 0
+  },
+  "valerian-benefits-forms-dosing-and-side-effects": {
+   "hash": "abc4ac10a158e239",
+   "products": 1
+  },
+  "vitamin-e-benefits-forms-dosing-and-side-effects": {
+   "hash": "06b70b2e65300a93",
+   "products": 4
+  },
+  "new-study-reveals-the-best-exercise-to-reverse-skin-wrinkles": {
+   "hash": "0551ee978fc47e42",
+   "products": 0
+  },
+  "doctor-recommended-intermittent-fasting-hack-that-actually-works": {
+   "hash": "7a914e1c7c05ce6a",
+   "products": 0
+  },
+  "chromium-benefits-forms-dosing-and-side-effects": {
+   "hash": "b69a5fbdc4fe00e8",
+   "products": 2
+  },
+  "collagen-benefits-best-forms-dosing-and-side-effects": {
+   "hash": "bf709ad56cd83492",
+   "products": 2
+  },
+  "cranberry-benefits-best-forms-dosing-and-side-effects": {
+   "hash": "684b38932b52df0a",
+   "products": 0
+  },
+  "flaxseed-oil-benefits-dosing-and-side-effects": {
+   "hash": "35c654068850803e",
+   "products": 0
+  },
+  "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects": {
+   "hash": "fab26f246b82d4e3",
+   "products": 0
+  },
+  "lions-mane-and-chaga-benefits-forms-dosing-and-side-effects": {
+   "hash": "e09ab6ffcce56c60",
+   "products": 0
+  },
+  "mangosteen-benefits-forms-dosing-and-side-effects": {
+   "hash": "014247544a9cf05c",
+   "products": 0
+  },
+  "manuka-honey-benefits-forms-dosing-and-side-effects": {
+   "hash": "695737856aae5d9e",
+   "products": 0
+  },
+  "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects": {
+   "hash": "6f41c9f85ba87fb7",
+   "products": 2
+  },
+  "olive-leaf-extract-benefits-forms-dosing-and-side-effects": {
+   "hash": "b38467f98da86126",
+   "products": 0
+  },
+  "omega-3-fish-oil-benefits-forms-dosing-and-side-effects": {
+   "hash": "ec392541eefa645c",
+   "products": 0
+  },
+  "weight-loss-supplements-benefits-evidence-and-safety": {
+   "hash": "0c7543dadd7f4ccc",
+   "products": 2
+  },
+  "is-the-berberine-hype-justified-should-you-take-it": {
+   "hash": "aad1ccd58b2c0cef",
+   "products": 1
+  },
+  "how-to-correctly-use-hyaluronic-acid-to-reverse-wrinkles-by-18": {
+   "hash": "effe419fc03ea17e",
+   "products": 1
+  },
+  "arginine-benefits-forms-dosing-and-side-effects": {
+   "hash": "5f1100f5b6711772",
+   "products": 0
+  },
+  "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects": {
+   "hash": "b0f80b3cb7acc599",
+   "products": 2
+  },
+  "garcinia-cambogia-benefits-dosing-and-side-effects": {
+   "hash": "b540bea70d183ed9",
+   "products": 0
+  },
+  "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects": {
+   "hash": "0ab2781abac3b2cc",
+   "products": 0
+  },
+  "glutamine-benefits-forms-dosing-and-side-effects": {
+   "hash": "36a689f1ae4f7e68",
+   "products": 0
+  },
+  "kelp-and-iodine-benefits-forms-dosing-and-side-effects": {
+   "hash": "f842c7a83989a6e0",
+   "products": 2
+  },
+  "l-theanine-benefits-forms-dosing-and-side-effects": {
+   "hash": "1ea328c24c2f5364",
+   "products": 0
+  },
+  "licorice-and-dgl-benefits-forms-dosing-and-side-effects": {
+   "hash": "8729cdd0252aceab",
+   "products": 0
+  },
+  "menopause-supplements-benefits-evidence-dosing-and-side-effects": {
+   "hash": "39651c8eeca4a9f1",
+   "products": 0
+  },
+  "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects": {
+   "hash": "d4b37689723e73ca",
+   "products": 0
+  },
+  "phosphatidylserine-benefits-forms-dosing-and-side-effects": {
+   "hash": "279ef694cdfd915d",
+   "products": 0
+  },
+  "potassium-benefits-forms-dosing-and-side-effects": {
+   "hash": "68f89f4056f6c60e",
+   "products": 2
+  },
+  "vitamin-c-benefits-forms-dosing-and-side-effects": {
+   "hash": "c070599e92259eed",
+   "products": 3
+  },
+  "zinc-benefits-forms-dosing-and-side-effects": {
+   "hash": "5bc80dd17f0d5226",
+   "products": 2
+  },
+  "this-study-proved-we-were-wrong-about-vitamin-d": {
+   "hash": "7404fdb2dd6ba147",
+   "products": 1
+  },
+  "lean-mass-hyper-responders-see-rapid-plaque-progression": {
+   "hash": "2983ca9ff4c6b90d",
+   "products": 0
+  },
+  "acai-berry-benefits-forms-dosing-and-side-effects": {
+   "hash": "94c17b9d89aef808",
+   "products": 0
+  },
+  "ashwagandha-benefits-forms-dosing-and-side-effects": {
+   "hash": "890bfb59db28ddbb",
+   "products": 0
+  },
+  "berberine-benefits-forms-dosing-and-side-effects": {
+   "hash": "9727be650fb5ec6c",
+   "products": 0
+  },
+  "boron-benefits-forms-dosing-and-side-effects": {
+   "hash": "c4408b5c083cd24f",
+   "products": 2
+  },
+  "glutathione-benefits-forms-dosing-and-side-effects": {
+   "hash": "66ce5a5000abcde1",
+   "products": 3
+  },
+  "iron-benefits-forms-dosing-and-side-effects": {
+   "hash": "8b298f3a8b63d947",
+   "products": 0
+  },
+  "nattokinase-benefits-forms-dosing-and-side-effects": {
+   "hash": "ad251d8affa6f64b",
+   "products": 0
+  },
+  "reishi-mushroom-benefits-forms-dosing-and-side-effects": {
+   "hash": "25bf59cb75b9799b",
+   "products": 0
+  },
+  "vitamin-d-benefits-forms-dosing-and-side-effects": {
+   "hash": "af7e2f4ee8ffb343",
+   "products": 2
+  },
+  "magnesium-benefits-best-forms-dosing": {
+   "hash": "d0d46171c805204f",
+   "products": 0
+  },
+  "the-world-s-1-anti-aging-cream-sunscreen-just-got-updated": {
+   "hash": "f322467b20c04938",
+   "products": 0
+  },
+  "creatine-fails-in-new-study-don-t-be-misled": {
+   "hash": "177ebd0c572619ee",
+   "products": 2
+  },
+  "salt-substitutes-can-slash-your-death-risk-by-12": {
+   "hash": "4cf3274f67c415dc",
+   "products": 0
+  },
+  "multivitamins-benefits-evidence-dosing-and-side-effects": {
+   "hash": "a118422b490c35c3",
+   "products": 5
+  },
+  "why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking": {
+   "hash": "415086c0a3b20f71",
+   "products": 1
+  },
+  "why-scientists-are-calling-taurine-the-youth-molecule": {
+   "hash": "07f68de81c36edf3",
+   "products": 2
+  },
+  "i-was-wrong-about-red-light-masks-skin-aging": {
+   "hash": "72174368586adcfd",
+   "products": 2
+  },
+  "these-foods-lower-death-risk-by-23": {
+   "hash": "9c1aa3df6dba5c37",
+   "products": 1
+  },
+  "collagen-peptides-can-fix-skin-wrinkles": {
+   "hash": "675071498ef2bfd1",
+   "products": 2
+  },
+  "best-diet-for-a-longer-healthier-life": {
+   "hash": "f700a887d62e82a7",
+   "products": 0
+  },
+  "the-surprising-truth-about-methylene-blue-and-anti-aging": {
+   "hash": "202a75c5a9aaf6bb",
+   "products": 1
+  },
+  "men-over-50-read-this-before-using-trt-testosterone-therapy": {
+   "hash": "c9ff4b2ac9b6b66f",
+   "products": 1
+  },
+  "the-fastest-way-to-reverse-skin-aging-new-science": {
+   "hash": "98fc9769f48b1808",
+   "products": 0
+  },
+  "a-healthy-blood-pressure-is-wrecking-your-brain-new-study": {
+   "hash": "da77f7eddcc67519",
+   "products": 1
+  },
+  "stop-these-longevity-supplements-dangerous-side-effects": {
+   "hash": "9155b250a268cf91",
+   "products": 2
+  },
+  "the-fastest-way-to-lower-your-blood-pressure-naturally": {
+   "hash": "1770851b1b17e7d5",
+   "products": 0
+  },
+  "should-you-use-ozempic-glp-1-weight-loss-meds-nuanced-answer": {
+   "hash": "d4ebe52436d8c484",
+   "products": 0
+  },
+  "should-you-be-taking-bpc-157-peptides": {
+   "hash": "a1335e5860f06fc0",
+   "products": 1
+  },
+  "the-best-diet-to-unclog-your-arteries": {
+   "hash": "1b8f94571bbaea50",
+   "products": 0
+  },
+  "do-not-use-apple-cider-vinegar-to-lose-weight-use-this-instead": {
+   "hash": "80141ea7f239acfa",
+   "products": 0
+  },
+  "the-1-top-remedy-for-dental-plaque": {
+   "hash": "ba2a3b4ca4f09fcf",
+   "products": 0
+  },
+  "new-studies-reveal-the-best-type-of-intermittent-fasting": {
+   "hash": "f915398537b477c7",
+   "products": 0
+  },
+  "how-to-prevent-a-heart-attack-for-5-45": {
+   "hash": "2f15b5c56084eea9",
+   "products": 0
+  },
+  "zma-supplements-benefits-research": {
+   "hash": "d873745accb9e810",
+   "products": 4
+  },
+  "supplement-gummies-compared-capsules": {
+   "hash": "c4fa0a1f23126cf8",
+   "products": 6
+  },
+  "elderberry-benefits-dosing-and-side-effects": {
+   "hash": "43a4fc922e4f195c",
+   "products": 0
+  },
+  "lysine-benefits-forms-dosing-and-side-effects": {
+   "hash": "ad39b4da1a72736d",
+   "products": 0
+  },
+  "pomegranate-benefits-forms-dosing-and-side-effects": {
+   "hash": "17318011f5fe5653",
+   "products": 0
+  },
+  "trace-minerals-vitamins-fad": {
+   "hash": "3d4224546198254e",
+   "products": 4
+  },
+  "study-exercise-blood-pressure": {
+   "hash": "445205f6d4e07408",
+   "products": 0
+  },
+  "losing-weight-intermittent-fasting": {
+   "hash": "1c2fb022d38a92ed",
+   "products": 2
+  },
+  "supplements-best-skin-tightening": {
+   "hash": "df39074a75286270",
+   "products": 4
+  },
+  "greens-powders-benefits-forms-dosing-and-side-effects": {
+   "hash": "4217bf221d7dbb85",
+   "products": 2
+  },
+  "green-tea-benefits-forms-dosing-and-side-effects": {
+   "hash": "ccfa31f8be822f5a",
+   "products": 0
+  },
+  "reverse-signs-skin-aging": {
+   "hash": "352f48f38d83a399",
+   "products": 2
+  },
+  "liposomal-vitamin-c-worth": {
+   "hash": "1f4c57c991d90cb9",
+   "products": 2
+  },
+  "nutrient-deficiency-blood-pressure": {
+   "hash": "edaa287c52ea9759",
+   "products": 1
+  },
+  "blood-type-diet-needs": {
+   "hash": "2d23fa6841e5d00b",
+   "products": 2
+  },
+  "best-worst-forms-magnesium": {
+   "hash": "34ce97d54934e0ae",
+   "products": 4
+  },
+  "methylated-multivitamin-regular-ones": {
+   "hash": "87f5b4605cc4d03f",
+   "products": 3
+  },
+  "vitamin-k2-d3-together": {
+   "hash": "f1b3d1845a49cd4d",
+   "products": 1
+  },
+  "only-supplements-work-2025": {
+   "hash": "635a57bd57dad2fd",
+   "products": 5
+  },
+  "food-proven-trigger-gout": {
+   "hash": "347902478bdbe569",
+   "products": 0
+  },
+  "ginseng-benefits-forms-dosing-and-side-effects": {
+   "hash": "f81b7993345446ce",
+   "products": 0
+  },
+  "anti-wrinkle-gel-cheap": {
+   "hash": "0aadc2e8956a6f70",
+   "products": 1
+  },
+  "human-studies-nmn-supplements": {
+   "hash": "6c04be0702fe313d",
+   "products": 2
+  },
+  "avoiding-cancer-easier-ever": {
+   "hash": "ed7a339c2a3ed0d2",
+   "products": 1
+  },
+  "theanine-anti-aging-longevity": {
+   "hash": "5fbeb114c7ef6a4e",
+   "products": 2
+  },
+  "spend-40-dollars-avoid-dying-early": {
+   "hash": "46a68a79812e1f65",
+   "products": 0
+  },
+  "resting-heart-rate-health": {
+   "hash": "17562926c45d38a4",
+   "products": 0
+  },
+  "mobile-iv-vitamin-therapy": {
+   "hash": "6a4f713246d3df80",
+   "products": 0
+  },
+  "best-anti-wrinkle-cream": {
+   "hash": "56a89c2335f422b5",
+   "products": 0
+  },
+  "diet-strongly-suspected-best": {
+   "hash": "84af80814f6275a0",
+   "products": 0
+  },
+  "calcium-rich-foods-diet": {
+   "hash": "265b3b373221c38c",
+   "products": 2
+  },
+  "tmg-betaine-exploding-popularity": {
+   "hash": "677d092f5adf0dda",
+   "products": 2
+  },
+  "difference-magnesium-oxide-glycinate": {
+   "hash": "b380e59c3fa8632b",
+   "products": 2
+  },
+  "seed-oils-toxic-inflammatory": {
+   "hash": "6d7029fb62ab4ae4",
+   "products": 0
+  },
+  "iron-supplementation-good-health": {
+   "hash": "a88dd02e33151077",
+   "products": 2
+  },
+  "brain-omega-3-discovery": {
+   "hash": "25226df4483b9fee",
+   "products": 1
+  },
+  "multivitamin-contains-enough-riboflavin": {
+   "hash": "5a3b7e8396b7606e",
+   "products": 5
+  },
+  "alpha-lipoic-acid-antioxidant": {
+   "hash": "23fe378b671ce2c1",
+   "products": 0
+  },
+  "difference-between-curcumin-turmeric": {
+   "hash": "1a24a28f2ae26091",
+   "products": 2
+  },
+  "foods-help-unclog-arteries": {
+   "hash": "b6df378295066348",
+   "products": 0
+  },
+  "benefits-apple-cider-vinegar": {
+   "hash": "d781d8800c466609",
+   "products": 2
+  },
+  "digestive-enzymes-benefits-dosing-and-side-effects": {
+   "hash": "43b8a7751ca0f274",
+   "products": 0
+  },
+  "5-livesaving-blog-tests": {
+   "hash": "57e33219406b7e16",
+   "products": 0
+  },
+  "build-muscle-faster-people": {
+   "hash": "a3d983ec9d1f23fa",
+   "products": 0
+  },
+  "d-mannose-benefits-dosing-and-side-effects": {
+   "hash": "39fbab24a052c831",
+   "products": 0
+  },
+  "breaking-reduce-dementia-risk-45-percent": {
+   "hash": "7d8e711395805a7e",
+   "products": 0
+  },
+  "longevity-experts-warning-fasting": {
+   "hash": "ab716669cdb932fa",
+   "products": 0
+  },
+  "fastest-reverse-skin-aging": {
+   "hash": "81d6dd762bc8bb0b",
+   "products": 1
+  },
+  "popular-supplements-try-avoid": {
+   "hash": "2d4c4f8d8d150aeb",
+   "products": 4
+  },
+  "controversial-supplement-cognitive-decline": {
+   "hash": "8a84db6d4e27d76a",
+   "products": 5
+  },
+  "sleep-schedule-wake-refreshed": {
+   "hash": "c9df1a69f07268cd",
+   "products": 0
+  },
+  "medications-potentially-improve-longevity": {
+   "hash": "f8d414c824701bb3",
+   "products": 2
+  },
+  "omega-3-heart-arrhythmia": {
+   "hash": "2b6ddfe712df9d6a",
+   "products": 2
+  },
+  "mistakes-people-make-magnesium": {
+   "hash": "ac49d5f97ceccc34",
+   "products": 3
+  },
+  "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects": {
+   "hash": "bd36b6a87999a91f",
+   "products": 0
+  },
+  "older-adults-seniors-creatine-supplements": {
+   "hash": "5e7d1fd1e0ad7156",
+   "products": 0
+  },
+  "exaple-home-workout-schedule": {
+   "hash": "f80b8a91285c1c40",
+   "products": 0
+  },
+  "cla-benefits-forms-dosing-and-side-effects": {
+   "hash": "086987c30d7bf694",
+   "products": 0
+  },
+  "vitamin-d3-k2-benefits-differences": {
+   "hash": "4942913a9b4019bc",
+   "products": 2
+  },
+  "cinnamon-benefits-forms-dosing-and-side-effects": {
+   "hash": "7436cd01661078e5",
+   "products": 0
+  },
+  "magnesium-l-threonate-effects-sleep": {
+   "hash": "35f2de91e9486dde",
+   "products": 1
+  },
+  "choline-benefits-best-forms-dosing-and-side-effects": {
+   "hash": "e250b9f15816a328",
+   "products": 2
+  },
+  "chia-seed-benefits-forms-dosing-and-side-effects": {
+   "hash": "773a2c322605ab55",
+   "products": 2
+  },
+  "cbd-benefits-forms-dosing-and-side-effects": {
+   "hash": "2ebe205e666a0545",
+   "products": 0
+  },
+  "bilberry-benefits-forms-dosing-and-side-effects": {
+   "hash": "36ac08efe37f1748",
+   "products": 0
+  },
+  "baobab-benefits-forms-dosing-and-side-effects": {
+   "hash": "65c77ce9050d8382",
+   "products": 0
+  },
+  "astaxanthin-benefits-forms-dosing-and-side-effects": {
+   "hash": "3f7c2085b2e52cb8",
+   "products": 0
+  },
+  "apple-cider-vinegar-benefits-forms-dosing-and-side-effects": {
+   "hash": "5f38372a6fe7f40e",
+   "products": 0
+  },
+  "alpha-lipoic-acid-benefits-forms-dosing-and-side-effects": {
+   "hash": "291bd74cdaa9671e",
+   "products": 0
+  },
+  "alginates-benefits-forms-dosing-and-side-effects": {
+   "hash": "a17b462494e1cf1e",
+   "products": 0
+  },
+  "african-mango-benefits-forms-dosing-and-side-effects": {
+   "hash": "6b8f70fece7bce56",
+   "products": 0
+  },
+  "acetyl-l-carnitine-benefits-forms-dosing-and-side-effects": {
+   "hash": "23afba47463bee85",
+   "products": 0
+  },
+  "diet": {
+   "hash": "a351f837839f05ae",
+   "products": 4
+  },
+  "exercise": {
+   "hash": "e9105eeb65c6e8db",
+   "products": 1
+  },
+  "sleep": {
+   "hash": "98c1ee07c68516a6",
+   "products": 5
+  },
+  "abdominal-aortic-aneurysm": {
+   "hash": "ca67e14c1a32706c",
+   "products": 0
+  },
+  "abnormal-bleeding-or-bruising": {
+   "hash": "4e77034887dd83a3",
+   "products": 0
+  },
+  "abnormal-liver-function-tests": {
+   "hash": "73d4d2988739d95e",
+   "products": 0
+  },
+  "abnormal-uterine-bleeding": {
+   "hash": "b1df3b169afaa9e3",
+   "products": 0
+  },
+  "abortion-for-fetal-anomalies-or-genetic-disorders": {
+   "hash": "af0542a88747c215",
+   "products": 0
+  },
+  "acc-musculoskeletal-integrated-care-icp-msk": {
+   "hash": "0d5eb32f9af1babf",
+   "products": 0
+  },
+  "ace-inhibitor-and-arb-use-in-renal-impairment": {
+   "hash": "6ad7702cad0f4273",
+   "products": 0
+  },
+  "acitretin-shared-care-guidance": {
+   "hash": "1d4472235b5c45bc",
+   "products": 0
+  },
+  "acne": {
+   "hash": "0aa73da90526921e",
+   "products": 0
+  },
+  "acromioclavicular-ac-joint-injury": {
+   "hash": "5a9eacae841d5036",
+   "products": 0
+  },
+  "acute-abdominal-pain-in-adults": {
+   "hash": "f991d22f1e56f1d5",
+   "products": 0
+  },
+  "acute-abdominal-pain-in-children": {
+   "hash": "c783713caf56057e",
+   "products": 0
+  },
+  "acute-adult-orl-head-and-neck-surgery-assessment": {
+   "hash": "ade0877d610b14d6",
+   "products": 0
+  },
+  "acute-angle-closure-glaucoma": {
+   "hash": "450dcece441a50a6",
+   "products": 0
+  },
+  "acute-ankle-injuries": {
+   "hash": "5576d88a2da44824",
+   "products": 0
+  },
+  "acute-asthma-in-adults-and-young-people": {
+   "hash": "4d2eb4470a530cbc",
+   "products": 0
+  },
+  "acute-asthma-in-children": {
+   "hash": "031289f72ea4aa9c",
+   "products": 0
+  },
+  "acute-bilateral-red-eye": {
+   "hash": "d5460015c9a2618e",
+   "products": 0
+  },
+  "acute-bipolar-disorder": {
+   "hash": "fc73f33f581256e0",
+   "products": 0
+  },
+  "acute-coronary-syndromes-acs": {
+   "hash": "a3c664cf193f5b58",
+   "products": 0
+  },
+  "acute-crises-in-palliative-care": {
+   "hash": "2fe1cb17a9185df4",
+   "products": 0
+  },
+  "acute-dystonic-reactions": {
+   "hash": "f7e20ded9660ef11",
+   "products": 0
+  },
+  "acute-exacerbation-of-copd": {
+   "hash": "23d3d880abdce0ca",
+   "products": 0
+  },
+  "acute-foot-injuries": {
+   "hash": "e8b7234c9eba02c5",
+   "products": 0
+  },
+  "acute-kidney-injury": {
+   "hash": "a5767b404f644188",
+   "products": 0
+  },
+  "acute-lower-abdominal-and-pelvic-pain-in-women": {
+   "hash": "2d68a319e6272082",
+   "products": 0
+  },
+  "acute-neurosurgery-assessment": {
+   "hash": "7609266b4247e316",
+   "products": 0
+  },
+  "acute-ophthalmology-assessment": {
+   "hash": "8392c96c46b1fd66",
+   "products": 0
+  },
+  "acute-otitis-media-aom-in-children": {
+   "hash": "1fbc5decc5132ca9",
+   "products": 0
+  },
+  "acute-paediatric-orl-head-and-neck-surgery-assessment": {
+   "hash": "4299c40eb61d5de0",
+   "products": 0
+  },
+  "acute-psychosis": {
+   "hash": "84a70faf4f40223d",
+   "products": 0
+  },
+  "acute-respiratory-illness-in-children-aged-2-years": {
+   "hash": "283e5d4abebc6b03",
+   "products": 0
+  },
+  "adalimumab-shared-care-guidance": {
+   "hash": "420fb89cccb2d29a",
+   "products": 0
+  },
+  "adhd-in-adults": {
+   "hash": "d825ea1153875dd9",
+   "products": 0
+  },
+  "adhd-in-children-and-youth-ongoing-care": {
+   "hash": "5fa96b58e4ab4f67",
+   "products": 0
+  },
+  "adrenal-nodules": {
+   "hash": "273b0eb7ba980cef",
+   "products": 0
+  },
+  "adult-mental-health-counselling-and-therapy": {
+   "hash": "d62576af4d6d6a27",
+   "products": 0
+  },
+  "advance-care-planning-acp": {
+   "hash": "10e84365a9b463fc",
+   "products": 0
+  },
+  "advanced-kidney-disease": {
+   "hash": "598fbf4f35369619",
+   "products": 0
+  },
+  "advanced-or-end-stage-copd": {
+   "hash": "60fe127b0c408a9e",
+   "products": 0
+  },
+  "advanced-or-end-stage-heart-failure": {
+   "hash": "36dd254c1e4e912c",
+   "products": 0
+  },
+  "adverse-events-following-immunisation-aefis": {
+   "hash": "f850aadc9098a691",
+   "products": 0
+  },
+  "adverse-reaction-reporting": {
+   "hash": "ff5a53527d16f77c",
+   "products": 0
+  },
+  "alcohol-screening-and-intervention": {
+   "hash": "e37e4acab59c2d2f",
+   "products": 0
+  },
+  "all-acute-fractures-and-injuries": {
+   "hash": "4cf6d813bd54e403",
+   "products": 0
+  },
+  "allergic-conjunctivitis": {
+   "hash": "905c909bda20f41e",
+   "products": 0
+  },
+  "allergic-rhinitis": {
+   "hash": "53d20c39e8c93622",
+   "products": 0
+  },
+  "allergy-testing": {
+   "hash": "25e0896c4fe57612",
+   "products": 0
+  },
+  "allergy": {
+   "hash": "1da5383e24466f3f",
+   "products": 0
+  },
+  "amenorrhoea": {
+   "hash": "eb956e795c36994e",
+   "products": 0
+  },
+  "aminosalicylates-asa": {
+   "hash": "377e4cdfb64e616c",
+   "products": 0
+  },
+  "anaemia-in-adults": {
+   "hash": "f7ff0b9697eb5c9b",
+   "products": 0
+  },
+  "anaemia-in-pregnancy": {
+   "hash": "2860e032630f15d7",
+   "products": 0
+  },
+  "anal-fissure": {
+   "hash": "549dbff433277c72",
+   "products": 0
+  },
+  "analgesia-in-adults-with-acute-pain": {
+   "hash": "462ef1c127a78edb",
+   "products": 0
+  },
+  "anaphylaxis": {
+   "hash": "f67d89058111a44f",
+   "products": 0
+  },
+  "angina": {
+   "hash": "51a4d515fa8277b1",
+   "products": 0
+  },
+  "angio-oedema": {
+   "hash": "da21396c4e509983",
+   "products": 0
+  },
+  "ankle-and-foot-pain-in-adults": {
+   "hash": "e6ed1ae287f53ca4",
+   "products": 0
+  },
+  "ankle-fractures": {
+   "hash": "448f7e4c2abca292",
+   "products": 0
+  },
+  "ankle-sprain": {
+   "hash": "367fc8ac9ec0bf98",
+   "products": 0
+  },
+  "ankylosing-spondylitis-as": {
+   "hash": "824fd11ed3fb67fc",
+   "products": 0
+  },
+  "anorectal-abscess": {
+   "hash": "2ff73bb27dfc0314",
+   "products": 0
+  },
+  "antenatal-genetic-screening": {
+   "hash": "55e1794cdd7fd5e5",
+   "products": 0
+  },
+  "anti-epileptic-medication": {
+   "hash": "9d40c54561a810d3",
+   "products": 0
+  },
+  "antiplatelet-medication-and-dental-procedures": {
+   "hash": "f563273739fb9de0",
+   "products": 0
+  },
+  "anxiety-distress-and-agitation-in-palliative-care": {
+   "hash": "987da548a5a45408",
+   "products": 0
+  },
+  "anxiety-in-children-and-youth": {
+   "hash": "ed689e7e9bb1a35e",
+   "products": 0
+  },
+  "assault-or-abuse-community-support": {
+   "hash": "b7c054861c90a49f",
+   "products": 0
+  },
+  "assault-or-abuse-urgent-intervention": {
+   "hash": "bb23dd602b751c54",
+   "products": 0
+  },
+  "assessing-genetic-risk": {
+   "hash": "c3565928881fcc86",
+   "products": 0
+  },
+  "asthma-in-pregnancy": {
+   "hash": "dececc2ba244f996",
+   "products": 0
+  },
+  "atrial-fibrillation-af": {
+   "hash": "c0f3c9b75bf04c53",
+   "products": 0
+  },
+  "autonomic-dysreflexia-hypertensive-crisis": {
+   "hash": "e06a96fd6dfd2a5d",
+   "products": 0
+  },
+  "azathioprine-shared-care-guidance": {
+   "hash": "96c9ea2ca7b5c4ac",
+   "products": 0
+  },
+  "b-cell-chronic-lymphocytic-leukaemia-b-cll": {
+   "hash": "437bc4c271705ef1",
+   "products": 0
+  },
+  "back-and-neck-pain": {
+   "hash": "7c54d197500500f0",
+   "products": 0
+  },
+  "bacterial-vaginosis": {
+   "hash": "f39120020aa339c3",
+   "products": 0
+  },
+  "baker-cyst-in-children": {
+   "hash": "678e8f638bc71e5f",
+   "products": 0
+  },
+  "bariatric-surgery-complications": {
+   "hash": "786f5417a639f0bc",
+   "products": 0
+  },
+  "bariatric-surgery-specialist-assessment": {
+   "hash": "e10c67051ecc2e13",
+   "products": 0
+  },
+  "bartholin-s-cyst-or-abscess": {
+   "hash": "51fb602cf7663e11",
+   "products": 0
+  },
+  "bcg-vaccination": {
+   "hash": "ef324e91e91a1e6d",
+   "products": 0
+  },
+  "before-entering-aged-residential-care": {
+   "hash": "84c779fd8d95459d",
+   "products": 0
+  },
+  "behavioural-and-psychological-symptoms-of-dementia-bpsd": {
+   "hash": "35e74e52354369f5",
+   "products": 0
+  },
+  "behavioural-concerns-in-school-age-children": {
+   "hash": "445b3429896521e6",
+   "products": 0
+  },
+  "benign-and-premalignant-skin-lesions": {
+   "hash": "2e24d9316955ce8c",
+   "products": 0
+  },
+  "benign-prostatic-hyperplasia": {
+   "hash": "97dfe83f4b452a72",
+   "products": 0
+  },
+  "benzodiazepine-and-zopiclone-withdrawal": {
+   "hash": "57bdc96863dcf392",
+   "products": 0
+  },
+  "biceps-tendon-rupture": {
+   "hash": "a2147500f10374e7",
+   "products": 0
+  },
+  "biologics": {
+   "hash": "cb9efaf9c196aa55",
+   "products": 0
+  },
+  "birth-after-caesarean-section": {
+   "hash": "7197f4560784b459",
+   "products": 0
+  },
+  "bisphosphonates-and-dental-care": {
+   "hash": "6f81fd3d0642ef17",
+   "products": 0
+  },
+  "bite-wounds": {
+   "hash": "4fa448517146775e",
+   "products": 0
+  },
+  "bladder-retraining": {
+   "hash": "f1f97d26620cc250",
+   "products": 0
+  },
+  "blepharitis": {
+   "hash": "5b2afd245857b4f1",
+   "products": 0
+  },
+  "blood-or-body-fluid-exposures": {
+   "hash": "a863e57a8d61c3c8",
+   "products": 0
+  },
+  "body-contouring-procedures": {
+   "hash": "6a9aa2a43fda9573",
+   "products": 0
+  },
+  "bone-and-joint-infections-in-children": {
+   "hash": "63293fe6d3903420",
+   "products": 0
+  },
+  "bone-and-musculoskeletal-health-in-spinal-cord-impairment-sci": {
+   "hash": "4b4471b718d2e927",
+   "products": 0
+  },
+  "bone-density-scan-dexa": {
+   "hash": "ed94f4bf50e9079e",
+   "products": 0
+  },
+  "bone-pain": {
+   "hash": "ecf20b61230aa4a3",
+   "products": 0
+  },
+  "bow-legs": {
+   "hash": "7b30b2074fe4c454",
+   "products": 0
+  },
+  "bowel-management-in-spinal-cord-impairment-sci": {
+   "hash": "cb443f5ab53a7bfd",
+   "products": 0
+  },
+  "bowel-obstruction-in-palliative-care": {
+   "hash": "61beb62ac18a666f",
+   "products": 0
+  },
+  "bowel-polyp-surveillance": {
+   "hash": "917a7fefcbaba5a7",
+   "products": 0
+  },
+  "breast-cancer-risk-assessment": {
+   "hash": "7fcf50718e94e941",
+   "products": 0
+  },
+  "breast-engorgement-and-oversupply": {
+   "hash": "875db91d0c9007e4",
+   "products": 0
+  },
+  "breast-pain-mastalgia": {
+   "hash": "20d3a2b408b09f7b",
+   "products": 0
+  },
+  "breast-screening-and-surveillance": {
+   "hash": "c21ca6806f00fe2a",
+   "products": 0
+  },
+  "breast-surgery": {
+   "hash": "dbfe23a5d3685bbe",
+   "products": 0
+  },
+  "breast-symptoms": {
+   "hash": "78b60e778570a308",
+   "products": 0
+  },
+  "bronchiectasis": {
+   "hash": "595afdbd0441f5bf",
+   "products": 0
+  },
+  "bronchiolitis-in-children": {
+   "hash": "526f8e47f8569c58",
+   "products": 0
+  },
+  "bunions-hallux-valgus": {
+   "hash": "37682ca8c6ae08b6",
+   "products": 0
+  },
+  "burn-injuries": {
+   "hash": "23b497b2910d8f9f",
+   "products": 0
+  },
+  "cachexia-and-anorexia-in-palliative-care": {
+   "hash": "08165e7f62d8d095",
+   "products": 0
+  },
+  "calcium-supplementation-in-osteoporosis": {
+   "hash": "db7dbec1c7e12917",
+   "products": 0
+  },
+  "calprotectin": {
+   "hash": "0a3b71416ee8db32",
+   "products": 0
+  },
+  "candidiasis": {
+   "hash": "d4e0eb4646c470c5",
+   "products": 0
+  },
+  "cannabis-and-synthetic-cannabinoids": {
+   "hash": "0b828937481b4fcc",
+   "products": 0
+  },
+  "cardiac-catheterisation-complications": {
+   "hash": "739f8617cc9bf3aa",
+   "products": 0
+  },
+  "cardiac-drugs-and-monitoring": {
+   "hash": "4fee3a2f6b7145ea",
+   "products": 0
+  },
+  "cardiovascular-risk-assessment-cvra": {
+   "hash": "6294afd502381aa8",
+   "products": 0
+  },
+  "carer-stress": {
+   "hash": "fa93c7443433b871",
+   "products": 0
+  },
+  "carotid-artery-stenosis": {
+   "hash": "657e366781734024",
+   "products": 0
+  },
+  "carpal-tunnel-syndrome": {
+   "hash": "aa03b301e739edef",
+   "products": 0
+  },
+  "cataracts": {
+   "hash": "24b5fc316c14f594",
+   "products": 0
+  },
+  "catheter-change-or-trial-of-void": {
+   "hash": "ea4c94cc17f0904a",
+   "products": 0
+  },
+  "cellulitis-in-adults": {
+   "hash": "cb790d25f938f12b",
+   "products": 0
+  },
+  "cellulitis-in-children": {
+   "hash": "9d969ad4feb9f919",
+   "products": 0
+  },
+  "cervical-polyps": {
+   "hash": "09ca006b389200e8",
+   "products": 0
+  },
+  "cervical-shock": {
+   "hash": "a92f89427254c381",
+   "products": 0
+  },
+  "chest-pain": {
+   "hash": "480fab3ef7dca5e4",
+   "products": 0
+  },
+  "child-abuse-and-neglect": {
+   "hash": "2b4d248dc366ec92",
+   "products": 0
+  },
+  "child-speech-language-therapy-assessment": {
+   "hash": "2ff0cf851787aa3f",
+   "products": 0
+  },
+  "child-with-a-limp": {
+   "hash": "2871c4d4217d73f0",
+   "products": 0
+  },
+  "children-s-eye-problems": {
+   "hash": "0e03fe6ea6b1c72e",
+   "products": 0
+  },
+  "chlamydia": {
+   "hash": "ff70d013b20dc42d",
+   "products": 0
+  },
+  "cholinesterase-inhibitors-cheis": {
+   "hash": "b65dc1edaf7b8908",
+   "products": 0
+  },
+  "chronic-abdominal-pain-in-children-and-youth": {
+   "hash": "ea6219575be4ae47",
+   "products": 0
+  },
+  "chronic-conditions-in-youth": {
+   "hash": "86c840a5fd79ab15",
+   "products": 0
+  },
+  "chronic-cough-in-adults": {
+   "hash": "34aeec144ff15f12",
+   "products": 0
+  },
+  "chronic-hepatitis-c": {
+   "hash": "fc625e2e4d0315cd",
+   "products": 0
+  },
+  "chronic-kidney-disease-ckd": {
+   "hash": "01a2fdb9ac147b06",
+   "products": 0
+  },
+  "chronic-non-cancer-pain": {
+   "hash": "ee8d51656f633c70",
+   "products": 0
+  },
+  "chronic-pelvic-pain": {
+   "hash": "91fe021de323021e",
+   "products": 0
+  },
+  "chronic-red-eye": {
+   "hash": "07a8a1437a8aebba",
+   "products": 0
+  },
+  "ciclosporin-shared-care-guidance": {
+   "hash": "a801f7bb0e578e8a",
+   "products": 0
+  },
+  "cirrhosis": {
+   "hash": "013e82f982efae57",
+   "products": 0
+  },
+  "clavicle-fracture": {
+   "hash": "d9b70806e7f5df0d",
+   "products": 0
+  },
+  "clozapine-monitoring": {
+   "hash": "1066b0c580a9a4b2",
+   "products": 0
+  },
+  "coeliac-disease-adults": {
+   "hash": "275283aceb4ee980",
+   "products": 0
+  },
+  "coeliac-disease-in-children": {
+   "hash": "97f17cc11817520e",
+   "products": 0
+  },
+  "colonoscopy-and-ct-colonography-ctc": {
+   "hash": "b287807c7c189dc2",
+   "products": 0
+  },
+  "colorectal-cancer-follow-up": {
+   "hash": "13613b7685dff6f3",
+   "products": 0
+  },
+  "colorectal-cancer-risk": {
+   "hash": "e5fe772b536f9262",
+   "products": 0
+  },
+  "colorectal-symptoms": {
+   "hash": "c160b251349f4950",
+   "products": 0
+  },
+  "combined-oral-contraceptive-pill": {
+   "hash": "6a87d4071bd0d405",
+   "products": 0
+  },
+  "community-acquired-pneumonia-cap-in-adults": {
+   "hash": "02afa0adff0d1816",
+   "products": 0
+  },
+  "community-pharmacy": {
+   "hash": "8aeb64db601386fa",
+   "products": 0
+  },
+  "compression-therapy-varicose-veins": {
+   "hash": "0b428f48fc46a988",
+   "products": 0
+  },
+  "compulsory-treatment-for-addiction": {
+   "hash": "f4751d7a24123fa5",
+   "products": 0
+  },
+  "congenital-heart-disease-genetics": {
+   "hash": "5944ff182f1865f3",
+   "products": 0
+  },
+  "constipation-in-adults": {
+   "hash": "4a28a5168a593fd8",
+   "products": 0
+  },
+  "constipation-in-children": {
+   "hash": "2dc2f08e13a4c4af",
+   "products": 0
+  },
+  "constipation-in-palliative-care-and-oncology": {
+   "hash": "5d74f717def404ce",
+   "products": 0
+  },
+  "contact-tracing-partner-notification": {
+   "hash": "4d6ff442ca92c1fc",
+   "products": 0
+  },
+  "contraception-after-pregnancy": {
+   "hash": "a8038ff90a4a866d",
+   "products": 0
+  },
+  "contraception-counselling": {
+   "hash": "07804ef5a42408f2",
+   "products": 0
+  },
+  "contraceptive-implant-insertion": {
+   "hash": "0ef220434defb32f",
+   "products": 0
+  },
+  "contraceptive-implant-removal": {
+   "hash": "7b84b47c918c9db8",
+   "products": 0
+  },
+  "contraceptive-injection": {
+   "hash": "89383e3f23582302",
+   "products": 0
+  },
+  "copd-diagnosis-and-initial-management": {
+   "hash": "8d601d66c6a2a012",
+   "products": 0
+  },
+  "copd-severity-classification": {
+   "hash": "2c212677a8830207",
+   "products": 0
+  },
+  "corneal-ulcers-and-abrasions": {
+   "hash": "03b9cac6db5d51a9",
+   "products": 0
+  },
+  "corns-and-calluses": {
+   "hash": "cb75c9079dbbee10",
+   "products": 0
+  },
+  "corticosteroid-injections-into-joints": {
+   "hash": "4eaaebe1c259d34f",
+   "products": 0
+  },
+  "cough-in-children": {
+   "hash": "0b7f1b9b0633189a",
+   "products": 0
+  },
+  "cough-in-palliative-care": {
+   "hash": "565f309a8136471f",
+   "products": 0
+  },
+  "covid-19-therapeutics": {
+   "hash": "0d7d5d0e9ec32e46",
+   "products": 0
+  },
+  "covid-19-vaccination": {
+   "hash": "c071921043f647f2",
+   "products": 0
+  },
+  "covid-19": {
+   "hash": "45fdf7dd2e2bfc03",
+   "products": 0
+  },
+  "croup": {
+   "hash": "b12255d949bded49",
+   "products": 0
+  },
+  "ct-chest": {
+   "hash": "a3cc071e318f71ba",
+   "products": 0
+  },
+  "ct-head": {
+   "hash": "a95f22870572dc5a",
+   "products": 0
+  },
+  "ct-ivu-and-ct-renal": {
+   "hash": "af2351320a223d72",
+   "products": 0
+  },
+  "ct-kidneys-ureters-and-bladder-ct-kub": {
+   "hash": "6fb0fee47112a6eb",
+   "products": 0
+  },
+  "ct-sinus": {
+   "hash": "68d1809f19012ce5",
+   "products": 0
+  },
+  "culturally-and-linguistically-diverse-cald-young-people": {
+   "hash": "8f865d6cea0ca7df",
+   "products": 0
+  },
+  "curly-toes": {
+   "hash": "da87936842f10dea",
+   "products": 0
+  },
+  "cyclophosphamide-oral-shared-care-guidance": {
+   "hash": "7496844ef22ca0eb",
+   "products": 0
+  },
+  "cystic-fibrosis-cf": {
+   "hash": "2c457ccf7c76a316",
+   "products": 0
+  },
+  "de-quervain-tenosynovitis": {
+   "hash": "828f194394a9b61e",
+   "products": 0
+  },
+  "debriding-wounds": {
+   "hash": "feaae67d82c5a9b5",
+   "products": 0
+  },
+  "deep-vein-thrombosis-dvt": {
+   "hash": "924cc3f3fb310d70",
+   "products": 0
+  },
+  "dehydration-in-adults": {
+   "hash": "86d0b89daf852320",
+   "products": 0
+  },
+  "delirium-in-palliative-care": {
+   "hash": "6894f9b80929b8ff",
+   "products": 0
+  },
+  "delirium": {
+   "hash": "78c06a0ab9180ab6",
+   "products": 0
+  },
+  "dengue-fever": {
+   "hash": "a98b6576039c5bcc",
+   "products": 0
+  },
+  "dental-trauma": {
+   "hash": "3d1c0a86b18b00e0",
+   "products": 0
+  },
+  "depression-in-adults-and-older-persons": {
+   "hash": "c4bb6224685a4be4",
+   "products": 0
+  },
+  "depression-in-children-and-youth": {
+   "hash": "647de1f0f36135b7",
+   "products": 0
+  },
+  "determine-injury-type": {
+   "hash": "7bd9a1b1fc8a9cef",
+   "products": 0
+  },
+  "developmental-concerns-in-preschool-children": {
+   "hash": "6ceded17fb4add9e",
+   "products": 0
+  },
+  "developmental-concerns-in-school-age-children": {
+   "hash": "d91790ab6296e933",
+   "products": 0
+  },
+  "developmental-dysplasia-of-the-hip-ddh": {
+   "hash": "62ee17abecf67107",
+   "products": 0
+  },
+  "dexamethasone-in-palliative-care-and-oncology": {
+   "hash": "e594b6722a0db9be",
+   "products": 0
+  },
+  "diabetes-diagnosis-in-children-and-youth": {
+   "hash": "f44606f389f4be4f",
+   "products": 0
+  },
+  "diabetes-in-palliative-care": {
+   "hash": "18e343d4526b0cb4",
+   "products": 0
+  },
+  "diabetes-in-pregnancy": {
+   "hash": "513b50779ff2a6ba",
+   "products": 0
+  },
+  "diabetes-screening-and-diagnosis-in-adults": {
+   "hash": "40d9171c57734aa0",
+   "products": 0
+  },
+  "diabetes-self-monitoring": {
+   "hash": "d4c92311ed0f7281",
+   "products": 0
+  },
+  "diagnosed-ovarian-cyst": {
+   "hash": "7bed5e2055f48750",
+   "products": 0
+  },
+  "differences-of-sex-development-dsd": {
+   "hash": "6ae41144e543dc29",
+   "products": 0
+  },
+  "differentiating-asthma-from-copd": {
+   "hash": "a8f72f7c1916a3d8",
+   "products": 0
+  },
+  "dimethyl-fumarate-dmf-shared-care-guidance": {
+   "hash": "da865b62ee15fc51",
+   "products": 0
+  },
+  "direct-oral-anticoagulants": {
+   "hash": "348dc9dbf060b20e",
+   "products": 0
+  },
+  "diverticular-disease": {
+   "hash": "1f0087a80c8065f2",
+   "products": 0
+  },
+  "diving-accidents-and-decompression-illness": {
+   "hash": "f1046905d52b0586",
+   "products": 0
+  },
+  "domperidone-as-galactagogue": {
+   "hash": "dda6db8f4d85cbfb",
+   "products": 0
+  },
+  "down-syndrome": {
+   "hash": "bd00e72700f67e42",
+   "products": 0
+  },
+  "dual-disability-mental-health-service": {
+   "hash": "cdf0853569c8f321",
+   "products": 0
+  },
+  "dupuytren-disease": {
+   "hash": "9f984124cfea306e",
+   "products": 0
+  },
+  "dysmorphic-child-genetics": {
+   "hash": "0c615a2d1fc35cdc",
+   "products": 0
+  },
+  "dyspareunia-deep-or-superficial": {
+   "hash": "6e41b12e125f3c1c",
+   "products": 0
+  },
+  "dyspnoea-in-mnd": {
+   "hash": "750fb4cb651f3fe1",
+   "products": 0
+  },
+  "dyspnoea-in-palliative-care": {
+   "hash": "c6a26e71c5c20e48",
+   "products": 0
+  },
+  "dyspnoea": {
+   "hash": "615b386890c82e75",
+   "products": 0
+  },
+  "ear-anomalies": {
+   "hash": "a33f5815bdc505fc",
+   "products": 0
+  },
+  "ear-discharge": {
+   "hash": "159b32330490268b",
+   "products": 0
+  },
+  "ear-wax": {
+   "hash": "4f5447a48230758d",
+   "products": 0
+  },
+  "eating-disorders-in-adults": {
+   "hash": "12756c59161cf83e",
+   "products": 0
+  },
+  "eating-disorders-in-children-and-youth": {
+   "hash": "62eea942341d1757",
+   "products": 0
+  },
+  "ecg-images": {
+   "hash": "80a11fdbe52692fc",
+   "products": 0
+  },
+  "ectropion-and-entropion": {
+   "hash": "fcd6c29f93c2a376",
+   "products": 0
+  },
+  "eczema-in-children": {
+   "hash": "93da090ff30b46ca",
+   "products": 0
+  },
+  "elbow-fractures-in-children": {
+   "hash": "08c80220811bc361",
+   "products": 0
+  },
+  "elder-abuse-and-neglect": {
+   "hash": "e9c98c5140849ef9",
+   "products": 0
+  },
+  "elective-procedures-and-diabetes": {
+   "hash": "a0755b4c12336aa6",
+   "products": 0
+  },
+  "emergency-contraception": {
+   "hash": "348d8176a94100b9",
+   "products": 0
+  },
+  "emollients-moisturisers": {
+   "hash": "8cf9f62e2945dd2c",
+   "products": 0
+  },
+  "endometrial-cells-on-cervical-screening-results": {
+   "hash": "e8149bef322cd03e",
+   "products": 0
+  },
+  "endometriosis": {
+   "hash": "40857513dc3ac5af",
+   "products": 0
+  },
+  "enteral-feeding-tubes-in-adults": {
+   "hash": "356067d1a75ae1b2",
+   "products": 0
+  },
+  "enuresis-in-children": {
+   "hash": "8922e83315045c56",
+   "products": 0
+  },
+  "epididymo-orchitis": {
+   "hash": "20237bd47d3feca9",
+   "products": 0
+  },
+  "epilepsy-in-children-and-young-people": {
+   "hash": "f98c5a837cb265c1",
+   "products": 0
+  },
+  "epilepsy-in-women-and-pregnancy": {
+   "hash": "09ca897bc8880c20",
+   "products": 0
+  },
+  "epistaxis": {
+   "hash": "670ab205ec6e7df0",
+   "products": 0
+  },
+  "erectile-dysfunction": {
+   "hash": "ce2e1440a9f4005d",
+   "products": 0
+  },
+  "established-bipolar-disorder": {
+   "hash": "85e4fab8e747243b",
+   "products": 0
+  },
+  "established-psychosis": {
+   "hash": "0357840bdbcf5b5c",
+   "products": 0
+  },
+  "excessive-or-retained-secretions-in-palliative-care": {
+   "hash": "68caec8071411bae",
+   "products": 0
+  },
+  "exudate-and-moisture-balance-in-wounds": {
+   "hash": "c50e721df70f78be",
+   "products": 0
+  },
+  "eye-assessment-in-adults": {
+   "hash": "6756773fc1bd9162",
+   "products": 0
+  },
+  "eye-disease-in-diabetes": {
+   "hash": "020b9e2de116bd93",
+   "products": 0
+  },
+  "eyelid-lesions": {
+   "hash": "be85d0b68831c80a",
+   "products": 0
+  },
+  "facial-palsy": {
+   "hash": "6c6f53f37f8f135c",
+   "products": 0
+  },
+  "failure-to-thrive": {
+   "hash": "b25710c94ba4e14b",
+   "products": 0
+  },
+  "falls-prevention": {
+   "hash": "b6b5e00fa288452e",
+   "products": 0
+  },
+  "familial-breast-or-ovarian-cancer-syndromes": {
+   "hash": "0c64580608459909",
+   "products": 0
+  },
+  "familial-colorectal-or-endometrial-cancer-syndromes": {
+   "hash": "a14795c9ce8aa886",
+   "products": 0
+  },
+  "family-violence": {
+   "hash": "f0b10c4e8a2eeb53",
+   "products": 0
+  },
+  "fatigue": {
+   "hash": "5af1b2dd6b56a154",
+   "products": 0
+  },
+  "febrile-illness-in-children": {
+   "hash": "887cb8e55206c1ba",
+   "products": 0
+  },
+  "female-genital-mutilation-fgm": {
+   "hash": "791f783055f771c3",
+   "products": 0
+  },
+  "fentanyl-guide": {
+   "hash": "92e714aafb3c14c7",
+   "products": 0
+  },
+  "fetal-renal-tract-dilatation": {
+   "hash": "f6cba57df7640b0f",
+   "products": 0
+  },
+  "fever-in-returning-travellers": {
+   "hash": "e3e7bb116fef933e",
+   "products": 0
+  },
+  "fibromyalgia-diagnostic-criteria": {
+   "hash": "d3206b65af0a3184",
+   "products": 0
+  },
+  "fine-needle-aspiration-fna": {
+   "hash": "9cc109933df2ca48",
+   "products": 0
+  },
+  "finger-dislocations": {
+   "hash": "cb5a7cffbcb60df5",
+   "products": 0
+  },
+  "finger-tip-injuries": {
+   "hash": "c217c5b0c6523447",
+   "products": 0
+  },
+  "finger-tip-units": {
+   "hash": "5763151e0f9e73b4",
+   "products": 0
+  },
+  "fingolimod-shared-care-guidance": {
+   "hash": "b0d5cc741cd13add",
+   "products": 0
+  },
+  "first-carpometacarpal-joint-osteoarthritis-cmcj-oa": {
+   "hash": "144f7b5f666c5d1d",
+   "products": 0
+  },
+  "first-seizure-in-adults": {
+   "hash": "bbaf9111dcf957f7",
+   "products": 0
+  },
+  "flat-feet-in-children": {
+   "hash": "998221d85a47bac1",
+   "products": 0
+  },
+  "floaters-flashes-retinal-detachment": {
+   "hash": "52c7b02fbe4cb332",
+   "products": 0
+  },
+  "fontanelle-development": {
+   "hash": "56632ce50a692e3f",
+   "products": 0
+  },
+  "food-hypersensitivity-in-children": {
+   "hash": "87045cbf880986e7",
+   "products": 0
+  },
+  "foot-screening-and-management-in-diabetes": {
+   "hash": "79c13f1aa9da88a0",
+   "products": 0
+  },
+  "foreign-bodies-ingested-by-children": {
+   "hash": "bfe23fbdcdaf2b9d",
+   "products": 0
+  },
+  "foreign-bodies-inhaled-by-children": {
+   "hash": "25a91b8c6d12e1dd",
+   "products": 0
+  },
+  "foreign-body-in-ear": {
+   "hash": "f668d4fb4bfa21e2",
+   "products": 0
+  },
+  "foreign-body-in-eye": {
+   "hash": "34c1820653242dd3",
+   "products": 0
+  },
+  "foreign-body-in-nose": {
+   "hash": "94e9b4963937ab31",
+   "products": 0
+  },
+  "fungal-nail-infections-in-adults": {
+   "hash": "1037ada59e2dd353",
+   "products": 0
+  },
+  "gallstones": {
+   "hash": "1c6503a152254d39",
+   "products": 0
+  },
+  "ganglia": {
+   "hash": "510f22b594703def",
+   "products": 0
+  },
+  "gastroenteritis-in-children": {
+   "hash": "d00976206b4b3044",
+   "products": 0
+  },
+  "gastroscopy": {
+   "hash": "ff66dcd817a328c1",
+   "products": 0
+  },
+  "gender-diversity-and-transgender-health": {
+   "hash": "65b287202bc477e8",
+   "products": 0
+  },
+  "general-mental-health-in-youth": {
+   "hash": "b50d1b03c725259f",
+   "products": 0
+  },
+  "genital-dermatology": {
+   "hash": "e0588837a65d0662",
+   "products": 0
+  },
+  "genital-herpes": {
+   "hash": "cc9b71401634dfd6",
+   "products": 0
+  },
+  "genital-skin-lesions": {
+   "hash": "2528e7ffb169f8cf",
+   "products": 0
+  },
+  "genital-warts": {
+   "hash": "88559bed2689cb4e",
+   "products": 0
+  },
+  "genitourinary-system-in-spinal-cord-impairment-sci": {
+   "hash": "08bae184e56f1388",
+   "products": 0
+  },
+  "giant-cell-arteritis-temporal-arteritis": {
+   "hash": "bbb7982ec4fe67a8",
+   "products": 0
+  },
+  "goitre-in-adults": {
+   "hash": "9a3f2e814268adfe",
+   "products": 0
+  },
+  "gonorrhoea": {
+   "hash": "afff4a156d5286c7",
+   "products": 0
+  },
+  "gout": {
+   "hash": "dd8cea40bac5ff6e",
+   "products": 0
+  },
+  "growth-b4-school-check": {
+   "hash": "b2e1fab3e104e3e1",
+   "products": 0
+  },
+  "gynaecomastia": {
+   "hash": "aca8d863c4a27fdc",
+   "products": 0
+  },
+  "haematospermia": {
+   "hash": "4601fd7d182d35b0",
+   "products": 0
+  },
+  "haematuria-in-adults": {
+   "hash": "19846d5968a4e00f",
+   "products": 0
+  },
+  "haematuria-in-children": {
+   "hash": "7b96a73271cc39d4",
+   "products": 0
+  },
+  "haemoptysis": {
+   "hash": "ba9f0d680f4cfad6",
+   "products": 0
+  },
+  "haemorrhoids": {
+   "hash": "352da38e372ff8b0",
+   "products": 0
+  },
+  "hand-hygiene": {
+   "hash": "a1b01704b613adf3",
+   "products": 0
+  },
+  "harmful-gambling": {
+   "hash": "8bc7a212949a62ef",
+   "products": 0
+  },
+  "hazardous-substance-injury-reporting": {
+   "hash": "caacdd288a9b6275",
+   "products": 0
+  },
+  "head-injuries-in-adults": {
+   "hash": "563bfa14930f351d",
+   "products": 0
+  },
+  "head-injury-and-concussion-in-children": {
+   "hash": "986986a722f6cef7",
+   "products": 0
+  },
+  "head-lice": {
+   "hash": "f8d69f961eb7c2eb",
+   "products": 0
+  },
+  "headaches-in-adults": {
+   "hash": "7a0e0304b20d3e15",
+   "products": 0
+  },
+  "headaches-in-children": {
+   "hash": "cd6832042645872b",
+   "products": 0
+  },
+  "health-and-frailty-assessment-for-older-adults": {
+   "hash": "da2b17025a28f2be",
+   "products": 0
+  },
+  "health-assessment-of-young-people": {
+   "hash": "cc3d7e1b13b12c6c",
+   "products": 0
+  },
+  "hearing-loss-in-adults": {
+   "hash": "a168c0cf1bb80a9f",
+   "products": 0
+  },
+  "heart-conditions-in-pregnancy": {
+   "hash": "d91de9b94de8a04f",
+   "products": 0
+  },
+  "heart-failure": {
+   "hash": "7a6144fe3a87e4f3",
+   "products": 0
+  },
+  "heart-murmurs-in-adults": {
+   "hash": "2e6978e8504b35b7",
+   "products": 0
+  },
+  "heart-murmurs-in-children": {
+   "hash": "54bfe875a202c761",
+   "products": 0
+  },
+  "hepatitis-b-hbv": {
+   "hash": "062c8db2baf1066b",
+   "products": 0
+  },
+  "hernia-in-adults": {
+   "hash": "982cb1a444a3556a",
+   "products": 0
+  },
+  "herpes-simplex-keratitis-dendritic-ulcer": {
+   "hash": "5a6b6d00e5ee767e",
+   "products": 0
+  },
+  "herpes-zoster-ophthalmicus": {
+   "hash": "182c7aa614a4cede",
+   "products": 0
+  },
+  "herpes-zoster-shingles-immunisation": {
+   "hash": "5d02503dbdb3200c",
+   "products": 0
+  },
+  "herpes-zoster-shingles": {
+   "hash": "2ce652f40f4b2f46",
+   "products": 0
+  },
+  "hiccups-in-palliative-care": {
+   "hash": "2cefe301632ad9f7",
+   "products": 0
+  },
+  "hidradenitis-suppurativa": {
+   "hash": "98925aa7e80e01c1",
+   "products": 0
+  },
+  "hip-and-knee-joint-replacement": {
+   "hash": "43f2677ed146259c",
+   "products": 0
+  },
+  "hip-imaging-in-children": {
+   "hash": "8dae9e89829b243f",
+   "products": 0
+  },
+  "home-oxygen": {
+   "hash": "989036de9f146733",
+   "products": 0
+  },
+  "hpv-vaccination": {
+   "hash": "e24795ba1656a10a",
+   "products": 0
+  },
+  "humerus-fractures": {
+   "hash": "d01255869b89c6e4",
+   "products": 0
+  },
+  "huntington-disease": {
+   "hash": "578b0073ff180346",
+   "products": 0
+  },
+  "hydroxychloroquine-shared-care-guidance": {
+   "hash": "355fc73d3100f23d",
+   "products": 0
+  },
+  "hypercalcaemia-of-malignancy": {
+   "hash": "a3e49c9a480315dc",
+   "products": 0
+  },
+  "hypercalcaemia": {
+   "hash": "bf631a1fd648c6e2",
+   "products": 0
+  },
+  "hyperlipidaemia": {
+   "hash": "04b068a69a7f484c",
+   "products": 0
+  },
+  "hypertension-in-adults": {
+   "hash": "91a48b53542c313a",
+   "products": 0
+  },
+  "hypertension-in-pregnancy-and-postpartum": {
+   "hash": "6982f955314ea477",
+   "products": 0
+  },
+  "hyperthyroidism": {
+   "hash": "fce1337dd7c4d495",
+   "products": 0
+  },
+  "hypoglycaemia": {
+   "hash": "2fa584ce943022bd",
+   "products": 0
+  },
+  "hyponatraemia": {
+   "hash": "365cf841867b3c50",
+   "products": 0
+  },
+  "hypothyroidism": {
+   "hash": "20d1529edf52a51f",
+   "products": 0
+  },
+  "ibd-medications": {
+   "hash": "05b0048541dabb6a",
+   "products": 0
+  },
+  "immunoglobulin-administration": {
+   "hash": "2cdc16d16a7870d7",
+   "products": 0
+  },
+  "immunomodulators": {
+   "hash": "6c05c47e31dbe278",
+   "products": 0
+  },
+  "impalpable-thyroid-nodule": {
+   "hash": "f8463e2e51377c3d",
+   "products": 0
+  },
+  "impetigo": {
+   "hash": "131e0a0d21f8c0f1",
+   "products": 0
+  },
+  "incidental-findings-on-imaging": {
+   "hash": "36bfaf6d1c1aa61e",
+   "products": 0
+  },
+  "incidental-liver-lesions": {
+   "hash": "ec9eaddb50e338f5",
+   "products": 0
+  },
+  "incidental-renal-lesion": {
+   "hash": "1a0221fd18790e85",
+   "products": 0
+  },
+  "increased-haemoglobin-flow-chart": {
+   "hash": "fa28a9a1e6448e3e",
+   "products": 0
+  },
+  "infantile-haemangioma": {
+   "hash": "24a275bd286265f1",
+   "products": 0
+  },
+  "infectious-gastroenteritis": {
+   "hash": "b36ade313173fe0a",
+   "products": 0
+  },
+  "infectious-keratitis": {
+   "hash": "b95490ed80e5d055",
+   "products": 0
+  },
+  "infectious-mononucleosis": {
+   "hash": "f35b5018bb22658a",
+   "products": 0
+  },
+  "infective-conjunctivitis": {
+   "hash": "dddf98735f8c8e83",
+   "products": 0
+  },
+  "infective-endocarditis-prophylaxis": {
+   "hash": "8e00f0d17d5365cd",
+   "products": 0
+  },
+  "inflammatory-arthritis": {
+   "hash": "628a3a0a4c95e3de",
+   "products": 0
+  },
+  "infliximab-shared-care-guidance": {
+   "hash": "6bf258ad36371c3f",
+   "products": 0
+  },
+  "influenza-immunisation": {
+   "hash": "69a2c4eeb233c4f0",
+   "products": 0
+  },
+  "influenza": {
+   "hash": "4309ef108a38cf54",
+   "products": 0
+  },
+  "ingrown-toenail": {
+   "hash": "6eff855e4b90f596",
+   "products": 0
+  },
+  "inguinal-hernia-in-children": {
+   "hash": "8eb50c39cf464717",
+   "products": 0
+  },
+  "insomnia": {
+   "hash": "5e5e402df21dc7fd",
+   "products": 0
+  },
+  "insulin-for-type-2-diabetes": {
+   "hash": "a5e44a37deaba7f1",
+   "products": 0
+  },
+  "insulin-pumps": {
+   "hash": "344f227f156be032",
+   "products": 0
+  },
+  "intellectual-disability-in-adults-genetics": {
+   "hash": "78f5a6a4872ac5dc",
+   "products": 0
+  },
+  "interpreting-peds-results": {
+   "hash": "aa0962866dc7ef39",
+   "products": 0
+  },
+  "interpreting-sdq-results": {
+   "hash": "e7071e5d5bd5bee4",
+   "products": 0
+  },
+  "intestinal-parasites": {
+   "hash": "c97913980be42d06",
+   "products": 0
+  },
+  "intoeing": {
+   "hash": "4593e06033385d2c",
+   "products": 0
+  },
+  "intrauterine-device-insertion": {
+   "hash": "6a7b51076753284f",
+   "products": 0
+  },
+  "intrauterine-device-removal": {
+   "hash": "c7e972fdf27c6742",
+   "products": 0
+  },
+  "iodine-supplementation-in-pregnancy-and-breastfeeding": {
+   "hash": "6c25f5d8d315908e",
+   "products": 0
+  },
+  "iritis-anterior-uveitis": {
+   "hash": "06db49b08c029ccb",
+   "products": 0
+  },
+  "irritable-bowel-syndrome-ibs": {
+   "hash": "85025d04b2aec70f",
+   "products": 0
+  },
+  "iv-iron-infusion": {
+   "hash": "57999f4a2132fd06",
+   "products": 0
+  },
+  "iv-morphine-for-children": {
+   "hash": "d970a5e838f994b7",
+   "products": 0
+  },
+  "jaundice-in-babies": {
+   "hash": "55e2fc28ccfcb9be",
+   "products": 0
+  },
+  "joint-aspiration": {
+   "hash": "63673aa0331b4571",
+   "products": 0
+  },
+  "kidney-disease-in-diabetes": {
+   "hash": "ce6e60bf94bcf981",
+   "products": 0
+  },
+  "knee-injuries": {
+   "hash": "641eb7599729af4d",
+   "products": 0
+  },
+  "knee-joint-aspiration-and-injection": {
+   "hash": "7129dd00ebfce52c",
+   "products": 0
+  },
+  "knock-knees-genu-valgum": {
+   "hash": "6ba8ed9aa82a8167",
+   "products": 0
+  },
+  "lactation-insufficiency": {
+   "hash": "f7a2c08a77da1ef6",
+   "products": 0
+  },
+  "land-contamination": {
+   "hash": "d896a6242e20aebf",
+   "products": 0
+  },
+  "latent-tuberculosis": {
+   "hash": "ea3cc98cec1d50bf",
+   "products": 0
+  },
+  "lead-poisoning": {
+   "hash": "6422b503fafd2083",
+   "products": 0
+  },
+  "leg-problems-in-sleep": {
+   "hash": "e907ac5d6c94133b",
+   "products": 0
+  },
+  "leg-ulcers": {
+   "hash": "8214918a90b4cc3e",
+   "products": 0
+  },
+  "legionellosis": {
+   "hash": "2dbba27c3eaaed08",
+   "products": 0
+  },
+  "liver-cancer": {
+   "hash": "7bec85a9f830801e",
+   "products": 0
+  },
+  "long-covid": {
+   "hash": "b32a64345e0f7c50",
+   "products": 0
+  },
+  "long-qt-syndrome": {
+   "hash": "db7dd3d55763ae9e",
+   "products": 0
+  },
+  "long-term-glucocorticoids-steroids": {
+   "hash": "acdd4ff9171dc72b",
+   "products": 0
+  },
+  "low-fodmap-diet": {
+   "hash": "f252a6c063e1d06b",
+   "products": 0
+  },
+  "low-risk-endometrial-cancer-follow-up": {
+   "hash": "59e4be12b95e3e81",
+   "products": 0
+  },
+  "lower-urinary-tract-symptoms-in-men-luts": {
+   "hash": "fc7993e76b9c3c92",
+   "products": 0
+  },
+  "lung-cancer": {
+   "hash": "c09c4ca90ee34809",
+   "products": 0
+  },
+  "lymphocytosis": {
+   "hash": "331578e41c3a03eb",
+   "products": 0
+  },
+  "lymphoedema": {
+   "hash": "a8bfa4c3c9584430",
+   "products": 0
+  },
+  "macular-degeneration": {
+   "hash": "14f2313f9eb48e22",
+   "products": 0
+  },
+  "malaria": {
+   "hash": "83f0fca1dc4c9a60",
+   "products": 0
+  },
+  "malignant-spinal-cord-compression": {
+   "hash": "24666cc4b5a4591a",
+   "products": 0
+  },
+  "managing-swallowing-difficulties": {
+   "hash": "7a49774eb87ce97b",
+   "products": 0
+  },
+  "marfan-syndrome": {
+   "hash": "d75e93c87d16bdb2",
+   "products": 0
+  },
+  "masld-fatty-liver": {
+   "hash": "a14e4a9d4137a66f",
+   "products": 0
+  },
+  "mastitis-and-breast-abscess": {
+   "hash": "33d368da9f21f62f",
+   "products": 0
+  },
+  "measles": {
+   "hash": "33d29f61dead0c56",
+   "products": 0
+  },
+  "medication-management-in-older-adults": {
+   "hash": "43b82ccbbae75dce",
+   "products": 0
+  },
+  "medications-for-osteoporosis": {
+   "hash": "7c6036767f6ac23f",
+   "products": 0
+  },
+  "medications-for-perinatal-depression-and-anxiety": {
+   "hash": "ac8e9d46f2ed3393",
+   "products": 0
+  },
+  "medications-in-chronic-pain": {
+   "hash": "3086363c94ddd927",
+   "products": 0
+  },
+  "medications-in-pregnancy-and-breastfeeding": {
+   "hash": "adefa306b2b63c4f",
+   "products": 0
+  },
+  "medicinal-cannabis": {
+   "hash": "8a6921710252078e",
+   "products": 0
+  },
+  "melanoma": {
+   "hash": "16b5bce2ca567709",
+   "products": 0
+  },
+  "meningococcal-disease": {
+   "hash": "ecb75e3d093c9ccc",
+   "products": 0
+  },
+  "meningococcal-vaccination": {
+   "hash": "4964f447fd8a4dae",
+   "products": 0
+  },
+  "menopause-hormone-therapy-mht": {
+   "hash": "60c0defd6f6aeeb3",
+   "products": 0
+  },
+  "metabolic-syndrome-insulin-resistance-syndrome": {
+   "hash": "5d93536d7fbc44ff",
+   "products": 0
+  },
+  "metacarpal-fracture": {
+   "hash": "d881baf9c7a2ef2f",
+   "products": 0
+  },
+  "metatarsalgia": {
+   "hash": "d275a0512df7abaf",
+   "products": 0
+  },
+  "metatarsus-adductus": {
+   "hash": "a54bf82094f688d3",
+   "products": 0
+  },
+  "methamphetamine-p": {
+   "hash": "21bc4a2a9d9ace7b",
+   "products": 0
+  },
+  "methotrexate-shared-care-guidance": {
+   "hash": "c97ef8e588740da5",
+   "products": 0
+  },
+  "mgus-monoclonal-gammopathy-of-undetermined-significance": {
+   "hash": "84248c312b1b75a8",
+   "products": 0
+  },
+  "middle-and-proximal-phalanx-fractures": {
+   "hash": "d40561a1927432d8",
+   "products": 0
+  },
+  "migrant-and-refugee-services": {
+   "hash": "5909ad94f30345ed",
+   "products": 0
+  },
+  "mothers-babies-and-parenting-community-support": {
+   "hash": "ea94d9bb0451bca4",
+   "products": 0
+  },
+  "mpox": {
+   "hash": "85e545ccc3b82090",
+   "products": 0
+  },
+  "multi-drug-resistant-organisms-mdro": {
+   "hash": "fd706cf510679293",
+   "products": 0
+  },
+  "multiple-sclerosis-ms": {
+   "hash": "8e5ed408a506732b",
+   "products": 0
+  },
+  "mumps": {
+   "hash": "c710bace884a410f",
+   "products": 0
+  },
+  "myalgic-encephalomyelitis-chronic-fatigue-syndrome-me-cfs": {
+   "hash": "a6cf4f7113f4dcc1",
+   "products": 0
+  },
+  "myelodysplastic-neoplasms": {
+   "hash": "7946cff85755b428",
+   "products": 0
+  },
+  "myocarditis-and-pericarditis-after-covid-19-vaccination": {
+   "hash": "eb83df1095bb6c9b",
+   "products": 0
+  },
+  "myotonic-dystrophy": {
+   "hash": "9328d2243444c2ae",
+   "products": 0
+  },
+  "nasal-fracture": {
+   "hash": "6e868a2e9f73621b",
+   "products": 0
+  },
+  "national-bowel-screening-programme": {
+   "hash": "d66d9ee60253382c",
+   "products": 0
+  },
+  "nausea-and-vomiting-in-palliative-care": {
+   "hash": "3cb9d11a0b80b731",
+   "products": 0
+  },
+  "nausea-and-vomiting-in-pregnancy": {
+   "hash": "0133fac2f16c7a56",
+   "products": 0
+  },
+  "neck-lumps-in-adults": {
+   "hash": "d3e97af1186d0c89",
+   "products": 0
+  },
+  "neck-lumps-in-children": {
+   "hash": "d85f92bb00508a24",
+   "products": 0
+  },
+  "needle-phobia-and-vaccination": {
+   "hash": "09f28174f227355e",
+   "products": 0
+  },
+  "neutropenia": {
+   "hash": "2ae4ff3249ce0310",
+   "products": 0
+  },
+  "neutrophilia": {
+   "hash": "aa7fb0c300b410ee",
+   "products": 0
+  },
+  "new-onset-seizures-in-children": {
+   "hash": "67b46ef9d56d6c94",
+   "products": 0
+  },
+  "new-patient-to-palliative-care": {
+   "hash": "ae89e8d2d17556c4",
+   "products": 0
+  },
+  "newborn-hearing-screening-and-early-intervention": {
+   "hash": "cbc4993a7a0372ef",
+   "products": 0
+  },
+  "nipple-pain-in-breastfeeding": {
+   "hash": "63f88b41ff6487ed",
+   "products": 0
+  },
+  "non-acute-asthma-in-adults-and-young-people": {
+   "hash": "bd6a6fa081c3b830",
+   "products": 0
+  },
+  "non-acute-asthma-in-children": {
+   "hash": "325c373cad82cba3",
+   "products": 0
+  },
+  "non-acute-neurosurgery-assessment": {
+   "hash": "c4c4bfe20a5b0321",
+   "products": 0
+  },
+  "non-acute-wheeze-and-asthma-in-preschool-children": {
+   "hash": "29321be2b5c374d3",
+   "products": 0
+  },
+  "non-fatal-strangulation-and-or-suffocation": {
+   "hash": "ee83524a22046090",
+   "products": 0
+  },
+  "non-insulin-diabetes-medications": {
+   "hash": "2bb58027c1911f70",
+   "products": 0
+  },
+  "non-melanoma-skin-cancer": {
+   "hash": "04f89107af97aa3b",
+   "products": 0
+  },
+  "non-suicidal-deliberate-self-harm": {
+   "hash": "404a65427eef4cdb",
+   "products": 0
+  },
+  "nsaids-and-dyspepsia-heartburn": {
+   "hash": "f97063ac48fd503b",
+   "products": 0
+  },
+  "obsessive-compulsive-disorder-ocd": {
+   "hash": "4b672470f9485d8e",
+   "products": 0
+  },
+  "obstructive-sleep-apnoea-osa-in-adults": {
+   "hash": "11ab543643c6fbcd",
+   "products": 0
+  },
+  "open-angle-glaucoma": {
+   "hash": "e0b39cabea611792",
+   "products": 0
+  },
+  "opioid-reduction-management": {
+   "hash": "9a85835e03ab3ca4",
+   "products": 0
+  },
+  "opioid-substitution-treatment": {
+   "hash": "124b8f452a31ab54",
+   "products": 0
+  },
+  "oral-allergy-syndrome": {
+   "hash": "4a973617938eb9bb",
+   "products": 0
+  },
+  "oral-care-in-palliative-care": {
+   "hash": "dbd4553f9dde1535",
+   "products": 0
+  },
+  "oral-iron": {
+   "hash": "f4b6182f01aec616",
+   "products": 0
+  },
+  "oral-lesions": {
+   "hash": "0ccdbb9344eea329",
+   "products": 0
+  },
+  "osteoarthritis-oa": {
+   "hash": "dfc2a47756b4416e",
+   "products": 0
+  },
+  "otitis-externa": {
+   "hash": "1a74462cb79fce67",
+   "products": 0
+  },
+  "ovarian-cancer-symptoms": {
+   "hash": "2fde66a9a4bb4055",
+   "products": 0
+  },
+  "pain-and-bleeding-in-early-pregnancy": {
+   "hash": "3ab1af97ca6ce5ee",
+   "products": 0
+  },
+  "pain-in-spinal-cord-impairment-sci": {
+   "hash": "220a9d01fd109ec1",
+   "products": 0
+  },
+  "pain-management-in-palliative-care": {
+   "hash": "9ae1e34ae8b4540d",
+   "products": 0
+  },
+  "palpable-thyroid-nodule": {
+   "hash": "b9cb3156d1771392",
+   "products": 0
+  },
+  "palpitations-in-pregnancy": {
+   "hash": "c349cf3de0240cc0",
+   "products": 0
+  },
+  "parkinson-disease": {
+   "hash": "8a8b5b220967585f",
+   "products": 0
+  },
+  "parotid-gland-disorders": {
+   "hash": "6d1a763af0822e6a",
+   "products": 0
+  },
+  "pelvic-inflammatory-disease-pid": {
+   "hash": "66e07ff7f1bab9a1",
+   "products": 0
+  },
+  "pelvic-mesh-complications-in-women": {
+   "hash": "57dabd4aabe66d40",
+   "products": 0
+  },
+  "penis-and-foreskin-problems-in-children": {
+   "hash": "540f499b467281c2",
+   "products": 0
+  },
+  "peri-procedural-management-of-warfarin-doacs-and-antiplatelets": {
+   "hash": "6804149d3144494c",
+   "products": 0
+  },
+  "perinatal-mental-health": {
+   "hash": "c752a424648ca1ba",
+   "products": 0
+  },
+  "perineal-tear-follow-up": {
+   "hash": "c3ad12c5b8baec5c",
+   "products": 0
+  },
+  "peripheral-arterial-disease": {
+   "hash": "0452e5ab241253c0",
+   "products": 0
+  },
+  "peripheral-neuropathy": {
+   "hash": "046508a92399e8c7",
+   "products": 0
+  },
+  "permanent-contraception": {
+   "hash": "001e3ece2cce9a8d",
+   "products": 0
+  },
+  "persistent-wet-cough-in-children": {
+   "hash": "20e5e738763ce1f2",
+   "products": 0
+  },
+  "perthes-disease": {
+   "hash": "7f9a7a693de8011d",
+   "products": 0
+  },
+  "pertussis-vaccine-in-pregnancy": {
+   "hash": "8accc2a9b7b97536",
+   "products": 0
+  },
+  "pertussis-whooping-cough": {
+   "hash": "1c15ba2c76b4f21c",
+   "products": 0
+  },
+  "physical-activity-adults": {
+   "hash": "ce89864a37b5224b",
+   "products": 0
+  },
+  "physical-health-and-mental-illness": {
+   "hash": "5ffd774818f363eb",
+   "products": 0
+  },
+  "pilonidal-disease": {
+   "hash": "1fc62a693b403e0e",
+   "products": 0
+  },
+  "pipelle-biopsy-procedure": {
+   "hash": "32ba989a00b6d735",
+   "products": 0
+  },
+  "plagiocephaly": {
+   "hash": "2fba7a657de89345",
+   "products": 0
+  },
+  "plantar-fasciitis": {
+   "hash": "4b160d3be9f66546",
+   "products": 0
+  },
+  "pneumococcal-vaccination": {
+   "hash": "0871b7f6f70b3c49",
+   "products": 0
+  },
+  "pneumonia-in-children": {
+   "hash": "8001f495af51a4c5",
+   "products": 0
+  },
+  "podiatry-and-orthotics-services": {
+   "hash": "1be4a0508ec282a2",
+   "products": 0
+  },
+  "poisoning-and-drug-overdose": {
+   "hash": "2ad075aab8be8f8e",
+   "products": 0
+  },
+  "poliomyelitis-flaccid-paralysis": {
+   "hash": "c9c67ac89ee4976b",
+   "products": 0
+  },
+  "polycystic-ovary-syndrome-pcos": {
+   "hash": "3eb67fb06c69cf71",
+   "products": 0
+  },
+  "polymyalgia-rheumatica-pmr": {
+   "hash": "4fd17cd5d3f68372",
+   "products": 0
+  },
+  "post-coital-bleeding": {
+   "hash": "6c4a76743642489b",
+   "products": 0
+  },
+  "post-exposure-prophylaxis-for-hiv-pep": {
+   "hash": "084e38a6d02f651a",
+   "products": 0
+  },
+  "post-natural-disaster-health": {
+   "hash": "4740f624059061f4",
+   "products": 0
+  },
+  "post-operative-care-of-cardiac-patients": {
+   "hash": "a7fad5e271392210",
+   "products": 0
+  },
+  "post-traumatic-stress-disorder-ptsd": {
+   "hash": "d2645fa6c5fc8c87",
+   "products": 0
+  },
+  "postherpetic-neuralgia": {
+   "hash": "f042b17e4fd5e2e0",
+   "products": 0
+  },
+  "postmenopausal-bleeding": {
+   "hash": "a846f04957050ba6",
+   "products": 0
+  },
+  "postoperative-urologic-complications": {
+   "hash": "192d717204d1c3b2",
+   "products": 0
+  },
+  "pre-conception-consultation": {
+   "hash": "2d7c3d00fef5904c",
+   "products": 0
+  },
+  "pre-exposure-prophylaxis-for-hiv-prep": {
+   "hash": "620401830daa3390",
+   "products": 0
+  },
+  "pre-pregnancy-diabetes-planning": {
+   "hash": "8e0c3e355b46adfc",
+   "products": 0
+  },
+  "prediabetes": {
+   "hash": "4edcbefefbdd77a3",
+   "products": 0
+  },
+  "pregnancy-and-postnatal-care-in-a-covid-19-patient": {
+   "hash": "4d7d4816ff21b9c2",
+   "products": 0
+  },
+  "premenstrual-syndrome-pms": {
+   "hash": "e70150a7531787a3",
+   "products": 0
+  },
+  "prescribing-naloxone": {
+   "hash": "c86004098fc3e680",
+   "products": 0
+  },
+  "pressure-injuries-in-spinal-cord-impairment": {
+   "hash": "e4b2534ac8a62761",
+   "products": 0
+  },
+  "preterm-and-low-birth-weight-infants": {
+   "hash": "9edd97ba16bab2ac",
+   "products": 0
+  },
+  "previously-undisclosed-sexual-assault": {
+   "hash": "59c659847fe7292e",
+   "products": 0
+  },
+  "progestogen-only-contraceptive-pills": {
+   "hash": "f3d915819b2056ca",
+   "products": 0
+  },
+  "prostate-cancer-diagnosis": {
+   "hash": "4452930481e2a414",
+   "products": 0
+  },
+  "prostate-cancer-management": {
+   "hash": "e22d819dc904c8d1",
+   "products": 0
+  },
+  "prostate-cancer-testing": {
+   "hash": "c98f2b0371d77100",
+   "products": 0
+  },
+  "prostatitis": {
+   "hash": "0c4b821874c4c863",
+   "products": 0
+  },
+  "proteinuria-in-children": {
+   "hash": "2fd117c1f2b5ad97",
+   "products": 0
+  },
+  "pruritus-in-palliative-care": {
+   "hash": "90c82c857e7d72bf",
+   "products": 0
+  },
+  "pruritus": {
+   "hash": "f0d1fb7d4aae3041",
+   "products": 0
+  },
+  "psoriasis": {
+   "hash": "1da894b0786ae9d5",
+   "products": 0
+  },
+  "psychosis-in-children-and-youth": {
+   "hash": "928f7a2e93d6d8ae",
+   "products": 0
+  },
+  "pterygium-and-pinguecula": {
+   "hash": "a40ba2fe41ca89b8",
+   "products": 0
+  },
+  "pulled-elbow": {
+   "hash": "82af84665d9974d3",
+   "products": 0
+  },
+  "pulmonary-embolism-pe": {
+   "hash": "ef04a4b6e63e2d7e",
+   "products": 0
+  },
+  "pulmonary-rehabilitation": {
+   "hash": "3655449015b5f9ae",
+   "products": 0
+  },
+  "punch-or-shave-biopsy": {
+   "hash": "43486d5b667182ea",
+   "products": 0
+  },
+  "pyelonephritis": {
+   "hash": "4585e302ec325c6f",
+   "products": 0
+  },
+  "radiation-in-medical-imaging": {
+   "hash": "622f4fc743e5f4c8",
+   "products": 0
+  },
+  "radionuclide-thyroid-scan-adult": {
+   "hash": "7e6e2ed5ee2a0e19",
+   "products": 0
+  },
+  "raised-ferritin-and-haemochromatosis": {
+   "hash": "b099c99e493a41c0",
+   "products": 0
+  },
+  "raised-intracranial-pressure": {
+   "hash": "5f0e0b956032a8e3",
+   "products": 0
+  },
+  "rash-and-itch-in-pregnancy": {
+   "hash": "10b332a8b995ac80",
+   "products": 0
+  },
+  "recent-sexual-assault": {
+   "hash": "04338d33bafe191d",
+   "products": 0
+  },
+  "recurrent-miscarriage": {
+   "hash": "7d757631c69e6f46",
+   "products": 0
+  },
+  "recurrent-staphylococcal-infection": {
+   "hash": "4745db6edc2eb99f",
+   "products": 0
+  },
+  "recurrent-utis-in-women": {
+   "hash": "6ff2f606c2c1c893",
+   "products": 0
+  },
+  "reflux-and-gord-in-children": {
+   "hash": "2c02f669e70e424c",
+   "products": 0
+  },
+  "refugee-health-in-adults": {
+   "hash": "3d9d6650ab656cce",
+   "products": 0
+  },
+  "refugee-health-in-children-and-adolescents": {
+   "hash": "6881b7cb4615afab",
+   "products": 0
+  },
+  "refugee-health-screening": {
+   "hash": "f06eb29685e712aa",
+   "products": 0
+  },
+  "renal-colic-and-urinary-tract-stones": {
+   "hash": "a353e3c72637794a",
+   "products": 0
+  },
+  "respiratory-conditions-and-air-travel": {
+   "hash": "d23178ff1751cda8",
+   "products": 0
+  },
+  "respiratory-infection-in-spinal-cord-impairment-sci": {
+   "hash": "ec8e96a598ae0e39",
+   "products": 0
+  },
+  "respiratory-syncytial-virus-rsv-immunisation": {
+   "hash": "25ed1a9c808c3321",
+   "products": 0
+  },
+  "responding-to-drug-seeking-behaviour": {
+   "hash": "6c89c2b950c2c5f8",
+   "products": 0
+  },
+  "rhesus-d-in-pregnancy": {
+   "hash": "d9bf5594414cc263",
+   "products": 0
+  },
+  "rheumatic-fever-and-rheumatic-heart-disease": {
+   "hash": "a4b54f0100041ff1",
+   "products": 0
+  },
+  "rhinosinusitis": {
+   "hash": "1949b4b1b8ecd375",
+   "products": 0
+  },
+  "ring-pessaries": {
+   "hash": "bb079b7d55a98133",
+   "products": 0
+  },
+  "risk-taking-in-youth": {
+   "hash": "765aaffa59a9749c",
+   "products": 0
+  },
+  "scabies-in-adults": {
+   "hash": "d1d69872b535186f",
+   "products": 0
+  },
+  "scabies-in-children": {
+   "hash": "bef0b8b18abd21e0",
+   "products": 0
+  },
+  "scleritis-and-episcleritis": {
+   "hash": "8be261af96aadd31",
+   "products": 0
+  },
+  "scoliosis": {
+   "hash": "f50af9feed2714cc",
+   "products": 0
+  },
+  "scrotal-lumps-in-adults": {
+   "hash": "8ec61e8cae4ac39f",
+   "products": 0
+  },
+  "scrotal-pain-and-swelling-in-children": {
+   "hash": "c638b50e2ef2447b",
+   "products": 0
+  },
+  "sedation-for-mri-in-adults": {
+   "hash": "db623d534fb3e226",
+   "products": 0
+  },
+  "seizures-in-palliative-care": {
+   "hash": "5deccfe89f40fe4d",
+   "products": 0
+  },
+  "seizures-with-fever-in-children": {
+   "hash": "3920b383c2d0d836",
+   "products": 0
+  },
+  "sepsis-in-adults-young-people-and-pregnant-women": {
+   "hash": "0b7f9285ee6f2374",
+   "products": 0
+  },
+  "sepsis-in-children": {
+   "hash": "707ef83c66016b83",
+   "products": 0
+  },
+  "septic-arthritis": {
+   "hash": "ae33ceb069baef0f",
+   "products": 0
+  },
+  "sexual-assault-medical-and-forensic-assessment": {
+   "hash": "11918cdb135a10b3",
+   "products": 0
+  },
+  "sexual-health-check": {
+   "hash": "6b150cb0ed186ca2",
+   "products": 0
+  },
+  "sexual-health-in-youth": {
+   "hash": "ae2ff69644572183",
+   "products": 0
+  },
+  "sexuality-in-spinal-cord-impairment-sci": {
+   "hash": "1f1a0520a7b3c96d",
+   "products": 0
+  },
+  "shaft-forearm-fractures": {
+   "hash": "7296aea404678595",
+   "products": 0
+  },
+  "shin-pain": {
+   "hash": "66d3995d0ed04049",
+   "products": 0
+  },
+  "short-and-tall-stature-in-children": {
+   "hash": "aaa52d2b189d4bd4",
+   "products": 0
+  },
+  "shoulder-dislocation-and-chronic-instability": {
+   "hash": "f8103ae7a37b897b",
+   "products": 0
+  },
+  "shoulder-imaging-in-adults": {
+   "hash": "03c87e2d8c394238",
+   "products": 0
+  },
+  "shoulder-pain": {
+   "hash": "e92ac1e4af56f2b8",
+   "products": 0
+  },
+  "silica-exposure": {
+   "hash": "14a0db17a95468a5",
+   "products": 0
+  },
+  "skin-lesion-excision": {
+   "hash": "d2736ada51d13b46",
+   "products": 0
+  },
+  "skin-tears": {
+   "hash": "9c65e920474ff468",
+   "products": 0
+  },
+  "sleep-disorder-specialised-assessment": {
+   "hash": "62b644598c5aac7c",
+   "products": 0
+  },
+  "sleep-disturbances-in-palliative-care": {
+   "hash": "7cb45a2c4c8d4d07",
+   "products": 0
+  },
+  "slipped-upper-femoral-epiphysis-sufe": {
+   "hash": "3b551824246b659b",
+   "products": 0
+  },
+  "smoking-cessation-advice": {
+   "hash": "551627ae82f0960e",
+   "products": 0
+  },
+  "snoring-and-sleep-apnoea-in-children": {
+   "hash": "c95826d44ed1513e",
+   "products": 0
+  },
+  "soft-tissue-abscesses": {
+   "hash": "fb10bfd92fcb189c",
+   "products": 0
+  },
+  "soft-tissue-lumps-in-adults": {
+   "hash": "de3d546866f2e5a3",
+   "products": 0
+  },
+  "sore-throat": {
+   "hash": "297ffb3df701583a",
+   "products": 0
+  },
+  "spasticity-in-spinal-cord-impairment": {
+   "hash": "ff45d3c8f5a1d25c",
+   "products": 0
+  },
+  "special-authority-for-special-foods": {
+   "hash": "6ed0e085004bb347",
+   "products": 0
+  },
+  "specific-learning-difficulties-support": {
+   "hash": "c0b9a03ea950e228",
+   "products": 0
+  },
+  "speech-and-communication-difficulties-in-adults": {
+   "hash": "f7ebefb45f0fae64",
+   "products": 0
+  },
+  "speech-and-language-difficulties-in-children": {
+   "hash": "c582498ed9510224",
+   "products": 0
+  },
+  "spirometry-interpretation": {
+   "hash": "123cfddcf37aaa70",
+   "products": 0
+  },
+  "spirometry-testing": {
+   "hash": "c47adbc711fcb56b",
+   "products": 0
+  },
+  "splenectomy-in-adults": {
+   "hash": "428f3442fcbcf4c1",
+   "products": 0
+  },
+  "steroids": {
+   "hash": "b94ec3013b7b97f1",
+   "products": 0
+  },
+  "stroke": {
+   "hash": "78b970a12c68e2ab",
+   "products": 0
+  },
+  "sub-fertility": {
+   "hash": "a9fe59a32f2e720e",
+   "products": 0
+  },
+  "subcutaneous-fluid-administration-in-palliative-care": {
+   "hash": "b1602918c7090648",
+   "products": 0
+  },
+  "subcutaneous-foreign-bodies": {
+   "hash": "9f6001f0f2eeba96",
+   "products": 0
+  },
+  "submandibular-gland-disorders": {
+   "hash": "9aee64844a9d454b",
+   "products": 0
+  },
+  "substance-use-in-pregnancy": {
+   "hash": "54db328ed25da2fe",
+   "products": 0
+  },
+  "sudden-or-recent-vision-loss": {
+   "hash": "6564cf9711ee4fcd",
+   "products": 0
+  },
+  "sudden-unexpected-death-in-infancy-sudi": {
+   "hash": "1eddbbb367865560",
+   "products": 0
+  },
+  "suicide-prevention-in-adults": {
+   "hash": "1941d7450ae19a9d",
+   "products": 0
+  },
+  "suicide-prevention-in-youth": {
+   "hash": "5f3581a7c61e2ec9",
+   "products": 0
+  },
+  "sulfasalazine-shared-care-guidance": {
+   "hash": "5a143451693b8bc1",
+   "products": 0
+  },
+  "superior-vena-cava-obstruction-svco-in-palliative-care": {
+   "hash": "d41b8b83676ecaf5",
+   "products": 0
+  },
+  "suspected-b12-deficiency": {
+   "hash": "9340932e8523c08f",
+   "products": 0
+  },
+  "sweating-in-palliative-care": {
+   "hash": "1219b290773d2847",
+   "products": 0
+  },
+  "syncope-and-presyncope": {
+   "hash": "3f42f30cb33d9d9d",
+   "products": 0
+  },
+  "syphilis": {
+   "hash": "ed574ea8df4a9f83",
+   "products": 0
+  },
+  "syringe-drivers": {
+   "hash": "14e2eb9e21bd2b88",
+   "products": 0
+  },
+  "temporomandibular-disorder-tmd": {
+   "hash": "cdc1aec5a5043e74",
+   "products": 0
+  },
+  "tennis-and-golfer-s-elbow": {
+   "hash": "91eaab18d7e6d4aa",
+   "products": 0
+  },
+  "teriflunomide-shared-care-guidance": {
+   "hash": "f0b5ffaca73004e4",
+   "products": 0
+  },
+  "terminal-haemorrhage-in-palliative-care": {
+   "hash": "4e36033c3428c84b",
+   "products": 0
+  },
+  "testosterone-undecanoate-reandron-injections": {
+   "hash": "7c0545778650fba6",
+   "products": 0
+  },
+  "tetanus-prone-wound-management": {
+   "hash": "d75afbfa4fdb5f11",
+   "products": 0
+  },
+  "thrombocytopenia-low-platelets": {
+   "hash": "78824fd7b097d281",
+   "products": 0
+  },
+  "thrombocytosis-high-platelets": {
+   "hash": "500844458722a9f8",
+   "products": 0
+  },
+  "thyroid-disease-in-pregnancy": {
+   "hash": "3aa25d9e01fd9c60",
+   "products": 0
+  },
+  "thyroid-function-tests": {
+   "hash": "b56748ff9e907e40",
+   "products": 0
+  },
+  "thyroid-nodules": {
+   "hash": "eaebf8ce444c3da7",
+   "products": 0
+  },
+  "tibial-shaft-fractures": {
+   "hash": "28a7671d270bf047",
+   "products": 0
+  },
+  "tinnitus": {
+   "hash": "db7c878f0be7762a",
+   "products": 0
+  },
+  "toe-injuries": {
+   "hash": "4a1a5d23c6bfd4db",
+   "products": 0
+  },
+  "tongue-tie-ankyloglossia-and-breastfeeding-difficulties": {
+   "hash": "61bb10580c1d3060",
+   "products": 0
+  },
+  "toothache": {
+   "hash": "3e819f58c26e2cd9",
+   "products": 0
+  },
+  "topical-corticosteroids": {
+   "hash": "defa912e19d2d804",
+   "products": 0
+  },
+  "torticollis": {
+   "hash": "6f006c2001c68d7c",
+   "products": 0
+  },
+  "transient-ischaemic-attack-tia": {
+   "hash": "f684cdc50619e0c6",
+   "products": 0
+  },
+  "transient-monocular-vision-loss": {
+   "hash": "58ac88e6537a5afa",
+   "products": 0
+  },
+  "transitioning-paediatric-to-adult-palliative-care": {
+   "hash": "f192c04a72c0e36c",
+   "products": 0
+  },
+  "trauma-informed-care": {
+   "hash": "de9be4c882645cae",
+   "products": 0
+  },
+  "travel-consultation": {
+   "hash": "dc778d030e5c67fc",
+   "products": 0
+  },
+  "tremor": {
+   "hash": "069aa98fbc6a0a2d",
+   "products": 0
+  },
+  "trichomoniasis": {
+   "hash": "4f014a10ab6661ca",
+   "products": 0
+  },
+  "trigeminal-neuralgia": {
+   "hash": "413434f5b5fb34e6",
+   "products": 0
+  },
+  "trigger-finger": {
+   "hash": "66238fa80853667a",
+   "products": 0
+  },
+  "trigger-thumb-in-children": {
+   "hash": "33c529f348f7a244",
+   "products": 0
+  },
+  "tuberculosis": {
+   "hash": "3f0186cd0de06c2a",
+   "products": 0
+  },
+  "type-2-diabetes": {
+   "hash": "373ebc4e229324e0",
+   "products": 0
+  },
+  "ulnar-nerve-compression-unc": {
+   "hash": "5c111f7846c453fd",
+   "products": 0
+  },
+  "ultrasound-abdomen": {
+   "hash": "2a422f49fa1dd4a4",
+   "products": 0
+  },
+  "ultrasound-carotid": {
+   "hash": "fb522fb65be667c1",
+   "products": 0
+  },
+  "ultrasound-dvt": {
+   "hash": "b98a40c05972b459",
+   "products": 0
+  },
+  "ultrasound-neck-and-thyroid": {
+   "hash": "11dede8bbe8f6ad6",
+   "products": 0
+  },
+  "ultrasound-pelvis": {
+   "hash": "60751c8d56dddc1d",
+   "products": 0
+  },
+  "ultrasound-renal": {
+   "hash": "8bfa41989b449f92",
+   "products": 0
+  },
+  "ultrasound-spine-for-children": {
+   "hash": "46b9db648da49f06",
+   "products": 0
+  },
+  "umbilical-hernia-in-children": {
+   "hash": "394624b5547b5465",
+   "products": 0
+  },
+  "undescended-testes": {
+   "hash": "13c8ac4f1d027df6",
+   "products": 0
+  },
+  "undifferentiated-neurological-symptoms": {
+   "hash": "eef992a084e1da10",
+   "products": 0
+  },
+  "unexpected-deterioration-in-an-older-adult": {
+   "hash": "3cf35635049d2945",
+   "products": 0
+  },
+  "unilateral-red-eye": {
+   "hash": "e66edee6a68894a7",
+   "products": 0
+  },
+  "unsettled-infant": {
+   "hash": "5754574fe8a74a19",
+   "products": 0
+  },
+  "upadacitinib-shared-care-guidance": {
+   "hash": "8aec15e23e681ac2",
+   "products": 0
+  },
+  "urethritis": {
+   "hash": "431adc2aed83b495",
+   "products": 0
+  },
+  "urinary-continence-questionnaire": {
+   "hash": "20ca19e0ef8c4163",
+   "products": 0
+  },
+  "urinary-incontinence-in-men": {
+   "hash": "6c40be806cf247ed",
+   "products": 0
+  },
+  "urinary-incontinence-in-women": {
+   "hash": "43937ed54f5c360b",
+   "products": 0
+  },
+  "urinary-tract-infection-uti-in-children": {
+   "hash": "d60bb639af7aa7e5",
+   "products": 0
+  },
+  "urticaria": {
+   "hash": "ac103e7da7cf1822",
+   "products": 0
+  },
+  "utis-and-asymptomatic-bacteriuria-in-pregnancy": {
+   "hash": "6419b2c8772aab87",
+   "products": 0
+  },
+  "vaccine-storage-and-cold-chain-breaches": {
+   "hash": "a5de55acbd460425",
+   "products": 0
+  },
+  "vaginal-discharge": {
+   "hash": "1a97e800611e13bf",
+   "products": 0
+  },
+  "vaginal-prolapse": {
+   "hash": "b626bc7150621001",
+   "products": 0
+  },
+  "venous-thromboembolism-vte-risk-in-pregnancy": {
+   "hash": "10cd5f78a90363d3",
+   "products": 0
+  },
+  "vertigo": {
+   "hash": "df43cafc8a15bdda",
+   "products": 0
+  },
+  "videofluoroscopy-and-barium-swallow": {
+   "hash": "9508216f2d20b077",
+   "products": 0
+  },
+  "vitamin-d-deficiency-in-children": {
+   "hash": "fbb7c455c143f992",
+   "products": 0
+  },
+  "vitamin-d-supplementation": {
+   "hash": "1c3946ac924a5e8a",
+   "products": 0
+  },
+  "vulvodynia": {
+   "hash": "ecfc0e769f2cd7f0",
+   "products": 0
+  },
+  "warfarin-dental-extractions": {
+   "hash": "7f11fe92159f7ab8",
+   "products": 0
+  },
+  "warfarin-monitoring-requests": {
+   "hash": "08ceb96559b4594a",
+   "products": 0
+  },
+  "warfarin-over-anticoagulation": {
+   "hash": "38d733066e9894f0",
+   "products": 0
+  },
+  "warfarin-starting-and-monitoring": {
+   "hash": "05a747f2e9d5bfa1",
+   "products": 0
+  },
+  "warts-and-verrucas": {
+   "hash": "683e67a472dac158",
+   "products": 0
+  },
+  "weakness-and-fatigue-in-palliative-care": {
+   "hash": "8d0930add1866489",
+   "products": 0
+  },
+  "weight-management-in-children": {
+   "hash": "5818013adc210554",
+   "products": 0
+  },
+  "weight-related-concerns-in-adults": {
+   "hash": "4f5a75a384969a14",
+   "products": 0
+  },
+  "wound-infections": {
+   "hash": "f9f4d7481027c082",
+   "products": 0
+  },
+  "wrist-and-forearm-fractures-in-children": {
+   "hash": "f46d81ec3554e79f",
+   "products": 0
+  },
+  "wrist-fractures-in-adults": {
+   "hash": "f3ce0d757cc81372",
+   "products": 0
+  },
+  "wrist-pain-in-adults": {
+   "hash": "2ae9111f35e4daea",
+   "products": 0
+  },
+  "x-ray-abdomen-axr": {
+   "hash": "a6622659ba7c4c30",
+   "products": 0
+  },
+  "x-ray-chest-cxr": {
+   "hash": "6806bed0275c8ca3",
+   "products": 0
+  },
+  "x-ray-musculoskeletal-msk-adult": {
+   "hash": "b0a6cf5e6012c952",
+   "products": 0
+  },
+  "x-ray-musculoskeletal-msk-child": {
+   "hash": "6cd5ce7d0b7ca67b",
+   "products": 0
+  },
+  "youth-mental-health-counselling-and-therapy": {
+   "hash": "9e88ffc965535a42",
+   "products": 0
+  },
+  "zika-virus": {
+   "hash": "d2d025e620509da1",
+   "products": 0
+  },
+  "zoledronic-acid-infusion-checklist": {
+   "hash": "955283fd154d64bb",
+   "products": 0
+  },
+  "zoledronic-acid-infusion": {
+   "hash": "e705b6a17811a95c",
+   "products": 0
+  }
+ }
+}

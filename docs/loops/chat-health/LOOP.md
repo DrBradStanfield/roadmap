@@ -4,10 +4,9 @@ Inherits everything in [../LOOP.md](../LOOP.md) (the constitution) — read it
 FIRST; this file holds only this loop's deltas. Schedule: Sundays ~10:23am NZ
 (cron `23 22 * * 6` UTC — the fleet runs at the weekend so its plan usage
 falls outside Brad's working week; Brad ruling 2026-08-12). Registry: [../REGISTRY.md](../REGISTRY.md).
-Sibling: [product-health](../product-health/LOOP.md) covers how people *use
-the tool*; you cover one thing only — **does the chatbot retrieve the right
-knowledge, and answer well from it.** Read its latest report for context,
-then stay in your lane.
+Sibling: [product-health](../product-health/LOOP.md) covers how people *use the tool*;
+you cover one thing only — **does the chatbot retrieve the right knowledge, and answer
+well from it.** Read its latest report for context, then stay in your lane.
 
 ## Mission
 
@@ -48,18 +47,16 @@ this loop on reasoning alone: if you cannot measure it, you propose it.
 5. **Format uniformity matters.** 83% of pathway summaries open "Clinical
    pathway for…"; rewriting a subset in a different voice made those entries
    *harder* to find. Change style everywhere or nowhere.
-6. **The classifier and router stay serial.** The classifier's only job is
-   deciding whether the router fires; running them concurrently fires the
-   router every turn and deletes the entire saving. See
-   `chat-architecture.md` § "Do not re-parallelise".
+6. **The classifier and router stay serial.** The classifier decides whether
+   the router fires; run concurrently, the router fires every turn and the
+   saving is gone (`chat-architecture.md` § "Do not re-parallelise").
 
 ## Orient (read yourself, not via workers)
 
 1. This charter + `LEARNINGS.md` + `metrics.csv` here.
 2. The two most recent reports in this folder.
-3. `docs/chat-overview.html` "Current state at a glance" (claude_business
-   repo) — build-session envs only; unreachable from the cloud runner, where
-   it is a standing named gap (don't re-discover this each run).
+3. `docs/chat-overview.html` "Current state at a glance" (claude_business):
+   build sessions only; from the cloud runner it is a standing named gap.
 
 ## Gather (fan out workers; every unreachable source is a NAMED gap)
 
@@ -85,12 +82,11 @@ this loop on reasoning alone: if you cannot measure it, you propose it.
     backfilled). The widget's question text there is verbatim; no reply.
     YouTube only began persisting 2026-08-07 — if its count is 0 after that
     date, something is broken; say so.
-  - **YouTube reply length** (added 2026-08-10 with the prompt's three-way
-    cap): for `platform = youtube` assistant rows, report median words and
-    the count breaching ≤5 sentences / ≤90 words / ≤25 words-per-sentence
-    (2026-08-10 baseline: median 84 words, one 132-word outlier). A rising
-    breach rate means the prompt cap is decaying — propose a prompt fix,
-    never a code truncation.
+  - **YouTube reply length** (since 2026-08-10): for `platform = youtube`
+    assistant rows, median words and the count breaching ≤5 sentences / ≤90
+    words / ≤25 words-per-sentence (baseline: median 84, one 132-word
+    outlier). A rising breach rate means the prompt cap is decaying: propose
+    a prompt fix, never a code truncation.
 
 ## Categorise every empty-handle query (the analysis that drives everything)
 
@@ -129,37 +125,42 @@ this loop on reasoning alone: if you cannot measure it, you propose it.
   --runs 3 --concurrency 5`. Record the number. Apply edits, `npm run
   rebuild-index`, re-run the SAME command. **Lower OR unchanged after-number →
   revert**, and report the attempt with its numbers anyway.
-- Before drafting a summary edit for a failing query, check what the router
-  picked INSTEAD (verbose/single-query run). Selection-side failures (wrong
-  entry chosen despite correct terms) can't be fixed by summary edits — W33
-  spent two reverted edits learning this.
+- Before drafting a summary edit, check what the router picked INSTEAD
+  (verbose single-query run): a wrong pick despite correct terms is
+  selection-side, and no summary edit fixes it (W33: two reverted edits).
 - Add every confirmed production failure to `tools/test-queries.json` as a
-  regression case, fixed or not — **paraphrased on ingest, never verbatim**
-  (Brad 2026-09-10). The file is public, and a production failure is a real
-  person's words. Before it lands: replace numbers and units with placeholders
-  or typical values that keep the routing intent (a real LDL becomes a typical
-  one); strip names, emails, phone numbers and URLs; keep the first-person
-  phrasing, the misspellings and the shape of the ask, because that is what is
-  under test. Same rule `content-backlog.csv` already follows for its
-  `example_queries_anonymised` column. `tools/test-queries.privacy.test.ts`
-  guards the floor: no email, no 7+-digit run, no query-string URL, no
-  `@handle`.
+  regression case, fixed or not, **paraphrased, never verbatim** (Brad
+  2026-09-10: the file is public; a failure is a real person's words).
+  Numbers and units become typical values that keep the routing intent;
+  names, emails, phones and URLs go; the first-person phrasing, misspellings
+  and shape of the ask stay, because they are under test. `content-backlog.csv`
+  follows the same rule; `tools/test-queries.privacy.test.ts` guards the floor.
 - `npx tsx tools/test-classifier.ts --runs 1` if anything
   classifier-adjacent changed. `npm test` before committing.
-- ⚠️ **Harness key gotcha**: the cloud env var must be named
-  `ANTHROPIC_TEST_API_KEY`, NOT `ANTHROPIC_API_KEY` — the platform reserves
-  the latter for Claude Code's own auth and never passes it to scripts
-  (observed 2026-08-10). All three harnesses check `ANTHROPIC_TEST_API_KEY`
-  first. Missing key = NAMED data gap → run proposal-only; never paste a key
-  into the repo or report.
+- ⚠️ **Harness key**: the cloud env var is `ANTHROPIC_TEST_API_KEY`, never
+  `ANTHROPIC_API_KEY` (reserved for Claude Code's own auth, never passed to
+  scripts; 2026-08-10); every harness and the lint read it first. Missing key
+  = NAMED data gap → proposal-only; never paste a key into the repo or report.
+
+## Weekly lint (Brad 2026-09-29, knowledge-refresh plan decision 6, US-41)
+
+After the retrieval work, run the lint in [notes/weekly-lint.md](notes/weekly-lint.md):
+deterministic rules, then Sonnet 5.5 detection over this week's changed entries plus
+a 1-in-13 slice (`--run --max-calls 60 --max-usd 2`). Both cost lines go in the report.
+- MAY write `lint-state.json`, `lint-fix-queue.json` and metrics rows. Once the refresh
+  plan's batch check scripts exist, it MAY draft body fixes for open queue items (Opus
+  workers, ≤5 entries) on a `claude/lint-fixes-YYYY-Www` PR; Brad's merge signs it (AC8).
+- MAY NOT edit `lint-allowlist.json` (Brad's; propose entries), `index.json`, a summary
+  outside the Verify rule, or the algorithm side (reported under Proposals, never edited).
+- Signal: open queue items and lint counts fall quarter over quarter.
 
 ## Report sections (file: `YYYY-'W'WW.md` here, ≤150 lines)
 
 TL;DR (3 bullets) · Empty-handle count + category table w/ deltas (append
 rows to metrics.csv) · Latency table · Fixes applied w/ before/after harness
 numbers · Fixes attempted and reverted (w/ numbers) · Content-gap backlog ·
-Proposals needing Brad · Data gaps · Retro (incl. charter + LEARNINGS line
-counts).
+Weekly lint · Proposals needing Brad · Data gaps · Retro (incl. charter +
+LEARNINGS line counts).
 
 ## Write scope (Brad-set; a loop may never widen it)
 
@@ -173,14 +174,13 @@ counts).
   `chat-classifier-prompt.md`, `chat-posture-*.md` — compliance and
   clinical-safety carriers) and never edit clinical body content
   (`health_roadmap_algorithm.md`, `evidence.ts`, `roadmap_text.html`, or any
-  pathway/blog body) — constitution Guardrails apply above all of this.
+  pathway/blog body outside a Weekly lint PR) — constitution Guardrails apply above all of this.
 
 ## Delivery
 
-Commit `chat-health: weekly retrieval report YYYY-Www` to main. No email
-(constitution rule; the run-complete notification + committed report are the
-delivery). The report's TL;DR must carry: fixes with numbers, top 3
-new/growing content gaps, and what needs Brad's approval.
+Commit `chat-health: weekly retrieval report YYYY-Www` to main; the committed
+report is the delivery (no email, constitution rule). Its TL;DR carries fixes
+with numbers, the top 3 new or growing content gaps, and what needs Brad.
 
 Charter history: [changelog.md](changelog.md) — history file, exempt
 from the operative cap. History NEVER lives inside this charter.
