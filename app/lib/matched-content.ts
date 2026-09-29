@@ -46,9 +46,10 @@ export function loadBlogArticle(handle: string): string | null {
  * Concatenate the content for the router's handles, in order, up to
  * MAX_BLOG_CHARS. An entry that would overflow the cap is skipped (listed in
  * `skipped`), never the rest of the list (US-15 AC23). `titles` names the
- * entries loaded, from the blog index, never model output (US-15 AC20).
+ * entries loaded, from the blog index, never model output (US-15 AC20), and
+ * only those in `titled`; the content is the same either way (US-15 AC25).
  */
-export function loadMatchedContent(handles: string[]): { content: string | null; titles: string[]; skipped: string[] } {
+export function loadMatchedContent(handles: string[], titled = handles): { content: string | null; titles: string[]; skipped: string[] } {
   const parts: string[] = [];
   const titles: string[] = [];
   const skipped: string[] = [];
@@ -63,7 +64,7 @@ export function loadMatchedContent(handles: string[]): { content: string | null;
     parts.push(content);
     totalChars += content.length;
     const title = loadBlogIndex().find(a => a.handle === handle)?.title;
-    if (title) titles.push(title);
+    if (title && titled.includes(handle)) titles.push(title);
   }
   return { content: parts.length > 0 ? parts.join('\n\n---\n\n') : null, titles, skipped };
 }

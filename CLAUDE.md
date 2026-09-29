@@ -211,13 +211,18 @@ same commit).
   keeps the calls: clinical logic, merge semantics, FHIR shapes, security, synthesis. All delegated
   work goes to `worker`, every adversarial check to a FRESH `adversary`: both Opus at high effort,
   pinned in `.claude/agents/`. Spawn them by name, never with a per-call `model`; never set
-  `CLAUDE_CODE_SUBAGENT_MODEL`; no Sonnet or Haiku. Loops: docs/loops/LOOP.md.
+  `CLAUDE_CODE_SUBAGENT_MODEL`; no Haiku. **Amendment (Brad, 2026-09-29):** Sonnet 5.5
+  (`general-purpose` + `model: sonnet`, the one allowed per-call model) does mechanical work:
+  fetching, scraping, tool fixes, data pulls, inventories. Opus 5.5 writes every knowledge-base
+  entry and web page. Never a Fable subagent. Loops: docs/loops/LOOP.md.
 - **Every adversarial Claude check gets a Codex one beside it** (Brad,
   2026-09-21): `node tools/codex-review.mjs` — skill `codex-review`, contract
   docs/review-format.md, spec US-40. REQUIRED before committing clinical,
   merge/FHIR, security or agent-contract changes WHATEVER their size — a
   one-line auth or threshold edit still gets it. Skip ONLY outside those
-  classes (doc/blog sweeps, one-liners). Incomplete is never a pass. Loops
+  classes (doc/blog sweeps, one-liners). Incomplete is never a pass, EXCEPT when the
+  Codex plan's usage limit is exhausted (`E_EXIT_1`, events end `turn.started → error`):
+  then say so and continue on fresh Opus 5.5 adversaries alone (Brad, 2026-09-29). Loops
   run it with `--loop` (Tier 3 applies; Brad, 2026-09-28); CI stays Claude-only.
 
 ## Dangerous Gotchas (curated — full archive in docs/reference.md)

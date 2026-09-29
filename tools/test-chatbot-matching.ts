@@ -41,6 +41,7 @@
  *   npx tsx tools/test-chatbot-matching.ts
  *   npx tsx tools/test-chatbot-matching.ts --runs 3 --verbose
  *   npx tsx tools/test-chatbot-matching.ts --category cardiovascular
+ *   npx tsx tools/test-chatbot-matching.ts --category pediatric,palliative   # several, one warmup
  *   npx tsx tools/test-chatbot-matching.ts --variance-threshold 0.1
  *   npx tsx tools/test-chatbot-matching.ts --answer-check   # also test generated answers
  *   npx tsx tools/test-chatbot-matching.ts --fixed-handles-only   # only the answer_handles checks (implies --answer-check)
@@ -367,9 +368,11 @@ if (unknownForbidden.length > 0) {
   console.error(`must_not_route names handles not in the index: ${unknownForbidden.join(', ')}`);
   process.exit(1);
 }
-if (categoryFilter) filtered = filtered.filter(q => q.category === categoryFilter);
+// --category takes a comma list, so several categories share one run and one cache warmup.
+const categories = categoryFilter?.split(',');
+if (categories) filtered = filtered.filter(q => categories.includes(q.category));
 if (sourceFilter) filtered = filtered.filter(q => q.source === sourceFilter);
-if (categoryFilter) fixedHandle = fixedHandle.filter(q => q.category === categoryFilter);
+if (categories) fixedHandle = fixedHandle.filter(q => categories.includes(q.category));
 if (sourceFilter) fixedHandle = fixedHandle.filter(q => q.source === sourceFilter);
 const suite = [...filtered, ...fixedHandle];
 

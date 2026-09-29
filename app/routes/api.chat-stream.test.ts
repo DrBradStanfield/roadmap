@@ -11,6 +11,9 @@ const mocks = vi.hoisted(() => ({
   getChatCompletion: vi.fn(),
   completion: {} as Record<string, unknown>,
   articles: null as null | { content: string; titles: string[] },
+  // Set to the real loader to check what loads and what is titled (US-15 AC25).
+  loadArticles: null as null | ((handles: string[], titled?: string[]) => { content: string; titles: string[] } | null),
+  blogArticles: undefined as string | null | undefined,
   fireRouter: false,
   classifierGate: Promise.resolve(),
 }));
@@ -27,8 +30,10 @@ vi.mock('../lib/supabase.server', () => ({
 }));
 vi.mock('../lib/chat.server', () => ({
   resolveChatContext: () => ({ healthDocuments: [], userContextJson: '{}' }),
-  buildSystemBlocks: () => [], buildConversationMessages: () => [],
-  matchDocumentTitle: () => null, loadMatchedArticlesFromHandles: () => mocks.articles,
+  buildSystemBlocks: (_u: string, opts?: { blogArticles?: string | null }) => { mocks.blogArticles = opts?.blogArticles; return []; },
+  buildConversationMessages: () => [],
+  matchDocumentTitle: () => null,
+  loadMatchedArticlesFromHandles: (handles: string[], titled?: string[]) => mocks.loadArticles ? mocks.loadArticles(handles, titled) : mocks.articles,
   DOCTOR_POSTURE: '', BRAND_POSTURE: '',
   getChatCompletion: mocks.getChatCompletion,
   reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test', MAX_MESSAGE_LENGTH: 500,
@@ -41,6 +46,7 @@ vi.mock('../lib/chat-router.server', async (original) => ({
 vi.mock('../lib/chat-classifier.server', () => ({ classifyMessage: async () => { await mocks.classifierGate; return { routerSkipped: true, classification: 'SKIP', latencyMs: 0 }; }, shouldFireRouter: () => mocks.fireRouter }));
 
 import { action } from './api.chat';
+import { routeQuery } from '../lib/chat-router.server';
 
 const id = '12345678-1234-4234-8234-123456789abc';
 let inserts: Array<{ table: string; row: Record<string, unknown> }>;
@@ -49,6 +55,8 @@ let consoleLog: { mock: { calls: unknown[][] } };
 beforeEach(() => {
   inserts = [];
   mocks.articles = null;
+  mocks.loadArticles = null;
+  mocks.blogArticles = undefined;
   mocks.fireRouter = false;
   mocks.classifierGate = Promise.resolve();
   mocks.completion = {
@@ -213,6 +221,56 @@ describe('US-15 AC20 — status and sources while the answer is prepared', () =>
     const plain = await post({ message: 'hello' });
     expect(plain.status).toBe(500);
     expect(await plain.json()).toEqual({ success: false, error: 'Failed to create conversation' });
+  });
+});
+
+// US-15 AC25: population and crisis titles are hidden; the content never changes.
+describe('US-15 AC25 — titles in the sources line, not the content loaded', () => {
+  const HANDLES = ['anxiety-in-children-and-youth', 'suicide-prevention-in-adults', 'adult-mental-health-counselling-and-therapy'];
+  beforeEach(async () => {
+    const real = await vi.importActual<typeof import('../lib/chat.server')>('../lib/chat.server');
+    mocks.loadArticles = real.loadMatchedArticlesFromHandles;
+    mocks.fireRouter = true;
+  });
+  const routes = (handles: string[]) => vi.mocked(routeQuery).mockResolvedValueOnce(
+    { handles, latencyMs: 0, cacheHit: false, usage: { inputTokens: 0, cacheReadTokens: 0 } } as Awaited<ReturnType<typeof routeQuery>>,
+  );
+  const sources = (out: Array<{ type: string; titles?: string[] }>) => out.filter((l) => l.type === 'sources');
+  const article = async (h: string) =>
+    (await vi.importActual<typeof import('../lib/matched-content')>('../lib/matched-content')).loadBlogArticle(h)!;
+
+  it('an adult anxiety question loads all three pathways and titles only the adult one', async () => {
+    routes(HANDLES);
+    const out = await lines(await post({ message: 'I feel anxious all the time', localFirst: true, stream: true }));
+    expect(sources(out)).toEqual([{ type: 'sources', titles: ['Pathway: Adult Mental Health Counselling and Therapy'] }]);
+    for (const h of HANDLES) expect(mocks.blogArticles, h).toContain(await article(h));
+  });
+
+  it('a question about a daughter titles the children pathway', async () => {
+    routes(['cough-in-children']);
+    const out = await lines(await post({ message: 'my daughter has a cough', localFirst: true, stream: true }));
+    expect(sources(out)).toEqual([{ type: 'sources', titles: ['Pathway: Cough in Children'] }]);
+  });
+
+  it('reads the signal from an earlier turn: "my son is 4" then "he has a cough" titles the children pathway', async () => {
+    const history = [{ role: 'user', content: 'my son is 4' }, { role: 'assistant', content: 'Thanks.' }];
+    routes(['cough-in-children']);
+    const out = await lines(await post({ message: 'he has a cough', history, localFirst: true, stream: true }));
+    expect(sources(out)).toEqual([{ type: 'sources', titles: ['Pathway: Cough in Children'] }]);
+  });
+
+  it('the same message with no history hides the children title, and the content still loads', async () => {
+    routes(['cough-in-children']);
+    const out = await lines(await post({ message: 'he has a cough', localFirst: true, stream: true }));
+    expect(sources(out)).toEqual([]);
+    expect(mocks.blogArticles).toBe(await article('cough-in-children'));
+  });
+
+  it('no sources line when every title is hidden, and the content still loads', async () => {
+    routes(['suicide-prevention-in-adults']);
+    const out = await lines(await post({ message: 'I want to end my life', localFirst: true, stream: true }));
+    expect(sources(out)).toEqual([]);
+    expect(mocks.blogArticles).toBe(await article('suicide-prevention-in-adults'));
   });
 });
 

@@ -264,6 +264,16 @@ export function sanitizeRawHandles(handles: unknown): unknown {
     .slice(0, 3);
 }
 
+/**
+ * The user text the router reads, spelling-normalised as routeQuery does: the
+ * first and recent user turns, then the current one. The chat's title rule
+ * (US-15 AC25) reads its signals here.
+ */
+export function routerText(currentMessage: string, firstMessage?: string, recentUserMessages?: string[]): string {
+  return [firstMessage, ...(recentUserMessages ?? []), currentMessage]
+    .filter((m): m is string => !!m).map(normaliseSpellings).join('\n');
+}
+
 // ---------------------------------------------------------------------------
 // Core routing function
 // ---------------------------------------------------------------------------

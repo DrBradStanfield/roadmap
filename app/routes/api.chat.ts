@@ -25,7 +25,8 @@ import {
   CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
-import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget, ROUTER_VERSION } from '../lib/chat-router.server';
+import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget, routerText, ROUTER_VERSION } from '../lib/chat-router.server';
+import { titledHandles } from '../lib/chat-router-guard';
 import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS } from '../../packages/health-core/src/chat-history';
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 import { findDuplicateReply, type DedupHistoryItem } from '../lib/chat-dedup.server';
@@ -493,8 +494,11 @@ export async function action({ request }: ActionFunctionArgs) {
       }
 
       // Load content from router handles — [] when classifier said SKIP (router never ran).
-      // The stream names the articles loaded, by their index titles (US-15 AC20).
-      const articles = loadMatchedArticlesFromHandles(effectiveHandles);
+      // The stream names the articles loaded, by their index titles (US-15 AC20),
+      // except crisis pathways and population pathways the text gives no signal
+      // of (AC25). Every routed article still loads.
+      const titled = titledHandles(effectiveHandles, routerText(sanitizedCurrent, sanitizedFirst, sanitizedRecent));
+      const articles = loadMatchedArticlesFromHandles(effectiveHandles, titled);
       if (articles?.titles.length) write({ type: 'sources', titles: articles.titles });
 
       // Build system blocks + messages, call LLM

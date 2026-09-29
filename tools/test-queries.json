@@ -75,11 +75,10 @@
       "hyperthyroidism",
       "impalpable-thyroid-nodule",
       "palpable-thyroid-nodule",
-      "thyroid-disease-in-pregnancy",
       "goitre-in-adults"
     ],
     "category": "metabolic",
-    "notes": "TSH abnormal can point to any thyroid pathway — all are relevant"
+    "notes": "TSH abnormal can point to any thyroid pathway — all are relevant. 2026-09-29: thyroid-disease-in-pregnancy removed; rule 2 forbids it without a pregnancy signal."
   },
   {
     "query": "I feel cold all the time and gained weight",
@@ -104,11 +103,12 @@
       "adult-mental-health-counselling-and-therapy"
     ],
     "category": "mental-health",
-    "notes": "no dedicated adult anxiety pathway — palliative or children closest. 2026-09-29 (Sonnet 5.5 router move): expected was the palliative and children pathways, which router rule 2 forbids for an adult query with no palliative signal; now the adult mental health pathway. must_not_route pins rule 2: the palliative and youth entries are wrong for an adult with no palliative signal, even when the router prefers them (a known Sonnet 5.5 miss, 2026-09-29).",
+    "notes": "no dedicated adult anxiety pathway — palliative or children closest. 2026-09-29 (Sonnet 5.5 router move): expected was the palliative and children pathways, which router rule 2 forbids for an adult query with no palliative signal; now the adult mental health pathway. must_not_route pins rule 2: the palliative and youth entries are wrong for an adult with no palliative signal, even when the router prefers them (a known Sonnet 5.5 miss, 2026-09-29). The perinatal entry joins must_not_route for the same rule-2 reason (2026-09-29). These pin the router itself: since US-15 AC25 every routed pathway loads and only its title is hidden, so nothing in code removes a misroute. suicide-prevention-in-adults is not pinned: a crisis pathway may load for an anxious adult, and its title never shows.",
     "must_not_route": [
       "anxiety-distress-and-agitation-in-palliative-care",
       "anxiety-in-children-and-youth",
-      "general-mental-health-in-youth"
+      "general-mental-health-in-youth",
+      "perinatal-mental-health"
     ]
   },
   {
@@ -128,11 +128,10 @@
   {
     "query": "I snore loudly and wake up tired",
     "expected": [
-      "obstructive-sleep-apnoea-osa-in-adults",
-      "snoring-and-sleep-apnoea-in-children"
+      "obstructive-sleep-apnoea-osa-in-adults"
     ],
     "category": "sleep",
-    "notes": "empty keyword entry for OSA — expect fail at baseline"
+    "notes": "empty keyword entry for OSA — expect fail at baseline. 2026-09-29: snoring-and-sleep-apnoea-in-children removed; rule 2 forbids it without a child signal."
   },
   {
     "query": "Do I have sleep apnea?",
@@ -177,20 +176,18 @@
   {
     "query": "Heartburn after meals",
     "expected": [
-      "nsaids-and-dyspepsia-heartburn",
-      "reflux-and-gord-in-children"
+      "nsaids-and-dyspepsia-heartburn"
     ],
     "category": "gi",
-    "notes": "no dedicated adult GORD pathway — children's pathway is closest content match"
+    "notes": "no dedicated adult GORD pathway — children's pathway is closest content match. 2026-09-29: reflux-and-gord-in-children removed; rule 2 forbids it without a child signal."
   },
   {
     "query": "Acid reflux keeping me awake",
     "expected": [
-      "nsaids-and-dyspepsia-heartburn",
-      "reflux-and-gord-in-children"
+      "nsaids-and-dyspepsia-heartburn"
     ],
     "category": "gi",
-    "notes": "GERD lay term; no adult-specific GORD pathway"
+    "notes": "GERD lay term; no adult-specific GORD pathway. 2026-09-29: reflux-and-gord-in-children removed; rule 2 forbids it without a child signal."
   },
   {
     "query": "IBS symptoms and treatment",

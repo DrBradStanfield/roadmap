@@ -128,3 +128,50 @@ describe('test-chatbot-matching fixed-handle answer checks (US-15 AC24)', () => 
     expect(status).toBe(0);
   }, 60_000);
 });
+
+// US-15 AC13: --category takes a comma list, so several categories share one run.
+describe('test-chatbot-matching --category comma list (US-15 AC13)', () => {
+  interface Entry { category: string; expected?: string[]; answer_handles?: string[] }
+  const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
+  const routed = (c: string) => all.filter(q => q.category === c && Array.isArray(q.expected)).length;
+  const fixed = (c: string) => all.filter(q => q.category === c && !Array.isArray(q.expected) && Array.isArray(q.answer_handles)).length;
+  // One category holds a fixed-handle case, the other only routed cases.
+  const a = all.find(q => !Array.isArray(q.expected) && Array.isArray(q.answer_handles))!.category;
+  const b = all.find(q => Array.isArray(q.expected) && q.category !== a && fixed(q.category) === 0)!.category;
+
+  /** The "Queries:" line of an offline run: router returns no handles, answers are fixed text. */
+  function queriesLine(category: string): string {
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-category-'));
+    try {
+      const stub = join(dir, 'fetch-stub.mjs');
+      writeFileSync(stub, `
+        globalThis.fetch = async (_url, init) => {
+          const body = JSON.parse(init.body);
+          const text = Array.isArray(body.system) ? '{"handles":[]}' : 'stub answer';
+          return new Response(JSON.stringify({
+            content: [{ type: 'text', text }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+          }), { status: 200, headers: { 'content-type': 'application/json' } });
+        };
+      `);
+      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
+        '--category', category, '--answer-check', '--runs', '1']);
+      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
+      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
+      const line = res.stdout.replace(/\x1b\[[0-9;]*m/g, '').split('\n').find(l => l.startsWith('Queries:'));
+      if (!line) throw new Error(`no Queries line for "${category}": ${res.stderr}`);
+      return line;
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+  const expectLine = (r: number, f: number) => `Queries:     ${r}${f ? ` + ${f} fixed-handle answer checks` : ''}`;
+
+  it('runs the sum of two categories, and one category runs only its own', () => {
+    expect(fixed(a)).toBeGreaterThan(0);
+    expect(routed(b)).toBeGreaterThan(0);
+    expect(queriesLine(`${a},${b}`)).toBe(expectLine(routed(a) + routed(b), fixed(a) + fixed(b)));
+    expect(queriesLine(b)).toBe(expectLine(routed(b), fixed(b)));
+    expect(queriesLine(a)).toBe(expectLine(routed(a), fixed(a)));
+  }, 120_000);
+});

@@ -25,7 +25,7 @@ vi.mock('../lib/chat.server', () => ({
   getChatCompletion: async () => ({ content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 }, isFallback: false }),
   reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test', MAX_MESSAGE_LENGTH: 4000,
 }));
-vi.mock('../lib/chat-router.server', () => ({ sanitizeForRouter: (text: string) => text, reportRouterFailure: vi.fn(), ROUTER_VERSION: 'test' }));
+vi.mock('../lib/chat-router.server', () => ({ sanitizeForRouter: (text: string) => text, routerText: () => '', reportRouterFailure: vi.fn(), ROUTER_VERSION: 'test' }));
 vi.mock('../lib/chat-classifier.server', () => ({ classifyMessage: async () => ({ routerSkipped: true, classification: 'SKIP', latencyMs: 0 }), shouldFireRouter: () => false }));
 
 import { action, loader } from './api.chat';

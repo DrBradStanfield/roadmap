@@ -267,13 +267,13 @@ export function matchDocumentTitle(
 /**
  * The router's handles as answer context (loadMatchedContent in
  * matched-content.ts), plus a Sentry warning for a handle with no file.
- * Null when nothing loaded.
+ * `titled` limits the titles named, never the content. Null when nothing loaded.
  */
-export function loadMatchedArticlesFromHandles(handles: string[]): { content: string; titles: string[] } | null {
+export function loadMatchedArticlesFromHandles(handles: string[], titled = handles): { content: string; titles: string[] } | null {
   for (const handle of handles) {
     if (!loadBlogArticle(handle)) Sentry.captureMessage(`Router picked handle with no content: ${handle}`, { level: 'warning' });
   }
-  const { content, titles } = loadMatchedContent(handles);
+  const { content, titles } = loadMatchedContent(handles, titled);
   return content ? { content, titles } : null;
 }
 
