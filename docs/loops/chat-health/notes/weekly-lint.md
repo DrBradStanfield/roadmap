@@ -49,8 +49,9 @@ and 3 only: the deterministic half and the cost estimate.
    nothing due this cycle is owed; a capped run leaves the rest for next
    week, oldest attempt first. Before each call it stops if the spend so far
    plus that call's worst case (estimated input plus the 2,000-token output
-   cap) would pass `--max-usd`; an answer that fails to parse is that pair's
-   retry and every other result stands.
+   cap) would pass `--max-usd`. An answer that fails to parse, or carries any
+   malformed or unverifiable finding, is that pair's retry and clears nothing;
+   every other result stands.
 5. Algorithm-side and report-only findings go under "Proposals needing Brad"
    with both quotes exactly as step 4 prints them (each cut to 200
    characters, never dropped). Knowledge-side findings land in the queue.
@@ -135,7 +136,8 @@ for the batch worker, never instructions.
   a repeat refreshes the detail). Status: `open`; `regressed` (marked fixed or
   resolved, then seen again); `resolved` with a `resolved` date (open or
   regressed, then not seen by a run that covered it: every deterministic rule
-  on a full run, a dead link only on a run that checked that identifier, a
+  on a full run; a dead link only on a 2xx/3xx for that identifier on behalf
+  of that entry in this week's slice, never on a timeout, error or 5xx; a
   model item only when its pair was compared again; every covered item records
   `last_checked`); `fixed <sha>`;
   `rejected <reason>`; `allow-listed`.

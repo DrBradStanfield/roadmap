@@ -205,26 +205,32 @@ export function ruleIdentifiers(e: Entry): Finding[] {
 type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
 export interface LinkId { kind: 'doi' | 'pmid'; id: string; handle: string }
 
-/** HEAD each identifier once, up to `cap`. Only a 404 is dead, reported against every entry citing it; anything else unexpected is unverified. */
+/**
+ * HEAD each identifier once, up to `cap`. Only a 404 is dead, reported against
+ * every entry citing it. `conclusive` lists `handle|id` for each citing entry
+ * when the answer was a 2xx/3xx or a 404; a timeout, network error, 5xx or
+ * other 4xx is unverified and never resolves a dead link.
+ */
 export async function checkLinks(ids: LinkId[], opts: { fetchImpl: Fetch; delayMs: number; cap: number }) {
   const citing = new Map<string, Set<string>>();
   for (const i of ids) (citing.get(`${i.kind}:${i.id}`) ?? citing.set(`${i.kind}:${i.id}`, new Set()).get(`${i.kind}:${i.id}`)!).add(i.handle);
   const unique = [...new Map(ids.map(i => [`${i.kind}:${i.id}`, i])).values()];
   const dead: Finding[] = [];
   let checked = 0, unverified = 0;
-  const checkedIds: string[] = [];
+  const conclusive: string[] = [];
   for (const i of unique.slice(0, opts.cap)) {
     const url = i.kind === 'doi' ? `https://doi.org/${encodeURI(i.id)}` : `https://pubmed.ncbi.nlm.nih.gov/${i.id}/`;
     if (checked && opts.delayMs) await new Promise(r => setTimeout(r, opts.delayMs));
     checked++;
-    checkedIds.push(i.id);
+    const handles = [...citing.get(`${i.kind}:${i.id}`)!];
     try {
       const { status } = await opts.fetchImpl(url, { method: 'HEAD', redirect: i.kind === 'doi' ? 'manual' : 'follow' });
-      if (status === 404) for (const handle of citing.get(`${i.kind}:${i.id}`)!) dead.push({ rule: 'link-dead', handle, item: i.id });
-      else if (status >= 400) unverified++;
+      if (status === 404) for (const handle of handles) dead.push({ rule: 'link-dead', handle, item: i.id });
+      if (status < 400 || status === 404) conclusive.push(...handles.map(h => `${h}|${i.id}`));
+      else unverified++;
     } catch { unverified++; }
   }
-  return { checked, unchecked: Math.max(0, unique.length - opts.cap), unverified, dead, checkedIds };
+  return { checked, unchecked: Math.max(0, unique.length - opts.cap), unverified, dead, conclusive };
 }
 
 // ---------------------------------------------------------------------------
@@ -342,10 +348,14 @@ export const queueItem = (f: Finding) => ({
 
 type QueueItemKey = { rule?: string; kind?: string; handles: string[]; fix_handle: string; item?: string };
 
-/** What a deterministic run covered: every rule over every entry, but a dead link only if this run checked that identifier. */
+/**
+ * What a deterministic run covered: every rule over every entry, but a dead
+ * link only if this run got a conclusive answer for that identifier on behalf
+ * of that entry (so only for entries in this week's slice).
+ */
 export const queueCovered = (r: Pick<LintResult, 'links'>) => {
-  const checked = new Set(r.links?.checkedIds ?? []);
-  return (i: QueueItemKey) => !!i.rule && (i.rule !== 'link-dead' || checked.has(i.item ?? ''));
+  const conclusive = new Set(r.links?.conclusive ?? []);
+  return (i: QueueItemKey) => !!i.rule && (i.rule !== 'link-dead' || conclusive.has(`${i.fix_handle}|${i.item}`));
 };
 
 type QueueCounts = { open: number; regressed: number; resolved: number };
@@ -458,7 +468,7 @@ type Stats = { grokBodies: number; grokRefs: number; grokVia: number; grokMentio
 export interface LintResult {
   date: string; corpus: Record<'total' | EntryType, number>; findings: Finding[]; suppressed: number; allowEntries: number;
   stats: Stats; due: DueItem[]; cursor: number; stateMissing: boolean;
-  links: { checked: number; unchecked: number; unverified: number; checkedIds: string[] } | null;
+  links: { checked: number; unchecked: number; unverified: number; conclusive: string[] } | null;
 }
 
 export async function runLint(root: string, opts: { checkLinks?: { cap: number; delayMs: number; fetchImpl: Fetch } }): Promise<LintResult> {
@@ -486,7 +496,7 @@ export async function runLint(root: string, opts: { checkLinks?: { cap: number; 
     });
     const r = await checkLinks(ids, opts.checkLinks);
     all.push(...r.dead);
-    links = { checked: r.checked, unchecked: r.unchecked, unverified: r.unverified, checkedIds: r.checkedIds };
+    links = { checked: r.checked, unchecked: r.unchecked, unverified: r.unverified, conclusive: r.conclusive };
   }
   const findings = all.filter(f => !isAllowed(f, allow));
   return {

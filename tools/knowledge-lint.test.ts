@@ -282,7 +282,8 @@ describe('checkLinks (--check-links)', () => {
     expect(calls).toEqual(['https://doi.org/10.1000/ok', 'https://doi.org/10.1000/dead', 'https://pubmed.ncbi.nlm.nih.gov/123/']);
     expect(r.dead.map(f => f.item)).toEqual(['10.1000/dead']);
     expect(r).toMatchObject({ checked: 3, unchecked: 1 });
-    expect(r.checkedIds).toEqual(['10.1000/ok', '10.1000/dead', '123']);
+    // Only a 2xx/3xx or a 404 is conclusive; the 503 never counts as checked (Codex round 3, finding 2).
+    expect(r.conclusive).toEqual(['a|10.1000/ok', 'b|10.1000/ok', 'a|10.1000/dead', 'a|123']);
   });
   it('checks an identifier two entries share once, and reports a dead one against each entry (Codex review)', async () => {
     const calls: string[] = [];
@@ -303,13 +304,15 @@ describe('queueCovered (Codex round 2, finding 1)', () => {
     const dir = mkdtempSync(join(tmpdir(), 'kqueue-'));
     const file = join(dir, 'q.json');
     const dead = { id: 'deadlink0001', rule: 'link-dead', side: 'knowledge', handles: ['a'], fix_handle: 'a', item: '10.1000/dead' };
-    const links = (ids: string[]) => ({ links: { checked: ids.length, unchecked: 0, unverified: 0, checkedIds: ids } });
+    const links = (keys: string[]) => ({ links: { checked: keys.length, unchecked: 0, unverified: 0, conclusive: keys } });
     const item = () => JSON.parse(readFileSync(file, 'utf8')).items[0];
     appendFixQueue(file, [dead], '2026-10-04', queueCovered({ links: null }));
     expect(appendFixQueue(file, [], '2026-10-11', queueCovered({ links: null })).counts.open).toBe(1);
     expect(item().last_checked).toBeUndefined();
-    expect(appendFixQueue(file, [], '2026-10-18', queueCovered(links(['10.1000/other']))).counts.open).toBe(1);
-    expect(appendFixQueue(file, [], '2026-10-25', queueCovered(links(['10.1000/dead']))).counts.resolved).toBe(1);
+    expect(appendFixQueue(file, [], '2026-10-18', queueCovered(links(['a|10.1000/other']))).counts.open).toBe(1);
+    // Codex round 3, finding 1: the same identifier checked for an entry in this slice resolves nothing for entry a.
+    expect(appendFixQueue(file, [], '2026-10-20', queueCovered(links(['z|10.1000/dead']))).counts.open).toBe(1);
+    expect(appendFixQueue(file, [], '2026-10-25', queueCovered(links(['a|10.1000/dead']))).counts.resolved).toBe(1);
     expect(item()).toMatchObject({ status: 'resolved', resolved: '2026-10-25', last_checked: '2026-10-25' });
     rmSync(dir, { recursive: true });
   });
@@ -317,6 +320,22 @@ describe('queueCovered (Codex round 2, finding 1)', () => {
     const covered = queueCovered({ links: null });
     expect(covered({ rule: 'dose-mismatch', handles: ['a'], fix_handle: 'a', item: '5 mg' })).toBe(true);
     expect(covered({ kind: 'pathway-vs-reference', handles: ['a', 'b'], fix_handle: 'b' })).toBe(false);
+  });
+});
+
+describe('checkLinks conclusiveness (Codex round 3, finding 2)', () => {
+  it('counts a timeout, a network error or a 5xx as inconclusive, so it can never resolve a dead link', async () => {
+    const replies: Record<string, () => Promise<Response>> = {
+      'https://doi.org/10.1000/alive': async () => ({ status: 200 }) as Response,
+      'https://doi.org/10.1000/moved': async () => ({ status: 301 }) as Response,
+      'https://doi.org/10.1000/down': async () => ({ status: 502 }) as Response,
+      'https://doi.org/10.1000/slow': async () => { throw new Error('timeout'); },
+      'https://doi.org/10.1000/forbidden': async () => ({ status: 403 }) as Response,
+    };
+    const ids = Object.keys(replies).map(u => ({ kind: 'doi' as const, id: u.slice('https://doi.org/'.length), handle: 'a' }));
+    const r = await checkLinks(ids, { fetchImpl: (u: string) => replies[u](), delayMs: 0, cap: 10 });
+    expect(r.conclusive).toEqual(['a|10.1000/alive', 'a|10.1000/moved']);
+    expect(r.unverified).toBe(3);
   });
 });
 

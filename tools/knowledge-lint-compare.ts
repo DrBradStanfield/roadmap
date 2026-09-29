@@ -271,10 +271,11 @@ export async function runJobs(jobs: Job[], o: { apiKey: string; fetchImpl: Fetch
       r.usd = (r.tokensIn * p.input + r.tokensOut * p.output) / 1e6;
       if (data.stop_reason === 'refusal' || data.stop_reason === 'max_tokens') throw new Error(data.stop_reason);
       const parsed = parseFindings(job, (data.content ?? []).filter(c => c.type === 'text').map(c => c.text).join(''), o.date);
-      if (!parsed.usable) throw new Error('unparseable');
+      // A malformed or unverifiable finding makes the whole answer suspect: it must not clear an open contradiction.
+      r.rejected += parsed.rejected;
+      if (!parsed.usable || parsed.rejected) throw new Error('unparseable');
       r.outcomes.push({ id: job.id, status: 'done' });
       r.findings.push(...parsed.findings);
-      r.rejected += parsed.rejected;
       if (parsed.instructionTextSeen) r.instructionText.push(`${job.a.handle} / ${job.b.handle}`);
     } catch {
       // Any failure with one answer is that pair's retry; every other pair's result stands.
@@ -366,7 +367,7 @@ export async function main(argv: string[], root: string, log: (s: string) => voi
     const compared = new Set(r.outcomes.filter(o => o.status === 'done').map(o => byId.get(o.id)!).map(j => `${j.kind}|${j.a.handle}|${j.b.handle}`));
     const queued = appendFixQueue(join(root, PATHS.queue), r.findings, date, i => !!i.kind && compared.has(`${i.kind}|${i.handles.join('|')}`));
     log(`Cost: ${usd(r.usd)} over ${r.calls} calls (${r.tokensIn.toLocaleString()} input, ${r.tokensOut.toLocaleString()} output tokens); ${r.errors} without a usable answer, marked retry.`);
-    log(`Findings: ${r.findings.length} kept, ${r.rejected} rejected (a quote not in its excerpt, an instruction-shaped quote, or a malformed field).`);
+    log(`Findings: ${r.findings.length} kept, ${r.rejected} rejected (a quote not in its excerpt, an instruction-shaped quote, or a malformed field; their comparisons are retried).`);
     log(queueLine(queued));
     for (const f of r.findings.filter(x => x.side !== 'knowledge')) for (const line of evidenceLines(f)) log(line);
     if (r.instructionText.length) log(`Instruction-shaped text seen in: ${r.instructionText.join('; ')}. Read those excerpts before the batch.`);

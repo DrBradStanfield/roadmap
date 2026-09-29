@@ -171,6 +171,15 @@ describe('runJobs and the fix queue', () => {
     expect(r).toMatchObject({ calls: 1, deferred: 1 });
     expect(r.usd).toBeLessThanOrEqual(projectedUsd(jobs[0]));
   });
+  it('an answer with any malformed or unverifiable finding is a retry, never a clean comparison (Codex round 3, finding 3)', async () => {
+    const good = { quote_a: '| Optimal | < 1.4 |', quote_b: 'Treat LDL to below 1.8 mmol/L in high risk.', severity: 'high', side: 'knowledge', fix_handle: 'hyperlipidaemia', summary: 's', suggested_fix: 'f' };
+    for (const extra of [{ ...good, severity: 'urgent' }, { ...good, quote_b: 'not in the excerpt' }, 'a string']) {
+      const text = JSON.stringify({ findings: [good, extra] });
+      const r = await runJobs(jobs.slice(0, 1), { apiKey: 'k', fetchImpl: async () => answer(text), maxCalls: 1, maxUsd: 5, date: 'd' });
+      expect(r.outcomes).toEqual([{ id: jobs[0].id, status: 'retry' }]);
+      expect(r.findings).toEqual([]);
+    }
+  });
   it('a response that fails to parse records a retry for that pair and keeps every other result (Codex round 2, finding 2)', async () => {
     const p2 = mk('hyperlipidaemia', 'pathway', `${pathway.body}\n\nPsyllium may help. Psyllium again.`, ['cholesterol', 'ldl', 'statin']);
     const psy = mk('psyllium', 'reference', 'Psyllium lowers LDL cholesterol.', ['psyllium']);
@@ -179,7 +188,7 @@ describe('runJobs and the fix queue', () => {
     const bodies = [
       answer('{"findings": []}'),
       { ok: true, status: 200, json: async () => { throw new SyntaxError('Unexpected token < in JSON'); } } as unknown as Response,
-      answer('{"findings": [null, 3]}'),
+      answer('{"findings": []}'),
     ];
     let i = 0;
     const r = await runJobs(three, { apiKey: 'k', fetchImpl: async () => bodies[i++] ?? answer('{"findings": []}'), maxCalls: 10, maxUsd: 5, date: 'd' });
