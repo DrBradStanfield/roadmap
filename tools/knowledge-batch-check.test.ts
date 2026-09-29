@@ -62,6 +62,17 @@ describe("sentences and products", () => {
     expect(sentences("Take it, e.g. at lunch. Dr. Smith saw 0.5 mg vs. placebo. Done?")).toEqual([
       "Take it, e.g. at lunch.", "Dr. Smith saw 0.5 mg vs. placebo.", "Done?"]);
   });
+  it("skips table separator rows and prints cell text without the leading pipe", () => {
+    expect(sentences("| a | b |\n|---|---|\n| :-: | --- |\n| Take 5 mg daily. | ok |")).toEqual([
+      "a | b |", "Take 5 mg daily. | ok |"]);
+  });
+  it("treats generic omega-3 as not a product, bare Omega-3 as one", () => {
+    expect(productMentions("Omega-3")).toBe(1);
+    expect(productMentions("omega-3 fatty acids help. Omega 3 and Cardiovascular Disease")).toBe(0);
+    expect(productMentions("Try omega-3 from fish oil, or Omega-3 by Dr Brad.")).toBe(1);
+    expect(productMentions("See [Omega-3 in heart care](https://x.org) now.")).toBe(0);
+    expect(productMentions("omega-3 is fine, and much later than thirty characters comes fatty acid")).toBe(1);
+  });
   it("counts each product name once, MicroVitamin+ before MicroVitamin", () => {
     expect(productMentions("MicroVitamin+ and MicroVitamin and Sleep by Dr Brad and Omega-3.")).toBe(4);
   });
@@ -72,6 +83,8 @@ describe("report schema", () => {
     expect(validateReport(exampleReport("x"))).toEqual([]);
     expect(validateReport({ ...exampleReport("x"), type: "blog" }).length).toBeGreaterThan(0);
     expect(validateReport({ ...exampleReport("x"), changed_tokens: [{ token: "1" }] }).length).toBeGreaterThan(0);
+    const bad = validateReport({ ...exampleReport("x"), changed_tokens: [{ token: "1", body_line: 12, raw_quote: "q" }] });
+    expect(bad).toContain("changed_tokens[0].body_line: body_line must be the body line's text, not a number");
   });
   it("CLI prints schema and example, and exits 2 without arguments", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -282,6 +295,39 @@ describe("AC7", () => {
     expect(f).toContain("excluded-page: excluded handle gained a file");
     const { results } = runBatch({ root, batch: "t", handles: ["legacy-slug"], reportsDir: reports, exclusionsPath: exclusions });
     expect(results.find((r) => r.id === "AC7")!.evidence.join()).toContain("legacy-slug: handle is on the HealthPathways exclusion list");
+  });
+});
+
+describe("exceptions", () => {
+  const exc = (over = {}) => ({ check: "AC7", handle: "alpha", match: "grokipedia", reason: "quoted source name", by: "Brad", date: "2026-09-30", ...over });
+  const dirty = () => put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it", "See Grokipedia. Take it"));
+  it("turns a matched FAIL into a WARN and lists it", () => {
+    dirty();
+    const r = run({ exceptions: [exc()] });
+    expect(r.AC7.status).toBe("WARN");
+    expect(r.AC7.evidence.join()).toContain("EXCEPTION (Brad, 2026-09-30): quoted source name");
+    expect(r.AC7.excepted?.length).toBe(1);
+  });
+  it("does not match another handle, check or substring", () => {
+    dirty();
+    for (const o of [{ handle: "beta" }, { check: "AC4" }, { match: "nothing" }]) expect(run({ exceptions: [exc(o)] }).AC7.status).toBe("FAIL");
+  });
+  it("ignores a missing file and applies a file through the CLI", () => {
+    dirty();
+    writeReports();
+    writeFileSync(join(reports, "handles.txt"), "alpha\nbeta\n");
+    const cwd = process.cwd();
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    process.chdir(root);
+    try {
+      const out = join(root, "docs", "b.md");
+      const args = ["--batch", "t", "--handles", join(reports, "handles.txt"), "--reports", reports, "--out", out];
+      main([...args, "--exceptions", join(reports, "missing.json")]);
+      expect(log.mock.calls.flat().join("\n")).toContain("FAIL AC7");
+      writeFileSync(join(reports, "exc.json"), JSON.stringify([exc()]));
+      main([...args, "--exceptions", join(reports, "exc.json")]);
+      expect(readFileSync(out, "utf8")).toContain("Accepted exceptions");
+    } finally { process.chdir(cwd); log.mockRestore(); }
   });
 });
 

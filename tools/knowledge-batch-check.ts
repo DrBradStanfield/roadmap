@@ -17,7 +17,8 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 export type Status = "PASS" | "FAIL" | "WARN";
-export interface Result { id: string; title: string; status: Status; evidence: string[] }
+export interface Exception { check: string; handle: string; match: string; reason: string; by: string; date: string }
+export interface Result { id: string; title: string; status: Status; evidence: string[]; excepted?: Exception[] }
 export interface Report {
   handle: string;
   type: "pathway" | "reference" | "video" | "guideline";
@@ -97,7 +98,10 @@ export function validateReport(o: unknown): string[] {
   const objArr = (k: string, keys: string[]) => {
     if (!Array.isArray(r[k])) { e.push(`${k}: array expected`); return; }
     (r[k] as unknown[]).forEach((x, i) => {
-      for (const key of keys) if (!x || typeof (x as Record<string, unknown>)[key] !== "string") e.push(`${k}[${i}].${key}: string expected`);
+      for (const key of keys) {
+        if (x && typeof (x as Record<string, unknown>)[key] === "string") continue;
+        e.push(`${k}[${i}].${key}: ${key === "body_line" ? "body_line must be the body line's text, not a number" : "string expected"}`);
+      }
     });
   };
   str("handle"); str("raw_path"); str("raw_sha256"); str("notes");
@@ -196,12 +200,12 @@ export function tokenise(text: string, opts: { keepRefs?: boolean } = {}): Set<s
 
 const ABBREV = /\b(e\.g|i\.e|vs|Dr|mg|etc|approx|Mr|Mrs|Ms|Prof|al|Fig)\./gi;
 export const cleanSentence = (s: string) =>
-  s.replace(/[*_]/g, "").replace(/^\s*(?:[>#-]+|\d+[.)])\s+/, "").replace(/\s+/g, " ").trim();
+  s.replace(/[*_]/g, "").replace(/^\s*(?:[>#-]+|\d+[.)]|\|)\s+/, "").replace(/\s+/g, " ").trim();
 
 export function sentences(body: string): string[] {
   const out: string[] = [];
   for (const line of body.split(/\r?\n/)) {
-    if (/^\s*#{1,6}\s/.test(line) || /^\s*[-*_]{3,}\s*$/.test(line) || !line.trim()) continue;
+    if (/^\s*#{1,6}\s/.test(line) || /^\s*[-*_]{3,}\s*$/.test(line) || /^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/.test(line) && line.includes("|") || !line.trim()) continue;
     const masked = line.replace(ABBREV, (m) => `${m.slice(0, -1)}\u0000`);
     for (const part of masked.split(/(?<=[.?!][)"'\]*]*)\s+/)) {
       const s = cleanSentence(part.replace(/\u0000/g, "."));
@@ -225,7 +229,15 @@ const totalIn = (text: string, list: string[]) => list.reduce((n, p) => n + coun
 
 export const PRODUCT_NAMES = ["MicroVitamin+", "MicroVitamin", "Sleep by Dr Brad", "Omega-3", "Potassium Fiber"];
 const PRODUCT_RE = new RegExp(PRODUCT_NAMES.map((n) => n.replace(/[+]/g, "\\+")).join("|"), "gi");
-export const productMentions = (body: string) => (body.match(PRODUCT_RE) ?? []).length;
+// Generic omega-3 (fatty acids, fish oil, leaflets, link text) is not the product.
+const OMEGA = "omega[- ]?3";
+const OMEGA_GENERIC = new RegExp(`${OMEGA}(?=[\\s\\S]{0,30}?(?:fatty acid|fish oil|leaflet|and cardiovascular))`, "gi");
+const OMEGA_IN_LINK = /\[[^\]]*\](?=\()/g;
+export const productMentions = (body: string) =>
+  (body
+    .replace(OMEGA_IN_LINK, (m) => m.replace(new RegExp(OMEGA, "gi"), ""))
+    .replace(OMEGA_GENERIC, "")
+    .match(PRODUCT_RE) ?? []).length;
 
 const BANNED = ["Top Pick", "What CL Found", "ConsumerLab approved", "CL Approved", "Approved Quality"];
 const BRAND_RANKING = /\b(?:best|top|#1|number one|top[- ]rated|highest[- ]rated)\s+brands?\b|\bbrand rankings?\b|\bbrands?,? ranked\b|\branked (?:the )?brands?\b/i;
@@ -248,7 +260,7 @@ const readOpt = (p: string) => (existsSync(p) ? readFileSync(p, "utf8") : null);
 
 export interface Options {
   root: string; batch: string; handles: string[]; reportsDir: string; base?: string; outRel?: string;
-  exclusionsPath?: string;
+  exclusionsPath?: string; exceptions?: Exception[];
 }
 export interface Row {
   handle: string; type: string; file: string; rawSha: string; bodySha: string; tokensNew: number; quoted: number;
@@ -261,10 +273,17 @@ const clip = (l: string, n = 120) => { const t = l.trim(); return t.length > n ?
 class Check {
   fails: string[] = []; warns: string[] = []; infos: string[] = [];
   constructor(readonly id: string, readonly title: string) {}
-  result(): Result {
-    const status: Status = this.fails.length ? "FAIL" : this.warns.length ? "WARN" : "PASS";
-    return { id: this.id, title: this.title, status,
-      evidence: [...this.fails.map((s) => `FAIL ${s}`), ...this.warns.map((s) => `WARN ${s}`), ...this.infos] };
+  result(exceptions: Exception[] = []): Result {
+    const excepted: Exception[] = [], notes: string[] = [];
+    const fails = this.fails.filter((f) => {
+      const ex = exceptions.find((x) => x.check === this.id && f.startsWith(`${x.handle}:`) && f.includes(x.match));
+      if (!ex) return true;
+      excepted.push(ex); notes.push(`EXCEPTION (${ex.by}, ${ex.date}): ${ex.reason}: ${f}`);
+      return false;
+    });
+    const status: Status = fails.length ? "FAIL" : this.warns.length || notes.length ? "WARN" : "PASS";
+    return { id: this.id, title: this.title, status, excepted,
+      evidence: [...fails.map((s) => `FAIL ${s}`), ...this.warns.map((s) => `WARN ${s}`), ...notes, ...this.infos] };
   }
 }
 
@@ -489,7 +508,7 @@ export function runBatch(o: Options): { results: Result[]; rows: Row[]; baseSha:
   ac6.infos.push(`${changed.size} changed paths versus ${base}`);
   ac6.infos.push("Shopify updated_at snapshot: separate tool, NOT checked here");
 
-  return { results: [ac1, ac2, ac3, ac4, ac6, ac7, pw].map((c) => c.result()), rows, baseSha };
+  return { results: [ac1, ac2, ac3, ac4, ac6, ac7, pw].map((c) => c.result(o.exceptions)), rows, baseSha };
 }
 
 /** Markdown batch report: counts and hashes only, under 150 lines. */
@@ -508,6 +527,11 @@ export function renderReport(batch: string, base: string, baseSha: string, resul
     L.push(`| ${r.handle} | ${r.type} | ${r.rawSha.slice(0, 16)} | ${r.bodySha.slice(0, 16)} | ${r.tokensNew} | ${r.quoted} | ${r.deleted} | ${r.hedgeBefore}>${r.hedgeAfter} | ${r.productsBefore}>${r.productsAfter} |`);
   }
   if (rows.length > cap) L.push("", `${rows.length - cap} more handles omitted to stay under the line cap.`);
+  const ex = results.flatMap((r) => r.excepted ?? []);
+  if (ex.length) {
+    L.push("", "## Accepted exceptions", "", "| check | handle | by | date | reason | match sha256 |", "|---|---|---|---|---|---|");
+    for (const x of ex) L.push(`| ${x.check} | ${x.handle} | ${x.by} | ${x.date} | ${x.reason.replace(/\|/g, "/")} | ${sha256(x.match).slice(0, 16)} |`);
+  }
   L.push("", "Hashes are the first 16 hex characters of sha256.", "",
     "AC5 (answer quality) and the Shopify updated_at snapshot: not covered here.", "", "AC8 sign-off (Brad): PENDING");
   return `${L.join("\n")}\n`;
@@ -530,7 +554,7 @@ export function main(argv: string[]): number {
   if (a["print-schema"]) { console.log(JSON.stringify(REPORT_SCHEMA, null, 2)); return 0; }
   if (typeof a.example === "string") { console.log(JSON.stringify(exampleReport(a.example), null, 2)); return 0; }
   if (typeof a.batch !== "string" || typeof a.handles !== "string") {
-    console.error("usage: knowledge-batch-check.ts --batch <name> --handles <file> [--reports <dir>] [--base <ref>] [--out <file>]");
+    console.error("usage: knowledge-batch-check.ts --batch <name> --handles <file> [--reports <dir>] [--base <ref>] [--out <file>] [--exceptions <file>]");
     return 2;
   }
   const root = git(process.cwd(), ["rev-parse", "--show-toplevel"]).trim();
@@ -540,7 +564,9 @@ export function main(argv: string[]): number {
   const base = typeof a.base === "string" ? a.base : "HEAD";
   const rel = out ? relative(root, out) : "";
   const outRel = out && !rel.startsWith("..") && !isAbsolute(rel) ? rel : undefined;
-  const { results, rows, baseSha } = runBatch({ root, batch: a.batch, handles, reportsDir, base, outRel });
+  const exceptions: Exception[] = typeof a.exceptions === "string" && existsSync(a.exceptions)
+    ? JSON.parse(readFileSync(a.exceptions, "utf8")) : [];
+  const { results, rows, baseSha } = runBatch({ root, batch: a.batch, handles, reportsDir, base, outRel, exceptions });
   for (const r of results) {
     console.log(`${r.status} ${r.id} ${r.title}`);
     for (const e of r.evidence) console.log(`    ${e}`);
