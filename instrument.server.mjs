@@ -3,7 +3,7 @@
 // instruments the runtime BEFORE the app bundle loads — the RR7 replacement for the old
 // `Sentry.init()` that lived at the top of app/entry.server.tsx.
 //
-// CRITICAL (HIPAA): the beforeSend / beforeBreadcrumb scrubbing below removes PII/PHI before
+// CRITICAL (HIPAA): the beforeSend* / beforeBreadcrumb scrubbing below removes PII/PHI before
 // any event leaves the server. This logic is moved verbatim from the old entry.server.tsx —
 // do not weaken it. The scrub helpers come from ./instrument-scrub.mjs (a self-contained,
 // plain-ESM copy) rather than @roadmap/health-core: this file is `node --import`-ed before the
@@ -19,7 +19,14 @@ Sentry.init({
   // health value past every key-based rule (found by audit, 2026-09-10). The
   // server keeps no console breadcrumbs at all; an error still arrives as its
   // own message and class.
-  integrations: (defaults) => defaults.filter((i) => i.name !== "Console"),
+  //
+  // Request bodies never leave: the SDK reads incoming bodies by default and
+  // attaches them to every event, transactions included (US-09 AC7,
+  // 2026-10-01). An /mcp body is a health record; a consent POST is a password.
+  integrations: (defaults) => [
+    ...defaults.filter((i) => i.name !== "Console"),
+    Sentry.httpIntegration({ maxIncomingRequestBodySize: "none" }),
+  ],
   tracesSampleRate: 0.2,
   enabled: !!process.env.SENTRY_DSN,
   ignoreErrors: [
@@ -51,9 +58,11 @@ Sentry.init({
 
     // Scrub PII/PHI from event data before it leaves the server (shared with
     // the parity test, which runs this exact pipeline against the browser's).
-    scrubServerEvent(event);
-    return event;
+    return scrubServerEvent(event);
   },
+  // Sampled transactions carry the request (headers, cookies) too, and
+  // beforeSend never sees them.
+  beforeSendTransaction: scrubServerEvent,
   beforeBreadcrumb(breadcrumb) {
     if (
       (breadcrumb.category === "fetch" ||

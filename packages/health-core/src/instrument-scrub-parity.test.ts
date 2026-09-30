@@ -60,6 +60,7 @@ const SENSITIVE_SAMPLE: Record<string, unknown> = {
   summary: 'LDL up since March',
   unsubscribe_token: 'tok', accessToken: 'tok', authorization: 'Bearer x',
   bearerToken: 'b', apiKey: 'k', api_key: 'k',
+  cookie: 'c', 'http.request.header.cookie.theme': 'c',
   sourceFileName: 'Brad lipids.pdf', filename: 'Brad lipids.pdf',
   prostatePsaValue: 1, prostate_psa_value: 1,
   lungPackYears: 0, lung_pack_years: 0,

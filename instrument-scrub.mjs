@@ -72,6 +72,8 @@ const SENSITIVE_SUBSTRINGS = [
   // Every credential family, by the word it is named after: `token` covers
   // unsubscribe_token, refreshToken and access_token in one rule.
   'token', 'auth', 'bearer', 'apikey', 'api_key',
+  // A cookie is a session: the SDK copies each one into span data by name.
+  'cookie',
   // A clinical document is named by its file: "Brad Stanfield lipids Mar 2026.pdf".
   'filename', 'sourcefilename',
   'screening', 'followup',
@@ -247,13 +249,81 @@ export function dropLongStrings(input, max = 200) {
   return out;
 }
 
+// Headers are an allowlist too, server side: what a request was, never who
+// sent it or what it carried. Host and user-agent place it; content-type,
+// content-length and accept describe a body without holding it. Cookies,
+// Authorization, a Referer (a page URL with its query), forwarding IPs and any
+// header nobody anticipated all go.
+const KEPT_HEADERS = ['host', 'user-agent', 'content-type', 'content-length', 'accept'];
+const KEPT_HEADER_ATTRIBUTES = new Set(KEPT_HEADERS.flatMap((h) =>
+  ['request', 'response'].map((side) => `http.${side}.header.${h.replace(/-/g, '_')}`)));
+
+function keepHeaders(headers) {
+  return Object.fromEntries(Object.entries(headers).filter(([k]) => KEPT_HEADERS.includes(k.toLowerCase())));
+}
+
+// A transaction repeats the request as span attributes. The query goes whole,
+// as in `request` below; a header attribute obeys the allowlist; the other end
+// of the connection goes (the SDK's `http.client_ip` is the first
+// X-Forwarded-For hop, the visitor's own address; OTel names the rest
+// `client.address`, `net.peer.*`, `network.peer.*`, `user.ip_address`); a
+// URL-valued attribute (a path, or anything with a scheme) goes through
+// `urlRule`, and is dropped when that returns undefined.
+const CLIENT_ADDRESS_KEY = /client_ip|client\.address|(^|\.)peer\.|ip_address/i;
+
+function scrubSpanData(data, urlRule) {
+  const out = {};
+  for (const [key, value] of Object.entries(data ?? {})) {
+    if (/query$/i.test(key) || CLIENT_ADDRESS_KEY.test(key)) continue;
+    if (/^http\.(request|response)\.header\./.test(key) && !KEPT_HEADER_ATTRIBUTES.has(key)) continue;
+    const isUrl = /url|target/i.test(key) && typeof value === 'string' && (value.startsWith('/') || value.includes('://'));
+    const kept = isUrl ? urlRule(value) : value;
+    if (kept !== undefined) out[key] = kept;
+  }
+  return out;
+}
+
+// An outgoing call gets the breadcrumb rule, origin only, whether it is a
+// child span or a root transaction of its own (a call that outlives its
+// request). The SDK names it "METHOD <full URL>", and the path can name a
+// document, so that name keeps the method and origin too.
+function originOf(url) {
+  try { return new URL(url).origin; } catch { return undefined; }
+}
+
+function methodAndOrigin(name) {
+  const [method, url] = name.split(' ');
+  return [method, originOf(url)].filter(Boolean).join(' ');
+}
+
+const scrubOutgoingData = (data) => scrubStrings(scrubSensitiveData(scrubSpanData(data, originOf)));
+
+function scrubChildSpan(span) {
+  span.data = scrubOutgoingData(span.data);
+  if (span.op === 'http.client' && typeof span.description === 'string') {
+    span.description = methodAndOrigin(span.description);
+  }
+}
+
 /**
- * The server's whole beforeSend scrub, in one place so the parity test can run
- * an event through it (instrument.server.mjs cannot be imported — it calls
- * Sentry.init on load). The browser's `scrubEvent` runs the same steps in the
- * same order after its browser-only drops.
+ * The server's whole beforeSend (and beforeSendTransaction) scrub, in one
+ * place so the parity test can run an event through it (instrument.server.mjs
+ * cannot be imported — it calls Sentry.init on load). The browser's
+ * `scrubEvent` runs the same steps in the same order after its browser-only
+ * drops. Three steps are server-only: the header allowlist, the span-data
+ * pass on a transaction's root span (the outgoing-call rule when the root is
+ * itself an outgoing call), and the child-span pass. The browser sends no
+ * transactions and keeps its header denylist.
  */
 export function scrubServerEvent(event) {
+  // An incoming request's transaction name is left alone: under
+  // react-router-serve it is a route pattern (`GET *`), and the SDK has
+  // already cut its query.
+  const trace = event.contexts?.trace;
+  const outgoing = trace?.op === 'http.client';
+  if (trace?.data) trace.data = outgoing ? scrubOutgoingData(trace.data) : scrubSpanData(trace.data, scrubUrl);
+  if (outgoing && typeof event.transaction === 'string') event.transaction = methodAndOrigin(event.transaction);
+  for (const span of event.spans ?? []) scrubChildSpan(span);
   if (event.extra) event.extra = scrubSensitiveData(event.extra);
   if (event.contexts) event.contexts = scrubSensitiveData(event.contexts);
   if (event.request) {
@@ -263,13 +333,9 @@ export function scrubServerEvent(event) {
     // The query goes whole — see scrubUrl.
     delete event.request.query_string;
     delete event.request.cookies;
-    if (event.request.headers) {
-      delete event.request.headers.cookie;
-      // Belt and braces for the hosted MCP server (US-32): the bearer token
-      // seals a live Dropbox refresh token, so it never reaches an event.
-      delete event.request.headers.authorization;
-      delete event.request.headers.Authorization;
-    }
+    // The hosted MCP server's bearer token (US-32) seals a live Dropbox
+    // refresh token: the allowlist keeps it, like every credential, out.
+    if (event.request.headers) event.request.headers = keepHeaders(event.request.headers);
   }
   if (event.breadcrumbs) {
     event.breadcrumbs = event.breadcrumbs

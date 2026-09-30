@@ -75,6 +75,8 @@ const SENSITIVE_SUBSTRINGS = [
   // Every credential family, by the word it is named after: `token` covers
   // unsubscribe_token, refreshToken and access_token in one rule.
   'token', 'auth', 'bearer', 'apikey', 'api_key',
+  // A cookie is a session: the SDK copies each one into span data by name.
+  'cookie',
   // A clinical document is named by its file: "Brad Stanfield lipids Mar 2026.pdf".
   'filename', 'sourcefilename',
   'screening', 'followup',
