@@ -120,6 +120,8 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   auto-loads** (undocumented for cloud routines; don't bet rules on it). It is
   the source of truth: deletion-first prod-LOC discipline, security authorship,
   gotcha archiving, plus the essentials restated below.
+- **First git act:** `git fetch origin main && git checkout main && git merge --ff-only origin/main` (cloud copies arrive
+  on a detached HEAD since 2026-10-01, where pull and push fail).
 - Commit everything to main and push (no branches, no PRs, sweep rule applies
   — EXCEPT Tier 3 code changes, which go via `claude/` branch + PR by design).
   `docs/products.md` must be a REAL file (mode 100644), never a symlink
