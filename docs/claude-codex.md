@@ -334,7 +334,7 @@ One disagreement. Codex says defer the cloud auto-review to keep variables separ
 - `docs/review-format.md`: the shared contract, 97 lines.
 - `tools/codex-review.mjs`: the bounded wrapper. Targets uncommitted work, a commit, or a range. Structured JSON via `--output-schema`; exit 0 clean, 2 blocking, 3 incomplete.
 - `.claude/skills/codex-review/SKILL.md`: how Claude invokes it and responds to findings.
-- Model: `gpt-6-astra` at high reasoning effort, per Brad.
+- Model: `gpt-6.1-sol` at high reasoning effort, per Brad (2026-10-02; was `gpt-6-astra`).
 
 Not built, by design: any change to `.github/workflows/**` or `auto-ship.yml` (Brad-only), the reciprocal Codex-authors path, and the cloud auto-review toggle (a Brad click in the Codex web app).
 

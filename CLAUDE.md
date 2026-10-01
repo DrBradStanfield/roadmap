@@ -216,7 +216,8 @@ same commit).
   fetching, scraping, tool fixes, data pulls, inventories. Opus 5.5 writes every knowledge-base
   entry and web page. Never a Fable subagent. Loops: docs/loops/LOOP.md.
 - **Every adversarial Claude check gets a Codex one beside it** (Brad,
-  2026-09-21): `node tools/codex-review.mjs` — skill `codex-review`, contract
+  2026-09-21): a fresh Opus 5.5 `adversary` plus Codex on `gpt-6.1-sol`, high effort (the
+  wrapper's default since 2026-10-02; was `gpt-6-astra`). `node tools/codex-review.mjs` — skill `codex-review`, contract
   docs/review-format.md, spec US-40. REQUIRED before committing clinical,
   merge/FHIR, security or agent-contract changes WHATEVER their size — a
   one-line auth or threshold edit still gets it. Skip ONLY outside those

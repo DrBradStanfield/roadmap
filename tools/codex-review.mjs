@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Local adversarial reviewer on a different model (Codex, gpt-6-astra by
+// Local adversarial reviewer on a different model (Codex, gpt-6.1-sol by
 // default). Contract: docs/review-format.md. Advisory only: it never edits,
 // commits, merges, or gates anything.
 //
@@ -133,7 +133,7 @@ function findCodex() {
 }
 if (!CODEX) { console.error("codex binary not found: pass --codex <path> or set CODEX_BIN"); process.exit(1); }
 
-const MODEL = opt("--model", "gpt-6-astra");
+const MODEL = opt("--model", "gpt-6.1-sol");
 const TIMEOUT_MS = Number(opt("--timeout-min", "25")) * 60_000;
 const RECORD = has("--record");
 const LOOP = has("--loop");

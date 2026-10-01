@@ -1,6 +1,6 @@
 ---
 name: codex-review
-description: Independent adversarial review of the current change by a different model (Codex, gpt-6-astra) against docs/review-format.md. Run it beside every adversarial Claude check, and REQUIRED before committing clinical, merge/FHIR, security or agent-contract changes whatever their size; skip ONLY outside those classes (doc/blog sweeps, one-liners). Loops run it with --loop (Tier 3 applies); CI stays Claude-only. Also whenever asked to "get Codex to review" or "cross-model review". Advisory only.
+description: Independent adversarial review of the current change by a different model (Codex, gpt-6.1-sol) against docs/review-format.md. Run it beside every adversarial Claude check, and REQUIRED before committing clinical, merge/FHIR, security or agent-contract changes whatever their size; skip ONLY outside those classes (doc/blog sweeps, one-liners). Loops run it with --loop (Tier 3 applies); CI stays Claude-only. Also whenever asked to "get Codex to review" or "cross-model review". Advisory only.
 ---
 
 # Codex review
