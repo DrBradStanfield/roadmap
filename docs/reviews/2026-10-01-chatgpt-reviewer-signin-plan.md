@@ -423,3 +423,16 @@ is unknown; their guidance asks for exactly this kind of demo login.
 5. **Your part**, about 15 minutes: fetch the Dropbox app secret from the App Console and run the
    script's `--password` and `--mint` modes from a private window at home; later, connect once in
    ChatGPT developer mode; then resubmit.
+
+## 13. Brad's decisions (2026-10-02)
+
+1. **Exception: yes.** The reviewer login and the server-held reviewer Dropbox token, ChatGPT client
+   only, invented account only.
+2. **Box open, above the choice, while a review is pending: yes.**
+3. **Hidden between reviews.** The box appears only while the three reviewer secrets are set (§4.1),
+   so after OpenAI approves, `flyctl secrets unset -a health-tool-edu MCP_REVIEWER_USERNAME
+   MCP_REVIEWER_PASSWORD_SHA256 MCP_REVIEWER_DROPBOX_RT` restores today's consent page for everyone,
+   with no code change, and ends every reviewer session (§4.2). Before each later submission, stage
+   them again (`--password` keeps the old password only if Brad re-enters it; otherwise the form gets
+   the new one). The runbook states both steps.
+4. Stored Sentry IPs: left to Sentry's retention. Codex reviewer is now `gpt-6.1-sol`.
