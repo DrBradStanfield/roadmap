@@ -319,7 +319,7 @@ This is a **resubmission**: a new 1.0.1 version inside the existing app record, 
 ### 1.0.2, Brad's steps (plan §8)
 
 1. Republish the privacy page (`node scripts/build-privacy-page.mjs --publish`) and the guides (`node scripts/publish-guides.mjs --publish`), so every public custody sentence names the reviewer exception before the box exists.
-2. Stage the three reviewer secrets and deploy, then run the in-machine check ([runbook](deploy-runbook-mcp.md#the-openai-reviewer-sign-in-us-32-ac38)).
+2. Stage the three reviewer secrets and deploy, then run the in-machine check ([runbook](deploy-runbook-mcp.md#the-openai-reviewer-sign-in-us-32-ac38)). At `--mint`'s prompt, type the reviewer account's email address by hand; do not autofill it. It is the plus-address (`name+tag@domain`); the base address is the scratch account, and the tool refuses it. The tool stages the token only if Dropbox confirms that verified address and the synthetic record. Run the first `--mint` without `--expect` (Dropbox's UI never shows the account id), save the `dbid:` id it prints on `match` in the credentials file, and pass `--expect <id>` on every later mint.
 3. The fixture work under Test cases: the fresh ferritin row, positive 2's date, the synthetic lab PDF.
 4. Live verification (plan §7): the check prints `ok`; a Playwright run as ChatGPT on each pinned callback (wrong password first, then right); one connection from ChatGPT developer mode with the reviewer login; the positive set twice; a real WebKit screenshot of the consent page at phone width.
 5. Resubmit from the OpenAI Platform dashboard: **Scan Tools** first, upload the JSON, re-select **Healthcare**, paste Variant C, version 1.0.2, release notes from "What 1.0.2 adds over 1.0.1".

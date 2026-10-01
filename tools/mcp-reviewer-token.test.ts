@@ -7,15 +7,18 @@ import crypto from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   authorizeUrl,
+  flag,
   generatePassword,
   groupPassword,
   isPassword,
   isSyntheticRecord,
   mint,
+  outcomeLines,
   password,
   PASSWORD_ALPHABET,
   PASSWORD_LENGTH,
   passwordHash,
+  reviewerAddressProblem,
   secretLines,
 } from './mcp-reviewer-token';
 import { check } from './mcp-reviewer-check.mjs';
@@ -113,12 +116,12 @@ describe('US-32 AC38 — the staged lines', () => {
 });
 
 describe('US-32 AC38 — minting the reviewer token', () => {
-  it('asks Dropbox for an offline token with the live scopes and no redirect', () => {
+  it('asks Dropbox for an offline token with the live scopes plus account_info.read, and no redirect', () => {
     const url = new URL(authorizeUrl('app-key'));
     expect(url.origin + url.pathname).toBe('https://www.dropbox.com/oauth2/authorize');
     expect(url.searchParams.get('token_access_type')).toBe('offline');
     expect(url.searchParams.get('response_type')).toBe('code');
-    expect(url.searchParams.get('scope')).toBe('files.content.read files.content.write files.metadata.read');
+    expect(url.searchParams.get('scope')).toBe('files.content.read files.content.write files.metadata.read account_info.read');
     expect(url.searchParams.has('redirect_uri')).toBe(false);
   });
 
@@ -129,8 +132,11 @@ describe('US-32 AC38 — minting the reviewer token', () => {
     expect(isSyntheticRecord(null)).toBe(false);
   });
 
-  /** Dropbox's token, download and revoke endpoints on the global fetch, answering as each case asks. */
-  function dropbox({ accountId, record }: { accountId: string; record: string | null }) {
+  // Placeholder addresses only: the reviewer is a plus-address of the scratch mailbox.
+  const REVIEWER = { email: 'User+Reviewer@Example.com', email_verified: true };
+
+  /** Dropbox's token, account, download and revoke endpoints on the global fetch, answering as each case asks. */
+  function dropbox({ accountId = 'dbid:reviewer', account = REVIEWER as object | Response, record = JSON.stringify(SYNTHETIC) as string | null, revokeOk = true } = {}) {
     const calls: string[] = [];
     const fetch = vi.fn(async (url: string | URL, init: RequestInit = {}) => {
       calls.push(String(url));
@@ -141,10 +147,14 @@ describe('US-32 AC38 — minting the reviewer token', () => {
         expect(body.has('redirect_uri')).toBe(false);
         return Response.json({ access_token: 'new-access', refresh_token: 'new-refresh', account_id: accountId });
       }
+      if (String(url).endsWith('/2/users/get_current_account')) {
+        expect((init.headers as Record<string, string>).Authorization).toBe('Bearer new-access');
+        return account instanceof Response ? account : Response.json(account);
+      }
       if (String(url).endsWith('/2/files/download')) return record === null ? new Response('', { status: 409 }) : new Response(record);
       if (String(url).endsWith('/2/auth/token/revoke')) {
         expect((init.headers as Record<string, string>).Authorization).toBe('Bearer new-access');
-        return new Response(null);
+        return revokeOk ? new Response('null') : new Response('', { status: 500 });
       }
       throw new Error(`unexpected ${url}`);
     });
@@ -152,47 +162,150 @@ describe('US-32 AC38 — minting the reviewer token', () => {
     return { calls };
   }
 
-  const args = { expect: 'dbid:reviewer', appKey: 'app-key', code: 'the-code', appSecret: 'app-secret' };
+  const args = { email: ' user+reviewer@example.COM ', appKey: 'app-key', code: 'the-code', appSecret: 'app-secret' };
+  const REVOKE = 'https://api.dropboxapi.com/2/auth/token/revoke';
 
-  it('stages the token on a match: the expected account, and the synthetic record', async () => {
-    const { calls } = dropbox({ accountId: 'dbid:reviewer', record: JSON.stringify(SYNTHETIC) });
+  it('stages the token on a match: the typed email (trimmed, any case), verified, and the synthetic record', async () => {
+    const { calls } = dropbox();
     const stage = vi.fn(async () => {});
-    expect(await mint({ ...args, stage })).toBe('match');
+    expect(await mint({ ...args, stage })).toEqual({ result: 'match', accountId: 'dbid:reviewer' });
     expect(stage).toHaveBeenCalledWith('MCP_REVIEWER_DROPBOX_RT=new-refresh\n');
     expect(calls.some((url) => url.endsWith('/revoke'))).toBe(false);
   });
 
-  it('stages nothing and revokes the new token for another account — Brad signed in as himself', async () => {
-    const { calls } = dropbox({ accountId: 'dbid:brad', record: JSON.stringify(SYNTHETIC) });
-    const stage = vi.fn();
-    expect(await mint({ ...args, stage })).toBe('mismatch');
-    expect(stage).not.toHaveBeenCalled();
-    expect(calls.at(-1)).toBe('https://api.dropboxapi.com/2/auth/token/revoke');
-    // The record of another account is never even read.
-    expect(calls.some((url) => url.endsWith('/download'))).toBe(false);
+  it('with --expect, stages only when the account id matches too', async () => {
+    dropbox();
+    const stage = vi.fn(async () => {});
+    expect(await mint({ ...args, expect: 'dbid:reviewer', stage })).toEqual({ result: 'match', accountId: 'dbid:reviewer' });
+    expect(stage).toHaveBeenCalledOnce();
   });
 
-  it('stages nothing and revokes when the folder holds a record that is not the synthetic one', async () => {
-    const { calls } = dropbox({ accountId: 'dbid:reviewer', record: JSON.stringify({ profile: { sex: 'female', birthYear: 1990, heightCm: 165 } }) });
+  const failures: Array<[string, Parameters<typeof dropbox>[0], Partial<typeof args> & { expect?: string }, string]> = [
+    ['another account (Brad signed in as himself)', { account: { email: 'someone@else.com', email_verified: true } }, {}, 'email'],
+    ['the scratch account: its base address, where the reviewer\'s plus-address was typed', { account: { email: 'user@example.com', email_verified: true } }, {}, 'email'],
+    ['the reviewer account where the base address was typed', {}, { email: 'user@example.com' }, 'email'],
+    ['a typed domain that the account address merely contains', { account: { email: 'user@example.com', email_verified: true } }, { email: 'example.com' }, 'email'],
+    ['a typed address that merely contains the account address', {}, { email: 'user+reviewer@example.com.au' }, 'email'],
+    ['an unverified email', { account: { email: 'user+reviewer@example.com', email_verified: false } }, {}, 'unverified'],
+    ['an account with no email', { account: { email_verified: true } }, {}, 'email'],
+    ['an account Dropbox will not describe', { account: new Response('', { status: 500 }) }, {}, 'lookup'],
+    ['an empty typed email', { account: { email: '', email_verified: true } }, { email: '  ' }, 'email'],
+    ['the wrong account id with --expect', {}, { expect: 'dbid:other' }, 'account-id'],
+  ];
+  for (const [name, answers, over, gate] of failures) {
+    it(`stages nothing, awaits the revoke and never reads the record for ${name} (gate: ${gate})`, async () => {
+      const { calls } = dropbox(answers);
+      const stage = vi.fn();
+      expect(await mint({ ...args, ...over, stage })).toEqual({ result: 'mismatch', gate, revoked: true });
+      expect(stage).not.toHaveBeenCalled();
+      expect(calls.at(-1)).toBe(REVOKE);
+      expect(calls.some((url) => url.endsWith('/download'))).toBe(false);
+    });
+  }
+
+  it('stages nothing and revokes when the right account holds a record that is not the synthetic one', async () => {
+    const { calls } = dropbox({ record: JSON.stringify({ profile: { sex: 'female', birthYear: 1990, heightCm: 165 } }) });
     const stage = vi.fn();
-    expect(await mint({ ...args, stage })).toBe('mismatch');
+    expect(await mint({ ...args, stage })).toEqual({ result: 'mismatch', gate: 'record', revoked: true });
     expect(stage).not.toHaveBeenCalled();
-    expect(calls.at(-1)).toBe('https://api.dropboxapi.com/2/auth/token/revoke');
+    expect(calls.at(-1)).toBe(REVOKE);
   });
 
   it('stages nothing and revokes when the folder holds no record', async () => {
-    const { calls } = dropbox({ accountId: 'dbid:reviewer', record: null });
+    const { calls } = dropbox({ record: null });
     const stage = vi.fn();
-    expect(await mint({ ...args, stage })).toBe('mismatch');
+    expect(await mint({ ...args, stage })).toEqual({ result: 'mismatch', gate: 'record', revoked: true });
     expect(stage).not.toHaveBeenCalled();
-    expect(calls.at(-1)).toBe('https://api.dropboxapi.com/2/auth/token/revoke');
+    expect(calls.at(-1)).toBe(REVOKE);
   });
 
-  it('answers mismatch when Dropbox will not trade the code', async () => {
+  it('revokes the matched token when staging fails, and reports the revoke', async () => {
+    const { calls } = dropbox();
+    const stage = vi.fn(async () => { throw new Error('flyctl exited 1'); });
+    expect(await mint({ ...args, stage })).toEqual({ result: 'staging failed', revoked: true });
+    expect(stage).toHaveBeenCalledOnce();
+    expect(calls.at(-1)).toBe(REVOKE);
+    dropbox({ revokeOk: false });
+    expect(await mint({ ...args, stage })).toEqual({ result: 'staging failed', revoked: false });
+  });
+
+  it('reports a revoke Dropbox refused', async () => {
+    dropbox({ account: { email: 'someone@else.com', email_verified: true }, revokeOk: false });
+    expect(await mint({ ...args, stage: vi.fn() })).toEqual({ result: 'mismatch', gate: 'email', revoked: false });
+  });
+
+  it('answers mismatch with nothing to revoke when Dropbox will not trade the code', async () => {
     const stage = vi.fn();
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('bad code', { status: 400 })));
-    expect(await mint({ ...args, stage })).toBe('mismatch');
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ error: 'invalid_grant' }, { status: 400 })));
+    expect(await mint({ ...args, stage })).toEqual({ result: 'mismatch', gate: 'code' });
     expect(stage).not.toHaveBeenCalled();
+  });
+
+  it('names the scope when Dropbox refuses it at the token exchange', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ error: 'invalid_scope' }, { status: 400 })));
+    expect(await mint({ ...args, stage: vi.fn() })).toEqual({ result: 'mismatch', gate: 'scope' });
+  });
+
+  it('names the scope, and revokes, when the token lacks account_info.read', async () => {
+    const { calls } = dropbox({ account: Response.json({ error: { '.tag': 'missing_scope', required_scope: 'account_info.read' } }, { status: 401 }) });
+    const stage = vi.fn();
+    expect(await mint({ ...args, stage })).toEqual({ result: 'mismatch', gate: 'scope', revoked: true });
+    expect(stage).not.toHaveBeenCalled();
+    expect(calls.at(-1)).toBe(REVOKE);
+  });
+});
+
+describe('US-32 AC38 — what --mint prints', () => {
+  it('refuses, before any Dropbox step, an address with no plus in its local part', () => {
+    expect(reviewerAddressProblem('user+reviewer@example.com')).toBeNull();
+    expect(reviewerAddressProblem(' User+Reviewer@Example.com ')).toBeNull();
+    for (const typed of ['user@example.com', 'example.com', '', 'user@ex+ample.com', '+@']) {
+      expect(reviewerAddressProblem(typed), typed).toMatch(/plus-address.*scratch account/);
+    }
+  });
+
+  it('names the gate that failed, never an address, and the revoke result', () => {
+    expect(outcomeLines({ result: 'mismatch', gate: 'unverified', revoked: true })).toEqual(['mismatch: unverified', 'revoked']);
+    expect(outcomeLines({ result: 'mismatch', gate: 'email', revoked: false })).toEqual([
+      'mismatch: email',
+      'REVOKE FAILED: remove the app at dropbox.com/account/connected_apps',
+    ]);
+    expect(outcomeLines({ result: 'mismatch', gate: 'code' })).toEqual(['mismatch: code']);
+    const scope = outcomeLines({ result: 'mismatch', gate: 'scope', revoked: true });
+    expect(scope[0]).toBe('mismatch: scope');
+    expect(scope[1]).toContain('account_info.read');
+    expect(scope[2]).toBe('revoked');
+  });
+
+  it('on a staging failure, reports the revoke and the unset that clears the staged secret', () => {
+    expect(outcomeLines({ result: 'staging failed', revoked: true })).toEqual([
+      'staging failed',
+      'revoked',
+      'Clean up: flyctl secrets unset -a health-tool-edu MCP_REVIEWER_DROPBOX_RT --stage',
+    ]);
+  });
+
+  it('on a match, prints the account id to pass as --expect', () => {
+    const lines = outcomeLines({ result: 'match', accountId: 'dbid:reviewer' });
+    expect(lines[0]).toBe('match');
+    expect(lines[1]).toContain('--expect dbid:reviewer');
+  });
+});
+
+describe('US-32 AC38 — the flags', () => {
+  it('reads a flag and its value', () => {
+    expect(flag(['--mint', '--expect', 'dbid:x'], '--expect')).toBe('dbid:x');
+    expect(flag(['--mint'], '--expect')).toBeUndefined();
+  });
+
+  it('refuses the --flag=value form', () => {
+    expect(() => flag(['--mint', '--expect=dbid:x'], '--expect')).toThrow('--expect <value>');
+    expect(() => flag(['--mint', '--app-key=k'], '--app-key')).toThrow('--app-key <value>');
+  });
+
+  it('refuses a missing value and one that is another flag', () => {
+    expect(() => flag(['--mint', '--expect'], '--expect')).toThrow('--expect needs a value');
+    expect(() => flag(['--mint', '--expect', '--app-key', 'k'], '--expect')).toThrow('--expect needs a value');
   });
 });
 

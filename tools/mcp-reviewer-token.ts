@@ -9,15 +9,18 @@
 //     prompt, type the password already in the OpenAI form to stage it again.
 //     A new password changes the generation and ends every reviewer session.
 //
-//   npx tsx tools/mcp-reviewer-token.ts --mint --expect <account_id> [--app-key <key>]
+//   npx tsx tools/mcp-reviewer-token.ts --mint [--expect <account_id>] [--app-key <key>]
 //     The confidential code flow with no redirect, exactly as live connections
 //     are minted. Open the printed URL in a PRIVATE window, sign in as the
 //     reviewer, press Allow, and paste the code Dropbox shows at the hidden
 //     prompt; then the app secret from the Dropbox App Console at a second one.
-//     The token is staged only if the account id Dropbox returns equals
-//     <account_id> AND the app folder's record is the synthetic profile. On any
-//     mismatch it stages nothing and revokes the new token. Prints "match" or
-//     "mismatch".
+//     First it asks for the reviewer account's email address. The token is
+//     staged only if Dropbox's get_current_account returns that email (any
+//     case), verified, AND (with --expect) the account id equals <account_id>,
+//     AND the app folder's record is the synthetic profile. The record is read
+//     only after the account matches. On anything else it stages nothing,
+//     revokes the new token, and prints "mismatch" and the revoke's result; on
+//     success, "match" and the account id to pass as --expect next time.
 //
 // Staging: NAME=VALUE lines on stdin to `flyctl secrets import --stage -a
 // health-tool-edu`, so they take effect on the next deploy. No secret value is
@@ -40,6 +43,15 @@ const DEFAULT_USERNAME = 'openaireviewer';
 /** The invented reviewer record's profile (plan §4.5). Anything else is not the reviewer's folder. */
 const SYNTHETIC_PROFILE = { birthYear: 1979, heightCm: 178, sex: 'male' };
 const DROPBOX_REVOKE_URL = 'https://api.dropboxapi.com/2/auth/token/revoke';
+const DROPBOX_ACCOUNT_URL = 'https://api.dropboxapi.com/2/users/get_current_account';
+/**
+ * Asked for on the reviewer mint only, so the tool can read the account's email.
+ * Dropbox requires every user-linked app to register account_info.read, so the
+ * App Console cannot switch it off; a token carries it only when the authorize
+ * URL asks for it. https://dropbox.tech/developers/customizing-scopes-in-oauth-flow
+ */
+const ACCOUNT_SCOPE = 'account_info.read';
+const SCOPE_MESSAGE = `Dropbox refused the ${ACCOUNT_SCOPE} scope. In the Dropbox App Console, Permissions tab, make sure ${ACCOUNT_SCOPE} is ticked, then run --mint again.`;
 
 type Stage = (lines: string) => Promise<void>;
 
@@ -80,7 +92,7 @@ export function authorizeUrl(appKey: string): string {
   url.searchParams.set('client_id', appKey);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('token_access_type', 'offline');
-  url.searchParams.set('scope', DROPBOX_SCOPE);
+  url.searchParams.set('scope', `${DROPBOX_SCOPE} ${ACCOUNT_SCOPE}`);
   return url.toString();
 }
 
@@ -92,29 +104,74 @@ export function isSyntheticRecord(body: unknown): boolean {
 
 // --- the flows --------------------------------------------------------------
 
-/** The --mint flow: 'match' stages the token; 'mismatch' stages nothing and revokes it. */
-export async function mint(options: { expect: string; appKey: string; code: string; appSecret: string; stage: Stage }): Promise<'match' | 'mismatch'> {
-  const { expect, appKey, code, appSecret, stage } = options;
+/** Which check a mint failed. A word only: never the account's address or name. */
+export type Gate = 'code' | 'lookup' | 'email' | 'unverified' | 'account-id' | 'record' | 'scope';
+export type MintOutcome =
+  | { result: 'match'; accountId: string }
+  /** `revoked` is absent when Dropbox issued no token, so there was nothing to revoke. */
+  | { result: 'mismatch'; gate: Gate; revoked?: boolean }
+  | { result: 'staging failed'; revoked: boolean };
+
+/**
+ * The --mint flow. 'match' stages the token. Anything else stages nothing and
+ * revokes the new token, if Dropbox issued one. Identity is the account's
+ * verified email, checked by machine against the address Brad typed; the record
+ * is read only after the email (and the account id, with --expect) match.
+ */
+export async function mint(options: { email: string; expect?: string; appKey: string; code: string; appSecret: string; stage: Stage }): Promise<MintOutcome> {
+  const { email, expect, appKey, code, appSecret, stage } = options;
   const res = await fetch(DROPBOX_TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ grant_type: 'authorization_code', code, client_id: appKey, client_secret: appSecret }),
   });
-  if (!res.ok) return 'mismatch';
-  const token = (await res.json().catch(() => null)) as { access_token?: string; refresh_token?: string; account_id?: string } | null;
-  if (!token?.refresh_token || !token.access_token) return 'mismatch';
+  const token = (await res.json().catch(() => null)) as { access_token?: string; refresh_token?: string; account_id?: string; error?: string } | null;
+  if (!res.ok) return { result: 'mismatch', gate: token?.error === 'invalid_scope' ? 'scope' : 'code' };
+  if (!token?.refresh_token || !token.access_token) return { result: 'mismatch', gate: 'code' };
+  const auth = { Authorization: `Bearer ${token.access_token}` };
 
-  // The record is read only once the account is the expected one.
-  const matches = token.account_id === expect
-    && isSyntheticRecord(await dropboxRead(token.access_token, ROADMAP_FILE_NAME).then(({ body }) => body, () => null));
-  if (!matches) {
-    // Revokes this refresh token and its access tokens, not the account's app
-    // link: a mistaken run on Brad's own account leaves his connections intact.
-    await fetch(DROPBOX_REVOKE_URL, { method: 'POST', headers: { Authorization: `Bearer ${token.access_token}` } }).catch(() => null);
-    return 'mismatch';
+  // The same call the widget makes: JSON null for a route with no arguments.
+  const accountRes = await fetch(DROPBOX_ACCOUNT_URL, { method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' }, body: 'null' }).catch(() => null);
+  const account = (await accountRes?.json().catch(() => null)) as { email?: unknown; email_verified?: unknown; error?: { '.tag'?: string } } | null;
+  const wanted = email.trim().toLowerCase();
+  // Exact equality: a plus-tag or a substring is another account.
+  const gate: Gate | null = account?.error?.['.tag'] === 'missing_scope' ? 'scope'
+    : !accountRes?.ok || !account ? 'lookup'
+    : wanted === '' || typeof account.email !== 'string' || account.email.trim().toLowerCase() !== wanted ? 'email'
+    : account.email_verified !== true ? 'unverified'
+    : !token.account_id || (expect !== undefined && token.account_id !== expect) ? 'account-id'
+    // Only now, with the account known, is the record read.
+    : !isSyntheticRecord(await dropboxRead(token.access_token, ROADMAP_FILE_NAME).then(({ body }) => body, () => null)) ? 'record'
+    : null;
+  // Revokes this refresh token and its access tokens, not the account's app
+  // link: a mistaken run on Brad's own account leaves his connections intact.
+  const revoke = async () => (await fetch(DROPBOX_REVOKE_URL, { method: 'POST', headers: auth }).catch(() => null))?.ok === true;
+  if (gate || !token.account_id) return { result: 'mismatch', gate: gate ?? 'account-id', revoked: await revoke() };
+  // A token nothing holds is still a live reviewer token: revoke it if staging fails.
+  const staged = await stage(secretLines({ MCP_REVIEWER_DROPBOX_RT: token.refresh_token })).then(() => true, () => false);
+  if (!staged) return { result: 'staging failed', revoked: await revoke() };
+  return { result: 'match', accountId: token.account_id };
+}
+
+/** What --mint prints for an outcome: gate words and fixed text, never an address or name. */
+export function outcomeLines(outcome: MintOutcome): string[] {
+  if (outcome.result === 'match') {
+    return ['match', `account_id ${outcome.accountId}: save it in your credentials file and pass --expect ${outcome.accountId} next time.`];
   }
-  await stage(secretLines({ MCP_REVIEWER_DROPBOX_RT: token.refresh_token }));
-  return 'match';
+  const revoked = outcome.revoked === undefined ? [] : [outcome.revoked ? 'revoked' : 'REVOKE FAILED: remove the app at dropbox.com/account/connected_apps'];
+  if (outcome.result === 'staging failed') {
+    return ['staging failed', ...revoked, `Clean up: flyctl secrets unset -a ${FLY_APP} MCP_REVIEWER_DROPBOX_RT --stage`];
+  }
+  return [`mismatch: ${outcome.gate}`, ...(outcome.gate === 'scope' ? [SCOPE_MESSAGE] : []), ...revoked];
+}
+
+/**
+ * The reviewer account is a plus-address of the scratch mailbox (name+tag@domain);
+ * the base address is the scratch account itself. Refuse any other shape up front.
+ */
+export function reviewerAddressProblem(email: string): string | null {
+  return /^[^@+\s]+\+[^@\s]+@[^@\s]+$/.test(email.trim()) ? null
+    : 'The reviewer account is a plus-address of the mailbox (name+tag@domain); the base address is the scratch account. Type the reviewer\'s plus-address.';
 }
 
 /** The --password flow. `existing` is a password re-entered to keep it; empty makes a new one. */
@@ -157,9 +214,14 @@ function prompt(question: string, { hidden = false } = {}): Promise<string> {
   });
 }
 
-function flag(args: string[], name: string): string | undefined {
+/** A flag's value. Refuses `--flag=value`, a missing value, and a value that is another flag. */
+export function flag(args: string[], name: string): string | undefined {
+  if (args.some((arg) => arg.startsWith(`${name}=`))) throw new Error(`write ${name} <value>, with a space, not ${name}=<value>`);
   const at = args.indexOf(name);
-  return at >= 0 ? args[at + 1] : undefined;
+  if (at < 0) return undefined;
+  const value = args[at + 1];
+  if (value === undefined || value === '' || value.startsWith('--')) throw new Error(`${name} needs a value`);
+  return value;
 }
 
 async function main(args: string[]): Promise<number> {
@@ -176,16 +238,20 @@ async function main(args: string[]): Promise<number> {
   }
   if (args.includes('--mint')) {
     const expect = flag(args, '--expect');
-    if (!expect) throw new Error('--mint needs --expect <account_id>, from your credentials file');
     const appKey = flag(args, '--app-key') || process.env.DROPBOX_APP_KEY || (await prompt('Dropbox app key (App Console): '));
+    const email = await prompt("The reviewer account's email address (type it, do not autofill): ");
+    const problem = reviewerAddressProblem(email);
+    if (problem) throw new Error(problem);
     console.log(`\nOpen this in a PRIVATE window, sign in as the reviewer, and press Allow:\n\n  ${authorizeUrl(appKey)}\n`);
+    console.log(`If Dropbox shows a scope error instead (invalid_scope): ${SCOPE_MESSAGE}\n`);
     const code = await prompt('Code Dropbox shows: ', { hidden: true });
     const appSecret = await prompt('Dropbox app secret (App Console): ', { hidden: true });
-    const result = await mint({ expect, appKey, code, appSecret, stage: stageWithFlyctl });
-    console.log(result);
-    return result === 'match' ? 0 : 1;
+    const outcome = await mint({ email, expect, appKey, code, appSecret, stage: stageWithFlyctl });
+    // Never the account's email or name: on a mismatch they belong to someone else.
+    for (const line of outcomeLines(outcome)) console.log(line);
+    return outcome.result === 'match' ? 0 : 1;
   }
-  console.error('Usage: npx tsx tools/mcp-reviewer-token.ts --password [--username <word>] | --mint --expect <account_id> [--app-key <key>]');
+  console.error('Usage: npx tsx tools/mcp-reviewer-token.ts --password [--username <word>] | --mint [--expect <account_id>] [--app-key <key>]');
   return 2;
 }
 

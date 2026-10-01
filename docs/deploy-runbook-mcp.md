@@ -328,15 +328,31 @@ npx tsx tools/mcp-reviewer-token.ts --password
 
 # The token: from home, where any emailed Dropbox code can be read. Open the printed
 # URL in a PRIVATE window, sign in as the reviewer account, press Allow, paste the
-# code at the hidden prompt, then the app secret from the Dropbox App Console.
-# <account_id> is the reviewer account's id, kept in the private credentials file.
+# code at the hidden prompt, then the app secret from the Dropbox App Console. It
+# first asks for the reviewer account's email address: type it, do not autofill.
+# It must be the plus-address (name+tag@domain): the base address is the scratch
+# account, and the tool refuses it before showing the URL.
+# First run: no --expect (Dropbox's UI never shows the account id).
+npx tsx tools/mcp-reviewer-token.ts --mint
+# Later runs: the account id the first run printed, kept in the credentials file.
 npx tsx tools/mcp-reviewer-token.ts --mint --expect <account_id>
 ```
 
-`--mint` stages the token only if the `account_id` Dropbox returns equals `--expect` AND
-the app folder's `health-roadmap.json` is the synthetic profile (male, born 1979,
-178 cm). Otherwise it prints `mismatch`, stages nothing and revokes the new token (that
-token only; a run on the wrong account leaves that account's own connections alone).
+`--mint` asks Dropbox for `account_info.read` beside the live scopes, so it can read the
+account's email. It stages the token only if `get_current_account` returns the address
+you typed (any case) with `email_verified` true, the `account_id` equals `--expect` when
+given, and the app folder's `health-roadmap.json` is the synthetic profile (male, born
+1979, 178 cm). It reads the record only after the account matches. Success prints
+`match` and the account id: save it and pass `--expect` from then on. Anything else
+prints `mismatch: <gate>`, the check that failed (`code`, `lookup`, `email`,
+`unverified`, `account-id`, `record` or `scope`; never the account's email or name),
+stages nothing, revokes the new token (that token only; a run on the wrong account leaves that account's own connections
+alone) and prints `revoked` or `REVOKE FAILED: remove the app at
+dropbox.com/account/connected_apps`. A scope error means the App Console's Permissions
+tab must allow `account_info.read`; Dropbox requires it for every user-linked app, so
+this should not happen. If staging fails after a match, the tool revokes the token
+too, prints `staging failed` and the revoke result, and names the cleanup:
+`flyctl secrets unset -a health-tool-edu MCP_REVIEWER_DROPBOX_RT --stage`.
 
 **Check, inside the machine** (Fly secrets cannot be read back). Before submitting, and
 daily until the verdict:

@@ -192,7 +192,7 @@ touches the password (and the password in the OpenAI form never goes stale mid-r
   file and the OpenAI form, and stages only `MCP_REVIEWER_USERNAME` and
   `MCP_REVIEWER_PASSWORD_SHA256`. Running it again is the answer to a leaked password: it changes
   `rv` and ends every reviewer session.
-- **`--mint --expect <account_id>`**: the confidential code flow with no redirect (Dropbox shows the
+- **Superseded 2026-10-02 (see the amendment below).** **`--mint --expect <account_id>`**: the confidential code flow with no redirect (Dropbox shows the
   code on screen), `token_access_type=offline`, exactly as live connections are minted, so the
   server's secret-bearing refresh is the proven path. Brad opens the URL in a **private window**,
   signs in as the reviewer (from home, where he can read any emailed code), presses Allow, and pastes
@@ -205,6 +205,22 @@ touches the password (and the password in the OpenAI form never goes stale mid-r
   mismatch it stages nothing and revokes the new token (`/2/auth/token/revoke` disables that refresh
   token and its access tokens, not the account's app link, so a mistaken run on Brad's real account
   leaves his own connections intact). It prints only "match" or "mismatch".
+- **Amended 2026-10-02: identity by email, checked by machine.** Dropbox's UI never shows an
+  account id, so Brad had no `--expect` value for the first mint. A first fix (print the id and
+  ask "yes") was blocked in review: the synthetic-profile check also passes on the scratch
+  microvitamin.com record, and an id Brad has never seen gives him nothing to judge. Now the mint
+  asks for the reviewer account's email address at a visible prompt (not argv), requests
+  `account_info.read` beside the live scopes for this mint only (Dropbox requires every
+  user-linked app to register it, but a token carries it only when asked for), and calls
+  `/2/users/get_current_account` after the exchange. It stages only if that `email` equals the
+  typed address (trimmed, any case) with `email_verified` true, the `account_id` equals `--expect`
+  when given, and the record is the synthetic profile; the record is read only after the account
+  matches. `--expect` is now optional, and success prints the account id to save for it. The typed
+  address must be a plus-address (the base address is the scratch account), refused before any
+  Dropbox step. A failure prints `mismatch: <gate>` (never the account's email or name), awaits
+  the revoke and prints "revoked" or "REVOKE FAILED"; a staging failure after a match also
+  revokes and names the `flyctl secrets unset ... --stage` cleanup. The staged reviewer token now also carries `account_info.read`; nothing on
+  the server uses it.
 - **Staging** (both modes): `NAME=VALUE` lines on stdin to
   `flyctl secrets import --stage -a health-tool-edu` (verified with flyctl 0.4.6: reads stdin;
   `--stage` skips the deploy). Values never appear in arguments, output or files. They take effect
