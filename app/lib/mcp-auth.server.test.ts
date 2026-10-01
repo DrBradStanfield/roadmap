@@ -134,7 +134,7 @@ describe('write allowance, weighted and per connection (US-32, design §3 mitiga
   });
 
   it('spends the hour’s allowance, then refuses', () => {
-    const key = connectionKey('dropbox-refresh');
+    const key = connectionKey({ rt: 'dropbox-refresh' });
     for (let i = 0; i < WRITES_PER_HOUR / WRITE_COST.correct; i++) {
       expect(spendWrites(key, WRITE_COST.correct)).toBe(true);
     }
@@ -143,24 +143,24 @@ describe('write allowance, weighted and per connection (US-32, design §3 mitiga
 
   it('is keyed on the connection, so extra access tokens buy no extra writes', () => {
     const rt = 'dropbox-refresh';
-    for (let i = 0; i < WRITES_PER_HOUR; i++) expect(spendWrites(connectionKey(rt), WRITE_COST.add)).toBe(true);
-    expect(spendWrites(connectionKey(rt), WRITE_COST.add)).toBe(false);
+    for (let i = 0; i < WRITES_PER_HOUR; i++) expect(spendWrites(connectionKey({ rt }), WRITE_COST.add)).toBe(true);
+    expect(spendWrites(connectionKey({ rt }), WRITE_COST.add)).toBe(false);
 
     // A second access token over the same connection lands on the same key.
-    const issued = issueTokens(AUDIENCE.clientId, 'dropbox', rt, Date.now());
+    const issued = issueTokens(AUDIENCE.clientId, 'dropbox', { rt }, Date.now());
     const access = unpackSealed<AccessPayload>('access', issued.access_token)!;
-    expect(spendWrites(connectionKey(access.rt), WRITE_COST.add)).toBe(false);
+    expect(spendWrites(connectionKey(access), WRITE_COST.add)).toBe(false);
   });
 
   it('the allowance comes back with the hour, so refreshing never locks a user out', () => {
-    const key = connectionKey('dropbox-refresh');
+    const key = connectionKey({ rt: 'dropbox-refresh' });
     for (let i = 0; i < WRITES_PER_HOUR; i++) expect(spendWrites(key, WRITE_COST.add)).toBe(true);
     const nextHour = Date.now() + 61 * 60 * 1000;
     expect(spendWrites(key, WRITE_COST.add, nextHour)).toBe(true);
   });
 
   it('an access token’s stated lifetime is honest — clients refresh against it', () => {
-    const issued = issueTokens(AUDIENCE.clientId, 'dropbox', 'rt', Date.now());
+    const issued = issueTokens(AUDIENCE.clientId, 'dropbox', { rt: 'rt' }, Date.now());
     expect(issued.expires_in).toBe(ACCESS_LIFETIME_SECONDS);
   });
 
@@ -168,11 +168,11 @@ describe('write allowance, weighted and per connection (US-32, design §3 mitiga
     const start = Date.parse('2026-01-01T00:00:00.000Z');
     const first = unpackSealed<RefreshPayload>(
       'refresh',
-      issueTokens(AUDIENCE.clientId, 'dropbox', 'rt', start).refresh_token,
+      issueTokens(AUDIENCE.clientId, 'dropbox', { rt: 'rt' }, start).refresh_token,
       start,
     )!;
     const day89 = start + 89 * 24 * 60 * 60 * 1000;
-    const renewed = issueTokens(AUDIENCE.clientId, 'dropbox', 'rt', day89, first.exp);
+    const renewed = issueTokens(AUDIENCE.clientId, 'dropbox', { rt: 'rt' }, day89, first.exp);
     expect(unpackSealed<RefreshPayload>('refresh', renewed.refresh_token, day89)!.exp).toBe(first.exp);
   });
 });

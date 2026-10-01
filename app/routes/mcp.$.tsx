@@ -23,7 +23,7 @@ import { type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
 import { getClientIp } from '../lib/local-first-route.server';
 import { mcpClientLabel, mcpEndpoint, originRejected } from '../lib/mcp.server';
 import { recordServerEvent } from '../lib/product-events.server';
-import { checkAuthorize, sealState, verifyPkce } from '../lib/mcp-authorize.server';
+import { type AuthorizeRequest, checkAuthorize, sealState, verifyPkce } from '../lib/mcp-authorize.server';
 import {
   isLoopbackRedirect,
   KNOWN_CLIENTS,
@@ -35,7 +35,7 @@ import {
   type McpClientLabel,
 } from '../lib/mcp-clients.server';
 import { isMcpEnabled, issuer } from '../lib/mcp-config.server';
-import { allowAuthorize, allowRateLimitEvent, allowToken, claimCode, CODE_LIFETIME_SECONDS, issueTokens, STATE_LIFETIME_SECONDS, type CodePayload, type RefreshPayload, type StatePayload } from '../lib/mcp-grants.server';
+import { allowAuthorize, allowRateLimitEvent, allowToken, claimCode, CODE_LIFETIME_SECONDS, grantLive, issueTokens, STATE_LIFETIME_SECONDS, type CodePayload, type Grant, type RefreshPayload, type StatePayload } from '../lib/mcp-grants.server';
 import {
   availableProviders,
   isProvider,
@@ -47,6 +47,7 @@ import {
   providerTag,
 } from '../lib/mcp-providers.server';
 import { packSealed, unpackSealed } from '../lib/mcp-seal.server';
+import { REVIEWER_CLIENT, reviewerFailures, reviewerGeneration, reviewerLoginMatches, reviewerOffered, reviewerRefreshToken } from '../lib/mcp-reviewer.server';
 import type { McpOAuthReason } from '../../packages/health-core/src/product-events';
 
 /**
@@ -169,6 +170,11 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
  * exactly that reason.
  */
 async function authorizeScreen(request: Request, url: URL): Promise<Response> {
+  // A bare visit is a person who typed or followed the address, not a client
+  // that failed a check: no row, no fetch, and a sentence that says where to go.
+  if (!url.searchParams.get('client_id')) {
+    return html(page('Start from ChatGPT', '<p class="lede">This page opens when you connect Health by Dr Brad from ChatGPT. Go back to ChatGPT and press Connect.</p>'));
+  }
   // The label, not the id: a client id is caller-chosen text, and an id we do
   // not recognise is `other` — the same word every refusal below carries.
   const who = mcpClientLabel(url.searchParams.get('client_id') ?? '');
@@ -210,14 +216,22 @@ async function authorizeScreen(request: Request, url: URL): Promise<Response> {
     return redirectTo(back.toString());
   }
 
-  // One sealed state per provider: the choice is inside the blob, so the POST
-  // cannot be edited into a provider the user did not press.
-  const offers = providers.map((provider) => ({
-    provider,
-    state: sealState(checked.request, provider, Date.now()),
-  }));
   void recordServerEvent('mcp_authorize_shown', { client: who });
-  return html(consentPage(client, offers));
+  return html(consentFor(checked.request));
+}
+
+/**
+ * The consent page for one checked request. One sealed state per provider:
+ * the choice is inside the blob, so the POST cannot be edited into a provider
+ * the user did not press. Freshly sealed on every render, a reviewer retry's
+ * included (US-32 AC38).
+ */
+function consentFor(request: AuthorizeRequest, error?: string): string {
+  const offers = availableProviders().map((provider) => ({
+    provider,
+    state: sealState(request, provider, Date.now()),
+  }));
+  return consentPage(request.client, offers, error);
 }
 
 /**
@@ -242,9 +256,7 @@ async function providerCallback(request: Request, url: URL): Promise<Response> {
 
   const denied = url.searchParams.get('error');
   const code = url.searchParams.get('code');
-  const back = new URL(state.redirectUri);
-  back.searchParams.set('iss', issuer());
-  if (state.clientState) back.searchParams.set('state', state.clientState);
+  const back = clientReturn(state);
 
   if (denied || !code) {
     connectFailed('provider-denied', state);
@@ -260,25 +272,46 @@ async function providerCallback(request: Request, url: URL): Promise<Response> {
     return redirectTo(back.toString(), clear);
   }
 
+  return redirectTo(mintClientCode(state, { rt: refreshToken }), clear);
+}
+
+/** The client's own redirect, with `iss` (RFC 9207) and its `state`: every answer to it starts here. */
+function clientReturn(state: StatePayload): URL {
+  const back = new URL(state.redirectUri);
+  back.searchParams.set('iss', issuer());
+  if (state.clientState) back.searchParams.set('state', state.clientState);
+  return back;
+}
+
+/**
+ * Hand the CLIENT its own authorization code — a 60-second blob carrying the
+ * PKCE challenge it must answer — and say where to send it. One door for both
+ * ways in: a provider's refresh token, or a reviewer's generation with no
+ * token at all (US-32 AC38).
+ */
+function mintClientCode(state: StatePayload, grant: Grant): string {
   const payload: CodePayload = {
     clientId: state.clientId,
     provider: state.provider,
     redirectUri: state.redirectUri,
     codeChallenge: state.codeChallenge,
-    rt: refreshToken,
+    ...grant,
     jti: crypto.randomUUID(),
     exp: Math.floor(Date.now() / 1000) + CODE_LIFETIME_SECONDS,
   };
+  const back = clientReturn(state);
   back.searchParams.set('code', packSealed('code', state.clientId, payload));
-  // One value-free row per code minted: which assistant, which cloud. Redemption
-  // failures are counted at `/token` as `mcp_connect_failed`, so this row says
-  // the door opened, not that the client walked through.
+  // One value-free row per code minted: which assistant, which cloud, and
+  // whether it was the reviewer's door. Redemption failures are counted at
+  // `/token` as `mcp_connect_failed`, so this row says the door opened, not
+  // that the client walked through.
   // Fire-and-forget — a counter never stands between the user and their record.
   void recordServerEvent('mcp_connect', {
     client: mcpClientLabel(state.clientId),
     provider: providerTag(state.provider),
+    ...(grant.rv === undefined ? {} : { via: 'reviewer' as const }),
   });
-  return redirectTo(back.toString(), clear);
+  return back.toString();
 }
 
 // ---------------------------------------------------------------------------
@@ -306,7 +339,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
 async function consentGiven(request: Request): Promise<Response> {
   const body = await cappedBody(request);
   if (body === null) return tooLarge();
-  const state = unpackSealed<StatePayload>('state', new URLSearchParams(body).get('state') ?? '');
+  const form = new URLSearchParams(body);
+  const state = unpackSealed<StatePayload>('state', form.get('state') ?? '');
   if (!state) {
     connectFailed('state-expired');
     return htmlError('That sign-in took too long. Please start again from your assistant.');
@@ -318,6 +352,7 @@ async function consentGiven(request: Request): Promise<Response> {
     connectFailed('provider-unavailable', state);
     return htmlError('That storage provider is not available here. Please start again from your assistant.');
   }
+  if (form.get('reviewer') === '1') return reviewerSignIn(request, form, state);
   void recordServerEvent('mcp_consent_posted', { client: who, provider: providerTag(state.provider) });
 
   const nonce = crypto.randomBytes(32).toString('base64url');
@@ -328,6 +363,41 @@ async function consentGiven(request: Request): Promise<Response> {
     // The seal still binds first — its clock started at the authorize GET.
     'Set-Cookie': `${STATE_COOKIE}=${sealed}; ${STATE_COOKIE_ATTRS}; Max-Age=${STATE_LIFETIME_SECONDS}`,
   });
+}
+
+/**
+ * OpenAI's reviewer pressed Sign in (US-32 AC38). The exact pinned ChatGPT
+ * client, the Dropbox state, and the secrets set — or the page they came from
+ * could not have shown the form. The password is the only security boundary;
+ * the limiter counts failures alone and only stops noise. Nothing here logs
+ * or echoes what was typed.
+ */
+function reviewerSignIn(request: Request, form: URLSearchParams, state: StatePayload): Response {
+  const generation = reviewerGeneration();
+  if (!REVIEWER_CLIENT || !generation || !reviewerOffered(state.clientId, state.provider)) {
+    return htmlError('That sign-in is not available here. Please start again from your assistant.');
+  }
+  const client = REVIEWER_CLIENT;
+  const ip = getClientIp(request, 'fly');
+  const retry = (reason: 'reviewer-credentials' | 'reviewer-rate-limited', message: string, status: number) => {
+    // One row per IP per window, per reason: a flood is when these run.
+    if (allowRateLimitEvent(`${reason}:${ip}`)) connectFailed(reason, state);
+    const again: AuthorizeRequest = {
+      client,
+      redirectUri: state.redirectUri,
+      codeChallenge: state.codeChallenge,
+      clientState: state.clientState,
+    };
+    return html(consentFor(again, message), status);
+  };
+  if (reviewerFailures.remaining(ip) === 0) {
+    return retry('reviewer-rate-limited', 'Too many wrong sign-ins from this network. Please wait 15 minutes, then try again.', 429);
+  }
+  if (!reviewerLoginMatches(form.get('username') ?? '', form.get('password') ?? '')) {
+    reviewerFailures.take(ip, 1);
+    return retry('reviewer-credentials', 'That username or password is not right.', 200);
+  }
+  return redirectTo(mintClientCode(state, { rt: '', rv: generation }));
 }
 
 /**
@@ -373,17 +443,22 @@ async function tokenEndpoint(request: Request): Promise<Response> {
     // cannot promise it across Fly machines. Redemption still needs the
     // verifier, which never leaves the client (design §4).
     if (!claimCode(code.jti)) return dead('token-replayed');
-    return Response.json(issueTokens(clientId, code.provider, code.rt, Date.now()), { headers: NO_STORE });
+    // A reviewer code never resolves to the token here: it is re-sealed with
+    // its generation, and only if that generation is still the live one.
+    if (!grantLive(code)) return dead('reviewer-generation');
+    return Response.json(issueTokens(clientId, code.provider, code, Date.now()), { headers: NO_STORE });
   }
 
   if (grant === 'refresh_token') {
     const refresh = unpackSealed<RefreshPayload>('refresh', form.get('refresh_token') ?? '');
-    if (!refresh || refresh.clientId !== clientId) {
-      connectFailed(refresh ? 'token-client' : 'token-dead-refresh', { clientId, provider: refresh?.provider });
+    const dead = (reason: McpOAuthReason) => {
+      connectFailed(reason, { clientId, provider: refresh?.provider });
       return oauthError('invalid_grant', 'Please reconnect');
-    }
+    };
+    if (!refresh || refresh.clientId !== clientId) return dead(refresh ? 'token-client' : 'token-dead-refresh');
+    if (!grantLive(refresh)) return dead('reviewer-generation');
     // The original expiry travels through, so 90 days runs from consent.
-    return Response.json(issueTokens(clientId, refresh.provider, refresh.rt, Date.now(), refresh.exp), {
+    return Response.json(issueTokens(clientId, refresh.provider, refresh, Date.now(), refresh.exp), {
       headers: NO_STORE,
     });
   }
@@ -458,16 +533,16 @@ function html(body: string, status = 200, headers: Record<string, string> = {}):
  * every error. Self-contained — inline styles only, so the `default-src 'none';
  * style-src 'unsafe-inline'` policy above needs no widening, and no webfont.
  */
-function page(title: string, inner: string): string {
+function page(title: string, inner: string, lead = ''): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>${escapeHtml(title)}</title>
 <style>
 :root{--bg:#f7f7f5;--card:#fff;--line:#e6e5e0;--ink:#16302a;--dim:#5f6b66;
---brand:#00a38b;--brand-ink:#00806d;--radius:14px}
+--brand:#00a38b;--brand-ink:#00806d;--err:#b42318;--radius:14px}
 @media (prefers-color-scheme:dark){:root{--bg:#101413;--card:#181d1c;--line:#2a3230;
---ink:#eef2f0;--dim:#9aa8a3;--brand:#26bfa6;--brand-ink:#26bfa6}}
+--ink:#eef2f0;--dim:#9aa8a3;--brand:#26bfa6;--brand-ink:#26bfa6;--err:#f97066}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,
 BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -487,7 +562,7 @@ p{margin:0 0 14px}
 form{margin:0}
 .pick{display:flex;flex-direction:column;gap:10px;margin:22px 0 4px}
 button{display:flex;width:100%;min-height:52px;align-items:center;gap:12px;
-font:600 16px/1.2 inherit;color:#fff;background:var(--brand);border:0;
+font-weight:600;font-size:16px;line-height:1.2;font-family:inherit;color:#fff;background:var(--brand);border:0;
 border-radius:12px;padding:14px 18px;cursor:pointer;text-align:left}
 button:hover{background:var(--brand-ink)}
 button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
@@ -504,9 +579,18 @@ font-size:14px;color:var(--dim)}
 .fine p:last-child{margin:0}
 a{color:var(--brand-ink);text-decoration:underline;text-underline-offset:2px}
 .rev{overflow-wrap:anywhere}
+.lead{margin-bottom:16px;border-color:var(--brand)}
+.lead h2{margin:0 0 8px;font-size:1.15rem;text-transform:none;letter-spacing:0;color:var(--ink)}
+label{display:block;margin:14px 0 6px;font-size:14px;font-weight:600}
+input{display:block;width:100%;min-height:48px;font-family:inherit;font-size:16px;color:var(--ink);
+background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+input:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
+.reviewer button{margin-top:18px;justify-content:center}
+.err{color:var(--err);font-weight:600}
 </style>
 </head><body><main>
 <div class="mark"><span class="dot"></span>Health by Dr Brad</div>
+${lead ? `<div class="card lead">${lead}</div>` : ''}
 <div class="card"><h1>${escapeHtml(title)}</h1>${inner}</div>
 </main></body></html>`;
 }
@@ -553,10 +637,36 @@ function clientSource(client: McpClient): string {
 }
 
 /**
+ * OpenAI's reviewer box (US-32 AC38): open, and above everything else on the
+ * page, because the reviewer pressed the first button inside two seconds. It
+ * exists only for the exact pinned ChatGPT client, only while the reviewer
+ * secrets are set, and only with Dropbox on offer. `error` is our own
+ * sentence; what was typed is never echoed.
+ */
+function reviewerBox(state: string, error?: string): string {
+  return `<h2>OpenAI app reviewers: sign in here</h2>
+<p class="lede">For OpenAI’s app review only. This is not your Dropbox or Google password.</p>
+${error ? `<p class="err" role="alert">${escapeHtml(error)}</p>` : ''}<form method="post" class="reviewer">
+<input type="hidden" name="state" value="${escapeHtml(state)}">
+<input type="hidden" name="reviewer" value="1">
+<label for="reviewer-username">Username</label>
+<input id="reviewer-username" type="text" name="username" pattern="[^@]*" autocomplete="off" autocapitalize="none" spellcheck="false" required>
+<label for="reviewer-password">Password</label>
+<input id="reviewer-password" type="password" name="password" autocomplete="off" required>
+<button type="submit"><span>Sign in</span></button>
+</form>`;
+}
+
+/**
  * What the user is actually agreeing to, in the words §1 approved. The
  * assistant's name is text it chose, so it is escaped.
  */
-function consentPage(client: McpClient, offers: Array<{ provider: McpProvider; state: string }>): string {
+function consentPage(client: McpClient, offers: Array<{ provider: McpProvider; state: string }>, error?: string): string {
+  const dropbox = offers.find(({ provider }) => provider === 'dropbox');
+  const reviewer = dropbox && reviewerOffered(client.clientId, dropbox.provider) ? reviewerBox(dropbox.state, error) : '';
+  // The custody clause follows the TOKEN, not the whole feature: a token set
+  // with a malformed password hash keeps the box off but still sits on this server.
+  const reviewerTokenHeld = reviewerRefreshToken() !== '';
   // One form per provider, each carrying its own sealed state. A button is a
   // choice of cloud, and the choice is sealed the moment it is offered.
   const buttons = offers
@@ -572,9 +682,9 @@ function consentPage(client: McpClient, offers: Array<{ provider: McpProvider; s
   const clouds = offers.map(({ provider }) => providerLabel(provider)).join(' or ');
   return page(
     'Where do you want to keep your health record?',
-    `<p class="lede"><span class="who">${escapeHtml(client.name)}</span> wants to connect to your health record.</p>
+    `${reviewer ? '<h2>Everyone else: choose where your record is kept</h2>\n' : ''}<p class="lede"><span class="who">${escapeHtml(client.name)}</span> wants to connect to your health record.</p>
 <p class="lede">That name is the app’s own, not ours. What we can tell you about it: ${escapeHtml(clientSource(client))}.</p>
-<p class="lede">Your health record is yours, and yours alone. Keep it in your own ${escapeHtml(clouds)}. Your assistant reads and writes one file there, plus a temporary imports folder while an import is pending. Nothing is stored on our server.</p>
+<p class="lede">Your health record is yours, and yours alone. Keep it in your own ${escapeHtml(clouds)}. Your assistant reads and writes one file there, plus a temporary imports folder while an import is pending. Nothing is stored on our server${reviewerTokenHeld ? ', except, while an OpenAI app review is pending, the Dropbox credential of one invented reviewer account' : ''}.</p>
 <div class="pick">${buttons}</div>
 ${offers.some(({ provider }) => provider === 'google') ? '<p class="lede">Importing lab files: drop a file into the chat on either cloud, on any device, and your assistant reads it. With Dropbox you can also put files in the folder; with Google Drive the folder cannot be read, so the chat or the website’s upload are the ways in.</p>' : ''}
 <h2>What the assistant can do</h2>
@@ -612,5 +722,6 @@ between: <a href="https://drstanfield.com/pages/roadmap">see the setup guide</a>
 <p class="rev">Disconnect any time at ${escapeHtml(revoke)}.</p>
 <p>Educational, not medical advice.</p>
 </div>`,
+    reviewer,
   );
 }

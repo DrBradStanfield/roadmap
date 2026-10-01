@@ -20,7 +20,7 @@ Hosted-server design: **rev 4, DECIDED: FINAL**. 2026-09-01. Brad has ruled on e
 
 **One write path.** Every surface in this table that writes reads and saves the record through `SyncManager` over a `StorageAdapter`, read, migrate, merge, conditional write on `expectedVersion`, verify. The CLI and the stdio server hand it `FileAdapter` (one local file); the hosted server hands it `DropboxAdapter` or `DriveAdapter`, chosen by the provider sealed into the bearer token. The database of record is a constructor argument, not a second code path.
 
-**Intent:** a web ChatGPT/Claude user clicks connect, authorizes, and their AI reads and saves their health record in THEIR cloud. **Architecture:** fully stateless, no token table, nothing per-user in Supabase. The provider refresh token is sealed into the bearer token we issue.
+**Intent:** a web ChatGPT/Claude user clicks connect, authorizes, and their AI reads and saves their health record in THEIR cloud. **Architecture:** fully stateless, no token table, nothing per-user in Supabase. The provider refresh token is sealed into the bearer token we issue. One exception, for one invented account: the OpenAI reviewer sign-in (§1, Brad's exception).
 
 Closes the gap `docs/guides/getting-started.md` admits: "A web AI cannot write to your Dropbox or Drive… That is the clunky step."
 
@@ -30,7 +30,7 @@ Closes the gap `docs/guides/getting-started.md` admits: "A web AI cannot write t
 
 ## 1. Trust model, stated brutally
 
-**Split custody.** The AI vendor holds a sealed blob, AES-256-GCM ciphertext, useless to them. We hold the key and hold no blob. Compromise needs our Fly secrets *and* a vendor's token store: ciphertext and key never sit in one organisation.
+**Split custody.** The AI vendor holds a sealed blob, AES-256-GCM ciphertext, useless to them. We hold the key and hold no blob. Compromise needs our Fly secrets *and* a vendor's token store: ciphertext and key never sit in one organisation. The one exception is the invented OpenAI reviewer account (below): its Dropbox token is a Fly secret, so for that account alone our server holds the credential outright.
 
 **What we keep per user: no record of them.** Not "nothing." In memory and outside our control there exist the auth-code `jti` set, per-IP rate maps, the CIMD metadata cache, Fly's proxy/router metadata, and Sentry event metadata. None is health data and none is a per-user row we can query, but the honest claim is *no durable per-user state*, not amnesia.
 
@@ -46,13 +46,22 @@ Closes the gap `docs/guides/getting-started.md` admits: "A web AI cannot write t
 
 **Revocation.**
 - *Can:* expire, access blob 1 h, refresh blob 90 d (§4 explains why that number is ours).
-- *Can:* kill everything at once by rotating `MCP_SEAL_KEYS` with no overlap. All-or-nothing; our only server-side revocation.
+- *Can:* kill everything at once by rotating `MCP_SEAL_KEYS` with no overlap. All-or-nothing; our only server-side revocation for real users. (The reviewer account's sessions also end when its secrets are unset or rotated: below.)
 - *Cannot:* revoke one user. A denylist needs state.
 - *Real kill switch is provider-side,* which is right for local-first: `dropbox.com/account/connected_apps` or `myaccount.google.com/connections`.
 - *Shared app identity is unavoidable.* Separate identities per surface were evaluated and are impossible: Dropbox app-folder scoping and Google `drive.file` visibility are both tied to the app, so a second identity sees an empty folder. Unlinking therefore **also disconnects this website from the folder**. Disclosed, not hidden.
 - *Also lost with the table:* we cannot list which AIs are connected.
 
-**Promise: APPROVED. Additive and conditional; constitution line 11 is untouched** and stays true for every user who never connects an AI. A second paragraph is added beneath it, applying only to those who do:
+**Brad's exception: the OpenAI reviewer sign-in (US-32 AC38, decided 2026-10-02).** OpenAI's reviewer twice stopped at a third-party login: Dropbox challenged an unfamiliar sign-in with an emailed code, which OpenAI's review rules forbid ([the plan](reviews/2026-10-01-chatgpt-reviewer-signin-plan.md)). So the consent page carries one password login, for the exact pinned ChatGPT client id only, and only while three Fly secrets are set: `MCP_REVIEWER_USERNAME`, `MCP_REVIEWER_PASSWORD_SHA256` and `MCP_REVIEWER_DROPBOX_RT`, the refresh token of an invented Dropbox account holding a synthetic record. This is the one password login on the auth server and the one provider credential held server-side, both for an account that belongs to nobody. Every real user's credential stays sealed in their assistant's blob, as above. Reviewer grants carry `rv`, a 16-hex generation hashed from the password hash and the token, and `rt: ''`, never the token; `/token` re-seals the generation and `/mcp` checks it before dispatch, so `fly secrets unset` or a rotated secret ends every reviewer session on its next request of any kind. All reviewer sessions share one connection key, `'reviewer:' + rv`. Between reviews the secrets are unset and the page is exactly what everyone else sees.
+
+| Reviewer threat | Position |
+| --- | --- |
+| Password leaks | The password is the only security boundary: anyone can start the flow with the pinned client id, and the box is shown to every ChatGPT user while a review is pending. What it reaches is the invented record and nothing else. Answer: `npx tsx tools/mcp-reviewer-token.ts --password` and a deploy, which changes `rv` and ends every reviewer session; or unset the secrets. 130 random bits make guessing infeasible; the failures-only limiter (20 per IP per 15 minutes, per machine) only stops noise. |
+| Reviewer token leaks | It opens the reviewer account's app folder: an invented record, nothing else. Revoke it at the reviewer account's Dropbox connected-apps page, or unset the secret. |
+| Kill switch | `flyctl secrets unset -a health-tool-edu MCP_REVIEWER_USERNAME MCP_REVIEWER_PASSWORD_SHA256 MCP_REVIEWER_DROPBOX_RT`: the box disappears and every reviewer grant answers `invalid_grant` at `/token` and 401 at `/mcp`. |
+| A mistaken mint on a real account | `--mint --expect` stages only when Dropbox's returned `account_id` matches and the folder holds the synthetic profile; otherwise it revokes the new token (that token only, not the account's app link) and stages nothing. |
+
+**Promise: APPROVED. Additive and conditional; constitution line 11 is untouched** and stays true for every user who never connects an AI. It holds for every real user; the invented reviewer account above is the one exception, recorded beside the promise in `docs/user-stories.md`. A second paragraph is added beneath it, applying only to those who do:
 
 > *"If you connect an AI assistant, your record still lives only in your storage. To answer one call, our server unseals the sealed credential your assistant holds, opens your folder with it, and holds your record in memory for the length of that request. It stores none of it and keeps no copy. If you would rather no server saw it, the same tools run as a program on your own computer with no server at all. You cancel the connector in your Dropbox or Google settings; that also disconnects this website from your folder, and you can reconnect here in one click."*
 
@@ -183,7 +192,7 @@ cosmetic one. A tool added later without a line here is the same bug again.
 | Threat | Position |
 | --- | --- |
 | **Retroactive key compromise** | An access blob wraps a **non-expiring** provider credential. Our `exp` is *advisory*, enforced only by our own unseal path. A leaked `MCP_SEAL_KEYS` opens **every blob ever issued**, including expired ones captured months earlier. The worst property of the design, and why no-overlap rotation is the default incident response. |
-| **Provider adopts refresh-token rotation** | Verified 2026-09-01: **neither Dropbox nor Google rotates refresh tokens on refresh.** The design depends on it. If either adopts rotation, every connection breaks **simultaneously** with no server-side remedy, we hold no row to update. This closes the door on generic/self-declared providers. |
+| **Provider adopts refresh-token rotation** | Verified 2026-09-01: **neither Dropbox nor Google rotates refresh tokens on refresh.** The design depends on it. If either adopts rotation, every connection breaks **simultaneously** with no server-side remedy, we hold no row to update (only the reviewer account's token, a Fly secret, could be re-minted). This closes the door on generic/self-declared providers. |
 | **Google's 100-refresh-token cap** | Per account **per client id**, shared with the widget. A widget reconnect can therefore **evict the MCP grant** (Google silently drops the oldest). Never mint a spare token. |
 | Vendor token store leaks | **The provider credential is safe; our endpoint is not.** The Dropbox refresh token inside is ciphertext and inert without our key, but the blob itself is a live bearer against `/mcp` until its absolute expiry, and using it needs no key at all. What split custody protects is the PROVIDER credential, not access to this server. |
 | Token passthrough | Forbidden by spec and construction: we mint our own token, validate audience, never forward a provider token. |
@@ -311,7 +320,7 @@ Brad's ruling: build the full thing. The recruitment gate is removed. The phase 
 
 ## 9. What this does not do
 
-No health data in Supabase, and no *anything* in Supabase. No accounts, no passwords, no stored email. No analytics on health content. No delete tool, no `eraseEpoch`, no reminder-token access. No WebDAV, GitHub or self-host in v1, and §4's rotation finding closes generic providers entirely. No per-user revocation, no connection list, no per-user audit trail, value-free counters (`product_events`: `mcp_connect` {client, provider}, `mcp_authorize_shown` / `mcp_authorize_refused` / `mcp_consent_posted` / `mcp_connect_failed` {client, provider, reason}, `mcp_tool_call` {tool, client, outcome}, `mcp_import` {route, phase, file-count bucket}) and nothing that identifies a user. **No Gemini promise:** consumer custom MCP exists only inside Spark tasks, personal accounts, US-only, English-only, 18+.
+No health data in Supabase, and no *anything* in Supabase. No accounts, no passwords (except the one invented reviewer login, §1), no stored email. No analytics on health content. No delete tool, no `eraseEpoch`, no reminder-token access. No WebDAV, GitHub or self-host in v1, and §4's rotation finding closes generic providers entirely. No per-user revocation, no connection list, no per-user audit trail, value-free counters (`product_events`: `mcp_connect` {client, provider, via?}, `mcp_authorize_shown` / `mcp_authorize_refused` / `mcp_consent_posted` / `mcp_connect_failed` {client, provider, reason}, `mcp_tool_call` {tool, client, outcome}, `mcp_import` {route, phase, file-count bucket}) and nothing that identifies a user. **No Gemini promise:** consumer custom MCP exists only inside Spark tasks, personal accounts, US-only, English-only, 18+.
 
 ---
 

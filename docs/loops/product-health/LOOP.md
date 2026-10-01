@@ -60,7 +60,9 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   refused vendor shows here and nowhere else) → `mcp_consent_posted` →
   `mcp_connect` / `mcp_connect_failed` (whose `reason` now covers `/token`
   too: a `token-*` word means a client that reached the last door and still
-  got no token), then `mcp_tool_call` /
+  got no token; exclude `mcp_connect` rows whose `metadata.via` is
+  `reviewer` from connect counts, since those are OpenAI's app reviewers
+  on the invented account, US-32 AC38), then `mcp_tool_call` /
   `mcp_import` / `remote_change_applied` (metadata breakdown by tool, client,
   route, reason, and `backend` local|cloud, since a guest's second tab counts
   too; value-free by design — while n is tiny these are Brad's own

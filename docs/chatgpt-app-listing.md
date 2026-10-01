@@ -1,5 +1,7 @@
 # ChatGPT app listing: Health by Dr Brad
 
+> **Rejected again 2026-09-30. v1.0.2 is the resubmission.** OpenAI declined v1.0.1 with the same sentence as 1.0.0. Our funnel shows two attempts that reached Dropbox and never came back, and the reviewer account's mailbox shows Dropbox asked for an emailed security code at 15:59 UTC: the evidence suggests Dropbox's risk engine challenged the reviewer's sign-in, which OpenAI's rules forbid. 1.0.2 signs OpenAI's reviewer in on our own consent page with a username and password we issue, with no Dropbox or Google login at all (US-32 AC38; [the plan](reviews/2026-10-01-chatgpt-reviewer-signin-plan.md)). Test credentials: Variant C below. The box shows only while the three reviewer secrets are set ([runbook](deploy-runbook-mcp.md#the-openai-reviewer-sign-in-us-32-ac38)).
+
 > **Rejected 2026-09-15. v1.0.1 is the resubmission.** OpenAI declined "Health Roadmap" v1.0.0 (submission `C-Ggl3RkPf6el6`) with one reason, quoted whole: "We're unable to complete your sign-in or OAuth flow. Please ensure valid, working credentials are included and that they include no additional setup or verification to access your service." Two causes, both ours.
 >
 > **One: a redirect our server refused.** The pinned ChatGPT client carried only the first of OpenAI's two callbacks, so `/mcp/authorize` answered a non-redirectable 400 for `https://chatgpt.com/backend-api/aip/connectors/links/oauth/callback`, and the reviewer got a dead window with no error ChatGPT could show. Fixed on main in `ca62912` (2026-09-16) and deployed. Telemetry agrees with the reviewer: we record no completed connection in the review window.
@@ -23,7 +25,7 @@ The form runs in seven sections: **Info, MCP, Skills, Prompts, Testing, Global, 
 | Section | Field | Value |
 | --- | --- | --- |
 | Info | Display name | Health by Dr Brad |
-| Info | Version | 1.0.1 (the field wants "a semantic version greater than the published version") |
+| Info | Version | 1.0.2 (the field wants "a semantic version greater than the published version") |
 | Info | Subtitle (30 char max) | Track labs in your own cloud (28 chars, unchanged from 1.0.0) |
 | Info | Description | the long description below |
 | Info | Category | Healthcare |
@@ -36,15 +38,15 @@ The form runs in seven sections: **Info, MCP, Skills, Prompts, Testing, Global, 
 | Info | Commerce | unchecked. We sell nothing through the connector. |
 | Info | `chatgpt-app-submission.json` | optional upload; ours is generated at `docs/chatgpt-app-submission.json` |
 | MCP | Server URL | https://mcp.drstanfield.com/mcp (unchanged) |
-| MCP | Auth | OAuth 2.1, PKCE, CIMD. The user authorizes their own Dropbox or Google Drive. |
+| MCP | Auth | OAuth 2.1, PKCE, CIMD. The user authorizes their own Dropbox or Google Drive. OpenAI's reviewer instead signs in on our consent page with the username and password under Test credentials. |
 | MCP | Content security policy | blank. No widget, no UI resource, no iframe. |
 | MCP | Tool annotations | the table below, all four hints on all nine tools |
 | Skills | Bundle | none. We ship no skills. |
 | Prompts | Starter prompts | the seven below |
-| Testing | Test credentials | the paste block under Demo credentials |
+| Testing | Test credentials | the Variant C paste block under Demo credentials |
 | Testing | Test cases | five positive, three negative, below |
 | Global | Countries | all available countries. English only, and the support form is global. |
-| Submit | Release notes | "What 1.0.1 adds over 1.0.0" |
+| Submit | Release notes | "What 1.0.2 adds over 1.0.1" |
 
 **Privacy URL.** Use `/pages/connector-privacy`, the notice written for this connector and what 1.0.0 submitted, not `/policies/privacy-policy`. Both answer 200 (checked 2026-09-18).
 
@@ -59,13 +61,13 @@ is due for screening, and evidence-based suggestions with the citation behind ea
 never deleted; a correction appends the new number and marks the old row `entered-in-error`, so your
 history stays auditable. If something is wrong, ask it to file a bug report and it will, as a public
 issue on the project's GitHub, carrying its description of the problem and nothing about you. We
-store nothing. Disconnect at `dropbox.com/account/connected_apps` or
+keep no copy of your record and never store your own cloud credential. Disconnect at `dropbox.com/account/connected_apps` or
 `myaccount.google.com/connections`. This is educational information, not medical advice, and does not
 replace your doctor.
 
 ## Compliance
 
-**We do not collect, solicit, store or retain protected health information (PHI).** The record lives in the user's own Dropbox or Google Drive and stays there. To answer one tool call, the server fetches the file over the user's own credential, holds it in memory for that request, and writes it back if the call was a write. Nothing is persisted: no per-user row, no health table, no health data at rest on our infrastructure (the v1 tables were purged 2026-06-12). Nothing is logged: health values are excluded from logs, Sentry and product analytics, and the reminder capability token is stripped from every read. A file the user drops into the chat is read by ChatGPT itself and never reaches our server; the values ChatGPT read are handled in memory for one request and written to the user's own folder (`file_results`). We send nothing to a model ourselves, except when the user asks to import files from their Dropbox folder: those files (never the record) then go to Anthropic's API for extraction, at the extract step and before the user confirms anything. We keep none of them. Anthropic's commercial terms say they do not train models on customer content, and their privacy centre says API inputs and outputs are deleted within 30 days of receipt or generation, kept longer only to enforce their usage policy or comply with the law (https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data). Otherwise the only model that sees the record is the user's own ChatGPT session.
+**We do not collect, solicit, store or retain protected health information (PHI).** The record lives in the user's own Dropbox or Google Drive and stays there. To answer one tool call, the server fetches the file over the user's own credential, holds it in memory for that request, and writes it back if the call was a write. Nothing is persisted: no per-user row, no health table, no health data at rest on our infrastructure (the v1 tables were purged 2026-06-12). The one exception is a credential, not health data: while a review is pending, the server holds the Dropbox token of an invented reviewer account, so OpenAI's reviewer can sign in without a Dropbox login. Nothing is logged: health values are excluded from logs, Sentry and product analytics, and the reminder capability token is stripped from every read. A file the user drops into the chat is read by ChatGPT itself and never reaches our server; the values ChatGPT read are handled in memory for one request and written to the user's own folder (`file_results`). We send nothing to a model ourselves, except when the user asks to import files from their Dropbox folder: those files (never the record) then go to Anthropic's API for extraction, at the extract step and before the user confirms anything. We keep none of them. Anthropic's commercial terms say they do not train models on customer content, and their privacy centre says API inputs and outputs are deleted within 30 days of receipt or generation, kept longer only to enforce their usage policy or comply with the law (https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data). Otherwise the only model that sees the record is the user's own ChatGPT session.
 
 **Confirmation is the user's, in their own words.** ChatGPT's per-connector "Allow all actions" setting removes the client's own approval prompt, so the three permanent tools (`correct_value`, `update_profile`, `report_feedback`) and both import commits are two-phase on the server: the first call writes nothing and answers with a receipt; the tool text tells ChatGPT to show it and wait for the user's own yes, in their own words, and says a client setting that skips the prompt is not that yes. `add_measurement` and `add_lab_values` say they are for a value the user asked to add, never a fallback for a correction that found no row. Our guide tells users to keep the default prompt on.
 
@@ -117,19 +119,33 @@ Three per tool, as the portal asks. Paste as written.
 
 The form takes exactly five positive cases, each with **Scenario, User prompt, Tool triggered,
 Expected output**, then negative cases with **Scenario** and **User prompt**. All five run on the
-reviewer account under Demo credentials, connected through our consent screen; that account's own
-file is the fixture. `add_lab_values` is not among the five: positive 4 writes lab rows through the
-same validator, and starter prompt 1 exercises it directly.
+reviewer account, signed in through our consent page (Variant C); that account's own file is the
+fixture. `add_lab_values` is not among the five: positive 4 writes lab rows through the same
+validator, and starter prompt 1 exercises it directly.
 
-**Positive 1.** *Scenario:* Read the connected record, the first thing after sign-in. *User prompt:* What's in my health record? *Tool triggered:* `read_record`. *Expected output:* The profile (male, born 1979, 178 cm), 15 seeded measurements, 5 lab rows including a ferritin of 95 ug/L, one supplement, and empty sections for medications, screenings and documents. Nothing is written.
+**Every case must hold on a record earlier reviewers have already used** (US-32 AC38; plan §7 step
+4). Several reviewers share one record and one connection bucket, and a reviewer's write stays. So
+the expected outputs below are relative to the fixture: never an exact count, never a value a
+reviewer has to choose. The generated JSON carries the same wording
+(`docs/chatgpt-app-submission.source.ts`).
 
-**Positive 2.** *Scenario:* Add one measurement the user states in the chat. *User prompt:* Record my weight today as 78 kg. *Tool triggered:* `add_measurement`. *Expected output:* One weight row appended at today's date, confirmed back as 78 kg with the metric and date named. Asking a second time the same day is refused rather than overwritten.
+**Positive 1.** *Scenario:* Read the connected record, the first thing after sign-in. *User prompt:* What's in my health record? *Tool triggered:* `read_record`. *Expected output:* The profile (male, born 1979, 178 cm), at least fifteen measurements and at least five lab results, among them a ferritin result, plus sections for medications, supplements, screenings and documents. Earlier reviewers may have added rows; that is expected. Nothing is written.
+
+**Positive 2.** *Scenario:* Add one measurement the user states in the chat, on a past date. *User prompt:* Record my weight on 2 March 2026 as 78 kg. *Tool triggered:* `add_measurement`. *Expected output:* One weight row dated 2 March 2026, confirmed back with the metric, value and date. If an earlier reviewer already recorded a weight on that date, the tool refuses a second value for the day and offers a correction instead: one value per test per day, never a silent overwrite. Either answer is correct.
 
 **Positive 3.** *Scenario:* Compute the plan from the record. *User prompt:* What should I do next about my health? *Tool triggered:* `get_plan`. *Expected output:* Current values, what screening is due for a man of that age, and evidence-based suggestions, each with its reason and citation, in hedged wording ("may support"). Educational, not medical advice. Nothing is written.
 
-**Positive 4.** *Scenario:* A lab PDF dropped straight into the conversation. ChatGPT reads the file itself; it never reaches our server (US-36, the main addition in 1.0.1). *User prompt:* Here is my blood test. Add the results to my record. (Attach any lab PDF or photo.) *Tool triggered:* `file_results`. *Expected output:* Two calls. The first writes nothing and answers with each printed result matched against the record, its unit as printed, the collection date, and a receipt listing what would be added. After the user says yes in their own words, ChatGPT calls again with `commit`: the values are appended and the document is filed as a metadata-only row, name and date only, no contents.
+**Positive 4.** *Scenario:* A lab PDF dropped straight into the conversation. ChatGPT reads the file itself; it never reaches our server (US-36). *User prompt:* Here is my blood test. Add the results to my record. (Attach the synthetic lab PDF supplied with this submission, not a real person's report.) *Tool triggered:* `file_results`. *Expected output:* Two calls. The first writes nothing and answers with each printed result matched against the record, its unit as printed, the collection date, and a receipt listing what would be added. After the user says yes in their own words, ChatGPT calls again with `commit`: the values are appended and the document is filed as a metadata-only row, name and date only, no contents. If an earlier reviewer already filed the same file, the first call says it was already imported and offers nothing to commit; that is correct too.
 
-**Positive 5.** *Scenario:* Correct a value entered wrongly. The record is append-only, so this supersedes rather than edits. *User prompt:* My ferritin should have been 120, not 95. *Tool triggered:* `correct_value`. *Expected output:* `read_record` first, for the row id and the value to expect. Then two calls to `correct_value`: the first writes nothing and returns a confirm receipt naming the old and new value; only after the user's own yes does the second write. Result: a new ferritin row of 120 at the original date, about 60 days ago and so inside the 90-day window, the 95 row flipped to `entered-in-error`, nothing deleted.
+**Positive 5.** *Scenario:* Correct a value entered wrongly. The record is append-only, so this supersedes rather than edits. *User prompt:* My most recent ferritin should be 10 ug/L higher than it shows. *Tool triggered:* `correct_value`. *Expected output:* `read_record` first, for the most recent ferritin row's id and its current value. Then two calls to `correct_value`: the first writes nothing and returns a confirm receipt naming that value and the value 10 ug/L higher; only after the user's own yes does the second write. Result: a new ferritin row with the higher value at the original date, the old row flipped to `entered-in-error`, nothing deleted and nothing invented.
+
+**Fixture work before submitting (Brad).**
+
+- **A fresh ferritin row.** Add a NEW ferritin row dated within the last few days through the normal write path (the website, or `add_lab_values`), so positive 5's most recent ferritin stays inside the 90-day correction window for the whole review. A correction keeps the original date, so it cannot extend a row's life; only a new row can.
+- **Positive 2's date.** Check 2 March 2026 holds no weight on the reviewer record today. If it does, pick another empty past date and change it here and in the source, then rebuild the JSON.
+- **The synthetic lab PDF (TODO, Brad).** No repo script makes one, so none was generated. What it needs: one page, a made-up clinic name and patient ("Reviewer, Test", male, born 1979), a collection date in the last month, and five or so common results printed with units and reference ranges (LDL cholesterol in mmol/L, HbA1c in %, ferritin in ug/L, TSH in mIU/L, eGFR), every value invented and plausible. Name it `health-by-dr-brad-synthetic-labs.pdf`, attach it to the submission where the form allows a file (or host it at a stable public URL and name that URL in the test case), and never put a real report in its place. Its name is its dedup key: a reviewer who re-sends it gets "already imported", which the expected output covers.
+- **The budget, per full run of the five.** Writes are weighted per connection per hour, and every reviewer shares one bucket. Positive 2 costs 1, positive 4 about 2, positive 5 costs 5 (a correction is charged at its proposal); 1, 3 and the reads cost nothing. About 8 of the 60 an hour, so about seven full runs an hour across all reviewers. About 10 tool calls a run against 120 a minute. `file_results` sends nothing to the extraction model, so the 30 import files a day are untouched. `report_feedback` is not among the five; a reviewer who tries it shares 3 issues a day across every reviewer session, and the Variant C text says so.
+- **Proof.** Run the full positive set twice in a row through the reviewer login (Playwright as ChatGPT, or ChatGPT developer mode); both runs must pass as written.
 
 Three negative cases, in the form's sense: prompts the connector should **not** fire on at all.
 
@@ -191,7 +207,28 @@ MFA, SMS codes, email confirmation (including emailed codes or magic links)".
 - **Loaded and verified.** Profile male, born 1979, 178 cm, plus 15 measurements, 5 lab rows and 1 supplement, so `get_plan` runs first time and positives 1, 3 and 5 all have something to work on. Confirm one lab row is a ferritin of 95 ug/L dated about 60 days ago, or edit positives 1 and 5 to the value that is there.
 - **Placeholders here, values only in the form.** This repository is public, so `[REVIEWER_EMAIL]` and `[REVIEWER_PASSWORD]` never appear in it. The real values live in Brad's private credentials file and in the OpenAI form.
 
-**Variant B is in use.** Variant A is not used; its text stays below as the fallback.
+**Variant C is in use from 1.0.2.** Variants A and B stay below as history: B was the 1.0.1 answer, and the reviewer met Dropbox's emailed code with it.
+
+### Variant C: sign in on our own consent page (1.0.2)
+
+No third-party login at all. The username and password are ours, issued for the review; they open
+the invented reviewer record and nothing else. Values only in the form and Brad's private
+credentials file, never here. Paste block:
+
+> Login URL: https://chatgpt.com (there is no separate login page; follow the steps below)
+> Username: `[REVIEWER_USERNAME]`
+> Password: `[REVIEWER_PASSWORD]`
+>
+> Sign-in steps:
+> 1. Connect Health by Dr Brad in ChatGPT.
+> 2. Our page opens with a box headed "OpenAI app reviewers: sign in here". Enter the username and password above and press **Sign in**. The password is 26 letters and digits, shown in groups of four; spaces, dashes and capitals do not matter.
+> 3. You return to ChatGPT connected. There is no Dropbox or Google sign-in, no code and no email.
+>
+> Please do not press Continue to Dropbox or Google Drive: those buttons are for real users and their own accounts.
+>
+> This account is ours, made for your review. It holds invented data, not a real person's record, and already has a profile and results, so every test case works immediately. Earlier reviewers may have added rows; the test cases allow for that. Bug reports (`report_feedback`) are limited to 3 a day for all reviewer sessions together, so that tool may refuse late in a busy day.
+
+Never give `/mcp/authorize` as the login URL: opened on its own it shows only a plain "start from ChatGPT" page.
 
 ### Variant A: Google Workspace reviewer account (not used, fallback only)
 
@@ -242,6 +279,10 @@ In use. A fresh Dropbox Basic account on a plus-alias of the scratch mailbox, em
 >
 > This account is ours, made for your review. It holds invented data, not a real person's record, and already has a profile and results, so every test case works immediately.
 
+## What 1.0.2 adds over 1.0.1
+
+- **Reviewer sign-in on our own consent screen, for the ChatGPT client only.** OpenAI's reviewer signs in with a username and password we issue, with no Dropbox or Google login.
+
 ## What 1.0.1 adds over 1.0.0
 
 The 1.0.0 form described seven tools, five starter prompts and no prompt list. This is the release
@@ -274,6 +315,16 @@ This is a **resubmission**: a new 1.0.1 version inside the existing app record, 
    - **Testing.** Credentials pasted from Brad's private credentials file, Variant B, the Dropbox reviewer account. Five positive cases, three negative.
    - **Info, by hand.** Display name, subtitle, description, developer identity, website, support URL, privacy URL (`/pages/connector-privacy`), terms URL, the 1.0.0 demo recording link, commerce unchecked, logo unchanged. CSP blank.
    - **Submit.** Release notes written from "What 1.0.1 adds over 1.0.0". Approval does not publish the app: Brad chooses when it goes live.
+
+### 1.0.2, Brad's steps (plan §8)
+
+1. Republish the privacy page (`node scripts/build-privacy-page.mjs --publish`) and the guides (`node scripts/publish-guides.mjs --publish`), so every public custody sentence names the reviewer exception before the box exists.
+2. Stage the three reviewer secrets and deploy, then run the in-machine check ([runbook](deploy-runbook-mcp.md#the-openai-reviewer-sign-in-us-32-ac38)).
+3. The fixture work under Test cases: the fresh ferritin row, positive 2's date, the synthetic lab PDF.
+4. Live verification (plan §7): the check prints `ok`; a Playwright run as ChatGPT on each pinned callback (wrong password first, then right); one connection from ChatGPT developer mode with the reviewer login; the positive set twice; a real WebKit screenshot of the consent page at phone width.
+5. Resubmit from the OpenAI Platform dashboard: **Scan Tools** first, upload the JSON, re-select **Healthcare**, paste Variant C, version 1.0.2, release notes from "What 1.0.2 adds over 1.0.1".
+6. Reply to the rejection email, worded as evidence, not certainty: our logs show two attempts that reached Dropbox and did not return, and the account's mailbox shows Dropbox asked for an emailed code at 15:59 UTC; the new build signs reviewers in on our own page with no third-party login.
+7. After the verdict, unset the three secrets (runbook). Stage them again before each later submission.
 
 ### Still to do
 

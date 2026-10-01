@@ -268,7 +268,7 @@ export interface HostedImporterOptions {
 /** The `ImportSurface` for one hosted call. Built per call, like the adapter; holds nothing after. */
 export function hostedImporter(options: HostedImporterOptions): ImportSurface {
   const { token, adapter, client } = options;
-  const connection = connectionKey(token.rt);
+  const connection = connectionKey(token);
   const audience = audienceFor(token.clientId);
 
   async function sweepStale(nowMs: number, signal: AbortSignal): Promise<void> {

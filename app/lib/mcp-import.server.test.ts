@@ -152,7 +152,7 @@ describe('US-35 AC7 — the receipt names the payload and binds it to one connec
     expect(await refusalOf(surface, 'not.a.receipt')).toMatch(/not valid/);
     expect(await refusalOf(surface, '')).toMatch(/not valid/);
     // A claims block sealed by us but naming a non-UUID id can never form a path.
-    const forged = seal('import', { id: '../health-roadmap', exp: 2_000_000_000, conn: hash(connectionKey('connection-a')), sha256: 'x' }, { clientId: 'c.test', resource: resourceUrl() });
+    const forged = seal('import', { id: '../health-roadmap', exp: 2_000_000_000, conn: hash(connectionKey({ rt: 'connection-a' })), sha256: 'x' }, { clientId: 'c.test', resource: resourceUrl() });
     expect(await refusalOf(surface, forged)).toMatch(/not valid/);
     // The pending file edited in the folder no longer matches the hash the receipt carries.
     const name = [...cloud.files.keys()].find((n) => n.startsWith('imports/'))!;
@@ -167,7 +167,7 @@ describe('US-35 AC7 — the receipt names the payload and binds it to one connec
     const answer = await surface.open({ receipt, accept: [], replace: bogus }, file, NOW, deadline());
     expect('refusal' in answer && answer.refusal).toMatch(/not a candidate/);
     // The whole hourly allowance is still there.
-    expect(chargeWrites(connectionKey('connection-a'), WRITES_PER_HOUR)).toBeNull();
+    expect(chargeWrites(connectionKey({ rt: 'connection-a' }), WRITES_PER_HOUR)).toBeNull();
   });
 
   it('survives a key rotation: a receipt sealed under the previous key still opens', async () => {
@@ -329,7 +329,7 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
     const answer = await atDeadline(surface.open({ receipt: stashed.receipt, accept: [], replace: [] }, file, NOW, deadline()));
     expect(answer).toEqual({ refusal: expect.stringMatching(/did not read in time/) });
     abortedOnce(seen);
-    expect(chargeWrites(connectionKey('rt'), WRITES_PER_HOUR)).toBeNull();
+    expect(chargeWrites(connectionKey({ rt: 'rt' }), WRITES_PER_HOUR)).toBeNull();
   });
 
   it('the commit’s delete is aborted at the deadline; the call still answers and the sweep takes the file later', async () => {
@@ -360,7 +360,7 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
     const cloud = new MemoryCloud();
     cloud.docs.set('labs.pdf', new Blob([PDF]));
     const surface = surfaceOver(new MemoryAdapter(cloud));
-    const key = connectionKey('rt');
+    const key = connectionKey({ rt: 'rt' });
     machineFiles.reset();
     setImportSeams({ extract: async () => { throw new DOMException('signal timed out', 'TimeoutError'); } });
     const bundle = await surface.extract({}, file, NOW, deadline());
@@ -377,7 +377,7 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
     const cloud = new MemoryCloud();
     cloud.docs.set('labs.pdf', new Blob([PDF]));
     const surface = surfaceOver(new MemoryAdapter(cloud));
-    const key = connectionKey('rt');
+    const key = connectionKey({ rt: 'rt' });
     machineFiles.reset();
     const seam = vi.fn();
     setImportSeams({ extract: seam });
@@ -489,7 +489,7 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     cloud.docs.set('a.pdf', new Blob([PDF]));
     const kinds: string[] = [];
     setImportSeams({ extract: async (pages) => { kinds.push(pages[0].type); return letter; } });
-    const key = connectionKey('rt');
+    const key = connectionKey({ rt: 'rt' });
     const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
     if (!('files' in bundle)) throw new Error(bundle.refusal);
     // The listing's order: a.pdf, then the ZIP's entries flattened in the archive's order, then what it skipped.

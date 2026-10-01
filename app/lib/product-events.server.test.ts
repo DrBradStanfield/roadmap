@@ -78,6 +78,10 @@ describe('parseProductEvent', () => {
 
   // The SERVER list carries `reason` too (US-32 AC29). The browser's must not:
   // SERVER_ONLY_EVENT_NAMES keeps mcp_tool_call out, and this keeps the key out.
+  it('does not take the server-only `via` key from a browser (US-32 AC38)', () => {
+    expect(parseProductEvent({ eventName: 'results_viewed', visitorId: VISITOR, metadata: { via: 'reviewer' } })).toBeNull();
+  });
+
   it('does not widen the browser allow-list with the server-only reason key', () => {
     expect(
       parseProductEvent({
@@ -369,6 +373,31 @@ describe('recordServerEvent — the server path validates too', () => {
   it('reports nothing when the metadata is clean', async () => {
     await recordServerEvent('mcp_connect', { client: 'claude', provider: 'dropbox' });
     expect(captureMessage).not.toHaveBeenCalled();
+  });
+
+  // US-32 AC38: the reviewer sign-in's usage signal. `via` is owned by
+  // `mcp_connect` alone; unregistered, cleanMetadata would strip it silently
+  // and keep the row, so this asserts what is STORED.
+  it('stores `via: reviewer` on mcp_connect, and refuses it on every other event', async () => {
+    await recordServerEvent('mcp_connect', { client: 'chatgpt', provider: 'dropbox', via: 'reviewer' });
+    await recordServerEvent('mcp_connect_failed', { client: 'chatgpt', reason: 'reviewer-credentials', via: 'reviewer' } as never);
+    await recordServerEvent('mcp_tool_call', { tool: 'read_record', client: 'chatgpt', outcome: 'ok', via: 'reviewer' } as never);
+    await recordServerEvent('mcp_connect', { client: 'chatgpt', via: 'someone' } as never);
+    expect(inserts.map((row) => row.metadata)).toEqual([
+      { client: 'chatgpt', provider: 'dropbox', via: 'reviewer' },
+      { client: 'chatgpt', reason: 'reviewer-credentials' },
+      { tool: 'read_record', client: 'chatgpt', outcome: 'ok' },
+      { client: 'chatgpt' },
+    ]);
+  });
+
+  it('keeps the three reviewer reasons on mcp_connect_failed (US-32 AC38)', async () => {
+    await recordServerEvent('mcp_connect_failed', { client: 'chatgpt', provider: 'dropbox', reason: 'reviewer-credentials' });
+    await recordServerEvent('mcp_connect_failed', { client: 'chatgpt', provider: 'dropbox', reason: 'reviewer-rate-limited' });
+    await recordServerEvent('mcp_connect_failed', { client: 'chatgpt', provider: 'dropbox', reason: 'reviewer-generation' });
+    expect(inserts.map((row) => (row.metadata as { reason?: string }).reason)).toEqual([
+      'reviewer-credentials', 'reviewer-rate-limited', 'reviewer-generation',
+    ]);
   });
 
   // US-21 phase 3, the same pairing on the server path, where a bad key is

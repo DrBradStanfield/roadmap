@@ -243,6 +243,13 @@ export const MCP_OAUTH_REASONS = [
   'token-replayed',
   /** The refresh token was dead, expired or tampered with. */
   'token-dead-refresh',
+  // US-32 AC38, OpenAI's reviewer sign-in on our own consent page.
+  /** A wrong reviewer username or password. */
+  'reviewer-credentials',
+  /** A reviewer sign-in refused by the failures-only limiter. */
+  'reviewer-rate-limited',
+  /** A reviewer grant whose secrets were unset or rotated since it was minted. */
+  'reviewer-generation',
 ] as const;
 
 export type McpOAuthReason = (typeof MCP_OAUTH_REASONS)[number];

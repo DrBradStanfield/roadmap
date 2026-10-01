@@ -37,6 +37,9 @@ interface ProviderSpec {
   offlineParams: Record<string, string>;
 }
 
+/** Dropbox's scopes, for every live connection and for the reviewer token (`tools/mcp-reviewer-token.ts`). */
+export const DROPBOX_SCOPE = 'files.content.read files.content.write files.metadata.read';
+
 /**
  * Reuse the app's EXISTING OAuth clients, which §1 makes mandatory: Dropbox's
  * app-folder scoping and Google's `drive.file` visibility are both tied to the
@@ -64,7 +67,7 @@ const PROVIDERS: Record<McpProvider, ProviderSpec> = {
     revokeUrl: 'dropbox.com/account/connected_apps',
     authorizeUrl: 'https://www.dropbox.com/oauth2/authorize',
     tokenUrl: DROPBOX_TOKEN_URL,
-    scope: 'files.content.read files.content.write files.metadata.read',
+    scope: DROPBOX_SCOPE,
     idVar: 'DROPBOX_APP_KEY',
     secretVar: 'DROPBOX_APP_SECRET',
     offlineParams: { token_access_type: 'offline' },

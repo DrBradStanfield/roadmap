@@ -185,7 +185,7 @@ flood could drive it:
 
 ### 4.5 Minting, checking and revoking the token
 
-A one-off script, `tools/mcp-reviewer-token.mjs`, run by Brad. Separate modes, so a re-mint never
+A one-off script, `tools/mcp-reviewer-token.ts` (run with `npx tsx`), run by Brad. Separate modes, so a re-mint never
 touches the password (and the password in the OpenAI form never goes stale mid-review):
 
 - **`--password`**: generates the password (§4.1), shows it once, grouped, for Brad's credentials

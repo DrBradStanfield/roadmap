@@ -9,6 +9,7 @@ import { resetMcpWarnings } from './mcp-config.server';
 import { resetCimdCache } from './mcp-clients.server';
 import { resetGithubIssues } from './github-issues.server';
 import { hash, packSealed } from './mcp-seal.server';
+import { reviewerFailures, reviewerGeneration, reviewerRefreshToken } from './mcp-reviewer.server';
 import type { McpProvider } from './mcp-providers.server';
 import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 
@@ -25,6 +26,10 @@ import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
  * lifetime never bounded anyone who wanted one. What bounds the flow is the
  * `__Host-` cookie, the 32-byte provider nonce, PKCE, and the 60-second
  * single-use code. The blob itself carries no credential (see StatePayload).
+ *
+ * A wrong reviewer login (US-32 AC38) re-renders the page with fresh states,
+ * which restamps this clock. Harmless: a state only ever mints a code for the
+ * PKCE challenge it was sealed with, which belongs to the client that started.
  */
 export const STATE_LIFETIME_SECONDS = 30 * 60;
 export const CODE_LIFETIME_SECONDS = 60;
@@ -63,30 +68,34 @@ export interface StatePayload {
   exp: number;
 }
 
-export interface CodePayload {
+/**
+ * What a code, access or refresh blob stands for. A real connection carries the
+ * provider's refresh token, which never leaves a sealed blob. A reviewer grant
+ * (US-32 AC38) carries the reviewer generation and an EMPTY token: the token
+ * itself is a server secret, read only where a provider refresh needs it.
+ */
+export type Grant = { rt: string; rv?: undefined } | { rt: ''; rv: string };
+
+export type CodePayload = Grant & {
   clientId: string;
   provider: McpProvider;
   redirectUri: string;
   codeChallenge: string;
-  /** The provider's refresh token. Never leaves a sealed blob. */
-  rt: string;
   jti: string;
   exp: number;
-}
+};
 
-export interface AccessPayload {
+export type AccessPayload = Grant & {
   clientId: string;
   provider: McpProvider;
-  rt: string;
   exp: number;
-}
+};
 
-export interface RefreshPayload {
+export type RefreshPayload = Grant & {
   clientId: string;
   provider: McpProvider;
-  rt: string;
   exp: number;
-}
+};
 
 export function nowSeconds(nowMs: number): number {
   return Math.floor(nowMs / 1000);
@@ -99,19 +108,17 @@ export function nowSeconds(nowMs: number): number {
  * the 90 days run from consent and not from the last refresh. Without it the
  * lifetime slides: a client that refreshes hourly never reaches an expiry, and
  * "90 days" bounds nothing. Omitted on the code grant, where the clock starts.
+ *
+ * Only the grant's own two fields are re-sealed, so a reviewer grant (US-32
+ * AC38) stays the generation and never becomes a token.
  */
-export function issueTokens(
-  clientId: string,
-  provider: McpProvider,
-  rt: string,
-  nowMs: number,
-  refreshExp?: number,
-) {
-  const access: AccessPayload = { clientId, provider, rt, exp: nowSeconds(nowMs) + ACCESS_LIFETIME_SECONDS };
+export function issueTokens(clientId: string, provider: McpProvider, from: Grant, nowMs: number, refreshExp?: number) {
+  const grant: Grant = from.rv === undefined ? { rt: from.rt } : { rt: '', rv: from.rv };
+  const access: AccessPayload = { clientId, provider, ...grant, exp: nowSeconds(nowMs) + ACCESS_LIFETIME_SECONDS };
   const refresh: RefreshPayload = {
     clientId,
     provider,
-    rt,
+    ...grant,
     exp: refreshExp ?? nowSeconds(nowMs) + REFRESH_LIFETIME_SECONDS,
   };
   return {
@@ -167,9 +174,27 @@ export const claimProposal = (jti: string, lifetimeMs: number, nowMs = Date.now(
  */
 const spentWrites = new Map<string, { used: number; at: number }>();
 
-/** The connection a sealed credential belongs to, named without naming it. */
-export function connectionKey(rt: string): string {
-  return hash(rt);
+/**
+ * The connection a sealed credential belongs to, named without naming it.
+ * Every reviewer session shares one stated bucket (US-32 AC38): writes,
+ * tool-call rate, import files, feedback dedup and confirm receipts.
+ */
+export function connectionKey(grant: Grant): string {
+  return hash(grant.rv === undefined ? grant.rt : `reviewer:${grant.rv}`);
+}
+
+/** The provider refresh token a grant stands for: its own, or the reviewer's secret. */
+export function grantRefreshToken(grant: Grant): string {
+  return grant.rv === undefined ? grant.rt : reviewerRefreshToken();
+}
+
+/**
+ * Is this grant still alive on our side? A real one always is (its expiry is
+ * the seal's). A reviewer grant dies the moment its generation stops being the
+ * current one: secrets unset, the token rotated, or the password changed.
+ */
+export function grantLive(grant: Grant): boolean {
+  return grant.rv === undefined || grant.rv === reviewerGeneration();
 }
 
 export function spendWrites(connection: string, cost: number, nowMs = Date.now()): boolean {
@@ -206,6 +231,7 @@ export function resetMcpMemory(): void {
   spentProposals.clear();
   spentWrites.clear();
   importFiles.reset();
+  reviewerFailures.reset();
   resetCimdCache();
   resetGithubIssues();
   resetMcpWarnings();

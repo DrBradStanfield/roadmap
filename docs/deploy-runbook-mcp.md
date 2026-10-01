@@ -99,7 +99,8 @@ step 8 over Drive **PASSED 2026-09-02**.
    matches it literally.
 2. **OAuth consent screen → Publishing status must be "In production."** If it says
    "Testing", **every refresh token dies after 7 days** and every connection breaks at
-   once, with no server-side remedy, we hold no row to update. This is the single most
+   once, with no server-side remedy, we hold no row to update (only the reviewer
+   account's token, a Dropbox Fly secret, could be re-minted). This is the single most
    important line in this section.
 3. **Scopes: `https://www.googleapis.com/auth/drive.file` only.** It is a non-sensitive
    scope, so the requirement is **brand verification** (app name, logo, homepage, privacy
@@ -285,7 +286,8 @@ says: the record is read in memory to answer one call, no copy is kept, no per-u
 exists, and the user cancels at `dropbox.com/account/connected_apps`. Second, OpenAI's
 developer guidelines list **protected health information under Restricted Data**. Read
 strictly that is a refusal; read as written it is about what the plugin *collects*, and
-we collect and store nothing. **A question for OpenAI, asked before submission, not a
+we collect and store nothing (beyond, while a review is pending, the Dropbox token of one
+invented reviewer account: next section). **A question for OpenAI, asked before submission, not a
 judgement made silently in a form.** If the answer is no, developer mode stays the
 honest path.
 
@@ -294,6 +296,79 @@ submission portal generates for domain verification. `app/routes/[.]well-known.$
 serves it at `/.well-known/openai-apps-challenge` as bare `text/plain`, `no-store`, and
 404s while unset. It answers independently of `isMcpEnabled()`, so ownership can be
 proved before the connector is switched on. Rotate by setting the secret again.
+
+### The OpenAI reviewer sign-in (US-32 AC38)
+
+Why it exists, and Brad's exception: [mcp-architecture.md](mcp-architecture.md) §1 and
+[the plan](reviews/2026-10-01-chatgpt-reviewer-signin-plan.md). In one line: OpenAI's
+reviewer signs in on our consent page with a username and password we issued, and the
+session reads the invented reviewer account's Dropbox record through a token our server
+holds. The box shows for the exact pinned ChatGPT client only, and only while all three
+secrets below are set and well formed. **It is on only while a review is pending.**
+
+**The three secrets, on `health-tool-edu` only.** All three valid, or the feature is off.
+
+| Secret | Shape | Made by |
+| --- | --- | --- |
+| `MCP_REVIEWER_USERNAME` | one plain lowercase word, no `@` | `--password` |
+| `MCP_REVIEWER_PASSWORD_SHA256` | 64 lowercase hex: SHA-256 of the normalised password | `--password` |
+| `MCP_REVIEWER_DROPBOX_RT` | the reviewer account's Dropbox refresh token | `--mint` |
+
+**Both scripts stage, never deploy.** They pipe `NAME=VALUE` lines on stdin to
+`flyctl secrets import --stage -a health-tool-edu`; no value reaches a file, an argument
+or the script's output, except the new password, shown once on screen for Brad to copy.
+Staged secrets take effect on the next deploy. Order does not matter: code first leaves
+the feature off; secrets first are ignored by old code.
+
+```bash
+# The password: shown once, in groups of four. Copy it to the private credentials
+# file and the OpenAI form. At the hidden prompt, press Enter for a new one, or type
+# the password already in the form to stage it again unchanged.
+npx tsx tools/mcp-reviewer-token.ts --password
+
+# The token: from home, where any emailed Dropbox code can be read. Open the printed
+# URL in a PRIVATE window, sign in as the reviewer account, press Allow, paste the
+# code at the hidden prompt, then the app secret from the Dropbox App Console.
+# <account_id> is the reviewer account's id, kept in the private credentials file.
+npx tsx tools/mcp-reviewer-token.ts --mint --expect <account_id>
+```
+
+`--mint` stages the token only if the `account_id` Dropbox returns equals `--expect` AND
+the app folder's `health-roadmap.json` is the synthetic profile (male, born 1979,
+178 cm). Otherwise it prints `mismatch`, stages nothing and revokes the new token (that
+token only; a run on the wrong account leaves that account's own connections alone).
+
+**Check, inside the machine** (Fly secrets cannot be read back). Before submitting, and
+daily until the verdict:
+
+```bash
+fly machine start -a health-tool-edu    # if it is suspended
+fly ssh console -a health-tool-edu -C "node /app/tools/mcp-reviewer-check.mjs"
+```
+
+It prints `ok` or `fail`: the three secrets have the shape the server accepts, the
+token refreshes with the server's own `client_id` + `client_secret` call, and the app
+folder lists.
+
+**Kill switch, and the between-reviews state** (Brad's decision, 2026-10-02). After
+OpenAI's verdict, unset all three. The consent page goes back to exactly what every
+other user sees, with no code change, and every reviewer session ends on its next
+request (`/token` answers `invalid_grant`, `/mcp` 401):
+
+```bash
+flyctl secrets unset -a health-tool-edu MCP_REVIEWER_USERNAME MCP_REVIEWER_PASSWORD_SHA256 MCP_REVIEWER_DROPBOX_RT
+```
+
+A leaked password: run `--password` again and deploy; that changes the generation and
+ends every reviewer session. A leaked token: revoke it at the reviewer account's own
+`dropbox.com/account/connected_apps`, or unset it.
+
+**Before each later submission, stage them again.** Run `--password` (type the old
+password at the prompt to keep it, or press Enter and put the new one in the form). Run
+`--mint` too: an unset token cannot be read back, and nothing kept a copy. To retire the
+old one first, remove the app at the reviewer account's connected-apps page, which
+revokes every token it held, then mint. Deploy, then run the check. Every submission
+needs all three set before OpenAI's reviewer arrives.
 
 ### Listing in Anthropic's Connectors Directory
 

@@ -2,7 +2,8 @@
 
 Published at [drstanfield.com/pages/connector-privacy](https://drstanfield.com/pages/connector-privacy)
 by `node scripts/build-privacy-page.mjs --publish` (last 28 September 2026, from commit
-6b47168). Republish after every edit here; the page is generated, never hand-edited.
+6b47168; edited 2 October 2026 for the OpenAI reviewer sign-in, US-32 AC38, and not yet
+republished). Republish after every edit here; the page is generated, never hand-edited.
 Written 2026-09-02, re-audited 2026-09-07 and 2026-09-10, from the code at
 `app/lib/mcp.server.ts`, `app/lib/mcp-*.server.ts`, `app/routes/mcp.$.tsx` and
 `packages/health-core/src/mcp-tools.ts`.
@@ -77,7 +78,7 @@ where you can delete it yourself.
 ## What we store
 
 For the connector: no account, no copy of your health data, and no row that
-identifies you. The server holds no database of connector users. (The rest of the
+identifies you, with the one exception below. The server holds no database of connector users. (The rest of the
 product does store some things; see "What the rest of the product stores" below.)
 When you connect, we hand your AI assistant an encrypted credential. Your assistant
 stores it. We hold the encryption key and never a copy of the credential, so neither
@@ -86,10 +87,24 @@ meet on our server during a normal call: it unseals the credential to open your 
 for that request, then discards both. A compromised server could capture them at that
 moment; encryption at rest does not protect against that, and we do not claim it does.
 
-Three things sit in the memory of a running server and vanish when it restarts: a short
-list of one-time authorization codes, a count of requests per network address, and a
-count of writes per connection. The write count is keyed on a SHA-256 hash of the
-credential, not on your name, your email or your file.
+One exception, for one invented account. While an OpenAI app review is pending, our
+server holds the Dropbox credential of a synthetic reviewer account we made, so OpenAI's
+reviewer can sign in on our consent page with a username and password we issued instead
+of a Dropbox login. The account belongs to no one and its record is invented. The
+reviewer's assistant holds no credential at all, only a marker that names the current
+reviewer secrets, so removing or changing those secrets ends every reviewer session. It
+is the only password login on the connector and the only storage credential our server
+holds, and it exists only while the secrets are set. Your own credential is never held
+this way.
+
+Some things sit in the memory of a running server and vanish when it restarts. Among
+them: the one-time authorization codes and confirm receipts already used, so neither
+works twice; counts of requests per network address; counts of tool calls, writes and
+imported files per connection; the public bug reports each connection filed recently,
+so a retry does not file twice; a count of failed reviewer sign-ins per network address;
+and a short-lived cache of the descriptions assistants publish about themselves. A
+per-connection count is keyed on a SHA-256 hash of the credential (for the reviewer
+account, of its marker), not on your name, your email or your file.
 
 Our database still carries the tables the old server-stored version used: `lab_values`,
 `health_measurements`, `health_documents`, `medications`, `medication_history`,
@@ -107,8 +122,10 @@ public key that would let a browser talk to it directly ships in none of our bun
 Our hosting provider records ordinary web request lines: the time, the method, the
 path and its query string, and the status code. The web server writes the request line
 as it arrived, so whatever sits in a URL sits in that log. As of 10 September 2026
-nothing secret and nothing about your health travels in one: the lab-import poll carries
-its token in the body of a POST instead. What does appear there is the signature and the
+nothing about your health travels in one: the lab-import poll carries its token in the
+body of a POST instead. One secret does: when you connect, your storage provider sends
+you back to us with a one-time sign-in code in the address, as OAuth requires. It works
+once, and only together with our app secret, which never leaves our server. What does appear there is the signature and the
 timestamp Shopify puts on an app-proxy address, and both expire in ten minutes. Errors
 go to Sentry. Before an event leaves the server, our own code deletes the
 request body, the cookies and the `Authorization` header from it, cuts the request
@@ -134,7 +151,8 @@ expires 90 days after it is issued.
 
 One thing is kept: a count of connector activity. Each row says which tool was called,
 which assistant called it, whether it succeeded, was refused or failed, and when. The
-row that marks a new connection also says which storage provider it uses. An import
+row that marks a new connection also says which storage provider it uses, and whether it
+came through the reviewer sign-in. An import
 adds a row saying which route it took (the Dropbox folder, a ChatGPT file, or a Google
 Drive refusal), which phase (extract or commit), and how many files, as a bucket such as
 "1" or "2-5". No values, no metric names, no file names, no row ids, no identifier, and

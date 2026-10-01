@@ -52,7 +52,11 @@ const metadataSchema = z
  * The word itself is parsed as a plain string and judged against its own
  * EVENT below, because the two vocabularies share this one key.
  */
-const serverMetadataSchema = metadataSchema.extend({ reason: z.string().optional() });
+const serverMetadataSchema = metadataSchema.extend({
+  reason: z.string().optional(),
+  /** US-32 AC38: a connection made through the reviewer sign-in. Server-only, owned by `mcp_connect`. */
+  via: z.enum(['reviewer']).optional(),
+});
 
 /** The event a metadata key belongs to, where the key has no vocabulary of its
  *  own to be judged against (`reason` has EVENT_REASONS). Without this a
@@ -60,6 +64,7 @@ const serverMetadataSchema = metadataSchema.extend({ reason: z.string().optional
 const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   key: ['lab_unit_refused'],
   unit: ['lab_unit_refused'],
+  via: ['mcp_connect'],
 };
 
 /**

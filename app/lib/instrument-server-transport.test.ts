@@ -17,6 +17,8 @@ vi.mock('@sentry/react-router', async (original) => ({
 // Referer), the client's address or a query string, and an outgoing call,
 // child span or root, keeps only the origin of the URL it called.
 const PASSWORD = 'PW_SENTINEL_7f3a';
+const USERNAME = 'USER_SENTINEL_2d9e';
+const RPC_VALUE = 'RPC_SENTINEL_8a4c';
 const BEARER = 'BEARER_SENTINEL_9c1d';
 const COOKIE = 'COOKIE_SENTINEL_4b2e';
 const CODE = 'CODE_SENTINEL_5e8b';
@@ -104,6 +106,10 @@ beforeAll(async () => {
           // inserts: the SDK sends this span as its own root transaction.
           res.end('ok');
           await (await fetch(`${base}/upstream/${ROOT_PATH}.pdf?path=${ROOT_QUERY}`)).text();
+        } else if (req.url === '/mcp') {
+          // US-32 AC38: a tool call that fails inside the server, the one
+          // place a JSON-RPC body (a health value) and a bearer meet an error.
+          Sentry.captureException(new Error(`synthetic tool failure after ${body.length} bytes`));
         } else if (req.url === '/mcp/authorize') {
           // A session cookie set on the response: the SDK copies it into span
           // data by name, as it does a request cookie.
@@ -139,11 +145,23 @@ describe('US-09 AC7: server Sentry envelopes carry no request body, credentials 
         'x-custom-session': CUSTOM_HEADER,
         'x-forwarded-for': `${CLIENT_IP}, 10.0.0.1`,
       },
-      body: new URLSearchParams({ username: 'reviewer', password: PASSWORD }).toString(),
+      body: new URLSearchParams({ state: 'sealed', reviewer: '1', username: USERNAME, password: PASSWORD }).toString(),
     });
     expect(await res.text()).toBe('ok');
     await waitForItems({ error: isError, server: isServer('POST /mcp/authorize') });
-    expectClean([PASSWORD, BEARER, COOKIE, REFERER, CUSTOM_HEADER, CLIENT_IP, SET_COOKIE]);
+    expectClean([USERNAME, PASSWORD, BEARER, COOKIE, REFERER, CUSTOM_HEADER, CLIENT_IP, SET_COOKIE]);
+    expect(rawBodies, 'a body was read before the scrub').toEqual([]);
+  });
+
+  it('sends no JSON-RPC body and no bearer from an /mcp tool call (US-32 AC38)', async () => {
+    const res = await fetch(`${base}/mcp`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${BEARER}` },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'add_measurement', arguments: { metricType: 'ldl', value: RPC_VALUE } } }),
+    });
+    expect(await res.text()).toBe('ok');
+    await waitForItems({ error: isError, server: isServer('POST /mcp') });
+    expectClean([RPC_VALUE, BEARER, 'add_measurement']);
     expect(rawBodies, 'a body was read before the scrub').toEqual([]);
   });
 

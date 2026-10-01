@@ -114,7 +114,7 @@ export const SI_NOTE =
   'keeps the unit it was reported in.';
 
 /** The version the server announces, and the one a report is stamped with. */
-export const SERVER_VERSION = '1.0.1';
+export const SERVER_VERSION = '1.0.2';
 
 /** Bumped when a tool's meaning changes, so an old report reads correctly. v2: a ChatGPT drop is read by the assistant (`file_results`), not downloaded by `import_documents`. */
 export const TOOL_LAYER_VERSION = 2;

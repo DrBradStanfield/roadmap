@@ -23,8 +23,9 @@ export const APP_INFO = {
     'Health by Dr Brad keeps your health record as a single file in your own Dropbox or Google Drive. '
     + 'ChatGPT can read it, add measurements and lab results, correct a value entered wrongly, file the '
     + 'results from a lab report dropped into the chat, and compute a plan: what screening is due, and '
-    + 'evidence-based suggestions with the citation behind each one. Nothing is stored on our servers, and '
-    + 'no value is ever deleted; a correction appends the new number and marks the old row entered-in-error.',
+    + 'evidence-based suggestions with the citation behind each one. Your record and your own cloud credential '
+    + 'are never stored on our servers, and no value is ever deleted; a correction appends the new number and '
+    + 'marks the old row entered-in-error.',
   category: 'LIFESTYLE',
 } as const;
 
@@ -111,21 +112,25 @@ export interface SubmissionTestCase {
   expected_output: string;
 }
 
-/** Exactly five, as the form takes. */
+/**
+ * Exactly five, as the form takes. Every case must hold on a record earlier
+ * reviewers have already used (US-32 AC38; plan §7 step 4), so the expected
+ * outputs are relative to the fixture, never exact counts or fixed values.
+ */
 export const TEST_CASES: SubmissionTestCase[] = [
   {
     description: 'Read the connected record, the first thing after sign-in.',
     user_prompt: "What's in my health record?",
     tools_triggered: 'read_record',
     expected_output:
-      'Returns the profile, seeded measurements and lab results, and empty sections for medications, supplements, screenings and documents. Nothing is written.',
+      'Returns the profile (male, born 1979, 178 cm), at least fifteen measurements and at least five lab results, among them a ferritin result, plus sections for medications, supplements, screenings and documents. Earlier reviewers may have added rows; that is expected. Nothing is written.',
   },
   {
-    description: 'Add one measurement the user states in the chat.',
-    user_prompt: 'Record my weight today as 78 kg.',
+    description: 'Add one measurement the user states in the chat, on a past date.',
+    user_prompt: 'Record my weight on 2 March 2026 as 78 kg.',
     tools_triggered: 'add_measurement',
     expected_output:
-      'Appends one weight row at today’s date and confirms the metric, value and date. A second weight the same day is refused, not overwritten.',
+      'Appends one weight row dated 2 March 2026 and confirms the metric, value and date. If an earlier reviewer already recorded a weight on that date, the tool refuses a second value for the day and offers a correction instead: one value per test per day, never a silent overwrite. Either answer is correct.',
   },
   {
     description: 'Compute the plan from the record.',
@@ -137,18 +142,18 @@ export const TEST_CASES: SubmissionTestCase[] = [
   {
     description:
       'File the results from a lab report dropped into the chat. ChatGPT reads the file itself; it never reaches our server.',
-    user_prompt: 'Here is my blood test. Add the results to my record.',
+    user_prompt: 'Here is my blood test. Add the results to my record. (Attach the synthetic lab PDF supplied with this submission, not a real person’s report.)',
     tools_triggered: 'file_results',
     expected_output:
-      'The first call writes nothing and returns each printed result matched against the record, with units and collection date, plus a receipt. After the user confirms in their own words, a second call commits: values appended, document filed as a metadata-only row.',
+      'The first call writes nothing and returns each printed result matched against the record, with units and collection date, plus a receipt. After the user confirms in their own words, a second call commits: values appended, document filed as a metadata-only row. If an earlier reviewer already filed the same file, the first call says it was already imported and offers nothing to commit; that is correct too.',
   },
   {
     description:
       'Correct a value entered wrongly. The record is append-only, so the old row is superseded rather than edited.',
-    user_prompt: 'My ferritin should have been 120, not 95.',
+    user_prompt: 'My most recent ferritin should be 10 ug/L higher than it shows.',
     tools_triggered: 'correct_value',
     expected_output:
-      'Reads the record for the row id and the value to expect, then returns a confirm receipt naming the seeded ferritin of 95 ug/L and the new value of 120, and writes nothing. After the user’s own yes, a second call appends a ferritin row of 120 at the original date, about 60 days ago and so inside the 90-day window, and marks the 95 row entered-in-error. Nothing is deleted.',
+      'Reads the record for the most recent ferritin row, its id and its current value, then returns a confirm receipt naming that value and the value 10 ug/L higher, and writes nothing. After the user’s own yes, a second call appends a ferritin row with the higher value at the original date and marks the old row entered-in-error. Nothing is deleted and nothing is invented.',
   },
 ];
 

@@ -30,7 +30,7 @@ import { recordServerEvent } from './product-events.server';
 import { type FileLabValue, type FileMeasurement, type RoadmapFile, stableStringify } from '../../packages/health-core/src/roadmap-file';
 import { githubFiler } from './github-issues.server';
 import { isMcpEnabled, issuer } from './mcp-config.server';
-import { type AccessPayload, allowToolCall, chargeWrites, claimProposal, connectionKey, WRITE_COST } from './mcp-grants.server';
+import { type AccessPayload, allowToolCall, chargeWrites, claimProposal, connectionKey, grantLive, grantRefreshToken, WRITE_COST } from './mcp-grants.server';
 import { type McpProvider, providerAccessToken, providerLabel } from './mcp-providers.server';
 import { audienceFor, hash, issueStep, openStep, type StepClaims, unpackSealed } from './mcp-seal.server';
 
@@ -224,7 +224,7 @@ function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile,
 function chargeTool(token: AccessPayload, name: string): GuardRefusal | null {
   const cost = WRITE_COSTS.get(name);
   if (cost === undefined) return null;
-  const spent = chargeWrites(connectionKey(token.rt), cost);
+  const spent = chargeWrites(connectionKey(token), cost);
   return spent === null ? null : { text: spent, reason: 'allowance' };
 }
 
@@ -265,7 +265,7 @@ async function callHostedTool(
     const refusal = charge ? chargeTool(token, name) : null;
     if (refusal) return { ...refusal, isError: true };
   } else {
-    const minted = await providerAccessToken(token.provider, token.rt);
+    const minted = await providerAccessToken(token.provider, grantRefreshToken(token));
     if (!minted) {
       return refuse(
         `${provider} would not renew this connection, so nothing was read and nothing was written. Either the user ` +
@@ -297,7 +297,7 @@ async function callHostedTool(
       savedNote: () => `Saved to the user’s ${provider}.`,
       // With no GitHub token configured the tool falls back to a prefilled URL
       // the user submits — which is all the stdio server can ever do.
-      fileFeedback: name === 'report_feedback' ? (githubFiler(token.provider, connectionKey(token.rt)) ?? undefined) : undefined,
+      fileFeedback: name === 'report_feedback' ? (githubFiler(token.provider, connectionKey(token)) ?? undefined) : undefined,
       // The import reads files through the user's own folder and parks its
       // candidates there (US-35). Built per call and holding nothing, so it
       // is built for every call; which tool uses it is the tool's declaration.
@@ -360,7 +360,7 @@ function withProposal(token: AccessPayload, name: string, args: Record<string, u
   if (answer.isError || !answer.pendingWrite) return answer;
   const { token: confirm, claims } = issueStep(
     'proposal',
-    { subject: callIdentity(name, args), conn: hash(connectionKey(token.rt)), nbfSeconds: PROPOSAL_NBF_SECONDS, ttlSeconds: PROPOSAL_LIFETIME_SECONDS },
+    { subject: callIdentity(name, args), conn: hash(connectionKey(token)), nbfSeconds: PROPOSAL_NBF_SECONDS, ttlSeconds: PROPOSAL_LIFETIME_SECONDS },
     audienceFor(token.clientId),
     Date.parse(now),
   );
@@ -379,7 +379,7 @@ function withProposal(token: AccessPayload, name: string, args: Record<string, u
  */
 function checkConfirm(token: AccessPayload, name: string, args: Record<string, unknown>, confirm: string, now: string): StepClaims | string {
   const nowMs = Date.parse(now);
-  const claims = openStep('proposal', confirm, audienceFor(token.clientId), hash(connectionKey(token.rt)), nowMs);
+  const claims = openStep('proposal', confirm, audienceFor(token.clientId), hash(connectionKey(token)), nowMs);
   if (!claims) {
     return `That confirm receipt is not valid for this connection, or has expired (${PROPOSAL_LIFETIME_SECONDS / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.`;
   }
@@ -461,7 +461,7 @@ function hostedSurface(token: AccessPayload, now: string) {
       // our one shared app identity, so a loop here is a loop at the provider.
       // Not counted: a client stuck in a loop would otherwise write the
       // counter thousands of times and drown the tool it is looping on.
-      if (!allowToolCall(connectionKey(token.rt))) {
+      if (!allowToolCall(connectionKey(token))) {
         return {
           answer: {
             text: 'Too many tool calls from this connection in the last minute. Wait a moment, then try again.',
@@ -537,6 +537,10 @@ export async function mcpEndpoint(request: Request, now = new Date().toISOString
   if (!presented) return unauthorized();
   const token = unpackSealed<AccessPayload>('access', presented);
   if (!token) return unauthorized();
+  // A reviewer grant whose generation is gone (secrets unset or rotated) is
+  // dead for EVERY request — initialize and tools/list included — not only
+  // the ones that would refresh at Dropbox (US-32 AC38).
+  if (!grantLive(token)) return unauthorized();
 
   let text: string;
   try {

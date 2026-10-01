@@ -37,7 +37,10 @@ The same file, the same write path, three ways in.
 
 To answer one hosted call, the server unseals the cloud credential the
 assistant holds, opens the user's folder with it, and holds the record in
-server memory for the length of that request. It stores none of it. Anyone who
+server memory for the length of that request. It stores none of it. (One
+exception, for an invented account: while an OpenAI app review is pending,
+the server holds the reviewer account's Dropbox credential itself; US-32
+AC38.) Anyone who
 does not want that runs surface 2 instead: `tools/mcp-server.ts` is the same
 tool layer over the same file with no server of ours in it at all
 ([docs/guides/getting-started.md](docs/guides/getting-started.md), the hub
