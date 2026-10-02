@@ -29,18 +29,14 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   the proxy/edge answering (machine restart / cold start), not an application
   answer; client code must not treat it as final. Fixed for chat via one-shot
   retry (US-15 AC3, PR #11); same class likely reachable on the other
-  `PROXY_PATH` endpoints — extend only on Sentry evidence. Known residuals
-  (documented, not defects): send retry can duplicate the user row when
-  attempt 1 died mid-pipeline (same as a manual retype; pinning it needs a
-  server test); a 504 while attempt 1 still runs costs one extra LLM spend.
+  `PROXY_PATH` endpoints — extend only on Sentry evidence. Residuals, not
+  defects: a retry can duplicate the user row or cost one extra LLM spend.
 - `[expected][sentry]` 2026-08-12 — The info-level issue titled
   "Chat transient upstream 5xx, retrying once" IS the retry instrumentation
   from PR #11 — ledger it `wontfix` (expected) on first appearance; its rate
   is the transient-failure trend, worth reading, never "fixing". Same on
   sight for self-generated probes (`level=info` + a non-production
-  `environment` tag; 2026-09-07: PR #73's five `bundle-filter-verification`
-  events, ids in docs/sentry-filter-verification-2026-09-07.md): match,
-  `wontfix`; only regrowth matters.
+  `environment` tag; ids: docs/sentry-filter-verification-2026-09-07.md).
 - `[process][review]` 2026-08-12 — Verify a safety claim at the CALL SITE
   that enforces it, not the helper that implements it (round-1 REJECT: dedup
   helper was sound, but the route gates it behind `if (conversationId)`).
@@ -120,9 +116,15 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   bypassed them (6T/6N/6J, US-09 AC16, PR #121). Escape: every standalone test stubs a
   WORKING localStorage. Audit shortcut: `grep -rn "localStorage\." widget-src
   --include=*.ts* | grep -v test` — anything outside lib/storage.ts and a
-  try/catch is this class again. Same run: a scrub that keeps only closed tags
-  can still carry the browser's error NAME (`cause`) value-free; 6M sat
-  unreadable at 32 events for want of it.
+  try/catch is this class again. A scrub keeping only closed tags can still
+  carry the error NAME value-free (`cause`): 6M sat unreadable at 32 events
+  without it, and 6W (10-02, upload `no_files`) repeats the gap.
+- `[class][widget]` 2026-10-02 — Bundled DEPENDENCIES escape our ES2020 floor:
+  tsc checks our source only, and pdfjs-dist 4.9 ships 41 bare
+  `Promise.withResolvers` calls (ES2024) in health-upload.js, so every PDF fails
+  on Safari <17.4 (adversary find, not yet tied to an event). Audit: grep built
+  `assets/*.js` for post-floor APIs (`withResolvers`, `Object.groupBy`,
+  `Array.prototype.findLast`, `structuredClone`) before trusting a floor.
 - `[defect][widget][merge]` 2026-09-18 — The 09-17 fallback (PR #106) ran the
   session on the device copy at `eraseEpoch` 0; `mergeFiles` hands a higher
   epoch the whole file, so the next good load of a once-erased record silently
@@ -147,12 +149,10 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   misuse, not a dead key. Funnel column: `event_name`. The role reads
   product_events, ab_events, feedback, chat_* and reminder_optin_v2 (emails):
   counts and event names only into a public report, never rows.
-- `[gotcha][process]` 2026-08-14 — Fresh cloud containers start on a detached
-  HEAD at origin/main's tip while the local `main` REF lags: diff/typecheck
-  comparisons against `main` silently use stale code. `git checkout -B main
-  origin/main` first. Related: on SHALLOW clones, `git log -S`/`--stat`
-  falsely attribute changes to graft-boundary commits (they diff as whole-tree
-  adds) — verify blob ids across parents before blaming a commit.
+- `[gotcha][process]` 2026-08-14 — Clones are SHALLOW: `git log -S`/`--stat`
+  blame graft-boundary commits (whole-tree adds); `git fetch --deepen=400`.
+  Live-bundle proof without CDN access: the event's debug-meta debug id,
+  grepped in committed `assets/` (10-02: edu-96 = 73291a90).
 - `[class][server]` 2026-09-10 — Shopify's `appProxy` rejects an unsigned
   request by THROWING a 400 Response, and react-router returns a thrown
   Response as-is without `handleError`, so a route catch-all that captures it
