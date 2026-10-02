@@ -367,7 +367,7 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [3] Shuster S et al. "The influence of age and sex on skin thickness, skin collagen and density." *Br J Dermatol*. 1975;93(6):639-643. doi: [10.1111/j.1365-2133.1975.tb05113.x](https://doi.org/10.1111/j.1365-2133.1975.tb05113.x)
 
-[4] Myung SK et al. "Efficacy of Oral Collagen Supplements on Skin Health: A Systematic Review and Meta-Analysis." *Am J Med*. 2025. doi: [10.1016/j.amjmed.2025.04.034](https://doi.org/10.1016/j.amjmed.2025.04.034)
+[4] Myung SK et al. "Effects of Collagen Supplements on Skin Aging: A Systematic Review and Meta-Analysis of Randomized Controlled Trials." *Am J Med*. 2025;138(9):1264-1277. doi: [10.1016/j.amjmed.2025.04.034](https://doi.org/10.1016/j.amjmed.2025.04.034)
 
 [5] Alcock RD et al. "Bone Broth Unlikely to Provide Reliable Concentrations of Collagen Precursors Compared with Supplemental Sources of Collagen Used in Collagen Research." *Front Nutr*. 2019;6:67. doi: [10.3389/fnut.2019.00067](https://doi.org/10.3389/fnut.2019.00067)
 
@@ -399,7 +399,7 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [19] Sangsuwan W et al. "Effect of oral supplementation with collagen hydrolysate on skin elasticity in postmenopausal women." *J Dermatolog Treat*. 2020. doi: [10.1080/09546634.2020.1764906](https://doi.org/10.1080/09546634.2020.1764906)
 
-[20] Kim DU et al. "Oral Intake of Low-Molecular-Weight Collagen Peptide Improves Hydration, Elasticity, and Wrinkling in Human Skin: A Randomized, Double-Blind, Placebo-Controlled Study." *J Med Food*. 2022;25(12):1146-1153. doi: [10.1089/jmf.2022.k.0097](https://doi.org/10.1089/jmf.2022.k.0097)
+[20] Kim J et al. "Oral Supplementation of Low-Molecular-Weight Collagen Peptides Reduces Skin Wrinkles and Improves Biophysical Properties of Skin: A Randomized, Double-Blinded, Placebo-Controlled Study." *J Med Food*. 2022;25(12):1146-1154. doi: [10.1089/jmf.2022.k.0097](https://doi.org/10.1089/jmf.2022.k.0097)
 
 [21] Campos PMM et al. "Oral Supplementation with Hydrolyzed Fish Cartilage Improves the Morphological and Structural Characteristics of the Skin." *Molecules*. 2021;26(16):4832. doi: [10.3390/molecules26164832](https://doi.org/10.3390/molecules26164832)
 
