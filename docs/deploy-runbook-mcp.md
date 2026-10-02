@@ -269,11 +269,12 @@ directory, Gemini, Perplexity, Le Chat, Copilot) is in **[assistant-landscape.md
 Today a user needs **developer mode** to add our connector to ChatGPT, because OpenAI
 keeps unreviewed connectors behind it. Claude needs no equivalent: a custom connector is
 available on any plan. Publishing through OpenAI's review is what removes that step.
-**Nothing here has been submitted.** Every field the form asks for is written out in
-**[chatgpt-app-listing.md](chatgpt-app-listing.md)**: descriptions, category, tool
-annotations, starter prompts, the eleven test cases, the demo-credentials answer, the PHI
-compliance statement, and a numbered dashboard checklist. That file is the working
-document; this section holds only what it depends on.
+**Nothing here has been submitted.** The package is
+[`chatgpt-review/plugin/`](chatgpt-review/plugin/): `plugin.json` holds the descriptions, category,
+starter prompts, test cases and release notes. **[chatgpt-app-listing.md](chatgpt-app-listing.md)**
+is the working document: what goes in the ZIP and what in the dashboard, tool annotations and their
+justifications, the reviewer account, the PHI compliance statement, and a numbered dashboard
+checklist. This section holds only what it depends on.
 
 **Brad's, not an agent's: all of it.** Submission is tied to a verified identity on his
 OpenAI account and to policy acknowledgements he is signing. Identity verification gates

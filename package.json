@@ -27,7 +27,7 @@
     "test:server": "vitest run app/lib",
     "test:watch": "npm run test --workspace=@roadmap/health-core -- --watch",
     "rebuild-index": "npx tsx scripts/rebuild-blog-index.ts",
-    "build:chatgpt-submission": "npx tsx scripts/build-chatgpt-app-submission.ts"
+    "build:chatgpt-plugin": "node docs/chatgpt-review/build-plugin-zip.mjs"
   },
   "type": "module",
   "engines": {

@@ -385,7 +385,8 @@ describe('US-32 AC9 — the hosted server files the issue itself', () => {
     const answer = await twoStep(access, 'report_feedback', REPORT);
 
     expect(answer.isError).toBe(true);
-    expect(answer.text).toBe('GitHub did not answer. Nothing was filed. Try again later.');
+    // US-32 AC39: worded for every failure, not only silence — GitHub may answer and refuse.
+    expect(answer.text).toBe('Feedback could not be filed right now. Nothing was posted. Try again later.');
     expect(answer.structured).toBeUndefined();
     expect(posts).toHaveLength(1);
     // The status, and not one word of the report.
@@ -1776,7 +1777,7 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
 // ---------------------------------------------------------------------------
 import { INSTRUCTIONS } from '../lib/mcp.server';
 import { OPEN_SOURCE_NOTE, SI_NOTE } from '../../packages/health-core/src/mcp-tools';
-import { REPO_URL } from '../../packages/health-core/src/plan';
+import { REPO_PUBLIC, REPO_URL } from '../../packages/health-core/src/plan';
 import { MCP_REFUSAL_REASONS } from '../../packages/health-core/src/product-events';
 
 function toolCallEvents(): Record<string, unknown>[] {
@@ -1784,9 +1785,12 @@ function toolCallEvents(): Record<string, unknown>[] {
 }
 
 describe('US-32 AC28 — every assistant is told the code is open', () => {
-  it('the hosted instructions carry the note and the repository URL', () => {
+  it('the hosted instructions carry the note, and the repository URL only while it opens', () => {
     expect(INSTRUCTIONS).toContain(OPEN_SOURCE_NOTE);
-    expect(INSTRUCTIONS).toContain(REPO_URL);
+    // US-32 AC39: GitHub hides the repository from the public while the account
+    // is flagged, so a reviewer following the URL would meet a 404.
+    expect(INSTRUCTIONS.includes(REPO_URL)).toBe(REPO_PUBLIC);
+    expect(INSTRUCTIONS.includes('github.com')).toBe(REPO_PUBLIC);
     // US-32 AC35: the SI contract is told at connect, not only per tool.
     expect(INSTRUCTIONS).toContain(SI_NOTE);
   });

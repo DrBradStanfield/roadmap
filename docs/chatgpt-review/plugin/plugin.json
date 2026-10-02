@@ -1,0 +1,100 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "health-by-dr-brad",
+  "version": "1.0.2",
+  "description": "A health plan from your own results: the screening that is due and evidence-based suggestions with citations, from a record kept in your own Dropbox or Google Drive.",
+  "author": {
+    "name": "Dr Brad, Inc",
+    "url": "https://drstanfield.com"
+  },
+  "homepage": "https://drstanfield.com/blogs/guides/chatgpt-app",
+  "license": "MIT",
+  "keywords": ["health", "health record", "lab results", "blood tests", "screening"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Health by Dr Brad",
+        "shortDescription": "Track labs in your own cloud",
+        "longDescription": "Health by Dr Brad works out a health plan from your own results: which screening is due at your age, and evidence-based suggestions, each with the reason and the published citation behind it. In ChatGPT you can ask what your plan says next, add measurements and lab results, file the results from a lab report you drop into the chat, and correct a value entered wrongly. For a test our catalogue knows, the unit is checked before the result is saved, and a unit spelling we do not know is refused rather than guessed. Your record is a single file, health-roadmap.json, in your own Dropbox or Google Drive. We keep no copy of your record and never store your own cloud credential. Values are never deleted: a correction adds the new number and marks the old one entered-in-error, so your history stays auditable. You can disconnect at any time at dropbox.com/account/connected_apps or myaccount.google.com/connections. This is educational information, not medical advice, and does not replace your doctor.",
+        "developerName": "Dr Brad, Inc",
+        "category": "Healthcare",
+        "capabilities": [
+          "Compute your screening and suggestion plan",
+          "Read your health record",
+          "Add measurements and lab results",
+          "Correct a recorded value"
+        ],
+        "websiteURL": "https://drstanfield.com",
+        "supportURL": "https://drstanfield.com/pages/contact",
+        "privacyPolicyURL": "https://drstanfield.com/pages/connector-privacy",
+        "termsOfServiceURL": "https://drstanfield.com/policies/terms-of-service",
+        "defaultPrompt": [
+          "Add my blood test results from today.",
+          "What does my plan say I should do next?",
+          "Show me how my LDL has changed over the past year."
+        ],
+        "composerIcon": "./assets/logo.png",
+        "logo": "./assets/logo.png"
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Read the connected record, the first thing after sign-in.",
+              "prompt": "What's in my health record?",
+              "tools_triggered": "read_record",
+              "expected_behavior": "Returns the profile (male, born 1979, 178 cm), at least fifteen measurements and at least five lab results, among them a ferritin result, plus sections for medications, supplements, screenings and documents. Earlier reviewers may have added rows; that is expected. Nothing is written."
+            },
+            {
+              "description": "Add one measurement the user states in the chat, on a past date.",
+              "prompt": "Record my weight on 2 March 2026 as 78 kg.",
+              "tools_triggered": "add_measurement",
+              "expected_behavior": "Appends one weight row dated 2 March 2026 and confirms the metric, value and date. If an earlier reviewer already recorded a weight on that date, the tool refuses a second value for the day and offers a correction instead: one value per test per day, never a silent overwrite. Either answer is correct."
+            },
+            {
+              "description": "Compute the plan from the record.",
+              "prompt": "What should I do next about my health?",
+              "tools_triggered": "get_plan",
+              "expected_behavior": "Returns current values, what screening is due, and evidence-based suggestions with a reason and citation each, in hedged educational wording. Nothing is written."
+            },
+            {
+              "description": "File the results from a lab report dropped into the chat. ChatGPT reads the file itself; it never reaches our server. Attach the synthetic report at the file attachment URL: invented data for app review, not a real person's report.",
+              "prompt": "Here is my blood test. Add the results to my record.",
+              "tools_triggered": "file_results",
+              "expected_behavior": "The first call writes nothing and returns each printed result matched against the record, with units and collection date, plus a receipt. After the user confirms in their own words, a second call commits: values appended, document filed as a metadata-only row. If an earlier reviewer already filed the same file, the first call says it was already imported and offers nothing to commit; that is correct too.",
+              "file_attachment_urls": [
+                "https://cdn.shopify.com/s/files/1/0790/6109/0503/files/sample-lab-report.pdf?v=1790902633"
+              ]
+            },
+            {
+              "description": "Correct a value entered wrongly. The record is append-only, so the old row is superseded rather than edited.",
+              "prompt": "My most recent ferritin should be 10 ug/L higher than it shows.",
+              "tools_triggered": "read_record, correct_value",
+              "expected_behavior": "Reads the record for the most recent ferritin row, its id and its current value, then returns a confirm receipt naming that value and the value 10 ug/L higher, and writes nothing. After the user's own yes, a second call appends a ferritin row with the higher value at the original date and marks the old row entered-in-error. Nothing is deleted and nothing is invented."
+            }
+          ],
+          "negative": [
+            {
+              "description": "A general medical question that does not touch the user's own record. The app should not be invoked: ChatGPT answers from its own knowledge.",
+              "prompt": "What does high ferritin usually mean?"
+            },
+            {
+              "description": "Diet planning. The app stores and reads a health record and writes no meal plans, so no tool matches. The app should not be invoked.",
+              "prompt": "Write me a seven-day meal plan for lowering my cholesterol."
+            },
+            {
+              "description": "Booking or contacting a clinician. The app has no scheduling, no directory and no messaging, so it cannot book or contact anyone. The app should not be invoked.",
+              "prompt": "Book me an appointment with a doctor near me this week."
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "Health by Dr Brad sells nothing through ChatGPT: there is no checkout and nothing to buy."
+      },
+      "publication": {
+        "countries": [],
+        "release_notes": "1.0.2 changes how OpenAI's reviewer signs in. The reviewer now signs in on our own consent page with a username and password we issue for the review: no Dropbox or Google sign-in, no code and no email. This sign-in is offered to the ChatGPT client only. This is also our first plugin package upload. It keeps the same nine tools and four prompts as 1.0.1. The starter prompts drop from seven to three, the new limit."
+      }
+    }
+  }
+}

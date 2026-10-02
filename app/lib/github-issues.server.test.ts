@@ -31,9 +31,26 @@ describe('the GitHub call is bounded in time', () => {
     const started = Date.now();
     const answer = await githubFiler('dropbox', 'connection-a')!(ISSUE);
 
-    expect(answer).toEqual({ ok: false, refusal: 'GitHub did not answer. Nothing was filed. Try again later.' });
+    expect(answer).toEqual({ ok: false, refusal: 'Feedback could not be filed right now. Nothing was posted. Try again later.' });
     expect(Date.now() - started).toBeLessThan(12_000);
   });
+});
+
+describe('US-32 AC39 — a refusal from GitHub is answered honestly', () => {
+  // GitHub flagged the account on 2026-09-18 and hides the repository from the
+  // public; a POST it refuses (403, 410, 422) must not read as silence.
+  for (const status of [403, 410, 422]) {
+    it(`answers a ${status} with nothing posted, and logs the status alone`, async () => {
+      vi.stubGlobal('fetch', async () => new Response(JSON.stringify({ message: 'quoted report text' }), { status }));
+      const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const answer = await githubFiler('dropbox', 'connection-a')!(ISSUE);
+
+      expect(answer).toEqual({ ok: false, refusal: 'Feedback could not be filed right now. Nothing was posted. Try again later.' });
+      for (const call of errors.mock.calls) expect(JSON.stringify(call)).not.toContain('quoted report text');
+      errors.mockRestore();
+    });
+  }
 });
 
 describe('one connection files three reports a day', () => {

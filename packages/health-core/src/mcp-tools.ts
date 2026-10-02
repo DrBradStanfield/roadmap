@@ -25,7 +25,7 @@ import {
   type UnifiedExtractionResult,
   VALID_METRICS,
 } from './lab-extraction';
-import { computePlan, oneLine, PlanError, planPayload, printable, REPO_SLUG, REPO_URL } from './plan';
+import { computePlan, oneLine, PlanError, planPayload, printable, REPO_PUBLIC, REPO_SLUG, REPO_URL } from './plan';
 import {
   appendLabValue,
   appendMeasurement,
@@ -90,9 +90,11 @@ export const FEEDBACK_REPO = REPO_SLUG;
  * instead of a promise, and can read what a tool does before reporting it.
  * It starts with a space: both servers append it to a sentence.
  */
-export const OPEN_SOURCE_NOTE =
-  ` These tools are open source at ${REPO_URL}, MIT licensed. Read the code if the user asks how something ` +
-  'works, and use report_feedback to propose a change.';
+export const OPEN_SOURCE_NOTE = REPO_PUBLIC
+  ? ` These tools are open source at ${REPO_URL}, MIT licensed. Read the code if the user asks how something ` +
+    'works, and use report_feedback to propose a change.'
+  // US-32 AC39: no URL while the repository 404s to the public.
+  : ' These tools are open source, MIT licensed. Use report_feedback to propose a change.';
 
 /**
  * The unit contract, told at connect on both servers (US-32 AC35). A number
@@ -1008,8 +1010,12 @@ export async function fileFeedback(
   if (!result.ok) return { status: 'rejected', text: result.refusal };
   return {
     status: 'ok',
-    text: `Filed as ${result.url}. Tell the user their report is in — it is a public issue on the project’s ` +
-      'GitHub, carrying their description and nothing about them or their health record.',
+    text: REPO_PUBLIC
+      ? `Filed as ${result.url}. Tell the user their report is in — it is a public issue on the project’s ` +
+        'GitHub, carrying their description and nothing about them or their health record.'
+      // US-32 AC39: GitHub hides the repository while the account is flagged; the issue exists, its link 404s.
+      : `Filed as issue #${result.number}. Tell the user their report is in, carrying their description and nothing ` +
+        'about them or their health record. The project’s GitHub is temporarily not public, so the link will not open for them yet.',
     data: { filed: true, url: result.url, number: result.number, kind: request.kind, title: prepared.title },
   };
 }
@@ -2368,9 +2374,11 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       additionalProperties: false,
     },
     // Not read-only and open-world: this one leaves the user's own file behind
-    // and writes something public on someone else's system. Not destructive —
-    // it takes nothing away — and not idempotent: two calls file two issues.
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    // and writes something public on someone else's system. Destructive: it
+    // takes nothing away, but a sent issue cannot be unsent, and OpenAI's review
+    // counts an irreversible send as destructive (US-32 AC39). Not idempotent:
+    // two calls file two issues.
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
   }),
   {
     name: 'import_documents',

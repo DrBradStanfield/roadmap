@@ -35,6 +35,14 @@ export const REPO_SLUG = 'DrBradStanfield/roadmap';
 /** Where an assistant reads the code, and where report_feedback files an issue. */
 export const REPO_URL = `https://github.com/${REPO_SLUG}`;
 
+/**
+ * False while GitHub has the account flagged (since 2026-09-18) and the
+ * repository answers 404 to everyone but its owner: agent-facing text then
+ * names no repository URL, because a reviewer who follows one meets a 404
+ * (US-32 AC39). Restoring the links is this one edit.
+ */
+export const REPO_PUBLIC = false;
+
 export const SCHEMA_URL =
   `https://raw.githubusercontent.com/${REPO_SLUG}/main/docs/health-roadmap-file.schema.json`;
 
@@ -289,14 +297,18 @@ export function planPayload(plan: Plan) {
       title: s.title,
       description: s.description,
       ingredients: s.ingredients ?? [],
-      link: s.link ?? null,
+      // No `link`: on the widget it is a product link (an affiliate short link,
+      // a brand's shop), and a plugin must not serve ads (US-32 AC39). Evidence
+      // lives in `references` and `guidelines`, never in `link`.
       reason: s.reason ?? null,
       guidelines: s.guidelines ?? [],
       references: s.references ?? [],
     })),
     // `repo` makes the two paths below resolvable: without it an assistant is
-    // holding file names it cannot open.
-    source: { repo: REPO_URL, schema: SCHEMA_URL, tool: 'tools/get-plan.ts', docs: 'docs/agent-access.md' },
+    // holding file names it cannot open. Null while the repository 404s (AC39).
+    source: {
+      repo: REPO_PUBLIC ? REPO_URL : null, schema: REPO_PUBLIC ? SCHEMA_URL : null, tool: 'tools/get-plan.ts', docs: 'docs/agent-access.md',
+    },
   };
 }
 

@@ -46,8 +46,11 @@ const CONNECTION_CAP = 512;
 /** How long we wait on GitHub before calling it unanswered. */
 const GITHUB_TIMEOUT_MS = 8000;
 
-/** One wording for every way GitHub can fail us: the agent can only retry. */
-const UNAVAILABLE = { ok: false, refusal: 'GitHub did not answer. Nothing was filed. Try again later.' } as const;
+/**
+ * One wording for every way GitHub can fail us — silence, a 5xx, or a refusal
+ * such as a flagged account's (US-32 AC39): the agent can only retry.
+ */
+const UNAVAILABLE = { ok: false, refusal: 'Feedback could not be filed right now. Nothing was posted. Try again later.' } as const;
 
 const filedAt: number[] = [];
 const recent = new Map<string, { url: string; number: number; at: number }>();

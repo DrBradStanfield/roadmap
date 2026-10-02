@@ -52,7 +52,7 @@ import {
   SERVER_VERSION,
   TOOL_LAYER_VERSION,
 } from './mcp-tools';
-import { REPO_SLUG, REPO_URL, SCHEMA_URL } from './plan';
+import { computePlan, REPO_PUBLIC, REPO_SLUG, REPO_URL, SCHEMA_URL } from './plan';
 import { dayOf, mergeFiles, stampFields } from './merge';
 import { migrateFile } from './migrate';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
@@ -282,10 +282,32 @@ describe('US-32 — get_plan', () => {
     expect(ids).not.toContain('lipid-diet');
   });
 
-  it('keeps each suggestion’s link beside its reason and references', () => {
-    const parsed = JSON.parse(ok(getPlan(base(), NOW)).text);
-    for (const suggestion of parsed.suggestions) expect(suggestion).toHaveProperty('link');
-  });
+  // US-32 AC39: OpenAI's plugin guidelines — "Plugins must not serve
+  // advertisements" — and our listing declares commerce false. The skin cards
+  // carry product links (an Amazon affiliate short link, a brand's own shop);
+  // the agent shape drops `link` and keeps the evidence, which lives in
+  // `references` and `guidelines`. Both unit systems: the sunscreen link differs.
+  for (const unitSystem of ['si', 'conventional'] as const) {
+    it(`drops every product link from get_plan and keeps each card and its evidence word for word (${unitSystem})`, () => {
+      const file = base();
+      file.profile.unitSystem = unitSystem;
+      const widget = computePlan(file, new Date(NOW)).results.suggestions;
+      // The widget path is unchanged: its cards still carry the links it renders.
+      expect(widget.find((s) => s.id === 'skin-moisturizer')?.link).toMatch(/^https:\/\/amzn\.to\//);
+      expect(widget.find((s) => s.id === 'skin-sunscreen')?.link).toMatch(/^https:\/\//);
+
+      const text = ok(getPlan(file, NOW)).text;
+      for (const commercial of ['amzn.to', 'amazon.com', 'beautyofjoseon.com']) expect(text).not.toContain(commercial);
+      const agent = JSON.parse(text).suggestions as Record<string, unknown>[];
+      expect(agent.filter((s) => 'link' in s).map((s) => s.id)).toEqual([]);
+      expect(agent).toEqual(widget.map((s) => ({
+        id: s.id, category: s.category, priority: s.priority, title: s.title, description: s.description,
+        ingredients: s.ingredients ?? [], reason: s.reason ?? null, guidelines: s.guidelines ?? [], references: s.references ?? [],
+      })));
+      const evidence = agent.flatMap((s) => s.references as { url: string }[]);
+      expect(evidence.some((r) => r.url.startsWith('https://doi.org/'))).toBe(true);
+    });
+  }
 
   it('refuses, rather than throws, when the record has no height or sex', () => {
     const file = base();
@@ -716,10 +738,11 @@ describe('US-32 — the dispatcher', () => {
     expect(MCP_TOOLS.filter((t) => t.annotations.readOnlyHint).map((t) => t.name))
       .toEqual(['read_record', 'get_plan']);
     // A correction supersedes a row for good, and a profile write overwrites
-    // the only copy there is; both claim to destroy, and nothing else does.
-    // An import's `replace` is a correction (US-35 AC12, US-36 AC7).
+    // the only copy there is; both claim to destroy. An import's `replace` is a
+    // correction (US-35 AC12, US-36 AC7). A filed issue is a send that cannot be
+    // taken back, which OpenAI's review counts as destructive (US-32 AC39).
     expect(MCP_TOOLS.filter((t) => t.annotations.destructiveHint).map((t) => t.name))
-      .toEqual(['correct_value', 'update_profile', 'import_documents', 'file_results']);
+      .toEqual(['correct_value', 'update_profile', 'report_feedback', 'import_documents', 'file_results']);
     // file_results is closed-world: no file host, no model — nothing leaves the record (US-36 AC7).
     expect(MCP_TOOLS.filter((t) => t.annotations.openWorldHint).map((t) => t.name)).toEqual(['report_feedback', 'import_documents']);
     for (const tool of MCP_TOOLS) {
@@ -1025,6 +1048,17 @@ describe('US-32 AC9 — a surface that can file, files it', () => {
     const data = OUTPUTS.report_feedback.parse((outcome as { data: unknown }).data);
     expect(data).toEqual({ filed: true, url: 'https://github.com/DrBradStanfield/roadmap/issues/7', number: 7, kind: 'bug', title: GOOD.title });
     expect(outcome.status === 'ok' && outcome.file).toBeUndefined();
+  });
+
+  // US-32 AC39: while GitHub hides the repository, the issue exists but its
+  // link 404s for the user, so the answer must not promise a public issue.
+  it('calls the issue public, and its link one to open, only while the repository is public', async () => {
+    const { filer } = spy();
+    const outcome = await fileFeedback(GOOD, NOW, filer);
+    expect(outcome.status).toBe('ok');
+    expect(outcome.text.includes('public issue')).toBe(REPO_PUBLIC);
+    expect(outcome.text.includes('will not open for them yet')).toBe(!REPO_PUBLIC);
+    expect(outcome.text).toContain('nothing about them or their health record');
   });
 
   /**
@@ -2286,14 +2320,20 @@ describe('US-32 AC28 — the assistant is told the code is open', () => {
     expect(REPO_URL).toBe(`https://github.com/${REPO_SLUG}`);
     expect(SCHEMA_URL.startsWith(`https://raw.githubusercontent.com/${REPO_SLUG}/`)).toBe(true);
 
-    expect(OPEN_SOURCE_NOTE).toContain(REPO_URL);
+    // US-32 AC39: the note names the repository only while it opens for the
+    // public; the licence and the way to propose a change stay either way.
+    expect(OPEN_SOURCE_NOTE.includes(REPO_URL)).toBe(REPO_PUBLIC);
+    expect(OPEN_SOURCE_NOTE.includes('github.com')).toBe(REPO_PUBLIC);
     expect(OPEN_SOURCE_NOTE).toContain('open source');
+    expect(OPEN_SOURCE_NOTE).toContain('MIT licensed');
     expect(OPEN_SOURCE_NOTE).toContain('report_feedback');
   });
 
-  it('gives get_plan a repo the paths beside it can be found in', () => {
-    const source = JSON.parse(ok(getPlan(base(), NOW)).text).source as Record<string, string>;
-    expect(source.repo).toBe(REPO_URL);
+  it('gives get_plan a repo the paths beside it can be found in, while it can be', () => {
+    const source = JSON.parse(ok(getPlan(base(), NOW)).text).source as Record<string, string | null>;
+    // US-32 AC39: a URL that 404s is worse than none, so both are null while the repository is hidden.
+    expect(source.repo).toBe(REPO_PUBLIC ? REPO_URL : null);
+    expect(source.schema).toBe(REPO_PUBLIC ? SCHEMA_URL : null);
     // Without `repo` these two are file names an assistant cannot open.
     expect(source.tool).toBe('tools/get-plan.ts');
     expect(source.docs).toBe('docs/agent-access.md');
