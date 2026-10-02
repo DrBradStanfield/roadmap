@@ -41,6 +41,11 @@
   data-clarity-mask="true"
   data-upload-url="{{ 'health-upload.js' | asset_url }}"
   data-assistant-name="{{ shop.metafields.health_roadmap.chat_assistant_name | default: 'Brad AI' | escape }}"
+  {% comment %} US-44: on a funnel page (/pages/start) the visitor already gave
+       their email, so "Save as PDF" shows without the email box. Off by default;
+       the homepage and /pages/roadmap blocks carry no settings and stay gated.
+       Non-trimming tags keep the space between attributes. {% endcomment %}
+  data-skip-email-gate="{{ block.settings.skip_email_gate }}"
 >
   <div class="hr-skeleton" aria-hidden="true">
     <div class="hr-skel-tabbar">&nbsp;</div>
@@ -83,6 +88,13 @@
 {
   "name": "Health by Dr Brad",
   "target": "section",
-  "settings": []
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "skip_email_gate",
+      "label": "Skip the email box before Save as PDF (funnel pages only)",
+      "default": false
+    }
+  ]
 }
 {% endschema %}

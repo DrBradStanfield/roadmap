@@ -1173,6 +1173,15 @@ input[type="number"] {
   line-height: 1.4;
 }
 
+/* US-44 — the funnel page's optional reminders line names itself. */
+.email-capture-label {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-gray-dark);
+}
+
 .email-capture {
   background: #fff;
   border-radius: 12px;

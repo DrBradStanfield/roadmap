@@ -27,6 +27,7 @@ import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmail
 import { trackABConversion, trackProductEvent } from '../lib/server-api';
 import { EMAIL_REGEX } from '../lib/email';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
+import { getSkipEmailGate } from '../lib/assistant-config';
 import { ColumnHeader } from './ColumnHeader';
 import { StorageNotice } from '../lib/storage-notice';
 import { FeedbackForm } from './FeedbackForm';
@@ -307,7 +308,9 @@ function renderGroupedSuggestions(suggestions: Suggestion[], highlightedIds?: Se
   return elements;
 }
 
-type GuestEmailState = 'idle' | 'sending' | 'captured';
+// 'skipped' + 'reminded' are US-44's funnel-page states: the block skips the
+// email gate, so the box only offers reminders and nothing is persisted.
+type GuestEmailState = 'idle' | 'sending' | 'captured' | 'skipped' | 'reminded';
 
 // On local-first the capture button DELIVERS the plan by opening the browser
 // save-as-PDF window; the email field only subscribes to Klaviyo (no plan is
@@ -318,6 +321,12 @@ export const LOCAL_FIRST_EMAIL_HELPER = 'Get a PDF of your personalized plan, wi
  *  surface the click opens the browser save-as-PDF window, so the label is
  *  PDF-accurate (the email field only subscribes to Klaviyo). */
 export const GUEST_CAPTURE_BUTTON_LABEL = 'Get My Health Plan';
+
+/** US-44: the funnel page's optional reminders line (no email gate there). */
+export const REMINDER_SIGNUP_LABEL = 'Email me when a check-up is due';
+export const REMINDER_SIGNUP_HELPER = "Optional. You don't need this to save your PDF.";
+export const REMINDER_SIGNUP_BUTTON = 'Remind me';
+export const REMINDER_SIGNUP_DONE = "You're signed up. We'll email you when a check-up is due.";
 
 /** Open the print/save-as-PDF window for a built report (shared by the Print
  *  button and, on local-first, the email-capture button). */
@@ -338,15 +347,19 @@ interface GuestEmailHook {
   state: GuestEmailState;
   helperText: string;
   handleSubmit: () => void;
+  /** US-44: this page's block skips the email gate (read from the page, never stored). */
+  gateSkipped?: boolean;
 }
 
 function useGuestEmailCapture(): GuestEmailHook {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
+  // US-44: the page decides, once per mount. Never written to the record.
+  const [gateSkipped] = useState(getSkipEmailGate);
   // Returning local-first users who already captured: skip the email box and
   // land straight on the "Save as PDF" view (the flag lives in their own cloud).
   const [state, setState] = useState<GuestEmailState>(
-    () => (getReportEmailCaptured() ? 'captured' : 'idle'),
+    () => (getReportEmailCaptured() ? 'captured' : gateSkipped ? 'skipped' : 'idle'),
   );
   const helperText = LOCAL_FIRST_EMAIL_HELPER;
 
@@ -358,6 +371,19 @@ function useGuestEmailCapture(): GuestEmailHook {
     }
     setEmailError('');
     setState('sending');
+
+    if (gateSkipped) {
+      // US-44 AC3: reminders only. The PDF has its own button, so no print
+      // window, and nothing is marked captured. Same enrolment call as below.
+      const result = await sendGuestReport(trimmed);
+      if (result.success) {
+        setState('reminded');
+      } else {
+        setEmailError(result.error || 'Failed to send. Please try again.');
+        setState('skipped');
+      }
+      return;
+    }
 
     // Local-first: the button DELIVERS the plan — open the save-as-PDF window
     // FIRST (it builds client-side, so this stays inside the click's user
@@ -381,7 +407,56 @@ function useGuestEmailCapture(): GuestEmailHook {
     }
   };
 
-  return { email, setEmail, emailError, setEmailError, state, helperText, handleSubmit };
+  return { email, setEmail, emailError, setEmailError, state, helperText, handleSubmit, gateSkipped };
+}
+
+/** US-44: the funnel page's box. The gate is skipped (Save as PDF sits in the
+ *  plan header), so this only enrols check-up reminders, and only if asked. */
+function ReminderSignup({ hook }: { hook: GuestEmailHook }) {
+  const { email, setEmail, emailError, setEmailError, state, handleSubmit } = hook;
+
+  if (state === 'reminded') {
+    return (
+      <div className="email-capture no-print">
+        <p className="email-guest-helper" role="status">{REMINDER_SIGNUP_DONE}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="email-capture no-print">
+      <label htmlFor="reminderEmail" className="email-capture-label">{REMINDER_SIGNUP_LABEL}</label>
+      <p className="email-guest-helper">{REMINDER_SIGNUP_HELPER}</p>
+      <div className="email-capture-row">
+        <input
+          type="email"
+          id="reminderEmail"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => { setEmail(e.target.value); setEmailError(''); }}
+          onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+          className={emailError ? 'error' : ''}
+        />
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={handleSubmit}
+          disabled={state === 'sending'}
+        >
+          {state === 'sending' ? 'Sending...' : REMINDER_SIGNUP_BUTTON}
+        </button>
+      </div>
+      {emailError && <span className="email-capture-error">{emailError}</span>}
+      {/* US-23 AC4 + AC11 — the same disclosure, worded for a sign-up that no
+          longer stands between the visitor and their plan. */}
+      <p className="email-capture-disclosure">
+        Signing up adds you to the <strong>MicroVitamin mailing list</strong> (Dr Brad's
+        supplement company), and we'll email you when a check-up or blood test is due. We store only
+        check-up names and dates, never your results. Every email has a one-click unsubscribe.
+      </p>
+      <StorageNotice surface="email" className="email-guest-helper" />
+    </div>
+  );
 }
 
 export function GuestEmailCapture({ hook, formStage }: {
@@ -396,6 +471,8 @@ export function GuestEmailCapture({ hook, formStage }: {
     // button lives inline in the "Your plan…" header (planHeaderMeta) instead.
     return null;
   }
+
+  if (hook.gateSkipped) return <ReminderSignup hook={hook} />;
 
   return (
     <div className={`email-capture no-print${formStage === 3 ? ' field-attention' : ''}`}>
@@ -596,9 +673,9 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
         {printLabel}
       </button>
     </>
-  ) : (SHOPIFY_SURFACE && guestEmailHook.state === 'captured') ? (
-    // Shopify v2, post-capture: the email box is gone; the ungated Save-as-PDF
-    // lives inline in this header (Brad). handlePrint = getReportHtml + print.
+  ) : (SHOPIFY_SURFACE && (guestEmailHook.state === 'captured' || guestEmailHook.gateSkipped)) ? (
+    // Shopify v2, post-capture (or US-44's gate-skipped page): the ungated
+    // Save-as-PDF lives inline in this header (Brad). handlePrint = getReportHtml + print.
     <button type="button" className="action-btn-small no-print" onClick={handlePrint} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
       {printLabel}
     </button>
@@ -736,7 +813,8 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
           unreachable (deleted 2026-08-13). */}
       {remindersSection}
 
-      {showEmailCapture && <GuestEmailCapture hook={guestEmailHook} />}
+      {/* US-44: the gate-skipped reminders box renders once, at the top. */}
+      {showEmailCapture && !guestEmailHook.gateSkipped && <GuestEmailCapture hook={guestEmailHook} />}
 
       {SHOPIFY_SURFACE && <FeedbackForm />}
 

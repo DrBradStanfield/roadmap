@@ -14,7 +14,7 @@ import { HealthTool } from '../src/components/HealthTool';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initSentry, Sentry } from '../src/lib/sentry';
 import { initRoadmapStore, flushRoadmapStoreSync, setPreEraseHook } from '../src/lib/roadmap-data';
-import { resolveAssistantName, setAssistantName } from '../src/lib/assistant-config';
+import { resolveAssistantName, setAssistantName, resolveSkipEmailGate, setSkipEmailGate } from '../src/lib/assistant-config';
 import { autoEnrolReminders, cancelRemindersForErase, pushReminderSchedule } from './reminders';
 import { RemindersEnrolledNotice } from './reminders-control';
 import { DropboxAdapter, GoogleDriveAdapter } from '../src/storage';
@@ -97,6 +97,8 @@ async function main() {
   }
   // Per-store chatbot display name (default "Brad AI"; overridable per store).
   setAssistantName(resolveAssistantName(container));
+  // US-44: the funnel page's block shows Save as PDF without the email box.
+  setSkipEmailGate(resolveSkipEmailGate(container));
   // The sync control renders inside the plan panel (where the Shopify "Data
   // synced" line was) via the syncControl prop — not as a separate top banner.
   createRoot(container).render(

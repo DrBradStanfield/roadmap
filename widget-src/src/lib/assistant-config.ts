@@ -56,3 +56,24 @@ export function setChatSurface(surface: ChatSurface): void {
 export function getChatSurface(): ChatSurface {
   return chatSurface;
 }
+
+/**
+ * US-44: skip the email box before "Save as PDF". Read from the tool root's
+ * `data-skip-email-gate`, set by the app block's `skip_email_gate` checkbox
+ * (on only for the /pages/start funnel page). Only the literal "true" turns it
+ * on, so a missing attribute or an unset setting keeps today's gate. Never
+ * persisted: it is a property of the page, not of the user.
+ */
+let skipEmailGate = false;
+
+export function resolveSkipEmailGate(root: HTMLElement | null): boolean {
+  return root?.dataset.skipEmailGate?.trim() === 'true';
+}
+
+export function setSkipEmailGate(skip: boolean): void {
+  skipEmailGate = skip;
+}
+
+export function getSkipEmailGate(): boolean {
+  return skipEmailGate;
+}

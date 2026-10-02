@@ -5,6 +5,7 @@ import {
   setAssistantName,
   DEFAULT_ASSISTANT_NAME,
   resolveChatSurface,
+  resolveSkipEmailGate,
 } from './assistant-config';
 
 // `resolveAssistantName` only touches `root.dataset.assistantName`, so a minimal
@@ -64,5 +65,23 @@ describe('resolveChatSurface', () => {
     expect(resolveChatSurface(root(''))).toBe('doctor');
     expect(resolveChatSurface(root('Brand!'))).toBe('doctor');
     expect(resolveChatSurface(null)).toBe('doctor');
+  });
+});
+
+describe('resolveSkipEmailGate (US-44 AC1)', () => {
+  const root = (skipEmailGate?: string) =>
+    ({ dataset: skipEmailGate === undefined ? {} : { skipEmailGate } }) as unknown as HTMLElement;
+
+  it('is on only for the literal "true" the checkbox renders', () => {
+    expect(resolveSkipEmailGate(root('true'))).toBe(true);
+    expect(resolveSkipEmailGate(root(' true '))).toBe(true);
+  });
+
+  it('stays off for "false", blank, a missing attribute or no root', () => {
+    expect(resolveSkipEmailGate(root('false'))).toBe(false);
+    expect(resolveSkipEmailGate(root(''))).toBe(false);
+    expect(resolveSkipEmailGate(root('TRUE'))).toBe(false);
+    expect(resolveSkipEmailGate(root())).toBe(false);
+    expect(resolveSkipEmailGate(null)).toBe(false);
   });
 });

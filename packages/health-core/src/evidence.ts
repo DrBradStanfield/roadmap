@@ -177,7 +177,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Exercise ───────────────────────────────────────────────
 
   'exercise': {
-    reason: 'The Physical Activity Guidelines for Americans recommend at least 150 minutes of moderate-intensity aerobic activity plus 2–3 resistance training sessions per week. Large studies (PURE, 130,000 people across 17 countries) show that higher physical activity reduces all-cause mortality regardless of income level or country. Cardiorespiratory fitness is one of the strongest predictors of longevity.',
+    reason: 'The Physical Activity Guidelines for Americans recommend at least 150 minutes of moderate-intensity aerobic activity plus 2–3 resistance training sessions per week. Large studies (PURE, 130,000 people across 17 countries) show that higher physical activity reduces all-cause mortality regardless of income level or country. Cardiorespiratory fitness is one of the strongest predictors of how long people live.',
     guidelines: ['Physical Activity Guidelines 2018'],
     references: REFS_EXERCISE,
   },
