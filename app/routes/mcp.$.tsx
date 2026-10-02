@@ -47,8 +47,9 @@ import {
   providerTag,
 } from '../lib/mcp-providers.server';
 import { packSealed, unpackSealed } from '../lib/mcp-seal.server';
-import { REVIEWER_CLIENT, reviewerFailures, reviewerGeneration, reviewerLoginMatches, reviewerOffered, reviewerRefreshToken } from '../lib/mcp-reviewer.server';
+import { reviewerClient, reviewerFailures, reviewerGeneration, reviewerLoginMatches, reviewerOffered, reviewerRefreshToken } from '../lib/mcp-reviewer.server';
 import type { McpOAuthReason } from '../../packages/health-core/src/product-events';
+import { REPO_PUBLIC } from '../../packages/health-core/src/plan';
 
 /**
  * The consent screen is the only place a provider trip may start, and this
@@ -366,18 +367,18 @@ async function consentGiven(request: Request): Promise<Response> {
 }
 
 /**
- * OpenAI's reviewer pressed Sign in (US-32 AC38). The exact pinned ChatGPT
- * client, the Dropbox state, and the secrets set — or the page they came from
+ * OpenAI's reviewer pressed Sign in (US-32 AC38). The exact pinned ChatGPT or
+ * Codex client, the Dropbox state, and the secrets set — or the page they came from
  * could not have shown the form. The password is the only security boundary;
  * the limiter counts failures alone and only stops noise. Nothing here logs
  * or echoes what was typed.
  */
 function reviewerSignIn(request: Request, form: URLSearchParams, state: StatePayload): Response {
   const generation = reviewerGeneration();
-  if (!REVIEWER_CLIENT || !generation || !reviewerOffered(state.clientId, state.provider)) {
+  const client = reviewerClient(state.clientId);
+  if (!client || !generation || !reviewerOffered(state.clientId, state.provider)) {
     return htmlError('That sign-in is not available here. Please start again from your assistant.');
   }
-  const client = REVIEWER_CLIENT;
   const ip = getClientIp(request, 'fly');
   const retry = (reason: 'reviewer-credentials' | 'reviewer-rate-limited', message: string, status: number) => {
     // One row per IP per window, per reason: a flood is when these run.
@@ -639,7 +640,7 @@ function clientSource(client: McpClient): string {
 /**
  * OpenAI's reviewer box (US-32 AC38): open, and above everything else on the
  * page, because the reviewer pressed the first button inside two seconds. It
- * exists only for the exact pinned ChatGPT client, only while the reviewer
+ * exists only for the exact pinned ChatGPT and Codex clients, only while the reviewer
  * secrets are set, and only with Dropbox on offer. `error` is our own
  * sentence; what was typed is never echoed.
  */
@@ -693,7 +694,7 @@ ${offers.some(({ provider }) => provider === 'google') ? '<p class="lede">Import
 <li>Add measurements and lab results.</li>
 <li>Correct a recent value, after showing you what it would change. Nothing is ever deleted.</li>
 <li>Update your sex, birth year, birth month and height, after showing you the change.</li>
-<li>File a bug report as a public issue on GitHub, in your words, without your health values, after
+<li>File a bug report as ${REPO_PUBLIC ? 'a public issue on GitHub' : 'an issue on the project’s GitHub, which becomes public when that GitHub is public again'}, in your words, without your health values, after
 showing you what it would say. The check refuses numbers written near a metric name, email addresses,
 phone numbers, file names and links with a query string, but it cannot recognise a diagnosis written in prose,
 so read what it shows you before you say yes.</li>

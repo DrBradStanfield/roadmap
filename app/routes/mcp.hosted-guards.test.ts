@@ -20,6 +20,7 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
 import { MAX_LAB_ROWS_PER_CALL } from '../../packages/health-core/src/mcp-tools';
+import { REPO_PUBLIC } from '../../packages/health-core/src/plan';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
 
@@ -371,37 +372,61 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
 
   it('report_feedback: the receipt is bound to the prepared text, so spacing and case drift confirm and a different report does not', async () => {
     seedEmpty();
-    const access = await connect();
-    const report = { kind: 'bug', title: 'Tool refused a valid day', detail: 'Steps  here.\nThen it refused.' };
-    const proposed = await callToolAt(access, 'report_feedback', report, NOW);
-    expect(proposed.isError).toBe(false);
-    expect(proposed.text).toContain('Would file a PUBLIC GitHub issue');
-    // The receipt is the one human review step, so it shows the DETAIL that
-    // goes public — not the title alone, which hides what is filed.
-    expect(proposed.text).toContain(report.detail); // exactly the text sent, spacing and all
-    expect(proposed.text).not.toContain('github.com/DrBradStanfield/roadmap/issues/new'); // the proposal is not a link to submit
-    const data = OUTPUTS.report_feedback.parse(proposed.structured);
-    expect(data).toMatchObject({ filed: false, proposal: true });
+    // While the repository is hidden only a surface that can file may propose (US-32 AC39), so this
+    // one gets a GitHub token and a GitHub that files; while public it stays tokenless.
+    if (!REPO_PUBLIC) {
+      process.env.GITHUB_ISSUES_TOKEN = 'ghp-test-token';
+      const passThrough = fetch;
+      vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => (String(url).startsWith('https://api.github.com/')
+        ? Response.json({ html_url: 'https://github.com/DrBradStanfield/roadmap/issues/5', number: 5 }, { status: 201 })
+        : passThrough(url, init))));
+    }
+    try {
+      const access = await connect();
+      const report = { kind: 'bug', title: 'Tool refused a valid day', detail: 'Steps  here.\nThen it refused.' };
+      const proposed = await callToolAt(access, 'report_feedback', report, NOW);
+      expect(proposed.isError).toBe(false);
+      // US-32 AC39: the proposal calls the issue public only while the repository is.
+      expect(proposed.text).toContain(REPO_PUBLIC
+        ? 'Would file a PUBLIC GitHub issue'
+        : 'an issue on the project’s GitHub, which is temporarily not public and becomes public when it is');
+      expect(proposed.text.includes('PUBLIC GitHub issue')).toBe(REPO_PUBLIC);
+      // The receipt is the one human review step, so it shows the DETAIL that
+      // goes public — not the title alone, which hides what is filed.
+      expect(proposed.text).toContain(report.detail); // exactly the text sent, spacing and all
+      expect(proposed.text).not.toContain('github.com/DrBradStanfield/roadmap/issues/new'); // the proposal is not a link to submit
+      const data = OUTPUTS.report_feedback.parse(proposed.structured);
+      expect(data).toMatchObject({ filed: false, proposal: true });
+      // US-32 AC39: no structured link that 404s while the project's GitHub is hidden.
+      expect(data.url.includes('github.com')).toBe(REPO_PUBLIC);
 
-    const other = await callToolAt(access, 'report_feedback', { ...report, detail: 'Something else entirely.', confirm: data.confirm }, at(11));
-    expect(other.isError).toBe(true);
-    expect(other.text).toContain('different arguments');
+      const other = await callToolAt(access, 'report_feedback', { ...report, detail: 'Something else entirely.', confirm: data.confirm }, at(11));
+      expect(other.isError).toBe(true);
+      expect(other.text).toContain('different arguments');
 
-    const drifted = await callToolAt(access, 'report_feedback', { ...report, title: 'tool refused a valid day', detail: 'steps here. then it refused.', confirm: data.confirm }, at(11));
-    expect(drifted.isError).toBe(false);
-    // No GitHub token in this suite: the confirmed call answers with the link the user submits.
-    const filed = OUTPUTS.report_feedback.parse(drifted.structured);
-    expect(filed.filed).toBe(false);
-    expect(filed.proposal).toBeUndefined();
-    expect(drifted.text).toContain('github.com');
+      const drifted = await callToolAt(access, 'report_feedback', { ...report, title: 'tool refused a valid day', detail: 'steps here. then it refused.', confirm: data.confirm }, at(11));
+      // Either way the receipt held. Tokenless while public: the confirmed call answers with the link the
+      // user submits. With the token while hidden: it files, and hands over the number, not a link that 404s.
+      expect(drifted.isError).toBe(false);
+      const filed = OUTPUTS.report_feedback.parse(drifted.structured);
+      expect(filed.proposal).toBeUndefined();
+      if (REPO_PUBLIC) {
+        expect(filed.filed).toBe(false);
+        expect(drifted.text).toContain('github.com');
+      } else {
+        expect(filed).toMatchObject({ filed: true, url: '', number: 5 });
+      }
 
-    // A confirm call that does not even parse (no detail) is refused in words, never answered as an
-    // internal error: the receipt's identity is computed before the schema runs (adversarial review 2026-09-07).
-    seedEmpty();
-    const fresh = OUTPUTS.report_feedback.parse((await callToolAt(access, 'report_feedback', report, at(20))).structured).confirm!;
-    const malformed = await callToolAt(access, 'report_feedback', { kind: 'bug', title: report.title, confirm: fresh }, at(31));
-    expect(malformed.isError).toBe(true);
-    expect(malformed.text).toContain('different arguments');
+      // A confirm call that does not even parse (no detail) is refused in words, never answered as an
+      // internal error: the receipt's identity is computed before the schema runs (adversarial review 2026-09-07).
+      seedEmpty();
+      const fresh = OUTPUTS.report_feedback.parse((await callToolAt(access, 'report_feedback', report, at(20))).structured).confirm!;
+      const malformed = await callToolAt(access, 'report_feedback', { kind: 'bug', title: report.title, confirm: fresh }, at(31));
+      expect(malformed.isError).toBe(true);
+      expect(malformed.text).toContain('different arguments');
+    } finally {
+      delete process.env.GITHUB_ISSUES_TOKEN;
+    }
   });
 
   it('a stale receipt against the tool list: `confirm` is published on exactly the three permanent tools', async () => {

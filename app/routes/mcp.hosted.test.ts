@@ -287,14 +287,17 @@ describe('a record-free tool needs no record and no Dropbox (US-32)', () => {
     const answer = await twoStep(access, 'report_feedback', {
       kind: 'bug', title: 'correct_value refused', detail: 'It asked for expectedValue and I had none.',
     });
-    expect(answer.isError).toBe(false);
-    expect(answer.text).toContain('github.com');
+    // Tokenless, it hands over the link only while the repository is public;
+    // while hidden it refuses in words (US-32 AC39). Either way it opens nothing.
+    expect(answer.isError).toBe(!REPO_PUBLIC);
+    expect(answer.text).toContain(REPO_PUBLIC ? 'github.com' : 'Nothing was posted');
     expect(calls()).toBe(before);
 
     // Still answers with Dropbox refusing outright, which is the point of it.
     vi.stubGlobal('fetch', vi.fn(async () => new Response('no', { status: 400 })));
     const offline = await twoStep(access, 'report_feedback', { kind: 'feature', title: 'a', detail: 'b' });
-    expect(offline.isError).toBe(false);
+    expect(offline.isError).toBe(!REPO_PUBLIC);
+    expect(offline.text).not.toContain('record');
     const refused = await callTool(access, 'read_record', {});
     expect(refused.isError).toBe(true);
     expect(refused.structured).toBeUndefined(); // a refusal carries no structured content
@@ -337,7 +340,8 @@ describe('US-32 AC9 — the hosted server files the issue itself', () => {
 
     expect(answer.isError).toBe(false);
     expect(answer.structured).toEqual({
-      filed: true, url: 'https://github.com/DrBradStanfield/roadmap/issues/11', number: 11, kind: 'bug', title: REPORT.title,
+      // US-32 AC39: the link only while the repository is public; the number either way.
+      filed: true, url: REPO_PUBLIC ? 'https://github.com/DrBradStanfield/roadmap/issues/11' : '', number: 11, kind: 'bug', title: REPORT.title,
     });
     expect(posts).toHaveLength(1);
     expect(posts[0].url).toBe('https://api.github.com/repos/DrBradStanfield/roadmap/issues');
@@ -527,7 +531,9 @@ describe('a pinned vendor client connects without DCR and without a fetch (US-32
     // Everything the grant actually carries, in the words the user reads: the
     // two tools that shipped after the first copy was written, and the counters.
     expect(screen).toContain('birth year');
-    expect(screen).toContain('public issue');
+    // US-32 AC39: a bug report is a public issue only while the project's GitHub is public.
+    expect(screen.includes('public issue')).toBe(REPO_PUBLIC);
+    if (!REPO_PUBLIC) expect(screen).toContain('an issue on the project’s GitHub, which becomes public when that GitHub is public again');
     expect(screen).toContain('never your values');
     const targets = (fetch as unknown as { mock: { calls: Array<[unknown]> } }).mock.calls;
     expect(targets.some(([to]) => String(to).includes('claude.ai'))).toBe(false);

@@ -62,7 +62,7 @@ Changes the four things your plan is worked out from: your sex, your birth year,
 
 ### `report_feedback`: File a bug report or feature request
 
-Reports a problem for you, as a public issue on the project, when something refuses or looks wrong.
+Reports a problem for you, as an issue on the project's GitHub, when something refuses or looks wrong. That GitHub is temporarily not public; the issue becomes public when it is.
 
 **What it will not do.** It opens no health record. It refuses anything that reads as a health value, an email address, a phone number, a file name or a link carrying a token, and it shows you the report before you say yes; the report carries only what the assistant wrote about the problem.
 
@@ -126,4 +126,4 @@ It also cannot do things it is sometimes asked for. It writes no meal plans. It 
 
 The plan is educational information, worked out from published guidelines and the evidence behind each suggestion, with the citation attached. Its hedged wording is deliberate. It does not replace your doctor, and it is not a diagnosis.
 
-If something looks wrong, ask the app to report it. The issue it files is public, so it shows you the report first and sends only what the assistant wrote about the problem.
+If something looks wrong, ask the app to report it. The issue it files becomes public, so it shows you the report first and sends only what the assistant wrote about the problem.

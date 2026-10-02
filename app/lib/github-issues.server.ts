@@ -11,7 +11,7 @@
  * public, so what leaves is only what the tool already allowed: the assistant's
  * own description of the problem.
  */
-import { FEEDBACK_REPO, type FeedbackFiler, type FeedbackIssue } from '../../packages/health-core/src/mcp-tools';
+import { FEEDBACK_REPO, FEEDBACK_UNAVAILABLE, type FeedbackFiler, type FeedbackIssue } from '../../packages/health-core/src/mcp-tools';
 import type { McpProvider } from './mcp-providers.server';
 
 const API = `https://api.github.com/repos/${FEEDBACK_REPO}/issues`;
@@ -50,7 +50,7 @@ const GITHUB_TIMEOUT_MS = 8000;
  * One wording for every way GitHub can fail us — silence, a 5xx, or a refusal
  * such as a flagged account's (US-32 AC39): the agent can only retry.
  */
-const UNAVAILABLE = { ok: false, refusal: 'Feedback could not be filed right now. Nothing was posted. Try again later.' } as const;
+const UNAVAILABLE = { ok: false, refusal: FEEDBACK_UNAVAILABLE } as const;
 
 const filedAt: number[] = [];
 const recent = new Map<string, { url: string; number: number; at: number }>();

@@ -304,11 +304,11 @@ export function planPayload(plan: Plan) {
       guidelines: s.guidelines ?? [],
       references: s.references ?? [],
     })),
-    // `repo` makes the two paths below resolvable: without it an assistant is
-    // holding file names it cannot open. Null while the repository 404s (AC39).
-    source: {
-      repo: REPO_PUBLIC ? REPO_URL : null, schema: REPO_PUBLIC ? SCHEMA_URL : null, tool: 'tools/get-plan.ts', docs: 'docs/agent-access.md',
-    },
+    // `repo` makes the two paths resolvable: without it an assistant is holding
+    // file names it cannot open, so they go too while the repository 404s (AC39, AC41).
+    source: REPO_PUBLIC
+      ? { repo: REPO_URL, schema: SCHEMA_URL, tool: 'tools/get-plan.ts', docs: 'docs/agent-access.md' }
+      : { repo: null, schema: null },
   };
 }
 

@@ -1,5 +1,5 @@
-// Builds the OpenAI plugin ZIP for Health by Dr Brad from docs/chatgpt-review/plugin/
-// (US-32; listing and test cases: docs/chatgpt-app-listing.md).
+// Builds the OpenAI plugin ZIP for Health by Dr Brad from docs/chatgpt-review/plugin/, plus the assets
+// taken from their sources at build time (US-32; listing and test cases: docs/chatgpt-app-listing.md).
 //
 //   node docs/chatgpt-review/build-plugin-zip.mjs           validate, then write health-by-dr-brad-<version>.zip
 //   node docs/chatgpt-review/build-plugin-zip.mjs --check   validate only
@@ -19,6 +19,8 @@ import JSZip from 'jszip';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, 'plugin');
+// Archive path -> source file. The logo is the app icon itself, so no copy of it is committed.
+const ASSETS = { 'assets/logo.png': path.join(HERE, '../../demo-video/public/app-icon.png') };
 const PLUGIN_SCHEMA = 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json';
 const MCP_SCHEMA = 'https://agent-plugins.org/schemas/1.0.0/mcp.schema.json';
 const CATEGORIES = ['Productivity', 'Creativity', 'Developer Tools', 'Business & Operations', 'Data & Analytics',
@@ -54,8 +56,8 @@ function onlyKeys(code, obj, allowed) {
 /** Square, 48 to 4096 px, at most 5 MiB, content matching the extension. PNG is all we ship. */
 function image(code, rel) {
   if (typeof rel !== 'string' || !rel.startsWith('./')) return fail(code, 'must be a ./-prefixed path');
-  const file = path.join(ROOT, rel);
-  if (!file.startsWith(ROOT + path.sep) || !fs.existsSync(file)) return fail(code, `${rel} is missing`);
+  const file = ASSETS[rel.slice(2)];
+  if (!file || !fs.existsSync(file)) return fail(code, `${rel} is missing`);
   const buf = fs.readFileSync(file);
   if (buf.length > 5 * 1024 * 1024) fail(code, `${rel} is over 5 MiB`);
   if (!rel.endsWith('.png') || buf.toString('latin1', 1, 4) !== 'PNG') return fail(code, `${rel} must be a real PNG`);
@@ -152,9 +154,11 @@ function listFiles(dir, prefix = '') {
     .flatMap((e) => (e.isDirectory() ? listFiles(path.join(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`]));
 }
 
-const files = listFiles(ROOT);
+const committed = listFiles(ROOT);
 // skills/ is refused below and assets/ is one level deep, so archive_member_path_too_deep (20 levels) cannot arise.
-for (const f of files) if (!/^(plugin\.json|mcp\.json|assets\/[^/]+|skills\/.+)$/.test(f)) fail('package layout', `unexpected file ${f}`);
+// Assets come only from ASSETS: a committed copy would drift from its source.
+for (const f of committed) if (!/^(plugin\.json|mcp\.json|skills\/.+)$/.test(f)) fail('package layout', `unexpected file ${f}`);
+const files = [...committed, ...Object.keys(ASSETS)].sort();
 if (files.some((f) => f.startsWith('skills/'))) fail('skills', 'this package ships no skills; validate SKILL.md front matter here before adding one');
 const raw = Object.fromEntries(files.filter((f) => f.endsWith('.json')).map((f) => [f, fs.readFileSync(path.join(ROOT, f), 'utf8')]));
 for (const [f, body] of Object.entries(raw)) {
@@ -179,7 +183,7 @@ if (process.argv.includes('--check')) process.exit(0);
 // A fixed date and sorted entries, so the same folder always gives the same bytes.
 const zip = new JSZip();
 const date = new Date('2026-01-01T00:00:00Z');
-for (const f of files) zip.file(f, fs.readFileSync(path.join(ROOT, f)), { date, createFolders: false });
+for (const f of files) zip.file(f, fs.readFileSync(ASSETS[f] ?? path.join(ROOT, f)), { date, createFolders: false });
 const out = path.join(HERE, `${plugin.name}-${plugin.version}.zip`);
 const bytes = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', platform: 'UNIX' });
 if (bytes.length > 100 * 1024 * 1024) throw new Error('archive_too_large');

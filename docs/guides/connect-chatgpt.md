@@ -50,7 +50,7 @@ Claude needs no equivalent step. If you use both, [connecting Claude](/blogs/gui
 
 ## What it can do
 
-It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same one the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. It corrects a value that went in wrong. It changes four things about you: your sex, your birth year, your birth month and your height, the four your plan is worked out from. And if a tool refuses something you reasonably expected, it reports the problem for you: a public issue on the project's GitHub, filed as you ask, carrying its description and nothing about you or your values.
+It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same one the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. It corrects a value that went in wrong. It changes four things about you: your sex, your birth year, your birth month and your height, the four your plan is worked out from. And if a tool refuses something you reasonably expected, it reports the problem for you: an issue on the project's GitHub, filed as you ask, carrying its description and nothing about you or your values. That GitHub is temporarily not public; the issue becomes public when it is.
 
 It can import lab files, too. Two ways in. Drop a file straight into the conversation,
 from a computer or a phone: a PDF, a JPEG or PNG photo, or a clinic letter. ChatGPT reads
@@ -125,4 +125,4 @@ ChatGPT says it cannot find your record: open [the tool](https://drstanfield.com
 
 Something looks wrong in your data: open the tool and correct the value there. The app appends the correction and marks the old row as an error, which is the safest undo you have.
 
-Anything else: ask ChatGPT to report the problem and it files a bug report for you, as a public issue on the project's GitHub carrying its description and nothing about you. Or open an issue at [github.com/DrBradStanfield/roadmap/issues](https://github.com/DrBradStanfield/roadmap/issues), or open the chat bubble on any page of this site and ask.
+Anything else: ask ChatGPT to report the problem and it files a bug report for you, as an issue on the project's GitHub carrying its description and nothing about you. That GitHub is temporarily not public; the issue becomes public when it is. Or open the chat bubble on any page of this site and ask.

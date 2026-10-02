@@ -10,9 +10,12 @@ This file is the only home of the Variant C paste block; [the listing](../chatgp
 says why Variant C replaced A and B. It ends with the sample report positive test case 4 attaches. The box on the consent page shows only while
 the three reviewer secrets are set ([runbook](../deploy-runbook-mcp.md#the-openai-reviewer-sign-in-us-32-ac38)).
 
-> Login URL: https://chatgpt.com (there is no separate login page; follow the steps below)
+> Login URL: https://chatgpt.com
 > Username: `[REVIEWER_USERNAME]`
 > Password: `[REVIEWER_PASSWORD]`
+>
+> Instructions:
+> These are not ChatGPT credentials: type them into our page that opens when you connect Health by Dr Brad. Please test in ChatGPT.
 >
 > Sign-in steps:
 > 1. Connect Health by Dr Brad in ChatGPT.
@@ -22,5 +25,7 @@ the three reviewer secrets are set ([runbook](../deploy-runbook-mcp.md#the-opena
 > Please do not press Continue to Dropbox or Google Drive: those buttons are for real users and their own accounts.
 >
 > This account is ours, made for your review. It holds invented data, not a real person's record, and already has a profile and results, so every test case works immediately. Earlier reviewers may have added rows; the test cases allow for that. Bug reports (`report_feedback`) are limited to 3 a day for all reviewer sessions together, so that tool may refuse late in a busy day.
+>
+> Health data: the record is the user's own file in their own Dropbox or Google Drive. Our server processes it in memory for one request, after the user's consent screen, and stores none of it. The folder-import route sends the user's lab files, never the record, to Anthropic's API for extraction; we keep those files nowhere.
 >
 > Positive test case 4 uses a synthetic lab report, invented data for app review: https://cdn.shopify.com/s/files/1/0790/6109/0503/files/sample-lab-report.pdf?v=1790902633. Download it and drop it into the chat. Please keep its file name: a second upload of the same file is reported as already imported, which the test case allows.

@@ -20,6 +20,7 @@ import { FileAdapter } from '../packages/health-core/src/file-adapter';
 import { type ImportCommit, type ImportPayload, type ImportSurface, MCP_TOOLS, OPEN_SOURCE_NOTE, SI_NOTE, RECEIPT_LIFETIME_SECONDS, runToolOverSync, type ToolAnswer } from '../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PARSE_ERROR, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../packages/health-core/src/mcp-rpc';
 import { recordSync } from '../packages/health-core/src/roadmap-doc';
+import { REPO_PUBLIC } from '../packages/health-core/src/plan';
 import { describeStorageFailure, isStorageFailure } from '../packages/health-core/src/sync-manager';
 
 /** What the assistant is told once, at connect. */
@@ -28,9 +29,13 @@ const INSTRUCTIONS =
   'slotted one per metric per day, and a day that already holds a value is corrected, never added to twice. ' +
   'Nothing is ever deleted; a superseded row stays as "entered-in-error". The plan from get_plan is educational, ' +
   'not medical advice, and its hedged wording and citations are calibrated — pass them on as written. ' +
-  'If a tool refuses something the user reasonably expected, the record cannot hold what they want to track, or a ' +
-  'result looks wrong, offer report_feedback: it prepares a GitHub issue link, carrying no health values, that the ' +
-  'user reviews and submits themselves. import_documents is listed but refuses here: this server has no model and ' +
+  // US-32 AC39: while the repository is hidden this server can only refuse a report, so it offers none.
+  (REPO_PUBLIC
+    ? 'If a tool refuses something the user reasonably expected, the record cannot hold what they want to track, or a ' +
+      'result looks wrong, offer report_feedback: it prepares a GitHub issue link, carrying no health values, that the ' +
+      'user reviews and submits themselves. '
+    : '') +
+  'import_documents is listed but refuses here: this server has no model and ' +
   'no network; folder files go through the website’s upload or the hosted connector. A file the user gives YOU is ' +
   'file_results: read it, send every value it prints, show the candidates, and commit only what the user confirms.' +
   SI_NOTE + OPEN_SOURCE_NOTE;

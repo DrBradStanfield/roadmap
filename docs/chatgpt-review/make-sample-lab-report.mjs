@@ -5,6 +5,9 @@
 // units.ts UNIT_ALIASES, lab-catalog.ts LAB_CATALOG), or file_results refuses the row.
 //
 // Regenerate: node docs/chatgpt-review/make-sample-lab-report.mjs
+// Our own proof runs: node docs/chatgpt-review/make-sample-lab-report.mjs --variant
+// writes sample-lab-report-proof.pdf, the same results under another name and a
+// week earlier, so the reviewer's file is never filed before the review.
 // Uses Playwright's Chromium (a repo devDependency) to print HTML to an A4 PDF
 // with a real text layer. The file name is the record's dedup key: keep it.
 
@@ -12,7 +15,7 @@ import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'sample-lab-report.pdf');
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 export const REPORT = {
   lab: 'Example Pathology Laboratory',
@@ -24,6 +27,13 @@ export const REPORT = {
   collected: '2026-09-28',
   reported: '2026-09-29',
 };
+
+/** Where to write, and the header to print: the reviewer's edition, or the proof variant. */
+export function edition(proof) {
+  return proof
+    ? { out: path.join(HERE, 'sample-lab-report-proof.pdf'), report: { ...REPORT, collected: '2026-09-21', reported: '2026-09-22' } }
+    : { out: path.join(HERE, 'sample-lab-report.pdf'), report: REPORT };
+}
 
 /** One printed result: name, value, unit and range exactly as they appear on the page. */
 export const ROWS = [
@@ -37,7 +47,7 @@ export const ROWS = [
   { section: 'Vitamins', name: 'Vitamin D (25-OH)', value: '72', unit: 'nmol/L', range: '50 - 150' },
 ];
 
-function html() {
+function html(report) {
   const sections = [...new Set(ROWS.map((r) => r.section))];
   const body = sections.map((s) => `
     <tr class="section"><td colspan="5">${s}</td></tr>
@@ -64,17 +74,17 @@ function html() {
     .foot { margin-top: 28pt; font-size: 9pt; color: #555; border-top: 1px solid #999; padding-top: 6pt; }
   </style></head><body>
     <div class="banner">SAMPLE REPORT: invented data for app review, not a real patient</div>
-    <h1>${REPORT.lab}</h1>
+    <h1>${report.lab}</h1>
     <div class="sub">Laboratory report: biochemistry</div>
     <div class="meta">
-      <div><b>Patient</b> ${REPORT.patient}</div>
-      <div><b>Lab number</b> ${REPORT.labNumber}</div>
-      <div><b>Sex</b> ${REPORT.sex}</div>
-      <div><b>Requested by</b> ${REPORT.requestedBy}</div>
-      <div><b>Year of birth</b> ${REPORT.birthYear}</div>
-      <div><b>Collected</b> ${REPORT.collected}</div>
+      <div><b>Patient</b> ${report.patient}</div>
+      <div><b>Lab number</b> ${report.labNumber}</div>
+      <div><b>Sex</b> ${report.sex}</div>
+      <div><b>Requested by</b> ${report.requestedBy}</div>
+      <div><b>Year of birth</b> ${report.birthYear}</div>
+      <div><b>Collected</b> ${report.collected}</div>
       <div><b>Specimen</b> Serum, fasting</div>
-      <div><b>Reported</b> ${REPORT.reported}</div>
+      <div><b>Reported</b> ${report.reported}</div>
     </div>
     <table>
       <thead><tr><th>Test</th><th style="text-align:right">Result</th><th>Flag</th><th>Units</th><th>Reference range</th></tr></thead>
@@ -86,15 +96,16 @@ function html() {
 }
 
 async function main() {
+  const { out, report } = edition(process.argv.includes('--variant'));
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage();
-    await page.setContent(html(), { waitUntil: 'load' });
-    await page.pdf({ path: OUT, format: 'A4', printBackground: true, preferCSSPageSize: true });
+    await page.setContent(html(report), { waitUntil: 'load' });
+    await page.pdf({ path: out, format: 'A4', printBackground: true, preferCSSPageSize: true });
   } finally {
     await browser.close();
   }
-  console.log(`wrote ${OUT}`);
+  console.log(`wrote ${out}`);
 }
 
 // Run when called directly; importing it (to check ROWS against the catalogue) builds nothing.

@@ -55,7 +55,7 @@
               "description": "Compute the plan from the record.",
               "prompt": "What should I do next about my health?",
               "tools_triggered": "get_plan",
-              "expected_behavior": "Returns current values, what screening is due, and evidence-based suggestions with a reason and citation each, in hedged educational wording. Nothing is written."
+              "expected_behavior": "Returns current values, what screening is due, and evidence-based suggestions with reasons and citations, in hedged educational wording. Nothing is written."
             },
             {
               "description": "File the results from a lab report dropped into the chat. ChatGPT reads the file itself; it never reaches our server. Attach the synthetic report at the file attachment URL: invented data for app review, not a real person's report.",
@@ -75,12 +75,12 @@
           ],
           "negative": [
             {
-              "description": "A general medical question that does not touch the user's own record. The app should not be invoked: ChatGPT answers from its own knowledge.",
-              "prompt": "What does high ferritin usually mean?"
+              "description": "Travel booking. The app reads and writes a health record and has no travel or booking tools, and nothing in the request touches a record, so no tool matches. The app should not be invoked.",
+              "prompt": "Book me a flight from Auckland to Sydney next Friday."
             },
             {
-              "description": "Diet planning. The app stores and reads a health record and writes no meal plans, so no tool matches. The app should not be invoked.",
-              "prompt": "Write me a seven-day meal plan for lowering my cholesterol."
+              "description": "Creative writing with nothing about health or a record in it, so no tool matches. The app should not be invoked: ChatGPT writes the poem itself.",
+              "prompt": "Write a short poem about autumn."
             },
             {
               "description": "Booking or contacting a clinician. The app has no scheduling, no directory and no messaging, so it cannot book or contact anyone. The app should not be invoked.",
@@ -93,7 +93,7 @@
       },
       "publication": {
         "countries": [],
-        "release_notes": "1.0.2 changes how OpenAI's reviewer signs in. The reviewer now signs in on our own consent page with a username and password we issue for the review: no Dropbox or Google sign-in, no code and no email. This sign-in is offered to the ChatGPT client only. This is also our first plugin package upload. It keeps the same nine tools and four prompts as 1.0.1. The starter prompts drop from seven to three, the new limit."
+        "release_notes": "1.0.2 changes how OpenAI's reviewer signs in. The reviewer now signs in on our own consent page with a username and password we issue for the review: no Dropbox or Google sign-in, no code and no email. This sign-in is offered to the ChatGPT and Codex clients only. Other changes since 1.0.1: report_feedback is now marked destructive, because a filed issue cannot be taken back, and it says the issue becomes public when the project's GitHub is public again. get_plan no longer carries product links; evidence stays in each suggestion's references. read_record no longer returns sync bookkeeping, device identifiers or reminder settings, only what the record says. The server instructions no longer link to the source repository while it is not public. This is also our first plugin package upload. It keeps the same nine tools and four prompts as 1.0.1. The starter prompts drop from seven to three, the new limit."
       }
     }
   }

@@ -165,4 +165,4 @@ those.
 
 ## If something goes wrong
 
-Run either command with `--help` for the full list of options. If a command fails in a way this guide does not explain, or the output is wrong, open an issue at https://github.com/DrBradStanfield/roadmap/issues with the command you ran and what it printed. Leave your record out of it; the `schemaVersion` at the top of the file is all we need.
+Run either command with `--help` for the full list of options. If a command fails in a way this guide does not explain, or the output is wrong, open the chat bubble on any page of drstanfield.com and say which command you ran and what it printed. (The project's GitHub, where issues usually go, is temporarily not public.) Leave your record out of it; the `schemaVersion` at the top of the file is all we need.

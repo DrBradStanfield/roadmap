@@ -3,7 +3,7 @@
  *
  * Twice the reviewer stopped at a third party's login (docs/reviews/
  * 2026-10-01-chatgpt-reviewer-signin-plan.md §1). This is the one password
- * login on the auth server, for one invented account, ChatGPT client only, and
+ * login on the auth server, for one invented account, ChatGPT and Codex clients only, and
  * only while the three reviewer secrets are set. Each test pins one clause of
  * AC38: who sees the form, what a right and a wrong login do, that no blob
  * carries the reviewer's Dropbox token, and that unsetting or rotating either
@@ -37,6 +37,9 @@ const CHATGPT_REDIRECTS = [
   'https://chatgpt.com/backend-api/aip/connectors/links/oauth/callback',
 ];
 const CHATGPT_REDIRECT = CHATGPT_REDIRECTS[0];
+/** OpenAI tests "ChatGPT and Codex surfaces", so the pinned Codex client sees the box too (US-32 AC38). */
+const CODEX = 'https://chatgpt.com/oauth/codex/client.json';
+const CODEX_REDIRECT = 'http://127.0.0.1:4567/callback';
 const VERIFIER = 'v'.repeat(64);
 const CHALLENGE = crypto.createHash('sha256').update(VERIFIER, 'ascii').digest('base64url');
 const NOW = '2026-09-02T10:00:00.000Z';
@@ -275,7 +278,7 @@ function events(name: string): Array<Record<string, unknown>> {
 // Who sees the form
 // ---------------------------------------------------------------------------
 
-describe('US-32 AC38 — the form is for the exact pinned ChatGPT client, and only while the secrets are set', () => {
+describe('US-32 AC38 — the form is for the exact pinned ChatGPT and Codex clients, and only while the secrets are set', () => {
   it('shows an open reviewer form ABOVE the provider choice for the pinned ChatGPT client', async () => {
     const html = await consentHtml();
     expect(html).toContain(REVIEWER_HEADING);
@@ -305,7 +308,16 @@ describe('US-32 AC38 — the form is for the exact pinned ChatGPT client, and on
     expect(hasReviewerForm(html)).toBe(false);
   });
 
-  it('shows no form to Claude, Claude Code, Codex, another CIMD client or a DCR client', async () => {
+  it('shows it to the exact pinned Codex client, and not to a Codex id with a query string', async () => {
+    expect(hasReviewerForm(await consentHtml(CODEX, CODEX_REDIRECT))).toBe(true);
+    const lookalike = `${CODEX}?x=1`;
+    stubFetch({ [lookalike]: { client_id: lookalike, client_name: 'Codex', redirect_uris: [CODEX_REDIRECT] } });
+    const html = await consentHtml(lookalike, CODEX_REDIRECT);
+    expect(html).toContain('Continue to Dropbox');
+    expect(hasReviewerForm(html)).toBe(false);
+  });
+
+  it('shows no form to Claude, Claude Code, another CIMD client or a DCR client', async () => {
     const other = 'https://assistant.example/client.json';
     stubFetch({ [other]: { client_id: other, client_name: 'ChatGPT', redirect_uris: [CHATGPT_REDIRECT] } });
     const register = await post('/mcp/register', {
@@ -316,7 +328,6 @@ describe('US-32 AC38 — the form is for the exact pinned ChatGPT client, and on
     const cases: Array<[string, string]> = [
       ['https://claude.ai/oauth/mcp-oauth-client-metadata', 'https://claude.ai/api/mcp/auth_callback'],
       ['https://claude.ai/oauth/claude-code-client-metadata', 'http://localhost:4567/callback'],
-      ['https://chatgpt.com/oauth/codex/client.json', 'http://127.0.0.1:4567/callback'],
       [other, CHATGPT_REDIRECT],
       [dcr, CHATGPT_REDIRECT],
     ];
@@ -423,6 +434,21 @@ describe('US-32 AC38 — the right login connects with no third-party sign-in, a
     expectGenerationOnly('access', renewed.access_token);
     expectGenerationOnly('refresh', renewed.refresh_token);
     expect((await callTool(renewed.access_token, 'read_record', {})).isError).toBe(false);
+  });
+
+  it('signs the pinned Codex client in the same way, back to its own loopback callback', async () => {
+    seedReviewerRecord();
+    const res = await signIn(reviewerState(await consentHtml(CODEX, CODEX_REDIRECT)), USERNAME, PASSWORD);
+    expect(res.status).toBe(302);
+    const to = new URL(res.headers.get('location')!);
+    expect(to.origin + to.pathname).toBe(CODEX_REDIRECT);
+    const code = to.searchParams.get('code')!;
+    expectGenerationOnly('code', code);
+    const redeemed = await token({ grant_type: 'authorization_code', code, redirect_uri: CODEX_REDIRECT, code_verifier: VERIFIER, client_id: CODEX });
+    expect(redeemed.status).toBe(200);
+    const { access_token: access } = (await redeemed.json()) as { access_token: string };
+    expect((await callTool(access, 'read_record', {})).isError).toBe(false);
+    expect(events('mcp_connect')).toEqual([{ client: 'codex', provider: 'dropbox', via: 'reviewer' }]);
   });
 
   it('counts one mcp_connect with via reviewer, and no consent press', async () => {
@@ -627,11 +653,16 @@ describe('US-32 AC38 — reviewer=1 is refused where it does not belong', () => 
     expect(events('mcp_connect')).toEqual([]);
   });
 
-  it('refuses a state sealed for any other client, the ChatGPT lookalike included', async () => {
-    serveLookalike();
+  it('refuses a state sealed for any other client, the ChatGPT and Codex lookalikes included', async () => {
+    const codexLookalike = `${CODEX}?x=1`;
+    stubFetch({
+      [LOOKALIKE]: { client_id: LOOKALIKE, client_name: 'ChatGPT', redirect_uris: [CHATGPT_REDIRECT] },
+      [codexLookalike]: { client_id: codexLookalike, client_name: 'Codex', redirect_uris: [CODEX_REDIRECT] },
+    });
     for (const [clientId, redirect] of [
       ['https://claude.ai/oauth/mcp-oauth-client-metadata', 'https://claude.ai/api/mcp/auth_callback'],
       [LOOKALIKE, CHATGPT_REDIRECT],
+      [codexLookalike, CODEX_REDIRECT],
     ]) {
       const res = await signIn(allStates(await consentHtml(clientId, redirect))[0], USERNAME, PASSWORD);
       expect(res.status, clientId).toBe(400);

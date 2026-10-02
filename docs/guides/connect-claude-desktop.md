@@ -26,7 +26,7 @@ Correct a value. Fix a number that went in wrong.
 
 Change four things about you. Your sex, your birth year, your birth month and your height, because your plan is worked out from those. Nothing else about you is writable.
 
-Report a problem. If a tool refuses something you reasonably expected, ask Claude to report it. The program on your computer holds no key to anything, so it cannot file anything itself: it hands you a prefilled link to a public issue on the project's GitHub, carrying its description of the problem and nothing about you. Nothing is filed until you open that link and press the button. (The hosted connectors, Claude on the web and ChatGPT, do file it themselves. Their guides say so.)
+Report a problem. If a tool refuses something you reasonably expected, ask Claude to report it. The program on your computer holds no key to anything, so it cannot file anything itself. While the project's GitHub is not public, it says it cannot file reports and posts nothing. Otherwise it hands you a prefilled link to a public issue on the project's GitHub, carrying its description of the problem and nothing about you, and nothing is filed until you open that link and press the button. (The hosted connectors, Claude on the web and ChatGPT, do file it themselves. Their guides say so.)
 
 Import lab files. This one is hosted-only, over Dropbox: the local program you run here has no model and no network, so it lists the tool and refuses it, pointing you at the website's upload or the hosted connector instead.
 
@@ -136,4 +136,4 @@ Claude Desktop shows no tools: check the paths in the config file are absolute, 
 
 Claude says it cannot find the record: run `ls` on the path you configured. A Dropbox or Drive file set to online-only is not on disk, whatever the folder shows.
 
-Anything else, or something that looks wrong in your data: open an issue at [github.com/DrBradStanfield/roadmap/issues](https://github.com/DrBradStanfield/roadmap/issues), or open the chat bubble on any page of this site and ask.
+Anything else, or something that looks wrong in your data: open the chat bubble on any page of this site and ask. (The project's GitHub, where issues usually go, is temporarily not public.)

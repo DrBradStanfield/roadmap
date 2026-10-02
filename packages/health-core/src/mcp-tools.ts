@@ -14,7 +14,7 @@
 import { deadlineSignal } from './adapter';
 import { dayOf, daysBetween, stampFields } from './merge';
 import { displayLabUnit, foldLpa, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
-import { ISO_DATE } from './measurement-history';
+import { ISO_DATE, latestActivePerMetric } from './measurement-history';
 import {
   type AdditionalLabValue,
   DOCUMENT_CLASSIFICATIONS,
@@ -41,7 +41,7 @@ import {
   stampUpdatedAt,
   type EditRejection,
 } from './record-edits';
-import type { FileDocument, FileLabValue, FileMeasurement, FileReminderOptIn, RoadmapFile, RoadmapProfile } from './roadmap-file';
+import type { FileDocument, FileLabValue, FileMeasurement, RoadmapFile, RoadmapProfile } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
 import { CANONICAL_UNITS, formatDisplayValue, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
@@ -94,7 +94,8 @@ export const OPEN_SOURCE_NOTE = REPO_PUBLIC
   ? ` These tools are open source at ${REPO_URL}, MIT licensed. Read the code if the user asks how something ` +
     'works, and use report_feedback to propose a change.'
   // US-32 AC39: no URL while the repository 404s to the public.
-  : ' These tools are open source, MIT licensed. Use report_feedback to propose a change.';
+  // No report_feedback either: a tokenless surface can only refuse one while the repository is hidden.
+  : ' These tools are open source, MIT licensed.';
 
 /**
  * The unit contract, told at connect on both servers (US-32 AC35). A number
@@ -289,6 +290,8 @@ export type FileResultsSource = FileResultsRequest & Required<Pick<FileResultsRe
  */
 const LOOSE = z.record(z.unknown());
 const ROWS = z.array(LOOSE);
+/** A value row as `read_record` hands it out: the record's own fields, plus `current` (US-32 AC41). */
+const VALUE_ROWS = z.array(z.object({ current: z.boolean() }).passthrough());
 
 /**
  * US-37: what a Dropbox read adds when the folder holds files the record
@@ -301,23 +304,19 @@ export const folderNudgeOutput = z.object({
   hint: z.string(),
 }).strict();
 
-/** The record as `readRecord` filters it — the file's own keys, minus the token. */
+/** The record as `readRecord` filters it — the file's own keys, minus its bookkeeping (US-32 AC41). */
 export const readRecordOutput = z.object({
   schemaVersion: z.number(),
   units: LOOSE,
-  meta: LOOSE,
   profile: LOOSE,
-  measurements: ROWS,
+  measurements: VALUE_ROWS,
   medications: ROWS,
   medicationHistory: ROWS,
   supplements: ROWS,
   supplementHistory: ROWS,
   screenings: LOOSE,
-  labValues: ROWS,
+  labValues: VALUE_ROWS,
   documents: ROWS,
-  reminderPreferences: ROWS,
-  recommendationSnapshots: ROWS,
-  reminderOptIn: LOOSE.optional(),
   folder: folderNudgeOutput.optional(),
 }).passthrough();
 
@@ -493,24 +492,51 @@ export type ToolOutcome =
   | { status: 'rejected'; text: string; reason?: McpRefusalReason }
   | { status: 'invalid-args'; text: string };
 
-/** A record safe to hand an assistant: same file, minus the capability secret. */
-export type RedactedRecord = Omit<RoadmapFile, 'reminderOptIn'> & {
-  reminderOptIn?: Omit<FileReminderOptIn, 'token'>;
-};
+/** Per-row sync bookkeeping and device identifiers: the merge's, never what the record says. */
+const BOOKKEEPING = ['createdAt', 'updatedAt', 'lamport', 'fieldStamps', 'externalId'] as const;
+type Plain<T> = Omit<T, (typeof BOOKKEEPING)[number]>;
+
+function plain<T extends object>(row: T): Plain<T> {
+  const copy = { ...row } as Record<string, unknown>;
+  for (const key of BOOKKEEPING) delete copy[key];
+  return copy as Plain<T>;
+}
 
 /**
- * `reminderOptIn.token` manages the user's reminder schedule on Brad's server
- * (agent-access rule 12). It is a capability, not health data: an assistant
- * never needs it, and a copy of it in a chat transcript is a copy that can
- * cancel someone's reminders. It leaves on every read, here, once.
+ * The record an assistant reads (US-32 AC41): what it says, and nothing it
+ * needs only to sync. `meta` is clocks and a device id; the reminder opt-in
+ * holds a capability token that can cancel someone's reminders (agent-access
+ * rule 12) and an email address; reminder settings and recommendation
+ * snapshots are the app's own, and so is `profile.reportEmailCaptured`. Row
+ * ids stay, because `correct_value` takes them. Each measurement and lab row
+ * says whether it is `current`: the row the plan counts for its metric, by the
+ * plan's own rule, so two active rows in one slot never leave a reader guessing
+ * without `createdAt`. A deleted document is gone, text and all. Always a copy:
+ * the caller must never be holding the store's own object.
  */
-export function redactRecord(file: RoadmapFile): RedactedRecord {
-  // Always a copy, even with nothing to strip: a caller handed something typed
-  // RedactedRecord must never be holding the store's own object.
-  const { reminderOptIn, ...rest } = file;
-  if (!reminderOptIn) return rest;
-  const { token: _secret, ...optIn } = reminderOptIn;
-  return { ...rest, reminderOptIn: optIn };
+export function redactRecord(file: RoadmapFile) {
+  const {
+    meta: _meta, reminderOptIn: _optIn, reminderPreferences: _prefs, recommendationSnapshots: _snapshots,
+    profile, screenings, measurements, labValues, medications, medicationHistory, supplements, supplementHistory, documents, ...rest
+  } = file;
+  const { reportEmailCaptured: _emailFlag, ...shownProfile } = plain(profile);
+  // By position, never by id: a reused id must not make a second row current.
+  const currentMeasurements = new Set(latestActivePerMetric(measurements.map((m, at) => ({ ...m, at }))).map((r) => r.at));
+  const currentLabs = new Set(latestActivePerMetric(labValues.map((l, at) => ({ ...l, metricType: labSlotKey(l.metricName), at }))).map((r) => r.at));
+  return {
+    ...rest,
+    profile: shownProfile,
+    screenings: plain(screenings),
+    measurements: measurements.map((row, at) => ({ ...plain(row), current: currentMeasurements.has(at) })),
+    labValues: labValues.map((row, at) => ({ ...plain(row), current: currentLabs.has(at) })),
+    medications: medications.map(plain),
+    // A history row's `updatedAt` is when the change happened: the user's own history, so it stays.
+    medicationHistory: medicationHistory.map((row) => ({ ...plain(row), updatedAt: row.updatedAt })),
+    supplements: supplements.map(plain),
+    supplementHistory: supplementHistory.map((row) => ({ ...plain(row), updatedAt: row.updatedAt })),
+    documents: documents.filter((d) => !d.deleted).map(({ id, title, type, date, sourceFileName, extractedText }) =>
+      ({ id, title, type, date, sourceFileName: sourceFileName ?? null, extractedText })),
+  };
 }
 
 function matchesMetric(name: string, query: string): boolean {
@@ -530,14 +556,8 @@ export function readRecord(file: RoadmapFile, request: z.infer<typeof readRecord
   const since = request.since;
   const keep = (row: { recordedAt?: string | null }) => !since || dayOf(row.recordedAt ?? '') >= since;
 
-  // The per-field clocks are the merge's bookkeeping, not what the record says
-  // (US-10 AC6); an agent writes through the tools, which stamp for it.
-  const { fieldStamps: _profileClocks, ...profile } = record.profile;
-  const { fieldStamps: _screeningClocks, ...screenings } = record.screenings;
   const filtered = {
     ...record,
-    profile,
-    screenings,
     measurements: record.measurements.filter((m) => (!metric || matchesMetric(m.metricType, metric)) && keep(m)),
     labValues: record.labValues.filter((l) => (!metric || matchesMetric(l.metricName, metric)) && keep(l)),
     // A question about one metric is not a question about the user's documents,
@@ -963,14 +983,26 @@ function prepareFeedback(
   };
 }
 
+/** One wording for every transient GitHub failure (US-32 AC39): the agent can only retry. */
+export const FEEDBACK_UNAVAILABLE = 'Feedback could not be filed right now. Nothing was posted. Try again later.';
+
+/** A surface with no filer while the repository is hidden: permanent, so no "try again" (US-32 AC39). */
+export const FEEDBACK_HIDDEN = 'This server cannot file reports while the project\'s GitHub is not public. Nothing was posted.';
+
+/** Where a report goes while GitHub hides the repository (US-32 AC39); it still turns public, so the privacy rules stand. */
+const HIDDEN_ISSUE = 'an issue on the project’s GitHub, which is temporarily not public and becomes public when it is';
+
 /**
  * Prepare a bug report as a prefilled GitHub issue URL — what a surface with no
  * GitHub token can do. It holds no secret, makes no request and writes nothing:
  * the user opens the URL, reads what it says and submits it themselves.
  */
-export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now: string, dryRun = false): ToolOutcome {
+export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now: string, dryRun = false, canFile = false): ToolOutcome {
   const prepared = prepareFeedback(request, now);
   if (!prepared.ok) return { status: 'rejected', reason: prepared.reason, text: prepared.text };
+  // US-32 AC39: the new-issue link 404s while GitHub hides the repository, so only a
+  // surface that can file may even propose; the rest refuse, at the proposal too.
+  if (!REPO_PUBLIC && !(dryRun && canFile)) return { status: 'rejected', text: FEEDBACK_HIDDEN };
 
   const body = `${prepared.detail}\n\n---\nReported via health-roadmap MCP ${SERVER_VERSION}, tool layer v${TOOL_LAYER_VERSION}, ${dayOf(now)}`;
   const url = `https://github.com/${FEEDBACK_REPO}/issues/new?labels=from-connector,${request.kind}`
@@ -986,11 +1018,15 @@ export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now
   const text = dryRun
     // The receipt is the ONE place a human sees the report before it is public,
     // so it shows the prepared text itself — a title alone hides what gets filed.
-    ? `Would file a PUBLIC GitHub issue (${request.kind}): “${prepared.title}”.\n\n${prepared.detail}\n\nThat detail is filed as written. Read it to the user before they confirm.`
+    ? (REPO_PUBLIC
+      ? `Would file a PUBLIC GitHub issue (${request.kind}): “${prepared.title}”.`
+      : `Would file “${prepared.title}” (${request.kind}) as ${HIDDEN_ISSUE}.`) +
+      `\n\n${prepared.detail}\n\nThat detail is filed as written. Read it to the user before they confirm.`
     : `${url}\n\nShow the user this link. Ask them to read the title and body first — they must contain no ` +
       'health values, no names and no file paths — and to submit it themselves; it needs a GitHub account. ' +
       'Nothing has been sent anywhere.';
-  return { status: 'ok', text, data: { filed: false, url, kind: request.kind, title: prepared.title } };
+  // US-32 AC39: only a dry run gets here while hidden, and its link would 404.
+  return { status: 'ok', text, data: { filed: false, url: REPO_PUBLIC ? url : '', kind: request.kind, title: prepared.title } };
 }
 
 /**
@@ -1016,7 +1052,8 @@ export async function fileFeedback(
       // US-32 AC39: GitHub hides the repository while the account is flagged; the issue exists, its link 404s.
       : `Filed as issue #${result.number}. Tell the user their report is in, carrying their description and nothing ` +
         'about them or their health record. The project’s GitHub is temporarily not public, so the link will not open for them yet.',
-    data: { filed: true, url: result.url, number: result.number, kind: request.kind, title: prepared.title },
+    // US-32 AC39: the link 404s while hidden, so the number carries the issue.
+    data: { filed: true, url: REPO_PUBLIC ? result.url : '', number: result.number, kind: request.kind, title: prepared.title },
   };
 }
 
@@ -1899,6 +1936,15 @@ const DAY_SCHEMA = { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' } as cons
 /** The two shapes a record or plan section takes, unexpanded on purpose. */
 const OBJECT = { type: 'object' } as const;
 const OBJECT_ARRAY = { type: 'array', items: { type: 'object' } } as const;
+/** US-32 AC41: which row the plan counts, so a reader never needs the stripped `createdAt` to break a tie. */
+const VALUE_ROW_ARRAY = {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: { current: { type: 'boolean', description: 'True on the one row the plan counts for this metric; read it instead of guessing.' } },
+    required: ['current'],
+  },
+} as const;
 
 /** The first call of a two-phase write answers with these beside its ordinary fields (US-36 AC9). */
 const PROPOSAL_SCHEMA = {
@@ -1930,23 +1976,19 @@ const ROW_FIELDS = {
 /** The half of the unit contract both `units` maps share (US-32 AC35). */
 const LAB_UNIT_NOTE = ' A catalogued labValues[] row is stored in its SI unit, converted from what the lab printed; a test the catalogue does not know keeps the unit it was reported in.';
 
-/** Every section `readRecord` returns. `reminderOptIn` is the only optional one. */
+/** Every section `readRecord` returns (US-32 AC41), all of them always. */
 const RECORD_SECTIONS = {
   schemaVersion: { type: 'number' },
   units: { type: 'object', description: `Every measurements[].value is stored in this SI unit, keyed by metricType.${OFF_CATALOGUE_NOTE}${LAB_UNIT_NOTE}` },
-  meta: OBJECT,
   profile: OBJECT,
-  measurements: OBJECT_ARRAY,
+  measurements: VALUE_ROW_ARRAY,
   medications: OBJECT_ARRAY,
   medicationHistory: OBJECT_ARRAY,
   supplements: OBJECT_ARRAY,
   supplementHistory: OBJECT_ARRAY,
   screenings: OBJECT,
-  labValues: OBJECT_ARRAY,
+  labValues: VALUE_ROW_ARRAY,
   documents: OBJECT_ARRAY,
-  reminderPreferences: OBJECT_ARRAY,
-  recommendationSnapshots: OBJECT_ARRAY,
-  reminderOptIn: OBJECT,
 } as const;
 
 /** US-37: the nudge, as both reads publish it. */
@@ -2118,7 +2160,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'Return the user’s health-roadmap.json: profile, measurements, lab values, medications, supplements, ' +
       'screenings and documents. Rows are never deleted here — a superseded value stays with status ' +
       '"entered-in-error", so read `status: "active"` rows as the current truth. Optionally narrow to one ' +
-      'metric or to rows on or after a date. The reminder capability token is never included. Measurements ' +
+      'metric or to rows on or after a date. Use each row\'s `current` flag for the value the plan counts. ' +
+      'Sync bookkeeping is left out. Measurements ' +
       'are SI (`units`). A catalogued lab is converted to SI; an unknown test keeps the unit it was reported in.',
     inputSchema: {
       type: 'object',
@@ -2131,7 +2174,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     outputSchema: {
       type: 'object',
       properties: RECORD_SECTIONS,
-      required: Object.keys(RECORD_SECTIONS).filter((key) => key !== 'reminderOptIn'),
+      required: Object.keys(RECORD_SECTIONS),
       // Open, alone among the tools: `migrateFile` keeps unknown top-level keys,
       // so a record written by a newer app would fail a strict schema on read.
     },
@@ -2346,11 +2389,13 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     _meta: invocation('Preparing your report…', 'Prepared your report'),
     title: 'File a bug report or feature request',
     description:
-      'This files a public GitHub issue. Do not include diagnoses, names, contact details, or values; describe the ' +
-      'behaviour, not the person — dates of results and file paths too. Say it is public before you call it, and only ' +
+      (REPO_PUBLIC ? 'This files a public GitHub issue.' : `This files ${HIDDEN_ISSUE}.`) +
+      ' Do not include diagnoses, names, contact details, or values; describe the ' +
+      `behaviour, not the person — dates of results and file paths too. Say it ${REPO_PUBLIC ? 'is' : 'will be'} public before you call it, and only ` +
       'when the user asked you to. Offer it when a tool refuses something they expected, the record cannot hold what ' +
-      'they want to track, or a result looks wrong. Without a GitHub token the server answers with a link they ' +
-      'submit themselves; the answer says which.',
+      'they want to track, or a result looks wrong.' +
+      // US-32 AC39: while hidden the tokenless link would 404, so that path refuses and says so itself.
+      (REPO_PUBLIC ? ' Without a GitHub token the server answers with a link they submit themselves; the answer says which.' : ''),
     inputSchema: {
       type: 'object',
       properties: {
@@ -2365,7 +2410,10 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       type: 'object',
       properties: {
         filed: { type: 'boolean', description: 'True if the issue now exists. False if the user must submit it.' },
-        url: { type: 'string', description: 'The issue, or the prefilled link the user opens.' },
+        url: {
+          type: 'string',
+          description: REPO_PUBLIC ? 'The issue, or the prefilled link the user opens.' : 'Empty while the project’s GitHub is not public; `number` names a filed issue.',
+        },
         number: { type: 'integer', description: 'The issue number, when one was filed.' },
         kind: { type: 'string', enum: ['bug', 'feature'] },
         title: { type: 'string' },
@@ -2635,7 +2683,7 @@ function parseArgs<N extends ToolName>(name: N, args: unknown): { ok: true; data
 export function callTool(
   name: ToolName,
   args: unknown,
-  context: EditContext & { file: RoadmapFile | undefined; dryRun?: boolean },
+  context: EditContext & { file: RoadmapFile | undefined; dryRun?: boolean; canFile?: boolean },
 ): ToolOutcome {
   const parsed = parseArgs(name, args);
   if (!parsed.ok) return { status: 'invalid-args', text: parsed.text };
@@ -2649,7 +2697,7 @@ export function callTool(
   const record = file as RoadmapFile;
   switch (name) {
     case 'report_feedback':
-      return reportFeedback(parsed.data as z.infer<typeof reportFeedbackInput>, now, context.dryRun);
+      return reportFeedback(parsed.data as z.infer<typeof reportFeedbackInput>, now, context.dryRun, context.canFile);
     case 'read_record':
       return readRecord(record, parsed.data as z.infer<typeof readRecordInput>);
     case 'get_plan':
@@ -2778,7 +2826,7 @@ export async function runToolOverSync(
     // A malformed call is worded in one place: `callTool` parses and refuses.
     const outcome = filer && parsed?.ok
       ? await fileFeedback(parsed.data, now, filer)
-      : callTool(name, args, { file: undefined, now, latestDay: options.latestDay, dryRun: options.dryRun });
+      : callTool(name, args, { file: undefined, now, latestDay: options.latestDay, dryRun: options.dryRun, canFile: Boolean(options.fileFeedback) });
     // A file to save with nothing opened would be a write dropped in silence.
     if (outcome.status === 'ok' && outcome.file) {
       throw new ToolContractError(`${name} produced a file without opening one`);

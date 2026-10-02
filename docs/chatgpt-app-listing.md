@@ -24,7 +24,7 @@ What OpenAI's plugin submission needs, and where each part lives. Requirements r
 **In the ZIP** ([`plugin/`](chatgpt-review/plugin/), validated by the build script against the Agent Plugins
 schemas and the documented error codes): display name, subtitle (30 characters), long description,
 category **Healthcare** (a valid value now, so nothing to re-select), the four listing URLs, the logo
-(`assets/logo.png`, a copy of `demo-video/public/app-icon.png`), three starter prompts (the limit), five
+(`assets/logo.png`, taken from `demo-video/public/app-icon.png` at build time), three starter prompts (the limit), five
 positive and three negative test cases, commerce `false`, countries `[]` (no restriction), release notes,
 and the MCP server URL in `mcp.json`. No skills, no screenshots (we return no UI), no CSP.
 
@@ -78,7 +78,7 @@ ready in case the MCP tab asks. They explain the server's annotations; they neve
 | `add_lab_values` | Appends up to 50 lab rows in one call and writes the file back to the user's own cloud. | Writes only to the calling user's own file, over that user's own credential. | Append-only and all rows or none: existing rows are never deleted, and a duplicate test on the same day is refused. |
 | `correct_value` | Appends the corrected row, flips the row it supersedes and writes the file back. | Touches only the calling user's own file in that user's own cloud. | It deletes nothing, but the superseded row is marked entered-in-error permanently, guarded by a required expected value and a 90-day age limit. |
 | `update_profile` | Writes sex, birth year, birth month or height into the record's profile and saves the file. | Writes only to the calling user's own file, over that user's own credential. | The profile is last-writer-wins, so a change overwrites what stood there; each changed field requires the value the caller expects to find, and a mismatch writes nothing. |
-| `report_feedback` | Files a public GitHub issue on the project's repository for the user. | It posts to GitHub's API on our own repository, carrying only what the assistant wrote about the problem; anything that reads as a health value, an email address, a phone number, a file name or a link carrying a token is refused before it is sent. | A filed issue cannot be unfiled, so the send is irreversible (US-32 AC39); it takes nothing away, and the health record is neither read nor changed. |
+| `report_feedback` | Files an issue on the project's GitHub repository for the user; the repository is temporarily not public, and the issue becomes public when it is. | It posts to GitHub's API on our own repository, carrying only what the assistant wrote about the problem; anything that reads as a health value, an email address, a phone number, a file name or a link carrying a token is refused before it is sent. | A filed issue cannot be unfiled, so the send is irreversible (US-32 AC39); it takes nothing away, and the health record is neither read nor changed. |
 | `import_documents` | Its extract phase parks candidate values in the user's own folder and its commit phase appends values and files documents. | It sends a file from the user's own connected Dropbox folder, never the record, to Anthropic's API for extraction, and keeps nothing after extraction. | A replace in commit marks the superseded row entered-in-error permanently, guarded by the expected value, a 90-day age limit and the user’s own confirmation. |
 | `file_results` | Appends the lab values the user confirmed and files the document as a metadata-only row in the user's own file. | ChatGPT read the attached file, so the call carries only the values it read and reaches nothing outside the user’s own record. | A replace flips the superseded row to entered-in-error permanently, guarded by the expected value, a 90-day age limit and the user’s own confirmation. |
 
@@ -98,13 +98,18 @@ fixture. `add_lab_values` is not among the five: positive 4 writes lab rows thro
 the expected outputs are relative to the fixture: never an exact count, never a value a reviewer has
 to choose.
 
-**Fixture work before submitting (Brad).**
+**Fixture work before submitting (Brad), in this order.** Each step depends on the one before.
 
-- **A fresh ferritin row.** Add a NEW ferritin row dated within the last few days through the normal write path (the website, or `add_lab_values`), so positive 5's most recent ferritin stays inside the 90-day correction window for the whole review. A correction keeps the original date, so it cannot extend a row's life; only a new row can.
-- **Positive 2's date.** Check 2 March 2026 holds no weight on the reviewer record today. If it does, pick another empty past date, change it in `plugin.json`, and rebuild the ZIP.
-- **The synthetic lab PDF.** Positive 4 uses [`docs/chatgpt-review/sample-lab-report.pdf`](chatgpt-review/sample-lab-report.pdf), built by `node docs/chatgpt-review/make-sample-lab-report.mjs`. One A4 page with a real text layer, headed "SAMPLE REPORT: invented data for app review, not a real patient": Example Pathology Laboratory, patient "SAMPLE, Alex", male, born 1979, collected 2026-09-28, reported 2026-09-29. Eight invented results, each a name and unit the catalogue takes: HbA1c (mmol/mol), total, HDL and LDL cholesterol and triglycerides (mmol/L), creatinine (umol/L), ferritin (ug/L, 140, not the record's 95) and vitamin D (nmol/L). LDL is flagged slightly high, so the plan has something to say. A dry run through `file_results` on an empty record filed all eight and the document, with nothing refused. Never put a real report in its place. Its name is its dedup key: a reviewer who re-sends it gets "already imported", which the expected output covers, so do not rename it. Keep the fresh ferritin row (above) off 2026-09-28, or positive 4 meets a held ferritin on that day and offers a replacement instead of a plain add. Hosted at a stable public URL (same bytes as the repo copy, checked 2026-10-02), named in positive 4's `file_attachment_urls` and in the review details.
+1. **Proof.** Run the full positive set twice in a row through the reviewer login (Playwright as ChatGPT, or ChatGPT developer mode); both runs must pass as written. Positive 4 drops the proof variant, `sample-lab-report-proof.pdf` (`node docs/chatgpt-review/make-sample-lab-report.mjs --variant`: the same results under another file name, collected 2026-09-21), never the reviewer's `sample-lab-report.pdf`, whose file name is its dedup key.
+2. **Positive 2's date.** The proof runs wrote weights, so check now: the date in positive 2 (2 March 2026) must hold no weight on the reviewer record. If it does, pick another empty past date and change it in `plugin.json`.
+3. **A fresh ferritin row.** Add a NEW ferritin row dated after 2026-09-28, for example 2026-09-30, through the normal write path (the website, or `add_lab_values`), so positive 5's most recent ferritin stays inside the 90-day correction window for the whole review and is off positive 4's collection day. A correction keeps the original date, so it cannot extend a row's life; only a new row can.
+4. **Check the record.** `sample-lab-report.pdf` was never filed (no document and no lab row carry that file name), and the record holds no `reminderOptIn`.
+5. **Rebuild the ZIP** (`node docs/chatgpt-review/build-plugin-zip.mjs`).
+
+Reference for the steps above:
+
+- **The synthetic lab PDF.** Positive 4 uses [`docs/chatgpt-review/sample-lab-report.pdf`](chatgpt-review/sample-lab-report.pdf), built by `node docs/chatgpt-review/make-sample-lab-report.mjs`. One A4 page with a real text layer, headed "SAMPLE REPORT: invented data for app review, not a real patient": Example Pathology Laboratory, patient "SAMPLE, Alex", male, born 1979, collected 2026-09-28, reported 2026-09-29. Eight invented results, each a name and unit the catalogue takes: HbA1c (mmol/mol), total, HDL and LDL cholesterol and triglycerides (mmol/L), creatinine (umol/L), ferritin (ug/L, 140) and vitamin D (nmol/L). LDL is flagged slightly high, so the plan has something to say. A dry run through `file_results` on an empty record filed all eight and the document, with nothing refused. Never put a real report in its place. Its name is its dedup key: a reviewer who re-sends it gets "already imported", which the expected output covers, so do not rename it. Keep the fresh ferritin row (step 3) off 2026-09-28, or positive 4 meets a held ferritin on that day and offers a replacement instead of a plain add. Hosted at a stable public URL (same bytes as the repo copy, checked 2026-10-02), named in positive 4's `file_attachment_urls` and in the review details.
 - **The budget, per full run of the five.** Writes are weighted per connection per hour, and every reviewer shares one bucket. Positive 2 costs 1, positive 4 about 2, positive 5 costs 5 (a correction is charged at its proposal); 1, 3 and the reads cost nothing. About 8 of the 60 an hour, so about seven full runs an hour across all reviewers. About 10 tool calls a run against 120 a minute. `file_results` sends nothing to the extraction model, so the 30 import files a day are untouched. `report_feedback` is not among the five; a reviewer who tries it shares 3 issues a day across every reviewer session, and the Variant C text says so.
-- **Proof.** Run the full positive set twice in a row through the reviewer login (Playwright as ChatGPT, or ChatGPT developer mode); both runs must pass as written.
 
 ### Refusals a reviewer may see
 
@@ -113,7 +118,7 @@ reviewer trips one.
 
 1. **A second weight on a day that already holds one.** `add_measurement` refuses and offers `correct_value`: one active value per metric per day, so a silent overwrite would destroy history.
 2. **A correction with a stale `expectedValue`.** `correct_value` refuses and the model re-reads: the row moved under it, and correcting the wrong row is a clinical error.
-3. **A bug report carrying a health value.** `report_feedback` refuses and sends nothing: the issue it would file is public.
+3. **A bug report carrying a health value.** `report_feedback` refuses and sends nothing: the issue it would file becomes public.
 4. **A correction to a metric the record has no row for.** `correct_value` refuses by id and says not to add it instead unless the user asks; the model does not reach for `add_measurement` or `add_lab_values` on its own (live 2026-09-07 it did).
 5. **Folder import on a Google Drive account.** `import_documents` refuses and says so: Google's `drive.file` scope cannot list a folder. Dropbox only, so the reviewer account in use will not hit this. Positive 4 is the import path that works everywhere.
 
@@ -134,7 +139,7 @@ links, or private-network access".
 
 **A dedicated reviewer account, holding synthetic data only.** Built 2026-09-18. It is not Brad's own record and not a shared production credential; everything in it is invented.
 
-- **Loaded and verified.** Profile male, born 1979, 178 cm, plus 15 measurements, 5 lab rows and 1 supplement, so `get_plan` runs first time and positives 1, 3 and 5 all have something to work on. Confirm one lab row is a ferritin of 95 ug/L dated about 60 days ago, or edit positives 1 and 5 to the value that is there.
+- **Loaded and verified.** Profile male, born 1979, 178 cm, plus 15 measurements, 5 lab rows and 1 supplement, so `get_plan` runs first time and positives 1, 3 and 5 all have something to work on. Positive 5 corrects the most recent ferritin, whatever its value, so fixture step 3's fresh row is the one it finds.
 - **Placeholders here, values only in the dashboard.** This repository is public, so real usernames and passwords never appear in it. The real values live in Brad's private credentials file and in the dashboard's Review details.
 
 **Variant C is in use from 1.0.2.** Variants A and B stay below as history: B was the 1.0.1 answer, and the reviewer met Dropbox's emailed code with it.
@@ -199,7 +204,9 @@ In use. A fresh Dropbox Basic account on a plus-alias of the scratch mailbox, em
 ## What 1.0.2 adds over 1.0.1
 
 The release notes are in `plugin.json` (`publication.release_notes`): the reviewer sign-in on our own
-consent page, ChatGPT client only, and the move to a plugin package.
+consent page, ChatGPT and Codex clients only; `report_feedback` destructive and worded for a hidden
+repository; `get_plan` without product links; `read_record` without sync bookkeeping; server
+instructions without the repository link; and the move to a plugin package.
 
 ## What 1.0.1 adds over 1.0.0
 
@@ -238,9 +245,14 @@ This is a **resubmission**: a new 1.0.1 version inside the existing app record, 
 
 1. Republish the privacy page (`node scripts/build-privacy-page.mjs --publish`) and the guides (`node scripts/publish-guides.mjs --publish`), so every public custody sentence names the reviewer exception before the box exists.
 2. Stage the three reviewer secrets and deploy, then run the in-machine check ([runbook](deploy-runbook-mcp.md#the-openai-reviewer-sign-in-us-32-ac38)). At `--mint`'s prompt, type the reviewer account's email address by hand; do not autofill it. It is the plus-address (`name+tag@domain`); the base address is the scratch account, and the tool refuses it. The tool stages the token only if Dropbox confirms that verified address and the synthetic record. Run the first `--mint` without `--expect` (Dropbox's UI never shows the account id), save the `dbid:` id it prints on `match` in the credentials file, and pass `--expect <id>` on every later mint.
-3. The fixture work under Test cases: the fresh ferritin row and positive 2's date. The synthetic lab PDF is hosted (done).
-4. Live verification (plan §7): the check prints `ok`; a Playwright run as ChatGPT on each pinned callback (wrong password first, then right); one connection from ChatGPT developer mode with the reviewer login; the positive set twice; a real WebKit screenshot of the consent page at phone width.
-5. Resubmit from the OpenAI Platform dashboard: build the ZIP (`npm run build:chatgpt-plugin`), open the plugin and choose **Upload plugin to make changes**, resolve the **Metadata & Skills** findings, **Connect** the MCP server (domain challenge, then the scan), paste [review-details.md](chatgpt-review/review-details.md) into **Review details** with the real credentials, check the demo recording URL, then **Submit for review**.
+3. The fixture work under Test cases, in its order: proof runs with the variant PDF, positive 2's date, the fresh ferritin row, the record check, then the ZIP. The synthetic lab PDF is hosted (done).
+4. Live verification (plan §7): the check prints `ok`; a Playwright run as ChatGPT on each pinned callback (wrong password first, then right); one connection from ChatGPT developer mode with the reviewer login; a real WebKit screenshot of the consent page at phone width. The positive set twice is step 3's proof.
+5. Resubmit from the OpenAI Platform dashboard:
+   - **Package name first.** Read the existing plugin's package name (**Download release ZIP**, or the name the upload error quotes) and make `plugin.json` `name` match it; rebuild the ZIP (`npm run build:chatgpt-plugin`).
+   - Open the plugin, choose **Upload plugin to make changes**, and resolve the **Metadata & Skills** findings.
+   - **Connect** the MCP server. In the Connect drawer choose CIMD (client `https://chatgpt.com/oauth/client.json`, redirect `https://chatgpt.com/connector_platform_oauth_redirect`), never DCR. Complete Connect's sign-in through the reviewer box, then confirm a `mcp_connect` row with `via: reviewer` in `product_events`.
+   - **Domain.** If the portal shows a domain token different from `OPENAI_APPS_CHALLENGE`, stage the new one on `health-tool-edu` and deploy, then press **Verify**.
+   - Paste [review-details.md](chatgpt-review/review-details.md) into **Review details** with the real credentials, check the demo recording URL, then **Submit for review**.
 6. Reply to the rejection email, worded as evidence, not certainty: our logs show two attempts that reached Dropbox and did not return, and the account's mailbox shows Dropbox asked for an emailed code at 15:59 UTC; the new build signs reviewers in on our own page with no third-party login.
 7. After the verdict, unset the three secrets (runbook). Stage them again before each later submission.
 

@@ -19,11 +19,15 @@ import type { McpProvider } from './mcp-providers.server';
 import { createQuotaCounter } from './rate-limiter';
 
 /**
- * The only client that sees the form: the pinned ChatGPT entry, matched by its
- * exact id, never a lookalike. chatgpt.com echoes any query string into a CIMD
+ * The only clients that see the form: the pinned ChatGPT and Codex entries,
+ * since OpenAI tests "ChatGPT and Codex surfaces". Matched by exact id (a Map
+ * key), never a lookalike: chatgpt.com echoes any query string into a CIMD
  * document, so `…client.json?x=1` resolves as a client named "ChatGPT".
  */
-export const REVIEWER_CLIENT = [...KNOWN_CLIENTS.values()].find(({ label }) => label === 'chatgpt');
+export function reviewerClient(clientId: string) {
+  const client = KNOWN_CLIENTS.get(clientId);
+  return client?.label === 'chatgpt' || client?.label === 'codex' ? client : undefined;
+}
 
 /** A noise brake, not a defence: the password is a ~130-bit random secret. Failures only, 20 per IP per 15 minutes, per machine. */
 export const reviewerFailures = createQuotaCounter(20, 15 * 60_000, 10 * 60_000);
@@ -53,7 +57,7 @@ export function reviewerConfigured(): boolean {
 
 /** Does this client, choosing this cloud, see the reviewer form, and may it sign in? One answer for the page and the POST. */
 export function reviewerOffered(clientId: string, provider: McpProvider): boolean {
-  return clientId === REVIEWER_CLIENT?.clientId && provider === 'dropbox' && reviewerConfigured();
+  return reviewerClient(clientId) !== undefined && provider === 'dropbox' && reviewerConfigured();
 }
 
 /**

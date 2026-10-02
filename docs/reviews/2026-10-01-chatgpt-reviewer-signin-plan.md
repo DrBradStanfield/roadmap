@@ -137,7 +137,7 @@ any kind. The Dropbox-side kill is revoking the token (§4.5).
 - Rendered only when the sealed client id **equals exactly** `https://chatgpt.com/oauth/client.json`
   (chatgpt.com echoes any query string into a CIMD document, so `…client.json?x=1` resolves as a
   client named "ChatGPT"; name or host is never the gate), `reviewerConfigured()`, and Dropbox is
-  available. Claude, Codex, other CIMD and DCR clients never see it. The gate decides who SEES the
+  available. Claude, Codex, other CIMD and DCR clients never see it (amended: see §13 item 5). The gate decides who SEES the
   form; the password is the only security boundary.
 - **Open, above the provider buttons**, headed "OpenAI app reviewers: sign in here", with one line:
   "For OpenAI's app review only. This is not your Dropbox or Google password." Username (`pattern`
@@ -292,7 +292,7 @@ build greps again.
 
 Unit and route tests:
 - Form present for the exact pinned ChatGPT client with valid secrets and Dropbox available (fails
-  today); absent for `…client.json?x=1`, Claude, Codex, other CIMD, DCR, a missing secret, and a
+  today); absent for `…client.json?x=1`, Claude, Codex (amended: see §13 item 5), other CIMD, DCR, a missing secret, and a
   malformed hash (these guard the positive one).
 - Right login, with a normal non-hex username and the password pasted with spaces and in capitals:
   302 with a code; the code redeems at `/mcp/token` with PKCE; **unsealing the code, access and
@@ -452,3 +452,7 @@ is unknown; their guidance asks for exactly this kind of demo login.
    them again (`--password` keeps the old password only if Brad re-enters it; otherwise the form gets
    the new one). The runbook states both steps.
 4. Stored Sentry IPs: left to Sentry's retention. Codex reviewer is now `gpt-6.1-sol`.
+5. **Codex too (2026-10-02, after the pre-submission audit).** OpenAI tests "ChatGPT and Codex
+   surfaces", so the box and the sign-in also accept the exact pinned Codex client id
+   (`https://chatgpt.com/oauth/codex/client.json`), matched as a `KNOWN_CLIENTS` key, never a
+   lookalike. Every other limit in item 1 stands: invented account only, Dropbox only, secrets set.

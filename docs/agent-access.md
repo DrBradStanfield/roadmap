@@ -52,15 +52,24 @@ document has `fileRef: ""`.
    - `measurements` (core metrics) and `labValues` (everything else) are **append-only
      history**. A row's slot is `(metric, calendar day of recordedAt)`, `metricType` for
      measurements, `metricName` for lab values.
-   - Within a slot, at most one row has `status: "active"`. That is the current value.
-     If several are active, the newest `createdAt` wins (larger `id` breaks a tie).
+   - Within a slot, at most one row has `status: "active"`. That is the slot's value.
+     If several are active, the newest `createdAt` wins (larger `id` breaks a tie). A
+     metric's current value is its active row with the latest `recordedAt`, by the same
+     tie-break.
+   - Through `read_record` rows carry no `createdAt` (US-32 AC41). Each `measurements` and
+     `labValues` row carries `current` instead: `true` on the one row the plan counts for
+     that metric, `false` on every other. Use it; do not work the tie-break out yourself.
    - Everything with `status: "entered-in-error"` is superseded history. Keep it, show it
      if asked, never treat it as current.
 4. `medications`, `supplements`, `reminderPreferences` hold current state, one row per
    key. `medicationHistory` and `supplementHistory` are the append-only logs behind them.
    `profile` and `screenings` are singletons. Each may carry `fieldStamps`, the merge's
    clock for each field; it is not part of what the record says, so skip it when reading.
-   `read_record` leaves it out.
+   `read_record` leaves it out, with the rest of the sync bookkeeping (US-32 AC41): `meta`,
+   every row's `createdAt` and `lamport`, `updatedAt` except on the two history logs (there
+   it is the date of the change), `externalId`, `profile.reportEmailCaptured`, the reminder
+   opt-in and settings, recommendation snapshots, deleted documents and each document's
+   storage fields. Row ids stay.
 5. Skip any document with `deleted: true`. The row stays in the file forever; the user
    deleted it.
 

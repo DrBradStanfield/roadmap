@@ -6,7 +6,7 @@
  * a batch is all-or-nothing and bounded, a taken slot sends the agent to
  * `correct_value`, and `expectedValue` refuses a stale correction.
  */
-import { describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect, vi } from 'vitest';
 import Ajv2020 from 'ajv/dist/2020';
 import { isRefusalReason, MCP_REFUSAL_REASONS, MCP_TOOL_NAMES } from './product-events';
 import { z } from 'zod';
@@ -92,16 +92,29 @@ function ok(outcome: { status: string; text: string; file?: RoadmapFile }) {
   return outcome;
 }
 
+/**
+ * The tool layer as it loads with `REPO_PUBLIC` set either way (US-32 AC39),
+ * so both states are pinned whichever one ships.
+ */
+async function withRepoPublic(isPublic: boolean): Promise<typeof import('./mcp-tools')> {
+  vi.resetModules();
+  vi.doMock('./plan', async (importOriginal) => ({ ...(await importOriginal<typeof import('./plan')>()), REPO_PUBLIC: isPublic }));
+  try {
+    return await import('./mcp-tools');
+  } finally {
+    vi.doUnmock('./plan');
+    vi.resetModules();
+  }
+}
+
 describe('US-32 — read_record strips the reminder capability token', () => {
-  it('never returns reminderOptIn.token, and keeps the rest of the opt-in', () => {
+  it('never returns reminderOptIn.token, nor the opt-in around it (US-32 AC41)', () => {
     const text = ok(readRecord(base(), {})).text;
 
     expect(text).not.toContain('SECRET-CAPABILITY-TOKEN');
     expect(text).not.toContain('"token"');
-    const parsed = JSON.parse(text);
-    expect(parsed.reminderOptIn).toEqual({
-      status: 'active', email: 'brad@example.com', provider: 'dropbox', updatedAt: NOW, lamport: 1,
-    });
+    expect(text).not.toContain('brad@example.com');
+    expect(JSON.parse(text).reminderOptIn).toBeUndefined();
   });
 
   it('strips it on every path a tool can be reached by', () => {
@@ -119,6 +132,156 @@ describe('US-32 — read_record strips the reminder capability token', () => {
     delete file.reminderOptIn;
 
     expect(JSON.parse(ok(readRecord(file, {})).text).reminderOptIn).toBeUndefined();
+  });
+});
+
+describe('US-32 AC41 — read_record hands an assistant what the record says, not its bookkeeping', () => {
+  /** A record holding every kind of bookkeeping and identifier a file can carry. */
+  function busy(): RoadmapFile {
+    const file = base();
+    file.measurements.push(createMeasurement({
+      id: 'm3', metricType: 'weight', value: 81, recordedAt: '2026-08-01',
+      createdAt: '2026-08-01T07:00:00Z', source: 'healthkit' as never, externalId: 'HK-SAMPLE-UUID-123',
+    }));
+    const stamp = { updatedAt: '2026-08-02T00:00:00Z', lamport: 41 };
+    file.medications.push({ id: 'med1', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', ...stamp });
+    file.medicationHistory.push({ id: 'mh1', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', changeType: 'started', ...stamp });
+    file.supplements.push({ id: 's1', supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: 1, doseUnit: 'g', status: 'active', startedAt: '2026-08-01', ...stamp });
+    file.supplementHistory.push({ id: 'sh1', supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: 1, doseUnit: 'g', status: 'active', startedAt: '2026-08-01', changeType: 'started', ...stamp });
+    file.reminderPreferences.push({ category: 'lipids', enabled: true, ...stamp });
+    file.recommendationSnapshots.push({ date: '2026-08-02', suggestions: [] });
+    file.documents.push(
+      {
+        id: 'd1', title: 'Clinic letter', type: 'clinic_letter', date: '2026-08-01', fileRef: 'documents/doc_1.pdf',
+        contentHash: 'sha256-abc', mimeType: 'application/pdf', extractedText: 'The letter says hello.',
+        addedAt: '2026-08-02T00:00:00Z', metadata: { model: 'x' }, sourceFileName: 'letter.pdf',
+      },
+      {
+        id: 'd2', title: 'Deleted scan', type: 'scan_result', date: '2026-07-01', fileRef: 'documents/doc_2.pdf',
+        contentHash: 'sha256-def', mimeType: 'application/pdf', extractedText: 'GONE-TEXT', addedAt: '2026-07-02T00:00:00Z', deleted: true,
+      },
+    );
+    Object.assign(file.profile, stamp, { reportEmailCaptured: true });
+    Object.assign(file.screenings, stamp);
+    return file;
+  }
+
+  it('leaves out the meta clocks, the reminder settings, the snapshots and every per-row clock', () => {
+    const text = ok(readRecord(busy(), {})).text;
+    const parsed = JSON.parse(text);
+
+    for (const key of ['meta', 'reminderOptIn', 'reminderPreferences', 'recommendationSnapshots']) expect(parsed, key).not.toHaveProperty(key);
+    // History rows keep `updatedAt` (their change date); nothing else does.
+    const { medicationHistory: _mh, supplementHistory: _sh, ...withoutHistory } = parsed;
+    expect(JSON.stringify(withoutHistory)).not.toContain('"updatedAt"');
+    for (const word of ['"lamport"', '"createdAt"', '"externalId"', '"fieldStamps"', '"lastDeviceId"', '"eraseEpoch"',
+      CTX.deviceId, 'HK-SAMPLE-UUID-123', 'brad@example.com', '"fileRef"', '"contentHash"', '"mimeType"', '"addedAt"', '"metadata"']) {
+      expect(text, word).not.toContain(word);
+    }
+    expect(() => OUTPUTS.read_record.parse(parsed)).not.toThrow();
+  });
+
+  it('keeps what the tools and the user need: ids, days, values, units, status, corrections, profile, documents', () => {
+    const parsed = JSON.parse(ok(readRecord(busy(), {})).text);
+
+    expect(parsed.schemaVersion).toBe(busy().schemaVersion);
+    expect(parsed.profile).toMatchObject({ sex: 'male', birthYear: 1971, heightCm: 178, unitSystem: 'si' });
+    // An app flag about email capture, not something the record says about the user.
+    expect(parsed.profile).not.toHaveProperty('reportEmailCaptured');
+    expect(Object.keys(parsed.measurements[0]).sort()).toEqual(['correctsId', 'current', 'id', 'metricType', 'recordedAt', 'source', 'status', 'value']);
+    expect(Object.keys(parsed.labValues[0]).sort())
+      .toEqual(['correctsId', 'current', 'id', 'metricName', 'recordedAt', 'referenceHigh', 'referenceLow', 'source', 'status', 'unit', 'value']);
+    expect(parsed.medications).toEqual([{ id: 'med1', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }]);
+    // A history row's change date is the user's own history, not bookkeeping: it keeps `updatedAt`, never `lamport`.
+    expect(parsed.medicationHistory).toEqual([{
+      id: 'mh1', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', changeType: 'started', updatedAt: '2026-08-02T00:00:00Z',
+    }]);
+    expect(parsed.supplements[0]).toMatchObject({ id: 's1', status: 'active', startedAt: '2026-08-01' });
+    expect(parsed.supplements[0]).not.toHaveProperty('updatedAt');
+    expect(parsed.supplementHistory[0]).toMatchObject({ id: 'sh1', changeType: 'started', updatedAt: '2026-08-02T00:00:00Z' });
+    expect(parsed.supplementHistory[0]).not.toHaveProperty('lamport');
+    // A deleted document is gone, text and all; a live one keeps what the website shows.
+    expect(parsed.documents).toEqual([{
+      id: 'd1', title: 'Clinic letter', type: 'clinic_letter', date: '2026-08-01', sourceFileName: 'letter.pdf', extractedText: 'The letter says hello.',
+    }]);
+  });
+
+  it('marks the row the plan counts as current, even with two active rows in one slot, without touching the file', () => {
+    const file = base();
+    // Two active rows on one day: the invariant broken, as a stale writer can leave it.
+    file.measurements.push(createMeasurement({ id: 'm9', metricType: 'ldl', value: 2.9, recordedAt: '2026-07-14', createdAt: '2026-07-15T08:00:00Z' }));
+    // Spelled differently from its twin ('ferritin'): the slot is the catalogue key, so labSlotKey must join them.
+    file.labValues.push({ ...file.labValues[0], id: 'l9', metricName: 'Ferritin', value: 180, createdAt: '2026-07-15T08:00:00Z' });
+    file.measurements.push(createMeasurement({ id: 'm8', metricType: 'ldl', value: 9.9, recordedAt: '2026-08-01', createdAt: '2026-08-01T08:00:00Z', status: 'entered-in-error' }));
+    const before = JSON.stringify(file);
+
+    const read = JSON.parse(ok(readRecord(file, {})).text);
+    const plan = JSON.parse(ok(getPlan(file, NOW)).text);
+    const current = (rows: Array<{ id: string; current: boolean }>) => rows.filter((r) => r.current).map((r) => r.id);
+
+    const ldl = read.measurements.filter((m: { metricType: string }) => m.metricType === 'ldl');
+    expect(current(ldl)).toEqual([plan.currentValues.find((v: { metric: string }) => v.metric === 'ldl').id]);
+    expect(current(ldl)).toEqual(['m9']); // the later-created twin, as the plan picks it; never the entered-in-error row
+    expect(current(read.labValues)).toEqual([plan.labValues.find((l: { key: string }) => l.key === 'ferritin').id]);
+    expect(current(read.labValues)).toEqual(['l9']);
+    for (const row of [...read.measurements, ...read.labValues]) expect(typeof row.current, row.id).toBe('boolean');
+    // A narrowed read marks the same row.
+    expect(current(JSON.parse(ok(readRecord(file, { metric: 'ldl' })).text).measurements)).toEqual(['m9']);
+    // Narrowed by day too: `current` is the whole record's answer, not the filtered slice's.
+    const narrowed = JSON.parse(ok(readRecord(file, { metric: 'ferritin', since: '2026-07-14' })).text);
+    expect(narrowed.labValues.map((l: { id: string }) => l.id).sort()).toEqual(['l1', 'l9']);
+    expect(current(narrowed.labValues)).toEqual(['l9']);
+    expect(current(JSON.parse(ok(readRecord(file, { since: '2026-07-15' })).text).measurements)).toEqual([]);
+    // Published and enforced: every value row carries it.
+    expect(() => OUTPUTS.read_record.parse(read)).not.toThrow();
+    expect(OUTPUTS.read_record.safeParse({ ...read, labValues: [{ id: 'x' }] }).success).toBe(false);
+    const published = MCP_TOOLS.find((t) => t.name === 'read_record')!.outputSchema.properties as Record<string, { items: { required?: string[] } }>;
+    expect(published.measurements.items.required).toEqual(['current']);
+    expect(published.labValues.items.required).toEqual(['current']);
+    expect(JSON.stringify(read)).not.toContain('"createdAt"');
+    expect(JSON.stringify(file)).toBe(before);
+  });
+
+  it('marks by row, not by id: a reused id never makes two rows current, nor an entered-in-error one', () => {
+    const file = base();
+    // A reused id, as a hand-edited or badly merged file can carry: one superseded twin, one live.
+    file.measurements.push(createMeasurement({ id: 'm1', metricType: 'ldl', value: 2.1, recordedAt: '2026-08-20', createdAt: '2026-08-20T08:00:00Z' }));
+    file.measurements[0].status = 'entered-in-error'; // the original m1, LDL 3.4
+    // Two ACTIVE rows sharing an id, one slot apart in time.
+    file.labValues.push({ ...file.labValues[0], value: 180, recordedAt: '2026-08-21', createdAt: '2026-08-21T08:00:00Z' });
+    // And two ACTIVE rows sharing an id in ONE slot: only the later-created one is current.
+    file.measurements.push(createMeasurement({ id: 'm2', metricType: 'weight', value: 83, recordedAt: '2026-01-05', createdAt: '2026-01-06T08:00:00Z' }));
+    const loaded = migrateFile(JSON.parse(JSON.stringify(file)), { deviceId: 'd', now: NOW }) as RoadmapFile;
+
+    const read = JSON.parse(ok(callTool('read_record', {}, { file: loaded, now: NOW })).text);
+    const plan = JSON.parse(ok(getPlan(loaded, NOW)).text);
+
+    const ldl = read.measurements.filter((m: { metricType: string }) => m.metricType === 'ldl');
+    expect(ldl.filter((m: { current: boolean }) => m.current)).toHaveLength(1);
+    const chosenLdl = plan.currentValues.find((v: { metric: string }) => v.metric === 'ldl');
+    expect(ldl.find((m: { current: boolean }) => m.current)).toMatchObject({ id: chosenLdl.id, value: 2.1, status: 'active' });
+    for (const row of [...read.measurements, ...read.labValues]) {
+      if (row.status !== 'active') expect(row.current, `${row.id} ${row.status}`).toBe(false);
+    }
+
+    const weights = read.measurements.filter((m: { metricType: string; current: boolean }) => m.metricType === 'weight' && m.current);
+    expect(weights).toHaveLength(1);
+    expect(weights[0].value).toBe(83);
+    expect(plan.currentValues.find((v: { metric: string }) => v.metric === 'weight').id).toBe('m2');
+
+    const ferritin = read.labValues.filter((l: { current: boolean }) => l.current);
+    expect(ferritin).toHaveLength(1);
+    const chosenLab = plan.labValues.find((l: { key: string }) => l.key === 'ferritin');
+    expect(ferritin[0]).toMatchObject({ id: chosenLab.id, value: chosenLab.value, recordedAt: '2026-08-21' });
+  });
+
+  it('hands out row ids correct_value accepts, and leaves the file it was given untouched', () => {
+    const file = busy();
+    const id = JSON.parse(ok(readRecord(file, {})).text).measurements.find((m: { metricType: string }) => m.metricType === 'ldl').id;
+    expect(ok(correctValueTool(file, { id, newValue: 2.1, expectedValue: 3.4 }, NOW)).file).toBeDefined();
+    expect(file.meta.lastDeviceId).toBe(CTX.deviceId);
+    expect(file.measurements[2].externalId).toBe('HK-SAMPLE-UUID-123');
+    expect(file.reminderOptIn?.token).toBe('SECRET-CAPABILITY-TOKEN');
   });
 });
 
@@ -720,10 +883,12 @@ describe('US-32 — the dispatcher', () => {
     }
   });
 
-  it('never lets a record-free tool produce a file, so no write is dropped in silence', () => {
+  it('never lets a record-free tool produce a file, so no write is dropped in silence', async () => {
     // `runToolOverSync` runs these without opening the record and throws a
     // ToolContractError if one hands back a file. Nothing can reach that throw
-    // today, and this is why: no record-free tool writes.
+    // today, and this is why: no record-free tool writes. (While the repository
+    // is hidden the tokenless call refuses outright, US-32 AC39, so the answering path is pinned.)
+    const { callTool } = await withRepoPublic(true);
     const outcome = callTool('report_feedback', { kind: 'bug', title: 'x', detail: 'y' }, { file: undefined, now: NOW });
     expect(outcome.status).toBe('ok');
     expect(outcome.status === 'ok' && outcome.file).toBeUndefined();
@@ -789,6 +954,9 @@ describe('US-32 — the dispatcher', () => {
 
 describe('US-32 AC9 — report_feedback prepares an issue the user submits', () => {
   const GOOD = { kind: 'bug', title: 'correct_value refused a row it should accept', detail: 'It said the row was superseded.' } as const;
+  // US-32 AC39: the prefilled link is handed over only while the repository is public.
+  let reportFeedback: typeof import('./mcp-tools').reportFeedback;
+  beforeAll(async () => { ({ reportFeedback } = await withRepoPublic(true)); });
 
   /** The URL a call prepared, or a failed expectation naming the refusal. */
   function url(request: z.infer<typeof reportFeedbackInput>): URL {
@@ -934,7 +1102,7 @@ describe('US-32 — every tool answers with structured content that fits its out
   it('read_record answers with the filtered record, token stripped', () => {
     const data = structured(readRecord(base(), {}), 'read_record');
     expect(JSON.stringify(data)).not.toContain('SECRET');
-    expect((data.reminderOptIn as Record<string, unknown>).token).toBeUndefined();
+    expect(data.reminderOptIn).toBeUndefined();
   });
 
   it('get_plan answers with the plan object, and it is the same object as the text', () => {
@@ -979,7 +1147,9 @@ describe('US-32 — every tool answers with structured content that fits its out
     expect(same.changed).toEqual([]);
   });
 
-  it('report_feedback answers with the URL it prepared', () => {
+  it('report_feedback answers with the URL it prepared', async () => {
+    // US-32 AC39: the tokenless link exists only while the repository is public.
+    const { reportFeedback } = await withRepoPublic(true);
     const data = structured(reportFeedback({ kind: 'bug', title: 'Tool refused a valid day', detail: 'Steps here.' }, NOW), 'report_feedback');
     expect(data.kind).toBe('bug');
     expect(data.filed).toBe(false);
@@ -1011,8 +1181,10 @@ describe('US-32 — every tool answers with structured content that fits its out
     const published = Object.keys(OUTPUTS.read_record.shape);
     // `folder` is the nudge (US-37) and `units` the SI contract (US-32 AC35):
     // both are a read's addition, not a section of the record.
-    const added = new Set(['reminderOptIn', 'folder', 'units']);
-    expect(published.filter((k) => !added.has(k)).sort()).toEqual(keys.sort());
+    const added = new Set(['folder', 'units']);
+    // US-32 AC41: the sync bookkeeping and the reminder settings never leave.
+    const withheld = new Set(['meta', 'reminderPreferences', 'recommendationSnapshots']);
+    expect(published.filter((k) => !added.has(k)).sort()).toEqual(keys.filter((k) => !withheld.has(k)).sort());
   });
 });
 
@@ -1046,7 +1218,8 @@ describe('US-32 AC9 — a surface that can file, files it', () => {
 
     expect(outcome.status).toBe('ok');
     const data = OUTPUTS.report_feedback.parse((outcome as { data: unknown }).data);
-    expect(data).toEqual({ filed: true, url: 'https://github.com/DrBradStanfield/roadmap/issues/7', number: 7, kind: 'bug', title: GOOD.title });
+    // US-32 AC39: the link only while the repository is public; the number either way.
+    expect(data).toEqual({ filed: true, url: REPO_PUBLIC ? 'https://github.com/DrBradStanfield/roadmap/issues/7' : '', number: 7, kind: 'bug', title: GOOD.title });
     expect(outcome.status === 'ok' && outcome.file).toBeUndefined();
   });
 
@@ -1156,6 +1329,8 @@ describe('US-32 AC9 — a surface that can file, files it', () => {
   });
 
   it('falls back to the prefilled URL when the surface hands in no filer', async () => {
+    // US-32 AC39: only while the repository is public; the hidden state is pinned below.
+    const { runToolOverSync } = await withRepoPublic(true);
     const answer = await runToolOverSync(NO_SYNC, 'report_feedback', GOOD, NOW);
     expect(answer.isError).toBe(false);
     expect(answer.text).toContain('github.com/DrBradStanfield/roadmap/issues/new');
@@ -1176,6 +1351,112 @@ describe('US-32 AC9 — a surface that can file, files it', () => {
     expect(answer.isError).toBe(true);
     expect(answer.text).toContain('report_feedback');
     expect(seen).toHaveLength(0);
+  });
+});
+
+describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () => {
+  const GOOD = { kind: 'bug', title: 'correct_value refused a row it should accept', detail: 'It said the row was superseded.' } as const;
+  const NO_SYNC = { load: () => { throw new Error('report_feedback must not open the record'); } } as never;
+  const UNAVAILABLE = 'Feedback could not be filed right now. Nothing was posted. Try again later.';
+  /** A permanent refusal, not a transient one: retrying cannot help while the repository is hidden. */
+  const HIDDEN = 'This server cannot file reports while the project\'s GitHub is not public. Nothing was posted.';
+  const description = (mod: typeof import('./mcp-tools')) => mod.MCP_TOOLS.find((t) => t.name === 'report_feedback')!.description;
+  const filer: FeedbackFiler = async () => ({ ok: true, url: 'https://github.com/DrBradStanfield/roadmap/issues/7', number: 7 });
+
+  it('while public, the description, the proposal and the tokenless link read exactly as before', async () => {
+    const mod = await withRepoPublic(true);
+    expect(description(mod)).toBe(
+      'This files a public GitHub issue. Do not include diagnoses, names, contact details, or values; describe the ' +
+      'behaviour, not the person — dates of results and file paths too. Say it is public before you call it, and only ' +
+      'when the user asked you to. Offer it when a tool refuses something they expected, the record cannot hold what ' +
+      'they want to track, or a result looks wrong. Without a GitHub token the server answers with a link they ' +
+      'submit themselves; the answer says which. On the hosted server this takes two calls: the first answers with ' +
+      'what it would do and a `confirm` receipt; show it to the user and call again with `confirm` only after their ' +
+      'own yes, in their own words.',
+    );
+    expect(ok(mod.reportFeedback(GOOD, NOW, true)).text).toBe(
+      `Would file a PUBLIC GitHub issue (bug): “${GOOD.title}”.\n\n${GOOD.detail}\n\nThat detail is filed as written. Read it to the user before they confirm.`,
+    );
+    const link = ok(mod.reportFeedback(GOOD, NOW)) as unknown as { text: string; data: { url: string; filed: boolean } };
+    expect(link.data.url.startsWith('https://github.com/DrBradStanfield/roadmap/issues/new?')).toBe(true);
+    expect(link.data.filed).toBe(false);
+    expect(link.text).toBe(
+      `${link.data.url}\n\nShow the user this link. Ask them to read the title and body first — they must contain no ` +
+      'health values, no names and no file paths — and to submit it themselves; it needs a GitHub account. ' +
+      'Nothing has been sent anywhere.',
+    );
+  });
+
+  it('while hidden, the description says the issue becomes public later, and keeps the privacy warning', async () => {
+    const text = description(await withRepoPublic(false));
+    expect(text).toContain('an issue on the project’s GitHub, which is temporarily not public and becomes public when it is');
+    expect(text).toContain('Do not include diagnoses, names, contact details, or values');
+    expect(text).toContain('Say it will be public before you call it');
+    expect(text).not.toContain('public GitHub issue');
+    expect(text).not.toContain('link they submit');
+  });
+
+  it('while hidden, the proposal says the same and still shows the detail as it will be filed', async () => {
+    // A dry run on a surface that can file (the hosted server with its token).
+    const text = ok((await withRepoPublic(false)).reportFeedback(GOOD, NOW, true, true)).text;
+    expect(text).toContain('an issue on the project’s GitHub, which is temporarily not public and becomes public when it is');
+    expect(text).toContain(GOOD.detail);
+    expect(text).toContain('Read it to the user before they confirm.');
+    expect(text).not.toContain('PUBLIC GitHub issue');
+    expect(text).not.toContain('github.com');
+  });
+
+  it('hands the proposal’s structured url only while public, and says so in the published schema', async () => {
+    const urlDescription = (mod: typeof import('./mcp-tools')) =>
+      (mod.MCP_TOOLS.find((t) => t.name === 'report_feedback')!.outputSchema.properties as Record<string, { description?: string }>).url.description;
+    const shown = await withRepoPublic(true);
+    const open = ok(shown.reportFeedback(GOOD, NOW, true)) as unknown as { data: { url: string } };
+    expect(open.data.url.startsWith('https://github.com/DrBradStanfield/roadmap/issues/new?')).toBe(true);
+    expect(urlDescription(shown)).toBe('The issue, or the prefilled link the user opens.');
+
+    const hidden = await withRepoPublic(false);
+    const proposal = ok(hidden.reportFeedback(GOOD, NOW, true, true)) as unknown as { data: { url: string } };
+    expect(proposal.data.url).toBe('');
+    expect(hidden.OUTPUTS.report_feedback.parse(proposal.data).url).toBe('');
+    expect(urlDescription(hidden)).toContain('Empty while the project’s GitHub is not public');
+  });
+
+  it('while hidden, the tokenless fallback refuses for good, in its own words, and hands over no link', async () => {
+    const mod = await withRepoPublic(false);
+    // The transient GitHub-failure words stay for a real GitHub failure; this one is not transient.
+    expect(mod.FEEDBACK_UNAVAILABLE).toBe(UNAVAILABLE);
+    expect(mod.FEEDBACK_HIDDEN).toBe(HIDDEN);
+    expect(mod.reportFeedback(GOOD, NOW)).toEqual({ status: 'rejected', text: HIDDEN });
+    const answer = await mod.runToolOverSync(NO_SYNC, 'report_feedback', GOOD, NOW);
+    expect(answer.isError).toBe(true);
+    expect(answer.text).toBe(HIDDEN);
+    expect(answer.structured).toBeUndefined();
+    // The health-value guard still answers first, in its own words.
+    expect(mod.reportFeedback({ ...GOOD, detail: 'My LDL is 3.2' }, NOW)).toMatchObject({ status: 'rejected', reason: 'health-value' });
+  });
+
+  it('while hidden, a dry run with no filer refuses at the proposal, and one with a filer proposes', async () => {
+    const mod = await withRepoPublic(false);
+    expect(mod.reportFeedback(GOOD, NOW, true)).toEqual({ status: 'rejected', text: HIDDEN });
+    const tokenless = await mod.runToolOverSync(NO_SYNC, 'report_feedback', GOOD, NOW, { dryRun: true });
+    expect(tokenless).toMatchObject({ isError: true, text: HIDDEN });
+    const withToken = await mod.runToolOverSync(NO_SYNC, 'report_feedback', GOOD, NOW, { dryRun: true, fileFeedback: filer });
+    expect(withToken.isError).toBe(false);
+    expect(withToken.text).toContain('temporarily not public');
+    // While public, a tokenless dry run still proposes: its confirm hands over the link.
+    expect(ok((await withRepoPublic(true)).reportFeedback(GOOD, NOW, true)).text).toContain('Would file a PUBLIC GitHub issue');
+  });
+
+  it('a filed report promises a public issue, and hands over its link, only while the repository is public', async () => {
+    const shown = await (await withRepoPublic(true)).fileFeedback(GOOD, NOW, filer);
+    expect(shown.text).toContain('it is a public issue on the project’s GitHub');
+    expect((shown as { data: { url: string } }).data.url).toBe('https://github.com/DrBradStanfield/roadmap/issues/7');
+    const hidden = await (await withRepoPublic(false)).fileFeedback(GOOD, NOW, filer);
+    expect(hidden.text).toContain('Filed as issue #7');
+    expect(hidden.text).toContain('will not open for them yet');
+    expect(hidden.text).not.toContain('public issue');
+    // US-32 AC39: the link would 404, so the structured url is empty and the number carries the issue.
+    expect((hidden as { data: { url: string; number: number } }).data).toMatchObject({ url: '', number: 7 });
   });
 });
 
@@ -2326,7 +2607,16 @@ describe('US-32 AC28 — the assistant is told the code is open', () => {
     expect(OPEN_SOURCE_NOTE.includes('github.com')).toBe(REPO_PUBLIC);
     expect(OPEN_SOURCE_NOTE).toContain('open source');
     expect(OPEN_SOURCE_NOTE).toContain('MIT licensed');
-    expect(OPEN_SOURCE_NOTE).toContain('report_feedback');
+    // While hidden a tokenless surface can only refuse a report, so the note offers none (US-32 AC39).
+    expect(OPEN_SOURCE_NOTE.includes('report_feedback')).toBe(REPO_PUBLIC);
+  });
+
+  it('offers report_feedback and the repository in the note only while the repository is public, both ways', async () => {
+    const shown = (await withRepoPublic(true)).OPEN_SOURCE_NOTE;
+    expect(shown).toContain(REPO_URL);
+    expect(shown).toContain('report_feedback');
+    const hidden = (await withRepoPublic(false)).OPEN_SOURCE_NOTE;
+    expect(hidden).toBe(' These tools are open source, MIT licensed.');
   });
 
   it('gives get_plan a repo the paths beside it can be found in, while it can be', () => {
@@ -2335,8 +2625,9 @@ describe('US-32 AC28 — the assistant is told the code is open', () => {
     expect(source.repo).toBe(REPO_PUBLIC ? REPO_URL : null);
     expect(source.schema).toBe(REPO_PUBLIC ? SCHEMA_URL : null);
     // Without `repo` these two are file names an assistant cannot open.
-    expect(source.tool).toBe('tools/get-plan.ts');
-    expect(source.docs).toBe('docs/agent-access.md');
+    // US-32 AC41: and the two paths go with it, since nobody can open them.
+    expect(source.tool).toBe(REPO_PUBLIC ? 'tools/get-plan.ts' : undefined);
+    expect(source.docs).toBe(REPO_PUBLIC ? 'docs/agent-access.md' : undefined);
   });
 });
 

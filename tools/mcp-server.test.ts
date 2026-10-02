@@ -13,7 +13,8 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PassThrough } from 'node:stream';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core';
-import { MCP_TOOLS, OUTPUTS } from '../packages/health-core/src/mcp-tools';
+import { FEEDBACK_HIDDEN, MCP_TOOLS, OUTPUTS } from '../packages/health-core/src/mcp-tools';
+import { REPO_PUBLIC } from '../packages/health-core/src/plan';
 import { run as runCli } from './edit-record';
 import { handle, MAX_LINE_BYTES, serve } from './mcp-server';
 
@@ -63,7 +64,8 @@ describe('US-32 — the JSON-RPC handshake', () => {
     expect(response.result.capabilities).toEqual({ tools: { listChanged: false }, prompts: { listChanged: false } });
     expect(response.result.serverInfo.name).toBe('health-roadmap');
     expect(response.result.instructions).toContain('not medical advice');
-    expect(response.result.instructions).toContain('report_feedback');
+    // US-32 AC39: offered only while it can do more than refuse.
+    expect(response.result.instructions.includes('report_feedback')).toBe(REPO_PUBLIC);
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -389,6 +391,35 @@ describe('US-32 — nothing that could reach the network is imported', () => {
   });
 });
 
+describe('US-32 AC39 — the stdio instructions offer report_feedback only while the repository is public', () => {
+  /** The stdio server's instructions, as they load with REPO_PUBLIC set either way. */
+  async function instructions(isPublic: boolean): Promise<string> {
+    vi.resetModules();
+    vi.doMock('../packages/health-core/src/plan', async (importOriginal) => ({ ...(await importOriginal<object>()), REPO_PUBLIC: isPublic }));
+    try {
+      const { handle: fresh } = await import('./mcp-server');
+      const response = await fresh({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }, '/nowhere.json') as { result: { instructions: string } };
+      return response.result.instructions;
+    } finally {
+      vi.doUnmock('../packages/health-core/src/plan');
+      vi.resetModules();
+    }
+  }
+
+  it('offers it, and names the repository, while public', async () => {
+    const text = await instructions(true);
+    expect(text).toContain('offer report_feedback');
+    expect(text).toContain('github.com/DrBradStanfield/roadmap');
+  });
+
+  it('never mentions it while hidden, when it can only refuse', async () => {
+    const text = await instructions(false);
+    expect(text).not.toContain('report_feedback');
+    expect(text).not.toContain('github.com');
+    expect(text).toContain('not medical advice');
+  });
+});
+
 describe('US-32 AC9 — report_feedback over the wire', () => {
   it('returns a prefilled issue URL and leaves the record exactly as it was', async () => {
     const { dir, path } = writeFixture(fixture());
@@ -398,9 +429,15 @@ describe('US-32 AC9 — report_feedback over the wire', () => {
       kind: 'feature', title: 'let me track resting heart rate', detail: 'The record has nowhere to put it.',
     }));
 
-    const link = text(response).split('\n')[0];
-    expect(link).toContain('https://github.com/DrBradStanfield/roadmap/issues/new?labels=from-connector,feature');
-    expect(response.result!.isError).toBeUndefined();
+    if (REPO_PUBLIC) {
+      const link = text(response).split('\n')[0];
+      expect(link).toContain('https://github.com/DrBradStanfield/roadmap/issues/new?labels=from-connector,feature');
+      expect(response.result!.isError).toBeUndefined();
+    } else {
+      // US-32 AC39: the link would 404 while the repository is hidden, so it refuses in words.
+      expect(text(response)).toBe(FEEDBACK_HIDDEN);
+      expect(response.result!.isError).toBe(true);
+    }
     // No write, no backup: the file is only the thing being reported about.
     expect(statSync(path).mtimeMs).toBe(before.mtimeMs);
     expect(readdirSync(dir).filter((n) => n.includes('.bak-'))).toHaveLength(0);
@@ -418,9 +455,9 @@ describe('US-32 AC9 — report_feedback over the wire', () => {
       kind: 'bug', title: 'the server cannot find my record', detail: 'It says no record here.',
     }));
 
-    expect(response.result!.isError).toBeUndefined();
-    expect(text(response)).toContain('github.com/');
-    expect(text(response)).toContain('/issues/new');
+    // US-32 AC39: tokenless and hidden, the answer is a refusal in words, never "no record here".
+    expect(response.result!.isError).toBe(REPO_PUBLIC ? undefined : true);
+    expect(text(response)).toContain(REPO_PUBLIC ? '/issues/new' : 'Nothing was posted');
     // Nothing was created: no record, no backup, an empty directory.
     expect(existsSync(path)).toBe(false);
     expect(readdirSync(dir)).toHaveLength(0);

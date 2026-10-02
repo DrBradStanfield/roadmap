@@ -269,7 +269,10 @@ directory, Gemini, Perplexity, Le Chat, Copilot) is in **[assistant-landscape.md
 Today a user needs **developer mode** to add our connector to ChatGPT, because OpenAI
 keeps unreviewed connectors behind it. Claude needs no equivalent: a custom connector is
 available on any plan. Publishing through OpenAI's review is what removes that step.
-**Nothing here has been submitted.** The package is
+
+**When `REPO_PUBLIC` (plan.ts) flips back to true**, the code follows on its own; these static texts do not, so edit them back in the same commit: `docs/guides/chatgpt-app.md`, `connect-chatgpt.md`, `connect-claude-desktop.md`, `command-line.md` (If something goes wrong) and `getting-started.md` (front matter, the GitHub links, the `report_feedback` paragraphs and the setup prompt's read-only fallback), `docs/privacy-connector-addendum.md` (Bug reports), `docs/chatgpt-app-listing.md` (the `report_feedback` justification row and refusal 3), `docs/mcp-architecture.md` (`report_feedback`), then republish the guides and the privacy page.
+
+**Submitted twice and rejected twice (1.0.0, 1.0.1); 1.0.2 is the resubmission.** The package is
 [`chatgpt-review/plugin/`](chatgpt-review/plugin/): `plugin.json` holds the descriptions, category,
 starter prompts, test cases and release notes. **[chatgpt-app-listing.md](chatgpt-app-listing.md)**
 is the working document: what goes in the ZIP and what in the dashboard, tool annotations and their
@@ -304,7 +307,7 @@ Why it exists, and Brad's exception: [mcp-architecture.md](mcp-architecture.md) 
 [the plan](reviews/2026-10-01-chatgpt-reviewer-signin-plan.md). In one line: OpenAI's
 reviewer signs in on our consent page with a username and password we issued, and the
 session reads the invented reviewer account's Dropbox record through a token our server
-holds. The box shows for the exact pinned ChatGPT client only, and only while all three
+holds. The box shows for the exact pinned ChatGPT and Codex clients only, and only while all three
 secrets below are set and well formed. **It is on only while a review is pending.**
 
 **The three secrets, on `health-tool-edu` only.** All three valid, or the feature is off.

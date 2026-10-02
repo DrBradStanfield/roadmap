@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MCP_TOOL_NAMES } from '../packages/health-core/src/product-events';
+import { REPO_PUBLIC } from '../packages/health-core/src/plan';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(here, 'build-guide-html.mjs');
@@ -223,10 +224,12 @@ Read my health record.
 describe('build-guide-html.mjs — the link to the markdown master', () => {
   it('names the guide\'s own file, inside the wrapper and before the script', () => {
     const { html } = build(`${FRONT_MATTER}Prose.\n\n\`\`\`bootstrap-prompt\nRead my health record.\n\`\`\`\n`);
-    // The scratch guide is scratch.md, so the link must say scratch.md.
-    expect(html).toContain(
-      `<p class="rmg-md">This guide is also published as plain Markdown for AI agents: <a href="${RAW}scratch.md">docs/guides/scratch.md</a>. The Markdown is the master; this page is built from it.</p>`,
-    );
+    // The scratch guide is scratch.md, so the link must say scratch.md. While the
+    // repository 404s (US-32 AC39), the raw link would too: point at the published guide.
+    expect(html).toContain(REPO_PUBLIC
+      ? `<p class="rmg-md">This guide is also published as plain Markdown for AI agents: <a href="${RAW}scratch.md">docs/guides/scratch.md</a>. The Markdown is the master; this page is built from it.</p>`
+      : '<p class="rmg-md">This page is built from docs/guides/scratch.md, which is not public while the project’s GitHub is not. The published guide is <a href="https://drstanfield.com/blogs/guides/scratch">drstanfield.com/blogs/guides/scratch</a>.</p>');
+    expect(html.includes('raw.githubusercontent.com')).toBe(REPO_PUBLIC);
     // Inside the .rmguide wrapper (its close is the last </div>), before the script.
     expect(html.indexOf('rmg-md')).toBeLessThan(html.lastIndexOf('</div>'));
     expect(html.lastIndexOf('</div>')).toBeLessThan(html.indexOf('<script>'));
@@ -252,8 +255,10 @@ describe('build-guide-html.mjs — the guides actually shipped', () => {
       const source = readFileSync(join(GUIDES, guide), 'utf8');
       const carriesBox = source.includes('```bootstrap-prompt') || source.includes('```copy-box');
       expect(html.includes('<div class="rmg-promptbox">'), guide).toBe(carriesBox);
-      // Every published guide points an agent at its own markdown master.
-      expect(html, guide).toContain(`<a href="${RAW}${guide}">docs/guides/${guide}</a>`);
+      // Every published guide points an agent at its own markdown master, or,
+      // while the repository is hidden (US-32 AC39), names it and links the published guide.
+      if (REPO_PUBLIC) expect(html, guide).toContain(`<a href="${RAW}${guide}">docs/guides/${guide}</a>`);
+      else expect(html, guide).toMatch(new RegExp(`This page is built from docs/guides/${guide}, .*<a href="https://drstanfield\\.com/blogs/guides/[a-z-]+">`));
       // A button pointing at a step list on the same page is only honest if
       // that heading is really there: renaming the heading must fail here, not
       // leave a reader clicking a button that scrolls nowhere.
@@ -261,6 +266,26 @@ describe('build-guide-html.mjs — the guides actually shipped', () => {
         expect(html, `${guide}: no heading with id ${id}`).toContain(`<h2 id="${id}">`);
       }
     }
+  });
+
+  // US-29 AC3: the setup prompt's hard write rules stand whatever happens. While the
+  // repository is hidden (US-32 AC39) the spec it points at will not open, and an AI
+  // without the spec must not write: it reads and explains, and says why.
+  it('keeps the setup prompt\'s hard rules, and forbids writing when the spec cannot be read', () => {
+    const source = readFileSync(join(GUIDES, 'getting-started.md'), 'utf8');
+    const prompt = source.slice(source.indexOf('```bootstrap-prompt'), source.indexOf('```', source.indexOf('```bootstrap-prompt') + 3));
+    for (const rule of [
+      '- Never edit or delete a row.',
+      '- Never leave two active rows for one metric on one day.',
+      '- Set meta.updatedAt to now. Never touch meta.lamport, meta.eraseEpoch or meta.lastDeviceId.',
+      '- No dates in the future.',
+      '- Before every write, copy the record to a backup beside it',
+      '- Validate against the schema before you save. With no schema, you save nothing.\n',
+    ]) expect(prompt, rule).toContain(rule);
+    // Building a file is a write, so it too needs the schema in hand.
+    expect(prompt).toContain('only if you read the schema, offer to build a minimal valid one from it');
+    expect(prompt).not.toMatch(/if you could read it/i);
+    if (!REPO_PUBLIC) expect(prompt).toContain('do not write to my file at all');
   });
 
   it('places all four diagrams on the hub guide', () => {

@@ -10,7 +10,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MCP_TOOLS } from '../../packages/health-core/src/mcp-tools';
@@ -56,5 +56,10 @@ describe('docs/chatgpt-review/plugin — the package', () => {
     // Throws, with the validator's errors on stderr, on a non-zero exit.
     const out = execFileSync('node', [join(HERE, 'build-plugin-zip.mjs'), '--check'], { encoding: 'utf8' });
     expect(out).toMatch(/^ok {7}health-by-dr-brad /m);
+  });
+
+  it('takes the logo from the app icon at build time, so no copy is committed (US-32 AC40)', () => {
+    expect(existsSync(join(HERE, 'plugin/assets'))).toBe(false);
+    expect(read('build-plugin-zip.mjs')).toContain("'../../demo-video/public/app-icon.png'");
   });
 });

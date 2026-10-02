@@ -194,9 +194,14 @@ document.querySelectorAll('.rmg-copy').forEach(function (el) {
 </script>`;
 
 // The .md is the master, so every page says where it lives: an agent handed a
-// guide URL can fetch the source instead of scraping the rendered page.
+// guide URL can fetch the source instead of scraping the rendered page. While
+// GitHub hides the repository (REPO_PUBLIC in plan.ts, US-32 AC39) that link
+// 404s, so the page names the published guide instead.
 const mdFile = `docs/guides/${basename(mdPath)}`;
-const mdLink = `<p class="rmg-md">This guide is also published as plain Markdown for AI agents: <a href="https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/${mdFile}">${mdFile}</a>. The Markdown is the master; this page is built from it.</p>`;
+const repoPublic = /export const REPO_PUBLIC = true;/.test(readFileSync(new URL('../packages/health-core/src/plan.ts', import.meta.url), 'utf8'));
+const mdLink = repoPublic
+  ? `<p class="rmg-md">This guide is also published as plain Markdown for AI agents: <a href="https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/${mdFile}">${mdFile}</a>. The Markdown is the master; this page is built from it.</p>`
+  : `<p class="rmg-md">This page is built from ${mdFile}, which is not public while the project’s GitHub is not. The published guide is <a href="https://drstanfield.com/blogs/guides/${meta.slug}">drstanfield.com/blogs/guides/${meta.slug}</a>.</p>`;
 
 const html = `${style}\n<div class="rmguide">\n${rendered}\n${mdLink}\n</div>${script}\n`;
 
