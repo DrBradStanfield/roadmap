@@ -9,7 +9,13 @@
   },
   "homepage": "https://drstanfield.com/blogs/guides/chatgpt-app",
   "license": "MIT",
-  "keywords": ["health", "health record", "lab results", "blood tests", "screening"],
+  "keywords": [
+    "health",
+    "health record",
+    "lab results",
+    "blood tests",
+    "screening"
+  ],
   "extensions": {
     "com.openai": {
       "interface": {
@@ -93,7 +99,7 @@
       },
       "publication": {
         "countries": [],
-        "release_notes": "1.0.2 changes how OpenAI's reviewer signs in. The reviewer now signs in on our own consent page with a username and password we issue for the review: no Dropbox or Google sign-in, no code and no email. This sign-in is offered to the ChatGPT and Codex clients only. Other changes since 1.0.1: report_feedback is now marked destructive, because a filed issue cannot be taken back, and it says the issue becomes public when the project's GitHub is public again. get_plan no longer carries product links; evidence stays in each suggestion's references. read_record no longer returns sync bookkeeping, device identifiers or reminder settings, only what the record says. The server instructions no longer link to the source repository while it is not public. This is also our first plugin package upload. It keeps the same nine tools and four prompts as 1.0.1. The starter prompts drop from seven to three, the new limit."
+        "release_notes": "First release in ChatGPT. Ask what your health plan says you should do next, see which screening is due at your age, and get evidence-based suggestions with the reason and published citation behind each. Add measurements and lab results, file the results from a lab report you drop into the chat, and correct a value entered wrongly. Your record stays a single file in your own Dropbox or Google Drive."
       }
     }
   }

@@ -1251,6 +1251,33 @@ describe('discovery documents (US-32, design §6)', () => {
     expect(doc.authorization_response_iss_parameter_supported).toBe(true);
     expect(doc.scopes_supported).toBeUndefined();
   });
+
+  // US-32 AC42: OpenAI's plugin dashboard fetched the RFC 8414 document, then
+  // asked /.well-known/openid-configuration, got a 404 and stopped
+  // ("Authorization unavailable"). The MCP spec has clients try both paths for
+  // a pathless issuer, so both answer, byte for byte the same.
+  it('answers the OpenID path with the same document, claiming nothing OIDC (US-32 AC42)', async () => {
+    const { loader: wellKnown } = await import('./[.]well-known.$');
+    const get = async (path: string) => (await wellKnown({ params: { '*': path } } as never)) as Response;
+    const oauth = await get('oauth-authorization-server');
+    const oidc = await get('openid-configuration');
+    expect(oidc.status).toBe(200);
+    expect(oidc.headers.get('Cache-Control')).toBe(oauth.headers.get('Cache-Control'));
+    expect(oidc.headers.get('Access-Control-Allow-Origin')).toBeNull();
+    expect(await oidc.text()).toBe(await oauth.text());
+    const doc = await (await get('openid-configuration')).json();
+    expect(doc.issuer).toBe(ISSUER);
+    expect(doc.authorization_endpoint).toBe(`${ISSUER}/mcp/authorize`);
+    expect(doc.token_endpoint).toBe(`${ISSUER}/mcp/token`);
+    expect(doc.code_challenge_methods_supported).toContain('S256');
+    expect(doc.client_id_metadata_document_supported).toBe(true);
+    expect(doc.token_endpoint_auth_methods_supported).toEqual(['none']);
+    expect(doc.authorization_response_iss_parameter_supported).toBe(true);
+    // No ID token is ever issued, so no OIDC field may suggest one is.
+    for (const key of ['jwks_uri', 'userinfo_endpoint', 'id_token_signing_alg_values_supported', 'subject_types_supported']) {
+      expect(doc[key]).toBeUndefined();
+    }
+  });
 });
 
 describe('OpenAI domain verification (docs/chatgpt-app-listing.md)', () => {

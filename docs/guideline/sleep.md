@@ -330,7 +330,7 @@ The glycinate chelate form has high bioavailability and is well-tolerated (no la
 Note: MicroVitamin and MicroVitamin+ use magnesium taurate (chosen for cardiovascular benefit). The Sleep product uses magnesium glycinate (chosen for sleep/relaxation benefit). Different forms serve different purposes.
 
 **References:**
-- Arab et al. 2023 – Magnesium and sleep quality meta-analysis (DOI: 10.1007/s12011-022-03232-w)
+- Arab et al. 2023 – Magnesium and sleep quality meta-analysis (DOI: 10.1007/s12011-022-03162-1)
 - Schuster et al. 2025 – Magnesium and sleep systematic review (DOI: 10.2147/NSS.S524348)
 
 ### Glycine
@@ -380,7 +380,7 @@ Brad's rationale for this combination: addresses three complementary mechanisms 
 **Brad's position:** His Sleep product represents his curated evidence-based stack for mild-moderate sleep difficulties. For consumers wanting to try supplements before seeing a doctor, this is a reasonable starting point for sleep-onset and sleep-quality issues. It does not replace CBT-I or medical evaluation for chronic insomnia.
 
 **References:**
-- Low et al. 2020 – Melatonin for insomnia, umbrella review of meta-analyses (DOI: 10.1016/j.jpsychires.2019.11.001)
+- Low et al. 2020 – Melatonin for insomnia, umbrella review of meta-analyses (DOI: 10.1016/j.jpsychires.2019.10.022)
 - UpToDate: Pharmacotherapy for Insomnia — Dietary Supplements section
 
 ---

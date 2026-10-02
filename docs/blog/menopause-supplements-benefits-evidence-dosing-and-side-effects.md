@@ -538,9 +538,9 @@ A Mediterranean-style or DASH-style diet rich in fruits, vegetables, whole grain
 
 [32] Ayers B, Smith M, Hellier J, Mann E, Hunter MS. "Effectiveness of group and self-help cognitive behavior therapy in reducing problematic menopausal hot flushes and night sweats (MENOS 2): a randomized controlled trial." *Menopause*. 2012;19(7):749-759. doi: [10.1097/gme.0b013e31823cc5f4](https://doi.org/10.1097/gme.0b013e31823cc5f4)
 
-[33] Low TL, Choo FN, Tan SM. "The efficacy of melatonin and melatonin agonists in insomnia — An umbrella review." *J Psychiatr Res*. 2020;121:10-23. doi: [10.1016/j.jpsychires.2019.11.001](https://doi.org/10.1016/j.jpsychires.2019.11.001)
+[33] Low TL, Choo FN, Tan SM. "The efficacy of melatonin and melatonin agonists in insomnia — An umbrella review." *J Psychiatr Res*. 2020;121:10-23. doi: [10.1016/j.jpsychires.2019.10.022](https://doi.org/10.1016/j.jpsychires.2019.10.022)
 
-[34] Arab A, Rafie N, Amani R, Shirani F. "The Role of Magnesium in Sleep Health." *Biol Trace Elem Res*. 2023;201(7):3171-3179. doi: [10.1007/s12011-022-03232-w](https://doi.org/10.1007/s12011-022-03232-w)
+[34] Arab A, Rafie N, Amani R, Shirani F. "The Role of Magnesium in Sleep Health." *Biol Trace Elem Res*. 2023;201(7):3171-3179. doi: [10.1007/s12011-022-03162-1](https://doi.org/10.1007/s12011-022-03162-1)
 
 [35] Portman DJ, Bachmann GA, Simon JA. "Ospemifene, a novel selective estrogen receptor modulator for treating dyspareunia associated with postmenopausal vulvar and vaginal atrophy." *Menopause*. 2013;20(6):623-630. doi: [10.1097/gme.0b013e318279ba64](https://doi.org/10.1097/gme.0b013e318279ba64)
 

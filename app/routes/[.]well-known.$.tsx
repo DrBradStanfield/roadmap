@@ -6,6 +6,12 @@
  *   /.well-known/oauth-protected-resource        RFC 9728
  *   /.well-known/oauth-protected-resource/mcp    RFC 9728, path-suffixed form
  *   /.well-known/oauth-authorization-server      RFC 8414
+ *   /.well-known/openid-configuration            the same RFC 8414 document
+ *
+ * The OpenID path is not an OpenID provider. The MCP spec has a client try
+ * both paths for a pathless issuer, and OpenAI's plugin dashboard stopped at
+ * our 404 there (US-32 AC42). So it serves the RFC 8414 bytes unchanged, and
+ * claims nothing we lack: no ID token, no `jwks_uri`, no userinfo.
  *
  * Three details are load-bearing and each was learned the hard way by someone:
  * `resource` must equal the URL the user typed, EXACTLY; `authorization_servers`
@@ -62,7 +68,11 @@ export async function loader({ params }: LoaderFunctionArgs) {
     );
   }
 
-  if (path === 'oauth-authorization-server' || path === 'oauth-authorization-server/mcp') {
+  if (
+    path === 'oauth-authorization-server' ||
+    path === 'oauth-authorization-server/mcp' ||
+    path === 'openid-configuration'
+  ) {
     return Response.json(
       {
         issuer: issuer(),
