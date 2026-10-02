@@ -321,7 +321,7 @@ At 0.8 mg the dose stays below the 1 mg threshold UpToDate identifies as potenti
 
 **Guideline position:** HealthPathways lists magnesium as having "equivocal evidence of efficacy" for sleep. UpToDate notes magnesium among the "many other dietary supplements marketed for insomnia" with insufficient evidence. It is listed as generally safe.
 
-**Evidence:** A 2023 meta-analysis (Arab et al.) found magnesium supplementation associated with reduced sleep onset latency and improvements in subjective sleep quality. A 2025 systematic review (Schuster et al.) similarly supports modest benefit. Effects appear most pronounced in individuals with magnesium deficiency, which is common in Western diets (40–50% of adults fall below recommended intake).
+**Evidence:** A 2023 systematic review without meta-analysis (Arab et al.; 9 cross-sectional, cohort and randomized studies, 7,582 participants) found that observational studies linked magnesium status with sleep quality, while its randomized trials gave contradictory results and an uncertain association between magnesium supplementation and sleep. A 2025 randomized, double-blind, placebo-controlled trial (Schuster et al.; 155 adults aged 18–65 reporting poor sleep, 250 mg elemental magnesium as bisglycinate daily) found a greater fall in Insomnia Severity Index score than placebo at 4 weeks (−3.9 vs −2.3; p = 0.049; Cohen's d 0.2, a small effect). Effects appear most pronounced in individuals with magnesium deficiency, which is common in Western diets (40–50% of adults fall below recommended intake).
 
 The glycinate chelate form has high bioavailability and is well-tolerated (no laxative effect unlike magnesium oxide or citrate at sleep-relevant doses).
 
@@ -330,8 +330,8 @@ The glycinate chelate form has high bioavailability and is well-tolerated (no la
 Note: MicroVitamin and MicroVitamin+ use magnesium taurate (chosen for cardiovascular benefit). The Sleep product uses magnesium glycinate (chosen for sleep/relaxation benefit). Different forms serve different purposes.
 
 **References:**
-- Arab et al. 2023 – Magnesium and sleep quality meta-analysis (DOI: 10.1007/s12011-022-03162-1)
-- Schuster et al. 2025 – Magnesium and sleep systematic review (DOI: 10.2147/NSS.S524348)
+- Arab et al. 2023 – The Role of Magnesium in Sleep Health: systematic review of observational studies and RCTs, no meta-analysis (DOI: 10.1007/s12011-022-03162-1)
+- Schuster et al. 2025 – Magnesium bisglycinate in healthy adults reporting poor sleep, randomized placebo-controlled trial (DOI: 10.2147/NSS.S524348)
 
 ### Glycine
 

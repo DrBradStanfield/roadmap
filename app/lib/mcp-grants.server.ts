@@ -5,7 +5,7 @@
  * NOTHING HERE MAY LOG A URL.
  */
 import { createQuotaCounter, createRateLimiter, DAY_MS } from './rate-limiter';
-import { resetMcpWarnings } from './mcp-config.server';
+import { MCP_SCOPES, resetMcpWarnings } from './mcp-config.server';
 import { resetCimdCache } from './mcp-clients.server';
 import { resetGithubIssues } from './github-issues.server';
 import { hash, packSealed } from './mcp-seal.server';
@@ -127,7 +127,7 @@ export function issueTokens(clientId: string, provider: McpProvider, from: Grant
     token_type: 'Bearer',
     // Honest, because Claude refreshes proactively five minutes before this.
     expires_in: ACCESS_LIFETIME_SECONDS,
-    scope: 'health.read health.append',
+    scope: MCP_SCOPES.join(' '),
   };
 }
 

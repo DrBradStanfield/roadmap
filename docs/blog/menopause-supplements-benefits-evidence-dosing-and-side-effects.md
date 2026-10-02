@@ -540,7 +540,7 @@ A Mediterranean-style or DASH-style diet rich in fruits, vegetables, whole grain
 
 [33] Low TL, Choo FN, Tan SM. "The efficacy of melatonin and melatonin agonists in insomnia — An umbrella review." *J Psychiatr Res*. 2020;121:10-23. doi: [10.1016/j.jpsychires.2019.10.022](https://doi.org/10.1016/j.jpsychires.2019.10.022)
 
-[34] Arab A, Rafie N, Amani R, Shirani F. "The Role of Magnesium in Sleep Health." *Biol Trace Elem Res*. 2023;201(1):121-128. doi: [10.1007/s12011-022-03162-1](https://doi.org/10.1007/s12011-022-03162-1)
+[34] Arab A, Rafie N, Amani R, Shirani F. "The Role of Magnesium in Sleep Health: a Systematic Review of Available Literature." *Biol Trace Elem Res*. 2023;201(1):121-128. doi: [10.1007/s12011-022-03162-1](https://doi.org/10.1007/s12011-022-03162-1)
 
 [35] Portman DJ, Bachmann GA, Simon JA. "Ospemifene, a novel selective estrogen receptor modulator for treating dyspareunia associated with postmenopausal vulvar and vaginal atrophy." *Menopause*. 2013;20(6):623-630. doi: [10.1097/gme.0b013e318279ba64](https://doi.org/10.1097/gme.0b013e318279ba64)
 

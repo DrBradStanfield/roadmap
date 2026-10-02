@@ -26,15 +26,15 @@
  * its own secret, NOT from `isMcpEnabled()`, so domain ownership can be proved
  * before the connector itself is switched on.
  *
- * Neither document advertises `scopes_supported`: nothing reads a requested
- * `scope` and every grant carries the same fixed pair, so advertising a menu
- * would have promised a choice the authorize endpoint does not make. The token
- * response still states the scope the grant actually holds.
+ * Both documents advertise `scopes_supported`, because OpenAI's plugin
+ * dashboard offers no OAuth without it (US-32 AC43). The list is the one the
+ * token response already states (`MCP_SCOPES`). Nothing enforces it: the
+ * authorize endpoint ignores a requested `scope`, and one consent covers both.
  *
  * These are the only unauthenticated documents this server publishes.
  */
 import { type LoaderFunctionArgs } from 'react-router';
-import { isMcpEnabled, issuer, resourceUrl } from '../lib/mcp-config.server';
+import { isMcpEnabled, issuer, MCP_SCOPES, resourceUrl } from '../lib/mcp-config.server';
 
 /** Public, cacheable, and identical for everyone — no `Vary`, no CORS. */
 const HEADERS = { 'Cache-Control': 'public, max-age=3600' };
@@ -61,6 +61,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
         resource: resourceUrl(),
         authorization_servers: [issuer()],
         bearer_methods_supported: ['header'],
+        scopes_supported: MCP_SCOPES,
         resource_name: 'Health by Dr Brad',
         resource_documentation: 'https://drstanfield.com/pages/connector-privacy',
       },
@@ -82,6 +83,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
         response_types_supported: ['code'],
         grant_types_supported: ['authorization_code', 'refresh_token'],
         code_challenge_methods_supported: ['S256'],
+        scopes_supported: MCP_SCOPES,
         // Both, deliberately: CIMD is what avoids a registry, and `none` is what
         // keeps DCR working for clients that do not speak CIMD.
         token_endpoint_auth_methods_supported: ['none'],

@@ -156,7 +156,7 @@ async function redeem(form: Record<string, string>) {
     body: new URLSearchParams(form),
   });
   expect(res.status).toBe(200);
-  return (await res.json()) as { access_token: string; refresh_token: string; expires_in: number };
+  return (await res.json()) as { access_token: string; refresh_token: string; expires_in: number; scope: string };
 }
 
 async function rpc(access: string, method: string, params: unknown = {}, now = NOW) {
@@ -1230,6 +1230,13 @@ describe('bodies and floods are bounded (US-32)', () => {
 });
 
 describe('discovery documents (US-32, design §6)', () => {
+  /** The scope a real token response states, as a list. */
+  const grantedScopes = async (): Promise<string[]> => {
+    const { clientId, refresh } = await connect();
+    const tokens = await redeem({ grant_type: 'refresh_token', refresh_token: refresh, client_id: clientId });
+    return tokens.scope.split(' ');
+  };
+
   it('names this resource exactly, and lists our issuer first', async () => {
     const { loader: wellKnown } = await import('./[.]well-known.$');
     const doc = await (await wellKnown({ params: { '*': 'oauth-protected-resource/mcp' } } as never) as Response).json();
@@ -1237,9 +1244,10 @@ describe('discovery documents (US-32, design §6)', () => {
     expect(doc.authorization_servers[0]).toBe(ISSUER);
     // A live page, not a 404: this is the link a client shows before consent.
     expect(doc.resource_documentation).toBe('https://drstanfield.com/pages/connector-privacy');
-    // No scope menu: nothing reads a requested scope and every grant carries
-    // the same fixed pair, so advertising one promised a choice we never make.
-    expect(doc.scopes_supported).toBeUndefined();
+    // US-32 AC43: OpenAI's dashboard needs advertised scopes. They describe
+    // what every token already says; nothing enforces them.
+    expect(doc.scopes_supported).toEqual(['health.read', 'health.append']);
+    expect(doc.scopes_supported).toEqual(await grantedScopes());
   });
 
   it('advertises CIMD and "none", which Claude needs both of', async () => {
@@ -1249,7 +1257,14 @@ describe('discovery documents (US-32, design §6)', () => {
     expect(doc.token_endpoint_auth_methods_supported).toContain('none');
     expect(doc.code_challenge_methods_supported).toEqual(['S256']);
     expect(doc.authorization_response_iss_parameter_supported).toBe(true);
-    expect(doc.scopes_supported).toBeUndefined();
+    // US-32 AC43: the same list on every authorization-server path, and the
+    // same list the token response states.
+    const granted = await grantedScopes();
+    for (const path of ['oauth-authorization-server', 'oauth-authorization-server/mcp', 'openid-configuration']) {
+      const served = await (await wellKnown({ params: { '*': path } } as never) as Response).json();
+      expect(served.scopes_supported).toEqual(['health.read', 'health.append']);
+      expect(served.scopes_supported).toEqual(granted);
+    }
   });
 
   // US-32 AC42: OpenAI's plugin dashboard fetched the RFC 8414 document, then
