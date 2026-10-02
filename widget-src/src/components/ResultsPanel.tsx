@@ -309,7 +309,7 @@ function renderGroupedSuggestions(suggestions: Suggestion[], highlightedIds?: Se
 }
 
 // 'skipped' + 'reminded' are US-44's funnel-page states: the block skips the
-// email gate, so the box only offers reminders and nothing is persisted.
+// email gate, so the box only offers reminders; only a successful sign-up persists.
 type GuestEmailState = 'idle' | 'sending' | 'captured' | 'skipped' | 'reminded';
 
 // On local-first the capture button DELIVERS the plan by opening the browser
@@ -374,9 +374,12 @@ function useGuestEmailCapture(): GuestEmailHook {
 
     if (gateSkipped) {
       // US-44 AC3: reminders only. The PDF has its own button, so no print
-      // window, and nothing is marked captured. Same enrolment call as below.
+      // window. Same enrolment call as below. A successful sign-up marks the
+      // record captured (Brad, 2026-10-03), so the plan-ready and reminder
+      // emails' link back to /pages/roadmap doesn't ask for the email again.
       const result = await sendGuestReport(trimmed);
       if (result.success) {
+        markReportEmailCaptured();
         setState('reminded');
       } else {
         setEmailError(result.error || 'Failed to send. Please try again.');

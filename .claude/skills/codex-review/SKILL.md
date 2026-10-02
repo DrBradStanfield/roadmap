@@ -20,8 +20,10 @@ does not run it: no Codex there, so CI stays Claude-only (US-40 AC8).
 
 A fresh-context reviewer on a different model, the cross-model analogue of
 the fresh Opus 5.5 adversarial check. It reviews an immutable, symlink-free
-snapshot in a read-only sandbox with the ChatGPT connector layer, web,
-images, plugins and memories disabled, and a minimal environment. Credential
+snapshot in a read-only sandbox with the ChatGPT connector layer, images,
+plugins and memories disabled, web search limited to OpenAI's hosted,
+index-only mode so it can check a cited study (no live page fetches, and the
+shell has no network; US-40 AC14), and a minimal environment. Credential
 files and their values are withheld from the snapshot and patch (US-40 AC11).
 Credential-named paths (`.env*`, `*.env`, `*.env.*`, `env.local` and the
 like; code named `config/prod.env.js` or `secrets.env.py` counts too, so a

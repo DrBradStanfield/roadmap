@@ -2,7 +2,8 @@
 /**
  * US-44 — the funnel page (/pages/start) skips the email gate before
  * "Save as PDF". The block's `skip_email_gate` setting reaches the widget as
- * `data-skip-email-gate`; nothing about it is ever written to the user's record.
+ * `data-skip-email-gate`. The setting is never written to the user's record;
+ * only a successful reminders sign-up marks it captured (AC3).
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -46,6 +47,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.skip.value = true;
   mocks.getReportEmailCaptured.mockReturnValue(false);
+  mocks.markReportEmailCaptured.mockImplementation(() => {});
   mocks.getReportHtml.mockResolvedValue({ success: true, html: '<p>Local report</p>' });
   mocks.sendGuestReport.mockResolvedValue({ success: true });
   print = vi.fn();
@@ -92,7 +94,7 @@ describe('US-44 AC3/AC4 — the optional reminders line', () => {
     expect(box.lastElementChild).toBe(notice);
   });
 
-  it('submitting enrols through the same capture call, opens no print window and persists nothing', async () => {
+  it('submitting enrols through the same capture call, opens no print window and marks the record captured', async () => {
     const view = showPlan();
     fireEvent.change(view.getByLabelText(REMINDER_SIGNUP_LABEL), { target: { value: ' reader@example.com ' } });
     fireEvent.click(view.getByRole('button', { name: 'Remind me' }));
@@ -100,7 +102,7 @@ describe('US-44 AC3/AC4 — the optional reminders line', () => {
     expect(mocks.sendGuestReport).toHaveBeenCalledOnce();
     expect(mocks.sendGuestReport).toHaveBeenCalledWith('reader@example.com');
     expect(print).not.toHaveBeenCalled();
-    expect(mocks.markReportEmailCaptured).not.toHaveBeenCalled();
+    expect(mocks.markReportEmailCaptured).toHaveBeenCalledOnce();
     expect(mocks.trackABConversion).not.toHaveBeenCalled();
     expect(view.getByRole('button', { name: 'Save as PDF' })).toBeTruthy();
     expect(view.container.querySelector('input[type="email"]')).toBeNull();
@@ -123,6 +125,18 @@ describe('US-44 AC3/AC4 — the optional reminders line', () => {
     expect(view.getByLabelText(REMINDER_SIGNUP_LABEL)).toBeTruthy();
     expect(view.getByRole('button', { name: 'Save as PDF' })).toBeTruthy();
     expect(mocks.markReportEmailCaptured).not.toHaveBeenCalled();
+  });
+
+  it('after a successful sign-up, the next render shows the captured view', async () => {
+    mocks.markReportEmailCaptured.mockImplementation(() => { mocks.getReportEmailCaptured.mockReturnValue(true); });
+    const first = showPlan();
+    fireEvent.change(first.getByLabelText(REMINDER_SIGNUP_LABEL), { target: { value: 'reader@example.com' } });
+    fireEvent.click(first.getByRole('button', { name: 'Remind me' }));
+    await waitFor(() => expect(first.getByText(REMINDER_SIGNUP_DONE)).toBeTruthy());
+    first.unmount();
+    const again = showPlan();
+    expect(again.container.querySelector('input[type="email"]')).toBeNull();
+    expect(again.getByRole('button', { name: 'Save as PDF' })).toBeTruthy();
   });
 
   it('a returning visitor who already captured sees today\'s captured view (no box)', () => {
