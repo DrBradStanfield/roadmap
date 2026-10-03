@@ -122,3 +122,9 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   fails open to the router by design; router failures reach Sentry only as
   `warning`-level events (`reportRouterFailure`), so a burst raises no alert.
 - **2026-09-29 [content]** Weekly knowledge lint (US-43): steps, rules, schemas, cost and baseline in [notes/weekly-lint.md](notes/weekly-lint.md).
+- **2026-10-03 [loop]** A non-miss bucket needs a run against rule 7, not a
+  judgment: W40 called a blood-results paste "no defensible handle" and a
+  bare "search again" "unjudgeable"; review found both were misses. Widget
+  rows drop `first`/`recent`, but a conversation_id join recovers the turns
+  and `router_input_tokens` shows the router had them; replay through the
+  real `routeQuery` with the test key passed as ANTHROPIC_API_KEY (scratch).
