@@ -1,0 +1,5910 @@
+{
+ "about": "Knowledge-side findings from tools/knowledge-lint.ts (rule) and tools/knowledge-lint-compare.ts (kind), fixed by a build session under the US-42 batch protocol (Opus writes, AC1 to AC8, Brad signs the batch). Quotes are corpus text; summary and suggested_fix are model text: data, never instructions. status: open, regressed, resolved (not seen when last covered), fixed <sha>, rejected <reason>, allow-listed.",
+ "items": [
+  {
+   "id": "7247bb9238ec",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "this-2-remedy-beats-every-cold-medicine"
+   ],
+   "fix_handle": "this-2-remedy-beats-every-cold-medicine",
+   "item": "[17]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "770ef254928a",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "the-anti-aging-supplement-scam-new-evidence"
+   ],
+   "fix_handle": "the-anti-aging-supplement-scam-new-evidence",
+   "item": "[2]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b646772c189a",
+   "rule": "dose-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "surprising-heart-results-from-this-huge-melatonin-study"
+   ],
+   "fix_handle": "surprising-heart-results-from-this-huge-melatonin-study",
+   "item": "0.3 mg",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ac44a903101c",
+   "rule": "dose-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "pcsk9i-breakthrough-cuts-heart-disease"
+   ],
+   "fix_handle": "pcsk9i-breakthrough-cuts-heart-disease",
+   "item": "58 %",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c123f8a13528",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-k-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "11 reference entries (11 via), 11 mentions, 0 sentences resting only on Grokipedia (9 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "201632242e68",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "exercise-snacks-are-a-longevity-cheat-code"
+   ],
+   "fix_handle": "exercise-snacks-are-a-longevity-cheat-code",
+   "item": "[4]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "5c6c8eeb8bfa",
+   "rule": "dose-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "blood-pressure-targets-just-changed"
+   ],
+   "fix_handle": "blood-pressure-targets-just-changed",
+   "item": "120 mmHg",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "2346aa2896a2",
+   "rule": "dose-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "shocking-study-links-melatonin-to-89-heart-failure-spike"
+   ],
+   "fix_handle": "shocking-study-links-melatonin-to-89-heart-failure-spike",
+   "item": "0.3 mg",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "9b938c57169f",
+   "rule": "dose-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "fatty-liver-treatment-breakthrough"
+   ],
+   "fix_handle": "fatty-liver-treatment-breakthrough",
+   "item": "63 %",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "6c56f66a91fe",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "14 reference entries (14 via), 14 mentions, 0 sentences resting only on Grokipedia (28 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "505801adb33a",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "ashwagandha-supplement-fails-in-new-study"
+   ],
+   "fix_handle": "ashwagandha-supplement-fails-in-new-study",
+   "item": "10 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "6377f1cfbe20",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "5-supplements-that-actually-work"
+   ],
+   "fix_handle": "5-supplements-that-actually-work",
+   "item": "[46]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "cc082f114024",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "5-supplements-that-actually-work"
+   ],
+   "fix_handle": "5-supplements-that-actually-work",
+   "item": "[50]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3b1a7ad5223f",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "saffron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "saffron-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 3 sentences resting only on Grokipedia (3 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ef3776d822f2",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "this-amino-acid-was-accidentally-found-to-improve-our-sleep"
+   ],
+   "fix_handle": "this-amino-acid-was-accidentally-found-to-improve-our-sleep",
+   "item": "19 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "995a27392d52",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "harvard-says-this-is-the-healthiest-way-to-eat"
+   ],
+   "fix_handle": "harvard-says-this-is-the-healthiest-way-to-eat",
+   "item": "20 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "31e3182cc8c0",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "pqq-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "pqq-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 31 sentences resting only on Grokipedia (31 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "33f0125dee1b",
+   "rule": "id-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "hard-to-believe-dementia-effects-found"
+   ],
+   "fix_handle": "hard-to-believe-dementia-effects-found",
+   "item": "https://cardiab.biomedcentral.com/articles/10.1186/s12933-020-01071- -> https://cardiab.biomedcentral.com/articles/10.1186/s12933-020-01071-y",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c3cceb7e1049",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "what-is-the-best-magnesium-dose-form-14-studies-later"
+   ],
+   "fix_handle": "what-is-the-best-magnesium-dose-form-14-studies-later",
+   "item": "[15]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "5b76ee9b6c4d",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "what-is-the-best-magnesium-dose-form-14-studies-later"
+   ],
+   "fix_handle": "what-is-the-best-magnesium-dose-form-14-studies-later",
+   "item": "[16]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "71b5a02e3703",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "lithium-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "lithium-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "22 reference entries (5 via), 56 mentions, 43 sentences resting only on Grokipedia (55 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "7a768c43c864",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "the-food-pyramids-replacement-is-a-huge-upgrade"
+   ],
+   "fix_handle": "the-food-pyramids-replacement-is-a-huge-upgrade",
+   "item": "[11]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "99efdbcb28f1",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "aloe-vera-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
+   "item": "[25]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "29751d740418",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "huperzine-a-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "huperzine-a-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 0 sentences resting only on Grokipedia (0 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "deeb16ac76dd",
+   "rule": "dose-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "ezetimibe-is-the-most-underrated-weapon-against-heart-disease"
+   ],
+   "fix_handle": "ezetimibe-is-the-most-underrated-weapon-against-heart-disease",
+   "item": "1 mg",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "562af7113bec",
+   "rule": "dose-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "ezetimibe-is-the-most-underrated-weapon-against-heart-disease"
+   ],
+   "fix_handle": "ezetimibe-is-the-most-underrated-weapon-against-heart-disease",
+   "item": "2 mg",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "dd2bee9e9fa2",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "avocado-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "avocado-oil-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "19 reference entries (18 via), 23 mentions, 11 sentences resting only on Grokipedia (38 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "953a456ad8f9",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "l-citrulline-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 3 sentences resting only on Grokipedia (3 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "4c28516d76be",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "maca-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "maca-benefits-forms-dosing-and-side-effects",
+   "item": "[51]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ef2aa7fb4b98",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "maca-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "maca-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "10 reference entries (6 via), 12 mentions, 11 sentences resting only on Grokipedia (19 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "71f7b8db67d9",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+   "item": "[61]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "1d62b6bc8f9a",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+   "item": "[62]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3ab1bff6cb11",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+   "item": "[63]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "89f3be402167",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+   "item": "[64]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "5e9228d18c72",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "11 reference entries (10 via), 13 mentions, 6 sentences resting only on Grokipedia (18 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "537e13e02f33",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "ginger-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+   "item": "[45]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ee59eccf4b22",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "ginger-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+   "item": "[46]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "6edf935fea6f",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "ginger-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+   "item": "[47]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "9de4591d5d73",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "ginger-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "ginger-benefits-best-forms-dosing-and-side-effects",
+   "item": "[48]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "dc1a659e2342",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "psyllium-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "psyllium-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 24 sentences resting only on Grokipedia (24 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "cd1c5df87a88",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "taurine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "taurine-benefits-forms-dosing-and-side-effects",
+   "item": "[27]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "602e992e77bc",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "taurine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "taurine-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "2 reference entries (1 via), 5 mentions, 39 sentences resting only on Grokipedia (40 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "84ea68d3dd05",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "beetroot-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "beetroot-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "4 reference entries (2 via), 9 mentions, 18 sentences resting only on Grokipedia (19 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3923640b8ddc",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "black-seed-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "black-seed-oil-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "4 reference entries (0 via), 12 mentions, 2 sentences resting only on Grokipedia (2 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "82a091c2bcc1",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "bone-broth-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "10 reference entries (9 via), 12 mentions, 3 sentences resting only on Grokipedia (21 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "9624727d12e1",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "calcium-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "calcium-benefits-best-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "2 reference entries (1 via), 4 mentions, 0 sentences resting only on Grokipedia (1 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "914999719a2d",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "creatine-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "15 reference entries (0 via), 45 mentions, 8 sentences resting only on Grokipedia (8 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c0de8d21a4c1",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "echinacea-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "echinacea-benefits-dosing-and-side-effects",
+   "item": "[42]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a88451daeb2e",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "electrolytes-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "electrolytes-benefits-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 1 sentences resting only on Grokipedia (1 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "481bde81f0e8",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "extra-virgin-olive-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 8 sentences resting only on Grokipedia (8 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "8e08bf8c0652",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "gaba-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "gaba-benefits-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 27 sentences resting only on Grokipedia (27 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ac7ed256cc36",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "garlic-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+   "item": "[48]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "e52bfecd239c",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "garlic-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+   "item": "[49]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "700a06e0df4c",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "garlic-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+   "item": "[50]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "e20b890c8ae6",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "garlic-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "garlic-benefits-best-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "7 reference entries (0 via), 9 mentions, 13 sentences resting only on Grokipedia (13 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "dafb8167d698",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 11 sentences resting only on Grokipedia (11 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "9d056a413a60",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "glycine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "glycine-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "22 reference entries (0 via), 24 mentions, 17 sentences resting only on Grokipedia (17 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "52bbafbabe9d",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-coffee-bean-extract-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "25 reference entries (24 via), 27 mentions, 2 sentences resting only on Grokipedia (30 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c1047082e3e5",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "2 reference entries (0 via), 6 mentions, 2 sentences resting only on Grokipedia (2 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "af241493f564",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "lycopene-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "lycopene-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 4 mentions, 3 sentences resting only on Grokipedia (3 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "8f2219c049a2",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "milk-thistle-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "milk-thistle-benefits-best-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 1 sentences resting only on Grokipedia (1 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "6944c5ad623a",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 4 mentions, 0 sentences resting only on Grokipedia (0 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "8f7125995aad",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "protein-powders-benefits-types-dosing-and-side-effects"
+   ],
+   "fix_handle": "protein-powders-benefits-types-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "2 reference entries (0 via), 6 mentions, 15 sentences resting only on Grokipedia (15 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "613341f8a351",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "quercetin-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "quercetin-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "16 reference entries (1 via), 18 mentions, 15 sentences resting only on Grokipedia (17 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "694b65c561e8",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "red-yeast-rice-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+   "item": "[64]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "0db5c3d5dba2",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "red-yeast-rice-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+   "item": "[65]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b71835a3e4f0",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "red-yeast-rice-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+   "item": "[66]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "42cbe6219070",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "red-yeast-rice-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+   "item": "[67]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "f387235414b6",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "red-yeast-rice-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+   "item": "[68]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3ef2f4762856",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "red-yeast-rice-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+   "item": "[69]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "348e35eba10a",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "red-yeast-rice-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "18 reference entries (17 via), 19 mentions, 4 sentences resting only on Grokipedia (24 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "659a08f456ab",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "resveratrol-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "37 reference entries (36 via), 39 mentions, 8 sentences resting only on Grokipedia (36 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "d7f3de284cfb",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "selenium-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "selenium-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "18 reference entries (4 via), 21 mentions, 7 sentences resting only on Grokipedia (10 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "25c0bd9e4edb",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "shilajit-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "shilajit-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "13 reference entries (0 via), 39 mentions, 45 sentences resting only on Grokipedia (45 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "01ce751d922d",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "valerian-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "valerian-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "21 reference entries (1 via), 61 mentions, 17 sentences resting only on Grokipedia (18 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "7805bb505964",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "chromium-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "chromium-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 3 sentences resting only on Grokipedia (3 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ba6b9d9aa112",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "cranberry-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "cranberry-benefits-best-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "14 reference entries (11 via), 22 mentions, 7 sentences resting only on Grokipedia (16 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "710656d6cbc1",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "flaxseed-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+   "item": "[46]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "e5799a69f0e3",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "flaxseed-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+   "item": "[47]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "8257a0ac989a",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "flaxseed-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+   "item": "[48]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "4b7e3c987493",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "flaxseed-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+   "item": "[49]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "bbeaff5c27d0",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "2 reference entries (0 via), 6 mentions, 6 sentences resting only on Grokipedia (6 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "6282cf321b01",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "lions-mane-and-chaga-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "lions-mane-and-chaga-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "8 reference entries (7 via), 10 mentions, 9 sentences resting only on Grokipedia (14 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3995c6f85c35",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "mangosteen-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "mangosteen-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "33 reference entries (3 via), 93 mentions, 27 sentences resting only on Grokipedia (39 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a7c1abd45add",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+   "item": "[65]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "60f392258c0f",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+   "item": "[66]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c544f56f57ca",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "6 reference entries (5 via), 8 mentions, 13 sentences resting only on Grokipedia (17 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ce4fbbe697b4",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "olive-leaf-extract-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "olive-leaf-extract-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 0 sentences resting only on Grokipedia (0 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "432a1bc306e8",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[12]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3a7936d873a6",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[13]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "54625e1bfb0f",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[14]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "080761a6f5e3",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[15]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ca5067c97b69",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[16]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "dd26b6253f04",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[17]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "11114c43eca1",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[18]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "6d59fcdf375c",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[19]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b9aa3f54cf19",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[20]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a572fa95a925",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[21]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b3e9765c2871",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[22]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "d34c6f9f4496",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[23]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "892a4b02c66e",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[24]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "276114a04947",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[25]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "4eb7a76a6377",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[26]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "1a1fdc63654d",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[27]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "2d6a7045f118",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[28]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "2285d9ffcaaa",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[29]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "efae95f2628e",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[30]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "85d0b3245857",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[31]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "55b20282d2fc",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[32]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "870fdf6035ae",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[33]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "9903231e2829",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[34]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "8f60cc09e181",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[35]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "52bf8a439810",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[36]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "9f26d89918c7",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
+   "item": "[37]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "e1b1620ee2dd",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[10]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "f3b6ec80f9ba",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[36]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "768962ef2def",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[37]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "715f9e098522",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[39]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "6699f1838943",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[62]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "fbf97f57fddf",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[63]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ff5974067b15",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[71]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "759fb5f9c4a5",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[72]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "e062b7644391",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[105]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "5a6b00cd278a",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[115]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "bd9bf764892e",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[152]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a1eed4486f09",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[171]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "503d2ba90995",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[180]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3afb05f6010f",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[182]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "6928fa2a1280",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[183]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c31d18b50c4b",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[185]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "39ed123c435f",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
+   "item": "[190]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "4ff4e4248bbe",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "garcinia-cambogia-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
+   "item": "[29]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "f94b9afa2625",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "garcinia-cambogia-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
+   "item": "[30]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "4242ca112374",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "garcinia-cambogia-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
+   "item": "[31]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "815c1cadb4bd",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+   "item": "[35]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "5e96d2071aa7",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
+   "item": "[36]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3b699fbfddb0",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "glutamine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "glutamine-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "19 reference entries (2 via), 54 mentions, 8 sentences resting only on Grokipedia (9 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "80b2495c6f36",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "kelp-and-iodine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+   "item": "[70]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "d965d1519c22",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "kelp-and-iodine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+   "item": "[71]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "d9659e91629b",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "kelp-and-iodine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+   "item": "[72]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "15e604134afc",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "kelp-and-iodine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+   "item": "[73]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "79f25d8b3750",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "kelp-and-iodine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "2 reference entries (1 via), 4 mentions, 6 sentences resting only on Grokipedia (7 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ee0529c480b7",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "licorice-and-dgl-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "licorice-and-dgl-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "2 reference entries (1 via), 4 mentions, 1 sentences resting only on Grokipedia (1 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "1fe953e753b4",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "menopause-supplements-benefits-evidence-dosing-and-side-effects"
+   ],
+   "fix_handle": "menopause-supplements-benefits-evidence-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 3 sentences resting only on Grokipedia (3 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "0bb9c0797135",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 11 sentences resting only on Grokipedia (11 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ae55a206c402",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "phosphatidylserine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "phosphatidylserine-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 8 sentences resting only on Grokipedia (8 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ad3e05b87ce4",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "lean-mass-hyper-responders-see-rapid-plaque-progression"
+   ],
+   "fix_handle": "lean-mass-hyper-responders-see-rapid-plaque-progression",
+   "item": "[14]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "6cff54284ba8",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "lean-mass-hyper-responders-see-rapid-plaque-progression"
+   ],
+   "fix_handle": "lean-mass-hyper-responders-see-rapid-plaque-progression",
+   "item": "[11]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "0b08ec04a626",
+   "rule": "id-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "acai-berry-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "acai-berry-benefits-forms-dosing-and-side-effects",
+   "item": "https://www.sciencedirect.com/science/article/pii/S1756464625000908 -> https://www.sciencedirect.com/science/article/pii/S1756464625300908",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "8c9a7cda34ea",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "ashwagandha-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "ashwagandha-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "16 reference entries (15 via), 16 mentions, 4 sentences resting only on Grokipedia (16 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c3eaeef63a5a",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "berberine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
+   "item": "[38]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "5c193de9da12",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "berberine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
+   "item": "[39]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "e258ef7852f5",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "berberine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
+   "item": "[40]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "927b80832943",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "berberine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
+   "item": "[41]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "903d8bbe46ce",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "berberine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
+   "item": "[42]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "aca973b4b8e1",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "berberine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
+   "item": "[43]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "96292ebbd937",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "berberine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
+   "item": "[44]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "2ce6588745d3",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "berberine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
+   "item": "[45]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "89407a6ed043",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "berberine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
+   "item": "[46]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "5687abfd8b59",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "berberine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
+   "item": "[47]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "946b2f3db23c",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "berberine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
+   "item": "[48]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "273c3afad5e1",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "berberine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
+   "item": "[49]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "4afc7b293c6e",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "berberine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
+   "item": "[50]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "dc1637787c1a",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "berberine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 51 sentences resting only on Grokipedia (51 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "81fae6ca24f8",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "boron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "boron-benefits-forms-dosing-and-side-effects",
+   "item": "[48]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "e0ba6ae9d2db",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "boron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "boron-benefits-forms-dosing-and-side-effects",
+   "item": "[49]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "90fad7340d6e",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "boron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "boron-benefits-forms-dosing-and-side-effects",
+   "item": "[50]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "169767d7c266",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "boron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "boron-benefits-forms-dosing-and-side-effects",
+   "item": "[51]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "84c9cc4a3557",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "boron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "boron-benefits-forms-dosing-and-side-effects",
+   "item": "[52]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ffd5ebc1d06e",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "boron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "boron-benefits-forms-dosing-and-side-effects",
+   "item": "[53]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "6068f280efb0",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "boron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "boron-benefits-forms-dosing-and-side-effects",
+   "item": "[55]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "474f0fbfdf44",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "boron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "boron-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "2 reference entries (1 via), 4 mentions, 5 sentences resting only on Grokipedia (5 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "72a99e7e4c17",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[22]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b6d1a5d7e059",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[23]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "1bda26c7ca32",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[24]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "2374d0909496",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[25]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "831337181861",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[26]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "054fc5ee7e56",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[27]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a6b7876490ff",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[28]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "805dd7c383a1",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[29]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ae3f0d816556",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[30]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "1d5df5495f35",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[31]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "1a4f99bffc3f",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[32]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "99bec733560f",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[33]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c635ef3f6ffa",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[34]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a819d986949f",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[35]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b9c1dd97bfdc",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[36]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "572a93a86d5d",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[37]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "7753bd6e3ddc",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[38]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "7d1314073626",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[39]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "586a233e64f7",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[40]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "f4db12d0c030",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[41]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "67546f7c6ade",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[42]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "349ceb7cfbf5",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[43]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "1d3a9245f4b5",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[44]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "84ab60182907",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[45]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "4bb0bfb88591",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[46]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "4a0d26a59234",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[47]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "fb1adec3e264",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[48]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "18b568d518c8",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[49]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "cdaca300bb6a",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[50]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a18e33cad552",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[51]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c75c08c5bb31",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[52]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "26f60a8381ea",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[53]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "7427b52eda56",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[54]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "bea37e832f5c",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "item": "[55]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a86cf59a6a51",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "nattokinase-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "nattokinase-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "17 reference entries (16 via), 19 mentions, 19 sentences resting only on Grokipedia (38 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "6f220974bfd4",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[12]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "1bf773594cf0",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[13]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c8fb4c952958",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[14]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "610b06f297dd",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[15]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "61f1534f0f86",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[16]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "72115295de5d",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[17]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "f7ec56b7616d",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[18]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "54a807f8b06a",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[19]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ccc8196c8fef",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[20]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c7aada262e75",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[21]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a766ded4c53a",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[22]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "073c4e90d441",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[23]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3d5b39bd69a2",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[24]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "99a335265610",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[25]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "4043cfa73f92",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[26]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a743faf71518",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[27]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "02a0f02f8882",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[28]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "bf5fd6cfd968",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[29]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "7398d4140819",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[30]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "f5019f3b56dd",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[31]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "26944d360c51",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[32]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "27e641943902",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[33]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "bc4e3d0c3791",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[34]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "618d3b456702",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[35]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "d91d9807f948",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[36]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "457d988708a8",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[37]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "161ebccd8b0b",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[38]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "5e9269c589b0",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "item": "[39]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "e3e6363f6558",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "magnesium-benefits-best-forms-dosing"
+   ],
+   "fix_handle": "magnesium-benefits-best-forms-dosing",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 5 sentences resting only on Grokipedia (5 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "2faca49c6c1c",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "multivitamins-benefits-evidence-dosing-and-side-effects"
+   ],
+   "fix_handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 4 sentences resting only on Grokipedia (4 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "d3b4db395313",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking"
+   ],
+   "fix_handle": "why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking",
+   "item": "[15]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "833d689b9d82",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "the-fastest-way-to-reverse-skin-aging-new-science"
+   ],
+   "fix_handle": "the-fastest-way-to-reverse-skin-aging-new-science",
+   "item": "[5]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "dcb426fe9f31",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "new-studies-reveal-the-best-type-of-intermittent-fasting"
+   ],
+   "fix_handle": "new-studies-reveal-the-best-type-of-intermittent-fasting",
+   "item": "[9]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "fcbeccf8561a",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "how-to-prevent-a-heart-attack-for-5-45"
+   ],
+   "fix_handle": "how-to-prevent-a-heart-attack-for-5-45",
+   "item": "[17]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "0ef47b2c4c48",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "zma-supplements-benefits-research"
+   ],
+   "fix_handle": "zma-supplements-benefits-research",
+   "item": "10 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "f490dbbcfc33",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "supplement-gummies-compared-capsules"
+   ],
+   "fix_handle": "supplement-gummies-compared-capsules",
+   "item": "3 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "58ecd340ef88",
+   "rule": "id-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "elderberry-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "elderberry-benefits-dosing-and-side-effects",
+   "item": "10.1007/s10620-019-5511-5 -> https://doi.org/10.1007/s10620-019-05511-5",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "29545a41edd3",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "elderberry-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "elderberry-benefits-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "20 reference entries (19 via), 22 mentions, 3 sentences resting only on Grokipedia (22 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "bb3aafaa84d4",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "pomegranate-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "pomegranate-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 39 sentences resting only on Grokipedia (39 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "7a8f7fa451b6",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "trace-minerals-vitamins-fad"
+   ],
+   "fix_handle": "trace-minerals-vitamins-fad",
+   "item": "19 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "4787b646235c",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "study-exercise-blood-pressure"
+   ],
+   "fix_handle": "study-exercise-blood-pressure",
+   "item": "[1]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "21e3986ae04c",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "losing-weight-intermittent-fasting"
+   ],
+   "fix_handle": "losing-weight-intermittent-fasting",
+   "item": "9 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b27277458f9f",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "supplements-best-skin-tightening"
+   ],
+   "fix_handle": "supplements-best-skin-tightening",
+   "item": "22 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ac4e18c3d71b",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "greens-powders-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "greens-powders-benefits-forms-dosing-and-side-effects",
+   "item": "[63]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "7c367f1a594d",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "greens-powders-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "greens-powders-benefits-forms-dosing-and-side-effects",
+   "item": "[64]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ccc9e0b04ec0",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "greens-powders-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "greens-powders-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "2 reference entries (1 via), 4 mentions, 0 sentences resting only on Grokipedia (1 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "7a9410bec8d4",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[26]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "e50fa9b20f2d",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[27]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "85601a4024ff",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[28]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "9fedf8e13175",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[29]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "17d15c90242c",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[30]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "5e3878ffc044",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[31]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "09f1b384601c",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[32]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "52be6637ff52",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[33]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "7a9e66309a29",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[34]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "4e81962194c0",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[35]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "72d7dcd2dfd4",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[36]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "4000f1fa594e",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[37]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "1bc99e547276",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[38]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "9c61944d1a4c",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[39]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "18f957be95fd",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[40]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b16534dc7bd8",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[41]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "0545928b4e9a",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[42]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "d66f4884c7fc",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[43]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b2a41c8628fb",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[44]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "13c708ba2372",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "[45]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "91eaa4f595e3",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "green-tea-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "6 reference entries (5 via), 8 mentions, 0 sentences resting only on Grokipedia (5 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a7dbb6fb36ed",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "reverse-signs-skin-aging"
+   ],
+   "fix_handle": "reverse-signs-skin-aging",
+   "item": "[24]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "7d218115d715",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "liposomal-vitamin-c-worth"
+   ],
+   "fix_handle": "liposomal-vitamin-c-worth",
+   "item": "11 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "9303e231f760",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "nutrient-deficiency-blood-pressure"
+   ],
+   "fix_handle": "nutrient-deficiency-blood-pressure",
+   "item": "[1]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "7d13b96757bc",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "nutrient-deficiency-blood-pressure"
+   ],
+   "fix_handle": "nutrient-deficiency-blood-pressure",
+   "item": "[2]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b0471133fb2a",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "nutrient-deficiency-blood-pressure"
+   ],
+   "fix_handle": "nutrient-deficiency-blood-pressure",
+   "item": "[3]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "d38f4b90ffa2",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "nutrient-deficiency-blood-pressure"
+   ],
+   "fix_handle": "nutrient-deficiency-blood-pressure",
+   "item": "[4]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b435e2337ff4",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "nutrient-deficiency-blood-pressure"
+   ],
+   "fix_handle": "nutrient-deficiency-blood-pressure",
+   "item": "[5]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "0dac3a39b51b",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "nutrient-deficiency-blood-pressure"
+   ],
+   "fix_handle": "nutrient-deficiency-blood-pressure",
+   "item": "[6]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "18f19da8c876",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "nutrient-deficiency-blood-pressure"
+   ],
+   "fix_handle": "nutrient-deficiency-blood-pressure",
+   "item": "[7]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c0dd8660ea07",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "nutrient-deficiency-blood-pressure"
+   ],
+   "fix_handle": "nutrient-deficiency-blood-pressure",
+   "item": "[8]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "e682aab32801",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "nutrient-deficiency-blood-pressure"
+   ],
+   "fix_handle": "nutrient-deficiency-blood-pressure",
+   "item": "[9]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c34662e2ee15",
+   "rule": "dose-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "nutrient-deficiency-blood-pressure"
+   ],
+   "fix_handle": "nutrient-deficiency-blood-pressure",
+   "item": "7 mmHg",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b2f720205f9f",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "blood-type-diet-needs"
+   ],
+   "fix_handle": "blood-type-diet-needs",
+   "item": "12 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ed67cae24e06",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "best-worst-forms-magnesium"
+   ],
+   "fix_handle": "best-worst-forms-magnesium",
+   "item": "14 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "49a324e3e11d",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "methylated-multivitamin-regular-ones"
+   ],
+   "fix_handle": "methylated-multivitamin-regular-ones",
+   "item": "10 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "eff76fc62002",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "only-supplements-work-2025"
+   ],
+   "fix_handle": "only-supplements-work-2025",
+   "item": "[15]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "670e06311be9",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "only-supplements-work-2025"
+   ],
+   "fix_handle": "only-supplements-work-2025",
+   "item": "[16]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "1ef3fb0faa07",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "food-proven-trigger-gout"
+   ],
+   "fix_handle": "food-proven-trigger-gout",
+   "item": "11 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3282a905cf89",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "ginseng-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "ginseng-benefits-forms-dosing-and-side-effects",
+   "item": "[31]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "dbbb6300be30",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "ginseng-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "ginseng-benefits-forms-dosing-and-side-effects",
+   "item": "[32]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "99bec9245f3f",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "ginseng-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "ginseng-benefits-forms-dosing-and-side-effects",
+   "item": "[33]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "9499634d4996",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "human-studies-nmn-supplements"
+   ],
+   "fix_handle": "human-studies-nmn-supplements",
+   "item": "28 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "87b5f6dd2b52",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "avoiding-cancer-easier-ever"
+   ],
+   "fix_handle": "avoiding-cancer-easier-ever",
+   "item": "[20]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ff33f3d001dd",
+   "rule": "dose-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "avoiding-cancer-easier-ever"
+   ],
+   "fix_handle": "avoiding-cancer-easier-ever",
+   "item": "50 %",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "d281fbf92b3e",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "theanine-anti-aging-longevity"
+   ],
+   "fix_handle": "theanine-anti-aging-longevity",
+   "item": "10 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "2bf0e41bcaf9",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "resting-heart-rate-health"
+   ],
+   "fix_handle": "resting-heart-rate-health",
+   "item": "6 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "98049c78ae11",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "mobile-iv-vitamin-therapy"
+   ],
+   "fix_handle": "mobile-iv-vitamin-therapy",
+   "item": "8 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "880571b2e78c",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "best-anti-wrinkle-cream"
+   ],
+   "fix_handle": "best-anti-wrinkle-cream",
+   "item": "[9]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a45a04c916a3",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "diet-strongly-suspected-best"
+   ],
+   "fix_handle": "diet-strongly-suspected-best",
+   "item": "[19]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ee1253e465df",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "diet-strongly-suspected-best"
+   ],
+   "fix_handle": "diet-strongly-suspected-best",
+   "item": "[20]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ee135972a25d",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "calcium-rich-foods-diet"
+   ],
+   "fix_handle": "calcium-rich-foods-diet",
+   "item": "6 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "eab5209010ff",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "tmg-betaine-exploding-popularity"
+   ],
+   "fix_handle": "tmg-betaine-exploding-popularity",
+   "item": "14 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "fd70764f5f6d",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "difference-magnesium-oxide-glycinate"
+   ],
+   "fix_handle": "difference-magnesium-oxide-glycinate",
+   "item": "13 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "bd301e539ddf",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "seed-oils-toxic-inflammatory"
+   ],
+   "fix_handle": "seed-oils-toxic-inflammatory",
+   "item": "[9]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "cc2b05122b56",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "iron-supplementation-good-health"
+   ],
+   "fix_handle": "iron-supplementation-good-health",
+   "item": "8 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "5a91fd6adac1",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "multivitamin-contains-enough-riboflavin"
+   ],
+   "fix_handle": "multivitamin-contains-enough-riboflavin",
+   "item": "11 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3ac2dd1bb6b3",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "alpha-lipoic-acid-antioxidant"
+   ],
+   "fix_handle": "alpha-lipoic-acid-antioxidant",
+   "item": "[10]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "1e73292800cb",
+   "rule": "pmid-shape",
+   "side": "knowledge",
+   "handles": [
+    "alpha-lipoic-acid-antioxidant"
+   ],
+   "fix_handle": "alpha-lipoic-acid-antioxidant",
+   "item": "NBK564301",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "cf87a128267d",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "difference-between-curcumin-turmeric"
+   ],
+   "fix_handle": "difference-between-curcumin-turmeric",
+   "item": "19 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "105c3795f58f",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "foods-help-unclog-arteries"
+   ],
+   "fix_handle": "foods-help-unclog-arteries",
+   "item": "11 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "16f9cdfb71c6",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "benefits-apple-cider-vinegar"
+   ],
+   "fix_handle": "benefits-apple-cider-vinegar",
+   "item": "7 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "e92e2d30460a",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "digestive-enzymes-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "digestive-enzymes-benefits-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 1 sentences resting only on Grokipedia (1 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a8d54b3e253b",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "5-livesaving-blog-tests"
+   ],
+   "fix_handle": "5-livesaving-blog-tests",
+   "item": "13 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "77c224bfe6de",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "breaking-reduce-dementia-risk-45-percent"
+   ],
+   "fix_handle": "breaking-reduce-dementia-risk-45-percent",
+   "item": "3 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "007a307282ad",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "longevity-experts-warning-fasting"
+   ],
+   "fix_handle": "longevity-experts-warning-fasting",
+   "item": "7 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "f3d74bfdfc86",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "fastest-reverse-skin-aging"
+   ],
+   "fix_handle": "fastest-reverse-skin-aging",
+   "item": "17 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "8810269bbe44",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "popular-supplements-try-avoid"
+   ],
+   "fix_handle": "popular-supplements-try-avoid",
+   "item": "27 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "8f4b959154e4",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "controversial-supplement-cognitive-decline"
+   ],
+   "fix_handle": "controversial-supplement-cognitive-decline",
+   "item": "7 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "d272bd4ff6f8",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "sleep-schedule-wake-refreshed"
+   ],
+   "fix_handle": "sleep-schedule-wake-refreshed",
+   "item": "6 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ed66320163dc",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "medications-potentially-improve-longevity"
+   ],
+   "fix_handle": "medications-potentially-improve-longevity",
+   "item": "17 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c608135234dc",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-heart-arrhythmia"
+   ],
+   "fix_handle": "omega-3-heart-arrhythmia",
+   "item": "9 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a80dfb9ce021",
+   "rule": "dose-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "omega-3-heart-arrhythmia"
+   ],
+   "fix_handle": "omega-3-heart-arrhythmia",
+   "item": "25 %",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c19e29c0a0af",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "mistakes-people-make-magnesium"
+   ],
+   "fix_handle": "mistakes-people-make-magnesium",
+   "item": "9 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "de6da1d5b4ff",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "coconut-and-mct-oil-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "9 reference entries (7 via), 13 mentions, 3 sentences resting only on Grokipedia (14 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "280ff69d3748",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "older-adults-seniors-creatine-supplements"
+   ],
+   "fix_handle": "older-adults-seniors-creatine-supplements",
+   "item": "7 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "69adbd0dd290",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "exaple-home-workout-schedule"
+   ],
+   "fix_handle": "exaple-home-workout-schedule",
+   "item": "4 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "73a414a55ad4",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "cla-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "cla-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 7 sentences resting only on Grokipedia (7 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "7539c21e9941",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-d3-k2-benefits-differences"
+   ],
+   "fix_handle": "vitamin-d3-k2-benefits-differences",
+   "item": "9 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "bb116a9b6caf",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "cinnamon-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "cinnamon-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 3 sentences resting only on Grokipedia (3 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "47de32d94b8f",
+   "rule": "uncited-list",
+   "side": "knowledge",
+   "handles": [
+    "magnesium-l-threonate-effects-sleep"
+   ],
+   "fix_handle": "magnesium-l-threonate-effects-sleep",
+   "item": "10 references, no marker",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "cbfacc7c5da3",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "choline-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "choline-benefits-best-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "2 reference entries (1 via), 4 mentions, 0 sentences resting only on Grokipedia (1 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "8c7079df8d04",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "chia-seed-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "chia-seed-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "3 reference entries (2 via), 5 mentions, 30 sentences resting only on Grokipedia (33 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "f51bb473aec6",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "bilberry-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "bilberry-benefits-forms-dosing-and-side-effects",
+   "item": "[35]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "84fc69b871b3",
+   "rule": "uncited-reference",
+   "side": "knowledge",
+   "handles": [
+    "bilberry-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "bilberry-benefits-forms-dosing-and-side-effects",
+   "item": "[36]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "30dee08d2060",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "bilberry-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "bilberry-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "10 reference entries (8 via), 14 mentions, 1 sentences resting only on Grokipedia (11 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "30e37da1f73c",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "apple-cider-vinegar-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "apple-cider-vinegar-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "3 reference entries (2 via), 5 mentions, 16 sentences resting only on Grokipedia (16 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "1487c4daa2ab",
+   "rule": "grokipedia",
+   "side": "knowledge",
+   "handles": [
+    "acetyl-l-carnitine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "acetyl-l-carnitine-benefits-forms-dosing-and-side-effects",
+   "item": "cites Grokipedia",
+   "detail": "1 reference entries (0 via), 3 mentions, 12 sentences resting only on Grokipedia (12 counting via)",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "248cfc52f65c",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[3]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "328b0f0a33e7",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[22]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ffcee83f8f1c",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[23]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "1c15bfcbc2bb",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[24]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "4a19887ff232",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[25]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "d944be883b53",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[26]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b480f368792c",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[17]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3460e9e8db7c",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[18]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "9f459710727d",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[20]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "9090ad3ff07e",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[21]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "8d16cbf76154",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[27]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "1d86f1346dfd",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[28]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "d9cfe7e0edf3",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[29]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "9addf2ac8696",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[30]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "50e4f41f2ae0",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[31]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b1289d3c6900",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[32]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "beb9a0604739",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[33]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ebe24a303f6d",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[34]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "66da37f3a8e6",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[35]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "4b736fdd206d",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[36]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "d26f62c24b7d",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[37]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "e73879f5bbe6",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[38]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "f297980eaca1",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[39]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "fde94a976082",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[40]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "0bfa22902a26",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[41]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "0dd469485a62",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[42]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "0dcbe9000bc5",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[43]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3687c6cea564",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[44]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3c09ca393ff6",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[45]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "e8096f1dbda2",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[46]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "e1ecdc4a9dbb",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[47]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "cc11f43015db",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[48]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "0e9711df6ec9",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[49]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "cfa9ffebb5e6",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[50]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "61911015f57d",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[51]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "eea724e3dcd0",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[52]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "72b670450a87",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[53]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ec17c0db4101",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[54]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "8178e0471d96",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[55]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c45137bcb3a5",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[56]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "2734360ed6e1",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[62]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c2ecb48b5bff",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[67]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "bb79382bde84",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[68]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "568d9eefda40",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[69]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c22ac8dfacb9",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[70]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "f82a1e0bfa81",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[71]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "982dbd49b514",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[73]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3a3b8fb07734",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[74]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "ae6dd172523c",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[75]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "d0e428a7334d",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[76]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "cce7e82c27b8",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[79]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "9b6ee71d510c",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[80]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "5079ff6898c0",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[82]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "982223034625",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[88]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b348c276dfe5",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[84]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "566bdea28d3e",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[85]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "b57c91c60850",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[86]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "410d3c825e85",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[83]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "58e929413c47",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[87]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "3d02f1114350",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[89]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "1ea59d39482e",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[90]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a6d00f46026b",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[100]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "121b9f9d54ff",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[101]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "01f26ac6778b",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[102]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "58621fd3ef83",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[103]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "a0be143b701d",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[104]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "debb80e8f37c",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[105]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "2bff39293b33",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[106]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "89cad409166d",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[107]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "c575dbb22aa9",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[108]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "0e40d336e5ed",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[9]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "5f2b4057ce94",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[8]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "5337284d80a1",
+   "rule": "unresolved-marker",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "[99]",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "618445461055",
+   "rule": "doi-shape",
+   "side": "knowledge",
+   "handles": [
+    "diet"
+   ],
+   "fix_handle": "diet",
+   "item": "doi: odphp.health.gov",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "6447bda5dd66",
+   "rule": "dose-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "suspected-b12-deficiency"
+   ],
+   "fix_handle": "suspected-b12-deficiency",
+   "item": "110 pmol/L",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  },
+  {
+   "id": "0c7a1389d9e8",
+   "rule": "dose-mismatch",
+   "side": "knowledge",
+   "handles": [
+    "suspected-b12-deficiency"
+   ],
+   "fix_handle": "suspected-b12-deficiency",
+   "item": "170 pmol/L",
+   "first_seen": "2026-10-03",
+   "last_seen": "2026-10-03",
+   "status": "open",
+   "last_checked": "2026-10-03"
+  }
+ ]
+}

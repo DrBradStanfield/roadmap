@@ -74,3 +74,15 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W40,router_cache_hit_rate_pct,53,17,212,chat_match_events,"23/43 (v1 10, v2 13); 18 hits within 300 s of the previous call, 2 at 300–3600 s, 3 beyond 3600 s (7339 / 12268 / 3600.4 s) — first week on the 1-hour TTL"
 2026-W40,yt_reply_median_words,68,70,-3,chat_messages,"n=11 excluding 5 SKIP_NO_REPLY sentinels (16 assistant rows); raw incl. tag (11/11 carry it); tag-stripped median 62"
 2026-W40,yt_reply_gt90w_count_7d,1,5,-80,chat_messages,"1/11 (9%) raw, max 131; tag-stripped 1/11, max 125; >5-sentence breaches 5; any sentence >25 words 3/11 (splitter caveat); small n"
+2026-W40,lint_unresolved_marker,87,,,tools/knowledge-lint.ts,weekly lint
+2026-W40,lint_uncited_reference,207,,,tools/knowledge-lint.ts,weekly lint
+2026-W40,lint_uncited_list,39,,,tools/knowledge-lint.ts,weekly lint
+2026-W40,lint_doi_shape,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W40,lint_pmid_shape,1,,,tools/knowledge-lint.ts,weekly lint
+2026-W40,lint_id_mismatch,3,,,tools/knowledge-lint.ts,weekly lint
+2026-W40,lint_link_dead,,,,tools/knowledge-lint.ts,"NOT MEASURED: 500 checked, 500 unverified, 41 over the cap — the cloud agent proxy refuses doi.org and pubmed.ncbi.nlm.nih.gov (CONNECT 403); the tool wrote 0, blanked by the orchestrator"
+2026-W40,lint_grokipedia,67,,,tools/knowledge-lint.ts,weekly lint
+2026-W40,lint_dose_mismatch,12,,,tools/knowledge-lint.ts,weekly lint
+2026-W40,lint_product_rise,0,,,tools/knowledge-lint.ts,weekly lint
+2026-W40,lint_grokipedia_only_sentences,703,,,tools/knowledge-lint.ts,weekly lint
+2026-W40,lint_due_entries,86,,,tools/knowledge-lint.ts,weekly lint
