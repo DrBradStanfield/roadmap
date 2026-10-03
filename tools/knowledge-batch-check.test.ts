@@ -299,30 +299,47 @@ describe("US-42 AC2 multiset and body_line", () => {
 
 describe("US-42 AC7 identifiers", () => {
   const cited = () => put("docs/blog/alpha.md", fx("alpha.new.md").replace("upset [2].", "upset [2] [3].").trimEnd() + "\n\n[3] Foo B. Study. PMID: 99999999 doi:10.1000/abc.def\n");
-  it("warns on a new reference line whose PMID or DOI is in no raw file", () => {
-    cited();
-    const r = run().AC7;
-    expect(r.evidence.filter((e) => e.includes("unverified primary")).length).toBe(1);
-    expect(fails(r).filter((f) => f.includes("unverified"))).toEqual([]);
-  });
-  it("counts only a pubmed/ abstract with a '# PubMed <pmid>' header as verifying", () => {
-    cited();
-    const dir = join(reports, "pubmed");
+  const absFile = (id: string, dirName = "pubmed") => {
+    const dir = join(reports, dirName);
     mkdirSync(dir, { recursive: true });
-    const abs = join(dir, "99999999.md");
-    writeFileSync(abs, "# PubMed 99999999\n\nSynthetic abstract. doi 10.1000/ABC.DEF\n");
-    reps.alpha.extra_raw = [{ path: abs, sha256: sha256(readFileSync(abs)) }];
-    expect(run().AC7.evidence.some((e) => e.includes("unverified primary"))).toBe(false);
-    // the same identifiers in ordinary raw text (ConsumerLab or NIH) do not verify
+    const f = join(dir, `${id}.md`);
+    writeFileSync(f, `# PubMed ${id}\n\nSynthetic abstract. doi 10.1000/ABC.DEF\n`);
+    return { path: f, sha256: sha256(readFileSync(f)) };
+  };
+  it("fails a NEW PubMed reference whose abstract file is not in extra_raw", () => {
+    cited();
+    const f = fails(run().AC7).join("\n");
+    expect(f).toContain("new PubMed reference has no abstract file in extra_raw");
+    expect(f).toContain("PMID: 99999999");
+  });
+  it("accepts a new PubMed reference once its pubmed/ abstract with the PMID header is in extra_raw", () => {
+    cited();
+    reps.alpha.extra_raw = [absFile("99999999")];
+    expect(fails(run().AC7).join("\n")).not.toContain("no abstract file");
+  });
+  it("does not accept ordinary raw text, a headerless file, or another PMID's abstract", () => {
+    cited();
     const plain = join(reports, "x.txt");
     writeFileSync(plain, "see PMID 99999999 and 10.1000/ABC.DEF");
     reps.alpha.extra_raw = [{ path: plain, sha256: sha256(readFileSync(plain)) }];
-    expect(run().AC7.evidence.some((e) => e.includes("unverified primary"))).toBe(true);
-    // a pubmed/ file without the header does not count either
-    const bare = join(dir, "bare.md");
+    expect(fails(run().AC7).join()).toContain("no abstract file");
+    const bare = join(reports, "pubmed", "bare.md");
+    mkdirSync(join(reports, "pubmed"), { recursive: true });
     writeFileSync(bare, "PMID 99999999 10.1000/ABC.DEF");
     reps.alpha.extra_raw = [{ path: bare, sha256: sha256(readFileSync(bare)) }];
-    expect(run().AC7.evidence.some((e) => e.includes("unverified primary"))).toBe(true);
+    expect(fails(run().AC7).join()).toContain("no abstract file");
+    reps.alpha.extra_raw = [absFile("11111111")];
+    expect(fails(run().AC7).join()).toContain("no abstract file");
+  });
+  it("leaves a PubMed reference that is already in the base alone, even renumbered", () => {
+    const line = (n: number) => `[${n}] Smith A. Synthetic trial. PMID: 99999999 https://pubmed.ncbi.nlm.nih.gov/99999999/`;
+    const base = fx("alpha.base.md").replace("[1] Smith A. Synthetic trial. 2019.", line(1));
+    put("docs/blog/alpha.md", base);
+    sh(["add", "docs/blog/alpha.md"]); sh(["commit", "-q", "-m", "pubmed base", "--", "docs/blog/alpha.md"]);
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("[1] Smith A. Synthetic trial. 2019.", line(1)));
+    expect(fails(run().AC7).join()).not.toContain("no abstract file");
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("[1] Smith A. Synthetic trial. 2019.\n\n[2] Jones B. Synthetic safety review. 2020.", `[1] Jones B. Synthetic safety review. 2020.\n\n${line(2)}`));
+    expect(fails(run().AC7).join()).not.toContain("no abstract file");
   });
   it("--check-ids is off by default, FAILs on 404, and caps at 60", () => {
     cited();
@@ -349,14 +366,18 @@ describe("US-42 AC7 exclusions file", () => {
 });
 
 describe("US-42 AC3 hedging", () => {
-  it("warns when a shrinking reference loses hedges, and fails when it does not shrink", () => {
+  it("allows a hedge total to fall only inside sentences declared deleted, as a WARN", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Some evidence suggests benefit. ", ""));
     reps.alpha.deleted_sentences.push({ sentence: "Some evidence suggests benefit.", justification: "Not in raw." });
     const r = run().AC3;
     expect(r.status).toBe("WARN");
-    expect(r.evidence.join()).toContain("hedge tokens fell 3 -> 1 (body shrank)");
-    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Some evidence suggests benefit. ", "Benefit was reported in the synthetic trial population overall. "));
-    expect(fails(run().AC3).join()).toContain("hedge tokens fell 3 -> 1");
+    expect(r.evidence.join()).toContain("hedge tokens fell 3 -> 1, all inside declared deleted sentences");
+  });
+  it("fails a hedge total that falls through an undeclared removal, even when the body shrank", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Some evidence suggests benefit. ", ""));
+    const f = fails(run().AC3).join();
+    expect(f).toContain("hedge tokens fell 3 -> 1");
+    expect(f).not.toContain("body shrank");
   });
   it("keeps the hard FAIL for a pathway", () => {
     put("docs/pathway/beta.md", fx("beta.base.md").replace("severe.", "severe. It may help."));
@@ -425,6 +446,14 @@ describe("US-42 AC4 references and patterns", () => {
     const r = run().AC4;
     expect(fails(r)).toEqual([]);
     expect(r.evidence.join()).toContain("(1 justified by pattern)");
+  });
+  it("keeps headings at every level from 1 to 6", () => {
+    for (const h of ["##### Deep heading", "###### Deeper heading"]) {
+      put("docs/blog/alpha.md", fx("alpha.base.md").replace("## Safety", `${h}\n\nNote text.\n\n## Safety`));
+      sh(["add", "docs/blog/alpha.md"]); sh(["commit", "-q", "-m", "deep", "--", "docs/blog/alpha.md"]);
+      put("docs/blog/alpha.md", fx("alpha.new.md").replace("## Safety", "Note text.\n\n## Safety"));
+      expect(fails(run().AC4).join()).toContain(`heading missing from new body: ${h}`);
+    }
   });
   it("fails a claimed deletion that is still in the body, but not a pattern entry", () => {
     reps.alpha.deleted_sentences.push({ sentence: "Some evidence suggests benefit.", justification: "claimed gone" });
@@ -497,6 +526,13 @@ describe("US-42 AC2/AC4 sentence pairs", () => {
     reps.alpha.changed_tokens[1].body_line = "Doses of 200 mg may cause upset [2].";
     reps.alpha.changed_tokens[1].raw_quote = "Doses of 200 mg were never studied at all";
     expect(fails(run().AC2).join()).toContain("not in the raw file");
+  });
+  it("fails a new numeric sentence with no base match and no changed_tokens entry, even when counts are unchanged", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Trials used 300 mg in adults [1].", "Pregnancy warrants caution with 200 mg twice."));
+    reps.alpha.changed_tokens = [];
+    expect(fails(run().AC2).join()).toContain("new numeric sentence has no changed_tokens entry: Pregnancy warrants caution with 200 mg twice.");
+    reps.alpha.changed_tokens = [{ token: "200 mg", body_line: "Pregnancy warrants caution with 200 mg twice.", raw_quote: "Pregnancy warrants caution with 200 mg twice per the study group" }];
+    expect(fails(run().AC2).join()).not.toContain("new numeric sentence");
   });
   it("warns when a claim keeps its number but loses its citation", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Doses of 2 g may cause upset [2].", "Doses of 2 g may cause upset."));
@@ -814,6 +850,80 @@ describe("US-42 AC2 tokeniser units and comparators (R7)", () => {
     expect(t("no more than 2 cups")).not.toEqual(t("more than 2 cups"));
     expect(t("Recover the hover 5 mg")).toEqual(["5 mg"]); // "over" inside a word is not a comparator
   });
+  it("gives both ends of a range the unit, whichever separator it uses", () => {
+    const pct = ["40 %", "60 %"];
+    for (const text of ["40–60%", "40-60%", "40 - 60 %", "40 to 60% of patients", "between 40 and 60%", "40 and 60 percent"]) expect(t(text), text).toEqual(pct);
+    expect(t("5 to 10 mg")).toEqual(["10 mg", "5 mg"]);
+    expect(t("5 mg to 10 mg")).toEqual(["10 mg", "5 mg"]);
+    expect(t("between 2 and 4 years")).toEqual(["2 year", "4 year"]);
+    expect(t("2 to 4 years")).toEqual(t("2–4 years"));
+    expect(t("type 1 and 2 diabetes")).toEqual(["1", "2"]);
+  });
+  it("reads 'maximum <word> N' like 'maximum of N'", () => {
+    expect(t("maximum duration 1 week")).toEqual(["≤1 week"]);
+    expect(t("maximum of 1 week")).toEqual(["≤1 week"]);
+    expect(t("maximum dose 4 mg")).toEqual(["≤4 mg"]);
+    expect(t("maximum 4 mg")).toEqual(["≤4 mg"]);
+  });
+  it("decodes HTML entities before matching", () => {
+    expect(t("5&#xa0;grams")).toEqual(["5000 mg"]);
+    expect(t("5&nbsp;mg")).toEqual(["5 mg"]);
+    expect(t("5&#160;mg &amp; 6 mg")).toEqual(["5 mg", "6 mg"]);
+    expect(t("40&#8211;60 mg")).toEqual(["40 mg", "60 mg"]);
+    expect(t("&lt;5 mg")).toEqual(["<5 mg"]);
+    expect(t("&gt;5 mg")).toEqual([">5 mg"]);
+    expect(normQuote("5&#xa0;grams &amp; more &ndash; ok")).toBe("5 grams & more - ok");
+  });
+  it("reads a hyphenated unit like its plural form", () => {
+    expect(t("30-s chair stand")).toEqual(["30 sec"]);
+    expect(t("30-second test")).toEqual(["30 sec"]);
+    expect(t("30-second test")).toEqual(t("30 seconds"));
+    expect(t("8-week course")).toEqual(["8 week"]);
+    expect(t("8-week course")).toEqual(t("8 weeks"));
+    expect(t("5 s")).toEqual(["5 sec"]);
+    expect(t("the 1990s")).toEqual([]);
+  });
+  it("reads over/above before a range as a time span, and before a single number as >", () => {
+    expect(t("over 12 to 72 hours")).toEqual(["12 hour", "72 hour"]);
+    expect(t("came on over 6 to 12 hours")).toEqual(["12 hour", "6 hour"]);
+    expect(t("above 5–10 mg")).toEqual(["10 mg", "5 mg"]);
+    expect(t("over 12 hours")).toEqual([">12 hour"]);
+    expect(t("above 140 mmHg")).toEqual([">140 mmHg"]);
+    expect(t("less than 5 to 10 mg")).toEqual(["<10 mg", "<5 mg"]);
+  });
+  it("skips a digit that is part of a name (5-ASA, 6-MP, 5-HT3, B12, CHA2DS2, COVID-19)", () => {
+    expect(t("5-ASA")).toEqual([]);
+    expect(t("maximum 5-ASA dose")).toEqual([]);
+    expect(t("6-MP 50 mg")).toEqual(["50 mg"]);
+    expect(t("5-HT3 blockers")).toEqual([]);
+    expect(t("B12 and CHA2DS2 and COVID-19")).toEqual([]);
+    expect(t("5-year course")).toEqual(["5 year"]);
+    expect(t("5-10 mg")).toEqual(["10 mg", "5 mg"]);
+  });
+  it("strips trailing punctuation from a unit and reads minute(s) inside a compound unit as min", () => {
+    expect(t("40 mL/minute.")).toEqual(["40 mL/min"]);
+    expect(t("40 mL/minutes,")).toEqual(["40 mL/min"]);
+    expect(t("40 mL/minute")).toEqual(t("40 mL/min"));
+    expect(t("90 mL/minute/1.73m2")).toEqual(["90 mL/min/1.73m2"]);
+    expect(t("5 mg/m2.")).toEqual(["5 mg/m2"]);
+    expect(t("5 mg/second")).toEqual(["5 mg/sec"]);
+  });
+  // Work in progress recovered 2026-10-03 from the agent's unsaved edits of 2026-09-29: this
+  // test was written before its code. "20 micrograms/L" still tokenises as "20 mcg/l". Unskip
+  // once normUnit/genericOf canonicalise a spelled-out compound's denominator (US-42).
+  it.skip("normalises spelled-out units inside compounds to the symbol compound, denominator case-insensitive", () => {
+    expect(t("20 micrograms/L")).toEqual(["20 mcg/L"]);
+    expect(t("20 micrograms/L")).toEqual(t("20 mcg/L"));
+    expect(t("4 MICROGRAMS/l")).toEqual(t("4 mcg/L"));
+    expect(t("5 milligrams/dL")).toEqual(t("5 mg/dL"));
+    expect(t("5 grams/L")).toEqual(["5 g/L"]); // a concentration, not 5000 mg/L
+    expect(t("5 grams/L")).toEqual(t("5 g/L"));
+    expect(t("3 nanograms/mL")).toEqual(t("3 ng/mL"));
+    expect(t("3 ng/ml")).toEqual(["3 ng/mL"]);
+    expect(t("40 mL/minute")).toEqual(["40 mL/min"]);
+    expect(t("10 litres/minute")).toEqual(["10 L/min"]);
+    expect(t("5 g/day")).toEqual(["5000 mg/day"]);
+  });
   it("reads spelled-out units like their symbols", () => {
     expect(t("3 grams per day")).toEqual(t("3 g/day"));
     expect(t("3 grams per day")).toEqual(["3000 mg/day"]);
@@ -991,6 +1101,22 @@ describe("US-42 AC2 primary study cited without its abstract (R14d)", () => {
     reps.alpha.changed_tokens[0].raw_quote = "EXTRA: participants took 300 mg in adults every day";
     expect(flagged()).toContain("number cited to a primary study without its abstract in reach");
   });
+  it("resolves [n] from the entry's own sentence, not from another sentence holding the same number", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md")
+      .replace("[1] Smith A. Synthetic trial. 2019.", `[1] Smith A. Synthetic trial. PMID: ${pm} https://pubmed.ncbi.nlm.nih.gov/${pm}/`)
+      .replace("Doses of 2 g may cause upset [2].", "Doses of 300 mg may cause upset [2]."));
+    const raw = "In the trial, participants took 300 mg in adults for 12 weeks. Elsewhere, doses of 300 mg may cause upset in some people.";
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.extra_raw = [abstract(pm)];
+    reps.alpha.changed_tokens = [
+      { token: "300 mg", body_line: "Trials used 300 mg in adults [1].", raw_quote: "EXTRA: participants took 300 mg in adults every day" },
+      { token: "300 mg", body_line: "Doses of 300 mg may cause upset [2].", raw_quote: "Elsewhere, doses of 300 mg may cause upset in some people" },
+    ];
+    expect(flagged()).not.toContain("without its abstract");
+    reps.alpha.changed_tokens[0].raw_quote = "participants took 300 mg in adults for 12 weeks";
+    expect(flagged()).toContain("without its abstract in reach");
+  });
   it("does not apply when the cited reference is not a PubMed record", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md"));
     reps.alpha.extra_raw = [abstract("87654321")];
@@ -1027,6 +1153,17 @@ describe("US-42 AC9 pathway rules", () => {
     expect(f).not.toContain("a.org");
     put("docs/pathway/beta.md", fx("beta.new.md").replace("*Source: Auckland Region HealthPathways", "*Source:\u00a0Auckland Region HealthPathways"));
     expect(fails(run().PATHWAY)).toEqual([]);
+  });
+  it("fails funding criteria, but not a bare 'funded' or 'fully funded'", () => {
+    const withLine = (l: string) => put("docs/pathway/beta.md", fx("beta.new.md").replace("Review again", `${l} Review again`));
+    for (const bad of ["Special Authority applies.", "Check the funding criteria.", "Eligible for public funding.", "Eligibility for funding is limited.", "It is funded only if the patient has diabetes.", "Funded when the test is abnormal.", "Subsidised only for adults.", "PHARMAC decides.", "Subsidized if ordered by a specialist."]) {
+      withLine(bad);
+      expect(fails(run().PATHWAY).join("\n"), bad).toContain("forbidden term");
+    }
+    for (const ok of ["This medicine is funded.", "Fully funded in New Zealand.", "The test is subsidised.", "Take it to the pharmacy.", "Ask your pharmacist."]) {
+      withLine(ok);
+      expect(fails(run().PATHWAY), ok).toEqual([]);
+    }
   });
   it("normalises no-break spaces before the banned-phrase check", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it", "Our Top\u00a0Pick. Take it"));
