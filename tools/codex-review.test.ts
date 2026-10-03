@@ -256,6 +256,26 @@ describe('US-40 AC14 — hosted, index-only web search; the shell stays offline 
     expect(runWrapper(g.bin).status).toBe(0);
     expect(JSON.parse(readFileSync(outJson, 'utf8')).web_searches).toBe(0);
     expect(JSON.parse(readFileSync(outJson, 'utf8')).web_search_domains).toEqual([]);
+    expect(JSON.parse(readFileSync(outJson, 'utf8')).web_searches_without_provenance).toBe(0);
+  });
+  it('Codex R1 on 132431c8: a hosted search that reports no results or URL logs domains null (unknown, never []) and is counted', () => {
+    writeFileSync(join(repo, 'a.txt'), 'ac14 change\n');
+    const bare = JSON.stringify({ type: 'item.completed', item: { id: 'ws3', type: 'web_search', query: 'QUERY-MARKER-4421', action: { type: 'search', query: 'QUERY-MARKER-4421' } } });
+    const junk = JSON.stringify({ type: 'item.completed', item: { id: 'ws4', type: 'web_search', action: { type: 'search' }, results: [{ domain: 'not a host', url: 'no-url' }] } });
+    const withSources = JSON.stringify({ type: 'item.completed', item: { id: 'ws5', type: 'web_search', action: { type: 'search' }, results: [{ domain: 'pubmed.ncbi.nlm.nih.gov' }] } });
+    const f = fake({ output: CLEAN, events: [bare, junk, withSources] });
+    const r = runWrapper(f.bin, ['--keep']);
+    expect(r.status).toBe(0);
+    const report = JSON.parse(readFileSync(outJson, 'utf8'));
+    expect(report.web_searches).toBe(3);
+    expect(report.web_searches_without_provenance).toBe(2);
+    expect(report.web_search_domains).toEqual(['pubmed.ncbi.nlm.nih.gov']);
+    expect(r.stdout).toContain('**Web searches:** 3 (hosted, cached index; 2 without source domains)');
+    const work = r.stderr.match(/work dir kept at (\S+)/)![1];
+    const lines = readFileSync(join(work, 'events.jsonl'), 'utf8').split('\n').filter((l) => l.includes('"web_search"')).map((l) => JSON.parse(l));
+    expect(lines.map((l) => l.domains)).toEqual([null, null, ['pubmed.ncbi.nlm.nih.gov']]);
+    expect(readFileSync(join(work, 'events.jsonl'), 'utf8')).not.toContain('QUERY-MARKER-4421');
+    rmSync(work, { recursive: true, force: true });
   });
 });
 

@@ -57,9 +57,14 @@
 //     exhaustive either (a miss is not proof a source is wrong).
 //     Queries, result text and URLs are never logged (AC5); events.jsonl
 //     keeps, per web_search event, the action type and the DOMAINS of its
-//     results and of any opened page (hostnames only), so a poisoned source
-//     leaves a trace of where it came from but not what it said; the report
-//     counts searches (`web_searches`) and lists those domains
+//     results and of any opened page (hostnames only) WHEN THE EVENT PROVIDES
+//     THEM, so a poisoned source leaves a trace of where it came from but not
+//     what it said. Some hosted searches expose no provenance at all (only
+//     the action; Codex R1 on 132431c8): those log `domains: null`
+//     (unknown, never [] which would read as "no sources") and are counted
+//     (`web_searches_without_provenance`, also on the printed line), so the
+//     domain list is known to be partial. The report counts searches
+//     (`web_searches`) and lists the domains it did see
 //     (`web_search_domains`);
 //   * credential files and their values are withheld from the snapshot and
 //     the patch (US-40 AC11, 2026-09-28). Credential-NAMED paths (rule at
@@ -1007,14 +1012,19 @@ writeFileSync(join(work, "events.jsonl"), eventMetadata(run.stdout));
 const errLines = run.stderr.split("\n");
 writeFileSync(join(work, "stderr.log"), JSON.stringify({ errors: errLines.filter((l) => /ERROR/.test(l)).length, warnings: errLines.filter((l) => /WARN/.test(l)).length }));
 /** Diagnostic metadata only: tool arguments, results, and message text never persist (a live record may be in them). */
-/** A web_search event's result and opened-page hostnames (AC14): never a query, a path, a query string or any text. */
+/**
+ * A web_search event's result and opened-page hostnames (AC14): never a query, a path, a query string or any text.
+ * null, not [], when the event yields no hostname: some hosted searches report only the action, with no results or URL
+ * (Codex R1 on 132431c8), and an empty list would read as "no sources" when the truth is "sources unknown".
+ */
 function searchDomains(it) {
   const host = (u) => { try { return new URL(u).hostname; } catch { return null; } };
   const raw = [
     ...(Array.isArray(it.results) ? it.results.flatMap((r) => [r?.domain, host(r?.url)]) : []),
     host(it.action?.url),
   ];
-  return [...new Set(raw.filter((d) => typeof d === "string" && /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(d) && d.length <= 253).map((d) => d.toLowerCase()))].sort();
+  const hosts = [...new Set(raw.filter((d) => typeof d === "string" && /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(d) && d.length <= 253).map((d) => d.toLowerCase()))].sort();
+  return hosts.length ? hosts : null;
 }
 function eventMetadata(jsonl) {
   return jsonl.split("\n").flatMap((line) => {
@@ -1069,12 +1079,14 @@ function pick(r) {
 const calls = run.stdout.split("\n").flatMap((line) => {
   try { const ev = JSON.parse(line); return ev.item?.type === "mcp_tool_call" ? [ev] : []; } catch { return []; }
 });
-// Hosted web searches (AC14): counted, with result and opened-page hostnames; query, result text and URLs stay out of every kept file (AC5).
+// Hosted web searches (AC14): counted, with result and opened-page hostnames when the event provides them, and a count of
+// those that provide none; query, result text and URLs stay out of every kept file (AC5).
 const searchEvents = run.stdout.split("\n").flatMap((line) => {
   try { const ev = JSON.parse(line); return ev.type === "item.completed" && ev.item?.type === "web_search" ? [ev.item] : []; } catch { return []; }
 });
 const webSearches = searchEvents.length;
-const webSearchDomains = [...new Set(searchEvents.flatMap(searchDomains))].sort();
+const webSearchDomains = [...new Set(searchEvents.flatMap((it) => searchDomains(it) ?? []))].sort();
+const webSearchesWithoutProvenance = searchEvents.filter((it) => searchDomains(it) === null).length;
 const ALLOWED_TOOLS = ["read_record", "get_plan", "list_mcp_resources", "list_mcp_resource_templates"];
 const READ_TOOLS = ["read_record", "get_plan"];
 const allowed = (ev) => RECORD && ev.item.server === "health" && ALLOWED_TOOLS.includes(ev.item.tool);
@@ -1114,17 +1126,17 @@ const changedIncludes = INCLUDES.flatMap((inc, k) => {
 });
 if (changedIncludes.length) drift = [drift, `included folder(s) changed during review: ${changedIncludes.join(", ")}; this verdict covers the copies only`].filter(Boolean).join("; ");
 
-finish(review, elapsedMin, { drift, recordAccess, webSearches, webSearchDomains });
+finish(review, elapsedMin, { drift, recordAccess, webSearches, webSearchDomains, webSearchesWithoutProvenance });
 
 // --- 5. Report, print, exit ---------------------------------------------------
 function finish(review, elapsedMin, extra = {}) {
-  const { drift = null, recordAccess = RECORD ? "not_attempted" : "not_requested", webSearches = 0, webSearchDomains = [] } = extra;
-  const report = { ...review, model: MODEL, author: LOOP ? "loop" : "session", label, base, files: files.length, secret_files_excluded: secretFiles, secret_values: secretValues, elapsed_min: Number(elapsedMin), drift, record_access: recordAccess, web_searches: webSearches, web_search_domains: webSearchDomains, instruction_edits: instructionEdits, symlinks_removed: symlinks?.length ?? 0, symlinks_materialised: linksMaterialised, included, link_policy: TEST_LINK_POLICY ? "test" : "default", include_policy: TEST_INCLUDE_POLICY ? "test" : "default", include_roots: includeRoots };
+  const { drift = null, recordAccess = RECORD ? "not_attempted" : "not_requested", webSearches = 0, webSearchDomains = [], webSearchesWithoutProvenance = 0 } = extra;
+  const report = { ...review, model: MODEL, author: LOOP ? "loop" : "session", label, base, files: files.length, secret_files_excluded: secretFiles, secret_values: secretValues, elapsed_min: Number(elapsedMin), drift, record_access: recordAccess, web_searches: webSearches, web_search_domains: webSearchDomains, web_searches_without_provenance: webSearchesWithoutProvenance, instruction_edits: instructionEdits, symlinks_removed: symlinks?.length ?? 0, symlinks_materialised: linksMaterialised, included, link_policy: TEST_LINK_POLICY ? "test" : "default", include_policy: TEST_INCLUDE_POLICY ? "test" : "default", include_roots: includeRoots };
   const out = opt("--out");
   if (out) writeFileSync(out, JSON.stringify(report, null, 2)); // a failed write throws, and the exit handler still cleans up
   const blocking = report.findings.filter((f) => f.blocks_merge);
   console.log(`## Codex review (${MODEL}) — ${label}, snapshot ${snapshotId}, ${elapsedMin} min`);
-  console.log(`**Status:** ${report.status}${drift ? `  \n**Drift:** ${drift}` : ""}${RECORD ? `  \n**Record access:** ${recordAccess}` : ""}${webSearches ? `  \n**Web searches:** ${webSearches} (hosted, cached index)` : ""}`);
+  console.log(`**Status:** ${report.status}${drift ? `  \n**Drift:** ${drift}` : ""}${RECORD ? `  \n**Record access:** ${recordAccess}` : ""}${webSearches ? `  \n**Web searches:** ${webSearches} (hosted, cached index${webSearchesWithoutProvenance ? `; ${webSearchesWithoutProvenance} without source domains` : ""})` : ""}`);
   console.log(`\n${report.summary}\n`);
   for (const f of report.findings) {
     console.log(`### ${f.id} · ${f.severity}${f.blocks_merge ? " · BLOCKS MERGE" : ""} · ${f.file}:${f.line}`);
