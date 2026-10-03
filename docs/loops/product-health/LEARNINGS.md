@@ -65,8 +65,8 @@ duplicates.
   same fingerprint). **Receded by 2026-09-05:** 4,133 sessions/3d, organic
   mobile/Google-led shape, `/pages/roadmap` extractable again — floods can
   end on their own; re-check shape every pull rather than carrying the gap.
-- **2026-08-16 [usage]** The typed reminder lane outdraws cloud ~10:1 (W33: 17
-  vs 3; W40: 194 vs 20 all-time). A partial first week fakes a "doubling":
+- **2026-08-16 [usage]** The typed reminder lane outdraws cloud (W33: 17 vs 3;
+  W40: 194 vs 20 all-time, ~10:1). A partial first week fakes a "doubling":
   compare per-day rates across a series' first two weeks.
 - **2026-08-29 [tooling]** git approxidate parses `--since=8d` as "August 8"
   (day-of-month), NOT "8 days ago" — so the charter's workflow-integrity
@@ -122,9 +122,10 @@ duplicates.
   by counting nested dates inside the window (W37: 2 = 2, W38: 0 = 0), never
   by a range filter on the column (PostgREST answers 22P02). Server-side
   `product_events` carry the nil-UUID `visitor_id`, so burst detection groups
-  on `metadata.client`. Unsubscribe TOMBSTONES the row (empty schedule) since
-  09-10 (`reminder-v2.server.ts:379-393`), so optouts never lower
-  `reminder_optin_total`; count live rows apart (W40: 214 rows, 210 live).
+  on `metadata.client`. The email unsubscribe TOMBSTONES the row (empty
+  schedule, `reminder-v2.server.ts:379-393`); a verified Drive cancel, a bounce
+  or complaint DELETES it, and the cron purges tombstones after 90 days. Count
+  live rows apart (W40: 214 rows, 210 live).
 - **2026-09-19 [usage]** An `mcp_authorize_shown` burst marks the REFUSAL
   path, not a scan and not a normal connect: on 09-17 two 4-row bursts
   (02:18, 02:24, client chatgpt) were each followed ~1 s later by a
@@ -153,15 +154,16 @@ duplicates.
   YouTube-bot's rise (37 → 86) came from a video first seen 09-23 (checkable via
   `router_context.videoId`). A referrer HOST on `results_viewed` (no path, no
   query) is the missing instrument (W39 backlog #3).
-- **2026-10-03 [usage]** The plan-ready email's button cannot bring a guest's
-  plan back, and mostly doesn't: 14 of 17 W40 clicks fired `email_landing_empty`
-  within 3.3 s (16 of 21 since 09-24); the notice recovered 2 of 8 visitors.
-  The emit is awaited after the record load and guest-only, so it is not a
-  race. Local-first puts the only fix at capture time, in the browser holding
-  the plan. Pair clicks to landings by timestamp; the email events' constant
-  `visitor_id` cannot.
-- **2026-10-03 [instrumentation]** A behaviour fix can silently redefine a
-  counter: `remote_change_applied` fell 190 → 5 when bundle 87a0eff (US-34
-  "never repeat one") stopped announcing re-reads; the unkeyed rows end at
-  09-24T21:49. Before reading a big drop as usage, find the last row of the old
-  metadata shape and the deploy just before it (cousin of the 08-10 entry).
+- **2026-10-03 [usage]** The plan-ready email's button brings a guest's plan
+  back only in the browser that made it, and mostly lands elsewhere: 14 of 17
+  W40 clicks fired `email_landing_empty` within ~3.4 s (16 of 21 since 09-24);
+  1 of 8 visitors clearly recovered. A connect is not a recovery: require
+  `results_viewed` after it (W39's "recovered" visitor connected, saw nothing,
+  and kept looking). Pair clicks to landings by timestamp; the email events'
+  constant `visitor_id` cannot.
+- **2026-10-03 [instrumentation]** A deploy can silently change what a counter
+  counts: `remote_change_applied` fell 190 → 5 with its old rows ending
+  09-24T21:49 while the old code was still live. The obvious suspect
+  (94627c07, "never repeat one") shipped 8 h later, so it is ruled out; the
+  cause is one of three bundles that night. Check the suspect commit's deploy
+  time against the last row before naming it (W40 review R2).
