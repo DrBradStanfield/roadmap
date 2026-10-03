@@ -7,32 +7,12 @@ Read before appending — no duplicates.
 
 Tags: `[retrieval] [classifier] [latency] [content] [loop]`
 
-- **2026-08-07 [retrieval]** The router receives ONE string per entry:
-  `[type] handle: summary`; `keywords` frontmatter is read by nothing at
-  runtime. Discoverability fixes edit the **summary** — `ncah` in two
-  pathways' keywords changed nothing; in the summary it routed.
-- **2026-08-07 [retrieval]** Appending the curated `keywords` to the router
-  index was the WORST configuration tested — 88.9% vs 96.3% at 2.3× the
-  tokens: a 224-char term dump per line buries the discriminating sentence.
-- **2026-08-07 [retrieval]** Longer summaries are worse, not better:
-  150 chars → 96.3%, 250 → 92.6%, uncapped 269 → 92.6%. There is an optimum
-  near 150. Past it the marginal sentence is usually generic scaffolding
-  ("red flags, assessment, investigations") true of nearly every pathway.
-- **2026-08-07 [retrieval]** Blanket summary rewrites REGRESS. Two independent
-  rewrites of the same 52 pathways — one keyword-style, one careful prose, very
-  different in voice — both scored exactly 93.8% against the originals' 96.3%.
-  The originals are auto-derived from the document body and faithfully mirror
-  it; any hand-compression is a lossy re-encoding. Truncating a 269-char
-  body-derived summary at 150 beats purpose-writing 150 chars.
-- **2026-08-07 [retrieval]** Format uniformity is load-bearing. 83% of pathway
-  summaries open "Clinical pathway for…" and 89% end "Always discuss with your
-  doctor." Rewriting a *subset* in a different voice made those entries harder
-  to find; stripping the boilerplate from ALL 709 uniformly scored the same
-  96.3% as leaving it. Change style everywhere or nowhere.
-- **2026-08-07 [retrieval]** TARGETED fixes do work, unlike blanket ones. Three
-  summaries rewritten in response to identified failures took the supplement
-  test category 81.3% → 100% and made NCAH and statin queries route at all. The
-  production failure log is a better guide to what to fix than any campaign.
+- **2026-08-07 [retrieval]** The 08-07 experiments are the charter's Ground
+  truth 1–5 (one string per entry; keywords unread, and appended to the index
+  the worst arm; ~150 chars optimal; blanket rewrites regress, targeted fixes
+  win; uniform style). Detail the charter omits: stripping the boilerplate from
+  ALL 709 pathways scored the same 96.3%, and truncating a 269-char body-derived
+  summary at 150 beats purpose-writing 150 chars (pruned 2026-10-03).
 - **2026-08-07 [retrieval]** The router systematically emits `guideline-diet`
   for the handle `diet` — concatenating the bracketed TYPE label onto handles
   that are single generic words. The allowlist silently dropped these, so
@@ -46,9 +26,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   scoped narrowly to read-back and correction; interpretation ("is my Lp(a) a
   concern?") deliberately still routes, because that is exactly the question
   the reference content exists to answer.
-- **2026-08-07 [latency]** Every doc said the router took ~250–400ms; measured
-  over 200 rows it was **median 1,615ms**, p90 3,063ms — a pre-launch estimate
-  never re-checked, making the pre-router classifier 4–6× more valuable.
+- **2026-08-07 [latency]** Docs claimed a 250–400 ms router; 200 rows measured
+  median 1,615 ms, p90 3,063 ms. Measure; never trust a pre-launch estimate.
 - **2026-08-07 [loop]** Corroboration count is not evidence: a stale estimate
   in four places outvoted the measured figure in two. One number repeated four
   times can be one mistake propagated; prefer one measurement to citations.
@@ -115,13 +94,6 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   turned a 3/3-passing liver query into a ∅ 3/3 "shape" that did not exist;
   the recommender fixture also flipped ∅ 3/3 → 6/6 on an identical index
   between sessions, so a single 3-run arm is weak evidence either way.
-- **2026-08-10 [loop]** Cloud environments intercept `ANTHROPIC_API_KEY` — the
-  platform warns it "won't be used to authenticate requests" because Claude
-  Code sessions authenticate through the account. Scripts that need a key for
-  their own direct API calls (the three test harnesses) must get it as
-  **`ANTHROPIC_TEST_API_KEY`**, which they already check first. A missing key
-  is a named data gap and a proposal-only run, never an excuse to fabricate
-  harness numbers.
 - **2026-08-22 [retrieval]** The router refused PRACTICAL/CONSUMER-shaped
   inputs while routing knowledge-shaped twins of the same topics (W35 shape
   probe; every instance ∅ 3/3 with the right terms visible in the summary).
