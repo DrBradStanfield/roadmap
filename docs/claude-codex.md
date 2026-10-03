@@ -449,7 +449,9 @@ in `tools/codex-review.test.ts`, driven the same way.
   was false and the three runs had that layer in reach. The wrapper now
   passes `--disable apps`, `--disable image_generation`, `--disable
   browser_use`, `--disable computer_use`, `--disable plugins`, `--disable
-  memories`, `--disable skill_search`, `web_search="disabled"`,
+  memories`, `--disable skill_search`, `web_search="disabled"` (since
+  2026-10-03 `"cached"`, hosted index-only search, plus `--disable
+  multi_agent`: US-40 AC14),
   `shell_environment_policy.inherit="core"`, `--strict-config`, and a
   five-variable process environment. A probe asking the hardened reviewer
   to call the health tool and run a web search produced no tool-call event
