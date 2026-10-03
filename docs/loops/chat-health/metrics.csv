@@ -86,3 +86,5 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W40,lint_product_rise,0,,,tools/knowledge-lint.ts,weekly lint
 2026-W40,lint_grokipedia_only_sentences,703,,,tools/knowledge-lint.ts,weekly lint
 2026-W40,lint_due_entries,86,,,tools/knowledge-lint.ts,weekly lint
+2026-W40,routing_miss_share_pct,40,23.1,73,manual categorisation,"2/5, both on router_version 1 (Haiku 4.5) and both PASS 6/6 as typed on the Sonnet 5.5 router: statin + bowel-screening/FIT ask (widget), HbA1c dashboard-analysis paste (widget); fixtures added 324 → 326 (router 304 → 306)"
+2026-W40,harness_full_suite_pass_pct,97.7,92.7,5,tools/test-chatbot-matching.ts,"arm A 297/304 (A2 295/304, 97.0%), claude-sonnet-5-5 thinking off, --runs 3, 0 API errors, $13.98/arm; prior = W39 arm A 281/303 on Haiku 4.5 + pre-09-29 prompt (model and prompt changed together)"

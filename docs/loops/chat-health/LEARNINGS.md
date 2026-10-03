@@ -46,11 +46,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   `hyperlipidaemia` whose summary described the *condition*; the answer was in
   the body all along. When a query names a drug, check whether the owning
   document's summary names it too.
-- **2026-08-10 [retrieval]** The router self-sabotages on multi-topic queries:
-  when it emits >3 handles, Zod's `.max(3)` rejects the WHOLE array → logged as
-  `router_error` with empty handles, every found match discarded. 3 of 27
-  empty-handle turns in W33 were this. The sanitize block normalises handle
-  format but not count; fix is a one-line `.slice(0, 3)` (proposed W33 report).
+- **2026-08-10 [retrieval]** A router reply with >3 handles once failed Zod's
+  `.max(3)` whole (3 of 27 W33 empties); `sanitizeRawHandles` now slices to 3.
 - **2026-08-10 [retrieval]** YouTube empty-handles are structurally different
   from web ones: the bot pre-loads the video's companion blog into the reply
   context (`findBlogByVideoId`), so an empty router result on an on-topic
@@ -58,32 +55,19 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   But `routeQuery`/`classifyMessage` get the bare comment with no video
   context, so oblique comments ("could it cause blindness?") are unroutable.
   Categorise YT empties against the companion blog before calling them misses.
-- **2026-08-10 [retrieval]** Term-presence in the visible summary is necessary
-  but NOT sufficient: the statin-cognition query kept failing (77%→77%) after
-  "memory/cognitive decline" was placed inside the first 150 chars — the router
-  picked `medications-in-chronic-pain` instead. When a query fails, inspect
-  what the router chose INSTEAD before drafting any summary edit; if the
-  failure is selection-side, a summary edit can't fix it. Confirmed again
-  2026-08-29: `medications-in-chronic-pain` also stole a compounded-
-  tirzepatide safety probe 3/3 — it is a recurring wrong-attractor for
-  drug-safety queries (second documented steal). W36 closed the question
-  from the other side: weakening the ATTRACTOR's summary (its generic
-  "drug selection… safety considerations" vocabulary) paired with re-adding
-  victim terms still left the steal at 3/3 — reverted. Steals are
-  summary-immune from both sides; the lever is the router prompt or model.
-  Same run: summary edits shift selection boundaries index-wide (two
-  unrelated fixtures flipped state under the edit pair and flipped back on
-  revert). W39 proved it with four full arms: ONE pathway summary line
-  (liver lesions + "hypodensities") sent a toddler-vomit, a snoring and an
-  omega-3 fixture to ∅ 6/6 on the edited index while both original-index
-  arms passed them — a category before/after cannot see this; only a
-  full-suite arm can. Attribute distant flips only with paired arms.
-  W38 extended this to ADDITIONS: two unrelated blog entries (1022 → 1024)
-  turned the natto and K2-variables known-fails into 6/6 passes, and
-  `--index` pinned to the W36-era file fails them 6/6 in the same minutes;
-  a fifth attractor (`cholesterol-lowering-supplements…`) stole an ApoB
-  derivation ask 3/3. A known-fail that passes after a blog publish is not
-  fixed; a prompt fix is proven only on the full suite.
+- **2026-08-10 [retrieval]** Term presence in the visible summary is necessary
+  but NOT sufficient: before any summary edit, check what the router picked
+  INSTEAD. On the Haiku router, steals (a theme neighbour beating the named
+  entry) were immune to summary edits from both sides, and one summary line
+  could flip distant fixtures — attribute those only with paired full-suite
+  arms. A known-fail that passes after an index change is not fixed until a
+  pinned-index arm agrees. **W40: the Sonnet 5.5 router (v2, 09-29) passes
+  every documented steal and refused shape on both full arms** (PCSK9, ApoB
+  derivation, liver hypodensities, statin-cognition, tirzepatide company,
+  natto, K2 disagreement; Lp(a)-diet on one arm, never stolen) — model and
+  rule 7 rework changed together, so not attributable to either alone. The
+  own-data assessment shape ("rate my overall health") still fails ∅ 6/6.
+  History: [notes/router-steals-and-shapes-2026.md](notes/router-steals-and-shapes-2026.md).
 - **2026-08-10 [loop]** Baseline a production failure in the harness BEFORE
   editing anything: the 08-05 MSM miss already passed at baseline (the 08-07
   fix wave had fixed it). Production failures predating the last fix wave may
@@ -94,37 +78,16 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   turned a 3/3-passing liver query into a ∅ 3/3 "shape" that did not exist;
   the recommender fixture also flipped ∅ 3/3 → 6/6 on an identical index
   between sessions, so a single 3-run arm is weak evidence either way.
-- **2026-08-22 [retrieval]** The router refused PRACTICAL/CONSUMER-shaped
-  inputs while routing knowledge-shaped twins of the same topics (W35 shape
-  probe; every instance ∅ 3/3 with the right terms visible in the summary).
-  RESOLVED 2026-08-30 (Brad-authorized router-prompt edit, issue #39): a
-  top-level "practical questions route" rule fixed all five known-fails +
-  four compliance guards (suite 89.3%→91.7%). Position was the mechanism —
-  the same carve-outs buried inside Rule 7's empty-list bullets were inert.
-  W36 verified live: 4/5 fixtures pass; none of the five fixed shapes
-  recurred in production. Rule of thumb stands: 3/3-∅ with terms visible → router
-  territory, skip the summary edit. RESIDUE (W36, all fixtures): third-party-
-  recommender disagreement, should-I-stop-taking-X, how-do-I-start/obtain,
-  and pure mechanism-depth questions still refuse; tirzepatide-company still
-  fails selection-side. SECOND PASS 2026-09-24 (Brad, issue #63 option 2;
-  trail: [notes/router-second-pass-2026-09.md](notes/router-second-pass-2026-09.md)):
-  rule 6 gained the residue shapes and an unnumbered selection rule ("a
-  NAMED topic beats a THEME neighbour") went between rules 6 and 7. Two
-  full-suite arms each: 273/272 → 278/277, six robust fixes, no two-arm
-  regression, guards unchanged, held-out paraphrases 13 → 15; every
-  documented steal gone (a suppressed steal becomes ∅ unless the named
-  entry is findable). Nine drafts; four regressed CLINICAL routing and were
-  caught only by numbers or the adversarial reviewer (symptom over-refusal,
-  insomnia → sleep guideline, a premature baby → adult palliative entry
-  inside a fixture that fails before AND after, ambiguous "MI" → cardiac).
+- **2026-08-22 [retrieval]** Router-prompt rules work by POSITION: carve-outs
+  buried in rule 7's empty-list bullets were inert; a top-level "practical
+  questions route" rule fixed all five refused shapes (08-30, suite 89.3% →
+  91.7%). The 09-24 second pass added a selection rule; four of nine drafts
+  regressed CLINICAL routing, caught only by numbers or the adversary.
   Rules: selection guidance sits BELOW rules 1 and 2 and never empties a
-  match; score like-for-like on ONE fixture file (no widening); one 3-run
-  arm is weak — the same prompt flips 1–2% of fixtures per arm. W39 (first
-  run on the shipped prompt): the pain-family steal is NOT gone — Lp(a)-diet
-  went to `chronic-non-cancer-pain` 3/3 on both original-index full arms and
-  the category arm (9/9; ∅ only on the edited index); an as-typed PCSK9
-  mechanism question picked `hyperlipidaemia` 3/3 over two PCSK9-named
-  entries. The 09-24 "every documented steal is gone" held on its arms only.
+  match; score like-for-like on ONE fixture file; one 3-run arm is weak
+  (the same prompt flips 1–3% of fixtures per arm; W40 A vs A2: 297 vs 295).
+  Trail: [notes/router-second-pass-2026-09.md](notes/router-second-pass-2026-09.md)
+  and [notes/router-steals-and-shapes-2026.md](notes/router-steals-and-shapes-2026.md).
 - **2026-09-05 [loop]** The cloud runner is uid 0 (root): chmod-based tests
   can't fail writes, so health-core's US-31 AC8 (`file-adapter.test.ts`)
   fails in this env on a CLEAN tree — verify on clean tree before blaming
@@ -136,11 +99,16 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   without, 52 with); proposal filed W36. Real replies end with the 6-word
   `[written by Brad AI for testing]` tag (prompt before 08-10; in W39 raw counts).
 - **2026-09-19 [latency]** The cache-hit rate is an inter-arrival metric, not
-  a router property: every hit in W36–W38 fell within 300 s of the previous
-  router call (13/13, 10/13, 2/2) and none beyond it (0/28, 0/34, 0/16) —
-  the 5-minute prompt-cache TTL. Its rise and fall is traffic burstiness;
-  W33's "mix-shift" and three later "watch" notes were chasing that.
-  (2026-09-29: the TTL is now 1 hour and the router is Sonnet 5.5; the window is 3,600 s from that deploy on.)
+  a router property: on the 5-minute TTL every W36–W38 hit fell within 300 s
+  of the previous router call and none beyond. Its rise and fall is traffic
+  burstiness. W40, first week on the 1-hour TTL: 23/43 hits (18 within 300 s,
+  2 at 300–3,600 s, 3 beyond 3,600 s — a non-logged caller such as a harness
+  run sharing the org cache is the likely warmer, unverified).
+- **2026-10-03 [latency]** The Sonnet 5.5 router is slower in production than
+  the Haiku one it replaced: W40 v2 median 2,234 ms, p90 3,469 ms (n=24) vs
+  v1 1,225 / 1,666 ms (n=19); v2 cache misses median 2,826 ms vs hits 1,340.
+  The harness reads p50 ~1,260 ms on a warm cache, so harness latency
+  understates production. Small n: re-measure before acting.
 - **2026-09-19 [loop]** Production brownout signature (09-11 04:45–06:18Z):
   5 router timeouts at 11,006–11,013 ms — the router's 5 s call + 1 s backoff
   + 5 s retry (`callAnthropicWithUsage(body, 5_000)`, `RETRY_MAX_ATTEMPTS`
