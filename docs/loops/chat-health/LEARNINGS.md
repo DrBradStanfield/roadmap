@@ -9,7 +9,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
 
 - **2026-08-07 [retrieval]** The 08-07 experiments are the charter's Ground
   truth 1–5 (one string per entry; keywords unread, and appended to the index
-  the worst arm; ~150 chars optimal; blanket rewrites regress, targeted fixes
+  the worst arm, its 224-char term dump burying the discriminating sentence;
+  ~150 chars optimal; blanket rewrites regress, targeted fixes
   win; uniform style). Detail the charter omits: stripping the boilerplate from
   ALL 709 pathways scored the same 96.3%, and truncating a 269-char body-derived
   summary at 150 beats purpose-writing 150 chars (pruned 2026-10-03).
@@ -27,7 +28,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   concern?") deliberately still routes, because that is exactly the question
   the reference content exists to answer.
 - **2026-08-07 [latency]** Docs claimed a 250–400 ms router; 200 rows measured
-  median 1,615 ms, p90 3,063 ms. Measure; never trust a pre-launch estimate.
+  median 1,615 ms, p90 3,063 ms, making the pre-router classifier 4–6× more
+  valuable. Measure; never trust a pre-launch estimate.
 - **2026-08-07 [loop]** Corroboration count is not evidence: a stale estimate
   in four places outvoted the measured figure in two. One number repeated four
   times can be one mistake propagated; prefer one measurement to citations.
@@ -61,12 +63,12 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   entry) were immune to summary edits from both sides, and one summary line
   could flip distant fixtures — attribute those only with paired full-suite
   arms. A known-fail that passes after an index change is not fixed until a
-  pinned-index arm agrees. **W40: the Sonnet 5.5 router (v2, 09-29) passes
-  every documented steal and refused shape on both full arms** (PCSK9, ApoB
-  derivation, liver hypodensities, statin-cognition, tirzepatide company,
-  natto, K2 disagreement; Lp(a)-diet on one arm, never stolen) — model and
-  rule 7 rework changed together, so not attributable to either alone. The
-  own-data assessment shape ("rate my overall health") still fails ∅ 6/6.
+  pinned-index arm agrees. **W40, Sonnet 5.5 router (v2, 09-29): PCSK9,
+  ApoB derivation, liver hypodensities, statin-cognition, tirzepatide
+  company, natto and K2 disagreement pass on both full arms.** Still failing:
+  Lp(a)-diet on one arm (never stolen), D3-in-product ∅ on both, a
+  child-anxiety population hit on one, own-data asks ∅ 6/6. Model, rule 7,
+  12 fixtures and the harness changed together: not attributable.
   History: [notes/router-steals-and-shapes-2026.md](notes/router-steals-and-shapes-2026.md).
 - **2026-08-10 [loop]** Baseline a production failure in the harness BEFORE
   editing anything: the 08-05 MSM miss already passed at baseline (the 08-07
@@ -100,10 +102,12 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   `[written by Brad AI for testing]` tag (prompt before 08-10; in W39 raw counts).
 - **2026-09-19 [latency]** The cache-hit rate is an inter-arrival metric, not
   a router property: on the 5-minute TTL every W36–W38 hit fell within 300 s
-  of the previous router call and none beyond. Its rise and fall is traffic
-  burstiness. W40, first week on the 1-hour TTL: 23/43 hits (18 within 300 s,
-  2 at 300–3,600 s, 3 beyond 3,600 s — a non-logged caller such as a harness
-  run sharing the org cache is the likely warmer, unverified).
+  of the previous router call (13/13, 10/13, 2/2) and none beyond (0/28,
+  0/34, 0/16). Its rise and fall is traffic burstiness; W33's "mix-shift"
+  and three later "watch" notes chased that. W40 confirmed the 1-hour TTL on
+  v2: measured to the previous SAME-version call, every v2 miss came >3,600 s
+  after it; 2 of 13 hits had no v2 call in the hour before (an unlogged
+  caller on the production key, unverified). A v1 call cannot warm v2.
 - **2026-10-03 [latency]** The Sonnet 5.5 router is slower in production than
   the Haiku one it replaced: W40 v2 median 2,234 ms, p90 3,469 ms (n=24) vs
   v1 1,225 / 1,666 ms (n=19); v2 cache misses median 2,826 ms vs hits 1,340.

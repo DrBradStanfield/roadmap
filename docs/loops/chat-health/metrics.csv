@@ -71,9 +71,9 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W40,router_errors_7d,0,1,-100,chat_match_events,"clean week; fallbacks 0 (match events and chat_messages)"
 2026-W40,router_latency_median_ms,1524,1324,15,chat_match_events,"n=43; by router_version: v1 (Haiku 4.5) 1225 n=19, v2 (Sonnet 5.5, first row 09-29T01:47:56Z) 2234.5 n=24"
 2026-W40,router_latency_p90_ms,3194,1562,104,chat_match_events,"nearest-rank n=43; v1 1666 (n=19), v2 3469 (n=24); no error rows"
-2026-W40,router_cache_hit_rate_pct,53,17,212,chat_match_events,"23/43 (v1 10, v2 13); 18 hits within 300 s of the previous call, 2 at 300–3600 s, 3 beyond 3600 s (7339 / 12268 / 3600.4 s) — first week on the 1-hour TTL"
+2026-W40,router_cache_hit_rate_pct,53,17,212,chat_match_events,"23/43 (v1 10/19, v2 13/24). Gaps to the previous call of the SAME router version (adversarial review R8: a v1 call cannot warm v2's prefix): v1 hits 10/10 within 300 s (5-minute TTL); v2 hits 8 within 300 s, 3 at 300–3,600 s, 1 at 12,268 s, 1 on the first v2 call; every v2 miss came >3,600 s after the previous v2 call (min 6,037 s) — the 1-hour TTL, observed"
 2026-W40,yt_reply_median_words,68,70,-3,chat_messages,"n=11 excluding 5 SKIP_NO_REPLY sentinels (16 assistant rows); raw incl. tag (11/11 carry it); tag-stripped median 62"
-2026-W40,yt_reply_gt90w_count_7d,1,5,-80,chat_messages,"1/11 (9%) raw, max 131; tag-stripped 1/11, max 125; >5-sentence breaches 5; any sentence >25 words 3/11 (splitter caveat); small n"
+2026-W40,yt_reply_gt90w_count_7d,1,5,-80,chat_messages,"1/11 (9%) raw, max 131; tag-stripped 1/11, max 125; >5-sentence breaches 5 raw but 0 tag-stripped (all five are five sentences plus the required tag; review R7); any sentence >25 words 3/11 (splitter caveat); small n"
 2026-W40,lint_unresolved_marker,87,,,tools/knowledge-lint.ts,weekly lint
 2026-W40,lint_uncited_reference,207,,,tools/knowledge-lint.ts,weekly lint
 2026-W40,lint_uncited_list,39,,,tools/knowledge-lint.ts,weekly lint
@@ -86,5 +86,5 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W40,lint_product_rise,0,,,tools/knowledge-lint.ts,weekly lint
 2026-W40,lint_grokipedia_only_sentences,703,,,tools/knowledge-lint.ts,weekly lint
 2026-W40,lint_due_entries,86,,,tools/knowledge-lint.ts,weekly lint
-2026-W40,routing_miss_share_pct,40,23.1,73,manual categorisation,"2/5, both on router_version 1 (Haiku 4.5) and both PASS 6/6 as typed on the Sonnet 5.5 router: statin + bowel-screening/FIT ask (widget), HbA1c dashboard-analysis paste (widget); fixtures added 324 → 326 (router 304 → 306)"
-2026-W40,harness_full_suite_pass_pct,97.7,92.7,5,tools/test-chatbot-matching.ts,"arm A 297/304 (A2 295/304, 97.0%), claude-sonnet-5-5 thinking off, --runs 3, 0 API errors, $13.98/arm; prior = W39 arm A 281/303 on Haiku 4.5 + pre-09-29 prompt (model and prompt changed together)"
+2026-W40,routing_miss_share_pct,80,23.1,246,manual categorisation,"4/5 after the adversarial review (R1, R2), all on router_version 1 (Haiku 4.5). On the Sonnet 5.5 router: statin + bowel-screening/FIT ask PASS 6/6, HbA1c dashboard-analysis paste PASS 6/6, generic blood-results template ∅ 6/6 (KNOWN-FAIL, own-data shape), 'search again' follow-up replayed with its first turn (see report); fixtures added 324 → 327 (router 304 → 307)"
+2026-W40,harness_full_suite_pass_pct,97.7,92.7,5,tools/test-chatbot-matching.ts,"arm A 297/304 (A2 295/304, 97.0%), claude-sonnet-5-5 thinking off, --runs 3, 0 API errors, $13.98/arm; prior = W39 arm A 281/303 on Haiku 4.5. NOT like-for-like (review R4): the router model, rule 7, 12 fixtures' expected/must_not_route and ~300 harness lines all changed between the arms"
