@@ -908,10 +908,18 @@ describe("US-42 AC2 tokeniser units and comparators (R7)", () => {
     expect(t("5 mg/m2.")).toEqual(["5 mg/m2"]);
     expect(t("5 mg/second")).toEqual(["5 mg/sec"]);
   });
-  // Work in progress recovered 2026-10-03 from the agent's unsaved edits of 2026-09-29: this
-  // test was written before its code. "20 micrograms/L" still tokenises as "20 mcg/l". Unskip
-  // once normUnit/genericOf canonicalise a spelled-out compound's denominator (US-42).
-  it.skip("normalises spelled-out units inside compounds to the symbol compound, denominator case-insensitive", () => {
+  it("normalises compound units that already work (symbols, spelled-out time and volume, g/day)", () => {
+    expect(t("3 ng/ml")).toEqual(["3 ng/mL"]);
+    expect(t("40 mL/minute")).toEqual(["40 mL/min"]);
+    expect(t("10 litres/minute")).toEqual(["10 L/min"]);
+    expect(t("5 g/day")).toEqual(["5000 mg/day"]);
+  });
+  // NOT YET BUILT (recovered 2026-10-03 from the agent's unsaved edits of 2026-09-29; the test was
+  // written before its code). Today a spelled-out mass unit inside a compound is mishandled:
+  // "20 micrograms/L" -> "20 mcg/l"; "5 grams/L" -> "5000 mg/l" (a concentration wrongly converted);
+  // "3 nanograms/mL" -> "3" (the unit is DROPPED, so a mL-to-dL edit passes AC2 unseen).
+  // it.fails keeps the spec live: this turns red once normUnit/genericOf are fixed; then make it `it`.
+  it.fails("normalises spelled-out mass units inside compounds to the symbol compound, denominator case-insensitive", () => {
     expect(t("20 micrograms/L")).toEqual(["20 mcg/L"]);
     expect(t("20 micrograms/L")).toEqual(t("20 mcg/L"));
     expect(t("4 MICROGRAMS/l")).toEqual(t("4 mcg/L"));
@@ -919,10 +927,6 @@ describe("US-42 AC2 tokeniser units and comparators (R7)", () => {
     expect(t("5 grams/L")).toEqual(["5 g/L"]); // a concentration, not 5000 mg/L
     expect(t("5 grams/L")).toEqual(t("5 g/L"));
     expect(t("3 nanograms/mL")).toEqual(t("3 ng/mL"));
-    expect(t("3 ng/ml")).toEqual(["3 ng/mL"]);
-    expect(t("40 mL/minute")).toEqual(["40 mL/min"]);
-    expect(t("10 litres/minute")).toEqual(["10 L/min"]);
-    expect(t("5 g/day")).toEqual(["5000 mg/day"]);
   });
   it("reads spelled-out units like their symbols", () => {
     expect(t("3 grams per day")).toEqual(t("3 g/day"));

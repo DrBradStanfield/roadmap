@@ -111,7 +111,7 @@ Batch close (about 20): AC1 to AC7 scripts; summary corrections applied by the o
 
 ## 4b. Night of 2026-09-29: what ran (orchestrator log)
 
-Batches written by Opus 5.5 workers (one per article), checked by `tools/knowledge-batch-check.ts` (branch, US-42), reviewed by fresh Opus adversaries and Codex with the raw in reach, fixes applied, checks at exit 0:
+Batches written by Opus 5.5 workers (one per article), checked by `tools/knowledge-batch-check.ts` (merged to main 2026-10-03 as work in progress, US-42; batch bodies archived unsigned in `archive/knowledge-refresh-batches-2026-09-29/`), reviewed by fresh Opus adversaries and Codex with the raw in reach, fixes applied, checks at exit 0:
 - Pathways pilot (10, by chat traffic): two adversary rounds, two Codex passes. Real source changes found: HbA1c thresholds (48 / 42 to 47) and waist cutoffs in diabetes screening; Coversyl salt change; new second-line rule in hypertension; digoxin 0.0625 (an April typo); troponin timing rules withdrawn in ACS. Drift fixed: unsupported claims, lost hedges, funding criteria, device brands, clinician voice. Emergency actions made explicit (US-42 AC10). Five entries had wrong or no emergency action after the source's clinician text changed.
 - Pathways batch 2 (20 more with traffic): one adversary round (1,401 numbers verified against raw), one Codex pass. Cardiac drugs page gained six drugs; eye-disease page fully rewritten by the source (July 2026 HbA1c screening rules); vitamin D in children doses changed at source.
 - New pathways (41 of the 42 triaged; one excluded as a product and funding page): written under the new-entry addendum (authored frontmatter); adversary and Codex running at the time of writing.

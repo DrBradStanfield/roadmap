@@ -1,0 +1,2623 @@
+# Saved 2026-10-03 from a temporary working copy (wt-pathways), base commit 05d52d998edf9fe16e5288cd7dd3efc940e4c559. Restore on main with: git apply --3way wt-pathways.patch
+diff --git a/docs/pathway/acute-coronary-syndromes-acs.md b/docs/pathway/acute-coronary-syndromes-acs.md
+index 8baac407..c6261761 100644
+--- a/docs/pathway/acute-coronary-syndromes-acs.md
++++ b/docs/pathway/acute-coronary-syndromes-acs.md
+@@ -8,9 +8,11 @@ summary: "Clinical pathway for suspected acute coronary syndrome (ACS): when to
+ 
+ # Acute Coronary Syndromes (ACS)
+ 
+-*Source: Auckland Region HealthPathways*
++*Source: Auckland Region HealthPathways. Last reviewed: July 2026.*
+ 
+-This pathway covers suspected acute coronary syndrome — including heart attack and unstable angina — occurring within the last 72 hours, and follow-up care after a confirmed ACS diagnosis.
++This pathway covers suspected acute coronary syndrome, including heart attack and unstable angina, and follow-up care after a confirmed ACS diagnosis.
++
++> This is general information based on guidance written for doctors. It does not replace medical advice. Always discuss your own situation with your doctor.
+ 
+ ---
+ 
+@@ -19,7 +21,7 @@ This pathway covers suspected acute coronary syndrome — including heart attack
+ Call an ambulance (111) or go to the emergency department immediately if you have:
+ 
+ - Ongoing chest pain or signs of cardiovascular collapse (haemodynamic instability)
+-- Crescendo angina (rapidly worsening angina episodes)
++- A history that suggests unstable angina (see below)
+ - New changes on an ECG suggesting ischaemia
+ - An elevated troponin blood test result
+ 
+@@ -27,17 +29,19 @@ Call an ambulance (111) or go to the emergency department immediately if you hav
+ 
+ ## About Acute Coronary Syndromes
+ 
++In ACS, blood flow to the heart muscle drops suddenly, most often because a fatty plaque in a coronary artery ruptures and a clot forms.
++
+ Acute coronary syndromes (ACS) is an umbrella term that includes:
+ 
+-- **ST elevation myocardial infarction (STEMI)** — a major heart attack with a specific pattern on ECG
+-- **Non-ST elevation ACS (NSTEACS)** — which includes:
+-  - Non-ST elevation myocardial infarction (NSTEMI)
++- **ST elevation myocardial infarction (STEMI):** a heart attack with ST elevation on the ECG
++- **Non-ST elevation ACS (NSTEACS)**, which is either:
++  - Non-ST elevation myocardial infarction (NSTEMI), or
+   - Unstable angina, such as:
+-    - Angina that has appeared recently (within the past month), is severe or frequent
+-    - More intense or frequent angina on top of previously stable angina
++    - Angina that has appeared recently (within the past month) and is severe or frequent
++    - Severe, prolonged or more frequent angina on top of previously stable angina
+     - Angina occurring at rest or with minimal effort
+ 
+-Unstable angina typically causes a heavy, tight, or uncomfortable feeling rather than classic "pain." Symptoms are often more intense and last longer than stable angina, and may be accompanied by sweating or nausea. It can be difficult to distinguish from NSTEMI on initial assessment.
++The pain of unstable angina is similar to stable angina, but often more intense and longer lasting. It may come with sweating or nausea. It can be difficult to tell apart from NSTEMI on initial assessment.
+ 
+ ---
+ 
+@@ -45,50 +49,60 @@ Unstable angina typically causes a heavy, tight, or uncomfortable feeling rather
+ 
+ ### ECG
+ 
+-Your doctor will perform an ECG promptly. An important point: **a normal ECG does not rule out ACS.** Your doctor may repeat the ECG after a few minutes.
++If ACS is suspected, your doctor will perform an ECG immediately. An important point: **a normal ECG does not rule out ACS.**
+ 
+ Your doctor will look for:
+ 
+-- ST elevation in multiple leads (suggesting STEMI)
+-- New left bundle branch block (LBBB)
+-- Widespread ST depression
+-- T-wave inversion, especially in leads V2, V3, and V4
++- ST elevation of 1 mm or more in 2 or more limb leads, or 2 mm or more in 2 or more chest leads (suggesting STEMI)
++- New left bundle branch block (LBBB), which can be hard to confirm as new without an older ECG to compare
++- ST depression
++- T-wave inversion or biphasic T waves, especially in leads V2, V3, and V4. This may indicate Wellen's syndrome, which is suspicious for a critical narrowing of the left anterior descending artery
++
++If an ECG machine is not available and ACS is suspected, your doctor will move straight to emergency management.
+ 
+ ### Symptoms Your Doctor Will Ask About
+ 
+-Your doctor will ask in detail about your pain or discomfort. Some people describe it as heaviness, tightness, or pressure rather than pain. Atypical presentations are more common in women and people with diabetes.
++Your doctor will ask in detail about your pain or discomfort. Angina is often, but not always, a heavy, crushing, or dull pain behind the breastbone. It may spread to the neck, jaw, or arms.
+ 
+ ACS is more likely if:
+ 
+-- Discomfort is predominantly in the chest
+-- Pain radiates to the arm, shoulder, or jaw
+-- Discomfort has lasted more than 15 minutes
++- Pain is predominantly in the chest
++- Pain spreads to the neck, arm, or shoulder (either side)
++- Pain has lasted longer than 15 minutes
+ - Associated sweating
+-- Symptoms worsen with exertion
+ - This feels similar to a previous angina or heart attack
+-- There has been a sudden worsening of previously stable angina
++- Previously stable angina has suddenly got worse, with frequent episodes at little or no exertion. This likely represents unstable angina
++
++ACS may be present even without these features. There is no typical pattern. Older adults, women, and people with diabetes or heart failure are more likely to have vague symptoms.
+ 
+ ACS is less likely if:
+ 
+ - Pain occurs or worsens when breathing in (pleuritic pain)
+ - Pain can be reproduced by pressing on the chest
++- Symptoms last less than 5 minutes
++
++### Risk Factors Your Doctor Will Consider
+ 
+-Your doctor will also consider your cardiovascular risk factors. If you are of Maori, Pacific, or South Asian ethnicity, cardiovascular disease tends to be more common and can present at a younger age.
++- Current or past smoking
++- A parent or sibling who was hospitalised with, or died from, a heart attack or stroke before the age of 50 years
++- Ethnicity: in Māori, Pacific, and South Asian people, cardiovascular disease is significantly more common and presents at a younger age. Māori and Pacific people have about twice the death rate from coronary heart disease of New Zealand European people
++- Diabetes, high cholesterol, high blood pressure, chronic kidney disease, overweight or obesity, significant mental illness, or systemic inflammatory conditions such as inflammatory arthritis and cancer
+ 
+ ### Vital Signs and Monitoring
+ 
+-Your doctor will monitor your blood pressure, heart rate, and oxygen saturation.
++Your doctor will check for sweating or paleness, your vital signs (including blood pressure in both arms), and your pulses. They will listen to your heart and lungs, check whether pressing on your chest, abdomen, or spine reproduces the pain, and look for signs of a deep vein thrombosis.
+ 
+ ### EDACS Score (for lower-risk presentations)
+ 
+-If your doctor has a lower suspicion of ACS and you have no red flags, they may calculate your Emergency Department Assessment of Chest Pain Score (EDACS). This tool helps determine whether it is safe to continue monitoring in the community or whether hospital assessment is needed. The EDACS score is only used when:
++If there are no high-risk features, your doctor may calculate the Emergency Department Assessment of Chest Pain Score (EDACS). It is only used when:
+ 
+-- Risk of ACS appears low
+-- No significant ECG findings
++- There are no significant acute ischaemic ECG findings
+ - You are 18 years or older
+-- Symptoms are consistent with ACS
++- Your chest pain or symptoms mean ACS cannot be excluded without further testing
+ - Vital signs are normal
+-- Pain is not ongoing and there is no crescendo pattern
++- There is no ongoing pain or unstable presentation
++
++EDACS predicts heart attack and serious heart events within 30 days. It does not predict whether you have cardiac ischaemia or underlying coronary disease.
+ 
+ ---
+ 
+@@ -96,75 +110,70 @@ If your doctor has a lower suspicion of ACS and you have no red flags, they may
+ 
+ ### If Red Flags Are Present or ACS Is Strongly Suspected
+ 
+-An ambulance will be called immediately. While waiting for the ambulance, your doctor may:
++An ambulance will be called immediately, without delay, because suitable patients are fast-tracked for rapid treatment to restore blood flow (reperfusion therapy).
+ 
+-- **Give aspirin 300 mg** to chew and swallow — even if you already take low-dose aspirin regularly
+-- **Give glyceryl trinitrate (GTN) spray** for pain relief, repeated every 5 minutes up to 3 doses (provided blood pressure stays above 90 mmHg). Your doctor will ask whether you have taken any erectile dysfunction medications (such as sildenafil) in the past 48 hours, as combining these with GTN can cause a severe drop in blood pressure
+-- **Consider intravenous morphine** in small increments (typically 2–3 mg every 5 minutes) for pain not relieved by GTN
+-- **Give supplemental oxygen** only if you are in shock or your oxygen saturation falls below 93% (target 94–98%). Routine oxygen is not given, as it has not been shown to be beneficial and may be harmful in some cases
++While waiting for the ambulance, your doctor may:
++
++- **Give aspirin 300 mg** to chew and swallow, even if you already take low-dose aspirin regularly
++- **Give glyceryl trinitrate (GTN) spray** for pain relief, 1 to 2 puffs under the tongue, repeated every 5 minutes up to 3 doses (provided blood pressure stays above 90 mmHg). Your doctor will ask whether you have taken any erectile dysfunction medicines (such as sildenafil) in the past 24 to 48 hours, as combining these with GTN may cause a severe drop in blood pressure
++- **Consider intravenous morphine**, usually in 2 to 3 mg increments every 5 minutes
++- **Give supplemental oxygen** only if you are in cardiogenic shock or your oxygen saturation is below 93% (target 94 to 98%). Routine oxygen has not been shown to be beneficial and may be harmful. With COPD and a risk of carbon dioxide build-up, the target is 88 to 92%
++- Follow the local protocol for clot-dissolving treatment (thrombolysis), if the clinic offers it and it is indicated
+ - Monitor you closely and document all medications given
+ 
+ All documentation (medications, doses, times, and ECG copy) will be sent with you to the hospital.
+ 
+ ### EDACS Score 16 or More (or Ongoing Clinical Concern)
+ 
+-Your doctor will treat this as high risk and arrange immediate hospital assessment with ambulance transport, giving all appropriate medications before transfer.
++Your doctor will arrange urgent ambulance transport to the emergency department, with the same treatment while you wait.
+ 
+ ### EDACS Score 15 or Less
+ 
+-Your doctor will consider one of these approaches depending on your situation:
++Community management is only considered if your EDACS is 15 or less.
++
++- **If there is ongoing concern about ACS:** hospital assessment will be arranged, especially if tests cannot be done in a realistic time frame (for example, the clinic is closing, or it may be hard to reach you with results)
++- **Otherwise, your doctor may consider community care**, weighing factors such as a low suspicion of ACS, whether the practice can safely manage your results and follow-up, and whether, after discussion with you and your family, hospital admission and invasive treatment are felt to be unsuitable for you
+ 
+-- **If there is still clinical concern:** Hospital assessment will be arranged
+-- **If there is some suspicion of ACS and you are within 72 hours of the episode with a normal ECG:** Your doctor may arrange a troponin blood test in the community
++If you are managed in the community, your doctor will arrange a troponin test, either at a lab or with a point-of-care test in the clinic.
+ 
+ ### Troponin Testing
+ 
+-Troponin is a protein released by heart muscle when it is damaged. Laboratories now use highly sensitive cardiac troponin (hs-cTn) assays.
++Troponin is the blood test used to diagnose a heart attack. Different laboratories in New Zealand use different troponin tests.
+ 
+ Key points:
+ 
++- Troponin takes 2 to 6 hours to rise after a heart attack, and can stay raised for up to 14 days after ACS
++- As well as the level itself, a change in troponin, up or down, is an important sign of an acute process
+ - A diagnosis of heart attack requires a change in troponin level, with at least one elevated value in the context of suspected cardiac ischaemia
+-- A normal troponin rules out an acute heart attack, but does not fully rule out ACS — follow-up testing (such as a treadmill stress test) may still be arranged to exclude unstable angina
+-- Elevated troponin can also result from many non-cardiac causes, including arrhythmias, pulmonary embolism, heart failure, severe illness, renal failure, myocarditis, and strenuous exercise
+-
+-Depending on timing:
++- Troponin results are read with the flow chart for the specific test used, and a second test may be required. Absence of a troponin rise rules out an acute heart attack, but not other ACS, such as unstable angina, or underlying coronary artery disease. Even "negative" results close to the laboratory's upper limit are linked with significant 1-year and 5-year heart event rates
++- Troponin can also be raised by many conditions other than ACS, including arrhythmias, severe pulmonary embolism, heart failure, myocarditis, sepsis, renal failure, stroke, and strenuous exercise
+ 
+-- If more than 6 hours have passed since symptom onset, one troponin test may be sufficient
+-- If 6 hours or less since onset, your doctor will test troponin at the time and again at least 3 hours later
++The first troponin can be taken at any time. It does not show **when** a heart event happened.
+ 
+-**Troponin result interpretation:**
++**Troponin result interpretation:** your doctor will use a flow chart made for the specific troponin test. If it points to specialist review, hospital assessment will be arranged.
+ 
+-- **Elevated result** (Troponin T 15 nanogram/L or above, or Troponin I 40 nanogram/L or above): hospital assessment will be arranged
+-- **Normal result with ongoing concern:** your doctor may seek specialist cardiology advice
++Your doctor will talk with you about what to do if chest pain returns. If there are still concerns about narrowed coronary arteries, your doctor may consider follow-up testing, such as an exercise (treadmill) ECG or a CT coronary angiogram (CTCA), and may refer you to cardiology.
+ 
+ ### While Waiting for Troponin Results
+ 
+-Your doctor may advise that you can wait away from the clinic under certain conditions (going to a known address, not driving, having a responsible adult with you, and being reachable by phone). You should:
+-
+-- Avoid all physical activity (no gardening, exercise, or housework)
+-- Not drive
+-- Have someone with you
+-- Stay by a phone
+-- Call 111 immediately if you develop any chest pain, tightness, shortness of breath, or palpitations
+-
+-Your doctor will explain that while the risk of a heart attack is considered low, there remains a small possibility, and a cardiac arrest can occur in people who have had a heart attack. This information will be documented in your notes.
++Staying at the practice is the recommended option if you have had pain that day. You may be able to wait elsewhere if you are going to a known address, will not drive, have a responsible adult with you, can be reliably reached by phone, and understand you might have to go to hospital without delay. Your doctor should give you a copy of the [information for people awaiting blood test results for acute chest pain](https://hostedfiles-newzealand.communityhealthpathways.org/CHPNZLive/./patientinfo/HealthInfo_InformationForPeopleAwaitingBloodTestResultsForAcuteChestPain.pdf). If chest pain, tightness, breathlessness or palpitations return while you wait, call 111 straight away.
+ 
+ ---
+ 
+ ## Long-Term Management After ACS
+ 
+-After an ACS, you will need lifelong management of your cardiovascular risk — approximately half of all ACS events occur in people who have already had one.
++After an ACS, you will need lifelong management of your cardiovascular risk.
+ 
+ Your doctor will:
+ 
+-1. **Review your discharge summary and medications** — including intended duration of any new medicines (for example, ticagrelor is commonly prescribed for 12 months)
++1. **Review your discharge summary and medications**, including how long any medicines that are not long-term should continue. Dual antiplatelet therapy (DAPT) and anticoagulation are now often individualised. If you are prescribed them, your notes and prescriptions should clearly say when each is to stop.
+ 
+ 2. **At 3 months after your ACS, your doctor will:**
+-   - Check whether you have completed cardiac rehabilitation
++   - Check whether you have completed cardiac rehabilitation, and consider cardiology advice or assessment if not
+    - Ask about your return to activities (work, driving, sexual activity) and offer support
+    - Screen for depression and anxiety
+    - Check your medication compliance and understanding
+-   - Check that blood pressure and lipid levels are within target ranges
++   - Check that blood pressure, lipid levels, and diabetes (if present) are within target ranges
+    - Review lifestyle risk factors (smoking, exercise, diet) and offer support
+    - Provide an angina action plan
+ 
+@@ -178,6 +187,6 @@ Your doctor will:
+ 
+ ## Patient Resources
+ 
+-- Health New Zealand Te Whatu Ora: [Chest Pain](https://info.health.nz/health-topics/conditions-treatments/heart-health/chest-pain), [Heart Attack](https://info.health.nz/health-topics/conditions-treatments/heart-health/heart-attack)
+-- Healthify He Puna Waiora: [Chest Pain](https://healthify.nz/health-a-z/c/chest-pain)
+-- Heart Foundation: [Angina Action Plan](https://assets.heartfoundation.org.nz/documents/shop/marketing/non-stock-resources/angina-action-plan.pdf)
++- Healthify He Puna Waiora: [Angina](https://healthify.nz/health-a-z/a/angina), [Chest Pain](https://healthify.nz/health-a-z/c/chest-pain), [Heart Attack | Hē Manawa](https://healthify.nz/health-a-z/h/heart-attack), [NZSL Chest Pain Videos](https://healthify.nz/translations/n/nzsl-chest-pain-videos)
++- Health New Zealand: [Chest Pain](https://info.health.nz/health-topics/conditions-treatments/heart-health/chest-pain)
++- Heart Foundation: [Angina Action Plan](https://assets.heartfoundation.org.nz/documents/shop/marketing/non-stock-resources/angina-action-plan.pdf), [Uma Tino Mamae](https://assets.heartfoundation.org.nz/documents/shop/heart-healthcare/angina-pamphlet-maori.pdf) (te reo Māori angina pamphlet)
+diff --git a/docs/pathway/cardiovascular-risk-assessment-cvra.md b/docs/pathway/cardiovascular-risk-assessment-cvra.md
+index 7078b687..f33fd3bf 100644
+--- a/docs/pathway/cardiovascular-risk-assessment-cvra.md
++++ b/docs/pathway/cardiovascular-risk-assessment-cvra.md
+@@ -8,9 +8,11 @@ summary: "Clinical pathway for cardiovascular risk assessment in adults: who to
+ 
+ # Cardiovascular Risk Assessment (CVRA)
+ 
+-*Source: Auckland Region HealthPathways*
++*Source: Auckland Region HealthPathways. Last reviewed: May 2019.*
+ 
+-This pathway covers how cardiovascular risk is assessed in adults — who should be screened, what factors are considered, and how risk level guides management.
++This pathway covers how cardiovascular risk is assessed in adults: who should be screened, what factors are considered, and how risk level guides management.
++
++> This is general information, not a personal assessment. Your doctor will work out your individual risk and guide treatment decisions with you.
+ 
+ ---
+ 
+@@ -20,7 +22,7 @@ This pathway covers how cardiovascular risk is assessed in adults — who should
+ - The goal of CVRA is to identify modifiable cardiovascular risk factors, in order to guide behaviour change and medical management.
+ - Recommendations are based on the combined risk estimate, current evidence of benefits and harms, and the patient's overall health, co-morbidities, and frailty.
+ - Treatment decisions use a shared decision-making model, based on informed personal choice.
+-- The relative benefit of interventions (particularly medication) is roughly constant across patients, so the absolute benefit is proportional to the estimated combined CVD risk — meaning the higher your risk, the more you benefit from treatment.
++- The relative benefit of interventions (particularly medication) is roughly constant across patients, so the absolute benefit is proportional to the estimated combined CVD risk. The higher your risk, the more you are likely to benefit from treatment.
+ 
+ ---
+ 
+@@ -56,7 +58,7 @@ Your doctor will also record your smoking status, ethnicity, personal cardiovasc
+ 
+ ### Family History Risk Factors
+ 
+-- Premature CVD — a first-degree relative hospitalised or who died from a heart attack or stroke before age 50
++- Premature CVD: a first-degree relative hospitalised or who died from a heart attack or stroke before age 50
+ - Type 2 diabetes
+ - Genetic lipid disorder
+ 
+@@ -98,7 +100,7 @@ Some patients are in a very high-risk group without needing a full risk calculat
+   - Familial hypercholesterolaemia
+   - Familial defective ApoB
+   - Familial combined dyslipidaemia
+-- Diabetes with overt nephropathy (albumin:creatinine ratio ≥ 30 mg/mmol or urinary albumin ≥ 200 mg/L)
++- Diabetes with overt nephropathy (albumin:creatinine ratio 30 mg/mmol or urinary albumin 200 mg/L)
+ - Diabetes with other renal disease causing renal impairment (eGFR ≤ 60 mL/min/1.73 m²)
+ 
+ ---
+@@ -111,17 +113,18 @@ Some patients are in a very high-risk group without needing a full risk calculat
+ - Risk factors considered include:
+   - Low HDL < 0.7 mmol/L (possible genetic lipid disorder)
+   - Known or suspected familial dyslipidaemias or genetic lipid disorders
+-  - Type 1 or Type 2 diabetes with microalbuminuria, or Type 2 diabetes of long duration (10 years or more)
++  - Type 1 or Type 2 diabetes with microalbuminuria, or Type 2 diabetes of long duration (10 years)
+ - Results are approximations but can guide shared decision-making
+ - Some risk factors in young people may warrant more intensive intervention or specialist referral
+ 
+ ### Aged 75 Years or Older
+ 
+ - Management depends on co-morbidities, though many older people benefit from the same interventions as younger people
+-- In secondary prevention (existing CVD), statins have consistent benefit in people aged 75 and over
+-- Evidence for lipid-lowering as primary prevention in the elderly is more limited — cardiovascular events may decrease, particularly in those with diabetes, but mortality benefit has not been clearly established
+-- Blood pressure treatment continues to benefit older people, but so do the potential harms (especially in the very elderly) — treatment should be reviewed regularly
+-- Risk estimates in this age group are approximations, as they are outside the range of the NZ Primary Prevention Equations
++- In secondary prevention (existing atherosclerotic CVD), the relative benefit of statins in people aged 75 and over is consistent with that in younger people
++- Evidence for lipid-lowering as primary prevention in the elderly is more limited. Cardiovascular events may decrease, particularly in those with diabetes, but a mortality benefit has not yet been established
++- Blood pressure treatment continues to benefit older people, but so do the potential harms (especially in the very elderly), so treatment should be reviewed regularly
++- Weighing benefits against harms is harder in older people: other health conditions are more common and there is less time to gain the benefits
++- Risk estimates in this age group are approximations only, as they are outside the range of the NZ Primary Prevention Equations, but they can still be useful
+ - Your doctor will discuss your expectations and priorities when making treatment decisions
+ 
+ ---
+@@ -132,26 +135,28 @@ Your doctor will use shared decision-making to discuss your risk category and wh
+ 
+ - **Low risk (< 5%):** Promote lifestyle changes. Drug treatment is usually not required.
+ - **Moderate risk (5 to < 15%):** Discussion about the benefits and harms of blood pressure or lipid-lowering medication, versus lifestyle-only management.
+-- **High risk (≥ 15%):** Most patients benefit from blood pressure and lipid-lowering medication, plus intensive lifestyle changes. For some, aspirin or another antiplatelet agent may also be considered.
++- **High risk (≥ 15%):** Most people at high risk, and all people with a personal history of CVD, are likely to benefit from blood pressure and lipid-lowering medication, plus intensive lifestyle changes. For some groups, aspirin or another antiplatelet agent may also be considered.
++
++If your total cholesterol to HDL cholesterol (TC:HDL-C) ratio is 8 or higher, lipid-lowering treatment is usually recommended.
+ 
+ ### Aspirin
+ 
+ - Recommended if you have had a prior cardiovascular event (secondary prevention)
+-- May be considered for primary prevention if you are under 70 with a 5-year CV risk of 15% or more and are not at increased bleeding risk. Potential benefits include reduction in non-fatal heart attack and colorectal cancer (though the colorectal cancer benefit takes at least 10 years to appear)
+-- Not recommended for primary prevention if:
++- May be considered for primary prevention if you are under 70 with a 5-year CV risk of 15% or more and are not at increased bleeding risk. Potential benefits include reduction in non-fatal heart attack and colorectal cancer, and possibly a small gain in years of life. The colorectal cancer benefit does not appear until 10 years after starting aspirin
++- Not recommended for primary prevention alone if:
+   - Aged over 70, regardless of CV risk
+   - 5-year CV risk is below 15%
+ 
+ ### Lifestyle Interventions
+ 
+-Lifestyle changes are recommended for all patients, regardless of risk level:
++Lifestyle changes are recommended for all patients, regardless of risk level. Ongoing support and follow-up is often needed to support behaviour change:
+ 
+ - **Diet:** Reduce saturated fat and cholesterol intake. The [Heart Foundation guide to eating for a healthy heart](https://www.heartfoundation.org.nz/wellbeing/healthy-eating/eating-for-a-healthy-heart) is a useful resource.
+ - **Physical activity:** Aim for at least 30 minutes of moderately intense exercise on most days of the week
+ - **Weight:** Weight loss if overweight
+-- **Smoking:** Quitting smoking is one of the most effective ways to reduce cardiovascular risk. Note: stopping smoking does not worsen mental illness.
+-- **Flu vaccination:** Annual influenza immunisation is recommended for eligible patients
+-- **Diabetes:** If you have diabetes, good blood sugar control is an important part of cardiovascular risk management
++- **Smoking:** Stopping smoking is recommended, including for people with severe mental illness. Stopping smoking does not worsen mental illness.
++- **Flu vaccination:** Annual influenza immunisation is recommended for those eligible for the funded vaccine
++- **Diabetes:** If you have diabetes, your doctor may advise about diabetes control
+ 
+ ---
+ 
+@@ -181,7 +186,7 @@ Lifestyle changes are recommended for all patients, regardless of risk level:
+ | 15% or more | Every year |
+ | Severe mental illness | Every 2 years, or annually if risk is 15% or more |
+ 
+-Between formal assessments, your doctor may still see you opportunistically to support lifestyle changes — especially if you have modifiable risk factors.
++Between formal assessments, your doctor may still support lifestyle changes, even when your risk is low. A younger person with a low 5-year risk, who does not need a repeat assessment for 5 years, may still have several modifiable risk factors.
+ 
+ ---
+ 
+diff --git a/docs/pathway/chronic-non-cancer-pain.md b/docs/pathway/chronic-non-cancer-pain.md
+index 116f2f2d..1f969064 100644
+--- a/docs/pathway/chronic-non-cancer-pain.md
++++ b/docs/pathway/chronic-non-cancer-pain.md
+@@ -8,11 +8,13 @@ summary: "Clinical pathway for chronic non-cancer pain (persistent pain lasting
+ 
+ # Chronic Non-cancer Pain
+ 
+-*Source: Auckland Region HealthPathways*
++*Source: Auckland Region HealthPathways. Last reviewed: July 2024.*
+ 
+-Chronic non-cancer pain (also called persistent pain) is defined as constant daily pain for 3 months or more in the last 6 months. It affects about 1 in 5 people and is a complex medical condition influenced by physical, psychological, social, and cultural factors.
++Chronic non-cancer pain (also called persistent pain) is defined as constant daily pain for 3 months or more in the last 6 months. It is a major cause of disability, affecting 1 in 5 New Zealanders. It is more common in women and in Māori and Pacific peoples.
+ 
+-**The goal of management is to restore function and improve quality of life — not simply to eliminate pain. Eighty per cent of effective management is non-pharmacological; medications contribute only 20%.**
++It is a complex condition that affects, and is affected by, social environment, emotional state, physical fitness, sleep, and nutrition. An early, active approach involving community allied health providers may reduce how long the pain lasts and how severe it is.
++
++**The goal of management is to restore physical and emotional function and improve quality of life, rather than to lower the pain score. Eighty per cent of successful management is non-pharmacological; medications contribute only 20%.**
+ 
+ > This information is for general understanding. Your doctor will assess your specific situation and guide your management plan.
+ 
+@@ -22,12 +24,14 @@ Chronic non-cancer pain (also called persistent pain) is defined as constant dai
+ 
+ Tell your doctor straight away if you have:
+ 
+-- Trauma or injury causing or worsening pain
+-- Constitutional symptoms: fever, chills, or unexplained weight loss
+-- Pain starting after age 50 or before age 20 (when no prior diagnosis)
+-- Neurological deficit: numbness, weakness, or loss of bladder/bowel control
++- Trauma
++- Constitutional symptoms: fever, chills, or weight loss
++- Pain when you are older than 50 years or younger than 20 years
++- Neurological deficit, such as severe or worsening numbness or weakness
++
++These may suggest a serious underlying cause.
+ 
+-These may indicate a serious underlying cause that needs urgent investigation.
++**New problems controlling your bladder or bowel, numbness around the saddle area, or new leg weakness with back pain: this is an emergency, call 111 or go to the emergency department.**
+ 
+ ---
+ 
+@@ -35,54 +39,54 @@ These may indicate a serious underlying cause that needs urgent investigation.
+ 
+ Your doctor may describe your pain using these terms:
+ 
+-**Nociceptive pain** — from tissue damage (cuts, bruises, arthritis, sprains). Usually well-localised and aching or throbbing.
++**Nociceptive pain** comes from tissue damage caused by trauma, an injury that has not healed, or inflammation. Examples include cuts, bruises, fractures, sprains, and arthritis.
+ 
+-**Neuropathic pain** — from a lesion or disease of the nervous system. Often burning, shooting, or "pins and needles." Examples: diabetic neuropathy, postherpetic neuralgia.
++**Neuropathic pain** comes from a lesion or disease of the nerves that carry sensation. It is often described as burning or shooting, sometimes with "pins and needles", numbness, or itching. Examples include diabetic neuropathy, postherpetic neuralgia, and multiple sclerosis.
+ 
+-**Radicular pain** — radiates in a thin line down a limb (often from a pinched nerve root). More painful toward the periphery; can cause numbness in a specific dermatomal pattern.
++**Radicular pain** radiates in a thin line down the length of a limb and is usually more painful further down the limb. It is often troublesome at night and can come with numbness in a specific skin area (dermatome). Radicular pain without radiculopathy (weakness, numbness, or abnormal reflexes) does not mean the nerve is damaged.
+ 
+-**Nociplastic pain** — altered pain processing in the nervous system with no clear tissue damage. The nervous system becomes sensitised and easier to trigger. Examples: fibromyalgia, non-specific low back pain, irritable bowel syndrome. Less likely to respond to standard pain medications.
++**Nociplastic pain** comes from altered pain processing with no clear evidence of tissue damage or disease (also called central sensitisation). Normal-looking tissue becomes oversensitive. Examples include fibromyalgia, non-specific low back pain, and irritable bowel syndrome. It is less likely to respond to pain medications.
+ 
+ ---
+ 
+ ## Assessment
+ 
+-Your doctor will conduct a thorough assessment — this may take multiple appointments. They will:
++Your doctor will aim for a detailed assessment, which may take multiple appointments. How much the pain limits what you can do drives treatment decisions. An examination can help identify the type of pain and rule out serious causes. Your doctor will avoid over-investigation, arranging tests only to answer a specific clinical question.
+ 
+ ### Take a Detailed History
+ 
+ A brief assessment uses the **SPACE** framework:
+-- **Sleep** — what wakes you up, whether sleep is refreshing
+-- **Pain** — location, duration, triggers, relievers, type
+-- **Affect** — depression and anxiety screening
+-- **Cognitive** — brain fog or concentration difficulties
+-- **Energy** — fatigue levels
++- **Sleep:** what wakes you up, whether sleep is refreshing
++- **Pain:** location, duration, triggers, relievers, type
++- **Affect:** depression, and any risk of self-harm or suicide
++- **Cognitive:** cognitive impairment or brain fog
++- **Energy:** energy and fatigue
+ 
+ A fuller history also covers:
+-- **Pain characteristics** — nature, intensity, location, onset, aggravating/relieving factors, radiation
+-- **Past medical history** — previous treatments and outcomes, other conditions, medications
+-- **Performance and functioning** — impact on daily activities, work, relationships
+-- **Psychosocial factors** — mental health (depression, anxiety), substance use, beliefs about pain, work and financial stress
+-- **Sociocultural context** — cultural beliefs about pain, family and social support
++- **Pain characteristics:** nature, intensity, location, duration, onset, frequency, aggravating/relieving factors, radiation. A pain diary may help.
++- **Past medical history:** previous treatments and outcomes, other conditions, past surgery or trauma, medications (including over-the-counter and herbal)
++- **Performance and functioning:** impact on daily activities, work, and relationships
++- **Psychosocial factors:** depression and anxiety, thoughts of suicide, substance use, and beliefs about pain (for example, that activity is harmful, or that all pain must go before returning to normal activity)
++- **Sociocultural context:** cultural beliefs about pain, problems at work, life events, and family support
+ 
+ ### Check for Red Flags Suggesting Serious Cause
+ 
+ - **Possible fracture:** major trauma, or minor trauma in older or osteoporotic people
+-- **Possible tumour:** age >50 or <20, history of cancer, weight loss, pain worsening at night
+-- **Possible infection:** fever, chills, immunosuppression, intravenous drug use
+-- **Possible neurological disorder:** progressive weakness, bladder/bowel dysfunction, neurological deficit
++- **Possible tumour:** age older than 50 years or younger than 20 years, history of cancer, fever, chills or weight loss, pain worsening at night or when lying down, immunosuppression
++- **Possible infection:** fever, chills or feeling unwell, immunosuppression, recent bacterial infection, intravenous drug use
++- **Possible neurological disorder:** severe or progressive changes in sensation or weakness, bladder or bowel dysfunction, neurological deficit (in the legs and/or perineum in someone with low back pain)
+ 
+ ### Identify Complex Regional Pain Syndrome (CRPS) Early
+ 
+-CRPS requires **urgent referral**. It is characterised by regional pain disproportionate to any injury, with associated changes in sensation, skin colour/temperature, sweating, or movement.
++CRPS needs **urgent treatment and referral**. It is characterised by continuing regional pain that seems out of proportion, in time or degree, to the usual course of any known injury or lesion.
+ 
+-**Budapest criteria for CRPS diagnosis — all four must be met:**
++**Budapest criteria for CRPS diagnosis:**
+ 1. Continuing pain disproportionate to any inciting event
+-2. At least 1 symptom in 3 of 4 categories: sensory (hyperalgesia/allodynia), vasomotor (temperature or colour asymmetry), sudomotor/oedema, motor/trophic changes
++2. At least 1 symptom in 3 of 4 categories: sensory (hyperalgesia/allodynia), vasomotor (temperature or colour asymmetry), sudomotor/oedema (swelling, sweating changes), motor/trophic (reduced movement, weakness, tremor, changes in hair, nails, or skin)
+ 3. At least 1 sign at evaluation in 2 or more of the same 4 categories
+ 4. No other diagnosis better explains the findings
+ 
+-*Note: Acute CRPS in children and adolescents must be treated and referred urgently.*
++*Note: Acute CRPS, especially in children and adolescents, should be treated and referred urgently.*
+ 
+ ### Identify Specific Pain Syndromes
+ 
+@@ -100,72 +104,83 @@ Some conditions need specific management pathways:
+ 
+ ### 1. CRPS — Urgent Action
+ 
+-If CRPS is suspected, your doctor will refer urgently to a pain specialist. In adults who meet the Budapest criteria, a prednisone taper is typically started. Children and adolescents need urgent specialist input.
++If CRPS is suspected in an adult, your doctor may refer you urgently for a specialised pain assessment. If you meet the Budapest criteria, your doctor may also start a reducing (tapering) course of prednisone. In children and adolescents (younger than 16 years), CRPS may not meet the Budapest criteria. Your doctor may seek urgent paediatric advice, and prednisone is not used in this group without specialist input.
+ 
+ ### 2. Physical Factors
+ 
+-**Physical activity** is essential for managing chronic pain — particularly for low back pain, osteoarthritis, and neuropathic pain.
++**Physical activity** is essential for managing chronic pain, particularly low back pain, osteoarthritis, and neuropathic pain.
+ 
+-- Start gradually — gentle activities like walking, swimming, stretching, or chair yoga
+-- Use **activity pacing**: identify an activity, establish a comfortable amount, add a rest element, maintain that level for a week, then slowly increase
+-- Avoid "boom-bust" patterns (doing too much on good days, collapsing on bad days)
+-- Physiotherapy with a therapist experienced in chronic pain can help
++- Start where you are. Sudden increases in activity may cause a pain flare.
++- Gentle activities to start with include walking in a heated pool, stretching, chair yoga, or beginner's yoga
++- Use **activity pacing**: identify an important activity that pain affects, set an amount (usually a time) you are confident you can do, and add a "relax" step afterwards. Keep to that amount for a week, then set small, measurable goals to build up slowly, whatever your pain level. Relax when it is time to, even on good days.
++- Avoid "boom-bust" patterns. Overdoing things can set back recovery as much as underdoing them.
++- Your doctor may refer you to a physiotherapist with experience in chronic pain management
++- There is no evidence for alternative and complementary medicine, chiropractic, or osteopathy in managing chronic pain
+ 
+-**Sleep:** Maintain regular sleep/wake times; avoid napping after 3pm; limit caffeine and alcohol before bed; use relaxation techniques.
++**Sleep:** Go to bed and get up at the same time every day. Avoid napping during the day if possible; if you must, nap before 3 pm and then only for 30 minutes. Wind down with relaxing activities, and avoid caffeine and alcohol before bed.
+ 
+-**Diet:** A healthy balanced diet supports overall wellbeing.
++**Diet:** Your doctor may give advice on healthy eating.
+ 
+ ### 3. Psychosocial Support
+ 
+-Psychological approaches are a core part of pain management, not an add-on.
++Psychological strategies can help change thoughts and beliefs about pain, and so reduce the impact pain has on your life.
+ 
+ **Key messages your doctor may share:**
+-- Chronic pain is a complex problem requiring approaches beyond medication
+-- Pain is the body's danger alarm — in chronic pain, that alarm can become oversensitive even without ongoing harm
+-- Thoughts and beliefs about pain influence how the body responds to pain signals
+-- Many people with chronic pain learn to live well and lead full lives
+-- There is no quick fix; gradual improvement through active participation is the goal
++- Chronic pain is a complex problem, and good pain management needs approaches beyond medication
++- Pain is the body's built-in danger alarm, and it can become sensitive and easier to trigger. "The fire has been put out, but the fire alarm is still going off."
++- Thoughts and beliefs about pain can influence how the body responds to pain signals
++- Many people with chronic pain can learn to live well despite pain, and most can lead completely normal lives
++- There is no instant answer or quick fix; you and your doctor work on the problem together
++- Your doctor will stay alert to any changes that suggest a different cause
+ 
+ **Psychological strategies include:**
+-- Cognitive behavioural therapy (CBT) for chronic pain
+-- Acceptance and commitment therapy (ACT)
+-- Mindfulness
+-- Online resources such as Retrain Pain
++- [Retrain Pain](https://www.retrainpain.org/), an online course
++- [painTRAINER](https://www.paintrainer.org/login-to-paintrainer/), online cognitive behavioural therapy (free login)
++- Mindfulness: Healthify He Puna Waiora, [Mindfulness and Letting Go](https://healthify.nz/hauora-wellbeing/m/mindfulness)
++
++Your doctor may also treat anxiety, depression, or substance use, if present.
++
++**A holistic and culturally safe approach:**
++- Your doctor may pay attention to parts of management that align with your cultural practices or beliefs
++- Traditional practices, such as mirimiri (massage) and rongoā Māori (traditional Māori medicine), may be included in pain management where they are consistent with evidence-based guidelines
++- Particularly for Māori, more emphasis may be placed on self-management and long-term strategies, to keep the goals you achieve
+ 
+ **Unhelpful beliefs to address:**
+-- "Hurt equals harm" — pain does not always mean damage is occurring
+-- "Exercise will make it worse" — appropriate activity generally improves chronic pain
+-- "I need to rest until the pain is gone" — prolonged inactivity worsens chronic pain
+-- "Only a medical procedure can fix this" — most chronic pain improves with active self-management
++- "Hurt equals harm"
++- "Exercise will make pain worse"
++- "When in pain, I should rest"
++- "Returning to work will worsen my pain"
++- "Only medical interventions can fix my pain"
+ 
+ **Work and social functioning:**
+-- Staying at or returning to work (even with reduced hours) is usually beneficial
+-- Social connection matters — isolation worsens chronic pain
++- Most people with chronic pain are encouraged to stay at work, or to return as early as possible, with reduced hours if needed.
++- Social isolation is common and debilitating. Start where you are, with small, realistic goals, and slowly increase social contact.
+ 
+ ### 4. Pharmacological Pain Relief
+ 
+-Medications are adjusted to improve function, not just reduce pain scores. If a medication is not providing meaningful benefit, it is stopped.
++Your doctor will adjust medicines for the best effect on function, rather than on pain relief. If a medicine is not giving a significant benefit, your doctor may stop it and explore another option.
+ 
+ **Long-term opioids are NOT recommended for chronic non-cancer pain.**
+ 
+-Your doctor will refer to the Medications in Chronic Pain pathway for specific options (including paracetamol, anti-inflammatories, antidepressants for pain, anticonvulsants, and topical agents).
++Specific medicine options are covered in a separate pathway on medications in chronic pain.
+ 
+ ### 5. Self-Management and Flare-Up Planning
+ 
+ **Self-management principles:**
+ - Take ownership of your pain management plan
+ - Start with what you can manage now and build slowly
+-- Engage your support network
++- Others involved in your care can help shape the plan
+ 
+-**During a flare-up (non-pharmacological strategies are first-line):**
+-- Identify and avoid triggers (overactivity or underactivity)
++**During a flare-up (non-pharmacological strategies should be the mainstay):**
++- Identify and prevent triggers such as overactivity or underactivity, and respond to warning signs of a flare-up
++- Set realistic goals to cope with the flare-up, rather than cure it
+ - Use heat pads or cold compresses on the sore area
+ - Do gentle stretching and movement to prevent stiffness
+-- Breathe slowly and deeply to reduce tension
+-- Use distraction (hobbies, conversation about topics other than pain)
+-- Avoid prolonged rest or inactivity
+-- Accept the flare-up and know it will pass
+-- Return to your doctor if you develop new or different symptoms
++- Breathe slowly and deeply to avoid tension and over-breathing
++- Take up a hobby or activity for distraction, and talk with someone about anything other than the pain
++- Avoid long periods of rest or inactivity
++- Accept the pain, and know that your situation will start to improve
++- Return to your doctor if you develop new or different symptoms, rather than a flare of existing ones
+ 
+ ### 6. Specific Pain Types
+ 
+@@ -177,40 +192,43 @@ Certain conditions are managed with their own specific pathways:
+ 
+ ## When to See a Specialist
+ 
+-Your doctor will consider referring you to a specialised pain service if:
++Your doctor may consider referring you to a specialised pain service if:
+ 
+ ### Complexity Indicators (Biomedical)
+-- Opioid use for more than 90 days (not for palliative care)
++- Opioid use for more than 90 days (excluding palliative or end-of-life comfort care)
+ - Refractory neuropathic pain
+ - Red flags suggesting a serious cause
+-- Spending more than 60 minutes lying down during waking hours
++- Lying down or reclining for more than 60 minutes in total during usual waking hours
+ 
+ ### Complexity Indicators (Psychological)
+ - Kessler 10 (K10) score >19 out of 50
+ - DASS-21: Depression >9, Anxiety >7, or Stress >14
+-- Unhelpful pain beliefs (e.g. fear-avoidance, catastrophising)
+-- Expectation that passive treatment or strong analgesia will fix the pain
++- Fear-avoidance (avoiding activity for fear of pain or re-injury), low mood, or social withdrawal
++- Unhelpful beliefs about pain
++- Expectation that passive treatment, rather than active participation, or strong analgesia is the key to managing the pain
++- Contested compensation or litigation claims
+ 
+ ### Other Reasons for Specialist Referral
+-- No improvement after 3 months of appropriate management
++- No improvement after 3 months despite appropriate medical management
+ - Potential benefit from an interventional pain management technique (see below)
+ - Suspected or confirmed CRPS (urgent)
+ 
+ ### Interventional Techniques
+ 
+-These give only short-term relief, work for fewer than 10% of patients, and are used less frequently than in the past. They include:
++These may give only short-term relief, are useful in less than 10% of people with chronic non-cancer pain, and are being used less often. They include:
+ 
+ **Nerve blocks (targeted injections):**
+-- Diagnostic blocks to identify the pain source
+-- Therapeutic blocks using local anaesthetic ± steroid for temporary relief
+-- Specific examples: lumbar epidural injections (for radicular pain), facet joint injections, sacroiliac joint injections, occipital nerve block
++- Diagnostic blocks use local anaesthetic to find the pain source
++- Therapeutic blocks use local anaesthetic ± steroid for temporary relief
++- Specific examples: lumbar epidural injections (for radicular pain; not recommended for non-radicular pain), facet joint injections, sacroiliac joint injections, occipital nerve block
+ 
+ **Nerve ablation (radiofrequency rhizotomy):**
++- The most common method
+ - Used when a diagnostic block confirms a facet joint as the pain source
+-- Produces longer-term relief at that site
++- Can produce longer-term relief at that site
+ 
+ **Neurostimulation (spinal cord stimulator):**
+-- Considered for: failed back surgery pain with radicular symptoms, CRPS of the lower limb, peripheral vascular disease pain, refractory angina
++- May be considered for: failed back surgery pain with radicular symptoms, CRPS of the lower limb, peripheral vascular disease pain, refractory angina
+ - A positive trial with an external stimulator is required before implanting a permanent device
+ - Goals should be functional and objective (e.g. reduced analgesic use), not just pain score reduction
+ 
+@@ -218,24 +236,18 @@ These give only short-term relief, work for fewer than 10% of patients, and are
+ 
+ ## Follow-Up
+ 
+-Your doctor will typically see you 1–2 times a week for 4 sessions initially, then monthly, then every 3 months. Follow-up aims to:
++Your doctor may suggest seeing you 1 to 2 times a week for 4 sessions, then monthly, then every 3 months. This is costly and may not be available to everyone. Follow-up aims to:
+ 
+-- Review and adjust your pain management plan
+-- Support self-management and avoid dependence on passive treatments
+-- Consider involving practice nurses or other allied health practitioners
++- Review your pain management plan
++- Encourage self-management and avoid dependence
++- Consider involving practice nurses or a health improvement practitioner
+ 
+ ---
+ 
+ ## Resources
+ 
+ **For patients:**
+-- [Healthify He Puna Waiora — Chronic Pain](https://healthify.nz)
+-- [Retrain Pain](https://retrainpain.org) — online self-management course
+-- [The New Zealand Pain Society — Pain Resources](https://www.nzps.org.nz)
+-- Understanding Pain in Less Than 5 Minutes — video available on YouTube
+-
+-**For clinicians:**
+-- bpacnz — Understanding the Role of Opioids in Chronic Non-malignant Pain
+-- PEER Simplified Chronic Pain Guideline (Canadian Family Physician)
+-- NICE Guidance — Chronic Pain (Primary and Secondary) in Over 16s
+-- Pain Medicine — CRPS: Practical Diagnostic and Treatment Guidelines, 5th Edition
++- [Healthify He Puna Waiora: Chronic Pain | Mamaenga Roa](https://healthify.nz/health-a-z/c/chronic-pain)
++- [Retrain Pain](https://www.retrainpain.org/): online course
++- [The New Zealand Pain Society: Pain Resources](https://www.nzps.org.nz/painresource/)
++- [Understanding Pain in Less Than 5 Minutes, and What To Do About It](https://www.youtube.com/watch?v=C_3phB93rvI): 5-minute video
+diff --git a/docs/pathway/diabetes-screening-and-diagnosis-in-adults.md b/docs/pathway/diabetes-screening-and-diagnosis-in-adults.md
+index 054de6f9..d441c404 100644
+--- a/docs/pathway/diabetes-screening-and-diagnosis-in-adults.md
++++ b/docs/pathway/diabetes-screening-and-diagnosis-in-adults.md
+@@ -8,39 +8,38 @@ summary: "Clinical pathway for diabetes screening and diagnosis in adults withou
+ 
+ # Diabetes Screening and Diagnosis in Adults
+ 
+-*Source: Auckland Region HealthPathways*
++*Source: Auckland Region HealthPathways. Last reviewed: June 2025.*
+ 
+-This pathway applies to adults who do not have a current diagnosis of type 1 or 2 diabetes, prediabetes, or gestational diabetes. It covers who should be screened, how diabetes is diagnosed, and how to tell different types apart.
++This pathway applies to adults who are not pregnant and do not have a current diagnosis of type 1 or 2 diabetes, prediabetes, or gestational diabetes. It covers who should be screened, how diabetes is diagnosed, and how to tell different types apart.
+ 
+-> **Always discuss your results and management with your doctor.** This information is a general guide — your doctor will apply it to your individual situation.
++> **Always discuss your results and management with your doctor.** This information is a general guide. Your doctor will apply it to your individual situation.
+ 
+ ---
+ 
+ ## Important: Updated Diagnostic Thresholds from 1 July 2026
+ 
+-From 1 July 2026, the HbA1c thresholds used to diagnose diabetes and prediabetes in New Zealand will change:
++This pathway uses these HbA1c thresholds:
+ 
+-| Category | New threshold (from July 2026) | Previous threshold |
+-|----------|-------------------------------|-------------------|
+-| Normal | HbA1c less than 42 mmol/mol | Less than 41 mmol/mol |
+-| Prediabetes | HbA1c 42–47 mmol/mol | 41–49 mmol/mol |
+-| Diabetes | HbA1c 48 mmol/mol or greater | 50 mmol/mol or greater |
++| Category | HbA1c |
++|----------|-------|
++| Prediabetes | 42 to 47 mmol/mol |
++| Diabetes | 48 mmol/mol or higher |
+ 
+-There is no change to the glucose-based diagnostic criteria.
++If you have no symptoms, an HbA1c of 48 to 52 mmol/mol needs a second test to confirm it. An HbA1c of 53 or greater confirms diabetes without a repeat test.
+ 
+ ---
+ 
+ ## Red Flags — Seek Urgent Medical Attention
+ 
+-See your doctor urgently or call emergency services if you have:
++See your doctor urgently if you have:
+ 
+-- Significant unexplained weight loss
++- Weight loss
+ - Excessive urination (polyuria)
+ - Excessive thirst (polydipsia)
+ - Dehydration
+-- Altered or reduced consciousness
++- Altered consciousness
+ 
+-These may be signs of undiagnosed diabetes with a serious complication such as diabetic ketoacidosis (DKA) or hyperosmolar hyperglycaemic state (HHS) — both of which require emergency care.
++If you are acutely unwell, these may be signs of a serious complication such as diabetic ketoacidosis (DKA) or hyperosmolar hyperglycaemic state (HHS). This is a medical emergency: call 111 or go to the emergency department.
+ 
+ ---
+ 
+@@ -52,20 +51,20 @@ Your doctor will test you if you have symptoms of high blood sugar or insulin de
+ 
+ - Excessive urination
+ - Excessive thirst
+-- Unexplained weight loss
+-- Recurrent fungal, skin, or urinary tract infections
++- Weight loss
++- Recurrent fungal, skin, or genitourinary (genital or urinary tract) infections
+ 
+ ### Asymptomatic Screening
+ 
+ Even without symptoms, your doctor may screen you based on your risk:
+ 
+ **Screening is recommended if you have:**
+-- Current prediabetes — tested **annually**
+-- A history of gestational diabetes — tested **annually**
+-- 2 or more diabetes risk factors — tested **at least every 3 years from age 15**
+-- Diabetes in remission — tested **annually for 5 years**, then every 3 years if HbA1c remains below 40 mmol/mol
++- Current prediabetes: tested **annually**
++- A history of gestational diabetes: tested **annually**
++- 2 or more diabetes risk factors: tested **at least every 3 years from age 15**
++- Diabetes in remission: tested **annually for 5 years**, then every 3 years if HbA1c is less than 40 mmol/mol
+ 
+-**As part of routine cardiovascular risk assessment**, screening is recommended:
++**As part of routine cardiovascular risk assessment**, screening is recommended from these ages. How often depends on your risk.
+ 
+ | Ethnicity | Men | Women |
+ |-----------|-----|-------|
+@@ -73,15 +72,17 @@ Even without symptoms, your doctor may screen you based on your risk:
+ | Other ethnicities | From age 45 | From age 55 |
+ 
+ **Risk factors for diabetes include:**
+-- Non-European ethnicity
++- Māori, Pacific, Indo-Asian, or other non-European ethnicity
+ - Previous prediabetes or type 2 diabetes in remission
+-- A close family member who developed type 2 diabetes before age 40
++- A first-degree relative (close family member) who developed type 2 diabetes before age 40
+ - Conditions associated with insulin resistance: polycystic ovarian syndrome (PCOS), acanthosis nigricans (darkened skin patches), high blood pressure, or abnormal cholesterol
+-- History of heart disease
+-- Long-term use of corticosteroids or antipsychotic medications
++- History of cardiovascular disease
++- Current long-term use of corticosteroids or antipsychotic medications
+ - Having had an organ transplant
+-- BMI over 30 kg/m² (or over 27 kg/m² in Indo-Asian individuals)
+-- Waist circumference over 94 cm (men) or 80 cm (women)
++- Obesity, which counts as one risk factor and means any of:
++  - BMI over 30 kg/m² (or over 27 kg/m² in Indo-Asian individuals)
++  - Waist-to-height ratio more than 0.5
++  - Waist circumference more than 102 cm (men) or more than 88 cm (women); in Indo-Asian individuals, over 80 cm in women or over 90 cm in men
+ 
+ ---
+ 
+@@ -89,66 +90,76 @@ Even without symptoms, your doctor may screen you based on your risk:
+ 
+ ### Primary Test: HbA1c
+ 
+-HbA1c (glycated haemoglobin) is the standard first test. It reflects average blood sugar levels over the past 2–3 months.
++HbA1c (glycated haemoglobin) is the first test.
+ 
+ **HbA1c may be unreliable** in people with:
+ - Haemoglobin disorders (e.g., sickle cell anaemia, thalassaemia)
+-- Conditions affecting red blood cell lifespan (bleeding, haemolysis, significant iron deficiency)
++- Altered red blood cell turnover (bleeding, previous spleen removal, haemolysis, significant iron or vitamin B12 deficiency)
+ - Recent blood transfusion
+ - Second or third trimester of pregnancy
+ 
+-In these situations, your doctor will use fasting glucose or random glucose instead.
++In these situations, your doctor may use a fasting glucose test instead, or a random glucose test in the clinic if you have symptoms.
+ 
+-### Current Diagnostic Thresholds (Pre-July 2026)
++### Current Diagnostic Thresholds
+ 
+ | Test | Diabetes | Prediabetes |
+ |------|----------|-------------|
+-| HbA1c | ≥50 mmol/mol | 41–49 mmol/mol |
+-| Fasting glucose | ≥7 mmol/L | 6.1–6.9 mmol/L |
+-| Random glucose | ≥11.1 mmol/L | n/a |
+-| 75 g glucose tolerance test | ≥11.1 mmol/L | 7.8–11 mmol/L |
++| HbA1c | 48 mmol/mol or higher | 42 to 47 mmol/mol |
++| Fasting glucose | 7 mmol/L or higher | 6.1–6.9 mmol/L |
++| Random glucose | 11.1 mmol/L or higher | n/a |
++| 75 g glucose tolerance test | 11.1 mmol/L or higher | 7.8–11 mmol/L |
++
++If you have no symptoms, a result in the diabetes range needs confirming with a second abnormal test. An HbA1c of 53 or greater does not need a repeat test.
+ 
+ ### Confirming the Result
+ 
+-For **asymptomatic patients** with an initial HbA1c of 50 mmol/mol or higher, a **second confirmatory test** is needed:
+-- If the second test is also elevated, diabetes is confirmed
+-- If the second test is not elevated, a further test is done in 3–6 months
++For **asymptomatic patients** with a first HbA1c of 48 to 52 mmol/mol, a **second confirmatory test** is always done, on the same day or as soon as practicable. It may be:
++- A repeat HbA1c of 48 mmol/mol or higher
++- A fasting glucose of 7.0 mmol/L or higher
++- A 2-hour glucose of 11.1 mmol/L or higher after a 75 g glucose tolerance test
++
++If the second test is not elevated, the test is repeated in another 3 to 6 months.
+ 
+-A single HbA1c measurement is sufficient to diagnose prediabetes (if no intercurrent illness).
++A single HbA1c measurement is enough to diagnose prediabetes (if no intercurrent illness).
+ 
+ ---
+ 
+ ## Types of Diabetes
+ 
+-While type 2 diabetes is by far the most common, your doctor will consider whether another type could be responsible.
++While type 2 diabetes is the most common, your doctor will consider other types, because management differs. Your doctor will also examine you, including your BMI.
+ 
+ ### Type 1 Diabetes
+ 
+-- Usually presents under age 35, but can occur at any age
+-- Rapid deterioration of blood sugar control
+-- Associated with autoimmune conditions (personal or family history)
++- Usually presents under age 35, but can occur at any age, sometimes with a gradual onset
++- Rapid deterioration in glucose levels or HbA1c
++- Associated with autoimmune conditions (personal or family history) or a family history of type 1 diabetes
+ - Symptoms of insulin deficiency (weight loss, excessive urination/thirst)
+ - Normal or low BMI, without typical features of metabolic syndrome
+ - Confirmed by blood tests: Anti-GAD, anti-IA2, or anti-ZnT8 antibodies; low C-peptide
+ 
+ ### Diabetes Due to Loss of Pancreatic Function
+ 
+-- Can present at any age, usually with a clear triggering cause
++- Usually has a clear triggering cause
+ - Associated with pancreatitis, cystic fibrosis, or pancreatic surgery, cancer, or trauma
+ - May have diarrhoea or signs of malabsorption
+-- Confirmed by low faecal elastase
++- Normal or low BMI, without typical features of metabolic syndrome
++- Tests may show low faecal elastase
++- If there is no clear cause, your doctor may seek specialist diabetes advice about looking for a pancreatic cause
+ 
+ ### Monogenic Diabetes
+ 
+-- Usually presents under age 35 with a strong family history of early-onset diabetes
++- Usually presents under age 35 with a strong family history of monogenic or early-onset diabetes, but can be diagnosed at any age
+ - May respond unusually well to sulfonylurea medications
+ - Sometimes associated with sensorineural hearing loss (mitochondrial subtypes)
+-- Requires specialist genetic testing
++- Normal or low BMI, without typical features of metabolic syndrome
++- Confirmed by genetic testing, which a GP cannot order directly
++
++Finger-prick (capillary) ketones are generally poor at telling the types of diabetes apart, but they are important for ruling out DKA.
+ 
+ ### Secondary Causes of Diabetes
+ 
+ Your doctor will consider whether diabetes could be caused by another condition or medication, including:
+-- Medications: corticosteroids, antipsychotics, thiazide diuretics, calcineurin inhibitors
++- Medications: corticosteroids, antipsychotics, thiazide diuretics, calcineurin inhibitors (after a transplant)
+ - Hormonal conditions: Cushing's syndrome, thyrotoxicosis, acromegaly
+ - Hyperandrogenism (in women)
+ - Haemochromatosis (iron overload)
+@@ -159,23 +170,24 @@ Your doctor will consider whether diabetes could be caused by another condition
+ 
+ ### Diabetic Ketoacidosis (DKA)
+ 
+-A medical emergency, most common in type 1 diabetes. Suspect if blood glucose is above 11 mmol/L plus any of:
++Suspect DKA if blood glucose is above 11 mmol/L plus any of:
+ 
+-- Positive blood ketones (more than 1.5 mmol/L) — note: urinary ketones may be falsely low if on empagliflozin
++- Positive finger-prick blood ketones (more than 1.5 mmol/L). Urinary ketones may be falsely low if on empagliflozin.
+ - Nausea or vomiting
+ - Dehydration
+ - Fast heart rate (tachycardia)
+ - Abdominal pain
+-- Rapid or deep laboured breathing (Kussmaul respiration)
+-- Confusion or reduced consciousness
++- Fast breathing (tachypnoea)
++- Rapid shallow breathing, or deep sighing breathing that may be mistaken for asthma (Kussmaul respiration)
++- Confusion, which may progress to reduced consciousness and coma
+ 
+ Note: Blood glucose may be below 11 mmol/L in DKA in people on empagliflozin or in pregnancy (euglycaemic DKA).
+ 
+ ### Hyperosmolar Hyperglycaemic State (HHS)
+ 
+-A life-threatening complication more common in type 2 diabetes. Suspect if someone has: extreme thirst, frequent urination, confusion, weakness, nausea, weight loss, dry mouth, fever, or seizures.
++A life-threatening complication that happens when blood glucose stays very high for a long time. It is more common in type 2 diabetes. Suspect it if someone has: extreme thirst, frequent urination, confusion, weakness, nausea, weight loss, dry mouth and tongue, fever, or seizures.
+ 
+-Both DKA and HHS require **emergency medical care**.
++Both DKA and HHS are a **medical emergency: call 111 or go to the emergency department**.
+ 
+ ---
+ 
+@@ -183,7 +195,7 @@ Both DKA and HHS require **emergency medical care**.
+ 
+ ### Urgent Referral (Same Day)
+ 
+-Your doctor will refer you urgently to hospital if:
++Your doctor will refer you urgently to hospital for an acute diabetes assessment if:
+ - You are unwell with high blood sugar
+ - DKA or HHS is suspected
+ 
+@@ -204,6 +216,6 @@ If type 2 diabetes or prediabetes is confirmed and you are otherwise well, your
+ 
+ ## Patient Resources
+ 
+-- Healthify He Puna Waiora: [HbA1c test — diagnosing diabetes and pre-diabetes](https://healthify.nz/health-a-z/h/hba1c-test/)
+-- Healthify He Puna Waiora: [Prediabetes / Tūraru Mate Huka](https://healthify.nz/health-a-z/p/prediabetes/)
+-- Healthify He Puna Waiora: [Type 2 Diabetes / Mate Huka](https://healthify.nz/health-a-z/d/diabetes-type-2/)
++- Healthify He Puna Waiora: [HbA1c test: diagnosing diabetes and pre-diabetes](https://healthify.nz/health-a-z/h/hba1c-testing)
++- Healthify He Puna Waiora: [Prediabetes / Tūraru Mate Huka](https://healthify.nz/health-a-z/d/diabetes-prediabetes)
++- Healthify He Puna Waiora: [Type 2 Diabetes / Mate Huka](https://healthify.nz/health-a-z/d/diabetes-type-2)
+diff --git a/docs/pathway/heart-failure.md b/docs/pathway/heart-failure.md
+index f3c461f9..3455156e 100644
+--- a/docs/pathway/heart-failure.md
++++ b/docs/pathway/heart-failure.md
+@@ -8,7 +8,7 @@ summary: "Clinical pathway for heart failure in adults: types (HFrEF, HFmrEF, HF
+ 
+ # Heart Failure
+ 
+-*Source: Auckland Region HealthPathways*
++*Source: Auckland Region HealthPathways. Last reviewed: August 2025.*
+ 
+ This pathway covers the diagnosis and management of heart failure in adults, including the different types, how it is assessed, and the medications used to treat it.
+ 
+@@ -16,7 +16,7 @@ This pathway covers the diagnosis and management of heart failure in adults, inc
+ 
+ ## Red Flags — Seek Emergency Care
+ 
+-Call an ambulance or go to the emergency department if you have:
++Call 111 or go to the emergency department if you are acutely unwell or have:
+ 
+ - Chest pain
+ - Acute breathlessness or severe difficulty breathing (acute pulmonary oedema)
+@@ -29,17 +29,19 @@ Call an ambulance or go to the emergency department if you have:
+ 
+ Heart failure (HF) is the inability of the heart to pump sufficiently to meet the body's needs. It is a serious condition with an average annual mortality of 10%. Those with severe heart failure have an annual mortality of 30–50%.
+ 
++Careful management, education, and support in general practice can help improve quality of life and prognosis, and reduce hospitalisations.
++
+ ### Types of Heart Failure
+ 
+-Heart failure is classified by the heart's ejection fraction (EF) — the percentage of blood pumped out with each beat:
++Heart failure is classified by the heart's ejection fraction (EF), the percentage of blood pumped out with each beat:
+ 
+ | Type | Ejection Fraction | Description |
+ |------|------------------|-------------|
+-| **HFrEF** — Heart failure with reduced ejection fraction | Less than 40% | Most evidence-based treatments target this type |
+-| **HFmrEF** — Heart failure with mildly reduced ejection fraction | 41–49% | Intermediate category |
+-| **HFpEF** — Heart failure with preserved ejection fraction | 50% or more | Management focuses mainly on treating underlying causes and symptoms |
++| **HFrEF**: Heart failure with reduced ejection fraction | 40% or less | Four medication classes (the "four pillars") are started as early as possible |
++| **HFmrEF**: Heart failure with mildly reduced ejection fraction | 41 to 49% | Intermediate category |
++| **HFpEF**: Heart failure with preserved ejection fraction | 50% or more | Management focuses mainly on treating underlying causes and symptoms |
+ 
+-The underlying causes and management differ between types.
++The underlying causes and management can differ between types.
+ 
+ ### Who Is at Higher Risk?
+ 
+@@ -89,7 +91,7 @@ Your doctor will consider heart failure in newly breathless patients, particular
+ - Hepatomegaly or ascites
+ - Cold extremities
+ 
+-*Note: Physical examination is often normal, especially in older people and those with obesity or other health conditions. A normal examination does not rule out heart failure.*
++*Note: Physical examination is often normal. Diagnosis can be harder, especially in older people and in people with obesity or other health conditions.*
+ 
+ ### Causes and Precipitating Factors
+ 
+@@ -105,14 +107,15 @@ Your doctor will consider heart failure in newly breathless patients, particular
+ **Things that can worsen or trigger a deterioration (precipitants):**
+ - Anaemia, atrial fibrillation, infection or sepsis
+ - Thyrotoxicosis, pulmonary embolus
+-- Acute dehydration (can mimic fluid overload — more common in hot weather)
+-- Poor medication adherence
++- Acute dehydration (some deteriorations are due to dehydration, not fluid overload; this may be more common in hot summer months)
++- Poor medication adherence or changes to medications
+ 
+ **Medications that can contribute to heart failure:**
+ - NSAIDs (including COX-2 inhibitors)
+ - Corticosteroids
+ - Tricyclic antidepressants
+ - Clozapine
++- Urinary alkalinisers (due to their high sodium content)
+ - Glitazones (e.g., pioglitazone)
+ - Non-dihydropyridine calcium channel blockers (diltiazem, verapamil)
+ - TNF-alpha receptor antagonists (e.g., etanercept)
+@@ -126,7 +129,7 @@ Your doctor will arrange tests. These may include:
+ 
+ ### NT-proBNP (Brain Natriuretic Peptide)
+ 
+-NT-proBNP is a blood test useful for distinguishing heart failure from other causes of breathlessness. It is most useful as a rule-out test.
++NT-proBNP is a blood test useful for distinguishing heart failure from other causes of breathlessness. It is most useful as a rule-out test. Unlike BNP, NT-proBNP is not affected by the sacubitril in Entresto.
+ 
+ **Interpretation:**
+ - If NT-proBNP is **less than 35 pmol/L**, heart failure is unlikely
+@@ -135,15 +138,15 @@ NT-proBNP is a blood test useful for distinguishing heart failure from other cau
+   - Aged 50–75 years and NT-proBNP is greater than 138 pmol/L
+   - Older than 75 years and NT-proBNP is greater than 279 pmol/L
+ 
+-**Causes of falsely elevated NT-proBNP** (non-heart failure causes): atrial fibrillation, left ventricular hypertrophy, valvular disease, pulmonary embolism, pulmonary hypertension, sepsis, COPD with cor pulmonale, cirrhosis, hyperthyroidism, severe renal impairment.
++**Other causes of raised levels:** after a heart attack in older adults, atrial fibrillation, left ventricular hypertrophy, valvular disease, pulmonary embolism, pulmonary hypertension, sepsis, COPD with cor pulmonale, cirrhosis, hyperthyroidism, severe renal impairment.
+ 
+-**Causes of falsely lower NT-proBNP:** obesity, hypothyroidism, treatment with diuretics, vasodilators, or ACE inhibitors.
++**Causes of lower levels:** obesity, hypothyroidism, treatment with diuretics, vasodilators, or ACE inhibitors.
+ 
+-Very high NT-proBNP levels carry a poor prognosis.
++Very high levels carry a poor prognosis.
+ 
+ ### ECG (12-lead)
+ 
+-Useful for identifying the cause of heart failure. Only about 10% of patients with heart failure have a completely normal ECG. Your doctor will look for ischaemia, arrhythmias (e.g., atrial fibrillation), left ventricular hypertrophy, previous heart attack, and conduction abnormalities.
++Useful for identifying the cause of heart failure. Only about 10% of patients with heart failure have a normal ECG. Your doctor will look for ischaemia, arrhythmias (e.g., atrial fibrillation), left ventricular hypertrophy, previous heart attack, and conduction abnormalities.
+ 
+ ### Blood Tests
+ 
+@@ -154,7 +157,7 @@ Useful for identifying the cause of heart failure. Only about 10% of patients wi
+ 
+ ### Echocardiogram
+ 
+-An echocardiogram (heart ultrasound) confirms the diagnosis and type of heart failure, detects valvular disease, and guides treatment decisions. Your doctor will arrange this.
++An echocardiogram (heart ultrasound) shows which type of heart failure is present. It also detects valvular disease, pulmonary hypertension, and other causes. Your doctor will arrange this.
+ 
+ ---
+ 
+@@ -165,8 +168,8 @@ Your doctor will grade your symptoms using the New York Heart Association (NYHA)
+ | Class | Description |
+ |-------|-------------|
+ | **Class I** | No symptoms with ordinary physical activity (asymptomatic) |
+-| **Class II** | Slight limitation — ordinary activity causes fatigue, breathlessness, or palpitations (mild heart failure) |
+-| **Class III** | Marked limitation — less than ordinary activity causes symptoms (moderate heart failure) |
++| **Class II** | Slight limitation: ordinary activity causes fatigue, breathlessness, or palpitations (mild heart failure) |
++| **Class III** | Marked limitation: less than ordinary activity causes symptoms (moderate heart failure) |
+ | **Class IV** | Unable to do any physical activity without discomfort; symptoms at rest (severe heart failure) |
+ 
+ ---
+@@ -177,20 +180,22 @@ Heart failure is a complex condition. All medication decisions should be made by
+ 
+ ### When to Seek Urgent Care
+ 
+-Contact your doctor or seek emergency care if heart failure worsens significantly. Your doctor may refer to a specialist cardiologist in certain situations, such as ejection fraction of 40% or less, new heart failure not responding to treatment, heart failure in pregnancy, or significant valvular disease.
++Contact your doctor or seek emergency care if heart failure worsens significantly. Your doctor may refer to a specialist cardiologist in certain situations, such as ejection fraction of 40% or less, new heart failure not responding to treatment, heart failure in pregnancy, or significant valvular or structural heart disease.
+ 
+ ### General Measures — For All Patients
+ 
+ **Lifestyle and self-care:**
+ 
+-- **Salt reduction:** Avoid adding salt to food. A low-sodium diet (less than 1.5 g per day, about half a teaspoon) is associated with improved quality of life
++- **Salt reduction:** Do not add salt to cooking or at the table. A low-sodium diet (less than 1.5 g per day, about half a teaspoon) is associated with improved quality of life
+ - **Fluid intake:** Avoid excessive fluid intake; fluid restriction is usually only needed with significant hyponatraemia in the context of congestion
+ - **Alcohol:** No more than one standard drink per day; if alcohol-related cardiomyopathy, abstinence is advised
+ - **Caffeine:** Habitual coffee consumption is likely safe; limit total caffeine to less than 400 mg per day; if on diuretics, limit to 1–2 cups per day
+-- **Smoking:** Stop smoking
+-- **Exercise:** A gradual, supervised exercise programme improves symptoms and functional capacity. Many patients fear exercise will be harmful, but evidence shows the opposite — gradually increasing activity provides long-term benefit. Cardiac rehabilitation is recommended if available
++- **Smoking and methamphetamine:** Stop smoking and avoid methamphetamine
++- **Exercise:** A rehabilitative exercise plan improves symptoms and functional capacity. Many patients fear being active will cause harm, but evidence shows that gradually increasing activity provides long-term benefit. Your doctor may refer you to a cardiac rehabilitation programme
++
++**Self-monitoring: what to watch for:**
+ 
+-**Self-monitoring — what to watch for:**
++Your doctor may give you an action plan and ask you to check your weight, swelling, and breathing every day.
+ 
+ Contact your doctor if you notice:
+ - Weight gain or loss of more than 2 kg over 2 days
+@@ -202,12 +207,12 @@ Contact your doctor if you notice:
+ - Increased ankle or leg swelling
+ - Feeling more tired or more down than usual
+ 
+-**Target weight (dry weight):** This is your stable baseline weight before symptoms of fluid overload began. Your doctor will record this and use it as a reference.
++**Target weight (dry weight):** This is your average weight before symptoms of fluid overload began. Your doctor will record this and use it as a reference.
+ 
+ **Other important considerations:**
+-- **Vaccination:** Heart failure increases the risk of respiratory infections, which can cause decompensation. Stay up to date with influenza, COVID-19, and pneumococcal vaccines
+-- **Driving and travel:** High-altitude travel should be avoided; air travel is not recommended if symptoms are poorly controlled; discuss with your doctor
+-- **Sexual activity:** Sexual problems are common in heart failure. Sexual activity is generally safe in stable heart failure (equivalent to climbing 3 flights of stairs). Phosphodiesterase type-5 inhibitors (e.g., sildenafil) are generally safe in stable heart failure but should be avoided with nitrates or in high cardiac-risk patients
++- **Vaccination:** Heart failure increases the risk of respiratory infections, which are a major cause of decompensation. Stay up to date with influenza, COVID-19, pneumococcal, and RSV vaccines
++- **Driving and travel:** High-altitude destinations should be avoided; air travel is not recommended if symptoms are poorly controlled; discuss with your doctor
++- **Sexual activity:** Sexual problems are common in heart failure. If heart failure is worsening or advanced, it is best to wait until symptoms are controlled. Sexual activity needs mild to moderate effort, similar to climbing 3 flights of stairs. Thiazide diuretics, spironolactone, and beta-blockers may worsen erectile dysfunction. Phosphodiesterase type-5 inhibitors are generally safe in stable heart failure but should be avoided with nitrates or in high cardiac-risk patients
+ - **Depression and anxiety:** These are common in heart failure and should be addressed
+ - **Mental and social wellbeing:** Your doctor can discuss advance care planning and support options
+ 
+@@ -217,18 +222,20 @@ Contact your doctor if you notice:
+ 
+ ### Guideline-Directed Medical Therapy (GDMT) — The "Four Pillars" for HFrEF
+ 
+-For heart failure with reduced ejection fraction (HFrEF), four medication classes work together to reduce death and hospitalisations. Your doctor will aim to start all four as soon as possible and gradually increase doses to the maximum tolerated:
++For heart failure with reduced ejection fraction (HFrEF), four medication classes are used together to reduce illness and death. Your doctor will aim to start all four as soon as possible and gradually increase doses to the maximum tolerated:
+ 
+ 1. **ACE inhibitor or ARB or ARNI** (see below)
+ 2. **Beta-blocker** (only started once fluid overload is controlled)
+ 3. **Mineralocorticoid receptor antagonist (MRA)** (spironolactone or eplerenone)
+ 4. **SGLT2 inhibitor** (empagliflozin or dapagliflozin)
+ 
++Doses are usually doubled every 2 weeks or as tolerated, aiming for optimal doses within 3 months. The beta-blocker is generally increased first, unless you are congested or your heart rate is less than 50 beats per minute. One medicine should not be increased at the cost of starting the others.
++
+ ---
+ 
+ ### ACE Inhibitors (ACEi)
+ 
+-ACE inhibitors reduce the workload on the heart and improve survival.
++ACE inhibitors are started at a low dose and increased every 2 to 3 weeks to the highest tolerated dose, up to evidence-based target doses.
+ 
+ **Examples and typical dosing:**
+ - Enalapril: starting 2.5 mg twice daily, target 10–20 mg twice daily
+@@ -237,19 +244,20 @@ ACE inhibitors reduce the workload on the heart and improve survival.
+ - Perindopril: starting 2 mg once daily, target 8 mg once daily
+ - Ramipril: starting 1.25 mg once daily, target 5 mg twice daily
+ 
++*Note (August 2026): The salts in Coversyl (perindopril) are changing. This needs a switch to a slightly different dose and a new prescription.*
++
+ **Key points:**
+-- Doses are started low and increased gradually every 2–3 weeks
+ - Blood tests (creatinine and electrolytes) are checked 1 week after starting and after each dose change
+ - A rise in creatinine of up to 30% is generally acceptable
+-- First-dose low blood pressure is more likely if blood pressure is already low, or if on high-dose diuretics — taking the first doses in the evening reduces this risk
++- First-dose low blood pressure is more likely if systolic blood pressure is under 90 mm Hg, or if taking 80 mg or more of furosemide daily. Starting low and taking the first few doses in the evening can help reduce this risk
+ - If not tolerated, switch to an ARB; do not combine ACEi with ARB
+-- Contraindicated in pregnancy, with high potassium (greater than 5 mmol/L), low blood pressure, or significant kidney disease
++- Contraindications and precautions include potassium greater than 5 mmol/L, eGFR less than 30 mL/min (or creatinine greater than 250 micromole/L), symptomatic low blood pressure or systolic blood pressure less than 80 mm Hg, symptomatic severe aortic stenosis, angio-oedema, and pregnancy
+ 
+ ---
+ 
+ ### Angiotensin Receptor Blockers (ARBs)
+ 
+-Used if ACE inhibitors are not tolerated (e.g., due to cough).
++Used if ACE inhibitors are not tolerated.
+ 
+ **Examples:**
+ - Losartan: starting 12.5 mg once daily, target 150 mg once daily
+@@ -259,15 +267,15 @@ Used if ACE inhibitors are not tolerated (e.g., due to cough).
+ 
+ ### Angiotensin Receptor Neprilysin Inhibitor (ARNI) — Sacubitril/Valsartan (Entresto)
+ 
+-ARNIs are now recommended as a preferred treatment over ACEi/ARB for HFrEF with NYHA Class II–IV symptoms. They reduce mortality and hospitalisation.
++ARNIs reduce mortality and hospitalisation. International guidelines now recommend them as first-line treatment for heart failure with reduced and mildly reduced ejection fraction. This pathway advises starting an ACE inhibitor or ARB, then switching to an ARNI if you have NYHA Class II–IV symptoms.
+ 
+-**How it works:** Combines a neprilysin inhibitor (which increases beneficial natriuretic peptides) with an angiotensin receptor blocker.
++**How it works:** Combines a neprilysin inhibitor (which stops the breakdown of natriuretic peptides) with an angiotensin receptor blocker.
+ 
+-**Important:** ACE inhibitor must be stopped at least 36 hours before starting — there is a risk of serious angioedema if they overlap. No washout period is needed when switching from an ARB.
++**Important:** ACE inhibitor must be stopped at least 36 hours before starting, to avoid potentially serious side effects. No washout period is needed when switching from an ARB.
+ 
+-**Starting dose:** 49 mg/51 mg (sacubitril/valsartan) twice daily; increase to 97 mg/103 mg twice daily after 2–4 weeks if tolerated. A lower starting dose (24 mg/26 mg twice daily) is used if blood pressure is low (less than 110 mmHg), age 75 or older, switching from low-dose or no ACEi/ARB, or with significant kidney or liver disease.
++**Starting dose:** 49 mg/51 mg (sacubitril/valsartan) twice daily; increase to 97 mg/103 mg twice daily after 2–4 weeks if tolerated. A lower starting dose (24 mg/26 mg twice daily) may be used if systolic blood pressure is less than 110 mmHg, age 75 or older, switching from low-dose or no ACEi/ARB, severe kidney impairment (eGFR less than 30 mL/min), or moderate liver impairment. It is avoided if systolic blood pressure is less than 100 mmHg.
+ 
+-**Contraindications:** End-stage kidney failure, severe liver impairment, history of angioedema with an ACE inhibitor or hereditary angioedema, pregnancy, concurrent ACE inhibitor use.
++**Contraindications:** End-stage kidney failure, severe liver impairment, history of angioedema with an ACE inhibitor or hereditary angioedema, pregnancy, concurrent ACE inhibitor use. Women of reproductive age must use contraception.
+ 
+ **Monitoring:** Weekly potassium, creatinine, and blood pressure during initiation and dose titration; then every 6–12 months once stable.
+ 
+@@ -284,21 +292,21 @@ Beta-blockers improve survival, reduce hospitalisations, and improve heart funct
+ 
+ **Key points:**
+ - Start at a low dose and double every 2–4 weeks, aiming for target dose within 3 months
+-- Do not stop beta-blockers suddenly — this can cause rebound hypertension and arrhythmias; reduce gradually over 1–2 weeks if stopping is necessary
++- Do not stop beta-blockers suddenly. This can cause rebound hypertension and arrhythmias; reduce gradually over 1–2 weeks if stopping is necessary
+ - Beta-1 selective agents (bisoprolol, metoprolol) may be considered in patients with well-controlled asthma or COPD
+-- If fluid overload worsens on beta-blockers, increase diuretics or halve the beta-blocker dose
++- If heart failure worsens on beta-blockers, increase diuretics or halve the beta-blocker dose
+ 
+ ---
+ 
+ ### Mineralocorticoid Receptor Antagonists (MRAs)
+ 
+-Spironolactone and eplerenone reduce fluid retention and improve survival.
++Spironolactone is the usual MRA. Eplerenone may be used in HFrEF if spironolactone is not tolerated.
+ 
+ **Dosing:** Starting dose 12.5–25 mg daily; titrate to 25–50 mg daily.
+ 
+ **Key monitoring:**
+-- Monitor creatinine and potassium at 1, 4, 8, and 12 weeks, then every 3 months
+-- Avoid if potassium is greater than 5 mmol/L or significant kidney disease (creatinine clearance less than 30 mL/min)
++- Monitor creatinine and potassium at 1, 4, 8, and 12 weeks, then every 3 months or during an intercurrent illness
++- Avoid or use cautiously if potassium is greater than 5 mmol/L or significant kidney disease (creatinine clearance less than 30 mL/min)
+ - SGLT2 inhibitors reduce the risk of high potassium when used together
+ - Monitor for low blood pressure and falls (particularly in older adults)
+ 
+@@ -306,12 +314,12 @@ Spironolactone and eplerenone reduce fluid retention and improve survival.
+ 
+ ### SGLT2 Inhibitors (Empagliflozin, Dapagliflozin)
+ 
+-SGLT2 inhibitors reduce cardiovascular death and heart failure hospitalisation in HFrEF, HFmrEF, and HFpEF. They are the newest pillar of heart failure therapy.
++SGLT2 inhibitors reduce cardiovascular death and heart failure hospitalisation in HFrEF, HFmrEF, and HFpEF.
+ 
+ **Dose:** 10 mg once daily for both agents.
+ 
+ **Key points:**
+-- Creatinine may rise and kidney function (eGFR) may decline in the first 6–8 weeks of starting — this does not usually require stopping the medication
++- Creatinine may rise and kidney function (eGFR) may decline in the first 6–8 weeks of starting. This does not usually require stopping the medication
+ - Can be started when eGFR is greater than 20 mL/min
+ 
+ **Contraindications:**
+@@ -319,9 +327,9 @@ SGLT2 inhibitors reduce cardiovascular death and heart failure hospitalisation i
+ - Ketogenic diet (risk of diabetic ketoacidosis)
+ - Do not initiate if eGFR is less than 20 mL/min
+ 
+-**Cautions:** Pregnancy and breastfeeding; kidney disease (eGFR 20–30 mL/min — maximum dose 10 mg); Type 1 diabetes or previous diabetic ketoacidosis (specialist approval required); severe alcohol use disorder.
++**Cautions:** Pregnancy and breastfeeding; kidney disease (eGFR 20–30 mL/min: maximum dose 10 mg); Type 1 diabetes or previous diabetic ketoacidosis (specialist approval required); severe alcohol use disorder.
+ 
+-**Signs of diabetic ketoacidosis (DKA):** If you develop nausea/vomiting, abdominal pain, rapid breathing, confusion, or feel unwell while on an SGLT2 inhibitor, seek urgent medical attention. Note: blood sugar may be near-normal in DKA on these medications (euglycaemic DKA).
++**Signs of diabetic ketoacidosis (DKA):** If you develop nausea or vomiting, abdominal pain, rapid breathing, or confusion while on an SGLT2 inhibitor, seek urgent medical attention. Note: blood glucose may be less than 11 mmol/L in DKA in people on empagliflozin (euglycaemic DKA).
+ 
+ ---
+ 
+@@ -334,11 +342,11 @@ Diuretics are used to relieve fluid overload (congestion). They are used in HFrE
+ - Moderate to severe heart failure: furosemide 40 mg daily initially
+ - Aim for weight loss of about 1 kg per day, returning to target dry weight
+ - Bumetanide has more reliable absorption and may be used when furosemide is not working well (1 mg bumetanide = 40 mg furosemide)
+-- A thiazide diuretic (e.g., bendroflumethiazide or metolazone) can be added as a short-term measure if not responding to the loop diuretic alone — this can cause very potent fluid loss (up to 5 litres or more in a day)
++- A thiazide diuretic (e.g., bendroflumethiazide or metolazone) can be added as a short-term measure if not responding to the loop diuretic alone. This can cause very potent fluid loss (up to 5 litres or more in a day)
+ 
+-**Important:** Avoid NSAIDs while taking diuretics — they can cause kidney injury and worsen heart failure.
++**Important:** Avoid NSAIDs while taking diuretics. They can cause kidney injury and worsen heart failure.
+ 
+-**Monitoring:** Potassium and creatinine weekly during titration, then every 3 months. Diuretics are titrated up and down according to symptoms and weight; the dose is reduced to the minimum needed once fluid overload is resolved.
++**Monitoring:** Potassium and creatinine weekly during titration, then every 3 months. Diuretics are titrated up and down according to symptoms and weight; the dose is reduced to the minimum needed, or stopped, once fluid overload is resolved.
+ 
+ ---
+ 
+@@ -346,7 +354,7 @@ Diuretics are used to relieve fluid overload (congestion). They are used in HFrE
+ 
+ Considered for patients in atrial fibrillation needing rate control, or in those with NYHA Class III–IV symptoms not adequately controlled with standard therapy.
+ 
+-- Aim for the lowest dose that improves symptoms (usual maintenance: 0.065–0.125 mg daily)
++- Aim for the lowest dose that improves symptoms (usual maintenance: 0.0625 to 0.125 mg daily)
+ - Check levels 7–10 days after starting (take blood at least 6 hours after the last dose)
+ - **Toxicity signs:** confusion, loss of appetite, nausea, visual disturbances, arrhythmias
+ - Do not raise the dose simply to reach a "therapeutic level" if the patient is doing well
+@@ -359,20 +367,24 @@ Considered for patients in atrial fibrillation needing rate control, or in those
+ 
+ Iron deficiency is present in about 50% of heart failure patients and is defined as ferritin less than 100 microgram/L, or ferritin 100–300 microgram/L with transferrin saturation less than 20%.
+ 
+-- Intravenous iron (ferric carboxymaltose) is used in HFrEF and HFmrEF — it improves symptoms, quality of life, and reduces hospitalisations, even without anaemia
++- Intravenous iron (ferric carboxymaltose) is used in HFrEF and HFmrEF. It improves symptoms and quality of life, and reduces hospitalisations, even without anaemia
+ - Oral iron is not effective at correcting iron deficiency in heart failure patients
+ 
+ ---
+ 
+ ## Management by Heart Failure Type
+ 
+-### HFrEF (Ejection Fraction Less Than 40%)
++If echocardiogram results are not available, heart failure is treated as HFrEF until proven otherwise.
++
++### HFrEF (Ejection Fraction 40% or Less)
++
++HFrEF means an ejection fraction of 40% or less.
+ 
+ Start all four GDMT pillars (ACEi/ARB/ARNI, beta-blocker, MRA, SGLT2 inhibitor) as soon as possible. If fluid overloaded, start a loop diuretic first and delay beta-blocker until fluid is controlled. Continue GDMT even if ejection fraction normalises with treatment.
+ 
+ ### HFmrEF (Ejection Fraction 41–49%)
+ 
+-Treat symptoms with a loop diuretic. SGLT2 inhibitors are recommended (reduce cardiovascular mortality and hospitalisation). Consider ACEi/ARB/ARNI, MRA, or beta-blocker — each has lower absolute benefit than in HFrEF, and strict dose titration may not be as necessary. Discuss with your doctor or cardiologist.
++Treat symptoms with a loop diuretic. SGLT2 inhibitors are recommended (reduce cardiovascular mortality and hospitalisation). Consider ACEi/ARB/ARNI, MRA, or beta-blocker. Each has lower absolute benefit than in HFrEF, and strict dose titration may not be as necessary. Discuss with your doctor or cardiologist.
+ 
+ ### HFpEF (Ejection Fraction 50% or More)
+ 
+@@ -380,18 +392,19 @@ Focus management on:
+ - **Underlying causes:** e.g., blood pressure control (ACEi, ARB, or MRA), atrial fibrillation management (beta-blocker)
+ - **Symptom relief:** loop diuretics for fluid overload, with close kidney function monitoring
+ - **SGLT2 inhibitors:** recommended to reduce cardiovascular mortality and hospitalisation
++- **Low-dose MRA:** may be considered to reduce hospital admissions, with close monitoring of kidney function and potassium
+ - **Comorbidities:** diabetes, obesity, ischaemic heart disease, sleep apnoea
+ - **Exercise training:** cardiac rehabilitation, supervised exercise
+ 
+-*Note: Several medications used in HFpEF can reduce blood pressure significantly. Your doctor will review medications carefully. NSAIDs, digoxin (unless in atrial fibrillation), glitazones, and non-dihydropyridine calcium channel blockers (diltiazem, verapamil) can worsen HFpEF and should generally be avoided.*
++*Note: Too much diuresis, or venodilators (e.g., isosorbide dinitrate), can cause a severe drop in cardiac output and blood pressure. Some patients benefit from venodilators, so they are not stopped without specialist advice. NSAIDs, glitazones, and non-dihydropyridine calcium channel blockers (diltiazem, verapamil) can worsen heart failure. Digoxin is avoided unless you have atrial fibrillation. Your doctor will review medications carefully.*
+ 
+ ---
+ 
+ ## Exacerbations (Worsening of Heart Failure)
+ 
+-If heart failure worsens, your doctor will assess fluid and heart status and look for a cause. Common causes include ischaemia, medication changes or non-adherence, infection, uncontrolled blood pressure, arrhythmia (especially atrial fibrillation), poor diet adherence, anaemia, kidney problems, or acute dehydration.
++If heart failure worsens, your doctor will assess fluid and heart status and look for a cause. Common causes include ischaemia, medication changes or non-adherence, infection, uncontrolled blood pressure, arrhythmia (especially atrial fibrillation), poor adherence to salt and fluid limits, anaemia, kidney problems, or acute dehydration.
+ 
+-If fluid overloaded: diuretics will be increased and a temporary fluid restriction (around 1.5 litres per day) may be recommended. Regular weight and symptom monitoring is essential.
++If fluid overloaded: diuretics may be increased and a temporary fluid restriction (around 1.5 litres per day) may be recommended. Regular weight and symptom monitoring is essential. Your doctor may also start an SGLT2 inhibitor, as there is evidence of benefit during this acute phase.
+ 
+ If the heart failure does not respond to outpatient treatment, or if performance status is poor, your doctor will discuss further specialist options or advance care planning.
+ 
+@@ -399,5 +412,7 @@ If the heart failure does not respond to outpatient treatment, or if performance
+ 
+ ## Patient Resources
+ 
+-- New Zealand Heart Foundation: [Staying Well with Heart Failure](https://www.heartfoundation.org.nz/your-heart/heart-conditions/heart-failure/staying-well-with-heart-failure), [Action Plan](https://www.heartfoundation.org.nz/your-heart/heart-conditions/heart-failure/action-plan), [Daily Checks Record Sheet](https://www.heartfoundation.org.nz/your-heart/heart-conditions/heart-failure/daily-checks-record-sheet)
+-- Healthify He Puna Waiora: [Heart Failure](https://healthify.nz/health-a-z/h/heart-failure), [Medicines for Heart Problems](https://healthify.nz/medicines-a-z/m/medicines-used-for-heart-problems), [Sodium and Salt](https://healthify.nz/health-a-z/s/sodium)
++- New Zealand Heart Foundation: [Staying Well with Heart Failure](https://assets.heartfoundation.org.nz/documents/heart-healthcare/heart-failure/staying-well-with-heart-failure-2022.pdf), [Action Plan](https://assets.heartfoundation.org.nz/documents/heart-healthcare/heart-failure/heart-failure-action-plan.pdf), [Daily Checks Record Sheet](https://assets.heartfoundation.org.nz/documents/heart-healthcare/heart-failure/heart-failure-daily-checks-record-2022.pdf), [Supporting Someone with Heart Failure](https://assets.heartfoundation.org.nz/documents/shop/heart-healthcare/supporting-someone-with-heart-failure1.pdf)
++- Healthify He Puna Waiora: [Heart Failure](https://healthify.nz/health-a-z/h/heart-failure), [Medicines Used for Heart Problems](https://healthify.nz/medicines-a-z/c/cardiovascular-medications), [Sodium and Salt](https://healthify.nz/hauora-wellbeing/s/sodium-salt)
++
++> This is general information, not personal medical advice. Heart failure treatment is tailored to each person. Always discuss changes to your medicines, fluids, or activity with your doctor.
+diff --git a/docs/pathway/hyperlipidaemia.md b/docs/pathway/hyperlipidaemia.md
+index b8f7696d..7b2753c2 100644
+--- a/docs/pathway/hyperlipidaemia.md
++++ b/docs/pathway/hyperlipidaemia.md
+@@ -8,15 +8,17 @@ summary: "High cholesterol: which statin to choose, statin side effects and into
+ 
+ # Hyperlipidaemia
+ 
+-*Source: Auckland Region HealthPathways*
++*Source: Auckland Region HealthPathways. Last reviewed: October 2018.*
+ 
+ This pathway covers the assessment and management of high blood lipids (cholesterol and triglycerides) in adults, including when treatment is needed and what targets to aim for.
+ 
++> This is general information from a guideline written for health professionals. It is not personal medical advice. Please discuss your results and any treatment decisions with your doctor.
++
+ ---
+ 
+ ## Red Flags — Seek Medical Attention Promptly
+ 
+-- Triglycerides > 11 mmol/L — discuss with your doctor urgently as this significantly raises the risk of pancreatitis
++- Triglycerides > 11 mmol/L. Discuss this with your doctor promptly.
+ 
+ ---
+ 
+@@ -29,23 +31,23 @@ For screening, non-fasting blood lipids are used first. If triglyceride levels a
+ Before considering treatment, your doctor will typically:
+ 
+ - Measure non-fasting lipids on at least 2 occasions (not during an acute illness)
+-- Check for secondary causes: thyroid function (TSH), kidney function (creatinine), liver function (LFTs), blood glucose or HbA1c, and a urine dipstick for protein
++- Check for secondary causes: thyroid function (TSH), kidney function (creatinine), liver function (LFTs), fasting blood glucose or HbA1c, and a urine dipstick for protein
+ 
+-Cardiovascular risk is then calculated to guide management. CT calcium scoring and carotid ultrasound are not routinely recommended for asymptomatic individuals, though CT calcium scoring may help selected patients with intermediate or high calculated CVD risk who are uncertain about the benefits of preventive treatment.
++Cardiovascular risk is then calculated to guide management. CT calcium scoring and carotid ultrasound are not routinely recommended for asymptomatic individuals. CT calcium scoring improves the prediction of cardiovascular risk compared with standard risk calculation. It may help selected patients with intermediate or high calculated CVD risk who are uncertain about the benefits of preventive treatment. It is usually not useful if you already have known CVD, since there is already a strong reason for preventive medication.
+ 
+ ### Very High Risk Patients
+ 
+-Your doctor will classify you as very high risk if you have any of:
++Your doctor will classify you as very high risk, and manage you in the high risk category, if you have any of:
+ 
+-- Previous CVD event — angina, heart attack (MI), coronary intervention (PCI or CABG), TIA, ischaemic stroke, or peripheral vascular disease
++- Previous CVD event: angina, heart attack (MI), coronary intervention (PCI or CABG), TIA, ischaemic stroke, or peripheral vascular disease
+ - eGFR < 30 mL/min/1.73 m² (severely reduced kidney function)
+ - Asymptomatic carotid or coronary disease
+-- Certain genetic lipid disorders — familial hypercholesterolaemia (FH), familial defective ApoB (FDB), or familial combined hyperlipidaemia (FCH)
+-- Diabetes with overt nephropathy (albumin/creatinine ratio ≥ 30 mg/mmol or urinary albumin ≥ 200 mg/L)
++- Certain genetic lipid disorders: familial hypercholesterolaemia (FH), familial defective ApoB (FDB), or familial combined dyslipidaemia (FCH)
++- Diabetes with overt nephropathy (albumin/creatinine ratio 30 mg/mmol or urinary albumin 200 mg/L)
+ 
+ ### Patients Aged ≥ 75 Years
+ 
+-Your doctor will consider cardiovascular risk alongside co-morbidities, risks and benefits of treatment, and life expectancy. Many patients aged ≥ 75 years benefit from cardiovascular risk assessment. In New Zealand, average life expectancy at age 75 is approximately 13.5 years for females and 11.9 years for males.
++Your doctor will consider cardiovascular risk alongside co-morbidities, risks and benefits of treatment, and life expectancy. Many patients aged ≥ 75 years would benefit from cardiovascular risk assessment. In New Zealand, average life expectancy at age 75 is 13.5 years for females and 11.9 years for males. At age 80 years it is 9.9 years for females and 8.8 years for males.
+ 
+ ---
+ 
+@@ -63,8 +65,9 @@ Your doctor will use shared decision-making for all treatment decisions, weighin
+ 
+ ### Lipid-Lowering Targets
+ 
+-- **Very high risk patients:** LDL cholesterol target of < 1.4 mmol/L is strongly recommended, in addition to dietary changes
+-- **High CVD risk (> 15%):** CSANZ also recommends LDL < 1.4 mmol/L with lipid-lowering treatment
++- **5-year CVD risk ≥ 15% and very high risk patients:** aim for LDL cholesterol < 1.4 mmol/L. Lipid-lowering drug treatment with this target is strongly recommended, in addition to dietary changes
++- **CSANZ:** the Cardiac Society of Australia and New Zealand now recommends LDL < 1.4 mmol/L with lipid-lowering treatment for a 5-year CVD risk > 15%, in addition to dietary changes
++- If the LDL target is not reached, your doctor may arrange a specialist lipid assessment
+ 
+ ### Familial Hypercholesterolaemia
+ 
+@@ -74,45 +77,47 @@ Your doctor may consider familial hypercholesterolaemia (FH) if:
+ - Total cholesterol > 6 mmol/L and LDL > 4 mmol/L with a family history of premature cardiovascular disease (a first-degree relative who died or was hospitalised from heart attack or stroke before age 50)
+ - A family history of a confirmed genetic lipid disorder
+ 
+-FH affects approximately 1 in 500 people. If untreated, 50% of males will have had a heart attack by age 50, and 50% of females by age 60. Treatment is recommended from teenage years onwards and significantly reduces this risk. Your doctor will arrange a specialist assessment if FH is suspected.
++FH affects approximately 1 in 500 people. If untreated, 50% of males will have had a heart attack by age 50, and 50% of females by age 60. Treatment is recommended from teenage years onwards and significantly reduces the risk of heart disease. Your doctor will arrange a specialist assessment if FH is suspected.
+ 
+ ---
+ 
+ ## Lifestyle and Dietary Changes
+ 
+-Lifestyle changes have a modest but meaningful effect on LDL cholesterol and a greater effect on triglycerides. Your doctor will recommend:
++Lifestyle changes usually have a modest effect on LDL cholesterol, though a greater effect on triglycerides. Changes that reduce overall cardiovascular risk are important. Your doctor will recommend:
+ 
+ - **Weight loss** if relevant
+ - **Increased physical activity**
+ - **Smoking cessation**
+-- **Dietary changes:** Reducing saturated fat and substituting it with mono- and polyunsaturated fats is the most effective dietary approach to lowering LDL while maintaining or raising HDL
++- **Dietary changes:** The benefits of cutting saturated fat are controversial, but New Zealand Ministry of Health guidelines suggest dietary advice about reducing it. Replacing saturated fat with mono- and polyunsaturated fats is the most effective dietary approach to lowering LDL while maintaining or raising HDL
+ 
+ ---
+ 
+ ## Treatment for Specific Lipid Profiles
+ 
++The right medication depends on your lipid profile and your cardiovascular risk assessment. International guidelines vary on the thresholds for starting medication in primary prevention, so shared decision-making and your own choice are important.
++
+ ### High Total Cholesterol
+ 
+ - In patients with a TC:HDL-C ratio ≥ 8 after lifestyle changes, lipid-lowering treatment is usually recommended regardless of combined CVD risk
+-- **Statins** are first-line treatment and are proven to reduce cardiovascular events and death
++- **Statins** are first-line treatment and have been shown to reduce cardiovascular illness and death
+ - In **primary prevention** (no previous CVD event), atorvastatin or simvastatin up to 40 mg are used
+ - In **secondary prevention** (existing CVD), atorvastatin up to 80 mg is used
+ - After a stroke or TIA, 80 mg atorvastatin is recommended regardless of pre-treatment cholesterol level
+ 
+ ### Statin Adherence
+ 
+-Long-term adherence to statins is important but often poor — around 4 in 10 patients stop taking statins regularly within 12 months of an acute coronary event. Your doctor will ensure you understand the proven long-term benefits of statins for reducing heart attacks, strokes, and death, particularly if you have a history of MI, stroke, or very high cardiovascular risk.
++Long-term adherence to statins is important but often poor. Around 4 in 10 patients are not taking statins regularly in the 12 months after an acute coronary event. Your doctor will ensure you understand the proven long-term benefits of statins for reducing heart attacks, strokes, and death, particularly if you have a history of MI, stroke, or very high cardiovascular risk.
+ 
+ ### Statin Intolerance
+ 
+-Statin intolerance — particularly muscle aches (myalgia) — is over-diagnosed. Good evidence from placebo-controlled trials shows that most perceived statin side effects are not caused by the statin itself. Many patients can be successfully rechallenged.
++Statin intolerance, particularly muscle aches (myalgia), is over-diagnosed. Good evidence from placebo-controlled trials shows that most perceived statin side effects are not caused by the statin itself. Many, but not all, patients with possible side effects can be successfully rechallenged.
+ 
+ Your doctor may take the following steps:
+ 
+ - **Mild or moderate symptoms:**
+   - Stop for 2–3 weeks, then restart at half the previous dose
+   - If symptoms persist, repeat this step or switch to an alternate statin
+-  - Rosuvastatin is generally better tolerated; 20 mg rosuvastatin is roughly equivalent in LDL-lowering to 40 mg atorvastatin or 80 mg simvastatin, with fewer side effects
++  - Your doctor may consider rosuvastatin, which is generally better tolerated; 20 mg rosuvastatin is equivalent in LDL-lowering to 40 mg atorvastatin and 80 mg simvastatin, with fewer side effects
+   - Note: Simvastatin 80 mg is associated with a high rate of muscle inflammation (myositis) and other statins are preferred for more effective LDL reduction
+   - If lipid targets are not reached, your doctor will titrate back up to the maximum tolerated dose
+ 
+@@ -125,40 +130,41 @@ Your doctor may take the following steps:
+ 
+ Your doctor may consider the following if statin therapy alone is insufficient:
+ 
+-- **Ezetimibe** — added as a second-line option after a statin. The IMPROVE-IT trial (2015) showed ezetimibe added to simvastatin reduced cardiovascular events by approximately 11%. Can be used in combination with a statin, or alone in patients who cannot tolerate statins. Usually started with specialist advice.
+-- **Resins** (e.g., colestid) — can be added to the highest tolerated statin dose; usually started with specialist advice
+-- **Fibrates** (e.g., bezafibrate, gemfibrozil) — not used unless triglycerides are raised and HDL is low
+-- **PCSK9 inhibitors and LDL apheresis** — newer treatments that may be appropriate for some very high risk patients
++- **Ezetimibe:** added as a second-line option after a statin, at the highest tolerated statin dose, if the target is not reached. The IMPROVE-IT trial (2015) showed ezetimibe added to simvastatin reduced cardiovascular events by approximately 11%, but it did not reduce mortality. It can be used with a statin, or in patients who cannot tolerate statins and have not reached their LDL goal. It is not usually recommended as the only LDL-lowering medication. Usually started in secondary care or with specialist advice.
++- **Resins** (e.g., colestid): can be added to the highest tolerated statin dose; usually started with specialist advice
++- **Fibrates** (e.g., bezafibrate, gemfibrozil): not used unless triglycerides are raised and HDL is low
++- **Specialist lipid assessment:** if the target cannot be reached with maximum tolerated therapy
++- **PCSK9 inhibitors and LDL apheresis:** new treatments that may be appropriate for some high risk patients
+ 
+ ### High Fasting Triglycerides
+ 
+ High triglycerides may be associated with high alcohol intake, poorly controlled diabetes, or other secondary causes.
+ 
+-**Dietary measures are first line** and are often effective:
++**Dietary measures are first line** and are often effective, limiting the need for drug therapy:
+ 
+ - Limit alcohol
+ - Reduce sugar intake
+ - Reduce total fat and calorie intake
+ 
+-Blood triglyceride levels are very diet-sensitive — improvements can be seen within 2–3 weeks.
++Blood triglyceride levels are very diet-sensitive. Improvements can be seen within 2–3 weeks.
+ 
+ If fasting triglycerides ≥ 1.7 mmol/L on two occasions, your doctor will advise alcohol cessation, dietary changes, and better diabetes control where relevant.
+ 
+-If newly diagnosed diabetes with poor control and fasting triglycerides ≥ 10 mmol/L, your doctor may consider early insulin initiation and will recheck levels in 2–3 weeks.
++If newly diagnosed diabetes with poor control and fasting triglycerides ≥ 10 mmol/L, your doctor may consider early insulin initiation and will recheck levels in 2–3 weeks. If they are still ≥ 10 mmol/L, your doctor will arrange a specialist lipid assessment.
+ 
+ If triglycerides remain > 5 mmol/L after dietary measures, your doctor will arrange a specialist lipid assessment.
+ 
+-**Medications for high triglycerides:**
++**Medications for high triglycerides:** your doctor may consider these in special situations, to prevent pancreatitis or reduce cardiovascular risk.
+ 
+ - Statins are used first if there is combined dyslipidaemia, as long as triglycerides are < 5 mmol/L
+ - If triglycerides remain > 2.3 mmol/L and HDL is low (< 1 mmol/L), a fibrate may be added
+ 
+-Patient dietary information: [Healthinfo — High Triglycerides](https://www.healthinfo.org.nz/High-triglycerides.htm)
++Patient dietary information: [Healthinfo: High Triglycerides](https://www.healthinfo.org.nz/High-triglycerides.htm)
+ 
+ ### High HDL (> 2 mmol/L)
+ 
+ - A very high HDL is not necessarily protective
+-- If HDL is high, TC:HDL ratios should not be used to calculate cardiovascular risk — your doctor will look at other risk factors instead
++- If HDL is high, TC:HDL ratios should not be used to calculate cardiovascular risk. Your doctor will look at other risk factors instead
+ 
+ ### Low HDL (< 0.7 mmol/L)
+ 
+@@ -175,7 +181,9 @@ Once treatment has been started, your doctor will monitor:
+ 
+ - **Non-fasting lipids every 6–12 months** until the agreed target has been reached
+ - **Annually** once the target is achieved
+-- **Compliance** at each visit — non-compliance and statin intolerance are both common
++- **Compliance** at each visit, since non-compliance and statin intolerance are both common
++
++If you are at very high risk and targets are not reached, your doctor will arrange a specialist lipid assessment.
+ 
+ Your doctor will also reassess all cardiovascular risk factors at each monitoring visit. The best outcomes come from reducing all risk factors together, not lipids alone.
+ 
+@@ -185,4 +193,4 @@ Your doctor will also reassess all cardiovascular risk factors at each monitorin
+ 
+ - Healthify He Puna Waiora: [High Cholesterol](https://healthify.nz/health-a-z/c/cholesterol-high)
+ - Healthinfo: [High Cholesterol](https://www.healthinfo.org.nz/High-cholesterol.htm)
+-- Canterbury DHB: [Omega 3 and Cardiovascular Disease](https://edu.cdhb.health.nz/Patients-Visitors/patient-information-pamphlets/Documents/Omega-3%20Fish%20Oils%20and%20Heart%20Disease.pdf)
++- Patient leaflet: [Omega 3 and Cardiovascular Disease](https://edu.cdhb.health.nz/Patients-Visitors/patient-information-pamphlets/Documents/Omega-3%20Fish%20Oils%20and%20Heart%20Disease.pdf)
+diff --git a/docs/pathway/hypertension-in-adults.md b/docs/pathway/hypertension-in-adults.md
+index c93f0c9c..107b3853 100644
+--- a/docs/pathway/hypertension-in-adults.md
++++ b/docs/pathway/hypertension-in-adults.md
+@@ -8,15 +8,19 @@ summary: "Clinical pathway for hypertension in adults: diagnosis thresholds, blo
+ 
+ # Hypertension in Adults
+ 
+-*Source: Auckland Region HealthPathways*
++*Source: Auckland Region HealthPathways. Last reviewed: July 2021.*
+ 
+-This pathway covers the assessment and management of high blood pressure in adults — from diagnosis through to long-term treatment.
++This pathway covers the assessment and management of high blood pressure in adults, from diagnosis through to long-term treatment.
++
++> This is general information from a clinical pathway, not personal medical advice. Always discuss your blood pressure readings and any treatment with your doctor.
+ 
+ ---
+ 
+ ## Red Flags — Seek Emergency Care
+ 
+-**Hypertensive emergency** (high BP, often > 180/110 mmHg, with acute organ damage) requires emergency assessment:
++**Symptomatic hypertension** (headache or visual disturbance) needs same-day medical assessment.
++
++**Hypertensive emergency** is very high BP (often > 180/110 mmHg) with acute organ damage, such as chest pain, stroke symptoms, breathlessness from fluid on the lungs, or confusion. This is an emergency: call 111 or go to the emergency department. Signs of organ damage include:
+ 
+ - Heart failure or acute pulmonary oedema
+ - Acute myocardial infarction
+@@ -26,13 +30,11 @@ This pathway covers the assessment and management of high blood pressure in adul
+ - Flame-shaped haemorrhages on fundoscopy
+ - Cerebral infarction or haemorrhagic stroke
+ 
+-**Symptomatic hypertension** — headache or visual disturbance with a very high BP — also warrants urgent assessment.
+-
+ ---
+ 
+ ## Background
+ 
+-Hypertension is an important contributor to cardiovascular disease. Blood pressure category is defined by the highest level — whether systolic or diastolic. End-organ damage is more closely associated with ambulatory blood pressure than in-practice measurements.
++Hypertension is an important contributor to cardiovascular disease. Blood pressure category is defined by the highest level, whether systolic or diastolic. End-organ damage is more closely associated with ambulatory blood pressure than in-practice measurements.
+ 
+ Diagnosis is important because treatment is typically life-long. Treatment decisions are individualised based on overall cardiovascular risk.
+ 
+@@ -44,9 +46,9 @@ Diagnosis is important because treatment is typically life-long. Treatment decis
+ 
+ Before starting antihypertensive medication:
+ 
+-- Take an average of 2 seated readings after the patient has rested for at least 5 minutes.
++- Take an average of 2 seated readings after you have rested for at least 5 minutes.
+ - Repeat on 3 separate occasions.
+-- Consider an automated machine with the patient alone in a quiet room — this can be more informative than supervised manual measurement.
++- Consider an automated machine with you alone in a quiet room, taking serial readings over 5 minutes. This can be more informative than supervised manual measurement.
+ - Check BP in both arms during the initial diagnostic phase; use the arm with the higher reading for subsequent measurements.
+ - Use the correct cuff size.
+ 
+@@ -59,31 +61,41 @@ Before starting antihypertensive medication:
+ | 35–44 cm | Large adult (16 × 36 cm) |
+ | 45–52 cm | Adult thigh (16 × 42 cm) |
+ 
+-Automated devices should be validated, maintained, and regularly calibrated. They may occasionally over- or under-estimate BP — use a manual device if in doubt.
++Automated devices should be validated, maintained, and regularly calibrated. They may at times over- or under-estimate BP. A manual device may be used where appropriate.
+ 
+ **Diagnostic thresholds:**
+ 
+ - Diagnose hypertension if > 140/90 mmHg.
+ - Consider hypertensive urgency if BP > 180/110 mmHg without organ damage.
+-- Consider hypertensive emergency if BP is very high with evidence of acute organ damage (see Red Flags above).
++- Consider hypertensive emergency if there is acute target organ damage or dysfunction (see Red Flags above).
++
++High blood pressure is otherwise usually without symptoms. Your doctor may also consider whether a blood pressure medicine is causing symptoms that seem to come from high blood pressure.
+ 
+ ### Hypertensive Urgency
+ 
+-BP > 180/110 mmHg that is not immediately life-threatening — sometimes associated with headache or visual disturbance, but without target organ damage. Your doctor will treat with oral antihypertensives and review daily.
++BP > 180/110 mmHg that is not immediately life-threatening. It is sometimes associated with headache or visual disturbance, but without target organ damage. Your doctor will treat with oral antihypertensives and review daily:
++
++- They may start 2 complementary medicines (ACEi or ARB plus a dihydropyridine CCB) at adequate (non-minimum) doses.
++- Diuretics are avoided, as people with hypertensive urgency are often low in potassium (hypokalaemic).
++- Daily follow-up checks BP, signs of a hypertensive emergency, and medicines. The gap between visits may slowly lengthen once BP is < 170/105.
+ 
+ ### Ambulatory and Home Blood Pressure Monitoring
+ 
+-Your doctor may recommend ambulatory blood pressure monitoring (ABPM) or home blood pressure monitoring (HBPM) if:
++Ambulatory blood pressure monitoring (ABPM) can be considered the gold standard for diagnosing hypertension. Hypertension can be misdiagnosed in up to 20% of patients if the diagnosis is based only on office readings.
++
++Your doctor may recommend ABPM or home blood pressure monitoring (HBPM) if:
+ 
+ - Suspected white coat hypertension.
+ - Suspected nocturnal hypertension (in sleep apnoea, diabetes, or chronic kidney disease).
+ - Marked variability between clinic and home readings.
+ - Autonomic, postprandial, postural, or drug-induced hypotension.
+ 
++ABPM is also particularly useful for younger patients, to check how well treatment is working, when BP is resistant to several medicines, and in diabetes or high risk of obstructive sleep apnoea.
++
+ **Home monitoring protocol:**
+ 
+-- Use a validated automatic monitor (upper arm, not wrist) with memory storage.
+-- Rest seated for 5 minutes before each reading; measure before medication, food, tea, or coffee.
++- Use a validated automatic monitor, preferably with memory storage.
++- Rest seated for 5 minutes before each reading; measure before medication, food, tea, coffee, or vigorous exercise.
+ - Record morning and evening (2 readings each time) for 7 days.
+ - Calculate the average over the full 7 days, excluding day 1.
+ - An average of ≥ 135/85 mmHg indicates hypertension.
+@@ -96,7 +108,7 @@ Your doctor may recommend ambulatory blood pressure monitoring (ABPM) or home bl
+ | Asleep | ≥ 120/70 mmHg |
+ | 24-hour average | ≥ 130/80 mmHg |
+ 
+-Night systolic should be at least 10% lower than daytime. Patients who do not show this dipping pattern are at higher cardiovascular risk.
++Use validated machines, not wrist monitors. Night systolic should be at least 10% lower than daytime. Patients who do not show this dipping pattern are at higher cardiovascular risk.
+ 
+ **Approximate equivalence between office and ambulatory/home readings:**
+ 
+@@ -113,7 +125,7 @@ Your doctor will look for symptoms suggesting an underlying cause for the hypert
+ | Possible cause | Features |
+ |---|---|
+ | Obstructive sleep apnoea | Obesity, snoring, daytime sleepiness, Epworth score ≥ 10 |
+-| Hypokalaemia (e.g., primary aldosteronism) | Muscle weakness, cramps, hypotonia |
++| Hypokalaemia | Muscle weakness, cramps, hypotonia |
+ | Hypothyroidism | Tiredness, weight gain, bradycardia |
+ | Hyperthyroidism | Heat sensitivity, weight loss, tachycardia |
+ | Cushing syndrome | Central obesity, skin pigmentation, round flushed face |
+@@ -127,15 +139,17 @@ Your doctor will look for symptoms suggesting an underlying cause for the hypert
+ - Corticosteroids
+ - SNRIs and MAOIs
+ - Clozapine, bupropion, decongestants, diet pills
+-- Excessive alcohol, liquorice, caffeine products, energy drinks, cocaine, amphetamines
++- Excessive alcohol, liquorice, caffeine pills and products, energy drinks and guarana, cocaine, amphetamines
++
++Your doctor will also ask about intolerance to any blood pressure medicine, and whether medicines are being taken as prescribed.
+ 
+ ### Risk Factors
+ 
+ - Male sex; increasing age
+-- Lifestyle factors — smoking, obesity, excess alcohol, recreational drug use
+-- Family history of kidney disease, hypertension, diabetes, dyslipidaemia, stroke, or early-onset heart disease
++- Lifestyle factors: smoking, obesity, alcohol intake, recreational drug use
++- Family history of kidney disease, hypertension, diabetes, dyslipidaemia, stroke, or early-onset heart disease (men aged < 55 years, women aged < 65 years)
+ - Dyslipidaemia, diabetes, or prediabetes
+-- Depression or other psychosocial factors
++- Depression, social isolation, or other psychosocial factors
+ 
+ ### Cardiovascular and Renal Disease
+ 
+@@ -151,33 +165,34 @@ Your doctor will check for existing:
+ 
+ ### Examination
+ 
+-Your doctor will typically measure pulse rate, rhythm and character; jugular venous pressure; waist circumference; and BMI. They will listen to the heart and lungs, assess for arterial disease, check for kidney enlargement, and look for signs of endocrine or retinal abnormalities.
++Your doctor will typically measure pulse rate, rhythm and character; jugular venous pressure; waist circumference; and BMI. They will listen to the heart and lungs, assess for arterial disease, check for kidney enlargement, and look for signs of endocrine or retinal abnormalities and any focal neurological signs.
+ 
+ ### Investigations
+ 
+ **Initial investigations** (to assess end-organ damage and associated conditions):
+ 
+-- Urine: urinalysis for blood and protein, albumin-to-creatinine ratio (ACR)
++- Urine: urinalysis for blood and protein, microalbuminuria and albumin-to-creatinine ratio (ACR)
+ - Blood: sodium, potassium, creatinine, eGFR, TSH, FBC, HbA1c, lipid profile, liver function tests
+ - ECG: check for left ventricular hypertrophy, previous MI
+ 
+ **Further investigations** (if clinically indicated):
+ 
+-- Plasma aldosterone-renin ratio — for primary aldosteronism (ideally before starting beta blockers, diuretics, ACEi, or ARBs; patient should have breakfast and be ambulatory for at least 1 hour before the test)
+-- Plasma-free metanephrine or 24-hour urinary metanephrine — if phaeochromocytoma is suspected
+-- 24-hour urinary cortisol or 1 mg overnight dexamethasone suppression test — for Cushing syndrome
+-- Echocardiogram — for left ventricular hypertrophy
++- Plasma aldosterone-renin ratio, for primary aldosteronism (ideally before starting beta blockers, diuretics, ACEi, or ARBs; patient should have breakfast and be ambulatory for at least 1 hour before the test)
++- Plasma-free metanephrine or 24-hour urinary metanephrine, if phaeochromocytoma is suspected
++- 24-hour urinary cortisol or 1 mg overnight dexamethasone suppression test, for Cushing syndrome
++- Echocardiogram, for left ventricular hypertrophy
++- Sleep apnoea investigations, if obstructive sleep apnoea is suspected
+ 
+ ### Secondary Hypertension
+ 
+-Consider this if:
++This is uncommon. Your doctor may consider it with severe or resistant hypertension, especially in a younger person, or if:
+ 
+-- Hypertension resistant to 3 agents from different classes at adequate doses.
++- Hypertension persists despite 3 agents from different classes taken together.
+ - Acute rise in BP over a previously stable value.
+ - Age < 40 years with no family history and no obesity.
+-- Malignant hypertension (very high BP with end-organ damage).
++- Malignant hypertension (severe hypertension with signs of end-organ damage).
+ 
+-Causes include renal disease (e.g., polycystic kidney disease, renal artery stenosis), coarctation of the aorta, endocrine disorders (hyperaldosteronism, Cushing syndrome, phaeochromocytoma), obstructive sleep apnoea, and medications (steroids, NSAIDs, amphetamines).
++Causes include renal disease (e.g., polycystic kidney disease, renal artery stenosis), coarctation of the aorta, endocrine disorders (hyperaldosteronism, Cushing syndrome, phaeochromocytoma), obstructive sleep apnoea, medications (steroids, NSAIDs, amphetamine-type drugs), and baroreflex failure.
+ 
+ ### Renovascular Hypertension
+ 
+@@ -193,15 +208,19 @@ Your doctor may consider renovascular causes (e.g., renal artery stenosis) if:
+ 
+ Hypertension is mostly managed in primary care.
+ 
+-If a secondary cause is suspected, your doctor will investigate and manage accordingly — this may involve specialist referral.
++If a secondary cause is suspected, your doctor will investigate and manage it according to the cause. This may involve specialist referral.
++
++Your doctor may also seek a specialist assessment if hypertension is resistant (BP > 140/90 despite good adherence to maximally tolerated triple therapy), if you are aged < 30 years, if a secondary cause is suspected, or if it is uncertain whether to start medication.
+ 
+ ### When Are Medications Indicated?
+ 
+ Your doctor will base this on your 5-year cardiovascular disease (CVD) risk:
+ 
+-- **BP ≥ 160/100 mmHg** (or ≥ 150/95 on ambulatory/home monitoring) after lifestyle modification → treat with medication regardless of CVD risk.
+-- **5-year CVD risk ≥ 15% (high)** with persistent BP ≥ 130/80 (or ≥ 125/75 on monitoring) → lifestyle changes and medication strongly recommended.
+-- **5-year CVD risk 5–15% (moderate)** with persistent BP ≥ 140/90 (or ≥ 135/85 on monitoring) → lifestyle changes, and discuss risks and benefits of medication.
++- **Office BP ≥ 160 mmHg systolic or ≥ 100 mmHg diastolic** (or ≥ 150/95 on ambulatory/home monitoring) after lifestyle modification: treat with medication regardless of CVD risk.
++- **5-year CVD risk ≥ 15% (high)** with persistent BP ≥ 130/80 (or ≥ 125/75 on monitoring): lifestyle changes and medication strongly recommended.
++- **5-year CVD risk 5–15% (moderate)** with persistent BP ≥ 140/90 (or ≥ 135/85 on monitoring): lifestyle changes, and discuss risks and benefits of medication.
++
++Current New Zealand cardiovascular guidelines are more conservative than European and NICE guidelines. They recommend treatment only at higher CVD risk levels.
+ 
+ For each 10 mmHg reduction in systolic BP, there is approximately a 20% relative reduction in cardiovascular events over 5 years.
+ 
+@@ -215,19 +234,19 @@ For each 10 mmHg reduction in systolic BP, there is approximately a 20% relative
+ 
+ ### Lifestyle Interventions
+ 
+-**Physical activity:**
++**Physical activity:** some form of activity is encouraged regardless of age, ability, or other conditions.
+ 
+ - Ages 18–64: aim for 150–300 minutes of moderate-intensity activity or 75–150 minutes of vigorous activity per week, plus muscle-strengthening on at least 2 days.
+ - Ages > 65: aim for at least 30 minutes of moderate-intensity activity on most days.
+ 
+-**Smoking cessation:** Strongly recommended — your doctor can discuss nicotine replacement therapy, bupropion, or varenicline.
++**Smoking cessation:** your doctor can refer you to [Quitline](https://quit.org.nz/). They may consider nicotine replacement therapy, or bupropion or varenicline, if you smoke more than 10 cigarettes a day and have no contraindications.
+ 
+-**Weight management:** If waist circumference is > 94 cm (men) or > 80 cm (women) and/or BMI > 25 kg/m², reducing caloric intake and increasing activity is advised.
++**Weight management:** If waist circumference is > 94 cm (men) or > 80 cm (women) and BMI > 25 kg/m², reducing kilojoule intake and increasing activity is advised.
+ 
+ **Dietary changes:**
+ 
+-- Eat more vegetables, fruits, wholegrains, and low-fat dairy (DASH diet approach).
+-- Restrict salt to ≤ 4 g/day (65 mmol sodium/day).
++- Eat more vegetables, fruits, and grains, including low-fat dairy (DASH diet approach).
++- Restrict salt to ≤ 4 g/day (65 mmol sodium/day). Choose low-salt and reduced-salt foods.
+ - Limit alcohol: no more than 2 standard drinks in one sitting; ≤ 15 standard drinks/week for men, ≤ 10 for women; at least 2 alcohol-free days per week.
+ 
+ ### Antihypertensive Medications
+@@ -239,7 +258,9 @@ Your doctor will select the most appropriate medication based on your age, other
+ - **Aged < 55 years:** ACE inhibitor (ACEi) or angiotensin-II receptor blocker (ARB).
+ - **Aged ≥ 55 years:** Calcium channel blocker (CCB) or thiazide diuretic.
+ 
+-If systolic BP is > 160 mmHg, your doctor may start a combination of 2 complementary drugs (ACEi or ARB plus CCB or thiazide) at low doses from the outset.
++If systolic BP is > 160 mmHg, your doctor may start a combination of 2 complementary drugs (ACEi or ARB plus a dihydropyridine CCB or a thiazide diuretic) at low doses.
++
++Medicines are usually started at non-minimum doses, except in elderly (aged > 75 years) or frail patients.
+ 
+ Beta blockers are reserved for inadequate BP control with the other 3 main classes, or if specific indications exist (e.g., heart disease, increased sympathetic drive, ACEi intolerance).
+ 
+@@ -253,34 +274,36 @@ Beta blockers are reserved for inadequate BP control with the other 3 main class
+ | Diabetes | ACEi or ARB, or CCB (avoid beta blockers or thiazide diuretics) |
+ | Chronic kidney disease | ACEi or ARB (especially with albuminuria) |
+ | Benign prostatic hypertrophy | Alpha blocker (watch for postural hypotension, especially in older patients) |
+-| Asthma | Avoid beta blockers; cardioselective beta blockers (e.g., metoprolol) may be used cautiously in stable COPD |
++| Asthma or COPD | Beta blockers are generally contraindicated in asthma; cardioselective beta blockers (e.g., metoprolol) can be used cautiously in stable COPD, especially if specifically indicated (e.g., heart failure) |
+ 
+ **Effective drug combinations:**
+ 
+-- ACEi or ARB + CCB — particularly in diabetes or dyslipidaemia
+-- ACEi or ARB + thiazide diuretic — particularly in heart failure or post-stroke
+-- ACEi or ARB + beta blocker — after MI or in heart failure
+-- Beta blocker + dihydropyridine CCB — in heart disease
++- ACEi or ARB + CCB, particularly in diabetes or dyslipidaemia
++- ACEi or ARB + thiazide diuretic, particularly in heart failure or post-stroke
++- ACEi or ARB + beta blocker, after MI or in heart failure
++- Beta blocker + dihydropyridine CCB, in heart disease
+ 
+ **Combinations to avoid:**
+ 
+-- Beta blocker + verapamil or diltiazem — risk of heart block (unless specifically indicated for AF rate control)
+-- ACEi + ARB — increased risk of hypotension, syncope, and renal dysfunction
+-- Thiazide + beta blocker — not recommended in glucose intolerance, metabolic syndrome, or diabetes
++- Beta blocker + verapamil or diltiazem: risk of heart block (unless specifically indicated for AF rate control)
++- ACEi + ARB: increased risk of hypotension, syncope, and renal dysfunction
++- Thiazide + beta blocker: not recommended in glucose intolerance, metabolic syndrome, or diabetes
+ 
+ **Monitoring:**
+ 
+ - Check electrolytes and creatinine 2 weeks after starting or increasing the dose of an ACEi, ARB, or diuretic.
+ - Review BP monthly until target is reached.
+-- If not at target, titrate up one agent, then add a third if needed.
++- If not at target, add a second agent from a different class at low dose. If still not at target, titrate up one agent, then add a third if needed.
++
++**Perindopril (Coversyl) note, August 2026:** the salt in Coversyl is changing. This needs a switch to a slightly different dose and a new prescription. See Pharmac: [Perindopril (Coversyl): Your Medicine is Updating](https://www.pharmac.govt.nz/medicine-funding-and-supply/medicine-notices/coversyl).
+ 
+ ### Blood Pressure Targets
+ 
+ Research on optimal BP targets continues. Your doctor will set an individual target, but general guidance is:
+ 
+-- **General minimum target:** ≤ 140/90 mmHg.
++- **General minimum target once medication is started:** ≤ 140/90 mmHg.
+ - **Younger patients and those with high CVD risk, diabetes, CKD, coronary artery disease, or left ventricular hypertrophy:** ideally < 130/80 mmHg.
+-- **Elderly (> 75 years) or frail patients:** < 130/80 mmHg if tolerable, otherwise ≤ 140/90 mmHg; monitor carefully for dizziness and falls from low BP.
++- **Elderly (> 75 years) or frail patients:** < 130/80 mmHg if tolerable, otherwise ≤ 140/90 mmHg; monitor for orthostatic hypotension.
+ 
+ ---
+ 
+@@ -298,15 +321,15 @@ In frail elderly patients, the risks of treatment (orthostatic hypotension, fall
+ 
+ ### Isolated Systolic Hypertension
+ 
+-Common in older patients. First-line agents are diuretics or calcium channel blockers.
++Predominantly a problem in older patients. First-line agents are diuretics or calcium channel blockers.
+ 
+ ### Hypertension with Proteinuria
+ 
+-Hypertension accelerates progressive kidney damage in chronic kidney disease.
++Hypertension is a driver of progressive kidney failure in chronic kidney disease.
+ 
+ - Use an ACEi or ARB, titrated to maximum tolerated dose.
+ - Consider a systolic target of < 130 mmHg if macroalbuminuria is present (urine ACR > 25 in males or > 35 in females).
+-- Monitor eGFR regularly.
++- Monitor eGFR.
+ 
+ ### Resistant Hypertension
+ 
+@@ -316,8 +339,8 @@ Your doctor will:
+ 
+ - Exclude non-adherence, white coat hypertension, and incorrectly sized BP cuffs.
+ - Confirm with ambulatory or home BP measurement.
+-- Review lifestyle factors and exclude a missed secondary cause.
+-- Consider adding spironolactone 12.5–25 mg daily (approximately twice as effective as adding a beta blocker or long-acting alpha blocker in this setting, with ~8 mmHg vs ~4 mmHg reductions). This requires monitoring of electrolytes and creatinine; watch for hyperkalaemia.
++- Review lifestyle factors and exclude a missed secondary cause, particularly underlying kidney disease.
++- If resistant hypertension is confirmed, seek a specialist assessment and consider adding spironolactone 12.5–25 mg daily (approximately twice as effective as adding a beta blocker or long-acting alpha blocker in this setting, with ~8 mmHg vs ~4 mmHg reductions). This requires monitoring of electrolytes and creatinine; watch for hyperkalaemia.
+ 
+ Invasive treatments (e.g., renal denervation) are only considered in specialist centres.
+ 
+@@ -331,8 +354,8 @@ Hypertension in pregnancy and the postpartum period is managed under a separate
+ 
+ Once BP is satisfactory, your doctor will typically review every 6 months:
+ 
+-- Physical examination including BP, weight, BMI, and waist circumference.
+-- Screening bloods: electrolytes, creatinine, eGFR, urine ACR.
++- Physical examination including heart sounds, BP, weight, BMI, and waist circumference.
++- Screening for dyslipidaemia, diabetes, and organ damage: electrolytes, creatinine, eGFR, urine ACR.
+ - Cardiovascular risk reassessment as appropriate.
+ - Medication side-effects and adherence check.
+ - For long-standing hypertension: consider ECG or chest X-ray for end-organ damage.
+@@ -343,4 +366,4 @@ Once BP is satisfactory, your doctor will typically review every 6 months:
+ 
+ - Healthify He Puna Waiora: [High Blood Pressure](https://healthify.nz/health-a-z/b/blood-pressure-high) (resources and videos in multiple languages), [Heart Risk Assessment](https://healthify.nz/health-a-z/h/heart-risk-assessment), [How to Eat Less Salt But More Iodine](https://healthify.nz/hauora-wellbeing/s/salt-iodine), [Sodium (Salt)](https://healthify.nz/hauora-wellbeing/s/sodium-salt), [What is Healthy Eating?](https://healthify.nz/hauora-wellbeing/h/healthy-eating)
+ - Heart Foundation: [Managing High Blood Pressure](http://www.heartfoundation.org.nz/know-the-facts/managing-your-risk/managing-your-blood-pressure), [Salt and Blood Pressure](https://www.heartfoundation.org.nz/wellbeing/healthy-eating/nutrition-facts/salt-and-your-heart), [Eating for a Healthy Heart](https://www.heartfoundation.org.nz/shop/heart-healthcare/eating-for-a-healthy-heart-v2.pdf)
+-- [American Heart Association — How to Measure Your Blood Pressure](https://www.heart.org/-/media/files/health-topics/high-blood-pressure/how_to_measure_your_blood_pressure_letter_size.pdf?la=en)
++- American Heart Association: [How to Measure Your Blood Pressure](https://www.heart.org/-/media/files/health-topics/high-blood-pressure/how_to_measure_your_blood_pressure_letter_size.pdf?la=en)
+diff --git a/docs/pathway/non-insulin-diabetes-medications.md b/docs/pathway/non-insulin-diabetes-medications.md
+index 18deea5d..ee75b708 100644
+--- a/docs/pathway/non-insulin-diabetes-medications.md
++++ b/docs/pathway/non-insulin-diabetes-medications.md
+@@ -8,7 +8,7 @@ summary: "Overview of non-insulin medications used in type 2 diabetes and predia
+ 
+ # Non-insulin Diabetes Medications
+ 
+-*Source: Auckland Region HealthPathways (adapted for patient use)*
++*Source: Auckland Region HealthPathways (adapted for patient use). Last reviewed: June 2025.*
+ 
+ This page explains the non-insulin medications used to manage type 2 diabetes and prediabetes. Your doctor will choose the most appropriate medication based on your individual circumstances.
+ 
+@@ -20,21 +20,23 @@ This page explains the non-insulin medications used to manage type 2 diabetes an
+ 
+ ### First-line: Metformin
+ 
+-Metformin is the starting medication for almost all patients with type 2 diabetes and prediabetes. It is safe, effective, and well-studied.
++Healthy lifestyle measures and metformin are first-line treatment for type 2 diabetes and prediabetes. Your doctor will usually start metformin for everyone newly diagnosed, even people who are not overweight.
+ 
+ ### Second-line medications
+ 
+-If HbA1c remains above target on metformin, or if HbA1c is greater than 64 mmol/mol at diagnosis, a second medication is added. Choice depends on your individual risk factors:
++If HbA1c stays above target, your doctor may add or change medications. If HbA1c is greater than 64 mmol/mol at diagnosis, your doctor may consider starting a second medication alongside metformin. Choice depends on your individual risk factors:
+ 
+ | Patient situation | Preferred second medication |
+ |---|---|
+-| Cardiovascular disease, obesity | SGLT2 inhibitors or GLP-1 receptor agonists |
++| Cardiovascular disease, obesity, Māori or Pacific peoples | SGLT2 inhibitors or GLP-1 receptor agonists |
+ | Heart failure or kidney disease | SGLT2 inhibitors |
+ | No cardiovascular disease, kidney disease, obesity, or heart failure | DPP-4 inhibitors |
+ 
++SGLT2 inhibitors and GLP-1 receptor agonists are preferred second-line options for people with cardiovascular disease, heart failure, or chronic kidney disease, whatever their HbA1c. If heart failure or kidney disease is the main concern, SGLT2 inhibitors are likely preferable. The two classes can also be used together, with likely added benefit.
++
+ ### Third-line medications
+ 
+-If blood sugar remains above target on two medications, pioglitazone, sulfonylureas, or acarbose may be considered. Your doctor will weigh benefits and risks for your situation.
++Sulfonylureas and acarbose may be used as third-line medications. Pioglitazone may be used third or fourth line. Your doctor will weigh benefits and risks for your situation.
+ 
+ ---
+ 
+@@ -45,7 +47,7 @@ If blood sugar remains above target on two medications, pioglitazone, sulfonylur
+ | Metformin | Very low (alone) | Mild loss | First-line for almost everyone |
+ | DPP-4 inhibitors (e.g. vildagliptin) | Very low | No change | Weight neutral, well tolerated |
+ | SGLT2 inhibitors (e.g. empagliflozin) | Very low | Loss | Protects kidneys and heart; DKA risk |
+-| GLP-1 agonists (e.g. dulaglutide) | Very low | Most weight loss | Injection; protects heart and kidneys |
++| GLP-1 agonists (e.g. dulaglutide) | Very low | Most weight loss | Injection; reduces cardiovascular disease |
+ | Pioglitazone | Very low | Mild gain | Third/fourth line; fluid retention |
+ | Sulfonylureas (e.g. gliclazide) | Higher | Mild gain | Older agent; hypoglycaemia risk |
+ | Acarbose | Very low | No change | GI side effects limit use |
+@@ -70,7 +72,7 @@ Metformin reduces the amount of glucose the liver produces and helps the body us
+ - Severe kidney failure (eGFR <15 mL/min)
+ - Severe liver or heart failure
+ 
+-**Starting dose:** 250–500 mg once or twice daily with food, increased slowly. Typical target dose is 2000 mg daily. Your doctor will adjust the dose if you have reduced kidney function.
++**Starting dose:** 250–500 mg once or twice daily, increased slowly each week. Typical target dose is 2000 mg daily, or the highest dose you tolerate with food. Your doctor will lower the dose if your eGFR is less than 45 mL/min.
+ 
+ **Sick days:** Stop metformin if you have vomiting, diarrhoea, or are severely dehydrated. Restart once you are well.
+ 
+@@ -78,7 +80,7 @@ Metformin reduces the amount of glucose the liver produces and helps the body us
+ 
+ ## DPP-4 inhibitors (e.g. vildagliptin)
+ 
+-DPP-4 inhibitors work by helping the body produce more insulin after meals and reducing glucose released from the liver.
++DPP-4 inhibitors work by helping the body release more insulin when glucose is high, and by reducing glucagon release.
+ 
+ **Benefits:**
+ - Weight neutral
+@@ -88,11 +90,13 @@ DPP-4 inhibitors work by helping the body produce more insulin after meals and r
+ **Common side effects:**
+ - Nausea, diarrhoea
+ - Runny nose or upper respiratory symptoms
+-- Rarely: liver problems, skin reactions
++- Liver problems
++- Rarely: muscle aches or weakness, serious skin reactions
+ 
+ **Not suitable if:**
+ - Significant liver disease (raised ALT/AST >2.5× normal)
+ - Unstable heart failure
++- Pregnancy or breastfeeding
+ - Also taking a GLP-1 receptor agonist (these work similarly and are not used together)
+ 
+ **Monitoring:** Liver function tests (LFTs) should be checked before starting and every 3 months for the first year.
+@@ -108,37 +112,39 @@ SGLT2 inhibitors work by causing the kidneys to excrete extra glucose and sodium
+ **Benefits:**
+ - Weight loss
+ - Reduces blood pressure
+-- Protects the kidneys and heart — your doctor may recommend this medication primarily for these benefits rather than blood sugar control alone
++- Protects the kidneys and heart. Your doctor may recommend this medication mainly for these benefits rather than blood sugar control alone.
+ - Very unlikely to cause low blood sugar on its own
+ 
+-**When your doctor may strongly recommend an SGLT2 inhibitor (regardless of HbA1c):**
+-- Kidney disease (reduced eGFR or elevated urine albumin)
++**When your doctor may prefer an SGLT2 inhibitor (regardless of HbA1c):**
++- Kidney disease (eGFR less than 60 mL/min, or urine albumin:creatinine ratio 3 mg/mmol or higher)
+ - Heart failure
+-- Established cardiovascular disease (e.g. past stroke or heart attack)
+-- High 5-year cardiovascular risk (>15%)
++- Cardiovascular disease (including stroke, peripheral vascular disease, and familial hypercholesterolaemia)
++- High 5-year cardiovascular risk (15% or higher)
++
++It may also be preferred if HbA1c is above target and weight loss would help.
+ 
+ **Common side effects:**
+ - Increased urination
+ - Genital or urinary tract infections (thrush, UTIs)
+-- Low blood pressure, particularly when starting
++- Low blood pressure (your doctor may reduce blood pressure medicines before starting)
+ - Rare but serious: diabetic ketoacidosis (see below)
+-- Very rare: Fournier's gangrene (serious infection of the genital/perineal area — seek urgent medical care if significant pain, redness, or fever in that area)
++- Rare: Fournier's gangrene, a serious infection of the genital or perineal area. It can be life-threatening. If you have significant pain, redness, or fever in that area, call 111 or go to the emergency department.
+ 
+-**Important — Diabetic Ketoacidosis (DKA) risk:**
++**Important: Diabetic Ketoacidosis (DKA) risk**
+ 
+ SGLT2 inhibitors carry a small (~1 in 1000) risk of DKA, which can occur even with near-normal blood sugar levels.
+ 
+-Seek medical attention urgently if you experience:
++If you have any of these symptoms, call 111 or go to the emergency department:
+ - Nausea, vomiting, or abdominal pain
+-- Excessive thirst, fatigue, or confusion
++- Excessive thirst, loss of appetite, dizziness, or confusion
+ - Fast heart rate or difficulty breathing
+ 
+ **Not suitable if:**
+-- Recurrent severe genital/urinary infections
++- A previous severe genital or urinary infection
+ - Ketogenic (very low carbohydrate) diet
+-- Kidney failure (eGFR <20 mL/min) — cannot be started but may be continued until dialysis is needed
++- Kidney failure (eGFR <20 mL/min): cannot be started, but may be continued until dialysis is needed
+ 
+-**Cautions:** Use with care in pregnancy, with alcohol use disorder, or if there is a history of DKA.
++**Cautions:** Use with care in pregnancy or breastfeeding. If you have had DKA before, or have harmful alcohol use, it should not be started without specialist approval.
+ 
+ **Sick days and procedures:** Stop your SGLT2 inhibitor:
+ - When you are ill or severely dehydrated
+@@ -149,25 +155,26 @@ Seek medical attention urgently if you experience:
+ 
+ ## GLP-1 receptor agonists (e.g. dulaglutide, liraglutide)
+ 
+-GLP-1 receptor agonists mimic a natural gut hormone that stimulates insulin release, slows stomach emptying, and reduces appetite. They are given by subcutaneous (under the skin) injection using a pen device.
++GLP-1 receptor agonists act on the GLP-1 receptor. They increase insulin release when glucose is high, slow stomach emptying, and reduce appetite. They are given by subcutaneous (under the skin) injection using a pen device.
+ 
+ **Benefits:**
+ - Greatest weight loss of all diabetes medications
+ - Reduces cardiovascular disease risk
+-- Protects the kidneys
+ - Very unlikely to cause low blood sugar on its own
+ - A good alternative to starting insulin
+ 
+-**When your doctor may strongly recommend a GLP-1 agonist (regardless of HbA1c):**
+-- Established cardiovascular disease (past stroke or heart attack)
++**When your doctor may prefer a GLP-1 agonist (regardless of HbA1c):**
++- Cardiovascular disease (including stroke, peripheral vascular disease, and familial hypercholesterolaemia)
+ - Heart failure
+-- Kidney disease
+-- High 5-year cardiovascular risk (>15%)
++- Kidney disease (eGFR less than 60 mL/min, or urine albumin:creatinine ratio 3 mg/mmol or higher)
++- High 5-year cardiovascular risk (15% or higher)
++
++It may also be preferred if HbA1c is above target and weight loss would help.
+ 
+ **Common side effects:**
+ - Nausea, vomiting, reduced appetite, diarrhoea (usually improve over time)
+ - Injection site reactions
+-- Rarely: pancreatitis, muscle weakness, skin reactions
++- Rarely: pancreatitis, muscle weakness, skin reactions, low platelet count
+ 
+ **Tips to reduce GI side effects:**
+ - Eat smaller meals
+@@ -179,8 +186,9 @@ GLP-1 receptor agonists mimic a natural gut hormone that stimulates insulin rele
+ **Not suitable if:**
+ - Severe kidney failure (eGFR <15 mL/min)
+ - Pregnancy or breastfeeding
+-- Personal or family history of medullary thyroid cancer or MEN2 syndrome
+-- History of pancreatitis (caution)
++- Type 1 diabetes (unless advised by a diabetes specialist)
++
++**Cautions:** Previous pancreatitis, severe gastrointestinal disease (including gastroparesis), severe liver disease, or a history of medullary thyroid cancer or MEN2 syndrome.
+ 
+ **Storage:** Refrigerate for long-term storage. Safe at room temperature (<30°C) for up to 14 days.
+ 
+@@ -188,7 +196,9 @@ GLP-1 receptor agonists mimic a natural gut hormone that stimulates insulin rele
+ 
+ **Liraglutide (Victoza):** Daily injection. Started at 0.6 mg for one week, increased to 1.2 mg, then up to 1.8 mg if needed.
+ 
+-**Sick days:** Stop GLP-1 agonists if you have acute gastrointestinal illness or are at risk of dehydration. Restart once well.
++**Other medicines in this class:** Semaglutide (Wegovy) and tirzepatide (Mounjaro) are also given by subcutaneous injection. Neither is funded. In New Zealand, semaglutide (Wegovy) is registered only for weight loss. Tirzepatide acts on both the GIP and GLP-1 receptors.
++
++**Sick days:** Stop GLP-1 agonists if you have acute gastrointestinal illness. Your doctor may also advise stopping if you are at risk of dehydration. Restart once well.
+ 
+ ---
+ 
+@@ -224,7 +234,6 @@ Pioglitazone reduces insulin resistance. It is used as a third- or fourth-line a
+ Sulfonylureas stimulate the pancreas to produce more insulin. They are older medications used as third-line agents.
+ 
+ **Benefits:**
+-- Effective blood sugar lowering
+ - First-choice for steroid-induced high blood sugar
+ 
+ **Disadvantages:**
+@@ -245,7 +254,7 @@ Sulfonylureas stimulate the pancreas to produce more insulin. They are older med
+ - Pregnancy or breastfeeding
+ 
+ **Starting doses:**
+-- Glipizide 2.5 mg, or gliclazide 40 mg — taken 15 minutes before your largest meal
++- Glipizide 2.5 mg, or gliclazide 40 mg, taken 15 minutes before your largest meal
+ - Doses are increased every 1–2 weeks if needed (maximum: glipizide 40 mg/day or gliclazide 320 mg/day)
+ - Glipizide is preferred if you have kidney disease
+ 
+@@ -260,14 +269,15 @@ Acarbose slows the digestion and absorption of carbohydrates, reducing blood sug
+ **Benefits:**
+ - Weight neutral
+ - Does not cause hypoglycaemia on its own
+-- Does not require dose adjustment for kidney disease until eGFR <25 mL/min
+ 
+ **Side effects:**
+ - Bloating and gas (very common)
+ - Diarrhoea
+ - Rarely: liver test abnormalities
+ 
+-**Note on hypoglycaemia treatment:** If you take acarbose and have low blood sugar, treat with pure glucose (glucose tablets or gel) — not ordinary sugar (sucrose), because acarbose blocks sucrose absorption.
++**Not suitable if:** eGFR is less than 25 mL/min.
++
++**Note on hypoglycaemia treatment:** If you take acarbose and have low blood sugar, treat with pure glucose (glucose tablets or gel), not ordinary sugar (sucrose), because acarbose blocks sucrose absorption.
+ 
+ **Dose:** 50 mg three times daily with meals, increased to 100 mg three times daily if needed.
+ 
+@@ -284,7 +294,7 @@ When you are unwell, your blood sugar can change significantly. All people with
+ - Avoid strenuous exercise
+ - Drink at least 125–250 mL (half to one cup) of fluid every hour
+   - If eating normally: water or sugar-free drinks
+-  - If not eating normal meals (and on insulin or sulfonylurea): try small amounts of food (e.g. crackers, toast). If your blood glucose is below 8 mmol/L, drink carbohydrate-containing fluids (flat soft drinks, juice, sports drinks, or oral rehydration solution)
++  - If not eating normal meals (and on insulin or sulfonylurea): try small amounts of food (e.g. crackers, toast). If your blood glucose is below 8 mmol/L, drink carbohydrate-containing fluids (cordial, flat soft drinks, sports drinks, or oral rehydration solution)
+ - Monitor your blood glucose more frequently than usual
+ - Avoid NSAIDs (e.g. ibuprofen, naproxen)
+ - Contact your doctor or practice if you are unsure what to do
+@@ -296,16 +306,16 @@ When you are unwell, your blood sugar can change significantly. All people with
+ | Metformin | Stop during vomiting/diarrhoea or dehydration. Restart once well. |
+ | DPP-4 inhibitors | Stop during acute GI illness. Restart once well. |
+ | SGLT2 inhibitors | Stop when sick. Get ketones checked urgently if nausea, vomiting, or abdominal pain. Stop at least 3 days before major procedures. |
+-| GLP-1 agonists | Stop during acute GI illness or if risk of dehydration. Restart once well. |
++| GLP-1 agonists | Stop during acute GI illness. Consider stopping if at risk of dehydration. Restart once well. |
+ | Pioglitazone | Stop during GI illness. Restart once well. |
+ | Sulfonylureas | Reduce or skip dose if eating less. Restart normally once well. |
+ | Acarbose | Stop during GI illness. Restart once well. Treat hypoglycaemia with glucose, not sucrose. |
+-| Insulin | Reduce bolus/premixed insulin if eating less. Reduce basal insulin by 20–30%. Correction insulin every 4 hours as needed. |
++| Insulin | Reduce or skip bolus insulin if eating less. Reduce basal or premixed insulin by 20–30%. Correction insulin every 4 hours as needed. |
+ 
+ ---
+ 
+ ## Patient Resources
+ 
+-- Healthify He Puna Waiora: [Medicines for Type 2 Diabetes](https://healthify.nz)
+-- Healthify He Puna Waiora: [Diabetes Type 2 Sick Day Plan](https://healthify.nz)
+-- Healthify He Puna Waiora: [Empagliflozin information](https://healthify.nz) (available in English, Te reo Māori, Samoan, Tongan)
++- Healthify He Puna Waiora: [Medicines for Type 2 Diabetes](https://healthify.nz/health-a-z/d/diabetes-type-2-medications)
++- Healthify He Puna Waiora: [Diabetes Type 2 Sick Day Plan](https://healthify.nz/health-a-z/d/diabetes-type-2-sick-day-plan)
++- Healthify He Puna Waiora: [Empagliflozin information](https://healthify.nz/assets/Brochures/empagliflozin-english-factsheet-v2.pdf) (also available in Te reo Māori, Samoan, Tongan)
+diff --git a/docs/pathway/osteoarthritis-oa.md b/docs/pathway/osteoarthritis-oa.md
+index 9a0548ca..7601e800 100644
+--- a/docs/pathway/osteoarthritis-oa.md
++++ b/docs/pathway/osteoarthritis-oa.md
+@@ -8,17 +8,17 @@ summary: "Clinical pathway for osteoarthritis in adults: red flags, assessment,
+ 
+ # Osteoarthritis (OA)
+ 
+-*Source: Auckland Region HealthPathways*
++*Source: Auckland Region HealthPathways. Last reviewed: September 2021.*
+ 
+-This pathway covers the assessment and management of osteoarthritis (OA) in adults — the most common form of arthritis. It includes how OA is diagnosed, managed without medications, what medications may help, and when referral for joint replacement is appropriate.
++This pathway covers the assessment and management of osteoarthritis (OA) in adults. OA is the most common form of arthritis. The pathway includes how OA is diagnosed, managed without medications, what medications may help, and when referral for joint replacement is appropriate.
+ 
+-All treatment decisions should be made with your doctor, who can tailor the approach to your individual circumstances.
++> All treatment decisions should be made with your doctor, who can tailor the approach to your individual circumstances.
+ 
+ ---
+ 
+ ## Red Flags — Seek Medical Attention Promptly
+ 
+-Contact your doctor promptly if you have joint pain with any of the following features, as these may indicate something other than OA (e.g., fracture, infection, cancer affecting bone):
++Contact your doctor promptly if you have joint pain with any of the following features. These may point to a cause other than OA, such as osteonecrosis, cancer that has spread to bone, a joint infection (septic arthritis), or a fracture:
+ 
+ - Sudden-onset acute pain
+ - Pain following trauma or injury
+@@ -46,7 +46,7 @@ Your doctor will make a diagnosis based on your history and examination.
+ The main symptom is pain, classically worse with use. Rest and nocturnal pain can occur in more severe disease.
+ 
+ The most frequently affected sites are:
+-- Hand: distal and proximal interphalangeal joints (DIP and PIP joints — often with a genetic component), and the carpometacarpal (CMC) joint of the thumb
++- Hand: distal and proximal interphalangeal joints (DIP and PIP joints, often with a genetic predisposition), and the carpometacarpal (CMC) joint of the thumb
+ - Hip: pain is usually in the groin or may radiate to the knee. Buttock or below-knee pain usually comes from the lumbar spine, not the hip.
+ - Knee
+ - Spinal facet joints
+@@ -71,37 +71,35 @@ Your doctor will examine the affected joint for:
+ 
+ ### Investigations
+ 
+-Your doctor will generally not arrange an X-ray routinely, because there is poor correlation between X-ray changes and symptoms — except in advanced disease.
++Your doctor will generally not arrange an X-ray routinely, because there is poor correlation between X-ray changes and symptoms, except in advanced disease.
+ 
+-An X-ray may be arranged if:
+-- There are red flags
+-- You are likely to be referred for joint replacement surgery
+-- There is suspicion of calcium pyrophosphate disease (CPPD)
+-- There is diagnostic uncertainty
++Your doctor may arrange an X-ray if you meet accepted criteria for one.
+ 
+-If inflammatory arthritis is a possibility, your doctor may arrange blood tests including CRP, serum urate, anti-CCP antibodies, and rheumatoid factor.
++If inflammatory arthritis is a possibility, your doctor may arrange blood tests including CRP, serum urate, anti-CCP antibodies, and rheumatoid factor. If a joint has been swollen for more than 6 weeks, they may also arrange X-rays of both hands and wrists, or both ankles and feet.
+ 
+-Your doctor will also assess your functional limitation and effect on lifestyle, and measure your BMI if relevant.
++In younger people (aged less than 50 years) with no predisposing factors such as past trauma, your doctor may consider screening for haemochromatosis (iron overload).
++
++Your doctor will also assess your functional limitation and effect on lifestyle, and measure your weight and BMI.
+ 
+ ### Differential Diagnoses Your Doctor May Consider
+ 
+ #### Calcium Pyrophosphate Disease (CPPD / Pseudogout)
+ 
+-CPPD is an inflammatory arthritis caused by calcium pyrophosphate crystals. It occurs in up to 20–30% of elderly people with generalised OA and can overlap with OA findings. It may present with acute inflammation (e.g., knee synovitis). Joint aspiration can confirm the diagnosis.
++CPPD is an inflammatory arthritis caused by calcium pyrophosphate crystals. It occurs in up to 20–30% of elderly people with generalised OA, and people may have low-level signs of inflammation. It may present with acute inflammation (e.g., knee synovitis). Joint aspiration can confirm the diagnosis.
+ 
+-Treatment focuses on symptom relief, similar to gout flares. Options include:
++Treatment focuses on symptom relief, similar to gout flares. NSAIDs are often unsuitable because of other health conditions. Options for flares include:
+ - Prednisone 20–40 mg daily, tapered over 2 weeks
+-- Low-dose colchicine (only if no contraindications — colchicine has a narrow safety margin and can be fatal in overdose; your doctor will check suitability carefully)
++- Low-dose colchicine (only if no contraindications; colchicine has a narrow safety margin and overdoses from 7 mg can be fatal, with no reversal agent; your doctor will check suitability carefully)
+ - Intra-articular steroid injection
+ 
+ There are no effective long-term treatments to dissolve the crystals, unlike gout.
+ 
+ #### Hip Pain — Other Causes
+ 
+-- **Greater trochanteric pain syndrome** (lateral hip pain): lateral hip pain with tenderness over the greater trochanter. Caused by gluteal tendinopathy rather than bursitis in most cases. Physiotherapy (supervised exercise programme) is the main treatment. NSAIDs and surgery are of limited benefit. A corticosteroid injection can provide enough pain relief to allow physiotherapy to be effective but is not effective on its own.
++- **Greater trochanteric pain syndrome** (lateral hip pain): lateral hip pain with tenderness over the greater trochanter. It is often diagnosed as trochanteric bursitis, but bursitis is uncommon. It may be caused by gluteal muscle weakness and inactivity, leading to tendinopathy of the gluteal tendons. Physiotherapy, including a supervised exercise programme, is important for long-term management. Local heat and weight loss are said to help. NSAIDs and surgery are of limited benefit. A corticosteroid injection alone is ineffective, but it can provide enough pain relief to allow physiotherapy to work.
+ - **Peripheral vascular disease**: aortoiliac disease can cause buttock, hip, or thigh aching with walking. Your doctor may arrange a vascular assessment.
+ - **Referred pain** from the lumbosacral spine or sacroiliac joint.
+-- **Femoro-acetabular impingement or labral pathology**: presents similarly to hip OA but usually in people under 50. Pain is reproduced by hip flexion, adduction, or internal rotation. Conservative management (same as OA) is tried first; if this fails, orthopaedic assessment is considered.
++- **Femoro-acetabular impingement or labral pathology**: presents similarly to hip OA but usually in people under 50. Pain is reproduced by hip flexion, adduction, or internal rotation. It may be a precursor to developing OA later. Conservative management (same as OA) is tried first; if this fails, orthopaedic assessment is considered.
+ 
+ #### Knee Pain — Other Causes
+ 
+@@ -123,7 +121,7 @@ Physical activity and self-management are core treatments for OA:
+ - General aerobic exercise and local muscle strengthening (e.g., via a Green Prescription)
+ - Hydrotherapy (aqua-jogging, water-based exercise classes)
+ 
+-**Weight loss**: particularly important for lower limb OA (hip, knee). Even modest weight loss can reduce joint load and pain.
++**Weight loss**: recommended if you are overweight, especially for lower limb OA.
+ 
+ **Physiotherapy**: for mobilisation, muscle strengthening, balance, and mobility equipment. Also useful during an exacerbation, for preoperative conditioning, or for a course of hydrotherapy.
+ 
+@@ -139,18 +137,20 @@ Physical activity and self-management are core treatments for OA:
+ 
+ Your doctor will discuss medication options with you. These are usually used alongside non-pharmacological management, not instead of it.
+ 
+-**Paracetamol**: may be helpful in combination with other options for as-needed use. Recent evidence suggests paracetamol alone may not adequately improve OA pain, and risks (GI effects, organ toxicity) are greater than previously thought. Discuss with your doctor whether this is right for you.
++**Paracetamol**: may be helpful in combination with other options for as-needed use, although evidence is limited. Recent evidence suggests paracetamol alone may not improve OA pain, and its risks (gastrointestinal effects and multi-organ failure) are greater than previously thought. Discuss with your doctor whether this is right for you.
+ 
+-**Topical medications** (applied to the skin — particularly useful for knee and hand OA):
++**Topical medications** (applied to the skin, particularly useful for knee and hand OA):
+ - *Topical NSAIDs*: effective for superficial joints; plasma levels are much lower than oral NSAIDs (approximately 10%). Not currently funded in New Zealand.
+-- *Capsaicin cream* (0.025%): funded under Special Authority for OA not responding to paracetamol when oral NSAIDs are contraindicated. Works by depleting substance P in nerve endings. Not recommended for spine, hip, or shoulder. Takes 1 week for initial effect and 4–6 weeks for full effect. Use 3–4 times daily. An initial burning sensation is normal and fades with regular use. Avoid on broken skin; wash hands after applying.
++- *Capsaicin cream* (0.025%): funded. May be trialled for hand and knee OA. Works by depleting substance P in nerve endings. Not recommended for spine, hip, or shoulder. Takes 1 week for initial effect and 4–6 weeks for full effect. Use 3–4 times daily. An initial burning sensation is normal and fades with regular use. Avoid on broken skin; wash hands after applying.
+ 
+-**Oral NSAIDs** (e.g., celecoxib, ibuprofen, naproxen — preferred over diclofenac):
++**Oral NSAIDs** (e.g., celecoxib, ibuprofen, naproxen, preferred over diclofenac):
+ - More effective than simple analgesics for OA.
+ - Used at the lowest effective dose for as short a time as possible; long-term use is avoided.
+ - Your doctor will assess your GI risk, kidney function, blood pressure, and cardiovascular risk before prescribing.
++- Avoided or used with caution in older people and those with kidney problems, especially if also taking an ACE inhibitor, ARB, or diuretic.
+ - If you have increased GI risk, a COX-2 selective NSAID plus a proton pump inhibitor (PPI) is used.
+ - Avoid in heart failure. Can raise blood pressure and cause fluid retention.
++- Your doctor may review you 2 to 4 weeks after starting.
+ 
+ **Codeine-based analgesia**: cautiously considered only if NSAIDs are contraindicated and disease is severe and inoperable.
+ 
+@@ -159,16 +159,16 @@ Your doctor will discuss medication options with you. These are usually used alo
+ - Shoulder OA
+ - CMC joint of the thumb
+ 
+-Note: repeated corticosteroid injections every 3 months for knee OA have been shown not to improve pain long-term and may increase cartilage loss. Injections do not reduce disease progression.
++Note: a recent study in knee OA found that repeated steroid injections every 3 months did not improve pain and increased cartilage loss. Injections do not reduce disease progression.
+ 
+ **Medications NOT recommended / not funded:**
+ - Chondroitin and glucosamine: uncertain benefit for symptom relief in knee OA; not appropriate for disease modification. Not publicly funded.
+-- Intra-articular hyaluronic acid: inconsistent evidence; not offered by public rheumatology services in this region. Not appropriate for multiple joint OA.
++- Intra-articular hyaluronic acid: inconsistent evidence. Not appropriate for multiple joint OA.
+ - Platelet-rich plasma and stem cell injections: insufficient evidence.
+ 
+ ### Monitoring
+ 
+-Your doctor will review you regularly to monitor symptoms and treatment effectiveness. If you have difficulty opening medication bottles or packs, let your pharmacist know — a medication use review may help.
++Your doctor will review you regularly to monitor symptoms and treatment effectiveness. If you have difficulty opening medication bottles or packs, let your pharmacist know. A medication use review may help.
+ 
+ ---
+ 
+@@ -181,8 +181,6 @@ Your doctor may refer you for orthopaedic assessment (consideration of joint rep
+ - You have tried and exhausted all non-operative treatment options
+ - You do not have absolute contraindications to surgery, and any relative contraindications are fully managed
+ 
+-Private orthopaedic or musculoskeletal specialist assessment is an option if you do not meet public criteria.
+-
+ ---
+ 
+ ## When Your Doctor May Refer You to a Specialist
+@@ -193,7 +191,7 @@ Private orthopaedic or musculoskeletal specialist assessment is an option if you
+ - **Physiotherapy**: for mobilisation, strengthening, balance, mobility equipment, exacerbation management, preoperative conditioning, or hydrotherapy.
+ - **Occupational therapy**: for home safety and functional assessment.
+ - **Hand therapy**: for thumb and hand OA.
+-- **Podiatry** (private): for foot OA; or for valgus knee deformity or flat feet (pes planus) — medial arch supports to reduce stress on the medial knee compartment.
++- **Podiatry** (private): for foot OA; or for valgus knee deformity or flat feet (pes planus), with medial arch supports to reduce stress on the medial knee compartment.
+ 
+ ---
+ 
+diff --git a/docs/pathway/type-2-diabetes.md b/docs/pathway/type-2-diabetes.md
+index 807896f4..06862717 100644
+--- a/docs/pathway/type-2-diabetes.md
++++ b/docs/pathway/type-2-diabetes.md
+@@ -8,27 +8,32 @@ summary: "Clinical pathway for established type 2 diabetes (non-pregnant adults)
+ 
+ # Type 2 Diabetes
+ 
+-*Source: Auckland Region HealthPathways*
++*Source: Auckland Region HealthPathways. Last reviewed: July 2025.*
+ 
+-This pathway covers the ongoing management of established type 2 diabetes in non-pregnant adults — including HbA1c targets, medications, lifestyle, annual review, and complications screening.
++This pathway covers the ongoing management of established type 2 diabetes in adults who are not pregnant or planning pregnancy. It includes HbA1c targets, medications, lifestyle, annual review, and complications screening.
+ 
+-> **Note (effective 1 July 2026):** New Zealand HbA1c diagnostic thresholds are changing. Diabetes will be diagnosed at HbA1c ≥48 mmol/mol (down from ≥50). Prediabetes is now 42–47 mmol/mol. A confirmatory test is required if HbA1c is 48–52 mmol/mol; no confirmation needed if ≥53 mmol/mol.
++> This is general information, not medical advice. Always discuss changes to your management with your doctor.
+ 
+ ---
+ 
+ ## When to Seek Emergency Care
+ 
+-Call an ambulance or go to emergency if you have diabetes and any of the following:
++If you have diabetes and become acutely unwell, seek urgent medical help if you have any of the following:
+ 
+-- Any intercurrent illness with capillary ketone levels higher than 1.5 mmol/L
++- Capillary (finger-prick) ketone levels higher than 1.5 mmol/L
+ - Blood glucose levels persistently higher than 25 mmol/L
++- Symptoms of high blood glucose (hyperglycaemia)
+ - Symptoms of DKA: nausea or vomiting, abdominal pain, rapid or deep breathing, confusion
+ - Symptoms of HHS: extreme thirst, frequent urination, confusion, weakness, fever, seizures
+-- Severe hypoglycaemia requiring someone else's help to treat
++- Severe hypoglycaemia requiring someone else's help to treat, or a high risk of it
+ 
+-**Suspect diabetic ketoacidosis (DKA)** if blood glucose >11 mmol/L plus any of: ketones >1.5 mmol/L, nausea/vomiting, abdominal pain, rapid breathing, or confusion. Note: people on empagliflozin can develop DKA with blood glucose as low as normal (euglycaemic DKA).
++Any illness on top of diabetes is a reason for your doctor to consider seeking diabetes advice, whatever your glucose and ketone levels.
+ 
+-**Suspect hyperosmolar hyperglycaemic state (HHS)** if: extreme thirst, frequent urination, confusion, weakness, nausea, weight loss, dry mouth, fever, or seizures.
++**Suspect diabetic ketoacidosis (DKA)** if blood glucose is more than 11 mmol/L plus any of: finger-prick ketones more than 1.5 mmol/L, nausea or vomiting, dehydration, a fast heart rate, abdominal pain, rapid or deep sighing breathing, or confusion. Confusion may progress to reduced consciousness and coma. Urine ketones may be falsely low on empagliflozin. People on empagliflozin can develop DKA with blood glucose less than 11 mmol/L (euglycaemic DKA).
++
++**Suspect hyperosmolar hyperglycaemic state (HHS)** if: extreme thirst, frequent urination, confusion, weakness, nausea, weight loss, dry mouth and tongue, fever, or seizures. HHS is a life-threatening complication that occurs when blood glucose stays very high for a long time. It is more common in type 2 diabetes.
++
++**If you may have DKA or HHS, this is a medical emergency: call 111 or go to the emergency department.**
+ 
+ ---
+ 
+@@ -43,11 +48,14 @@ Your doctor will set an individualised HbA1c target. HbA1c reflects your average
+ | Low hypoglycaemia risk (not on insulin or sulfonylureas) | High hypoglycaemia risk (on insulin/sulfonylureas) |
+ | Younger patients | Frail older adults |
+ | Pregnant or planning pregnancy | Cognitive impairment or functional dependence |
+-| Established retinopathy or nephropathy | Previous severe hypoglycaemia or hypoglycaemic unawareness |
++| Microvascular complications, particularly retinopathy or nephropathy | Previous severe hypoglycaemia or significant hypoglycaemic unawareness |
++| | Unlikely to develop diabetes complications within their lifetime |
++
++Hypoglycaemia usually occurs only in people treated with insulin or sulfonylureas.
+ 
+ HbA1c is checked every 3 months until target is reached, then every 6 months.
+ 
+-**Risk factors for hypoglycaemia** (low blood sugar): older age, insulin or sulfonylurea use, previous severe hypoglycaemia, loss of hypoglycaemic awareness, long duration of diabetes, irregular meals or low-carbohydrate diet, kidney impairment, beta blockers, significant alcohol intake, autonomic neuropathy.
++**Risk factors for hypoglycaemia** (low blood sugar): older age, insulin or sulfonylurea use, previous severe hypoglycaemia, loss of hypoglycaemic awareness, long duration of diabetes, irregular meals or low-carbohydrate diet, kidney impairment, tight glycaemic control (e.g. HbA1c less than 48 mmol/mol), beta blockers, significant alcohol intake, autonomic neuropathy.
+ 
+ ---
+ 
+@@ -59,17 +67,18 @@ Your doctor may recommend self-monitoring when:
+ - Starting sulfonylurea or insulin
+ - There are concerns about hypoglycaemia
+ - You are planning or are pregnant
+-- HbA1c is unreliable (e.g. haemoglobinopathy, recent blood transfusion)
++- HbA1c is unreliable (e.g. haemoglobinopathy, significant iron deficiency, recent blood transfusion)
+ - Assessing the effect of lifestyle or medication changes
+ 
+ **Glucose targets (non-pregnant adults):**
+ - Fasting glucose: less than 7 mmol/L
+ - 2–3 hours after meals: less than 10 mmol/L
+ - Time in target range (3.9–10 mmol/L): more than 70% on continuous glucose monitor (CGM)
++- On sulfonylureas or insulin: avoid hypoglycaemia (less than 3.9 mmol/L)
+ 
+ ### Continuous glucose monitoring (CGM)
+ 
+-CGM is not funded for type 2 diabetes, but you are eligible for one free Freestyle Libre System and one Dexcom ONE+.
++Continuous glucose monitoring sensors are available, but CGM is not funded for type 2 diabetes. Manufacturer starter programmes may be available.
+ 
+ ### Capillary ketones
+ 
+@@ -88,7 +97,7 @@ Your doctor should review you at least once a year (every 3 months if at high ri
+ - Liver function tests (LFT)
+ - Non-fasting lipids
+ 
+-**Cardiovascular risk:** Your doctor will calculate your 5-year cardiovascular disease (CVD) risk.
++**Cardiovascular risk:** Your doctor will calculate your cardiovascular disease (CVD) risk.
+ 
+ **Examination:**
+ - Weight and waist circumference
+@@ -96,51 +105,61 @@ Your doctor should review you at least once a year (every 3 months if at high ri
+ - Teeth and gums
+ - Feet (at each visit if high risk)
+ 
+-**Retinal photo-screening:**
+-- At diagnosis
+-- If your clinical condition changes
+-- During first trimester of pregnancy
++**Common related conditions your doctor may check for:**
++- Recurrent skin and genitourinary infections
++- Other features of metabolic syndrome, e.g. gout, polycystic ovarian syndrome
++- Mental health conditions, e.g. depression, dementia, disordered eating
++- Erectile dysfunction
++- Heart conditions, e.g. heart failure, atrial fibrillation
++- Musculoskeletal conditions, e.g. frozen shoulder, myopathy
++- Skin conditions, e.g. diabetic dermopathy, acanthosis nigricans
++- Gastrointestinal conditions, e.g. fatty liver disease, diarrhoea
+ 
+-**Complications screening:** eyes, kidneys, feet, heart, nerves, teeth
++**Retinal photo-screening:**
++- Now, if HbA1c is 53 mmol/mol or higher, or if HbA1c is 48 to 52 mmol/mol and diabetes has lasted 2 years or more (or for an unknown time)
++- In 3 years, if HbA1c is 48 to 52 mmol/mol and diabetes clearly began within the last 2 years
++- Follow-up screening at least every 3 years
++- During the first trimester of pregnancy, if you had diabetes before pregnancy
+ 
+-**Foot disease risk — high risk factors (eligible for podiatry):**
++**Foot disease risk (high risk factors, eligible for podiatry):**
+ - Previous amputation or ulceration
+-- Charcot foot
++- Consolidated Charcot foot (a deformed foot without swelling and with normal temperature)
+ - Any two of: loss of sensation, significant callus, foot deformity, pre-ulcerative lesion, eGFR <15 mL/min, Māori ethnicity, peripheral vascular disease
+ 
+ ---
+ 
+ ## Lifestyle Management
+ 
+-These are essential — not optional — in diabetes management.
++Lifestyle changes are essential to managing diabetes.
+ 
+ ### Weight loss
+ 
+-- Aim to lose 5–10% of body weight if overweight (BMI >30, or >25 with large waist)
+-- Losing 10–15% of body weight may lead to diabetes remission (less likely if long duration of diabetes)
+-- Bariatric surgery may be considered in obesity
++- Aim to lose 5–10% of body weight if overweight (BMI >30, or BMI >25 with a waist over 88 cm in women or over 102 cm in men)
++- Losing 10–15% of body weight may lead to diabetes remission (remission may not be possible after a long duration of diabetes, due to loss of pancreatic beta cells)
++- Weight-loss medicines and bariatric surgery may be considered in obesity
+ 
+ ### Healthy eating
+ 
+-A dietitian can help — ask your doctor for a referral. General principles include reducing refined carbohydrates, increasing fibre, and eating regular meals.
++A dietitian can help. Your doctor may refer you each year, and when starting bolus or premixed insulin. If you find healthy choices hard, a food diary can help.
+ 
+ ### Physical activity
+ 
+-- 150 minutes of moderate-to-high-intensity aerobic exercise per week (spread over at least 3 days)
++- 150 minutes of moderate-to-high-intensity aerobic exercise per week, spread over at least 3 days, with no more than 2 consecutive days without exercise
+ - Resistance exercise at least twice per week
+ - Avoid sitting for longer than 30 minutes at a time
+-- Even a brisk 5-to-6-minute daily walk is associated with 4 extra years of life
++- If you have other conditions, such as heart disease, the intensity and length of exercise may need to be reduced
++- Do as much activity as you can, even if you cannot reach these goals. A brisk 5-to-6-minute daily walk is associated with 4 extra years of life
+ - Adding 500 steps per day is linked to up to 10% reduction in mortality
+ 
+ ### Sleep
+ 
+-- Aim for 6–8 hours of sleep each night — this improves glucose levels and body weight
++- Aim for 6–8 hours of sleep each night. This benefits glucose levels and body weight
+ - Over 50% of people with type 2 diabetes have obstructive sleep apnoea (OSA); treating OSA significantly improves glucose control
+-- Your doctor may screen for sleep disorders (OSA, restless legs, nocturia)
++- Your doctor may screen for sleep problems (OSA, restless legs, nocturia, night-time hypoglycaemia, peripheral neuropathy)
+ 
+ ### Smoking, alcohol
+ 
+-- Stop smoking — your doctor can help with cessation support
++- Stop smoking. Your doctor can help with cessation support
+ - Reduce alcohol intake
+ 
+ ---
+@@ -151,43 +170,59 @@ Your doctor will prescribe medications to help manage your blood glucose. These
+ 
+ ### Stepwise approach
+ 
+-1. **Metformin** — first-line for almost all patients; started at diagnosis
+-2. **Second-line agents** — added if HbA1c is not at target; strongly consider at diagnosis if HbA1c >64 mmol/mol
+-3. **Insulin** — considered when other medications are insufficient, or if significant hyperglycaemia
++1. **Metformin:** first-line treatment for all patients, alongside healthy lifestyle measures
++2. **Second-line agents:** added if HbA1c is not at target; strongly consider at diagnosis if HbA1c >64 mmol/mol
++3. **Insulin:** considered when other medications are insufficient, or if significant hyperglycaemia
+ 
+ ### Key second-line medications (funded in New Zealand)
+ 
+-- **SGLT2 inhibitors** (e.g. empagliflozin) — reduce glucose, protect the heart and kidneys
+-- **GLP-1 receptor agonists** (e.g. dulaglutide, liraglutide) — reduce glucose and promote weight loss
+-- **Sulfonylureas** — reduce glucose but can cause hypoglycaemia
+-- **DPP-4 inhibitors, acarbose** — other options your doctor may consider
++- **SGLT2 inhibitors** (e.g. empagliflozin) and **GLP-1 receptor agonists** (e.g. dulaglutide, liraglutide): preferred second-line options for people with heart disease, heart failure or chronic kidney disease, whatever their HbA1c. Also an option when HbA1c stays above target and weight loss is wanted
++- **Sulfonylureas:** reduce glucose but can cause hypoglycaemia
++- **DPP-4 inhibitors, acarbose:** other options your doctor may consider
+ 
+-Funded empagliflozin, dulaglutide, or liraglutide are recommended for high-risk patients including those with kidney disease, heart disease, and Māori and Pacific patients.
++Funded access to empagliflozin, dulaglutide, and liraglutide widened in September 2026.
+ 
+ ### When insulin is considered
+ 
+ - HbA1c not at target despite lifestyle and non-insulin medications
+-- Symptoms of insulin deficiency (excessive thirst, frequent urination, unexplained weight loss)
+-- HbA1c >90 mmol/mol or blood glucose persistently >20 mmol/L
++- Symptoms of insulin deficiency (excessive thirst, frequent urination, weight loss)
++- HbA1c >90 mmol/mol or blood glucose persistently >20 mmol/L, at any stage including diagnosis
+ - Previous DKA or HHS
+ 
+ ---
+ 
++## Hypoglycaemia (Low Blood Glucose)
++
++Hypoglycaemia means a blood glucose below 4 mmol/L. Everyone on sulfonylureas or insulin needs to be able to recognise and treat it.
++
++**Signs and symptoms:** sweating and fatigue, palpitations, tremor, anxiety, hunger, dizziness and weakness, confusion. Severe cases can cause seizures and coma.
++
++**Hypoglycaemic unawareness:** low glucose without symptoms. It is uncommon, and repeated minor episodes can lead to it.
++
++**Common causes:** missed meals, exercise, alcohol, increasing insulin or sulfonylureas too quickly, worsening kidney function, and injecting insulin into new sites after previously injecting into areas of lipohypertrophy.
++
++Your doctor may consider:
++- Prescribing glucagon 1 mg injections if you are at high risk, and showing your partner or whānau how to give them. Glucagon has a short expiry date, so check it regularly
++- A night-time check between 2 am and 3 am, or CGM, if low glucose overnight is suspected
++- Reviewing your medications, and your fitness to drive, after a severe episode or frequent mild ones
++
++---
++
+ ## Sick Day Management
+ 
+-When you are unwell, your blood glucose levels can change significantly. Follow a sick day plan:
++When you are unwell, blood glucose can rise significantly (from stress, less activity, a changed diet, stopping medicines, or steroids). If you take sulfonylureas or insulin, glucose can also fall when you eat and drink less. Follow a sick day plan:
+ 
+ 1. Let someone know you are unwell
+ 2. Avoid strenuous exercise
+-3. Stay hydrated: drink 125–250 mL (half to one cup) of fluid every hour
++3. Stay hydrated: drink at least 125 to 250 mL (half to one cup) of fluid every hour
+    - If eating normally: water or sugar-free drinks
+-   - If on insulin/sulfonylureas and not eating normally: try small snacks (crackers, toast); if glucose <8 mmol/L, drink carbohydrate-containing fluids (cordial, sports drinks, ORS)
++   - If on insulin/sulfonylureas and not eating normally: try small meals (crackers, toast); if glucose <8 mmol/L, drink carbohydrate-containing fluids (cordial, "flat" soft drinks, sports drinks, ORS)
+ 4. Monitor blood glucose more frequently
+ 5. Avoid NSAIDs (e.g. ibuprofen)
+ 6. Adjust medications as directed:
+-   - **SGLT2 inhibitors:** Stop when unwell. Get ketone levels checked if you have nausea, vomiting, or abdominal pain
+-   - **Insulin/sulfonylurea:** Reduce or skip bolus insulin or sulfonylurea if eating less; reduce basal or premixed insulin by 20–30%
+-   - **Metformin, DPP-4 inhibitors, GLP-1 agonists, acarbose:** Stop during acute gastrointestinal illness; restart when well
++   - **SGLT2 inhibitors:** Stop when unwell. Get ketone levels checked at your practice or hospital if you have nausea, vomiting, or abdominal pain, even after stopping
++   - **Insulin/sulfonylurea:** Reduce or skip bolus insulin or sulfonylurea if eating less; reduce basal or premixed insulin by 20–30%. Correction insulin can be taken every 4 hours as needed for high glucose
++   - **Metformin, DPP-4 inhibitors, GLP-1 agonists, acarbose:** Stop during acute gastrointestinal illness; restart when well. Your doctor may also advise pausing a GLP-1 agonist if you are at risk of dehydration
+ 7. Contact your doctor if you are not improving or are concerned
+ 
+ ---
+@@ -196,9 +231,11 @@ When you are unwell, your blood glucose levels can change significantly. Follow
+ 
+ **Before driving:** Ensure blood glucose is above 4.2 mmol/L ("Above 5, safe to drive").
+ 
+-**On long trips:** Stop and check glucose every 2–3 hours. Have your glucose meter and hypoglycaemia treatment in the car.
++**On long trips:** Stop and check glucose every 2–3 hours, or as soon as you have hypoglycaemia symptoms. Have your glucose meter or CGM and hypoglycaemia treatment with you at all times.
++
++**Alcohol:** Avoid even small amounts if you plan to drive.
+ 
+-**After a hypoglycaemic episode — stand-down periods before driving:**
++**After a hypoglycaemic episode (stand-down periods before driving):**
+ 
+ | Type of episode | Stand-down period |
+ |---|---|
+@@ -207,18 +244,18 @@ When you are unwell, your blood glucose levels can change significantly. Follow
+ | Severe, sulfonylurea-induced | 48 hours |
+ | Severe, while driving | 1 month (specialist assessment required) |
+ 
+-**Commercial licences (class 2–5):** Annual medical assessment is required if on insulin or sulfonylureas. This can now be done by your GP — specialist review is no longer mandatory for type 2 diabetes.
++**Commercial licences (class 2–5, or P, V, I, or O endorsements):** Annual medical assessment is required if on insulin or sulfonylureas. Your GP or nurse practitioner can now do this. Specialist review is no longer mandatory for type 2 diabetes.
+ 
+-There is no legal cut-off for hyperglycaemia and driving — do not drive if you feel unwell or your decision-making is impaired.
++There is no legal cut-off for hyperglycaemia and driving. Do not drive if you feel unwell or your decision-making is impaired.
+ 
+ ---
+ 
+ ## Glucocorticoid (Steroid) Use
+ 
+-Steroids can significantly raise blood glucose. If you are prescribed steroids:
+-- More frequent blood glucose monitoring is needed
+-- Your doctor may start or increase sulfonylurea, or add insulin, to manage steroid-induced hyperglycaemia
+-- Insulin doses may need adjusting every 2–3 days
++Steroids can raise blood glucose. Glucose management may be needed with steroids at any dose or duration. If you are prescribed steroids:
++- More frequent blood glucose monitoring may be needed, especially if you feel unwell, or glucose is unexpectedly high, persistently more than 15 mmol/L, or below 4 mmol/L
++- If you are not on insulin, your doctor may start or increase a sulfonylurea, or consider intermediate-acting insulin if glucose is higher (e.g. more than 15 mmol/L) or not on target with a sulfonylurea
++- If you are on insulin, doses may need adjusting every 2–3 days until on target. A dose change can take up to 3 days to show its full effect
+ 
+ ---
+ 
+@@ -230,27 +267,29 @@ Your doctor will manage any complications that develop. Key areas:
+ 
+ | Target | Indication |
+ |---|---|
+-| <140/90 mmHg | Low CVD risk, no complications |
++| <140/90 mmHg | 5-year CVD risk below 5% and no complications |
+ | <130/80 mmHg | Microvascular/macrovascular complications, or 5-year CVD risk ≥5% |
+ | <125/75 mmHg | Young patients with complications |
+ 
+-Medications may include ACE inhibitors, ARBs, calcium channel blockers. For patients with kidney disease, an ACE inhibitor or ARB is preferred.
++Medications may include ACE inhibitors, ARBs, calcium channel blockers. For patients with kidney disease, an ACE inhibitor or ARB is preferred. ACE inhibitors or ARBs may also be first choice with heart failure.
+ 
+ ### Cholesterol
+ 
+ - Target LDL cholesterol: less than 1.4 mmol/L
+-- First-line: statin (e.g. atorvastatin)
++- First-line: statin (e.g. atorvastatin), adjusted every 3 to 6 months based on non-fasting levels
+ - Add ezetimibe if LDL remains above target on maximum statin dose
+-- Rosuvastatin may be used for patients who cannot reach LDL target on other statins (or as first-line for Māori and Pacific patients at high CVD risk)
++- Rosuvastatin may be used for patients who cannot reach LDL target on maximal tolerated doses of atorvastatin or simvastatin (or as first-line for Māori and Pacific patients at risk of CVD)
+ - Statin therapy is routinely recommended for established cardiovascular disease, 5-year CVD risk ≥15%, or diabetic kidney disease
++- Self-funded PCSK9 inhibitors (potent LDL-lowering medicines) are an option if LDL target cannot be reached
++- Bezafibrate, acipimox, and omega-3 fatty acid (fish oil) preparations have not been shown to reduce mortality in people with diabetes. They may be used for significant high triglycerides (more than 10 mmol/L) that persist despite lifestyle changes and optimised glucose control (especially insulin)
+ 
+ ### Eyes
+ 
+-Retinal photo-screening at diagnosis and then regularly. Diabetic retinopathy is a leading cause of preventable blindness.
++Retinal photo-screening timing depends on your HbA1c and how long you have had diabetes (see Annual Review). It is repeated at least every 3 years.
+ 
+ ### Kidneys
+ 
+-Annual urine albumin:creatinine ratio and eGFR. Kidney disease is more common in Māori and Pacific peoples.
++Annual urine albumin:creatinine ratio and eGFR. Kidney screening is especially important for Māori and Pacific people.
+ 
+ ### Feet
+ 
+@@ -258,12 +297,14 @@ Annual foot examination at minimum. High-risk patients should have feet examined
+ 
+ ### Teeth
+ 
+-Diabetes increases the risk of dental and periodontal disease. Regular dental care is important.
++Your teeth and gums are checked as part of your review. Your doctor may refer you if you have significant dental or periodontal (gum) disease.
+ 
+ ### Cholesterol and heart disease
+ 
+ Addressed above under blood pressure and cholesterol management.
+ 
++People with diabetes have a higher risk of bleeding on antiplatelet medicines, so these are used with more caution. For preventing a first heart attack or stroke, aspirin is generally considered only if you are younger than 70 years, your 5-year CVD risk is 15% or higher, and your bleeding risk is low. If you already have cardiovascular disease, antiplatelet therapy is recommended unless it is unsuitable for you.
++
+ ---
+ 
+ ## When Your Doctor May Refer You
+@@ -279,11 +320,14 @@ Your doctor may refer you to a specialist or other service if:
+ - Bariatric surgery is being considered
+ - Driving assessment is needed due to hypoglycaemia concerns
+ 
++**Diabetes education:** Individual or group diabetes self-management education and support (DSMES) may be offered at diagnosis, each year, when complications develop, and after changes in life or care. It covers living well with diabetes, how diabetes and its treatments work, preventing and managing complications, sick days, self-monitoring, managing hypoglycaemia, and driving. It should be culturally appropriate and ideally involve whānau. Culturally appropriate services, community groups such as Diabetes New Zealand, and mobile apps can also help.
++
+ ---
+ 
+ ## Patient Resources
+ 
+-- [Healthify He Puna Waiora – How is Diabetes Managed?](https://healthify.nz)
+-- [Healthify He Puna Waiora – Diabetes Foot Care](https://healthify.nz)
+-- [Healthify He Puna Waiora – Diabetes Type 2 Sick Day Plan](https://healthify.nz)
+-- [Diabetes New Zealand – Diabetes & Travelling](https://diabetes.org.nz)
++- [Healthify He Puna Waiora – How is Diabetes Managed?](https://healthify.nz/health-a-z/d/diabetes-management)
++- [Healthify He Puna Waiora – Diabetes Foot Care](https://healthify.nz/health-a-z/d/diabetes-foot-care)
++- [Healthify He Puna Waiora – Diabetes Type 2 Sick Day Plan](https://healthify.nz/health-a-z/d/diabetes-sick-day-plan)
++- [Healthify He Puna Waiora – Diabetes Type 2 Apps](https://healthify.nz/apps/d/diabetes-type-2-apps)
++- [Diabetes New Zealand – Diabetes & Travelling](https://www.diabetes.org.nz/managing-diabetes-travelling-2)

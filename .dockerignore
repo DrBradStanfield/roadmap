@@ -47,3 +47,6 @@ docs/wiki/research/
 **/_*.mjs
 **/_*.ts
 **/_*.js
+
+# Archived, unsigned clinical drafts (never loaded by the server)
+archive/
