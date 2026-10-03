@@ -5,11 +5,9 @@ how to improve it. Maintained by the weekly loop (see [LOOP.md](LOOP.md)) and by
 build sessions. Dated, tagged, newest at the bottom. Read before appending — no
 duplicates.
 
-- **2026-08-06 [usage]** First audit: the tool's audience is small but deeply
-  engaged (23–69-min sessions, returning desktop users 12+ min); blog→CTA→tool
-  is the working funnel; microvitamin.com's embed had zero traffic.
-- **2026-08-06 [usage]** The chatbot doubles as unpaid customer support (~17% of
-  queries) and ~48% of router lookups go unmatched — both improvement levers.
+- **2026-08-06 [usage]** First audit: a small, deeply engaged audience (23–69-min
+  sessions); blog→CTA→tool is the working funnel; the chatbot doubles as
+  customer support (~17% of queries). Detail: docs/usage-audit-2026-08.md.
 - **2026-08-07 [bug-class]** The three defects found this week (eraseEpoch
   resurrection, reminder-optout revert, BP validation hole) share one shape:
   a mutation path that bypasses the established stamped/validated helper. When
@@ -67,27 +65,20 @@ duplicates.
   same fingerprint). **Receded by 2026-09-05:** 4,133 sessions/3d, organic
   mobile/Google-led shape, `/pages/roadmap` extractable again — floods can
   end on their own; re-check shape every pull rather than carrying the gap.
-- **2026-08-16 [usage]** First week of the email machine (US-17/22/23): 18
-  enrolments — 17 typed vs 3 cloud rows all-time, so the ~10:1 typed-lane bet
-  held almost exactly; 40% plan-ready click rate; 1/25 bounce; 0 opt-outs.
-  Meanwhile per-day funnel rates were flat W32→W33 (results_viewed ~50/day):
-  raw weekly counts "doubled" only because W32 was a partial week.
+- **2026-08-16 [usage]** The typed reminder lane outdraws cloud ~10:1 (W33: 17
+  vs 3; W40: 194 vs 20 all-time). A partial first week fakes a "doubling":
+  compare per-day rates across a series' first two weeks.
 - **2026-08-29 [tooling]** git approxidate parses `--since=8d` as "August 8"
   (day-of-month), NOT "8 days ago" — so the charter's workflow-integrity
   command over-scans mid-month and, in the first days of a month, resolves to
   a FUTURE date and silently returns empty: a falsely-clean tripwire. Use
   `--since="8 days ago"` or an explicit ISO date. (Adversarial-review catch,
   W35; substance re-verified with explicit dates — the window was clean.)
-- **2026-08-29 [usage]** "Nothing due until 2027" is stale since the typed
-  lane shipped: enrolment now captures already-overdue items, so real sends
-  can begin any week. They HAVE — the first genuine reminder send was stamped
-  (`last_sent`) 2026-08-28 on a row enrolled 08-25 with an item due 08-01,
-  inside the PGRST303 cron-fault window. Verify any "nothing due" claim
-  against live `reminder_optin_v2` schedules, not memory of the old cohort.
-  `reminder_sent` instrumented 2026-08-30 (server-only, forge-rejected at the
-  client route); sends are rare by design (90/180/365d cooldowns). **Verified
-  2026-09-05 (W36):** 2 fires, matching the window's only 2 `last_sent`
-  stamps exactly — the event and the stamp now corroborate each other.
+- **2026-08-29 [usage]** The typed lane enrols already-overdue items, so real
+  reminder sends happen any week (first 08-28); check live `reminder_optin_v2`
+  schedules, never memory, before saying "nothing due". `reminder_sent`
+  (server-only) has matched the in-window `last_sent` stamps every week since
+  W36 (W40: 3 = 3); a mismatch is the finding.
 - **2026-09-05 [bug-class]** A docs-rewrite commit can silently delete a third
   of the product spec: `2285724` (09-01, message describes only US-32 edits)
   removed US-12–US-28 + Epics D–G from `user-stories.md` (+18/−221) and
@@ -131,8 +122,9 @@ duplicates.
   by counting nested dates inside the window (W37: 2 = 2, W38: 0 = 0), never
   by a range filter on the column (PostgREST answers 22P02). Server-side
   `product_events` carry the nil-UUID `visitor_id`, so burst detection groups
-  on `metadata.client`. The unsubscribe route hard-deletes the opted-out row,
-  so `reminder_optin_total` can fall by one per optout.
+  on `metadata.client`. Unsubscribe TOMBSTONES the row (empty schedule) since
+  09-10 (`reminder-v2.server.ts:379-393`), so optouts never lower
+  `reminder_optin_total`; count live rows apart (W40: 214 rows, 210 live).
 - **2026-09-19 [usage]** An `mcp_authorize_shown` burst marks the REFUSAL
   path, not a scan and not a normal connect: on 09-17 two 4-row bursts
   (02:18, 02:24, client chatgpt) were each followed ~1 s later by a
@@ -140,7 +132,10 @@ duplicates.
   rendered the page once or twice and consented. Both bursts sat inside Brad's
   own re-test (AC34 commits 01:04Z/02:38Z, his OpenAI reply 02:20Z). Read the
   charter's probe rule with the refusal and consent rows beside it, or Brad's
-  tests count as attacks.
+  tests count as attacks. Confirmed again 09-30: the reviewer left quiet
+  shown→consent rows with no return (15:55Z, 16:03Z), while the 19:50Z burst
+  with every refusal reason was Brad's probes. His `docs/reviews/` write-up
+  for the week names both; read it before attributing any connector row.
 - **2026-09-26 [fleet]** A GitHub account flag (~09-18, support ticket open a
   week) removed three sources at once: Actions (the CI tripwire, Tier 3, deploys —
   the API just shows zero runs and a truncated history), Pages (the US-38
@@ -158,3 +153,15 @@ duplicates.
   YouTube-bot's rise (37 → 86) came from a video first seen 09-23 (checkable via
   `router_context.videoId`). A referrer HOST on `results_viewed` (no path, no
   query) is the missing instrument (W39 backlog #3).
+- **2026-10-03 [usage]** The plan-ready email's button cannot bring a guest's
+  plan back, and mostly doesn't: 14 of 17 W40 clicks fired `email_landing_empty`
+  within 3.3 s (16 of 21 since 09-24); the notice recovered 2 of 8 visitors.
+  The emit is awaited after the record load and guest-only, so it is not a
+  race. Local-first puts the only fix at capture time, in the browser holding
+  the plan. Pair clicks to landings by timestamp; the email events' constant
+  `visitor_id` cannot.
+- **2026-10-03 [instrumentation]** A behaviour fix can silently redefine a
+  counter: `remote_change_applied` fell 190 → 5 when bundle 87a0eff (US-34
+  "never repeat one") stopped announcing re-reads; the unkeyed rows end at
+  09-24T21:49. Before reading a big drop as usage, find the last row of the old
+  metadata shape and the deploy just before it (cousin of the 08-10 entry).
