@@ -329,6 +329,7 @@ export {
   CHAT_HISTORY_MAX_CONVERSATIONS,
   MAX_HISTORY_MESSAGES,
   MAX_HISTORY_TURN_CHARS,
+  cutText,
   createEmptyChatHistoryFile,
   migrateChatHistoryFile,
   mergeChatHistoryFiles,

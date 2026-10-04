@@ -143,3 +143,64 @@ describe('US-15 AC19 — only the chat that applies edits asks for the tools', (
     expect(await sendWith()).toBe(false);
   });
 });
+
+// US-15 AC26 (2026-10-04): a pasted lab report or prompt template is kept whole
+// up to 8,000 characters; it was cut silently at 500.
+describe('US-15 AC26 — the input holds 8,000 characters', () => {
+  const pasted = (n: number) => 'x'.repeat(n);
+
+  it('US-15 AC26: the cap is 8,000', () => {
+    expect(hookModule.MAX_CHARS).toBe(8000);
+  });
+
+  it('US-15 AC26: a 3,000-character paste is not truncated', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    act(() => hook.result.current.actions.handleInputChange(pasted(3000)));
+    expect(hook.result.current.state.inputText).toHaveLength(3000);
+  });
+
+  it('US-15 AC26: an 8,001-character paste keeps the first 8,000', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    act(() => hook.result.current.actions.handleInputChange(pasted(8001)));
+    expect(hook.result.current.state.inputText).toHaveLength(8000);
+  });
+
+  it('US-15 AC26: an 8,000-character message is sent whole', async () => {
+    const { sendMessage } = await import('../lib/chat-api');
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    act(() => hook.result.current.actions.handleInputChange(pasted(8000)));
+    act(() => { void hook.result.current.actions.handleSend(); });
+    expect((sendMessage as unknown as { mock: { calls: unknown[][] } }).mock.calls.at(-1)![0]).toBe(pasted(8000));
+  });
+});
+
+describe('US-15 AC26 — a cut paste is announced', () => {
+  const NOTICE = 'Your message was cut at 8,000 characters.';
+
+  it('US-15 AC26: a paste over 8,000 shows the notice; the next normal edit clears it', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    act(() => hook.result.current.actions.handleInputChange('x'.repeat(8001)));
+    expect(hook.result.current.state.error).toBe(NOTICE);
+    act(() => hook.result.current.actions.handleInputChange('x'.repeat(7999)));
+    expect(hook.result.current.state.error).toBeNull();
+  });
+
+  it('US-15 AC26: sending clears the notice', async () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    act(() => hook.result.current.actions.handleInputChange('x'.repeat(9000)));
+    act(() => { void hook.result.current.actions.handleSend(); });
+    expect(hook.result.current.state.error).toBeNull();
+  });
+
+  it('US-15 AC26: a paste within the cap shows no notice', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    act(() => hook.result.current.actions.handleInputChange('x'.repeat(8000)));
+    expect(hook.result.current.state.error).toBeNull();
+  });
+
+  it('US-15 AC26: an emoji straddling 7999/8000 is dropped, not split', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    act(() => hook.result.current.actions.handleInputChange('x'.repeat(7999) + '😀'));
+    expect(hook.result.current.state.inputText).toBe('x'.repeat(7999));
+  });
+});
