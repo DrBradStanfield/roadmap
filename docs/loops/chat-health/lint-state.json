@@ -1,7 +1,145 @@
 {
  "version": 1,
- "lastRun": null,
- "cursor": 0,
+ "lastRun": "2026-10-04T01:14:20.468Z",
+ "cursor": 1,
+ "pairs": {
+  "c6ab8482d146": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "bb831316e1f3": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "3db7c5287af8": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "2d83c6b61fba": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "4af8887835be": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "09d881ef0c7b": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "8b792bc05f66": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "42ba679edcb9": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "2e354aebe6b0": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "a3e55bfbe47f": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "f16ba42af533": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "3477c5910980": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "64ea826417e2": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "33afa762d12a": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "dbec00c8d08d": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "d93c9e4e66f2": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "aab4e2294f11": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "0fbcc4375a9f": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "3d008549e89a": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "81ad22a9c593": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "be856741cc99": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "73c0e3415b61": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "1311119a321b": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "212442b0db80": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "71262d11e6b3": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "2de42b9c8026": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "750c0218e304": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "262a50ee7a46": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "321d2d4cc822": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "8c7e79e75890": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "aa2d4697b17e": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "a5d658dcd534": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "38aca5d5d919": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  },
+  "095928a1e70a": {
+   "last_attempted": "2026-10-04T01:14:20.468Z",
+   "status": "done"
+  }
+ },
  "algorithm": {
   "lipids": "834534ae59d23027",
   "glycaemia": "c04f19fc731f2872",
@@ -725,7 +863,7 @@
    "products": 2
   },
   "collagen-benefits-best-forms-dosing-and-side-effects": {
-   "hash": "bf709ad56cd83492",
+   "hash": "932de87c679ca128",
    "products": 2
   },
   "cranberry-benefits-best-forms-dosing-and-side-effects": {
@@ -809,7 +947,7 @@
    "products": 0
   },
   "menopause-supplements-benefits-evidence-dosing-and-side-effects": {
-   "hash": "39651c8eeca4a9f1",
+   "hash": "b884827d6fb6938e",
    "products": 0
   },
   "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects": {
@@ -1269,7 +1407,7 @@
    "products": 1
   },
   "sleep": {
-   "hash": "98c1ee07c68516a6",
+   "hash": "cb2c5401681a9233",
    "products": 5
   },
   "abdominal-aortic-aneurysm": {

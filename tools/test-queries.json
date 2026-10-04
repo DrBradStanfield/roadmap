@@ -2867,5 +2867,37 @@
     "category": "lifestyle",
     "source": "production",
     "notes": "2026-09-26 chat-health loop (W39 run): real widget turn 2026-09-22, paraphrased on ingest. An own-data assessment ask with no named topic; rule 7's own example ('Based on my data, what should I improve first?') says this ROUTES to the diet/exercise guideline, and the classifier's MEASUREMENT label is read-back only, so the classifier (ROUTE) was right and the empty was a router miss. Re-bucketed from in-context to routing miss by the W39 adversarial review. BASELINE 2026-09-26: ∅ 3/3 as typed and ∅ 3/3 with this paraphrase (lifestyle run 14/15). The guideline summaries already carry the natural words ('what should I eat', 'how much per week'), so no summary edit applies — router territory, KNOWN-FAIL."
+  },
+  {
+    "query": "Started a low-dose statin recently and waiting on new bloods to check my cholesterol. Why would I need cholesterol cancer screening? And what's a FIT test?",
+    "expected": [
+      "national-bowel-screening-programme",
+      "cancer-tests-you-need-right-now",
+      "colorectal-symptoms",
+      "colorectal-cancer-risk"
+    ],
+    "category": "gi",
+    "source": "production",
+    "notes": "2026-10-04 chat-health loop (W40 run): real widget turn 2026-09-27, paraphrased on ingest (the user's 'cholesterol cancer screening' slip is kept: it is under test). Multi-topic ask (statin follow-up plus bowel screening and FIT); national-bowel-screening-programme covers FIT inside its visible summary. Router returned empty in production on router_version 1 (Haiku 4.5). BASELINE 2026-10-04 on the Sonnet 5.5 router (v2): as typed PASS 6/6 (national-bowel-screening-programme and colorectal-symptoms every run, hyperlipidaemia 5 of 6). Paraphrase PASS 6/6 (two gi,metabolic runs, 14/14 each). A v1-era miss the router swap fixed; kept as a regression guard."
+  },
+  {
+    "query": "Act as a health data analyst. Go through all my dashboard results below and tell me where I sit against the targets and optimal ranges. Focus on my HbA1c: what it means, whether it's healthy, and how it compares with my other metabolic and heart markers. Lay it out as: 1. A short summ",
+    "expected": [
+      "prediabetes",
+      "diabetes-screening-and-diagnosis-in-adults",
+      "type-2-diabetes"
+    ],
+    "category": "metabolic",
+    "source": "production",
+    "notes": "2026-10-04 chat-health loop (W40 run): real widget turn 2026-09-27, paraphrased on ingest; a pasted role-prompt template, cut mid-word at the widget's 500-character input cap (useChatState MAX_CHARS), so the router saw exactly this much and no values. Interpretation of a named analyte, so rule 7 ROUTES it. Router returned empty in production on router_version 1 (Haiku 4.5). BASELINE 2026-10-04 on the Sonnet 5.5 router (v2), stored text as typed: PASS 6/6 (prediabetes every run; diabetes-screening-and-diagnosis-in-adults 5 of 6). Paraphrase PASS 6/6 (two gi,metabolic runs, 14/14 each). A v1-era miss the router swap fixed; kept as a regression guard."
+  },
+  {
+    "query": "Pretend you're a doctor going over my blood test. I'm pasting my results below, so tell me what they say about my health. I get that you're not my physician and this isn't medical advice, but explain it plainly. Cover: - which numbers are outside the normal range - what each abnormal one could point to - any patterns or links betw",
+    "expected": [
+      "5-livesaving-blog-tests"
+    ],
+    "category": "lifestyle",
+    "source": "production",
+    "notes": "2026-10-04 chat-health loop (W40 run): real widget turn 2026-09-27, paraphrased on ingest; a pasted role-prompt template cut mid-word at the widget's 500-character input cap (useChatState MAX_CHARS), so no result value reached the router. An interpretation ask, which rule 7 routes; 5-livesaving-blog-tests is the entry on which blood tests matter and what they show. Router returned empty in production on router_version 1 (Haiku 4.5). Re-bucketed from 'own-data paste, no analyte' to routing miss by the W40 adversarial review. BASELINE 2026-10-04 on the Sonnet 5.5 router (v2): as typed ∅ 6/6. Same family as the W39 'rate my overall health' fixture (∅ 6/6 on v2): own-data asks with no named topic still refuse. KNOWN-FAIL."
   }
 ]
