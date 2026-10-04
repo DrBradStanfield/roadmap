@@ -9,9 +9,9 @@ Story: US-43. The loop reports and queues; a build session does the fixing
 The Sonnet call is a harness call from a script, like `test-chatbot-matching.ts`,
 not a spawned worker, so LOOP.md's "never Sonnet" worker rule does not apply.
 
-**No `--run` until Brad says yes.** The first model run waits for Brad's
-written yes on the cost line below. Until then the Sunday job runs steps 1, 2
-and 3 only: the deterministic half and the cost estimate.
+**`--run` every week (Brad, 2026-10-04, issue #125).** The first model run
+was supervised on 2026-10-04: $0.47 over 34 comparisons, 15 findings kept.
+Every Sunday job now runs steps 1 to 6 under the $2 cap.
 
 ## Limits (the orchestrator's, binding)
 
@@ -40,7 +40,7 @@ and 3 only: the deterministic half and the cost estimate.
 3. `npx tsx tools/knowledge-lint-compare.ts`: the comparisons still owed, their
    cost estimate, and a `CUT` line for every excerpt that did not fit (chars
    sent against chars available). Stop and name it if the estimate passes $2.
-4. Only after Brad's yes: `npx tsx tools/knowledge-lint-compare.ts --run
+4. `npx tsx tools/knowledge-lint-compare.ts --run
    --max-calls 60 --max-usd 2` with `ANTHROPIC_TEST_API_KEY`. Paste its
    `Cost:`, `Findings:`, `Fix queue:`, `PARKED` and `State` lines. It records
    every attempt in `lint-state.json`: an answer that is missing, refused,

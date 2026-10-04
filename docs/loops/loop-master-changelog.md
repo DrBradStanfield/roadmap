@@ -5,6 +5,12 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-10-04 (Brad-directed: no Codex in cloud loops):** Brad: "run Codex only on your Mac, and let
+  the cloud loops rely on the Claude adversary alone." Codex signs in only with his ChatGPT
+  subscription on his Mac; he does not want API credits spent. Orchestration's "Codex beside the
+  adversary" bullet (API-key login, 2026-09-28) became "No Codex in cloud loops": the fresh adversary
+  is the whole review and the retro names it in one line, not as a gap. CLAUDE.md, the codex-review
+  skill and US-40 AC10 changed in the same commit (the AC8 drift test passes). Supersedes 2026-09-28.
 - **2026-09-28 (Brad-directed: loop effort high):** Brad: "set to high". The cloud environment
   now sets `CLAUDE_CODE_EFFORT_LEVEL=high` (replacing the unread `CLAUDE_EFFORT_LEVEL`), reversing
   the earlier "never set it" rule; Orchestration says so. Probe run `cse_01Vam9JbCqtMu36cb81DkHf1`

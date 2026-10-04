@@ -4,6 +4,9 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-10-04 (Brad, issue #125): the weekly lint's model step runs every
+  week under the $2 cap, after one supervised run ($0.47, 15 findings).
+  Weekly lint section: "waits for Brad's yes" became "Brad said yes".
 - 2026-09-29 (Brad, knowledge-refresh plan decision 6): the weekly lint
   joins the loop. Deterministic rules (`tools/knowledge-lint.ts`) and Sonnet
   5.5 detection (`tools/knowledge-lint-compare.ts`) over changed entries plus
