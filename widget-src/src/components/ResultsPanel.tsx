@@ -38,14 +38,16 @@ interface ResultsPanelProps {
   unitOverrides?: Partial<Record<MetricType, UnitSystem>>;
   hasUnsavedLongitudinal?: boolean;
   onSaveLongitudinal?: () => Promise<unknown>;
-  onDeleteData?: () => void;
+  /** Resolves true once the data is erased (false if cancelled or failed). */
+  onDeleteData?: () => Promise<boolean>;
   isDeleting?: boolean;
   sex?: 'male' | 'female';
   showEmailCapture?: boolean;
   formStage?: number;
   /** Cloud connection controls shared by Shopify and Pages. Hidden for new users
-   *  until they have entered real data. */
-  syncControl?: (ctx: { hasData: boolean }) => React.ReactNode;
+   *  until they have entered real data. `attention` (US-09 AC19): the guest has
+   *  their PDF, so the storage button may pulse. */
+  syncControl?: (ctx: { hasData: boolean; attention: boolean }) => React.ReactNode;
   /** The local-first email-reminders section (US-17), rendered as its own block
    *  lower in the plan — not bolted onto the sync line at the top. */
   remindersSection?: React.ReactNode;
@@ -548,13 +550,17 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
   // not be built). A window that opens clears it, and so does an erase.
   const [pdfBlocked, setPdfBlocked] = useState<PdfButton | null>(null);
   if (!results && pdfBlocked) setPdfBlocked(null);
+  // US-09 AC19: a print window opened in this tab (the gate-skipped page's PDF).
+  // Only an erase forgets it: the plan also goes blank mid-edit.
+  const [pdfOpened, setPdfOpened] = useState(false);
   // Emptied first (inside the click) so a repeat refusal is announced again.
   const printReport = async (at: PdfButton) => {
     setPdfBlocked(null);
     const report = await getReportHtml();
     const opened = report.success && !!report.html && openPrintWindow(report.html);
     setPdfBlocked(opened ? null : at);
-    if (!opened) trackProductEvent('pdf_window_blocked');
+    if (opened) setPdfOpened(true);
+    else trackProductEvent('pdf_window_blocked');
   };
 
   const handlePrint = async (at: PdfButton) => {
@@ -638,11 +644,18 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
   // The note (and the capture box it can sit in) changes the plan's height.
   useEffect(() => { onLayoutChange?.(); }, [pdfBlocked, guestEmailHook.emailError, guestEmailHook.state]);
 
+  // US-09 AC19: the guest has their PDF (or, on the gate-skipped page, signed up
+  // for reminders, which marks the record captured). Never before, so the storage
+  // button's pulse never competes with the email box.
+  const { state: emailState, gateSkipped } = guestEmailHook;
+  // Pages has no email gate or funnel, even for a record captured on Shopify.
+  const attention = SHOPIFY_SURFACE && (emailState === 'captured' || emailState === 'reminded' || (!!gateSkipped && pdfOpened));
+
   if (!isValid || !results) {
     return (
       <div className="health-results-panel">
         <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={null} muted />
-        {syncControl?.({ hasData: false })}
+        {syncControl?.({ hasData: false, attention })}
         <div className="plan-empty-preview">
           <p className="plan-empty-intro">
             <strong>Here's what your plan will look like.</strong> Real suggestions appear once you fill in your details.
@@ -719,7 +732,7 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
     <div className="health-results-panel">
       <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={planHeaderMeta} actions={planHeaderMeta !== null} />
       {/* Cloud connection */}
-      {syncControl?.({ hasData: true })}
+      {syncControl?.({ hasData: true, attention })}
       {showEmailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
 
       {/* Quick Stats */}
@@ -867,7 +880,7 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
         <div className="delete-data-section">
           <button
             className="delete-data-link"
-            onClick={onDeleteData}
+            onClick={async () => { if (await onDeleteData()) setPdfOpened(false); }}
             disabled={isDeleting}
           >
             {isDeleting ? 'Deleting...' : 'Delete All My Data'}

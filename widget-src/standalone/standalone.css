@@ -152,3 +152,20 @@
 /* US-09 AC5 — "Where do you want to keep your health record?" leads the local
    state, so it spans the card instead of sitting right-aligned beside a status. */
 .hr-sync-btn-full { margin-left: 0; width: 100%; box-sizing: border-box; }
+/* US-09 AC19: once the guest has their PDF, the storage button wears the form's
+   attention-pulse glow (keyframes in styles.css) until first pressed. The PDF
+   clone drops .hr-sync; the print rule covers printing the page itself. */
+.hr-sync-btn-attention {
+  -webkit-animation: attention-pulse 2s ease-in-out infinite;
+  animation: attention-pulse 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hr-sync-btn-attention {
+    -webkit-animation: none;
+    animation: none;
+    box-shadow: 0 0 6px 3px rgba(0, 163, 139, 0.38);
+  }
+}
+@media print {
+  .hr-sync-btn-attention { -webkit-animation: none; animation: none; box-shadow: none; }
+}

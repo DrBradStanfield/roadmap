@@ -149,7 +149,7 @@ async function mirrorSavedLists(): Promise<void> {
   if (result) patchMirror({ medications: result.medications, screenings: result.screenings });
 }
 
-export function HealthTool({ syncControl, remindersSection }: { syncControl?: (ctx: { hasData: boolean }) => ReactNode; remindersSection?: ReactNode } = {}) {
+export function HealthTool({ syncControl, remindersSection }: { syncControl?: (ctx: { hasData: boolean; attention: boolean }) => ReactNode; remindersSection?: ReactNode } = {}) {
   // The store is ready before render, so returning users see their saved prefill immediately.
   const [inputs, setInputs] = useState<Partial<HealthInputs>>(getInitialInputsSync);
   // What the matrices' drafts lend the plan and the chat, by field (US-03
@@ -687,7 +687,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
 
   const handleDeleteData = useCallback(async () => {
     const confirmed = window.confirm(ERASE_CONFIRM);
-    if (!confirmed) return;
+    if (!confirmed) return false;
 
     setIsDeleting(true);
     const result = await deleteUserData();
@@ -705,6 +705,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     } else {
       window.alert(result.error || 'Failed to delete data. Please try again.');
     }
+    return result.success;
   }, []);
 
   // One field's new value, from the form or the chat. A weight or waist

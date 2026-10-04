@@ -390,3 +390,102 @@ describe('US-44 AC1 — the block setting', () => {
     expect(rootTag).toContain('data-skip-email-gate="{{ block.settings.skip_email_gate }}"');
   });
 });
+
+// US-09 AC19: the plan tells the storage button to pulse once the guest has
+// their PDF: the record captured (gated page, this or a later visit), or on a
+// gate-skipped page a Save as PDF whose window opened in this tab. Never before,
+// so it never competes with the email box.
+describe('US-09 AC19 — the storage button\'s attention flag', () => {
+  const syncControl = ({ hasData, attention }: { hasData: boolean; attention: boolean }) =>
+    hasData ? <span data-testid="sync">{String(attention)}</span> : null;
+  const attention = (view: ReturnType<typeof showPlan>) => view.getByTestId('sync').textContent;
+  const fillAndCapture = (view: ReturnType<typeof showPlan>) => {
+    fireEvent.change(view.container.querySelector('#guestEmail')!, { target: { value: 'reader@example.com' } });
+    fireEvent.click(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })[0]);
+  };
+
+  it('gated: off before capture and while sending, on once captured', async () => {
+    mocks.skip.value = false;
+    let send!: (r: { success: boolean }) => void;
+    mocks.sendGuestReport.mockReturnValue(new Promise((r) => { send = r; }));
+    const view = showPlan({ syncControl });
+    expect(attention(view)).toBe('false');
+    fillAndCapture(view);
+    await waitFor(() => expect(print).toHaveBeenCalledOnce());
+    expect(attention(view)).toBe('false'); // the window opened, but the capture is still sending
+    send({ success: true });
+    await waitFor(() => expect(attention(view)).toBe('true'));
+  });
+
+  it('gated: a capture that fails to send stays off', async () => {
+    mocks.skip.value = false;
+    mocks.sendGuestReport.mockResolvedValue({ success: false, error: 'Please retry' });
+    const view = showPlan({ syncControl });
+    fillAndCapture(view);
+    await waitFor(() => expect(view.getAllByText('Please retry').length).toBeGreaterThan(0));
+    expect(attention(view)).toBe('false');
+  });
+
+  it('a later visit to a captured record is on from the start', () => {
+    mocks.skip.value = false;
+    mocks.getReportEmailCaptured.mockReturnValue(true);
+    expect(attention(showPlan({ syncControl }))).toBe('true');
+  });
+
+  it('skip-gate: off until a Save as PDF window opens; a refused window keeps it off', async () => {
+    vi.mocked(window.open).mockImplementation(() => null);
+    const view = showPlan({ syncControl });
+    expect(attention(view)).toBe('false');
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(view.getByText(PDF_WINDOW_BLOCKED)).toBeTruthy());
+    expect(attention(view)).toBe('false');
+    vi.mocked(window.open).mockImplementation(() => ({ document: { write: vi.fn(), close: vi.fn() }, print }) as unknown as Window);
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(attention(view)).toBe('true'));
+  });
+
+  it('skip-gate: a successful reminders sign-up turns it on (the record is captured), a failed one does not', async () => {
+    mocks.sendGuestReport.mockResolvedValueOnce({ success: false, error: 'Please retry' });
+    const view = showPlan({ syncControl });
+    fireEvent.change(view.getByLabelText(REMINDER_SIGNUP_LABEL), { target: { value: 'reader@example.com' } });
+    fireEvent.click(view.getByRole('button', { name: 'Remind me' }));
+    await waitFor(() => expect(view.getByText('Please retry')).toBeTruthy());
+    expect(attention(view)).toBe('false');
+    fireEvent.click(view.getByRole('button', { name: 'Remind me' }));
+    await waitFor(() => expect(view.getByText(REMINDER_SIGNUP_DONE)).toBeTruthy());
+    expect(print).not.toHaveBeenCalled();
+    expect(attention(view)).toBe('true');
+  });
+
+  it('skip-gate: an erase forgets the opened window; a cancelled one does not', async () => {
+    const onDeleteData = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    const view = showPlan({ syncControl, onDeleteData });
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(attention(view)).toBe('true'));
+    fireEvent.click(view.getByRole('button', { name: 'Delete All My Data' }));
+    await waitFor(() => expect(onDeleteData).toHaveBeenCalledTimes(1));
+    expect(attention(view)).toBe('true');
+    fireEvent.click(view.getByRole('button', { name: 'Delete All My Data' }));
+    await waitFor(() => expect(attention(view)).toBe('false'));
+  });
+
+  it('skip-gate: a plan that goes blank mid-edit (height cleared) keeps it on', async () => {
+    const view = showPlan({ syncControl });
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(attention(view)).toBe('true'));
+    view.rerender(plan({ syncControl, results: null, isValid: false }));
+    view.rerender(plan({ syncControl }));
+    expect(attention(view)).toBe('true');
+  });
+
+  it('Pages never pulses, even with a captured record or an opened PDF window', async () => {
+    mocks.shopify.value = false;
+    mocks.skip.value = false;
+    mocks.getReportEmailCaptured.mockReturnValue(true);
+    const view = showPlan({ syncControl, showEmailCapture: false });
+    expect(attention(view)).toBe('false');
+    fireEvent.click(view.getAllByRole('button', { name: 'Save as PDF' })[0]);
+    await waitFor(() => expect(print).toHaveBeenCalledOnce());
+    expect(attention(view)).toBe('false');
+  });
+});

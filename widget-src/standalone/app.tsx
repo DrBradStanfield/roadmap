@@ -113,7 +113,7 @@ async function main() {
         {emailLanding && <EmailLandingNotice />}
         <StorageNoticeContext.Provider value={state === 'guest'}>
           <HealthTool
-            syncControl={({ hasData }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} />}
+            syncControl={({ hasData, attention }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} attention={attention} />}
             remindersSection={<RemindersSection backend={backend} />}
           />
         </StorageNoticeContext.Provider>
