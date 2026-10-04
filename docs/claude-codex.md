@@ -332,7 +332,7 @@ One disagreement. Codex says defer the cloud auto-review to keep variables separ
 ## What now exists
 
 - `docs/review-format.md`: the shared contract, 97 lines.
-- `tools/codex-review.mjs`: the bounded wrapper. Targets uncommitted work, a commit, or a range. Structured JSON via `--output-schema`; exit 0 clean, 2 blocking, 3 incomplete.
+- `tools/codex-review.mjs`: the bounded wrapper. Targets uncommitted work, a commit, a range, or exact files (`--subject`, since 2026-10-05; see the last section). Structured JSON via `--output-schema`; exit 0 clean, 2 blocking, 3 incomplete.
 - `.claude/skills/codex-review/SKILL.md`: how Claude invokes it and responds to findings.
 - Model: `gpt-6.1-sol` at high reasoning effort, per Brad (2026-10-02; was `gpt-6-astra`).
 
@@ -797,3 +797,51 @@ subscription to metered billing on every loop run.
 Unverified and worth testing before anyone claims it works: whether the CLI
 installs in that environment at all, and whether the Linux sandbox blocks
 network the way the macOS one does.
+
+## Reviewing an exact file: `--subject` (2026-10-05, US-40 AC15)
+
+Brad: "Codex reviewed the wrong file last time. This keeps happening." On
+2026-10-02 three runs on a YouTube script, `output/38 end-of-obesity/script-draft-v4.md`
+in claude_business, reviewed the wrong thing: `output/` is gitignored, so the
+script never entered the patch (the reviewer saw two unrelated files); then
+another session's untracked plan was in the tree, so the review was about
+that; then, on a clean tree, "Nothing to review" and exit 0. `--include` could
+not help (reference-only, and it refuses paths inside the checkout), so the
+workaround was a hand-run `codex exec`, which drops every protection the
+wrapper has.
+
+The default mode reviews the working tree's diff against HEAD, so it reviews
+whatever the tree holds. `--subject` reviews named files instead:
+
+```bash
+node ~/Documents/roadmap/tools/codex-review.mjs \
+  --subject "output/38 end-of-obesity/script-draft-v4.md" \
+  --baseline "output/38 end-of-obesity/script-draft-v3.md" \
+  --context "output/38 end-of-obesity/research" \
+  --out "$SCRATCH/codex-review.json"
+```
+
+- `--subject <file>` (repeatable): the only change under review. Tracked,
+  untracked or gitignored, but inside the checkout.
+- `--baseline <file>` (repeatable): the earlier version, paired by position
+  with `--subject`. Without one, a tracked subject is compared with its HEAD
+  version and an untracked one is a new file. Inside the checkout too.
+- `--context <path>` (repeatable): a file or folder inside the checkout copied
+  into the snapshot at its own path as reference, not under review.
+
+The snapshot is `git archive HEAD` plus the subjects plus the context, and
+nothing else from the working tree. `REVIEW_PATCH.diff` holds the subject
+diff only, and full baseline copies sit beside the snapshot. Before Codex
+starts, stderr prints the pre-flight line (this one from the first run,
+2026-10-05); read it before trusting the verdict:
+
+```
+codex-review: SUBJECT "output/38 end-of-obesity/script-draft-v4.md" (baseline "output/38 end-of-obesity/script-draft-v3.md", 102,469 bytes, sha256 0a5f83f328af); CONTEXT "output/38 end-of-obesity/research/" (56 files); excluded from snapshot: 1 other uncommitted file(s)
+```
+
+A subject identical to its baseline is `E_SUBJECT_UNCHANGED` (incomplete,
+exit 3). Credential-named, symlinked, hard-linked, outside-the-checkout and
+health-record paths are usage errors, as are instruction files as context;
+an instruction file as a subject is reviewed and flagged. Subject, baseline
+and context bytes go through the same credential value and shape scan as
+everything else. Not with `--commit`, `--range` or `--loop`.
