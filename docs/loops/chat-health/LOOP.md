@@ -147,7 +147,7 @@ this loop on reasoning alone: if you cannot measure it, you propose it.
 After the retrieval work, run the lint in [notes/weekly-lint.md](notes/weekly-lint.md):
 deterministic rules, then Sonnet 5.5 detection over this week's changed entries plus
 a 1-in-13 slice (`--run --max-calls 60 --max-usd 2`). Both cost lines go in the report.
-The first `--run` waits for Brad's written yes on the cost line; until then, no `--run`.
+Brad said yes on 2026-10-04 (issue #125): `--run` every week, under the $2 cap.
 - MAY write `lint-state.json`, `lint-fix-queue.json` (every knowledge-side finding) and
   metrics rows. It reports and queues; it never fixes. A build session (the orchestrator,
   Opus writers) fixes queue items under US-42's batch protocol; Brad signs each batch.

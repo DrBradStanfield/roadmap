@@ -25,12 +25,11 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   ledger row; re-judge customer-facing output through its full compliance and quality gates with fresh eyes; and
   hunt for the claim whose evidence is missing. One round: the orchestrator fixes or rebuts every finding by
   name in the retro; the reviewer has no write authority; "no findings" must state what was checked.
-- **Codex beside the adversary** (Brad, 2026-09-28): commit the deliverable first, then in ONE background Bash
-  call run `npm i -g @openai/codex@0.157.1 && export CODEX_HOME=$(mktemp -d) && printenv OPENAI_API_KEY | codex
-  login --with-api-key && node tools/codex-review.mjs --loop --range <run's first commit>^..HEAD --timeout-min
-  9` (`OPENAI_API_KEY` is not yet in the cloud environment; until it is, the login fails). Handle its findings
-  like the adversary's and re-run after any substantive fix. `incomplete` is never a pass, and nor is a missing
-  wrapper, a run with no commits, or 'Nothing to review': record why in the retro.
+- **No Codex in cloud loops** (Brad, 2026-10-04, superseding 2026-09-28): Codex signs in only with Brad's ChatGPT
+  subscription on his Mac, never an API key, so a cloud loop cannot run it. The fresh `adversary` above is the
+  run's whole review; the retro says "Codex: not run (cloud)" in one line, and that is not a gap or a failure.
+  Brad may run `node tools/codex-review.mjs --loop --range <commits>` on a loop's commits from his Mac; handle
+  any findings he relays like the adversary's.
 ## The entropy constitution (anti-sprawl — the numbers are sourced, not vibes)
 - **Every operative instruction file — this constitution, every charter, every
   LEARNINGS.md — is capped at 200 lines / 25KB** (past it, models silently drop rules).

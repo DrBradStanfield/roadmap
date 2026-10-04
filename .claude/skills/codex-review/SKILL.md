@@ -1,6 +1,6 @@
 ---
 name: codex-review
-description: Independent adversarial review of the current change by a different model (Codex, gpt-6.1-sol) against docs/review-format.md. Run it beside every adversarial Claude check, and REQUIRED before committing clinical, merge/FHIR, security or agent-contract changes whatever their size; skip ONLY outside those classes (doc/blog sweeps, one-liners). Loops run it with --loop (Tier 3 applies); CI stays Claude-only. Also whenever asked to "get Codex to review" or "cross-model review". Advisory only.
+description: Independent adversarial review of the current change by a different model (Codex, gpt-6.1-sol) against docs/review-format.md. Run it beside every adversarial Claude check, and REQUIRED before committing clinical, merge/FHIR, security or agent-contract changes whatever their size; skip ONLY outside those classes (doc/blog sweeps, one-liners). It runs only on Brad's Mac with his ChatGPT subscription, never an API key, so cloud loops and CI stay Claude-only; on a loop's commits Brad runs it with --loop (Tier 3 applies). Also whenever asked to "get Codex to review" or "cross-model review". Advisory only.
 ---
 
 # Codex review
@@ -12,11 +12,12 @@ clinical logic, merge or FHIR semantics, a security surface, or an
 agent-facing contract — whatever its size, because a one-line auth or
 threshold edit is exactly the kind that hurts someone. Skip it ONLY outside
 those classes, for doc and blog sweeps and one-line fixes, where the round
-trip costs more than it returns. A loop runs it too, with `--loop`, per
-docs/loops/LOOP.md § Orchestration: an API-key login in a temporary
-`CODEX_HOME`, and the contract's Tier 3 restrictions apply (Brad,
-2026-09-28, superseding the 2026-09-21 loop exclusion; US-40 AC10). A CI job
-does not run it: no Codex there, so CI stays Claude-only (US-40 AC8).
+trip costs more than it returns. It runs only on Brad's
+Mac, signed in with his ChatGPT subscription, never an API key (Brad,
+2026-10-04, superseding the 2026-09-28 API-key loop rule; US-40 AC10). Cloud
+loops and CI do not run it, so they stay Claude-only (US-40 AC8); on a loop's
+commits Brad runs it from his Mac with `--loop`, and the contract's Tier 3
+restrictions apply.
 
 A fresh-context reviewer on a different model, the cross-model analogue of
 the fresh Opus 5.5 adversarial check. It reviews an immutable, symlink-free
