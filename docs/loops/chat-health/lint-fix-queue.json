@@ -5905,6 +5905,158 @@
    "last_seen": "2026-10-03",
    "status": "open",
    "last_checked": "2026-10-03"
+  },
+  {
+   "id": "9ee3d064ad80",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "chromium-benefits-forms-dosing-and-side-effects",
+    "multivitamins-benefits-evidence-dosing-and-side-effects"
+   ],
+   "fix_handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+   "quote_a": "**No Tolerable Upper Intake Level (UL) has been established** for chromium, due to insufficient long-term safety data. The FNB noted that caution may be warranted and that people with renal and liver disease might be susceptible to adverse effects from high intakes [2].",
+   "quote_b": "**Chromium:** AI is 35 mcg for men 14-50 and 25 mcg for women 19-50. No UL has been established, but there are concerns about kidney damage at excessive intakes [15].",
+   "severity": "low",
+   "summary": "A says only renal/liver-disease patients might be susceptible and that no adverse effects are definitively linked to high intakes, while B states a general concern about kidney damage at excessive intakes.",
+   "suggested_fix": "Align the multivitamin text with the chromium reference: say people with renal or liver disease might be susceptible to adverse effects, and that kidney failure is only reported in case reports at high doses with causality not established.",
+   "first_seen": "2026-10-04",
+   "last_seen": "2026-10-04",
+   "status": "open",
+   "last_checked": "2026-10-04"
+  },
+  {
+   "id": "95aa0fe00f8a",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "bone-broth-benefits-forms-dosing-and-side-effects",
+    "collagen-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+   "quote_a": "A typical cup (240 mL) of bone broth provides approximately 6-10 grams of protein, of which about 40-80% is collagen — yielding roughly 2.5-8 grams of collagen per cup [1][6].",
+   "quote_b": "| Bone broth | 5-15 g per cup (varies widely) | Made by simmering animal bones; content varies by preparation time and source |",
+   "severity": "medium",
+   "summary": "The two excerpts give incompatible collagen content per cup of bone broth (about 2.5-8 g versus 5-15 g, and the upper figure exceeds the total protein per cup stated in A).",
+   "suggested_fix": "Reconcile the per-cup collagen range between the two references. A's range is bounded by its stated 6-10 g protein per cup, so B's 5-15 g upper end looks too high unless a source supports it.",
+   "first_seen": "2026-10-04",
+   "last_seen": "2026-10-04",
+   "status": "open",
+   "last_checked": "2026-10-04"
+  },
+  {
+   "id": "e931c98dc808",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "bone-broth-benefits-forms-dosing-and-side-effects",
+    "collagen-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+   "quote_a": "To achieve the 10-15 grams of collagen per day used in most clinical trials for joint health, consider consuming 2-3 cups of bone broth daily [1].",
+   "quote_b": "Hydrolyzed collagen for joint pain typically requires 5-10 grams daily.",
+   "severity": "low",
+   "summary": "A says the joint-health trial dose is 10-15 g/day, while B gives 5-10 g/day for joint pain, so the target dose used to size bone broth intake differs.",
+   "suggested_fix": "Align the joint-health collagen dose across both references. A's own table lists 5-10 g/day for exercise-related joint pain and 10-12 g/day for osteoarthritis, so the 10-15 g/day figure should be revised or qualified.",
+   "first_seen": "2026-10-04",
+   "last_seen": "2026-10-04",
+   "status": "open",
+   "last_checked": "2026-10-04"
+  },
+  {
+   "id": "7a3fe4356bb4",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "collagen-benefits-best-forms-dosing-and-side-effects",
+    "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects",
+   "quote_a": "Hydrolyzed collagen for joint pain typically requires 5-10 grams daily.",
+   "quote_b": "**Hydrolyzed collagen peptides:** 5,000-12,500 mg/day",
+   "severity": "low",
+   "summary": "The joint-health dose range for hydrolyzed collagen peptides is 5-10 g/day in one excerpt and 5-12.5 g/day in the other.",
+   "suggested_fix": "Align the upper end of the hydrolyzed collagen joint dose in both references (10 g vs 12.5 g), or state which studies support the higher figure.",
+   "first_seen": "2026-10-04",
+   "last_seen": "2026-10-04",
+   "status": "open",
+   "last_checked": "2026-10-04"
+  },
+  {
+   "id": "e007d03d0b60",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "collagen-benefits-best-forms-dosing-and-side-effects",
+    "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+   "quote_a": "| Joint pain (osteoarthritis) | UC-II (undenatured type II) | 40 mg (~10 mg collagen) | 3-6 months |",
+   "quote_b": "- **Undenatured type II collagen (UC-II, NT2):** 40 mg/day (providing ~10 mg collagen), taken on an empty stomach at bedtime [1]",
+   "severity": "low",
+   "summary": "The collagen reference gives a 3-6 month onset for UC-II joint benefit, while the joint-supplements reference advises stopping if there is no response by 3 months.",
+   "suggested_fix": "Reconcile the expected time to benefit for joint supplements. Either note that collagen products may need up to 6 months, or soften the 3-month stop rule when it is applied to collagen.",
+   "first_seen": "2026-10-04",
+   "last_seen": "2026-10-04",
+   "status": "open",
+   "last_checked": "2026-10-04"
+  },
+  {
+   "id": "0830c483967f",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+    "vitamin-a-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+   "quote_a": "Lutein supplements are not known to have major drug interactions.",
+   "quote_b": "Avoid taking vitamin A supplements with prescription medications in the retinoid family, as the combination increases the risk of toxicity and side effects.",
+   "severity": "low",
+   "summary": "Not a clear contradiction: the two excerpts address different substances (lutein vs vitamin A), so no finding is warranted here.",
+   "suggested_fix": "No change needed; the claims are about different supplements.",
+   "first_seen": "2026-10-04",
+   "last_seen": "2026-10-04",
+   "status": "open",
+   "last_checked": "2026-10-04"
+  },
+  {
+   "id": "ba6e8c0dd55e",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "african-mango-benefits-forms-dosing-and-side-effects",
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "african-mango-benefits-forms-dosing-and-side-effects",
+   "quote_a": "No specific adverse effects were reported** in any of the three published clinical trials [1]",
+   "quote_b": "Mild human adverse effects: headache, difficulty sleeping, flatulence, and gas [19].",
+   "severity": "medium",
+   "summary": "Excerpt A says no adverse effects were reported in any human trial, while excerpt B lists mild human adverse effects (headache, insomnia, flatulence, gas) for African mango.",
+   "suggested_fix": "Reconcile the human adverse-effect statements. Either note the mild effects that B cites (headache, difficulty sleeping, flatulence, gas) in A, or clarify that B's source is not one of the three trials.",
+   "first_seen": "2026-10-04",
+   "last_seen": "2026-10-04",
+   "status": "open",
+   "last_checked": "2026-10-04"
+  },
+  {
+   "id": "2493777bcbef",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "african-mango-benefits-forms-dosing-and-side-effects",
+    "weight-loss-supplements-benefits-evidence-and-safety"
+   ],
+   "fix_handle": "african-mango-benefits-forms-dosing-and-side-effects",
+   "quote_a": "While no liver toxicity has been reported with African mango, the absence of evidence is not evidence of absence, particularly given the limited safety monitoring in the available trials.",
+   "quote_b": "One case of renal failure was associated with African mango in a patient with pre-existing chronic kidney disease [21].",
+   "severity": "medium",
+   "summary": "Excerpt B reports a case of renal failure associated with African mango in a CKD patient, while A's safety and special-population sections describe no reported serious harm and only advise caution in kidney disease.",
+   "suggested_fix": "Mention the reported renal failure case in CKD in A's safety and special-population sections, and reconsider advising only 'use with caution' for kidney disease in light of it.",
+   "first_seen": "2026-10-04",
+   "last_seen": "2026-10-04",
+   "status": "open",
+   "last_checked": "2026-10-04"
   }
  ]
 }
