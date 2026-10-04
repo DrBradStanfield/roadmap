@@ -82,7 +82,7 @@ There is no delete. Nothing in your record can be removed by any tool here. A co
 
 ## Before anything permanent
 
-Three tools change something that cannot be reversed: correcting a value, changing your profile, and filing a bug report. Each takes two calls. The first writes nothing and hands back a receipt saying exactly what would happen. Only after you say yes, in your own words, does the second one act. Filing results from a document works the same way: a receipt first, the write after your yes.
+Three tools change something that cannot be reversed: correcting a value, changing your profile, and filing a bug report. Each takes two calls. The first writes nothing and hands back a receipt saying exactly what would happen. Only after you say yes, in your own words, does the second one act. Filing results from a document works the same way: a receipt first, and nothing is saved to your record until your yes.
 
 ChatGPT has a setting that skips its own approval prompt for a connector. That setting is not your yes, and our tools say so: they still ask, and they still wait.
 

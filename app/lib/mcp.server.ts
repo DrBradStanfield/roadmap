@@ -48,11 +48,11 @@ const SUPPORTED_PROTOCOLS = new Set([PROTOCOL_VERSION, '2025-06-18', '2025-03-26
 export const INSTRUCTIONS =
   'These tools read and write ONE health record — the user’s own file in their own cloud folder. Read before ' +
   'you write: values are slotted one per metric per day, and a day that already holds a value is corrected, ' +
-  'never added to twice. Nothing is ever deleted; a superseded row stays as "entered-in-error". Correcting a ' +
+  'never added to twice. No value is ever deleted; a superseded row stays as "entered-in-error". Correcting a ' +
   'value is permanent and needs the value you expect to find, so read the record first and correct only what ' +
   'the user asked you to. The plan from get_plan is educational, not medical advice, and its hedged wording ' +
   'and citations are calibrated — pass them on as written. import_documents reads lab files from the Dropbox folder and ' +
-  'writes nothing until its commit, which needs the user’s own confirmation of what it found; a file dropped into the chat ' +
+  'writes nothing to the record until its commit, which needs the user’s own confirmation of what it found; a file dropped into the chat ' +
   'is read by you and filed through file_results the same way. correct_value, update_profile and report_feedback are ' +
   'permanent, so here they take two calls: the first answers with a confirm receipt, and only the second, after the user’s ' +
   'own yes, does it.' + SI_NOTE + OPEN_SOURCE_NOTE;

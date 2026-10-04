@@ -1,44 +1,76 @@
 # Demo recording script (ChatGPT app 1.0.2)
 
-OpenAI requires a walkthrough that "demonstrates your plugin's test cases and functionality". Its
+OpenAI asks for a recording that will "demonstrate the test cases and plugin functionality". Its
 URL goes in `extensions.com.openai.review.demo_recording_url` in `plugin/plugin.json`, then the ZIP is
-rebuilt and uploaded again. The video is not shared outside OpenAI.
+rebuilt and uploaded again. The video sits at an unlisted CDN URL: anyone holding the link can watch
+it, so it shows invented data only.
 
-Record after the reviewer sign-in is live (the three `MCP_REVIEWER_*` secrets set and deployed).
+It is a real screen recording of a live ChatGPT session, never an animation: the reviewer must see
+the app working. It uses a ChatGPT developer-mode connection to the same server the plugin points
+to, and says so. Long model waits are cut, and the narration says that too. Brad's ElevenLabs voice
+clone narrates it (`demo/narration.json`, `demo/tts.mjs`); the end card says the voice-over was
+generated from his own voice.
 
-**Do not use the review's own inputs.** The reviewer's record is shared, so the demo must not use up
-the first-time paths of the test cases:
+It is also proof run 1 ([listing, fixture step 1](../chatgpt-app-listing.md)), so it shows each
+first-time path; run 2 repeats it word for word.
 
-- Positive 2: record a weight on a DIFFERENT date (for example 3 March 2026), not 2 March.
-- Positive 4: drop `sample-lab-report-proof.pdf` (made with
-  `node docs/chatgpt-review/make-sample-lab-report.mjs --variant`), never `sample-lab-report.pdf`.
+## Before recording (each one is a gate)
 
-## Setup (about 1 minute on screen)
+1. **The reviewer sign-in is live:** the three `MCP_REVIEWER_*` secrets set and deployed, and
+   `tools/mcp-reviewer-check.mjs` passes. Never re-run `--password` or `--mint` after this: either
+   one changes the generation and ends every reviewer session, this one included.
+2. **Nothing of Brad's can reach the screen.** Brad's existing developer app "Health Roadmap"
+   reaches his real Dropbox, with the same nine tool names on the same URL, so ChatGPT could call it
+   instead. Brad disconnects or disables it for the session, turns off ChatGPT memory and chat-history
+   reference (his real values could surface from earlier chats), turns off his other ChatGPT apps, and turns on Do Not Disturb. The
+   sidebar stays closed: it lists his own chats.
+3. **The demo app.** ChatGPT → Settings → Apps → developer mode → create "Health by Dr Brad" with
+   `https://mcp.drstanfield.com/mcp`, and stop before Connect.
+4. **The proof PDF exists locally:** `node docs/chatgpt-review/make-sample-lab-report.mjs --variant`
+   writes `sample-lab-report-proof.pdf`. It is hosted nowhere, so nothing can attach the reviewer's
+   CDN copy by mistake. Brad attaches it himself if the browser tool cannot.
 
-1. Start a screen recording (Cmd+Shift+5, record the browser window) at ChatGPT on the desktop.
-2. Settings → Apps → Health by Dr Brad → Connect.
-3. Our page opens with "OpenAI app reviewers: sign in here". Type the reviewer username and password,
-   press Sign in. ChatGPT shows the app connected. (Pause a second on our page so the box is visible.)
+## Recording
 
-## The cases (about 3 minutes)
+Claude brings Chrome to the front and records the page area only with `screencapture -v -R <tab
+bounds>`, so the Claude extension's side panel is not captured. Brad presses Connect, types the
+reviewer username and password into our box (the password field is masked) and presses Sign in;
+Claude never types the password. Then Brad keeps hands off the Mac for about eight minutes while
+Claude drives ChatGPT.
 
-Type each prompt; let ChatGPT finish and show the tool call before moving on.
+Brad's other ChatGPT apps are off for the session too, so a negative case cannot wander into one.
+Every tool-call chip must name "Health by Dr Brad". A take is discarded, and recorded again, if any
+chip names another app, any answer shows a value that is not in the reviewer record, or a negative
+case calls our app (that case is then replaced in `plugin.json` before the retake). The username
+Brad types is blurred in assembly; the password field is masked already.
 
-1. "What's in my health record?" → the profile, measurements and lab results.
-2. "Record my weight on 3 March 2026 as 78 kg." → added. (Same tool as positive 2.)
-3. "What should I do next about my health?" → the plan, with reasons and citations.
-4. Drop `sample-lab-report-proof.pdf`, then "Here is my blood test. Add the results to my record."
-   → ChatGPT lists what it read; say yes; the results are filed.
-5. "My most recent ferritin should be 10 ug/L higher than it shows." → ChatGPT shows the change;
-   say yes; the value is corrected.
-6. One negative: "Write a short poem about autumn." → ChatGPT answers without the app.
+| Segment | On screen |
+| --- | --- |
+| s0 | Title card. |
+| s1 | Settings → Apps → Health by Dr Brad → Connect. Our page with "OpenAI app reviewers: sign in here"; hold a second, then sign in. ChatGPT shows the app connected. |
+| s2 | "What's in my health record?" → profile, measurements, lab results. |
+| s3 | "Record my weight on 3 March 2026 as 78 kg." → added. Not 2 March: that date is the reviewer's. |
+| s4 | "What should I do next about my health?" → the plan, with reasons and citations. |
+| s5 | Drop `sample-lab-report-proof.pdf`, then "Here is my blood test. Add the results to my record." → ChatGPT lists what it read; "Yes, add them."; filed. |
+| s6 | "My most recent ferritin should be 10 ug/L higher than it shows." → ChatGPT shows the change; "Yes, correct it."; corrected. |
+| s7 | All three negatives, each in a new chat: "Book me a flight from Auckland to Sydney next Friday.", "Write a short poem about autumn.", "Book me an appointment with a doctor near me this week." → no app call. If the third calls the app, the case is replaced in `plugin.json` before submitting. |
+| s8 | Phone (below). |
+| s9 | End card, with "Voice-over generated from Brad Stanfield's own voice." |
 
-## Phone (about 30 seconds)
+## Phone (segment s8, Brad)
 
-OpenAI asks for the main use cases "across supported platforms". On the ChatGPT phone app, with the
-same account, ask "What should I do next about my health?" and show the plan.
+OpenAI's submission-errors page asks for a recording that "shows the main use cases and tools
+across supported platforms". So the video ends with about 30 seconds from the ChatGPT phone app,
+on the same ChatGPT account, after the desktop take: Brad starts iOS screen recording, opens a new
+chat, asks "What should I do next about my health?", lets the plan finish, stops, and AirDrops the
+file to the Mac. The gates above still hold: "Health Roadmap" off, memory off, and every chip names
+"Health by Dr Brad". If the phone app does not offer the developer-mode app, the fallback is
+chatgpt.com in a phone-sized browser window, and the narration says "ChatGPT on a phone-sized
+screen", never "the phone app".
 
-## Upload
+## Assembly
 
-Upload the recording to Google Drive (or YouTube, unlisted), set sharing to "anyone with the link",
-and send the link. It goes into `plugin.json`, and the ZIP is rebuilt and uploaded.
+`node docs/chatgpt-review/demo/tts.mjs` renders one clip per segment and exits nonzero if any
+fails. ffmpeg cuts the long model waits, lays each clip at its segment and burns in captions.
+Outputs stay in the gitignored `demo/audio/` and `demo/out/`. The MP4 goes to Shopify Files on the
+edu store, as the sample report did, and its CDN URL goes into `plugin.json`.

@@ -67,7 +67,7 @@
               "description": "File the results from a lab report dropped into the chat. ChatGPT reads the file itself; it never reaches our server. Attach the synthetic report at the file attachment URL: invented data for app review, not a real person's report.",
               "prompt": "Here is my blood test. Add the results to my record.",
               "tools_triggered": "file_results",
-              "expected_behavior": "The first call writes nothing and returns each printed result matched against the record, with units and collection date, plus a receipt. After the user confirms in their own words, a second call commits: values appended, document filed as a metadata-only row. If an earlier reviewer already filed the same file, the first call says it was already imported and offers nothing to commit; that is correct too.",
+              "expected_behavior": "The first call writes nothing to the record and returns each printed result matched against the record, with units and collection date, plus a receipt. After the user confirms in their own words, a second call commits: values appended, document filed as a metadata-only row. If an earlier reviewer already filed the same file, the first call says it was already imported and offers nothing to commit; that is correct too.",
               "file_attachment_urls": [
                 "https://cdn.shopify.com/s/files/1/0790/6109/0503/files/sample-lab-report.pdf?v=1790902633"
               ]

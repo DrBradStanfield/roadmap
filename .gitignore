@@ -62,3 +62,6 @@ docs/chatgpt-review/*.zip
 
 # Proof-run twin of the reviewer sample report: rebuilt with make-sample-lab-report.mjs --variant
 docs/chatgpt-review/sample-lab-report-proof.pdf
+# Review demo: voice-over audio and the rendered video (docs/chatgpt-review/demo-script.md)
+docs/chatgpt-review/demo/audio/
+docs/chatgpt-review/demo/out/
