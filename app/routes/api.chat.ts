@@ -27,7 +27,7 @@ import {
 } from '../lib/chat.server';
 import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget, routerText, ROUTER_VERSION } from '../lib/chat-router.server';
 import { titledHandles } from '../lib/chat-router-guard';
-import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS } from '../../packages/health-core/src/chat-history';
+import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../packages/health-core/src/chat-history';
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 import { findDuplicateReply, type DedupHistoryItem } from '../lib/chat-dedup.server';
 import { PURGED_TEXT } from '../lib/chat-purge-cron.server';
@@ -49,8 +49,8 @@ type Turn = { role: 'user' | 'assistant'; content: string };
 /**
  * The widget's earlier turns, sent from its own chat-history.json (US-15 AC7:
  * the server stores none). Whitelisted roles, non-empty strings, the same
- * bound the BYOK transport uses, each turn cut at MAX_HISTORY_TURN_CHARS (a
- * reply runs longer than a question may), and never starting on an assistant turn — the Messages API 400s on that,
+ * bound the BYOK transport uses, each turn cut at MAX_HISTORY_TURN_CHARS (no
+ * shorter than a question may be), and never starting on an assistant turn — the Messages API 400s on that,
  * which would surface as a fallback.
  */
 function readClientHistory(value: unknown): Turn[] {
@@ -58,7 +58,7 @@ function readClientHistory(value: unknown): Turn[] {
   const turns = value.slice(-MAX_HISTORY_MESSAGES).filter((t): t is Turn =>
     !!t && typeof t === 'object' && (t.role === 'user' || t.role === 'assistant')
     && typeof t.content === 'string' && t.content.length > 0)
-    .map((t) => ({ role: t.role, content: t.content.slice(0, MAX_HISTORY_TURN_CHARS) }));
+    .map((t) => ({ role: t.role, content: cutText(t.content, MAX_HISTORY_TURN_CHARS) }));
   return turns.slice(Math.max(0, turns.findIndex((t) => t.role === 'user')));
 }
 
@@ -533,15 +533,20 @@ export async function action({ request }: ActionFunctionArgs) {
 
       // Router telemetry, one row per answered turn. On the widget it is the ONLY
       // row, trimmed to its whitelist in one place (redactForWidget).
+      // The row holds question text, which may carry health details: at most its
+      // first 500 chars, as before the 8,000 cap, blanked by the 30-day purge
+      // (US-15 AC7/AC26). CLAUDE.md keeps health values out of telemetry, so it never grows.
+      const MATCH_EVENT_MESSAGE_CHARS = 500;
+      const clip = (s: string) => cutText(s, MATCH_EVENT_MESSAGE_CHARS);
       const matchEvent = {
         message_id: assistantMessageId,
         conversation_id: activeConversationId,
         user_id: auth.userId,
-        message: sanitizedCurrent,
+        message: clip(sanitizedCurrent),
         router_context: {
           platform: 'shopify',
-          first: sanitizedFirst ?? null,
-          recent: sanitizedRecent,
+          first: sanitizedFirst ? clip(sanitizedFirst) : null,
+          recent: sanitizedRecent.map(clip),
         },
         matched_handles: effectiveHandles,
         router_version: routerResult ? ROUTER_VERSION : null,
@@ -643,6 +648,8 @@ export async function action({ request }: ActionFunctionArgs) {
         classifierError: !!classifierResult.error,
         isGuest: auth.isGuest,
         streamed: streaming,
+        // The question's length, a number only: how often a message passes 500 or 2,000 (US-15 AC26).
+        messageChars: message.length,
         // Ms from the LLM call to the first answer text; null when not streamed or no text came.
         firstTokenMs,
       }));

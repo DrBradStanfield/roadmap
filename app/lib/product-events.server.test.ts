@@ -178,6 +178,23 @@ describe('the email-arrival counters', () => {
     expect(SERVER_ONLY_EVENT_NAMES).toContain('reminder_email_clicked');
     expect(parseProductEvent({ eventName: 'reminder_email_clicked', visitorId: VISITOR })).toBeNull();
   });
+
+  it('takes email_landing_link_copied from a browser, with no metadata (US-22 AC14)', () => {
+    expect(PRODUCT_EVENT_NAMES).toContain('email_landing_link_copied');
+    expect(parseProductEvent({ eventName: 'email_landing_link_copied', visitorId: VISITOR })).toEqual({
+      eventName: 'email_landing_link_copied',
+      visitorId: VISITOR,
+    });
+  });
+
+  it('takes pdf_window_blocked from a browser, with no metadata (US-18 AC6)', () => {
+    expect(PRODUCT_EVENT_NAMES).toContain('pdf_window_blocked');
+    expect(parseProductEvent({ eventName: 'pdf_window_blocked', visitorId: VISITOR })).toEqual({
+      eventName: 'pdf_window_blocked',
+      visitorId: VISITOR,
+    });
+    expect(parseProductEvent({ eventName: 'pdf_window_blocked', visitorId: VISITOR, metadata: { key: 'x' } })).toBeNull();
+  });
 });
 
 /** US-38 — the guide link's counter: which surface sent someone to the hub. */

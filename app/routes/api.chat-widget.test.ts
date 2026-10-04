@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   auth: vi.fn(),
   buildConversationMessages: vi.fn(() => []),
+  classify: vi.fn(async (..._args: unknown[]) => ({ routerSkipped: true, classification: 'SKIP', latencyMs: 0 })),
   completion: {
     content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 },
     isFallback: false as boolean, failureMode: undefined as string | undefined,
@@ -28,19 +29,22 @@ vi.mock('../lib/supabase.server', () => ({
   getOrCreateGuestSession: vi.fn(async () => ({ sessionId: '87654321-4321-4321-8321-cba987654321', sessionToken: 'tok' })),
   GuestRateLimitError: class extends Error {},
 }));
-vi.mock('../lib/chat.server', () => ({
+// MAX_MESSAGE_LENGTH is the real one, so the length tests below pin the route
+// to the shipped cap (US-15 AC26).
+vi.mock('../lib/chat.server', async (original) => ({
   resolveChatContext: () => ({ healthDocuments: [], userContextJson: '{}' }),
   buildSystemBlocks: () => [], buildConversationMessages: mocks.buildConversationMessages,
   matchDocumentTitle: () => null, loadMatchedArticlesFromHandles: () => null,
   DOCTOR_POSTURE: '', BRAND_POSTURE: '',
   getChatCompletion: async () => mocks.completion,
-  reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test', MAX_MESSAGE_LENGTH: 500,
+  reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test',
+  MAX_MESSAGE_LENGTH: (await original<typeof import('../lib/chat.server')>()).MAX_MESSAGE_LENGTH,
 }));
 vi.mock('../lib/chat-router.server', async (original) => ({
   ...await original<typeof import('../lib/chat-router.server')>(),
   routeQuery: vi.fn(), reportRouterFailure: vi.fn(),
 }));
-vi.mock('../lib/chat-classifier.server', () => ({ classifyMessage: async () => ({ routerSkipped: true, classification: 'SKIP', latencyMs: 0 }), shouldFireRouter: () => false }));
+vi.mock('../lib/chat-classifier.server', () => ({ classifyMessage: mocks.classify, shouldFireRouter: () => false }));
 
 import { action } from './api.chat';
 
@@ -208,5 +212,69 @@ describe('US-15 AC7 — widget turns store no message content', () => {
     expect(row.message_id).toMatch(/^[0-9a-f-]{36}$/);
     expect(row.router_context).toEqual({ platform: 'shopify', first: null, recent: [] });
     expect(mocks.buildConversationMessages).toHaveBeenCalledWith([], question);
+  });
+});
+
+// US-15 AC26 (2026-10-04): a pasted lab panel or prompt template reaches the
+// model whole up to 8,000 characters; past that the route refuses it.
+describe('US-15 AC26 — the route takes a message up to 8,000 characters', () => {
+  for (const n of [7999, 8000]) {
+    it(`US-15 AC26: accepts ${n} characters and hands the model all of them`, async () => {
+      const message = 'x'.repeat(n);
+      const res = await post({ message, localFirst: true });
+      expect(res.status).toBe(200);
+      expect(mocks.buildConversationMessages).toHaveBeenCalledWith([], message);
+    });
+  }
+
+  it('US-15 AC26: refuses 8,001 characters with a 400 and calls no model', async () => {
+    const res = await post({ message: 'x'.repeat(8001), localFirst: true });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe('Message too long (max 8000 chars)');
+    expect(mocks.buildConversationMessages).not.toHaveBeenCalled();
+  });
+});
+
+// US-15 AC26 with AC7: the router still reads 2,000 characters, but the
+// telemetry row keeps at most 500 of any question, as it did before the cap rose.
+describe('US-15 AC26 — the match-event row does not grow with the message cap', () => {
+  const long = (c: string) => c.repeat(3000);
+
+  it('US-15 AC26: a 3,000-char widget message is routed with 2,000 chars and stored with 500', async () => {
+    mocks.classify.mockClear();
+    await post({ message: long('x'), localFirst: true });
+    expect(mocks.classify.mock.calls[0][0]).toBe('x'.repeat(2000));
+    expect(matchEvent().message).toBe('x'.repeat(500));
+  });
+
+  it('US-15 AC26: a stored-surface row caps the question and its router context at 500', async () => {
+    const realFrom = mocks.from.getMockImplementation()!;
+    mocks.from.mockImplementation((table: string) => {
+      const query = realFrom(table);
+      if (table === 'chat_messages') query.then = (resolve: any, reject: any) =>
+        Promise.resolve({ data: [{ role: 'user', content: long('y'), created_at: new Date().toISOString() }], error: null }).then(resolve, reject);
+      return query;
+    });
+    await post({ message: long('x'), conversationId: id });
+    const row = matchEvent();
+    expect(row.message).toBe('x'.repeat(500));
+    expect(row.router_context.first).toBe('y'.repeat(500));
+    expect(row.router_context.recent).toEqual(['y'.repeat(500)]);
+  });
+});
+
+describe('US-15 AC26 — clean cuts and the length signal', () => {
+  it('US-15 AC26: an emoji straddling 499/500 leaves no lone surrogate on the row', async () => {
+    await post({ message: 'a'.repeat(499) + '😀' + 'b'.repeat(100), localFirst: true });
+    expect(matchEvent().message).toBe('a'.repeat(499));
+  });
+
+  it('US-15 AC26: chat_timing carries the message length as a number and no text', async () => {
+    const message = 'LDL 4.2 ' + 'x'.repeat(2992);
+    await post({ message, localFirst: true });
+    const timing = consoleLog.mock.calls.map((c) => JSON.parse(String(c[0]))).find((l) => l.evt === 'chat_timing');
+    expect(timing.messageChars).toBe(3000);
+    expect(JSON.stringify(timing)).not.toContain('LDL');
+    expect(JSON.stringify(timing)).not.toContain('xxxx');
   });
 });

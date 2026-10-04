@@ -11,6 +11,7 @@ import {
   loadMatchedArticlesFromHandles,
 } from './chat.server';
 import { chatContextOf } from '../../packages/health-core/src/chat-context';
+import { MAX_HISTORY_TURN_CHARS } from '../../packages/health-core/src/chat-history';
 import { loadBlogIndex } from './blog-index.server';
 
 describe('buildConversationMessages', () => {
@@ -318,8 +319,12 @@ describe('matchDocumentTitle', () => {
 });
 
 describe('constants', () => {
-  it('has correct message length limit', () => {
-    expect(MAX_MESSAGE_LENGTH).toBe(500);
+  it('US-15 AC26: a message may run to 8,000 characters', () => {
+    expect(MAX_MESSAGE_LENGTH).toBe(8000);
+  });
+
+  it('US-15 AC26: a question that fits the limit travels whole as a later history turn', () => {
+    expect(MAX_HISTORY_TURN_CHARS).toBeGreaterThanOrEqual(MAX_MESSAGE_LENGTH);
   });
 });
 

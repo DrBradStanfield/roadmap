@@ -54,6 +54,13 @@ export const PRODUCT_EVENT_NAMES = [
   // so the landing notice showed. Name only. Recovery is the same visitor then
   // firing results_viewed or cloud_connect_success.
   'email_landing_empty',
+  // US-22 AC14: on that notice, the reader pressed Copy link to open the tool
+  // in the browser that holds the plan. Name only; the recovery happens under
+  // another visitor id, so this counts intent, never success.
+  'email_landing_link_copied',
+  // US-18 AC6: the browser refused the save-as-PDF window (window.open gave
+  // null, as mail and social apps' own browsers often do). Name only.
+  'pdf_window_blocked',
   // US-32 hosted connector. Value-free counters: which tool, which assistant,
   // whether it worked (mcp_tool_call), and one row per completed connection
   // (mcp_connect). Never a value, never an identifier, never a connection key.
