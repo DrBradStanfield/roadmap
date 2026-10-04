@@ -1726,7 +1726,10 @@ export function importDocumentsCommit(
   // (US-21 phase 3). Said out loud, never dropped quietly: the user chose that
   // row, and a value that vanishes between the review and the record is the
   // failure this whole rule exists to prevent.
-  const refusedUnits = applied.refused.map((r) => `${oneLine(r.key)}: ${oneLine(r.message)}`);
+  const listed = (refused: typeof applied.refused) => refused.map((r) => `${oneLine(r.key)}: ${oneLine(r.message)}`).join('; ');
+  // A refusal for the number (US-21 AC15) is the person's to settle: no offer of another unit.
+  const unknownSpellings = applied.refused.filter((r) => !r.fault);
+  const refusedNumbers = applied.refused.filter((r) => r.fault);
   const next = docs.length ? stampUpdatedAt({ ...applied.file, documents: [...applied.file.documents, ...docs] }, now) : applied.file;
 
   const written = {
@@ -1738,7 +1741,8 @@ export function importDocumentsCommit(
   };
   const lines = [
     describe('Filed', applied.saved),
-    ...(refusedUnits.length ? [`Not filed — ${refusedUnits.join('; ')}. Tell the user, and offer to add these with the unit the catalogue takes.`] : []),
+    ...(unknownSpellings.length ? [`Not filed — ${listed(unknownSpellings)}. Tell the user, and offer to add these with the unit the catalogue takes.`] : []),
+    ...(refusedNumbers.length ? [`Not filed — ${listed(refusedNumbers)}.`] : []),
     ...docs.map((d) => `Filed document “${oneLine(d.title)}” (${d.type}${d.date ? `, ${d.date}` : ''}) from ${oneLine(d.sourceFileName ?? '')}`),
     `${written.measurements + written.labValues} value(s) added, ${written.corrections} replaced, ${docs.length} document(s) filed. ` +
       'If another device wrote the same day at the same moment, the newer row wins and the other stays in history.',

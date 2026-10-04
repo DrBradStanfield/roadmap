@@ -433,10 +433,13 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
   // changed unit drops it rather than leaving it beside a number it misreads.
   const relabelled = stored.unit !== labRow.unit;
   // A count per µL is checked against the range the row already holds, as an
-  // append checks its printed one (US-21 AC15).
-  if (entry && request.unit !== undefined && !relabelled
-    && correctionOffScale(entry, request.unit, stored.value, labRow.referenceLow, labRow.referenceHigh)) {
-    return reject('unknown-unit', labUnitRefusal(entry, request.unit, 'scale'));
+  // append checks its printed one (US-21 AC15), read on the canonical scale:
+  // a legacy row in a factor-1 spelling (K/uL) holds its range there too.
+  if (entry && request.unit !== undefined) {
+    const held = canonicalLabRow(entry, labRow);
+    if (held?.factor === 1 && correctionOffScale(entry, request.unit, stored.value, held.stored.referenceLow, held.stored.referenceHigh)) {
+      return reject('unknown-unit', labUnitRefusal(entry, request.unit, 'scale'));
+    }
   }
   const row: FileLabValue = {
     ...labRow,
@@ -486,9 +489,10 @@ export interface BulkAppendResult {
   skippedDuplicates: number;
   /**
    * Lab rows refused because the catalogue does not know that unit spelling
-   * for that test. The caller SHOWS these — a silently dropped value is the
+   * for that test, or, under a spelling it takes, for the number (`fault`,
+   * US-21 AC15). The caller SHOWS these — a silently dropped value is the
    * failure this whole change exists to prevent — and counts one
-   * `lab_unit_refused` event per row.
+   * `lab_unit_refused` event per spelling refusal only.
    */
   refused: LabUnitRefusal[];
 }

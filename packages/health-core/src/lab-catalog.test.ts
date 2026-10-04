@@ -518,12 +518,16 @@ describe('US-21 AC15 — cells/µL, cumm, and a differential in %', () => {
     expect(labCountFault(entryOf('platelets'), { value: 2.5, unit: '×10³/µL', referenceLow: 150, referenceHigh: 400 })).toBeNull();
 
     const scale = labUnitRefusal(entryOf('platelets'), 'cells/µL', 'scale');
-    expect(scale).toBe('Platelets in "cells/µL": the value and its printed range are on different scales, so the row was not stored. Do not re-send it in another unit; ask the person to check the report');
+    expect(scale).toBe('Platelets in "cells/µL": the value and its printed range are on different scales, so the row was not stored. Ask the person to check the report; do not re-send it in another unit on your own');
     expect(labUnitRefusalNote(entryOf('platelets'), 'cells/µL', 'scale')).toBe('the value and its printed range are on different scales, so the row was not stored');
+    // The assistant's copy of either asks the person; it never re-sends on its own.
     const decimal = labUnitRefusal(entryOf('platelets'), 'cells/µL', 'decimal');
     expect(decimal).toContain('whole numbers');
-    expect(decimal).toContain('check whether the report means thousands per µL (×10³/µL)');
+    expect(decimal).toContain('ask the person whether the report means thousands per µL (×10³/µL); do not re-send it in another unit on your own');
     expect(decimal).not.toContain('different scales');
+    // The person's copy keeps its hint to look for the ×10³/µL line.
+    expect(labUnitRefusalNote(entryOf('platelets'), 'cells/µL', 'decimal')).toContain('check whether the report means thousands per µL (×10³/µL)');
+    expect(labUnitRefusalNote(entryOf('platelets'), 'cells/µL', 'decimal')).not.toContain('re-send');
     for (const message of [scale, decimal]) {
       expect(message).not.toContain('—');
       expect(message).not.toMatch(/\d{3}/);

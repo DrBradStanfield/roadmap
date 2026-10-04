@@ -728,13 +728,31 @@ describe('US-21 AC15 — cells/µL at the write doors', () => {
     if (refused.ok) return;
     expect(refused.reason).toBe('unknown-unit');
     expect(refused.message).toContain('different scales');
-    expect(refused.message).toContain('Do not re-send it in another unit');
+    expect(refused.message).toContain('do not re-send it in another unit on your own');
     expect(refused.message).not.toContain('260');
 
     expect(ok(correctValue(file, { id, newValue: 260000, unit: 'cells/uL', now: NOW })).row)
       .toMatchObject({ value: 260, unit: '×10⁹/L', referenceLow: 150, referenceHigh: 400, correctsId: id });
     // Only cells/µL is checked: the same number in ×10⁹/L is the caller's call.
     expect(ok(correctValue(file, { id, newValue: 26, unit: '×10⁹/L', now: NOW })).row).toMatchObject({ value: 26 });
+  });
+
+  // US-21 AC15: a legacy row still in a factor-1 spelling (K/uL, 10^3/cmm;
+  // migrate leaves those alone) holds its range on the canonical scale too.
+  // Probe: WBC 6 K/uL (4–11) corrected to 6 cells/uL stored 0.006.
+  it('US-21 AC15 — a correction is checked against a legacy row stored in a factor-1 spelling', () => {
+    const appended = ok(appendLabValue(base(), {
+      metricName: 'WBC', value: 6, unit: '×10⁹/L', referenceLow: 4, referenceHigh: 11, recordedAt: '2026-08-14', now: NOW,
+    })).file;
+    const file = { ...appended, labValues: appended.labValues.map((l) => (l.metricName === 'wbc' ? { ...l, unit: 'K/uL' } : l)) };
+    const id = file.labValues.find((l) => l.metricName === 'wbc')!.id;
+
+    const refused = correctValue(file, { id, newValue: 6, unit: 'cells/uL', now: NOW });
+    expect(refused.ok).toBe(false);
+    if (!refused.ok) expect([refused.reason, refused.message.includes('different scales')]).toEqual(['unknown-unit', true]);
+
+    expect(ok(correctValue(file, { id, newValue: 6000, unit: 'cells/uL', now: NOW })).row)
+      .toMatchObject({ value: 6, unit: '×10⁹/L', correctsId: id });
   });
 
   it('US-21 AC15 — a differential in % is refused, and the refusal points at the absolute count', () => {

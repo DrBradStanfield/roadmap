@@ -2720,6 +2720,29 @@ describe('US-21 phase 3 — the import commit converts under the name the receip
     expect(outcome.text).not.toContain('Not filed');
   });
 
+  // US-21 AC15: the offer to re-add in the catalogue's unit is for a spelling
+  // refusal only; a refusal for the number asks the person instead.
+  it('US-21 AC15 — the commit offers a re-add only for a spelling refusal, not a refusal for the number', () => {
+    const file = base();
+    const { payload } = prepareImport(file, bundleOf([extracted('us.pdf', labReport({
+      values: [], unrecognized: [],
+      additionalValues: [
+        { name: 'Ferritin', value: 80, unit: 'µg/L', referenceLow: null, referenceHigh: null },
+        { name: 'Neutrophils', value: 2.4, unit: '×10⁹/L', referenceLow: null, referenceHigh: null },
+      ],
+    }))]), IMPORT_CTX);
+    // What a write refuses that the preview did not: one spelling, one number.
+    const tampered = { ...payload, candidates: payload.candidates.map((c) => (c.kind !== 'lab' ? c
+      : c.metric === 'ferritin' ? { ...c, unit: 'pmol/L' } : { ...c, unit: 'cells/uL' })) };
+    const outcome = importDocumentsCommit(file, tampered, { receipt: 'r', accept: tampered.candidates.map((c) => c.id), replace: [] }, NOW);
+    expect(outcome.status).toBe('ok');
+    const spelling = outcome.text.split('\n').find((l) => l.includes('ferritin:'))!;
+    const number = outcome.text.split('\n').find((l) => l.includes('neutrophils:'))!;
+    expect(spelling).toContain('offer to add these with the unit the catalogue takes');
+    expect(number).not.toContain('offer to add');
+    expect(number).toContain('do not re-send it in another unit on your own');
+  });
+
   it('the assistant route: the same row through file_results files the same number', () => {
     const file = base();
     const { payload } = prepared(labCall([row('urea', 'BUN', 18, 'mg/dL')]), file);

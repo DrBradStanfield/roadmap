@@ -80,8 +80,11 @@ const COUNT_ALIASES_12 = ['×10⁶/µl', 'm/µl', 'million/µl', 't/l'];
  *  2.4 ×10⁹/L. Counted, so only a whole number converts — see `canonicalLabValue`. */
 const CELLS_PER_UL = 'cells/µl';
 const COUNT_PER_UL = { [CELLS_PER_UL]: 0.001 };
-const WHOLE_COUNT_NOTE = 'Counts of cells per µL are whole numbers on the same scale as their printed range, so this row is refused, never rescaled: check whether the report means thousands per µL (×10³/µL)';
+const WHOLE_COUNT = 'Counts of cells per µL are whole numbers on the same scale as their printed range, so this row is refused, never rescaled';
+const WHOLE_COUNT_NOTE = `${WHOLE_COUNT}: check whether the report means thousands per µL (×10³/µL)`;
 const SCALE_NOTE = 'the value and its printed range are on different scales, so the row was not stored';
+/** The assistant's copy of a refusal for the number: the person decides, never a re-send. */
+const NOT_ON_YOUR_OWN = 'do not re-send it in another unit on your own';
 /** Real counts of these sit near zero (an eosinophil count of 0, severe
  *  neutropenia), so only WBC and platelets get the low-side check. */
 const LOW_SIDE_COUNTS = new Set(['wbc', 'platelets']);
@@ -258,8 +261,10 @@ export function acceptedLabUnits(entry: LabCatalogEntry): string[] {
  * alone, so a health value never enters the message.
  */
 export function labUnitRefusal(entry: LabCatalogEntry, unit: string, fault?: CountFault | null): string {
-  if (fault === 'scale') return `${entry.label} in "${unit}": ${SCALE_NOTE}. Do not re-send it in another unit; ask the person to check the report`;
-  if (labUnitTaken(entry, unit)) return `${entry.label} in "${unit}" was not stored. ${WHOLE_COUNT_NOTE}`;
+  if (fault === 'scale') return `${entry.label} in "${unit}": ${SCALE_NOTE}. Ask the person to check the report; ${NOT_ON_YOUR_OWN}`;
+  if (labUnitTaken(entry, unit)) {
+    return `${entry.label} in "${unit}" was not stored. ${WHOLE_COUNT}: ask the person whether the report means thousands per µL (×10³/µL); ${NOT_ON_YOUR_OWN}`;
+  }
   const refusal = `${entry.label} is stored in ${entry.unit}; this record takes ${acceptedLabUnits(entry).join(', ')}, not "${unit}"`;
   const extra = entry.refusalNotes?.[normalizeLabUnit(unit).toLowerCase()];
   return extra ? [refusal, extra.note, ...(extra.assistant ? [extra.assistant] : [])].join('. ') : refusal;
