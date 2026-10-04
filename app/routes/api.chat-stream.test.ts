@@ -28,7 +28,7 @@ vi.mock('../lib/supabase.server', () => ({
   getOrCreateGuestSession: vi.fn(async () => ({ sessionId: '87654321-4321-4321-8321-cba987654321', sessionToken: 'tok' })),
   GuestRateLimitError: class extends Error {},
 }));
-vi.mock('../lib/chat.server', () => ({
+vi.mock('../lib/chat.server', async (original) => ({
   resolveChatContext: () => ({ healthDocuments: [], userContextJson: '{}' }),
   buildSystemBlocks: (_u: string, opts?: { blogArticles?: string | null }) => { mocks.blogArticles = opts?.blogArticles; return []; },
   buildConversationMessages: () => [],
@@ -36,7 +36,8 @@ vi.mock('../lib/chat.server', () => ({
   loadMatchedArticlesFromHandles: (handles: string[], titled?: string[]) => mocks.loadArticles ? mocks.loadArticles(handles, titled) : mocks.articles,
   DOCTOR_POSTURE: '', BRAND_POSTURE: '',
   getChatCompletion: mocks.getChatCompletion,
-  reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test', MAX_MESSAGE_LENGTH: 500,
+  reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test',
+  MAX_MESSAGE_LENGTH: (await original<typeof import('../lib/chat.server')>()).MAX_MESSAGE_LENGTH,
 }));
 vi.mock('../lib/chat-router.server', async (original) => ({
   ...await original<typeof import('../lib/chat-router.server')>(),

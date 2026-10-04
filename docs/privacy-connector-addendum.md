@@ -228,9 +228,9 @@ address is a stranger to us again, and an optin naming it starts over, welcome e
 included.
 
 **Chat.** On the storefront widget we store one row for each question you send: the
-text of that question, which may hold health details you wrote into it; the articles it
-matched; its classification; the router's raw output and any router error; the name of
-the surface; and a pseudonymous session and conversation id. The earlier turns of the
+first 500 characters of that question, nothing more, which may hold health details
+you wrote into it; the articles it matched; its classification; the router's raw
+output and any router error; the name of the surface; and a pseudonymous session and conversation id. The earlier turns of the
 conversation and the reply are not stored. A daily job blanks the question text, the
 router's raw output and the error text once a row is 30 days old; the match record
 stays: the articles, the classification, the ids. A guest session row holds a hashed

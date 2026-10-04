@@ -24,8 +24,8 @@ const hook = vi.hoisted(() => ({
   state: {} as Record<string, unknown>,
   refs: { inputRef: { current: null }, messagesContainerRef: { current: null as HTMLElement | null } },
 }));
-vi.mock('../hooks/useChatState', () => ({
-  MAX_CHARS: 500,
+vi.mock('../hooks/useChatState', async (original) => ({
+  MAX_CHARS: (await original<typeof import('../hooks/useChatState')>()).MAX_CHARS,
   useChatState: () => ({
     state: hook.state,
     actions: {
