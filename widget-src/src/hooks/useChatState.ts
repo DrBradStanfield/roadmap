@@ -37,7 +37,7 @@ interface UseChatStateOptions {
   onProposeEdit?: (edits: ProposedEdit[]) => void;
 }
 
-export const MAX_CHARS = 500;
+export const MAX_CHARS = 8000;
 const NO_PENDING: ChatPending = { thinking: '', text: '', status: '', sources: [] };
 
 export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected, onProposeEdit }: UseChatStateOptions) {

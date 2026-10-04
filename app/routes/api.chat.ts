@@ -49,8 +49,8 @@ type Turn = { role: 'user' | 'assistant'; content: string };
 /**
  * The widget's earlier turns, sent from its own chat-history.json (US-15 AC7:
  * the server stores none). Whitelisted roles, non-empty strings, the same
- * bound the BYOK transport uses, each turn cut at MAX_HISTORY_TURN_CHARS (a
- * reply runs longer than a question may), and never starting on an assistant turn — the Messages API 400s on that,
+ * bound the BYOK transport uses, each turn cut at MAX_HISTORY_TURN_CHARS (no
+ * shorter than a question may be), and never starting on an assistant turn — the Messages API 400s on that,
  * which would surface as a fallback.
  */
 function readClientHistory(value: unknown): Turn[] {
@@ -533,15 +533,19 @@ export async function action({ request }: ActionFunctionArgs) {
 
       // Router telemetry, one row per answered turn. On the widget it is the ONLY
       // row, trimmed to its whitelist in one place (redactForWidget).
+      // The row keeps at most 500 chars of any question, as before the 8,000 cap
+      // (US-15 AC7/AC26; CLAUDE.md: health values never enter telemetry).
+      const MATCH_EVENT_MESSAGE_CHARS = 500;
+      const clip = (s: string) => s.slice(0, MATCH_EVENT_MESSAGE_CHARS);
       const matchEvent = {
         message_id: assistantMessageId,
         conversation_id: activeConversationId,
         user_id: auth.userId,
-        message: sanitizedCurrent,
+        message: clip(sanitizedCurrent),
         router_context: {
           platform: 'shopify',
-          first: sanitizedFirst ?? null,
-          recent: sanitizedRecent,
+          first: sanitizedFirst ? clip(sanitizedFirst) : null,
+          recent: sanitizedRecent.map(clip),
         },
         matched_handles: effectiveHandles,
         router_version: routerResult ? ROUTER_VERSION : null,

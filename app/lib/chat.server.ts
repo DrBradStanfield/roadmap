@@ -39,7 +39,7 @@ import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, modelParams } f
 //   • A refusal returns 200 with `stop_reason: 'refusal'`: its own outcome.
 // Persistence paths tag rows with CHAT_MODEL re-exported from here; never
 // re-declare the string locally (Discord once did, and mislabelled its rows).
-const MAX_MESSAGE_LENGTH = 500;
+const MAX_MESSAGE_LENGTH = 8000;
 const HISTORY_TOKEN_BUDGET = 8000;
 
 // ---------------------------------------------------------------------------
