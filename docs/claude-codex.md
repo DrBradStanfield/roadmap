@@ -830,32 +830,62 @@ node ~/Documents/roadmap/tools/codex-review.mjs \
   the checkout too.
 - `--context <path>` (repeatable): a file or folder inside the checkout copied
   into the snapshot at its own path as reference, not under review. A context
-  that copies no files is refused.
+  that copies no files is refused. It is copied as it is on disk, so a
+  tracked context file with uncommitted changes arrives in its working-tree
+  version; the pre-flight line counts and names those ("context includes N
+  uncommitted change(s)"). In the example, `research/` is sent WITHOUT its
+  YouTube comment dumps (`research/channel/comments-*.json` and `.txt`) or the
+  channel-research index that quotes them: the deny list below withholds them.
 
 **Privacy.** Gitignored folders in claude_business hold customer data
 (chatbot message exports, YouTube comment backups, Judge.me review exports).
 So any subject, baseline or context file that is not tracked at HEAD must sit
 under a root pinned in `tools/codex-review-includes.json` under
-`"subjectRoots"`, committed at HEAD like the `--include` roots. The first pin
-is the numbered video folders, `claude_business/output/[0-9]*`. A tracked
-file is always allowed. A new pin is a committed policy change, Brad's call.
+`"subjectRoots"`, committed at HEAD like the `--include` roots. The pins are
+the numbered video FOLDERS, `claude_business/output/[0-9] *`, `[0-9][0-9] *`
+and `[0-9][0-9][0-9] *` (digits, then a space, and a real folder: never
+`output/0-private` or a loose file). A tracked file is always allowed. A new
+pin is a committed policy change, Brad's call.
+
+**Private-data deny list, every mode.** A numbered video folder itself holds
+YouTube comment data, so the same file's `"privateDeny"` globs name paths
+that never reach the reviewer, whatever the mode: `**/comments-*` (comment
+dumps, author beside text), `**/competitor-*-comments.*`,
+`**/objection-intel*` (quotes @handles beside comments),
+`**/research/channel/index.md` (quotes comments verbatim),
+`**/*judgeme*.csv` (Judge.me exports: emails, IP addresses) and the chatbot
+exports `**/chatbot_*/messages*` and `**/chatbot_*/conversations*`. Not
+`*.csv`: both repos track CSV ledgers that must stay reviewable. A subject or
+baseline on the list is a usage error; inside a context folder it is
+withheld and counted; the base `git archive` and every patch exclude it, in
+uncommitted, `--commit` and `--range` mode too, so a wrongly tracked dump
+never travels; and stderr says `withheld N private-data path(s)`. The list in
+force is the committed one plus any patterns an uncommitted edit adds. It
+matches names: a dump copied under another name is not caught.
 
 The snapshot is `git archive HEAD` plus the subjects plus the context, and
 nothing else from the working tree. `REVIEW_PATCH.diff` holds the subject
 diff only, and full baseline copies sit beside the snapshot; context and
-baseline copies are deleted at exit whatever the status. One byte budget
+baseline copies are deleted at exit whatever the status. A kept work dir
+(`--keep`, or any incomplete run) still holds the subject in `src/` and
+`REVIEW_PATCH.diff`, whose `-` lines are the baseline's changed lines: that
+is the reviewed change, and the kept-dir message says so. One byte budget
 (`--include-limit-mb`, 64 MB) covers subjects, baselines, context and
-`--include`. Before Codex starts, stderr prints the pre-flight line (this one
-from a stub run on 2026-10-05); read it before trusting the verdict:
+`--include`. Before Codex starts, stderr prints the pre-flight line and the
+privacy count (these from a stub run on 2026-10-05, after the deny list);
+read them before trusting the verdict:
 
 ```
-codex-review: SUBJECT "output/38 end-of-obesity/script-draft-v4.md" (baseline "output/38 end-of-obesity/script-draft-v3.md", 102,469 bytes, sha256 0a5f83f328af); CONTEXT "output/38 end-of-obesity/research/" (56 files); excluded from snapshot: 1 other uncommitted file(s)
+codex-review: SUBJECT "output/38 end-of-obesity/script-draft-v4.md" (baseline "output/38 end-of-obesity/script-draft-v3.md", 102,469 bytes, sha256 0a5f83f328af); CONTEXT "output/38 end-of-obesity/research/" (41 files, 15 withheld for privacy); excluded from snapshot: 0 other uncommitted file(s)
+codex-review: withheld 15 private-data path(s) (the "privateDeny" list in tools/codex-review-includes.json: comment dumps, objection notes, review and chatbot exports) from the snapshot and --context
 ```
 
-A subject identical to its baseline is `E_SUBJECT_UNCHANGED` (incomplete,
-exit 3). Credential-named, symlinked, hard-linked, outside-the-checkout,
-nested-repo and health-record paths are usage errors (exit 1), as are
-instruction files as context; an instruction file as a subject, at any
+A subject identical to its baseline, bytes and file mode, is
+`E_SUBJECT_UNCHANGED` (incomplete, exit 3). Credential-named, symlinked, hard-linked, outside-the-checkout,
+nested-repo, private-data and health-record paths are usage errors (exit 1),
+as are instruction files as context (the health-record content check reads
+files under 5 MB only; a bigger record under an ordinary name is not caught by
+content); an instruction file as a subject, at any
 depth, is reviewed and flagged. Subject, baseline and context bytes go
 through the same credential value and shape scan as everything else. Not with
 `--commit`, `--range` or `--loop`.
