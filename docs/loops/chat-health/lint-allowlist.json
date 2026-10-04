@@ -22,6 +22,17 @@
    "reason": "Deliberate: the algorithm's LDL target (below 1.4 mmol/L, 55 mg/dL) sits below guideline targets.",
    "date": "2026-09-29",
    "who": "Brad (knowledge-refresh plan decision 6)"
+  },
+  {
+   "rule": "entry-vs-algorithm",
+   "pair": [
+    "collagen-benefits-best-forms-dosing-and-side-effects",
+    "algorithm:supplements"
+   ],
+   "item": "collagen 10–15 g/day dose and its skin evidence",
+   "reason": "Deliberate: Brad keeps the algorithm's hydrolysed collagen 10–15 g/day suggestion (Pu 2023) although the reference's skin trials used 2.5–5 g and a 2025 review found no benefit in independent studies. Covers the dose and evidence only; safety caveats (oxalate stones, glucose-lowering drugs) still report.",
+   "date": "2026-10-04",
+   "who": "Brad (in session, issue #125)"
   }
  ]
 }
