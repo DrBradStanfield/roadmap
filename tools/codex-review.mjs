@@ -122,6 +122,26 @@
 //     and back again entirely between those two checks is not seen (the value
 //     and shape scan still covers the bytes copied). Paths the prompt prints
 //     are JSON-quoted;
+//   * `--subject <file>` (US-40 AC15, Brad 2026-10-05: "Codex reviewed the wrong file last time") reviews EXACT files
+//     instead of the working tree: the snapshot is `git archive HEAD` + a synthetic patch per subject (its baseline ->
+//     the subject, labelled at the subject's path) + any `--context` files, and NOTHING else from the working tree, so
+//     another session's uncommitted or untracked work never becomes the change (the run counts what it left out on the
+//     pre-flight SUBJECT line). A subject may be tracked, untracked or gitignored. `--baseline <file>` pairs by order
+//     with `--subject`; with none, a tracked subject's baseline is its HEAD version and an untracked one is a new file.
+//     Subjects and baselines must be regular, singly-linked files INSIDE the checkout (a baseline outside it is refused,
+//     by choice: no second pinned-root policy), every component from the checkout's top a real folder, not a link;
+//     refused, as usage errors: a credential-named component, `.git`, a control or line-break character, a health
+//     record (by name or content), a FIFO or device. The patch is built in a throwaway index AND a throwaway object
+//     directory (the repo's objects read as an alternate), so the real index and object store are never written.
+//     REVIEW_PATCH.diff holds the subject diff only; full baseline copies sit beside the snapshot in
+//     `subject-baselines/`. `--context <path>` (repeatable; a file or folder inside the checkout, typically
+//     gitignored sources) is copied into the snapshot at its own path AFTER the base value pass, walked and copied by
+//     the --include module (symlinks stripped, node_modules skipped, credential-named entries withheld and counted, an
+//     instruction file, a health record, a nested repo, a hard link or a FIFO refused); it is reference, not under
+//     review. Subject, baseline and context bytes pass the same credential value and shape scan as everything else,
+//     and share the --include-limit-mb cap. The snapshot id is base + subject-patch hash (+ context hash), and drift
+//     re-reads the subjects, baselines and context from disk. A subject identical to its baseline is
+//     E_SUBJECT_UNCHANGED, never "Nothing to review". Refused with --commit, --range and --loop;
 //   * the result is validated field by field; a nonzero exit, timeout, or
 //     malformed output is INCOMPLETE, never clean (CR4);
 //   * `--record` serves a LOCAL copy of the designated scratch record through
@@ -149,6 +169,12 @@
 //                      the checkout, under a pinned root, copied to
 //                      work/included/<name>/; --include-limit-mb <n> raises the
 //                      64 MB total cap
+//            --subject <file>  (repeatable) review EXACTLY this file inside the checkout (tracked, untracked or
+//                      gitignored) against its baseline; nothing else from the working tree enters the snapshot
+//            --baseline <file>  (repeatable) the earlier version of the subject in the same position; default: the
+//                      subject's HEAD version, or a new file when it is untracked
+//            --context <path>  (repeatable, with --subject) a file or folder inside the checkout copied into the
+//                      snapshot as reference, not under review
 // Exit: 0 clean, 2 blocking findings, 3 incomplete review, 1 usage error or a
 // patch that does not apply to the snapshot.
 
@@ -156,10 +182,10 @@ import { execFileSync, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { closeSync, existsSync, fstatSync, lstatSync, mkdirSync, mkdtempSync, openSync, readdirSync, readFileSync, readSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { externalSources, headBlob, LINK_POLICY, materialiseLinks } from "./codex-review-links.mjs";
-import { includeHash, includeWalk, isInstructionName } from "./codex-review-include.mjs";
+import { includeHash, includeWalk, isHealthRecord, isInstructionName, readRegular } from "./codex-review-include.mjs";
 import { isSecretName, isSecretPath, SECRET_EXCLUDES } from "./codex-review-names.mjs";
 
 const args = process.argv.slice(2);
@@ -221,7 +247,7 @@ let recordCopy = null;
 let symlinks = [];
 let linksMaterialised = [], linksRefused = [];
 let keep = has("--keep");
-let work = null, snapshotId = "(not built)", instructionEdits = [], files = [], secretFiles = [], label = "(not built)", base = "", included = [], includeRoots = []; // declared here: an early stop reports them
+let work = null, snapshotId = "(not built)", instructionEdits = [], files = [], secretFiles = [], label = "(not built)", base = "", included = [], includeRoots = [], subjects = [], context = [], excludedUncommitted = null; // declared here: an early stop reports them
 let purge = false; // a work dir that may hold a credential is never kept
 let valueChecked = false; // until the value check passes, no work dir is kept either
 let secretValues = { checked: 0, exempt_at_base: 0, exempt_keys: [], skipped: [] };
@@ -243,9 +269,171 @@ if (RECORD && real(SCRATCH_RECORD.path).startsWith(real(ROOT) + sep)) {
   finish(incomplete(`E_RECORD_IN_REPO: the scratch record must live outside the reviewed checkout (it would enter the review snapshot). Move it to ${join(process.env.HOME ?? "", ".codex-review", "scratch-record.json")}.`), "0.0");
 }
 
+// --- 0. --subject (US-40 AC15): review EXACT files, never whatever else the working tree holds -----------------------
+const usage = (why) => { console.error(`codex-review: ${why}`); process.exit(1); };
+/** Every value of a repeatable flag, in order ("" for a flag with nothing after it). */
+const many = (name) => args.flatMap((a, i) => (a === name ? [args[i + 1] ?? ""] : []));
+const INCLUDE_LIMIT_MB = Number(opt("--include-limit-mb", "64"));
+if (!(INCLUDE_LIMIT_MB > 0)) usage("--include-limit-mb takes a positive number of megabytes");
+const TOP = real(ROOT);
+/** A path the prompt prints must not be able to start a line of its own (adversary, 2026-09-29). */
+const CONTROL = /[\u0000-\u001f\u007f\u2028\u2029]/;
+const hasGit = (d) => { try { lstatSync(join(d, ".git")); return true; } catch { return false; } };
+const subjectArgs = many("--subject"), baselineArgs = many("--baseline"), contextArgs = many("--context");
+const SUBJECT_MODE = subjectArgs.length > 0;
+if (!SUBJECT_MODE && (baselineArgs.length || contextArgs.length)) usage("--baseline and --context only go with --subject");
+if (SUBJECT_MODE && (has("--commit") || has("--range") || LOOP)) usage("--subject reviews files in the working tree against HEAD: it is refused with --commit, --range and --loop");
+if (baselineArgs.length > subjectArgs.length) usage(`--baseline: ${baselineArgs.length} baselines for ${subjectArgs.length} subject(s); each baseline pairs with the --subject in the same position`);
+/** A refusal carrying its reason; the caller turns it into a usage error, a stop or drift. */
+const refuse = (why) => { throw Object.assign(new Error(why), { why }); };
+/** Every component from the checkout's top down to `abs` exists and is no link, and `abs` is its own real path (case included). */
+function realParts(abs) {
+  const rel = relative(TOP, abs);
+  let d = TOP;
+  for (const c of rel.split(sep)) {
+    d = join(d, c);
+    let st; try { st = lstatSync(d); } catch { refuse(`does not exist (${relative(TOP, d)})`); }
+    if (st.isSymbolicLink()) refuse(`passes through a symlink (${relative(TOP, d)})`);
+  }
+  let rp = null; try { rp = realpathSync.native(abs); } catch { /* checked below */ }
+  if (rp !== join(realpathSync.native(TOP), rel)) refuse("is not its own real path");
+}
+/** A --subject/--baseline/--context path: inside the checkout, no credential-named or .git component, no control character, no link on the way. */
+function checkoutPath(given, flag) {
+  const say = (why) => usage(`${flag} ${JSON.stringify(given)}: ${why}`);
+  if (!given) say("needs a path");
+  const abs = resolve(given);
+  if (CONTROL.test(given) || CONTROL.test(abs)) say("the path holds a control or line-break character");
+  const rel = relative(TOP, abs);
+  if (!rel || rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) say(`is outside the reviewed checkout ${ROOT} (a baseline must be inside it too)`);
+  const parts = rel.split(sep);
+  const secret = parts.find(isSecretName);
+  if (secret) say(`is or passes through a credential-named entry (${secret})`);
+  if (parts.some((c) => c.toLowerCase() === ".git")) say("is inside .git");
+  try { realParts(abs); } catch (e) { if (!e.why) throw e; say(e.why); }
+  return { abs, rel: parts.join("/"), parts };
+}
+/** A regular, singly-linked file that is not a health record by name; the bytes are checked when read. */
+function regularFile(p, given, flag) {
+  const st = lstatSync(p.abs), say = (why) => usage(`${flag} ${JSON.stringify(given)}: ${why}`);
+  if (!st.isFile()) say("is not a regular file (a folder, FIFO, device or link)");
+  if (st.nlink > 1) say("is a hard link, whose content may live outside the checkout");
+  if (isHealthRecord(basename(p.abs), Buffer.alloc(0))) say("looks like a health record, which only --record may serve");
+  return st;
+}
+const SUBJECTS = subjectArgs.map((given, i) => {
+  const s = checkoutPath(given, "--subject");
+  regularFile(s, given, "--subject");
+  const b = baselineArgs[i];
+  const baseline = b === undefined ? null : checkoutPath(b, "--baseline");
+  if (baseline) regularFile(baseline, b, "--baseline");
+  return { ...s, baseline };
+});
+if (new Set(SUBJECTS.map((s) => s.rel)).size < SUBJECTS.length) usage("--subject: the same file is named twice");
+const subjectRels = new Set(SUBJECTS.map((s) => s.rel));
+/** --context: a file or folder copied into the snapshot at its own path (reference, not under review), walked like an --include folder. */
+const CONTEXT = contextArgs.map((given) => {
+  const c = checkoutPath(given, "--context"), say = (why) => usage(`--context ${JSON.stringify(given)}: ${why}`);
+  if (c.parts.some(isInstructionName) || isInstruction(c.rel)) say("is or sits in an instruction file or folder the reviewer would obey (AGENTS.md, CLAUDE.md, .codex/, .claude/, docs/review-format.md)");
+  if (subjectRels.has(c.rel)) say("is also a --subject; a subject is under review, never context");
+  const folder = lstatSync(c.abs).isDirectory();
+  if (folder && hasGit(c.abs)) say("is a nested git repo, whose credential values the scan would miss");
+  /** The files to copy: [[rel under root, abs, size]]; a subject inside a context folder is left to the subject. */
+  const walk = () => {
+    if (!folder) {
+      const st = lstatSync(c.abs);
+      if (!st.isFile() || st.nlink > 1) refuse("is not a regular, singly-linked file");
+      if (isHealthRecord(basename(c.abs), st.size < 5 << 20 ? readRegular(c.abs) : Buffer.alloc(0))) refuse("looks like a health record, which only --record may serve"); // the content sniff stops at 5 MB, as the walk's does
+      return { files: [[basename(c.abs), c.abs, st.size]], withheld: [], links: [] };
+    }
+    const w = includeWalk(c.abs);
+    const bad = w.files.find(([r]) => isInstruction(`${c.rel}/${r}`));
+    if (bad) refuse(`holds ${c.rel}/${bad[0]}, an instruction file the reviewer would obey`);
+    return { ...w, files: w.files.filter(([r]) => !subjectRels.has(`${c.rel}/${r}`)) };
+  };
+  let walked; try { walked = walk(); } catch (e) { if (!e.why) throw e; say(`${e.path ? `${relative(TOP, e.path)} ` : ""}${e.why}`); }
+  const to = folder ? c.rel : dirname(c.rel) === "." ? "" : dirname(c.rel);
+  return { path: folder ? `${c.rel}/` : c.rel, rel: c.rel, root: folder ? c.abs : dirname(c.abs), to, walk, ...walked };
+});
+for (const a of CONTEXT) for (const b of CONTEXT) if (a !== b && (a.rel === b.rel || b.rel.startsWith(`${a.rel}/`))) usage(`--context ${JSON.stringify(b.rel)}: overlaps --context ${JSON.stringify(a.rel)}`);
+const contextBytes = CONTEXT.reduce((a, c) => a + c.files.reduce((b, f) => b + f[2], 0), 0);
+const subjectBytes = SUBJECTS.reduce((a, s) => a + statSync(s.abs).size + (s.baseline ? statSync(s.baseline.abs).size : 0), 0);
+if (subjectBytes + contextBytes > INCLUDE_LIMIT_MB * (1 << 20)) usage(`--subject/--context: ${((subjectBytes + contextBytes) / (1 << 20)).toFixed(1)} MB of subjects, baselines and context, over the ${INCLUDE_LIMIT_MB} MB limit; raise it with --include-limit-mb <n>`);
+/**
+ * The subject patch (US-40 AC15), built in a throwaway index AND a throwaway object directory (the repo's own objects
+ * are read as an alternate), so neither the real index nor the real object store is written. Tree A = base with each
+ * subject's baseline at the subject's path (an explicit baseline, else the base version, else nothing: a new file);
+ * tree B = tree A with the subjects. `patch` (REVIEW_PATCH.diff) = A -> B, the subjects only; `apply` = base -> B,
+ * what the snapshot gets. Each file is read without following a link, and the components above it are checked
+ * before and after the read; a read that is a health record is refused.
+ */
+function subjectBuild() {
+  const dir = mkdtempSync(join(tmpdir(), "cr-subj-"));
+  tempDirs.add(dir);
+  try {
+    mkdirSync(join(dir, "objects"));
+    const objects = resolve(ROOT, git(["rev-parse", "--git-path", "objects"]).trim());
+    const env = { ...process.env, GIT_INDEX_FILE: join(dir, "index"), GIT_OBJECT_DIRECTORY: join(dir, "objects"), GIT_ALTERNATE_OBJECT_DIRECTORIES: objects };
+    const g = (a, o = {}) => git(a, { env, ...o });
+    const read = (f) => {
+      realParts(f.abs);
+      const bytes = readRegular(f.abs);
+      realParts(f.abs);
+      if (isHealthRecord(basename(f.abs), bytes)) refuse(`${f.rel} looks like a health record, which only --record may serve`);
+      return bytes;
+    };
+    const blob = (bytes) => g(["hash-object", "-w", "--stdin"], { input: bytes }).trim();
+    const index = (entries) => { if (entries.length) g(["update-index", "-z", "--index-info"], { input: entries.map(([m, sha, p]) => `${m} ${sha}\t${p}\0`).join("") }); };
+    g(["read-tree", base]);
+    const out = SUBJECTS.map((s) => {
+      const bytes = read(s);
+      const mode = statSync(s.abs).mode & 0o111 ? "100755" : "100644";
+      let baseBytes = null, baseMode = mode, baseSha = null, baseline = null;
+      if (s.baseline) { baseBytes = read(s.baseline); baseSha = blob(baseBytes); baseline = s.baseline.rel; }
+      else {
+        const e = nul(g(["--literal-pathspecs", "ls-tree", "-z", "--full-tree", base, "--", s.rel])).find((l) => l.slice(l.indexOf("\t") + 1) === s.rel);
+        if (e) {
+          const [m, type, sha] = e.slice(0, e.indexOf("\t")).split(" ");
+          if (type !== "blob" || !["100644", "100755"].includes(m)) refuse(`${s.rel} is tracked at HEAD as a ${type === "blob" ? "symlink" : type}, not a file`);
+          [baseMode, baseSha, baseline] = [m, sha, "HEAD"];
+          baseBytes = g(["cat-file", "blob", sha], { encoding: "buffer" });
+        }
+      }
+      return { rel: s.rel, bytes, mode, sha: blob(bytes), baseBytes, baseMode, baseSha, baseline };
+    });
+    index(out.filter((o) => o.baseSha).map((o) => [o.baseMode, o.baseSha, o.rel]));
+    const treeA = g(["write-tree"]).trim();
+    index(out.map((o) => [o.mode, o.sha, o.rel]));
+    const treeB = g(["write-tree"]).trim();
+    const DIFF = ["diff", "--binary", "--no-renames", "--no-color", "--no-ext-diff", "--no-textconv", "--src-prefix=a/", "--dst-prefix=b/"];
+    return {
+      patch: g([...DIFF, treeA, treeB]),
+      apply: g([...DIFF, base, treeB]),
+      unchanged: out.filter((o) => o.sha === o.baseSha).map((o) => o.rel),
+      baselines: out.map((o) => o.baseBytes),
+      subjects: out.map((o) => ({ path: o.rel, baseline: o.baseline, sha256: createHash("sha256").update(o.bytes).digest("hex"), bytes: o.bytes.length })),
+    };
+  } finally { rmSync(dir, { recursive: true, force: true }); tempDirs.delete(dir); }
+}
+
 // --- 1. Resolve target: base sha + patch + file list + messages ------------
-let patch, messages, tip = null;
-if (has("--commit")) {
+let patch, messages, tip = null, applyPatch = null, subjectBaselines = [];
+if (SUBJECT_MODE) {
+  // AC15: base = HEAD, the change = the subjects against their baselines; the rest of the working tree stays out.
+  base = git(["rev-parse", "HEAD"]).trim();
+  let built;
+  try { built = subjectBuild(); } catch (e) { usage(`--subject: ${e.why ?? `the subject patch could not be built (${String(e.message).split("\n")[0].slice(0, 200)})`}`); }
+  ({ patch, apply: applyPatch, subjects, baselines: subjectBaselines } = built);
+  files = subjects.map((s) => s.path);
+  label = `subject ${files.join(", ")}`;
+  messages = opt("--message", "(uncommitted work: no commit message yet. The author states net production LOC and deletions in their reply, so check 8 is unverifiable here: a low finding, not a defect.)");
+  // What the snapshot leaves out, counted so a review of the wrong thing is visible: tracked changes and untracked files.
+  const inContext = (p) => CONTEXT.some((c) => p === c.rel || p.startsWith(`${c.rel}/`));
+  excludedUncommitted = new Set([...nul(git(["diff", "--name-only", "--no-renames", "-z", "HEAD"])), ...nul(git(["ls-files", "-z", "--others", "--exclude-standard"]))].filter((p) => !subjectRels.has(p) && !inContext(p))).size;
+  const said = (b) => (b === "HEAD" ? "its HEAD version" : b === null ? "none: a new file" : JSON.stringify(b));
+  console.error(`codex-review: ${subjects.map((s) => `SUBJECT ${JSON.stringify(s.path)} (baseline ${said(s.baseline)}, ${s.bytes.toLocaleString("en-US")} bytes, sha256 ${s.sha256.slice(0, 12)})`).join("; ")}${CONTEXT.length ? `; ${CONTEXT.map((c) => `CONTEXT ${JSON.stringify(c.path)} (${c.files.length} file${c.files.length === 1 ? "" : "s"}${c.withheld.length ? `, ${c.withheld.length} credential-named withheld` : ""}${c.links.length ? `, ${c.links.length} symlinks removed` : ""})`).join("; ")}` : ""}; excluded from snapshot: ${excludedUncommitted} other uncommitted file(s)`);
+  if (built.unchanged.length) finish(incomplete(`E_SUBJECT_UNCHANGED: ${built.unchanged.map((p) => JSON.stringify(p)).join(", ")} identical to its baseline, so there is nothing to review; name the earlier version with --baseline <file>`), "0.0");
+} else if (has("--commit")) {
   const sha = git(["rev-parse", opt("--commit")]).trim();
   base = git(["rev-parse", `${sha}^`]).trim();
   ({ patch, files, secretFiles } = committed(base, sha));
@@ -301,12 +489,8 @@ instructionEdits = files.filter(isInstruction);
 // --- 1a. --include (US-40 AC13): read-only source folders from OUTSIDE the checkout -----
 // Validated and walked here (tools/codex-review-include.mjs), so their credential-named files and their git repo's
 // values join the collection below; copied beside the snapshot after the base pass.
-const usage = (why) => { console.error(`codex-review: ${why}`); process.exit(1); };
-const includeArgs = args.flatMap((a, i) => (a === "--include" ? [args[i + 1] ?? ""] : []));
-const INCLUDE_LIMIT_MB = Number(opt("--include-limit-mb", "64"));
+const includeArgs = many("--include");
 if (includeArgs.length && LOOP) usage("--include is refused with --loop: a loop never hands an external folder to the reviewer");
-if (!(INCLUDE_LIMIT_MB > 0)) usage("--include-limit-mb takes a positive number of megabytes");
-const TOP = real(ROOT);
 /**
  * Pinned roots: the policy's `roots`, `~/` expanded, never resolved; a `*` may stand in the last part
  * (`knowledge-map-raw/refresh-*`). The shipped policy counts only as committed at HEAD in the wrapper's own checkout. A
@@ -338,9 +522,6 @@ const INCLUDE_ROOTS = includeArgs.length ? (() => {
 includeRoots = INCLUDE_ROOTS.map((r) => r.text);
 if (TEST_INCLUDE_POLICY) console.error(`codex-review: TEST include policy in use (${TEST_INCLUDE_POLICY})`);
 const under = (abs, dir) => abs === dir || abs.startsWith(dir + sep);
-/** A path the prompt prints must not be able to start a line of its own (adversary, 2026-09-29). */
-const CONTROL = /[\u0000-\u001f\u007f\u2028\u2029]/;
-const hasGit = (d) => { try { lstatSync(join(d, ".git")); return true; } catch { return false; } };
 /** The pinned root `p` lies under, or null; with a `*` root, the concrete folder it matched. */
 const rootOf = (p) => {
   const r = INCLUDE_ROOTS.find((x) => under(p, x.fixed) && (!x.pattern || x.pattern.test(relative(x.fixed, p).split(sep)[0])));
@@ -463,7 +644,9 @@ const isEnvPath = (v) => v.split(":").every((p) => /^~?\//.test(p) && existsSync
  * would stop every review over values that are not this repo's to leak.
  */
 const { values: credValues, unreadable, sourceValues } = guard("credential collection", () => {
-  const all = { ...collectCredentialValues(ROOT, null, INCLUDES.flatMap((i) => i.withheld)), sourceValues: new Map() };
+  // AC15: a --context folder's withheld credential-named entries are read for values too (the on-disk walk finds them as well).
+  const extra = [...INCLUDES.flatMap((i) => i.withheld), ...CONTEXT.flatMap((c) => c.withheld.map(([abs, r]) => [abs, `${c.rel}/${r}`]))];
+  const all = { ...collectCredentialValues(ROOT, null, extra), sourceValues: new Map() };
   for (const s of LINK_SOURCES) {
     const more = collectCredentialValues(s.path, s.name);
     all.sourceValues.set(s.name, more.values);
@@ -774,7 +957,7 @@ if (included.length) {
 // Apply BEFORE stripping symlinks: a patch may delete or retarget one, and
 // needs its preimage. git apply refuses to write through a symlink itself.
 try {
-  execFileSync("git", ["apply", "--binary", "-"], { cwd: src, input: patch, stdio: ["pipe", "pipe", "pipe"] });
+  execFileSync("git", ["apply", "--binary", "-"], { cwd: src, input: applyPatch ?? patch, stdio: ["pipe", "pipe", "pipe"] }); // AC15: base -> the subjects
 } catch (e) {
   console.error("patch did not apply to the snapshot:", String(e.stderr || e).slice(0, 400));
   purge = true; process.exit(1); // the exit handler deletes the work dir
@@ -787,7 +970,34 @@ if (linksMaterialised.length) console.error(`codex-review: materialised ${linksM
 const externalInputs = linksMaterialised.filter((l) => l.source !== "snapshot");
 if (externalInputs.length) snapshotId += `+${createHash("sha256").update(externalInputs.map((l) => [l.link, l.source, l.path, l.commit, l.blob, l.sha256].join("\0")).join("\n")).digest("hex").slice(0, 12)}`;
 if (linksRefused.length) console.error(`codex-review: refused ${linksRefused.length} allowlisted symlink(s), dropped instead: ${linksRefused.map((l) => `${l.rel} (${l.reason})`).join(", ")}`);
+// --context (AC15): copied into the snapshot at its own path AFTER the base value pass (never a source of base exemptions)
+// and after the symlinks are stripped (nothing in src/ can carry a write outside it), by the --include copier: every
+// folder a real folder before the open and after the read, each file regular and singly linked, read-only.
+const contextBudget = { bytes: INCLUDE_LIMIT_MB * (1 << 20) - subjectBytes };
+context = CONTEXT.map((c) => {
+  const to = join(src, c.to);
+  let copy;
+  try {
+    for (const [r] of c.files) rmSync(join(to, r), { recursive: true, force: true }); // the snapshot's own copy of a tracked file gives way to the one on disk
+    copy = includeHash(c.root, c.files, { to, budget: contextBudget });
+  } catch (e) {
+    purge = true;
+    finish(incomplete(e.why ? `E_CONTEXT_CHANGED: ${relative(TOP, e.path)} ${e.why} between the walk and the copy; the copy is discarded and the reviewer was not started` : `E_CONTEXT_COPY_FAILED: --context ${JSON.stringify(c.path)} could not be placed in the snapshot; the reviewer was not started`), "0.0");
+  }
+  return { path: c.path, files: c.files.length, bytes: copy.bytes, withheld: c.withheld.length, symlinks_removed: c.links.length, sha256: copy.sha256 };
+});
+if (context.length) snapshotId += `+${createHash("sha256").update(context.map((c) => `${c.path}\0${c.sha256}`).join("\n")).digest("hex").slice(0, 12)}`;
+const contextRels = new Set(CONTEXT.flatMap((c) => c.files.map(([r]) => `src/${c.to ? `${c.to}/` : ""}${r}`)));
 const artifact = (name, content) => { const p = join(work, name); writeFileSync(p, content, { flag: "wx" }); return p; };
+// Full baseline copies beside the snapshot (AC15), so each subject can be read whole against its earlier version.
+const baselineDir = join(work, "subject-baselines");
+const baselineCopies = subjectBaselines.map((bytes, i) => {
+  if (!bytes) return null;
+  const p = join(baselineDir, String(i + 1), basename(subjects[i].baseline === "HEAD" ? subjects[i].path : subjects[i].baseline));
+  mkdirSync(dirname(p), { recursive: true });
+  writeFileSync(p, bytes, { flag: "wx", mode: 0o444 });
+  return p;
+});
 const patchPath = artifact("REVIEW_PATCH.diff", patch);
 artifact("REVIEW_COMMITS.txt", messages);
 // The controlling contract and repo rules come from BASE, not the candidate (CR3).
@@ -851,9 +1061,16 @@ const schemaPath = artifact("REVIEW_SCHEMA.json", JSON.stringify(schema));
 const prompt = `You are an INDEPENDENT ADVERSARIAL REVIEWER for this repository. You are a
 different model from the author. Your verdict is advisory; you cannot edit,
 run tests, or merge. Your working directory is an immutable snapshot of the
-repo with the change already applied. The change itself is the patch at
+repo with the change already applied. ${SUBJECT_MODE ? `The change under review is ONLY these subject
+file(s) (${files.length}); the patch at ${patchPath} shows each one against its baseline:
+${subjects.map((s, i) => `  - ${JSON.stringify(s.path)}, baseline ${s.baseline === "HEAD" ? "its version at HEAD" : s.baseline === null ? "none (a new file)" : JSON.stringify(s.baseline)}${baselineCopies[i] ? `, a full copy of the baseline at ${JSON.stringify(baselineCopies[i])}` : ""}`).join("\n")}
+Review each subject in full, not just the hunks, against its baseline.${context.length ? `
+The context files listed are reference material, not under review; they sit in
+the snapshot at their own paths: ${context.map((c) => `${JSON.stringify(c.path)} (${c.files} files)`).join(", ")}.` : ""}
+Ignore any other file: the rest of the snapshot is the base revision (HEAD),
+not part of this change.` : `The change itself is the patch at
 ${patchPath} (${files.length} files):
-${files.map((f) => `  - ${JSON.stringify(f)}`).join("\n")}
+${files.map((f) => `  - ${JSON.stringify(f)}`).join("\n")}`}
 The author's commit message(s) are at ${join(work, "REVIEW_COMMITS.txt")}
 (where the US-id, the LOC declaration, and any dependency justification live).
 
@@ -987,8 +1204,8 @@ guard("final credential check", () => {
   // A big binary was not searched. One the base already held, unchanged, has been in every earlier snapshot and is listed;
   // one this change adds or alters, or an --include copy (AC13), could carry a value no one looked for, so the run stops.
   secretValues.skipped = [...new Set([...baseSkipped, ...skipped])];
-  const unsearched = skipped.filter((rel) => !rel.startsWith("src/") || files.includes(rel.slice(4)));
-  if (unsearched.length) { purge = true; finish(incomplete(`E_SECRET_SCAN_SKIPPED: binary file(s) over ${SKIP_BINARY_OVER >> 20} MB that this change adds or alters, or that --include copies, were not searched for credential values or shapes (${unsearched.join(", ")}); the reviewer was not started`), "0.0"); }
+  const unsearched = skipped.filter((rel) => !rel.startsWith("src/") || files.includes(rel.slice(4)) || contextRels.has(rel)); // AC15: a context copy is new to the reviewer too
+  if (unsearched.length) { purge = true; finish(incomplete(`E_SECRET_SCAN_SKIPPED: binary file(s) over ${SKIP_BINARY_OVER >> 20} MB that this change adds or alters, or that --include or --context copies, were not searched for credential values or shapes (${unsearched.join(", ")}); the reviewer was not started`), "0.0"); }
 });
 valueChecked = true;
 if (secretValues.skipped.length) console.error(`codex-review: ${secretValues.skipped.length} unchanged base binary file(s) over ${SKIP_BINARY_OVER >> 20} MB not searched for credential values: ${secretValues.skipped.join(", ")}`);
@@ -1108,7 +1325,18 @@ if (foreignCalls.length) {
 }
 
 let drift = null;
-if (!has("--commit") && !has("--range")) {
+if (SUBJECT_MODE) {
+  // AC15: the subjects, their baselines and the context are read again from disk; the rest of the working tree is not the target.
+  let now = null;
+  try { now = createHash("sha256").update(subjectBuild().patch).digest("hex").slice(0, 12); } catch { /* unreadable, a link, or refused now: changed */ }
+  if (now !== patchHash) drift = `subject or baseline file(s) changed during review (${patchHash} → ${now ?? "unreadable"}); this verdict is for the snapshot only`;
+  const changedContext = CONTEXT.flatMap((c, k) => {
+    let h = null;
+    try { h = includeHash(c.root, c.walk().files).sha256; } catch { /* unreadable or refused now: changed */ }
+    return h === context[k]?.sha256 ? [] : [c.path];
+  });
+  if (changedContext.length) drift = [drift, `context changed during review: ${changedContext.join(", ")}; this verdict covers the copies only`].filter(Boolean).join("; ");
+} else if (!has("--commit") && !has("--range")) {
   const nowHash = createHash("sha256").update(uncommitted().patch).digest("hex").slice(0, 12);
   if (nowHash !== patchHash) drift = `working tree changed during review (${patchHash} → ${nowHash}); this verdict is for the snapshot only`;
 }
@@ -1131,7 +1359,7 @@ finish(review, elapsedMin, { drift, recordAccess, webSearches, webSearchDomains,
 // --- 5. Report, print, exit ---------------------------------------------------
 function finish(review, elapsedMin, extra = {}) {
   const { drift = null, recordAccess = RECORD ? "not_attempted" : "not_requested", webSearches = 0, webSearchDomains = [], webSearchesWithoutProvenance = 0 } = extra;
-  const report = { ...review, model: MODEL, author: LOOP ? "loop" : "session", label, base, files: files.length, secret_files_excluded: secretFiles, secret_values: secretValues, elapsed_min: Number(elapsedMin), drift, record_access: recordAccess, web_searches: webSearches, web_search_domains: webSearchDomains, web_searches_without_provenance: webSearchesWithoutProvenance, instruction_edits: instructionEdits, symlinks_removed: symlinks?.length ?? 0, symlinks_materialised: linksMaterialised, included, link_policy: TEST_LINK_POLICY ? "test" : "default", include_policy: TEST_INCLUDE_POLICY ? "test" : "default", include_roots: includeRoots };
+  const report = { ...review, model: MODEL, author: LOOP ? "loop" : "session", label, base, files: files.length, secret_files_excluded: secretFiles, secret_values: secretValues, elapsed_min: Number(elapsedMin), drift, record_access: recordAccess, web_searches: webSearches, web_search_domains: webSearchDomains, web_searches_without_provenance: webSearchesWithoutProvenance, instruction_edits: instructionEdits, symlinks_removed: symlinks?.length ?? 0, symlinks_materialised: linksMaterialised, included, link_policy: TEST_LINK_POLICY ? "test" : "default", include_policy: TEST_INCLUDE_POLICY ? "test" : "default", include_roots: includeRoots, subjects, context, excluded_uncommitted: excludedUncommitted };
   const out = opt("--out");
   if (out) writeFileSync(out, JSON.stringify(report, null, 2)); // a failed write throws, and the exit handler still cleans up
   const blocking = report.findings.filter((f) => f.blocks_merge);

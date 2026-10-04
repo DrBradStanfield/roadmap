@@ -24,13 +24,15 @@ const isRecord = (bytes) => {
   try { const j = JSON.parse(bytes.toString("utf8").replace(/^﻿/, "")); return typeof j?.meta?.createdAt === "string" && (Array.isArray(j.measurements) || Array.isArray(j.labValues)); } catch { return false; }
 };
 const RECORD_WHY = "looks like a health record, which only --record may serve";
+/** A health record by name or content: the --subject and --context files of tools/codex-review.mjs (US-40 AC15) pass the same check. */
+export const isHealthRecord = (name, bytes) => RECORD_NAME.test(name) || isRecord(bytes);
 
 /**
  * One regular file's bytes: opened without following a link or waiting on a FIFO (O_NONBLOCK), the inode's only link, at
  * most `max` bytes by fstat. Any open failure (gone, now a link, unreadable) is a change, never a scan failure.
  */
 const GONE = "is gone or no longer a regular file";
-function readRegular(abs, max = Infinity) {
+export function readRegular(abs, max = Infinity) {
   let fd;
   try { fd = openSync(abs, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK); } catch { fail(abs, GONE); }
   try {
