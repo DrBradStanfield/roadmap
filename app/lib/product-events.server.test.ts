@@ -185,6 +185,7 @@ describe('the email-arrival counters', () => {
       eventName: 'email_landing_link_copied',
       visitorId: VISITOR,
     });
+    expect(parseProductEvent({ eventName: 'email_landing_link_copied', visitorId: VISITOR, metadata: { key: 'x' } })).toBeNull();
   });
 
   it('takes pdf_window_blocked from a browser, with no metadata (US-18 AC6)', () => {

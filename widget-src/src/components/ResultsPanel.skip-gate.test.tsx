@@ -17,7 +17,9 @@ const mocks = vi.hoisted(() => ({
   getReportEmailCaptured: vi.fn(),
   markReportEmailCaptured: vi.fn(),
   trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
   skip: { value: false },
+  shopify: { value: true },
 }));
 vi.mock('../lib/roadmap-data', () => ({
   getReportHtml: mocks.getReportHtml,
@@ -25,27 +27,31 @@ vi.mock('../lib/roadmap-data', () => ({
   getReportEmailCaptured: mocks.getReportEmailCaptured,
   markReportEmailCaptured: mocks.markReportEmailCaptured,
 }));
-vi.mock('../lib/server-api', () => ({ trackABConversion: mocks.trackABConversion, trackProductEvent: vi.fn() }));
-vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: true }));
+vi.mock('../lib/server-api', () => ({ trackABConversion: mocks.trackABConversion, trackProductEvent: mocks.trackProductEvent }));
+vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return mocks.shopify.value; } }));
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => mocks.skip.value }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
-import { ResultsPanel, REMINDER_SIGNUP_LABEL, REMINDER_SIGNUP_DONE, GUEST_CAPTURE_BUTTON_LABEL } from './ResultsPanel';
+import { ResultsPanel, REMINDER_SIGNUP_LABEL, REMINDER_SIGNUP_DONE, GUEST_CAPTURE_BUTTON_LABEL, PDF_WINDOW_BLOCKED } from './ResultsPanel';
 import { EMAIL_STORAGE_NOTICE, StorageNoticeContext } from '../lib/storage-notice';
 
 const results = calculateHealthResults({ heightCm: 175, sex: 'male' });
 
-function showPlan() {
-  return render(
+function plan(props: Partial<React.ComponentProps<typeof ResultsPanel>> = {}) {
+  return (
     <StorageNoticeContext.Provider value>
-      <ResultsPanel results={results} isValid unitSystem="si" showEmailCapture formStage={3} />
-    </StorageNoticeContext.Provider>,
+      <ResultsPanel results={results} isValid unitSystem="si" showEmailCapture formStage={3} {...props} />
+    </StorageNoticeContext.Provider>
   );
+}
+function showPlan(props: Partial<React.ComponentProps<typeof ResultsPanel>> = {}) {
+  return render(plan(props));
 }
 
 let print: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.skip.value = true;
+  mocks.shopify.value = true;
   mocks.getReportEmailCaptured.mockReturnValue(false);
   mocks.markReportEmailCaptured.mockImplementation(() => {});
   mocks.getReportHtml.mockResolvedValue({ success: true, html: '<p>Local report</p>' });
@@ -165,6 +171,205 @@ describe('US-44 AC5 — gate not skipped: today\'s behaviour', () => {
     await waitFor(() => expect(view.getByRole('button', { name: 'Save as PDF' })).toBeTruthy());
     expect(print).toHaveBeenCalledOnce();
     expect(mocks.markReportEmailCaptured).toHaveBeenCalledOnce();
+  });
+});
+
+describe('US-18 AC6 — a refused print window is never silent', () => {
+  // The words Brad signs. No em dash, no claim the plan is saved here (a device
+  // that refused storage runs from memory), and never "use another browser":
+  // that browser would not hold this plan.
+  const BLOCKED = "The PDF window didn't open. Try Save as PDF again. Some apps' built-in browsers block it.";
+  const opens = () => vi.mocked(window.open).mockImplementation(() => ({ document: { write: vi.fn(), close: vi.fn() }, print }) as unknown as Window);
+  const refuseWindow = () => vi.mocked(window.open).mockImplementation(() => null);
+  const blockedEvents = () => mocks.trackProductEvent.mock.calls.filter(([name]) => name === 'pdf_window_blocked');
+
+  it('the copy is plain: no em dash, no other browser, no claim the plan is saved', () => {
+    expect(PDF_WINDOW_BLOCKED).toBe(BLOCKED);
+    expect(BLOCKED).not.toMatch(/\u2014/);
+    expect(BLOCKED.toLowerCase()).not.toMatch(/saved|stored/);
+    expect(BLOCKED.toLowerCase()).not.toMatch(/another browser|different browser|other browser/);
+  });
+
+  it('gated (/pages/roadmap): the capture still completes, and Save as PDF says the window did not open', async () => {
+    mocks.skip.value = false;
+    refuseWindow();
+    const view = showPlan();
+    fireEvent.change(view.container.querySelector('#guestEmail')!, { target: { value: 'reader@example.com' } });
+    fireEvent.click(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })[0]);
+    await waitFor(() => expect(view.getByRole('button', { name: 'Save as PDF' })).toBeTruthy());
+    expect(window.open).toHaveBeenCalledOnce();
+    expect(mocks.sendGuestReport).toHaveBeenCalledWith('reader@example.com');
+    expect(mocks.markReportEmailCaptured).toHaveBeenCalledOnce();
+    expect(mocks.trackABConversion).toHaveBeenCalledOnce();
+    expect(view.container.querySelector('#guestEmail')).toBeNull();
+    const note = view.getByText(BLOCKED);
+    expect(note.getAttribute('role')).toBe('status');
+    expect(note.closest('.hr-col-meta')).toBe(view.getByRole('button', { name: 'Save as PDF' }).closest('.hr-col-meta'));
+    expect(blockedEvents()).toEqual([['pdf_window_blocked']]);
+  });
+
+  it('gated: a later Save as PDF whose window opens clears the message', async () => {
+    mocks.skip.value = false;
+    refuseWindow();
+    const view = showPlan();
+    fireEvent.change(view.container.querySelector('#guestEmail')!, { target: { value: 'reader@example.com' } });
+    fireEvent.click(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })[0]);
+    await waitFor(() => expect(view.getByText(BLOCKED)).toBeTruthy());
+    vi.mocked(window.open).mockImplementation(() => ({ document: { write: vi.fn(), close: vi.fn() }, print }) as unknown as Window);
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(print).toHaveBeenCalledOnce());
+    await waitFor(() => expect(view.queryByText(BLOCKED)).toBeNull());
+  });
+
+  it('skip-gate (/pages/start): the header Save as PDF says so when its own window is refused, and clears on success', async () => {
+    refuseWindow();
+    const view = showPlan();
+    expect(view.queryByText(BLOCKED)).toBeNull();
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(view.getByText(BLOCKED)).toBeTruthy());
+    expect(blockedEvents()).toEqual([['pdf_window_blocked']]);
+    expect(mocks.markReportEmailCaptured).not.toHaveBeenCalled();
+    vi.mocked(window.open).mockImplementation(() => ({ document: { write: vi.fn(), close: vi.fn() }, print }) as unknown as Window);
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(print).toHaveBeenCalledOnce());
+    await waitFor(() => expect(view.queryByText(BLOCKED)).toBeNull());
+  });
+
+  it('each refusal is announced again: the same live region empties, then refills', async () => {
+    refuseWindow();
+    const view = showPlan();
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    const note = await waitFor(() => view.getByText(BLOCKED));
+    expect(note.getAttribute('role')).toBe('status');
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    expect(note.textContent).toBe('');
+    await waitFor(() => expect(note.textContent).toBe(BLOCKED));
+    expect(view.getByText(BLOCKED)).toBe(note);
+    expect(blockedEvents()).toHaveLength(2); // trackProductEvent itself sends once per tab session
+  });
+
+  it('on a phone the Plan tab re-measures its height when the note comes and goes', async () => {
+    const onLayoutChange = vi.fn();
+    refuseWindow();
+    const view = showPlan({ onLayoutChange });
+    onLayoutChange.mockClear();
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(view.getByText(BLOCKED)).toBeTruthy());
+    expect(onLayoutChange).toHaveBeenCalled();
+    onLayoutChange.mockClear();
+    opens();
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(view.queryByText(BLOCKED)).toBeNull());
+    expect(onLayoutChange).toHaveBeenCalled();
+    const tool = readFileSync(resolve(__dirname, 'HealthTool.tsx'), 'utf8');
+    expect(tool).toContain('onLayoutChange: () => liveSwiper()?.updateAutoHeight(),');
+  });
+
+  it('a refusal on a capture that then fails to send shows beside that error', async () => {
+    mocks.skip.value = false;
+    mocks.sendGuestReport.mockResolvedValue({ success: false, error: 'Please retry' });
+    refuseWindow();
+    const view = showPlan();
+    fireEvent.change(view.container.querySelector('#guestEmail')!, { target: { value: 'reader@example.com' } });
+    fireEvent.click(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })[0]);
+    await waitFor(() => expect(view.getAllByText('Please retry').length).toBeGreaterThan(0));
+    const box = view.getAllByText('Please retry')[0].closest('.email-capture')!;
+    expect(box.textContent).toContain(BLOCKED);
+    expect(mocks.markReportEmailCaptured).not.toHaveBeenCalled();
+    expect(blockedEvents()).toEqual([['pdf_window_blocked']]);
+  });
+
+  it('a capture whose report could not be built counts as a refusal', async () => {
+    mocks.skip.value = false;
+    mocks.getReportHtml.mockResolvedValue({ success: false, error: 'still loading' });
+    const view = showPlan();
+    fireEvent.change(view.container.querySelector('#guestEmail')!, { target: { value: 'reader@example.com' } });
+    fireEvent.click(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })[0]);
+    await waitFor(() => expect(view.getByRole('button', { name: 'Save as PDF' })).toBeTruthy());
+    expect(window.open).not.toHaveBeenCalled();
+    expect(mocks.markReportEmailCaptured).toHaveBeenCalledOnce();
+    expect(view.getByText(BLOCKED)).toBeTruthy();
+    expect(blockedEvents()).toEqual([['pdf_window_blocked']]);
+  });
+
+  it('Save as PDF whose report could not be built counts as a refusal', async () => {
+    mocks.getReportHtml.mockResolvedValue({ success: false, error: 'still loading' });
+    const view = showPlan();
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(view.getByText(BLOCKED)).toBeTruthy());
+    expect(view.getByRole('button', { name: 'Save as PDF' })).toBeTruthy();
+    expect(blockedEvents()).toEqual([['pdf_window_blocked']]);
+  });
+
+  it('an erase clears the note, so it does not come back with the next plan', async () => {
+    refuseWindow();
+    const view = showPlan();
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(view.getByText(BLOCKED)).toBeTruthy());
+    view.rerender(plan({ results: null, isValid: false }));
+    view.rerender(plan());
+    expect(view.queryByText(BLOCKED)).toBeNull();
+  });
+
+  it('Pages build: the note sits beside the Save as PDF button pressed', async () => {
+    mocks.shopify.value = false;
+    refuseWindow();
+    const view = showPlan({ showEmailCapture: false });
+    const [header, bottom] = view.getAllByRole('button', { name: 'Save as PDF' });
+    fireEvent.click(bottom);
+    await waitFor(() => expect(view.getByText(BLOCKED)).toBeTruthy());
+    expect(view.getByText(BLOCKED).closest('.report-actions')).toBe(bottom.closest('.report-actions'));
+    expect(header.closest('.hr-col-meta')!.textContent).not.toContain(BLOCKED);
+    fireEvent.click(header);
+    await waitFor(() => expect(view.getByText(BLOCKED).closest('.hr-col-meta')).toBe(header.closest('.hr-col-meta')));
+    expect(bottom.closest('.report-actions')!.textContent).not.toContain(BLOCKED);
+  });
+
+  it('a window that opens shows no message and fires no event', async () => {
+    const view = showPlan();
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(print).toHaveBeenCalledOnce());
+    expect(view.queryByText(BLOCKED)).toBeNull();
+    expect(blockedEvents()).toEqual([]);
+  });
+});
+
+describe('US-44 AC6 — Save as PDF shows on a phone', () => {
+  // jsdom applies no media queries, so this pins the class on the plan header
+  // and the phone rule in styles.css that keeps that header's actions visible.
+  const planHeader = (view: ReturnType<typeof showPlan>) => view.container.querySelector('.hr-col-header')!;
+
+  it('the plan header carries the actions modifier when it holds Save as PDF', () => {
+    const view = showPlan();
+    expect(planHeader(view).contains(view.getByRole('button', { name: 'Save as PDF' }))).toBe(true);
+    expect(planHeader(view).classList.contains('hr-col-header--actions')).toBe(true);
+  });
+
+  it('gated and not yet captured, the header holds no action, so no modifier (no empty row on a phone)', async () => {
+    mocks.skip.value = false;
+    const view = showPlan();
+    expect(planHeader(view).classList.contains('hr-col-header--actions')).toBe(false);
+    fireEvent.change(view.container.querySelector('#guestEmail')!, { target: { value: 'reader@example.com' } });
+    fireEvent.click(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })[0]);
+    await waitFor(() => expect(planHeader(view).classList.contains('hr-col-header--actions')).toBe(true));
+  });
+
+  it('the empty-plan placeholder header and the input header stay fully hidden on a phone', () => {
+    const view = render(<ResultsPanel results={null} isValid={false} unitSystem="si" />);
+    expect(planHeader(view as ReturnType<typeof showPlan>).classList.contains('hr-col-header--actions')).toBe(false);
+    const input = readFileSync(resolve(__dirname, 'InputPanel.tsx'), 'utf8');
+    const inputHeader = /<ColumnHeader step=\{1\}[^\n]*\/>/.exec(input)![0];
+    expect(inputHeader).not.toContain('actions');
+  });
+
+  it('styles.css: at 768px the column header hides, except the plan header\'s actions', () => {
+    const css = readFileSync(resolve(__dirname, '../styles.css'), 'utf8').replace(/\s+/g, ' ');
+    const hide = css.indexOf('.hr-col-header { display: none; }');
+    expect(hide).toBeGreaterThan(-1);
+    const block = css.slice(css.lastIndexOf('@media (max-width: 768px) {', hide), css.indexOf('.hr-guide-mobile', hide));
+    const keep = block.indexOf('.hr-col-header--actions { display: flex;');
+    expect(keep).toBeGreaterThan(block.indexOf('.hr-col-header { display: none; }'));
+    expect(block).toContain('.hr-col-header--actions .hr-col-title { display: none; }');
   });
 });
 

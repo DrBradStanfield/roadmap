@@ -192,6 +192,15 @@ export function normalizeLabUnit(raw: string): string {
   // Lowercase litre after a slash; squared metre ("m2"/"m^2") in eGFR units.
   u = u.replace(/\/l\b/g, '/L');
   u = u.replace(/m\^?2\b/g, 'm²');
+  // Three spellings of one unit (US-21 AC14), any case, only as a whole token
+  // between the ends, a slash or a space: "gm/dL" is g/dL, "Unit" or "Units"
+  // is U, and a cubic millimetre ("cmm", "cu mm", "cu.mm", "c.mm") is a µL.
+  // Run last, so they cannot change a spelling the catalogue already accepted.
+  // Only gm/dL folds: a bare "gm/L" would land on g/L, which a count test reads
+  // as G/L. A bracketed "Unit(s)" is not a whole token, so it is not folded.
+  u = u.replace(/(^|[\s/])gm(?=\/dl(?:$|[\s/]))/gi, '$1g');
+  u = u.replace(/(^|[\s/])units?(?=$|[\s/])/gi, '$1U');
+  u = u.replace(/(^|[\s/])(?:cmm|cu[ .]mm|c\.mm)(?=$|[\s/])/gi, '$1µL');
   return u;
 }
 

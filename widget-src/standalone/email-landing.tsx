@@ -9,7 +9,7 @@
  *
  * Kept out of app.tsx, which runs on import and so cannot be tested.
  */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { hasSavedRecord, loadLatestMeasurements } from '../src/lib/roadmap-data';
 import { trackProductEvent } from '../src/lib/server-api';
 import { openBackendPicker } from '../src/lib/storage-notice';
@@ -17,6 +17,12 @@ import type { StorageState } from './connect';
 
 /** Exactly what the server redirect appends. Nothing else counts as the flag. */
 const EMAIL_FLAG = 'from=email';
+
+/** US-22 AC14: what Copy link writes, for the browser that holds the plan. A
+ *  literal, never location.href, which carries whatever the click arrived with. */
+const ROADMAP_ADDRESS = 'https://drstanfield.com/pages/roadmap';
+
+const COPY_LABEL = { idle: 'Copy link', copied: 'Copied', manual: 'Select and copy the address' };
 
 /**
  * Read the email flag, and strip it from the address bar so a reload or a
@@ -54,12 +60,45 @@ export async function emailLandingApplies(fromEmail: boolean, state: StorageStat
 }
 
 /** Above the widget, in ConnectRefusedNotice's slot: visible on the input tab,
- *  where every mobile arrival lands. Connect opens the storage picker. */
+ *  where every mobile arrival lands. Most empty landings are the mail app's own
+ *  browser (US-22 AC14), so the notice first says to open the page in the one
+ *  that holds the plan. Connect opens the storage picker. */
 export function EmailLandingNotice() {
   const [shown, setShown] = useState(true);
+  const [copy, setCopy] = useState<keyof typeof COPY_LABEL>('idle');
+  const address = useRef<HTMLSpanElement>(null);
+  // The Copied reset, cleared on every press, Dismiss and unmount, so a stale
+  // one never overwrites a newer label.
+  const reset = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => () => clearTimeout(reset.current), []);
   if (!shown) return null;
+  const copyLink = () => {
+    clearTimeout(reset.current);
+    // The executor runs inside the click (WebKit wants the write in the
+    // gesture), and a missing clipboard API throws into the same rejection as
+    // a refusal: select the address for a copy by hand.
+    new Promise<void>((resolve) => resolve(navigator.clipboard.writeText(ROADMAP_ADDRESS)))
+      .then(
+        () => {
+          trackProductEvent('email_landing_link_copied');
+          setCopy('copied');
+          reset.current = setTimeout(() => setCopy('idle'), 2000);
+        },
+        () => {
+          const range = document.createRange();
+          if (address.current) range.selectNodeContents(address.current);
+          getSelection()?.removeAllRanges();
+          getSelection()?.addRange(range);
+          setCopy('manual');
+        },
+      );
+  };
   return (
     <div className="hr-sync hr-page-notice" role="status">
+      <p className="hr-page-notice-lead">
+        <strong>Opened this from your email app?</strong> Your plan is in the browser where you made it. Open{' '}
+        <span ref={address}>drstanfield.com/pages/roadmap</span> there.
+      </p>
       <span className="hr-sync-status">Looking for your plan?</span>
       <p className="hr-sync-detail">
         If you saved it to Google Drive or Dropbox, connect it and it loads. If not, it stays only in the
@@ -67,7 +106,15 @@ export function EmailLandingNotice() {
         if you saved one.
       </p>
       <button type="button" className="hr-sync-btn" onClick={openBackendPicker}>Connect</button>
-      <button type="button" className="hr-sync-link hr-page-notice-dismiss" onClick={() => setShown(false)}>
+      <button type="button" className="hr-sync-btn" onClick={copyLink}>{COPY_LABEL[copy]}</button>
+      <button
+        type="button"
+        className="hr-sync-link hr-page-notice-dismiss"
+        onClick={() => {
+          clearTimeout(reset.current);
+          setShown(false);
+        }}
+      >
         Dismiss
       </button>
     </div>

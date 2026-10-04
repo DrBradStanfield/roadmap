@@ -4274,6 +4274,16 @@ a.action-btn-small.action-btn-small:hover {
   justify-content: flex-end;
 }
 
+/* US-18 AC6: the refused-window note must be read; the meta grey is below AA. */
+.hr-pdf-blocked {
+  display: block;
+  color: var(--color-text-secondary);
+}
+/* Empty, it stays mounted (so the next refusal is announced) but takes no room. */
+.hr-pdf-blocked:empty {
+  position: absolute;
+}
+
 .hr-col-header--muted .hr-col-title {
   color: #b8bfc5;
 }
@@ -4284,6 +4294,10 @@ a.action-btn-small.action-btn-small:hover {
 
 @media (max-width: 768px) {
   .hr-col-header { display: none; }
+  /* US-44 AC6: the plan header holds Save as PDF, so its actions stay (the
+     tabs name the column), right-aligned with the cards, clear of the tabs. */
+  .hr-col-header--actions { display: flex; justify-content: flex-end; padding: 8px 0 0; }
+  .hr-col-header--actions .hr-col-title { display: none; }
   /* US-38: the header (and its guide button) is hidden here, so the footer
      link is the mobile entry point. */
   .hr-guide-mobile.hr-guide-mobile {

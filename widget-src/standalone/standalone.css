@@ -94,6 +94,10 @@
 /* A notice with an explanation line (US-22 AC13): the action starts the row
    under it instead of floating between the text and Dismiss. */
 .hr-page-notice .hr-sync-detail + .hr-sync-btn { margin-left: 0; }
+/* US-22 AC14: the in-app line leads on its own row, and Copy link sits beside
+   Connect instead of floating off to Dismiss. */
+.hr-page-notice-lead { flex-basis: 100%; margin: 0; }
+.hr-page-notice .hr-sync-btn + .hr-sync-btn { margin-left: 0; }
 
 /* "Where should your health plan live?" lightbox — a native <dialog>,
    so focus trap / Escape / top-layer come from the platform. */

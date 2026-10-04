@@ -979,6 +979,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     sex: inputs.sex,
     showEmailCapture: emailCaptureActive,
     formStage,
+    onLayoutChange: () => liveSwiper()?.updateAutoHeight(),
   };
 
   // The chat reads its context as each message is sent (useChatState), through

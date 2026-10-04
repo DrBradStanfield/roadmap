@@ -334,6 +334,26 @@ describe('US-21 phase 3 — legacy lab rows are corrected into SI at load', () =
     expect(stableStringify(out.labValues)).toBe(stableStringify(rows));
   });
 
+  it('US-21 AC14 — a legacy gm/dL row converts at ×10 on load, once; Units/L and 10^3/cmm rows are factor 1 and left alone', () => {
+    const hb = labRow({ id: 'hb', metricName: 'Hemoglobin', value: 14.2, unit: 'gm/dL', referenceLow: 13.5, referenceHigh: 17.5 });
+    const out = migrateFile(fileWith([hb]), OPTS);
+    expect(out.labValues).toHaveLength(2);
+    expect(out.labValues[0]).toMatchObject({ id: 'hb', value: 14.2, unit: 'gm/dL', status: 'entered-in-error' });
+    expect(out.labValues[1]).toMatchObject({
+      id: 'hb#si', metricName: 'Hemoglobin', value: 142, unit: 'g/L', referenceLow: 135, referenceHigh: 175,
+      status: 'active', correctsId: 'hb', recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z',
+    });
+    // The second load is a no-op.
+    const twice = migrateFile(JSON.parse(JSON.stringify(out)), OPTS);
+    expect(stableStringify(twice.labValues)).toBe(stableStringify(out.labValues));
+    // Same-scale spellings hold the right number already: no correction row.
+    const sameScale = [
+      labRow({ id: 'alt', metricName: 'ALT', value: 25, unit: 'Units/L', referenceLow: 7, referenceHigh: 56 }),
+      labRow({ id: 'wbc', metricName: 'WBC', value: 6.2, unit: '10^3/cmm', referenceLow: 4, referenceHigh: 11 }),
+    ];
+    expect(stableStringify(migrateFile(fileWith(sameScale), OPTS).labValues)).toBe(stableStringify(sameScale));
+  });
+
   it('US-21 phase 3 — a v1 copy merged with a migrated copy converges: no #dup ids, one active row per slot', () => {
     const v1 = migrateFile(fileWith([labRow({ id: 'l1' })]), OPTS);
     const other = migrateFile(fileWith([labRow({ id: 'l1' })]), { ...OPTS, deviceId: 'dev_b' });
