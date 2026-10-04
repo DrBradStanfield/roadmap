@@ -81,6 +81,10 @@ const COUNT_ALIASES_12 = ['×10⁶/µl', 'm/µl', 'million/µl', 't/l'];
 const CELLS_PER_UL = 'cells/µl';
 const COUNT_PER_UL = { [CELLS_PER_UL]: 0.001 };
 const WHOLE_COUNT_NOTE = 'Counts of cells per µL are whole numbers on the same scale as their printed range, so this row is refused, never rescaled: check whether the report means thousands per µL (×10³/µL)';
+const SCALE_NOTE = 'the value and its printed range are on different scales, so the row was not stored';
+/** Real counts of these sit near zero (an eosinophil count of 0, severe
+ *  neutropenia), so only WBC and platelets get the low-side check. */
+const LOW_SIDE_COUNTS = new Set(['wbc', 'platelets']);
 /** A differential in % is a share of the white count, not a count, and is
  *  never multiplied out from the WBC (US-21 AC15). */
 const PERCENT_OF_WBC_NOTE = { '%': {
@@ -249,11 +253,12 @@ export function acceptedLabUnits(entry: LabCatalogEntry): string[] {
 
 /**
  * Why a catalogued test refused a unit, in one sentence: what it is stored in
- * and every spelling it takes — or, for a count per µL it does take, that the
- * number was not whole (US-21 AC15). Read from the spelling alone, so a health
- * value never enters the message.
+ * and every spelling it takes — or, for a count per µL it does take, what was
+ * wrong with the number (US-21 AC15). Read from the spelling and the fault
+ * alone, so a health value never enters the message.
  */
-export function labUnitRefusal(entry: LabCatalogEntry, unit: string): string {
+export function labUnitRefusal(entry: LabCatalogEntry, unit: string, fault?: CountFault | null): string {
+  if (fault === 'scale') return `${entry.label} in "${unit}": ${SCALE_NOTE}. Do not re-send it in another unit; ask the person to check the report`;
   if (labUnitTaken(entry, unit)) return `${entry.label} in "${unit}" was not stored. ${WHOLE_COUNT_NOTE}`;
   const refusal = `${entry.label} is stored in ${entry.unit}; this record takes ${acceptedLabUnits(entry).join(', ')}, not "${unit}"`;
   const extra = entry.refusalNotes?.[normalizeLabUnit(unit).toLowerCase()];
@@ -262,7 +267,8 @@ export function labUnitRefusal(entry: LabCatalogEntry, unit: string): string {
 
 /** The part of a refusal that says what to do next, where there is one: the
  *  website's upload summary shows it under its own words. */
-export function labUnitRefusalNote(entry: LabCatalogEntry | undefined, unit: string): string | undefined {
+export function labUnitRefusalNote(entry: LabCatalogEntry | undefined, unit: string, fault?: CountFault | null): string | undefined {
+  if (fault === 'scale') return SCALE_NOTE;
   return labUnitTaken(entry, unit) ? WHOLE_COUNT_NOTE : entry?.refusalNotes?.[normalizeLabUnit(unit).toLowerCase()]?.note;
 }
 
@@ -311,22 +317,50 @@ export function canonicalLabValue(
   const factor = spelling === entry.unit.toLowerCase() || entry.unitAliases?.includes(spelling)
     ? 1
     : entry.conversions?.[spelling];
-  if (factor === undefined || !countRowHolds(spelling, value)) return null;
+  if (factor === undefined || countRowFault(entry, spelling, value)) return null;
   return { value: scaleBy(value, factor), unit: entry.unit, factor };
 }
 
+/** Why a count per µL was refused for its number (US-21 AC15). */
+export type CountFault = 'decimal' | 'scale';
+
 /**
  * Cells are counted, so under a per-µL label a row must read as one count
- * (US-21 AC15): the result and both bounds whole, and, when both bounds are
- * printed, the result no lower than a hundredth of the low bound and no higher
- * than a hundred times the high one. A decimal or a thousandfold gap means the
- * lab printed thousands under that label, so the row is refused, never
- * rescaled. A check of the row against itself, not a clinical threshold.
+ * (US-21 AC15): the result and both bounds whole (else `decimal`), and the
+ * result on its own range's scale (else `scale`, see `offRangeScale`). Either
+ * means the lab printed thousands under that label, so the row is refused,
+ * never rescaled. A check of the row against itself, not a clinical threshold.
  */
-function countRowHolds(spelling: string, value: number, low?: number | null, high?: number | null): boolean {
-  if (spelling !== CELLS_PER_UL) return true;
-  if (![value, low, high].every((n) => typeof n !== 'number' || Number.isInteger(n))) return false;
-  return typeof low !== 'number' || typeof high !== 'number' || (value >= low / 100 && value <= high * 100);
+function countRowFault(
+  entry: LabCatalogEntry, spelling: string, value: number, low?: number | null, high?: number | null,
+): CountFault | null {
+  if (spelling !== CELLS_PER_UL) return null;
+  if (![value, low, high].every((n) => typeof n !== 'number' || Number.isInteger(n))) return 'decimal';
+  return offRangeScale(entry, value, low, high) ? 'scale' : null;
+}
+
+/**
+ * With both bounds printed, a result above a hundred times the high bound, or,
+ * for WBC and platelets, below a hundredth of the low one. 0 reads the same on
+ * any scale. A ratio, so it holds on any one scale the value and range share.
+ */
+function offRangeScale(entry: LabCatalogEntry, value: number, low?: number | null, high?: number | null): boolean {
+  if (value === 0 || typeof low !== 'number' || typeof high !== 'number') return false;
+  return value > high * 100 || (LOW_SIDE_COUNTS.has(entry.key) && value < low / 100);
+}
+
+/** The fault that refused this row, or `null` when the count check passes. */
+export function labCountFault(
+  entry: LabCatalogEntry,
+  row: { value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null },
+): CountFault | null {
+  return countRowFault(entry, normalizeLabUnit(row.unit).toLowerCase(), row.value, row.referenceLow, row.referenceHigh);
+}
+
+/** A correction sent in cells/µL, against the range its row already holds:
+ *  both canonical, which the ratio check does not mind (US-21 AC15). */
+export function correctionOffScale(entry: LabCatalogEntry, unit: string, value: number, low: number | null, high: number | null): boolean {
+  return normalizeLabUnit(unit).toLowerCase() === CELLS_PER_UL && offRangeScale(entry, value, low, high);
 }
 
 /** The stored shape of one lab row: the value and both reference bounds in the
@@ -348,7 +382,7 @@ export function canonicalLabRow(
   row: { value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null },
 ): { stored: StoredLabRow; factor: number } | null {
   const canonical = canonicalLabValue(entry, row.value, row.unit);
-  if (!canonical || !countRowHolds(normalizeLabUnit(row.unit).toLowerCase(), row.value, row.referenceLow, row.referenceHigh)) return null;
+  if (!canonical || labCountFault(entry, row)) return null;
   const bound = (b: number | null | undefined) => (typeof b === 'number' ? scaleBy(b, canonical.factor) : null);
   return {
     stored: {

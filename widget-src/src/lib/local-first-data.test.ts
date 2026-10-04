@@ -94,4 +94,20 @@ describe('explicit local-first data path', () => {
     expect(trackProductEvent).toHaveBeenCalledTimes(1);
     expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin', unit: 'mg/dL' });
   });
+
+  // US-21 AC15 · the signal is a spelling to teach the catalogue: a count
+  // refused for its NUMBER under a spelling the test takes is not one.
+  it('US-21 AC15 — does not count a refusal under a spelling the test takes', async () => {
+    vi.mocked(trackProductEvent).mockClear();
+
+    const result = await data.bulkSaveLabValues([
+      { metricName: 'Neutrophils', value: 2.4, unit: 'cells/uL', recordedAt: '2024-06-01T09:00:00.000Z' },
+      { metricName: 'Platelets', value: 250000, unit: 'cells/µL', referenceLow: 150, referenceHigh: 400, recordedAt: '2024-06-01T09:00:00.000Z' },
+      { metricName: 'Lymphocytes', value: 30, unit: '%', recordedAt: '2024-06-01T09:00:00.000Z' },
+    ]);
+
+    expect(result.refused.map((r) => r.key)).toEqual(['neutrophils', 'platelets', 'lymphocytes']);
+    expect(trackProductEvent).toHaveBeenCalledTimes(1);
+    expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'lymphocytes', unit: '%' });
+  });
 });

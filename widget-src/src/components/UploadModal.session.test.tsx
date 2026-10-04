@@ -270,7 +270,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     } as Awaited<ReturnType<typeof labImport>>);
     vi.mocked(bulkSaveLabValues).mockResolvedValue({
       saved: [], skippedDuplicates: 0, errorCount: 0,
-      refused: [{ key: 'neutrophils', unit: 'cells/uL', message: 'Neutrophils in "cells/uL" was not stored' }],
+      refused: [{ key: 'neutrophils', unit: 'cells/uL', message: 'Neutrophils in "cells/uL" was not stored', fault: 'decimal' }],
     } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
     render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
@@ -278,5 +278,19 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(line.textContent).toContain('thousands per µL (×10³/µL).');
     expect(line.textContent).not.toContain('unit not recognised');
     expect(line.textContent).not.toContain('—');
+  });
+
+  it('US-21 AC15 — a count per µL on a different scale from its printed range says so', async () => {
+    vi.mocked(labImport).mockResolvedValue({
+      result: { ...extraction.result, additionalValues: [{ name: 'Platelets', value: 250000, unit: 'cells/µL', referenceLow: 150, referenceHigh: 400 }] },
+    } as Awaited<ReturnType<typeof labImport>>);
+    vi.mocked(bulkSaveLabValues).mockResolvedValue({
+      saved: [], skippedDuplicates: 0, errorCount: 0,
+      refused: [{ key: 'platelets', unit: 'cells/µL', message: 'Platelets in "cells/µL": the value and its printed range are on different scales', fault: 'scale' }],
+    } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    const line = await screen.findByText('Platelets: the value and its printed range are on different scales, so the row was not stored.');
+    expect(line.textContent).not.toContain('whole number');
   });
 });

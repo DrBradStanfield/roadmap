@@ -107,7 +107,7 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect }: {
         // A catalogued test typed under "Other" can still name a unit the
         // catalogue does not take (US-21 phase 3), or a number it refuses in
         // one it does: say so in the upload summary's words (US-21 AC15).
-        setNotice(labUnitRefusalLine(result.refused[0].key, result.refused[0].unit));
+        setNotice(labUnitRefusalLine(result.refused[0].key, result.refused[0].unit, result.refused[0].fault));
       } else if (result.skippedDuplicates > 0) {
         collided();
       } else {

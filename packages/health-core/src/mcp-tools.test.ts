@@ -346,6 +346,14 @@ describe('US-32 AC35 — a read states the unit every stored value is in', () =>
     expect(unitsDescription).toContain('stored in its SI unit');
     expect(unitsDescription).toContain('keeps the unit it was reported in');
   });
+
+  // US-21 AC15: a refusal under a spelling the test takes is for the number,
+  // and the assistant is told so where it reads the unit contract.
+  it('US-21 AC15 — the unit contract says a refusal can be for the number under an accepted spelling', () => {
+    expect(SI_NOTE).toContain('A refusal can also be for the number under a spelling the test takes: a cells/µL count that is not whole, or not on the scale of its own printed range.');
+    const addLab = MCP_TOOLS.find((tool) => tool.name === 'add_lab_values')!;
+    expect(addLab.description).toContain('an unknown spelling is refused, naming those it takes, as is a cells/µL count not whole or off its range\'s scale.');
+  });
 });
 
 describe('US-32 — a read answers compactly', () => {

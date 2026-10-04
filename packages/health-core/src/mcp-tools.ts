@@ -113,7 +113,9 @@ export const SI_NOTE =
   ' Every value is stored in SI canonical units; the `units` map in read_record and get_plan names them.' +
   OFF_CATALOGUE_NOTE + ' ' +
   'Send a lab result in the unit the lab printed: a test the catalogue knows is converted on the way in, and a ' +
-  'spelling it does not know for that test is refused rather than guessed. A test the catalogue does not know ' +
+  'spelling it does not know for that test is refused rather than guessed. A refusal can also be for the number under a ' +
+  'spelling the test takes: a cells/µL count that is not whole, or not on the scale of its own printed range. ' +
+  'A test the catalogue does not know ' +
   'keeps the unit it was reported in.';
 
 /** The version the server announces, and the one a report is stamped with. */
@@ -2243,10 +2245,10 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     _meta: invocation('Adding your lab results…', 'Added your lab results'),
     title: 'Add lab results',
     description:
-      'Append blood tests that are not core metrics (ferritin, TSH, ALT, …) — a whole lab panel in one call, ' +
-      `up to ${MAX_LAB_ROWS_PER_CALL} rows. Give the number and unit exactly as the lab printed; never convert. A ` +
-      'catalogued test is stored in SI (bounds too); a spelling it does not know is refused, naming the ones it takes. Either every row is written or none is. Only when the user ' +
-      'asked to add a value; a failed correction is never turned into an add.',
+      `Append blood tests that are not core metrics (ferritin, TSH, ALT, …), up to ${MAX_LAB_ROWS_PER_CALL} rows per call. ` +
+      'Give the number and unit exactly as printed; never convert. A catalogued test is stored in SI (bounds too); an ' +
+      'unknown spelling is refused, naming those it takes, as is a cells/µL count not whole or off its range\'s scale. ' +
+      'Writes all rows or none. Only when the user asked to add a value; a failed correction is never turned into an add.',
     inputSchema: {
       type: 'object',
       properties: {

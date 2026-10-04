@@ -792,7 +792,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                   for instead, where there is one, and a unit the test takes
                   was refused for its number, not its unit (US-21 AC15). */}
               {[...new Map(refusedLabUnits.map(r => [`${r.key}|${r.unit}`, r])).values()].map(r => (
-                <p key={`${r.key}|${r.unit}`} className="upload-done-skipped">{labUnitRefusalLine(r.key, r.unit)}</p>
+                <p key={`${r.key}|${r.unit}`} className="upload-done-skipped">{labUnitRefusalLine(r.key, r.unit, r.fault)}</p>
               ))}
               {saveErrorCount > 0 && (
                 <p className="upload-done-skipped">

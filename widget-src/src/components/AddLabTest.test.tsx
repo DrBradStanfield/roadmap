@@ -183,7 +183,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
   // US-21 AC15 · a refusal reads as the upload summary does: a person never
   // sees the assistant's copy of it.
   describe('US-21 AC15 — a refused unit under "Other" shows the person’s wording', () => {
-    async function saveOther(name: string, unit: string, value: string, refused: { key: string; unit: string; message: string }) {
+    async function saveOther(name: string, unit: string, value: string, refused: { key: string; unit: string; message: string; fault?: 'decimal' | 'scale' }) {
       bulkSaveLabValues.mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [refused] });
       const utils = openForm();
       fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
@@ -216,9 +216,19 @@ describe('US-21 phase 2 — AddLabTest', () => {
       expect(await findByText('Foo Marker: unit not recognised (zz). It was not saved.')).toBeTruthy();
     });
 
+    it('US-21 AC15 — a count per µL on a different scale from its range says so, never the assistant’s instruction', async () => {
+      const { findByText } = await saveOther('Platelets', 'cells/uL', '260', {
+        key: 'platelets', unit: 'cells/uL', fault: 'scale',
+        message: 'Platelets in "cells/uL": the value and its printed range are on different scales, so the row was not stored. Do not re-send it in another unit; ask the person to check the report',
+      });
+      const notice = await findByText('Platelets: the value and its printed range are on different scales, so the row was not stored.');
+      expect(notice.textContent).not.toContain('whole number');
+      expect(notice.textContent).not.toContain('re-send');
+    });
+
     it('US-21 AC15 — a decimal count per µL leads with the number, not the unit', async () => {
       const { findByText } = await saveOther('Neutrophils', 'cells/uL', '2.4', {
-        key: 'neutrophils', unit: 'cells/uL',
+        key: 'neutrophils', unit: 'cells/uL', fault: 'decimal',
         message: 'Neutrophils in "cells/uL" was not stored. Counts of cells per µL are whole numbers on the same scale as their printed range, so this row is refused, never rescaled: check whether the report means thousands per µL (×10³/µL)',
       });
       const notice = await findByText(/^Neutrophils: the number was not saved\. Counts of cells per µL are whole numbers/);

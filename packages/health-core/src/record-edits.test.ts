@@ -683,7 +683,7 @@ describe('US-21 AC15 — cells/µL at the write doors', () => {
     ], NOW);
     expect(bulk.saved).toHaveLength(1);
     expect(bulk.saved[0]).toMatchObject({ metricName: 'Platelets', value: 250, unit: '×10⁹/L' });
-    expect(bulk.refused).toEqual([{ key: 'wbc', unit: 'cells/uL', message: expect.stringContaining('whole number') }]);
+    expect(bulk.refused).toEqual([{ key: 'wbc', unit: 'cells/uL', message: expect.stringContaining('whole number'), fault: 'decimal' }]);
 
     const file = ok(appendLabValue(base(), { metricName: 'lymphocytes', value: 1.7, unit: '×10⁹/L', recordedAt: '2026-08-14', now: NOW })).file;
     const id = file.labValues.find((l) => l.metricName === 'lymphocytes')!.id;
@@ -709,9 +709,32 @@ describe('US-21 AC15 — cells/µL at the write doors', () => {
     expect(bulk.saved).toHaveLength(1);
     expect(bulk.saved[0]).toMatchObject({ metricName: 'Platelets', value: 250, referenceLow: 150, referenceHigh: 400, recordedAt: '2026-08-15' });
     expect(bulk.refused).toEqual([
-      { key: 'wbc', unit: 'cells/µL', message: expect.stringContaining('whole number') },
-      { key: 'platelets', unit: 'cells/µL', message: expect.stringContaining('printed range') },
+      { key: 'wbc', unit: 'cells/µL', message: expect.stringContaining('whole number'), fault: 'decimal' },
+      { key: 'platelets', unit: 'cells/µL', message: expect.stringContaining('different scales'), fault: 'scale' },
     ]);
+  });
+
+  // US-21 AC15: a correction runs the same check against the range the row
+  // already holds. Probe: platelets 250 ×10⁹/L (150–400), corrected to 260
+  // cells/µL, stored 0.26 beside 150–400.
+  it('US-21 AC15 — a correction in cells/µL is checked against the row’s existing range', () => {
+    const file = ok(appendLabValue(base(), {
+      metricName: 'Platelets', value: 250, unit: '×10⁹/L', referenceLow: 150, referenceHigh: 400, recordedAt: '2026-08-14', now: NOW,
+    })).file;
+    const id = file.labValues.find((l) => l.metricName === 'platelets')!.id;
+
+    const refused = correctValue(file, { id, newValue: 260, unit: 'cells/uL', now: NOW });
+    expect(refused.ok).toBe(false);
+    if (refused.ok) return;
+    expect(refused.reason).toBe('unknown-unit');
+    expect(refused.message).toContain('different scales');
+    expect(refused.message).toContain('Do not re-send it in another unit');
+    expect(refused.message).not.toContain('260');
+
+    expect(ok(correctValue(file, { id, newValue: 260000, unit: 'cells/uL', now: NOW })).row)
+      .toMatchObject({ value: 260, unit: '×10⁹/L', referenceLow: 150, referenceHigh: 400, correctsId: id });
+    // Only cells/µL is checked: the same number in ×10⁹/L is the caller's call.
+    expect(ok(correctValue(file, { id, newValue: 26, unit: '×10⁹/L', now: NOW })).row).toMatchObject({ value: 26 });
   });
 
   it('US-21 AC15 — a differential in % is refused, and the refusal points at the absolute count', () => {

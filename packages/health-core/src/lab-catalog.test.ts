@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { acceptedLabUnits, canonicalLabRow, canonicalLabValue, LAB_CATALOG, LAB_CONVERSIONS, LAB_GROUPS, labUnitRefusal, labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, normalizeLabUnit, labSlotKey } from './lab-catalog';
+import { acceptedLabUnits, canonicalLabRow, canonicalLabValue, LAB_CATALOG, labCountFault, LAB_CONVERSIONS, LAB_GROUPS, labUnitRefusal, labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, normalizeLabUnit, labSlotKey } from './lab-catalog';
 
 // US-21 · Additional blood tests — catalogue integrity (phase-1 scaffold).
 describe('lab catalogue integrity (US-21)', () => {
@@ -489,6 +489,45 @@ describe('US-21 AC15 — cells/µL, cumm, and a differential in %', () => {
     expect(labUnitTaken(entryOf('platelets'), 'cells/cumm')).toBe(true);
     expect(labUnitTaken(entryOf('lymphocytes'), '%')).toBe(false);
     expect(labUnitTaken(undefined, 'cells/µL')).toBe(false);
+  });
+
+  // US-21 AC15 (2026-10-04 amendment): 0 reads the same on any scale, and the
+  // low side guards WBC and platelets only, since real differential counts sit
+  // near zero (an eosinophil count of 0, severe neutropenia).
+  it('US-21 AC15 — 0 always passes, and the low-side check is for WBC and platelets only', () => {
+    const row = (name: string, value: number, referenceLow: number, referenceHigh: number) =>
+      canonicalLabRow(entryOf(name), { value, unit: 'cells/µL', referenceLow, referenceHigh });
+    expect(row('eosinophils', 0, 15, 500)).toEqual({ stored: { value: 0, unit: '×10⁹/L', referenceLow: 0.015, referenceHigh: 0.5 }, factor: 0.001 });
+    expect(row('wbc', 0, 4000, 11000)).not.toBeNull();
+    expect(row('platelets', 0, 150000, 450000)).not.toBeNull();
+    expect(row('neutrophils', 14, 1500, 7800)).toEqual({ stored: { value: 0.014, unit: '×10⁹/L', referenceLow: 1.5, referenceHigh: 7.8 }, factor: 0.001 });
+    for (const key of DIFFERENTIALS) expect(row(key, 1, 1500, 7800), key).not.toBeNull();
+    // The high side still guards every differential.
+    for (const key of DIFFERENTIALS) expect(row(key, 780001, 1500, 7800), key).toBeNull();
+    expect(row('platelets', 250, 150000, 450000)).toBeNull();
+    expect(row('platelets', 250000, 150, 400)).toBeNull();
+    expect(row('wbc', 100, 4000, 11000)).not.toBeNull();
+    expect(row('wbc', 200000, 4000, 11000)).not.toBeNull();
+  });
+
+  it('US-21 AC15 — a refusal for the number says which: a decimal, or a value and range on different scales', () => {
+    expect(labCountFault(entryOf('neutrophils'), { value: 2.4, unit: 'cells/uL' })).toBe('decimal');
+    expect(labCountFault(entryOf('neutrophils'), { value: 2400, unit: 'cells/uL', referenceLow: 1.5, referenceHigh: 8 })).toBe('decimal');
+    expect(labCountFault(entryOf('platelets'), { value: 250000, unit: 'cells/cumm', referenceLow: 150, referenceHigh: 400 })).toBe('scale');
+    expect(labCountFault(entryOf('platelets'), { value: 250000, unit: 'cells/µL', referenceLow: 150000, referenceHigh: 400000 })).toBeNull();
+    expect(labCountFault(entryOf('platelets'), { value: 2.5, unit: '×10³/µL', referenceLow: 150, referenceHigh: 400 })).toBeNull();
+
+    const scale = labUnitRefusal(entryOf('platelets'), 'cells/µL', 'scale');
+    expect(scale).toBe('Platelets in "cells/µL": the value and its printed range are on different scales, so the row was not stored. Do not re-send it in another unit; ask the person to check the report');
+    expect(labUnitRefusalNote(entryOf('platelets'), 'cells/µL', 'scale')).toBe('the value and its printed range are on different scales, so the row was not stored');
+    const decimal = labUnitRefusal(entryOf('platelets'), 'cells/µL', 'decimal');
+    expect(decimal).toContain('whole numbers');
+    expect(decimal).toContain('check whether the report means thousands per µL (×10³/µL)');
+    expect(decimal).not.toContain('different scales');
+    for (const message of [scale, decimal]) {
+      expect(message).not.toContain('—');
+      expect(message).not.toMatch(/\d{3}/);
+    }
   });
 
   it('US-21 AC15 — RBC and the other blood-count tests do not take cells/µL', () => {

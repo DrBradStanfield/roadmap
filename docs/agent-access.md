@@ -120,7 +120,9 @@ someone's medical history, or lose their data at the next device sync.
    them and let the record convert: a test in `lab-catalog.ts` is stored in that
    catalogue's canonical unit — reference bounds by the same factor — and a unit
    spelling the catalogue does not know for that test is REFUSED, naming the spellings
-   it takes, rather than guessed from the number. A test the catalogue does not know has
+   it takes, rather than guessed from the number. A refusal can also be for the number
+   under a spelling the test takes: a `cells/µL` count that is not a whole number, or
+   not on the scale of its own printed range. A test the catalogue does not know has
    no SI definition, so it is stored exactly as reported. If you write the file
    yourself rather than through a tool, convert with the table in
    `health_roadmap_algorithm.md` §2 "Lab catalogue conversions"; a row already written

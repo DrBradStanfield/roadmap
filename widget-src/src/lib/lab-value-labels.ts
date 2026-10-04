@@ -1,4 +1,4 @@
-import { labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry } from '@roadmap/health-core';
+import { labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, type LabUnitRefusal } from '@roadmap/health-core';
 
 /**
  * Display labels for flexible lab values (beyond the 13 core metrics).
@@ -92,9 +92,10 @@ export function labValueLabel(metricName: string): string {
  * refused, and a note on what to look for instead, where there is one (US-21 AC15). Never the store's
  * message, which is the copy an assistant reads.
  */
-export function labUnitRefusalLine(key: string, unit: string): string {
+export function labUnitRefusalLine(key: string, unit: string, fault?: LabUnitRefusal['fault']): string {
   const entry = resolveLabCatalogEntry(key);
-  const note = labUnitRefusalNote(entry, unit);
+  const note = labUnitRefusalNote(entry, unit, fault);
+  if (fault === 'scale') return `${labValueLabel(key)}: ${note}.`;
   const lead = labUnitTaken(entry, unit)
     ? `${labValueLabel(key)}: the number was not saved.`
     : `${labValueLabel(key)}: unit not recognised (${unit}). It was not saved.${entry ? ` This test takes ${entry.unit}.` : ''}`;
