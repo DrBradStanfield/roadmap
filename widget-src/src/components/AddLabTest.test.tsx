@@ -180,6 +180,54 @@ describe('US-21 phase 2 — AddLabTest', () => {
     });
   });
 
+  // US-21 AC15 · a refusal reads as the upload summary does: a person never
+  // sees the assistant's copy of it.
+  describe('US-21 AC15 — a refused unit under "Other" shows the person’s wording', () => {
+    async function saveOther(name: string, unit: string, value: string, refused: { key: string; unit: string; message: string }) {
+      bulkSaveLabValues.mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [refused] });
+      const utils = openForm();
+      fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
+      fireEvent.change(utils.getByLabelText('Test name'), { target: { value: name } });
+      fireEvent.change(utils.getByLabelText('Unit'), { target: { value: unit } });
+      fireEvent.change(utils.getByLabelText('Value'), { target: { value } });
+      fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+      return utils;
+    }
+
+    it('US-21 AC15 — Lymphocytes in % shows the % note, never the assistant’s instruction', async () => {
+      const { findByText } = await saveOther('Lymphocytes', '%', '30', {
+        key: 'lymphocytes', unit: '%',
+        message: 'Lymphocytes is stored in ×10⁹/L; this record takes ×10⁹/L, not "%". A percentage is a share of the white count, not a count: this record keeps the absolute count (×10⁹/L or cells/µL), so look for that line on the same report. Do not work the count out from the percentage',
+      });
+      const notice = await findByText(/^Lymphocytes: unit not recognised \(%\)\. It was not saved\. This test takes ×10⁹\/L\. A percentage is a share/);
+      expect(notice.textContent).toContain('A percentage is a share of the white count, not a count: this record keeps the absolute count (×10⁹/L or cells/µL), so look for that line on the same report.');
+      expect(notice.textContent).not.toContain('Do not work the count out');
+    });
+
+    it('US-21 AC15 — a unit the test does not take names the units it does, with no em dash', async () => {
+      const { findByText } = await saveOther('Ferritin', 'mg/dL', '80', {
+        key: 'ferritin', unit: 'mg/dL', message: 'Ferritin is stored in µg/L; this record takes µg/L, ng/ml, not "mg/dL"',
+      });
+      expect(await findByText('Ferritin: unit not recognised (mg/dL). It was not saved. This test takes µg/L.')).toBeTruthy();
+    });
+
+    it('US-21 AC15 — a test outside the catalogue gets no list of units', async () => {
+      const { findByText } = await saveOther('Foo Marker', 'zz', '1', { key: 'foo_marker', unit: 'zz', message: 'refused' });
+      expect(await findByText('Foo Marker: unit not recognised (zz). It was not saved.')).toBeTruthy();
+    });
+
+    it('US-21 AC15 — a decimal count per µL leads with the number, not the unit', async () => {
+      const { findByText } = await saveOther('Neutrophils', 'cells/uL', '2.4', {
+        key: 'neutrophils', unit: 'cells/uL',
+        message: 'Neutrophils in "cells/uL" was not stored. Counts of cells per µL are whole numbers on the same scale as their printed range, so this row is refused, never rescaled: check whether the report means thousands per µL (×10³/µL)',
+      });
+      const notice = await findByText(/^Neutrophils: the number was not saved\. Counts of cells per µL are whole numbers/);
+      expect(notice.textContent).toContain('thousands per µL (×10³/µL).');
+      expect(notice.textContent).not.toContain('unit not recognised');
+      expect(notice.textContent).not.toContain('—');
+    });
+  });
+
   it('Save is disabled until a test and a parseable value are entered', () => {
     const { getByLabelText, getByRole } = openForm();
     const save = getByRole('button', { name: /^save$/i }) as HTMLButtonElement;

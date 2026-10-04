@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { acceptedLabUnits, canonicalLabRow, canonicalLabValue, LAB_CATALOG, LAB_CONVERSIONS, LAB_GROUPS, resolveLabCatalogEntry, normalizeLabUnit, labSlotKey } from './lab-catalog';
+import { acceptedLabUnits, canonicalLabRow, canonicalLabValue, LAB_CATALOG, LAB_CONVERSIONS, LAB_GROUPS, labUnitRefusal, labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, normalizeLabUnit, labSlotKey } from './lab-catalog';
 
 // US-21 · Additional blood tests — catalogue integrity (phase-1 scaffold).
 describe('lab catalogue integrity (US-21)', () => {
@@ -335,8 +335,7 @@ describe('US-21 AC14 — normalizeLabUnit folds gm/dL, Unit or Units, and cmm', 
   });
 
   it('US-21 AC14 — the spellings Brad has not ruled on stay refused', () => {
-    expect(canonicalLabValue(entryOf('neutrophils'), 4100, 'cells/uL')).toBeNull();
-    expect(canonicalLabValue(entryOf('neutrophils'), 4100, 'cells/cmm')).toBeNull();
+    // cells/µL was on this list until AC15 ruled on it (its own block below).
     expect(canonicalLabValue(entryOf('lymphocytes'), 30, '%')).toBeNull();
     expect(normalizeLabUnit('mInt-unit(s)/mL')).toBe('mInt-unit(s)/mL');
     expect(canonicalLabValue(entryOf('tsh'), 1.8, 'mInt-unit(s)/mL')).toBeNull();
@@ -350,7 +349,7 @@ describe('US-21 AC14 — normalizeLabUnit folds gm/dL, Unit or Units, and cmm', 
     for (const unit of [
       'mU/L', 'IU/L', 'µU/mL', 'mIU/L', 'µIU/mL', 'µmol/L', 'g/dL', 'g/L', 'mmol/L', 'U/L', 'mg/mmol', 'mg/g',
       'mm/hr', 'fL', 'pg', '%', 'mg/dL', 'pg/mL', 'ng/dL', 'kU/L', 'mInt-unit(s)/mL', 'µUnits/mL',
-      'milliunits/L', 'kUnits/L', 'gm%', 'mgm/dL', 'gm/L', 'GM/L', 'mg/gm', 'gm/dL%', 'Unit(s)/L', 'mmol/mol', 'mL/min/1.73m²', 'cells/µL', 'lakhs/cumm',
+      'milliunits/L', 'kUnits/L', 'gm%', 'mgm/dL', 'gm/L', 'GM/L', 'mg/gm', 'gm/dL%', 'Unit(s)/L', 'mmol/mol', 'mL/min/1.73m²', 'cells/µL', 'lakhs/µL',
     ]) {
       expect(normalizeLabUnit(unit), unit).toBe(unit);
     }
@@ -381,5 +380,148 @@ describe('US-21 AC14 — normalizeLabUnit folds gm/dL, Unit or Units, and cmm', 
         expect(normalizeLabUnit(spelling).toLowerCase(), `${entry.key} ${spelling}`).toBe(spelling.toLowerCase());
       }
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-21 AC15 — three more of W40's refused spellings.
+// ---------------------------------------------------------------------------
+// A count printed per microlitre converts at ×0.001 to ×10⁹/L (a microlitre is
+// 10⁻⁶ L), but only as a whole number: cells are counted, so a decimal means
+// the lab printed thousands under the wrong label. "cumm" folds to µL like
+// cmm. A differential in % stays refused, and its refusal says the record
+// keeps the absolute count.
+describe('US-21 AC15 — cells/µL, cumm, and a differential in %', () => {
+  const entryOf = (name: string) => resolveLabCatalogEntry(name)!;
+  const COUNTED = ['wbc', 'neutrophils', 'lymphocytes', 'monocytes', 'eosinophils', 'basophils', 'platelets'];
+  const DIFFERENTIALS = ['neutrophils', 'lymphocytes', 'monocytes', 'eosinophils', 'basophils'];
+
+  it('US-21 AC15 — cumm folds to µL like cmm, only as a whole token', () => {
+    expect(normalizeLabUnit('10^3/cumm')).toBe('×10³/µL');
+    expect(normalizeLabUnit('10^6/cumm')).toBe('×10⁶/µL');
+    expect(normalizeLabUnit('10^3/CUMM')).toBe('×10³/µL');
+    expect(normalizeLabUnit('/cumm')).toBe('/µL');
+    expect(normalizeLabUnit('cells/cumm')).toBe('cells/µL');
+    expect(normalizeLabUnit('lakhs/cumm')).toBe('lakhs/µL');
+    // Not inside another word.
+    for (const unit of ['cummulative', 'xcumm/L', 'cumms/L', 'mg/cummx']) expect(normalizeLabUnit(unit), unit).toBe(unit);
+    // Every way a report spells cells per microlitre lands on one spelling.
+    for (const unit of ['cells/uL', 'cells/µL', 'cells/μL', 'cells/cmm', 'cells/cumm', 'cells/cu mm', 'Cells/uL']) {
+      expect(normalizeLabUnit(unit).toLowerCase(), unit).toBe('cells/µl');
+    }
+  });
+
+  it('US-21 AC15 — a whole count per µL converts at ×0.001 to ×10⁹/L, for the white cells, the differentials and platelets', () => {
+    for (const key of COUNTED) {
+      expect(entryOf(key).key).toBe(key);
+      for (const spelling of ['cells/µL', 'cells/uL', 'cells/cmm', 'cells/cumm']) {
+        expect(canonicalLabValue(entryOf(key), 2400, spelling), `${key} ${spelling}`).toEqual({ value: 2.4, unit: '×10⁹/L', factor: 0.001 });
+      }
+      expect(LAB_CONVERSIONS.filter((c) => c.key === key && c.spelling === 'cells/µl').map((c) => c.factor)).toEqual([0.001]);
+    }
+    // The range moves by the same factor as the value (AC8).
+    expect(canonicalLabRow(entryOf('Neutrophils'), { value: 2400, unit: 'cells/uL', referenceLow: 1500, referenceHigh: 8000 }))
+      .toEqual({ stored: { value: 2.4, unit: '×10⁹/L', referenceLow: 1.5, referenceHigh: 8 }, factor: 0.001 });
+    expect(canonicalLabRow(entryOf('Platelet count'), { value: 250000, unit: 'cells/µL', referenceLow: 150000, referenceHigh: 400000 }))
+      .toEqual({ stored: { value: 250, unit: '×10⁹/L', referenceLow: 150, referenceHigh: 400 }, factor: 0.001 });
+    // No binary noise: 4100 × 0.001 is 4.1, not 4.1000000000000005.
+    expect(canonicalLabValue(entryOf('wbc'), 4100, 'cells/cumm')!.value).toBe(4.1);
+    expect(canonicalLabValue(entryOf('lymphocytes'), 1700, 'cells/µL')!.value).toBe(1.7);
+    // Zero is a whole number: no basophils counted is a result.
+    expect(canonicalLabValue(entryOf('basophils'), 0, 'cells/µL')).toEqual({ value: 0, unit: '×10⁹/L', factor: 0.001 });
+  });
+
+  it('US-21 AC15 — a count per µL that is not a whole number is refused, never rescaled', () => {
+    for (const key of COUNTED) {
+      expect(canonicalLabValue(entryOf(key), 2.4, 'cells/µL'), key).toBeNull();
+      expect(canonicalLabRow(entryOf(key), { value: 2.4, unit: 'cells/uL', referenceLow: 1.5, referenceHigh: 8 }), key).toBeNull();
+    }
+    expect(canonicalLabValue(entryOf('platelets'), 250.5, 'cells/cumm')).toBeNull();
+    // The refusal says why, from the spelling alone — no value in the text.
+    const message = labUnitRefusal(entryOf('neutrophils'), 'cells/uL');
+    expect(message).toContain('whole number');
+    expect(message).toContain('thousands per µL (×10³/µL)');
+    expect(message).not.toMatch(/\d\.\d/);
+    expect(labUnitRefusalNote(entryOf('neutrophils'), 'cells/cmm')).toContain('whole number');
+  });
+
+  it('US-21 AC15 — under cells/µL a reference bound that is not a whole number refuses the row too', () => {
+    // A range printed in thousands under a per-µL label would land ×0.001 too
+    // small, and the result beside it would read as high when it never was.
+    const row = (referenceLow: number | null, referenceHigh: number | null) =>
+      canonicalLabRow(entryOf('neutrophils'), { value: 2400, unit: 'cells/uL', referenceLow, referenceHigh });
+    expect(row(1500, 8000)).toEqual({ stored: { value: 2.4, unit: '×10⁹/L', referenceLow: 1.5, referenceHigh: 8 }, factor: 0.001 });
+    expect(row(1.5, 8)).toBeNull();
+    expect(row(1500, 8.5)).toBeNull();
+    expect(row(1.5, null)).toBeNull();
+    // Zero and an absent bound are fine.
+    expect(canonicalLabRow(entryOf('basophils'), { value: 0, unit: 'cells/µL', referenceLow: 0, referenceHigh: 200 }))
+      .toEqual({ stored: { value: 0, unit: '×10⁹/L', referenceLow: 0, referenceHigh: 0.2 }, factor: 0.001 });
+    expect(row(null, null)).toEqual({ stored: { value: 2.4, unit: '×10⁹/L', referenceLow: null, referenceHigh: null }, factor: 0.001 });
+    // The refusal names the range as well as the result.
+    expect(labUnitRefusal(entryOf('neutrophils'), 'cells/uL')).toContain('printed range');
+    // A decimal bound on any other spelling is untouched by the guard.
+    expect(canonicalLabRow(entryOf('wbc'), { value: 6.2, unit: '×10³/µL', referenceLow: 4.5, referenceHigh: 11 })).not.toBeNull();
+  });
+
+  it('US-21 AC15 — under cells/µL with both bounds printed, a value a hundredfold off its own range refuses the row', () => {
+    const row = (name: string, value: number, referenceLow: number | null, referenceHigh: number | null) =>
+      canonicalLabRow(entryOf(name), { value, unit: 'cells/µL', referenceLow, referenceHigh });
+    // A ×10³/µL range under a per-µL value, and a ×10³/µL value under a per-µL range.
+    expect(row('platelets', 250000, 150, 400)).toBeNull();
+    expect(row('platelets', 250, 150000, 450000)).toBeNull();
+    // Real extremes pass: a check of the row against itself, not a clinical threshold.
+    expect(row('wbc', 200000, 4000, 11000)).toEqual({ stored: { value: 200, unit: '×10⁹/L', referenceLow: 4, referenceHigh: 11 }, factor: 0.001 });
+    expect(row('wbc', 100, 4000, 11000)).toEqual({ stored: { value: 0.1, unit: '×10⁹/L', referenceLow: 4, referenceHigh: 11 }, factor: 0.001 });
+    // A low bound of 0 sets no lower limit.
+    expect(row('basophils', 0, 0, 200)).toEqual({ stored: { value: 0, unit: '×10⁹/L', referenceLow: 0, referenceHigh: 0.2 }, factor: 0.001 });
+    // One bound only: no magnitude check.
+    expect(row('platelets', 250000, 150, null)).not.toBeNull();
+    expect(row('platelets', 250000, null, 400)).not.toBeNull();
+    // The limits themselves pass: exactly a hundredth of low and a hundred times high.
+    expect(row('wbc', 40, 4000, 11000)).not.toBeNull();
+    expect(row('wbc', 1100000, 4000, 11000)).not.toBeNull();
+    expect(row('wbc', 39, 4000, 11000)).toBeNull();
+    expect(row('wbc', 1100001, 4000, 11000)).toBeNull();
+    // Other spellings are untouched by it.
+    expect(canonicalLabRow(entryOf('platelets'), { value: 250000, unit: '×10³/µL', referenceLow: 150, referenceHigh: 400 })).not.toBeNull();
+    // A unit the test takes, refused for its number, is named as such for the website's summary.
+    expect(labUnitTaken(entryOf('platelets'), 'cells/cumm')).toBe(true);
+    expect(labUnitTaken(entryOf('lymphocytes'), '%')).toBe(false);
+    expect(labUnitTaken(undefined, 'cells/µL')).toBe(false);
+  });
+
+  it('US-21 AC15 — RBC and the other blood-count tests do not take cells/µL', () => {
+    for (const key of ['rbc', 'mcv', 'mch', 'mchc', 'rdw', 'haematocrit', 'haemoglobin']) {
+      expect(canonicalLabValue(entryOf(key), 4800000, 'cells/µL'), key).toBeNull();
+      expect(labUnitRefusalNote(entryOf(key), 'cells/µL'), key).toBeUndefined();
+    }
+  });
+
+  it('US-21 AC15 — a differential in % stays refused, and its refusal points at the absolute count', () => {
+    for (const key of DIFFERENTIALS) {
+      expect(canonicalLabValue(entryOf(key), 60, '%'), key).toBeNull();
+      const message = labUnitRefusal(entryOf(key), '%');
+      expect(message, key).toContain('absolute count');
+      expect(message, key).toContain('×10⁹/L or cells/µL');
+      expect(message, key).toContain('not "%"');
+      expect(message, key).toContain('Do not work the count out from the percentage');
+      expect(labUnitRefusalNote(entryOf(key), '%'), key).not.toContain('Do not work');
+    }
+    // Only the differentials carry it: a % WBC or platelet count is not a thing a report prints.
+    expect(labUnitRefusalNote(entryOf('wbc'), '%')).toBeUndefined();
+    expect(labUnitRefusalNote(entryOf('platelets'), '%')).toBeUndefined();
+    // Haematocrit in % is a real conversion and still converts.
+    expect(canonicalLabValue(entryOf('haematocrit'), 45, '%')!.value).toBe(0.45);
+    // Any other refused spelling keeps the plain message, with no note.
+    expect(labUnitRefusalNote(entryOf('ferritin'), 'pmol/L')).toBeUndefined();
+    expect(labUnitRefusal(entryOf('ferritin'), 'pmol/L')).toBe('Ferritin is stored in µg/L; this record takes µg/L, ng/ml, not "pmol/L"');
+  });
+
+  it('US-21 AC15 — the spellings still refused stay refused', () => {
+    expect(canonicalLabValue(entryOf('platelets'), 2.5, 'lakhs/cumm')).toBeNull();
+    expect(canonicalLabValue(entryOf('tsh'), 1.8, 'mInt-unit(s)/mL')).toBeNull();
+    expect(canonicalLabValue(entryOf('tsh'), 1.8, 'mInt-units/mL')).toBeNull();
+    expect(canonicalLabValue(entryOf('ft4'), 2.1, 'T7 index')).toBeNull();
   });
 });

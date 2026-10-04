@@ -5,7 +5,7 @@ import { IMPORT_LIMITS, type LabUnitRefusal, type UnitSystem, type MetricType } 
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
-import { labValueLabel } from '../lib/lab-value-labels';
+import { labUnitRefusalLine } from '../lib/lab-value-labels';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
@@ -788,11 +788,11 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                 </p>
               )}
               {/* One report can refuse the same test on several dates; the
-                  user needs the spelling named once. */}
+                  user needs the spelling named once. A note says what to look
+                  for instead, where there is one, and a unit the test takes
+                  was refused for its number, not its unit (US-21 AC15). */}
               {[...new Map(refusedLabUnits.map(r => [`${r.key}|${r.unit}`, r])).values()].map(r => (
-                <p key={`${r.key}|${r.unit}`} className="upload-done-skipped">
-                  {labValueLabel(r.key)} &mdash; unit not recognised: {r.unit}. It was not saved.
-                </p>
+                <p key={`${r.key}|${r.unit}`} className="upload-done-skipped">{labUnitRefusalLine(r.key, r.unit)}</p>
               ))}
               {saveErrorCount > 0 && (
                 <p className="upload-done-skipped">

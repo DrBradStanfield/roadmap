@@ -164,13 +164,15 @@ Source: `units.ts`
 
 Source: `packages/health-core/src/lab-catalog.ts` (`LAB_CONVERSIONS`, `canonicalLabValue`). Since US-21 phase 3, a lab test the catalogue knows is **stored** in its canonical SI unit, not in the unit the lab printed. A writer sends the number and the unit as printed; the record converts it once, on the write, and converts `referenceLow`/`referenceHigh` by the same factor.
 
-Factor = the number a reported value is multiplied by to reach the canonical unit. Spellings are matched lower case, after `normalizeLabUnit` folds report and LLM spelling (`umol/L` → `µmol/L`, `mcg` → `µg`, `uL` → `µL`, `x 10e9/L` → `×10⁹/L`, `1.73m2` → `1.73m²`, `gm/dL` → `g/dL`, `Units/L` → `U/L`, `10^3/cmm` → `×10³/µL`). A factor of 1 is a different notation for the same scale, not a conversion.
+Factor = the number a reported value is multiplied by to reach the canonical unit. Spellings are matched lower case, after `normalizeLabUnit` folds report and LLM spelling (`umol/L` → `µmol/L`, `mcg` → `µg`, `uL` → `µL`, `x 10e9/L` → `×10⁹/L`, `1.73m2` → `1.73m²`, `gm/dL` → `g/dL`, `Units/L` → `U/L`, `10^3/cmm` or `10^3/cumm` → `×10³/µL`, `cells/uL`, `cells/cmm` or `cells/cumm` → `cells/µL`). A factor of 1 is a different notation for the same scale, not a conversion.
 
-A spelling this table does not carry for that test is **refused** — never rescaled by guess. The refusal names the canonical unit and every spelling the test accepts, and the website counts it as `lab_unit_refused`. Three things follow from that:
+A spelling this table does not carry for that test is **refused** — never rescaled by guess. The refusal names the canonical unit and every spelling the test accepts, and the website counts it as `lab_unit_refused`. Five things follow from that:
 
+- **A count in cells/µL converts only as a whole number** (WBC, the five differentials, platelets). Cells are counted, so a decimal in the result or either reference bound, or (with both bounds printed) a result below a hundredth of the low bound or above a hundred times the high bound, means the lab printed thousands under the wrong label: the row is refused, never rescaled, and the refusal asks whether the report means ×10³/µL. No per-test minimum yet, so a mislabelled whole number can still land.
+- **A differential in % is refused.** It is a share of the white count, not a count, and is never multiplied out from the WBC. Its refusal says the record keeps the absolute count (×10⁹/L or cells/µL), so the person looks for that line on the same report.
 - **Prolactin in ng/mL is refused on purpose.** The mIU/L factor is assay-dependent (about 21.2 for the WHO 3rd IS), so converting would invent precision the report does not have.
 - **A test the catalogue does not know is stored exactly as reported**, with its printed unit. There is no SI definition to convert it to, and refusing it would throw the value away.
-- **Rows written before phase 3 are corrected at load**, not edited: `migrate.ts` appends a converted row with the id `<id>#si` and `correctsId` set, and flips the printed row to `entered-in-error`. Same id on every device, so cross-device copies merge into one row. A legacy `gm/dL` row (haemoglobin, albumin, total protein, globulin, MCHC) now converts at ×10 on load through the same path.
+- **Rows written before phase 3 are corrected at load**, not edited: `migrate.ts` appends a converted row with the id `<id>#si` and `correctsId` set, and flips the printed row to `entered-in-error`. Same id on every device, so cross-device copies merge into one row. A legacy `gm/dL` row (haemoglobin, albumin, total protein, globulin, MCHC) now converts at ×10 on load through the same path. So does a legacy whole count in cells/µL, at ×0.001; a decimal one is left as it is.
 
 | key | canonical | reported spelling | × factor | note |
 |-----|-----------|-------------------|----------|------|
@@ -207,42 +209,49 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `wbc` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `wbc` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `wbc` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `wbc` | ×10⁹/L | cells/µl | 0.001 | a microlitre is 10⁻⁶ L, so 2400 cells/µL is 2.4 ×10⁹/L. Whole numbers only: a decimal is refused |
 | `platelets` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `platelets` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `platelets` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `platelets` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `platelets` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `platelets` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `platelets` | ×10⁹/L | cells/µl | 0.001 | a microlitre is 10⁻⁶ L, so 2400 cells/µL is 2.4 ×10⁹/L. Whole numbers only: a decimal is refused |
 | `neutrophils` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `neutrophils` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `neutrophils` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `neutrophils` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `neutrophils` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `neutrophils` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `neutrophils` | ×10⁹/L | cells/µl | 0.001 | a microlitre is 10⁻⁶ L, so 2400 cells/µL is 2.4 ×10⁹/L. Whole numbers only: a decimal is refused |
 | `lymphocytes` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `lymphocytes` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `lymphocytes` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `lymphocytes` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `lymphocytes` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `lymphocytes` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `lymphocytes` | ×10⁹/L | cells/µl | 0.001 | a microlitre is 10⁻⁶ L, so 2400 cells/µL is 2.4 ×10⁹/L. Whole numbers only: a decimal is refused |
 | `monocytes` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `monocytes` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `monocytes` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `monocytes` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `monocytes` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `monocytes` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `monocytes` | ×10⁹/L | cells/µl | 0.001 | a microlitre is 10⁻⁶ L, so 2400 cells/µL is 2.4 ×10⁹/L. Whole numbers only: a decimal is refused |
 | `eosinophils` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `eosinophils` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `eosinophils` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `eosinophils` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `eosinophils` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `eosinophils` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `eosinophils` | ×10⁹/L | cells/µl | 0.001 | a microlitre is 10⁻⁶ L, so 2400 cells/µL is 2.4 ×10⁹/L. Whole numbers only: a decimal is refused |
 | `basophils` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `basophils` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `basophils` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `basophils` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `basophils` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `basophils` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `basophils` | ×10⁹/L | cells/µl | 0.001 | a microlitre is 10⁻⁶ L, so 2400 cells/µL is 2.4 ×10⁹/L. Whole numbers only: a decimal is refused |
 | `mchc` | g/L | g/dl | 10 | a decilitre is a tenth of a litre |
 | `tsh` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number |
 | `tsh` | mIU/L | mu/l | 1 | mU/L is mIU/L, printed short |

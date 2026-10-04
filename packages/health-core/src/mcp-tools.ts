@@ -1433,7 +1433,11 @@ export function prepareImport(
       for (const value of result.additionalValues) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
         const own = value.recordedAt ?? day;
-        const check = bundle.checked ? null : appendLabValue(file, { metricName: value.name, value: value.value, unit: value.unit, recordedAt: own, now: ctx.now, latestDay });
+        // With its range: the write checks the whole row (US-21 AC15), so the preview does too.
+        const check = bundle.checked ? null : appendLabValue(file, {
+          metricName: value.name, value: value.value, unit: value.unit, referenceLow: value.referenceLow, referenceHigh: value.referenceHigh,
+          recordedAt: own, now: ctx.now, latestDay,
+        });
         if (check && !check.ok && check.reason !== 'slot-occupied') {
           unrecognized.push(`${oneLine(value.name).slice(0, MAX_NAME_LENGTH)}: ${oneLine(check.message)}`);
           continue;
@@ -1597,7 +1601,10 @@ export function fileResultsBundle(request: FileResultsSource, file: RoadmapFile,
       // candidate and the commit. It is what decides a conversion ("BUN" in
       // mg/dL converts, the bare molecule name does not), and the slot it
       // lands in is the same either way: `labSlotKey` folds both to `urea`.
-      const check = appendLabValue(file, { metricName: printedName, value: row.value, unit, recordedAt: day, now: ctx.now, latestDay: ctx.latestDay });
+      const check = appendLabValue(file, {
+        metricName: printedName, value: row.value, unit, referenceLow: row.referenceLow, referenceHigh: row.referenceHigh,
+        recordedAt: day, now: ctx.now, latestDay: ctx.latestDay,
+      });
       if (!check.ok && check.reason !== 'slot-occupied') {
         refuse(`${oneLine(check.message)}.`);
         continue;
@@ -1645,7 +1652,6 @@ export function importDocumentsCommit(
   const rows: BulkRow[] = [];
   /** Slot → the chosen id that took it: two files can offer one day, the record keeps one value (AC6). */
   const taken = new Map<string, string>();
-  let corrections = 0;
 
   for (const id of chosen) {
     const c = byId.get(id)!;
@@ -1674,7 +1680,6 @@ export function importDocumentsCommit(
       if (c.slot.replaceable === false) {
         return { status: 'rejected', text: `${oneLine(id)} (${oneLine(c.metric)} on ${c.recordedAt}) is too old to replace here. Nothing was written. The user can correct older values in the app.` };
       }
-      corrections++;
     }
     const correctsId = replace.has(id) ? c.slot.existingRowId : undefined;
     rows.push(c.kind === 'measurement'
@@ -1725,14 +1730,15 @@ export function importDocumentsCommit(
   const written = {
     measurements: applied.saved.filter((r) => 'metricType' in r && !r.correctsId).length,
     labValues: applied.saved.filter((r) => 'metricName' in r && !r.correctsId).length,
-    corrections,
+    // Counted from what the write saved: a replacement it refused replaced nothing (US-21 AC15).
+    corrections: applied.saved.filter((r) => r.correctsId).length,
     documents: docs.length,
   };
   const lines = [
     describe('Filed', applied.saved),
     ...(refusedUnits.length ? [`Not filed — ${refusedUnits.join('; ')}. Tell the user, and offer to add these with the unit the catalogue takes.`] : []),
     ...docs.map((d) => `Filed document “${oneLine(d.title)}” (${d.type}${d.date ? `, ${d.date}` : ''}) from ${oneLine(d.sourceFileName ?? '')}`),
-    `${written.measurements + written.labValues} value(s) added, ${corrections} replaced, ${docs.length} document(s) filed. ` +
+    `${written.measurements + written.labValues} value(s) added, ${written.corrections} replaced, ${docs.length} document(s) filed. ` +
       'If another device wrote the same day at the same moment, the newer row wins and the other stays in history.',
   ].filter(Boolean);
   const changed = next !== file;

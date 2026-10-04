@@ -1,3 +1,5 @@
+import { labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry } from '@roadmap/health-core';
+
 /**
  * Display labels for flexible lab values (beyond the 13 core metrics).
  * Maps standardized snake_case metric names to human-readable labels.
@@ -82,4 +84,19 @@ export const LAB_VALUE_LABELS: Record<string, string> = {
 export function labValueLabel(metricName: string): string {
   return LAB_VALUE_LABELS[metricName]
     || metricName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/**
+ * What a person reads when the record refused a lab value's unit: the unit a
+ * catalogued test is stored in, or, for a unit it does take, that the number was
+ * refused, and a note on what to look for instead, where there is one (US-21 AC15). Never the store's
+ * message, which is the copy an assistant reads.
+ */
+export function labUnitRefusalLine(key: string, unit: string): string {
+  const entry = resolveLabCatalogEntry(key);
+  const note = labUnitRefusalNote(entry, unit);
+  const lead = labUnitTaken(entry, unit)
+    ? `${labValueLabel(key)}: the number was not saved.`
+    : `${labValueLabel(key)}: unit not recognised (${unit}). It was not saved.${entry ? ` This test takes ${entry.unit}.` : ''}`;
+  return note ? `${lead} ${note}.` : lead;
 }

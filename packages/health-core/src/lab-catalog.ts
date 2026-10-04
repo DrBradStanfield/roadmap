@@ -64,6 +64,10 @@ export interface LabCatalogEntry {
    *  meaning, so mg/dL reaches urea only through the name "BUN". Read once, by
    *  `resolveLabCatalogEntry`, which returns the merged entry. */
   nameConversions?: Array<{ names: string[]; conversions: Record<string, number> }>;
+  /** What a refusal of this spelling adds, where the list of units the test
+   *  takes would not say what to do next (US-21 AC15: a differential in %):
+   *  `note` for everyone, `assistant` only in the copy an assistant reads. */
+  refusalNotes?: Record<string, { note: string; assistant?: string }>;
 }
 
 /** Cell counts: every analyser spelling of ×10⁹/L. "G/L" is giga-per-litre —
@@ -71,6 +75,18 @@ export interface LabCatalogEntry {
 const COUNT_ALIASES_9 = ['×10³/µl', 'k/µl', 'thou/µl', 'thousand/µl', '×10³/mm3', 'g/l'];
 /** The same, one thousand times over: ×10¹²/L. */
 const COUNT_ALIASES_12 = ['×10⁶/µl', 'm/µl', 'million/µl', 't/l'];
+/** A count printed per microlitre (US-21 AC15; `cells/cmm` and `cells/cumm`
+ *  arrive here through the folds): a microlitre is 10⁻⁶ L, so 2400 cells/µL is
+ *  2.4 ×10⁹/L. Counted, so only a whole number converts — see `canonicalLabValue`. */
+const CELLS_PER_UL = 'cells/µl';
+const COUNT_PER_UL = { [CELLS_PER_UL]: 0.001 };
+const WHOLE_COUNT_NOTE = 'Counts of cells per µL are whole numbers on the same scale as their printed range, so this row is refused, never rescaled: check whether the report means thousands per µL (×10³/µL)';
+/** A differential in % is a share of the white count, not a count, and is
+ *  never multiplied out from the WBC (US-21 AC15). */
+const PERCENT_OF_WBC_NOTE = { '%': {
+  note: 'A percentage is a share of the white count, not a count: this record keeps the absolute count (×10⁹/L or cells/µL), so look for that line on the same report',
+  assistant: 'Do not work the count out from the percentage',
+} };
 /** An enzyme activity: international units and "units" are the same unit. */
 const ENZYME_ALIASES = ['iu/l'];
 /** An electrolyte with one charge: mEq/L and mmol/L are the same number. */
@@ -118,13 +134,13 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'haemoglobin', label: 'Haemoglobin', group: 'haematology', unit: 'g/L', aliases: ['hemoglobin', 'hb', 'hgb'], conversions: { 'g/dl': 10, 'mmol/l': 16.11 } }, // g/dL ×10; Hb per haem 16.11 g/mol (Dutch convention)
   { key: 'haematocrit', label: 'Haematocrit', group: 'haematology', unit: 'L/L', aliases: ['hematocrit', 'hct', 'pcv', 'packed cell volume'], unitAliases: ['ratio', 'fraction'], conversions: { '%': 0.01 } }, // a percentage is a hundredth
   { key: 'rbc', label: 'RBC', group: 'haematology', unit: '×10¹²/L', aliases: ['red blood cells', 'red blood cell count', 'red cell count', 'erythrocytes'], unitAliases: COUNT_ALIASES_12 },
-  { key: 'wbc', label: 'WBC', group: 'haematology', unit: '×10⁹/L', aliases: ['white blood cells', 'white blood cell count', 'white cell count', 'total white cell count', 'leukocytes', 'leucocytes'], unitAliases: COUNT_ALIASES_9 },
-  { key: 'platelets', label: 'Platelets', group: 'haematology', unit: '×10⁹/L', aliases: ['platelet count', 'plt'], unitAliases: COUNT_ALIASES_9 },
-  { key: 'neutrophils', label: 'Neutrophils', group: 'haematology', unit: '×10⁹/L', aliases: ['neutrophil count', 'neut'], unitAliases: COUNT_ALIASES_9 },
-  { key: 'lymphocytes', label: 'Lymphocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['lymphocyte count'], unitAliases: COUNT_ALIASES_9 },
-  { key: 'monocytes', label: 'Monocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['monocyte count'], unitAliases: COUNT_ALIASES_9 },
-  { key: 'eosinophils', label: 'Eosinophils', group: 'haematology', unit: '×10⁹/L', aliases: ['eosinophil count'], unitAliases: COUNT_ALIASES_9 },
-  { key: 'basophils', label: 'Basophils', group: 'haematology', unit: '×10⁹/L', aliases: ['basophil count'], unitAliases: COUNT_ALIASES_9 },
+  { key: 'wbc', label: 'WBC', group: 'haematology', unit: '×10⁹/L', aliases: ['white blood cells', 'white blood cell count', 'white cell count', 'total white cell count', 'leukocytes', 'leucocytes'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL },
+  { key: 'platelets', label: 'Platelets', group: 'haematology', unit: '×10⁹/L', aliases: ['platelet count', 'plt'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL },
+  { key: 'neutrophils', label: 'Neutrophils', group: 'haematology', unit: '×10⁹/L', aliases: ['neutrophil count', 'neut'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
+  { key: 'lymphocytes', label: 'Lymphocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['lymphocyte count'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
+  { key: 'monocytes', label: 'Monocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['monocyte count'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
+  { key: 'eosinophils', label: 'Eosinophils', group: 'haematology', unit: '×10⁹/L', aliases: ['eosinophil count'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
+  { key: 'basophils', label: 'Basophils', group: 'haematology', unit: '×10⁹/L', aliases: ['basophil count'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
   { key: 'mcv', label: 'MCV', group: 'haematology', unit: 'fL', aliases: ['mean cell volume', 'mean corpuscular volume'] },
   { key: 'mch', label: 'MCH', group: 'haematology', unit: 'pg', aliases: ['mean cell haemoglobin', 'mean corpuscular hemoglobin'] },
   { key: 'mchc', label: 'MCHC', group: 'haematology', unit: 'g/L', aliases: ['mean cell haemoglobin concentration', 'mean corpuscular hemoglobin concentration'], conversions: { 'g/dl': 10 } }, // a decilitre is a tenth of a litre
@@ -194,13 +210,13 @@ export function normalizeLabUnit(raw: string): string {
   u = u.replace(/m\^?2\b/g, 'm²');
   // Three spellings of one unit (US-21 AC14), any case, only as a whole token
   // between the ends, a slash or a space: "gm/dL" is g/dL, "Unit" or "Units"
-  // is U, and a cubic millimetre ("cmm", "cu mm", "cu.mm", "c.mm") is a µL.
+  // is U, and a cubic millimetre ("cmm", "cumm", "cu mm", "cu.mm", "c.mm") is a µL.
   // Run last, so they cannot change a spelling the catalogue already accepted.
   // Only gm/dL folds: a bare "gm/L" would land on g/L, which a count test reads
   // as G/L. A bracketed "Unit(s)" is not a whole token, so it is not folded.
   u = u.replace(/(^|[\s/])gm(?=\/dl(?:$|[\s/]))/gi, '$1g');
   u = u.replace(/(^|[\s/])units?(?=$|[\s/])/gi, '$1U');
-  u = u.replace(/(^|[\s/])(?:cmm|cu[ .]mm|c\.mm)(?=$|[\s/])/gi, '$1µL');
+  u = u.replace(/(^|[\s/])(?:cmm|cumm|cu[ .]mm|c\.mm)(?=$|[\s/])/gi, '$1µL');
   return u;
 }
 
@@ -229,6 +245,31 @@ export function acceptedLabUnits(entry: LabCatalogEntry): string[] {
   // A spelling that only a printed NAME unlocks is listed only when the entry
   // was resolved under that name — where the resolver has merged it in.
   return [...new Set([entry.unit, ...spellingsOf(entry).filter((s) => !s.reportedNames).map((s) => s.spelling)])];
+}
+
+/**
+ * Why a catalogued test refused a unit, in one sentence: what it is stored in
+ * and every spelling it takes — or, for a count per µL it does take, that the
+ * number was not whole (US-21 AC15). Read from the spelling alone, so a health
+ * value never enters the message.
+ */
+export function labUnitRefusal(entry: LabCatalogEntry, unit: string): string {
+  if (labUnitTaken(entry, unit)) return `${entry.label} in "${unit}" was not stored. ${WHOLE_COUNT_NOTE}`;
+  const refusal = `${entry.label} is stored in ${entry.unit}; this record takes ${acceptedLabUnits(entry).join(', ')}, not "${unit}"`;
+  const extra = entry.refusalNotes?.[normalizeLabUnit(unit).toLowerCase()];
+  return extra ? [refusal, extra.note, ...(extra.assistant ? [extra.assistant] : [])].join('. ') : refusal;
+}
+
+/** The part of a refusal that says what to do next, where there is one: the
+ *  website's upload summary shows it under its own words. */
+export function labUnitRefusalNote(entry: LabCatalogEntry | undefined, unit: string): string | undefined {
+  return labUnitTaken(entry, unit) ? WHOLE_COUNT_NOTE : entry?.refusalNotes?.[normalizeLabUnit(unit).toLowerCase()]?.note;
+}
+
+/** True when the test takes this spelling, so a refusal in it was about the
+ *  number: only a count per µL refuses a spelling it takes (US-21 AC15). */
+export function labUnitTaken(entry: LabCatalogEntry | undefined, unit: string): boolean {
+  return !!entry && canonicalLabValue(entry, 0, unit) !== null;
 }
 
 /** Every alternate spelling one entry accepts, with the factor that reaches
@@ -270,8 +311,22 @@ export function canonicalLabValue(
   const factor = spelling === entry.unit.toLowerCase() || entry.unitAliases?.includes(spelling)
     ? 1
     : entry.conversions?.[spelling];
-  if (factor === undefined) return null;
+  if (factor === undefined || !countRowHolds(spelling, value)) return null;
   return { value: scaleBy(value, factor), unit: entry.unit, factor };
+}
+
+/**
+ * Cells are counted, so under a per-µL label a row must read as one count
+ * (US-21 AC15): the result and both bounds whole, and, when both bounds are
+ * printed, the result no lower than a hundredth of the low bound and no higher
+ * than a hundred times the high one. A decimal or a thousandfold gap means the
+ * lab printed thousands under that label, so the row is refused, never
+ * rescaled. A check of the row against itself, not a clinical threshold.
+ */
+function countRowHolds(spelling: string, value: number, low?: number | null, high?: number | null): boolean {
+  if (spelling !== CELLS_PER_UL) return true;
+  if (![value, low, high].every((n) => typeof n !== 'number' || Number.isInteger(n))) return false;
+  return typeof low !== 'number' || typeof high !== 'number' || (value >= low / 100 && value <= high * 100);
 }
 
 /** The stored shape of one lab row: the value and both reference bounds in the
@@ -293,7 +348,7 @@ export function canonicalLabRow(
   row: { value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null },
 ): { stored: StoredLabRow; factor: number } | null {
   const canonical = canonicalLabValue(entry, row.value, row.unit);
-  if (!canonical) return null;
+  if (!canonical || !countRowHolds(normalizeLabUnit(row.unit).toLowerCase(), row.value, row.referenceLow, row.referenceHigh)) return null;
   const bound = (b: number | null | undefined) => (typeof b === 'number' ? scaleBy(b, canonical.factor) : null);
   return {
     stored: {

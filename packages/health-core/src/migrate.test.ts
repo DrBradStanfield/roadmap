@@ -354,6 +354,29 @@ describe('US-21 phase 3 — legacy lab rows are corrected into SI at load', () =
     expect(stableStringify(migrateFile(fileWith(sameScale), OPTS).labValues)).toBe(stableStringify(sameScale));
   });
 
+  it('US-21 AC15 — a legacy whole count per µL converts at ×0.001 on load, once; a decimal one is left as it is', () => {
+    const neut = labRow({ id: 'n1', metricName: 'Neutrophils', value: 2400, unit: 'cells/uL', referenceLow: 1500, referenceHigh: 8000 });
+    const out = migrateFile(fileWith([neut]), OPTS);
+    expect(out.labValues).toHaveLength(2);
+    expect(out.labValues[0]).toMatchObject({ id: 'n1', value: 2400, unit: 'cells/uL', status: 'entered-in-error' });
+    expect(out.labValues[1]).toMatchObject({
+      id: 'n1#si', metricName: 'Neutrophils', value: 2.4, unit: '×10⁹/L', referenceLow: 1.5, referenceHigh: 8,
+      status: 'active', correctsId: 'n1', recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z',
+    });
+    // The second load is a no-op: the #si row is already canonical.
+    const twice = migrateFile(JSON.parse(JSON.stringify(out)), OPTS);
+    expect(stableStringify(twice.labValues)).toBe(stableStringify(out.labValues));
+    // A decimal per µL is refused at the write, so the load leaves it exactly as it is.
+    const decimal = [
+      labRow({ id: 'w1', metricName: 'WBC', value: 6.2, unit: 'cells/cmm', referenceLow: 4, referenceHigh: 11 }),
+      // So is a whole count whose range was printed in thousands.
+      labRow({ id: 'n2', metricName: 'Neutrophils', value: 2400, unit: 'cells/uL', referenceLow: 1.5, referenceHigh: 8 }),
+      // And one a hundredfold off its own printed range.
+      labRow({ id: 'p1', metricName: 'Platelets', value: 250000, unit: 'cells/µL', referenceLow: 150, referenceHigh: 400 }),
+    ];
+    expect(stableStringify(migrateFile(fileWith(decimal), OPTS).labValues)).toBe(stableStringify(decimal));
+  });
+
   it('US-21 phase 3 — a v1 copy merged with a migrated copy converges: no #dup ids, one active row per slot', () => {
     const v1 = migrateFile(fileWith([labRow({ id: 'l1' })]), OPTS);
     const other = migrateFile(fileWith([labRow({ id: 'l1' })]), { ...OPTS, deviceId: 'dev_b' });

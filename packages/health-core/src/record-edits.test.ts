@@ -654,3 +654,72 @@ describe('US-21 phase 3 — every catalogued lab value is stored in SI', () => {
     expect(row.referenceHigh).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// US-21 AC15 — a count per µL converts at every write door; a decimal one and
+// a differential in % are refused in words that say what to look for.
+// ---------------------------------------------------------------------------
+describe('US-21 AC15 — cells/µL at the write doors', () => {
+  it('US-21 AC15 — an append converts a whole count per µL, range and all', () => {
+    const row = ok(appendLabValue(base(), {
+      metricName: 'Neutrophils', value: 2400, unit: 'cells/uL', referenceLow: 1500, referenceHigh: 8000,
+      recordedAt: '2026-08-14', now: NOW,
+    })).row as FileLabValue;
+    expect(row).toMatchObject({ metricName: 'neutrophils', value: 2.4, unit: '×10⁹/L', referenceLow: 1.5, referenceHigh: 8 });
+  });
+
+  it('US-21 AC15 — a decimal count per µL is refused at every door, and the message says why without the number', () => {
+    const appended = appendLabValue(base(), { metricName: 'neutrophils', value: 2.4, unit: 'cells/cumm', recordedAt: '2026-08-14', now: NOW });
+    expect(appended.ok).toBe(false);
+    if (appended.ok) return;
+    expect(appended.reason).toBe('unknown-unit');
+    expect(appended.message).toContain('whole number');
+    expect(appended.message).toContain('×10³/µL');
+    expect(appended.message).not.toContain('2.4');
+
+    const bulk = bulkAppendValues(base(), [
+      { kind: 'lab', metricName: 'Platelets', value: 250000, unit: 'cells/µL', recordedAt: '2026-08-14', source: 'lab_import' },
+      { kind: 'lab', metricName: 'WBC', value: 6.2, unit: 'cells/uL', recordedAt: '2026-08-14', source: 'lab_import' },
+    ], NOW);
+    expect(bulk.saved).toHaveLength(1);
+    expect(bulk.saved[0]).toMatchObject({ metricName: 'Platelets', value: 250, unit: '×10⁹/L' });
+    expect(bulk.refused).toEqual([{ key: 'wbc', unit: 'cells/uL', message: expect.stringContaining('whole number') }]);
+
+    const file = ok(appendLabValue(base(), { metricName: 'lymphocytes', value: 1.7, unit: '×10⁹/L', recordedAt: '2026-08-14', now: NOW })).file;
+    const id = file.labValues.find((l) => l.metricName === 'lymphocytes')!.id;
+    expect(ok(correctValue(file, { id, newValue: 1800, unit: 'cells/µL', now: NOW })).row).toMatchObject({ value: 1.8, unit: '×10⁹/L', correctsId: id });
+    const corrected = correctValue(file, { id, newValue: 1.8, unit: 'cells/µL', now: NOW });
+    expect(corrected.ok).toBe(false);
+    if (!corrected.ok) expect(corrected.message).toContain('whole number');
+  });
+
+  it('US-21 AC15 — a whole count per µL with a range printed in thousands is refused at the append and the bulk save', () => {
+    const appended = appendLabValue(base(), {
+      metricName: 'Neutrophils', value: 2400, unit: 'cells/uL', referenceLow: 1.5, referenceHigh: 8, recordedAt: '2026-08-14', now: NOW,
+    });
+    expect(appended.ok).toBe(false);
+    if (!appended.ok) expect([appended.reason, appended.message.includes('whole number')]).toEqual(['unknown-unit', true]);
+    const bulk = bulkAppendValues(base(), [
+      { kind: 'lab', metricName: 'WBC', value: 6200, unit: 'cells/µL', referenceLow: 4.5, referenceHigh: 11, recordedAt: '2026-08-14', source: 'lab_import' },
+      // A whole range in thousands (150–400) under a per-µL value is a
+      // thousandfold off its own value: refused by the magnitude check.
+      { kind: 'lab', metricName: 'Platelets', value: 250000, unit: 'cells/µL', referenceLow: 150, referenceHigh: 400, recordedAt: '2026-08-14', source: 'lab_import' },
+      { kind: 'lab', metricName: 'Platelets', value: 250000, unit: 'cells/µL', referenceLow: 150000, referenceHigh: 400000, recordedAt: '2026-08-15', source: 'lab_import' },
+    ], NOW);
+    expect(bulk.saved).toHaveLength(1);
+    expect(bulk.saved[0]).toMatchObject({ metricName: 'Platelets', value: 250, referenceLow: 150, referenceHigh: 400, recordedAt: '2026-08-15' });
+    expect(bulk.refused).toEqual([
+      { key: 'wbc', unit: 'cells/µL', message: expect.stringContaining('whole number') },
+      { key: 'platelets', unit: 'cells/µL', message: expect.stringContaining('printed range') },
+    ]);
+  });
+
+  it('US-21 AC15 — a differential in % is refused, and the refusal points at the absolute count', () => {
+    const result = appendLabValue(base(), { metricName: 'Lymphocytes', value: 30, unit: '%', recordedAt: '2026-08-14', now: NOW });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe('unknown-unit');
+    expect(result.message).toContain('not "%"');
+    expect(result.message).toContain('absolute count (×10⁹/L or cells/µL)');
+  });
+});

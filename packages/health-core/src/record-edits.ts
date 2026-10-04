@@ -28,7 +28,7 @@
  * screening op — those are last-write-wins current state, which a second
  * writer can only edit safely with the lamport discipline this does not take on.
  */
-import { acceptedLabUnits, canonicalLabRow, foldName, type LabCatalogEntry, labSlotKey, resolveLabCatalogEntry, type StoredLabRow } from './lab-catalog';
+import { canonicalLabRow, foldName, type LabCatalogEntry, labSlotKey, labUnitRefusal, resolveLabCatalogEntry, type StoredLabRow } from './lab-catalog';
 import { METRIC_LABELS, METRIC_TO_FIELD } from './mappings';
 import { dayOf, localDay } from './merge';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
@@ -212,7 +212,7 @@ function toStoredLab(
   if (!canonical) {
     // The refusal, in the shape a core metric's already takes: what it is
     // stored in, what spellings reach it, and the one that did not.
-    return reject('unknown-unit', `${entry.label} is stored in ${entry.unit}; this record takes ${acceptedLabUnits(entry).join(', ')}, not "${unit}"`);
+    return reject('unknown-unit', labUnitRefusal(entry, unit));
   }
   return canonical.stored;
 }
