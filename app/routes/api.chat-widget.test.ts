@@ -262,3 +262,19 @@ describe('US-15 AC26 — the match-event row does not grow with the message cap'
     expect(row.router_context.recent).toEqual(['y'.repeat(500)]);
   });
 });
+
+describe('US-15 AC26 — clean cuts and the length signal', () => {
+  it('US-15 AC26: an emoji straddling 499/500 leaves no lone surrogate on the row', async () => {
+    await post({ message: 'a'.repeat(499) + '😀' + 'b'.repeat(100), localFirst: true });
+    expect(matchEvent().message).toBe('a'.repeat(499));
+  });
+
+  it('US-15 AC26: chat_timing carries the message length as a number and no text', async () => {
+    const message = 'LDL 4.2 ' + 'x'.repeat(2992);
+    await post({ message, localFirst: true });
+    const timing = consoleLog.mock.calls.map((c) => JSON.parse(String(c[0]))).find((l) => l.evt === 'chat_timing');
+    expect(timing.messageChars).toBe(3000);
+    expect(JSON.stringify(timing)).not.toContain('LDL');
+    expect(JSON.stringify(timing)).not.toContain('xxxx');
+  });
+});

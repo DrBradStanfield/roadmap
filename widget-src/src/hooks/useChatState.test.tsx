@@ -173,3 +173,34 @@ describe('US-15 AC26 — the input holds 8,000 characters', () => {
     expect((sendMessage as unknown as { mock: { calls: unknown[][] } }).mock.calls.at(-1)![0]).toBe(pasted(8000));
   });
 });
+
+describe('US-15 AC26 — a cut paste is announced', () => {
+  const NOTICE = 'Your message was cut at 8,000 characters.';
+
+  it('US-15 AC26: a paste over 8,000 shows the notice; the next normal edit clears it', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    act(() => hook.result.current.actions.handleInputChange('x'.repeat(8001)));
+    expect(hook.result.current.state.error).toBe(NOTICE);
+    act(() => hook.result.current.actions.handleInputChange('x'.repeat(7999)));
+    expect(hook.result.current.state.error).toBeNull();
+  });
+
+  it('US-15 AC26: sending clears the notice', async () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    act(() => hook.result.current.actions.handleInputChange('x'.repeat(9000)));
+    act(() => { void hook.result.current.actions.handleSend(); });
+    expect(hook.result.current.state.error).toBeNull();
+  });
+
+  it('US-15 AC26: a paste within the cap shows no notice', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    act(() => hook.result.current.actions.handleInputChange('x'.repeat(8000)));
+    expect(hook.result.current.state.error).toBeNull();
+  });
+
+  it('US-15 AC26: an emoji straddling 7999/8000 is dropped, not split', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: false }));
+    act(() => hook.result.current.actions.handleInputChange('x'.repeat(7999) + '😀'));
+    expect(hook.result.current.state.inputText).toBe('x'.repeat(7999));
+  });
+});

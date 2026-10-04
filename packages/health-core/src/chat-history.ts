@@ -31,6 +31,13 @@ export const MAX_HISTORY_MESSAGES = 20;
  *  token budget in buildConversationMessages does the real trimming. */
 export const MAX_HISTORY_TURN_CHARS = 8000;
 
+/** `s` cut to at most `n` UTF-16 code units, never through a surrogate pair:
+ *  an emoji astride the cut is dropped, not halved (US-15 AC26). */
+export function cutText(s: string, n: number): string {
+  const cut = s.slice(0, n);
+  return /[\uD800-\uDBFF]$/.test(cut) ? cut.slice(0, -1) : cut;
+}
+
 export interface ChatFileMessage {
   id: string;
   role: 'user' | 'assistant';

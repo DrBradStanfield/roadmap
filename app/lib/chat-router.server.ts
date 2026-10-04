@@ -16,6 +16,7 @@ import { callAnthropicWithUsage, extractJsonObject, type AnthropicUsage } from '
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 // The router's model lives with the other pins; modelParams gives its family's body shape.
 import { PROMPT_CACHE, ROUTER_MODEL, modelParams } from '../../packages/health-core/src/models';
+import { cutText } from '../../packages/health-core/src/chat-history';
 
 // ---------------------------------------------------------------------------
 // Version — bump when router prompt or index format changes so chat_match_events
@@ -153,7 +154,7 @@ function getRouterPrompt(): string {
 // ---------------------------------------------------------------------------
 
 export function sanitizeForRouter(s: string): string {
-  return s.replace(/[\u0000-\u001F\u007F]/g, ' ').slice(0, 2000);
+  return cutText(s.replace(/[\u0000-\u001F\u007F]/g, ' '), 2000);
 }
 
 /** The columns a widget telemetry row may carry. A column not named here is

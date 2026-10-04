@@ -17,7 +17,7 @@ import {
   type ChatPending,
 } from '../lib/chat-api';
 import { postSync, postInputSync, subscribeSync, generateInstanceId } from '../lib/chat-sync';
-import type { ChatContextPayload, ProposedEdit } from '@roadmap/health-core';
+import { cutText, type ChatContextPayload, type ProposedEdit } from '@roadmap/health-core';
 
 export interface ChatPrefetchData {
   conversations: ChatConversation[];
@@ -38,6 +38,7 @@ interface UseChatStateOptions {
 }
 
 export const MAX_CHARS = 8000;
+const CUT_NOTICE = `Your message was cut at ${MAX_CHARS.toLocaleString('en')} characters.`;
 const NO_PENDING: ChatPending = { thinking: '', text: '', status: '', sources: [] };
 
 export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected, onProposeEdit }: UseChatStateOptions) {
@@ -344,7 +345,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   }, [instanceId]);
 
   const handleInputChange = useCallback((text: string) => {
-    const sliced = text.slice(0, MAX_CHARS);
+    const sliced = cutText(text, MAX_CHARS);
+    // Say so when a paste is cut (US-15 AC26); the next edit within the cap clears it.
+    setError(prev => text.length > MAX_CHARS ? CUT_NOTICE : prev === CUT_NOTICE ? null : prev);
     setInputText(sliced);
     postInputSync(instanceId, sliced);
   }, [instanceId]);
