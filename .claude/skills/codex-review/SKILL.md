@@ -95,7 +95,7 @@ node tools/codex-review.mjs --range main..HEAD --out "$SCRATCH/codex-review.json
 node tools/codex-review.mjs --record --out "$SCRATCH/codex-review.json"     # + live scratch record, read-only
 node tools/codex-review.mjs --loop --range <first>^..HEAD --out "$SCRATCH/codex-review.json"  # loop-authored: Tier 3 applies
 node tools/codex-review.mjs --include <dir> --out "$SCRATCH/codex-review.json"  # + a read-only source folder under a root pinned in tools/codex-review-includes.json (repeatable; 64 MB cap, --include-limit-mb; never with --loop; US-40 AC13)
-node tools/codex-review.mjs --subject <file> [--baseline <earlier file>] [--context <dir>] --out "$SCRATCH/codex-review.json"  # ONLY these files vs their baselines; nothing else from the tree (repeatable; never with --commit/--range/--loop; US-40 AC15)
+node tools/codex-review.mjs --subject <file> [--baseline <earlier file>|none] [--context <dir>] --out "$SCRATCH/codex-review.json"  # ONLY these files vs their baselines; nothing else from the tree (a --baseline pairs with the --subject before it; never with --commit/--range/--loop; US-40 AC15)
 ```
 
 **Pick the subject** (US-40 AC15, Brad 2026-10-05: "Codex reviewed the wrong
@@ -107,7 +107,12 @@ gitignored), or the tree holds other sessions' work, run with
 every protection this wrapper has. Then read the pre-flight `SUBJECT` line on
 stderr before trusting the verdict: it names the file reviewed, its baseline,
 its size and sha256, and how many other uncommitted files were left out of
-the snapshot. A subject identical to its baseline is `E_SUBJECT_UNCHANGED`.
+the snapshot. A subject identical to its baseline is `E_SUBJECT_UNCHANGED`;
+`--baseline none` reviews it in full as a new file. **Private data:** never
+point `--subject` or `--context` at a file holding customer or health data;
+an untracked file must sit under a root pinned in
+`tools/codex-review-includes.json` (`subjectRoots`), and widening that list is
+Brad's call.
 
 Run it in a Bash subagent or in the background; a review takes minutes. Exit
 codes: 0 clean, 2 blocking findings, 3 incomplete, 1 a usage error or a

@@ -1,5 +1,9 @@
 {
   "_about": "US-40 AC13: the only roots tools/codex-review.mjs --include may copy from (the folder, or one inside it). A leading ~/ is the home directory; a * may stand in the last part. Only the copy committed at HEAD counts. Brad's ruling 2026-09-29: the Codex reviewer reads the knowledge-base raw sources and diff reports Claude reads; narrowed the same day to the dated refresh folders and the pathway raw; the supplements raw added once Brad took decision 3c (ConsumerLab proceeds at full scope).",
+  "_about_subjectRoots": "US-40 AC15 (Brad 2026-10-05; adversary R1): a --subject, --baseline or --context file that is NOT tracked at HEAD must lie under one of these roots (absolute; a glob such as * or [0-9] may stand in the last part); a tracked file is always allowed. Gitignored folders hold customer data (chatbot message exports, YouTube comment backups, Judge.me review exports), so only the numbered video folders are pinned. Only the copy committed at HEAD counts.",
+  "subjectRoots": [
+    "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/output/[0-9]*"
+  ],
   "roots": [
     "~/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-*/",
     "~/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/health_pathways/",
