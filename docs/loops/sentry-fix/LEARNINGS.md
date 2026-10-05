@@ -71,12 +71,12 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   36→0 and gated in ci.yml, which surfaced a second latent crash (Object.hasOwn
   on iOS WebKit <15.4 → hasOwnProperty.call, floors kept at ES2020). app/ is
   still ungated — a standing task.
-- `[noise][server]` 2026-08-23 — Open-redirect/XSS probes on the Shopify OAuth
-  surface (`/auth/exit-iframe?exitIframe=javascript:…` or `data:…`) surface as
-  handled "Invalid URL. Refusing to redirect" server errors — that is
-  `sanitizeRedirectUrl` REJECTING the payload, i.e. the defense firing, not a
-  defect. Ledger `wontfix` on sight; the auth route is grant-excluded, so any
-  capture-hygiene change would be propose-only — not worth it at probe volume.
+- `[noise][server]` 2026-08-23, sharpened 10-05 — Probes surface as handled
+  server errors. OAuth open-redirect/XSS payloads (`/auth/exit-iframe?exitIframe=
+  javascript:…`) give "Invalid URL. Refusing to redirect": `sanitizeRedirectUrl`
+  firing. Route misses give `getInternalRouterError` "No route matches URL"
+  (handleError captures every 404; 6X = operator curls to /health). Ledger
+  `wontfix` on sight; both paths are grant-excluded, so hygiene is propose-only.
 - `[gap][sentry]` 2026-09-07, closed 09-08 — Until Brad's PR #73 (live from
   deploy run 58, 09-08 20:59Z) production `allowUrls` named the retired
   `health-tool.js`, so the SDK dropped every main-bundle exception: widget
