@@ -513,7 +513,7 @@ Source of truth: the v9 label artwork, read with `pdftotext -layout`: UK `multiv
 | Boron (Sodium Borate) | 3 mg | + | US v8 1 mg glycinate |
 | Vitamin B3 (Nicotinamide) | 16 mg | 100% | Same |
 | Manganese (Bisglycinate) | 2.3 mg | 115% | US v8 1.15 mg |
-| Vitamin D3 (Vitashine®, vegan; ingredients list "from Lichen") | 25 mcg | 500% | Same dose; US v8 uses AlgeD3™ |
+| Vitamin D3 (Vitashine®, vegan; ingredients list "from Lichen") | 25 mcg | 500% | Same dose; encapsulated like US v8's AlgeD3™ (Vitashine® is encapsulated, Brad 2026-10-05) |
 | Vitamin K2 (MK-7) (all-trans K2VITAL™ Delta) | 90 mcg | 120% | Same |
 | Copper (Bisglycinate) | 0.9 mg | 90% | Same |
 | Vitamin B5 (Calcium Pantothenate) | 5 mg | 83% | US v8 3.75 mg |
