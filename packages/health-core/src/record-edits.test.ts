@@ -311,6 +311,31 @@ describe('US-31 AC5 — units are resolved here, not in the CLI (F1)', () => {
 });
 
 describe('US-31 AC5 — a core metric is a core metric in any spelling (F2)', () => {
+  it('refuses Height without mutation and directs recovery to update_profile heightCm', () => {
+    const file = base();
+    const before = JSON.stringify(file);
+    const result = appendLabValue(file, { metricName: 'Height', value: 180, unit: 'cm', now: NOW });
+    expect(result.ok).toBe(false);
+    expect(JSON.stringify(file)).toBe(before);
+    if (result.ok) return;
+    expect(result.reason).toBe('core-metric');
+    expect(result.message).toContain('heightCm');
+    expect(result.message).toContain('update_profile');
+    expect(result.message).not.toContain('write it as a measurement');
+  });
+
+  it.each(['LDL-C', 'lDl-c', 'A1C', 'Apo B', 'hemoglobin_a1c', 'Serum Creatinine'])('refuses a recognized core alias %s without changing the record', (name) => {
+    const file = base();
+    const before = JSON.stringify(file);
+    const result = appendLabValue(file, { metricName: name, value: 1, unit: 'mmol/L', now: NOW });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe('core-metric');
+      expect(result.message).toBe(`"${name}" is a core metric — write it as a measurement, in SI units`);
+    }
+    expect(JSON.stringify(file)).toBe(before);
+  });
+
   it.each(['LDL', 'HbA1c', 'Weight', 'LDL cholesterol', 'Lp(a)'])('refuses --test %s', (name) => {
     const result = appendLabValue(base(), { metricName: name, value: 1, unit: 'mmol/L', now: NOW });
     expect(result.ok).toBe(false);

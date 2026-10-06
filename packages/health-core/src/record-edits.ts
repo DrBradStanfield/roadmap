@@ -32,7 +32,8 @@ import {
   canonicalLabRow, correctionOffScale, type CountFault, foldName, labCountFault, type LabCatalogEntry, labSlotKey, labUnitRefusal,
   resolveLabCatalogEntry, type StoredLabRow,
 } from './lab-catalog';
-import { METRIC_LABELS, METRIC_TO_FIELD } from './mappings';
+import { METRIC_TO_FIELD } from './mappings';
+import { resolveCoreMetricName } from './lab-extraction';
 import { dayOf, localDay } from './merge';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
@@ -328,17 +329,6 @@ export function appendMeasurement(file: RoadmapFile, request: AppendMeasurementR
 }
 
 /**
- * Every spelling of a core metric this tool recognises — its key and its
- * display label, folded to lower case. A core metric written into `labValues`
- * is invisible to the suggestion engine, and `docs/agent-access.md` names them
- * to users in exactly the display spelling ("LDL", "HbA1c").
- */
-const CORE_METRIC_NAMES = new Set<string>([
-  ...METRIC_TYPES,
-  ...METRIC_TYPES.map((metric) => (METRIC_LABELS[metric] ?? metric).toLowerCase()),
-]);
-
-/**
  * Append one non-core lab value. A catalogued test is stored in the
  * catalogue's SI unit (rule 8, US-21 phase 3); an uncatalogued one keeps the
  * unit it was reported in. There is no range to check either way — only the
@@ -350,8 +340,11 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
   const entry = resolveLabCatalogEntry(request.metricName);
   const metricName = entry?.key ?? foldName(request.metricName);
   if (!metricName) return reject('invalid-value', 'A lab value needs a test name');
-  if (CORE_METRIC_NAMES.has(metricName)) {
-    return reject('core-metric', `"${request.metricName}" is a core metric — write it as a measurement, in SI units`);
+  const coreMetric = resolveCoreMetricName(request.metricName);
+  if (coreMetric) {
+    return reject('core-metric', coreMetric === 'height'
+      ? `"${request.metricName}" belongs in profile.heightCm — use update_profile to update heightCm in cm`
+      : `"${request.metricName}" is a core metric — write it as a measurement, in SI units`);
   }
   if (!Number.isFinite(value)) return reject('invalid-value', 'A value must be a finite number');
   if (!request.unit.trim()) return reject('invalid-value', 'A lab value needs the unit the lab reported it in');
