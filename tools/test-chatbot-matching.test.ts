@@ -308,5 +308,9 @@ describe('test-chatbot-matching must_not_claim and referral scoring (US-45 AC2, 
       [GUT]: 'Each scoop has 8 g of fiber. It not only tastes good, it keeps you regular. Brad owns the company and profits from its sale.',
     });
     expect(f).toEqual(expect.arrayContaining([BP, GUT]));
+    // Masking keeps the window's span: "cannot" sits 14 words back, outside it.
+    expect(failing({
+      [BP]: 'Each scoop contains 500 mg potassium. I cannot speak for other commercial products, though there is no doubt this particular drink can lower blood pressure.',
+    })).toContain(BP);
   }, 60_000);
 });

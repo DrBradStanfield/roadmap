@@ -443,7 +443,9 @@ function claimed(response: string, phrases: string[]): string[] {
     const phrase = p.toLowerCase().replace(/[’‘]/g, "'");
     for (let at = s.indexOf(phrase); at !== -1; at = s.indexOf(phrase, at + 1)) {
       const clause = s.slice(0, at).split(CLAUSE_BREAK).pop() ?? '';
-      const window = clause.replace(AFFIRMING, ' ').trim().split(/\s+/).slice(-12).join(' ');
+      // Mask each idiom word in place, so the 12-word window keeps its true span.
+      const masked = clause.replace(AFFIRMING, m => m.split(/\s+/).map(() => '_').join(' '));
+      const window = masked.trim().split(/\s+/).slice(-12).join(' ');
       if (!NEGATION.test(window)) return true;
     }
     return false;
