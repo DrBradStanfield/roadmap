@@ -12,6 +12,7 @@ import { SAVE_ERRORS } from './BloodTestTimeline';
 import { bulkSaveLabValues } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { formatLabValue, sameAsSaved } from '../lib/blood-test-cell';
+import { labUnitRefusalLine } from '../lib/lab-value-labels';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiLabValue } from '../lib/api-types';
 
@@ -104,8 +105,9 @@ export function AddLabTest({ onAdded, labValues = [], onCorrect }: {
         onAdded();
       } else if (result.refused.length > 0) {
         // A catalogued test typed under "Other" can still name a unit the
-        // catalogue does not take (US-21 phase 3). Say which units reach it.
-        setNotice(result.refused[0].message);
+        // catalogue does not take (US-21 phase 3), or a number it refuses in
+        // one it does: say so in the upload summary's words (US-21 AC15).
+        setNotice(labUnitRefusalLine(result.refused[0].key, result.refused[0].unit, result.refused[0].fault));
       } else if (result.skippedDuplicates > 0) {
         collided();
       } else {

@@ -318,6 +318,8 @@ export {
   labSlotKey,
   normalizeLabUnit,
   displayLabUnit,
+  labUnitRefusalNote,
+  labUnitTaken,
   type LabCatalogEntry,
   type LabGroup,
   type LabGroupId,

@@ -346,6 +346,14 @@ describe('US-32 AC35 — a read states the unit every stored value is in', () =>
     expect(unitsDescription).toContain('stored in its SI unit');
     expect(unitsDescription).toContain('keeps the unit it was reported in');
   });
+
+  // US-21 AC15: a refusal under a spelling the test takes is for the number,
+  // and the assistant is told so where it reads the unit contract.
+  it('US-21 AC15 — the unit contract says a refusal can be for the number under an accepted spelling', () => {
+    expect(SI_NOTE).toContain('A refusal can also be for the number under a spelling the test takes: a cells/µL count that is not whole, or not on the scale of its own printed range.');
+    const addLab = MCP_TOOLS.find((tool) => tool.name === 'add_lab_values')!;
+    expect(addLab.description).toContain('an unknown spelling is refused, naming those it takes, as is a cells/µL count not whole or off its range\'s scale.');
+  });
 });
 
 describe('US-32 — a read answers compactly', () => {
@@ -544,6 +552,19 @@ describe('US-32 — add_lab_values is a batch, and all or nothing', () => {
     expect(outcome.text).toContain('values[0] (ferritin)');
     expect(outcome.text).toContain('µg/L');
     expect((outcome as { file?: RoadmapFile }).file).toBeUndefined();
+  });
+
+  it('US-21 AC15 — a whole count per µL is stored in ×10⁹/L; a decimal one and a differential in % are refused in words', () => {
+    const stored = ok(addLabValues(base(), {
+      values: [{ metricName: 'Neutrophils', value: 2400, unit: 'cells/uL', recordedAt: TODAY }],
+    }, CTX));
+    expect(stored.file!.labValues.find((l) => l.metricName === 'neutrophils')).toMatchObject({ value: 2.4, unit: '×10⁹/L' });
+    const decimal = addLabValues(base(), { values: [{ metricName: 'Neutrophils', value: 2.4, unit: 'cells/uL', recordedAt: TODAY }] }, CTX);
+    expect(decimal.status).toBe('rejected');
+    expect(decimal.text).toContain('whole number');
+    const percent = addLabValues(base(), { values: [{ metricName: 'Lymphocytes', value: 30, unit: '%', recordedAt: TODAY }] }, CTX);
+    expect(percent.status).toBe('rejected');
+    expect(percent.text).toContain('absolute count');
   });
 
   it('files a spaced test name under its catalogue key', () => {
@@ -2699,6 +2720,29 @@ describe('US-21 phase 3 — the import commit converts under the name the receip
     expect(outcome.text).not.toContain('Not filed');
   });
 
+  // US-21 AC15: the offer to re-add in the catalogue's unit is for a spelling
+  // refusal only; a refusal for the number asks the person instead.
+  it('US-21 AC15 — the commit offers a re-add only for a spelling refusal, not a refusal for the number', () => {
+    const file = base();
+    const { payload } = prepareImport(file, bundleOf([extracted('us.pdf', labReport({
+      values: [], unrecognized: [],
+      additionalValues: [
+        { name: 'Ferritin', value: 80, unit: 'µg/L', referenceLow: null, referenceHigh: null },
+        { name: 'Neutrophils', value: 2.4, unit: '×10⁹/L', referenceLow: null, referenceHigh: null },
+      ],
+    }))]), IMPORT_CTX);
+    // What a write refuses that the preview did not: one spelling, one number.
+    const tampered = { ...payload, candidates: payload.candidates.map((c) => (c.kind !== 'lab' ? c
+      : c.metric === 'ferritin' ? { ...c, unit: 'pmol/L' } : { ...c, unit: 'cells/uL' })) };
+    const outcome = importDocumentsCommit(file, tampered, { receipt: 'r', accept: tampered.candidates.map((c) => c.id), replace: [] }, NOW);
+    expect(outcome.status).toBe('ok');
+    const spelling = outcome.text.split('\n').find((l) => l.includes('ferritin:'))!;
+    const number = outcome.text.split('\n').find((l) => l.includes('neutrophils:'))!;
+    expect(spelling).toContain('offer to add these with the unit the catalogue takes');
+    expect(number).not.toContain('offer to add');
+    expect(number).toContain('do not re-send it in another unit on your own');
+  });
+
   it('the assistant route: the same row through file_results files the same number', () => {
     const file = base();
     const { payload } = prepared(labCall([row('urea', 'BUN', 18, 'mg/dL')]), file);
@@ -2721,5 +2765,63 @@ describe('US-21 phase 3 — the import commit converts under the name the receip
     expect(assistant.payload.candidates).toEqual([]);
     expect(assistant.unrecognized).toHaveLength(1);
     expect(assistant.unrecognized[0]).toContain('mmol/L');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-21 AC15 — every door checks the same row, the import preview included:
+// a preview never offers what the commit refuses, and the commit counts a
+// replacement only when one was written.
+// ---------------------------------------------------------------------------
+describe('US-21 AC15 — the import preview checks the row the commit will check', () => {
+  const neutrophils = (value: number, referenceLow: number, referenceHigh: number) =>
+    ({ name: 'Neutrophils', value, unit: 'cells/uL', referenceLow, referenceHigh });
+  const neutReport = (value: number, referenceLow: number, referenceHigh: number) =>
+    labReport({ values: [], additionalValues: [neutrophils(value, referenceLow, referenceHigh)], unrecognized: [] });
+  /** The record already holds neutrophils 2.0 ×10⁹/L on the report's day. */
+  const held = () => ok(addLabValues(base(), { values: [{ metricName: 'neutrophils', value: 2, unit: '×10⁹/L', recordedAt: LAB_DAY }] }, CTX)).file!;
+
+  it('US-21 AC15 — import_documents: a range printed in thousands under cells/µL is never offered', () => {
+    const { payload, unrecognized } = prepareImport(base(), bundleOf([extracted('a.pdf', neutReport(2400, 1.5, 8))]), IMPORT_CTX);
+    expect(payload.candidates.filter((c) => c.metric === 'neutrophils')).toEqual([]);
+    expect(unrecognized.join('\n')).toContain('whole numbers');
+    // The same value with its range in cells/µL is offered.
+    expect(prepareImport(base(), bundleOf([extracted('a.pdf', neutReport(2400, 1500, 8000))]), IMPORT_CTX).payload.candidates
+      .filter((c) => c.metric === 'neutrophils')).toHaveLength(1);
+  });
+
+  it('US-21 AC15 — file_results: a range printed in thousands under cells/µL is never offered', () => {
+    const request = labCall([row('neutrophils', 'Neutrophils', 2400, 'cells/uL', { referenceLow: 1.5, referenceHigh: 8 })]);
+    const { payload, unrecognized } = prepared(request);
+    expect(payload.candidates.filter((c) => c.metric === 'neutrophils')).toEqual([]);
+    expect(unrecognized.join('\n')).toContain('whole numbers');
+    // Nor is one over its own printed range a hundredfold (R2's magnitude check).
+    expect(prepared(labCall([row('platelets', 'Platelets', 250000, 'cells/uL', { referenceLow: 150, referenceHigh: 400 })])).payload.candidates
+      .filter((c) => c.metric === 'platelets')).toEqual([]);
+  });
+
+  it('US-21 AC15 — a replacement the write refuses is not counted as replaced', () => {
+    const file = held();
+    const { payload } = prepareImport(file, bundleOf([extracted('a.pdf', neutReport(2400, 1500, 8000))]), IMPORT_CTX);
+    const c = payload.candidates.find((x) => x.metric === 'neutrophils')!;
+    expect(c.slot.state).toBe('held_different');
+    // Written as offered, it replaces and says so.
+    const replaced = importDocumentsCommit(file, payload, { receipt: 'r', accept: [], replace: [c.id] }, NOW);
+    expect((replaced as { data: { written: { corrections: number } } }).data.written.corrections).toBe(1);
+    expect(replaced.text).toContain('1 replaced');
+    // A candidate the write refuses (its range now in thousands): nothing replaced, and the count says 0.
+    const refusedPayload = { ...payload, candidates: payload.candidates.map((x) => (x.id === c.id ? { ...x, referenceLow: 1.5, referenceHigh: 8 } : x)) };
+    const refused = importDocumentsCommit(file, refusedPayload, { receipt: 'r', accept: [], replace: [c.id] }, NOW);
+    expect((refused as { data: { written: { corrections: number } } }).data.written.corrections).toBe(0);
+    expect(refused.text).toContain('0 replaced');
+    expect(refused.text).toContain('whole numbers');
+    expect(((refused as { file?: RoadmapFile }).file ?? file).labValues.filter((l) => l.metricName === 'neutrophils').map((l) => [l.value, l.status])).toEqual([[2, 'active']]);
+  });
+
+  it('US-21 AC15 — the assistant’s copy of a % refusal says not to work the count out from the percentage', () => {
+    const outcome = addLabValues(base(), { values: [{ metricName: 'Neutrophils', value: 60, unit: '%', recordedAt: TODAY }] }, CTX);
+    expect(outcome.status).toBe('rejected');
+    expect(outcome.text).toContain('absolute count');
+    expect(outcome.text).toContain('Do not work the count out from the percentage');
   });
 });

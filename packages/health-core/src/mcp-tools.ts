@@ -113,7 +113,9 @@ export const SI_NOTE =
   ' Every value is stored in SI canonical units; the `units` map in read_record and get_plan names them.' +
   OFF_CATALOGUE_NOTE + ' ' +
   'Send a lab result in the unit the lab printed: a test the catalogue knows is converted on the way in, and a ' +
-  'spelling it does not know for that test is refused rather than guessed. A test the catalogue does not know ' +
+  'spelling it does not know for that test is refused rather than guessed. A refusal can also be for the number under a ' +
+  'spelling the test takes: a cells/µL count that is not whole, or not on the scale of its own printed range. ' +
+  'A test the catalogue does not know ' +
   'keeps the unit it was reported in.';
 
 /** The version the server announces, and the one a report is stamped with. */
@@ -1433,7 +1435,11 @@ export function prepareImport(
       for (const value of result.additionalValues) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
         const own = value.recordedAt ?? day;
-        const check = bundle.checked ? null : appendLabValue(file, { metricName: value.name, value: value.value, unit: value.unit, recordedAt: own, now: ctx.now, latestDay });
+        // With its range: the write checks the whole row (US-21 AC15), so the preview does too.
+        const check = bundle.checked ? null : appendLabValue(file, {
+          metricName: value.name, value: value.value, unit: value.unit, referenceLow: value.referenceLow, referenceHigh: value.referenceHigh,
+          recordedAt: own, now: ctx.now, latestDay,
+        });
         if (check && !check.ok && check.reason !== 'slot-occupied') {
           unrecognized.push(`${oneLine(value.name).slice(0, MAX_NAME_LENGTH)}: ${oneLine(check.message)}`);
           continue;
@@ -1597,7 +1603,10 @@ export function fileResultsBundle(request: FileResultsSource, file: RoadmapFile,
       // candidate and the commit. It is what decides a conversion ("BUN" in
       // mg/dL converts, the bare molecule name does not), and the slot it
       // lands in is the same either way: `labSlotKey` folds both to `urea`.
-      const check = appendLabValue(file, { metricName: printedName, value: row.value, unit, recordedAt: day, now: ctx.now, latestDay: ctx.latestDay });
+      const check = appendLabValue(file, {
+        metricName: printedName, value: row.value, unit, referenceLow: row.referenceLow, referenceHigh: row.referenceHigh,
+        recordedAt: day, now: ctx.now, latestDay: ctx.latestDay,
+      });
       if (!check.ok && check.reason !== 'slot-occupied') {
         refuse(`${oneLine(check.message)}.`);
         continue;
@@ -1645,7 +1654,6 @@ export function importDocumentsCommit(
   const rows: BulkRow[] = [];
   /** Slot → the chosen id that took it: two files can offer one day, the record keeps one value (AC6). */
   const taken = new Map<string, string>();
-  let corrections = 0;
 
   for (const id of chosen) {
     const c = byId.get(id)!;
@@ -1674,7 +1682,6 @@ export function importDocumentsCommit(
       if (c.slot.replaceable === false) {
         return { status: 'rejected', text: `${oneLine(id)} (${oneLine(c.metric)} on ${c.recordedAt}) is too old to replace here. Nothing was written. The user can correct older values in the app.` };
       }
-      corrections++;
     }
     const correctsId = replace.has(id) ? c.slot.existingRowId : undefined;
     rows.push(c.kind === 'measurement'
@@ -1719,20 +1726,25 @@ export function importDocumentsCommit(
   // (US-21 phase 3). Said out loud, never dropped quietly: the user chose that
   // row, and a value that vanishes between the review and the record is the
   // failure this whole rule exists to prevent.
-  const refusedUnits = applied.refused.map((r) => `${oneLine(r.key)}: ${oneLine(r.message)}`);
+  const listed = (refused: typeof applied.refused) => refused.map((r) => `${oneLine(r.key)}: ${oneLine(r.message)}`).join('; ');
+  // A refusal for the number (US-21 AC15) is the person's to settle: no offer of another unit.
+  const unknownSpellings = applied.refused.filter((r) => !r.fault);
+  const refusedNumbers = applied.refused.filter((r) => r.fault);
   const next = docs.length ? stampUpdatedAt({ ...applied.file, documents: [...applied.file.documents, ...docs] }, now) : applied.file;
 
   const written = {
     measurements: applied.saved.filter((r) => 'metricType' in r && !r.correctsId).length,
     labValues: applied.saved.filter((r) => 'metricName' in r && !r.correctsId).length,
-    corrections,
+    // Counted from what the write saved: a replacement it refused replaced nothing (US-21 AC15).
+    corrections: applied.saved.filter((r) => r.correctsId).length,
     documents: docs.length,
   };
   const lines = [
     describe('Filed', applied.saved),
-    ...(refusedUnits.length ? [`Not filed — ${refusedUnits.join('; ')}. Tell the user, and offer to add these with the unit the catalogue takes.`] : []),
+    ...(unknownSpellings.length ? [`Not filed — ${listed(unknownSpellings)}. Tell the user, and offer to add these with the unit the catalogue takes.`] : []),
+    ...(refusedNumbers.length ? [`Not filed — ${listed(refusedNumbers)}.`] : []),
     ...docs.map((d) => `Filed document “${oneLine(d.title)}” (${d.type}${d.date ? `, ${d.date}` : ''}) from ${oneLine(d.sourceFileName ?? '')}`),
-    `${written.measurements + written.labValues} value(s) added, ${corrections} replaced, ${docs.length} document(s) filed. ` +
+    `${written.measurements + written.labValues} value(s) added, ${written.corrections} replaced, ${docs.length} document(s) filed. ` +
       'If another device wrote the same day at the same moment, the newer row wins and the other stays in history.',
   ].filter(Boolean);
   const changed = next !== file;
@@ -2237,10 +2249,10 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     _meta: invocation('Adding your lab results…', 'Added your lab results'),
     title: 'Add lab results',
     description:
-      'Append blood tests that are not core metrics (ferritin, TSH, ALT, …) — a whole lab panel in one call, ' +
-      `up to ${MAX_LAB_ROWS_PER_CALL} rows. Give the number and unit exactly as the lab printed; never convert. A ` +
-      'catalogued test is stored in SI (bounds too); a spelling it does not know is refused, naming the ones it takes. Either every row is written or none is. Only when the user ' +
-      'asked to add a value; a failed correction is never turned into an add.',
+      `Append blood tests that are not core metrics (ferritin, TSH, ALT, …), up to ${MAX_LAB_ROWS_PER_CALL} rows per call. ` +
+      'Give the number and unit exactly as printed; never convert. A catalogued test is stored in SI (bounds too); an ' +
+      'unknown spelling is refused, naming those it takes, as is a cells/µL count not whole or off its range\'s scale. ' +
+      'Writes all rows or none. Only when the user asked to add a value; a failed correction is never turned into an add.',
     inputSchema: {
       type: 'object',
       properties: {
