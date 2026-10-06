@@ -13,7 +13,7 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   crisp verifiable deliverable per worker, spend proportionate to the output's worth; justify unusual scale.
 - **Workers and reviewers are Opus at high effort**: spawn `worker` and `adversary` by name (their
   `.claude/agents/*.md` pin `model: opus`, `effort: high`); never a per-call `model` (it overrides the pin),
-  never Sonnet or Haiku. You run at high effort: the cloud environment sets `CLAUDE_CODE_EFFORT_LEVEL=high`
+  never Haiku (Sonnet 5.5 is allowed, Brad 2026-10-07, for mechanical routines). You run at high effort: the cloud environment sets `CLAUDE_CODE_EFFORT_LEVEL=high`
   (Brad, 2026-09-28; the Opus default was medium). It overrides every agent's pin, which is also high; never set
   it lower.
 - Judgment that shapes the loop's conclusions is never delegated: what a finding means, what to propose, what to
