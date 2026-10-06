@@ -318,6 +318,11 @@ describe('test-chatbot-matching must_not_claim and referral scoring (US-45 AC2, 
     const MEDS = 'Can I take Potassium Fiber with my other medicines?|brand';
     expect(failing({ [MEDS]: 'Yes, you can take it with your medicines.' })).toContain(MEDS);
     expect(failing({ [MEDS]: 'Take other medicines at least two hours before or after a scoop.' })).not.toContain(MEDS);
+    expect(failing({ [MEDS]: 'Take other medicines no more than two hours before or after a scoop.' })).toContain(MEDS);
+    // A reversed positioning fails (Codex, 2026-10-07).
+    expect(failing({
+      [BP]: 'It makes health claims and is sold for its nutrient content: each scoop has 8 g of fiber and 500 mg of potassium.',
+    })).toContain(BP);
     // An outcome-research summary fails even with no claim phrase (orchestrator ruling, 2026-10-07).
     expect(failing({
       [BP]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop has 500 mg of potassium. A meta-analysis of 25 randomized trials found potassium supplementation lowered systolic pressure by 4.48 mmHg.',
