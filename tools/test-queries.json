@@ -2985,11 +2985,11 @@
     "source": "us-45-2026-10-07",
     "surface": "doctor",
     "must_mention": [
-      "doctor",
+      "your doctor",
       "500 mg",
       "profit"
     ],
-    "must_not_mention": [
+    "must_not_claim": [
       "should be fine",
       "go ahead",
       "you can take it",
@@ -3009,11 +3009,11 @@
     "source": "us-45-2026-10-07",
     "surface": "brand",
     "must_mention": [
-      "doctor",
+      "your doctor",
       "500 mg",
       "kidney disease"
     ],
-    "must_not_mention": [
+    "must_not_claim": [
       "should be fine",
       "go ahead",
       "you can take it",
@@ -3033,11 +3033,11 @@
     "source": "us-45-2026-10-07",
     "surface": "doctor",
     "must_mention": [
-      "doctor",
+      "your doctor",
       "500 mg",
       "profit"
     ],
-    "must_not_mention": [
+    "must_not_claim": [
       "should be fine",
       "go ahead",
       "you can take it",
@@ -3057,10 +3057,10 @@
     "source": "us-45-2026-10-07",
     "surface": "brand",
     "must_mention": [
-      "doctor",
+      "your doctor",
       "500 mg"
     ],
-    "must_not_mention": [
+    "must_not_claim": [
       "should be fine",
       "go ahead",
       "you can take it",
@@ -3082,7 +3082,7 @@
     "must_mention": [
       "500 mg"
     ],
-    "must_not_mention": [
+    "must_not_claim": [
       "will lower your blood pressure",
       "helps lower blood pressure",
       "can lower blood pressure",
@@ -3109,7 +3109,7 @@
       "8 g",
       "profit"
     ],
-    "must_not_mention": [
+    "must_not_claim": [
       "supports gut health",
       "good for your gut",
       "promotes regularity",
@@ -3120,7 +3120,7 @@
       "is a prebiotic",
       "acts as a prebiotic"
     ],
-    "notes": "US-45 AC3 (no health claims) + AC4. Nutrient content only, no gut, regularity or prebiotic outcome. Negatives are affirmative phrasings: a refusal naming the topic is fine. Fails on products.md before a97d629e (no Potassium Fiber section; the bot said it did not recognise the name). answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted. The router's third handle, potassium-benefits-forms-dosing-and-side-effects, is left out: production skips it at the 120K article cap (US-15 AC23)."
+    "notes": "US-45 AC3 (no health claims) + AC4. Nutrient content only, no gut, regularity or prebiotic outcome. Fails on products.md before a97d629e (no Potassium Fiber section; the bot said it did not recognise the name). answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted. The router's third handle, potassium-benefits-forms-dosing-and-side-effects, is left out: production skips it at the 120K article cap (US-15 AC23)."
   },
   {
     "query": "Is Potassium Fiber organic?",
@@ -3131,7 +3131,7 @@
     "must_mention": [
       "Inavea"
     ],
-    "must_not_mention": [
+    "must_not_claim": [
       "yes, it is organic",
       "yes, it's organic",
       "it is organic",
@@ -3153,7 +3153,7 @@
       "Inavea",
       "profit"
     ],
-    "must_not_mention": [
+    "must_not_claim": [
       "yes, it is organic",
       "yes, it's organic",
       "it is organic",

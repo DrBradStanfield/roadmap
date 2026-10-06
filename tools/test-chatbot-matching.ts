@@ -33,6 +33,11 @@
  *                             --answer-check (the model-bump qualification) never goes red on
  *                             them before a live baseline exists. Each handle must load and the list
  *                             must fit the 120K cap, or the harness exits before any API call.
+ *   must_not_claim?: string[]  answer check only: a sentence holding one of these phrases fails, UNLESS
+ *                             the same sentence carries a negation (no, not, never, cannot, without,
+ *                             nor, n't). So "it makes no claim that it can lower blood pressure" passes
+ *                             and "it can lower blood pressure" fails. A heuristic: a negation elsewhere
+ *                             in the sentence also excuses it, so keep the phrases claim-shaped.
  *   surface?: 'doctor' | 'brand'  answer check only: adds app/lib/chat-posture-<surface>.md after the
  *                             products block, where production's buildSystemBlocks puts it. Omitted =
  *                             no posture block (the harness's behaviour before 2026-10-07).
@@ -342,6 +347,7 @@ interface TestQuery {
   must_not_route?: string[];   // handles no run may return (see the header)
   must_mention?: string[];     // answer must contain ALL of these (case-insensitive)
   must_not_mention?: string[]; // answer must contain NONE of these (case-insensitive)
+  must_not_claim?: string[];   // no un-negated sentence may hold these (see the header)
   max_length_chars?: number;   // answer must be at most this many characters
   answer_handles?: string[];   // fixed-handle answer check, no `expected` (see the header)
   surface?: 'doctor' | 'brand'; // answer check adds that surface's posture block (see the header)
@@ -417,7 +423,18 @@ interface QueryResult {
   passed: boolean;
 }
 
-async function checkAnswer(query: string, mustMention: string[], mustNotMention: string[], maxLengthChars: number | undefined, matchedHandles: string[] = [], surface?: string, retryOnRateLimit = true): Promise<AnswerCheckResult> {
+const NEGATION = /\b(no|not|never|cannot|without|nor)\b|n['’]t\b/;
+
+/** Phrases stated as fact: in a sentence that carries no negation. */
+function claimed(response: string, phrases: string[]): string[] {
+  const sentences = response.toLowerCase().split(/(?<=[.!?])\s+|\n+/);
+  return phrases.filter(p => sentences.some(s => s.includes(p.toLowerCase()) && !NEGATION.test(s)));
+}
+
+async function checkAnswer(q: TestQuery, matchedHandles: string[] = [], retryOnRateLimit = true): Promise<AnswerCheckResult> {
+  const { query, surface, max_length_chars: maxLengthChars } = q;
+  const mustMention = q.must_mention ?? [];
+  const mustNotMention = q.must_not_mention ?? [];
   const matchedContent = loadMatchedContent(matchedHandles).content;
   // Production order (buildSystemBlocks): products, then the surface posture, then articles.
   const base = surface ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n${POSTURES.get(surface)}` : ANSWER_SYSTEM_CONTEXT;
@@ -444,7 +461,7 @@ async function checkAnswer(query: string, mustMention: string[], mustNotMention:
     const retryAfter = parseInt(res.headers.get('retry-after') ?? '30', 10);
     process.stdout.write(` [429, waiting ${retryAfter}s]`);
     await new Promise(r => setTimeout(r, retryAfter * 1000));
-    return checkAnswer(query, mustMention, mustNotMention, maxLengthChars, matchedHandles, surface, false);
+    return checkAnswer(q, matchedHandles, false);
   }
 
   if (!res.ok) {
@@ -467,6 +484,7 @@ async function checkAnswer(query: string, mustMention: string[], mustNotMention:
   for (const term of mustMention) {
     if (!lower.includes(term.toLowerCase())) failures.push(`missing: "${term}"`);
   }
+  for (const term of claimed(response, q.must_not_claim ?? [])) failures.push(`claimed: "${term}"`);
   for (const term of mustNotMention) {
     if (lower.includes(term.toLowerCase())) failures.push(`found forbidden: "${term}"`);
   }
@@ -499,10 +517,10 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
   if (forbidden.length > 0) routingPassed = false;
 
   let answerCheck: AnswerCheckResult | null = null;
-  if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || typeof q.max_length_chars === 'number')) {
+  if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || q.must_not_claim?.length || typeof q.max_length_chars === 'number')) {
     const answerRuns: AnswerCheckResult[] = [];
     for (let i = 0; i < answerCheckRuns; i++) {
-      answerRuns.push(await checkAnswer(q.query, q.must_mention ?? [], q.must_not_mention ?? [], q.max_length_chars, intersection, q.surface));
+      answerRuns.push(await checkAnswer(q, intersection));
     }
     const passCount = answerRuns.filter(r => r.passed).length;
     const majority = Math.floor(answerCheckRuns / 2) + 1;

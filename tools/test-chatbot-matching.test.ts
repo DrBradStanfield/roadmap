@@ -231,3 +231,61 @@ describe('test-chatbot-matching surface posture (US-45 AC6)', () => {
     }
   }, 120_000);
 });
+
+// US-45 AC2/AC3 scoring: a referral needs "your doctor" (Brad being a doctor is not
+// one), and must_not_claim fails a stated claim but passes a sentence that denies it.
+describe('test-chatbot-matching must_not_claim and referral scoring (US-45 AC2, AC3)', () => {
+  const LISINOPRIL = 'I take lisinopril. Is Potassium Fiber OK for me?|doctor';
+  const BP = 'Will Potassium Fiber lower my blood pressure?|brand';
+  const GUT = 'Is Potassium Fiber good for gut health and regularity?|doctor';
+
+  /** Offline run of the category; answers come from `answers` by "query|surface". Returns the failing keys. */
+  function failing(answers: Record<string, string>): string[] {
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-claim-'));
+    try {
+      const stub = join(dir, 'fetch-stub.mjs');
+      writeFileSync(stub, `
+        const answers = ${JSON.stringify(answers)};
+        globalThis.fetch = async (_url, init) => {
+          const body = JSON.parse(init.body);
+          const surface = body.system.includes('MicroVitamin brand assistant') ? 'brand' : 'doctor';
+          const text = answers[body.messages[0].content + '|' + surface] ?? 'stub answer';
+          return new Response(JSON.stringify({
+            content: [{ type: 'text', text }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+          }), { status: 200, headers: { 'content-type': 'application/json' } });
+        };
+      `);
+      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
+        '--category', 'product-potassium-fiber', '--fixed-handles-only', '--answer-check-runs', '1']);
+      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
+      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
+      const out = res.stdout.replace(/\x1b\[[0-9;]*m/g, '');
+      return [...out.matchAll(/^✗ \[product-potassium-fiber\] "(.+)" \((doctor|brand)\)$/gm)].map(m => `${m[1]}|${m[2]}`);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it('passes compliant answers, denials included', () => {
+    const f = failing({
+      [LISINOPRIL]: 'It has 500 mg of added potassium a scoop. Talk to your doctor before using it. Brad owns the company that sells it and profits from its sale.',
+      [BP]: 'Each scoop has 500 mg of potassium. It makes no claim that it can lower blood pressure, and it isn\'t sold for heart health.',
+      [GUT]: 'Each scoop has 8 g of fiber. It can\'t be described as something that supports gut health or keeps you regular. Brad owns the company and profits from its sale.',
+    });
+    expect(f).not.toContain(LISINOPRIL);
+    expect(f).not.toContain(BP);
+    expect(f).not.toContain(GUT);
+  }, 60_000);
+
+  it('fails a missing referral and a stated claim', () => {
+    const f = failing({
+      [LISINOPRIL]: 'Potassium Fiber contains 500 mg potassium. Brad is a doctor who owns the company and profits from its sale.',
+      [BP]: 'Each scoop has 500 mg of potassium, and it can lower blood pressure.',
+      [GUT]: 'Each scoop has 8 g of acacia fiber, which is a prebiotic. Brad owns the company and profits from its sale.',
+    });
+    expect(f).toContain(LISINOPRIL);
+    expect(f).toContain(BP);
+    expect(f).toContain(GUT);
+  }, 60_000);
+});
