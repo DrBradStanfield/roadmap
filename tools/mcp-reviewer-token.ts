@@ -202,7 +202,9 @@ function prompt(question: string, { hidden = false } = {}): Promise<string> {
   return new Promise((resolve) => {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
     if (hidden) {
-      process.stdout.write(question);
+      // On its own line: readline clears the cursor's line when it draws its
+      // (empty) prompt, which erased a question written on that line.
+      process.stdout.write(`${question}\n`);
       // Mute the echo: a hidden prompt must not print what is typed.
       (rl as unknown as { _writeToOutput: () => void })._writeToOutput = () => {};
     }
