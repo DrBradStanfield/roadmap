@@ -33,6 +33,9 @@
  *                             --answer-check (the model-bump qualification) never goes red on
  *                             them before a live baseline exists. Each handle must load and the list
  *                             must fit the 120K cap, or the harness exits before any API call.
+ *   surface?: 'doctor' | 'brand'  answer check only: adds app/lib/chat-posture-<surface>.md after the
+ *                             products block, where production's buildSystemBlocks puts it. Omitted =
+ *                             no posture block (the harness's behaviour before 2026-10-07).
  *
  * A fetch that throws (timeout, DNS, reset) counts as an API error, like a non-2xx:
  * visible, scored as ∅, and the run continues but never exits green.
@@ -341,6 +344,7 @@ interface TestQuery {
   must_not_mention?: string[]; // answer must contain NONE of these (case-insensitive)
   max_length_chars?: number;   // answer must be at most this many characters
   answer_handles?: string[];   // fixed-handle answer check, no `expected` (see the header)
+  surface?: 'doctor' | 'brand'; // answer check adds that surface's posture block (see the header)
 }
 
 const ALL_QUERIES: TestQuery[] = JSON.parse(
@@ -367,6 +371,17 @@ const unknownForbidden = filtered.flatMap(q => (q.must_not_route ?? []).filter(h
 if (unknownForbidden.length > 0) {
   console.error(`must_not_route names handles not in the index: ${unknownForbidden.join(', ')}`);
   process.exit(1);
+}
+// A surface the harness cannot load would score an answer with no posture at all.
+const POSTURES = new Map<string, string>();
+for (const q of ALL_QUERIES) {
+  if (q.surface === undefined || POSTURES.has(q.surface)) continue;
+  const file = path.join(REPO_ROOT, 'app/lib', `chat-posture-${q.surface}.md`);
+  if (!['doctor', 'brand'].includes(q.surface) || !fs.existsSync(file)) {
+    console.error(`unknown surface "${q.surface}" on: ${q.query}`);
+    process.exit(1);
+  }
+  POSTURES.set(q.surface, fs.readFileSync(file, 'utf-8'));
 }
 // --category takes a comma list, so several categories share one run and one cache warmup.
 const categories = categoryFilter?.split(',');
@@ -402,11 +417,13 @@ interface QueryResult {
   passed: boolean;
 }
 
-async function checkAnswer(query: string, mustMention: string[], mustNotMention: string[], maxLengthChars: number | undefined, matchedHandles: string[] = [], retryOnRateLimit = true): Promise<AnswerCheckResult> {
+async function checkAnswer(query: string, mustMention: string[], mustNotMention: string[], maxLengthChars: number | undefined, matchedHandles: string[] = [], surface?: string, retryOnRateLimit = true): Promise<AnswerCheckResult> {
   const matchedContent = loadMatchedContent(matchedHandles).content;
+  // Production order (buildSystemBlocks): products, then the surface posture, then articles.
+  const base = surface ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n${POSTURES.get(surface)}` : ANSWER_SYSTEM_CONTEXT;
   const system = matchedContent
-    ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
-    : ANSWER_SYSTEM_CONTEXT;
+    ? `${base}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
+    : base;
   const body = {
     ...modelParams(ANSWER_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system,
@@ -427,7 +444,7 @@ async function checkAnswer(query: string, mustMention: string[], mustNotMention:
     const retryAfter = parseInt(res.headers.get('retry-after') ?? '30', 10);
     process.stdout.write(` [429, waiting ${retryAfter}s]`);
     await new Promise(r => setTimeout(r, retryAfter * 1000));
-    return checkAnswer(query, mustMention, mustNotMention, maxLengthChars, matchedHandles, false);
+    return checkAnswer(query, mustMention, mustNotMention, maxLengthChars, matchedHandles, surface, false);
   }
 
   if (!res.ok) {
@@ -485,7 +502,7 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
   if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || typeof q.max_length_chars === 'number')) {
     const answerRuns: AnswerCheckResult[] = [];
     for (let i = 0; i < answerCheckRuns; i++) {
-      answerRuns.push(await checkAnswer(q.query, q.must_mention ?? [], q.must_not_mention ?? [], q.max_length_chars, intersection));
+      answerRuns.push(await checkAnswer(q.query, q.must_mention ?? [], q.must_not_mention ?? [], q.max_length_chars, intersection, q.surface));
     }
     const passCount = answerRuns.filter(r => r.passed).length;
     const majority = Math.floor(answerCheckRuns / 2) + 1;
@@ -609,7 +626,7 @@ const failedAll = [...failed, ...fixedResults.filter(r => !r.passed)];
 if (failedAll.length > 0) {
   console.log(`\n${BOLD}${RED}--- Failing queries ---${RESET}`);
   for (const r of failedAll) {
-    console.log(`\n${RED}✗${RESET} ${BOLD}[${r.query.category}]${RESET} "${r.query.query}"`);
+    console.log(`\n${RED}✗${RESET} ${BOLD}[${r.query.category}]${RESET} "${r.query.query}"${r.query.surface ? ` (${r.query.surface})` : ''}`);
     for (const h of r.forbidden) console.log(`    ${RED}✗ routed forbidden handle ${h}${RESET}`);
     if (!r.routingPassed) {
       if (r.query.expected.length > 0) {
@@ -644,7 +661,7 @@ if (verbose) {
   console.log(`\n${BOLD}${GREEN}--- Passing queries ---${RESET}`);
   for (const r of [...passed, ...fixedResults.filter(r => r.passed)]) {
     const top = r.intersection[0] ?? r.allRuns[0]?.[0] ?? '(router-empty)';
-    console.log(`${GREEN}✓${RESET} [${r.query.category}] "${r.query.query}" → ${top}`);
+    console.log(`${GREEN}✓${RESET} [${r.query.category}] "${r.query.query}"${r.query.surface ? ` (${r.query.surface})` : ''} → ${top}`);
   }
 }
 

@@ -175,3 +175,59 @@ describe('test-chatbot-matching --category comma list (US-15 AC13)', () => {
     expect(queriesLine(a)).toBe(expectLine(routed(a), fixed(a)));
   }, 120_000);
 });
+
+// US-45 AC6: a fixture's `surface` adds that surface's posture block to the answer
+// call, after the products block and before any articles, as buildSystemBlocks does.
+describe('test-chatbot-matching surface posture (US-45 AC6)', () => {
+  interface Entry { query: string; category: string; surface?: string; answer_handles?: string[]; expected?: string[] }
+  const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
+  const cases = all.filter(q => q.category === 'product-potassium-fiber');
+  const DOCTOR = '## SURFACE CONTEXT — Dr Brad education assistant';
+  const BRAND = '## SURFACE CONTEXT — MicroVitamin brand assistant';
+
+  it('each answer call carries exactly its own surface posture, before the articles', () => {
+    expect(cases.length).toBeGreaterThan(0);
+    expect(cases.every(q => q.surface === 'doctor' || q.surface === 'brand')).toBe(true);
+    expect(new Set(cases.map(q => q.surface))).toEqual(new Set(['doctor', 'brand']));
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-surface-'));
+    try {
+      const stub = join(dir, 'fetch-stub.mjs');
+      const log = join(dir, 'calls.jsonl');
+      writeFileSync(stub, `
+        import { appendFileSync } from 'node:fs';
+        globalThis.fetch = async (_url, init) => {
+          const body = JSON.parse(init.body);
+          if (Array.isArray(body.system)) throw new Error('router called');
+          const s = body.system;
+          const at = (t) => s.indexOf(t);
+          appendFileSync(${JSON.stringify(log)}, JSON.stringify({
+            query: body.messages[0].content,
+            doctor: at(${JSON.stringify(DOCTOR)}), brand: at(${JSON.stringify(BRAND)}),
+            products: at("## Dr Stanfield's Products"), articles: at('## Referenced Blog Articles'),
+          }) + '\\n');
+          return new Response(JSON.stringify({
+            content: [{ type: 'text', text: 'stub answer' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+          }), { status: 200, headers: { 'content-type': 'application/json' } });
+        };
+      `);
+      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
+        '--category', 'product-potassium-fiber', '--fixed-handles-only', '--answer-check-runs', '1']);
+      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
+      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
+      const calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l) as
+        { query: string; doctor: number; brand: number; products: number; articles: number });
+      expect(calls.length, res.stderr).toBe(cases.length);
+      const seen = calls.map(c => {
+        expect((c.doctor >= 0) !== (c.brand >= 0)).toBe(true); // one posture, never both or none
+        const at = Math.max(c.doctor, c.brand);
+        expect(at).toBeGreaterThan(c.products);
+        if (c.articles >= 0) expect(at).toBeLessThan(c.articles);
+        return `${c.query}|${c.doctor >= 0 ? 'doctor' : 'brand'}`;
+      }).sort();
+      expect(seen).toEqual(cases.map(q => `${q.query}|${q.surface}`).sort());
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 120_000);
+});
