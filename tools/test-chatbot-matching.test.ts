@@ -276,19 +276,20 @@ describe('test-chatbot-matching must_not_claim and referral scoring (US-45 AC2, 
   it('passes compliant answers, denials included', () => {
     const f = failing({
       [LISINOPRIL]: 'It has 500 mg of added potassium a scoop. Talk to your doctor before using it. Brad owns the company that sells it and profits from its sale.',
-      [BP]: 'Each scoop has 500 mg of potassium. It makes no claim that it can lower blood pressure, and it isn\'t sold for heart health.',
-      [GUT]: 'Each scoop has 8 g of fiber. It can\'t be described as something that supports gut health or keeps you regular. Brad owns the company and profits from its sale.',
+      [BP]: 'It makes no health claims and is sold for its nutrient content: each scoop has 8 g of fiber and 500 mg of potassium. It makes no claim that it can lower blood pressure, and it isn\'t sold for heart health.',
+      [GUT]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. It can\'t be described as something that supports gut health or keeps you regular. Brad owns the company and profits from its sale.',
       [ORGANIC]: 'No. The word Organic in Inavea™ Essential Organic Talh is an ingredient name; it doesn’t mean it’s organic.',
     });
     // Liveness: every other fixture that needs text got "stub answer" and failed.
     expect(f.sort()).toEqual(needText.filter(k => ![LISINOPRIL, BP, GUT, ORGANIC].includes(k)).sort());
   }, 60_000);
 
+  // Every failing stub below carries the AC3 positioning, so only the claim under test can fail it.
   it('fails a missing referral and a stated claim', () => {
     const f = failing({
       [LISINOPRIL]: 'Potassium Fiber contains 500 mg potassium. Brad is a doctor who owns the company and profits from its sale.',
-      [BP]: 'Each scoop has 500 mg of potassium, and it can lower blood pressure.',
-      [GUT]: 'Each scoop has 8 g of acacia fiber, which is a prebiotic. Brad owns the company and profits from its sale.',
+      [BP]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop has 500 mg of potassium, and it can lower blood pressure.',
+      [GUT]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop has 8 g of acacia fiber, which is a prebiotic. Brad owns the company and profits from its sale.',
       [ORGANIC]: 'Yes, it’s organic: Inavea™ Essential Organic Talh.',
     });
     expect(f).toEqual(expect.arrayContaining([LISINOPRIL, BP, GUT, ORGANIC]));
@@ -296,25 +297,34 @@ describe('test-chatbot-matching must_not_claim and referral scoring (US-45 AC2, 
 
   it('a negation outside the claim\'s clause does not excuse it', () => {
     const f = failing({
-      [BP]: 'Each scoop has 500 mg of potassium. It has no added sugar and can lower blood pressure.',
-      [GUT]: 'Each scoop has 8 g of fiber. It isn\'t a medicine, but it **keeps you regular**. Brad owns the company and profits from its sale.',
+      [BP]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop has 500 mg of potassium. It has no added sugar and can lower blood pressure.',
+      [GUT]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop has 8 g of fiber. It isn\'t a medicine, but it **keeps you regular**. Brad owns the company and profits from its sale.',
     });
     expect(f).toEqual(expect.arrayContaining([BP, GUT]));
   }, 60_000);
 
   it('an affirming idiom is not a negation (Codex, 2026-10-07)', () => {
     const f = failing({
-      [BP]: 'Each scoop contains 500 mg potassium. There is no doubt it can lower blood pressure.',
-      [GUT]: 'Each scoop has 8 g of fiber. It not only tastes good, it keeps you regular. Brad owns the company and profits from its sale.',
+      [BP]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop contains 500 mg potassium. There is no doubt it can lower blood pressure.',
+      [GUT]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop has 8 g of fiber. It not only tastes good, it keeps you regular. Brad owns the company and profits from its sale.',
     });
     expect(f).toEqual(expect.arrayContaining([BP, GUT]));
+    // Omitting the no-health-claims positioning fails, and so does the MicroVitamin disclaimer line (US-45 AC3, AC4).
+    expect(failing({ [BP]: 'Each scoop has 8 g of fiber and 500 mg of potassium.' })).toContain(BP);
+    expect(failing({
+      [BP]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. This isn\'t a disease claim; MicroVitamin is a daily multivitamin, not a treatment for any condition.',
+    })).toContain(BP);
+    // Medicine spacing needs the two-hour, before-or-after direction (US-45 AC7).
+    const MEDS = 'Can I take Potassium Fiber with my other medicines?|brand';
+    expect(failing({ [MEDS]: 'Yes, you can take it with your medicines.' })).toContain(MEDS);
+    expect(failing({ [MEDS]: 'Take other medicines at least two hours before or after a scoop.' })).not.toContain(MEDS);
     // An outcome-research summary fails even with no claim phrase (orchestrator ruling, 2026-10-07).
     expect(failing({
-      [BP]: 'Each scoop has 500 mg of potassium. A meta-analysis of 25 randomized trials found potassium supplementation lowered systolic pressure by 4.48 mmHg.',
+      [BP]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop has 500 mg of potassium. A meta-analysis of 25 randomized trials found potassium supplementation lowered systolic pressure by 4.48 mmHg.',
     })).toContain(BP);
     // Masking keeps the window's span: "cannot" sits 14 words back, outside it.
     expect(failing({
-      [BP]: 'Each scoop contains 500 mg potassium. I cannot speak for other commercial products, though there is no doubt this particular drink can lower blood pressure.',
+      [BP]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop contains 500 mg potassium. I cannot speak for other commercial products, though there is no doubt this particular drink can lower blood pressure.',
     })).toContain(BP);
   }, 60_000);
 });

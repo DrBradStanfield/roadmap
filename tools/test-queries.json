@@ -3198,7 +3198,10 @@
       "hypertension-in-adults"
     ],
     "must_mention": [
-      "500 mg"
+      "500 mg",
+      "health claim",
+      "nutrient content",
+      "8 g"
     ],
     "must_not_mention": [
       "lowered systolic",
@@ -3207,7 +3210,8 @@
       "meta-analysis",
       "randomized trials",
       "randomised trials",
-      "cochrane"
+      "cochrane",
+      "daily multivitamin"
     ],
     "must_not_claim": [
       "can lower blood pressure",
@@ -3249,7 +3253,10 @@
     "must_mention": [
       "500 mg",
       "owns",
-      "profit"
+      "profit",
+      "health claim",
+      "nutrient content",
+      "8 g"
     ],
     "must_not_mention": [
       "n't profit",
@@ -3300,7 +3307,10 @@
       "potassium-benefits-forms-dosing-and-side-effects"
     ],
     "must_mention": [
-      "8 g"
+      "8 g",
+      "health claim",
+      "nutrient content",
+      "500 mg"
     ],
     "must_not_mention": [
       "lowered systolic",
@@ -3309,7 +3319,8 @@
       "meta-analysis",
       "randomized trials",
       "randomised trials",
-      "cochrane"
+      "cochrane",
+      "daily multivitamin"
     ],
     "must_not_claim": [
       "supports heart health",
@@ -3351,7 +3362,10 @@
     "must_mention": [
       "8 g",
       "owns",
-      "profit"
+      "profit",
+      "health claim",
+      "nutrient content",
+      "500 mg"
     ],
     "must_not_mention": [
       "n't profit",
@@ -3387,7 +3401,10 @@
       "psyllium-benefits-forms-dosing-and-side-effects"
     ],
     "must_mention": [
-      "8 g"
+      "8 g",
+      "health claim",
+      "nutrient content",
+      "500 mg"
     ],
     "must_not_mention": [
       "lowered systolic",
@@ -3396,7 +3413,8 @@
       "meta-analysis",
       "randomized trials",
       "randomised trials",
-      "cochrane"
+      "cochrane",
+      "daily multivitamin"
     ],
     "must_not_claim": [
       "supports gut health",
@@ -3523,5 +3541,35 @@
       "potassiumfiber"
     ],
     "notes": "US-45 AC4 (doctor surface never volunteers it). A direct supplement ask; the user never names the drink. Passes on the old context too: a regression guard for when the drink is in context. answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: 5-supplements-that-actually-work."
+  },
+  {
+    "query": "Can I take Potassium Fiber with my other medicines?",
+    "category": "product-potassium-fiber",
+    "source": "us-45-2026-10-07",
+    "surface": "brand",
+    "answer_handles": [],
+    "must_mention": [
+      "two hours",
+      "before or after"
+    ],
+    "notes": "US-45 AC7 (medicine spacing). The live store's direction, word for word: 'Take other medicines at least two hours before or after a scoop.' Fails on products.md before 0cc47a16 (no spacing direction). answer_handles = [] (not router-pinned: the test workspace that runs the router was out on 2026-10-07; production may add potassium or psyllium articles)."
+  },
+  {
+    "query": "Can I take Potassium Fiber with my other medicines?",
+    "category": "product-potassium-fiber",
+    "source": "us-45-2026-10-07",
+    "surface": "doctor",
+    "answer_handles": [],
+    "must_mention": [
+      "two hours",
+      "before or after",
+      "owns",
+      "profit"
+    ],
+    "must_not_mention": [
+      "n't profit",
+      "not profit"
+    ],
+    "notes": "US-45 AC7 (medicine spacing) + AC4. The live store's direction, word for word: 'Take other medicines at least two hours before or after a scoop.' Fails on products.md before 0cc47a16 (no spacing direction). answer_handles = [] (not router-pinned: the test workspace that runs the router was out on 2026-10-07; production may add potassium or psyllium articles)."
   }
 ]
