@@ -244,6 +244,25 @@ Sleep by Dr Brad has a 4.8-star average from 47 reviews. Customers report fallin
 
 ---
 
+## Potassium Fiber Drink
+
+A lemon-lime drink powder, sold as a dietary supplement. **$70 a pouch of 60 scoops** ($1.17 a scoop). **Pre-sale:** a first run of 1,500 pouches, dispatched from 1 December 2026; customers are charged when they check out. Sold at https://potassiumfiber.com/products/drink (its own store) and on microvitamin.com. Made in the USA by Makers Nutrition.
+
+**Supplement Facts (Makers Nutrition panel, authorised by Brad 2026-10-06; quote these values exactly).** Serving size approx. 1 scoop (15 g); 60 servings per container. Per serving: calories 45; total carbohydrate 11 g (4% Daily Value); dietary fiber 8 g (29% DV); calcium 50 mg (4% DV); potassium (as potassium citrate) 500 mg (11% DV); Inavea™ Essential Organic Talh (*Acacia seyal*) gum powder 10 g (DV not established). Other ingredients: allulose, malic acid, luo han guo (monk fruit) fruit extract (sweetener), natural flavors, bamboo stem/shoot extract. Daily Values are the US Food and Drug Administration's (fiber 28 g on a 2,000-calorie diet; potassium 4,700 mg).
+
+- **The fiber is acacia gum** (gum arabic): 10 g of acacia gum gives 8 g of fiber. It dissolves into water without thickening or turning to gel, unlike psyllium.
+- **Potassium citrate**, 500 mg a scoop. That is more than the 99 mg typical of potassium pills because it is a powder dissolved in at least 300 mL of liquid, not a tablet.
+- **Directions:** start with half a scoop once a day for the first 1–2 weeks, then one full scoop, stirred into at least 300 mL (10 fl oz) of water, a smoothie or yogurt. Up to two scoops a day, several hours apart; no more than two unless a doctor advises otherwise.
+- **Warning:** 500 mg of added potassium per scoop (1,000 mg at two). Talk to a doctor first if you have kidney disease, have been told to limit potassium, or take an ACE inhibitor (angiotensin converting enzyme inhibitor), an angiotensin receptor blocker, a potassium-sparing diuretic or any other potassium supplement. Not for children; if pregnant or breastfeeding, ask a doctor first.
+
+**Editor notes for this section (instructions, not answer text).**
+- No health claims for this product, ever: no blood pressure, heart, cholesterol, gut, bowel-regularity, prebiotic or blood-sugar benefit tied to the drink or its doses. Nutrient-content statements are fine ("high in fiber": 29% DV; "a good source of potassium": 11% DV). Rules: `claude_business/docs/potassiumfiber-article-brief.md` § "Claims that must never appear".
+- The old pre-panel figures (10 g fiber, 36% DV, 12.9 g scoop, 20 calories) are wrong; never quote them.
+- Brad owns the company that sells it and profits from its sale; say so whenever the drink is suggested to someone.
+- Don't suggest it as a supplement for a condition, and don't suggest it to anyone the warning above covers.
+
+---
+
 ## Omega-3
 
 Dr Stanfield does not currently sell an Omega-3 product. The brand he takes himself and recommends is **WHC UnoCardio 1000 Fish Oil**, available on Amazon: https://amzn.to/3DslHpb
