@@ -82,12 +82,42 @@
   ],
   "resolutions": {
     "minimatch": "9.0.9",
-    "vite": "^6.2.2"
+    "vite": "^6.2.2",
+    "compression": "1.8.2",
+    "proxy-addr": "2.0.8",
+    "brace-expansion": "2.1.7",
+    "source-map-js": "1.2.2",
+    "express": "4.22.3",
+    "body-parser": "1.20.8",
+    "morgan": "1.12.1",
+    "fast-uri": "3.1.8",
+    "js-yaml": "4.3.2"
   },
   "overrides": {
     "minimatch": "9.0.9",
     "tar": "^7.5.11",
-    "vite": "^6.2.2"
+    "vite": "^6.2.2",
+    "compression": "1.8.2",
+    "proxy-addr": "2.0.8",
+    "brace-expansion": "2.1.7",
+    "source-map-js": "1.2.2",
+    "express": "4.22.3",
+    "body-parser": "1.20.8",
+    "morgan": "1.12.1",
+    "fast-uri": "3.1.8",
+    "js-yaml": "4.3.2",
+    "discord.js": {
+      "undici": "6.28.1"
+    },
+    "@discordjs/rest": {
+      "undici": "6.28.1"
+    },
+    "@sentry/cli": {
+      "undici": "6.28.1"
+    },
+    "jsdom": {
+      "undici": "7.29.1"
+    }
   },
   "author": "bradstanfield"
 }
