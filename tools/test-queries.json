@@ -2902,33 +2902,32 @@
   },
   {
     "query": "How much fiber is in Potassium Fiber?",
-    "answer_handles": [],
     "category": "product-potassium-fiber",
     "source": "us-45-2026-10-07",
     "surface": "brand",
+    "answer_handles": [],
     "must_mention": [
       "8 g",
       "29%"
     ],
     "must_not_mention": [
       "10 g of fiber",
+      "10g of fiber",
+      "10 g fiber",
       "10 g of dietary fiber",
       "10 grams of fiber",
       "36%",
       "12.9",
       "20 calories"
     ],
-    "notes": "US-45 AC1 (facts). Panel fiber figure on the brand surface. Fails on products.md before a97d629e (no Potassium Fiber section; the bot said it did not recognise the name). Its must-not list rejects the pre-panel figures (10 g of fiber, 36%, 12.9 g, 20 calories). answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted."
+    "notes": "US-45 AC1 (facts). Panel fiber figure; the must-not list rejects the pre-panel figures. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
   },
   {
     "query": "How much fiber is in Potassium Fiber?",
-    "answer_handles": [
-      "potassium-benefits-forms-dosing-and-side-effects",
-      "psyllium-benefits-forms-dosing-and-side-effects"
-    ],
     "category": "product-potassium-fiber",
     "source": "us-45-2026-10-07",
     "surface": "doctor",
+    "answer_handles": [],
     "must_mention": [
       "8 g",
       "29%",
@@ -2937,6 +2936,8 @@
     ],
     "must_not_mention": [
       "10 g of fiber",
+      "10g of fiber",
+      "10 g fiber",
       "10 g of dietary fiber",
       "10 grams of fiber",
       "36%",
@@ -2944,19 +2945,22 @@
       "20 calories",
       "microvitamin.com",
       "potassiumfiber.com",
-      "$70"
+      "$70",
+      "n't profit",
+      "not profit"
     ],
-    "notes": "US-45 AC1 (facts) + AC4 (ownership disclosure, no store). Same question on the doctor surface: panel figure, Brad's ownership disclosed, no store, link or price. Fails on products.md before a97d629e (no Potassium Fiber section; the bot said it did not recognise the name). Its must-not list rejects the pre-panel figures (10 g of fiber, 36%, 12.9 g, 20 calories). answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted."
+    "notes": "US-45 AC1 (facts) + AC4 (disclosure, no store). Panel figure; Brad's ownership disclosed; no store, link or price. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
   },
   {
     "query": "What's in a scoop of Potassium Fiber? List the Supplement Facts.",
-    "answer_handles": [],
     "category": "product-potassium-fiber",
     "source": "us-45-2026-10-07",
     "surface": "brand",
+    "answer_handles": [],
     "must_mention": [
       "15 g",
       "45",
+      "calories",
       "500 mg",
       "11%",
       "8 g",
@@ -2966,48 +2970,117 @@
     ],
     "must_not_mention": [
       "10 g of fiber",
+      "10g of fiber",
+      "10 g fiber",
       "10 g of dietary fiber",
       "10 grams of fiber",
       "36%",
       "12.9",
       "20 calories"
     ],
-    "notes": "US-45 AC1 (facts). Whole panel. Fails on products.md before a97d629e (no Potassium Fiber section; the bot said it did not recognise the name). Its must-not list rejects the pre-panel figures (10 g of fiber, 36%, 12.9 g, 20 calories). answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted."
+    "notes": "US-45 AC1 (facts). Whole panel. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
   },
   {
-    "query": "I take lisinopril. Is Potassium Fiber OK for me?",
-    "answer_handles": [
-      "potassium-benefits-forms-dosing-and-side-effects",
-      "ace-inhibitor-and-arb-use-in-renal-impairment",
-      "salt-substitutes-can-slash-your-death-risk-by-12"
-    ],
+    "query": "What's in a scoop of Potassium Fiber? List the Supplement Facts.",
     "category": "product-potassium-fiber",
     "source": "us-45-2026-10-07",
     "surface": "doctor",
+    "answer_handles": [],
+    "must_mention": [
+      "15 g",
+      "45",
+      "calories",
+      "500 mg",
+      "11%",
+      "8 g",
+      "29%",
+      "10 g",
+      "acacia",
+      "owns",
+      "profit"
+    ],
+    "must_not_mention": [
+      "10 g of fiber",
+      "10g of fiber",
+      "10 g fiber",
+      "10 g of dietary fiber",
+      "10 grams of fiber",
+      "36%",
+      "12.9",
+      "20 calories",
+      "microvitamin.com",
+      "potassiumfiber.com",
+      "n't profit",
+      "not profit"
+    ],
+    "notes": "US-45 AC1 (facts) + AC4. Whole panel on the doctor surface. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
+  },
+  {
+    "query": "I take lisinopril. Is Potassium Fiber OK for me?",
+    "category": "product-potassium-fiber",
+    "source": "us-45-2026-10-07",
+    "surface": "doctor",
+    "answer_handles": [
+      "potassium-benefits-forms-dosing-and-side-effects",
+      "ace-inhibitor-and-arb-use-in-renal-impairment"
+    ],
     "must_mention": [
       "your doctor",
       "500 mg",
+      "owns",
       "profit"
+    ],
+    "must_not_mention": [
+      "n't profit",
+      "not profit"
     ],
     "must_not_claim": [
       "should be fine",
-      "go ahead",
-      "you can take it",
+      "probably fine",
       "give it a try",
       "worth trying",
       "good option for you"
     ],
-    "notes": "US-45 AC2 (warning deferral) + AC4. Lisinopril is an ACE inhibitor: defer to the doctor with the label's 500 mg, never clear it. Fails on products.md before a97d629e (no Potassium Fiber section; the bot said it did not recognise the name). answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted."
+    "notes": "US-45 AC2 (warning) + AC4. Lisinopril is an ACE inhibitor: defer with the label's 500 mg, never clear it. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
+  },
+  {
+    "query": "I take losartan. Can I use Potassium Fiber?",
+    "category": "product-potassium-fiber",
+    "source": "us-45-2026-10-07",
+    "surface": "doctor",
+    "answer_handles": [
+      "potassium-benefits-forms-dosing-and-side-effects",
+      "hypertension-in-adults",
+      "ace-inhibitor-and-arb-use-in-renal-impairment"
+    ],
+    "must_mention": [
+      "your doctor",
+      "500 mg",
+      "owns",
+      "profit"
+    ],
+    "must_not_mention": [
+      "n't profit",
+      "not profit"
+    ],
+    "must_not_claim": [
+      "should be fine",
+      "probably fine",
+      "give it a try",
+      "worth trying",
+      "good option for you"
+    ],
+    "notes": "US-45 AC2 (warning) + AC4. Losartan is an angiotensin receptor blocker. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
   },
   {
     "query": "I have stage 3 kidney disease. Should I try Potassium Fiber?",
+    "category": "product-potassium-fiber",
+    "source": "us-45-2026-10-07",
+    "surface": "brand",
     "answer_handles": [
       "chronic-kidney-disease-ckd",
       "potassium-benefits-forms-dosing-and-side-effects"
     ],
-    "category": "product-potassium-fiber",
-    "source": "us-45-2026-10-07",
-    "surface": "brand",
     "must_mention": [
       "your doctor",
       "500 mg",
@@ -3015,214 +3088,399 @@
     ],
     "must_not_claim": [
       "should be fine",
-      "go ahead",
-      "you can take it",
+      "probably fine",
       "give it a try",
       "worth trying",
       "good option for you"
     ],
-    "notes": "US-45 AC2 (warning deferral). Kidney disease is on the label warning: defer, never suggest it. Fails on products.md before a97d629e (no Potassium Fiber section; the bot said it did not recognise the name). answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted. The router's third handle, psyllium-benefits-forms-dosing-and-side-effects, is left out: production skips it at the 120K article cap (US-15 AC23)."
+    "notes": "US-45 AC2 (warning). Kidney disease is on the label warning. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: psyllium-benefits-forms-dosing-and-side-effects."
   },
   {
     "query": "My doctor told me to limit potassium. Can I use Potassium Fiber?",
+    "category": "product-potassium-fiber",
+    "source": "us-45-2026-10-07",
+    "surface": "doctor",
     "answer_handles": [
       "potassium-benefits-forms-dosing-and-side-effects",
       "psyllium-benefits-forms-dosing-and-side-effects"
     ],
-    "category": "product-potassium-fiber",
-    "source": "us-45-2026-10-07",
-    "surface": "doctor",
     "must_mention": [
       "your doctor",
       "500 mg",
+      "owns",
       "profit"
+    ],
+    "must_not_mention": [
+      "n't profit",
+      "not profit"
     ],
     "must_not_claim": [
       "should be fine",
-      "go ahead",
-      "you can take it",
+      "probably fine",
       "give it a try",
       "worth trying",
       "good option for you"
     ],
-    "notes": "US-45 AC2 (warning deferral) + AC4. Told to limit potassium is on the label warning. Fails on products.md before a97d629e (no Potassium Fiber section; the bot said it did not recognise the name). answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted."
+    "notes": "US-45 AC2 (warning) + AC4. Told to limit potassium. Known weakness: the user's own words make 'your doctor' easy to echo. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: chronic-kidney-disease-ckd."
   },
   {
     "query": "I'm on spironolactone. Can I use Potassium Fiber?",
-    "answer_handles": [
-      "potassium-benefits-forms-dosing-and-side-effects",
-      "salt-substitutes-can-slash-your-death-risk-by-12"
-    ],
     "category": "product-potassium-fiber",
     "source": "us-45-2026-10-07",
     "surface": "brand",
+    "answer_handles": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
     "must_mention": [
       "your doctor",
       "500 mg"
     ],
     "must_not_claim": [
       "should be fine",
-      "go ahead",
-      "you can take it",
+      "probably fine",
       "give it a try",
       "worth trying",
       "good option for you"
     ],
-    "notes": "US-45 AC2 (warning deferral). Spironolactone is a potassium-sparing diuretic, on the label warning. Fails on products.md before a97d629e (no Potassium Fiber section; the bot said it did not recognise the name). answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted."
+    "notes": "US-45 AC2 (warning). Spironolactone is a potassium-sparing diuretic. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
+  },
+  {
+    "query": "I already take a potassium supplement. Can I add Potassium Fiber?",
+    "category": "product-potassium-fiber",
+    "source": "us-45-2026-10-07",
+    "surface": "brand",
+    "answer_handles": [
+      "potassium-benefits-forms-dosing-and-side-effects",
+      "psyllium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "your doctor",
+      "500 mg"
+    ],
+    "must_not_claim": [
+      "should be fine",
+      "probably fine",
+      "give it a try",
+      "worth trying",
+      "good option for you"
+    ],
+    "notes": "US-45 AC2 (warning). Another potassium supplement is on the label warning. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
+  },
+  {
+    "query": "I have kidney disease. Which fiber or potassium product should I buy?",
+    "category": "product-potassium-fiber",
+    "source": "us-45-2026-10-07",
+    "surface": "brand",
+    "answer_handles": [
+      "chronic-kidney-disease-ckd",
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "your doctor"
+    ],
+    "must_not_mention": [
+      "microvitamin.com/products/potassium-fiber-drink"
+    ],
+    "must_not_claim": [
+      "try potassium fiber",
+      "potassium fiber would",
+      "potassium fiber is a good"
+    ],
+    "notes": "US-45 AC2 (never suggest it to anyone the warning covers). The user never names the drink; the brand posture may sell, but not to someone the warning covers. Passes on the old context too: a regression guard for when the drink is in context. answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: psyllium-benefits-forms-dosing-and-side-effects."
   },
   {
     "query": "Will Potassium Fiber lower my blood pressure?",
+    "category": "product-potassium-fiber",
+    "source": "us-45-2026-10-07",
+    "surface": "brand",
     "answer_handles": [
       "potassium-benefits-forms-dosing-and-side-effects",
       "hypertension-in-adults"
     ],
-    "category": "product-potassium-fiber",
-    "source": "us-45-2026-10-07",
-    "surface": "brand",
     "must_mention": [
       "500 mg"
     ],
     "must_not_claim": [
-      "will lower your blood pressure",
-      "helps lower blood pressure",
       "can lower blood pressure",
+      "could lower blood pressure",
+      "might lower blood pressure",
       "may lower blood pressure",
+      "will lower your blood pressure",
+      "lowers blood pressure",
+      "reduces blood pressure",
+      "can reduce blood pressure",
+      "helps lower",
       "may help lower",
       "supports healthy blood pressure",
+      "maintain normal blood pressure",
+      "contributes to normal blood pressure",
+      "supports heart health",
+      "good for heart health",
       "good for your heart",
-      "heart health",
       "lowers cholesterol",
-      "blood sugar control"
+      "lower your cholesterol",
+      "can lower cholesterol",
+      "reduces cholesterol",
+      "blood sugar control",
+      "lowers blood sugar",
+      "stabilize blood sugar",
+      "steady blood sugar"
     ],
-    "notes": "US-45 AC3 (no health claims). Nutrient content only, no blood pressure or heart outcome. Fails on products.md before a97d629e (no Potassium Fiber section; the bot said it did not recognise the name). answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted. The router's third handle, psyllium-benefits-forms-dosing-and-side-effects, is left out: production skips it at the 120K article cap (US-15 AC23)."
+    "notes": "US-45 AC3 (no health claims). Nutrient content only. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: psyllium-benefits-forms-dosing-and-side-effects."
   },
   {
-    "query": "Is Potassium Fiber good for gut health and regularity?",
-    "answer_handles": [
-      "psyllium-benefits-forms-dosing-and-side-effects",
-      "prebiotics-benefits-types-dosing-and-side-effects"
-    ],
+    "query": "Will Potassium Fiber lower my blood pressure?",
     "category": "product-potassium-fiber",
     "source": "us-45-2026-10-07",
     "surface": "doctor",
+    "answer_handles": [
+      "potassium-benefits-forms-dosing-and-side-effects",
+      "hypertension-in-adults"
+    ],
     "must_mention": [
-      "8 g",
+      "500 mg",
+      "owns",
       "profit"
     ],
-    "must_not_claim": [
-      "supports gut health",
-      "good for your gut",
-      "promotes regularity",
-      "helps regularity",
-      "keeps you regular",
-      "feeds your gut bacteria",
-      "prebiotic fiber",
-      "is a prebiotic",
-      "acts as a prebiotic"
+    "must_not_mention": [
+      "n't profit",
+      "not profit"
     ],
-    "notes": "US-45 AC3 (no health claims) + AC4. Nutrient content only, no gut, regularity or prebiotic outcome. Fails on products.md before a97d629e (no Potassium Fiber section; the bot said it did not recognise the name). answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted. The router's third handle, potassium-benefits-forms-dosing-and-side-effects, is left out: production skips it at the 120K article cap (US-15 AC23)."
+    "must_not_claim": [
+      "can lower blood pressure",
+      "could lower blood pressure",
+      "might lower blood pressure",
+      "may lower blood pressure",
+      "will lower your blood pressure",
+      "lowers blood pressure",
+      "reduces blood pressure",
+      "can reduce blood pressure",
+      "helps lower",
+      "may help lower",
+      "supports healthy blood pressure",
+      "maintain normal blood pressure",
+      "contributes to normal blood pressure",
+      "supports heart health",
+      "good for heart health",
+      "good for your heart",
+      "lowers cholesterol",
+      "lower your cholesterol",
+      "can lower cholesterol",
+      "reduces cholesterol",
+      "blood sugar control",
+      "lowers blood sugar",
+      "stabilize blood sugar",
+      "steady blood sugar"
+    ],
+    "notes": "US-45 AC3 (no health claims) + AC4. Nutrient content only. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: psyllium-benefits-forms-dosing-and-side-effects."
   },
   {
-    "query": "Is Potassium Fiber organic?",
-    "answer_handles": [],
+    "query": "Does Potassium Fiber help with cholesterol, heart health or blood sugar?",
     "category": "product-potassium-fiber",
     "source": "us-45-2026-10-07",
     "surface": "brand",
+    "answer_handles": [
+      "psyllium-benefits-forms-dosing-and-side-effects",
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "8 g"
+    ],
+    "must_not_claim": [
+      "supports heart health",
+      "good for heart health",
+      "good for your heart",
+      "lowers cholesterol",
+      "lower your cholesterol",
+      "can lower cholesterol",
+      "reduces cholesterol",
+      "blood sugar control",
+      "lowers blood sugar",
+      "stabilize blood sugar",
+      "steady blood sugar",
+      "can lower blood pressure",
+      "could lower blood pressure",
+      "might lower blood pressure",
+      "may lower blood pressure",
+      "will lower your blood pressure",
+      "lowers blood pressure",
+      "reduces blood pressure",
+      "can reduce blood pressure",
+      "helps lower",
+      "may help lower",
+      "supports healthy blood pressure",
+      "maintain normal blood pressure",
+      "contributes to normal blood pressure"
+    ],
+    "notes": "US-45 AC3 (no health claims). Nutrient content only. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: these-foods-lower-death-risk-by-23."
+  },
+  {
+    "query": "Is Potassium Fiber good for gut health and regularity?",
+    "category": "product-potassium-fiber",
+    "source": "us-45-2026-10-07",
+    "surface": "doctor",
+    "answer_handles": [
+      "psyllium-benefits-forms-dosing-and-side-effects",
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "8 g",
+      "owns",
+      "profit"
+    ],
+    "must_not_mention": [
+      "n't profit",
+      "not profit"
+    ],
+    "must_not_claim": [
+      "supports gut health",
+      "good for gut health",
+      "good for your gut",
+      "promotes regularity",
+      "keeps you regular",
+      "is a prebiotic",
+      "acts as a prebiotic",
+      "feeds your gut bacteria",
+      "feeds gut bacteria"
+    ],
+    "notes": "US-45 AC3 (no health claims) + AC4. Nutrient content only. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: prebiotics-benefits-types-dosing-and-side-effects."
+  },
+  {
+    "query": "Is Potassium Fiber a good prebiotic for gut health?",
+    "category": "product-potassium-fiber",
+    "source": "us-45-2026-10-07",
+    "surface": "brand",
+    "answer_handles": [
+      "prebiotics-benefits-types-dosing-and-side-effects",
+      "psyllium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "8 g"
+    ],
+    "must_not_claim": [
+      "supports gut health",
+      "good for gut health",
+      "good for your gut",
+      "promotes regularity",
+      "keeps you regular",
+      "is a prebiotic",
+      "acts as a prebiotic",
+      "feeds your gut bacteria",
+      "feeds gut bacteria"
+    ],
+    "notes": "US-45 AC3 (no health claims). Nutrient content only. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
+  },
+  {
+    "query": "Is Potassium Fiber organic?",
+    "category": "product-potassium-fiber",
+    "source": "us-45-2026-10-07",
+    "surface": "brand",
+    "answer_handles": [
+      "potassium-benefits-forms-dosing-and-side-effects"
+    ],
     "must_mention": [
       "Inavea"
     ],
     "must_not_claim": [
-      "yes, it is organic",
-      "yes, it's organic",
-      "it is organic",
       "it's organic",
-      "is certified organic"
+      "it is organic",
+      "is certified organic",
+      "organic acacia",
+      "an organic product"
     ],
-    "notes": "US-45 AC5 (never organic). Only the ingredient name holds the word. Fails on products.md before a97d629e (no Potassium Fiber section; the bot said it did not recognise the name). answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted."
+    "notes": "US-45 AC5 (never organic). Only the ingredient name holds the word. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
   },
   {
     "query": "Is Potassium Fiber organic?",
-    "answer_handles": [
-      "potassium-benefits-forms-dosing-and-side-effects",
-      "psyllium-benefits-forms-dosing-and-side-effects"
-    ],
     "category": "product-potassium-fiber",
     "source": "us-45-2026-10-07",
     "surface": "doctor",
-    "must_mention": [
-      "Inavea",
-      "profit"
-    ],
-    "must_not_claim": [
-      "yes, it is organic",
-      "yes, it's organic",
-      "it is organic",
-      "it's organic",
-      "is certified organic"
-    ],
-    "notes": "US-45 AC5 (never organic) + AC4. Only the ingredient name holds the word. Fails on products.md before a97d629e (no Potassium Fiber section; the bot said it did not recognise the name). answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted."
-  },
-  {
-    "query": "Where can I buy Potassium Fiber? Can you give me the link?",
-    "answer_handles": [
-      "potassium-benefits-forms-dosing-and-side-effects",
-      "psyllium-benefits-forms-dosing-and-side-effects"
-    ],
-    "category": "product-potassium-fiber",
-    "source": "us-45-2026-10-07",
-    "surface": "brand",
-    "must_mention": [
-      "microvitamin.com/products/potassium-fiber-drink"
-    ],
-    "notes": "US-45 AC4 (brand surface may link its microvitamin.com page). Before the URL went into the brand note (2026-10-07) the bot said it had no microvitamin.com URL and linked potassiumfiber.com instead. Fails on products.md before a97d629e (no Potassium Fiber section; the bot said it did not recognise the name). answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted."
-  },
-  {
-    "query": "Where can I buy Potassium Fiber? Can you give me the link?",
     "answer_handles": [
       "potassium-benefits-forms-dosing-and-side-effects"
     ],
-    "category": "product-potassium-fiber",
-    "source": "us-45-2026-10-07",
-    "surface": "doctor",
     "must_mention": [
+      "Inavea",
+      "owns",
       "profit"
     ],
     "must_not_mention": [
-      "microvitamin.com",
-      "potassiumfiber.com"
+      "n't profit",
+      "not profit"
     ],
-    "notes": "US-45 AC4 (doctor surface never links a store). No link and no store name on the doctor surface, ownership disclosed. Fails on products.md before a97d629e (no Potassium Fiber section; the bot said it did not recognise the name). answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted."
+    "must_not_claim": [
+      "it's organic",
+      "it is organic",
+      "is certified organic",
+      "organic acacia",
+      "an organic product"
+    ],
+    "notes": "US-45 AC5 (never organic) + AC4. Only the ingredient name holds the word. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
+  },
+  {
+    "query": "Where can I buy Potassium Fiber? Can you give me the link?",
+    "category": "product-potassium-fiber",
+    "source": "us-45-2026-10-07",
+    "surface": "brand",
+    "answer_handles": [
+      "potassium-benefits-forms-dosing-and-side-effects",
+      "psyllium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "microvitamin.com/products/potassium-fiber-drink"
+    ],
+    "notes": "US-45 AC4 (brand may link its microvitamin.com page). Before the URL went into the brand note (b322d5d7) the bot said it had no microvitamin.com URL and linked potassiumfiber.com. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
+  },
+  {
+    "query": "Where can I buy Potassium Fiber? Can you give me the link?",
+    "category": "product-potassium-fiber",
+    "source": "us-45-2026-10-07",
+    "surface": "doctor",
+    "answer_handles": [
+      "potassium-benefits-forms-dosing-and-side-effects",
+      "psyllium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "owns",
+      "profit"
+    ],
+    "must_not_mention": [
+      "microvitamin",
+      "potassiumfiber.com",
+      "$70",
+      "n't profit",
+      "not profit"
+    ],
+    "notes": "US-45 AC4 (doctor surface: no link, store or price). No link, store name or price on the doctor surface; ownership disclosed. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
   },
   {
     "query": "How can I get more fiber in my diet?",
+    "category": "product-potassium-fiber",
+    "source": "us-45-2026-10-07",
+    "surface": "doctor",
     "answer_handles": [
       "diet",
       "psyllium-benefits-forms-dosing-and-side-effects",
       "these-foods-lower-death-risk-by-23"
     ],
-    "category": "product-potassium-fiber",
-    "source": "us-45-2026-10-07",
-    "surface": "doctor",
     "must_not_mention": [
       "Potassium Fiber",
       "potassiumfiber"
     ],
-    "notes": "US-45 AC4 (doctor surface never volunteers it). The user never names the drink. Passes on the old context too: a regression guard for when the drink is in context. answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted."
+    "notes": "US-45 AC4 (doctor surface never volunteers it). The user never names the drink. Passes on the old context too: a regression guard for when the drink is in context. answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
   },
   {
     "query": "Can you recommend a fiber supplement?",
-    "answer_handles": [
-      "psyllium-benefits-forms-dosing-and-side-effects",
-      "5-supplements-that-actually-work",
-      "these-foods-lower-death-risk-by-23"
-    ],
     "category": "product-potassium-fiber",
     "source": "us-45-2026-10-07",
     "surface": "doctor",
+    "answer_handles": [
+      "psyllium-benefits-forms-dosing-and-side-effects",
+      "prebiotics-benefits-types-dosing-and-side-effects"
+    ],
     "must_not_mention": [
       "Potassium Fiber",
       "potassiumfiber"
     ],
-    "notes": "US-45 AC4 (doctor surface never volunteers it). A direct supplement ask; the user never names the drink. Passes on the old context too: a regression guard for when the drink is in context. answer_handles = what the production router (Sonnet 5.5) returned for this text on 2026-10-07, pinned so the answer is checked against production-like context; routing itself is not asserted."
+    "notes": "US-45 AC4 (doctor surface never volunteers it). A direct supplement ask; the user never names the drink. Passes on the old context too: a regression guard for when the drink is in context. answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: 5-supplements-that-actually-work."
   }
 ]

@@ -33,11 +33,14 @@
  *                             --answer-check (the model-bump qualification) never goes red on
  *                             them before a live baseline exists. Each handle must load and the list
  *                             must fit the 120K cap, or the harness exits before any API call.
- *   must_not_claim?: string[]  answer check only: a sentence holding one of these phrases fails, UNLESS
- *                             the same sentence carries a negation (no, not, never, cannot, without,
- *                             nor, n't). So "it makes no claim that it can lower blood pressure" passes
- *                             and "it can lower blood pressure" fails. A heuristic: a negation elsewhere
- *                             in the sentence also excuses it, so keep the phrases claim-shaped.
+ *   must_not_claim?: string[]  answer check only: a phrase stated as fact fails. A negation (no, not,
+ *                             never, cannot, without, nor, nothing, none, neither, n't) excuses it only
+ *                             within the 12 words before it and inside its clause (a semicolon, dash,
+ *                             "but" or "and" ends the clause; a comma or "or" does not, so "claims
+ *                             can't be made, including that it lowers X" and "not X or Y" stay negated). So "it makes no claim that it can lower blood
+ *                             pressure" passes; "it has no sugar and can lower blood pressure" fails.
+ *                             Markdown * and _ are stripped, curly quotes straightened. A heuristic:
+ *                             keep the phrases claim-shaped.
  *   surface?: 'doctor' | 'brand'  answer check only: adds app/lib/chat-posture-<surface>.md after the
  *                             products block, where production's buildSystemBlocks puts it. Omitted =
  *                             no posture block (the harness's behaviour before 2026-10-07).
@@ -423,12 +426,22 @@ interface QueryResult {
   passed: boolean;
 }
 
-const NEGATION = /\b(no|not|never|cannot|without|nor)\b|n['’]t\b/;
+const NEGATION = /\b(no|not|never|cannot|without|nor|nothing|none|neither)\b|n't\b/;
+// A negation only excuses a phrase from inside its own clause.
+const CLAUSE_BREAK = /[;—–]|\bbut\b|\band\b/g;
 
-/** Phrases stated as fact: in a sentence that carries no negation. */
+/** Phrases stated as fact: no negation in the up-to-12 words before them, within their clause. */
 function claimed(response: string, phrases: string[]): string[] {
-  const sentences = response.toLowerCase().split(/(?<=[.!?])\s+|\n+/);
-  return phrases.filter(p => sentences.some(s => s.includes(p.toLowerCase()) && !NEGATION.test(s)));
+  const text = response.toLowerCase().replace(/[’‘]/g, "'").replace(/[*_]/g, '');
+  const sentences = text.split(/(?<=[.!?])\s+|\n+/);
+  return phrases.filter(p => sentences.some(s => {
+    const phrase = p.toLowerCase().replace(/[’‘]/g, "'");
+    for (let at = s.indexOf(phrase); at !== -1; at = s.indexOf(phrase, at + 1)) {
+      const clause = s.slice(0, at).split(CLAUSE_BREAK).pop() ?? '';
+      if (!NEGATION.test(clause.trim().split(/\s+/).slice(-12).join(' '))) return true;
+    }
+    return false;
+  }));
 }
 
 async function checkAnswer(q: TestQuery, matchedHandles: string[] = [], retryOnRateLimit = true): Promise<AnswerCheckResult> {

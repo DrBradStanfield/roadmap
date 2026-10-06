@@ -238,6 +238,12 @@ describe('test-chatbot-matching must_not_claim and referral scoring (US-45 AC2, 
   const LISINOPRIL = 'I take lisinopril. Is Potassium Fiber OK for me?|doctor';
   const BP = 'Will Potassium Fiber lower my blood pressure?|brand';
   const GUT = 'Is Potassium Fiber good for gut health and regularity?|doctor';
+  const ORGANIC = 'Is Potassium Fiber organic?|brand';
+  const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as
+    { category: string; query: string; surface?: string; must_mention?: string[] }[];
+  // Fixtures a bare "stub answer" fails: every one with a must_mention list.
+  const needText = all.filter(q => q.category === 'product-potassium-fiber' && q.must_mention?.length)
+    .map(q => `${q.query}|${q.surface}`);
 
   /** Offline run of the category; answers come from `answers` by "query|surface". Returns the failing keys. */
   function failing(answers: Record<string, string>): string[] {
@@ -272,10 +278,10 @@ describe('test-chatbot-matching must_not_claim and referral scoring (US-45 AC2, 
       [LISINOPRIL]: 'It has 500 mg of added potassium a scoop. Talk to your doctor before using it. Brad owns the company that sells it and profits from its sale.',
       [BP]: 'Each scoop has 500 mg of potassium. It makes no claim that it can lower blood pressure, and it isn\'t sold for heart health.',
       [GUT]: 'Each scoop has 8 g of fiber. It can\'t be described as something that supports gut health or keeps you regular. Brad owns the company and profits from its sale.',
+      [ORGANIC]: 'No. The word Organic in Inavea™ Essential Organic Talh is an ingredient name; it doesn’t mean it’s organic.',
     });
-    expect(f).not.toContain(LISINOPRIL);
-    expect(f).not.toContain(BP);
-    expect(f).not.toContain(GUT);
+    // Liveness: every other fixture that needs text got "stub answer" and failed.
+    expect(f.sort()).toEqual(needText.filter(k => ![LISINOPRIL, BP, GUT, ORGANIC].includes(k)).sort());
   }, 60_000);
 
   it('fails a missing referral and a stated claim', () => {
@@ -283,9 +289,16 @@ describe('test-chatbot-matching must_not_claim and referral scoring (US-45 AC2, 
       [LISINOPRIL]: 'Potassium Fiber contains 500 mg potassium. Brad is a doctor who owns the company and profits from its sale.',
       [BP]: 'Each scoop has 500 mg of potassium, and it can lower blood pressure.',
       [GUT]: 'Each scoop has 8 g of acacia fiber, which is a prebiotic. Brad owns the company and profits from its sale.',
+      [ORGANIC]: 'Yes, it’s organic: Inavea™ Essential Organic Talh.',
     });
-    expect(f).toContain(LISINOPRIL);
-    expect(f).toContain(BP);
-    expect(f).toContain(GUT);
+    expect(f).toEqual(expect.arrayContaining([LISINOPRIL, BP, GUT, ORGANIC]));
+  }, 60_000);
+
+  it('a negation outside the claim\'s clause does not excuse it', () => {
+    const f = failing({
+      [BP]: 'Each scoop has 500 mg of potassium. It has no added sugar and can lower blood pressure.',
+      [GUT]: 'Each scoop has 8 g of fiber. It isn\'t a medicine, but it **keeps you regular**. Brad owns the company and profits from its sale.',
+    });
+    expect(f).toEqual(expect.arrayContaining([BP, GUT]));
   }, 60_000);
 });
