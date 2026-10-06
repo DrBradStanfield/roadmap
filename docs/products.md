@@ -575,6 +575,7 @@ The physical/regulated marks that must appear correctly on MicroVitamin Capsules
 - **The flag with "MADE IN UK with imported ingredients"** — UK flag graphic on the front panel, with that line beneath it.
 - **The v9 designation** — the formula version marking on-label (see Regional Formula Differences above for what v9 means).
 - **"Food Supplement" wording** — the UK's regulatory term for the product category (not "dietary supplement," the US term); must appear on-label and in any UK-market copy that names the category.
+- **Exception — UK AI-generated ads (Brad 2026-09-11, reaffirmed 2026-10-06: "just use the generic bottle"):** full-generation ad images show the generic ad-safe bottle (no GMP badge, flag or v7: the generator garbles the GMP roundel every time). Its band should read "Food Supplement": a UK variant of the ad-safe cutout is pending Brad's approval; until it lands and the images are refreshed, the live UK full-gen images read "Dietary Supplement". Listing images, packshots and composites still need all four elements.
 - **Manufacturer line** — "Manufactured in the UK on behalf of: Freyr Life Sciences LTD, 9 Greyfriars Road, Reading, United Kingdom, RG1 1NU". The UK label carries no ℮ net-quantity mark.
 
 **EU** (MicroVitamin Capsules, EU market, **v9 formula** from 2026-10; English and German labels in `multivitamin/Manufacturing EU/labels/2 label v9 for G&G/`):
