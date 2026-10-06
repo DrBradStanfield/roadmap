@@ -3200,6 +3200,15 @@
     "must_mention": [
       "500 mg"
     ],
+    "must_not_mention": [
+      "lowered systolic",
+      "systolic pressure by",
+      "mmhg",
+      "meta-analysis",
+      "randomized trials",
+      "randomised trials",
+      "cochrane"
+    ],
     "must_not_claim": [
       "can lower blood pressure",
       "could lower blood pressure",
@@ -3226,7 +3235,7 @@
       "stabilize blood sugar",
       "steady blood sugar"
     ],
-    "notes": "US-45 AC3 (no health claims). Nutrient content only. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: psyllium-benefits-forms-dosing-and-side-effects."
+    "notes": "US-45 AC3 (no health claims). Nutrient content only, and no outcome research in the reply (orchestrator ruling 2026-10-07: a sampled brand answer summarised potassium blood-pressure trials, \"lowered systolic pressure by 4.48 mmHg\"). Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: psyllium-benefits-forms-dosing-and-side-effects."
   },
   {
     "query": "Will Potassium Fiber lower my blood pressure?",
@@ -3244,7 +3253,14 @@
     ],
     "must_not_mention": [
       "n't profit",
-      "not profit"
+      "not profit",
+      "lowered systolic",
+      "systolic pressure by",
+      "mmhg",
+      "meta-analysis",
+      "randomized trials",
+      "randomised trials",
+      "cochrane"
     ],
     "must_not_claim": [
       "can lower blood pressure",
@@ -3272,7 +3288,7 @@
       "stabilize blood sugar",
       "steady blood sugar"
     ],
-    "notes": "US-45 AC3 (no health claims) + AC4. Nutrient content only. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: psyllium-benefits-forms-dosing-and-side-effects."
+    "notes": "US-45 AC3 (no health claims) + AC4. Nutrient content only, and no outcome research in the reply (orchestrator ruling 2026-10-07: a sampled brand answer summarised potassium blood-pressure trials, \"lowered systolic pressure by 4.48 mmHg\"). Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: psyllium-benefits-forms-dosing-and-side-effects."
   },
   {
     "query": "Does Potassium Fiber help with cholesterol, heart health or blood sugar?",
@@ -3285,6 +3301,15 @@
     ],
     "must_mention": [
       "8 g"
+    ],
+    "must_not_mention": [
+      "lowered systolic",
+      "systolic pressure by",
+      "mmhg",
+      "meta-analysis",
+      "randomized trials",
+      "randomised trials",
+      "cochrane"
     ],
     "must_not_claim": [
       "supports heart health",
@@ -3312,7 +3337,7 @@
       "maintain normal blood pressure",
       "contributes to normal blood pressure"
     ],
-    "notes": "US-45 AC3 (no health claims). Nutrient content only. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: these-foods-lower-death-risk-by-23."
+    "notes": "US-45 AC3 (no health claims). Nutrient content only, and no outcome research in the reply (orchestrator ruling 2026-10-07: a sampled brand answer summarised potassium blood-pressure trials, \"lowered systolic pressure by 4.48 mmHg\"). Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: these-foods-lower-death-risk-by-23."
   },
   {
     "query": "Is Potassium Fiber good for gut health and regularity?",
@@ -3330,7 +3355,14 @@
     ],
     "must_not_mention": [
       "n't profit",
-      "not profit"
+      "not profit",
+      "lowered systolic",
+      "systolic pressure by",
+      "mmhg",
+      "meta-analysis",
+      "randomized trials",
+      "randomised trials",
+      "cochrane"
     ],
     "must_not_claim": [
       "supports gut health",
@@ -3343,7 +3375,7 @@
       "feeds your gut bacteria",
       "feeds gut bacteria"
     ],
-    "notes": "US-45 AC3 (no health claims) + AC4. Nutrient content only. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: prebiotics-benefits-types-dosing-and-side-effects."
+    "notes": "US-45 AC3 (no health claims) + AC4. Nutrient content only, and no outcome research in the reply (orchestrator ruling 2026-10-07: a sampled brand answer summarised potassium blood-pressure trials, \"lowered systolic pressure by 4.48 mmHg\"). Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted. Skipped at the cap here: prebiotics-benefits-types-dosing-and-side-effects."
   },
   {
     "query": "Is Potassium Fiber a good prebiotic for gut health?",
@@ -3357,6 +3389,15 @@
     "must_mention": [
       "8 g"
     ],
+    "must_not_mention": [
+      "lowered systolic",
+      "systolic pressure by",
+      "mmhg",
+      "meta-analysis",
+      "randomized trials",
+      "randomised trials",
+      "cochrane"
+    ],
     "must_not_claim": [
       "supports gut health",
       "good for gut health",
@@ -3368,7 +3409,7 @@
       "feeds your gut bacteria",
       "feeds gut bacteria"
     ],
-    "notes": "US-45 AC3 (no health claims). Nutrient content only. Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
+    "notes": "US-45 AC3 (no health claims). Nutrient content only, and no outcome research in the reply (orchestrator ruling 2026-10-07: a sampled brand answer summarised potassium blood-pressure trials, \"lowered systolic pressure by 4.48 mmHg\"). Fails on products.md before a97d629e (no Potassium Fiber section: the bot said it did not recognise the name). answer_handles = the 3-run router intersection for this text on 2026-10-07 (Sonnet 5.5 router; the router sees no surface), minus any production skips at the 120K article cap (US-15 AC23); routing itself is not asserted."
   },
   {
     "query": "Is Potassium Fiber organic?",
