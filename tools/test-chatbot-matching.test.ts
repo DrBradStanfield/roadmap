@@ -301,4 +301,12 @@ describe('test-chatbot-matching must_not_claim and referral scoring (US-45 AC2, 
     });
     expect(f).toEqual(expect.arrayContaining([BP, GUT]));
   }, 60_000);
+
+  it('an affirming idiom is not a negation (Codex, 2026-10-07)', () => {
+    const f = failing({
+      [BP]: 'Each scoop contains 500 mg potassium. There is no doubt it can lower blood pressure.',
+      [GUT]: 'Each scoop has 8 g of fiber. It not only tastes good, it keeps you regular. Brad owns the company and profits from its sale.',
+    });
+    expect(f).toEqual(expect.arrayContaining([BP, GUT]));
+  }, 60_000);
 });

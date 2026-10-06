@@ -37,8 +37,11 @@
  *                             never, cannot, without, nor, nothing, none, neither, n't) excuses it only
  *                             within the 12 words before it and inside its clause (a semicolon, dash,
  *                             "but" or "and" ends the clause; a comma or "or" does not, so "claims
- *                             can't be made, including that it lowers X" and "not X or Y" stay negated). So "it makes no claim that it can lower blood
- *                             pressure" passes; "it has no sugar and can lower blood pressure" fails.
+ *                             can't be made, including that it lowers X" and "not X or Y" stay
+ *                             negated). So "it makes no claim that it can lower blood pressure"
+ *                             passes; "it has no sugar and can lower blood pressure" fails.
+ *                             Affirming idioms ("no doubt", "not only", "no wonder", "no question",
+ *                             "without doubt", "none other than") never count as a negation.
  *                             Markdown * and _ are stripped, curly quotes straightened. A heuristic:
  *                             keep the phrases claim-shaped.
  *   surface?: 'doctor' | 'brand'  answer check only: adds app/lib/chat-posture-<surface>.md after the
@@ -429,6 +432,8 @@ interface QueryResult {
 const NEGATION = /\b(no|not|never|cannot|without|nor|nothing|none|neither)\b|n't\b/;
 // A negation only excuses a phrase from inside its own clause.
 const CLAUSE_BREAK = /[;—–]|\bbut\b|\band\b/g;
+// Idioms that hold a negation word but affirm ("there is no doubt it can …").
+const AFFIRMING = /\b(no doubt|not only|no wonder|no question|without (a )?doubt|none other than)\b/g;
 
 /** Phrases stated as fact: no negation in the up-to-12 words before them, within their clause. */
 function claimed(response: string, phrases: string[]): string[] {
@@ -438,7 +443,8 @@ function claimed(response: string, phrases: string[]): string[] {
     const phrase = p.toLowerCase().replace(/[’‘]/g, "'");
     for (let at = s.indexOf(phrase); at !== -1; at = s.indexOf(phrase, at + 1)) {
       const clause = s.slice(0, at).split(CLAUSE_BREAK).pop() ?? '';
-      if (!NEGATION.test(clause.trim().split(/\s+/).slice(-12).join(' '))) return true;
+      const window = clause.replace(AFFIRMING, ' ').trim().split(/\s+/).slice(-12).join(' ');
+      if (!NEGATION.test(window)) return true;
     }
     return false;
   }));
