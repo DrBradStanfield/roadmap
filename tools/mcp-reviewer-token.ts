@@ -36,7 +36,7 @@ import { normalisePassword, passwordDigest } from '../app/lib/mcp-reviewer.serve
 
 const FLY_APP = 'health-tool-edu';
 /** 32 symbols, none of them l, 1, o or 0: typeable in a remote browser that cannot paste. */
-export const PASSWORD_ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789';
+export const PASSWORD_ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789'; // gitleaks:allow, not a secret: public password alphabet
 /** 26 symbols of 5 bits each: 130 bits. */
 export const PASSWORD_LENGTH = 26;
 const DEFAULT_USERNAME = 'openaireviewer';

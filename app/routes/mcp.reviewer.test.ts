@@ -48,7 +48,7 @@ const LATER = new Date(Date.parse(NOW) + 11_000).toISOString();
 /** A normal username: a plain lowercase word, not hex. */
 const USERNAME = 'openaireview';
 /** 26 characters from the unambiguous alphabet: no l, 1, o, 0. */
-const PASSWORD = 'abcdefghijkmnpqrstuvwxyz23';
+const PASSWORD = 'abcdefghijkmnpqrstuvwxyz23'; // gitleaks:allow, not a secret: test fixture
 const sha256hex = (text: string) => crypto.createHash('sha256').update(text, 'utf8').digest('hex');
 const REVIEWER_RT = 'reviewer-dropbox-refresh-token';
 const REVIEWER_ACCESS = 'reviewer-dropbox-access-token';
