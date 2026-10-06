@@ -16,7 +16,7 @@ vi.mock('@sentry/react-router', async (original) => ({
 // header outside the allowlist (the Authorization header, a cookie, a
 // Referer), the client's address or a query string, and an outgoing call,
 // child span or root, keeps only the origin of the URL it called.
-const PASSWORD = 'PW_SENTINEL_7f3a';
+const PASSWORD = 'PW_SENTINEL_7f3a'; // gitleaks:allow, not a secret: test fixture
 const USERNAME = 'USER_SENTINEL_2d9e';
 const RPC_VALUE = 'RPC_SENTINEL_8a4c';
 const BEARER = 'BEARER_SENTINEL_9c1d';

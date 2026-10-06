@@ -679,7 +679,7 @@ describe('US-40 AC11 — credential VALUES never reach the reviewer under anothe
     expectValueStop(dir, ['--message', 'rotate SECRETVAL-MESSAGE-0006'], 'SECRETVAL-MESSAGE-0006', 'SESSION_SECRET', ['REVIEW_COMMITS.txt']);
   });
   it('a credential file that is not KEY=VALUE contributes its long lines; comment lines and PEM armour do not count', () => {
-    const dir = freshRepo({ 'deploy/service.env': '# rotate this key every ninety days\n-----BEGIN PRIVATE KEY-----\nMIIBSECRETVALPEMLINE0007abcdefgh\n-----END PRIVATE KEY-----\n' });
+    const dir = freshRepo({ 'deploy/service.env': '# rotate this key every ninety days\n-----BEGIN PRIVATE KEY-----\nMIIBSECRETVALPEMLINE0007abcdefgh\n-----END PRIVATE KEY-----\n' }); // gitleaks:allow, not a secret: test fixture
     // Code that quotes the armour (a PEM parser, a test fixture) must not brick every review.
     writeFileSync(join(dir, 'notes.md'), 'reminder: rotate this key every ninety days\n');
     writeFileSync(join(dir, 'pem.ts'), "const HEADER = '-----BEGIN PRIVATE KEY-----';\nconst FOOTER = '-----END PRIVATE KEY-----';\n");
@@ -767,7 +767,7 @@ describe('US-40 AC11 — where values are read from, and every stop that cannot 
   it('a credential file inside an ignored directory is found (node_modules and .git are not walked)', () => {
     const dir = freshRepo({ '.gitignore': 'secrets/\nnode_modules/\n' });
     mkdirSync(join(dir, 'secrets', 'deep'), { recursive: true });
-    writeFileSync(join(dir, 'secrets', 'deep', '.env.local'), 'DB_PASSWORD=SECRETVAL-IGNOREDDIR-0011\n');
+    writeFileSync(join(dir, 'secrets', 'deep', '.env.local'), 'DB_PASSWORD=SECRETVAL-IGNOREDDIR-0011\n'); // gitleaks:allow, not a secret: test fixture
     mkdirSync(join(dir, 'node_modules', 'pkg'), { recursive: true });
     writeFileSync(join(dir, 'node_modules', 'pkg', '.env'), 'NPM_TOKEN=SECRETVAL-NODEMODULES-0012\n');
     writeFileSync(join(dir, 'notes.md'), 'SECRETVAL-NODEMODULES-0012\n');
@@ -805,7 +805,7 @@ describe('US-40 AC11 — where values are read from, and every stop that cannot 
     const realGit = sh(tmpdir(), 'command -v git').trim();
     writeFileSync(join(shimDir, 'git'), `#!/bin/sh\ncase " $* " in *" ls-tree "*) echo "fatal: SYNTHETIC-GIT-ERROR-0015" >&2; exit 128 ;; esac\nexec ${JSON.stringify(realGit)} "$@"\n`);
     chmodSync(join(shimDir, 'git'), 0o755);
-    const dir = freshRepo({ '.env': 'API_TOKEN=SECRETVAL-GITFAIL-0015\n' });
+    const dir = freshRepo({ '.env': 'API_TOKEN=SECRETVAL-GITFAIL-0015\n' }); // gitleaks:allow, not a secret: test fixture
     writeFileSync(join(dir, 'a.txt'), 'two\n');
     const r = expectStop(dir, 'E_SECRET_SCAN_FAILED', [], childEnv({ PATH: `${shimDir}:${process.env.PATH}` }));
     expect(r.stdout).toContain('credential collection');
@@ -982,7 +982,7 @@ describe('US-40 AC11 — round 3: known shapes, the parser, public shapes, --loo
   it('a --loop case sees only the environment it sets: the runner\'s shell never reaches the child', () => {
     const dir = freshRepo();
     writeFileSync(join(dir, 'notes.md'), 'SECRETVAL-POLLUTED-0399\n');
-    process.env.CR_TEST_POLLUTION_API_KEY = 'SECRETVAL-POLLUTED-0399';
+    process.env.CR_TEST_POLLUTION_API_KEY = 'SECRETVAL-POLLUTED-0399'; // gitleaks:allow, not a secret: test fixture
     try {
       const { r } = clean(dir, ['--loop']);
       expect(r.stdout).not.toContain('CR_TEST_POLLUTION_API_KEY');
@@ -1083,7 +1083,7 @@ describe('US-40 AC11 — round 3: known shapes, the parser, public shapes, --loo
     // The first blob read marks the moment and sleeps, so the signal lands mid-scan.
     writeFileSync(join(shimDir, 'git'), `#!/bin/sh\ncase " $* " in *" cat-file "*) [ -e ${JSON.stringify(mark)} ] || { touch ${JSON.stringify(mark)}; sleep 1; } ;; esac\nexec ${JSON.stringify(realGit)} "$@"\n`);
     chmodSync(join(shimDir, 'git'), 0o755);
-    const dir = freshRepo({ '.env': 'API_TOKEN=SECRETVAL-SIGNAL-0801\n' });
+    const dir = freshRepo({ '.env': 'API_TOKEN=SECRETVAL-SIGNAL-0801\n' }); // gitleaks:allow, not a secret: test fixture
     writeFileSync(join(dir, 'a.txt'), 'two\n');
     const before = workDirsNow();
     const f = fake({ output: CLEAN });
@@ -1232,7 +1232,7 @@ describe('US-40 AC12 — pinned symlinks are materialised from the reviewed revi
     symlinkSync(join(source, 'docs', 'products.md'), join(dir, 'docs', 'products.md'));
     symlinkSync('../memory/overages.md', join(dir, 'docs', 'products-overages.md'));
     symlinkSync(join(source, 'docs', 'products.md'), join(dir, 'docs', 'stray.md'));
-    writeFileSync(join(dir, '.env'), 'WRAP_TEST_TOKEN=SECRETVAL-WRAP-0901\n');
+    writeFileSync(join(dir, '.env'), 'WRAP_TEST_TOKEN=SECRETVAL-WRAP-0901\n'); // gitleaks:allow, not a secret: test fixture
     sh(dir, 'git add -A && git commit -q -m base && echo y > a.txt');
     const pol = join(mkdtempSync(join(tmpdir(), 'cr-links-pol-')), 'policy.json');
     writeFileSync(pol, JSON.stringify({ repos: { rev: dir, src: source }, links: [{ reviewed: 'rev', link: 'docs/products.md', target: 'src', path: 'docs/products.md' }, { reviewed: 'rev', link: 'docs/products-overages.md', target: 'rev', path: 'memory/overages.md' }] }));
@@ -1886,7 +1886,7 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
     const shape = ['gh', 'p_', 'aB3dE6gH9k'.repeat(4).slice(0, 36)].join(''); // assembled at run time
     for (const [where, code] of [['subject', 'E_SECRET_VALUE'], ['baseline', 'E_SECRET_VALUE'], ['context', 'E_SECRET_VALUE'], ['subject-shape', 'E_SECRET_PATTERN']] as const) {
       const dir = scriptRepo();
-      writeFileSync(join(dir, '.env'), 'OPENAI_KEY=SECRETVAL-SUBJECT-0015\n'); // gitignored
+      writeFileSync(join(dir, '.env'), 'OPENAI_KEY=SECRETVAL-SUBJECT-0015\n'); // gitignored gitleaks:allow (planted test fixture)
       const planted = where === 'subject-shape' ? shape : 'SECRETVAL-SUBJECT-0015';
       const file = where === 'baseline' ? V3 : where === 'context' ? `${RESEARCH}/study-notes.md` : V4;
       writeFileSync(join(dir, file), `${readFileSync(join(dir, file), 'utf8')}pasted ${planted}\n`);
