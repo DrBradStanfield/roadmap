@@ -568,11 +568,25 @@ function loadRaw(rep: Report, o: Options, tag: string, ac2: Check): RawSet {
   return { main, extras, abstracts };
 }
 
+/** A quote hit must not start or end inside a number or word: "7 mg for 12 weeks" is not inside "1.7 mg for 12 weeks". */
+const atBoundary = (hay: string, q: string, i: number) => {
+  const alnum = /[\p{L}\d]/u, end = i + q.length;
+  const before = alnum.test(hay[i - 1] ?? "") || (/[.,]/.test(hay[i - 1] ?? "") && /\d/.test(hay[i - 2] ?? ""));
+  const after = alnum.test(hay[end] ?? "") || (/[.,]/.test(hay[end] ?? "") && /\d/.test(hay[end + 1] ?? ""));
+  return !(alnum.test(q[0]) && before) && !(alnum.test(q[q.length - 1]) && after);
+};
+
+const hasQuote = (hay: string, q: string) => {
+  for (let i = hay.indexOf(q); i >= 0; i = hay.indexOf(q, i + 1)) if (atBoundary(hay, q, i)) return true;
+  return false;
+};
+
 /** Find `q` in `hay`, then re-tokenise the whole words around each hit: the token must be a whole token there ("7 mmol/L" is not "1.7 mmol/L"). */
 function findWhole(hay: string, q: string, tok: string): "ok" | "partial" | "absent" {
   let found = false;
   for (let i = hay.indexOf(q); i >= 0; i = hay.indexOf(q, i + 1)) {
     found = true;
+    if (!atBoundary(hay, q, i)) continue;
     let a = i, b = i + q.length;
     while (a > 0 && !/\s/.test(hay[a - 1])) a--;
     while (b < hay.length && !/\s/.test(hay[b])) b++;
@@ -616,7 +630,7 @@ function citedForEntry(bodyLine: string, tok: string, body: string): Set<string>
 
 /** Body lines where the checker finds `tok`, for the writer to locate. */
 function linesWith(body: string, tok: string): string {
-  const hits = body.split(/\r?\n/).filter((l) => tokenCounts(l).has(tok)).slice(0, 3).map((l) => `"${clip(l, 120)}"`);
+  const hits = classifyLines(body).filter((x) => !x.ref).map((x) => x.line).filter((l) => tokenCounts(l).has(tok)).slice(0, 3).map((l) => `"${clip(l, 120)}"`);
   return hits.length ? `; found in: ${hits.join(" | ")}` : "";
 }
 
@@ -664,6 +678,18 @@ const emergencyOnly = (body: string, tok: string) => {
 function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairInfo): number {
   const rep = c.rep!, tag = `${c.handle}:`;
   const bodyLines = new Set(c.newBody.split(/\r?\n/).map(cleanSentence).filter(Boolean));
+  const proseLines = new Set(classifyLines(c.newBody).filter((x) => !x.ref).map((x) => cleanSentence(x.line)).filter(Boolean)); // reference-list lines never need an entry
+  const ctxLines = c.newBody.split(/\r?\n/);
+  /** Tokens of a body line as the whole-body pass reads them: a list item inherits the comparator of the line above it. */
+  const lineTokens = (bl: string): Set<string> => {
+    const target = cleanSentence(bl), idx = ctxLines.findIndex((l) => cleanSentence(l) === target);
+    if (idx < 0 || !LIST_ITEM.test(ctxLines[idx])) return tokenise(bl, { keepRefs: true });
+    let head = idx - 1;
+    while (head >= 0 && (LIST_ITEM.test(ctxLines[head]) || !ctxLines[head].trim())) head--;
+    if (head < 0) return tokenise(bl, { keepRefs: true });
+    const base = tokenCounts(ctxLines[head], { keepRefs: true });
+    return new Set([...tokenCounts(`${ctxLines[head]}\n${ctxLines[idx]}`, { keepRefs: true })].filter(([t, n]) => n > (base.get(t) ?? 0)).map(([t]) => t));
+  };
   const sources = (prefixed: boolean) => (prefixed ? raw.extras : raw.main ? [{ ...raw.main, path: "" }] : []);
   /** Validate one entry on its own; returns the numbers it supports (body_line and verbatim quote share them), or null after a FAIL. */
   const verifyEntry = (entry: Entry, n: number): Set<string> | null => {
@@ -681,8 +707,11 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
     const q = normQuote(quote);
     if (q.length < 30 && q.split(" ").length < 6) return fail(`raw_quote too short (need 6 words or 30 characters): ${line}`);
     const inQuote = tokenise(quote, { keepRefs: true });
-    const shared = [...tokenise(entry.body_line, { keepRefs: true })].filter((t) => inQuote.has(t));
-    if (!shared.length) { ac2.warns.push(`${label} entry supports no number in its body_line: ${line}`); return new Set(); }
+    const shared = [...lineTokens(entry.body_line)].filter((t) => inQuote.has(t));
+    if (!shared.length) {
+      const verbatim = sources(!!prefixed).some((x) => hasQuote(x.norm, q));
+      if (!verbatim) return fail(`raw_quote is not in the raw file: ${line}`);
+      ac2.warns.push(`${label} entry supports no number in its body_line: ${line}`); return new Set(); }
     const hits = new Map<string, { pmid: string | null; path: string }[]>();
     let partial = false;
     for (const x of sources(!!prefixed)) {
@@ -731,9 +760,9 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
   }
   // Each new or changed body line holding a needed number has entries whose quotes together carry all of that line's needed numbers.
   const baseLines = new Set(c.baseBody.split(/\r?\n/).map(cleanSentence));
-  for (const line of bodyLines) {
+  for (const line of proseLines) {
     if (baseLines.has(line)) continue;
-    const want = [...tokenCounts(line, { keepRefs: true }).keys()].filter((t) => needed.has(t) && !failed.has(t));
+    const want = [...lineTokens(line)].filter((t) => needed.has(t) && !failed.has(t));
     const have = new Set(valid.filter((e) => cleanSentence(e.body_line) === line).flatMap((e) => [...e.ok]));
     const lack = want.filter((t) => !have.has(t));
     if (lack.length) ac2.fails.push(`${tag} body line has no entry quoting ${lack.map((t) => `"${t}"`).join(", ")}: ${clip(line, 120)}`);
@@ -742,7 +771,8 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
   for (const o of info.orphans) {
     const toks = o.tokens.filter((t) => !emergencyOnly(c.newBody, t));
     if (!toks.length || toks.some((tk) => added.includes(tk))) continue; // none, or already reported as a new token
-    if (!valid.some((e) => relates(e.body_line, o.sentence) && toks.some((t) => e.ok.has(t)))) ac2.fails.push(`${tag} new numeric sentence has no entry: ${clip(o.sentence, 120)}`);
+    const bare = (t: string) => t.replace(/^[≥≤><]/, ""); // a list item's comparator comes from the line above it
+    if (!valid.some((e) => relates(e.body_line, o.sentence) && toks.some((t) => [...e.ok].some((k) => bare(k) === bare(t))))) ac2.fails.push(`${tag} new numeric sentence has no entry: ${clip(o.sentence, 120)}`);
   }
   ac2.infos.push(`${tag} ${added.length} new tokens, ${quoted} verified against raw`);
   return quoted;

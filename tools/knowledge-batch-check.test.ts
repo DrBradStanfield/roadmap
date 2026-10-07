@@ -239,7 +239,10 @@ describe("US-42 AC2 raw fidelity", () => {
     expect(fails(run().AC2).join()).toContain("sha256 mismatch");
   });
   it("warns, not fails, when an entry's quote shares no number with its body_line", () => {
-    reps.alpha.changed_tokens[0].raw_quote = "the participants were followed for 12 weeks";
+    const raw = `${fx("alpha.raw.txt")}\nIn total the participants were followed for 12 weeks.`;
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.changed_tokens[0].raw_quote = "In total the participants were followed for 12 weeks";
     expect(run().AC2.evidence.join()).toContain("WARN");
     expect(run().AC2.evidence.join()).toContain("entry supports no number in its body_line");
     expect(fails(run().AC2).join()).not.toContain("entry supports no number");
@@ -284,6 +287,30 @@ describe("US-42 AC2 multiset and body_line", () => {
     expect(f).toContain("found in: \"Trials used 300 mg in adults [1].");
     reps.alpha.changed_tokens = [{ body_line: "An unrelated line.", raw_quote: "participants took 300 mg in adults" }];
     expect(fails(run().AC2).find((x) => x.includes("not a current body line"))).toContain("found in: \"Trials used 300 mg in adults [1].");
+  });
+  it("US-42 AC2: a changed reference-list line is never asked to quote its number", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("[1] Smith A. Synthetic trial. 2019.", "[1] Smith A. Dosing at 300 mg. Synthetic trial. 2019."));
+    expect(fails(run().AC2)).toEqual([]);
+  });
+  it("US-42 AC2: a quote must not start inside a longer number in the raw", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("300 mg in adults", "7 mg for 12 weeks"));
+    const raw = "In the study, participants took 1.7 mg for 12 weeks in total.";
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.changed_tokens = [{ body_line: "Trials used 7 mg for 12 weeks [1].", raw_quote: "7 mg for 12 weeks in total" }];
+    expect(fails(run().AC2).join()).toContain("not whole tokens");
+  });
+  it("US-42 AC2: a list item takes the comparator of the line above, as the whole-body pass does", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Some evidence suggests benefit.", "Seek care if you take more than:\n- 5 mg a day"));
+    const raw = `${fx("alpha.raw.txt")}\nSafety limits: more than 5 mg a day were not studied.`;
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.changed_tokens.push({ body_line: "- 5 mg a day", raw_quote: "more than 5 mg a day were not studied" });
+    expect(fails(run().AC2)).toEqual([]);
+  });
+  it("US-42 AC2: a quote that supports no number must still be verbatim in the raw", () => {
+    reps.alpha.changed_tokens[0].raw_quote = "the participants were followed for twelve weeks";
+    expect(fails(run().AC2).join()).toContain("not in the raw file");
   });
   it("matches a comparator token declared with its '>'", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("300 mg in adults", "more than 6 weeks in adults"));
@@ -1134,7 +1161,7 @@ describe("US-42 AC2 derived tokens and the emergency number (B)", () => {
     expect(fails(run().AC2)).toEqual([]);
   });
   it("needs a body line and a quote that carry the SAME number (a mismatch only warns)", () => {
-    reps.alpha.changed_tokens[0].raw_quote = "participants took 200 mg in adults each week";
+    reps.alpha.changed_tokens[0].raw_quote = "Doses of 2,000 mg were not studied";
     expect(run().AC2.evidence.join()).toContain("WARN");
     expect(fails(run().AC2).join()).not.toContain("entry supports no number");
   });
