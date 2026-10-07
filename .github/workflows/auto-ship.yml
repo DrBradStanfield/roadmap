@@ -81,18 +81,24 @@ jobs:
             gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs?check_name=test" \
               | jq -c '[.check_runs[] | select(.app.slug == "github-actions")]' || echo '[]'
           }
+          # 0 = ci.yml, 1 = another workflow, 2 = API error (keep polling).
           from_ci() {
-            gh api "repos/${GITHUB_REPOSITORY}/actions/runs?check_suite_id=$1" \
-              | jq -e '.workflow_runs[0].path == ".github/workflows/ci.yml"' >/dev/null 2>&1
+            local path
+            path=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?check_suite_id=$1" \
+              | jq -r '.workflow_runs[0].path // empty') || return 2
+            [ -n "${path}" ] || return 2
+            [ "${path}" = ".github/workflows/ci.yml" ]
           }
           st=pending
           for _ in $(seq 40); do
-            runs=$(ci_test)
+            runs=$(ci_test); blip=no
             for suite in $(jq -r '.[] | select(.conclusion == "success") | .check_suite.id' <<<"${runs}"); do
-              from_ci "${suite}" && st=success && break
+              rc=0; from_ci "${suite}" || rc=$?
+              [ "${rc}" -eq 0 ] && st=success && break
+              [ "${rc}" -eq 2 ] && blip=yes
             done
             [ "${st}" = success ] && break
-            if jq -e 'length > 0 and all(.conclusion != null)' <<<"${runs}" >/dev/null; then st=failed; break; fi
+            if [ "${blip}" = no ] && jq -e 'length > 0 and all(.conclusion != null)' <<<"${runs}" >/dev/null; then st=failed; break; fi
             sleep 15
           done
           [ "${st}" = success ] || { echo "'test' check ${st} on ${HEAD_SHA} — not shipping."; [ "${st}" = failed ] && exit 0; exit 1; }
