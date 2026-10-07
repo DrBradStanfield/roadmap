@@ -79,7 +79,7 @@ There is not enough information to say whether lithium orotate or lithium aspart
 
 Some of the most intriguing evidence for low-dose lithium comes from ecological studies examining the relationship between naturally occurring lithium in drinking water and population-level mental health outcomes.
 
-**Early ecological studies:** A study of 27 Texas counties found that rates of suicide, homicide, and rape were significantly higher in counties whose water contained little or no lithium than in counties with 70 to 170 micrograms of lithium per liter (Schrauzer et al., *Biol Trace Elem Res*, 1990) [9]. A study of 40 municipalities in Aomori, Japan, found a statistical trend toward a link between tap-water lithium and suicide mortality among females (Sugawara et al., *Int J Environ Res Pub Health*, 2013) [10].
+**Early ecological studies:** A study of 27 Texas counties found that rates of suicide, homicide, and rape were significantly higher in counties whose water contained little or no lithium than in counties with 70 to 170 micrograms/L of lithium (Schrauzer et al., *Biol Trace Elem Res*, 1990) [9]. A study of 40 municipalities in Aomori, Japan, found a statistical trend toward a link between tap-water lithium and suicide mortality among females (Sugawara et al., *Int J Environ Res Pub Health*, 2013) [10].
 
 **Critical counterevidence:** However, a 2018 study from Parker and colleagues challenged these findings. After adjusting for healthcare resources and demographics by geography, the study found no association between lithium levels in groundwater and rates of mental illness. The apparent relationship was confounded: regions with low lithium tended to be areas with far more medical resources, likely resulting in more diagnoses rather than more illness (Parker et al., *JAMA Psychiatry*, 2018) [1][11].
 
@@ -91,7 +91,7 @@ Some of the most intriguing evidence for low-dose lithium comes from ecological 
 
 One psychiatrist has anecdotally reported benefits from prescribing 2 to 20 mg of lithium orotate daily to treat patients with aggression, depression, and other conditions (Greenblatt, *Townsend Letter*, 2015) [1][13]. This amount of lithium orotate would yield only 0.08 to 0.8 mg of elemental lithium, an extremely small dose [1].
 
-A small placebo-controlled study gave 24 former drug users 400 micrograms of lithium a day for 4 weeks from naturally lithium-rich brewer's yeast tablets; mood scores, including happiness, rose in the lithium group, suggesting this very low dose may improve mood (Schrauzer et al., *Biol Trace Elem Res*, 1994) [14].
+A small placebo-controlled study gave 24 former drug users 400 micrograms/d of lithium for four weeks from naturally lithium-rich brewer's yeast tablets; mood scores, including happiness, rose in the lithium group, suggesting this very low dose may improve mood (Schrauzer et al., *Biol Trace Elem Res*, 1994) [14].
 
 **Synthesis:** Human evidence for low-dose lithium's effects on mood and depression is preliminary and largely observational or anecdotal, and there is no conclusive evidence that supplemental lithium helps [1].
 
@@ -117,9 +117,9 @@ In a subset of the trial's participants, lithium significantly raised blood leve
 
 #### Mild Cognitive Impairment
 
-**Positive trial (moderate-dose lithium):** A placebo-controlled trial in Brazil randomised 45 older people with amnestic mild cognitive impairment to lithium (blood level 0.25 to 0.5 mmol/L) or placebo for 12 months; lithium was associated with lower levels of P-tau, a marker of Alzheimer's disease, and better scores on some cognitive tests (Forlenza et al., *Br J Psychiatry*, 2011) [19][1]. The dose ranged from 150 to 600 mg of prescription lithium carbonate (28 to 113 mg of elemental lithium), higher than typical supplement doses [1]. An extended follow-up found more of certain adverse effects with lithium (Aprahamian et al., *J Clin Psychiatry*, 2014) [20]; see the Safety section.
+**Positive trial (moderate-dose lithium):** A placebo-controlled trial in Brazil randomised forty-five older people with amnestic mild cognitive impairment to lithium (blood level 0.25 to 0.5 mmol/L) or placebo for 12 months; lithium was associated with lower levels of P-tau, a marker of Alzheimer's disease, and better scores on some cognitive tests (Forlenza et al., *Br J Psychiatry*, 2011) [19][1]. The dose ranged from 150 to 600 mg of prescription lithium carbonate (28 to 113 mg of elemental lithium), higher than typical supplement doses [1]. An extended follow-up found more of certain adverse effects with lithium (Aprahamian et al., *J Clin Psychiatry*, 2014) [20]; see the Safety section.
 
-**Negative trial (lower-dose lithium):** A pilot trial gave 80 adults aged 60 or older with mild cognitive impairment low-dose lithium carbonate or placebo daily for 2 years. None of its six main outcomes, which covered memory, brain volume and BDNF, met the prespecified significance threshold (Gildengers et al., *JAMA Neurol*, 2026) [21]. Verbal memory declined slightly less with lithium (0.73 versus 1.42 points a year), but the difference was not statistically significant [21]. The doses were 150 or 300 mg of lithium carbonate a day, about 28 to 56 mg of elemental lithium [1].
+**Negative trial (lower-dose lithium):** A pilot trial gave 80 adults aged 60 years or older with mild cognitive impairment low-dose lithium carbonate or placebo daily for 2 years. None of its six main outcomes, which covered memory, brain volume and BDNF, met the prespecified significance threshold (Gildengers et al., *JAMA Neurol*, 2026) [21]. Verbal memory declined slightly less with lithium (0.73 versus 1.42 points a year), but the difference was not statistically significant [21]. The doses were 150 or 300 mg of lithium carbonate a day, about 28 to 56 mg of elemental lithium [1].
 
 **Synthesis on cognitive impairment:** The evidence for low-dose lithium in cognitive impairment is mixed [1]. The most encouraging result comes from the Nunes study, which used 0.3 mg a day [1]. Research on the orotate form in Alzheimer's disease is at a very early stage [1].
 
@@ -159,11 +159,11 @@ Meaningful studies with low-dose lithium supplements have not been published, so
 |---------|:-:|------|------|
 | General brain health / trace supplementation | 0.5–1 mg/day | Orotate or aspartate | Researchers' suggestions cited by ConsumerLab [1] |
 | Mood support (general) | 0.4 mg/day | Lithium-rich brewer's yeast | Schrauzer (1994) mood study [1] |
-| Mood support (psychiatric adjunct) | 0.08 to 0.8 mg | Orotate (2–20 mg of the compound) | Greenblatt clinical experience [1][13] |
+| Mood support (psychiatric adjunct) | 0.08 to 0.8 mg | Orotate (2 mg to 20 mg of the compound daily) | Greenblatt clinical experience [1][13] |
 | Alzheimer's stabilization (micro-dose) | 0.3 mg/day | Carbonate | Nunes (2013) placebo-controlled trial [1] |
 | Cognitive impairment (moderate dose) | 28–113 mg/day | Carbonate (prescription) | Forlenza (2011) trial [1] |
 | Long COVID (exploratory) | 0.383–1.7 mg/day | Aspartate | Guttuso (2024) trial [1][6] |
-| Alcoholism (historical) | About 5.7 mg/day (150 mg × 3.83%) | Orotate (150 mg compound) | Sartori (1986) case series [15][1] |
+| Alcoholism (historical) | 150 mg/day of the orotate compound | Orotate | Sartori (1986) case series [15][1] |
 
 ### Practical Dosing Considerations
 
@@ -214,7 +214,7 @@ A 4-year study involving 150 to 600 mg of lithium carbonate (providing 28 to 113
 
 ### Thyroid Effects
 
-Long-term exposure to high or even moderate amounts of lithium can affect thyroid function, causing hypothyroidism, as shown in a study in the Argentine Andes where lithium in drinking water was as high as 1 mg per liter and total daily lithium intake may be as high as 30 mg [1]. In that study of 202 women in four Andean villages, higher urine lithium was linked with lower thyroxine and higher TSH (Broberg et al., *Environ Health Perspect*, 2011) [24]. Both lithium carbonate trials described above found raised TSH with lithium [1].
+Long-term exposure to high or even moderate amounts of lithium can affect thyroid function, causing hypothyroidism, as shown in a study in the Argentine Andes where lithium in drinking water was as high as 1 mg per liter and total lithium intake may be as high as 30 mg daily [1]. In that study of 202 women in four Andean villages, higher urine lithium was linked with lower thyroxine and higher TSH (Broberg et al., *Environ Health Perspect*, 2011) [24]. Both lithium carbonate trials described above found raised TSH with lithium [1].
 
 ### Kidney Effects
 
@@ -272,8 +272,8 @@ Lithium is found in variable amounts in foods, and in some areas drinking water 
 ### Lithium in Drinking Water
 
 Lithium levels in drinking water vary widely:
-- **Denmark:** 0.002 to 0.005 mg per liter in the lowest areas and 0.015 mg per liter in higher areas [1]
-- **Texas:** 70 to 170 micrograms per liter in some counties [9]
+- **Denmark:** 0.002 to 0.005 mg per liter in the lowest areas and 0.015 mg/L in higher areas [1]
+- **Texas:** 70 to 170 micrograms/L in some counties [9]
 - **Argentine Andes:** as high as 1 mg per liter [1]
 
 The US Geological Survey has mapped lithium levels, in micrograms per liter, in groundwater sampled across the United States [1][26].
@@ -284,11 +284,11 @@ The primary food sources of lithium are grains and vegetables [23]. Americans ge
 
 ### Lithium-Rich Brewer's Yeast
 
-Naturally lithium-rich brewer's yeast has been used in research: the Schrauzer mood study gave tablets providing 400 micrograms of lithium a day [14].
+Naturally lithium-rich brewer's yeast has been used in research: the Schrauzer mood study gave tablets providing 400 micrograms/d of lithium [14].
 
 ### Variability and Uncertainty
 
-ConsumerLab does not consider lithium an essential mineral [1]. A 2002 review by Schrauzer argued that the evidence was sufficient to accept lithium as essential and suggested a provisional intake of 1,000 micrograms a day for a 70 kg adult; this remains a researcher's suggestion [23].
+ConsumerLab does not consider lithium an essential mineral [1]. A 2002 review by Schrauzer argued that the evidence was sufficient to accept lithium as essential and suggested a provisional intake of 1 mg a day for a 70 kg adult; this remains a researcher's suggestion [23].
 
 ### Regulatory Status
 
@@ -308,11 +308,11 @@ In the US, supplement labels are required to state the amount of elemental lithi
 
 [6] Guttuso T Jr., Zhu R, Wilding GE. "Low-Dose Lithium for Long COVID." *JAMA Netw Open*. 2024;7(10):e2440326. doi: [10.1001/jamanetworkopen.2024.40326](https://doi.org/10.1001/jamanetworkopen.2024.40326)
 
-[7] Guelen PJM, Janssen TJ, de Witte TC, et al. "Bioavailability of lithium from lithium citrate syrup versus conventional lithium carbonate tablets." *Biopharm Drug Dispos*. 1992;13(3):225-230.
+[7] Guelen PJM, Janssen TJ, de Witte TC, et al. "Bioavailability of lithium from lithium citrate syrup versus conventional lithium carbonate tablets." *Biopharm Drug Dispos*. 1992.
 
 [8] Hanlon LW, Romaine M, Gilroy FJ, Deitrick JE. "Lithium chloride as a substitute for sodium chloride in the diet." *JAMA*. 1949;139(11):688-692. doi: [10.1001/jama.1949.02900280012004](https://doi.org/10.1001/jama.1949.02900280012004)
 
-[9] Schrauzer GN, Shrestha KP. "Lithium in drinking water and the incidences of crimes, suicides, and arrests related to drug addictions." *Biol Trace Elem Res*. 1990;25(2):105-113. doi: [10.1007/BF02990271](https://doi.org/10.1007/BF02990271)
+[9] Schrauzer GN, Shrestha KP. "Lithium in drinking water and the incidences of crimes, suicides, and arrests related to drug addictions." *Biol Trace Elem Res*. 1990. doi: [10.1007/BF02990271](https://doi.org/10.1007/BF02990271)
 
 [10] Sugawara N, Yasui-Furukori N, Ishii N, et al. "Lithium in tap water and suicide mortality in Japan." *Int J Environ Res Public Health*. 2013;10(11):6044-6048. doi: [10.3390/ijerph10116044](https://doi.org/10.3390/ijerph10116044)
 
@@ -322,7 +322,7 @@ In the US, supplement labels are required to state the amount of elemental lithi
 
 [13] Greenblatt JM. "Low-Dose Lithium for Mental Health." *Townsend Letter*. 2015.
 
-[14] Schrauzer GN, de Vroey E. "Effects of nutritional lithium supplementation on mood." *Biol Trace Elem Res*. 1994;40(1):89-101. doi: [10.1007/BF02916824](https://doi.org/10.1007/BF02916824)
+[14] Schrauzer GN, de Vroey E. "Effects of nutritional lithium supplementation on mood." *Biol Trace Elem Res*. 1994. doi: [10.1007/BF02916824](https://doi.org/10.1007/BF02916824)
 
 [15] Sartori HE. "Lithium orotate in the treatment of alcoholism and related conditions." *Alcohol*. 1986;3(2):97-100. doi: [10.1016/0741-8329(86)90018-2](https://doi.org/10.1016/0741-8329(86)90018-2)
 
@@ -340,7 +340,7 @@ In the US, supplement labels are required to state the amount of elemental lithi
 
 [22] Hashimoto R, Takei N, Shimazu K, et al. "Lithium induces brain-derived neurotrophic factor and activates TrkB in rodent cortical neurons." *Neuropharmacology*. 2002;43(7):1173-1179. doi: [10.1016/S0028-3908(02)00217-4](https://doi.org/10.1016/S0028-3908(02)00217-4)
 
-[23] Schrauzer GN. "Lithium: occurrence, dietary intakes, nutritional essentiality." *J Am Coll Nutr*. 2002;21(1):14-21. doi: [10.1080/07315724.2002.10719188](https://doi.org/10.1080/07315724.2002.10719188)
+[23] Schrauzer GN. "Lithium: occurrence, dietary intakes, nutritional essentiality." *J Am Coll Nutr*. 2002. doi: [10.1080/07315724.2002.10719188](https://doi.org/10.1080/07315724.2002.10719188)
 
 [24] Broberg K, Concha G, Engstrom K, et al. "Lithium in drinking water and thyroid function." *Environ Health Perspect*. 2011;119(6):827-830. doi: [10.1289/ehp.1002678](https://doi.org/10.1289/ehp.1002678)
 

@@ -179,7 +179,7 @@ Although many studies indicate that MK-7 does not reduce coronary artery calcifi
 
 **Hasific et al. (2023), subgroup analysis:** Another analysis of the same trial suggested a benefit among people who started with the highest levels of coronary artery calcification. In this group, MK-7 plus vitamin D reduced the progression of calcification compared with placebo, and fewer people had adverse cardiovascular events (myocardial infarction, coronary revascularization, all-cause mortality): 1.9% vs. 6.7% with placebo [3].
 
-**Hasific et al. (2026):** In 356 adults (average age 71) with severe coronary calcification (CAC score 400 AU or higher), 720 mcg of MK-7 plus 1,000 IU of vitamin D daily for two years slightly slowed calcification progression versus placebo (CAC scores rose 22% vs 27%) [3].
+**Hasific et al. (2026):** In 356 adults (average age 71) with severe coronary calcification (CAC score 400 AU or higher), 720 mcg of MK-7 plus 1,000 IU of vitamin D for two years slightly slowed calcification progression versus placebo (CAC scores rose 22% vs 27%) [3].
 
 #### Vitamin K1 Cardiovascular Trials
 
@@ -259,18 +259,18 @@ Some analyses of NHANES data from 2003-2006 and 2007-2010 found that only about 
 The doses used in clinical trials far exceed the AI and vary by form. Studies of K1 or the MK-4 form of K2 tend to use very high doses (500 mcg to 45,000 mcg), while studies of MK-7 have used more moderate doses, such as 180 mcg [3]:
 
 **Vitamin K1 (phylloquinone):**
-- Bone health: up to 5,000 mcg/day, which did not improve bone density but may have reduced the risk of vertebral fractures over 2 to 4 years [3]
-- Cardiovascular (calcification): 10 mg/day for three months [3]
+- Bone health: 5,000 mcg/day, which did not improve bone density but may have reduced the risk of vertebral fractures over 2 to 4 years [3]
+- Cardiovascular (calcification): 10 mg of vitamin K1 taken once daily for three months [3]
 - Newborn prophylaxis: a single intramuscular dose of 0.5 to 1 mg at birth [1]
 
 **Vitamin K2 as MK-4:**
 - Bone health (pharmacological): 45 mg/day, the dose used to treat osteoporosis in Japan and other parts of Asia [1]
-- In one study, 45,000 mcg/day was the minimum effective dose for bone; 15,000 mcg/day showed no benefit [3]
+- In one study, 45,000 mcg of MK-4 was the minimum effective dose for bone; 15,000 mcg showed no benefit [3]
 
 **Vitamin K2 as MK-7:**
 - Bone health: 90-375 mcg/day [3]
-- Cardiovascular health, lowest trial dose: 90 mcg/day plus 400 IU of vitamin D for about 9 months [3]
-- Cardiovascular health, highest trial dose: 720 mcg/day plus 1,000 IU of vitamin D for two years [3]
+- Cardiovascular health, lowest trial dose: 90 mcg of MK-7 plus 400 IU of vitamin D daily for about 9 months [3]
+- Cardiovascular health, highest trial dose: 720 mcg of MK-7 plus 1,000 IU of vitamin D for two years [3]
 - Nocturnal leg cramps: 180 mcg every night for eight weeks [3]
 
 ### Practical Dosing Considerations
@@ -291,7 +291,7 @@ Supplements containing only vitamin K, or vitamin K with a few other nutrients, 
 
 Vitamins K1 and K2 are generally safe when used appropriately in healthy individuals [3]. No Tolerable Upper Intake Level has been established because of vitamin K's low potential for toxicity [1].
 
-In small trials in Japan, Indonesia, and China, MK-4 at 45,000 mcg daily for one to three years showed no toxic effects [3].
+In small trials in Japan, Indonesia, and China, MK-4 at 45,000 mcg taken for one to three years showed no toxic effects [3].
 
 Vitamin K3 (menadione) is different: it may cause toxicity and is not sold as a supplement [3]. It damaged liver cells in laboratory studies, so it is no longer used in dietary supplements or fortified foods [1].
 
@@ -379,7 +379,7 @@ Green leafy vegetables are major food sources of vitamin K1. The following value
 
 *Daily Value = 120 mcg for adults and children age 4+.
 
-The most common sources of vitamin K in the U.S. diet are spinach, broccoli, iceberg lettuce, and fats and oils (particularly soybean and canola oil) [1]. A half cup of chopped, boiled broccoli provides about 110 mcg of vitamin K [1].
+The most common sources of vitamin K in the U.S. diet are spinach, broccoli, iceberg lettuce, and fats and oils (particularly soybean and canola oil) [1].
 
 ### Vitamin K2 (Menaquinones) — Animal and Fermented Sources
 

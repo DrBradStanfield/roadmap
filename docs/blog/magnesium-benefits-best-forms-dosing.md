@@ -77,7 +77,7 @@ Magnesium orotate is sometimes marketed as a "highly bioavailable" form. However
 
 Rat studies suggest magnesium may increase melatonin production by raising the activity of N-acetyltransferase, an enzyme involved in making melatonin [3].
 
-**Older adults with insomnia:** An RCT in 46 elderly subjects found that 500 mg/day of magnesium (as magnesium oxide) for 8 weeks significantly decreased sleep onset latency (P=0.02) and increased serum melatonin and renin levels compared to placebo (Abbasi et al., *J Res Med Sci*, 2012) [3][15].
+**Older adults with insomnia:** An RCT in 46 elderly subjects found that a daily dose of 500 mg of magnesium (as magnesium oxide) for 8 weeks significantly decreased sleep onset latency (P=0.02) and increased serum melatonin and renin levels compared to placebo (Abbasi et al., *J Res Med Sci*, 2012) [3][15].
 
 **Meta-analysis in older adults:** A meta-analysis of 3 RCTs (n=151 older adults) found that 320-729 mg magnesium daily reduced sleep onset latency by 17.36 minutes (95% CI: -27.27 to -7.44, P=0.0006). The most common side effect was soft stools (Mah & Piber, *BMC Complement Med Ther*, 2021) [16].
 
@@ -103,7 +103,7 @@ Rat studies suggest magnesium may increase melatonin production by raising the a
 
 Diabetes increases urinary magnesium losses, and the resulting magnesium inadequacy might impair insulin secretion and action [1].
 
-**Prediabetes with low magnesium:** An RCT of hypomagnesemic adults with prediabetes found that 382 mg/day of magnesium (as magnesium chloride) for four months improved glucose status in 50.8% of the magnesium group versus 7.0% of the placebo group. At the end of the trial, fasting glucose was 86.9 vs 98.3 mg/dL (Guerrero-Romero et al., *Diabetes & Metabolism*, 2015) [20].
+**Prediabetes with low magnesium:** An RCT of hypomagnesemic adults with prediabetes found that a daily dose of 382 mg of magnesium (as magnesium chloride) for four months improved glucose status in 50.8% of the magnesium group versus 7.0% of the placebo group. At the end of the trial, fasting glucose was 86.9 vs 98.3 mg/dL (Guerrero-Romero et al., *Diabetes & Metabolism*, 2015) [20].
 
 **Metabolic syndrome with low magnesium:** The same research group found that after 4 months of 382 mg magnesium chloride, only 48% of the magnesium group still met criteria for metabolic syndrome versus 77.5% of placebo (Rodriguez-Moran et al., *Adv Chronic Kidney Dis*, 2018) [21].
 
@@ -196,7 +196,7 @@ The UL for supplemental magnesium (not including food sources) is **350 mg/day**
 
 ### Practical Dosing by Indication
 
-**General supplementation (to fill dietary gaps):** 100 to 200 mg elemental magnesium per day, ideally split into two doses for better absorption [1][3].
+**General supplementation (to fill dietary gaps):** A dose of about 100 to 200 mg elemental magnesium is typically used, ideally split into two doses for better absorption [1][3].
 
 **Blood pressure support:** 300-500 mg/day. Most positive trials used 350-450 mg/day [13][14].
 
@@ -204,7 +204,7 @@ The UL for supplemental magnesium (not including food sources) is **350 mg/day**
 
 **Migraine prevention:** Up to 600 mg/day in divided doses (exceeds UL; discuss with healthcare provider) [1][3].
 
-**Prediabetes/insulin resistance with low magnesium:** The main trial used 382 mg/day as magnesium chloride [20].
+**Prediabetes/insulin resistance with low magnesium:** The main trial used a daily dose of 382 mg as magnesium chloride [20].
 
 **Muscle recovery (athletes with low Mg):** The main soreness trial used 500 mg/day for 7 days, which is above the UL [3][25].
 
@@ -256,7 +256,7 @@ The primary side effect of oral magnesium supplementation is **osmotic diarrhea*
 - **Moderate laxative risk:** Citrate (especially above 350 mg elemental), chloride, aspartate, malate, gluconate (at higher doses)
 - **Low/no laxative risk:** Glycinate/bisglycinate, taurate, threonate
 
-Other reported side effects include nausea, abdominal cramping, and bloating, typically at doses above 350 mg elemental from supplements [1].
+Other reported side effects include nausea and abdominal cramping at high doses [1].
 
 ### Toxicity (Hypermagnesemia)
 
