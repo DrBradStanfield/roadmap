@@ -77,17 +77,11 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   A miss is wontfix ONLY if unsigned, on *.fly.dev, tool UA (6X: curl/8.6.0 just
   after a release, like 7723659158); proxy path + browser UA = a stale caller,
   ours. Grant-excluded: hygiene is propose-only, not worth it at probe volume.
-- `[gap][sentry]` 2026-09-07, closed 09-08 — Until Brad's PR #73 (live from
-  deploy run 58, 09-08 20:59Z) production `allowUrls` named the retired
-  `health-tool.js`, so the SDK dropped every main-bundle exception: widget
-  "no-op" days before 09-08 are lower bounds, and issues first seen soon
-  after are newly VISIBLE, not old (6G's events were fresh connects), so rank
-  by `stats` since 09-08. Only the side bundles define `__SENTRY_RELEASE__`
-  (vite.config.chatbot/site-chat/upload): a `release` tag means a side
-  bundle, its absence health-plan-v2 — grep the right asset. Storage
-  adapters put document refs (date + sanitized title) into thrown messages:
-  READ TITLES before pasting them into a report or ledger note (AC7's text
-  scrub catches values, not titles).
+- `[gap][sentry]` 2026-09-07, closed 09-08 — Before PR #73 (live 09-08 20:59Z)
+  `allowUrls` dropped every main-bundle exception: earlier widget no-op days
+  are lower bounds. A `release` tag means a side bundle (only they define
+  `__SENTRY_RELEASE__`); its absence means health-plan-v2. Storage adapters put
+  document titles into thrown messages: READ them before quoting.
 - `[class][widget]` 2026-09-17, root-fixed 2026-09-20 — Anything `main()`
   awaits before `createRoot` is a blank-widget path: an unhandled rejection
   there leaves the mount empty and the user reloads (1-4 loads per session in
@@ -177,3 +171,9 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   resolve to a value that also has a legitimate meaning ("nothing counted",
   "another machine won"). Audit shortcut: grep `return false` / `return 0` /
   `return {}` inside catch/error branches of anything a cron or cap gate calls.
+- `[class][server]` 2026-10-07 — A UTF-16 `.slice(0, n)` that splits an emoji
+  leaves a lone surrogate; JSON.stringify emits `"\ud83d"` and PostgREST
+  rejects the whole body: PGRST102 "Empty or invalid json" (probed live). So
+  that dbError on an insert means a cut, not a bad payload shape. 6Y lost a
+  YouTube conversation row this way. Stored cuts use `cutText`; routeQuery
+  replaces lone surrogates in V8's JSON.parse error text (US-15 AC27).
