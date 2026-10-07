@@ -33,4 +33,4 @@ Stale sources:
 
 ## Sign-off
 
-AC8 sign-off (Brad): PENDING
+AC8 sign-off (Brad): APPROVED 2026-10-08, in chat: "I approve all." Every decision above is accepted as the entry currently reads (the orchestrator's defaults). Conditions recorded by the orchestrator: a writing-style.md pass on wording only (no numbers, no meaning) runs before merge, then the pre-registered answer checks (spend approved in the same message).
