@@ -3585,5 +3585,369 @@
       "no more than two hours"
     ],
     "notes": "US-45 AC7 (medicine spacing) + AC4. The live store's direction, word for word: 'Take other medicines at least two hours before or after a scoop.' Fails on products.md before 0cc47a16 (no spacing direction). answer_handles = [] (not router-pinned: the test workspace that runs the router was out on 2026-10-07; production may add potassium or psyllium articles)."
+  },
+  {
+    "query": "My troponin blood test came back normal. Does that mean my chest pain wasn't a heart problem?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "acute-coronary-syndromes-acs"
+    ],
+    "must_mention": [
+      "unstable angina"
+    ],
+    "must_not_mention": [
+      "Troponin T 15"
+    ],
+    "notes": "Changed. New entry: \"Absence of a troponin rise rules out an acute heart attack, but not other ACS, such as unstable angina, or underlying coronary artery disease\". Old entry gave troponin cut-offs (T 15, I 40 ng/L) and a 6-hour rule, now dropped."
+  },
+  {
+    "query": "I have chest pain and I took Viagra yesterday. Can I use my GTN spray?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "acute-coronary-syndromes-acs"
+    ],
+    "must_mention": [
+      "sildenafil",
+      "111"
+    ],
+    "notes": "Safety. New entry: \"whether you have taken an erectile dysfunction medicine (such as sildenafil) in the past 24 to 48 hours, as using it with GTN may cause a severe drop in blood pressure\"; old said 48 hours only. Emergency: call 111."
+  },
+  {
+    "query": "My doctor sent my blood test for chest pain. Can I wait at home for the result?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "acute-coronary-syndromes-acs"
+    ],
+    "must_mention": [
+      "drive",
+      "111"
+    ],
+    "must_not_mention": [
+      "gardening"
+    ],
+    "notes": "Changed. New entry: staying at the practice is recommended if pain that day; waiting elsewhere only with a known address, \"Are not going to drive\", a responsible adult, phone contact; \"If chest pain, tightness, breathlessness or palpitations return while you wait, call 111 straight away.\" Old list banned gardening/housework."
+  },
+  {
+    "query": "I'm 62 with a 16% five-year heart risk. Should I take aspirin every day to prevent a first heart attack?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "cardiovascular-risk-assessment-cvra"
+    ],
+    "must_mention": [
+      "bleeding"
+    ],
+    "notes": "Changed. New entry: aspirin \"May be considered for primary prevention if you are under 70 with a 5-year CV risk of 15% or more and are not at increased bleeding risk\"; \"The colorectal cancer benefit does not appear until 10 years after starting aspirin\"."
+  },
+  {
+    "query": "I'm 80 and had a heart attack last year. Are statins still worth taking at my age?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "cardiovascular-risk-assessment-cvra"
+    ],
+    "must_mention": [
+      "benefit"
+    ],
+    "must_not_mention": [
+      "too old"
+    ],
+    "notes": "Changed. New entry: \"In secondary prevention (existing CVD), the relative benefit of statins in people aged 75 and over is consistent with that in younger people\". Old said \"consistent benefit\"."
+  },
+  {
+    "query": "I have back pain and now I feel numb around my bottom and inner thighs, and my legs feel weak. What should I do?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "chronic-non-cancer-pain"
+    ],
+    "must_mention": [
+      "111",
+      "emergency"
+    ],
+    "notes": "Safety, new rule. New entry: \"If you have back pain with new problems controlling your bladder or bowel, numbness around your genitals, bottom or inner thighs (the saddle area), or new weakness in your legs, call 111 or go to the emergency department.\""
+  },
+  {
+    "query": "Will seeing a chiropractor help my chronic pain?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "chronic-non-cancer-pain"
+    ],
+    "must_mention": [
+      "evidence"
+    ],
+    "must_not_mention": [
+      "chiropractic is effective"
+    ],
+    "notes": "New. New entry: \"There is no evidence for alternative and complementary medicine, chiropractic, or osteopathy for managing chronic pain\"."
+  },
+  {
+    "query": "My HbA1c came back at 49 and I have no symptoms. Do I have diabetes?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "diabetes-screening-and-diagnosis-in-adults"
+    ],
+    "must_mention": [
+      "48",
+      "second"
+    ],
+    "must_not_mention": [
+      "50 mmol/mol or greater",
+      "41-49"
+    ],
+    "notes": "Changed. New entry: diabetes HbA1c \"48 mmol/mol or higher\"; \"If you have no symptoms, an HbA1c of 48 to 52 mmol/mol needs a second test to confirm it.\" Old: diabetes at 50 or greater; prediabetes 41-49."
+  },
+  {
+    "query": "My HbA1c is 55 and I feel fine. Do I need to repeat the test before I am told I have diabetes?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "diabetes-screening-and-diagnosis-in-adults"
+    ],
+    "must_mention": [
+      "53"
+    ],
+    "notes": "Changed. New entry: \"An HbA1c of 53 mmol/mol or higher does not need a repeat test.\""
+  },
+  {
+    "query": "I am very thirsty, passing lots of urine, vomiting and feeling confused. I think I might have diabetes. What should I do?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "diabetes-screening-and-diagnosis-in-adults"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "notes": "Safety. New entry: \"If you have altered consciousness or are acutely unwell... This is a medical emergency: call 111 or go to the emergency department.\""
+  },
+  {
+    "query": "My doctor is switching me from an ACE inhibitor to Entresto. Can I start it the next day?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "heart-failure"
+    ],
+    "must_mention": [
+      "36 hours"
+    ],
+    "must_not_mention": [
+      "24 hours"
+    ],
+    "notes": "Safety. New entry: \"ACE inhibitor must be stopped at least 36 hours before starting, to avoid potentially serious side effects. No washout period is needed when switching from an ARB.\""
+  },
+  {
+    "query": "My pharmacist says my Coversyl is changing. Do I just keep taking my usual tablets?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "heart-failure"
+    ],
+    "must_mention": [
+      "prescription",
+      "dose"
+    ],
+    "notes": "New. New entry: \"The salts in Coversyl (perindopril) are changing. This needs a switch to a slightly different dose and a new prescription.\" (August 2026 note)."
+  },
+  {
+    "query": "I take empagliflozin for heart failure and I have nausea, belly pain and fast breathing, but my sugar is normal. Should I wait it out?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "heart-failure"
+    ],
+    "must_mention": [
+      "urgent",
+      "ketoacidosis"
+    ],
+    "notes": "Changed. New entry: \"If you develop nausea or vomiting, abdominal pain, rapid breathing, or confusion while on an SGLT2 inhibitor, seek urgent medical attention\"; \"blood glucose may be less than 11 mmol/L in DKA in people on empagliflozin (euglycaemic DKA)\"."
+  },
+  {
+    "query": "My five-year heart risk is 18%. What LDL cholesterol should I aim for?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "hyperlipidaemia"
+    ],
+    "must_mention": [
+      "1.4"
+    ],
+    "notes": "Changed framing. New entry: \"5-year CVD risk >= 15% and very high risk patients: Aim for LDL cholesterol < 1.4 mmol/L.\""
+  },
+  {
+    "query": "I am on the highest statin dose I can tolerate and my LDL is still above 1.4. What happens next?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "hyperlipidaemia"
+    ],
+    "must_mention": [
+      "ezetimibe",
+      "specialist"
+    ],
+    "notes": "New rule. New entry: \"If the target cannot be reached with the maximum tolerated treatment, your doctor will arrange a specialist lipid assessment\"; ezetimibe \"added as a second-line option after a statin\"."
+  },
+  {
+    "query": "My blood pressure at home is 190/115 but I feel completely fine. Do I need to go to hospital?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "hypertension-in-adults"
+    ],
+    "must_mention": [
+      "same day"
+    ],
+    "notes": "Changed. New entry: \"BP > 180/110 mmHg without symptoms: contact your doctor the same day.\""
+  },
+  {
+    "query": "My blood pressure is 200/120 and I have chest pain and I feel confused. What should I do?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "hypertension-in-adults"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "notes": "Safety. New entry: \"Hypertensive emergency ... such as chest pain, stroke symptoms, breathlessness from fluid on the lungs, or confusion. This is an emergency: call 111 or go to the emergency department.\""
+  },
+  {
+    "query": "I take Coversyl for my blood pressure and heard it is changing. What do I need to do?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "hypertension-in-adults"
+    ],
+    "must_mention": [
+      "prescription",
+      "dose"
+    ],
+    "notes": "New. New entry: \"the salt in Coversyl is changing. This needs a switch to a slightly different dose and a new prescription.\""
+  },
+  {
+    "query": "I take empagliflozin and my finger-prick blood ketones are 2.0. What should I do?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "non-insulin-diabetes-medications"
+    ],
+    "must_mention": [
+      "111",
+      "1.5"
+    ],
+    "notes": "Changed. New entry: \"If a finger-prick test shows blood ketones over 1.5 mmol/L while you take an SGLT2 inhibitor, call 111 or go to the emergency department.\""
+  },
+  {
+    "query": "I take empagliflozin and have severe pain, redness and a fever around my groin. What should I do?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "non-insulin-diabetes-medications"
+    ],
+    "must_mention": [
+      "111",
+      "Fournier"
+    ],
+    "notes": "Changed. New entry: Fournier's gangrene \"can be life-threatening. If you have significant pain, fever and redness in that area ... call 111 or go to the emergency department.\" Old said seek urgent medical care."
+  },
+  {
+    "query": "Is Wegovy funded in New Zealand for type 2 diabetes?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "non-insulin-diabetes-medications"
+    ],
+    "must_mention": [
+      "funded",
+      "weight loss"
+    ],
+    "must_not_claim": [
+      "Wegovy is funded"
+    ],
+    "notes": "New. New entry: \"Semaglutide (Wegovy) and tirzepatide (Mounjaro)... Neither is funded. In New Zealand, semaglutide (Wegovy) is registered only for weight loss.\""
+  },
+  {
+    "query": "My doctor suggested low-dose colchicine for a flare of crystal arthritis in my knee. Is there anything I should know about safety?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "osteoarthritis-oa"
+    ],
+    "must_mention": [
+      "overdose",
+      "diarrhoea"
+    ],
+    "notes": "Changed. New entry: \"colchicine has a narrow safety margin and overdoses from 7 mg can be fatal, with no reversal agent\"; \"keep it out of reach of others, and stop it if you notice signs of toxicity: diarrhoea, nausea, vomiting, abdominal pain, or palpitations.\""
+  },
+  {
+    "query": "Should I get a steroid injection in my knee every three months for osteoarthritis?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "osteoarthritis-oa"
+    ],
+    "must_mention": [
+      "cartilage"
+    ],
+    "notes": "Changed. New entry: \"a recent study in knee OA found that repeated steroid injections every 3 months did not improve pain and increased cartilage loss. Injections do not reduce disease progression.\""
+  },
+  {
+    "query": "Would a daily paracetamol be enough for my knee osteoarthritis pain?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "osteoarthritis-oa"
+    ],
+    "must_mention": [
+      "paracetamol alone"
+    ],
+    "notes": "Changed. New entry: \"paracetamol alone may not improve OA pain, and that its risks ... are greater than previously thought\"; \"limited long-term daily doses, although evidence is limited\"."
+  },
+  {
+    "query": "My husband has type 2 diabetes and has passed out. Should I give him some juice?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "type-2-diabetes"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_claim": [
+      "give him some juice",
+      "should be given juice"
+    ],
+    "notes": "New. New entry: \"If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call 111. Do not give food or drink by mouth.\""
+  },
+  {
+    "query": "I take empagliflozin and metformin and I have a stomach bug and am vomiting. What should I do with my medicines?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "type-2-diabetes"
+    ],
+    "must_mention": [
+      "ketone",
+      "stop"
+    ],
+    "notes": "Changed. New entry: \"SGLT2 inhibitors: Stop when unwell. Get your ketone levels checked at your general practice or hospital if you have nausea, vomiting, or abdominal pain, even if you have stopped the SGLT2 inhibitor\"; \"Metformin ... Stop during acute gastrointestinal illness; restart when well.\""
+  },
+  {
+    "query": "I am on prednisone and my blood sugars keep reading above 15. What should I do?",
+    "category": "pathway-refresh-pilot-1-v2",
+    "source": "knowledge-refresh-pilot-1-v2-2026-10-08",
+    "answer_handles": [
+      "type-2-diabetes"
+    ],
+    "must_mention": [
+      "doctor",
+      "insulin"
+    ],
+    "notes": "Changed. New entry: steroids \"persistently more than 15 mmol/L\" need more monitoring; \"If glucose is higher (e.g. more than 15 mmol/L) or not on target with a sulfonylurea, intermediate-acting insulin may be considered\"."
   }
 ]
