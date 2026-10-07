@@ -8,7 +8,7 @@ summary: "Clinical pathway for eye disease in diabetes: background on diabetic r
 
 # Eye Disease in Diabetes
 
-*Source: Auckland Region HealthPathways*
+*Source: Auckland Region HealthPathways. Last reviewed: July 2026.*
 
 This pathway covers the assessment and management of eye disease in people with diabetes, including diabetic retinopathy, maculopathy, and cataracts, and when to refer for retinal screening.
 
@@ -16,45 +16,48 @@ This pathway covers the assessment and management of eye disease in people with 
 
 ## Background
 
-There are two main types of eye disease in diabetes:
+Diabetic retinopathy is damage to the small blood vessels at the back of the eye (the retina). It is the leading cause of preventable blindness and low vision among working-age adults in New Zealand.
 
-- **Diabetic retinopathy** — can be non-proliferative (mild, moderate, or severe) or proliferative.
-- **Diabetic maculopathy** — with or without oedema.
+Long-term high blood glucose damages these vessels. This can lead to bleeding and swelling at the centre of the retina (macular oedema). In advanced stages, fragile new vessels can grow and the retina can detach.
 
-About 20% of people with type 2 diabetes have retinopathy at the time of diagnosis. After 15 years of diabetes, 90% of people with type 1 diabetes and 80% of those with type 2 diabetes have retinopathy.
+An estimated 20 to 25% of people with diabetes have diabetic retinopathy. Māori, Pacific peoples, and South Asians (including Fijian Indians) have a higher burden of diabetes and are at increased risk of sight-threatening disease.
 
-Important: Severe retinopathy can be present even when vision appears normal. Refractive changes also occur as the lens alters due to elevated blood glucose.
+Important: Retinopathy can cause no symptoms until it is advanced, when treatment can be less effective. Regular retinal screening and control of risk factors significantly reduce vision loss.
+
+Other eye problems also occur in diabetes:
+
+- Refractive changes (needing different glasses) occur as the lens changes shape with high blood glucose.
+- Cataracts are more common in diabetes, appear at a younger age, and progress more quickly.
+- Advanced retinopathy increases the risk of neovascular glaucoma. This can cause a red, painful eye and a sudden drop in vision.
 
 ---
 
 ## Symptoms to Watch For
 
-Seek prompt medical or optometrist assessment if you notice any visual changes, including:
+Tell your doctor if you notice any change in your vision, including:
 
-- Gradual reduction in visual acuity
-- Painless blurred vision
-- Monocular double vision
-- Sensitivity to glare
-- Reduced vision in low light or mist
-- Reduced colour vision
-- **New floaters** — these may indicate a vitreous haemorrhage from new blood vessels (proliferative retinopathy) and require urgent assessment
+- Blurred or distorted vision that is not improved with glasses
+- Seeing floating spots or flashes (these may mean new bleeding inside the eye or a retinal detachment)
+- Sensitivity to light and glare
+- Difficulty seeing at night
+- Sudden loss of vision
 
-Impact on daily life includes difficulty reading fine print, seeing the TV clearly, managing traffic signs or stairs, glare from headlights or windows, or hazy/foggy vision.
+Cataracts may cause blurred vision, trouble with glare, difficulty seeing at night, and colours looking less clear.
+
+Some symptoms need same-day hospital care. See "When to See Your Doctor Urgently" below.
 
 ---
 
 ## Assessment
 
-Your doctor will assess you by:
+Your doctor may:
 
-1. Taking a history including your current vision, symptoms, any new floaters, impact on daily life, past eye conditions, medications, and risk factors (age, UV exposure, diet, diabetes duration, smoking, alcohol, steroid use).
-
-2. Examining you, including:
-   - Measuring visual acuity in each eye with glasses and a pinhole. Normal vision does not rule out sight-threatening retinopathy.
-   - Checking the red reflex to assess for cataracts. Cataracts are more common in people with diabetes, appear at a younger age, and progress more quickly.
-   - Examining the optic disc and macula (back of the eye), particularly for macular haemorrhage or exudates.
-
-3. If you have sudden or marked vision loss, other causes will be considered (see Sudden or Recent Vision Loss).
+- Ask about your risk factors for retinopathy (see below) and any changes in your vision.
+- If you have any visual symptoms, examine your eyes:
+  - Test the distance vision in each eye with a vision chart, wearing your distance glasses if you have them.
+  - If you do not reach the normal line on the chart, test each eye again looking through a pinhole. If your vision improves with the pinhole and there is no cataract, you may need a review of your glasses.
+  - Look for cataracts, such as cloudiness in the lens, a reduced light reflex, or difficulty seeing the back of the eye.
+- Ask about and check for other small blood vessel complications of diabetes, such as nerve damage in the feet and kidney disease, because these may occur alongside retinopathy.
 
 ---
 
@@ -62,80 +65,91 @@ Your doctor will assess you by:
 
 ### Who Should Be Screened
 
-Retinal photo-screening is recommended for all people with confirmed diabetes:
+Retinal screening is recommended for people with diabetes. From July 2026, when to start depends on your HbA1c:
 
-- **Type 1 diabetes:** 5 years after diagnosis, or at age 10 years — whichever comes first.
-- **Type 2 diabetes:** At diagnosis.
-- **Pregnancy:** People with established diabetes should be screened in the first trimester.
-
-Even if your blood glucose is now well controlled (HbA1c below the diagnostic threshold), you should still continue retinal screening if you have a prior diagnosis of type 2 diabetes. This includes people who have had bariatric surgery.
+- **Screening now:** if your HbA1c is 53 mmol/mol or greater, or if you have confirmed diabetes with an HbA1c of 48 to 52 mmol/mol and the diabetes has been present for 2 years or more, or for an unknown time.
+- **Screening in 3 years:** if you have confirmed diabetes with an HbA1c of 48 to 52 mmol/mol and it clearly started within the last 2 years.
+- **Children with type 1 diabetes:** screening is delayed until age 10, or 5 years after diagnosis, whichever comes first.
+- **Pregnancy:** people with diabetes that was present before pregnancy (including those with a booking HbA1c of 48 mmol/mol or greater) should be screened in the first trimester.
 
 ### Who Is Not Screened Through the Public Service
 
-The diabetic retinal screening service does not see:
-- People with prediabetes
-- People with gestational diabetes
-- People unable or unlikely to benefit from treatment (e.g., already blind, terminally ill)
-
-People who have regular reviews with a private ophthalmologist who is aware of their diabetes do not need separate public retinal screening referrals.
+People with prediabetes (HbA1c 42 to 47 mmol/mol) or gestational diabetes do not need retinal screening.
 
 ### Screening Intervals
 
-If no retinopathy is detected, recall is every 2 to 3 years. Your doctor should not send a new referral if you are already under the retinal screening service, unless your clinical condition has changed.
+Everyone with diabetes should have retinal screening at least every 3 years. If you have eye disease, the time until your next screening depends on the grading at your screening. It is given in your screening results letter. The retinal screening service is responsible for recalling you.
+
+Dilating eye drops are often not needed for screening, but may be used if the photos are not clear enough.
 
 ---
 
 ## Risk Factors for Retinopathy Progression
 
-The risk of developing retinopathy and the rate of progression increases with:
+The risk of diabetic retinopathy developing and getting worse increases with:
 
-- Poor blood glucose control
-- Longer duration of diabetes
-- Rapid or marked improvement in blood glucose (over 3 to 4 months)
-- Uncontrolled high blood pressure
-- Kidney impairment
-- Non-healing foot ulcers
+- Existing diabetic retinopathy
+- Long-term high blood glucose
+- High blood pressure
+- Having diabetes for more than 10 years
+- Protein in the urine (albuminuria)
+- Abnormal blood fats (dyslipidaemia)
+- Anaemia
 - Pregnancy
-- Poor engagement with the health system
+- Smoking
+- Severe low blood glucose episodes or rapid lowering of blood glucose, which may worsen existing retinopathy
+- Less contact with health services, including retinal screening
 
-Your doctor will inform the ophthalmology team if you are moving from poor to tight glucose control quickly, as this can trigger progression.
+Good blood glucose control lowers the risk of retinopathy getting worse. However, rapid improvement can worsen existing moderate to severe retinopathy. If you have moderate to severe retinopathy, your doctor may aim to improve your blood glucose over weeks or months rather than days, and check your vision regularly during this time.
 
 ---
 
 ## Management
 
-Management depends on the type and severity of eye disease:
+Your doctor may:
 
-- **Sudden vision loss:** Requires urgent ophthalmology assessment — discuss with your doctor immediately.
-- **Moderate or vision-threatening retinopathy or macular oedema:** Your doctor will arrange a non-acute ophthalmology assessment.
-- **Gradual visual loss:** Your doctor or optometrist will investigate the cause and refer if needed. Note that an optometrist who takes retinal photographs is not necessarily providing approved retinopathy screening.
-- **Macular oedema:** Your doctor may stop pioglitazone if you are taking it, and consider prescribing a fibrate medication (e.g., bezafibrate).
+- Arrange same-day hospital eye assessment if you have any warning signs (see below).
+- Refer you for a non-urgent eye specialist (ophthalmology) assessment if you have eye disease that needs treatment, such as cataract or diabetic retinopathy.
+- Manage all your diabetes risk factors to help prevent retinopathy or slow it down:
+  - Treat high blood pressure to target.
+  - Manage cholesterol, usually starting with a statin such as atorvastatin, aiming for LDL cholesterol lower than 1.4 mmol/L. Ezetimibe may be added if LDL stays above target.
+  - Check for kidney disease, which is more common in people with diabetic retinopathy.
+  - Hold off on new glasses until your blood glucose is stable.
+- Review your medicines if you have diabetic eye changes:
+  - If you have macular oedema and take pioglitazone, your doctor may seek specialist advice on whether it is safe to continue.
+  - Your doctor may consider a fibrate (such as bezafibrate) to slow the progression of diabetic retinopathy. This is an off-label use.
+- If you could become pregnant, talk with you about the risk of retinopathy in pregnancy and the need for screening.
+- Help if screening is hard to attend, such as through reminders, community outreach, or Māori or Pacific health providers.
+- Consider whether you are fit to drive if cataract, retinopathy, or its treatment affects your vision. People who have had extensive laser treatment often have very poor night vision and may have a narrower field of vision.
+- Give you information about low vision support.
 
-Treatment options for retinopathy include laser therapy and intravitreal injections (anti-VEGF medications).
+Eye specialist treatments for retinopathy may include:
 
-At every appointment, your doctor will work with you on:
-
-- **Blood pressure control** — high blood pressure accelerates retinopathy
-- **Smoking cessation**
-- **Blood glucose (glycaemic) control**
+- Anti-VEGF injections into the eye (such as bevacizumab or aflibercept)
+- Laser treatment (laser photocoagulation)
+- Eye surgery (vitrectomy)
+- Steroid injections into the eye (such as dexamethasone or triamcinolone acetonide)
 
 ---
 
 ## When to See Your Doctor Urgently
 
-Seek prompt assessment from your doctor or optometrist if you notice:
+- Recent or rapid worsening of your vision, even if your vision still seems quite good
+- New, significant floaters or flashes of light
+- Eye pain
 
-- Any sudden or marked deterioration in vision
-- New floaters
-- Blurred or hazy vision that is new or worsening
+These need same-day hospital eye assessment: call 111 if you cannot get there, or go to the emergency department.
+
+See your doctor promptly if you notice any other worsening of your vision.
 
 ---
 
 ## Patient Resources
 
-- Healthify He Puna Waiora: [Diabetes and Eye Problems](https://healthify.nz/health-a-z/d/diabetes-eye-problems)
-- New Zealand Society for the Study of Diabetes: [Management of Diabetic Retinopathy](https://t2dm.nzssd.org.nz/Section-107-Management-of-diabetic-retinopathy)
+- Healthify He Puna Waiora: [Diabetic Retinopathy | Kinonga Karu Nā Te Matehuka](https://healthify.nz/health-a-z/d/diabetic-retinopathy)
+- Healthify He Puna Waiora: [Blindness and Low Vision Support](https://healthify.nz/support/b/blindness-and-low-vision-support)
+- NZ Transport Agency Waka Kotahi: [Diabetes and Driving](https://www.nzta.govt.nz/driving-skills/medical-requirements/diabetes-and-driving)
 
 ---
 
-*This information is based on clinical guidelines for health professionals. Always discuss your individual situation with your doctor.*
+> This information is based on clinical guidelines for health professionals. Always discuss your individual situation with your doctor.

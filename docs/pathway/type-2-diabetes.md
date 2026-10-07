@@ -8,27 +8,32 @@ summary: "Clinical pathway for established type 2 diabetes (non-pregnant adults)
 
 # Type 2 Diabetes
 
-*Source: Auckland Region HealthPathways*
+*Source: Auckland Region HealthPathways. Last reviewed: July 2025.*
 
-This pathway covers the ongoing management of established type 2 diabetes in non-pregnant adults — including HbA1c targets, medications, lifestyle, annual review, and complications screening.
+This pathway covers the ongoing management of established type 2 diabetes in adults who are not pregnant or planning pregnancy: HbA1c targets, monitoring, lifestyle, medications, annual review, and complications screening.
 
-> **Note (effective 1 July 2026):** New Zealand HbA1c diagnostic thresholds are changing. Diabetes will be diagnosed at HbA1c ≥48 mmol/mol (down from ≥50). Prediabetes is now 42–47 mmol/mol. A confirmatory test is required if HbA1c is 48–52 mmol/mol; no confirmation needed if ≥53 mmol/mol.
+> This is general information, not personal medical advice. Always discuss changes to your management with your doctor.
 
 ---
 
 ## When to Seek Emergency Care
 
-Call an ambulance or go to emergency if you have diabetes and any of the following:
+If you have diabetes and are acutely unwell, seek urgent medical help if you have any of the following:
 
-- Any intercurrent illness with capillary ketone levels higher than 1.5 mmol/L
+- Any other illness, regardless of your glucose and ketone levels
+- Capillary (finger-prick) ketone levels higher than 1.5 mmol/L
 - Blood glucose levels persistently higher than 25 mmol/L
-- Symptoms of DKA: nausea or vomiting, abdominal pain, rapid or deep breathing, confusion
-- Symptoms of HHS: extreme thirst, frequent urination, confusion, weakness, fever, seizures
-- Severe hypoglycaemia requiring someone else's help to treat
+- Symptoms of high blood glucose
+- Any concern that DKA or HHS may be developing (see below)
+- Severe hypoglycaemia, or a high risk of severe hypoglycaemia
 
-**Suspect diabetic ketoacidosis (DKA)** if blood glucose >11 mmol/L plus any of: ketones >1.5 mmol/L, nausea/vomiting, abdominal pain, rapid breathing, or confusion. Note: people on empagliflozin can develop DKA with blood glucose as low as normal (euglycaemic DKA).
+**Suspect diabetic ketoacidosis (DKA)** if blood glucose is more than 11 mmol/L plus any of: finger-prick ketones more than 1.5 mmol/L, nausea or vomiting, dehydration, a fast heart rate, abdominal pain, rapid or deep sighing breathing, or confusion. Confusion may progress to reduced consciousness and coma.
 
-**Suspect hyperosmolar hyperglycaemic state (HHS)** if: extreme thirst, frequent urination, confusion, weakness, nausea, weight loss, dry mouth, fever, or seizures.
+Urine ketones may be falsely low on empagliflozin. People on empagliflozin can develop DKA with blood glucose less than 11 mmol/L (euglycaemic DKA).
+
+**Suspect hyperosmolar hyperglycaemic state (HHS)** if you have extreme thirst, frequent urination, confusion, feeling weak, nausea, weight loss, dry mouth and tongue, fever, or seizures. HHS is a life-threatening complication that occurs when blood glucose is very high for a long time. It is more common in type 2 diabetes.
+
+**If you may have DKA or HHS, this is a medical emergency: call 111 or go to the emergency department.**
 
 ---
 
@@ -38,16 +43,19 @@ Your doctor will set an individualised HbA1c target. HbA1c reflects your average
 
 **Most adults: target HbA1c less than 53 mmol/mol**
 
-| Lower target (<48 mmol/mol) | Higher target (53–70 mmol/mol) |
+| Lower target (less than 48 mmol/mol) | Higher target (53 to 70 mmol/mol) |
 |---|---|
-| Low hypoglycaemia risk (not on insulin or sulfonylureas) | High hypoglycaemia risk (on insulin/sulfonylureas) |
+| Low hypoglycaemia risk (not on insulin or sulfonylureas) | High hypoglycaemia risk (on insulin and/or sulfonylureas) |
 | Younger patients | Frail older adults |
 | Pregnant or planning pregnancy | Cognitive impairment or functional dependence |
-| Established retinopathy or nephropathy | Previous severe hypoglycaemia or hypoglycaemic unawareness |
+| Diabetic microvascular complications, particularly retinopathy and nephropathy | Previous severe hypoglycaemia or significant hypoglycaemic unawareness |
+| | Unlikely to develop complications of diabetes within lifetime |
+
+Hypoglycaemia usually occurs only in people treated with insulin and/or sulfonylureas.
 
 HbA1c is checked every 3 months until target is reached, then every 6 months.
 
-**Risk factors for hypoglycaemia** (low blood sugar): older age, insulin or sulfonylurea use, previous severe hypoglycaemia, loss of hypoglycaemic awareness, long duration of diabetes, irregular meals or low-carbohydrate diet, kidney impairment, beta blockers, significant alcohol intake, autonomic neuropathy.
+**Risk factors for hypoglycaemia** (low blood sugar): older age, insulin or sulfonylurea use, previous severe hypoglycaemia, loss of hypoglycaemic awareness, long duration of diabetes, irregular meals or low-carbohydrate diet, kidney impairment, tight glycaemic control (e.g. HbA1c less than 48 mmol/mol), beta blockers, significant alcohol intake, autonomic neuropathy.
 
 ---
 
@@ -59,17 +67,18 @@ Your doctor may recommend self-monitoring when:
 - Starting sulfonylurea or insulin
 - There are concerns about hypoglycaemia
 - You are planning or are pregnant
-- HbA1c is unreliable (e.g. haemoglobinopathy, recent blood transfusion)
+- HbA1c is unreliable (e.g. haemoglobinopathy, bleeding, significant iron deficiency, recent blood transfusion)
 - Assessing the effect of lifestyle or medication changes
 
 **Glucose targets (non-pregnant adults):**
 - Fasting glucose: less than 7 mmol/L
 - 2–3 hours after meals: less than 10 mmol/L
 - Time in target range (3.9–10 mmol/L): more than 70% on continuous glucose monitor (CGM)
+- On sulfonylureas or insulin: avoid hypoglycaemia (less than 3.9 mmol/L)
 
 ### Continuous glucose monitoring (CGM)
 
-CGM is not funded for type 2 diabetes, but you are eligible for one free Freestyle Libre System and one Dexcom ONE+.
+CGM may help some people with type 2 diabetes, including those just diagnosed (for education) and those on insulin. CGM is not funded in type 2 diabetes. Manufacturer supply programmes may be available.
 
 ### Capillary ketones
 
@@ -88,7 +97,9 @@ Your doctor should review you at least once a year (every 3 months if at high ri
 - Liver function tests (LFT)
 - Non-fasting lipids
 
-**Cardiovascular risk:** Your doctor will calculate your 5-year cardiovascular disease (CVD) risk.
+**Cardiovascular risk:** Your doctor will calculate your cardiovascular risk.
+
+**Related conditions your doctor may screen for:** recurrent skin and genitourinary infections, gout, polycystic ovarian syndrome, depression, erectile dysfunction, heart failure, atrial fibrillation, frozen shoulder, and fatty liver disease.
 
 **Examination:**
 - Weight and waist circumference
@@ -97,50 +108,54 @@ Your doctor should review you at least once a year (every 3 months if at high ri
 - Feet (at each visit if high risk)
 
 **Retinal photo-screening:**
-- At diagnosis
-- If your clinical condition changes
-- During first trimester of pregnancy
+- Now, if HbA1c is 53 mmol/mol or greater
+- Now, if diabetes is confirmed with HbA1c 48 to 52 mmol/mol and has lasted 2 years or more, or for an unknown time
+- In 3 years, if diabetes is confirmed with HbA1c 48 to 52 mmol/mol and clearly began within the last 2 years
+- At least every 3 years if follow-up has not happened in the recommended time
+- In the first trimester, for pregnant people who had diabetes before pregnancy
 
-**Complications screening:** eyes, kidneys, feet, heart, nerves, teeth
-
-**Foot disease risk — high risk factors (eligible for podiatry):**
+**Foot disease risk: high risk factors (eligible for podiatry):**
 - Previous amputation or ulceration
-- Charcot foot
-- Any two of: loss of sensation, significant callus, foot deformity, pre-ulcerative lesion, eGFR <15 mL/min, Māori ethnicity, peripheral vascular disease
+- Consolidated Charcot foot (a deformed foot without swelling and with normal temperature)
+- Any two of: loss of sensation, significant callus, significant foot deformity, pre-ulcerative lesion, eGFR lower than 15 mL/min, Māori ethnicity, known peripheral vascular disease (including claudication or more than one absent pulse)
+
+**Diabetes education:** Self-management education and support may be offered at diagnosis, every year, and when complications develop. It should be culturally appropriate and ideally involve whānau.
 
 ---
 
 ## Lifestyle Management
 
-These are essential — not optional — in diabetes management.
+Lifestyle changes are essential to the management of diabetes.
 
 ### Weight loss
 
-- Aim to lose 5–10% of body weight if overweight (BMI >30, or >25 with large waist)
-- Losing 10–15% of body weight may lead to diabetes remission (less likely if long duration of diabetes)
-- Bariatric surgery may be considered in obesity
+- Aim for 5 to 10% loss of body weight if overweight (BMI higher than 30, or BMI higher than 25 with waist circumference greater than 88 cm in women or greater than 102 cm in men)
+- Aim for 10 to 15% loss of body weight for remission of type 2 diabetes. Remission may not be possible after a long duration of diabetes, due to loss of pancreatic beta cells
+- Your doctor may consider weight-loss medicines and bariatric surgery in obesity
 
 ### Healthy eating
 
-A dietitian can help — ask your doctor for a referral. General principles include reducing refined carbohydrates, increasing fibre, and eating regular meals.
+A dietitian can help. Your doctor may refer you each year, and when starting bolus or premixed insulin. A food diary may help with healthy choices.
 
 ### Physical activity
 
-- 150 minutes of moderate-to-high-intensity aerobic exercise per week (spread over at least 3 days)
+- 150 minutes of moderate-to-high-intensity aerobic exercise spread over at least 3 days per week, with no more than 2 consecutive days without exercise
 - Resistance exercise at least twice per week
 - Avoid sitting for longer than 30 minutes at a time
-- Even a brisk 5-to-6-minute daily walk is associated with 4 extra years of life
-- Adding 500 steps per day is linked to up to 10% reduction in mortality
+- The intensity and duration of exercise may need to be reduced if you have other conditions, such as heart disease
+- Do as much physical activity as you can, even if you do not reach these goals:
+  - Even a brisk 5-to-6-minute daily walk is associated with 4 extra years of life
+  - Adding 500 steps per day is linked to up to 10% reduction in mortality
 
 ### Sleep
 
-- Aim for 6–8 hours of sleep each night — this improves glucose levels and body weight
+- Aim for 6 to 8 hours of sleep every night, for beneficial effects on glucose levels and body weight
 - Over 50% of people with type 2 diabetes have obstructive sleep apnoea (OSA); treating OSA significantly improves glucose control
 - Your doctor may screen for sleep disorders (OSA, restless legs, nocturia)
 
 ### Smoking, alcohol
 
-- Stop smoking — your doctor can help with cessation support
+- Stop smoking. Your doctor can help with cessation support
 - Reduce alcohol intake
 
 ---
@@ -151,74 +166,90 @@ Your doctor will prescribe medications to help manage your blood glucose. These 
 
 ### Stepwise approach
 
-1. **Metformin** — first-line for almost all patients; started at diagnosis
-2. **Second-line agents** — added if HbA1c is not at target; strongly consider at diagnosis if HbA1c >64 mmol/mol
-3. **Insulin** — considered when other medications are insufficient, or if significant hyperglycaemia
+1. **Metformin:** started for all patients. Healthy lifestyle measures and metformin remain first-line treatment
+2. **Second-line agents:** added as needed. Your doctor may strongly consider a second-line agent with metformin at diagnosis if HbA1c is higher than 64 mmol/mol
+3. **Insulin:** considered when other medications are not enough, or if blood glucose is significantly high
 
 ### Key second-line medications (funded in New Zealand)
 
-- **SGLT2 inhibitors** (e.g. empagliflozin) — reduce glucose, protect the heart and kidneys
-- **GLP-1 receptor agonists** (e.g. dulaglutide, liraglutide) — reduce glucose and promote weight loss
-- **Sulfonylureas** — reduce glucose but can cause hypoglycaemia
-- **DPP-4 inhibitors, acarbose** — other options your doctor may consider
+- **SGLT2 inhibitors** (e.g. empagliflozin) and **GLP-1 receptor agonists** (e.g. dulaglutide, liraglutide): preferred for people with cardiovascular disease, heart failure, or chronic kidney disease, whatever their HbA1c. Also considered when HbA1c stays above target and weight loss is wanted
+- **Sulfonylureas:** reduce glucose but can cause hypoglycaemia
+- **DPP-4 inhibitors, acarbose:** other options your doctor may consider
 
-Funded empagliflozin, dulaglutide, or liraglutide are recommended for high-risk patients including those with kidney disease, heart disease, and Māori and Pacific patients.
+Funded access to empagliflozin, dulaglutide, and liraglutide widened in September 2026.
 
 ### When insulin is considered
 
 - HbA1c not at target despite lifestyle and non-insulin medications
-- Symptoms of insulin deficiency (excessive thirst, frequent urination, unexplained weight loss)
-- HbA1c >90 mmol/mol or blood glucose persistently >20 mmol/L
+- Symptoms of insulin deficiency (excessive thirst, frequent urination, weight loss)
+- Significant hyperglycaemia at any stage, including at diagnosis: HbA1c higher than 90 mmol/mol or blood glucose persistently higher than 20 mmol/L
 - Previous DKA or HHS
+
+---
+
+## Hypoglycaemia (Low Blood Glucose)
+
+Hypoglycaemia means a blood glucose level lower than 4 mmol/L. Everyone on sulfonylureas or insulin needs to be able to recognise and treat it.
+
+**Signs and symptoms:** sweating and fatigue, palpitations, tremors and anxiety, hunger, dizziness and weakness, and confusion. Severe cases can cause seizures and coma.
+
+**Causes:** missed meals, exercise, alcohol, increasing insulin or sulfonylureas too quickly, accidental overdose, and worsening kidney function.
+
+**Hypoglycaemic unawareness** means having significant hypoglycaemia without symptoms. It is uncommon, and more likely in type 1 diabetes. Repeated minor episodes can lead to loss of awareness.
+
+Your doctor may consider:
+- Prescribing glucagon 1 mg injections if you are at high risk, and showing your partner or whānau how to give them. Glucagon has a short expiry date, so check it regularly
+- A night-time check between 2 am and 3 am, or CGM, if low glucose overnight is suspected
+- A specialist assessment, a medication review, and a check of fitness to drive after a single severe episode, frequent mild episodes, or suspected hypoglycaemic unawareness
 
 ---
 
 ## Sick Day Management
 
-When you are unwell, your blood glucose levels can change significantly. Follow a sick day plan:
+When you are unwell, blood glucose can rise. If you take a sulfonylurea or insulin, it can also fall when you eat and drink less. Your doctor can help you make a sick day plan:
 
 1. Let someone know you are unwell
 2. Avoid strenuous exercise
-3. Stay hydrated: drink 125–250 mL (half to one cup) of fluid every hour
+3. Stay hydrated: drink at least 125 to 250 mL (half to one cup) of fluid every hour
    - If eating normally: water or sugar-free drinks
-   - If on insulin/sulfonylureas and not eating normally: try small snacks (crackers, toast); if glucose <8 mmol/L, drink carbohydrate-containing fluids (cordial, sports drinks, ORS)
+   - If on insulin or sulfonylureas and not eating your usual foods: eat small meals if possible (e.g. crackers, toast). If glucose is lower than 8 mmol/L, drink carbohydrate-containing fluids (e.g. cordial, "flat" soft drinks, sports drinks, oral rehydration solution).
 4. Monitor blood glucose more frequently
 5. Avoid NSAIDs (e.g. ibuprofen)
 6. Adjust medications as directed:
-   - **SGLT2 inhibitors:** Stop when unwell. Get ketone levels checked if you have nausea, vomiting, or abdominal pain
-   - **Insulin/sulfonylurea:** Reduce or skip bolus insulin or sulfonylurea if eating less; reduce basal or premixed insulin by 20–30%
-   - **Metformin, DPP-4 inhibitors, GLP-1 agonists, acarbose:** Stop during acute gastrointestinal illness; restart when well
+   - **SGLT2 inhibitors:** Stop when unwell. Get your ketone levels checked at your general practice or hospital if you have nausea, vomiting, or abdominal pain, even if you have stopped the SGLT2 inhibitor
+   - **Insulin/sulfonylurea:** Reduce or skip bolus insulin or sulfonylurea if eating less. Reduce basal or premixed insulin by 20 to 30%. Correction insulin can be taken every 4 hours as needed to treat high glucose
+   - **Metformin, DPP-4 inhibitors, GLP-1 agonists, acarbose:** Stop during acute gastrointestinal illness; restart when well. Your doctor may suggest withholding a GLP-1 receptor agonist if you are at risk of dehydration
 7. Contact your doctor if you are not improving or are concerned
 
 ---
 
 ## Driving with Diabetes
 
-**Before driving:** Ensure blood glucose is above 4.2 mmol/L ("Above 5, safe to drive").
+**Before driving on insulin or sulfonylureas:** Make sure your glucose levels are higher than 4.2 mmol/L ("Above 5, safe to drive"). Alcohol increases the risk of hypoglycaemia, so avoid even small amounts if you plan to drive.
 
-**On long trips:** Stop and check glucose every 2–3 hours. Have your glucose meter and hypoglycaemia treatment in the car.
+**On long trips:** Stop and check glucose every 2 to 3 hours, or as soon as you have any symptoms of hypoglycaemia. Keep your glucose meter or CGM and hypoglycaemia treatment with you at all times.
 
-**After a hypoglycaemic episode — stand-down periods before driving:**
+**Stand-down periods before driving after a hypoglycaemic episode:**
 
 | Type of episode | Stand-down period |
 |---|---|
-| Mild (glucose <4 mmol/L) | 1 hour |
+| Mild (lower than 4 mmol/L) | 1 hour |
 | Severe, insulin-induced | 24 hours |
 | Severe, sulfonylurea-induced | 48 hours |
-| Severe, while driving | 1 month (specialist assessment required) |
+| Severe, while driving | 1 month (specialist assessment and remedial action needed before driving again) |
 
-**Commercial licences (class 2–5):** Annual medical assessment is required if on insulin or sulfonylureas. This can now be done by your GP — specialist review is no longer mandatory for type 2 diabetes.
+**Commercial licences (class 2 to 5, or P, V, I, or O endorsements):** Annual medical assessment is required if on insulin or sulfonylureas. Your GP or nurse practitioner can now do this. Specialist review is no longer mandatory for type 2 diabetes.
 
-There is no legal cut-off for hyperglycaemia and driving — do not drive if you feel unwell or your decision-making is impaired.
+There is no legal cut-off for hyperglycaemia and driving. Do not drive if you feel unwell or your decision-making is impaired.
 
 ---
 
 ## Glucocorticoid (Steroid) Use
 
-Steroids can significantly raise blood glucose. If you are prescribed steroids:
-- More frequent blood glucose monitoring is needed
-- Your doctor may start or increase sulfonylurea, or add insulin, to manage steroid-induced hyperglycaemia
-- Insulin doses may need adjusting every 2–3 days
+Steroids at any dose or for any length of time may mean your glucose needs extra management:
+- More frequent blood glucose monitoring may be needed, especially if you feel unwell, or glucose is unexpectedly high, persistently more than 15 mmol/L, or less than 4 mmol/L
+- If you are not on insulin, your doctor may start or increase a sulfonylurea. If glucose is higher (e.g. more than 15 mmol/L) or not on target with a sulfonylurea, intermediate-acting insulin may be considered
+- If you are on insulin, doses may need adjusting every 2 to 3 days until on target. It can take up to 3 days to see the full effect of a dose increase of long-acting or intermediate-acting insulin
 
 ---
 
@@ -228,29 +259,37 @@ Your doctor will manage any complications that develop. Key areas:
 
 ### Blood pressure
 
-| Target | Indication |
-|---|---|
-| <140/90 mmHg | Low CVD risk, no complications |
-| <130/80 mmHg | Microvascular/macrovascular complications, or 5-year CVD risk ≥5% |
-| <125/75 mmHg | Young patients with complications |
+Tight blood pressure control is very important to prevent complications.
 
-Medications may include ACE inhibitors, ARBs, calcium channel blockers. For patients with kidney disease, an ACE inhibitor or ARB is preferred.
+| Target blood pressure (mmHg) | Indication |
+|---|---|
+| 140/90 | 5-year CVD risk lower than 5% and no complications |
+| 130/80 | Microvascular or macrovascular complications, or 5-year CVD risk 5% or higher |
+| 125/75 | Young patients with complications |
+
+Medications may include ACE inhibitors, ARBs, calcium channel blockers. For people with kidney disease, an ACE inhibitor or ARB is started first and increased to the maximum dose before adding another medicine.
+
+Blood pressure is reviewed at least 3-monthly until it is on target.
+
+Antiplatelet medicines carry a higher bleeding risk in diabetes. To prevent a first heart attack or stroke, aspirin is generally considered only if you are younger than 70 years, your 5-year CVD risk is 15% or higher, and your bleeding risk is low. With established cardiovascular disease, antiplatelet therapy is recommended unless unsuitable.
 
 ### Cholesterol
 
-- Target LDL cholesterol: less than 1.4 mmol/L
-- First-line: statin (e.g. atorvastatin)
-- Add ezetimibe if LDL remains above target on maximum statin dose
-- Rosuvastatin may be used for patients who cannot reach LDL target on other statins (or as first-line for Māori and Pacific patients at high CVD risk)
-- Statin therapy is routinely recommended for established cardiovascular disease, 5-year CVD risk ≥15%, or diabetic kidney disease
+- Cholesterol-lowering treatment is started routinely for established macrovascular (heart and blood vessel) disease, 5-year CVD risk 15% or higher, and diabetic kidney disease
+- Target LDL cholesterol: lower than 1.4 mmol/L
+- First-line: statin (e.g. atorvastatin), adjusted every 3 to 6 months based on non-fasting levels
+- Add ezetimibe if LDL remains above target on the maximum tolerated statin dose
+- Rosuvastatin may be used if LDL is not at target on maximal tolerated atorvastatin or simvastatin, and may be considered first-line for Māori and Pacific patients at risk of CVD
+- PCSK9 inhibitors are potent LDL-lowering medicines if LDL is still not at target. They are not funded
+- Bezafibrate, acipimox, and omega-3 fatty acid (fish oil) preparations have not been shown to reduce mortality in people with diabetes. They may be used for significant high triglycerides (more than 10 mmol/L) that persist despite lifestyle changes and optimised glucose control (especially insulin)
 
 ### Eyes
 
-Retinal photo-screening at diagnosis and then regularly. Diabetic retinopathy is a leading cause of preventable blindness.
+Retinal photo-screening timing depends on your HbA1c and how long you have had diabetes (see Annual Review). It is repeated at least every 3 years.
 
 ### Kidneys
 
-Annual urine albumin:creatinine ratio and eGFR. Kidney disease is more common in Māori and Pacific peoples.
+Annual urine albumin:creatinine ratio and eGFR. Kidney disease screening is especially important in Māori and Pacific people.
 
 ### Feet
 
@@ -258,7 +297,7 @@ Annual foot examination at minimum. High-risk patients should have feet examined
 
 ### Teeth
 
-Diabetes increases the risk of dental and periodontal disease. Regular dental care is important.
+Teeth and gums are checked at your review. Significant dental or gum disease may need a dental referral.
 
 ### Cholesterol and heart disease
 
@@ -270,8 +309,8 @@ Addressed above under blood pressure and cholesterol management.
 
 Your doctor may refer you to a specialist or other service if:
 
-- You are younger than 25 years and newly diagnosed
-- You have frequent or severe hypoglycaemia, or hypoglycaemic unawareness
+- You are younger than 25 years and have a diabetes diagnosis
+- You have a single severe episode or frequent mild episodes of hypoglycaemia, or suspected hypoglycaemic unawareness
 - Hyperglycaemia is difficult to control on corticosteroids
 - You need dental assessment for significant periodontal disease
 - You are struggling emotionally with your diabetes (psychology referral)
@@ -283,7 +322,7 @@ Your doctor may refer you to a specialist or other service if:
 
 ## Patient Resources
 
-- [Healthify He Puna Waiora – How is Diabetes Managed?](https://healthify.nz)
-- [Healthify He Puna Waiora – Diabetes Foot Care](https://healthify.nz)
-- [Healthify He Puna Waiora – Diabetes Type 2 Sick Day Plan](https://healthify.nz)
-- [Diabetes New Zealand – Diabetes & Travelling](https://diabetes.org.nz)
+- [Healthify He Puna Waiora – How is Diabetes Managed?](https://healthify.nz/health-a-z/d/diabetes-management)
+- [Healthify He Puna Waiora – Diabetes Foot Care](https://healthify.nz/health-a-z/d/diabetes-foot-care)
+- [Healthify He Puna Waiora – Diabetes Type 2 Sick Day Plan](https://healthify.nz/health-a-z/d/diabetes-sick-day-plan)
+- [Diabetes New Zealand – Diabetes & Travelling](https://www.diabetes.org.nz/managing-diabetes-travelling-2)

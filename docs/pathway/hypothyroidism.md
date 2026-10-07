@@ -8,11 +8,11 @@ summary: "Clinical pathway for hypothyroidism in adults including subclinical hy
 
 # Hypothyroidism
 
-*Source: Auckland Region HealthPathways*
+*Source: Auckland Region HealthPathways. Last reviewed: March 2024.*
 
 This pathway covers the assessment and management of hypothyroidism in adults, including subclinical hypothyroidism.
 
-> **Note:** Diagnosis and treatment of thyroid disease requires a doctor. This information helps you understand what your doctor is assessing and why — it is not a substitute for medical care.
+> **Note:** Diagnosis and treatment of thyroid disease requires a doctor. This information helps you understand what your doctor is assessing and why. It is not a substitute for medical care.
 
 ---
 
@@ -26,11 +26,11 @@ The clinical manifestations of hypothyroidism are highly variable. Primary thyro
 
 ### Common causes
 
-- **Autoimmune (Hashimoto's thyroiditis)** — most common cause in iodine-sufficient countries
+- **Autoimmune (Hashimoto's thyroiditis):** the most common cause in iodine-sufficient countries
 - Post radioiodine, thyroidectomy, or external radiation therapy
-- Medications — e.g., lithium, amiodarone, antithyroid drugs, some monoclonal antibodies
-- Sub-acute or postpartum thyroiditis — hypothyroidism can follow the initial hyperthyroid phase
-- **Central hypothyroidism** — uncommon (<1% of cases); low FT4 with normal or low TSH due to pituitary or hypothalamic disease
+- Medications, e.g., lithium, amiodarone, antithyroid drugs, some monoclonal antibodies
+- Sub-acute or postpartum thyroiditis: hypothyroidism can follow the initial hyperthyroid phase
+- **Central hypothyroidism:** uncommon (<1% of cases); low FT4 with normal or low TSH due to pituitary or hypothalamic disease
 - Iodine deficiency (most common worldwide) or excess (e.g., from kelp tablets)
 
 ---
@@ -42,16 +42,17 @@ Asymptomatic people without risk factors do not need routine thyroid screening. 
 - A palpable thyroid nodule or goitre
 - A past history of thyroid disorder, neck surgery, or radiation exposure
 - A significant lipid disorder
-- Certain medications — amiodarone, lithium, antithyroid drugs, some monoclonal antibodies (e.g., pembrolizumab, nivolumab)
+- Certain medications, such as amiodarone, lithium, antithyroid drugs, some monoclonal antibodies (e.g., pembrolizumab, nivolumab)
 - A significant family history of thyroid disease
-- Persistent unexplained symptoms — fatigue, constipation, heat intolerance
-- Cardiovascular problems — heart failure, unexplained bradycardia or tachycardia
+- Persistent unexplained symptoms, such as fatigue, constipation, heat intolerance
+- Cardiovascular problems, such as heart failure, coronary artery disease, a resting heart rate greater than 90 beats per minute, or a heart rate less than 60 beats per minute
 - Menstrual disturbance or subfertility
-- Another autoimmune condition — type 1 diabetes, coeliac disease, pernicious anaemia, adrenal insufficiency
+- Another autoimmune condition, such as type 1 diabetes, coeliac disease, pernicious anaemia, adrenal insufficiency
 - Down syndrome or Turner syndrome
-- A malabsorptive condition (e.g., coeliac disease, IBD, H. pylori) that may affect thyroxine absorption
+- A malabsorptive condition (e.g., coeliac disease, IBD, lactose intolerance, H. pylori) that may affect thyroxine absorption
+- Dietary choices that may affect thyroxine absorption (e.g., espresso coffee, dietary fibre)
 - Morbid obesity
-- Mental health concerns — major depression, anxiety, declining cognition
+- Mental health concerns, such as major depression, anxiety, declining cognition
 - Pregnancy with known positive TPO antibodies
 
 **Note on biotin:** Biotin supplements do not affect thyroid hormone levels but can interfere with thyroid blood test measurements, producing false results. Inform your doctor if you take biotin.
@@ -75,7 +76,7 @@ Asymptomatic people without risk factors do not need routine thyroid screening. 
 - Abnormal vaginal bleeding, absent periods, or difficulty conceiving
 - Dry skin
 
-Symptoms range from minimal to severe. **Myxoedema coma** (hypothermia, confusion, altered consciousness, hypotension) is a rare but life-threatening extreme.
+Symptoms range from minimal to severe. **Myxoedema coma** (hypothermia, confusion, altered consciousness, hypotension) is a rare but life-threatening extreme. If these signs appear, call 111 or go to the emergency department.
 
 ### Signs your doctor will look for
 
@@ -86,10 +87,11 @@ Symptoms range from minimal to severe. **Myxoedema coma** (hypothermia, confusio
 - Generalised oedema
 - Slow reflexes
 - Proximal muscle weakness
-- Slow gait
+- Unsteady (ataxic) gait
 - Slow heart rate (bradycardia)
 - Diastolic hypertension
 - Pericardial effusion
+- Signs that may point to central hypothyroidism: absent periods, low blood pressure, low blood sugar, low sodium, unusual pallor, fine skin wrinkles, visual problems, or headache
 
 ---
 
@@ -101,13 +103,17 @@ Your doctor will order **TSH first**. If TSH is abnormal, FT4 (and sometimes FT3
 |--------|---------------|
 | High TSH + Low FT4 | Hypothyroidism |
 | High TSH + Normal FT4 | Subclinical hypothyroidism |
-| Low/normal TSH + Low FT4 + Low FT3 | Central (secondary) hypothyroidism — refer to specialist |
+| Low/normal TSH + Low FT4 + Low FT3 | Central (secondary) hypothyroidism: specialist input needed |
 
 **Thyroid ultrasound is not needed** just because hypothyroidism is present. Your doctor will only request imaging if there are specific indications (e.g., a nodule or goitre).
 
 ---
 
 ## Management
+
+If you are pregnant or have recently given birth, your doctor will follow a separate thyroid-in-pregnancy approach. Pregnancy can affect some test results (TSH in particular), and thyroid function needs close management for the health of mother and baby.
+
+Smoking can worsen thyroid disease.
 
 ### Hypothyroidism (high TSH + low FT4)
 
@@ -124,10 +130,12 @@ Thyroxine has a half-life of 7 days.
 - Increase in steps of 25 mcg; aim for TSH in the normal range
 - Usual maintenance dose: 100–200 micrograms once daily
 - If TSH stays elevated at 200 mcg/day, check you are taking it on an empty stomach, 1 hour before breakfast
+- If so, your doctor may recheck TSH in 6 to 8 weeks and seek specialist advice if it is still elevated
+- Some medicines can interfere with thyroxine absorption, such as iron, calcium carbonate and bile acid resins. Tell your doctor if you take any of these
 - Once stable, check TSH yearly (or sooner if new symptoms)
 - Even after TSH normalises, it may take up to 6 months for symptoms to fully improve
 
-**Note:** Natural thyroid extracts (containing variable T4 and T3) are not recommended. There is no robust evidence they are superior to levothyroxine, and they are harder to monitor.
+**Note:** Natural thyroid extracts are derived from animals and contain varying amounts of T4 and T3, which makes monitoring difficult. They are not recommended. There is no robust evidence of benefit from these products, or from adding T3 to T4.
 
 ---
 
@@ -142,7 +150,7 @@ Management depends on how elevated the TSH is:
 | TSH 4–6 | Monitor every 6–12 months |
 
 **If TSH is persistently 6–10:**
-- Check **anti-TPO antibodies** — if positive, progression to overt hypothyroidism is more likely (~5% per year) and the threshold for starting thyroxine is lower
+- Check **anti-TPO antibodies**. If positive, progression to overt hypothyroidism is more likely (~5% per year) and the threshold for starting thyroxine is lower
 - If TSH 6–10 and positive antibodies or palpable goitre: consider starting thyroxine
 - If TSH 6–10 and antibody-negative, no goitre: continue monitoring TSH every 6–12 months
 - If antibody-positive but TFTs are normal: consider annual TSH monitoring
@@ -158,7 +166,9 @@ Suspect it if:
 - Hypothyroid symptoms alongside other pituitary symptoms (visual changes, headaches, cortisol or sex hormone deficiency)
 - Hypothyroid symptoms with a normal or borderline-low TSH inconsistent with the degree of symptoms or FT4 level
 
-**Specialist referral is required** for central hypothyroidism — your doctor will arrange this.
+Severe illness may also cause symptoms consistent with central hypothyroidism.
+
+**Specialist input is needed** for suspected central hypothyroidism. Your doctor will arrange an endocrinology assessment or advice.
 
 ---
 
@@ -173,7 +183,7 @@ If the diagnosis is unclear, your doctor may repeat thyroid function tests every
 Your doctor will refer to or seek advice from an endocrinologist if:
 
 - Central (secondary) hypothyroidism is suspected
-- TSH remains elevated despite maximum thyroxine dose (200 mcg/day) and confirmed adherence
+- TSH remains elevated despite thyroxine at 200 mcg/day and confirmed adherence
 - The diagnosis remains uncertain after repeated thyroid function tests
 
 ---
