@@ -562,6 +562,12 @@ describe("US-42 AC2/AC4 sentence pairs", () => {
     expect(fails(run().AC2).join("\n")).toContain("20 mg");
     reps.alpha.changed_tokens[reps.alpha.changed_tokens.length - 1].body_line = "Participants took 120 mg daily for six weeks.";
   });
+  it("R1 (round 12): a quote cut inside 'one hundred twenty mg' does not verify 20 mg", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it with food", "Participants took 20 mg daily for six weeks.\nTake it with food"));
+    withRaw("Participants took one hundred twenty mg daily for six weeks.");
+    reps.alpha.changed_tokens.push({ body_line: "Participants took 20 mg daily for six weeks.", raw_quote: "twenty mg daily for six weeks." });
+    expect(fails(run().AC2).join("\n")).toContain("20 mg");
+  });
   it("R2: swapping 'six mg' and 'twelve mg' between two sentences needs an entry on each line", () => {
     const base = fx("alpha.new.md").replace("Take it with food", "Adults took six mg before breakfast.\nChildren took twelve mg after dinner.\nTake it with food");
     put("docs/blog/alpha.md", base);
@@ -1443,6 +1449,13 @@ describe("US-42 AC2 void entries, number words, abbreviations (v3)", () => {
     const bad = run().AC2;
     expect(fails(bad).join()).toContain('"300 mg"');
     expect(bad.evidence.join("\n")).toContain("VOID 0: retired");
+  });
+  it("lists every void entry in the --out markdown, without raw_quote text", () => {
+    reps.alpha.changed_tokens.push({ body_line: "No such line, and a long one that runs past sixty characters for the clip.", raw_quote: "secret raw words here for the quote", void: true, void_reason: "typo | first draft" });
+    const md = renderReport("t", "HEAD", "abc", [run().AC2], [], false);
+    expect(md).toContain("## Voided entries");
+    expect(md).toContain("alpha: VOID 1: typo / first draft [body: No such line, and a long one that runs past sixty characters]");
+    expect(md).not.toContain("secret raw words");
   });
   it("validates void and void_reason, and documents them in the schema", () => {
     const r = { ...exampleReport("x"), changed_tokens: [{ body_line: "a", raw_quote: "b", void: "yes" }] };

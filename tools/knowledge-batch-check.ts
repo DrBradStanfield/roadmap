@@ -636,6 +636,22 @@ const hasQuote = (hay: string, q: string) => {
   return false;
 };
 
+/** True when the quote starts or ends inside a number-word expression of `hay` ("twenty mg" cut from "one hundred twenty mg"). */
+function splitsNumberWords(hay: string, q: string, i: number): boolean {
+  const nw = new RegExp(`^(?:${W})$`, "i");
+  const first = /^[a-z]+/i.exec(q)?.[0] ?? "", last = /[a-z]+$/i.exec(q)?.[0] ?? "";
+  if (nw.test(first)) {
+    const before = hay.slice(0, i).trimEnd().split(/\s+/).slice(-2).map((w) => w.replace(/^[^a-z]+/i, ""));
+    const p1 = before[before.length - 1] ?? "";
+    if (nw.test(p1) || (/^and$/i.test(p1) && /^(?:hundred|thousand)$/i.test(before[0] ?? "") && before.length === 2)) return true;
+  }
+  if (nw.test(last)) {
+    const after = hay.slice(i + q.length).trimStart().split(/\s+/).slice(0, 2).map((w) => w.replace(/^[^a-z]+/i, ""));
+    if (nw.test(after[0] ?? "") || (/^and$/i.test(after[0] ?? "") && /^(?:hundred|thousand)$/i.test(last) && nw.test(after[1] ?? ""))) return true;
+  }
+  return false;
+}
+
 /** Find `q` in `hay`, then re-tokenise the whole words around each hit: the token must be a whole token there ("7 mmol/L" is not "1.7 mmol/L"). */
 function findWhole(hay: string, q: string, tok: string, lined = false): "ok" | "partial" | "absent" {
   let found = false;
@@ -643,6 +659,7 @@ function findWhole(hay: string, q: string, tok: string, lined = false): "ok" | "
     found = true;
     if (!atBoundary(hay, q, i)) continue;
     let a = i, b = i + q.length;
+    if (splitsNumberWords(hay, q, i)) continue;
     while (a > 0 && !/\s/.test(hay[a - 1])) a--;
     while (b < hay.length && !/\s/.test(hay[b])) b++;
     const words = tokenise(hay.slice(a, b), { keepRefs: true });
@@ -793,7 +810,7 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
   };
   const entries = rep.changed_tokens.flatMap((e, i) => {
     if (!e.void) return [{ e, ok: verifyEntry(e, i) }];
-    ac2.infos.push(`${tag} VOID ${i}: ${e.void_reason ?? "(no reason)"}`);
+    ac2.infos.push(`${tag} VOID ${i}: ${e.void_reason ?? "(no reason)"} [body: ${e.body_line.replace(/\s+/g, " ").slice(0, 60)}]`);
     return [];
   });
   const valid = entries.filter((x) => x.ok).map((x) => ({ ...x.e, ok: x.ok! }));
@@ -1224,6 +1241,8 @@ export function renderReport(batch: string, base: string, baseSha: string, resul
     L.push(`| ${r.handle} | ${r.type} | ${r.rawRel} | ${r.rawSha} | ${r.bodySha.slice(0, 16)} | ${r.tokensNew} | ${r.quoted} | ${r.deleted} | ${r.hedgeBefore}>${r.hedgeAfter} | ${r.productsBefore}>${r.productsAfter} |`);
   }
   if (rows.length > cap) L.push("", `${rows.length - cap} more handles omitted to stay under the line cap.`);
+  const voids = results.flatMap((r) => r.evidence).filter((e) => /^\S+: VOID \d+: /.test(e));
+  if (voids.length) L.push("", "## Voided entries", "", ...voids.map((v) => `- ${v.replace(/\|/g, "/")}`));
   const ex = results.flatMap((r) => r.excepted ?? []);
   if (ex.length) {
     L.push("", "## Accepted exceptions", "", "| check | handle | by | date | reason | match sha256 |", "|---|---|---|---|---|---|");
