@@ -41,7 +41,7 @@ jobs:
   ship:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 60
     steps:
       - name: Verify, notify, wait 30 min, re-verify, merge, dispatch deploy
         env:
@@ -72,10 +72,16 @@ jobs:
               )] | length')
           [ "${verdict}" -ge 1 ] || { echo "No trusted APPROVE verdict for ${HEAD_SHA} — not shipping."; exit 0; }
 
-          # The named 'test' check must be green on this exact commit.
-          ok=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs" \
-            | jq '[.check_runs[] | select(.name=="test" and .conclusion=="success")] | length')
-          [ "${ok}" -ge 1 ] || { echo "'test' check not green on ${HEAD_SHA} — not shipping."; exit 0; }
+          # The named 'test' check must be green on this exact commit. The review
+          # (~80 s) usually ends before 'test' (~3 min), so wait up to 10 min for
+          # it to finish instead of reading it once (#124/#129 stalled, 2026-10-07).
+          for _ in $(seq 40); do
+            st=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs?check_name=test" \
+              | jq -r '[.check_runs[].conclusion] | if any(. == "success") then "success"
+                  elif length > 0 and all(. != null) then "failed" else "pending" end')
+            [ "${st}" = "pending" ] || break; sleep 15
+          done
+          [ "${st}" = "success" ] || { echo "'test' check ${st} on ${HEAD_SHA} — not shipping."; exit 0; }
 
           # Veto window: notify (native email via issue), wait 30 minutes.
           # The email must stand alone — what the change is, why it exists, and
