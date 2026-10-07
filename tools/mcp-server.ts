@@ -27,7 +27,7 @@ import { describeStorageFailure, isStorageFailure } from '../packages/health-cor
 const INSTRUCTIONS =
   'These tools read and write ONE local health record file — the user’s own. Read before you write: values are ' +
   'slotted one per metric per day, and a day that already holds a value is corrected, never added to twice. ' +
-  'Nothing is ever deleted; a superseded row stays as "entered-in-error". The plan from get_plan is educational, ' +
+  'No value is ever deleted; a superseded row stays as "entered-in-error". The plan from get_plan is educational, ' +
   'not medical advice, and its hedged wording and citations are calibrated — pass them on as written. ' +
   // US-32 AC39: while the repository is hidden this server can only refuse a report, so it offers none.
   (REPO_PUBLIC

@@ -26,10 +26,17 @@ export const CHAT_HISTORY_MAX_CONVERSATIONS = 50;
 /** Prior turns a chat request carries: the BYOK transport and the widget's
  *  server both slice the conversation to this before it reaches the model. */
 export const MAX_HISTORY_MESSAGES = 20;
-/** Longest a prior turn may be when it travels with a request: a reply, not a
- *  question, so well past the message limit; the token budget in
- *  buildConversationMessages does the real trimming. */
+/** Longest a prior turn may be when it travels with a request: never below
+ *  the message limit, so a pasted question travels whole (US-15 AC26); the
+ *  token budget in buildConversationMessages does the real trimming. */
 export const MAX_HISTORY_TURN_CHARS = 8000;
+
+/** `s` cut to at most `n` UTF-16 code units, never through a surrogate pair:
+ *  an emoji astride the cut is dropped, not halved (US-15 AC26). */
+export function cutText(s: string, n: number): string {
+  const cut = s.slice(0, n);
+  return /[\uD800-\uDBFF]$/.test(cut) ? cut.slice(0, -1) : cut;
+}
 
 export interface ChatFileMessage {
   id: string;

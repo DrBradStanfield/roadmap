@@ -11,7 +11,7 @@
  * test HealthTool uses to load the form.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, fireEvent, cleanup } from '@testing-library/react';
+import { render, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
 import { RoadmapStore } from '../src/storage/roadmap-store';
 import { addMeasurement, initRoadmapStore } from '../src/lib/roadmap-data';
@@ -122,6 +122,111 @@ describe('EmailLandingNotice (US-22 AC13)', () => {
 
   it('can be dismissed', () => {
     const { getByRole, queryByRole } = render(<EmailLandingNotice />);
+    fireEvent.click(getByRole('button', { name: 'Dismiss' }));
+    expect(queryByRole('status')).toBeNull();
+  });
+});
+
+/**
+ * US-22 AC14 (2026-10-04) — most empty landings are the mail app's own browser,
+ * a storage area that never held the plan, while clicks that opened the
+ * person's own browser found it intact. So the notice first says what works:
+ * open the page there. The address is a literal, never location.href (that
+ * would carry whatever query the click arrived with).
+ */
+describe('EmailLandingNotice: the in-app line and Copy link (US-22 AC14)', () => {
+  const ADDRESS = 'https://drstanfield.com/pages/roadmap';
+  const SHOWN = 'drstanfield.com/pages/roadmap';
+  const IN_APP =
+    'Opened this from your email app? Your plan is in the browser where you made it. Open drstanfield.com/pages/roadmap there.';
+  const setClipboard = (clipboard: unknown) =>
+    Object.defineProperty(navigator, 'clipboard', { value: clipboard, configurable: true });
+  afterEach(() => {
+    setClipboard(undefined);
+    vi.useRealTimers();
+  });
+
+  // One paragraph more than AC13, no address row: the notice must still fit an
+  // iPhone 15 screen at load, Connect and Dismiss included.
+  it('opens with the in-app line, whose address is the copy target, and Copy link joins the Connect row', () => {
+    arrive('/pages/roadmap?utm_source=klaviyo#plan');
+    const { getByRole, getByText } = render(<EmailLandingNotice />);
+    const notice = getByRole('status');
+    const text = notice.textContent ?? '';
+    expect(text.startsWith(IN_APP)).toBe(true);
+    expect(text).not.toContain('https://');
+    expect(text).not.toContain(location.href);
+    expect(text).not.toMatch(/—/);
+    expect(getByText(IN_APP.slice(0, 32)).closest('p')?.textContent).toBe(IN_APP);
+    expect(getByText(SHOWN).closest('p')?.textContent).toBe(IN_APP);
+    const buttons = [...notice.querySelectorAll(':scope > button')].map((b) => b.textContent);
+    expect(buttons).toEqual(['Connect', 'Copy link', 'Dismiss']);
+    expect(text.indexOf('Looking for your plan?')).toBeLessThan(text.indexOf('Copy link'));
+  });
+
+  it('the copy runs inside the press, before any await (WebKit refuses a write outside the gesture)', () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    setClipboard({ writeText });
+    const { getByRole } = render(<EmailLandingNotice />);
+    fireEvent.click(getByRole('button', { name: 'Copy link' }));
+    expect(writeText).toHaveBeenCalledWith(ADDRESS);
+  });
+
+  it('copies the literal address, counts the copy, and says Copied briefly', async () => {
+    vi.useFakeTimers();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    setClipboard({ writeText });
+    arrive('/pages/roadmap?utm_source=klaviyo');
+    const { getByRole } = render(<EmailLandingNotice />);
+    await act(async () => { fireEvent.click(getByRole('button', { name: 'Copy link' })); });
+    expect(writeText).toHaveBeenCalledWith(ADDRESS);
+    expect(trackProductEvent).toHaveBeenCalledWith('email_landing_link_copied');
+    expect(getByRole('status').contains(getByRole('button', { name: 'Copied' }))).toBe(true);
+    act(() => { vi.advanceTimersByTime(2000); });
+    expect(getByRole('button', { name: 'Copy link' })).toBeTruthy();
+  });
+
+  it.each([
+    ['missing', () => undefined],
+    ['refused', () => ({ writeText: vi.fn().mockRejectedValue(new Error('NotAllowedError')) })],
+  ])('a %s clipboard selects the address in the sentence and asks for a copy by hand, uncounted', async (_case, clipboard) => {
+    setClipboard(clipboard());
+    const { getByRole } = render(<EmailLandingNotice />);
+    await act(async () => { fireEvent.click(getByRole('button', { name: 'Copy link' })); });
+    expect(window.getSelection()?.toString()).toBe(SHOWN);
+    expect(getByRole('button', { name: 'Select and copy the address' })).toBeTruthy();
+    expect(trackProductEvent).not.toHaveBeenCalledWith('email_landing_link_copied');
+  });
+
+  it('a stale Copied timer never overwrites a newer label', async () => {
+    vi.useFakeTimers();
+    const writeText = vi.fn().mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('NotAllowedError'));
+    setClipboard({ writeText });
+    const { getByRole } = render(<EmailLandingNotice />);
+    await act(async () => { fireEvent.click(getByRole('button', { name: 'Copy link' })); });
+    act(() => { vi.advanceTimersByTime(1000); });
+    await act(async () => { fireEvent.click(getByRole('button', { name: 'Copied' })); });
+    act(() => { vi.advanceTimersByTime(2000); });
+    expect(getByRole('button', { name: 'Select and copy the address' })).toBeTruthy();
+  });
+
+  it('dismissing clears a pending Copied timer', async () => {
+    vi.useFakeTimers();
+    setClipboard({ writeText: vi.fn().mockResolvedValue(undefined) });
+    const { getByRole } = render(<EmailLandingNotice />);
+    await act(async () => { fireEvent.click(getByRole('button', { name: 'Copy link' })); });
+    expect(vi.getTimerCount()).toBe(1);
+    fireEvent.click(getByRole('button', { name: 'Dismiss' }));
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('Connect and Dismiss still work beside Copy link', () => {
+    const opened = vi.fn();
+    window.addEventListener(OPEN_PICKER_EVENT, opened);
+    const { getByRole, queryByRole } = render(<EmailLandingNotice />);
+    fireEvent.click(getByRole('button', { name: 'Connect' }));
+    expect(opened).toHaveBeenCalledTimes(1);
+    window.removeEventListener(OPEN_PICKER_EVENT, opened);
     fireEvent.click(getByRole('button', { name: 'Dismiss' }));
     expect(queryByRole('status')).toBeNull();
   });

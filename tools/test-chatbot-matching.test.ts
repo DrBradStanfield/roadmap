@@ -175,3 +175,161 @@ describe('test-chatbot-matching --category comma list (US-15 AC13)', () => {
     expect(queriesLine(a)).toBe(expectLine(routed(a), fixed(a)));
   }, 120_000);
 });
+
+// US-45 AC6: a fixture's `surface` adds that surface's posture block to the answer
+// call, after the products block and before any articles, as buildSystemBlocks does.
+describe('test-chatbot-matching surface posture (US-45 AC6)', () => {
+  interface Entry { query: string; category: string; surface?: string; answer_handles?: string[]; expected?: string[] }
+  const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
+  const cases = all.filter(q => q.category === 'product-potassium-fiber');
+  const DOCTOR = '## SURFACE CONTEXT — Dr Brad education assistant';
+  const BRAND = '## SURFACE CONTEXT — MicroVitamin brand assistant';
+
+  it('each answer call carries exactly its own surface posture, before the articles', () => {
+    expect(cases.length).toBeGreaterThan(0);
+    expect(cases.every(q => q.surface === 'doctor' || q.surface === 'brand')).toBe(true);
+    expect(new Set(cases.map(q => q.surface))).toEqual(new Set(['doctor', 'brand']));
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-surface-'));
+    try {
+      const stub = join(dir, 'fetch-stub.mjs');
+      const log = join(dir, 'calls.jsonl');
+      writeFileSync(stub, `
+        import { appendFileSync } from 'node:fs';
+        globalThis.fetch = async (_url, init) => {
+          const body = JSON.parse(init.body);
+          if (Array.isArray(body.system)) throw new Error('router called');
+          const s = body.system;
+          const at = (t) => s.indexOf(t);
+          appendFileSync(${JSON.stringify(log)}, JSON.stringify({
+            query: body.messages[0].content,
+            doctor: at(${JSON.stringify(DOCTOR)}), brand: at(${JSON.stringify(BRAND)}),
+            products: at("## Dr Stanfield's Products"), articles: at('## Referenced Blog Articles'),
+          }) + '\\n');
+          return new Response(JSON.stringify({
+            content: [{ type: 'text', text: 'stub answer' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+          }), { status: 200, headers: { 'content-type': 'application/json' } });
+        };
+      `);
+      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
+        '--category', 'product-potassium-fiber', '--fixed-handles-only', '--answer-check-runs', '1']);
+      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
+      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
+      const calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l) as
+        { query: string; doctor: number; brand: number; products: number; articles: number });
+      expect(calls.length, res.stderr).toBe(cases.length);
+      const seen = calls.map(c => {
+        expect((c.doctor >= 0) !== (c.brand >= 0)).toBe(true); // one posture, never both or none
+        const at = Math.max(c.doctor, c.brand);
+        expect(at).toBeGreaterThan(c.products);
+        if (c.articles >= 0) expect(at).toBeLessThan(c.articles);
+        return `${c.query}|${c.doctor >= 0 ? 'doctor' : 'brand'}`;
+      }).sort();
+      expect(seen).toEqual(cases.map(q => `${q.query}|${q.surface}`).sort());
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 120_000);
+});
+
+// US-45 AC2/AC3 scoring: a referral needs "your doctor" (Brad being a doctor is not
+// one), and must_not_claim fails a stated claim but passes a sentence that denies it.
+describe('test-chatbot-matching must_not_claim and referral scoring (US-45 AC2, AC3)', () => {
+  const LISINOPRIL = 'I take lisinopril. Is Potassium Fiber OK for me?|doctor';
+  const BP = 'Will Potassium Fiber lower my blood pressure?|brand';
+  const GUT = 'Is Potassium Fiber good for gut health and regularity?|doctor';
+  const ORGANIC = 'Is Potassium Fiber organic?|brand';
+  const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as
+    { category: string; query: string; surface?: string; must_mention?: string[] }[];
+  // Fixtures a bare "stub answer" fails: every one with a must_mention list.
+  const needText = all.filter(q => q.category === 'product-potassium-fiber' && q.must_mention?.length)
+    .map(q => `${q.query}|${q.surface}`);
+
+  /** Offline run of the category; answers come from `answers` by "query|surface". Returns the failing keys. */
+  function failing(answers: Record<string, string>): string[] {
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-claim-'));
+    try {
+      const stub = join(dir, 'fetch-stub.mjs');
+      writeFileSync(stub, `
+        const answers = ${JSON.stringify(answers)};
+        globalThis.fetch = async (_url, init) => {
+          const body = JSON.parse(init.body);
+          const surface = body.system.includes('MicroVitamin brand assistant') ? 'brand' : 'doctor';
+          const text = answers[body.messages[0].content + '|' + surface] ?? 'stub answer';
+          return new Response(JSON.stringify({
+            content: [{ type: 'text', text }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+          }), { status: 200, headers: { 'content-type': 'application/json' } });
+        };
+      `);
+      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
+        '--category', 'product-potassium-fiber', '--fixed-handles-only', '--answer-check-runs', '1']);
+      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
+      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
+      const out = res.stdout.replace(/\x1b\[[0-9;]*m/g, '');
+      return [...out.matchAll(/^✗ \[product-potassium-fiber\] "(.+)" \((doctor|brand)\)$/gm)].map(m => `${m[1]}|${m[2]}`);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it('passes compliant answers, denials included', () => {
+    const f = failing({
+      [LISINOPRIL]: 'It has 500 mg of added potassium a scoop. Talk to your doctor before using it. Brad owns the company that sells it and profits from its sale.',
+      [BP]: 'It makes no health claims and is sold for its nutrient content: each scoop has 8 g of fiber and 500 mg of potassium. It makes no claim that it can lower blood pressure, and it isn\'t sold for heart health.',
+      [GUT]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. It can\'t be described as something that supports gut health or keeps you regular. Brad owns the company and profits from its sale.',
+      [ORGANIC]: 'No. The word Organic in Inavea™ Essential Organic Talh is an ingredient name; it doesn’t mean it’s organic.',
+    });
+    // Liveness: every other fixture that needs text got "stub answer" and failed.
+    expect(f.sort()).toEqual(needText.filter(k => ![LISINOPRIL, BP, GUT, ORGANIC].includes(k)).sort());
+  }, 60_000);
+
+  // Every failing stub below carries the AC3 positioning, so only the claim under test can fail it.
+  it('fails a missing referral and a stated claim', () => {
+    const f = failing({
+      [LISINOPRIL]: 'Potassium Fiber contains 500 mg potassium. Brad is a doctor who owns the company and profits from its sale.',
+      [BP]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop has 500 mg of potassium, and it can lower blood pressure.',
+      [GUT]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop has 8 g of acacia fiber, which is a prebiotic. Brad owns the company and profits from its sale.',
+      [ORGANIC]: 'Yes, it’s organic: Inavea™ Essential Organic Talh.',
+    });
+    expect(f).toEqual(expect.arrayContaining([LISINOPRIL, BP, GUT, ORGANIC]));
+  }, 60_000);
+
+  it('a negation outside the claim\'s clause does not excuse it', () => {
+    const f = failing({
+      [BP]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop has 500 mg of potassium. It has no added sugar and can lower blood pressure.',
+      [GUT]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop has 8 g of fiber. It isn\'t a medicine, but it **keeps you regular**. Brad owns the company and profits from its sale.',
+    });
+    expect(f).toEqual(expect.arrayContaining([BP, GUT]));
+  }, 60_000);
+
+  it('an affirming idiom is not a negation (Codex, 2026-10-07)', () => {
+    const f = failing({
+      [BP]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop contains 500 mg potassium. There is no doubt it can lower blood pressure.',
+      [GUT]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop has 8 g of fiber. It not only tastes good, it keeps you regular. Brad owns the company and profits from its sale.',
+    });
+    expect(f).toEqual(expect.arrayContaining([BP, GUT]));
+    // Omitting the no-health-claims positioning fails, and so does the MicroVitamin disclaimer line (US-45 AC3, AC4).
+    expect(failing({ [BP]: 'Each scoop has 8 g of fiber and 500 mg of potassium.' })).toContain(BP);
+    expect(failing({
+      [BP]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. This isn\'t a disease claim; MicroVitamin is a daily multivitamin, not a treatment for any condition.',
+    })).toContain(BP);
+    // Medicine spacing needs the two-hour, before-or-after direction (US-45 AC7).
+    const MEDS = 'Can I take Potassium Fiber with my other medicines?|brand';
+    expect(failing({ [MEDS]: 'Yes, you can take it with your medicines.' })).toContain(MEDS);
+    expect(failing({ [MEDS]: 'Take other medicines at least two hours before or after a scoop.' })).not.toContain(MEDS);
+    expect(failing({ [MEDS]: 'Take other medicines no more than two hours before or after a scoop.' })).toContain(MEDS);
+    // A reversed positioning fails (Codex, 2026-10-07).
+    expect(failing({
+      [BP]: 'It makes health claims and is sold for its nutrient content: each scoop has 8 g of fiber and 500 mg of potassium.',
+    })).toContain(BP);
+    // An outcome-research summary fails even with no claim phrase (orchestrator ruling, 2026-10-07).
+    expect(failing({
+      [BP]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop has 500 mg of potassium. A meta-analysis of 25 randomized trials found potassium supplementation lowered systolic pressure by 4.48 mmHg.',
+    })).toContain(BP);
+    // Masking keeps the window's span: "cannot" sits 14 words back, outside it.
+    expect(failing({
+      [BP]: 'It makes no health claims and is sold for its nutrient content: 8 g of fiber and 500 mg of potassium a scoop. Each scoop contains 500 mg potassium. I cannot speak for other commercial products, though there is no doubt this particular drink can lower blood pressure.',
+    })).toContain(BP);
+  }, 60_000);
+});

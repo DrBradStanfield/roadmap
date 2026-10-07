@@ -13,7 +13,7 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   crisp verifiable deliverable per worker, spend proportionate to the output's worth; justify unusual scale.
 - **Workers and reviewers are Opus at high effort**: spawn `worker` and `adversary` by name (their
   `.claude/agents/*.md` pin `model: opus`, `effort: high`); never a per-call `model` (it overrides the pin),
-  never Sonnet or Haiku. You run at high effort: the cloud environment sets `CLAUDE_CODE_EFFORT_LEVEL=high`
+  never Haiku (Sonnet 5.5 is allowed, Brad 2026-10-07, for mechanical routines). You run at high effort: the cloud environment sets `CLAUDE_CODE_EFFORT_LEVEL=high`
   (Brad, 2026-09-28; the Opus default was medium). It overrides every agent's pin, which is also high; never set
   it lower.
 - Judgment that shapes the loop's conclusions is never delegated: what a finding means, what to propose, what to
@@ -25,12 +25,11 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   ledger row; re-judge customer-facing output through its full compliance and quality gates with fresh eyes; and
   hunt for the claim whose evidence is missing. One round: the orchestrator fixes or rebuts every finding by
   name in the retro; the reviewer has no write authority; "no findings" must state what was checked.
-- **Codex beside the adversary** (Brad, 2026-09-28): commit the deliverable first, then in ONE background Bash
-  call run `npm i -g @openai/codex@0.157.1 && export CODEX_HOME=$(mktemp -d) && printenv OPENAI_API_KEY | codex
-  login --with-api-key && node tools/codex-review.mjs --loop --range <run's first commit>^..HEAD --timeout-min
-  9` (`OPENAI_API_KEY` is not yet in the cloud environment; until it is, the login fails). Handle its findings
-  like the adversary's and re-run after any substantive fix. `incomplete` is never a pass, and nor is a missing
-  wrapper, a run with no commits, or 'Nothing to review': record why in the retro.
+- **No Codex in cloud loops** (Brad, 2026-10-04, superseding 2026-09-28): Codex signs in only with Brad's ChatGPT
+  subscription on his Mac, never an API key, so a cloud loop cannot run it. The fresh `adversary` above is the
+  run's whole review; the retro says "Codex: not run (cloud)" in one line, and that is not a gap or a failure.
+  Brad may run `node tools/codex-review.mjs --loop --range <commits>` on a loop's commits from his Mac; handle
+  any findings he relays like the adversary's.
 ## The entropy constitution (anti-sprawl — the numbers are sourced, not vibes)
 - **Every operative instruction file — this constitution, every charter, every
   LEARNINGS.md — is capped at 200 lines / 25KB** (past it, models silently drop rules).

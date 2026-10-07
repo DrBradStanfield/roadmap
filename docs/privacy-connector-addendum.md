@@ -74,6 +74,13 @@ file stays. A file nobody acts on is removed at your next import, by whichever r
 take, once it is two hours old. If you never import again it stays in your own folder,
 where you can delete it yourself.
 
+A call that confirms a change, or files what your assistant found, also carries your
+short approval quoted in your own words (at most 200 characters). The server reads it
+only to check it is there and within that length, holds it in memory for that one
+request, and never stores,
+logs or counts it. It exists because ChatGPT's safety layer judges the call itself for
+evidence of your approval.
+
 ## What we store
 
 For the connector: no account, no copy of your health data, and no row that
@@ -228,9 +235,9 @@ address is a stranger to us again, and an optin naming it starts over, welcome e
 included.
 
 **Chat.** On the storefront widget we store one row for each question you send: the
-text of that question, which may hold health details you wrote into it; the articles it
-matched; its classification; the router's raw output and any router error; the name of
-the surface; and a pseudonymous session and conversation id. The earlier turns of the
+first 500 characters of that question, nothing more, which may hold health details
+you wrote into it; the articles it matched; its classification; the router's raw
+output and any router error; the name of the surface; and a pseudonymous session and conversation id. The earlier turns of the
 conversation and the reply are not stored. A daily job blanks the question text, the
 router's raw output and the error text once a row is 30 days old; the match record
 stays: the articles, the classification, the ids. A guest session row holds a hashed

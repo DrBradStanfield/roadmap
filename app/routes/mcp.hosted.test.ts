@@ -156,7 +156,7 @@ async function redeem(form: Record<string, string>) {
     body: new URLSearchParams(form),
   });
   expect(res.status).toBe(200);
-  return (await res.json()) as { access_token: string; refresh_token: string; expires_in: number };
+  return (await res.json()) as { access_token: string; refresh_token: string; expires_in: number; scope: string };
 }
 
 async function rpc(access: string, method: string, params: unknown = {}, now = NOW) {
@@ -185,6 +185,8 @@ async function callTool(access: string, name: string, args: unknown, now = NOW) 
 
 /** Eleven seconds after NOW: past the proposal receipt's `nbf` (US-36 AC9). */
 const LATER = new Date(Date.parse(NOW) + 11_000).toISOString();
+/** The user's own words, quoted in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
+const APPROVED = 'Yes, go ahead';
 
 /**
  * A permanent tool on the hosted surface takes two calls (US-36 AC9): propose,
@@ -197,7 +199,7 @@ async function twoStep(access: string, name: string, args: Record<string, unknow
   const { confirm, proposal } = proposed.structured as { confirm?: string; proposal?: boolean };
   if (!confirm) return proposed; // nothing to confirm: the tool would not have written
   expect(proposal).toBe(true);
-  return callTool(access, name, { ...args, confirm }, LATER);
+  return callTool(access, name, { ...args, confirm, approval: APPROVED }, LATER);
 }
 
 /** Distinct days, so every add lands in a free slot. */
@@ -1230,6 +1232,13 @@ describe('bodies and floods are bounded (US-32)', () => {
 });
 
 describe('discovery documents (US-32, design §6)', () => {
+  /** The scope a real token response states, as a list. */
+  const grantedScopes = async (): Promise<string[]> => {
+    const { clientId, refresh } = await connect();
+    const tokens = await redeem({ grant_type: 'refresh_token', refresh_token: refresh, client_id: clientId });
+    return tokens.scope.split(' ');
+  };
+
   it('names this resource exactly, and lists our issuer first', async () => {
     const { loader: wellKnown } = await import('./[.]well-known.$');
     const doc = await (await wellKnown({ params: { '*': 'oauth-protected-resource/mcp' } } as never) as Response).json();
@@ -1237,9 +1246,10 @@ describe('discovery documents (US-32, design §6)', () => {
     expect(doc.authorization_servers[0]).toBe(ISSUER);
     // A live page, not a 404: this is the link a client shows before consent.
     expect(doc.resource_documentation).toBe('https://drstanfield.com/pages/connector-privacy');
-    // No scope menu: nothing reads a requested scope and every grant carries
-    // the same fixed pair, so advertising one promised a choice we never make.
-    expect(doc.scopes_supported).toBeUndefined();
+    // US-32 AC43: OpenAI's dashboard needs advertised scopes. They describe
+    // what every token already says; nothing enforces them.
+    expect(doc.scopes_supported).toEqual(['health.read', 'health.append']);
+    expect(doc.scopes_supported).toEqual(await grantedScopes());
   });
 
   it('advertises CIMD and "none", which Claude needs both of', async () => {
@@ -1249,7 +1259,41 @@ describe('discovery documents (US-32, design §6)', () => {
     expect(doc.token_endpoint_auth_methods_supported).toContain('none');
     expect(doc.code_challenge_methods_supported).toEqual(['S256']);
     expect(doc.authorization_response_iss_parameter_supported).toBe(true);
-    expect(doc.scopes_supported).toBeUndefined();
+    // US-32 AC43: the same list on every authorization-server path, and the
+    // same list the token response states.
+    const granted = await grantedScopes();
+    for (const path of ['oauth-authorization-server', 'oauth-authorization-server/mcp', 'openid-configuration']) {
+      const served = await (await wellKnown({ params: { '*': path } } as never) as Response).json();
+      expect(served.scopes_supported).toEqual(['health.read', 'health.append']);
+      expect(served.scopes_supported).toEqual(granted);
+    }
+  });
+
+  // US-32 AC42: OpenAI's plugin dashboard fetched the RFC 8414 document, then
+  // asked /.well-known/openid-configuration, got a 404 and stopped
+  // ("Authorization unavailable"). The MCP spec has clients try both paths for
+  // a pathless issuer, so both answer, byte for byte the same.
+  it('answers the OpenID path with the same document, claiming nothing OIDC (US-32 AC42)', async () => {
+    const { loader: wellKnown } = await import('./[.]well-known.$');
+    const get = async (path: string) => (await wellKnown({ params: { '*': path } } as never)) as Response;
+    const oauth = await get('oauth-authorization-server');
+    const oidc = await get('openid-configuration');
+    expect(oidc.status).toBe(200);
+    expect(oidc.headers.get('Cache-Control')).toBe(oauth.headers.get('Cache-Control'));
+    expect(oidc.headers.get('Access-Control-Allow-Origin')).toBeNull();
+    expect(await oidc.text()).toBe(await oauth.text());
+    const doc = await (await get('openid-configuration')).json();
+    expect(doc.issuer).toBe(ISSUER);
+    expect(doc.authorization_endpoint).toBe(`${ISSUER}/mcp/authorize`);
+    expect(doc.token_endpoint).toBe(`${ISSUER}/mcp/token`);
+    expect(doc.code_challenge_methods_supported).toContain('S256');
+    expect(doc.client_id_metadata_document_supported).toBe(true);
+    expect(doc.token_endpoint_auth_methods_supported).toEqual(['none']);
+    expect(doc.authorization_response_iss_parameter_supported).toBe(true);
+    // No ID token is ever issued, so no OIDC field may suggest one is.
+    for (const key of ['jwks_uri', 'userinfo_endpoint', 'id_token_signing_alg_values_supported', 'subject_types_supported']) {
+      expect(doc[key]).toBeUndefined();
+    }
   });
 });
 
@@ -1366,7 +1410,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
 
     // A commit that declines every value still files the PDF itself as a
     // metadata-only document (AC8): the row records the file, not acceptance.
-    const declined = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [] } });
+    const declined = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [], approval: APPROVED } });
     expect(declined.isError).toBe(false);
     expect((declined.structured as { written: unknown }).written).toEqual({ measurements: 0, labValues: 0, corrections: 0, documents: 1 });
     expect(storedRecord().measurements.filter((m) => m.source === 'lab_import')).toHaveLength(0);
@@ -1384,7 +1428,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     // A second lab file: extract, then a real commit.
     stubImport({ 'labs-2.pdf': PDF_BYTES.map((b, i) => (i === PDF_BYTES.length - 1 ? b ^ 1 : b)) }, () => labReport({ reportDate: '2026-08-21' }));
     const again = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fileNames: ['labs-2.pdf'] })).structured);
-    const commit = await callTool(access, 'import_documents', { commit: { receipt: again.receipt, accept: ['c1', 'c2'], replace: [] } });
+    const commit = await callTool(access, 'import_documents', { commit: { receipt: again.receipt, accept: ['c1', 'c2'], replace: [], approval: APPROVED } });
     expect(commit.isError).toBe(false);
     expect(commit.text).toContain('Saved to the user’s Dropbox');
     const stored = storedRecord();
@@ -1412,15 +1456,15 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     const data = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', {})).structured);
 
     const tampered = `${data.receipt!.slice(0, -3)}AAA`;
-    const forged = await callTool(access, 'import_documents', { commit: { receipt: tampered, accept: ['c1'], replace: [] } });
+    const forged = await callTool(access, 'import_documents', { commit: { receipt: tampered, accept: ['c1'], replace: [], approval: APPROVED } });
     expect(forged.isError).toBe(true);
     expect(forged.text).toContain('not valid');
 
-    const ok = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
+    const ok = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
     expect(ok.isError).toBe(false);
-    const spent = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
+    const spent = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
     expect(spent.isError).toBe(true);
-    expect(spent.text).toContain('already committed');
+    expect(spent.text).toContain('names no pending import'); // US-35 AC7: the spent receipt's file is gone
     expect(storedRecord().measurements.filter((m) => m.status === 'active')).toHaveLength(1);
 
     const missing = await callTool(access, 'import_documents', { fileNames: ['nope.pdf'] });
@@ -1445,12 +1489,12 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     expect(old.slot).toMatchObject({ state: 'held_different', existingRowId: 'old', replaceable: false });
     expect(recent.slot).toMatchObject({ state: 'held_different', existingRowId: 'recent', replaceable: true });
 
-    const refused = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [old.id] } });
+    const refused = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [old.id], approval: APPROVED } });
     expect(refused.isError).toBe(true);
     expect(refused.text).toContain('too old');
     expect(MAX_CORRECTION_AGE_DAYS).toBe(90); // the rule `replaceable` was computed against
 
-    const corrected = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [recent.id] } });
+    const corrected = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [recent.id], approval: APPROVED } });
     expect(corrected.isError).toBe(false);
     const rows = storedRecord().measurements;
     expect(rows.find((m) => m.id === 'recent')!.status).toBe('entered-in-error');
@@ -1502,8 +1546,10 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     expect(data.files[0].title!.length).toBeLessThanOrEqual(120);
     expect(data.candidates).toEqual([]);
     // The pending payload in the folder is metadata only too.
-    const pending = JSON.parse(cloud.files.get(pendingFiles()[0])!.json) as { documents: Array<Record<string, unknown>> };
-    expect(Object.keys(pending.documents[0]).sort()).toEqual(['contentHash', 'date', 'mimeType', 'sourceFileName', 'title', 'type']);
+    // Since 2026-10-07 the payload sits beside its MAC and issue time and nothing else (US-35 AC7).
+    const pending = JSON.parse(cloud.files.get(pendingFiles()[0])!.json) as { payload: { documents: Array<Record<string, unknown>> } };
+    expect(Object.keys(pending).sort()).toEqual(['issued', 'mac', 'payload', 'v']);
+    expect(Object.keys(pending.payload.documents[0]).sort()).toEqual(['contentHash', 'date', 'mimeType', 'sourceFileName', 'title', 'type']);
   });
 
   it('AC2 — five folder files a call: the rest come back as remaining with the commit-first instruction, and a second call with those names reads them (AC10: the machine cap the website spends from moves too)', async () => {
@@ -1533,7 +1579,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     stubImport({ 'us.pdf': PDF_BYTES }, () => labReport());
     const data = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', {})).structured);
     expect(data.candidates[0]).toMatchObject({ metric: 'ldl', value: 2.8, unit: 'mmol/L', displayValue: '108', displayUnit: 'mg/dL' });
-    const commit = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
+    const commit = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
     expect(commit.isError).toBe(false);
     expect(storedRecord().measurements.find((m) => m.source === 'lab_import')).toMatchObject({ metricType: 'ldl', value: 2.8 });
   });
@@ -1637,7 +1683,7 @@ describe('US-37 — a Dropbox read lists folder files that are not in the record
     const data = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fromNudge: true })).structured);
     expect(data.next).toContain('empty accept and replace');
     expect(importEvents()).toEqual([{ route: 'dropbox', phase: 'extract', files: '1', fromNudge: true }]);
-    const declined = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [] } });
+    const declined = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [], approval: APPROVED } });
     expect(declined.isError).toBe(false);
     // The row the empty commit wrote carries a hash — exactly the row the nudge must honour (review 3.1).
     expect(storedRecord().documents[0].contentHash).toMatch(/^sha256-/);
@@ -1671,7 +1717,8 @@ describe('US-37 — a Dropbox read lists folder files that are not in the record
 // ---------------------------------------------------------------------------
 // US-36 — file_results over the hosted surface
 // ---------------------------------------------------------------------------
-import { WRITES_PER_HOUR as HOURLY } from '../lib/mcp-grants.server';
+import { type AccessPayload, connectionKey, spendWrites, WRITES_PER_HOUR as HOURLY } from '../lib/mcp-grants.server';
+import { seal, unpackSealed } from '../lib/mcp-seal.server';
 
 describe('US-36 — file_results: propose parks a receipt and charges one, commit writes and spends it (AC5, AC6, usage signal)', () => {
   afterEach(() => setImportSeams(null));
@@ -1681,6 +1728,44 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
       { metric: 'ldl', printedName: 'LDL Cholesterol', value: 100, unit: 'mg/dL' },
       { metric: 'ferritin', printedName: 'Ferritin', value: 210, unit: 'ug/L', referenceLow: 30, referenceHigh: 300 },
     ],
+  });
+
+  it('US-36 AC9 / US-35 AC7 — a receipt of the other kind, or an old sealed blob, is refused in words: no throw, no charge, the pending file kept', async () => {
+    seedRecord();
+    const { access } = await connect();
+    stubImport({}, () => labReport());
+    const filed = OUTPUTS.file_results.parse((await callTool(access, 'file_results', rows())).structured); // charges an add
+    const profile = { heightCm: 178, expected: { heightCm: null } };
+    const proposed = OUTPUTS.update_profile.parse((await callTool(access, 'update_profile', profile)).structured); // charges a correction
+    // Both are UUID-shaped, so each passes the other's shape check and must fail on what it names.
+    expect(filed.receipt).toMatch(/^[0-9a-f-]{36}$/);
+    expect(proposed.confirm).toMatch(/^[0-9a-f-]{36}$/);
+    // The wire form of a receipt minted before 2026-10-07: `header.body`, base64url, about 400 characters.
+    const oldBlob = seal('state', { clientId: 'c', pad: 'x'.repeat(200) }, { clientId: 'c', resource: 'https://mcp.example.test/mcp' });
+    expect(oldBlob.length).toBeGreaterThan(MAX_RECEIPT_LENGTH);
+
+    const refusals = [
+      [await callTool(access, 'file_results', { commit: { receipt: proposed.confirm, accept: ['c1'], replace: [], approval: APPROVED } }), 'names no pending import'],
+      [await callTool(access, 'import_documents', { commit: { receipt: proposed.confirm, accept: ['c1'], replace: [], approval: APPROVED } }), 'names no pending import'],
+      [await callTool(access, 'update_profile', { ...profile, confirm: filed.receipt, approval: APPROVED }, LATER), 'does not match these arguments on this connection, or is not ours'],
+      [await callTool(access, 'update_profile', { ...profile, confirm: oldBlob, approval: APPROVED }, LATER), 'does not match these arguments on this connection, or is not ours'],
+      [await callTool(access, 'file_results', { commit: { receipt: oldBlob, accept: ['c1'], replace: [], approval: APPROVED } }), 'Pass the receipt exactly as the extract returned it'],
+    ] as const;
+    for (const [answer, words] of refusals) {
+      expect(answer.isError, words).toBe(true);
+      expect(answer.text).toContain(words);
+    }
+    expect(pendingFiles()).toEqual([`imports/pending-${filed.receipt}.json`]);
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
+
+    // The honest halves still work: the commit charges its add, the confirm is free.
+    expect((await callTool(access, 'file_results', { commit: { receipt: filed.receipt, accept: ['c1'], replace: [], approval: APPROVED } })).isError).toBe(false);
+    expect((await callTool(access, 'update_profile', { ...profile, confirm: proposed.confirm, approval: APPROVED }, LATER)).isError).toBe(false);
+    expect(storedRecord().profile.heightCm).toBe(178);
+    // Spent: the propose's add, the proposal's correction, the commit's add. Not one refused call cost anything.
+    const connection = connectionKey(unpackSealed<AccessPayload>('access', access)!);
+    expect(spendWrites(connection, HOURLY - 2 * WRITE_COST.add - WRITE_COST.correct)).toBe(true);
+    expect(spendWrites(connection, 1)).toBe(false);
   });
 
   it('never calls the extractor, writes nothing at propose, then commits what was accepted with importedVia assistant', async () => {
@@ -1700,7 +1785,7 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     expect(pendingFiles()).toHaveLength(1);
     expect(extracted).toEqual([]); // no model, so no file quota and no machine cap spent
 
-    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1', 'c2'], replace: [] } });
+    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1', 'c2'], replace: [], approval: APPROVED } });
     expect(commit.isError).toBe(false);
     const stored = storedRecord();
     expect(stored.measurements.find((m) => m.metricType === 'ldl')).toMatchObject({ source: 'lab_import', recordedAt: LAB_DAY });
@@ -1709,7 +1794,7 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     // A DCR-registered test client is not a pinned one, so its label is `other` — which is also what tells the harness apart from a real ChatGPT (AC12).
     expect(stored.documents[0]).toMatchObject({ sourceFileName: 'Results.pdf', contentHash: '', metadata: { importedVia: 'assistant', client: 'other' } });
     expect(pendingFiles()).toHaveLength(0);
-    const spent = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
+    const spent = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
     expect(spent.isError).toBe(true);
 
     // The same file re-sent is already_imported by name and date; another date files.
@@ -1734,7 +1819,7 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     const { access } = await connect();
     const data = OUTPUTS.file_results.parse((await callTool(access, 'file_results', rows())).structured);
     expect(data.candidates[0].slot).toMatchObject({ state: 'held_different', existingRowId: 'old', replaceable: true });
-    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c2'], replace: ['c1'] } });
+    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c2'], replace: ['c1'], approval: APPROVED } });
     expect(commit.isError).toBe(false);
     expect(storedRecord().measurements.find((m) => m.id === 'old')!.status).toBe('entered-in-error');
     // 1 (propose) + 1 + 5 (commit with one replace) = 7 spent; 53 adds remain of the hour.
@@ -1752,14 +1837,14 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     const { access } = await connect();
     const data = OUTPUTS.file_results.parse((await callTool(access, 'file_results', rows('2026-01-10'))).structured);
     expect(data.candidates[0].slot.replaceable).toBe(false);
-    const refused = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: [], replace: ['c1'] } });
+    const refused = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: [], replace: ['c1'], approval: APPROVED } });
     expect(refused.isError).toBe(true);
     expect(refused.text).toContain('too old to replace');
     expect(storedRecord().measurements.find((m) => m.id === 'old')!.status).toBe('active');
 
     const letter = OUTPUTS.file_results.parse((await callTool(access, 'file_results', { sourceFileName: 'letter.pdf', classification: 'clinic_letter', document: { title: 'Cardiology review', type: 'clinic_letter', date: '2026-08-01' } })).structured);
     expect(letter.documents).toEqual([{ sourceFileName: 'letter.pdf', title: 'Cardiology review', type: 'clinic_letter', date: '2026-08-01' }]);
-    const filed = await callTool(access, 'file_results', { commit: { receipt: letter.receipt, accept: [], replace: [] } });
+    const filed = await callTool(access, 'file_results', { commit: { receipt: letter.receipt, accept: [], replace: [], approval: APPROVED } });
     expect(filed.isError).toBe(false);
     expect(storedRecord().documents.map((d) => d.title)).toEqual(['Cardiology review']);
   });
@@ -1811,7 +1896,7 @@ describe('US-32 AC29 — the counter records why a call was refused', () => {
     expect(refused.isError).toBe(true);
     expect(refused.text).toContain('reads as a health value');
     expect(toolCallEvents()).toEqual([
-      { tool: 'report_feedback', client: expect.any(String), outcome: 'refused', reason: 'health-value' },
+      { tool: 'report_feedback', client: expect.any(String), outcome: 'refused', reason: 'health-value', step: 'propose' },
     ]);
     expect(JSON.stringify(toolCallEvents())).not.toContain('4.2');
     expect(JSON.stringify(toolCallEvents())).not.toContain(detail);
@@ -1832,7 +1917,7 @@ describe('US-32 AC29 — the counter records why a call was refused', () => {
     const events = toolCallEvents();
     expect(events).toEqual([
       { tool: 'read_record', client: expect.any(String), outcome: 'ok' },
-      { tool: 'correct_value', client: expect.any(String), outcome: 'refused', reason: 'malformed' },
+      { tool: 'correct_value', client: expect.any(String), outcome: 'refused', reason: 'malformed', step: 'propose' },
     ]);
 
     // Whatever the row held, the counter holds one word from the closed list.
@@ -1841,6 +1926,27 @@ describe('US-32 AC29 — the counter records why a call was refused', () => {
       expect(MCP_REFUSAL_REASONS).toContain(event.reason as string);
       expect(JSON.stringify(event)).not.toMatch(/\d+\.\d+|mmol|whatever/);
     }
+  });
+
+  it('US-36 AC9 (2026-10-07) — the user’s quoted words never reach a counter row; a confirm without them is counted as a refused confirm', async () => {
+    seedRecord((file) => ({
+      ...file,
+      measurements: [createMeasurement({ id: 'row-ldl', metricType: 'ldl', value: 3.2, recordedAt: '2026-08-30', createdAt: '2026-08-30' })],
+    }));
+    const { access } = await connect();
+    const args = { id: 'row-ldl', newValue: 2.8, expectedValue: 3.2 };
+    const { confirm } = (await callTool(access, 'correct_value', args)).structured as { confirm: string };
+    (recordServerEvent as unknown as { mockClear(): void }).mockClear();
+    const words = 'Yes please, fix that reading from Tuesday';
+    expect((await callTool(access, 'correct_value', { ...args, confirm }, LATER)).isError).toBe(true);
+    expect((await callTool(access, 'correct_value', { ...args, confirm, approval: words }, LATER)).isError).toBe(false);
+    expect(toolCallEvents()).toEqual([
+      { tool: 'correct_value', client: expect.any(String), outcome: 'refused', reason: 'confirm', step: 'confirm' },
+      { tool: 'correct_value', client: expect.any(String), outcome: 'ok', step: 'confirm' },
+    ]);
+    expect(JSON.stringify(vi.mocked(recordServerEvent).mock.calls)).not.toMatch(/Tuesday|Yes please/);
+    // Told at connect too: the second call carries the user's words.
+    expect(INSTRUCTIONS).toContain('only the second, after the user’s own yes and carrying their words as approval, does it');
   });
 
   it('a correction older than ninety days is filed as too-old', async () => {

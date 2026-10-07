@@ -28,7 +28,10 @@
  * screening op — those are last-write-wins current state, which a second
  * writer can only edit safely with the lamport discipline this does not take on.
  */
-import { acceptedLabUnits, canonicalLabRow, foldName, type LabCatalogEntry, labSlotKey, resolveLabCatalogEntry, type StoredLabRow } from './lab-catalog';
+import {
+  canonicalLabRow, correctionOffScale, type CountFault, foldName, labCountFault, type LabCatalogEntry, labSlotKey, labUnitRefusal,
+  resolveLabCatalogEntry, type StoredLabRow,
+} from './lab-catalog';
 import { METRIC_LABELS, METRIC_TO_FIELD } from './mappings';
 import { dayOf, localDay } from './merge';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
@@ -205,14 +208,16 @@ function toCanonicalUnit(metricType: string, value: number, unit: string | undef
 function toStoredLab(
   entry: LabCatalogEntry | undefined, value: number, unit: string,
   referenceLow?: number | null, referenceHigh?: number | null,
-): StoredLabRow | EditRejection {
+): StoredLabRow | (EditRejection & { fault?: CountFault }) {
   const bounds = { referenceLow: referenceLow ?? null, referenceHigh: referenceHigh ?? null };
   if (!entry) return { value, unit, ...bounds };
   const canonical = canonicalLabRow(entry, { value, unit, ...bounds });
   if (!canonical) {
     // The refusal, in the shape a core metric's already takes: what it is
-    // stored in, what spellings reach it, and the one that did not.
-    return reject('unknown-unit', `${entry.label} is stored in ${entry.unit}; this record takes ${acceptedLabUnits(entry).join(', ')}, not "${unit}"`);
+    // stored in, what spellings reach it, and the one that did not; or, for a
+    // count per µL, what was wrong with the number (US-21 AC15).
+    const fault = labCountFault(entry, { value, unit, ...bounds });
+    return { ...reject('unknown-unit', labUnitRefusal(entry, unit, fault)), ...(fault ? { fault } : null) };
   }
   return canonical.stored;
 }
@@ -427,6 +432,15 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
   // range was read in the old unit and no factor carries it across, so a
   // changed unit drops it rather than leaving it beside a number it misreads.
   const relabelled = stored.unit !== labRow.unit;
+  // A count per µL is checked against the range the row already holds, as an
+  // append checks its printed one (US-21 AC15), read on the canonical scale:
+  // a legacy row in a factor-1 spelling (K/uL) holds its range there too.
+  if (entry && request.unit !== undefined) {
+    const held = canonicalLabRow(entry, labRow);
+    if (held?.factor === 1 && correctionOffScale(entry, request.unit, stored.value, held.stored.referenceLow, held.stored.referenceHigh)) {
+      return reject('unknown-unit', labUnitRefusal(entry, request.unit, 'scale'));
+    }
+  }
   const row: FileLabValue = {
     ...labRow,
     id: newId(), value: stored.value, unit: stored.unit, createdAt: now,
@@ -464,6 +478,8 @@ export interface LabUnitRefusal {
   key: string;
   unit: string;
   message: string;
+  /** Set when the test takes the spelling and the NUMBER was refused (US-21 AC15). */
+  fault?: CountFault;
 }
 
 export interface BulkAppendResult {
@@ -473,9 +489,10 @@ export interface BulkAppendResult {
   skippedDuplicates: number;
   /**
    * Lab rows refused because the catalogue does not know that unit spelling
-   * for that test. The caller SHOWS these — a silently dropped value is the
+   * for that test, or, under a spelling it takes, for the number (`fault`,
+   * US-21 AC15). The caller SHOWS these — a silently dropped value is the
    * failure this whole change exists to prevent — and counts one
-   * `lab_unit_refused` event per row.
+   * `lab_unit_refused` event per spelling refusal only.
    */
   refused: LabUnitRefusal[];
 }
@@ -510,7 +527,7 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
       const entry = resolveLabCatalogEntry(input.metricName);
       const stored = toStoredLab(entry, input.value, input.unit, input.referenceLow, input.referenceHigh);
       if ('ok' in stored) {
-        refused.push({ key: entry?.key ?? foldName(input.metricName), unit: input.unit, message: stored.message });
+        refused.push({ key: entry?.key ?? foldName(input.metricName), unit: input.unit, message: stored.message, ...(stored.fault ? { fault: stored.fault } : null) });
         continue;
       }
       makeRow = (recordedAt, correctsId) => createLabValue({

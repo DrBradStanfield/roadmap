@@ -692,7 +692,7 @@ ${offers.some(({ provider }) => provider === 'google') ? '<p class="lede">Import
 <ul>
 <li>Read your record and produce your plan.</li>
 <li>Add measurements and lab results.</li>
-<li>Correct a recent value, after showing you what it would change. Nothing is ever deleted.</li>
+<li>Correct a recent value, after showing you what it would change. The old value is kept.</li>
 <li>Update your sex, birth year, birth month and height, after showing you the change.</li>
 <li>File a bug report as ${REPO_PUBLIC ? 'a public issue on GitHub' : 'an issue on the project’s GitHub, which becomes public when that GitHub is public again'}, in your words, without your health values, after
 showing you what it would say. The check refuses numbers written near a metric name, email addresses,

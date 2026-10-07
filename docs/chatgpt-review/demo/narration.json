@@ -1,0 +1,12 @@
+[
+ {"id": "s0", "text": "This is Health by Dr Brad, in ChatGPT. It keeps your health record as one file in your own Dropbox or Google Drive, and works out a plan from it. This is a live ChatGPT session. It uses a developer connection to the same server the plugin uses, signed in to the review account, which holds invented data. Long waits are cut."},
+ {"id": "s1", "text": "Connecting opens our page. You sign in here, with the username and password from the review notes. Real users choose Dropbox or Google Drive instead. Then you're back in ChatGPT, connected."},
+ {"id": "s2", "text": "First: what's in my health record? ChatGPT calls read record, and shows the profile, the measurements and the lab results. Nothing is written."},
+ {"id": "s3", "text": "Second: record a weight. We use a different date from your test case, so your own test starts fresh. ChatGPT calls add measurement, and adds one row for that day. It's one value per test per day, so a second weight on the same day is offered as a correction instead."},
+ {"id": "s4", "text": "Third: what should I do next? Get plan returns what's due, and suggestions, with reasons and citations. It's educational, not medical advice."},
+ {"id": "s5", "text": "Fourth: a lab report dropped into the chat. Again, a different file from yours. ChatGPT reads the file itself, and nothing is saved to the record yet. It lists what it found, and asks. After a yes, the results are filed."},
+ {"id": "s6", "text": "Fifth: a correction. ChatGPT reads the latest ferritin, then shows the change and waits. After a yes, the new value is added, and the old one is kept, marked entered in error."},
+ {"id": "s7", "text": "And three requests the app doesn't cover: booking a flight, a poem about autumn, and booking a doctor's appointment. ChatGPT handles each one without calling the app."},
+ {"id": "s8", "text": "And the same on a phone: the plan, from the same record."},
+ {"id": "s9", "text": "That's Health by Dr Brad. Thank you for reviewing it."}
+]

@@ -38,17 +38,21 @@ interface ResultsPanelProps {
   unitOverrides?: Partial<Record<MetricType, UnitSystem>>;
   hasUnsavedLongitudinal?: boolean;
   onSaveLongitudinal?: () => Promise<unknown>;
-  onDeleteData?: () => void;
+  /** Resolves true once the data is erased (false if cancelled or failed). */
+  onDeleteData?: () => Promise<boolean>;
   isDeleting?: boolean;
   sex?: 'male' | 'female';
   showEmailCapture?: boolean;
   formStage?: number;
   /** Cloud connection controls shared by Shopify and Pages. Hidden for new users
-   *  until they have entered real data. */
-  syncControl?: (ctx: { hasData: boolean }) => React.ReactNode;
+   *  until they have entered real data. `attention` (US-09 AC19): the guest has
+   *  their PDF, so the storage button may pulse. */
+  syncControl?: (ctx: { hasData: boolean; attention: boolean }) => React.ReactNode;
   /** The local-first email-reminders section (US-17), rendered as its own block
    *  lower in the plan — not bolted onto the sync line at the top. */
   remindersSection?: React.ReactNode;
+  /** The panel's height changed outside its usual triggers (the phone's tab Swiper re-measures). */
+  onLayoutChange?: () => void;
 }
 
 function getBmiStatus(bmiCategory: string, waistToHeightRatio?: number): { label: string; className: string } {
@@ -309,7 +313,7 @@ function renderGroupedSuggestions(suggestions: Suggestion[], highlightedIds?: Se
 }
 
 // 'skipped' + 'reminded' are US-44's funnel-page states: the block skips the
-// email gate, so the box only offers reminders and nothing is persisted.
+// email gate, so the box only offers reminders; only a successful sign-up persists.
 type GuestEmailState = 'idle' | 'sending' | 'captured' | 'skipped' | 'reminded';
 
 // On local-first the capture button DELIVERS the plan by opening the browser
@@ -327,6 +331,20 @@ export const REMINDER_SIGNUP_LABEL = 'Email me when a check-up is due';
 export const REMINDER_SIGNUP_HELPER = "Optional. You don't need this to save your PDF.";
 export const REMINDER_SIGNUP_BUTTON = 'Remind me';
 export const REMINDER_SIGNUP_DONE = "You're signed up. We'll email you when a check-up is due.";
+
+/** US-18 AC6: shown beside the Save as PDF pressed when the browser refuses
+ *  the print window. No claim the plan is saved here (a device that refused
+ *  storage runs from memory), and never another browser: it would not hold
+ *  this plan. */
+export const PDF_WINDOW_BLOCKED = "The PDF window didn't open. Try Save as PDF again. Some apps' built-in browsers block it.";
+
+/** The button whose print window was refused: the note sits beside it. */
+type PdfButton = 'header' | 'bottom' | 'capture';
+
+/** US-18 AC6: always mounted and emptied before each try, so every refusal is announced. */
+function PdfNote({ show }: { show: boolean }) {
+  return <span className="hr-pdf-blocked no-print" role="status">{show ? PDF_WINDOW_BLOCKED : ''}</span>;
+}
 
 /** Open the print/save-as-PDF window for a built report (shared by the Print
  *  button and, on local-first, the email-capture button). */
@@ -351,7 +369,7 @@ interface GuestEmailHook {
   gateSkipped?: boolean;
 }
 
-function useGuestEmailCapture(): GuestEmailHook {
+function useGuestEmailCapture(printReport: () => Promise<void>): GuestEmailHook {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   // US-44: the page decides, once per mount. Never written to the record.
@@ -374,9 +392,12 @@ function useGuestEmailCapture(): GuestEmailHook {
 
     if (gateSkipped) {
       // US-44 AC3: reminders only. The PDF has its own button, so no print
-      // window, and nothing is marked captured. Same enrolment call as below.
+      // window. Same enrolment call as below. A successful sign-up marks the
+      // record captured (Brad, 2026-10-03), so the plan-ready and reminder
+      // emails' link back to /pages/roadmap doesn't ask for the email again.
       const result = await sendGuestReport(trimmed);
       if (result.success) {
+        markReportEmailCaptured();
         setState('reminded');
       } else {
         setEmailError(result.error || 'Failed to send. Please try again.');
@@ -389,8 +410,7 @@ function useGuestEmailCapture(): GuestEmailHook {
     // FIRST (it builds client-side, so this stays inside the click's user
     // activation; opening after the network await would trip popup blockers),
     // then subscribe the email to Klaviyo in the background (no plan is emailed).
-    const report = await getReportHtml();
-    if (report.success && report.html) openPrintWindow(report.html);
+    await printReport();
 
     const result = await sendGuestReport(trimmed);
 
@@ -459,9 +479,11 @@ function ReminderSignup({ hook }: { hook: GuestEmailHook }) {
   );
 }
 
-export function GuestEmailCapture({ hook, formStage }: {
+export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   hook: GuestEmailHook;
   formStage?: number;
+  /** US-18 AC6: this capture's print window was refused. */
+  pdfBlocked?: boolean;
 }) {
   const { email, setEmail, emailError, setEmailError, state, helperText, handleSubmit } = hook;
 
@@ -497,6 +519,7 @@ export function GuestEmailCapture({ hook, formStage }: {
         </button>
       </div>
       {emailError && <span className="email-capture-error">{emailError}</span>}
+      <PdfNote show={!!pdfBlocked && !!emailError} />
       {/* US-23 AC4 — typing the email IS the reminders enrolment (opt-out
           model), so the disclosure sits beside the box, not behind a click.
           Names what crosses (check-up names + dates) and the way out.
@@ -512,7 +535,7 @@ export function GuestEmailCapture({ hook, formStage }: {
   );
 }
 
-export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, sex, showEmailCapture, formStage, syncControl, remindersSection }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, onDeleteData, isDeleting, sex, showEmailCapture, formStage, syncControl, remindersSection, onLayoutChange }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -522,23 +545,34 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
   const fadeOutTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Report actions state (shared between top and bottom buttons)
-  const [printStatus, setPrintStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [printStatus, setPrintStatus] = useState<'idle' | 'loading'>('idle');
+  // US-18 AC6: where the last print window was refused (or its report could
+  // not be built). A window that opens clears it, and so does an erase.
+  const [pdfBlocked, setPdfBlocked] = useState<PdfButton | null>(null);
+  if (!results && pdfBlocked) setPdfBlocked(null);
+  // US-09 AC19: a print window opened in this tab (the gate-skipped page's PDF).
+  // Only an erase forgets it: the plan also goes blank mid-edit.
+  const [pdfOpened, setPdfOpened] = useState(false);
+  // Emptied first (inside the click) so a repeat refusal is announced again.
+  const printReport = async (at: PdfButton) => {
+    setPdfBlocked(null);
+    const report = await getReportHtml();
+    const opened = report.success && !!report.html && openPrintWindow(report.html);
+    setPdfBlocked(opened ? null : at);
+    if (opened) setPdfOpened(true);
+    else trackProductEvent('pdf_window_blocked');
+  };
 
-  const handlePrint = async () => {
+  const handlePrint = async (at: PdfButton) => {
     if (printStatus === 'loading') return;
     setPrintStatus('loading');
+    setPdfBlocked(null); // before the save's await, for the same reason
     // Include pending longitudinal values in the locally generated report.
     if (hasUnsavedLongitudinal && onSaveLongitudinal) {
       try { await onSaveLongitudinal(); } catch { /* proceed with saved data */ }
     }
-    const result = await getReportHtml();
-    if (result.success && result.html) {
-      openPrintWindow(result.html);
-      setPrintStatus('idle');
-    } else {
-      setPrintStatus('error');
-      setTimeout(() => setPrintStatus('idle'), 3000);
-    }
+    await printReport(at);
+    setPrintStatus('idle');
   };
 
   // Settle after 3s — skip highlighting during initial load + Phase 2 API overwrite
@@ -605,13 +639,23 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
   }, [results?.suggestions]);
 
   // Shared state for guest email capture (top + bottom instances stay in sync)
-  const guestEmailHook = useGuestEmailCapture();
+  const guestEmailHook = useGuestEmailCapture(() => printReport('capture'));
+
+  // The note (and the capture box it can sit in) changes the plan's height.
+  useEffect(() => { onLayoutChange?.(); }, [pdfBlocked, guestEmailHook.emailError, guestEmailHook.state]);
+
+  // US-09 AC19: the guest has their PDF (or, on the gate-skipped page, signed up
+  // for reminders, which marks the record captured). Never before, so the storage
+  // button's pulse never competes with the email box.
+  const { state: emailState, gateSkipped } = guestEmailHook;
+  // Pages has no email gate or funnel, even for a record captured on Shopify.
+  const attention = SHOPIFY_SURFACE && (emailState === 'captured' || emailState === 'reminded' || (!!gateSkipped && pdfOpened));
 
   if (!isValid || !results) {
     return (
       <div className="health-results-panel">
         <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={null} muted />
-        {syncControl?.({ hasData: false })}
+        {syncControl?.({ hasData: false, attention })}
         <div className="plan-empty-preview">
           <p className="plan-empty-intro">
             <strong>Here's what your plan will look like.</strong> Real suggestions appear once you fill in your details.
@@ -659,9 +703,8 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
   const supplementSuggestions = results.suggestions.filter(s => s.category === 'supplements');
   const skinSuggestions = results.suggestions.filter(s => s.category === 'skin');
 
-  const printLabel = printStatus === 'loading' ? 'Loading...'
-    : printStatus === 'error' ? 'Failed'
-    : 'Save as PDF';
+  const printLabel = printStatus === 'loading' ? 'Loading...' : 'Save as PDF';
+  const headerNote = <PdfNote show={pdfBlocked === 'header' || pdfBlocked === 'capture'} />;
 
   // Report actions: on the Shopify v2 surface the email-capture button IS the
   // PDF path (gated behind the email — Brad), so no standalone buttons. Pages
@@ -669,24 +712,28 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
   // surfaces (degraded plain-text self-compose — the capture email is better).
   const planHeaderMeta = !SHOPIFY_SURFACE ? (
     <>
-      <button type="button" className="action-btn-small no-print" onClick={handlePrint} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
+      <button type="button" className="action-btn-small no-print" onClick={() => handlePrint('header')} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
         {printLabel}
       </button>
+      {headerNote}
     </>
   ) : (SHOPIFY_SURFACE && (guestEmailHook.state === 'captured' || guestEmailHook.gateSkipped)) ? (
     // Shopify v2, post-capture (or US-44's gate-skipped page): the ungated
     // Save-as-PDF lives inline in this header (Brad). handlePrint = getReportHtml + print.
-    <button type="button" className="action-btn-small no-print" onClick={handlePrint} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
-      {printLabel}
-    </button>
+    <>
+      <button type="button" className="action-btn-small no-print" onClick={() => handlePrint('header')} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
+        {printLabel}
+      </button>
+      {headerNote}
+    </>
   ) : null;
 
   return (
     <div className="health-results-panel">
-      <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={planHeaderMeta} />
+      <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={planHeaderMeta} actions={planHeaderMeta !== null} />
       {/* Cloud connection */}
-      {syncControl?.({ hasData: true })}
-      {showEmailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} />}
+      {syncControl?.({ hasData: true, attention })}
+      {showEmailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
 
       {/* Quick Stats */}
       <section className="quick-stats">
@@ -792,9 +839,10 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
           v2 surface (the email-capture button is the PDF path there). */}
       {!SHOPIFY_SURFACE && (
         <div className="report-actions no-print">
-          <button type="button" className="action-btn" onClick={handlePrint} disabled={printStatus === 'loading'}>
-            {printStatus === 'loading' ? 'Loading...' : printStatus === 'error' ? 'Failed' : 'Save as PDF'}
+          <button type="button" className="action-btn" onClick={() => handlePrint('bottom')} disabled={printStatus === 'loading'}>
+            {printLabel}
           </button>
+          <PdfNote show={pdfBlocked === 'bottom'} />
         </div>
       )}
 
@@ -814,7 +862,7 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
       {remindersSection}
 
       {/* US-44: the gate-skipped reminders box renders once, at the top. */}
-      {showEmailCapture && !guestEmailHook.gateSkipped && <GuestEmailCapture hook={guestEmailHook} />}
+      {showEmailCapture && !guestEmailHook.gateSkipped && <GuestEmailCapture hook={guestEmailHook} pdfBlocked={pdfBlocked === 'capture'} />}
 
       {SHOPIFY_SURFACE && <FeedbackForm />}
 
@@ -832,7 +880,7 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
         <div className="delete-data-section">
           <button
             className="delete-data-link"
-            onClick={onDeleteData}
+            onClick={async () => { if (await onDeleteData()) setPdfOpened(false); }}
             disabled={isDeleting}
           >
             {isDeleting ? 'Deleting...' : 'Delete All My Data'}

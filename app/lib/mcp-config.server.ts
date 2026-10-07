@@ -51,6 +51,13 @@ function misconfigured(variable: string): false {
   return false;
 }
 
+/**
+ * The scopes every grant carries (US-32 AC43). The token response states them
+ * and both discovery documents advertise them, from this one list. Nothing
+ * enforces them: one consent covers both.
+ */
+export const MCP_SCOPES = ['health.read', 'health.append'];
+
 /** Public origin. The PRM `resource` must equal the URL a user types, exactly. */
 export function issuer(): string {
   return process.env.MCP_ISSUER || 'https://mcp.drstanfield.com';

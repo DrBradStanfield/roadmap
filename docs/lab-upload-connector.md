@@ -73,10 +73,13 @@ connector holds cannot see files dropped into the folder.
    `held_different` (`replaceable` by the 90-day rule). Candidates are shown
    in the record's own unit system. The payload (values + document metadata,
    never document text) is parked in the user's folder as
-   `imports/pending-<id>.json`; the assistant gets a sealed receipt
-   `{id, exp, conn, sha256}` (1 h). Extract sweeps pending files older than 24 h.
-2. **Commit** verifies the receipt before charging anything, reads the pending
-   file, checks its hash, applies `accept` / `replace`, writes through
+   `imports/pending-<id>.json`; the assistant's receipt is that id, a plain
+   UUID (1 h). The file holds the payload with an HMAC over the id, the issue
+   time, the payload's hash, the connection and the client (since 2026-10-07;
+   before, the receipt was a sealed blob ChatGPT flagged as a disguised
+   payload). The next stash sweeps pending files older than 2 h (twice a receipt's life).
+2. **Commit** reads the pending file the receipt names, checks its MAC and
+   window before charging anything, applies `accept` / `replace`, writes through
    `bulkAppendValues` with `source: 'lab_import'`, saves via the SyncManager,
    deletes the pending file. A replace flips the old row to
    `entered-in-error` and appends with `correctsId`. A moved slot refuses the

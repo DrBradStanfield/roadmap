@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { sanitizeRawHandles, RouterOutput, routeQuery } from './chat-router.server';
+import { sanitizeRawHandles, sanitizeForRouter, RouterOutput, routeQuery } from './chat-router.server';
 import { classifyMessage } from './chat-classifier.server';
 import { callAnthropicWithUsage } from './anthropic.server';
 
@@ -88,5 +88,12 @@ describe('redactForWidget', () => {
     const out = redactForWidget({ ...row, error_detail: 'raw provider text', content: 'the reply' });
     expect(out).not.toHaveProperty('error_detail');
     expect(out).not.toHaveProperty('content');
+  });
+});
+
+// US-15 AC26: the router's 2,000-char slice never splits an emoji.
+describe('US-15 AC26 — sanitizeForRouter', () => {
+  it('US-15 AC26: an emoji straddling 1999/2000 is dropped, not split', () => {
+    expect(sanitizeForRouter('a'.repeat(1999) + '😀')).toBe('a'.repeat(1999));
   });
 });

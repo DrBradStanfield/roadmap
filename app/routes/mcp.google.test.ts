@@ -34,6 +34,8 @@ const VERIFIER = 'v'.repeat(64);
 const CHALLENGE = crypto.createHash('sha256').update(VERIFIER, 'ascii').digest('base64url');
 const NOW = '2026-09-02T10:00:00.000Z';
 const TODAY = NOW.slice(0, 10);
+/** The user's own words, quoted in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
+const APPROVED = 'Yes, go ahead';
 
 let cloud: MemoryCloud;
 /** Which provider the factory was asked for, per call. */
@@ -522,7 +524,7 @@ describe('US-36 AC8 — file_results works on a Google Drive record, where the f
     expect(propose.isError).toBe(false);
     const data = JSON.parse(propose.text) as { receipt: string; candidates: Array<{ id: string }> };
     expect(data.candidates).toHaveLength(1);
-    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
+    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
     expect(commit.isError).toBe(false);
     expect(commit.text).toContain('Saved to the user’s Google Drive');
     // Written under the name the report PRINTED (US-21 phase 3: the printed name is what chooses a conversion); the slot is the catalogue key either way.

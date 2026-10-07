@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CHAT_HISTORY_SCHEMA_VERSION,
+  cutText,
   createEmptyChatHistoryFile,
   mergeChatHistoryFiles,
   migrateChatHistoryFile,
@@ -141,5 +142,19 @@ describe('mergeChatHistoryFiles', () => {
     const cloudAfterBoth = mergeChatHistoryFiles(dev2, cloudAfterDev1, OPTS);
     expect(cloudAfterBoth.conversations.map((c) => c.id)).toEqual(['c1', 'c2']);
     expect(cloudAfterBoth.conversations.flatMap((c) => c.messages).map((m) => m.id)).toEqual(['m1', 'm2']);
+  });
+});
+
+// US-15 AC26: a cut never leaves half of a surrogate pair (an emoji at the edge).
+describe('US-15 AC26 — cutText', () => {
+  const LONE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+  it('US-15 AC26: drops an emoji that straddles the cut instead of splitting it', () => {
+    const cut = cutText('a'.repeat(499) + '😀b', 500);
+    expect(cut).toBe('a'.repeat(499));
+    expect(LONE.test(cut)).toBe(false);
+  });
+  it('US-15 AC26: keeps an emoji that ends exactly at the cut, and short text whole', () => {
+    expect(cutText('a'.repeat(498) + '😀b', 500)).toBe('a'.repeat(498) + '😀');
+    expect(cutText('short', 500)).toBe('short');
   });
 });

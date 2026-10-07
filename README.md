@@ -143,9 +143,10 @@ network tab recording and use the widget.
   them. Sending a chat message from the storefront widget POSTs the message,
   that conversation's earlier turns, and the health context needed to answer it
   to `/api/chat`. On that surface the server stores one row per question: the
-  text you typed, which may hold health details you wrote into it; the articles
-  it matched; its classification; the router's raw output and any router error;
-  the name of the surface; and a pseudonymous session and conversation id. The
+  first 500 characters of the text you typed, nothing more, which may hold
+  health details you wrote into it; the articles it matched; its
+  classification; the router's raw output and any router error; the name of
+  the surface; and a pseudonymous session and conversation id. The
   earlier turns and the reply are not stored. A daily job blanks the question
   text, the router's raw output and the error text once a row is 30 days old;
   the match record stays: the articles, the classification, the ids. A guest

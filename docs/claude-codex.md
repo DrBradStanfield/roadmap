@@ -332,7 +332,7 @@ One disagreement. Codex says defer the cloud auto-review to keep variables separ
 ## What now exists
 
 - `docs/review-format.md`: the shared contract, 97 lines.
-- `tools/codex-review.mjs`: the bounded wrapper. Targets uncommitted work, a commit, or a range. Structured JSON via `--output-schema`; exit 0 clean, 2 blocking, 3 incomplete.
+- `tools/codex-review.mjs`: the bounded wrapper. Targets uncommitted work, a commit, a range, or exact files (`--subject`, since 2026-10-05; see the last section). Structured JSON via `--output-schema`; exit 0 clean, 2 blocking, 3 incomplete.
 - `.claude/skills/codex-review/SKILL.md`: how Claude invokes it and responds to findings.
 - Model: `gpt-6.1-sol` at high reasoning effort, per Brad (2026-10-02; was `gpt-6-astra`).
 
@@ -449,7 +449,9 @@ in `tools/codex-review.test.ts`, driven the same way.
   was false and the three runs had that layer in reach. The wrapper now
   passes `--disable apps`, `--disable image_generation`, `--disable
   browser_use`, `--disable computer_use`, `--disable plugins`, `--disable
-  memories`, `--disable skill_search`, `web_search="disabled"`,
+  memories`, `--disable skill_search`, `web_search="disabled"` (since
+  2026-10-03 `"cached"`, hosted index-only search, plus `--disable
+  multi_agent`: US-40 AC14),
   `shell_environment_policy.inherit="core"`, `--strict-config`, and a
   five-variable process environment. A probe asking the hardened reviewer
   to call the health tool and run a web search produced no tool-call event
@@ -795,3 +797,95 @@ subscription to metered billing on every loop run.
 Unverified and worth testing before anyone claims it works: whether the CLI
 installs in that environment at all, and whether the Linux sandbox blocks
 network the way the macOS one does.
+
+## Reviewing an exact file: `--subject` (2026-10-05, US-40 AC15)
+
+Brad: "Codex reviewed the wrong file last time. This keeps happening." On
+2026-10-02 three runs on a YouTube script, `output/38 end-of-obesity/script-draft-v4.md`
+in claude_business, reviewed the wrong thing: `output/` is gitignored, so the
+script never entered the patch (the reviewer saw two unrelated files); then
+another session's untracked plan was in the tree, so the review was about
+that; then, on a clean tree, "Nothing to review" and exit 0. `--include` could
+not help (reference-only, and it refuses paths inside the checkout), so the
+workaround was a hand-run `codex exec`, which drops every protection the
+wrapper has.
+
+The default mode reviews the working tree's diff against HEAD, so it reviews
+whatever the tree holds. `--subject` reviews named files instead:
+
+```bash
+node ~/Documents/roadmap/tools/codex-review.mjs \
+  --subject "output/38 end-of-obesity/script-draft-v4.md" \
+  --baseline "output/38 end-of-obesity/script-draft-v3.md" \
+  --context "output/38 end-of-obesity/research" \
+  --out "$SCRATCH/codex-review.json"
+```
+
+- `--subject <file>` (repeatable): the only change under review, inside the
+  checkout.
+- `--baseline <file>`: the earlier version of the `--subject` just before it.
+  `--baseline none` reviews that subject in full as a new file (use it for a
+  committed file that has not changed). Without one, a tracked subject is
+  compared with its HEAD version and an untracked one is a new file. Inside
+  the checkout too.
+- `--context <path>` (repeatable): a file or folder inside the checkout copied
+  into the snapshot at its own path as reference, not under review. A context
+  that copies no files is refused. It is copied as it is on disk, so a
+  tracked context file with uncommitted changes arrives in its working-tree
+  version; the pre-flight line counts and names those ("context includes N
+  uncommitted change(s)"). In the example, `research/` is sent WITHOUT its
+  YouTube comment dumps (`research/channel/comments-*.json` and `.txt`) or the
+  channel-research index that quotes them: the deny list below withholds them.
+
+**Privacy.** Gitignored folders in claude_business hold customer data
+(chatbot message exports, YouTube comment backups, Judge.me review exports).
+So any subject, baseline or context file that is not tracked at HEAD must sit
+under a root pinned in `tools/codex-review-includes.json` under
+`"subjectRoots"`, committed at HEAD like the `--include` roots. The pins are
+the numbered video FOLDERS, `claude_business/output/[0-9] *`, `[0-9][0-9] *`
+and `[0-9][0-9][0-9] *` (digits, then a space, and a real folder: never
+`output/0-private` or a loose file). A tracked file is always allowed. A new
+pin is a committed policy change, Brad's call.
+
+**Private-data deny list, every mode.** A numbered video folder itself holds
+YouTube comment data, so the same file's `"privateDeny"` globs name paths
+that never reach the reviewer, whatever the mode: `**/comments-*` (comment
+dumps, author beside text), `**/competitor-*-comments.*`,
+`**/objection-intel*` (quotes @handles beside comments),
+`**/research/channel/index.md` (quotes comments verbatim),
+`**/*judgeme*.csv` (Judge.me exports: emails, IP addresses) and the chatbot
+exports `**/chatbot_*/messages*` and `**/chatbot_*/conversations*`. Not
+`*.csv`: both repos track CSV ledgers that must stay reviewable. A subject or
+baseline on the list is a usage error; inside a context folder it is
+withheld and counted; the base `git archive` and every patch exclude it, in
+uncommitted, `--commit` and `--range` mode too, so a wrongly tracked dump
+never travels; and stderr says `withheld N private-data path(s)`. The list in
+force is the committed one plus any patterns an uncommitted edit adds. It
+matches names: a dump copied under another name is not caught.
+
+The snapshot is `git archive HEAD` plus the subjects plus the context, and
+nothing else from the working tree. `REVIEW_PATCH.diff` holds the subject
+diff only, and full baseline copies sit beside the snapshot; context and
+baseline copies are deleted at exit whatever the status. A kept work dir
+(`--keep`, or any incomplete run) still holds the subject in `src/` and
+`REVIEW_PATCH.diff`, whose `-` lines are the baseline's changed lines: that
+is the reviewed change, and the kept-dir message says so. One byte budget
+(`--include-limit-mb`, 64 MB) covers subjects, baselines, context and
+`--include`. Before Codex starts, stderr prints the pre-flight line and the
+privacy count (these from a stub run on 2026-10-05, after the deny list);
+read them before trusting the verdict:
+
+```
+codex-review: SUBJECT "output/38 end-of-obesity/script-draft-v4.md" (baseline "output/38 end-of-obesity/script-draft-v3.md", 102,469 bytes, sha256 0a5f83f328af); CONTEXT "output/38 end-of-obesity/research/" (41 files, 15 withheld for privacy); excluded from snapshot: 0 other uncommitted file(s)
+codex-review: withheld 15 private-data path(s) (the "privateDeny" list in tools/codex-review-includes.json: comment dumps, objection notes, review and chatbot exports) from the snapshot and --context
+```
+
+A subject identical to its baseline, bytes and file mode, is
+`E_SUBJECT_UNCHANGED` (incomplete, exit 3). Credential-named, symlinked, hard-linked, outside-the-checkout,
+nested-repo, private-data and health-record paths are usage errors (exit 1),
+as are instruction files as context (the health-record content check reads
+files under 5 MB only; a bigger record under an ordinary name is not caught by
+content); an instruction file as a subject, at any
+depth, is reviewed and flagged. Subject, baseline and context bytes go
+through the same credential value and shape scan as everything else. Not with
+`--commit`, `--range` or `--loop`.

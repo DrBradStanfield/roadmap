@@ -18,20 +18,36 @@ import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
 import { openBackendPicker, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, StorageSentence } from '../src/lib/storage-notice';
+import { safeGetItem, safeSetItem } from '../src/lib/storage';
 
-export function SyncControl({ backend, reconnect, hasData = true }: {
+/** US-09 AC19: the picker was opened once in this browser (a side key, never the record). */
+const STORAGE_CTA_SEEN_KEY = 'hr_storage_cta_seen';
+/** The same, for this page's life, in case storage throws. */
+let storageCtaSeen = false;
+
+export function SyncControl({ backend, reconnect, hasData = true, attention = false }: {
   backend: Backend;
   reconnect?: Exclude<Backend, 'local'>;
   /** False while the user hasn't entered any data yet — the device-tier
    *  "choose where to save" pitch stays hidden (nothing to save; Brad,
    *  2026-06-11). Cloud/reconnect states always show — data is at stake. */
   hasData?: boolean;
+  /** The guest has their PDF (US-09 AC19): pulse the storage button until the picker first opens. */
+  attention?: boolean;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  // Unreadable storage counts as unseen, so the pulse lasts only this page's life.
+  const [ctaSeen, setCtaSeen] = useState(() => storageCtaSeen || !!safeGetItem(STORAGE_CTA_SEEN_KEY));
   const { busy, error, run } = useBusyRun();
 
+  // Every route to the picker passes here, so any opening stops the pulse.
   useEffect(() => {
-    const open = () => setPickerOpen(true);
+    const open = () => {
+      storageCtaSeen = true;
+      safeSetItem(STORAGE_CTA_SEEN_KEY, '1');
+      setCtaSeen(true);
+      setPickerOpen(true);
+    };
     window.addEventListener(OPEN_PICKER_EVENT, open);
     return () => window.removeEventListener(OPEN_PICKER_EVENT, open);
   }, []);
@@ -136,7 +152,12 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
   } else {
     content = (
       <div className="hr-sync hr-sync-local">
-        <button className="hr-sync-btn hr-sync-btn-full" onClick={openBackendPicker}>{PLAN_STORAGE_CTA}</button>
+        <button
+          className={`hr-sync-btn hr-sync-btn-full${attention && !ctaSeen ? ' hr-sync-btn-attention' : ''}`}
+          onClick={openBackendPicker}
+        >
+          {PLAN_STORAGE_CTA}
+        </button>
         {/* Gate-free: this branch is already the guest, no-provider state. */}
         <StorageSentence surface="plan" className="hr-sync-detail" />
       </div>

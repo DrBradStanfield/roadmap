@@ -83,7 +83,8 @@ export const IMPORT_REFUSALS = {
     'Put the files there and ask again, or drop them into the chat from a computer. Nothing was read.',
   /** A `commit` block that does not parse. */
   commit:
-    'The commit was malformed. Pass the receipt exactly as the extract returned it, with accept and replace as lists of candidate ids. Nothing was written.',
+    'The commit was malformed. Pass the receipt exactly as the extract returned it, with accept and replace as lists of candidate ids, ' +
+    'and approval as the user’s own words, quoted. Nothing was written.',
   /** Anything else that does not parse: a fileNames or fileDates shape. */
   arguments:
     `The call was malformed: fileNames is a list of file names as listed, fileDates is a list of {file, date} pairs (${FILE_DATES_SHAPE}). Nothing was read.`,

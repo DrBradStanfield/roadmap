@@ -1,6 +1,6 @@
 ---
 name: codex-review
-description: Independent adversarial review of the current change by a different model (Codex, gpt-6.1-sol) against docs/review-format.md. Run it beside every adversarial Claude check, and REQUIRED before committing clinical, merge/FHIR, security or agent-contract changes whatever their size; skip ONLY outside those classes (doc/blog sweeps, one-liners). Loops run it with --loop (Tier 3 applies); CI stays Claude-only. Also whenever asked to "get Codex to review" or "cross-model review". Advisory only.
+description: Independent adversarial review of the current change by a different model (Codex, gpt-6.1-sol) against docs/review-format.md. Run it beside every adversarial Claude check, and REQUIRED before committing clinical, merge/FHIR, security or agent-contract changes whatever their size; skip ONLY outside those classes (doc/blog sweeps, one-liners). It runs only on Brad's Mac with his ChatGPT subscription, never an API key, so cloud loops and CI stay Claude-only; on a loop's commits Brad runs it with --loop (Tier 3 applies). Also whenever asked to "get Codex to review" or "cross-model review". Advisory only.
 ---
 
 # Codex review
@@ -12,16 +12,19 @@ clinical logic, merge or FHIR semantics, a security surface, or an
 agent-facing contract — whatever its size, because a one-line auth or
 threshold edit is exactly the kind that hurts someone. Skip it ONLY outside
 those classes, for doc and blog sweeps and one-line fixes, where the round
-trip costs more than it returns. A loop runs it too, with `--loop`, per
-docs/loops/LOOP.md § Orchestration: an API-key login in a temporary
-`CODEX_HOME`, and the contract's Tier 3 restrictions apply (Brad,
-2026-09-28, superseding the 2026-09-21 loop exclusion; US-40 AC10). A CI job
-does not run it: no Codex there, so CI stays Claude-only (US-40 AC8).
+trip costs more than it returns. It runs only on Brad's
+Mac, signed in with his ChatGPT subscription, never an API key (Brad,
+2026-10-04, superseding the 2026-09-28 API-key loop rule; US-40 AC10). Cloud
+loops and CI do not run it, so they stay Claude-only (US-40 AC8); on a loop's
+commits Brad runs it from his Mac with `--loop`, and the contract's Tier 3
+restrictions apply.
 
 A fresh-context reviewer on a different model, the cross-model analogue of
 the fresh Opus 5.5 adversarial check. It reviews an immutable, symlink-free
-snapshot in a read-only sandbox with the ChatGPT connector layer, web,
-images, plugins and memories disabled, and a minimal environment. Credential
+snapshot in a read-only sandbox with the ChatGPT connector layer, images,
+plugins, memories and sub-agents disabled, web search limited to OpenAI's hosted,
+index-only mode so it can check a cited study (no live page fetches, and the
+shell has no network; US-40 AC14), and a minimal environment. Credential
 files and their values are withheld from the snapshot and patch (US-40 AC11).
 Credential-named paths (`.env*`, `*.env`, `*.env.*`, `env.local` and the
 like; code named `config/prod.env.js` or `secrets.env.py` counts too, so a
@@ -92,7 +95,24 @@ node tools/codex-review.mjs --range main..HEAD --out "$SCRATCH/codex-review.json
 node tools/codex-review.mjs --record --out "$SCRATCH/codex-review.json"     # + live scratch record, read-only
 node tools/codex-review.mjs --loop --range <first>^..HEAD --out "$SCRATCH/codex-review.json"  # loop-authored: Tier 3 applies
 node tools/codex-review.mjs --include <dir> --out "$SCRATCH/codex-review.json"  # + a read-only source folder under a root pinned in tools/codex-review-includes.json (repeatable; 64 MB cap, --include-limit-mb; never with --loop; US-40 AC13)
+node tools/codex-review.mjs --subject <file> [--baseline <earlier file>|none] [--context <dir>] --out "$SCRATCH/codex-review.json"  # ONLY these files vs their baselines; nothing else from the tree (a --baseline pairs with the --subject before it; never with --commit/--range/--loop; US-40 AC15)
 ```
+
+**Pick the subject** (US-40 AC15, Brad 2026-10-05: "Codex reviewed the wrong
+file last time"). The default run reviews whatever the working tree holds.
+Whenever the work under review is a specific file (a script, a doc, anything
+gitignored), or the tree holds other sessions' work, run with
+`--subject <file>`, plus `--baseline <file>` for its previous version and
+`--context <path>` for its sources; never a hand-run `codex exec`, which drops
+every protection this wrapper has. Then read the pre-flight `SUBJECT` line on
+stderr before trusting the verdict: it names the file reviewed, its baseline,
+its size and sha256, and how many other uncommitted files were left out of
+the snapshot. A subject identical to its baseline is `E_SUBJECT_UNCHANGED`;
+`--baseline none` reviews it in full as a new file. **Private data:** never
+point `--subject` or `--context` at a file holding customer or health data;
+an untracked file must sit under a root pinned in
+`tools/codex-review-includes.json` (`subjectRoots`), and widening that list is
+Brad's call.
 
 Run it in a Bash subagent or in the background; a review takes minutes. Exit
 codes: 0 clean, 2 blocking findings, 3 incomplete, 1 a usage error or a

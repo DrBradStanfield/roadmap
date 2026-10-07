@@ -3,7 +3,9 @@ import {
   type ApiMeasurement,
   type FileReminderOptIn,
   type HealthInputs,
+  labUnitTaken,
   type ReminderScheduleItem,
+  resolveLabCatalogEntry,
 } from '@roadmap/health-core';
 import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
@@ -138,8 +140,11 @@ export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[])
 export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {
   if (!store) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
   const result = store.bulkSaveLabValues(values);
-  // The one place every lab writer passes, so each refused row is counted once.
-  for (const row of result.refused) trackProductEvent('lab_unit_refused', { key: row.key, unit: row.unit });
+  // The one place every lab writer passes, so each refused row is counted once:
+  // only a spelling the test does not take, the signal for the next one to teach it (US-21 AC15).
+  for (const row of result.refused) {
+    if (!labUnitTaken(resolveLabCatalogEntry(row.key), row.unit)) trackProductEvent('lab_unit_refused', { key: row.key, unit: row.unit });
+  }
   return result;
 }
 export async function bulkSaveDocuments(

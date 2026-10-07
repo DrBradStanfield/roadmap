@@ -1,7 +1,7 @@
 // Builds the OpenAI plugin ZIP for Health by Dr Brad from docs/chatgpt-review/plugin/, plus the assets
 // taken from their sources at build time (US-32; listing and test cases: docs/chatgpt-app-listing.md).
 //
-//   node docs/chatgpt-review/build-plugin-zip.mjs           validate, then write health-by-dr-brad-<version>.zip
+//   node docs/chatgpt-review/build-plugin-zip.mjs           validate, then write <name>-<version>.zip (name: the plugin OpenAI generated, app-…)
 //   node docs/chatgpt-review/build-plugin-zip.mjs --check   validate only
 //
 // OpenAI publishes no validator, so this one encodes the documented rules, cited by their error
