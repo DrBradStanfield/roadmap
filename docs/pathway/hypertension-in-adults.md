@@ -30,6 +30,8 @@ This pathway covers the assessment and management of high blood pressure in adul
 
 **Symptomatic hypertension** (headache or visual disturbance): see your doctor the same day.
 
+**BP > 180/110 mmHg without symptoms:** contact your doctor the same day.
+
 ---
 
 ## Background

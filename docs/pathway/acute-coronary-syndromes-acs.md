@@ -21,7 +21,7 @@ This pathway covers suspected acute coronary syndrome (ACS), including heart att
 Call 111 or go to the emergency department immediately if you have:
 
 - Ongoing chest pain or signs of cardiovascular collapse (haemodynamic instability)
-- A history that suggests unstable angina
+- A history that suggests unstable angina: chest pain (angina) that is new and severe or frequent, more severe, prolonged or frequent than your usual angina, or that comes on at rest or with minimal exertion
 - New changes on an ECG suggesting ischaemia
 - An elevated troponin blood test result
 

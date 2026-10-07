@@ -22,7 +22,7 @@ It is a complex medical condition that affects, and is affected by, many parts o
 
 ## Red Flags — See a Doctor Promptly
 
-Tell your doctor straight away if you have:
+Tell your doctor if you have:
 
 - Trauma
 - Constitutional symptoms: fever, chills, or weight loss
@@ -31,7 +31,7 @@ Tell your doctor straight away if you have:
 
 These may suggest a serious underlying cause.
 
-If you have back pain with new problems controlling your bladder or bowel, or new weakness in your legs, call 111 or go to the emergency department.
+If you have back pain with new problems controlling your bladder or bowel, numbness around your genitals, bottom or inner thighs (the saddle area), or new weakness in your legs, call 111 or go to the emergency department.
 
 ---
 

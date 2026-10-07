@@ -361,6 +361,8 @@ SGLT2 inhibitors reduce cardiovascular death and heart failure hospitalisation i
 
 **Signs of diabetic ketoacidosis (DKA):** If you develop nausea or vomiting, abdominal pain, rapid breathing, or confusion while on an SGLT2 inhibitor, seek urgent medical attention.
 
+If you are confused, very drowsy, or struggling to breathe, call 111 or go to the emergency department.
+
 Note: blood glucose may be less than 11 mmol/L in DKA in people on empagliflozin (euglycaemic DKA).
 
 ---

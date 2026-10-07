@@ -37,9 +37,8 @@ See your doctor urgently if you have:
 - Excessive urination (polyuria)
 - Excessive thirst (polydipsia)
 - Dehydration
-- Altered consciousness
 
-If you are acutely unwell, these may be signs of a serious complication such as diabetic ketoacidosis (DKA) or hyperosmolar hyperglycaemic state (HHS). This is a medical emergency: call 111 or go to the emergency department.
+If you have altered consciousness or are acutely unwell, these may be signs of a serious complication such as diabetic ketoacidosis (DKA) or hyperosmolar hyperglycaemic state (HHS). This is a medical emergency: call 111 or go to the emergency department.
 
 ---
 

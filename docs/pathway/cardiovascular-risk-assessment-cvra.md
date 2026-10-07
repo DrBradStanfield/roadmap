@@ -156,7 +156,7 @@ Lifestyle changes are recommended for all patients, regardless of risk level. On
 - **Physical activity:** Aim for at least 30 minutes of moderately intense exercise on most days of the week
 - **Weight:** Weight loss if overweight
 - **Smoking:** Stop smoking. For people with severe mental illness, stopping smoking does not worsen mental illness.
-- **Flu vaccination:** Annual influenza immunisation is recommended if you are eligible for the funded flu vaccine
+- **Flu vaccination:** Annual influenza immunisation is recommended
 - **Diabetes:** If you have diabetes, your doctor will advise you about diabetes control
 
 ---

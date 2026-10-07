@@ -32,6 +32,8 @@ If your HbA1c is greater than 64 mmol/mol when you are diagnosed, your doctor ma
 | Heart failure or kidney disease | SGLT2 inhibitors |
 | No cardiovascular disease, kidney disease, obesity, or heart failure | DPP-4 inhibitors |
 
+If you already take insulin or a sulfonylurea, the dose may need to be reduced when an SGLT2 inhibitor or GLP-1 receptor agonist is added, to prevent low blood sugar.
+
 ### Third-line medications
 
 Sulfonylureas and acarbose may be used as third-line medications, and pioglitazone as a third- or fourth-line medication. Your doctor will weigh benefits and risks for your situation.
@@ -124,7 +126,7 @@ SGLT2 inhibitors work by causing the kidneys to excrete extra glucose and sodium
 - Genital or urinary tract infections (thrush, UTIs)
 - Low blood pressure
 - Rare but serious: diabetic ketoacidosis (see below)
-- Rare: Fournier's gangrene, a serious infection of the genital or perineal area. It can be life-threatening. If you have significant pain, redness, or fever in that area, call 111 or go to the emergency department.
+- Rare: Fournier's gangrene, a serious infection of the genital or perineal area. It can be life-threatening. If you have significant pain, fever and redness in that area, worse than you would expect from a mild infection, call 111 or go to the emergency department.
 
 **Important: Diabetic Ketoacidosis (DKA) risk**
 
@@ -144,7 +146,7 @@ If a finger-prick test shows blood ketones over 1.5 mmol/L while you take an SGL
 - Ketogenic (very low carbohydrate) diet
 - Kidney failure (eGFR less than 20 mL/min). It cannot be started, but may be continued until dialysis or other kidney replacement therapy is needed
 
-**Cautions:** Use with care in pregnancy or breastfeeding. If you have had DKA before, or have harmful alcohol use, it should not be started without specialist approval.
+**Cautions:** Use with care in pregnancy or breastfeeding. If you have had DKA before, or have harmful alcohol use, it should not be started without specialist approval. The same applies if you have type 1 diabetes or diabetes due to loss of pancreatic function.
 
 **Sick days and procedures:** Stop your SGLT2 inhibitor:
 - When you are ill or severely dehydrated
@@ -217,7 +219,7 @@ Pioglitazone reduces insulin resistance. It is used as a third- or fourth-line a
 **Not suitable if:**
 - Heart failure
 - Fluid retention conditions (kidney failure, liver failure, eye swelling from diabetes)
-- Osteoporosis or high fracture risk
+- Osteoporosis or high risk of osteoporosis, e.g. postmenopausal women and men with hypogonadism (low testosterone)
 - Previous bladder cancer
 - Pregnancy or breastfeeding
 

@@ -118,7 +118,7 @@ There are no effective long-term treatments to dissolve the crystals, unlike gou
 Physical activity and self-management are core treatments for OA:
 
 **Physical activity**: helps relieve pain and improve function. Options include:
-- General aerobic exercise and local muscle strengthening (e.g., via a Green Prescription)
+- General aerobic exercise and local muscle strengthening
 - Hydrotherapy (aqua-jogging, water-based exercise classes)
 
 **Weight loss**: recommended if you are overweight, especially for lower limb OA (hip, knee).
@@ -189,13 +189,13 @@ Your doctor may refer you for orthopaedic assessment (consideration of joint rep
 
 ## When Your Doctor May Refer You to a Specialist
 
-- **Rheumatology** (non-acute): if there is diagnostic uncertainty or concern about inflammatory arthritis. Note: publicly funded rheumatology services do not manage OA directly.
+- **Rheumatology** (non-acute): if there is diagnostic uncertainty or concern about inflammatory arthritis.
 - **Orthopaedics** (non-acute): if you meet joint replacement criteria; or if conservative management of femoro-acetabular impingement fails.
 - **Vascular surgery** (non-acute): if peripheral vascular disease is suspected.
 - **Physiotherapy**: for mobilisation, strengthening, balance, mobility equipment, exacerbation management, preoperative conditioning, or hydrotherapy.
 - **Occupational therapy**: for home safety and functional assessment.
 - **Hand therapy**: for thumb and hand OA.
-- **Podiatry** (private): for foot OA, or for valgus knee deformity or flat feet (pes planus), where medial arch supports can reduce stress on the medial knee compartment.
+- **Podiatry**: for foot OA, or for valgus knee deformity or flat feet (pes planus), where medial arch supports can reduce stress on the medial knee compartment.
 
 ---
 

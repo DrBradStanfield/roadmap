@@ -21,7 +21,6 @@ This pathway covers the ongoing management of established type 2 diabetes in adu
 If you have diabetes and are acutely unwell, seek urgent medical help if you have any of the following:
 
 - Any other illness, regardless of your glucose and ketone levels
-- Capillary (finger-prick) ketone levels higher than 1.5 mmol/L
 - Blood glucose levels persistently higher than 25 mmol/L
 - Symptoms of high blood glucose
 - Any concern that DKA or HHS may be developing (see below)
@@ -30,6 +29,10 @@ If you have diabetes and are acutely unwell, seek urgent medical help if you hav
 **Suspect diabetic ketoacidosis (DKA)** if blood glucose is more than 11 mmol/L plus any of: finger-prick ketones more than 1.5 mmol/L, nausea or vomiting, dehydration, a fast heart rate, abdominal pain, rapid or deep sighing breathing, or confusion. Confusion may progress to reduced consciousness and coma.
 
 Urine ketones may be falsely low on empagliflozin. People on empagliflozin can develop DKA with blood glucose less than 11 mmol/L (euglycaemic DKA).
+
+If you take an SGLT2 inhibitor (e.g. empagliflozin) and your finger-prick ketones are over 1.5 mmol/L, call 111 or go to the emergency department.
+
+If you are confused, very drowsy, or struggling to breathe, call 111 or go to the emergency department.
 
 **Suspect hyperosmolar hyperglycaemic state (HHS)** if you have extreme thirst, frequent urination, confusion, feeling weak, nausea, weight loss, dry mouth and tongue, fever, or seizures. HHS is a life-threatening complication that occurs when blood glucose is very high for a long time. It is more common in type 2 diabetes.
 
@@ -78,7 +81,7 @@ Your doctor may recommend self-monitoring when:
 
 ### Continuous glucose monitoring (CGM)
 
-CGM may help some people with type 2 diabetes, including those just diagnosed (for education) and those on insulin. CGM is not funded in type 2 diabetes. Manufacturer supply programmes may be available.
+CGM may help some people with type 2 diabetes, including those just diagnosed (for education) and those on insulin. CGM is not funded in type 2 diabetes.
 
 ### Capillary ketones
 
@@ -172,7 +175,7 @@ Your doctor will prescribe medications to help manage your blood glucose. These 
 
 ### Key second-line medications (funded in New Zealand)
 
-- **SGLT2 inhibitors** (e.g. empagliflozin) and **GLP-1 receptor agonists** (e.g. dulaglutide, liraglutide): preferred for people with cardiovascular disease, heart failure, or chronic kidney disease, whatever their HbA1c. Also considered when HbA1c stays above target and weight loss is wanted
+- **SGLT2 inhibitors** (e.g. empagliflozin) and **GLP-1 receptor agonists** (e.g. dulaglutide, liraglutide): your doctor may consider empagliflozin and/or a GLP-1 receptor agonist if you have cardiovascular disease, heart failure, or chronic kidney disease, whatever your HbA1c. Also considered when HbA1c stays above target and weight loss is wanted
 - **Sulfonylureas:** reduce glucose but can cause hypoglycaemia
 - **DPP-4 inhibitors, acarbose:** other options your doctor may consider
 
@@ -192,6 +195,8 @@ Funded access to empagliflozin, dulaglutide, and liraglutide widened in Septembe
 Hypoglycaemia means a blood glucose level lower than 4 mmol/L. Everyone on sulfonylureas or insulin needs to be able to recognise and treat it.
 
 **Signs and symptoms:** sweating and fatigue, palpitations, tremors and anxiety, hunger, dizziness and weakness, and confusion. Severe cases can cause seizures and coma.
+
+If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call 111. Do not give food or drink by mouth.
 
 **Causes:** missed meals, exercise, alcohol, increasing insulin or sulfonylureas too quickly, accidental overdose, and worsening kidney function.
 
@@ -267,7 +272,7 @@ Tight blood pressure control is very important to prevent complications.
 | 130/80 | Microvascular or macrovascular complications, or 5-year CVD risk 5% or higher |
 | 125/75 | Young patients with complications |
 
-Medications may include ACE inhibitors, ARBs, calcium channel blockers. For people with kidney disease, an ACE inhibitor or ARB is started first and increased to the maximum dose before adding another medicine.
+Medications may include ACE inhibitors, ARBs, calcium channel blockers. For people with kidney disease, an ACE inhibitor or ARB is started first and increased to the maximum dose before adding another medicine. If you are a woman of childbearing age, make sure you are not pregnant and have effective contraception before starting these medicines.
 
 Blood pressure is reviewed at least 3-monthly until it is on target.
 
