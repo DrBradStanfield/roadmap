@@ -15,7 +15,7 @@ summary: "Reference on magnesium: benefits for sleep, muscle cramps, blood press
 
 Magnesium is an essential mineral involved in over 300 enzymatic reactions in the human body [1]. It serves as a cofactor for ATP production, DNA and RNA synthesis, protein synthesis, muscle contraction, nerve impulse conduction, blood glucose regulation, and blood pressure control [1][2][43]. Approximately 50-60% of the body's magnesium resides in bone, where it contributes to bone structure, with most of the rest in soft tissues [1].
 
-Low magnesium intake is widespread. Approximately 48% of the US population consumes less than the Estimated Average Requirement from food alone [1][3]. Groups at highest risk include the elderly, adolescents, individuals with chronic alcohol use, those with type 2 diabetes, and patients with gastrointestinal diseases such as Crohn's disease and celiac disease [1][4]. Serum magnesium holds less than 1% of total body magnesium and is a poor marker of whole-body status [1][3]. Subclinical deficiency can exist despite a normal serum level [5]. Red blood cell (RBC) magnesium gives an idea of recent magnesium status, but it also does not reflect total body magnesium [3].
+Low magnesium intake is widespread [4]. Approximately 48% of the US population consumes less than the Estimated Average Requirement from food alone [1][3]. Groups at highest risk include the elderly, adolescents, individuals with chronic alcohol use, those with type 2 diabetes, and patients with gastrointestinal diseases such as Crohn's disease and celiac disease [1]. Serum magnesium holds less than 1% of total body magnesium and is a poor marker of whole-body status [1][3]. Subclinical deficiency can exist despite a normal serum level [5]. Red blood cell (RBC) magnesium gives an idea of recent magnesium status, but it also does not reflect total body magnesium [3].
 
 Symptoms of deficiency progress from mild to severe [1][3]:
 - **Early:** Loss of appetite, nausea, fatigue, weakness
@@ -69,7 +69,7 @@ Magnesium orotate is sometimes marketed as a "highly bioavailable" form. However
 
 **Overall effect:** A meta-analysis of 34 RCTs (n=2,028) found that magnesium supplementation at a median dose of 368 mg/day reduced systolic blood pressure (SBP) by 2.00 mmHg (95% CI: 0.43-3.58) and diastolic blood pressure (DBP) by 1.78 mmHg (95% CI: 0.73-2.82) (Zhang et al., *Hypertension*, 2016) [13].
 
-**In those already on BP medications:** A subsequent meta-analysis of 38 trials found substantially larger effects in hypertensive patients already taking antihypertensive drugs: SBP reduction of 7.68 mmHg and DBP reduction of 2.96 mmHg. Importantly, the effect was NOT statistically significant in untreated hypertension (Argeros et al., *Hypertension*, 2025) [14]. This suggests magnesium may be most valuable as an adjunct to existing antihypertensive therapy rather than as a standalone treatment.
+**In those already on BP medications:** A subsequent meta-analysis of 38 trials found substantially larger effects in hypertensive patients already taking antihypertensive drugs: SBP reduction of 7.68 mmHg and DBP reduction of 2.96 mmHg. In normotensive groups, the effect did not reach statistical significance (Argeros et al., *Hypertension*, 2025) [14]. The authors concluded that the findings support a benefit in people with high blood pressure or low magnesium, interpreted with caution because the studies varied widely [14].
 
 **FDA position:** In January 2022, the FDA authorized a qualified health claim: "Consuming diets with adequate magnesium may reduce the risk of high blood pressure," but requires the qualifier "the evidence is inconsistent and inconclusive" [3].
 
@@ -79,23 +79,23 @@ Rat studies suggest magnesium may increase melatonin production by raising the a
 
 **Older adults with insomnia:** An RCT in 46 elderly subjects found that a daily dose of 500 mg of magnesium (as magnesium oxide) for 8 weeks significantly decreased sleep onset latency (P=0.02) and increased serum melatonin and renin levels compared to placebo (Abbasi et al., *J Res Med Sci*, 2012) [3][15].
 
-**Meta-analysis in older adults:** A meta-analysis of 3 RCTs (n=151 older adults) found that 320-729 mg magnesium daily reduced sleep onset latency by 17.36 minutes (95% CI: -27.27 to -7.44, P=0.0006). The most common side effect was soft stools (Mah & Piber, *BMC Complement Med Ther*, 2021) [16].
+**Meta-analysis in older adults:** A meta-analysis of 3 RCTs (n=151 older adults) found that 320-729 mg magnesium daily reduced sleep onset latency by 17.36 minutes (95% CI: -27.27 to -7.44, P=0.0006). The most common side effect was soft stools (Mah & Pitre, *BMC Complement Med Ther*, 2021) [3][16].
 
-**Magnesium bisglycinate:** An RCT of 134 participants found that 250 mg elemental magnesium as bisglycinate for 4 weeks modestly reduced insomnia severity (ISI score), with a small effect size (Cohen's d=0.2). Greater benefit was observed in those with lower baseline magnesium intake (Schuster et al., *Nat Sci Sleep*, 2025) [17].
+**Magnesium bisglycinate:** An RCT of 134 participants found that 250 mg elemental magnesium as bisglycinate for 4 weeks modestly reduced insomnia severity (ISI score), with a small effect size (Cohen's d=0.2). Greater benefit was observed in those with lower baseline magnesium intake (Schuster et al., *Nat Sci Sleep*, 2025) [3][17].
 
-**Magnesium L-threonate (Magtein) for sleep:** An industry-funded RCT (n=76) of 1 g/day Magtein for 21 days reported improved deep sleep and REM sleep scores via Oura ring and improved daytime functioning (Hausenblas et al., *Sleep Med X*, 2024) [12]. However, the study was small, short, industry-funded, has a published corrigendum, and questionnaire-based sleep measures did not consistently improve. Per ConsumerLab's assessment, Magtein does NOT appear to reliably improve sleep [3].
+**Magnesium L-threonate (Magtein) for sleep:** An industry-funded RCT of 1 g/day Magtein for 21 days reported improved deep sleep and REM sleep scores via Oura ring and improved daytime functioning (Hausenblas et al., *Sleep Med X*, 2024) [12]. ConsumerLab reports 76 participants [3]. However, the study was small, short, industry-funded, has a published corrigendum, and questionnaire-based sleep measures did not consistently improve. Per ConsumerLab's assessment, Magtein does NOT appear to reliably improve sleep [3].
 
 **Deficiency and sleep disorders:** Magnesium deficiency is NOT associated with insomnia per se but IS associated with approximately 3-fold increased risk of sleep apnea [3].
 
-**Practical recommendation:** For sleep, citrate or bisglycinate in the 250-300 mg elemental range, taken 1-2 hours before bed, has the best evidence [3][16][17].
+**Practical recommendation:** For sleep, citrate or bisglycinate in the 250-300 mg elemental range, taken 30 to 60 minutes before bed, has the best evidence [3].
 
 ### Cognitive Function
 
-**Calcium-to-magnesium ratio:** A placebo-controlled study of 240 adults in Tennessee found that reducing the dietary calcium-to-magnesium ratio improved cognition by 9.1% in those aged 65+, an effect linked to activity at the APOE gene (Zhu et al., *J Alzheimers Dis*, 2020) [3][18]. The ratio should not be reduced below 1.7 [3].
+**Calcium-to-magnesium ratio:** A placebo-controlled study of 240 adults in Tennessee found that reducing the dietary calcium-to-magnesium ratio improved cognition by 9.1% in those aged 65+ [3]. The trial linked this effect partly to changes at the APOE gene (Zhu et al., *J Alzheimers Dis*, 2020) [18]. The ratio should not be reduced below 1.7 [3].
 
-**Long-term observational data:** A 20-year follow-up of 6,473 women starting at around 70 years of age found that those consuming 257-317 mg/day of magnesium had 37% lower risk of mild cognitive impairment compared to those with lower intakes (Lo et al., *BMJ Open*, 2019) [3][19].
+**Long-term observational data:** A 20-year follow-up of 6,473 women starting at around 70 years of age found that those consuming 257-317 mg/day of magnesium had 37% lower risk of mild cognitive impairment compared to those with lower intakes (Lo et al., *BMJ Open*, 2019) [3]. The authors concluded that total magnesium intake between the estimated average requirement and the recommended dietary allowance may be associated with a lower risk of mild cognitive impairment [19].
 
-**Magnesium L-threonate (Magtein):** Three human studies exist, all showing minimal benefit. The original animal study (Slutsky et al., *Neuron*, 2010) demonstrated enhanced synaptic plasticity and memory in rats [9], but the dose used was equivalent to approximately 7 g/day in humans, 20 times the tolerable upper limit [3]. Human trials have not convincingly replicated these findings. Given L-threonate's very low elemental magnesium content (8%), achieving adequate systemic magnesium via better-absorbed forms (glycinate, citrate) may be equally or more effective for brain health at a fraction of the cost [3][9].
+**Magnesium L-threonate (Magtein):** Three human studies exist, all showing minimal benefit. The original animal study demonstrated enhanced synaptic plasticity and memory in rats (Slutsky et al., *Neuron*, 2010) [9]. However, the dose used was equivalent to approximately 7 g/day in humans, 20 times the tolerable upper limit [3]. Human trials have not convincingly replicated these findings. Given L-threonate's very low elemental magnesium content (8%), achieving adequate systemic magnesium via better-absorbed forms (glycinate, citrate) may be equally or more effective for brain health at a fraction of the cost [3].
 
 **Synthesis:** Clinical trial evidence does not yet support recommending magnesium specifically for cognitive enhancement over general adequacy [3].
 
@@ -105,9 +105,9 @@ Diabetes increases urinary magnesium losses, and the resulting magnesium inadequ
 
 **Prediabetes with low magnesium:** An RCT of hypomagnesemic adults with prediabetes found that a daily dose of 382 mg of magnesium (as magnesium chloride) for four months improved glucose status in 50.8% of the magnesium group versus 7.0% of the placebo group. At the end of the trial, fasting glucose was 86.9 vs 98.3 mg/dL (Guerrero-Romero et al., *Diabetes & Metabolism*, 2015) [20].
 
-**Metabolic syndrome with low magnesium:** The same research group found that after 4 months of the same dose and form (magnesium chloride), only 48% of the magnesium group still met criteria for metabolic syndrome versus 77.5% of placebo (Rodriguez-Moran et al., *Adv Chronic Kidney Dis*, 2018) [21].
+**Metabolic syndrome with low magnesium:** The same research group found that after 16 weeks of the same dose and form (magnesium chloride), only 48% of the magnesium group still met criteria for metabolic syndrome versus 77.5% of placebo (Rodriguez-Moran et al., *Adv Chronic Kidney Dis*, 2018) [21].
 
-**Established type 2 diabetes:** An RCT in 14 patients with already-treated type 2 diabetes and low magnesium found that 360 mg magnesium gluconate did NOT improve insulin sensitivity (Drethen et al., *Diabetologia*, 2023) [22].
+**Established type 2 diabetes:** An RCT in 14 people with insulin-treated type 2 diabetes and low magnesium found that 6 weeks of oral magnesium did NOT improve insulin sensitivity (Drenthen et al., *Diabetologia*, 2024) [22]. ConsumerLab reports the dose as 360 mg of magnesium per day, as magnesium gluconate [3].
 
 **Conclusion:** Magnesium supplementation may help prediabetes and metabolic syndrome when magnesium levels are low. It does NOT appear to benefit already-treated type 2 diabetes [3][20][21][22].
 
@@ -115,9 +115,9 @@ Diabetes increases urinary magnesium losses, and the resulting magnesium inadequ
 
 Approximately 50-60% of body magnesium resides in bone, where it is involved in bone formation and influences osteoblast and osteoclast activity [1].
 
-**Bone mineral density:** An analysis of approximately 2,000 adults aged 70-79 found that meeting the RDA for magnesium was associated with 2% higher bone mineral density (BMD) in white women (Ryder et al., *J Am Geriatr Soc*, 2005) [3][23].
+**Bone mineral density:** An analysis of approximately 2,000 adults aged 70-79 found that higher magnesium intake was associated with higher whole-body bone mineral density (BMD) in white women and men, but not in Black participants (Ryder et al., *J Am Geriatr Soc*, 2005) [23]. In white women, meeting the RDA for magnesium was associated with 2% higher BMD [3].
 
-**Fracture risk:** A US study of older adults followed for 8 years found that the highest magnesium intake was associated with 53% lower fracture risk in men and 62% lower fracture risk in women. Women meeting the RDA had 27% lower fracture risk (Veronese et al., *Br J Nutr*, 2017) [3][24].
+**Fracture risk:** A US study of older adults followed for 8 years found that the highest magnesium intake was associated with 53% lower fracture risk in men and 62% lower fracture risk in women [3]. Women meeting the RDA had 27% lower fracture risk (Veronese et al., *Br J Nutr*, 2017) [3][24].
 
 **Mechanism:** Magnesium affects the concentrations of both parathyroid hormone and the active form of vitamin D, which are major regulators of bone homeostasis. Severe magnesium deficiency can disrupt mineral homeostasis and cause hypocalcemia [1].
 
@@ -127,11 +127,11 @@ Magnesium plays a role in the active transport of calcium and potassium ions acr
 
 **Muscle soreness in low-Mg individuals:** In a crossover trial of nine male runners on low-magnesium diets, 500 mg/day of magnesium for 7 days reduced muscle soreness after a downhill run but did not improve performance (Steward et al., *Eur J Appl Physiol*, 2019) [25]. With magnesium oxide as the source, soreness was 32% lower at 24 hours and 53% lower three days after the run than with placebo [3].
 
-**Glycinate for DOMS:** An RCT in 22 college students found that 350 mg magnesium glycinate for 8 days modestly reduced delayed-onset muscle soreness (Reno et al., *J Strength Cond Res*, 2020) [26].
+**Glycinate for DOMS:** A double-blind, placebo-controlled trial in 9 men and 13 women of college age found that 350 mg/day of magnesium for 10 days modestly reduced delayed-onset muscle soreness (Reno et al., *J Strength Cond Res*, 2022) [26]. ConsumerLab reports that the form was magnesium glycinate [3].
 
-**Performance in adequate-Mg adults:** An RCT of 15 adults with adequate magnesium levels found that 300 mg magnesium chloride actually WORSENED cycling performance (Bomar et al., *Nutrients*, 2025) [27]. The mechanism may relate to magnesium's muscle-relaxing properties interfering with optimal contraction force.
+**Performance in adequate-Mg adults:** An RCT of 15 adults with adequate magnesium levels found that 300 mg magnesium chloride twice a day for 9 days modestly WORSENED cycling performance (Bomar et al., *Nutrients*, 2025) [27]. The mechanism may relate to magnesium's muscle-relaxing properties interfering with optimal contraction force.
 
-**Elderly women:** An RCT in healthy women older than 65 found that 300 mg magnesium oxide for 12 weeks improved walking speed and chair-rise performance (Veronese et al., *AJCN*, 2014) [3][28].
+**Elderly women:** An RCT enrolled healthy women older than 65 who took part in a mild, weekly exercise program [3]. Those given 300 mg magnesium oxide for 12 weeks improved walking speed and chair-rise performance compared with an untreated control group (Veronese et al., *AJCN*, 2014) [28].
 
 **Practical implication:** Magnesium supplementation for exercise recovery appears beneficial only if intake or levels are low. Athletes should ensure adequate dietary magnesium but should not megadose, as supplementation in replete individuals may worsen performance [25][26][27].
 
@@ -141,7 +141,7 @@ Despite being one of the most commonly cited reasons for taking magnesium, the e
 
 A Cochrane systematic review concluded that magnesium supplementation is unlikely to provide clinically meaningful benefit for skeletal muscle cramps regardless of form or dose (Garrison et al., *Cochrane Database Syst Rev*, 2020) [3][29].
 
-A subsequent RCT in Finland (n=109) confirmed that 250 mg magnesium hydrochloride for 4 weeks did NOT reduce cramp frequency (Kuusipalo et al., *Trials*, 2026) [30].
+A subsequent RCT in Finland (n=109) confirmed that magnesium hydrochloride taken daily for 4 weeks did NOT reduce cramp frequency compared with placebo (Kuusipalo et al., *Trials*, 2026) [30]. ConsumerLab reports a dose of 250 mg of magnesium (as magnesium hydrochloride) once daily [3].
 
 **Pregnancy cramps:** Results are mixed, but the overall meta-analysis indicates magnesium is NOT effective for pregnancy-related leg cramps (Liu et al., *Taiwan J Obstet Gynecol*, 2021) [31].
 
@@ -196,11 +196,11 @@ The UL for supplemental magnesium (not including food sources) is **350 mg/day**
 
 ### Practical Dosing by Indication
 
-**General supplementation (to fill dietary gaps):** A dose of about 100 to 200 mg elemental magnesium is typically used, ideally split into two doses for better absorption [1][3].
+**General supplementation (to fill dietary gaps):** A dose of about 100 to 200 mg elemental magnesium is typically used [1][3].
 
-**Blood pressure support:** 300-500 mg/day. Most positive trials used 350-450 mg/day [13][14].
+**Blood pressure support:** The two main meta-analyses used median doses of 368 mg/day [13] and 365 mg/day [14]. Both are just above the 350 mg/day upper limit for supplemental magnesium [1][3]. Talk to your doctor before taking more than that limit.
 
-**Sleep:** 250-300 mg elemental, taken 1-2 hours before bed. Glycinate (bisglycinate) or citrate [3][16][17].
+**Sleep:** 250-300 mg elemental, taken 30 to 60 minutes before bed. Glycinate (bisglycinate) or citrate [3][16][17].
 
 **Migraine prevention:** Up to 600 mg/day in divided doses (exceeds UL; discuss with healthcare provider) [1][3].
 
@@ -258,6 +258,8 @@ The primary side effect of oral magnesium supplementation is **osmotic diarrhea*
 
 Other reported side effects include nausea and abdominal cramping at high doses [1].
 
+If you use a magnesium powder, dissolve it completely in water before taking it, to avoid injury to the esophagus [3].
+
 ### Toxicity (Hypermagnesemia)
 
 Magnesium toxicity from oral supplements is rare in individuals with normal kidney function because the kidneys efficiently excrete excess magnesium [1][3]. However, hypermagnesemia can occur with:
@@ -268,6 +270,8 @@ Magnesium toxicity from oral supplements is rare in individuals with normal kidn
 Symptoms of hypermagnesemia usually develop once serum magnesium exceeds 1.74 to 2.61 mmol/L and progress with severity [1]:
 - **Early:** Hypotension, nausea, vomiting, facial flushing, urine retention, ileus, depression, lethargy
 - **Later:** Muscle weakness, difficulty breathing, extreme hypotension, irregular heartbeat, cardiac arrest
+
+If these later symptoms appear, call 111 or go to the emergency department. A few cases of fatal hypermagnesemia have been reported [1].
 
 ### Special Populations
 
@@ -302,9 +306,9 @@ These medications should be **separated from magnesium supplements** [1][3]:
 | Proton pump inhibitors (PPIs) | Deplete | Long-term use (>1 year) can cause clinically significant hypomagnesemia. FDA issued a safety communication in 2011 [1][3][44]. |
 | Loop diuretics | Deplete | Furosemide, bumetanide increase renal magnesium excretion. Supplementation often necessary [1][3]. |
 | Thiazide diuretics | Mild depletion | Less magnesium-wasting than loop diuretics but can contribute to deficiency with prolonged use [1]. |
-| Potassium-sparing diuretics | May increase | Amiloride, spironolactone reduce renal magnesium excretion [1]. Do NOT combine amiloride with magnesium supplements [3]. |
+| Potassium-sparing diuretics | May increase | Triamterene and spironolactone may increase magnesium levels in the blood [3]. Do NOT combine amiloride with magnesium supplements [3]. |
 | SGLT2 inhibitors | May increase | Empagliflozin, dapagliflozin may modestly increase serum magnesium. Monitor if supplementing [3]. |
-| Digoxin | Bidirectional | Magnesium deficiency increases digoxin toxicity risk. Maintain adequate levels in digoxin users [3]. |
+| Digoxin | Bidirectional | Digoxin lowers magnesium levels, which can increase the risk of digoxin toxicity and heart arrhythmias. Your physician should monitor your magnesium levels and supervise any use of magnesium. Magnesium hydroxide and magnesium trisilicate may reduce digoxin absorption [3]. |
 | High-dose zinc | May impair Mg | Very high doses of zinc supplements can interfere with the body's ability to absorb and regulate magnesium [1]. |
 
 ## 8. Frequently Asked Questions
@@ -319,7 +323,7 @@ The upper limit for supplemental magnesium is 350 mg/day for adults. The main ri
 Yes. Taking magnesium with food can reduce the occurrence of diarrhea [3].
 
 **How long does magnesium take to work?**
-Sleep trials that found benefits lasted 3 to 8 weeks. In the main blood pressure meta-analysis, people took magnesium for about three months [3][13][16].
+Sleep trials that found benefits lasted 3 to 8 weeks [3]. In the main blood pressure meta-analysis, people took magnesium for about three months [3][13].
 
 **Is magnesium L-threonate (Magtein) worth the premium price?**
 The evidence does not support it. Magtein provides only 8% elemental magnesium, human cognitive trials have shown minimal benefit, and it has failed to reliably improve sleep. The original animal data used doses equivalent to 20 times the human upper limit. Better-absorbed forms like glycinate provide more elemental magnesium at lower cost [3][9][12].
@@ -337,88 +341,88 @@ Yes, provided total elemental magnesium from supplements stays within the 350 mg
 
 [1] National Institutes of Health, Office of Dietary Supplements. "Magnesium -- Health Professional Fact Sheet." Updated January 6, 2026. [https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/](https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/)
 
-[2] de Baaij JHF, et al. Magnesium in man: implications for health and disease. *Physiol Rev*. 2015. PMID: 25540137. https://pubmed.ncbi.nlm.nih.gov/25540137/
+[2] de Baaij JHF, et al. Magnesium in man: implications for health and disease. *Physiol Rev*. 2015;95(1):1-46. doi: [10.1152/physrev.00012.2014](https://doi.org/10.1152/physrev.00012.2014) PMID: 25540137. https://pubmed.ncbi.nlm.nih.gov/25540137/
 
 [3] ConsumerLab. "Magnesium Supplements Review." Updated June 25, 2026. [https://www.consumerlab.com/reviews/magnesium-supplement-review/magnesium/](https://www.consumerlab.com/reviews/magnesium-supplement-review/magnesium/). Absorption data from: Ranade VV, *Am J Ther* 2001; Guerrera MP et al., *Am Fam Physician* 2009; Firoz M, Graber M, *Magnes Res* 2001; Schuchardt JP, Hahn A, *Curr Nutr Food Sci* 2017.
 
-[4] Rosanoff A, Weaver CM, Rude RK. "Suboptimal magnesium status in the United States: are the health consequences underestimated?" *Nutr Rev*. 2012;70(3):153-164. doi: [10.1111/j.1753-4887.2011.00465.x](https://doi.org/10.1111/j.1753-4887.2011.00465.x)
+[4] Rosanoff A, Weaver CM, Rude RK. "Suboptimal magnesium status in the United States: are the health consequences underestimated?" *Nutr Rev*. 2012;70(3):153-164. doi: [10.1111/j.1753-4887.2011.00465.x](https://doi.org/10.1111/j.1753-4887.2011.00465.x) PMID: 22364157. https://pubmed.ncbi.nlm.nih.gov/22364157/
 
-[5] Costello RB, et al. Perspective: The Case for an Evidence-Based Reference Interval for Serum Magnesium: The Time Has Come. *Adv Nutr*. 2016. PMID: 28140318. https://pubmed.ncbi.nlm.nih.gov/28140318/
+[5] Costello RB, et al. Perspective: The Case for an Evidence-Based Reference Interval for Serum Magnesium: The Time Has Come. *Adv Nutr*. 2016;7(6):977-993. doi: [10.3945/an.116.012765](https://doi.org/10.3945/an.116.012765) PMID: 28140318. https://pubmed.ncbi.nlm.nih.gov/28140318/
 
 [6] Firoz M, Graber M. "Bioavailability of US commercial magnesium preparations." *Magnes Res*. 2001;14(4):257-262. PMID: [11794633](https://pubmed.ncbi.nlm.nih.gov/11794633/)
 
-[7] Schuchardt JP, Hahn A. "Intestinal Absorption and Factors Influencing Bioavailability of Magnesium -- An Update." *Curr Nutr Food Sci*. 2017;13(4):260-278.
+[7] Schuchardt JP, Hahn A. "Intestinal Absorption and Factors Influencing Bioavailability of Magnesium -- An Update." *Curr Nutr Food Sci*. 2017;13(4):260-278. doi: [10.2174/1573401313666170427162740](https://doi.org/10.2174/1573401313666170427162740) PMID: 29123461. https://pubmed.ncbi.nlm.nih.gov/29123461/
 
-[8] Shrivastava P, et al. Magnesium taurate attenuates progression of hypertension and cardiotoxicity against cadmium chloride-induced hypertensive albino rats. *J Tradit Complement Med*. 2019. PMID: 30963046. https://pubmed.ncbi.nlm.nih.gov/30963046/
+[8] Shrivastava P, et al. Magnesium taurate attenuates progression of hypertension and cardiotoxicity against cadmium chloride-induced hypertensive albino rats. *J Tradit Complement Med*. 2019;9(2):119-123. doi: [10.1016/j.jtcme.2017.06.010](https://doi.org/10.1016/j.jtcme.2017.06.010) PMID: 30963046. https://pubmed.ncbi.nlm.nih.gov/30963046/
 
-[9] Slutsky I, Abumaria N, Wu LJ, et al. "Enhancement of Learning and Memory by Elevating Brain Magnesium." *Neuron*. 2010;65(2):165-177. doi: [10.1016/j.neuron.2009.12.026](https://doi.org/10.1016/j.neuron.2009.12.026)
+[9] Slutsky I, Abumaria N, Wu LJ, et al. "Enhancement of Learning and Memory by Elevating Brain Magnesium." *Neuron*. 2010;65(2):165-177. doi: [10.1016/j.neuron.2009.12.026](https://doi.org/10.1016/j.neuron.2009.12.026) PMID: 20152124. https://pubmed.ncbi.nlm.nih.gov/20152124/
 
-[10] Bannai M, Kawai N. New therapeutic strategy for amino acid medicine: glycine improves the quality of sleep. *J Pharmacol Sci*. 2012. PMID: 22293292. https://pubmed.ncbi.nlm.nih.gov/22293292/
+[10] Bannai M, Kawai N. New therapeutic strategy for amino acid medicine: glycine improves the quality of sleep. *J Pharmacol Sci*. 2012;118(2):145-148. doi: [10.1254/jphs.11R04FM](https://doi.org/10.1254/jphs.11R04FM) PMID: 22293292. https://pubmed.ncbi.nlm.nih.gov/22293292/
 
-[11] Kawai N, et al. The sleep-promoting and hypothermic effects of glycine are mediated by NMDA receptors in the suprachiasmatic nucleus. *Neuropsychopharmacology*. 2015. PMID: 25533534. https://pubmed.ncbi.nlm.nih.gov/25533534/
+[11] Kawai N, et al. The sleep-promoting and hypothermic effects of glycine are mediated by NMDA receptors in the suprachiasmatic nucleus. *Neuropsychopharmacology*. 2015;40(6):1405-1416. doi: [10.1038/npp.2014.326](https://doi.org/10.1038/npp.2014.326) PMID: 25533534. https://pubmed.ncbi.nlm.nih.gov/25533534/
 
-[12] Hausenblas HA, et al. "Magnesium L-Threonate and Sleep: A Double-Blind Placebo-Controlled Trial." *Sleep Med X*. 2024. doi: [10.1016/j.sleepx.2024.100101](https://doi.org/10.1016/j.sleepx.2024.100101)
+[12] Hausenblas HA, et al. "Magnesium-L-threonate improves sleep quality and daytime functioning in adults with self-reported sleep problems: A randomized controlled trial." *Sleep Med X*. 2024;8:100121. doi: [10.1016/j.sleepx.2024.100121](https://doi.org/10.1016/j.sleepx.2024.100121) PMID: 39252819. https://pubmed.ncbi.nlm.nih.gov/39252819/
 
-[13] Zhang X, Li Y, Del Gobbo LC, et al. "Effects of Magnesium Supplementation on Blood Pressure: A Meta-Analysis of Randomized Double-Blind Placebo-Controlled Trials." *Hypertension*. 2016;68(2):324-333. doi: [10.1161/HYPERTENSIONAHA.116.07664](https://doi.org/10.1161/HYPERTENSIONAHA.116.07664)
+[13] Zhang X, Li Y, Del Gobbo LC, et al. "Effects of Magnesium Supplementation on Blood Pressure: A Meta-Analysis of Randomized Double-Blind Placebo-Controlled Trials." *Hypertension*. 2016;68(2):324-333. doi: [10.1161/HYPERTENSIONAHA.116.07664](https://doi.org/10.1161/HYPERTENSIONAHA.116.07664) PMID: 27402922. https://pubmed.ncbi.nlm.nih.gov/27402922/
 
-[14] Argeros T, Karageorgos G, et al. "Magnesium Supplementation and Blood Pressure in Hypertensive Patients on Antihypertensive Therapy: A Meta-Analysis." *Hypertension*. 2025. doi: [10.1161/HYPERTENSIONAHA.124.24417](https://doi.org/10.1161/HYPERTENSIONAHA.124.24417)
+[14] Argeros Z, et al. "Magnesium Supplementation and Blood Pressure: A Systematic Review and Meta-Analysis of Randomized Controlled Trials." *Hypertension*. 2025;82(11):1844-1856. doi: [10.1161/HYPERTENSIONAHA.125.25129](https://doi.org/10.1161/HYPERTENSIONAHA.125.25129) PMID: 41000008. https://pubmed.ncbi.nlm.nih.gov/41000008/
 
 [15] Abbasi B, Kimiagar M, Sadeghniiat K, et al. "The effect of magnesium supplementation on primary insomnia in elderly: A double-blind placebo-controlled clinical trial." *J Res Med Sci*. 2012;17(12):1161-1169. PMID: [23853635](https://pubmed.ncbi.nlm.nih.gov/23853635/)
 
-[16] Mah J, Piber D. "Magnesium and Sleep in Older Adults: A Systematic Review and Meta-Analysis." *BMC Complement Med Ther*. 2021. doi: [10.1186/s12906-021-03297-z](https://doi.org/10.1186/s12906-021-03297-z)
+[16] Mah J, Pitre T. "Oral magnesium supplementation for insomnia in older adults: a Systematic Review & Meta-Analysis." *BMC Complement Med Ther*. 2021;21(1):125. doi: [10.1186/s12906-021-03297-z](https://doi.org/10.1186/s12906-021-03297-z) PMID: 33865376. https://pubmed.ncbi.nlm.nih.gov/33865376/
 
-[17] Schuster AK, et al. "Effect of Magnesium Bisglycinate Supplementation on Insomnia Severity: A Randomized Double-Blind Placebo-Controlled Trial." *Nat Sci Sleep*. 2025. doi: [10.2147/NSS.S505199](https://doi.org/10.2147/NSS.S505199)
+[17] Schuster J, et al. "Magnesium Bisglycinate Supplementation in Healthy Adults Reporting Poor Sleep: A Randomized, Placebo-Controlled Trial." *Nat Sci Sleep*. 2025;17:2027-2040. doi: [10.2147/NSS.S524348](https://doi.org/10.2147/NSS.S524348) PMID: 40918053. https://pubmed.ncbi.nlm.nih.gov/40918053/
 
-[18] Zhu M, et al. "Calcium and Magnesium Intakes and Cognitive Decline in Older Adults: The Cache County Study." *J Alzheimers Dis*. 2020;73(2):689-700. doi: [10.3233/JAD-190745](https://doi.org/10.3233/JAD-190745)
+[18] Zhu X, et al. "Ca:Mg Ratio, APOE Cytosine Modifications, and Cognitive Function: Results from a Randomized Trial." *J Alzheimers Dis*. 2020;75(1):85-98. doi: [10.3233/JAD-191223](https://doi.org/10.3233/JAD-191223) PMID: 32280092. https://pubmed.ncbi.nlm.nih.gov/32280092/
 
-[19] Lo K, et al. "Dietary magnesium intake and risk of mild cognitive impairment in women." *BMJ Open*. 2019.
+[19] Lo K, et al. "Relations of magnesium intake to cognitive impairment and dementia among participants in the Women's Health Initiative Memory Study: a prospective cohort study." *BMJ Open*. 2019;9(11):e030052. doi: [10.1136/bmjopen-2019-030052](https://doi.org/10.1136/bmjopen-2019-030052) PMID: 31685499. https://pubmed.ncbi.nlm.nih.gov/31685499/
 
 [20] Guerrero-Romero F, Simental-Mendia LE, Hernandez-Ronquillo G, Rodriguez-Moran M. "Oral magnesium supplementation improves glycaemic status in subjects with prediabetes and hypomagnesaemia: A double-blind placebo-controlled randomized trial." *Diabetes & Metabolism*. 2015;41(3):202-207. PMID: [25937055](https://pubmed.ncbi.nlm.nih.gov/25937055/)
 
-[21] Rodriguez-Moran M, et al. "Oral magnesium supplementation and metabolic syndrome." *Adv Chronic Kidney Dis*. 2018.
+[21] Rodriguez-Moran M, et al. "Oral Magnesium Supplementation and Metabolic Syndrome: A Randomized Double-Blind Placebo-Controlled Clinical Trial." *Adv Chronic Kidney Dis*. 2018;25(3):261-266. doi: [10.1053/j.ackd.2018.02.011](https://doi.org/10.1053/j.ackd.2018.02.011) PMID: 29793665. https://pubmed.ncbi.nlm.nih.gov/29793665/
 
-[22] Drethen T, et al. "Effect of Magnesium Supplementation on Glycemic Control in Type 2 Diabetes: A Randomized Double-Blind Placebo-Controlled Trial." *Diabetologia*. 2023. doi: [10.1007/s00125-023-06003-9](https://doi.org/10.1007/s00125-023-06003-9)
+[22] Drenthen LCA, de Baaij JHF, Rodwell L, et al. "Oral magnesium supplementation does not affect insulin sensitivity in people with insulin-treated type 2 diabetes and a low serum magnesium: a randomised controlled trial." *Diabetologia*. 2024;67(1):52-61. doi: [10.1007/s00125-023-06029-9](https://doi.org/10.1007/s00125-023-06029-9) PMID: 37922013. https://pubmed.ncbi.nlm.nih.gov/37922013/
 
-[23] Ryder KM, Shorr RI, Bush AJ, et al. "Magnesium intake from food and supplements is associated with bone mineral density in healthy older white women." *J Am Geriatr Soc*. 2005;53(11):1875-1880. doi: [10.1111/j.1532-5415.2005.53561.x](https://doi.org/10.1111/j.1532-5415.2005.53561.x)
+[23] Ryder KM, Shorr RI, Bush AJ, et al. "Magnesium intake from food and supplements is associated with bone mineral density in healthy older white subjects." *J Am Geriatr Soc*. 2005;53(11):1875-1880. doi: [10.1111/j.1532-5415.2005.53561.x](https://doi.org/10.1111/j.1532-5415.2005.53561.x) PMID: 16274367. https://pubmed.ncbi.nlm.nih.gov/16274367/
 
-[24] Veronese N, Stubbs B, Solmi M, et al. "Dietary magnesium intake and fracture risk: data from a large prospective study." *Br J Nutr*. 2017;117(11):1570-1576. doi: [10.1017/S0007114517001350](https://doi.org/10.1017/S0007114517001350)
+[24] Veronese N, Stubbs B, Solmi M, et al. "Dietary magnesium intake and fracture risk: data from a large prospective study." *Br J Nutr*. 2017;117(11):1570-1576. doi: [10.1017/S0007114517001350](https://doi.org/10.1017/S0007114517001350) PMID: 28631583. https://pubmed.ncbi.nlm.nih.gov/28631583/
 
-[25] Steward CJ, et al. One week of magnesium supplementation lowers IL-6, muscle soreness and increases post-exercise blood glucose in response to downhill running. *Eur J Appl Physiol*. 2019. PMID: 31624951. https://pubmed.ncbi.nlm.nih.gov/31624951/
+[25] Steward CJ, et al. One week of magnesium supplementation lowers IL-6, muscle soreness and increases post-exercise blood glucose in response to downhill running. *Eur J Appl Physiol*. 2019;119(11-12):2617-2627. doi: [10.1007/s00421-019-04238-y](https://doi.org/10.1007/s00421-019-04238-y) PMID: 31624951. https://pubmed.ncbi.nlm.nih.gov/31624951/
 
-[26] Reno AM, et al. "Effects of Magnesium Supplementation on Muscle Soreness and Performance." *J Strength Cond Res*. 2020.
+[26] Reno AM, Green M, Killen LG, et al. "Effects of Magnesium Supplementation on Muscle Soreness and Performance." *J Strength Cond Res*. 2022;36(8):2198-2203. doi: [10.1519/JSC.0000000000003827](https://doi.org/10.1519/JSC.0000000000003827) PMID: 33009349. https://pubmed.ncbi.nlm.nih.gov/33009349/
 
-[27] Bomar ME, et al. *Nutrients*. 2025.
+[27] Bomar MC, Ewell TR, Brown RL, et al. "Short-Term Magnesium Supplementation Has Modest Detrimental Effects on Cycle Ergometer Exercise Performance and Skeletal Muscle Mitochondria and Negligible Effects on the Gut Microbiota: A Randomized Crossover Clinical Trial." *Nutrients*. 2025;17(5). doi: [10.3390/nu17050915](https://doi.org/10.3390/nu17050915) PMID: 40077784. https://pubmed.ncbi.nlm.nih.gov/40077784/
 
-[28] Veronese N, et al. "Effect of oral magnesium supplementation on physical performance in healthy elderly women." *Am J Clin Nutr*. 2014;100(3):974-981.
+[28] Veronese N, et al. "Effect of oral magnesium supplementation on physical performance in healthy elderly women." *Am J Clin Nutr*. 2014;100(3):974-981. doi: [10.3945/ajcn.113.080168](https://doi.org/10.3945/ajcn.113.080168) PMID: 25008857. https://pubmed.ncbi.nlm.nih.gov/25008857/
 
-[29] Garrison SR, Korownyk CS, Kolber MR, et al. "Magnesium for skeletal muscle cramps." *Cochrane Database Syst Rev*. 2020;9(9):CD009402. doi: [10.1002/14651858.CD009402.pub3](https://doi.org/10.1002/14651858.CD009402.pub3)
+[29] Garrison SR, Korownyk CS, Kolber MR, et al. "Magnesium for skeletal muscle cramps." *Cochrane Database Syst Rev*. 2020;9(9):CD009402. doi: [10.1002/14651858.CD009402.pub3](https://doi.org/10.1002/14651858.CD009402.pub3) PMID: 32956536. https://pubmed.ncbi.nlm.nih.gov/32956536/
 
-[30] Kuusipalo T, et al. "Magnesium supplementation for leg cramps: A randomized controlled trial." *Trials*. 2026.
+[30] Kuusipalo A, Laitila J, Lehtonen E, et al. "Secondary prevention of leg cramps using compression stockings or magnesium supplements: a three-arm randomized clinical trial." *Trials*. 2026;27(1). doi: [10.1186/s13063-025-09370-z](https://doi.org/10.1186/s13063-025-09370-z) PMID: 41680812. https://pubmed.ncbi.nlm.nih.gov/41680812/
 
-[31] Liu CF, et al. "Magnesium supplementation during pregnancy for leg cramps: A meta-analysis." *Taiwan J Obstet Gynecol*. 2021.
+[31] Liu J, Song G, Zhao G, Meng T. "Effect of oral magnesium supplementation for relieving leg cramps during pregnancy: A meta-analysis of randomized controlled trials." *Taiwan J Obstet Gynecol*. 2021;60(4):609-614. doi: [10.1016/j.tjog.2021.05.006](https://doi.org/10.1016/j.tjog.2021.05.006) PMID: 34247796. https://pubmed.ncbi.nlm.nih.gov/34247796/
 
 [32] Koseoglu E, Talaslioglu A, Gonul AS, Kula M. "The effects of magnesium prophylaxis in migraine without aura." *Magnes Res*. 2008;21(2):101-108. PMID: [18705538](https://pubmed.ncbi.nlm.nih.gov/18705538/)
 
-[33] Peikert A, Wilimzig C, Kohne-Volland R. "Prophylaxis of migraine with oral magnesium: results from a prospective, multi-center, placebo-controlled and double-blind randomized study." *Cephalalgia*. 1996;16(4):257-263. doi: [10.1046/j.1468-2982.1996.1604257.x](https://doi.org/10.1046/j.1468-2982.1996.1604257.x)
+[33] Peikert A, Wilimzig C, Kohne-Volland R. "Prophylaxis of migraine with oral magnesium: results from a prospective, multi-center, placebo-controlled and double-blind randomized study." *Cephalalgia*. 1996;16(4):257-263. doi: [10.1046/j.1468-2982.1996.1604257.x](https://doi.org/10.1046/j.1468-2982.1996.1604257.x) PMID: 8792038. https://pubmed.ncbi.nlm.nih.gov/8792038/
 
-[34] Maizels M, et al. "A combination of riboflavin, magnesium, and feverfew for migraine prophylaxis." *Headache*. 2004.
+[34] Maizels M, et al. "A combination of riboflavin, magnesium, and feverfew for migraine prophylaxis." *Headache*. 2004;44(9):885-890. doi: [10.1111/j.1526-4610.2004.04170.x](https://doi.org/10.1111/j.1526-4610.2004.04170.x) PMID: 15447697. https://pubmed.ncbi.nlm.nih.gov/15447697/
 
-[35] Serefko A, et al. Magnesium in depression. *Pharmacol Rep*. 2013. PMID: 23950577. https://pubmed.ncbi.nlm.nih.gov/23950577/
+[35] Serefko A, et al. Magnesium in depression. *Pharmacol Rep*. 2013;65(3):547-554. doi: [10.1016/S1734-1140(13)71032-6](https://doi.org/10.1016/S1734-1140(13)71032-6) PMID: 23950577. https://pubmed.ncbi.nlm.nih.gov/23950577/
 
-[36] Tarleton EK, Littenberg B. Magnesium intake and depression in adults. *J Am Board Fam Med*. 2015. PMID: 25748766. https://pubmed.ncbi.nlm.nih.gov/25748766/
+[36] Tarleton EK, Littenberg B. Magnesium intake and depression in adults. *J Am Board Fam Med*. 2015;28(2):249-256. doi: [10.3122/jabfm.2015.02.140176](https://doi.org/10.3122/jabfm.2015.02.140176) PMID: 25748766. https://pubmed.ncbi.nlm.nih.gov/25748766/
 
-[37] Rajizadeh A, et al. "Effect of magnesium supplementation on depression status in depressed patients with magnesium deficiency." 2017.
+[37] Rajizadeh A, et al. "Effect of magnesium supplementation on depression status in depressed patients with magnesium deficiency." *Nutrition*. 2017;35:56-60. doi: [10.1016/j.nut.2016.10.014](https://doi.org/10.1016/j.nut.2016.10.014) PMID: 28241991. https://pubmed.ncbi.nlm.nih.gov/28241991/
 
-[38] Khan AM, et al. Low serum magnesium and the development of atrial fibrillation in the community: the Framingham Heart Study. *Circulation*. 2013. PMID: 23172839. https://pubmed.ncbi.nlm.nih.gov/23172839/
+[38] Khan AM, et al. Low serum magnesium and the development of atrial fibrillation in the community: the Framingham Heart Study. *Circulation*. 2013;127(1):33-38. doi: [10.1161/CIRCULATIONAHA.111.082511](https://doi.org/10.1161/CIRCULATIONAHA.111.082511) PMID: 23172839. https://pubmed.ncbi.nlm.nih.gov/23172839/
 
-[39] Adamopoulos C, et al. Low serum magnesium and cardiovascular mortality in chronic heart failure: a propensity-matched study. *Int J Cardiol*. 2009. PMID: 18672302. https://pubmed.ncbi.nlm.nih.gov/18672302/
+[39] Adamopoulos C, et al. Low serum magnesium and cardiovascular mortality in chronic heart failure: a propensity-matched study. *Int J Cardiol*. 2009;136(3):270-277. doi: [10.1016/j.ijcard.2008.05.006](https://doi.org/10.1016/j.ijcard.2008.05.006) PMID: 18672302. https://pubmed.ncbi.nlm.nih.gov/18672302/
 
-[40] Altman D, et al. Do women with pre-eclampsia, and their babies, benefit from magnesium sulphate? The Magpie Trial: a randomised placebo-controlled trial. *Lancet*. 2002. PMID: 12057549. https://pubmed.ncbi.nlm.nih.gov/12057549/
+[40] Altman D, et al. Do women with pre-eclampsia, and their babies, benefit from magnesium sulphate? The Magpie Trial: a randomised placebo-controlled trial. *Lancet*. 2002;359(9321):1877-1890. doi: [10.1016/S0140-6736(02)08778-0](https://doi.org/10.1016/S0140-6736(02)08778-0) PMID: 12057549. https://pubmed.ncbi.nlm.nih.gov/12057549/
 
 [41] U.S. Department of Agriculture, FoodData Central. [https://fdc.nal.usda.gov/](https://fdc.nal.usda.gov/)
 
-[42] Moe SM. Disorders involving calcium, phosphorus, and magnesium. *Prim Care*. 2008. PMID: 18486714. https://pubmed.ncbi.nlm.nih.gov/18486714/
+[42] Moe SM. Disorders involving calcium, phosphorus, and magnesium. *Prim Care*. 2008;35(2):215-237. doi: [10.1016/j.pop.2008.01.007](https://doi.org/10.1016/j.pop.2008.01.007) PMID: 18486714. https://pubmed.ncbi.nlm.nih.gov/18486714/
 
-[43] Grober U, et al. Magnesium in Prevention and Therapy. *Nutrients*. 2015. PMID: 26404370. https://pubmed.ncbi.nlm.nih.gov/26404370/
+[43] Grober U, et al. Magnesium in Prevention and Therapy. *Nutrients*. 2015;7(9):8199-8226. doi: [10.3390/nu7095388](https://doi.org/10.3390/nu7095388) PMID: 26404370. https://pubmed.ncbi.nlm.nih.gov/26404370/
 
 [44] U.S. Food and Drug Administration. "FDA Drug Safety Communication: Low magnesium levels can be associated with long-term use of Proton Pump Inhibitor drugs (PPIs)." March 2, 2011. [https://www.fda.gov/drugs/drug-safety-and-availability/fda-drug-safety-communication-low-magnesium-levels-can-be-associated-long-term-use-proton-pump](https://www.fda.gov/drugs/drug-safety-and-availability/fda-drug-safety-communication-low-magnesium-levels-can-be-associated-long-term-use-proton-pump)

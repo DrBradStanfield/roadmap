@@ -95,7 +95,7 @@ A longer half-life does not always mean greater clinical activity [3]. MK-4 at a
 
 ### Fat-Soluble Vitamin Interactions
 
-A laboratory experiment using intestinal cells found that uptake of vitamin K was reduced by approximately half by vitamins A, D, and E, likely due to competition for absorption among fat-soluble vitamins [3][15]. Vitamin K did not significantly reduce uptake of the other fat-soluble vitamins [3]. There do not appear to be studies showing reduced vitamin K absorption in people due to vitamin D, but it may be best to take vitamin K at least 3 hours apart from vitamin D. Combined formulas are rarely tested in people for ingredient absorption [3]. Large doses of vitamin E may antagonize vitamin K, making it less effective [3].
+A laboratory experiment using intestinal cells found that uptake of vitamin K was reduced by approximately half by vitamins A, D, and E, likely due to competition for absorption among fat-soluble vitamins [3]. In that experiment, vitamins D, E, and K competed with each other for uptake, and vitamin A also lowered uptake of the others [15]. Vitamin K did not significantly reduce uptake of the other fat-soluble vitamins [3]. There do not appear to be studies showing reduced vitamin K absorption in people due to vitamin D, but it may be best to take vitamin K at least 3 hours apart from vitamin D and not from formulas that include vitamin D [3]. Combined formulas are rarely tested in people for ingredient absorption [3]. Large doses of vitamin E may antagonize vitamin K, making it less effective [3].
 
 ## 3. Evidence for Benefits
 
@@ -173,7 +173,7 @@ Although many studies indicate that MK-7 does not reduce coronary artery calcifi
 
 **Kurnatowska et al. (2015):** A study of 40 people (average age 58) with chronic kidney disease (stage 3-5) showed that 90 mcg of MK-7 plus 400 IU of vitamin D daily for about 9 months lessened the increase in carotid artery intima-media thickness by about 7.9% compared with 400 IU of vitamin D alone, but there was no significant difference in progression of coronary artery calcification [3].
 
-**Diederichsen et al. (2022):** Despite improving vitamin K status to near normal ranges, daily supplementation with 720 mcg of MK-7 plus 1,000 IU of vitamin D for two years did not slow the progression of aortic valve calcification or stenosis in 333 men and women in Denmark (average age 71) with mild aortic valve calcification and stenosis. Supplementation also did not reduce the rate of heart valve replacement, cardiovascular events, or all-cause mortality. Most participants were also taking statin and/or ACE inhibitor or beta-blocker drugs [3][29].
+**Diederichsen et al. (2022):** Despite improving vitamin K status to near normal ranges, daily supplementation with 720 mcg of MK-7 plus 1,000 IU of vitamin D for two years did not slow the progression of aortic valve calcification or stenosis in a study in Denmark of people with mild aortic valve calcification and stenosis [3]. The trial enrolled 365 men, average age 71 [29]. Supplementation also did not reduce the rate of heart valve replacement, cardiovascular events, or all-cause mortality [3][29]. Most participants were also taking statin and/or ACE inhibitor or beta-blocker drugs [3].
 
 **Hasific et al. (2025):** Further analysis of the same trial found that MK-7 plus vitamin D for two years did not reduce inflammation of epicardial or pericoronary adipose tissue, nor did it significantly reduce blood markers of general inflammation [3].
 
@@ -193,7 +193,7 @@ The overall cardiovascular evidence is mixed. Higher dietary K2 intake has been 
 
 ### Nocturnal Leg Cramps
 
-A placebo-controlled trial by Tan et al. (2024) studied 199 older adults in China who took 180 mcg of MK-7 every night for eight weeks. Compared with placebo, those given MK-7 had a dramatic reduction in nocturnal leg cramps: down to about 1 per week from 2.6 per week at baseline, with reductions in cramp severity and duration (down to under 10 seconds from over 1 minute at baseline). Reductions were apparent within one week, with further improvements over the first four weeks that continued for the rest of the study. No adverse events related to vitamin K2 were identified [3][31].
+A placebo-controlled trial by Tan et al. (2024) studied 199 older adults in China who took 180 mcg of MK-7 every night for eight weeks. Compared with placebo, those given MK-7 had a dramatic reduction in nocturnal leg cramps: down to about 1 per week from 2.6 per week at baseline, with reductions in cramp severity and duration (down to under 10 seconds from over 1 minute at baseline). Reductions were apparent within one week, with further improvements over the first four weeks that continued for the rest of the study [3]. No adverse events related to vitamin K2 were identified [3][31].
 
 Vitamin K may relieve muscle cramps by affecting calcium channels in cells, reducing muscular contractions [3][32].
 
@@ -203,7 +203,7 @@ Observational evidence on vitamin K and cancer risk is mixed and does not establ
 
 **Nimptsch et al. (2010):** A multi-year population study in Germany found that people who consumed larger amounts of foods known to contain vitamin K2 (such as cheese) had a statistically lower risk of dying from cancer [3]. Men (but not women) also had a significant decrease in cancer incidence, particularly prostate and lung cancers [3][33].
 
-**Wang et al. (2020):** A larger population study in the U.S. among 51,662 women followed for a median of 13.6 years found that higher dietary intake of K2 (from butter and cheeses) was associated with a 26% higher risk of breast cancer and a 71% increased risk of death from breast cancer [3][34].
+**Wang et al. (2020):** A larger population study in the U.S. among 51,662 women followed for a median of 13.6 years found that higher dietary intake of K2 (from butter and cheeses) was associated with a 26% higher risk of breast cancer and a 71% increased risk of death from breast cancer [3]. The study's authors said the findings would need to be replicated in other studies [34].
 
 In both studies, no such associations were found for foods containing K1. These studies show only associations and do not establish cause-and-effect relationships [3].
 
@@ -213,7 +213,7 @@ A blood marker of low vitamin K levels (dp-ucMGP) has been associated with COVID
 
 **Dofferhoff et al. (2020):** Patients with COVID-19 had significantly higher dp-ucMGP levels (indicating low vitamin K) than a control group without COVID-19, and levels were significantly higher in patients with unfavorable outcomes (ventilation and/or death) than in those discharged without ventilation. This was true even after factoring for age, gender, or use of medications that may lower vitamin K levels. Reduced vitamin K status was also associated with accelerated breakdown of elastin [3].
 
-**Linneberg et al. (2020, preprint):** In a Danish study, average dp-ucMGP levels were significantly higher among people admitted to hospital with COVID-19 (1,022 pmol/L) than in controls (509 pmol/L). Those who died had levels of 1,445 pmol/L versus 877 pmol/L in those who survived. Every doubling of dp-ucMGP increased the risk of death by 50% [3][35].
+**Linneberg et al. (2020, preprint):** In a Danish study, average dp-ucMGP levels were significantly higher among people admitted to hospital with COVID-19 (1,022 pmol/L) than in controls (509 pmol/L). Those who died had levels of 1,445 pmol/L versus 877 pmol/L in those who survived. Every doubling of dp-ucMGP increased the risk of death by 50% [3]. In the published version of the study, this link weakened and was no longer statistically significant after adjustment for other health conditions [35].
 
 Proposed mechanisms include greater use of vitamin K during severe illness, which may deplete it, and a possible increase in the risk of abnormal blood clotting, venous thromboembolism, and elastin breakdown, which occurs with lung damage [3]. However, there is currently no direct evidence that vitamin K supplementation can prevent or treat COVID-19. Other conditions common in COVID-19 patients with poor outcomes (such as type 2 diabetes and high blood pressure) are also associated with reduced vitamin K levels [3].
 
@@ -221,7 +221,7 @@ Proposed mechanisms include greater use of vitamin K during severe illness, whic
 
 Vitamin K1 is known to be effective in preventing and treating poor blood clotting (hypoprothrombinemia) caused by vitamin K deficiency or induced by certain medications. Vitamin K2 has also been shown to be effective and, apparently, more potent [3]. Symptomatic vitamin K deficiency is rare, resulting from severe malnutrition or malabsorption, or prolonged therapy with some antibiotics [3].
 
-Among people on warfarin with unexplained INR instability, daily low-dose oral vitamin K (100 to 200 mcg of K1) was previously recommended to improve clotting stability under medical supervision [3][36]. However, experts now advise against low-dose vitamin K supplementation for people taking warfarin, after an analysis of clinical trials showed that vitamin K did not reduce major bleeding events or other complications related to blood clotting [3][37][38].
+Among people on warfarin with unexplained INR instability, daily low-dose oral vitamin K (100 to 200 mcg of K1) was previously recommended to improve clotting stability under medical supervision [3]. An earlier guideline on warfarin-type drugs gave specific advice for managing INR results outside the target range [36]. However, experts now advise against low-dose vitamin K supplementation for people taking warfarin, after an analysis of clinical trials showed that vitamin K did not reduce major bleeding events or other complications related to blood clotting [3][37][38].
 
 ## 4. Recommended Dosing
 
@@ -270,7 +270,7 @@ The doses used in clinical trials far exceed the AI and vary by form. Studies of
 **Vitamin K2 as MK-7:**
 - Bone health: 90-375 mcg/day [3]
 - Cardiovascular health, lowest trial dose: 90 mcg of MK-7 plus 400 IU of vitamin D daily for about 9 months [3]
-- Cardiovascular health, highest trial dose: 720 mcg of MK-7 plus 1,000 IU of vitamin D for two years [3]
+- Cardiovascular health, highest trial dose: daily supplementation with 720 mcg of MK-7 plus 1,000 IU of vitamin D for two years [3]
 - Nocturnal leg cramps: 180 mcg every night for eight weeks [3]
 
 ### Practical Dosing Considerations
@@ -299,7 +299,7 @@ Vitamin K3 (menadione) is different: it may cause toxicity and is not sold as a 
 
 **Soy allergy:** The MK-7 form of vitamin K2 is often derived from natto, which is made from soy. MenaQ7 is derived from chickpeas, and its manufacturer claims it is soy free. Labels should be read carefully, as "MenaQ7 Natto MK-7" is derived from soy [3].
 
-**Sleep concerns:** Despite anecdotal reports that MK-7 may worsen sleep, a clinical study in Japan of 115 adults (average age 47) who took 100 mcg of MK-7 daily for 12 weeks showed no worsening of sleep parameters compared with people who did not supplement. Some research has linked short sleep (less than 7 hours per night) with inadequate vitamin K intake from foods and supplements among women aged 19 to 50, though no such association was found in men [3][42].
+**Sleep concerns:** Despite anecdotal reports that MK-7 may worsen sleep, a clinical study in Japan of 115 adults (average age 47) who took 100 mcg of MK-7 daily for 12 weeks showed no worsening of sleep parameters compared with people who did not supplement. Some research has linked short sleep (less than 7 hours per night) with inadequate vitamin K intake from foods and supplements among women aged 19 to 50, though no such association was found in men [3]. In that analysis of U.S. survey data, women with short sleep were more likely to have inadequate intake of several nutrients, including vitamin K [42].
 
 **Breast cancer:** A U.S. population study found an association between higher dietary K2 intake (from butter and cheeses) and increased breast cancer risk. The link, if any, does not prove cause and effect. There does not appear to be convincing evidence that supplementation with soy-based MK-7 increases the risk of breast cancer or breast cancer recurrence [3].
 
@@ -323,7 +323,7 @@ Vitamin K may reduce the effectiveness of warfarin. This interference may occur 
 
 Although supplements providing up to 100 mcg of K1 per day may not cause clinically relevant disturbances, experts now recommend against low-dose vitamin K supplementation for warfarin users because of limited evidence of benefit and potential for interaction at the doses used in research (100 to 200 mcg per day) [3]. People taking warfarin should not begin supplementing with vitamin K unless advised to do so by their doctor [3].
 
-People taking warfarin should keep their vitamin K intake from food consistent, without large fluctuations. One study found that people who got less than 250 mcg of vitamin K daily from food were maintained on 4.4 mg of warfarin, while those consuming more needed 5.8 mg [3][39].
+People taking warfarin should keep their vitamin K intake from food consistent, without large fluctuations. NIH advises keeping vitamin K intake from both food and supplements consistent, because sudden changes can increase or decrease warfarin's anticoagulant effect [1]. One study found that people who got less than 250 mcg of vitamin K daily from food were maintained on 4.4 mg of warfarin, while those consuming more needed 5.8 mg [3][39].
 
 ### Direct Oral Anticoagulants (DOACs)
 
@@ -441,22 +441,22 @@ Substantial quantities of long-chain menaquinones made by gut bacteria are prese
 26. Beulens JW, Bots ML, Atsma F, et al. High dietary menaquinone intake is associated with reduced coronary calcification. *Atherosclerosis*. 2009;203(2):489-493. [PubMed](https://pubmed.ncbi.nlm.nih.gov/18722618/)
 27. Demer LL, Tintut Y. Vascular calcification: pathobiology of a multifaceted disease. *Circulation*. 2008;117(22):2938-2948. [PubMed](https://pubmed.ncbi.nlm.nih.gov/18519861/)
 28. Knapen MH, Braam LA, Drummen NE, et al. Menaquinone-7 supplementation improves arterial stiffness in healthy postmenopausal women: a double-blind randomised clinical trial. *Thromb Haemost*. 2015;113(5):1135-1144. [PubMed](https://pubmed.ncbi.nlm.nih.gov/25694037/)
-29. Diederichsen A, Lindholt JS, Mogenssen OK, et al. Vitamin K2 and D3 supplementation in patients with aortic valve calcification: a randomized clinical trial. *Circulation*. 2022;145(18):1378-1390.
+29. Diederichsen ACP, Lindholt JS, Möller S, et al. Vitamin K2 and D in patients with aortic valve calcification: a randomized double-blinded clinical trial. *Circulation*. 2022;145(18):1387-1397. PMID: 35465686. https://pubmed.ncbi.nlm.nih.gov/35465686/
 30. Shea MK, O'Donnell CJ, Hoffmann U, et al. Vitamin K supplementation and progression of coronary artery calcium in older men and women. *Am J Clin Nutr*. 2009;89(6):1799-1807. [PubMed](https://pubmed.ncbi.nlm.nih.gov/19386744/)
-31. Tan JKH, Mohan CD, Er JZ, et al. Vitamin K2 for nocturnal leg cramps in older adults: a randomized clinical trial. *JAMA Intern Med*. 2024;184(5):523-530.
+31. Tan J, Zhu R, Li Y, et al. Vitamin K2 in managing nocturnal leg cramps: a randomized clinical trial. *JAMA Intern Med*. 2024;184(12):1443-1447. PMID: 39466236. https://pubmed.ncbi.nlm.nih.gov/39466236/
 32. Zhang YS, Li Q, He BS, et al. Inhibitory effects of vitamin K on calcium signaling. *Biochem Biophys Res Commun*. 2016;474(2):341-345.
 33. Nimptsch K, Rohrmann S, Kaaks R, et al. Dietary vitamin K intake in relation to cancer incidence and mortality: results from the Heidelberg cohort of the European Prospective Investigation into Cancer and Nutrition (EPIC-Heidelberg). *Am J Clin Nutr*. 2010;91(5):1348-1358. [PubMed](https://pubmed.ncbi.nlm.nih.gov/20335553/)
-34. Wang J, et al. Dietary vitamin K intake and breast cancer risk. *Clin Nutr*. 2020;39(10):3082-3090.
-35. Linneberg A, Kampmann FB, Israelsen SB, et al. The association of low vitamin K status with mortality in a cohort of 138 hospitalized patients with COVID-19. *medRxiv*. 2020 (preprint).
-36. Ansell J, Hirsh J, Hylek E, et al. Pharmacology and management of the vitamin K antagonists. *Chest*. 2008;133(6 Suppl):160S-198S.
-37. Holbrook A, et al. Evidence-based management of anticoagulant therapy. *Chest*. 2012;141(2 Suppl):e152S-e184S.
-38. Witt DM, Clark NP, Kaatz S, et al. Guidance for the practical management of warfarin therapy. *J Thromb Thrombolysis*. 2016;41(1):187-205.
+34. Wang K, Wu Q, Li Z, et al. Vitamin K intake and breast cancer incidence and death: results from a prospective cohort study. *Clin Nutr*. 2021;40(5):3370-3378. PMID: 33277073. https://pubmed.ncbi.nlm.nih.gov/33277073/
+35. Linneberg A, Kampmann FB, Israelsen SB, et al. The association of low vitamin K status with mortality in a cohort of 138 hospitalized patients with COVID-19. *medRxiv*. 2020 (preprint). Published in *Nutrients*. 2021;13(6):1985. PMID: 34207745. https://pubmed.ncbi.nlm.nih.gov/34207745/
+36. Ansell J, Hirsh J, Hylek E, et al. Pharmacology and management of the vitamin K antagonists. *Chest*. 2008;133(6 Suppl):160S-198S. PMID: 18574265. https://pubmed.ncbi.nlm.nih.gov/18574265/
+37. Holbrook A, et al. Evidence-based management of anticoagulant therapy. *Chest*. 2012;141(2 Suppl):e152S-e184S. PMID: 22315259. https://pubmed.ncbi.nlm.nih.gov/22315259/
+38. Witt DM, Clark NP, Kaatz S, et al. Guidance for the practical management of warfarin therapy. *J Thromb Thrombolysis*. 2016;41(1):187-205. PMID: 26780746. https://pubmed.ncbi.nlm.nih.gov/26780746/
 39. Institute of Medicine, Food and Nutrition Board. *Dietary Reference Intakes for Vitamin A, Vitamin K, Arsenic, Boron, Chromium, Copper, Iodine, Iron, Manganese, Molybdenum, Nickel, Silicon, Vanadium, and Zinc*. Washington, DC: National Academy Press; 2001.
 40. European Food Safety Authority. Dietary reference values for vitamin K. *EFSA Journal*. 2017;15(5):4780.
 41. Deutsche Gesellschaft fur Ernahrung (DGE). Vitamin K recommendations. [DGE](https://www.dge.de/)
-42. Ikonte CJ, Mun JG, Reider CA, et al. Micronutrient inadequacy in short sleep: analysis of the NHANES 2005-2016. *Nutrients*. 2019;11(10):2335.
-43. Messina M, Redmond G. Effects of soy protein and soybean isoflavones on thyroid function in healthy adults and hypothyroid patients. *Thyroid*. 2006;16(3):249-258.
-44. Theuwissen E, Cranenburg EC, Knapen MH, et al. Low-dose supplementation of menaquinone-7 in subjects on stable oral anticoagulant therapy. *J Thromb Haemost*. 2013.
+42. Ikonte CJ, Mun JG, Reider CA, et al. Micronutrient inadequacy in short sleep: analysis of the NHANES 2005-2016. *Nutrients*. 2019;11(10):2335. PMID: 31581561. https://pubmed.ncbi.nlm.nih.gov/31581561/
+43. Messina M, Redmond G. Effects of soy protein and soybean isoflavones on thyroid function in healthy adults and hypothyroid patients. *Thyroid*. 2006;16(3):249-258. PMID: 16571087. https://pubmed.ncbi.nlm.nih.gov/16571087/
+44. Theuwissen E, Teunissen KJ, Spronk HM, et al. Effect of low-dose supplements of menaquinone-7 (vitamin K2) on the stability of oral anticoagulant treatment: dose-response relationship in healthy volunteers. *J Thromb Haemost*. 2013;11(6):1085-1092. PMID: 23530987. https://pubmed.ncbi.nlm.nih.gov/23530987/
 45. Pradaxa (dabigatran) Prescribing Information. Boehringer Ingelheim; 2010.
 46. Xarelto (rivaroxaban) Prescribing Information. Janssen Pharmaceuticals; 2015.
 47. Plavix (clopidogrel) Prescribing Information. Bristol-Myers Squibb/Sanofi; 2015.
@@ -465,5 +465,5 @@ Substantial quantities of long-chain menaquinones made by gut bacteria are prese
 50. MacWalter RS, Fraser HW, Armstrong KM. Orlistat enhances warfarin effect. *Ann Pharmacother*. 2003;37(4):510-512. [PubMed](https://pubmed.ncbi.nlm.nih.gov/12659605/)
 51. McDuffie JR, Calis KA, Booth SL, et al. Effects of orlistat on fat-soluble vitamins in obese adolescents. *Pharmacotherapy*. 2002;22(7):814-822. [PubMed](https://pubmed.ncbi.nlm.nih.gov/12126214/)
 52. Davidson MH, Hauptman J, DiGirolamo M, et al. Weight control and risk factor reduction in obese subjects treated for 2 years with orlistat. *JAMA*. 1999;281(3):235-242. [PubMed](https://pubmed.ncbi.nlm.nih.gov/9918478/)
-53. Okuyama H, Langsjoen PH, Hamazaki T, et al. Statins stimulate atherosclerosis and heart failure: a pharmacological mechanism. *Expert Rev Clin Pharmacol*. 2015;8(2):189-199.
+53. Okuyama H, Langsjoen PH, Hamazaki T, et al. Statins stimulate atherosclerosis and heart failure: pharmacological mechanisms. *Expert Rev Clin Pharmacol*. 2015;8(2):189-199. PMID: 25655639. https://pubmed.ncbi.nlm.nih.gov/25655639/
 54. Elder SJ, Haytowitz DB, Howe J, et al. Vitamin K contents of meat, dairy, and fast food in the U.S. diet. *J Agric Food Chem*. 2006;54(2):463-467. [PubMed](https://pubmed.ncbi.nlm.nih.gov/16417305/)

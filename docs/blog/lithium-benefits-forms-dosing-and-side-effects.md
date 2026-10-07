@@ -31,9 +31,9 @@ Lithium supplements are available in several chemical forms, each with different
 
 | Form | Elemental Li (%) | Absorption | Primary Context | Key Notes |
 |------|:-:|:-:|------|------|
-| Lithium Orotate | 3.83% | Higher than carbonate in one rat injection study; a later rat study linked this to reduced kidney function [4][5] | OTC supplement | One of the two usual supplement forms [1]. |
-| Lithium Aspartate | 4.8% | Not reported | OTC supplement | Used in a long COVID trial [1][6]. |
-| Lithium Carbonate | 18.8% | Same total bioavailability as citrate syrup [7] | Prescription drug (bipolar disorder) | Standard prescription form [1]. |
+| Lithium Orotate | 3.83% | Higher than carbonate in one rat injection study; a later rat study linked this to reduced kidney function [1] | OTC supplement | One of the two usual supplement forms [1]. |
+| Lithium Aspartate | 4.8% | Not reported | OTC supplement | Used in a long COVID trial [1]. |
+| Lithium Carbonate | 18.8% | Same total bioavailability as citrate syrup [1] | Prescription drug (bipolar disorder) | Standard prescription form [1]. |
 | Lithium Citrate | Not reported | Bioequivalent to carbonate | Prescription liquid; some OTC supplements | Absorbed slightly faster than carbonate tablets but otherwise bioequivalent [7]. Also sold as a low-dose supplement (e.g., 2 mg of lithium per dropper) [1]. |
 | Lithium Chloride | 16.4% | Not reported | Historical (salt substitute); rare in supplements | The FDA ordered lithium salt substitutes off the market after side effects in people consuming several grams a day [1][8]. |
 
@@ -47,7 +47,7 @@ However, a 1979 follow-up study using large amounts of lithium found that lithiu
 
 ### Lithium Aspartate
 
-Lithium aspartate contains 4.8% elemental lithium and was used in a long COVID trial and its follow-up [1][6]. The trial gave 10 to 15 mg a day of elemental lithium, and the follow-up 40 to 45 mg a day [6].
+Lithium aspartate contains 4.8% elemental lithium [1]. It was used in a long COVID trial and its follow-up [6]. The trial gave 10 to 15 mg a day, and the follow-up 40 to 45 mg a day [6]. The study names these doses as lithium aspartate; the blood lithium levels it reports suggest they are likely amounts of elemental lithium [6].
 
 ### Lithium Citrate
 
@@ -119,7 +119,7 @@ In a subset of the trial's participants, lithium significantly raised blood leve
 
 **Positive trial (moderate-dose lithium):** A placebo-controlled trial in Brazil randomised 45 older people with amnestic mild cognitive impairment to lithium (blood level 0.25 to 0.5 mmol/L) or placebo for 12 months; lithium was associated with lower levels of P-tau, a marker of Alzheimer's disease, and better scores on some cognitive tests (Forlenza et al., *Br J Psychiatry*, 2011) [19][1]. The dose ranged from 150 to 600 mg of prescription lithium carbonate (28 to 113 mg of elemental lithium), higher than typical supplement doses [1]. An extended follow-up found more of certain adverse effects with lithium (Aprahamian et al., *J Clin Psychiatry*, 2014) [20]; see the Safety section.
 
-**Negative trial (lower-dose lithium):** A pilot trial gave 80 adults aged 60 or older with mild cognitive impairment low-dose lithium carbonate or placebo daily for 2 years. None of its six main outcomes, which covered memory, brain volume and BDNF, met the prespecified significance threshold (Gildengers et al., *JAMA Neurol*, 2026) [21]. Verbal memory declined slightly less with lithium (0.73 versus 1.42 points a year), but the difference was not statistically significant [21]. The doses were 150 or 300 mg of lithium carbonate a day, about 28 to 56 mg of elemental lithium [1].
+**Negative trial (lower-dose lithium):** A pilot trial gave 80 adults aged 60 or older with mild cognitive impairment low-dose lithium carbonate or placebo daily for 2 years. None of its six main outcomes, which covered memory, brain volume and BDNF, met the prespecified significance threshold (Gildengers et al., *JAMA Neurol*, 2026) [21]. Verbal memory declined slightly less with lithium (0.73 versus 1.42 points a year), a difference that narrowly missed the prespecified significance threshold (P = .05) [21]. The doses were 150 or 300 mg of lithium carbonate a day, about 28 to 56 mg of elemental lithium [1].
 
 **Synthesis on cognitive impairment:** The evidence for low-dose lithium in cognitive impairment is mixed [1]. The most encouraging result comes from the Nunes study, which used 0.3 mg a day [1]. Research on the orotate form in Alzheimer's disease is at a very early stage [1].
 
@@ -131,9 +131,9 @@ In a subset of the Hampel trial's participants, lithium raised blood BDNF levels
 
 ### Long COVID
 
-A small study among 50 adults (average age 59) with fatigue and cognitive dysfunction related to long COVID showed that taking 10 to 15 mg a day of elemental lithium, as lithium aspartate, for 3 weeks did not significantly improve fatigue or cognitive dysfunction compared to placebo [1][6].
+A small trial that enrolled 52 adults with fatigue and cognitive dysfunction related to long COVID found that lithium aspartate, 10 to 15 mg a day for 3 weeks (likely elemental lithium, judging by the blood levels the study reports), did not significantly improve fatigue or cognitive dysfunction compared to placebo [6].
 
-A subsequent open-label follow-up study among just 5 people with long COVID found that those who took a higher dose (40 to 45 mg a day of elemental lithium, as lithium aspartate) did experience improvement in cognitive dysfunction and fatigue among those who achieved blood lithium levels between 0.18 to 0.50 mEq/L (Guttuso Jr. et al., *JAMA Netw Open*, 2024) [1][6].
+In an open-label follow-up, among 3 people who completed it, 40 to 45 mg a day of lithium aspartate was associated with numerically greater reductions in fatigue and cognitive dysfunction scores than 15 mg a day, particularly in 2 people with blood lithium levels of 0.18 and 0.49 mEq/L (Guttuso Jr. et al., *JAMA Netw Open*, 2024) [6].
 
 Larger, controlled studies are needed to determine whether higher-dose lithium is beneficial for long COVID fatigue and cognitive dysfunction [1].
 
@@ -162,7 +162,7 @@ Meaningful studies with low-dose lithium supplements have not been published, so
 | Mood support (psychiatric adjunct) | 0.08 to 0.8 mg | Orotate (2–20 mg of the compound) | Greenblatt clinical experience [1][13] |
 | Alzheimer's stabilization (micro-dose) | 0.3 mg/day | Carbonate | Nunes (2013) placebo-controlled trial [1] |
 | Cognitive impairment (moderate dose) | 28–113 mg/day | Carbonate (prescription) | Forlenza (2011) trial [1] |
-| Long COVID (exploratory) | 10–15 mg/day; 40–45 mg/day in follow-up | Aspartate | Guttuso (2024) trial [1][6] |
+| Long COVID (exploratory) | 10–15 mg/day; 40–45 mg/day in follow-up, under blood-level monitoring | Aspartate | Guttuso (2024) trial [6] |
 | Alcoholism (historical) | 150 mg/day of the orotate compound | Orotate | Sartori (1986) case series [15][1] |
 
 ### Practical Dosing Considerations
@@ -243,6 +243,7 @@ ConsumerLab's review lists no formal contraindications for low-dose lithium. Tal
 
 - **Older adults:** The lithium carbonate trials in older adults described above found more side effects with lithium than with placebo [1].
 - **People taking prescription lithium:** Taking too much of any form of lithium can cause toxicity [1], so do not add a lithium supplement without your doctor's advice.
+- **Pregnancy:** The prescription lithium label warns that lithium may cause harm when taken in pregnancy. Early reports linked first-trimester use with heart malformations, especially Ebstein's anomaly; later studies suggest the added risk is likely small, but the data are insufficient to establish it [27]. Talk to your doctor before taking any form of lithium if you are pregnant.
 
 ## 6. Drug Interactions
 
@@ -254,8 +255,10 @@ The interaction evidence for lithium comes from people taking high-dose prescrip
 |-----------|---------|------|:-:|
 | NSAIDs | Nabumetone (case report) | Reduced lithium clearance by the kidneys | Severe toxicity in one case on high-dose lithium [1] |
 | GLP-1 agonists (diabetes and weight loss) | Not named | Not stated | Raised lithium levels, and some cases of toxicity, when started on stable high-dose lithium [1] |
+| Diuretics (including thiazide water pills) | Not named | Sodium loss from the diuretic may reduce lithium clearance | Higher blood lithium; the label advises more frequent blood tests and a lower lithium dose [27] |
+| Renin-angiotensin system antagonists | ACE inhibitors and angiotensin receptor blockers (ARBs) | Not stated | Higher steady-state blood lithium; the label advises more frequent blood tests and a lower lithium dose [27] |
 
-In one case report, a woman on long-term prescription lithium developed severe lithium toxicity after raising both her lithium dose and her dose of the NSAID nabumetone [1].
+In one case report, a woman on long-term prescription lithium developed severe lithium toxicity after raising both her lithium dose and her dose of the NSAID nabumetone [1]. The prescription lithium label adds that NSAIDs decrease blood flow to the kidneys, which lowers lithium clearance and raises blood lithium [27].
 
 ### Other Notable Interactions
 
@@ -264,6 +267,8 @@ In one case report, a woman on long-term prescription lithium developed severe l
 ### Practical Guidance
 
 It is not known whether these interactions occur with low-dose lithium, but people taking low-dose lithium should let their doctor know before starting or switching a GLP-1 agonist, or before taking or increasing an NSAID [1].
+
+This list is not complete. The prescription lithium label names other interacting medicines too [27]. Check with your doctor or pharmacist before combining any form of lithium with another medicine.
 
 ## 7. Dietary Sources
 
@@ -300,50 +305,52 @@ In the US, supplement labels are required to state the amount of elemental lithi
 
 [2] Lithium Prescribing Information. 2018. U.S. Food and Drug Administration.
 
-[3] Gitlin M. "Lithium side effects and toxicity: prevalence and management strategies." *Int J Bipolar Disord*. 2016;4(1):27. doi: [10.1186/s40345-016-0068-y](https://doi.org/10.1186/s40345-016-0068-y)
+[3] Gitlin M. "Lithium side effects and toxicity: prevalence and management strategies." *Int J Bipolar Disord*. 2016;4(1):27. doi: [10.1186/s40345-016-0068-y](https://doi.org/10.1186/s40345-016-0068-y) PMID: 27900734. https://pubmed.ncbi.nlm.nih.gov/27900734/
 
-[4] Kling MA, Manowitz P, Pollack IW. "Rat brain and serum lithium concentrations after acute injections of lithium carbonate and orotate." *J Pharm Pharmacol*. 1978;30(6):368-370.
+[4] Kling MA, Manowitz P, Pollack IW. "Rat brain and serum lithium concentrations after acute injections of lithium carbonate and orotate." *J Pharm Pharmacol*. 1978;30(6):368-370. doi: [10.1111/j.2042-7158.1978.tb13258.x](https://doi.org/10.1111/j.2042-7158.1978.tb13258.x) PMID: 26768. https://pubmed.ncbi.nlm.nih.gov/26768/
 
 [5] Smith DF, Schou M. "Kidney function and lithium concentrations of rats given an injection of lithium orotate or lithium carbonate." *J Pharm Pharmacol*. 1979;31(3):161-163.
 
-[6] Guttuso T Jr., Zhu J, Wilding GE. "Lithium Aspartate for Long COVID Fatigue and Cognitive Dysfunction: A Randomized Clinical Trial." *JAMA Netw Open*. 2024;7(10):e2436874. doi: [10.1001/jamanetworkopen.2024.36874](https://doi.org/10.1001/jamanetworkopen.2024.36874)
+[6] Guttuso T Jr., Zhu J, Wilding GE. "Lithium Aspartate for Long COVID Fatigue and Cognitive Dysfunction: A Randomized Clinical Trial." *JAMA Netw Open*. 2024;7(10):e2436874. doi: [10.1001/jamanetworkopen.2024.36874](https://doi.org/10.1001/jamanetworkopen.2024.36874) PMID: 39356507. https://pubmed.ncbi.nlm.nih.gov/39356507/
 
-[7] Guelen PJM, Janssen TJ, de Witte TC, et al. "Bioavailability of lithium from lithium citrate syrup versus conventional lithium carbonate tablets." *Biopharm Drug Dispos*. 1992;13(3):225-230.
+[7] Guelen PJM, Janssen TJ, de Witte TC, et al. "Bioavailability of lithium from lithium citrate syrup versus conventional lithium carbonate tablets." *Biopharm Drug Dispos*. 1992;13(7):503-511. doi: [10.1002/bdd.2510130704](https://doi.org/10.1002/bdd.2510130704) PMID: 1489941. https://pubmed.ncbi.nlm.nih.gov/1489941/
 
 [8] Hanlon LW, Romaine M, Gilroy FJ, Deitrick JE. "Lithium chloride as a substitute for sodium chloride in the diet." *JAMA*. 1949;139(11):688-692. doi: [10.1001/jama.1949.02900280012004](https://doi.org/10.1001/jama.1949.02900280012004)
 
-[9] Schrauzer GN, Shrestha KP. "Lithium in drinking water and the incidences of crimes, suicides, and arrests related to drug addictions." *Biol Trace Elem Res*. 1990;25(2):105-113. doi: [10.1007/BF02990271](https://doi.org/10.1007/BF02990271)
+[9] Schrauzer GN, Shrestha KP. "Lithium in drinking water and the incidences of crimes, suicides, and arrests related to drug addictions." *Biol Trace Elem Res*. 1990;25(2):105-113. doi: [10.1007/BF02990271](https://doi.org/10.1007/BF02990271) PMID: 1699579. https://pubmed.ncbi.nlm.nih.gov/1699579/
 
-[10] Sugawara N, Yasui-Furukori N, Ishii N, et al. "Lithium in tap water and suicide mortality in Japan." *Int J Environ Res Public Health*. 2013;10(11):6044-6048. doi: [10.3390/ijerph10116044](https://doi.org/10.3390/ijerph10116044)
+[10] Sugawara N, Yasui-Furukori N, Ishii N, et al. "Lithium in tap water and suicide mortality in Japan." *Int J Environ Res Public Health*. 2013;10(11):6044-6048. doi: [10.3390/ijerph10116044](https://doi.org/10.3390/ijerph10116044) PMID: 24225643. https://pubmed.ncbi.nlm.nih.gov/24225643/
 
 [11] Parker WF, et al. Association Between Groundwater Lithium and the Diagnosis of Bipolar Disorder and Dementia in the United States. *JAMA Psychiatry*. 2018. PMID: 29799907. https://pubmed.ncbi.nlm.nih.gov/29799907/
 
-[12] Kessing LV, Gerds TA, Knudsen NN, et al. "Association of Lithium in Drinking Water With the Incidence of Dementia." *JAMA Psychiatry*. 2017;74(10):1005-1010. doi: [10.1001/jamapsychiatry.2017.2362](https://doi.org/10.1001/jamapsychiatry.2017.2362)
+[12] Kessing LV, Gerds TA, Knudsen NN, et al. "Association of Lithium in Drinking Water With the Incidence of Dementia." *JAMA Psychiatry*. 2017;74(10):1005-1010. doi: [10.1001/jamapsychiatry.2017.2362](https://doi.org/10.1001/jamapsychiatry.2017.2362) PMID: 28832877. https://pubmed.ncbi.nlm.nih.gov/28832877/
 
 [13] Greenblatt JM. "Low-Dose Lithium for Mental Health." *Townsend Letter*. 2015.
 
-[14] Schrauzer GN, de Vroey E. "Effects of nutritional lithium supplementation on mood." *Biol Trace Elem Res*. 1994;40(1):89-101. doi: [10.1007/BF02916824](https://doi.org/10.1007/BF02916824)
+[14] Schrauzer GN, de Vroey E. "Effects of nutritional lithium supplementation on mood." *Biol Trace Elem Res*. 1994;40(1):89-101. doi: [10.1007/BF02916824](https://doi.org/10.1007/BF02916824) PMID: 7511924. https://pubmed.ncbi.nlm.nih.gov/7511924/
 
-[15] Sartori HE. "Lithium orotate in the treatment of alcoholism and related conditions." *Alcohol*. 1986;3(2):97-100. doi: [10.1016/0741-8329(86)90018-2](https://doi.org/10.1016/0741-8329(86)90018-2)
+[15] Sartori HE. "Lithium orotate in the treatment of alcoholism and related conditions." *Alcohol*. 1986;3(2):97-100. doi: [10.1016/0741-8329(86)90018-2](https://doi.org/10.1016/0741-8329(86)90018-2) PMID: 3718672. https://pubmed.ncbi.nlm.nih.gov/3718672/
 
-[16] Nunes MA, Viel TA, Buck HS. "Microdose lithium treatment stabilized cognitive impairment in patients with Alzheimer's disease." *Curr Alzheimer Res*. 2013;10(1):104-107. doi: [10.2174/1567205011310010014](https://doi.org/10.2174/1567205011310010014)
+[16] Nunes MA, Viel TA, Buck HS. "Microdose lithium treatment stabilized cognitive impairment in patients with Alzheimer's disease." *Curr Alzheimer Res*. 2013;10(1):104-107. doi: [10.2174/1567205011310010014](https://doi.org/10.2174/1567205011310010014) PMID: 22746245. https://pubmed.ncbi.nlm.nih.gov/22746245/
 
 [17] Hampel H, et al. Lithium trial in Alzheimer's disease: a randomized, single-blind, placebo-controlled, multicenter 10-week study. *J Clin Psychiatry*. 2009. PMID: 19573486. https://pubmed.ncbi.nlm.nih.gov/19573486/
 
-[18] Leyhe T, Eschweiler GW, Stransky E, et al. "Increase of BDNF serum concentration in lithium treated patients with early Alzheimer's disease." *J Alzheimers Dis*. 2009;16(3):649-656. doi: [10.3233/JAD-2009-1004](https://doi.org/10.3233/JAD-2009-1004)
+[18] Leyhe T, Eschweiler GW, Stransky E, et al. "Increase of BDNF serum concentration in lithium treated patients with early Alzheimer's disease." *J Alzheimers Dis*. 2009;16(3):649-656. doi: [10.3233/JAD-2009-1004](https://doi.org/10.3233/JAD-2009-1004) PMID: 19276559. https://pubmed.ncbi.nlm.nih.gov/19276559/
 
-[19] Forlenza OV, Diniz BS, Radanovic M, et al. "Disease-modifying properties of long-term lithium treatment for amnestic mild cognitive impairment: randomised controlled trial." *Br J Psychiatry*. 2011;198(5):351-356. doi: [10.1192/bjp.bp.110.080044](https://doi.org/10.1192/bjp.bp.110.080044)
+[19] Forlenza OV, Diniz BS, Radanovic M, et al. "Disease-modifying properties of long-term lithium treatment for amnestic mild cognitive impairment: randomised controlled trial." *Br J Psychiatry*. 2011;198(5):351-356. doi: [10.1192/bjp.bp.110.080044](https://doi.org/10.1192/bjp.bp.110.080044) PMID: 21525519. https://pubmed.ncbi.nlm.nih.gov/21525519/
 
-[20] Aprahamian I, Santos FS, dos Santos B, et al. "Long-term, low-dose lithium treatment does not impair renal function in the elderly: a 2-year randomized, placebo-controlled trial followed by single-blind extension." *J Clin Psychiatry*. 2014;75(7):e672-e678. doi: [10.4088/JCP.13m08741](https://doi.org/10.4088/JCP.13m08741)
+[20] Aprahamian I, Santos FS, dos Santos B, et al. "Long-term, low-dose lithium treatment does not impair renal function in the elderly: a 2-year randomized, placebo-controlled trial followed by single-blind extension." *J Clin Psychiatry*. 2014;75(7):e672-e678. doi: [10.4088/JCP.13m08741](https://doi.org/10.4088/JCP.13m08741) PMID: 25093483. https://pubmed.ncbi.nlm.nih.gov/25093483/
 
 [21] Gildengers et al. Low-Dose Lithium for Mild Cognitive Impairment: A Pilot Randomized Clinical Trial. *JAMA Neurol*. 2026. PMID: 41770546. https://pubmed.ncbi.nlm.nih.gov/41770546/
 
-[22] Hashimoto R, Takei N, Shimazu K, et al. "Lithium induces brain-derived neurotrophic factor and activates TrkB in rodent cortical neurons." *Neuropharmacology*. 2002;43(7):1173-1179. doi: [10.1016/S0028-3908(02)00217-4](https://doi.org/10.1016/S0028-3908(02)00217-4)
+[22] Hashimoto R, Takei N, Shimazu K, et al. "Lithium induces brain-derived neurotrophic factor and activates TrkB in rodent cortical neurons." *Neuropharmacology*. 2002;43(7):1173-1179. doi: [10.1016/S0028-3908(02)00217-4](https://doi.org/10.1016/S0028-3908(02)00217-4) PMID: 12504924. https://pubmed.ncbi.nlm.nih.gov/12504924/
 
-[23] Schrauzer GN. "Lithium: occurrence, dietary intakes, nutritional essentiality." *J Am Coll Nutr*. 2002;21(1):14-21. doi: [10.1080/07315724.2002.10719188](https://doi.org/10.1080/07315724.2002.10719188)
+[23] Schrauzer GN. "Lithium: occurrence, dietary intakes, nutritional essentiality." *J Am Coll Nutr*. 2002;21(1):14-21. doi: [10.1080/07315724.2002.10719188](https://doi.org/10.1080/07315724.2002.10719188) PMID: 11838882. https://pubmed.ncbi.nlm.nih.gov/11838882/
 
-[24] Broberg K, Concha G, Engstrom K, et al. "Lithium in drinking water and thyroid function." *Environ Health Perspect*. 2011;119(6):827-830. doi: [10.1289/ehp.1002678](https://doi.org/10.1289/ehp.1002678)
+[24] Broberg K, Concha G, Engstrom K, et al. "Lithium in drinking water and thyroid function." *Environ Health Perspect*. 2011;119(6):827-830. doi: [10.1289/ehp.1002678](https://doi.org/10.1289/ehp.1002678) PMID: 21252007. https://pubmed.ncbi.nlm.nih.gov/21252007/
 
 [25] Pauze DK, Brooks DE. "Lithium toxicity from an internet dietary supplement." *J Med Toxicol*. 2007;3(2):61-62.
 
 [26] US Geological Survey. "Lithium in Groundwater Used for Drinking-Water Supply in the United States." Scientific Investigations Report 2013/5170. [https://pubs.usgs.gov/sir/2013/5170/](https://pubs.usgs.gov/sir/2013/5170/)
+
+[27] Lithium carbonate tablets and capsules, prescribing information (Hikma Pharmaceuticals USA Inc.). DailyMed, U.S. National Library of Medicine. Effective August 16, 2026; accessed October 8, 2026. [https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=b839ff4b-f62d-41ab-a823-550a756d58ec](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=b839ff4b-f62d-41ab-a823-550a756d58ec)
