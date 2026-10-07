@@ -153,7 +153,7 @@ A subsequent RCT in Finland (n=109) confirmed that 250 mg magnesium hydrochlorid
 
 **Negative evidence:** A trial combining 300 mg magnesium citrate/oxide with riboflavin and feverfew was NOT better than placebo (Maizels et al., *Headache*, 2004) [34].
 
-**Practical note:** Most positive migraine trials used 600 mg/day, well above the 350 mg supplement UL. GI side effects (diarrhea) are common at these doses. This indication should be discussed with a healthcare provider [1][3].
+**Practical note:** Migraine trials have used up to 600 mg/day, well above the 350 mg supplement UL. GI side effects (diarrhea) are common at these doses. This indication should be discussed with a healthcare provider [1][3].
 
 ### Depression
 
@@ -241,7 +241,7 @@ Source: NIH ODS, USDA FoodData Central [1][3][41].
 
 ### Practical Notes on Dietary Magnesium
 
-- **Refining grains removes magnesium.** White bread has approximately 25% of the magnesium found in whole wheat bread. White rice has about a quarter of the magnesium of brown rice [1].
+- **Refining grains removes magnesium.** White bread has much less magnesium than whole wheat bread. White rice has about a quarter of the magnesium of brown rice [1].
 - **Water can be a significant source.** Tap water magnesium content varies widely (1 mg/L to more than 120 mg/L) depending on the source. Hard water areas can contribute meaningfully to daily intake [1].
 - **Cooking reduces magnesium content**, particularly boiling (magnesium leaches into cooking water). Steaming and roasting preserve more magnesium [1].
 - **Food-first approach:** Meeting the RDA through diet alone is achievable with consistent intake of nuts/seeds, leafy greens, legumes, and whole grains (providing 400+ mg/day). However, the typical Western diet falls short, which is why supplementation is common [1][3].
