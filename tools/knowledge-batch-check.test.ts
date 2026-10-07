@@ -850,7 +850,7 @@ describe("US-42 AC2 tokeniser units and comparators (R7)", () => {
     expect(t("500 mg daily")).toEqual(["500 mg/day"]);
   });
   it("reads daily, a day, each day and per day after a unit as /day, and weekly or a week as /week", () => {
-    expect(t("45,000 mcg daily")).toEqual(["45000 mcg/day"]);
+    expect(t("45,000 mcg daily")).toEqual(["45 mg/day"]);
     expect(t("3,000 mg per day for people")).toEqual(["3000 mg/day"]);
     expect(t("2 g a day")).toEqual(["2000 mg/day"]);
     expect(t("50 mg each day")).toEqual(["50 mg/day"]);
@@ -1037,6 +1037,54 @@ describe("US-42 AC4/AC7 numbered references heading", () => {
     expect(f).not.toContain("reference lines never cited");
     expect([...tokenise(numbered)]).not.toContain("2019");
     expect([...tokenise(numbered.replace("Trials used", "Trials used 5 mg"))]).toContain("5 mg");
+  });
+});
+
+describe("US-42 AC2 references sections, unit spellings, aged N (R14)", () => {
+  const t = (s: string) => [...tokenise(s)].sort();
+  it.each(["# References", "#### Sources", "##### References", "## Sources"])("skips every line under %s, subheadings included", (h) => {
+    const body = `## Dose\nTake 5 mg.\n\n${h}\n\nJ Foo. 2019;45:123-130.\n\n###### 2020 papers\nBar. 2020;12:99.\n`;
+    expect(t(body)).toEqual(["5 mg"]);
+  });
+  it("a following heading of the same or higher level ends the section", () => {
+    expect(t("### References\nFoo 2019;45:123.\n#### Older\nBar 2018;7:55.\n### Dose\nTake 5 mg.\n")).toEqual(["5 mg"]);
+    expect(t("## Sources\nFoo 2019;45:123.\n# Dose\nTake 6 mg.\n")).toEqual(["6 mg"]);
+  });
+  it("skips [n] reference lines anywhere", () => {
+    expect(t("Text 5 mg.\n\n[1] Foo. J Bar. 2019;45:123-130.\n")).toEqual(["5 mg"]);
+  });
+  it("reads 'per liter', 'per litre' and 'per L' as /L", () => {
+    for (const w of ["per liter", "per litre", "per L"]) expect(t(`70 micrograms ${w}`)).toEqual(t("70 mcg/L"));
+    expect(t("70 mcg/L")).toEqual(["70 mcg/L"]);
+    expect(t("12 ng per litre")).toEqual(t("12 ng/L"));
+  });
+  it("reads microg and µg as mcg", () => {
+    expect(t("50 microg")).toEqual(["50 mcg"]);
+    expect(t("50 µg")).toEqual(["50 mcg"]);
+    expect(t("50 microg/L")).toEqual(t("50 mcg/L"));
+  });
+  it("reads /d as /day", () => {
+    expect(t("400 micrograms/d")).toEqual(t("400 mcg/day"));
+    expect(t("5 mg/d")).toEqual(t("5 mg/day"));
+    expect(t("5 mg/dL")).toEqual(["5 mg/dL"]);
+  });
+  it("reads N-monthly, -weekly, -hourly, -yearly as N month, week, hour, year", () => {
+    expect(t("3-monthly")).toEqual(t("3 month"));
+    expect(t("6-weekly")).toEqual(t("6 week"));
+    expect(t("4-hourly")).toEqual(t("4 hour"));
+    expect(t("2-yearly")).toEqual(t("2 year"));
+  });
+  it("gives 'aged 60 or older' the token of '60 years or older'", () => {
+    expect(t("aged 60 or older")).toEqual(t("60 years or older"));
+    expect(t("aged 60 years or older")).toEqual(t("60 years or older"));
+    expect(t("aged 60 or older")).toEqual(["60 year"]);
+    expect(t("aged 6 months")).toEqual(["6 month"]);
+    expect(t("aged 18-65 years")).toEqual(t("18-65 years"));
+  });
+  it("gives '1,000 micrograms a day' and '1 mg a day' one token", () => {
+    expect(t("1,000 micrograms a day")).toEqual(t("1 mg a day"));
+    expect(t("1,000 micrograms a day")).toEqual(["1 mg/day"]);
+    expect(t("400 mcg")).toEqual(["400 mcg"]);
   });
 });
 

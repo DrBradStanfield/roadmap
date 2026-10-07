@@ -184,16 +184,16 @@ export const normChars = (s: string) => decodeEntities(s).replace(/\u00a0/g, " "
 export const normQuote = (s: string) => unescapeMd(normChars(s)).replace(/\s+/g, " ").trim().toLowerCase();
 
 const squash = (t: string) => t.replace(/\s+/g, " ").trim();
-const REFS_HEADING = /^#{1,4}\s*(?:\d+[.)]?\s*)?(?:references|sources|citations|bibliography)\b/i;
+const REFS_HEADING = /^#{1,6}\s*(?:\d+[.)]?\s*)?(?:references|sources|citations|bibliography)\b/i;
 const REF_LINE = /^\s*\[(\d+)\]\s+\S/;
 
 /** Lines of a body with their reference-section status. */
 function classifyLines(body: string): { line: string; ref: boolean }[] {
-  let inRefs = false;
+  let refLevel = 0; // level of the open References heading; a heading at that level or higher closes it
   return body.split(/\r?\n/).map((line) => {
-    const isHeading = /^#{1,6}\s/.test(line);
-    if (isHeading) inRefs = REFS_HEADING.test(line);
-    return { line, ref: (inRefs && !isHeading) || REF_LINE.test(line) };
+    const level = /^(#{1,6})\s/.exec(line)?.[1].length ?? 0;
+    if (level && (!refLevel || level <= refLevel)) refLevel = REFS_HEADING.test(line) ? level : 0;
+    return { line, ref: (refLevel > 0 && !level) || REF_LINE.test(line) };
   });
 }
 
@@ -203,7 +203,7 @@ const UNIT = [
   "mL/min/1\\.73m2", "mmol/mol", "mmol/L", "nmol/L", "pmol/L", "[µμ]mol/L", "umol/L", "micromol/L", "micromole/L", "mg/mmol", "mg/dL", "mg/kg", "mg/L",
   "mL/min", "L/min", "breaths/min", "IU/L", "U/L", "g/dL", "g/L", "ng/mL", "ng/dL", "ng/L", "nanogram/L", "[µμ]g/dL", "mcg/dL", "[µμ]g/L", "mcg/L",
   "mmHg", "bpm", "x/day", "times daily", "percent", "%",
-  "kilograms?", "milligrams?", "micrograms?", "nanograms?", "millilitres?", "milliliters?", "litres?", "liters?", "grams?",
+  "kilograms?", "milligrams?", "micrograms?", "microg", "nanograms?", "millilitres?", "milliliters?", "litres?", "liters?", "grams?",
   "mcg", "[µμ]g", "mg", "IU", "mL", "kg", "cm", "g", "hours?", "days?", "weeks?", "months?", "years?", "minutes?", "mins?", "seconds?", "secs?",
   "(?<=[\\s-])s", // "30-s chair stand", "5 s", but not the "s" of "1990s"
 ].join("|");
@@ -215,7 +215,7 @@ const CMP_WORDS = [...["no more than", "not more than", "no less than", "not les
 const CMP_PRE = `(?:(≥|≤|>=|<=|>|<|\\b(?:${CMP_WORDS}))\\s*)?`;
 const CMP_POST = "or more|or higher|or above|or less";
 // "/day", "per dose", "a day", "each week", "daily", "weekly" straight after a unit.
-const SUFFIX = "(?:\\s*/\\s*|\\s+per\\s+)(?:day|dose|week|kg)|\\s+(?:a|each)\\s+(?:day|week)|\\s+(?:daily|weekly)";
+const SUFFIX = "(?:\\s*/\\s*|\\s+per\\s+)(?:day|dose|week|kg|d)|\\s+(?:a|each)\\s+(?:day|week)|\\s+(?:daily|weekly)";
 const suffixOf = (raw: string | undefined) => (!raw ? "" : /week/i.test(raw) ? "/week" : /dose/i.test(raw) ? "/dose" : /kg/i.test(raw) ? "/kg" : "/day");
 // Groups: 1 leading comparator, 2 and 3 numbers, 4 trailing comparator, 5 unit, 6 unit suffix (/day, per dose ...),
 // 7 any other attached "/x/y" (kept: "5 mg/m2" is not "5 mg"), 8 trailing comparator. A range may read "X-Y", "X to Y" or "X and Y".
@@ -248,7 +248,7 @@ function normUnit(u: string): string {
   const l = u.toLowerCase();
   if (COMPOUND_UNITS[l]) return COMPOUND_UNITS[l];
   if (l === "percent" || l === "%") return "%";
-  if (/^(µg|μg|mcg|micrograms?)$/.test(l)) return "mcg";
+  if (/^(µg|μg|mcg|microg|micrograms?)$/.test(l)) return "mcg";
   if (/^milligrams?$/.test(l)) return "mg";
   if (/^nanograms?$/.test(l)) return "ng";
   if (/^kilograms?$/.test(l)) return "kg";
@@ -267,6 +267,7 @@ function normUnit(u: string): string {
 function normNumber(n: string, unit: string): { value: string; unit: string } {
   let v = parseFloat(n.replace(/,/g, ""));
   if (unit === "g") { v = Number((v * 1000).toFixed(6)); unit = "mg"; }
+  else if (unit === "mcg" && v >= 1000) { v = Number((v / 1000).toFixed(6)); unit = "mg"; } // "1,000 micrograms" is "1 mg"
   return { value: String(v), unit };
 }
 
@@ -280,7 +281,10 @@ function stripNoise(line: string): string {
     .replace(/\b\d{4}-\d{2}-\d{2}\b/g, " ")
     .replace(/\[\d+(?:\s*[,–-]\s*\d+)*\]/g, " ")
     .replace(/\b(?:type\s+[12](?:\s*(?:and|or|\/|-)\s*[12])?|stage\s+[1-5])\b/gi, " ") // disease and category names, not values
-    .replace(/^\s*(?:[-*+]\s+)?\d+[.)]\s+/, " ");
+    .replace(/^\s*(?:[-*+]\s+)?\d+[.)]\s+/, " ")
+    .replace(/\b(micrograms?|microg|[µμ]g|mcg|milligrams?|mg|nanograms?|ng|grams?|g|IU|U)\s+per\s+(?:liters?|litres?|L)\b/gi, "$1/L")
+    .replace(/(\d)\s*-\s*(month|week|hour|year)ly\b/gi, "$1 $2")
+    .replace(/\baged\s+(\d+(?:\.\d+)?)(?![\d.])(?!\s*(?:years?|y\b|months?|weeks?|days?|(?:[-–]|to\s|and\s)\s*\d))/gi, "aged $1 years");
 }
 
 /** Number tokens of a text, unit-normalised ("1 g" -> "1000 mg"). Reference lines are skipped unless keepRefs. */
