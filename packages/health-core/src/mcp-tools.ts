@@ -161,8 +161,13 @@ export const addLabValuesInput = z.object({
  * it — the stdio server ignores it, a person watching their own file — so it
  * is declared here once and stripped by the surface that enforces it.
  */
-/** A receipt NAMES a pending payload in the user's folder; it never carries one (US-35 AC7). A proposal receipt fits the same bound. */
-export const MAX_RECEIPT_LENGTH = 1024;
+/**
+ * A receipt is UUID-shaped, 36 characters (US-35 AC7, US-36 AC9): an import's
+ * NAMES a pending payload in the user's folder and never carries one; a
+ * proposal's is the same shape. The sealed blobs before 2026-10-07 were about
+ * 400 characters, so one sent now is refused by the schema.
+ */
+export const MAX_RECEIPT_LENGTH = 64;
 /** How long a parked import waits for its commit, on either server. */
 export const RECEIPT_LIFETIME_SECONDS = 60 * 60;
 const CONFIRM = z.string().max(MAX_RECEIPT_LENGTH).optional();
@@ -1114,7 +1119,7 @@ export interface ImportDocument {
 /**
  * What an extract parks for its commit — in the user's own folder, as
  * `imports/pending-<id>.json`, where the record itself lives. The receipt the
- * assistant carries names it and hashes it; nothing an assistant sends can
+ * assistant carries is its id; the file holds the MAC over it; nothing an assistant sends can
  * put a value in here that the server did not extract (AC7).
  */
 export interface ImportPayload {

@@ -409,6 +409,20 @@ describe('recordServerEvent — the server path validates too', () => {
     ]);
   });
 
+  // US-36 AC9: the two-phase usage signal. `step` is owned by `mcp_tool_call` alone.
+  it('stores `step` on mcp_tool_call, and refuses it on every other event', async () => {
+    await recordServerEvent('mcp_tool_call', { tool: 'correct_value', client: 'chatgpt', outcome: 'ok', step: 'propose' });
+    await recordServerEvent('mcp_tool_call', { tool: 'correct_value', client: 'chatgpt', outcome: 'ok', step: 'confirm' });
+    await recordServerEvent('mcp_connect', { client: 'chatgpt', provider: 'dropbox', step: 'confirm' } as never);
+    await recordServerEvent('mcp_tool_call', { tool: 'correct_value', client: 'chatgpt', outcome: 'ok', step: 'other' } as never);
+    expect(inserts.map((row) => row.metadata)).toEqual([
+      { tool: 'correct_value', client: 'chatgpt', outcome: 'ok', step: 'propose' },
+      { tool: 'correct_value', client: 'chatgpt', outcome: 'ok', step: 'confirm' },
+      { client: 'chatgpt', provider: 'dropbox' },
+      { tool: 'correct_value', client: 'chatgpt', outcome: 'ok' },
+    ]);
+  });
+
   it('keeps the three reviewer reasons on mcp_connect_failed (US-32 AC38)', async () => {
     await recordServerEvent('mcp_connect_failed', { client: 'chatgpt', provider: 'dropbox', reason: 'reviewer-credentials' });
     await recordServerEvent('mcp_connect_failed', { client: 'chatgpt', provider: 'dropbox', reason: 'reviewer-rate-limited' });

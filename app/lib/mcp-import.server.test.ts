@@ -2,9 +2,9 @@
  * US-35 · the hosted half of `import_documents`, piece by piece.
  *
  * What is pinned here: the type of a file is its bytes (AC4), a ZIP is opened
- * under caps that a bomb cannot talk its way past (AC5), and a receipt is
- * small, sealed, bound to one connection, and fails closed on any tamper
- * (AC7). The whole flow over a folder is `mcp.hosted.test.ts`.
+ * under caps that a bomb cannot talk its way past (AC5), and a receipt is a
+ * plain UUID whose pending file carries a MAC bound to one connection, failing
+ * closed on any tamper (AC7). The whole flow over a folder is `mcp.hosted.test.ts`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import JSZip from 'jszip';
@@ -25,11 +25,12 @@ import {
 } from './mcp-import.server';
 import { resourceUrl } from './mcp-config.server';
 import { chargeWrites, connectionKey, IMPORT_FILES_PER_DAY, importFiles, resetMcpMemory, WRITES_PER_HOUR } from './mcp-grants.server';
-import { hash, seal } from './mcp-seal.server';
+import { seal } from './mcp-seal.server';
 import { machineFiles } from './rate-limiter';
-import { type ImportPayload, MAX_IMPORT_FILES_PER_CALL, MAX_RECEIPT_LENGTH } from '../../packages/health-core/src/mcp-tools';
+import { type ImportPayload, MAX_IMPORT_FILES_PER_CALL, MAX_RECEIPT_LENGTH, OUTPUTS, runToolOverSync } from '../../packages/health-core/src/mcp-tools';
+import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 import { IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
-import { StorageError } from '../../packages/health-core/src/adapter';
+import { ROADMAP_FILE_NAME, StorageError } from '../../packages/health-core/src/adapter';
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 
@@ -109,14 +110,15 @@ describe('US-35 AC5 — a ZIP is opened under caps, by position, with a counted 
   });
 });
 
-describe('US-35 AC7 — the receipt names the payload and binds it to one connection', () => {
+describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MAC in that file binds it to one connection', () => {
   const NOW = '2026-09-02T10:00:00.000Z';
-  const PAYLOAD: ImportPayload = { id: '11111111-2222-4333-8444-555555555555', route: 'dropbox', createdAt: NOW, candidates: [], documents: [] };
+  const PAYLOAD: ImportPayload = { id: '1111aaaa-2222-4333-8444-5555555555bb', route: 'dropbox', createdAt: NOW, candidates: [], documents: [] };
+  const PENDING = `imports/pending-${PAYLOAD.id}.json`;
   const file = createEmptyFile({ deviceId: 'test', now: NOW });
 
   /** The surface for one connection over one in-memory folder — the receipt is minted and opened here and nowhere else. */
-  function surfaceFor(rt: string, cloud = new MemoryCloud()) {
-    return hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt, exp: 0 }, adapter: new MemoryAdapter(cloud), client: 'claude', maxCorrectionAgeDays: 90 });
+  function surfaceFor(rt: string, cloud = new MemoryCloud(), clientId = 'c.test') {
+    return hostedImporter({ token: { clientId, provider: 'dropbox', rt, exp: 0 }, adapter: new MemoryAdapter(cloud), client: 'claude', maxCorrectionAgeDays: 90 });
   }
   const deadline = () => Date.now() + MCP_IMPORT_BUDGET_MS;
   async function stashed(surface: ReturnType<typeof surfaceFor>) {
@@ -128,36 +130,121 @@ describe('US-35 AC7 — the receipt names the payload and binds it to one connec
     const answer = await surface.open({ receipt, accept: [], replace: [] }, file, now, deadline());
     return 'refusal' in answer ? answer.refusal : null;
   }
+  const pendingOf = (cloud: MemoryCloud) => JSON.parse(cloud.files.get(PENDING)!.json) as Record<string, unknown>;
+  const editPending = (cloud: MemoryCloud, edit: (pending: Record<string, unknown>) => unknown) =>
+    cloud.files.set(PENDING, { ...cloud.files.get(PENDING)!, json: JSON.stringify(edit(pendingOf(cloud))) });
+  /** The whole hourly allowance is still there: nothing was charged. */
+  const unchargedOn = (rt: string) => expect(chargeWrites(connectionKey({ rt }), WRITES_PER_HOUR)).toBeNull();
 
   beforeEach(() => resetMcpMemory());
 
-  it('round-trips, stays under the cap, is sealed, and expires an hour after the extract', async () => {
+  it('round-trips: the receipt is the payload id, the file is {v: 2, payload, issued, mac}, and it expires an hour after the extract', async () => {
     const cloud = new MemoryCloud();
     const surface = surfaceFor('connection-a', cloud);
     const { receipt, expiresAt } = await stashed(surface);
-    expect(receipt.length).toBeLessThan(MAX_RECEIPT_LENGTH);
+    // A plain UUID, nothing encoded: ChatGPT read the old sealed blob as a disguised payload (2026-10-07). The id
+    // is readable off the wire on purpose now (the old "not readable" assertion retired): it was never a secret.
+    expect(receipt).toBe(PAYLOAD.id);
+    expect(receipt.length).toBeLessThanOrEqual(MAX_RECEIPT_LENGTH);
     expect(expiresAt).toBe('2026-09-02T11:00:00.000Z');
-    expect(receipt).not.toContain(PAYLOAD.id); // sealed: the id is not readable off the wire
+    expect(pendingOf(cloud)).toEqual({ v: 2, payload: PAYLOAD, issued: Date.parse(NOW) / 1000, mac: expect.stringMatching(/^[0-9a-f]{32}$/) });
     expect(await surface.open({ receipt, accept: [], replace: [] }, file, NOW, deadline())).toEqual(PAYLOAD);
+    // Still good at the last second of its hour.
+    expect(await surface.open({ receipt, accept: [], replace: [] }, file, '2026-09-02T11:00:00.000Z', deadline())).toEqual(PAYLOAD);
   });
 
-  it('fails closed: a changed byte, another connection, an expiry passed, an edited pending file, a shape that is not a receipt', async () => {
+  it('a receipt naming no pending file is told so in words — committed, discarded or mistyped — and charges nothing', async () => {
+    const surface = surfaceFor('connection-a');
+    await stashed(surface);
+    expect(await refusalOf(surface, '99999999-2222-4333-8444-555555555555')).toBe(
+      'That receipt names no pending import: it was committed, discarded or mistyped. Nothing was written. Extract again if the user still wants it.',
+    );
+    unchargedOn('connection-a');
+  });
+
+  it('refuses anything that is not a lowercase UUID before it reads a file: uppercase, whitespace, a path, an old sealed blob, empty', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const read = vi.spyOn(adapter, 'read');
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    await stashed(surface);
+    // This replaces the forged seal('import') case, retired 2026-10-07 with the sealed import blob itself: a path
+    // never passes the UUID check, and an old blob's wire form is refused here even past the schema.
+    const oldBlob = seal('state', { clientId: 'c.test', pad: 'x'.repeat(200) }, { clientId: 'c.test', resource: resourceUrl() });
+    for (const receipt of [PAYLOAD.id.toUpperCase(), ` ${PAYLOAD.id}`, `${PAYLOAD.id}\n`, '../health-roadmap', oldBlob, '']) {
+      expect(await refusalOf(surface, receipt), JSON.stringify(receipt)).toMatch(/not valid for this connection/);
+    }
+    expect(read).not.toHaveBeenCalled();
+    unchargedOn('connection-a');
+  });
+
+  it('fails closed on a tampered payload, issue time or MAC, another connection or another client: not valid, nothing charged, the file kept', async () => {
     const cloud = new MemoryCloud();
     const surface = surfaceFor('connection-a', cloud);
     const { receipt } = await stashed(surface);
-    const [header, body] = receipt.split('.');
-    expect(await refusalOf(surface, `${header}.${body.slice(0, -2)}xx`)).toMatch(/not valid/);
-    expect(await refusalOf(surfaceFor('connection-b', cloud), receipt)).toMatch(/not valid/);
-    expect(await refusalOf(surface, receipt, '2026-09-02T11:00:00.000Z')).toMatch(/not valid/);
-    expect(await refusalOf(surface, 'not.a.receipt')).toMatch(/not valid/);
-    expect(await refusalOf(surface, '')).toMatch(/not valid/);
-    // A claims block sealed by us but naming a non-UUID id can never form a path.
-    const forged = seal('import', { id: '../health-roadmap', exp: 2_000_000_000, conn: hash(connectionKey({ rt: 'connection-a' })), sha256: 'x' }, { clientId: 'c.test', resource: resourceUrl() });
-    expect(await refusalOf(surface, forged)).toMatch(/not valid/);
-    // The pending file edited in the folder no longer matches the hash the receipt carries.
-    const name = [...cloud.files.keys()].find((n) => n.startsWith('imports/'))!;
-    cloud.files.set(name, { ...cloud.files.get(name)!, json: JSON.stringify({ ...PAYLOAD, candidates: [{ id: 'c1' }] }) });
-    expect(await refusalOf(surface, receipt)).toMatch(/does not match/);
+    const original = cloud.files.get(PENDING)!;
+    const tampers: Array<(p: Record<string, unknown>) => unknown> = [
+      (p) => ({ ...p, payload: { ...PAYLOAD, candidates: [{ id: 'c1' }] } }),
+      (p) => ({ ...p, issued: (p.issued as number) + 3600 }), // an hour bought by editing the file
+      (p) => ({ ...p, mac: (p.mac as string).replace(/^./, (c) => (c === '0' ? '1' : '0')) }),
+      (p) => ({ ...p, mac: (p.mac as string).toUpperCase() }),
+    ];
+    for (const tamper of tampers) {
+      editPending(cloud, tamper);
+      expect(await refusalOf(surface, receipt), tamper.toString()).toMatch(/not valid for this connection/);
+      cloud.files.set(PENDING, original);
+    }
+    expect(await refusalOf(surfaceFor('connection-b', cloud), receipt)).toMatch(/not valid for this connection/);
+    expect(await refusalOf(surfaceFor('connection-a', cloud, 'c.other'), receipt)).toMatch(/not valid for this connection/);
+    // `open` never deletes; the file is still there for the honest commit.
+    expect(cloud.files.has(PENDING)).toBe(true);
+    unchargedOn('connection-a');
+    unchargedOn('connection-b');
+    resetMcpMemory();
+    expect(await surface.open({ receipt, accept: [], replace: [] }, file, NOW, deadline())).toEqual(PAYLOAD);
+  });
+
+  it('an hour and a second after the extract it has expired, in its own words', async () => {
+    const surface = surfaceFor('connection-a');
+    const { receipt } = await stashed(surface);
+    expect(await refusalOf(surface, receipt, '2026-09-02T11:00:01.000Z')).toMatch(/has expired/);
+    unchargedOn('connection-a');
+  });
+
+  it('a pending file from before 2026-10-07 (no `v`) is not readable; the name-based sweep below takes it', async () => {
+    const cloud = new MemoryCloud();
+    const surface = surfaceFor('connection-a', cloud);
+    cloud.files.set(PENDING, { json: JSON.stringify(PAYLOAD), version: 1, modified: NOW });
+    expect(await refusalOf(surface, PAYLOAD.id)).toMatch(/not readable/);
+    unchargedOn('connection-a');
+  });
+
+  it('a v2 file with no payload is refused in words, never thrown (US-35 AC7)', async () => {
+    const cloud = new MemoryCloud();
+    const surface = surfaceFor('connection-a', cloud);
+    cloud.files.set(PENDING, { json: JSON.stringify({ v: 2, issued: 1, mac: '0'.repeat(32) }), version: 1, modified: NOW });
+    expect(await refusalOf(surface, PAYLOAD.id)).toMatch(/not readable/);
+    unchargedOn('connection-a');
+  });
+
+  it('a planted v2 file nested too deep to serialise is refused in words, never thrown (US-35 AC7)', async () => {
+    const cloud = new MemoryCloud();
+    const surface = surfaceFor('connection-a', cloud);
+    const deep = '['.repeat(20000) + ']'.repeat(20000);
+    cloud.files.set(PENDING, { json: `{"v":2,"issued":1,"mac":"${'0'.repeat(32)}","payload":{"deep":${deep}}}`, version: 1, modified: NOW });
+    expect(await refusalOf(surface, PAYLOAD.id)).toMatch(/not readable/);
+    unchargedOn('connection-a');
+    expect(cloud.files.has(PENDING)).toBe(true);
+  });
+
+  it('a forged UUID never charges: a planted v2 file with a made-up MAC is not ours', async () => {
+    const cloud = new MemoryCloud();
+    const surface = surfaceFor('connection-a', cloud);
+    cloud.files.set(PENDING, { json: JSON.stringify({ v: 2, payload: PAYLOAD, issued: Date.parse(NOW) / 1000, mac: '0'.repeat(32) }), version: 1, modified: NOW });
+    const answer = await surface.open({ receipt: PAYLOAD.id, accept: [], replace: ['c1'] }, file, NOW, deadline());
+    expect('refusal' in answer && answer.refusal).toMatch(/not valid for this connection/);
+    expect(cloud.files.has(PENDING)).toBe(true);
+    unchargedOn('connection-a');
   });
 
   it('refuses an id the receipt does not carry BEFORE charging, so bogus replace ids cost nothing (AC10)', async () => {
@@ -166,17 +253,55 @@ describe('US-35 AC7 — the receipt names the payload and binds it to one connec
     const bogus = Array.from({ length: 300 }, (_, i) => `x${i}`);
     const answer = await surface.open({ receipt, accept: [], replace: bogus }, file, NOW, deadline());
     expect('refusal' in answer && answer.refusal).toMatch(/not a candidate/);
-    // The whole hourly allowance is still there.
-    expect(chargeWrites(connectionKey({ rt: 'connection-a' }), WRITES_PER_HOUR)).toBeNull();
+    unchargedOn('connection-a');
   });
 
-  it('survives a key rotation: a receipt sealed under the previous key still opens', async () => {
+  it('survives a key rotation: a receipt signed under the previous key still opens, and dies with that key', async () => {
     const surface = surfaceFor('connection-a');
     const { receipt } = await stashed(surface);
     process.env.MCP_SEAL_KEYS = `${Buffer.alloc(32, 8).toString('base64')},${Buffer.alloc(32, 7).toString('base64')}`;
     expect(await surface.open({ receipt, accept: [], replace: [] }, file, NOW, deadline())).toEqual(PAYLOAD);
     process.env.MCP_SEAL_KEYS = Buffer.alloc(32, 8).toString('base64');
     expect(await refusalOf(surface, receipt)).toMatch(/not valid/);
+  });
+});
+
+describe('US-35 AC7 — extract then commit, end to end through hostedImporter', () => {
+  const NOW = '2026-09-02T10:00:00.000Z';
+  const report = {
+    classification: 'lab_report' as const, reportDate: '2026-08-20',
+    values: [{ metric: 'ldl', valueSI: 2.8, displayValue: 2.8, displayUnit: 'mmol/L', displaySystem: 'si' as const, confidence: 'high' as const }],
+    additionalValues: [], unrecognized: [], document: null,
+  };
+
+  beforeEach(() => resetMcpMemory());
+  afterEach(() => setImportSeams(null));
+
+  it('the extract answers a UUID receipt, the commit files the accepted value and spends the pending file; a second commit finds nothing', async () => {
+    const cloud = new MemoryCloud();
+    cloud.docs.set('labs.pdf', new Blob([PDF]));
+    const adapter = new MemoryAdapter(cloud);
+    await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'test', now: NOW }), null);
+    setImportSeams({ extract: async () => report });
+    const call = (args: unknown) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, NOW, {
+      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 }),
+    });
+
+    const extract = await call({});
+    expect(extract.isError).toBe(false);
+    const data = OUTPUTS.import_documents.parse(extract.structured);
+    expect(data.receipt).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    expect(cloud.files.has(`imports/pending-${data.receipt}.json`)).toBe(true);
+
+    const commit = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
+    expect(commit.isError).toBe(false);
+    const stored = (await adapter.read(ROADMAP_FILE_NAME)).body as ReturnType<typeof createEmptyFile>;
+    expect(stored.measurements).toEqual([expect.objectContaining({ metricType: 'ldl', value: 2.8, source: 'lab_import' })]);
+    expect(cloud.files.has(`imports/pending-${data.receipt}.json`)).toBe(false);
+
+    const again = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
+    expect(again.isError).toBe(true);
+    expect(again.text).toContain('names no pending import');
   });
 });
 

@@ -10,10 +10,10 @@
  * here keeps a byte between requests: the file is read into memory, extracted,
  * and dropped; the candidate payload lives in the USER's own folder as
  * `imports/pending-<id>.json` until its commit reads it and removes it (AC7).
- * The receipt the assistant carries is small — an id, an expiry, the
- * connection it belongs to and the payload's hash — sealed like every other
- * credential this server hands out, so a value the server did not extract
- * cannot be committed.
+ * The receipt the assistant carries is that file's id, a plain UUID. The file
+ * holds the payload beside an HMAC over its id, its issue time, its hash, the
+ * connection and the client, so a value the server did not extract cannot be
+ * committed, and a receipt is good for one connection only.
  *
  * One fetch target, ever: the user's own folder through its `StorageAdapter`
  * (the ChatGPT file-host route was deleted 2026-09-10, US-36 AC12). Type is
@@ -27,7 +27,8 @@ import * as Sentry from '@sentry/react-router';
 import { extractOrClassify, isNetworkOrTimeoutError } from './anthropic.server';
 import { type McpClientLabel } from './mcp-clients.server';
 import { type AccessPayload, chargeWrites, connectionKey, importFiles, WRITE_COST } from './mcp-grants.server';
-import { audienceFor, hash, issueStep, openStep } from './mcp-seal.server';
+import { audienceFor, hash } from './mcp-seal.server';
+import { openStep, signStep, UUID } from './mcp-step.server';
 import { recordServerEvent } from './product-events.server';
 import { machineFiles } from './rate-limiter';
 import { deadlineSignal, StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
@@ -229,8 +230,16 @@ function pendingName(id: string): string {
 /** The sweep's own files, by name: never another file the user keeps in the folder. */
 const PENDING_NAME = /(^|\/)pending-[^/]+\.json$/;
 
-/** A `crypto.randomUUID()` and nothing else — the only id that may name a pending file. (`route-helpers`' `isValidUuid` sits behind the Shopify session store, which this layer must not load.) */
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+/** A pending file as `stash` writes it (US-35 AC7): the payload, its issue time in epoch seconds, and the MAC over both. */
+interface PendingFile {
+  v: 2;
+  payload: ImportPayload;
+  issued: number;
+  mac: string;
+}
+
+const RECEIPT_INVALID = 'That receipt is not valid for this connection. Nothing was written. Extract again and show the user the fresh candidates.';
+const PENDING_UNREADABLE = 'The pending import is not readable. Nothing was written. Extract again.';
 
 /** AC3, per client: the way that works for THIS assistant comes first. */
 function driveRefusal(client: McpClientLabel): string {
@@ -270,6 +279,9 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
   const { token, adapter, client } = options;
   const connection = connectionKey(token);
   const audience = audienceFor(token.clientId);
+  const conn = hash(connection);
+  /** What the MAC covers between its issue time and the connection; the step module adds the rest. */
+  const macFields = (id: string, payload: unknown) => [id, sha256Hex(JSON.stringify(payload))];
 
   async function sweepStale(nowMs: number, signal: AbortSignal): Promise<void> {
     if (!adapter.list || !adapter.remove) return;
@@ -453,44 +465,52 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       // `extract`, which `file_results` and every Drive user never call, so
       // their abandoned pending files were never swept at all.
       const swept = sweepStale(Date.parse(payload.createdAt), signal);
-      // The receipt names the pending file (`jti` = the payload id) and hashes it (`subject`), sealed like every credential (AC7).
-      const { token: receipt, claims } = issueStep(
-        'import',
-        { subject: sha256Hex(JSON.stringify(payload)), conn: hash(connection), jti: payload.id, ttlSeconds: RECEIPT_LIFETIME_SECONDS },
-        audience,
-        Date.parse(payload.createdAt),
-      );
-      const parked = await adapter.write(pendingName(payload.id), payload, null, signal).then(() => true, () => false);
+      // The receipt is the payload's own id; the MAC that makes it ours lives in the file it names (AC7).
+      const { mac, issued } = signStep('import', macFields(payload.id, payload), conn, audience, Date.parse(payload.createdAt));
+      const pending: PendingFile = { v: 2, payload, issued, mac };
+      const parked = await adapter.write(pendingName(payload.id), pending, null, signal).then(() => true, () => false);
       await swept;
       if (!parked) {
         return { refusal: 'The candidates could not be parked in the user’s folder, so there is nothing to commit. Try the import again.' };
       }
-      return { receipt, expiresAt: new Date(claims.exp * 1000).toISOString() };
+      return { receipt: payload.id, expiresAt: new Date((issued + RECEIPT_LIFETIME_SECONDS) * 1000).toISOString() };
     },
 
     async open(commit: ImportCommit, _file: RoadmapFile, now: string, deadline: number): Promise<ImportPayload | ImportRefusal> {
-      // Verified BEFORE anything is charged: a forged receipt costs nothing.
-      // A claims block sealed by us but naming a non-UUID id can never form a path.
-      const claims = openStep('import', commit.receipt, audience, hash(connection), Date.parse(now));
-      if (!claims || !UUID.test(claims.jti)) {
-        return { refusal: 'That receipt is not valid for this connection, or has expired. Nothing was written. Extract again and show the user the fresh candidates.' };
-      }
+      // Verified BEFORE anything is charged, in this order: a forged receipt costs nothing and deletes nothing.
+      // Only a lowercase UUID may form a path.
+      const id = commit.receipt;
+      if (!UUID.test(id)) return { refusal: RECEIPT_INVALID };
       const signal = deadlineSignal(deadline);
       let body: unknown;
       try {
-        ({ body } = await adapter.read(pendingName(claims.jti), signal));
+        ({ body } = await adapter.read(pendingName(id), signal));
       } catch (error) {
         if (!signal.aborted) throw error;
         return { refusal: 'The pending import did not read in time. Nothing was written. Try the commit once more.' };
       }
-      if (body == null) return { refusal: 'That import was already committed or discarded. Nothing was written. Extract again if the user still wants it.' };
-      if (sha256Hex(JSON.stringify(body)) !== claims.subject) {
-        return { refusal: 'The pending import does not match its receipt. Nothing was written. Extract again.' };
+      if (body == null) {
+        return { refusal: 'That receipt names no pending import: it was committed, discarded or mistyped. Nothing was written. Extract again if the user still wants it.' };
       }
-      const payload = body as ImportPayload;
-      if (payload.id !== claims.jti || !Array.isArray(payload.candidates) || !Array.isArray(payload.documents)) {
-        return { refusal: 'The pending import is not readable. Nothing was written. Extract again.' };
+      // A pending file from before 2026-10-07 has no `v`: not readable, and the sweep takes it by name.
+      const pending = body as Partial<PendingFile>;
+      if (pending.v !== 2 || typeof pending.payload !== 'object' || pending.payload === null || !Number.isSafeInteger(pending.issued) || typeof pending.mac !== 'string') {
+        return { refusal: PENDING_UNREADABLE };
       }
+      // The MAC binds the id and the payload's hash, and only `stash` signs, so a payload that opens is one we wrote.
+      // A file too deep to serialise was never ours: refused in words, never thrown.
+      let fields: string[];
+      try {
+        fields = macFields(id, pending.payload);
+      } catch {
+        return { refusal: PENDING_UNREADABLE };
+      }
+      const { status } = openStep('import', fields, conn, pending.mac, pending.issued as number, audience, Date.parse(now));
+      if (status === 'expired') {
+        return { refusal: `That receipt has expired: a pending import waits ${RECEIPT_LIFETIME_SECONDS / 60} minutes. Nothing was written. Extract again and show the user the fresh candidates.` };
+      }
+      if (status !== 'ok') return { refusal: RECEIPT_INVALID };
+      const payload = pending.payload as ImportPayload;
       // Ids checked before the charge: a replace list of invented ids must not spend the hour.
       const ids = new Set(payload.candidates.map((c) => c.id));
       const unknown = [...commit.accept, ...commit.replace].find((id) => !ids.has(id));

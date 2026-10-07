@@ -12,13 +12,16 @@ of truth for acceptance criteria and the schemas live in
 1. Receipt: the extract writes the candidate payload (values + document
    metadata, never document text) to the user's own folder as
    `imports/pending-<id>.json` through the same adapter; the receipt is
-   `{id, exp, conn, sha256}` sealed as an `'import'` blob by the one
-   `seal`/`unseal` every credential uses (bound to client + resource + the
-   connection hash, 1-hour expiry, ~550 bytes, under `MAX_RECEIPT_LENGTH`).
-   Commit verifies the receipt BEFORE charging anything, reads the
-   pending file, checks the hash, applies the selection, saves through the
-   SyncManager, then deletes the pending file. Extract sweeps pending files
-   older than 24 h.
+   that id, a plain UUID. Since 2026-10-07 the file is `{v: 2, payload,
+   issued, mac}`, the MAC an HMAC-SHA256 (HKDF info `mcp/import-step/v1`)
+   over the id, `issued`, the payload's sha256, the connection hash and the
+   client and resource hashes, 1-hour window, under `MAX_RECEIPT_LENGTH`
+   (64). Before, the receipt was a ~550-byte sealed `'import'` blob, which
+   ChatGPT's approval card flagged as a disguised payload. Commit reads the
+   pending file and checks its shape, MAC and window BEFORE charging
+   anything, applies the selection, saves through the SyncManager, then
+   deletes the pending file. The next stash sweeps pending files
+   older than 2 h (twice a receipt's life).
 2. Prompt injection: the tool result and the receipt never carry
    `extractedText`, `contentMarkdown` or free-form `metadata`; `title` and
    `question` are ≤120 chars, control characters stripped, and labelled as

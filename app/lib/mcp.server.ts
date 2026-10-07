@@ -32,7 +32,8 @@ import { githubFiler } from './github-issues.server';
 import { isMcpEnabled, issuer } from './mcp-config.server';
 import { type AccessPayload, allowToolCall, chargeWrites, claimProposal, connectionKey, grantLive, grantRefreshToken, WRITE_COST } from './mcp-grants.server';
 import { type McpProvider, providerAccessToken, providerLabel } from './mcp-providers.server';
-import { audienceFor, hash, issueStep, openStep, type StepClaims, unpackSealed } from './mcp-seal.server';
+import { audienceFor, hash, unpackSealed } from './mcp-seal.server';
+import { issueProposal, openProposal, STEP_WINDOWS, UUID } from './mcp-step.server';
 
 /** One JSON-RPC message. A lab panel of 50 rows is a few KB; this is slack. */
 const RPC_BODY_CAP = 1024 * 1024;
@@ -74,20 +75,6 @@ export const MAX_CORRECTION_AGE_DAYS = 90;
  */
 export const FOLDER_LIST_TIMEOUT_MS = 2_000;
 export const FOLDER_LIST_MAX_ENTRIES = 200;
-
-/**
- * Two-phase for the permanent tools (US-36 AC9). What the server can see is
- * time and argument identity, so that is what it enforces: a permanent write
- * takes two calls, identical arguments, the same connection, at least
- * `PROPOSAL_NBF_SECONDS` apart (a chained call lands in under two; a person's
- * yes takes longer) and inside `PROPOSAL_LIFETIME_SECONDS`. It cannot see
- * the user's yes, stop an assistant with a code tool from sleeping, or a
- * receipt held into the next turn; what it buys is a proposal in the
- * transcript before the write, the client's approval prompt twice, and a
- * second call an injected model has to emit.
- */
-export const PROPOSAL_NBF_SECONDS = 10;
-export const PROPOSAL_LIFETIME_SECONDS = 15 * 60;
 
 // ---------------------------------------------------------------------------
 // The user's folder, as a StorageAdapter
@@ -243,14 +230,14 @@ async function callHostedTool(
   /** The record as the loop opened it, kept for the nudge so the folder check costs no second read. */
   let opened: RoadmapFile | undefined;
   const twoPhase = TWO_PHASE.has(name) ? splitConfirm(args) : null;
-  /** The confirm receipt's verified claims, when this is the second call; the write then runs uncharged. */
-  let confirmed: StepClaims | null = null;
+  /** A verified confirm receipt: this is the second call, and the write runs uncharged. */
+  let confirmed = false;
   if (twoPhase) {
     args = twoPhase.args;
     if (twoPhase.confirm !== undefined) {
-      const checked = checkConfirm(token, name, twoPhase.args, twoPhase.confirm, now);
-      if (typeof checked === 'string') return refuse(checked, 'confirm');
-      confirmed = checked;
+      const refusal = checkConfirm(token, name, twoPhase.args, twoPhase.confirm, now);
+      if (refusal) return refuse(refusal, 'confirm');
+      confirmed = true;
     }
   }
   const charge = !confirmed;
@@ -355,20 +342,23 @@ function callIdentity(name: string, args: Record<string, unknown>): string {
  * The first call's answer: what the tool would have done, and the receipt to
  * do it with. Only a call that would have WRITTEN gets one — a refusal is a
  * refusal, and `update_profile` that changes nothing has nothing to confirm.
+ *
+ * What the server can see is time and argument identity, so that is what it
+ * enforces: a permanent write takes two calls, identical arguments, the same
+ * connection, at least `STEP_WINDOWS.proposal.nbfSeconds` apart (a chained
+ * call lands in under two; a person's yes takes longer) and inside its
+ * `ttlSeconds`. It cannot see the user's yes, stop an assistant with a code
+ * tool from sleeping, or a receipt held into the next turn; what it buys is a
+ * proposal in the transcript before the write, the client's approval prompt
+ * twice, and a second call an injected model has to emit.
  */
 function withProposal(token: AccessPayload, name: string, args: Record<string, unknown>, answer: ToolAnswer, now: string): ToolAnswer {
   if (answer.isError || !answer.pendingWrite) return answer;
-  const { token: confirm, claims } = issueStep(
-    'proposal',
-    { subject: callIdentity(name, args), conn: hash(connectionKey(token)), nbfSeconds: PROPOSAL_NBF_SECONDS, ttlSeconds: PROPOSAL_LIFETIME_SECONDS },
-    audienceFor(token.clientId),
-    Date.parse(now),
-  );
-  const confirmFrom = new Date(claims.nbf * 1000).toISOString();
+  const { receipt: confirm, notBefore: confirmFrom } = issueProposal(callIdentity(name, args), hash(connectionKey(token)), audienceFor(token.clientId), Date.parse(now));
   const text =
     `PROPOSAL — nothing written yet. ${answer.text}\n\n` +
     `Show this to the user and WAIT for their own yes, in their own words; a client setting that skips its approval prompt is not their yes. Then call ${name} again with the same arguments and confirm set to the receipt below; ` +
-    `it is valid from ${confirmFrom} for ${PROPOSAL_LIFETIME_SECONDS / 60} minutes and works once.\nconfirm: ${confirm}`;
+    `it is valid from ${confirmFrom} for ${STEP_WINDOWS.proposal.ttlSeconds / 60} minutes and works once.\nconfirm: ${confirm}`;
   return { text, isError: false, structured: { ...(answer.structured as Record<string, unknown>), proposal: true, confirm, confirmFrom } };
 }
 
@@ -377,22 +367,34 @@ function withProposal(token: AccessPayload, name: string, args: Record<string, u
  * arguments and this connection, inside its window, and unused. Every
  * failure is worded; an early call is told when to come back and not to spin.
  */
-function checkConfirm(token: AccessPayload, name: string, args: Record<string, unknown>, confirm: string, now: string): StepClaims | string {
+function checkConfirm(token: AccessPayload, name: string, args: Record<string, unknown>, confirm: string, now: string): string | null {
   const nowMs = Date.parse(now);
-  const claims = openStep('proposal', confirm, audienceFor(token.clientId), hash(connectionKey(token)), nowMs);
-  if (!claims) {
-    return `That confirm receipt is not valid for this connection, or has expired (${PROPOSAL_LIFETIME_SECONDS / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.`;
+  const conn = hash(connectionKey(token));
+  const { ttlSeconds } = STEP_WINDOWS.proposal;
+  // One answer for a receipt that is not ours, for other arguments, another tool or another connection:
+  // the MAC covers all of them, and telling them apart would tell a forger which input to change.
+  const invalid = `That confirm receipt does not match these arguments on this connection, or is not ours. Nothing was written. Call ${name} again without confirm, with exactly what the user approved, to propose afresh.`;
+  // The receipt's shape first: arguments are only canonicalised for a receipt that could be ours,
+  // and arguments too deep to canonicalise are refused in words, never thrown.
+  if (!UUID.test(confirm)) return invalid;
+  let subject: string;
+  try {
+    subject = callIdentity(name, args);
+  } catch {
+    return invalid;
   }
-  if (claims.subject !== callIdentity(name, args)) {
-    return `That confirm receipt was issued for different arguments. Nothing was written. Call ${name} again without confirm, with exactly what the user approved.`;
+  const opened = openProposal(confirm, subject, conn, audienceFor(token.clientId), nowMs);
+  if (opened.status === 'invalid') return invalid;
+  if (opened.status === 'expired') {
+    return `That confirm receipt has expired (${ttlSeconds / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.`;
   }
-  if (nowMs < claims.nbf * 1000) {
-    return `That confirm receipt is not valid yet: it can be used from ${new Date(claims.nbf * 1000).toISOString()}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`;
+  if (opened.status === 'early') {
+    return `That confirm receipt is not valid yet: it can be used from ${opened.notBefore}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`;
   }
-  if (!claimProposal(claims.jti, PROPOSAL_LIFETIME_SECONDS * 1000, nowMs)) {
+  if (!claimProposal(confirm, conn, ttlSeconds * 1000, nowMs)) {
     return `That confirm receipt has already been used. Nothing was written. If the user wants another change, call ${name} again without confirm.`;
   }
-  return claims;
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -430,6 +432,7 @@ function countToolCall(
   tool: string,
   outcome: 'ok' | 'refused' | 'error',
   reason?: unknown,
+  step?: 'propose' | 'confirm',
 ): void {
   // A name that is not a published tool was never a tool call, and free text
   // in a counter is how a counter becomes a log.
@@ -437,7 +440,17 @@ function countToolCall(
   // Only a refusal has a reason, and only a word the closed vocabulary names:
   // anything else counts as `other` rather than reaching the row (US-32 AC29).
   const why = outcome === 'refused' ? { reason: isRefusalReason(reason) ? reason : 'other' } : null;
-  void recordServerEvent('mcp_tool_call', { tool: tool as McpToolName, client: mcpClientLabel(clientId), outcome, ...why });
+  void recordServerEvent('mcp_tool_call', { tool: tool as McpToolName, client: mcpClientLabel(clientId), outcome, ...why, ...(step ? { step } : null) });
+}
+
+/**
+ * Which half of a two-phase write a call is (US-36 AC9's usage signal): a
+ * proposal with no confirm after it is a write the user declined or the
+ * client blocked, the failure ChatGPT's safety layer produced on 2026-10-07.
+ */
+function stepOf(name: string, args: unknown): 'propose' | 'confirm' | undefined {
+  if (!TWO_PHASE.has(name)) return undefined;
+  return splitConfirm(args).confirm === undefined ? 'propose' : 'confirm';
 }
 
 // ---------------------------------------------------------------------------
@@ -475,10 +488,10 @@ function hostedSurface(token: AccessPayload, now: string) {
       // already words by here; what lands in this catch is ours.
       try {
         const answer = await callHostedTool(token, name, args, now);
-        countToolCall(token.clientId, name, answer.isError ? 'refused' : 'ok', answer.reason);
+        countToolCall(token.clientId, name, answer.isError ? 'refused' : 'ok', answer.reason, stepOf(name, args));
         return { answer };
       } catch {
-        countToolCall(token.clientId, name, 'error');
+        countToolCall(token.clientId, name, 'error', undefined, stepOf(name, args));
         return { errorMessage: 'That tool failed inside this server. Nothing was written.' };
       }
     },

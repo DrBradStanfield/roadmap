@@ -241,7 +241,11 @@ describe('a malformed request body is a 400, not a crash (US-32 AC17)', () => {
 // US-36 AC9 — two-phase for the permanent tools, replayed by a scripted assistant
 // ---------------------------------------------------------------------------
 import { OUTPUTS } from '../../packages/health-core/src/mcp-tools';
-import { PROPOSAL_LIFETIME_SECONDS, PROPOSAL_NBF_SECONDS } from '../lib/mcp.server';
+import { STEP_WINDOWS } from '../lib/mcp-step.server';
+
+const { nbfSeconds: PROPOSAL_NBF_SECONDS, ttlSeconds: PROPOSAL_LIFETIME_SECONDS } = STEP_WINDOWS.proposal;
+/** One answer for a receipt that is not ours, or names other arguments, another tool or another connection (US-36 AC9, 2026-10-07). */
+const NOT_OURS = 'does not match these arguments on this connection, or is not ours';
 import { WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 
 const at = (seconds: number) => new Date(Date.parse(NOW) + seconds * 1000).toISOString();
@@ -260,6 +264,26 @@ async function callToolAt(access: string, name: string, args: unknown, now: stri
 describe('US-36 AC9 — a permanent write takes two calls, identical arguments, the same connection, 10 s apart, inside 15 min', () => {
   const FIX = { id: LDL_ID, newValue: 2.8, expectedValue: STORED_LDL };
 
+  it('a malformed confirm is refused before the arguments are canonicalised, and nesting too deep for that is refused in words (US-36 AC9)', async () => {
+    seedWithLdl();
+    const access = await connect();
+    // Written as text: JSON.stringify itself overflows on this depth, while the server's JSON.parse does not.
+    const deep = '['.repeat(20000) + ']'.repeat(20000);
+    for (const confirm of ['not-a-receipt', '00000000-0000-0000-0000-000000000000']) {
+      const args = `{"id":"${FIX.id}","newValue":${FIX.newValue},"expectedValue":${FIX.expectedValue},"confirm":"${confirm}","deep":${deep}}`;
+      const res = await mcpEndpoint(new Request(`${ISSUER}/mcp`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
+        body: `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"correct_value","arguments":${args}}}`,
+      }), at(11));
+      const answer = (await res.json()) as { result?: { content: Array<{ text: string }>; isError?: boolean }; error?: unknown };
+      expect(answer.error, confirm).toBeUndefined();
+      expect(answer.result!.isError, confirm).toBe(true);
+      expect(answer.result!.content[0].text, confirm).toContain('Nothing was written');
+    }
+    expect(storedRecord().measurements).toHaveLength(1);
+  });
+
   it('a scripted assistant obeying a planted line: every shortcut is refused in words, and the honest path writes once, uncharged', async () => {
     // The sequence the review measured a small model taking from a line in a
     // clinic letter (5/6): read, then correct_value straight away. Deterministic
@@ -277,6 +301,9 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     const data = OUTPUTS.correct_value.parse(proposed.structured);
     expect(data).toMatchObject({ proposal: true, correctsId: LDL_ID, value: 2.8, confirmFrom: at(PROPOSAL_NBF_SECONDS) });
     const receipt = data.confirm!;
+    // UUID-shaped: ChatGPT read the old 400-character sealed blob as a disguised payload and blocked the confirm (2026-10-07).
+    expect(receipt).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    expect(proposed.text).toContain(`confirm: ${receipt}`);
     expect(storedRecord().measurements).toHaveLength(1);
     expect(storedRecord().measurements[0].status).toBe('active');
 
@@ -289,17 +316,17 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     // 3. After the pause, but with the number changed under the user's yes.
     const altered = await callToolAt(access, 'correct_value', { ...FIX, newValue: 0.8, confirm: receipt }, at(11));
     expect(altered.isError).toBe(true);
-    expect(altered.text).toContain('different arguments');
+    expect(altered.text).toContain(NOT_OURS);
 
     // 4. Someone else's connection to the same client, holding the receipt.
     const foreign = await callToolAt(stranger, 'correct_value', { ...FIX, confirm: receipt }, at(11));
     expect(foreign.isError).toBe(true);
-    expect(foreign.text).toContain('not valid for this connection');
+    expect(foreign.text).toContain(NOT_OURS);
 
     // 5. Another tool, same receipt.
     const wrongTool = await callToolAt(access, 'update_profile', { heightCm: 170, expected: { heightCm: null }, confirm: receipt }, at(11));
     expect(wrongTool.isError).toBe(true);
-    expect(wrongTool.text).toContain('different arguments');
+    expect(wrongTool.text).toContain(NOT_OURS);
     expect(storedRecord().measurements).toHaveLength(1);
 
     // 6. The honest path: same arguments, same connection, after the pause. Written once.
@@ -362,7 +389,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     expect(storedRecord().profile.heightCm).toBe(178);
     // The first receipt names other arguments (no `sex`), so it does not confirm this call.
     const other = await callToolAt(access, 'update_profile', { heightCm: 178, sex: 'male', expected: { heightCm: null, sex: null }, confirm: data.confirm }, at(11));
-    expect(other.text).toContain('different arguments');
+    expect(other.text).toContain(NOT_OURS);
 
     const same = await callToolAt(access, 'update_profile', { heightCm: 178, expected: { heightCm: 178 } }, at(12));
     expect(same.isError).toBe(false);
@@ -402,7 +429,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
 
       const other = await callToolAt(access, 'report_feedback', { ...report, detail: 'Something else entirely.', confirm: data.confirm }, at(11));
       expect(other.isError).toBe(true);
-      expect(other.text).toContain('different arguments');
+      expect(other.text).toContain(NOT_OURS);
 
       const drifted = await callToolAt(access, 'report_feedback', { ...report, title: 'tool refused a valid day', detail: 'steps here. then it refused.', confirm: data.confirm }, at(11));
       // Either way the receipt held. Tokenless while public: the confirmed call answers with the link the
@@ -423,7 +450,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
       const fresh = OUTPUTS.report_feedback.parse((await callToolAt(access, 'report_feedback', report, at(20))).structured).confirm!;
       const malformed = await callToolAt(access, 'report_feedback', { kind: 'bug', title: report.title, confirm: fresh }, at(31));
       expect(malformed.isError).toBe(true);
-      expect(malformed.text).toContain('different arguments');
+      expect(malformed.text).toContain(NOT_OURS);
     } finally {
       delete process.env.GITHUB_ISSUES_TOKEN;
     }

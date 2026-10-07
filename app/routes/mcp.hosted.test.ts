@@ -1462,7 +1462,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     expect(ok.isError).toBe(false);
     const spent = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
     expect(spent.isError).toBe(true);
-    expect(spent.text).toContain('already committed');
+    expect(spent.text).toContain('names no pending import'); // US-35 AC7: the spent receipt's file is gone
     expect(storedRecord().measurements.filter((m) => m.status === 'active')).toHaveLength(1);
 
     const missing = await callTool(access, 'import_documents', { fileNames: ['nope.pdf'] });
@@ -1544,8 +1544,10 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     expect(data.files[0].title!.length).toBeLessThanOrEqual(120);
     expect(data.candidates).toEqual([]);
     // The pending payload in the folder is metadata only too.
-    const pending = JSON.parse(cloud.files.get(pendingFiles()[0])!.json) as { documents: Array<Record<string, unknown>> };
-    expect(Object.keys(pending.documents[0]).sort()).toEqual(['contentHash', 'date', 'mimeType', 'sourceFileName', 'title', 'type']);
+    // Since 2026-10-07 the payload sits beside its MAC and issue time and nothing else (US-35 AC7).
+    const pending = JSON.parse(cloud.files.get(pendingFiles()[0])!.json) as { payload: { documents: Array<Record<string, unknown>> } };
+    expect(Object.keys(pending).sort()).toEqual(['issued', 'mac', 'payload', 'v']);
+    expect(Object.keys(pending.payload.documents[0]).sort()).toEqual(['contentHash', 'date', 'mimeType', 'sourceFileName', 'title', 'type']);
   });
 
   it('AC2 — five folder files a call: the rest come back as remaining with the commit-first instruction, and a second call with those names reads them (AC10: the machine cap the website spends from moves too)', async () => {
@@ -1713,7 +1715,8 @@ describe('US-37 — a Dropbox read lists folder files that are not in the record
 // ---------------------------------------------------------------------------
 // US-36 — file_results over the hosted surface
 // ---------------------------------------------------------------------------
-import { WRITES_PER_HOUR as HOURLY } from '../lib/mcp-grants.server';
+import { type AccessPayload, connectionKey, spendWrites, WRITES_PER_HOUR as HOURLY } from '../lib/mcp-grants.server';
+import { seal, unpackSealed } from '../lib/mcp-seal.server';
 
 describe('US-36 — file_results: propose parks a receipt and charges one, commit writes and spends it (AC5, AC6, usage signal)', () => {
   afterEach(() => setImportSeams(null));
@@ -1723,6 +1726,44 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
       { metric: 'ldl', printedName: 'LDL Cholesterol', value: 100, unit: 'mg/dL' },
       { metric: 'ferritin', printedName: 'Ferritin', value: 210, unit: 'ug/L', referenceLow: 30, referenceHigh: 300 },
     ],
+  });
+
+  it('US-36 AC9 / US-35 AC7 — a receipt of the other kind, or an old sealed blob, is refused in words: no throw, no charge, the pending file kept', async () => {
+    seedRecord();
+    const { access } = await connect();
+    stubImport({}, () => labReport());
+    const filed = OUTPUTS.file_results.parse((await callTool(access, 'file_results', rows())).structured); // charges an add
+    const profile = { heightCm: 178, expected: { heightCm: null } };
+    const proposed = OUTPUTS.update_profile.parse((await callTool(access, 'update_profile', profile)).structured); // charges a correction
+    // Both are UUID-shaped, so each passes the other's shape check and must fail on what it names.
+    expect(filed.receipt).toMatch(/^[0-9a-f-]{36}$/);
+    expect(proposed.confirm).toMatch(/^[0-9a-f-]{36}$/);
+    // The wire form of a receipt minted before 2026-10-07: `header.body`, base64url, about 400 characters.
+    const oldBlob = seal('state', { clientId: 'c', pad: 'x'.repeat(200) }, { clientId: 'c', resource: 'https://mcp.example.test/mcp' });
+    expect(oldBlob.length).toBeGreaterThan(MAX_RECEIPT_LENGTH);
+
+    const refusals = [
+      [await callTool(access, 'file_results', { commit: { receipt: proposed.confirm, accept: ['c1'], replace: [] } }), 'names no pending import'],
+      [await callTool(access, 'import_documents', { commit: { receipt: proposed.confirm, accept: ['c1'], replace: [] } }), 'names no pending import'],
+      [await callTool(access, 'update_profile', { ...profile, confirm: filed.receipt }, LATER), 'does not match these arguments on this connection, or is not ours'],
+      [await callTool(access, 'update_profile', { ...profile, confirm: oldBlob }, LATER), 'does not match these arguments on this connection, or is not ours'],
+      [await callTool(access, 'file_results', { commit: { receipt: oldBlob, accept: ['c1'], replace: [] } }), 'Pass the receipt exactly as the extract returned it'],
+    ] as const;
+    for (const [answer, words] of refusals) {
+      expect(answer.isError, words).toBe(true);
+      expect(answer.text).toContain(words);
+    }
+    expect(pendingFiles()).toEqual([`imports/pending-${filed.receipt}.json`]);
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
+
+    // The honest halves still work: the commit charges its add, the confirm is free.
+    expect((await callTool(access, 'file_results', { commit: { receipt: filed.receipt, accept: ['c1'], replace: [] } })).isError).toBe(false);
+    expect((await callTool(access, 'update_profile', { ...profile, confirm: proposed.confirm }, LATER)).isError).toBe(false);
+    expect(storedRecord().profile.heightCm).toBe(178);
+    // Spent: the propose's add, the proposal's correction, the commit's add. Not one refused call cost anything.
+    const connection = connectionKey(unpackSealed<AccessPayload>('access', access)!);
+    expect(spendWrites(connection, HOURLY - 2 * WRITE_COST.add - WRITE_COST.correct)).toBe(true);
+    expect(spendWrites(connection, 1)).toBe(false);
   });
 
   it('never calls the extractor, writes nothing at propose, then commits what was accepted with importedVia assistant', async () => {
@@ -1853,7 +1894,7 @@ describe('US-32 AC29 — the counter records why a call was refused', () => {
     expect(refused.isError).toBe(true);
     expect(refused.text).toContain('reads as a health value');
     expect(toolCallEvents()).toEqual([
-      { tool: 'report_feedback', client: expect.any(String), outcome: 'refused', reason: 'health-value' },
+      { tool: 'report_feedback', client: expect.any(String), outcome: 'refused', reason: 'health-value', step: 'propose' },
     ]);
     expect(JSON.stringify(toolCallEvents())).not.toContain('4.2');
     expect(JSON.stringify(toolCallEvents())).not.toContain(detail);
@@ -1874,7 +1915,7 @@ describe('US-32 AC29 — the counter records why a call was refused', () => {
     const events = toolCallEvents();
     expect(events).toEqual([
       { tool: 'read_record', client: expect.any(String), outcome: 'ok' },
-      { tool: 'correct_value', client: expect.any(String), outcome: 'refused', reason: 'malformed' },
+      { tool: 'correct_value', client: expect.any(String), outcome: 'refused', reason: 'malformed', step: 'propose' },
     ]);
 
     // Whatever the row held, the counter holds one word from the closed list.

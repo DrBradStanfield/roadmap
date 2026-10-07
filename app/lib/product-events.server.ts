@@ -56,6 +56,8 @@ const serverMetadataSchema = metadataSchema.extend({
   reason: z.string().optional(),
   /** US-32 AC38: a connection made through the reviewer sign-in. Server-only, owned by `mcp_connect`. */
   via: z.enum(['reviewer']).optional(),
+  /** US-36 AC9: which half of a two-phase write a tool call was. Server-only, owned by `mcp_tool_call`. */
+  step: z.enum(['propose', 'confirm']).optional(),
 });
 
 /** The event a metadata key belongs to, where the key has no vocabulary of its
@@ -65,6 +67,7 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   key: ['lab_unit_refused'],
   unit: ['lab_unit_refused'],
   via: ['mcp_connect'],
+  step: ['mcp_tool_call'],
 };
 
 /**

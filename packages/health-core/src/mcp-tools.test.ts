@@ -2615,6 +2615,29 @@ describe('US-36 AC11 — tools/list stays inside ChatGPT’s budget', () => {
   });
 });
 
+import { importCommitInput, MAX_RECEIPT_LENGTH } from './mcp-tools';
+
+describe('US-35 AC7 / US-36 AC9 — a receipt is UUID-sized, and every published receipt field says so', () => {
+  it('caps receipt and confirm at 64 characters in the schemas the tool layer parses and the ones tools/list publishes', () => {
+    // A UUID is 36; the sealed blobs before 2026-10-07 were ~400, and one sent now is refused by the schema.
+    expect(MAX_RECEIPT_LENGTH).toBe(64);
+    const uuid = '0f3c2a91-7b4e-4c1d-9a2b-3c4d5e6f7a8b';
+    expect(importCommitInput.safeParse({ receipt: uuid, accept: [], replace: [] }).success).toBe(true);
+    expect(importCommitInput.safeParse({ receipt: 'x'.repeat(65), accept: [], replace: [] }).success).toBe(false);
+    expect(correctValueInput.safeParse({ id: 'm1', newValue: 2.8, confirm: 'x'.repeat(65) }).success).toBe(false);
+    const caps: string[] = [];
+    for (const tool of MCP_TOOLS) {
+      const props = tool.inputSchema.properties as Record<string, { maxLength?: number; properties?: Record<string, { maxLength?: number }> }>;
+      if (props.confirm) caps.push(`${tool.name}.confirm ${props.confirm.maxLength}`);
+      if (props.commit?.properties?.receipt) caps.push(`${tool.name}.commit.receipt ${props.commit.properties.receipt.maxLength}`);
+    }
+    expect(caps.sort()).toEqual([
+      'correct_value.confirm 64', 'file_results.commit.receipt 64', 'import_documents.commit.receipt 64',
+      'report_feedback.confirm 64', 'update_profile.confirm 64',
+    ]);
+  });
+});
+
 describe('US-32 AC28 — the assistant is told the code is open', () => {
   it('names the repository once, and the note points at it', () => {
     // One literal, so the two servers and the plan cannot drift apart.
