@@ -110,5 +110,53 @@
   "reason": "The creatinine blood-test advice was deleted in a first pass and rightly restored (ConsumerLab notes creatine raises serum creatinine); the stale deletion claim stays in the append-only report. Orchestrator 2026-10-08.",
   "by": "orchestrator",
   "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "changed_tokens[70] raw_quote shares no number with its body_line: **Blood pressure support:** The two main meta-analyses used median doses of 368 mg/day [13] and 3...",
+  "reason": "The meta-analysis abstracts give median doses of 368 mg and 365 mg with 'per day' implied by the trial design. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "token \"365 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Blood pressure support:** The two main meta-analyses used median doses of 368 mg/day [13] and 365 mg/day [14]. Both...\"",
+  "reason": "The meta-analysis abstracts give median doses of 368 mg and 365 mg with 'per day' implied by the trial design. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "body line has no entry quoting \"360 mg/day\": In the Magpie Trial of 10,141 women with pre-eclampsia, magnesium sulphate cut the risk of eclampsia by 58% compared ...",
+  "reason": "NIH states 350-360 mg in its RDA table with the unit in the column header; no verbatim span holds number and unit together. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "body line has no entry quoting \"111\": If these later symptoms appear, call 111 or go to the emergency department. A few cases of fatal hypermagnesemia have...",
+  "reason": "'call 111' line; the per-line coverage rule does not yet apply the AC10 emergency-number skip, and the chia-seed row's 111 mg raised the count. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "body line has no entry quoting \"360 mg/day\": Pregnancy: Magnesium needs increase to 350-360 mg/day [1]. In the Magpie Trial, magnesium sulphate for pre-eclampsia ...",
+  "reason": "NIH states 350-360 mg in its RDA table with the unit in the column header; no verbatim span holds number and unit together. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC7",
+  "handle": "lithium-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [27] Lithium carbonate tablets and capsules, prescribing information (Hikma Pharmaceuticals USA I...",
+  "reason": "DailyMed (dailymed.nlm.nih.gov) is the US National Library of Medicine's official drug-label site; the FDA lithium label [27] is cited from it. The host is not yet on AC7's allow-list. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
  }
 ]

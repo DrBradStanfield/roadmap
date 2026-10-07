@@ -186,7 +186,7 @@ The evidence for BCAA supplementation for muscle building is mixed and depends h
 
 **General health dose:** The ISSN position stand suggests that habitual low dietary creatine intake (for example, 3 g/day) throughout life may provide significant health benefits [72].
 
-**Emerging higher-dose considerations:** Recent expert commentary suggests that for brain health and cognitive support, minimum doses may be needed for noticeable increases in brain creatine [73]. A maintenance dose of 10 g/day has been used safely long-term in clinical studies.
+**Higher doses:** A maintenance dose of 10 g/day has been used safely long-term in clinical studies [1].
 
 ### Timing and Practical Recommendations
 
@@ -464,7 +464,6 @@ Dietary sources of BCAAs include dairy protein, eggs, meat, chicken, fish, and l
 
 [72] Kreider RB, Kalman DS, Antonio J, et al. "International Society of Sports Nutrition position stand: safety and efficacy of creatine supplementation in exercise, sport, and medicine." *J Int Soc Sports Nutr*. 2017. PMID: 28615996. [https://pubmed.ncbi.nlm.nih.gov/28615996/](https://pubmed.ncbi.nlm.nih.gov/28615996/)
 
-[73] Candow DG, et al. Expert commentary on higher creatine dosing for brain and bone health. SupplySide Global 2025; *J Pharm Biomed Sci*. 2025.
 
 [74] Antonio J, Ciccone V. "The effects of pre versus post workout supplementation of creatine monohydrate on body composition and strength." *J Int Soc Sports Nutr*. 2013. PMID: 23919405. [https://pubmed.ncbi.nlm.nih.gov/23919405/](https://pubmed.ncbi.nlm.nih.gov/23919405/)
 
