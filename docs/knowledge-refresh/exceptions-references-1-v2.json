@@ -1,0 +1,162 @@
+[
+ {
+  "check": "AC4",
+  "handle": "lithium-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Neurotransmitter Modulation",
+  "reason": "Section rested only on Grokipedia; no ConsumerLab, NIH or PubMed support. Removed on the 2026-09-29 ruling: an empty heading is worse than none.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC4",
+  "handle": "lithium-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Anti-Inflammatory Effects in Neural Tissue",
+  "reason": "Section rested only on Grokipedia. Removed on the 2026-09-29 ruling.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC4",
+  "handle": "lithium-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### BDNF Upregulation and Synaptogenesis",
+  "reason": "Section rested only on Grokipedia; the supported BDNF finding now sits under the cognition section. Removed on the 2026-09-29 ruling.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC4",
+  "handle": "lithium-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: #### Traumatic Brain Injury (TBI)",
+  "reason": "Section rested only on Grokipedia. Removed on the 2026-09-29 ruling.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC4",
+  "handle": "lithium-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: #### Mechanisms Relevant to Aging",
+  "reason": "Section rested only on Grokipedia. Removed on the 2026-09-29 ruling.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC4",
+  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### Inflammatory Bowel Disease",
+  "reason": "Section rested only on Grokipedia. Removed on the 2026-09-29 ruling.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC4",
+  "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+  "match": "heading missing from new body: ### St. John's Wort",
+  "reason": "The interaction rested only on Grokipedia; listed under SAFETY for Brad. Removed on the 2026-09-29 ruling.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "changed_tokens[43] raw_quote shares no number with its body_line: **Perimenopause and menopause:** One review suggests post-menopausal women may gain muscle size a...",
+  "reason": "The cited abstract gives the dose as '0.3 g·kg-1·d-1'; the body says '0.3 g for each kilogram'. Same dose; the checker cannot read the dot-operator notation. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "token \"300 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Perimenopause and menopause:** One review suggests post-menopausal women may gain muscle size and function at high ...\"",
+  "reason": "As above: 0.3 g per kg (the abstract's '0.3 g·kg-1·d-1'). Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "lithium-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[38] raw_quote shares no number with its body_line: | Cognitive impairment (moderate dose) | 28–113 mg/day | Carbonate (prescription) | Forlenza (201...",
+  "reason": "The source gives 28 to 113 mg with 'given daily' later in the same sentence; same dose. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "lithium-benefits-forms-dosing-and-side-effects",
+  "match": "changed_tokens[44] raw_quote shares no number with its body_line: Taking too much of any form of lithium can cause toxicity [1]. Suggested supplement doses of abou...",
+  "reason": "The source says 'daily doses ... 0.3 mg to 5 mg'; the daily word comes before the range. Same dose. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "lithium-benefits-forms-dosing-and-side-effects",
+  "match": "body line has no entry quoting \"0.3 mg/day\": Taking too much of any form of lithium can cause toxicity [1]. Suggested supplement doses of about 0.3 mg to 5 mg a d...",
+  "reason": "As above: 'daily doses ... 0.3 mg to 5 mg'. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "lithium-benefits-forms-dosing-and-side-effects",
+  "match": "token \"400 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"A small placebo-controlled study gave 24 former drug users 400 micrograms of lithium a day for 4 weeks from naturally...\" | \"Naturally lithium-rich brewer's yeast has been used in research: the Schrauzer mood study gave tablets providing 400 ...\"",
+  "reason": "The abstract says '400 micrograms/d'; the body gives 400 micrograms with its frequency in words. Same dose. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC4",
+  "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+  "match": "claimed deletion still in body: If you take creatine, inform your physician before blood tests measuring creatinine, or stop supplementation 2 weeks ...",
+  "reason": "The creatinine blood-test advice was deleted in a first pass and rightly restored (ConsumerLab notes creatine raises serum creatinine); the stale deletion claim stays in the append-only report. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "changed_tokens[70] raw_quote shares no number with its body_line: **Blood pressure support:** The two main meta-analyses used median doses of 368 mg/day [13] and 3...",
+  "reason": "The meta-analysis abstracts give median doses of 368 mg and 365 mg with 'per day' implied by the trial design. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "token \"365 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Blood pressure support:** The two main meta-analyses used median doses of 368 mg/day [13] and 365 mg/day [14]. Both...\"",
+  "reason": "The meta-analysis abstracts give median doses of 368 mg and 365 mg with 'per day' implied by the trial design. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "body line has no entry quoting \"360 mg/day\": In the Magpie Trial of 10,141 women with pre-eclampsia, magnesium sulphate cut the risk of eclampsia by 58% compared ...",
+  "reason": "NIH states 350-360 mg in its RDA table with the unit in the column header; no verbatim span holds number and unit together. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "body line has no entry quoting \"111\": If these later symptoms appear, call 111 or go to the emergency department. A few cases of fatal hypermagnesemia have...",
+  "reason": "'call 111' line; the per-line coverage rule does not yet apply the AC10 emergency-number skip, and the chia-seed row's 111 mg raised the count. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "magnesium-benefits-best-forms-dosing",
+  "match": "body line has no entry quoting \"360 mg/day\": Pregnancy: Magnesium needs increase to 350-360 mg/day [1]. In the Magpie Trial, magnesium sulphate for pre-eclampsia ...",
+  "reason": "NIH states 350-360 mg in its RDA table with the unit in the column header; no verbatim span holds number and unit together. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC7",
+  "handle": "lithium-benefits-forms-dosing-and-side-effects",
+  "match": "reference line has unknown host dailymed.nlm.nih.gov: [27] Lithium carbonate tablets and capsules, prescribing information (Hikma Pharmaceuticals USA I...",
+  "reason": "DailyMed (dailymed.nlm.nih.gov) is the US National Library of Medicine's official drug-label site; the FDA lithium label [27] is cited from it. The host is not yet on AC7's allow-list. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ }
+]
