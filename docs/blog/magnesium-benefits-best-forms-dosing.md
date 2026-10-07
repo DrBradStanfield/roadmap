@@ -93,7 +93,7 @@ Rat studies suggest magnesium may increase melatonin production by raising the a
 
 **Calcium-to-magnesium ratio:** A placebo-controlled study of 240 adults in Tennessee found that reducing the dietary calcium-to-magnesium ratio improved cognition by 9.1% in those aged 65+, an effect linked to activity at the APOE gene (Zhu et al., *J Alzheimers Dis*, 2020) [3][18]. The ratio should not be reduced below 1.7 [3].
 
-**Long-term observational data:** A 20-year follow-up of 6,473 women starting at around age 70 found that those consuming 257-317 mg/day of magnesium had 37% lower risk of mild cognitive impairment compared to those with lower intakes (Lo et al., *BMJ Open*, 2019) [3][19].
+**Long-term observational data:** A 20-year follow-up of 6,473 women starting at around 70 years of age found that those consuming 257-317 mg/day of magnesium had 37% lower risk of mild cognitive impairment compared to those with lower intakes (Lo et al., *BMJ Open*, 2019) [3][19].
 
 **Magnesium L-threonate (Magtein):** Three human studies exist, all showing minimal benefit. The original animal study (Slutsky et al., *Neuron*, 2010) demonstrated enhanced synaptic plasticity and memory in rats [9], but the dose used was equivalent to approximately 7 g/day in humans, 20 times the tolerable upper limit [3]. Human trials have not convincingly replicated these findings. Given L-threonate's very low elemental magnesium content (8%), achieving adequate systemic magnesium via better-absorbed forms (glycinate, citrate) may be equally or more effective for brain health at a fraction of the cost [3][9].
 
@@ -105,7 +105,7 @@ Diabetes increases urinary magnesium losses, and the resulting magnesium inadequ
 
 **Prediabetes with low magnesium:** An RCT of hypomagnesemic adults with prediabetes found that a daily dose of 382 mg of magnesium (as magnesium chloride) for four months improved glucose status in 50.8% of the magnesium group versus 7.0% of the placebo group. At the end of the trial, fasting glucose was 86.9 vs 98.3 mg/dL (Guerrero-Romero et al., *Diabetes & Metabolism*, 2015) [20].
 
-**Metabolic syndrome with low magnesium:** The same research group found that after 4 months of 382 mg magnesium chloride, only 48% of the magnesium group still met criteria for metabolic syndrome versus 77.5% of placebo (Rodriguez-Moran et al., *Adv Chronic Kidney Dis*, 2018) [21].
+**Metabolic syndrome with low magnesium:** The same research group found that after 4 months of the same dose and form (magnesium chloride), only 48% of the magnesium group still met criteria for metabolic syndrome versus 77.5% of placebo (Rodriguez-Moran et al., *Adv Chronic Kidney Dis*, 2018) [21].
 
 **Established type 2 diabetes:** An RCT in 14 patients with already-treated type 2 diabetes and low magnesium found that 360 mg magnesium gluconate did NOT improve insulin sensitivity (Drethen et al., *Diabetologia*, 2023) [22].
 
@@ -293,7 +293,7 @@ These medications should be **separated from magnesium supplements** [1][3]:
 | Levothyroxine | Synthroid, Levoxyl | 2-4 hours (4h for antacid forms) | ALL forms of magnesium affect absorption [3] |
 | Statins (rosuvastatin) | Crestor | 2+ hours | Antacid forms (oxide, hydroxide) reduce rosuvastatin absorption by 54%. Non-antacid forms (glycinate, taurate) are less likely to cause this interaction [3] |
 | Sotalol | Betapace | 2+ hours | Magnesium reduces blood levels [3] |
-| Gabapentin | Neurontin | 2+ hours | Magnesium hydroxide reduces bioavailability by 20% [3] |
+| Gabapentin | Neurontin | At least two hours | Magnesium hydroxide reduces bioavailability by 20% [3] |
 
 ### Drugs That Affect Magnesium Levels
 
