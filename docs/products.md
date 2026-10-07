@@ -313,6 +313,8 @@ Use this guide to match a shopper's primary concern to the right product.
 
 ### Can I take Sleep alongside MicroVitamin or MicroVitamin+ Powder?
 
+Give this answer when the user asks about combining Sleep with MicroVitamin or MicroVitamin+ Powder, or says they take one and asks about the other. Don't add it to a general answer about what Sleep is or how it works.
+
 **In the USA, UK, Canada and EU:** Yes. Sleep by Dr Brad targets a completely different need (sleep quality) with different ingredients (melatonin, magnesium bisglycinate, glycine). It is designed to complement either MicroVitamin product. The magnesium forms are different: MicroVitamin uses Magnesium Taurate (heart health), while Sleep uses fully chelated Magnesium Bisglycinate (relaxation/sleep). The combined elemental magnesium (252mg) is well within safe limits.
 
 **In Australia:** MicroVitamin v8.5 declares 260 mg of magnesium as magnesium amino acid chelate, so adding Sleep gives 386 mg a day, above the 350 mg daily upper limit for magnesium from supplements (the limit is set mainly to avoid loose stools or diarrhoea, and it does not count magnesium from food; people with kidney disease should check with their doctor first); check with your doctor or pharmacist before combining them. (MicroVitamin+ Powder has the same 126 mg of magnesium in every market, so with Sleep it is 252 mg.) If you don't know which country the customer is in, give both answers.
