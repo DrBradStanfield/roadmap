@@ -7,33 +7,49 @@ import {
   readPostingCaps,
   completionOutcome,
   shouldUnclaim,
+  persistYouTubeTurn,
   type YouTubeReply,
 } from './youtube-bot.server';
 
 // Chainable PostgREST-builder stub: every filter returns the chain, awaiting it
 // resolves to whatever response the test staged.
-const supa = vi.hoisted(() => ({
-  countRes: { count: 0 as number | null, error: null as unknown },
-  listRes: { data: [] as Array<{ video_id: string | null }> | null, error: null as unknown },
-}));
+const supa = vi.hoisted(() => {
+  // Read at module load: persistYouTubeTurn is a no-op without it.
+  process.env.YOUTUBE_BOT_PROFILE_ID = 'bot-profile';
+  return {
+    countRes: { count: 0 as number | null, error: null as unknown },
+    listRes: { data: [] as Array<{ video_id: string | null }> | null, error: null as unknown },
+    inserts: [] as Array<{ table: string; row: Record<string, unknown> }>,
+  };
+});
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('./supabase.server', () => ({
   supabaseAdmin: {
-    from: () => ({
+    from: (table: string) => ({
       select: (_cols: string, opts?: { head?: boolean }) => {
         const res = opts?.head ? supa.countRes : supa.listRes;
         type Chain = {
           eq: () => Chain;
           gte: () => Chain;
+          maybeSingle: () => Promise<unknown>;
           then: (onOk: (v: unknown) => unknown) => Promise<unknown>;
         };
         const chain: Chain = {
           eq: () => chain,
           gte: () => chain,
+          maybeSingle: () => Promise.resolve({ data: null, error: null }),
           then: (onOk) => Promise.resolve(res).then(onOk),
         };
         return chain;
+      },
+      insert: (row: Record<string, unknown>) => {
+        supa.inserts.push({ table, row });
+        const ok = { data: { id: 'conv-1' }, error: null };
+        return {
+          select: () => ({ single: () => Promise.resolve(ok) }),
+          then: (onOk: (v: unknown) => unknown) => Promise.resolve(ok).then(onOk),
+        };
       },
     }),
   },
@@ -269,5 +285,44 @@ describe('US-15 AC15: a refusal skips the comment and keeps the claim', () => {
     expect(shouldUnclaim(skip)).toBe(false);
     expect(completionOutcome({ content: 'An answer. ', usage, isFallback: false }, 1))
       .toMatchObject({ posted: true, replyText: 'An answer.', llmOutput: 'An answer.' });
+  });
+});
+
+describe('US-15 AC27: stored text cuts keep surrogate pairs whole (Sentry 6Y)', () => {
+  // JSON.stringify writes a lone surrogate as a \udXXX escape; PostgREST then
+  // rejects the whole body (PGRST102 "Empty or invalid json").
+  const LONE_SURROGATE = /\\u[dD][89a-fA-F]/;
+
+  it('cuts the YouTube conversation title and router_raw before a split emoji', async () => {
+    supa.inserts.length = 0;
+    await persistYouTubeTurn({
+      thread: {
+        topLevelCommentId: 'c1',
+        videoId: 'v1',
+        authorDisplayName: 'Viewer',
+        authorChannelId: 'UC_viewer',
+        text: 'a'.repeat(79) + '😀' + 'b',
+        publishedAt: '2026-10-07T00:00:00Z',
+      },
+      outcome: {
+        posted: false,
+        skipReason: 'router-error',
+        routerResult: {
+          handles: [],
+          rawJson: 'r'.repeat(499) + '😀',
+          usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 },
+          latencyMs: 1,
+          cacheHit: false,
+          error: 'parse',
+        },
+      },
+      postedYoutubeId: null,
+    });
+
+    const conv = supa.inserts.find((i) => i.table === 'chat_conversations');
+    expect(conv?.row.title).toBe('a'.repeat(79));
+    const evt = supa.inserts.find((i) => i.table === 'chat_match_events');
+    expect(evt?.row.router_raw).toBe('r'.repeat(499));
+    for (const { row } of supa.inserts) expect(JSON.stringify(row)).not.toMatch(LONE_SURROGATE);
   });
 });
