@@ -24,13 +24,12 @@ AC6 "unexpected change" lines list other batches on the same branch: expected. E
 | pathways-new-1 | 40 | parked v1 drafts; known safety fixes: analgesia-in-children tramadol after tonsillectomy under 18 (Medsafe contraindication), IBD calprotectin unit (/L vs /g) |
 
 ## Next steps, in order
-1. Style pass on the 15 (in progress 2026-10-08): Sonnet audit against docs/writing-style.md → `~/Documents/knowledge-refresh-recovery/runs/style-audit-v2.md`; then ONE fresh Opus worker fixes only flagged lines (numbers, hedges, meaning unchanged); rerun the checker on both batches. Frozen headings and frontmatter summaries keep their em dashes unless Brad says otherwise (asked 2026-10-08).
+1. Style pass on the 15 (in progress 2026-10-08): Sonnet audit against docs/writing-style.md → `~/Documents/knowledge-refresh-recovery/runs/style-audit-v2.md`; then ONE fresh Opus worker fixes only flagged lines (numbers, hedges, meaning unchanged); rerun the checker on both batches. Frozen headings and frontmatter summaries keep their em dashes (Brad, 2026-10-08: "leave them as they are").
 2. Answer checks (AC5), spend approved by Brad 2026-10-08: run the 42 fixed-handle cases (categories pathway-refresh-pilot-1-v2, pathway-refresh-references-1-v2) with `npx tsx tools/test-chatbot-matching.ts --fixed-handles-only` against main (baseline) and the branch (candidate); record results in each batch report under the flip rule.
 3. Merge: build a branch from main with ONLY the 15 entries, their fixtures and docs/knowledge-refresh (not the 60 parked); `npm run test:all`; merge to main; Brad deploys from Actions (agents cannot).
 4. Batch 2, then new-1, in batches of at most 20: rerun on checker v3 (v1 reports carry a now-ignored `token` field; body_lines may be stale); one Sonnet fixer per batch; apply the known safety fixes; one fresh Opus adversary + one Codex content review with `--include` sources and reports, from a review branch holding only that batch; sign-off sheet; Brad's AC8.
 
 ## Open items for Brad
-- Em dashes in frozen headings and summaries: change or keep (default keep).
 - ConsumerLab captcha guard edit: blocked by the permission system as a security change; needs Brad to allow it directly.
 - Uncommitted edits to docs/loops/LOOP.md, .gitignore and .claude/hooks/ in the main checkout from another session (LOOP.md guardrails are Brad-only).
 - docs/knowledge-refresh-plan-2026-09-29.md on main predates all of this; this file supersedes its section 4b.
