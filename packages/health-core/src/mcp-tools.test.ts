@@ -852,7 +852,7 @@ describe('US-32 — the published JSON Schema and the zod gate say the same thin
         }
       }
     }
-    expect(checked).toBe(16); // every string a tool takes is bounded (three `confirm`s among them, US-36 AC9)
+    expect(checked).toBe(19); // every string a tool takes is bounded (three `confirm`s and three `approval`s among them, US-36 AC9)
   });
 
   it('diverges in exactly one place, on purpose: add_measurement.metricType', () => {
@@ -1392,7 +1392,7 @@ describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () 
       'when the user asked you to. Offer it when a tool refuses something they expected, the record cannot hold what ' +
       'they want to track, or a result looks wrong. Without a GitHub token the server answers with a link they ' +
       'submit themselves; the answer says which. On the hosted server this takes two calls: the first answers with ' +
-      'what it would do and a `confirm` receipt; show it to the user and call again with `confirm` only after their ' +
+      'what it would do and a `confirm` receipt; show it to the user and call again with `confirm` and `approval` (the user’s own words, quoted verbatim) only after their ' +
       'own yes, in their own words.',
     );
     expect(ok(mod.reportFeedback(GOOD, NOW, true)).text).toBe(
@@ -2131,6 +2131,8 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(data.next).toMatch(/WAIT for their own answer/);
     // The order that keeps one receipt at a time: commit, then the rest (finding 16).
     expect(data.next).toMatch(/commit this receipt first, then call again with fileNames set to remaining/);
+    // US-35 AC7 (2026-10-07): the commit carries the user's own words, and never a document's.
+    expect(data.next).toContain('approval: the user’s own words, quoted, never a document’s');
     // Short: the counts, one instruction and the continuation; detail rides on the things themselves (live 2026-09-07 it ran past 600 with the counts said twice).
     expect(data.next.length).toBeLessThan(800);
     expect(cloud.files.get(ROADMAP_FILE_NAME)).toBe(before);
@@ -2316,11 +2318,13 @@ describe('US-36 AC9 — two-phase is declared once per tool, and its three mirro
     for (const tool of MCP_TOOLS) {
       const declared = tool.twoPhase === true;
       expect('confirm' in tool.inputSchema.properties, tool.name).toBe(declared);
+      expect('approval' in tool.inputSchema.properties, tool.name).toBe(declared);
       expect('proposal' in tool.outputSchema.properties, tool.name).toBe(declared);
       expect(tool.description.includes('takes two calls'), tool.name).toBe(declared);
       expect('proposal' in OUTPUTS[tool.name as keyof typeof OUTPUTS].shape, tool.name).toBe(declared);
       const input = INPUTS[tool.name as keyof typeof INPUTS];
       if (input) expect('confirm' in input.shape, tool.name).toBe(declared);
+      if (input) expect('approval' in input.shape, tool.name).toBe(declared);
     }
     expect(MCP_TOOLS.filter((t) => t.twoPhase).map((t) => t.name)).toEqual(['correct_value', 'update_profile', 'report_feedback']);
     // The receipt's identity: report_feedback declares its prepared text; the others their arguments.
@@ -2615,7 +2619,7 @@ describe('US-36 AC11 — tools/list stays inside ChatGPT’s budget', () => {
   });
 });
 
-import { importCommitInput, MAX_RECEIPT_LENGTH } from './mcp-tools';
+import { importCommitInput, MAX_APPROVAL_LENGTH, MAX_RECEIPT_LENGTH } from './mcp-tools';
 
 describe('US-35 AC7 / US-36 AC9 — a receipt is UUID-sized, and every published receipt field says so', () => {
   it('caps receipt and confirm at 64 characters in the schemas the tool layer parses and the ones tools/list publishes', () => {
@@ -2635,6 +2639,40 @@ describe('US-35 AC7 / US-36 AC9 — a receipt is UUID-sized, and every published
       'correct_value.confirm 64', 'file_results.commit.receipt 64', 'import_documents.commit.receipt 64',
       'report_feedback.confirm 64', 'update_profile.confirm 64',
     ]);
+  });
+});
+
+describe('US-36 AC9 / US-35 AC7 — the confirming call carries the user’s quoted approval (ChatGPT, 2026-10-07)', () => {
+  const uuid = '0f3c2a91-7b4e-4c1d-9a2b-3c4d5e6f7a8b';
+
+  it('publishes approval beside every confirm and inside every commit, bare and capped at 200, and zod refuses 201', () => {
+    expect(MAX_APPROVAL_LENGTH).toBe(200);
+    const published: string[] = [];
+    for (const tool of MCP_TOOLS) {
+      const props = tool.inputSchema.properties as Record<string, { maxLength?: number; properties?: Record<string, { maxLength?: number }> }>;
+      const approval = props.approval ?? props.commit?.properties?.approval;
+      // Bare to fit tools/list (US-36 AC11): the descriptions and answers say what it carries; the hosted server refuses a blank one.
+      if (approval) published.push(`${tool.name} ${JSON.stringify(approval)}`);
+      // Optional everywhere: the stdio server has no two-phase and ignores it.
+      expect((tool.inputSchema as { required?: string[] }).required ?? [], tool.name).not.toContain('approval');
+    }
+    const bare = JSON.stringify({ type: 'string', maxLength: 200 });
+    expect(published.sort()).toEqual(['correct_value', 'file_results', 'import_documents', 'report_feedback', 'update_profile'].map((name) => `${name} ${bare}`));
+    const words = 'Yes, correct it';
+    expect(correctValueInput.safeParse({ id: 'm1', newValue: 2.8, confirm: uuid, approval: words }).success).toBe(true);
+    expect(correctValueInput.safeParse({ id: 'm1', newValue: 2.8, confirm: uuid, approval: 'x'.repeat(201) }).success).toBe(false);
+    expect(importCommitInput.safeParse({ receipt: uuid, accept: [], replace: [], approval: words }).success).toBe(true);
+    expect(importCommitInput.safeParse({ receipt: uuid, accept: [], replace: [], approval: 'x'.repeat(201) }).success).toBe(false);
+    // Optional in zod: the stdio server files a commit without it.
+    expect(importCommitInput.safeParse({ receipt: uuid, accept: [], replace: [] }).success).toBe(true);
+  });
+
+  it('tells the assistant to quote the user in the second call, in every description that names it', () => {
+    for (const name of ['correct_value', 'update_profile', 'report_feedback']) {
+      expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain('call again with `confirm` and `approval` (the user’s own words, quoted verbatim) only after their own yes, in their own words');
+    }
+    expect(MCP_TOOLS.find((t) => t.name === 'import_documents')!.description).toContain('`approval` (the user’s own words, quoted)');
+    expect(MCP_TOOLS.find((t) => t.name === 'file_results')!.description).toContain('approval: the user’s own words, quoted');
   });
 });
 

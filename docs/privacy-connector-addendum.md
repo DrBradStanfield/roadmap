@@ -74,6 +74,13 @@ file stays. A file nobody acts on is removed at your next import, by whichever r
 take, once it is two hours old. If you never import again it stays in your own folder,
 where you can delete it yourself.
 
+A call that confirms a change, or files what your assistant found, also carries your
+short approval quoted in your own words (at most 200 characters). The server reads it
+only to check it is there and within that length, holds it in memory for that one
+request, and never stores,
+logs or counts it. It exists because ChatGPT's safety layer judges the call itself for
+evidence of your approval.
+
 ## What we store
 
 For the connector: no account, no copy of your health data, and no row that

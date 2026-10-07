@@ -256,7 +256,9 @@ with a `hint` in plain words (the type, the size limit, the day's quota, a missi
 , answered with `fileDates: [{ file, date }]`), and `next` says what to do with what it found.
 Three tools are permanent — `correct_value`, `update_profile`, `report_feedback` — and on
 the hosted server they take two calls: a proposal with a `confirm` receipt, then the same
-call with it after your yes (the mechanism and its limits: docs/mcp-architecture.md §3).
+call with it after your yes, carrying your words as `approval`, quoted. An import's
+`commit` carries `approval` the same way. The server holds those words for one request
+and never stores or logs them (the mechanism and its limits: docs/mcp-architecture.md §3).
 Every tool declares an `outputSchema` and answers with `structuredContent` beside the
 text: the same answer typed, so a row id is read, not parsed out of a sentence. A refusal
 carries none, it is an error result.

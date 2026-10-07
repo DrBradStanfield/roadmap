@@ -34,6 +34,8 @@ import { ROADMAP_FILE_NAME, StorageError } from '../../packages/health-core/src/
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 
+/** The user's own words, quoted in every commit (US-35 AC7, 2026-10-07). */
+const APPROVED = 'Yes, file them';
 const PDF = new TextEncoder().encode('%PDF-1.4\n1 0 obj\nendobj\n');
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0]);
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]);
@@ -127,7 +129,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     return answer;
   }
   async function refusalOf(surface: ReturnType<typeof surfaceFor>, receipt: string, now = NOW) {
-    const answer = await surface.open({ receipt, accept: [], replace: [] }, file, now, deadline());
+    const answer = await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, now, deadline());
     return 'refusal' in answer ? answer.refusal : null;
   }
   const pendingOf = (cloud: MemoryCloud) => JSON.parse(cloud.files.get(PENDING)!.json) as Record<string, unknown>;
@@ -148,9 +150,9 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     expect(receipt.length).toBeLessThanOrEqual(MAX_RECEIPT_LENGTH);
     expect(expiresAt).toBe('2026-09-02T11:00:00.000Z');
     expect(pendingOf(cloud)).toEqual({ v: 2, payload: PAYLOAD, issued: Date.parse(NOW) / 1000, mac: expect.stringMatching(/^[0-9a-f]{32}$/) });
-    expect(await surface.open({ receipt, accept: [], replace: [] }, file, NOW, deadline())).toEqual(PAYLOAD);
+    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, NOW, deadline())).toEqual(PAYLOAD);
     // Still good at the last second of its hour.
-    expect(await surface.open({ receipt, accept: [], replace: [] }, file, '2026-09-02T11:00:00.000Z', deadline())).toEqual(PAYLOAD);
+    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, '2026-09-02T11:00:00.000Z', deadline())).toEqual(PAYLOAD);
   });
 
   it('a receipt naming no pending file is told so in words — committed, discarded or mistyped — and charges nothing', async () => {
@@ -201,7 +203,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     unchargedOn('connection-a');
     unchargedOn('connection-b');
     resetMcpMemory();
-    expect(await surface.open({ receipt, accept: [], replace: [] }, file, NOW, deadline())).toEqual(PAYLOAD);
+    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, NOW, deadline())).toEqual(PAYLOAD);
   });
 
   it('an hour and a second after the extract it has expired, in its own words', async () => {
@@ -241,7 +243,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     const cloud = new MemoryCloud();
     const surface = surfaceFor('connection-a', cloud);
     cloud.files.set(PENDING, { json: JSON.stringify({ v: 2, payload: PAYLOAD, issued: Date.parse(NOW) / 1000, mac: '0'.repeat(32) }), version: 1, modified: NOW });
-    const answer = await surface.open({ receipt: PAYLOAD.id, accept: [], replace: ['c1'] }, file, NOW, deadline());
+    const answer = await surface.open({ receipt: PAYLOAD.id, accept: [], replace: ['c1'], approval: APPROVED }, file, NOW, deadline());
     expect('refusal' in answer && answer.refusal).toMatch(/not valid for this connection/);
     expect(cloud.files.has(PENDING)).toBe(true);
     unchargedOn('connection-a');
@@ -251,7 +253,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     const surface = surfaceFor('connection-a');
     const { receipt } = await stashed(surface);
     const bogus = Array.from({ length: 300 }, (_, i) => `x${i}`);
-    const answer = await surface.open({ receipt, accept: [], replace: bogus }, file, NOW, deadline());
+    const answer = await surface.open({ receipt, accept: [], replace: bogus, approval: APPROVED }, file, NOW, deadline());
     expect('refusal' in answer && answer.refusal).toMatch(/not a candidate/);
     unchargedOn('connection-a');
   });
@@ -260,9 +262,86 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     const surface = surfaceFor('connection-a');
     const { receipt } = await stashed(surface);
     process.env.MCP_SEAL_KEYS = `${Buffer.alloc(32, 8).toString('base64')},${Buffer.alloc(32, 7).toString('base64')}`;
-    expect(await surface.open({ receipt, accept: [], replace: [] }, file, NOW, deadline())).toEqual(PAYLOAD);
+    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, NOW, deadline())).toEqual(PAYLOAD);
     process.env.MCP_SEAL_KEYS = Buffer.alloc(32, 8).toString('base64');
     expect(await refusalOf(surface, receipt)).toMatch(/not valid/);
+  });
+});
+
+describe('US-35 AC7 / US-36 AC9 — a commit quotes the user’s approval, checked before anything is read or charged (ChatGPT, 2026-10-07)', () => {
+  const NOW = '2026-09-02T10:00:00.000Z';
+  const PAYLOAD: ImportPayload = { id: '1111aaaa-2222-4333-8444-5555555555cc', route: 'dropbox', createdAt: NOW, candidates: [], documents: [] };
+  const PENDING = `imports/pending-${PAYLOAD.id}.json`;
+  const file = createEmptyFile({ deviceId: 'test', now: NOW });
+  const deadline = () => Date.now() + MCP_IMPORT_BUDGET_MS;
+  const QUOTE = 'If the user has not yet answered in their own words, show them the candidates and end your turn. Otherwise commit again with the same receipt and approval set to the user’s own words approving these candidates, quoted from their message. Nothing was written.';
+
+  beforeEach(() => resetMcpMemory());
+
+  it('refuses a commit with no approval, or a blank one, before it reads the pending file or charges; the same receipt then commits with one', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const stashed = await surface.stash(PAYLOAD, deadline());
+    if ('refusal' in stashed) throw new Error(stashed.refusal);
+    const read = vi.spyOn(adapter, 'read');
+    for (const approval of [undefined, '', '   ', '\n\t']) {
+      const commit = { receipt: stashed.receipt, accept: [], replace: [], ...(approval === undefined ? null : { approval }) };
+      expect(await surface.open(commit, file, NOW, deadline()), JSON.stringify(approval)).toEqual({ refusal: QUOTE });
+    }
+    expect(read).not.toHaveBeenCalled();
+    expect(cloud.files.has(PENDING)).toBe(true);
+    expect(chargeWrites(connectionKey({ rt: 'connection-a' }), WRITES_PER_HOUR)).toBeNull();
+    resetMcpMemory();
+    expect(await surface.open({ receipt: stashed.receipt, accept: [], replace: [], approval: APPROVED }, file, NOW, deadline())).toEqual(PAYLOAD);
+  });
+
+  it('through the tool: no approval is refused in words, a 201-character one by the schema, and neither writes or spends the pending file', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'test', now: NOW }), null);
+    const importer = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const stashed = await importer.stash(PAYLOAD, deadline());
+    if ('refusal' in stashed) throw new Error(stashed.refusal);
+    const call = (commit: Record<string, unknown>) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'file_results', { commit }, NOW, { importer });
+    const before = cloud.files.get(ROADMAP_FILE_NAME);
+
+    const bare = await call({ receipt: stashed.receipt, accept: [], replace: [] });
+    expect(bare).toMatchObject({ isError: true, text: QUOTE });
+    const long = await call({ receipt: stashed.receipt, accept: [], replace: [], approval: 'y'.repeat(201) });
+    expect(long).toMatchObject({ isError: true, text: IMPORT_REFUSALS.commit });
+    // Never echoed: the refusal does not carry the user's words back.
+    expect(long.text).not.toContain('yyyy');
+    expect(cloud.files.get(ROADMAP_FILE_NAME)).toBe(before);
+    expect(cloud.files.has(PENDING)).toBe(true);
+
+    const ok = await call({ receipt: stashed.receipt, accept: [], replace: [], approval: 'Yes, file the letter' });
+    expect(ok.isError).toBe(false);
+    expect(cloud.files.has(PENDING)).toBe(false);
+  });
+
+  it('never writes the user’s words anywhere: not into the record on a commit, not into the pending file on a refused one (adversarial review R7)', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'test', now: NOW }), null);
+    const importer = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const call = (args: unknown) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'file_results', args, NOW, { importer, latestDay: '2026-09-02' });
+    const proposed = await call({
+      sourceFileName: 'labs.pdf', classification: 'lab_report', collectedOn: '2026-08-20',
+      values: [{ metric: 'ldl', printedName: 'LDL Cholesterol', value: 2.8, unit: 'mmol/L' }],
+    });
+    expect(proposed.isError).toBe(false);
+    const { receipt, candidates } = OUTPUTS.file_results.parse(proposed.structured);
+    const marker = 'Yes file it qx9-approval-marker';
+    // Refused after the words were read (an id not in the receipt): the pending file stays, without them.
+    expect((await call({ commit: { receipt, accept: ['nope'], replace: [], approval: marker } })).isError).toBe(true);
+    const pending = `imports/pending-${receipt}.json`;
+    expect(cloud.files.get(pending)!.json).not.toContain('qx9-approval-marker');
+    const filed = await call({ commit: { receipt, accept: candidates.map((c) => c.id), replace: [], approval: marker } });
+    expect(filed.isError).toBe(false);
+    expect(filed.text).not.toContain('qx9-approval-marker');
+    expect((await adapter.read(ROADMAP_FILE_NAME)).body).toMatchObject({ measurements: [expect.objectContaining({ metricType: 'ldl' })] });
+    for (const [name, stored] of cloud.files) expect(stored.json, name).not.toContain('qx9-approval-marker');
   });
 });
 
@@ -293,13 +372,13 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
     expect(data.receipt).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     expect(cloud.files.has(`imports/pending-${data.receipt}.json`)).toBe(true);
 
-    const commit = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
+    const commit = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
     expect(commit.isError).toBe(false);
     const stored = (await adapter.read(ROADMAP_FILE_NAME)).body as ReturnType<typeof createEmptyFile>;
     expect(stored.measurements).toEqual([expect.objectContaining({ metricType: 'ldl', value: 2.8, source: 'lab_import' })]);
     expect(cloud.files.has(`imports/pending-${data.receipt}.json`)).toBe(false);
 
-    const again = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
+    const again = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
     expect(again.isError).toBe(true);
     expect(again.text).toContain('names no pending import');
   });
@@ -451,7 +530,7 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
     if ('refusal' in stashed) throw new Error(stashed.refusal);
     const seen: AbortSignal[] = [];
     adapter.read = hang(seen);
-    const answer = await atDeadline(surface.open({ receipt: stashed.receipt, accept: [], replace: [] }, file, NOW, deadline()));
+    const answer = await atDeadline(surface.open({ receipt: stashed.receipt, accept: [], replace: [], approval: APPROVED }, file, NOW, deadline()));
     expect(answer).toEqual({ refusal: expect.stringMatching(/did not read in time/) });
     abortedOnce(seen);
     expect(chargeWrites(connectionKey({ rt: 'rt' }), WRITES_PER_HOUR)).toBeNull();

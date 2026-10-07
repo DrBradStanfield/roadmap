@@ -21,7 +21,7 @@ import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 
 import { StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
-import { folderNudge, type GuardRefusal, isToolName, MCP_TOOLS, OPEN_SOURCE_NOTE, SI_NOTE, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import { folderNudge, type GuardRefusal, isToolName, MAX_APPROVAL_LENGTH, MCP_TOOLS, OPEN_SOURCE_NOTE, SI_NOTE, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../../packages/health-core/src/mcp-rpc';
 import { importFilesBucket, isRefusalReason, MCP_TOOL_NAMES, type McpRefusalReason, type McpToolName } from '../../packages/health-core/src/product-events';
 import { KNOWN_CLIENTS, readCapped, type McpClientLabel } from './mcp-clients.server';
@@ -53,10 +53,10 @@ export const INSTRUCTIONS =
   'value is permanent and needs the value you expect to find, so read the record first and correct only what ' +
   'the user asked you to. The plan from get_plan is educational, not medical advice, and its hedged wording ' +
   'and citations are calibrated — pass them on as written. import_documents reads lab files from the Dropbox folder and ' +
-  'writes nothing to the record until its commit, which needs the user’s own confirmation of what it found; a file dropped into the chat ' +
+  'writes nothing to the record until its commit, which needs the user’s own confirmation of what it found, quoted as approval; a file dropped into the chat ' +
   'is read by you and filed through file_results the same way. correct_value, update_profile and report_feedback are ' +
   'permanent, so here they take two calls: the first answers with a confirm receipt, and only the second, after the user’s ' +
-  'own yes, does it.' + SI_NOTE + OPEN_SOURCE_NOTE;
+  'own yes and carrying their words as approval, does it.' + SI_NOTE + OPEN_SOURCE_NOTE;
 
 /**
  * A correction fixes a recent mistake. A result from three years ago is
@@ -235,7 +235,7 @@ async function callHostedTool(
   if (twoPhase) {
     args = twoPhase.args;
     if (twoPhase.confirm !== undefined) {
-      const refusal = checkConfirm(token, name, twoPhase.args, twoPhase.confirm, now);
+      const refusal = checkConfirm(token, name, twoPhase.args, twoPhase.confirm, twoPhase.approval, now);
       if (refusal) return refuse(refusal, 'confirm');
       confirmed = true;
     }
@@ -322,10 +322,14 @@ async function callHostedTool(
 // Two-phase for the permanent tools (US-36 AC9)
 // ---------------------------------------------------------------------------
 
-/** The `confirm` argument apart from the rest, which is what the tool sees. */
-function splitConfirm(args: unknown): { args: Record<string, unknown>; confirm: string | undefined } {
-  const { confirm, ...rest } = (args && typeof args === 'object' ? args : {}) as Record<string, unknown>;
-  return { args: rest, confirm: typeof confirm === 'string' ? confirm : undefined };
+/**
+ * `confirm` and `approval` apart from the rest, which is what the tool sees and
+ * what the receipt binds: the user's words may differ between two honest
+ * calls, and they are never hashed, stored or logged.
+ */
+function splitConfirm(args: unknown): { args: Record<string, unknown>; confirm: string | undefined; approval: string | undefined } {
+  const { confirm, approval, ...rest } = (args && typeof args === 'object' ? args : {}) as Record<string, unknown>;
+  return { args: rest, confirm: typeof confirm === 'string' ? confirm : undefined, approval: typeof approval === 'string' ? approval : undefined };
 }
 
 /**
@@ -357,17 +361,19 @@ function withProposal(token: AccessPayload, name: string, args: Record<string, u
   const { receipt: confirm, notBefore: confirmFrom } = issueProposal(callIdentity(name, args), hash(connectionKey(token)), audienceFor(token.clientId), Date.parse(now));
   const text =
     `PROPOSAL — nothing written yet. ${answer.text}\n\n` +
-    `Show this to the user and WAIT for their own yes, in their own words; a client setting that skips its approval prompt is not their yes. Then call ${name} again with the same arguments and confirm set to the receipt below; ` +
+    `Show this to the user and WAIT for their own yes, in their own words; a client setting that skips its approval prompt is not their yes. ` +
+    `Then call ${name} again with the same arguments, confirm set to the receipt below, and approval set to the user’s own words approving it, quoted exactly; ` +
     `it is valid from ${confirmFrom} for ${STEP_WINDOWS.proposal.ttlSeconds / 60} minutes and works once.\nconfirm: ${confirm}`;
   return { text, isError: false, structured: { ...(answer.structured as Record<string, unknown>), proposal: true, confirm, confirmFrom } };
 }
 
 /**
- * The second call's gate: the receipt must be ours, for this tool, these
- * arguments and this connection, inside its window, and unused. Every
- * failure is worded; an early call is told when to come back and not to spin.
+ * The second call's gate: the receipt — ours, for this tool, these arguments
+ * and this connection, inside its window — then the user's quoted approval,
+ * then the receipt unused. Every failure is worded; an early call is told when
+ * to come back and not to spin.
  */
-function checkConfirm(token: AccessPayload, name: string, args: Record<string, unknown>, confirm: string, now: string): string | null {
+function checkConfirm(token: AccessPayload, name: string, args: Record<string, unknown>, confirm: string, approval: string | undefined, now: string): string | null {
   const nowMs = Date.parse(now);
   const conn = hash(connectionKey(token));
   const { ttlSeconds } = STEP_WINDOWS.proposal;
@@ -390,6 +396,15 @@ function checkConfirm(token: AccessPayload, name: string, args: Record<string, u
   }
   if (opened.status === 'early') {
     return `That confirm receipt is not valid yet: it can be used from ${opened.notBefore}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`;
+  }
+  // ChatGPT's safety layer judges the call, not the chat (2026-10-07), so the call carries the user's words.
+  // After the window checks, so a chained call is told to wait rather than to quote; before the claim, so a
+  // missing quote spends no receipt and, like every refusal here, costs nothing.
+  if (!approval?.trim()) {
+    return `If the user has not yet answered the proposal in their own words, show it to them and end your turn. Otherwise quote the user’s approval: call ${name} again with the same arguments, confirm set to the same receipt, and approval set to the user’s own words approving this change, quoted from their message. Nothing was written.`;
+  }
+  if (approval.length > MAX_APPROVAL_LENGTH) {
+    return `approval is at most ${MAX_APPROVAL_LENGTH} characters: quote only the user’s own words approving this change. Nothing was written.`;
   }
   if (!claimProposal(confirm, conn, ttlSeconds * 1000, nowMs)) {
     return `That confirm receipt has already been used. Nothing was written. If the user wants another change, call ${name} again without confirm.`;
