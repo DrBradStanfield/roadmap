@@ -1,0 +1,225 @@
+[
+  {
+    "query": "I take ibuprofen most days for my knee and I'm thinking of starting a low-dose lithium supplement. Is that a problem?",
+    "category": "pathway-refresh-references-1-v2",
+    "source": "knowledge-refresh-references-1-v2-2026-10-08",
+    "answer_handles": [
+      "lithium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "NSAID",
+      "doctor"
+    ],
+    "notes": "Safety. Ruling 1 restores the interaction warnings (thiazides, ACE inhibitors, ARBs, NSAIDs) with the list stated as incomplete. Article already says NSAIDs reduce lithium clearance by the kidneys; one case report of severe toxicity on high-dose lithium with nabumetone."
+  },
+  {
+    "query": "Is lithium orotate from the health store safe to take every day for my mood?",
+    "category": "pathway-refresh-references-1-v2",
+    "source": "knowledge-refresh-references-1-v2-2026-10-08",
+    "answer_handles": [
+      "lithium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "kidney",
+      "rats"
+    ],
+    "must_not_mention": [
+      "no side effects"
+    ],
+    "notes": "Safety. Article: 1979 rat study found lithium orotate reduced kidney function; authors wrote it was inadvisable for treating patients. Doses and benefits are not established; prescription lithium is a different dose."
+  },
+  {
+    "query": "My wife is pregnant. Can she take low-dose lithium for her anxiety?",
+    "category": "pathway-refresh-references-1-v2",
+    "source": "knowledge-refresh-references-1-v2-2026-10-08",
+    "answer_handles": [
+      "lithium-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "Ebstein",
+      "doctor"
+    ],
+    "notes": "Safety. Ruling 1 restores the pregnancy warning (Ebstein's anomaly) from the FDA label. Must route to the doctor."
+  },
+  {
+    "query": "I take warfarin. Can I start a vitamin K2 supplement for my bones?",
+    "category": "pathway-refresh-references-1-v2",
+    "source": "knowledge-refresh-references-1-v2-2026-10-08",
+    "answer_handles": [
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "warfarin",
+      "doctor"
+    ],
+    "must_not_mention": [
+      "safe to take"
+    ],
+    "notes": "Safety. Article: vitamin K can reduce warfarin's effect, possibly with MK-7 as low as 10 mcg a day because of its long half-life; experts advise against low-dose supplementation in warfarin users; do not start unless advised. Ruling 7 adds NIH's consistent-intake sentence."
+  },
+  {
+    "query": "I'm on Coumadin and I love kale and spinach. Do I have to stop eating them?",
+    "category": "pathway-refresh-references-1-v2",
+    "source": "knowledge-refresh-references-1-v2-2026-10-08",
+    "answer_handles": [
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "consistent"
+    ],
+    "must_not_mention": [
+      "avoid all"
+    ],
+    "notes": "Safety. Ruling 7: keep vitamin K intake from food and supplements consistent, because sudden changes can raise or lower warfarin's effect. Article cites a study: under 250 mcg/day from food on 4.4 mg warfarin vs 5.8 mg above."
+  },
+  {
+    "query": "Does a vitamin K supplement stop calcium building up in my arteries?",
+    "category": "pathway-refresh-references-1-v2",
+    "source": "knowledge-refresh-references-1-v2-2026-10-08",
+    "answer_handles": [
+      "vitamin-k-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "720",
+      "did not"
+    ],
+    "must_not_mention": [
+      "prevents"
+    ],
+    "notes": "Changed/hedged. Daily 720 mcg MK-7 plus vitamin D for two years did not slow aortic valve calcification in 333 people (Diederichsen 2022); a CAC trial (Hasific 2026) found a slight slowing (22% vs 27%). Ruling 12: 'daily'."
+  },
+  {
+    "query": "What's the most magnesium I can safely take as a supplement each day?",
+    "category": "pathway-refresh-references-1-v2",
+    "source": "knowledge-refresh-references-1-v2-2026-10-08",
+    "answer_handles": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "must_mention": [
+      "350"
+    ],
+    "notes": "Upper limit. Article: UL for supplemental magnesium is 350 mg/day for adults, based on osmotic diarrhea, not systemic toxicity; food magnesium does not count."
+  },
+  {
+    "query": "I have kidney disease. Is a magnesium supplement okay for my cramps?",
+    "category": "pathway-refresh-references-1-v2",
+    "source": "knowledge-refresh-references-1-v2-2026-10-08",
+    "answer_handles": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "must_mention": [
+      "kidney",
+      "doctor"
+    ],
+    "must_not_mention": [
+      "safe for everyone"
+    ],
+    "notes": "Safety. Article: toxicity is rare with normal kidney function, but renal impairment reduces clearance and supplementation is potentially dangerous; severe kidney disease should avoid magnesium supplements."
+  },
+  {
+    "query": "I take digoxin for my heart. Do I need to worry about magnesium pills?",
+    "category": "pathway-refresh-references-1-v2",
+    "source": "knowledge-refresh-references-1-v2-2026-10-08",
+    "answer_handles": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
+    "must_mention": [
+      "digoxin",
+      "doctor"
+    ],
+    "notes": "Interaction. Ruling 8: digoxin line follows ConsumerLab (physician monitors magnesium and supervises use); also magnesium hydroxide/trisilicate can affect digoxin absorption. Article table: low magnesium raises digoxin toxicity risk."
+  },
+  {
+    "query": "Will creatine damage my kidneys? My creatinine ran a bit high after I started it.",
+    "category": "pathway-refresh-references-1-v2",
+    "source": "knowledge-refresh-references-1-v2-2026-10-08",
+    "answer_handles": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "creatinine",
+      "doctor"
+    ],
+    "must_not_mention": [
+      "does not indicate actual kidney damage",
+      "always harmless"
+    ],
+    "notes": "Changed. Ruling 5: a rise usually reflects creatine turnover rather than kidney damage, and still needs checking by your doctor. Article: creatine breaks down to creatinine; creatine ethyl ester may raise it more."
+  },
+  {
+    "query": "How much creatine should I take each day for muscle strength?",
+    "category": "pathway-refresh-references-1-v2",
+    "source": "knowledge-refresh-references-1-v2-2026-10-08",
+    "answer_handles": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "5 g"
+    ],
+    "must_not_mention": [
+      "10 g/day for brain"
+    ],
+    "notes": "Dose. Article: monohydrate 3-5 g/day; RCT in over-65s used 5 g/day with resistance training. Ruling 4 deletes the unverified youth 3 g/day and brain 10 g/day lines."
+  },
+  {
+    "query": "Is it OK for my 15 year old son to take creatine for football?",
+    "category": "pathway-refresh-references-1-v2",
+    "source": "knowledge-refresh-references-1-v2-2026-10-08",
+    "answer_handles": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "doctor"
+    ],
+    "must_not_mention": [
+      "3 g/day is the recommended dose for youth"
+    ],
+    "notes": "Safety. Ruling 4 deletes the unverified 'recommended dose for youth: 3 g/day'. Answer should defer to a doctor and not invent a youth dose."
+  },
+  {
+    "query": "Does taurine actually help heart failure? My dad has it.",
+    "category": "pathway-refresh-references-1-v2",
+    "source": "knowledge-refresh-references-1-v2-2026-10-08",
+    "answer_handles": [
+      "taurine-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "14 patients",
+      "larger"
+    ],
+    "must_not_mention": [
+      "several RCTs",
+      "proven"
+    ],
+    "notes": "Changed. Ruling 9: CHF row matches the abstract (14 patients, 4-week crossover, no dose) and drops 'several RCTs'. Article: small trials mostly from one research group; larger independent replication needed; potential adjunct to standard care, not a replacement."
+  },
+  {
+    "query": "How much taurine is a typical daily dose, and is it safe?",
+    "category": "pathway-refresh-references-1-v2",
+    "source": "knowledge-refresh-references-1-v2-2026-10-08",
+    "answer_handles": [
+      "taurine-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "6 g",
+      "doctor"
+    ],
+    "notes": "Dose. Article summary: 1-6 g/day typical; 2024 meta-analysis of 25 RCTs (1,024 participants, 0.5-6 g/day). Hedged safety wording per ruling 9."
+  },
+  {
+    "query": "Can taurine lower my blood pressure instead of my tablets?",
+    "category": "pathway-refresh-references-1-v2",
+    "source": "knowledge-refresh-references-1-v2-2026-10-08",
+    "answer_handles": [
+      "taurine-benefits-forms-dosing-and-side-effects"
+    ],
+    "must_mention": [
+      "doctor"
+    ],
+    "must_not_mention": [
+      "replace your medication",
+      "stop your"
+    ],
+    "notes": "Safety. Taurine may modestly reduce blood pressure in prehypertension and metabolic syndrome per the 2024 meta-analysis; never a substitute for prescribed treatment. Ruling 9 softens 'consistent evidence'."
+  }
+]
