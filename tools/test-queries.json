@@ -3587,6 +3587,40 @@
     "notes": "US-45 AC7 (medicine spacing) + AC4. The live store's direction, word for word: 'Take other medicines at least two hours before or after a scoop.' Fails on products.md before 0cc47a16 (no spacing direction). answer_handles = [] (not router-pinned: the test workspace that runs the router was out on 2026-10-07; production may add potassium or psyllium articles)."
   },
   {
+    "query": "How does Sleep by Dr Brad work?",
+    "category": "product-sleep",
+    "source": "smoke-2026-10-08",
+    "surface": "brand",
+    "answer_handles": [],
+    "must_mention": [
+      "melatonin",
+      "glycine"
+    ],
+    "must_not_mention": [
+      "disease claim",
+      "treatment for any condition",
+      "daily multivitamin",
+      "350 mg"
+    ],
+    "notes": "Smoke 2026-10-08 (commerce chat, guest): the reply ended with \"This isn't a disease claim. MicroVitamin is a daily multivitamin, not a treatment for any condition.\" (wrong product, and claims meta-talk) because chat-posture-brand.md told the bot to append that line to any structure/function benefit; it also volunteered the Australian MicroVitamin + Sleep magnesium caveat (350 mg) unasked. answer_handles = [] (not router-pinned)."
+  },
+  {
+    "query": "Can I take Sleep by Dr Brad with MicroVitamin? I live in Australia.",
+    "category": "product-sleep",
+    "source": "smoke-2026-10-08",
+    "surface": "brand",
+    "answer_handles": [],
+    "must_mention": [
+      "386",
+      "350"
+    ],
+    "must_not_mention": [
+      "disease claim",
+      "treatment for any condition"
+    ],
+    "notes": "Smoke 2026-10-08 guard: scoping the combination answer to when it is asked must not drop it. Australian MicroVitamin v8.5 260 mg + Sleep 126 mg = 386 mg, above the NHMRC 350 mg upper level for supplemental magnesium. answer_handles = [] (not router-pinned)."
+  },
+  {
     "query": "My troponin blood test came back normal. Does that mean my chest pain wasn't a heart problem?",
     "category": "pathway-refresh-pilot-1-v2",
     "source": "knowledge-refresh-pilot-1-v2-2026-10-08",

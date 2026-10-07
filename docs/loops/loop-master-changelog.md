@@ -5,6 +5,11 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-10-07 (Brad-directed: final brief):** Brad, live in the sentry-fix
+  run: "you need to give me a brief summary of what was done, why, and what's
+  outstanding (with context so that I can make informed decisions) for your
+  final message". Reporting gains that rule. Net 0 lines: the email and
+  commit-early bullets were compressed to make room (195 lines).
 - **2026-10-04 (Brad-directed: no Codex in cloud loops):** Brad: "run Codex only on your Mac, and let
   the cloud loops rely on the Claude adversary alone." Codex signs in only with his ChatGPT
   subscription on his Mac; he does not want API credits spent. Orchestration's "Codex beside the

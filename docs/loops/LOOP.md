@@ -102,17 +102,17 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   unreachable source is a NAMED gap — silence is never success; never fabricate
   numbers.** Distinguish signal (repeated, actionable) from noise.
 - **No email by default (Brad, 2026-08-10): the committed report IS the
-  delivery.** Contact Brad ONLY when a run needs his decision: open a GitHub
-  issue "🎯 Decision needed: <topic>" — decision, options, recommendation,
-  report link, fleet-dashboard URL (in REGISTRY.md) — **assign + @mention
-  @DrBradStanfield**. Cloud sessions author issues AS Brad, whom GitHub never
-  notifies of self-actions (probe-verified 2026-08-13) — the `loop-issue-notify`
-  workflow's bot comment is what emails him (missing/disabled = a delivery
-  gap in the retro). Never Gmail drafts.
-- **Commit early — truncation-proof the run**: commit the report with its data
-  as soon as the numbers are in, BEFORE polish and retro (runs share a
-  plan-usage pool and can be cut off mid-flight; a truncated run must still
-  leave its data on main, marked "run truncated after <step>").
+  delivery.** A decision for Brad → GitHub issue "🎯 Decision needed: <topic>"
+  (decision, options, recommendation, report link, fleet-dashboard URL from
+  REGISTRY.md), **assigned + @mentioning @DrBradStanfield**. Issues are authored
+  AS Brad, so GitHub never notifies him; the `loop-issue-notify` bot comment
+  emails him (missing = a retro gap). Never Gmail drafts.
+- **Commit early — truncation-proof the run**: commit report + data as soon as
+  the numbers are in, before polish and retro; a cut-off run still leaves its
+  data on main, marked "run truncated after <step>".
+- **Final chat message = a brief for Brad (Brad, 2026-10-07)**: what was done
+  and why, what is outstanding, what needs his decision — each with the context
+  (options, risk, recommendation) to decide unaided. Nothing needed → say so.
 
 ## Repo rules (inherited from CLAUDE.md — binding)
 - **READ `CLAUDE.md` yourself at the start of every run — never assume it
