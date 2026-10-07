@@ -302,6 +302,8 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     expect(proposed.isError).toBe(false);
     expect(proposed.text).toMatch(/^PROPOSAL — nothing written yet\./);
     expect(proposed.text).toContain('WAIT for their own yes, in their own words');
+    // A bare "yes" quoted alone was blocked live by ChatGPT's safety layer (2026-10-07); an approval naming the change passed.
+    expect(proposed.text).toContain('ask them to name the change');
     const data = OUTPUTS.correct_value.parse(proposed.structured);
     expect(data).toMatchObject({ proposal: true, correctsId: LDL_ID, value: 2.8, confirmFrom: at(PROPOSAL_NBF_SECONDS) });
     const receipt = data.confirm!;

@@ -361,7 +361,7 @@ function withProposal(token: AccessPayload, name: string, args: Record<string, u
   const { receipt: confirm, notBefore: confirmFrom } = issueProposal(callIdentity(name, args), hash(connectionKey(token)), audienceFor(token.clientId), Date.parse(now));
   const text =
     `PROPOSAL — nothing written yet. ${answer.text}\n\n` +
-    `Show this to the user and WAIT for their own yes, in their own words; a client setting that skips its approval prompt is not their yes. ` +
+    `Show this to the user and WAIT for their own yes, in their own words; ask them to name the change (“Yes, change X from A to B”), since a bare “yes” quoted alone may not be accepted as approval; a client setting that skips its approval prompt is not their yes. ` +
     `Then call ${name} again with the same arguments, confirm set to the receipt below, and approval set to the user’s own words approving it, quoted exactly; ` +
     `it is valid from ${confirmFrom} for ${STEP_WINDOWS.proposal.ttlSeconds / 60} minutes and works once.\nconfirm: ${confirm}`;
   return { text, isError: false, structured: { ...(answer.structured as Record<string, unknown>), proposal: true, confirm, confirmFrom } };
