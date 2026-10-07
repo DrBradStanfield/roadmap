@@ -19,13 +19,11 @@ At high doses, lithium is a prescription drug for bipolar disorder, most often a
 
 Low-dose lithium supplements typically provide a fraction of a milligram to 20 mg of elemental lithium a day, most often as lithium orotate or lithium aspartate [1]. That is a small fraction of the dose used for bipolar disorder [1]. Interest in these doses comes from studies linking lithium in drinking water to lower rates of suicide and dementia, a small Alzheimer's trial of 0.3 mg per day, and a mouse study of lithium in Alzheimer's disease [1].
 
-Americans get roughly 1 mg of lithium a day from what they eat and drink, and some experts have recommended a daily intake of 1 mg for adults [1].
-
-This article synthesizes the available evidence on low-dose lithium supplementation, covering forms and bioavailability, clinical evidence for benefits across multiple conditions, recommended dosing, safety considerations, drug interactions, and dietary sources.
+Americans get roughly 1 mg of lithium a day from what they eat and drink, and ConsumerLab reports that some experts have recommended a daily intake of 1 mg for adults [1].
 
 ## 2. Forms and Bioavailability
 
-Lithium supplements are available in several chemical forms, each with different elemental lithium content, absorption characteristics, and safety profiles. Understanding these differences is essential for selecting an appropriate form and interpreting dosage information on supplement labels.
+Lithium supplements are available in several chemical forms, each with different elemental lithium content, absorption characteristics, and safety profiles.
 
 ### Comparison Table
 
@@ -51,7 +49,7 @@ Lithium aspartate contains 4.8% elemental lithium [1]. It was used in a long COV
 
 ### Lithium Citrate
 
-Lithium citrate is available both as a prescription liquid and as a low-dose supplement. As a supplement, it typically provides 2 mg of lithium per dropper [1]. The citrate form is absorbed slightly faster than lithium carbonate tablets but is otherwise bioequivalent: it does not raise lithium levels in the body more than lithium carbonate when given as equal amounts of elemental lithium (Guelen et al., *Biopharm Drug Dispos*, 1992) [1][7]. Lithium citrate is also an FDA-approved drug form, raising the question of whether it can legally be sold as a dietary supplement [1].
+Lithium citrate is available both as a prescription liquid and as a low-dose supplement. As a supplement, it typically provides 2 mg of lithium per dropper [1]. The citrate form is absorbed slightly faster than lithium carbonate tablets but is otherwise bioequivalent: it does not raise lithium levels in the body more than lithium carbonate when given as equal amounts of elemental lithium (Guelen et al., *Biopharm Drug Dispos*, 1992) [1][7]. Lithium citrate is also an FDA-approved drug form, so it is unclear whether it can legally be sold as a dietary supplement [1].
 
 ### Lithium Chloride: A Historical Cautionary Tale
 
@@ -59,7 +57,7 @@ Lithium chloride (16.4% lithium) was used in the late 1940s in the US as a liqui
 
 ### How to Read a Supplement Label
 
-Supplement labeling for lithium can be confusing because of the difference between the lithium compound weight and the elemental lithium content. This distinction matters enormously:
+Supplement labeling for lithium can be confusing because of the difference between the lithium compound weight and the elemental lithium content:
 
 - **Prescription lithium** lists the dose as the compound weight: "900 mg lithium carbonate" contains 169 mg elemental lithium [1].
 - **Supplement lithium** labels are required by FDA rules to state the elemental lithium and name the compound in parentheses: "Lithium (as lithium orotate 131 mg) 5 mg" means the product contains 131 mg of the lithium orotate compound, which delivers 5 mg of elemental lithium [1].
@@ -77,7 +75,7 @@ There is not enough information to say whether lithium orotate or lithium aspart
 
 #### Lithium in Drinking Water and Suicide Risk
 
-Some of the most intriguing evidence for low-dose lithium comes from ecological studies examining the relationship between naturally occurring lithium in drinking water and population-level mental health outcomes.
+Some evidence for low-dose lithium comes from ecological studies examining the relationship between naturally occurring lithium in drinking water and population-level mental health outcomes.
 
 **Early ecological studies:** A study of 27 Texas counties found that rates of suicide, homicide, and rape were significantly higher in counties whose water contained little or no lithium than in counties with 70 to 170 micrograms of lithium per liter (Schrauzer et al., *Biol Trace Elem Res*, 1990) [9]. A study of 40 municipalities in Aomori, Japan, found a statistical trend toward a link between tap-water lithium and suicide mortality among females (Sugawara et al., *Int J Environ Res Pub Health*, 2013) [10].
 
@@ -85,15 +83,11 @@ Some of the most intriguing evidence for low-dose lithium comes from ecological 
 
 **Danish dementia study:** A large, long-term observational study in Denmark found an 18% lower risk of developing dementia in areas with higher lithium levels in drinking water (0.015 mg/L) compared to areas with the lowest levels (0.002–0.005 mg/L) (Kessing et al., *JAMA Psychiatry*, 2017) [1]. This does not prove cause and effect: the authors note that confounding by other factors linked to where people live cannot be excluded [12]. Lithium levels in Denmark and most of Europe tend to be much lower than in other regions of the world [1].
 
-**Synthesis:** Some observational studies suggest low-dose lithium may reduce the risk of suicide, but the evidence is not conclusive, and the Parker study found that healthcare resources confound the association [1].
-
 #### Low-Dose Lithium for Depression and Mood
 
 One psychiatrist has anecdotally reported benefits from prescribing 2 to 20 mg of lithium orotate daily to treat patients with aggression, depression, and other conditions (Greenblatt, *Townsend Letter*, 2015) [1][13]. This amount of lithium orotate would yield only 0.08 to 0.8 mg of elemental lithium, an extremely small dose [1].
 
-A small placebo-controlled study gave 24 former drug users 400 micrograms of lithium a day for 4 weeks from naturally lithium-rich brewer's yeast tablets; mood scores, including happiness, rose in the lithium group, suggesting this very low dose may improve mood (Schrauzer et al., *Biol Trace Elem Res*, 1994) [14].
-
-**Synthesis:** Human evidence for low-dose lithium's effects on mood and depression is preliminary and largely observational or anecdotal, and there is no conclusive evidence that supplemental lithium helps [1].
+A small placebo-controlled study gave 24 former drug users 400 micrograms of lithium a day for 4 weeks from naturally lithium-rich brewer's yeast tablets; mood scores, including happiness, rose in the lithium group, which suggests this very low dose may improve mood (Schrauzer et al., *Biol Trace Elem Res*, 1994) [14].
 
 #### Alcoholism and Addiction
 
@@ -121,7 +115,7 @@ In a subset of the trial's participants, lithium significantly raised blood leve
 
 **Negative trial (lower-dose lithium):** A pilot trial gave 80 adults aged 60 or older with mild cognitive impairment low-dose lithium carbonate or placebo daily for 2 years. None of its six main outcomes, which covered memory, brain volume and BDNF, met the prespecified significance threshold (Gildengers et al., *JAMA Neurol*, 2026) [21]. Verbal memory declined slightly less with lithium (0.73 versus 1.42 points a year), a difference that narrowly missed the prespecified significance threshold (P = .05) [21]. The doses were 150 or 300 mg of lithium carbonate a day, about 28 to 56 mg of elemental lithium [1].
 
-**Synthesis on cognitive impairment:** The evidence for low-dose lithium in cognitive impairment is mixed [1]. The most encouraging result comes from the Nunes study, which used 0.3 mg a day [1]. Research on the orotate form in Alzheimer's disease is at a very early stage [1].
+**Synthesis on cognitive impairment:** The most encouraging result comes from the Nunes study, which used 0.3 mg a day [1].
 
 #### Brain-Derived Neurotrophic Factor (BDNF) and Neuroprotection
 

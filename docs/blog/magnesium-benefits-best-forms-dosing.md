@@ -13,7 +13,7 @@ summary: "Reference on magnesium: benefits for sleep, muscle cramps, blood press
 
 ## 1. Overview
 
-Magnesium is an essential mineral involved in over 300 enzymatic reactions in the human body [1]. It serves as a cofactor for ATP production, DNA and RNA synthesis, protein synthesis, muscle contraction, nerve impulse conduction, blood glucose regulation, and blood pressure control [1][2][43]. Approximately 50-60% of the body's magnesium resides in bone, where it contributes to bone structure, with most of the rest in soft tissues [1].
+Magnesium is an essential mineral involved in over 300 enzymatic reactions in the human body [1]. It is a cofactor in ATP production, DNA and RNA synthesis, protein synthesis, muscle contraction, nerve impulse conduction, blood glucose regulation, and blood pressure control [1][2][43]. Approximately 50-60% of the body's magnesium resides in bone, where it contributes to bone structure, with most of the rest in soft tissues [1].
 
 Low magnesium intake is widespread [4]. Approximately 48% of the US population consumes less than the Estimated Average Requirement from food alone [1][3]. Groups at highest risk include the elderly, adolescents, individuals with chronic alcohol use, those with type 2 diabetes, and patients with gastrointestinal diseases such as Crohn's disease and celiac disease [1]. Serum magnesium holds less than 1% of total body magnesium and is a poor marker of whole-body status [1][3]. Subclinical deficiency can exist despite a normal serum level [5]. Red blood cell (RBC) magnesium gives an idea of recent magnesium status, but it also does not reflect total body magnesium [3].
 
@@ -109,8 +109,6 @@ Diabetes increases urinary magnesium losses, and the resulting magnesium inadequ
 
 **Established type 2 diabetes:** An RCT in 14 people with insulin-treated type 2 diabetes and low magnesium found that 6 weeks of oral magnesium did NOT improve insulin sensitivity (Drenthen et al., *Diabetologia*, 2024) [22]. ConsumerLab reports the dose as 360 mg of magnesium per day, as magnesium gluconate [3].
 
-**Conclusion:** Magnesium supplementation may help prediabetes and metabolic syndrome when magnesium levels are low. It does NOT appear to benefit already-treated type 2 diabetes [3][20][21][22].
-
 ### Bone Health
 
 Approximately 50-60% of body magnesium resides in bone, where it is involved in bone formation and influences osteoblast and osteoclast activity [1].
@@ -123,7 +121,7 @@ Approximately 50-60% of body magnesium resides in bone, where it is involved in 
 
 ### Exercise and Muscle Recovery
 
-Magnesium plays a role in the active transport of calcium and potassium ions across cell membranes, a process important to nerve impulse conduction, muscle contraction, and normal heart rhythm [1].
+Magnesium is involved in the active transport of calcium and potassium ions across cell membranes, a process important to nerve impulse conduction, muscle contraction, and normal heart rhythm [1].
 
 **Muscle soreness in low-Mg individuals:** In a crossover trial of nine male runners on low-magnesium diets, 500 mg/day of magnesium for 7 days reduced muscle soreness after a downhill run but did not improve performance (Steward et al., *Eur J Appl Physiol*, 2019) [25]. With magnesium oxide as the source, soreness was 32% lower at 24 hours and 53% lower three days after the run than with placebo [3].
 
@@ -133,7 +131,7 @@ Magnesium plays a role in the active transport of calcium and potassium ions acr
 
 **Elderly women:** An RCT enrolled healthy women older than 65 who took part in a mild, weekly exercise program [3]. Those given 300 mg magnesium oxide for 12 weeks improved walking speed and chair-rise performance compared with an untreated control group (Veronese et al., *AJCN*, 2014) [28].
 
-**Practical implication:** Magnesium supplementation for exercise recovery appears beneficial only if intake or levels are low. Athletes should ensure adequate dietary magnesium but should not megadose, as supplementation in replete individuals may worsen performance [25][26][27].
+**Practical implication:** Athletes should ensure adequate dietary magnesium but should not megadose, as supplementation in replete individuals may worsen performance [25][26][27].
 
 ### Leg Cramps
 
@@ -145,7 +143,7 @@ A subsequent RCT in Finland (n=109) confirmed that magnesium hydrochloride taken
 
 **Pregnancy cramps:** Results are mixed, but the overall meta-analysis indicates magnesium is NOT effective for pregnancy-related leg cramps (Liu et al., *Taiwan J Obstet Gynecol*, 2021) [31].
 
-**Synthesis:** The widespread belief that magnesium helps leg cramps exceeds the evidence. Cramps may respond to magnesium only when deficiency is the underlying cause, and even then, the evidence is weak [3][29][30].
+**Synthesis:** Cramps may respond to magnesium only when deficiency is the underlying cause, and even then, the evidence is weak [3][29][30].
 
 ### Migraine Prevention
 
@@ -163,7 +161,7 @@ A subsequent RCT in Finland (n=109) confirmed that magnesium hydrochloride taken
 
 **Mechanism:** How magnesium might act against depression is not fully understood; it probably influences several systems linked to depression [35].
 
-**Synthesis:** The mechanisms are not fully understood and the observational findings are mixed, so the interventional evidence remains preliminary. Correcting deficiency is reasonable in depressed patients, but magnesium should not be used as a substitute for established treatments [3][35][36].
+**Synthesis:** Correcting deficiency is reasonable in depressed patients, but magnesium should not be used as a substitute for established treatments [3][35][36].
 
 ### Cardiovascular Disease (Beyond Blood Pressure)
 
@@ -213,7 +211,7 @@ The UL for supplemental magnesium (not including food sources) is **350 mg/day**
 The weight of the magnesium compound and the weight of elemental magnesium are different. This is the single most common source of consumer confusion.
 
 - 1,000 mg magnesium glycinate = approximately 140 mg elemental magnesium
-- 500 mg magnesium oxide = approximately 300 mg elemental magnesium (but only ~4% absorbed = ~12 mg utilized)
+- 500 mg magnesium oxide = approximately 300 mg elemental magnesium (but only ~4% absorbed = ~12 mg used)
 - 1,000 mg magnesium citrate = approximately 110-160 mg elemental magnesium
 
 Look for "elemental magnesium" or check the "% Daily Value" on the Supplement Facts label. If a product lists 420 mg at 100% DV, it contains 420 mg elemental magnesium regardless of compound weight [3].

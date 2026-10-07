@@ -164,7 +164,6 @@ For specific medicines, your doctor may follow separate guidance on medications 
 ### 5. Self-Management and Flare-Up Planning
 
 **Self-management principles:**
-- Self-management is important
 - Start with what you can manage now and build slowly
 - Your doctor may help you develop a pain management plan that you own
 

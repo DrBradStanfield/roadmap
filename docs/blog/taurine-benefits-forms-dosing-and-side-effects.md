@@ -19,7 +19,7 @@ People make taurine from other nutrients: vitamin B6 and the amino acids methion
 
 Taurine levels tend to fall with age [1][3]. Animal studies linking taurine to longer lifespan drew wide news coverage in 2023, but there is currently no evidence in people that taurine supplementation increases lifespan [1].
 
-Taurine is thought to help regulate heartbeat, maintain cell membranes, and affect the release of neurotransmitters. The liver also joins taurine to bile acids to form bile salts, which are needed to emulsify fats in the intestine [1].
+Taurine is thought to help regulate heartbeat and maintain cell membranes. It may also affect the release of neurotransmitters. The liver also joins taurine to bile acids to form bile salts, which are needed to emulsify fats in the intestine [1].
 
 ## 2. Forms and Bioavailability
 
@@ -33,7 +33,7 @@ Capsule formulations typically provide 500–1,000 mg per capsule. Pill strength
 
 ### Magnesium Taurate
 
-Magnesium taurate is a chelated form of magnesium bound to taurine. It delivers both magnesium and taurine in a single compound, making it particularly relevant for cardiovascular support. Magnesium taurate has approximately 9% elemental magnesium content, lower than magnesium oxide (60%) or citrate (11–16%), but is well tolerated with minimal gastrointestinal side effects [4]. In a rat study, magnesium taurate lowered blood pressure and reduced heart damage caused by cadmium chloride [5].
+Magnesium taurate is a chelated form of magnesium bound to taurine. It delivers both magnesium and taurine in a single compound. That makes it particularly relevant for cardiovascular support. Magnesium taurate has approximately 9% elemental magnesium content, lower than magnesium oxide (60%) or citrate (11–16%), but is well tolerated with minimal gastrointestinal side effects [4]. In a rat study, magnesium taurate lowered blood pressure and reduced heart damage caused by cadmium chloride [5].
 
 Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes 126 mg of elemental magnesium as magnesium taurate — a form chosen for its cardiovascular benefits and minimal GI side effects. [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) contains the same magnesium taurate base plus an additional 1 g of free taurine for enhanced metabolic and cardiovascular support.
 
@@ -63,7 +63,7 @@ Taurine supplementation may modestly lower blood pressure [1]. Trials have inclu
 
 ### Congestive Heart Failure
 
-Several studies suggest that taurine may benefit congestive heart failure (CHF).
+Small trials by Azuma and colleagues suggest that taurine may benefit congestive heart failure (CHF).
 
 **CHF trial:** A double-blind, placebo-controlled crossover study added taurine to standard treatment in 14 patients with CHF for 4 weeks. Compared with placebo, taurine improved heart failure severity (NYHA functional class), crackles in the lungs, and chest X-ray findings. No patient worsened with taurine, but four patients did with placebo (Azuma et al., *Clin Cardiol*, 1985) [9].
 
@@ -101,17 +101,15 @@ Taurine is frequently included in pre-workout and muscle supplements, but the ev
 
 **Negative evidence:** A small 2026 study in Brazil of 16 physically active young adults (average age 22) found that 1 gram of taurine taken one hour before exercise did not significantly increase aerobic capacity or improve energy metabolism compared with placebo (Júnior, *Res Q Exerc Sport*, 2026) [1]. Similarly, 1.66 grams of taurine taken one hour before prolonged cycling did not improve time-trial performance in endurance-trained male cyclists (Rutherford et al., *Int J Sport Nutr Exerc Metab*, 2010) [15].
 
-**Systematic review (positive):** A review of ten clinical studies in which taurine alone was taken in doses ranging from 1 to 6 grams per day concluded that taurine supplementation resulted in a mild-to-moderate improvement in endurance exercise performance, including in time-to-exhaustion trials (Waldron et al., *Sports Med*, 2018) [16].
+**Systematic review (positive):** A review of ten clinical studies in which taurine alone was taken in doses ranging from 1 to 6 grams per day concluded that taurine supplementation resulted in a mild-to-moderate improvement in endurance exercise performance, including in time-to-exhaustion trials (Waldron et al., *Sports Med*, 2018) [16]. In the Waldron meta-analysis, single doses worked as well as supplementation over several days [16].
 
 **Taurine plus BCAAs for recovery:** A small controlled study in untrained men found that 2 grams of taurine plus 3.2 grams of branched-chain amino acids (BCAAs), three times a day for two weeks before and three days after high-intensity exercise, reduced delayed-onset muscle soreness (DOMS) and muscle damage compared to placebo (Ra et al., *J Int Soc Sports Nutr*, 2013) [17]. ConsumerLab adds that neither supplement alone helped [1]. This suggests a potential synergistic effect between taurine and BCAAs.
 
 **High-dose taurine for muscle recovery:** A small crossover study in 10 recreationally-fit men found that taurine taken twice daily (morning and evening) for 72 hours following eccentric exercise may help performance recovery of the biceps muscle. Only peak eccentric torque improved significantly, and creatine kinase, a marker of muscle damage, did not differ from placebo. The dose was 100 mg per kg of bodyweight a day (McLeay et al., *Antioxidants (Basel)*, 2017) [18].
 
-**Practical takeaway:** The evidence suggests a small to moderate benefit of taurine for exercise performance. Evidence for post-exercise recovery comes from small studies, and less muscle damage was seen only when taurine was combined with BCAAs [1][17]. In the Waldron meta-analysis, single doses worked as well as supplementation over several days [16].
-
 ### Aging and Longevity
 
-The potential role of taurine in aging has received significant scientific attention following a major 2023 publication.
+Interest in taurine and aging grew after a 2023 paper by Singh et al. in *Science*.
 
 **The Singh et al. Science paper (2023):** Supplementing nematode worms (*C. elegans*) with taurine from middle age increased median lifespan by 10–23%. In mice, taurine supplementation led to a 10–12% increase in lifespan and was associated with improvements in strength, coordination, and memory, as well as reductions in biological hallmarks of aging such as mitochondrial and DNA damage, and in chronic inflammation. In middle-aged rhesus macaques, 6 months of taurine supplementation led to positive effects on bone health, metabolic phenotypes, and immunological profiles (Singh et al., *Science*, 2023) [1].
 
@@ -121,7 +119,7 @@ The potential role of taurine in aging has received significant scientific atten
 
 **DNA and cellular protection:** Laboratory research suggests taurine may help protect DNA from oxidative damage, both in isolated DNA and in human blood cells exposed to hexavalent chromium (Messina et al., *Adv Exp Med Biol*, 2000; Husain et al., *Amino Acids*, 2020) [19][20].
 
-**Limitations and outlook:** Research is needed to determine if long-term supplementation with taurine yields similar benefits in humans and is safe. The animal data are provocative but the gap between animal lifespan extension and human evidence remains large. Larger, long-term human studies are needed to confirm benefits and address potential non-translatability from animal models [1][3].
+**Limitations:** Research is needed to determine if long-term supplementation with taurine yields similar benefits in humans and is safe. The animal data are interesting, but the gap between animal lifespan extension and human evidence remains large [1][3].
 
 ### Neurological and Cognitive Function
 
@@ -234,7 +232,7 @@ Taurine can be obtained directly from meat, poultry, eggs, dairy products, and f
 
 ### Taurine for Vegetarians and Vegans
 
-While vegetarians and vegans have lower plasma taurine levels, the clinical significance of this reduction is not established [1]. No deficiency syndromes have been documented in otherwise healthy vegetarian or vegan adults. However, individuals following plant-based diets who wish to ensure optimal taurine status — particularly for cardiovascular or metabolic benefits — may consider supplementation, as dietary intake from plant sources is negligible.
+While vegetarians and vegans have lower plasma taurine levels, the clinical significance of this reduction is not established [1]. No deficiency syndromes have been documented in otherwise healthy vegetarian or vegan adults. However, individuals following plant-based diets who wish to ensure optimal taurine status, particularly for cardiovascular or metabolic benefits, may consider supplementation, as dietary intake from plant sources is negligible.
 
 ## 8. Taurine for Pets
 

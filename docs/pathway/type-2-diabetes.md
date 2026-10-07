@@ -264,7 +264,7 @@ Your doctor will manage any complications that develop. Key areas:
 
 ### Blood pressure
 
-Tight blood pressure control is very important to prevent complications.
+Tight blood pressure control helps prevent complications.
 
 | Target blood pressure (mmHg) | Indication |
 |---|---|
@@ -286,7 +286,7 @@ Antiplatelet medicines carry a higher bleeding risk in diabetes. To prevent a fi
 - Add ezetimibe if LDL remains above target on the maximum tolerated statin dose
 - Rosuvastatin may be used if LDL is not at target on maximal tolerated atorvastatin or simvastatin, and may be considered first-line for Māori and Pacific patients at risk of CVD
 - PCSK9 inhibitors are potent LDL-lowering medicines if LDL is still not at target. They are not funded
-- Bezafibrate, acipimox, and omega-3 fatty acid (fish oil) preparations have not been shown to reduce mortality in people with diabetes. They may be used for significant high triglycerides (more than 10 mmol/L) that persist despite lifestyle changes and optimised glucose control (especially insulin)
+- Bezafibrate, acipimox, and omega-3 fatty acid (fish oil) preparations have not been shown to reduce mortality in people with diabetes. They may be used for significant high triglycerides (more than 10 mmol/L) that persist despite lifestyle changes and the best achievable glucose control (especially insulin)
 
 ### Eyes
 

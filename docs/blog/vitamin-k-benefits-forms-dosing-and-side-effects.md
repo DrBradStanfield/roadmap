@@ -15,7 +15,7 @@ summary: "Reference on vitamin K: bone health, cardiovascular health, nocturnal 
 
 Vitamin K is the generic name for a family of fat-soluble compounds with a common chemical structure of 2-methyl-1,4-naphthoquinone [1].
 
-The designation "K" comes from the German word "Koagulation," reflecting its discovery in the 1920s by Danish biochemist Henrik Dam as an anti-hemorrhagic factor essential for blood clotting [2]. In 1943, Dam and American biochemist Edward Doisy shared the Nobel Prize in Physiology or Medicine for discovering vitamin K and elucidating its chemical structure [2].
+The designation "K" comes from the German word "Koagulation," because Danish biochemist Henrik Dam discovered it in the 1920s as an anti-hemorrhagic factor essential for blood clotting [2]. In 1943, Dam and American biochemist Edward Doisy shared the Nobel Prize in Physiology or Medicine for discovering vitamin K and elucidating its chemical structure [2].
 
 The vitamin K family includes two naturally occurring forms [1][3]:
 
@@ -68,7 +68,7 @@ MK-7 is typically obtained from natto, a Japanese food made from fermented soybe
 
 Because MK-7 stays in the body longer, a study by Schurgers et al. (2007) suggested that if taken on a daily basis, 25 mcg of MK-7 might be more potent than 100 mcg of K1 [3].
 
-Limited research suggests that long-chain menaquinones may have higher absorption rates than phylloquinone from green vegetables [1].
+According to the NIH fact sheet, limited research suggests that long-chain menaquinones may have higher absorption rates than phylloquinone from green vegetables [1].
 
 Most MK-7 forms of vitamin K are derived from soy. MenaQ7 is derived from chickpeas, and its manufacturer claims it is soy free. A similar-sounding ingredient, MenaQ7 Natto MK-7, is derived from soy, so label reading is important [3].
 
@@ -95,7 +95,7 @@ A longer half-life does not always mean greater clinical activity [3]. MK-4 at a
 
 ### Fat-Soluble Vitamin Interactions
 
-A laboratory experiment using intestinal cells found that uptake of vitamin K was reduced by approximately half by vitamins A, D, and E, likely due to competition for absorption among fat-soluble vitamins [3]. In that experiment, vitamins D, E, and K competed with each other for uptake, and vitamin A also lowered uptake of the others [15]. Vitamin K did not significantly reduce uptake of the other fat-soluble vitamins [3]. There do not appear to be studies showing reduced vitamin K absorption in people due to vitamin D, but it may be best to take vitamin K at least 3 hours apart from vitamin D and not from formulas that include vitamin D [3]. Combined formulas are rarely tested in people for ingredient absorption [3]. Large doses of vitamin E may antagonize vitamin K, making it less effective [3].
+A laboratory experiment using intestinal cells found that uptake of vitamin K was reduced by approximately half by vitamins A, D, and E, likely due to competition for absorption among fat-soluble vitamins [3]. In that experiment, vitamins D, E, and K competed with each other for uptake, and vitamin A also lowered uptake of the others [15]. Vitamin K did not significantly reduce uptake of the other fat-soluble vitamins [3]. There do not appear to be studies showing reduced vitamin K absorption in people due to vitamin D, but it may be best to take vitamin K at least 3 hours apart from vitamin D and not from formulas that include vitamin D [3]. Combined formulas are rarely tested in people for ingredient absorption [3]. Large doses of vitamin E may antagonize vitamin K and reduce its effectiveness [3].
 
 ## 3. Evidence for Benefits
 
@@ -103,7 +103,7 @@ A laboratory experiment using intestinal cells found that uptake of vitamin K wa
 
 #### Overview of the Vitamin K–Bone Connection
 
-Low vitamin K consumption or impaired vitamin K status is associated with lower bone mass and higher risk of hip fracture in older individuals [3][16][17]. Vitamin K is required for the carboxylation of osteocalcin, one of the main proteins in bone, so deficiency could reduce bone mineralization [1]. Some research indicates that high serum levels of undercarboxylated osteocalcin are associated with lower bone mineral density (BMD) [1]. However, it is not well established that supplementing with vitamin K strengthens bones or reduces the risk of fractures, and results have been mixed [3].
+Low vitamin K consumption or impaired vitamin K status is associated with lower bone mass and higher risk of hip fracture in older individuals [3][16][17]. Vitamin K is required for the carboxylation of osteocalcin, one of the main proteins in bone, so deficiency could reduce bone mineralization [1]. According to the NIH fact sheet, some research indicates that high serum levels of undercarboxylated osteocalcin are associated with lower bone mineral density (BMD) [1]. However, it is not well established that supplementing with vitamin K strengthens bones or reduces the risk of fractures, and results have been mixed [3].
 
 A systematic review and meta-analysis by Cockayne et al. included 13 randomized controlled trials. Most were conducted in Japan in postmenopausal women, and trial duration ranged from 6 to 36 months. Twelve of the 13 trials found that supplementation with either phytonadione (K1) or MK-4 improved bone mineral density. Seven trials had fracture data for meta-analysis, and all of them used MK-4 at either 15 mg/day (1 trial) or 45 mg/day (6 trials) [1]. MK-4 supplementation significantly reduced rates of hip fractures, vertebral fractures, and all nonvertebral fractures [1][18].
 
@@ -141,7 +141,7 @@ The trial enrolled 244 healthy postmenopausal women, who took placebo or MK-7 fo
 
 Vitamin K is involved in bone metabolism through osteocalcin carboxylation, but it is unclear whether supplementation with any form of vitamin K reduces the risk of osteoporosis [1]. Clinical trials do not provide overall support for the idea that vitamin K supplementation of the general population will reduce bone loss or fracture risk [7].
 
-MK-4 at an extremely high dose (45,000 mcg daily) has shown some benefit in helping to prevent bone loss in small studies in Asia, but more research is needed. MK-7 has shown some bone strengthening at 180 mcg daily, but only after three years of use, and it did not show benefit in a study of women already getting adequate calcium and vitamin D [3]. Giving vitamin D and/or calcium along with vitamin K could partly explain why some studies have found a bone benefit and others have not [1].
+Giving vitamin D and/or calcium along with vitamin K could partly explain why some studies have found a bone benefit and others have not [1].
 
 ### Cardiovascular Health
 
@@ -159,7 +159,7 @@ Vascular calcification is one of the risk factors for coronary heart disease bec
 
 #### MK-7 Cardiovascular Trials
 
-Although many studies indicate that MK-7 does not reduce coronary artery calcification, it may modestly slow the progression of existing coronary artery calcification in some people [3]:
+ConsumerLab notes that many studies indicate MK-7 does not reduce coronary artery calcification, but it may modestly slow the progression of existing coronary artery calcification in some people [3]:
 
 **Knapen et al. (2015):** A double-blind study found that 180 mcg of MK-7 (MenaQ7, NattoPharma ASA) taken daily for three years reduced arterial stiffness in healthy postmenopausal women, especially in those with high arterial stiffness [3]. However, there was no effect on endothelial dysfunction, which is closely associated with cardiovascular events such as heart attack [3][28].
 
@@ -189,13 +189,13 @@ Although many studies indicate that MK-7 does not reduce coronary artery calcifi
 
 #### Summary of Cardiovascular Evidence
 
-The overall cardiovascular evidence is mixed. Higher dietary K2 intake has been associated with less coronary calcification and lower coronary heart disease mortality in observational studies [3][1]. These benefits have generally not been proven with vitamin K supplements, although there is limited evidence of benefit among people with existing, or extensive, coronary artery calcification [3]. In people without existing calcification, K1 supplementation did not prevent it from developing in one trial [3].
+Higher dietary K2 intake has been associated with less coronary calcification and lower coronary heart disease mortality in observational studies [3][1]. These benefits have generally not been proven with vitamin K supplements, although there is limited evidence of benefit among people with existing, or extensive, coronary artery calcification [3]. In people without existing calcification, K1 supplementation did not prevent it from developing in one trial [3].
 
 ### Nocturnal Leg Cramps
 
-A placebo-controlled trial by Tan et al. (2024) studied 199 older adults in China who took 180 mcg of MK-7 every night for eight weeks. Compared with placebo, those given MK-7 had a dramatic reduction in nocturnal leg cramps: down to about 1 per week from 2.6 per week at baseline, with reductions in cramp severity and duration (down to under 10 seconds from over 1 minute at baseline). Reductions were apparent within one week, with further improvements over the first four weeks that continued for the rest of the study [3]. No adverse events related to vitamin K2 were identified [3][31].
+A placebo-controlled trial by Tan et al. (2024) studied 199 older adults in China who took 180 mcg of MK-7 every night for eight weeks. Compared with placebo, those given MK-7 had fewer nocturnal leg cramps: down to about 1 per week from 2.6 per week at baseline, with reductions in cramp severity and duration (down to under 10 seconds from over 1 minute at baseline). Reductions were apparent within one week, with further improvements over the first four weeks that continued for the rest of the study [3]. No adverse events related to vitamin K2 were identified [3][31].
 
-Vitamin K may relieve muscle cramps by affecting calcium channels in cells, reducing muscular contractions [3][32].
+Vitamin K may relieve muscle cramps by affecting calcium channels in cells and reducing muscular contractions [3][32].
 
 ### Cancer
 
@@ -221,7 +221,7 @@ Proposed mechanisms include greater use of vitamin K during severe illness, whic
 
 Vitamin K1 is known to be effective in preventing and treating poor blood clotting (hypoprothrombinemia) caused by vitamin K deficiency or induced by certain medications. Vitamin K2 has also been shown to be effective and, apparently, more potent [3]. Symptomatic vitamin K deficiency is rare, resulting from severe malnutrition or malabsorption, or prolonged therapy with some antibiotics [3].
 
-Among people on warfarin with unexplained INR instability, daily low-dose oral vitamin K (100 to 200 mcg of K1) was previously recommended to improve clotting stability under medical supervision [3]. An earlier guideline on warfarin-type drugs gave specific advice for managing INR results outside the target range [36]. However, experts now advise against low-dose vitamin K supplementation for people taking warfarin, after an analysis of clinical trials showed that vitamin K did not reduce major bleeding events or other complications related to blood clotting [3][37][38].
+Among people on warfarin with unexplained INR instability, daily low-dose oral vitamin K (100 to 200 mcg of K1) was previously recommended to improve clotting stability under medical supervision [3]. An earlier guideline on warfarin-type drugs gave specific advice for managing INR results outside the target range [36]. However, ConsumerLab reports that experts now advise against low-dose vitamin K supplementation for people taking warfarin, after an analysis of clinical trials showed that vitamin K did not reduce major bleeding events or other complications related to blood clotting [3][37][38].
 
 ## 4. Recommended Dosing
 
@@ -277,8 +277,6 @@ The doses used in clinical trials far exceed the AI and vary by form. Studies of
 
 Higher dietary vitamin K intake is associated with a lower risk of hip fractures, though not with higher bone density. This decrease in fractures has been seen among older men and women consuming about 250 mcg per day of vitamin K [3].
 
-For bone, MK-7 at 180 mcg daily showed some bone strengthening, but only after three years of use [3].
-
 Because MK-7 has a longer half-life, dosages may need to be adjusted when switching between forms of vitamin K, though a longer half-life does not always translate into greater clinical activity [3].
 
 Most multivitamin/mineral supplements provide less than 75% of the Daily Value for vitamin K [1].
@@ -319,9 +317,9 @@ To prevent VKDB, the American Academy of Pediatrics recommends a single intramus
 
 Vitamin K can have a serious and potentially dangerous interaction with warfarin (Coumadin) and similar anticoagulants such as phenprocoumon, acenocoumarol, and tioclomarol [1]. These drugs antagonize the activity of vitamin K, leading to depletion of vitamin K-dependent clotting factors [1]. Vitamin K epoxide reductase (VKOR), the enzyme that recycles vitamin K, is the target of warfarin [5].
 
-Vitamin K may reduce the effectiveness of warfarin. This interference may occur with doses as low as 10 mcg per day of MK-7 because of its long half-life [3]. As a result, some experts suggest that people taking warfarin should avoid MK-7 supplements [3][44].
+Vitamin K may reduce the effectiveness of warfarin. This interference may occur with doses as low as 10 mcg per day of MK-7 because of its long half-life [3]. As a result, ConsumerLab notes that some experts suggest people taking warfarin should avoid MK-7 supplements [3][44].
 
-Although supplements providing up to 100 mcg of K1 per day may not cause clinically relevant disturbances, experts now recommend against low-dose vitamin K supplementation for warfarin users because of limited evidence of benefit and potential for interaction at the doses used in research (100 to 200 mcg per day) [3]. People taking warfarin should not begin supplementing with vitamin K unless advised to do so by their doctor [3].
+Although supplements providing up to 100 mcg of K1 per day may not cause clinically relevant disturbances, ConsumerLab reports that experts now recommend against low-dose vitamin K supplementation for warfarin users because of limited evidence of benefit and potential for interaction at the doses used in research (100 to 200 mcg per day) [3]. People taking warfarin should not begin supplementing with vitamin K unless advised to do so by their doctor [3].
 
 People taking warfarin should keep their vitamin K intake from food consistent, without large fluctuations. NIH advises keeping vitamin K intake from both food and supplements consistent, because sudden changes can increase or decrease warfarin's anticoagulant effect [1]. One study found that people who got less than 250 mcg of vitamin K daily from food were maintained on 4.4 mg of warfarin, while those consuming more needed 5.8 mg [3][39].
 
@@ -347,7 +345,7 @@ Orlistat (Alli, Xenical), a weight-loss drug, reduces the body's absorption of d
 
 ### Statins
 
-Some research suggests that statins may decrease vitamin K levels [3][53]. However, taking vitamin K does not appear to improve heart-related outcomes (including coronary artery calcification and aortic valve calcification) in most statin users, although it may reduce the progression of calcification among people with the highest levels of existing coronary artery calcification [3].
+A review by Okuyama and colleagues suggests that statins may decrease vitamin K levels [3][53]. However, taking vitamin K does not appear to improve heart-related outcomes (including coronary artery calcification and aortic valve calcification) in most statin users, although it may reduce the progression of calcification among people with the highest levels of existing coronary artery calcification [3].
 
 ## 7. Dietary Sources
 
@@ -409,7 +407,7 @@ Vitamin K is fat soluble, so full-fat dairy products contain significantly more 
 
 ### Impact of Gut Microbiota
 
-Substantial quantities of long-chain menaquinones made by gut bacteria are present in the large bowel, but little is known about how they are absorbed and transported [1]. Although the amount of vitamin K the body obtains this way is unclear, experts believe these menaquinones satisfy at least some of the body's requirement for vitamin K [1][14]. Antibiotics can reduce vitamin K status by destroying vitamin K-producing bacteria in the gut [1].
+Substantial quantities of long-chain menaquinones made by gut bacteria are present in the large bowel, but little is known about how they are absorbed and transported [1]. Although the amount of vitamin K the body obtains this way is unclear, the NIH fact sheet reports that experts believe these menaquinones satisfy at least some of the body's requirement for vitamin K [1][14]. Antibiotics can reduce vitamin K status by destroying vitamin K-producing bacteria in the gut [1].
 
 ## 8. References
 

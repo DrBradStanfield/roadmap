@@ -87,7 +87,7 @@ FH affects approximately 1 in 500 people. If untreated, 50% of males will have h
 
 ## Lifestyle and Dietary Changes
 
-Lifestyle changes usually have a modest effect on LDL cholesterol, though a greater effect on triglycerides. Lifestyle changes aimed at reducing overall cardiovascular disease are important. Your doctor will recommend:
+Lifestyle changes usually have a modest effect on LDL cholesterol, though a greater effect on triglycerides. Your doctor will recommend lifestyle changes aimed at reducing overall cardiovascular disease:
 
 - **Weight loss** if relevant
 - **Increased physical activity**
@@ -110,7 +110,7 @@ The right medication depends on your lipid profile and your cardiovascular risk 
 
 ### Statin Adherence
 
-Long-term adherence to statins is important but often poor. Around 4 in 10 patients are not taking statins regularly in the 12 months after an acute coronary event.
+Long-term adherence to statins is often poor. Around 4 in 10 patients are not taking statins regularly in the 12 months after an acute coronary event.
 
 Your doctor will ensure you understand the proven long-term benefits of statins for reducing heart attacks, strokes, and death, particularly if you have a history of MI, stroke, or very high cardiovascular risk.
 

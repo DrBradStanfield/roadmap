@@ -83,7 +83,7 @@ BP > 180/110 mmHg that is not immediately life-threatening. It is sometimes asso
 
 ### Ambulatory and Home Blood Pressure Monitoring
 
-Ambulatory blood pressure monitoring (ABPM) can be considered the gold standard for diagnosing hypertension. Hypertension can be misdiagnosed in up to 20% of patients if the diagnosis is based only on office readings.
+Ambulatory blood pressure monitoring (ABPM) can be considered the most accurate test for diagnosing hypertension. Hypertension can be misdiagnosed in up to 20% of patients if the diagnosis is based only on office readings.
 
 Your doctor may recommend ABPM or home blood pressure monitoring (HBPM) if:
 
