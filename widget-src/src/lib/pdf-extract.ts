@@ -2,12 +2,14 @@
  * Client-side PDF text/image extraction using pdfjs-dist.
  * Bundled in health-upload.js (separate IIFE), NOT in main widget.
  */
+import { WITH_RESOLVERS_PREFIX } from './promise-with-resolvers'; // must precede pdfjs-dist
 import * as pdfjsLib from 'pdfjs-dist';
 import workerCode from 'pdfjs-dist/build/pdf.worker.min.mjs?raw';
 
 // Inline the pdf.js worker as a blob URL so it works from any CDN origin.
 // The ?raw import inlines the worker source at build time.
-const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
+// The worker gets the Promise.withResolvers fallback ahead of its own code.
+const workerBlob = new Blob([WITH_RESOLVERS_PREFIX, workerCode], { type: 'application/javascript' });
 pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(workerBlob);
 
 const MAX_PAGES = 20;
