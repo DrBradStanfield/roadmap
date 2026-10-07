@@ -16,6 +16,8 @@
  *  - The hedge count may fall only by the hedges inside sentences the report lists in deleted_sentences with a
  *    justification (US-42 AC3): each such loss is a WARN, anything else is a FAIL, in every article type. A
  *    hedge lost from a sentence that SURVIVES (not declared deleted, its other words still present) is a FAIL.
+ *  - Known limits (not fixed): a list item whose inherited comparator changes while its own text stays the same is not
+ *    re-checked; two identical list items under different comparator lead-ins resolve to the first occurrence.
  *  - Comparator words are matched longest-first ("no more than" is <=, never ">" from "more than").
  *  - An unchanged (frozen) summary passes even with a proposed correction: the orchestrator applies
  *    corrections later under the paired-arm rule. A summary that changed must equal the proposal.
@@ -714,6 +716,7 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
     if (!shared.length) {
       const verbatim = sources(!!prefixed).some((x) => hasQuote(x.norm, q));
       if (!verbatim) return fail(`raw_quote is not in the raw file: ${line}`);
+      if (lineTokens(entry.body_line).size) return fail(`raw_quote shares no number with its body_line: ${line}`);
       ac2.warns.push(`${label} entry supports no number in its body_line: ${line}`); return new Set(); }
     const hits = new Map<string, { pmid: string | null; path: string }[]>();
     let partial = false;

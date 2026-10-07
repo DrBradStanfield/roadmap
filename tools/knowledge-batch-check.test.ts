@@ -238,14 +238,21 @@ describe("US-42 AC2 raw fidelity", () => {
     reps.alpha.raw_sha256 = "0".repeat(64);
     expect(fails(run().AC2).join()).toContain("sha256 mismatch");
   });
-  it("warns, not fails, when an entry's quote shares no number with its body_line", () => {
+  it("US-42 AC2: an entry whose body_line carries a number fails when its quote shares none", () => {
     const raw = `${fx("alpha.raw.txt")}\nIn total the participants were followed for 12 weeks.`;
     writeFileSync(join(reports, "alpha.raw.txt"), raw);
     reps.alpha.raw_sha256 = sha256(raw);
     reps.alpha.changed_tokens[0].raw_quote = "In total the participants were followed for 12 weeks";
-    expect(run().AC2.evidence.join()).toContain("WARN");
-    expect(run().AC2.evidence.join()).toContain("entry supports no number in its body_line");
-    expect(fails(run().AC2).join()).not.toContain("entry supports no number");
+    expect(fails(run().AC2).join()).toContain("shares no number with its body_line");
+  });
+  it("US-42 AC2: an entry whose body_line carries no number only warns, and the quote must be verbatim", () => {
+    const raw = `${fx("alpha.raw.txt")}\nIn total the participants were followed for 12 weeks.`;
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.changed_tokens.push({ body_line: "Take it with food, e.g. at lunch.", raw_quote: "In total the participants were followed for 12 weeks" });
+    const r = run().AC2;
+    expect(r.evidence.join()).toContain("entry supports no number in its body_line");
+    expect(fails(r)).toEqual([]);
   });
   it("fails on an empty quote, a missing report and a missing raw file", () => {
     reps.alpha.changed_tokens[0].raw_quote = " ";
@@ -1176,10 +1183,9 @@ describe("US-42 AC2 derived tokens and the emergency number (B)", () => {
     Object.assign(reps.alpha.changed_tokens[0], { token: "999 mg" });
     expect(fails(run().AC2)).toEqual([]);
   });
-  it("needs a body line and a quote that carry the SAME number (a mismatch only warns)", () => {
+  it("needs a body line and a quote that carry the SAME number (a mismatch fails)", () => {
     reps.alpha.changed_tokens[0].raw_quote = "Doses of 2,000 mg were not studied";
-    expect(run().AC2.evidence.join()).toContain("WARN");
-    expect(fails(run().AC2).join()).not.toContain("entry supports no number");
+    expect(fails(run().AC2).join()).toContain("shares no number with its body_line");
   });
   it("skips 111 in a 'call 111' sentence, but not a dose of 111 mg", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it with food", "Call 111 if you feel unwell.\nTake it with food"));
