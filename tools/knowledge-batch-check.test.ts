@@ -1408,3 +1408,68 @@ describe("US-42 AC1-AC7 CLI end to end", () => {
     } finally { process.chdir(cwd); err.mockRestore(); }
   });
 });
+
+describe("US-42 AC2 void entries, number words, abbreviations (v3)", () => {
+  const t = (s: string) => [...tokenise(s)].sort();
+  it("void entries are skipped, listed as VOID lines, and never cover a token", () => {
+    reps.alpha.changed_tokens.push({ body_line: "No such line.", raw_quote: "nothing like this in raw", void: true, void_reason: "typo in first draft" });
+    const ok = run().AC2;
+    expect(fails(ok)).toEqual([]);
+    expect(ok.evidence.join("\n")).toContain("VOID 1: typo in first draft");
+    reps.alpha.changed_tokens[0].void = true;
+    reps.alpha.changed_tokens[0].void_reason = "retired";
+    const bad = run().AC2;
+    expect(fails(bad).join()).toContain('"300 mg"');
+    expect(bad.evidence.join("\n")).toContain("VOID 0: retired");
+  });
+  it("validates void and void_reason, and documents them in the schema", () => {
+    const r = { ...exampleReport("x"), changed_tokens: [{ body_line: "a", raw_quote: "b", void: "yes" }] };
+    expect(validateReport(r).join()).toContain("void");
+    const v = { ...exampleReport("x"), changed_tokens: [{ body_line: "a", raw_quote: "b", void: true }] };
+    expect(validateReport(v).join()).toContain("void_reason");
+    expect(JSON.stringify(REPORT_SCHEMA)).toContain("void_reason");
+  });
+  it("reads number words before a unit", () => {
+    expect(t("for six weeks")).toEqual(["6 week"]);
+    expect(t("for Forty-five days")).toEqual(["45 day"]);
+    expect(t("a twelve-week trial")).toEqual(["12 week"]);
+    expect(t("took a hundred mg")).toEqual(["100 mg"]);
+    expect(t("took one hundred mg")).toEqual(["100 mg"]);
+    expect(t("for twenty-one days")).toEqual(["21 day"]);
+    expect(t("for Ninety days")).toEqual(["90 day"]);
+    expect(t("for fifteen minutes")).toEqual(["15 min"]);
+  });
+  it("reads a number word with no unit only when it opens a sentence before a counted noun", () => {
+    expect(t("Forty-five adults took it.")).toEqual(["45"]);
+    expect(t("It helped. Twelve patients improved.")).toEqual(["12"]);
+    expect(t("We saw forty-five adults.")).toEqual([]);
+    expect(t("Take one capsule with food.")).toEqual([]);
+    expect(t("One was enough.")).toEqual([]);
+  });
+  it("reads abbreviated time units", () => {
+    expect(t("4 wk")).toEqual(["4 week"]);
+    expect(t("8 wks")).toEqual(["8 week"]);
+    expect(t("72 h")).toEqual(["72 hour"]);
+    expect(t("12 hr and 6 hrs")).toEqual(["12 hour", "6 hour"]);
+    expect(t("10 d")).toEqual(["10 day"]);
+  });
+  it("lets a unit and its per-liter denominator sit up to four words apart", () => {
+    expect(t("70 micrograms of lithium per liter")).toEqual(["70 mcg/L"]);
+    expect(t("70 mcg/L")).toEqual(["70 mcg/L"]);
+    expect(t("5 mg of a very long per litre")).toEqual(["5 mg/L"]);
+    expect(t("5 mg of a very long drug name per litre")).toEqual(["5 mg"]);
+  });
+  it("reads a range whose daily suffix follows the second value", () => {
+    expect(t("2 mg to 20 mg of the compound daily")).toEqual(["2 mg/day", "20 mg/day"]);
+    expect(t("2 mg to 20 mg daily")).toEqual(["2 mg/day", "20 mg/day"]);
+    expect(t("2 mg to 20 mg of the compound")).toEqual(["2 mg", "20 mg"]);
+  });
+  it("decodes numeric entities and reads g.kg-1 as per kg", () => {
+    expect(t("0.1 g&#x2219;kg-1")).toEqual(t("0.1 g/kg"));
+    expect(t("0.1 g&#x2219;kg-1")).toEqual(["100 mg/kg"]);
+  });
+  it("does not split sentences after Jr. Sr. et al. e.g. i.e. vs. Dr.", () => {
+    expect(sentences("Martin Luther King Jr. spoke. Smith Sr. agreed with Lee et al. today, i.e. fine, e.g. here, vs. none. Dr. Who left.")).toEqual([
+      "Martin Luther King Jr. spoke.", "Smith Sr. agreed with Lee et al. today, i.e. fine, e.g. here, vs. none.", "Dr. Who left."]);
+  });
+});

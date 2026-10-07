@@ -21,6 +21,8 @@
  *  - Comparator words are matched longest-first ("no more than" is <=, never ">" from "more than").
  *  - An unchanged (frozen) summary passes even with a proposed correction: the orchestrator applies
  *    corrections later under the paired-arm rule. A summary that changed must equal the proposal.
+ *  - A changed_tokens entry may carry "void": true and a "void_reason". Reports are append-only, so a wrong entry is
+ *    voided, not deleted: every AC2 check skips it, it never covers a token, and the report lists "VOID <i>: <reason>".
  *  - AC6 allows the --out report path inside the repo: the batch report commits with the batch.
  *
  *   npx tsx tools/knowledge-batch-check.ts --print-schema
@@ -36,7 +38,7 @@ import { pathToFileURL } from "node:url";
 export type Status = "PASS" | "FAIL" | "WARN";
 export interface Exception { check: string; handle: string; match: string; reason: string; by: string; date: string }
 export interface Result { id: string; title: string; status: Status; evidence: string[]; excepted?: Exception[] }
-export interface Entry { body_line: string; raw_quote: string; notes?: string }
+export interface Entry { body_line: string; raw_quote: string; notes?: string; void?: boolean; void_reason?: string }
 export interface Report {
   handle: string;
   type: "pathway" | "reference" | "video" | "guideline";
@@ -80,6 +82,8 @@ export const REPORT_SCHEMA = {
           body_line: { type: "string", description: "an exact current line of the body" },
           raw_quote: { type: "string", description: "verbatim source text (6 words or 30 characters) sharing a number with body_line" },
           notes: { type: "string" },
+          void: { type: "boolean", description: "true: skip this entry in every AC2 check; it covers no token and is listed as a VOID line (reports are append-only)" },
+          void_reason: { type: "string", description: "required when void is true" },
         },
       },
     },
@@ -149,6 +153,11 @@ export function validateReport(o: unknown): string[] {
   if (Array.isArray(r.deleted_sentences)) (r.deleted_sentences as { pattern?: unknown }[]).forEach((x, i) => {
     if (x && x.pattern !== undefined && typeof x.pattern !== "boolean") e.push(`deleted_sentences[${i}].pattern: boolean expected`);
   });
+  if (Array.isArray(r.changed_tokens)) (r.changed_tokens as { void?: unknown; void_reason?: unknown }[]).forEach((x, i) => {
+    if (!x || x.void === undefined) return;
+    if (typeof x.void !== "boolean") e.push(`changed_tokens[${i}].void: boolean expected`);
+    else if (x.void && (typeof x.void_reason !== "string" || !x.void_reason.trim())) e.push(`changed_tokens[${i}].void_reason: a reason is required when void is true`);
+  });
   if (r.new !== undefined && typeof r.new !== "boolean") e.push("new: boolean expected");
   if (r.extra_raw !== undefined) {
     if (!Array.isArray(r.extra_raw)) e.push("extra_raw: array expected");
@@ -206,7 +215,7 @@ const UNIT = [
   "mL/min", "L/min", "breaths/min", "IU/L", "U/L", "g/dL", "g/L", "ng/mL", "ng/dL", "ng/L", "nanogram/L", "[µμ]g/dL", "mcg/dL", "[µμ]g/L", "mcg/L",
   "mmHg", "bpm", "x/day", "times daily", "percent", "%",
   "kilograms?", "milligrams?", "micrograms?", "microg", "nanograms?", "millilitres?", "milliliters?", "litres?", "liters?", "grams?",
-  "mcg", "[µμ]g", "mg", "IU", "mL", "kg", "cm", "g", "hours?", "days?", "weeks?", "months?", "years?", "minutes?", "mins?", "seconds?", "secs?",
+  "mcg", "[µμ]g", "mg", "IU", "mL", "kg", "cm", "g", "hours?", "hrs?", "h", "days?", "d", "weeks?", "wks?", "months?", "years?", "minutes?", "mins?", "seconds?", "secs?",
   "(?<=[\\s-])s", // "30-s chair stand", "5 s", but not the "s" of "1990s"
 ].join("|");
 const NUM = "\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+(?:\\.\\d+)?|\\.\\d+";
@@ -238,6 +247,8 @@ const canonCmp = (c: string | undefined) => (!c ? "" : /^maximum\b/i.test(c) ? "
 // "150 mg enteric coated, daily": "daily" or "per day" up to three words after a dose unit still means /day.
 const FAR_DAILY = /^(?:\s+(?!and\b|or\b|to\b)[A-Za-z][A-Za-z-]*,?){1,3}\s+(?:daily|per\s+day)\b/i;
 const FAR_DAILY_UNITS = new Set(["mg", "mcg", "g", "IU", "mL", "kg"]);
+const RANGE_TAIL = new RegExp(`^\\s+(?:to|and)\\s+(?:${NUM})\\s*(?:${UNIT})(?![A-Za-z])`, "i");
+const DAILY_NEAR = /^\s+(?:daily|per\s+day|a\s+day|\/\s*day)\b/i;
 const LIST_ITEM = /^\s*(?:[-*+]|\d+[.)])\s+/;
 const LEAD_CMP = new RegExp(`\\b(${CMP_WORDS})\\b[^:.]*:\\s*$`, "i");
 const COMPOUND_UNITS: Record<string, string> = { "mmol/l": "mmol/L", "mg/dl": "mg/dL", "ml/min": "mL/min", "ng/l": "ng/L", "pmol/l": "pmol/L", "nmol/l": "nmol/L",
@@ -263,6 +274,9 @@ function normUnit(u: string): string {
   if (l === "times daily" || l === "x/day") return "x/day";
   if (l === "iu") return "IU";
   if (l === "mmhg") return "mmHg";
+  if (/^wks?$/.test(l)) return "week";
+  if (/^(h|hrs?)$/.test(l)) return "hour";
+  if (l === "d") return "day";
   return l.replace(/s$/, "");
 }
 
@@ -284,10 +298,22 @@ function stripNoise(line: string): string {
     .replace(/\[\d+(?:\s*[,–-]\s*\d+)*\]/g, " ")
     .replace(/\b(?:type\s+[12](?:\s*(?:and|or|\/|-)\s*[12])?|stage\s+[1-5])\b/gi, " ") // disease and category names, not values
     .replace(/^\s*(?:[-*+]\s+)?\d+[.)]\s+/, " ")
-    .replace(/\b(micrograms?|microg|[µμ]g|mcg|milligrams?|mg|nanograms?|ng|grams?|g|IU|U)\s+per\s+(?:liters?|litres?|L)\b/gi, "$1/L")
+    .replace(/\b(micrograms?|microg|[µμ]g|mcg|milligrams?|mg|nanograms?|ng|grams?|g|IU|U)((?:\s+[A-Za-z-]+){0,4})\s+per\s+(?:liters?|litres?|L)\b/gi, "$1/L$2")
+    .replace(/([A-Za-z])\s*[∙·⋅]\s*([A-Za-z]+)\s*(?:[-−]|⁻)[1¹]\b/g, "$1/$2") // "g∙kg-1" is g/kg
     .replace(/(\d)\s*-\s*(month|week|hour|year)ly\b/gi, "$1 $2")
-    .replace(/\baged\s+(\d+(?:\.\d+)?)(?![\d.])(?!\s*(?:years?|y\b|months?|weeks?|days?|(?:[-–]|to\s|and\s)\s*\d))/gi, "aged $1 years");
+    .replace(/\baged\s+(\d+(?:\.\d+)?)(?![\d.])(?!\s*(?:years?|y\b|months?|weeks?|days?|(?:[-–]|to\s|and\s)\s*\d))/gi, "aged $1 years")
+    .replace(NUMWORD_UNIT, (_, w: string) => `${wordValue(w)} `)
+    .replace(NUMWORD_OPEN, (m, lead: string, w: string, noun: string) => (/^[A-Za-z]+s$/.test(noun) && !/(?:ss|us|is)$|^(?:was|has|does|as|this|thus)$/i.test(noun) ? `${lead}${wordValue(w)}` : m));
 }
+
+// "six weeks" = "6 weeks"; a bare number word counts only when it opens a sentence before a plural noun ("Forty-five adults").
+const ONES = "one|two|three|four|five|six|seven|eight|nine";
+const WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, fifteen: 15,
+  twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
+const NW = `(?:(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:-(?:${ONES}))?|a\\s+hundred|one\\s+hundred|${ONES}|ten|eleven|twelve|fifteen)`;
+const wordValue = (w: string) => /hundred/i.test(w) ? 100 : w.toLowerCase().split("-").reduce((n, p) => n + WORDS[p], 0);
+const NUMWORD_UNIT = new RegExp(`\\b(${NW})[\\s-]+(?=(?:${UNIT})(?![A-Za-z]))`, "gi");
+const NUMWORD_OPEN = new RegExp(`(^[\\s>*_-]*|(?<=[.?!][)"'\\]*]*\\s+))(${NW})(?=\\s+([A-Za-z]+)\\b)`, "gi");
 
 /** Number tokens of a text, unit-normalised ("1 g" -> "1000 mg"). Reference lines are skipped unless keepRefs. */
 export function tokenCounts(text: string, opts: { keepRefs?: boolean } = {}): Map<string, number> {
@@ -312,7 +338,11 @@ export function tokenCounts(text: string, opts: { keepRefs?: boolean } = {}): Ma
       const gen = genericOf(m[7]);
       // "micrograms/L" is "mcg/L": a spelled unit plus its /denominator, matched case-insensitively.
       const comp = unit && gen ? COMPOUND_UNITS[`${unit}${gen}`.toLowerCase()] : undefined;
-      const per = m[6] ?? (unit && FAR_DAILY_UNITS.has(unit) && !gen && FAR_DAILY.test(s.slice(m.index! + m[0].length)) ? "daily" : undefined);
+      const rest = s.slice(m.index! + m[0].length);
+      // "2 mg to 20 mg of the compound daily": the suffix after the second value covers the first too.
+      const tail = unit && !m[3] && !gen ? RANGE_TAIL.exec(rest) : null;
+      const after = tail ? rest.slice(tail[0].length) : rest;
+      const per = m[6] ?? (unit && FAR_DAILY_UNITS.has(unit) && !gen && (FAR_DAILY.test(after) || (tail && DAILY_NEAR.test(after))) ? "daily" : undefined);
       for (const n of [m[2], m[3]].filter(Boolean) as string[]) {
         if (!unit && !cmp && !n.includes(",") && !n.includes(".") && /^(19|20)\d\d$/.test(n)) continue;
         const { value, unit: u } = normNumber(n, comp ?? unit);
@@ -326,7 +356,7 @@ export function tokenCounts(text: string, opts: { keepRefs?: boolean } = {}): Ma
 
 export const tokenise = (text: string, opts: { keepRefs?: boolean } = {}): Set<string> => new Set(tokenCounts(text, opts).keys());
 
-const ABBREV = /\b(e\.g|i\.e|vs|Dr|mg|etc|approx|Mr|Mrs|Ms|Prof|al|Fig)\./gi;
+const ABBREV = /\b(e\.g|i\.e|vs|Dr|Jr|Sr|mg|etc|approx|Mr|Mrs|Ms|Prof|al|Fig)\./gi;
 export const cleanSentence = (s: string) =>
   s.replace(/[*_]/g, "").replace(/^\s*(?:[>#-]+|\d+[.)]|\|)\s+/, "").replace(/\s+/g, " ").trim();
 
@@ -738,7 +768,11 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
     if (where) ac2.infos.push(`${label} matched in extra_raw ${where.path}`);
     return ok;
   };
-  const entries = rep.changed_tokens.map((e, i) => ({ e, ok: verifyEntry(e, i) }));
+  const entries = rep.changed_tokens.flatMap((e, i) => {
+    if (!e.void) return [{ e, ok: verifyEntry(e, i) }];
+    ac2.infos.push(`${tag} VOID ${i}: ${e.void_reason ?? "(no reason)"}`);
+    return [];
+  });
   const valid = entries.filter((x) => x.ok).map((x) => ({ ...x.e, ok: x.ok! }));
   let quoted = 0;
   const needed = new Set<string>(), failed = new Set<string>();
