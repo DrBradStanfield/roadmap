@@ -554,7 +554,7 @@ export async function action({ request }: ActionFunctionArgs) {
         router_cache_hit: routerResult?.cacheHit ?? null,
         router_input_tokens: routerResult?.usage.inputTokens ?? null,
         router_cache_read_tokens: routerResult?.usage.cacheReadTokens ?? null,
-        router_raw: routerResult?.error ? (routerResult.rawJson?.slice(0, 500) ?? null) : null,
+        router_raw: routerResult?.error && routerResult.rawJson != null ? cutText(routerResult.rawJson, 500) : null,
         router_error: routerResult?.error ?? null,
         classification: classifierResult.classification,
         router_skipped: routerSkipped,
@@ -590,7 +590,7 @@ export async function action({ request }: ActionFunctionArgs) {
             // Persist the fallback cause so the daily audit email is self-diagnosing
             // (previously only sent to Sentry via reportChatFallback). Null on success.
             failure_mode: completion.failureMode ?? null,
-            error_detail: completion.errorDetail?.slice(0, 500) ?? null,
+            error_detail: completion.errorDetail != null ? cutText(completion.errorDetail, 500) : null,
           })
           .then(({ error: msgError }: { error: { message: string } | null }) => {
             if (msgError) {
