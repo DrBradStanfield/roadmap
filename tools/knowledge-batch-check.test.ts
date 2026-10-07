@@ -33,7 +33,7 @@ describe("US-42 AC2 tokeniser", () => {
   });
   it("keeps a year that carries a unit, and bare numbers", () => {
     expect(t("2000 mg")).toEqual(["2000 mg"]);
-    expect(t("Type 2 diabetes")).toEqual(["2"]);
+    expect(t("Type 2 diabetes")).toEqual([]);
   });
   it("normalises unit spellings", () => {
     expect(t("50 µg")).toEqual(["50 mcg"]);
@@ -238,9 +238,11 @@ describe("US-42 AC2 raw fidelity", () => {
     reps.alpha.raw_sha256 = "0".repeat(64);
     expect(fails(run().AC2).join()).toContain("sha256 mismatch");
   });
-  it("fails when the token is absent from its quote", () => {
+  it("warns, not fails, when an entry's quote shares no number with its body_line", () => {
     reps.alpha.changed_tokens[0].raw_quote = "the participants were followed for 12 weeks";
-    expect(fails(run().AC2).join()).toContain("entry supports no number in its body_line");
+    expect(run().AC2.evidence.join()).toContain("WARN");
+    expect(run().AC2.evidence.join()).toContain("entry supports no number in its body_line");
+    expect(fails(run().AC2).join()).not.toContain("entry supports no number");
   });
   it("fails on an empty quote, a missing report and a missing raw file", () => {
     reps.alpha.changed_tokens[0].raw_quote = " ";
@@ -889,7 +891,7 @@ describe("US-42 AC2 tokeniser units and comparators (R7)", () => {
     expect(t("5 mg to 10 mg")).toEqual(["10 mg", "5 mg"]);
     expect(t("between 2 and 4 years")).toEqual(["2 year", "4 year"]);
     expect(t("2 to 4 years")).toEqual(t("2–4 years"));
-    expect(t("type 1 and 2 diabetes")).toEqual(["1", "2"]);
+    expect(t("type 1 and 2 diabetes")).toEqual([]);
   });
   it("reads 'maximum <word> N' like 'maximum of N'", () => {
     expect(t("maximum duration 1 week")).toEqual(["≤1 week"]);
@@ -948,6 +950,17 @@ describe("US-42 AC2 tokeniser units and comparators (R7)", () => {
     expect(t("5 grams/L")).toEqual(["5 g/L"]); // a concentration, not 5000 mg/L
     expect(t("5 grams/L")).toEqual(t("5 g/L"));
     expect(t("3 nanograms/mL")).toEqual(t("3 ng/mL"));
+    expect(t("3 ng/ml")).toEqual(["3 ng/mL"]);
+    expect(t("40 mL/minute")).toEqual(["40 mL/min"]);
+    expect(t("10 litres/minute")).toEqual(["10 L/min"]);
+    expect(t("5 g/day")).toEqual(["5000 mg/day"]);
+  });
+  it("skips digits in disease and category names (type 1/2, stage 1-5) but keeps class 2 to 5", () => {
+    for (const s of ["type 2 diabetes", "Type 2", "TYPE 1", "CKD stage 3", "stage 5 disease"]) expect(t(s)).toEqual([]);
+    expect(t("class 2 to 5")).toEqual(["2", "5"]);
+    expect(t("type 2 diabetes, 500 mg")).toEqual(["500 mg"]);
+  });
+  it("normalises compound units that already work (symbols, spelled-out time and volume, g/day)", () => {
     expect(t("3 ng/ml")).toEqual(["3 ng/mL"]);
     expect(t("40 mL/minute")).toEqual(["40 mL/min"]);
     expect(t("10 litres/minute")).toEqual(["10 L/min"]);
@@ -1072,9 +1085,10 @@ describe("US-42 AC2 derived tokens and the emergency number (B)", () => {
     Object.assign(reps.alpha.changed_tokens[0], { token: "999 mg" });
     expect(fails(run().AC2)).toEqual([]);
   });
-  it("needs a body line and a quote that carry the SAME number", () => {
+  it("needs a body line and a quote that carry the SAME number (a mismatch only warns)", () => {
     reps.alpha.changed_tokens[0].raw_quote = "participants took 200 mg in adults each week";
-    expect(fails(run().AC2).join()).toContain("entry supports no number in its body_line");
+    expect(run().AC2.evidence.join()).toContain("WARN");
+    expect(fails(run().AC2).join()).not.toContain("entry supports no number");
   });
   it("skips 111 in a 'call 111' sentence, but not a dose of 111 mg", () => {
     put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it with food", "Call 111 if you feel unwell.\nTake it with food"));

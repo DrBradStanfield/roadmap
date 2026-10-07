@@ -279,6 +279,7 @@ function stripNoise(line: string): string {
     .replace(/\bPMIDs?:?\s*\d+(?:\s*[,;]\s*\d+)*/gi, " ")
     .replace(/\b\d{4}-\d{2}-\d{2}\b/g, " ")
     .replace(/\[\d+(?:\s*[,–-]\s*\d+)*\]/g, " ")
+    .replace(/\b(?:type\s+[12](?:\s*(?:and|or|\/|-)\s*[12])?|stage\s+[1-5])\b/gi, " ") // disease and category names, not values
     .replace(/^\s*(?:[-*+]\s+)?\d+[.)]\s+/, " ");
 }
 
@@ -677,7 +678,7 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
     if (q.length < 30 && q.split(" ").length < 6) return fail(`raw_quote too short (need 6 words or 30 characters): ${line}`);
     const inQuote = tokenise(quote, { keepRefs: true });
     const shared = [...tokenise(entry.body_line, { keepRefs: true })].filter((t) => inQuote.has(t));
-    if (!shared.length) return fail(`entry supports no number in its body_line: ${line}`);
+    if (!shared.length) { ac2.warns.push(`${label} entry supports no number in its body_line: ${line}`); return new Set(); }
     const hits = new Map<string, { pmid: string | null; path: string }[]>();
     let partial = false;
     for (const x of sources(!!prefixed)) {
