@@ -8,7 +8,7 @@ summary: "Overview of non-insulin medications used in type 2 diabetes and predia
 
 # Non-insulin Diabetes Medications
 
-*Source: Auckland Region HealthPathways (adapted for patient use)*
+*Source: Auckland Region HealthPathways (adapted for patient use). Last reviewed: June 2025.*
 
 This page explains the non-insulin medications used to manage type 2 diabetes and prediabetes. Your doctor will choose the most appropriate medication based on your individual circumstances.
 
@@ -20,21 +20,21 @@ This page explains the non-insulin medications used to manage type 2 diabetes an
 
 ### First-line: Metformin
 
-Metformin is the starting medication for almost all patients with type 2 diabetes and prediabetes. It is safe, effective, and well-studied.
+Healthy lifestyle measures and metformin remain the first-line treatment for type 2 diabetes and prediabetes. Your doctor will usually start metformin first, then add other medications if needed.
 
 ### Second-line medications
 
-If HbA1c remains above target on metformin, or if HbA1c is greater than 64 mmol/mol at diagnosis, a second medication is added. Choice depends on your individual risk factors:
+If your HbA1c is greater than 64 mmol/mol when you are diagnosed, your doctor may consider starting a second medication alongside metformin. Your doctor will also monitor your results and may add or change medications over time. The choice depends on your individual risk factors:
 
 | Patient situation | Preferred second medication |
 |---|---|
-| Cardiovascular disease, obesity | SGLT2 inhibitors or GLP-1 receptor agonists |
+| Cardiovascular disease, obesity, Māori or Pacific peoples | SGLT2 inhibitors or GLP-1 receptor agonists |
 | Heart failure or kidney disease | SGLT2 inhibitors |
 | No cardiovascular disease, kidney disease, obesity, or heart failure | DPP-4 inhibitors |
 
 ### Third-line medications
 
-If blood sugar remains above target on two medications, pioglitazone, sulfonylureas, or acarbose may be considered. Your doctor will weigh benefits and risks for your situation.
+Sulfonylureas and acarbose may be used as third-line medications, and pioglitazone as a third- or fourth-line medication. Your doctor will weigh benefits and risks for your situation.
 
 ---
 
@@ -42,10 +42,10 @@ If blood sugar remains above target on two medications, pioglitazone, sulfonylur
 
 | Medication | Hypoglycaemia risk | Effect on weight | Key notes |
 |---|---|---|---|
-| Metformin | Very low (alone) | Mild loss | First-line for almost everyone |
+| Metformin | Very low (alone) | Mild loss | First-line for most people |
 | DPP-4 inhibitors (e.g. vildagliptin) | Very low | No change | Weight neutral, well tolerated |
 | SGLT2 inhibitors (e.g. empagliflozin) | Very low | Loss | Protects kidneys and heart; DKA risk |
-| GLP-1 agonists (e.g. dulaglutide) | Very low | Most weight loss | Injection; protects heart and kidneys |
+| GLP-1 agonists (e.g. dulaglutide) | Very low | Most weight loss | Injection; reduces cardiovascular disease |
 | Pioglitazone | Very low | Mild gain | Third/fourth line; fluid retention |
 | Sulfonylureas (e.g. gliclazide) | Higher | Mild gain | Older agent; hypoglycaemia risk |
 | Acarbose | Very low | No change | GI side effects limit use |
@@ -67,10 +67,10 @@ Metformin reduces the amount of glucose the liver produces and helps the body us
 - Rarely: lactic acidosis
 
 **Not suitable if:**
-- Severe kidney failure (eGFR <15 mL/min)
-- Severe liver or heart failure
+- Severe kidney failure (eGFR less than 15 mL/min)
+- End-stage liver or heart failure
 
-**Starting dose:** 250–500 mg once or twice daily with food, increased slowly. Typical target dose is 2000 mg daily. Your doctor will adjust the dose if you have reduced kidney function.
+**Starting dose:** 250–500 mg once or twice daily, increased slowly each week. Typical target dose is 2000 mg daily, or the highest dose you tolerate with food. Your doctor will lower the dose if your eGFR is less than 45 mL/min.
 
 **Sick days:** Stop metformin if you have vomiting, diarrhoea, or are severely dehydrated. Restart once you are well.
 
@@ -78,7 +78,7 @@ Metformin reduces the amount of glucose the liver produces and helps the body us
 
 ## DPP-4 inhibitors (e.g. vildagliptin)
 
-DPP-4 inhibitors work by helping the body produce more insulin after meals and reducing glucose released from the liver.
+DPP-4 inhibitors help the body release more insulin when blood sugar rises and reduce glucagon, a hormone that raises blood sugar.
 
 **Benefits:**
 - Weight neutral
@@ -88,12 +88,14 @@ DPP-4 inhibitors work by helping the body produce more insulin after meals and r
 **Common side effects:**
 - Nausea, diarrhoea
 - Runny nose or upper respiratory symptoms
-- Rarely: liver problems, skin reactions
+- Liver problems
+- Rarely: muscle aches or weakness, serious skin reactions
 
 **Not suitable if:**
-- Significant liver disease (raised ALT/AST >2.5× normal)
+- Significant liver disease (ALT or AST greater than 2.5 times the upper limit of normal)
 - Unstable heart failure
 - Also taking a GLP-1 receptor agonist (these work similarly and are not used together)
+- Pregnancy or breastfeeding
 
 **Monitoring:** Liver function tests (LFTs) should be checked before starting and every 3 months for the first year.
 
@@ -108,37 +110,41 @@ SGLT2 inhibitors work by causing the kidneys to excrete extra glucose and sodium
 **Benefits:**
 - Weight loss
 - Reduces blood pressure
-- Protects the kidneys and heart — your doctor may recommend this medication primarily for these benefits rather than blood sugar control alone
+- Protects the kidneys and heart. Your doctor may recommend this medication mainly for these benefits rather than blood sugar control alone
 - Very unlikely to cause low blood sugar on its own
 
-**When your doctor may strongly recommend an SGLT2 inhibitor (regardless of HbA1c):**
-- Kidney disease (reduced eGFR or elevated urine albumin)
+**When your doctor may prefer an SGLT2 inhibitor (regardless of HbA1c):**
+- Kidney disease (eGFR less than 60 mL/min, or urine albumin:creatinine ratio 3 mg/mmol or higher)
 - Heart failure
-- Established cardiovascular disease (e.g. past stroke or heart attack)
-- High 5-year cardiovascular risk (>15%)
+- Cardiovascular disease, including disease of the blood vessels to the brain or legs, and familial hypercholesterolaemia
+- High 5-year cardiovascular risk (15% or higher)
 
 **Common side effects:**
 - Increased urination
 - Genital or urinary tract infections (thrush, UTIs)
-- Low blood pressure, particularly when starting
+- Low blood pressure
 - Rare but serious: diabetic ketoacidosis (see below)
-- Very rare: Fournier's gangrene (serious infection of the genital/perineal area — seek urgent medical care if significant pain, redness, or fever in that area)
+- Rare: Fournier's gangrene, a serious infection of the genital or perineal area. It can be life-threatening. If you have significant pain, redness, or fever in that area, call 111 or go to the emergency department.
 
-**Important — Diabetic Ketoacidosis (DKA) risk:**
+**Important: Diabetic Ketoacidosis (DKA) risk**
 
 SGLT2 inhibitors carry a small (~1 in 1000) risk of DKA, which can occur even with near-normal blood sugar levels.
 
-Seek medical attention urgently if you experience:
+If you have any of these symptoms, see your doctor or go to hospital the same day to have your blood ketones checked, even if you have stopped the SGLT2 inhibitor:
 - Nausea, vomiting, or abdominal pain
-- Excessive thirst, fatigue, or confusion
-- Fast heart rate or difficulty breathing
+- Excessive thirst, loss of appetite, dizziness, or confusion
+- Fast heart rate or shortness of breath
+
+If you are confused, very drowsy, or struggling to breathe, call 111 or go to the emergency department.
+
+If a finger-prick test shows blood ketones over 1.5 mmol/L while you take an SGLT2 inhibitor, call 111 or go to the emergency department.
 
 **Not suitable if:**
-- Recurrent severe genital/urinary infections
+- A previous severe genital or urinary infection
 - Ketogenic (very low carbohydrate) diet
-- Kidney failure (eGFR <20 mL/min) — cannot be started but may be continued until dialysis is needed
+- Kidney failure (eGFR less than 20 mL/min). It cannot be started, but may be continued until dialysis or other kidney replacement therapy is needed
 
-**Cautions:** Use with care in pregnancy, with alcohol use disorder, or if there is a history of DKA.
+**Cautions:** Use with care in pregnancy or breastfeeding. If you have had DKA before, or have harmful alcohol use, it should not be started without specialist approval.
 
 **Sick days and procedures:** Stop your SGLT2 inhibitor:
 - When you are ill or severely dehydrated
@@ -149,25 +155,24 @@ Seek medical attention urgently if you experience:
 
 ## GLP-1 receptor agonists (e.g. dulaglutide, liraglutide)
 
-GLP-1 receptor agonists mimic a natural gut hormone that stimulates insulin release, slows stomach emptying, and reduces appetite. They are given by subcutaneous (under the skin) injection using a pen device.
+GLP-1 receptor agonists help the body release more insulin when blood sugar rises. They also slow stomach emptying, reduce appetite, and reduce glucagon. They are given by subcutaneous (under the skin) injection using a pen device.
 
 **Benefits:**
 - Greatest weight loss of all diabetes medications
 - Reduces cardiovascular disease risk
-- Protects the kidneys
 - Very unlikely to cause low blood sugar on its own
 - A good alternative to starting insulin
 
-**When your doctor may strongly recommend a GLP-1 agonist (regardless of HbA1c):**
-- Established cardiovascular disease (past stroke or heart attack)
+**When your doctor may prefer a GLP-1 agonist (regardless of HbA1c):**
+- Cardiovascular disease, including disease of the blood vessels to the brain or legs, and familial hypercholesterolaemia
 - Heart failure
-- Kidney disease
-- High 5-year cardiovascular risk (>15%)
+- Kidney disease (eGFR less than 60 mL/min, or urine albumin:creatinine ratio 3 mg/mmol or higher)
+- High 5-year cardiovascular risk (15% or higher)
 
 **Common side effects:**
 - Nausea, vomiting, reduced appetite, diarrhoea (usually improve over time)
 - Injection site reactions
-- Rarely: pancreatitis, muscle weakness, skin reactions
+- Rarely: pancreatitis, muscle weakness, skin reactions, low platelet count
 
 **Tips to reduce GI side effects:**
 - Eat smaller meals
@@ -177,18 +182,21 @@ GLP-1 receptor agonists mimic a natural gut hormone that stimulates insulin rele
 - Stay well hydrated
 
 **Not suitable if:**
-- Severe kidney failure (eGFR <15 mL/min)
+- Severe kidney failure (eGFR less than 15 mL/min)
 - Pregnancy or breastfeeding
-- Personal or family history of medullary thyroid cancer or MEN2 syndrome
-- History of pancreatitis (caution)
+- Type 1 diabetes (unless advised by a diabetes specialist)
 
-**Storage:** Refrigerate for long-term storage. Safe at room temperature (<30°C) for up to 14 days.
+**Cautions:** Previous pancreatitis, severe gastrointestinal disease (including gastroparesis), liver failure or severe liver disease, or a history of medullary thyroid cancer or MEN2 syndrome.
+
+**Storage:** Refrigerate for long-term storage. Safe at room temperature (under 30°C) for up to 14 days.
 
 **Dulaglutide (Trulicity):** Weekly injection, 1.5 mg. Your doctor may increase this if needed.
 
 **Liraglutide (Victoza):** Daily injection. Started at 0.6 mg for one week, increased to 1.2 mg, then up to 1.8 mg if needed.
 
-**Sick days:** Stop GLP-1 agonists if you have acute gastrointestinal illness or are at risk of dehydration. Restart once well.
+**Other medicines in this class:** Semaglutide (Wegovy) and tirzepatide (Mounjaro) are also given by subcutaneous injection. Neither is funded. In New Zealand, semaglutide (Wegovy) is registered only for weight loss. Tirzepatide acts on both the GIP and GLP-1 receptors.
+
+**Sick days:** Stop GLP-1 agonists if you have acute gastrointestinal illness. Your doctor may also advise stopping if you are at risk of dehydration. Restart once well.
 
 ---
 
@@ -204,7 +212,7 @@ Pioglitazone reduces insulin resistance. It is used as a third- or fourth-line a
 - Weight gain (2–3 kg, mainly fluid)
 - Fluid retention (swelling)
 - Reduced bone density and higher fracture risk
-- Small possible risk of bladder cancer (seen in animal studies, not confirmed in human studies)
+- Possible increased risk of bladder cancer (found in animal studies, but not in later studies in people)
 
 **Not suitable if:**
 - Heart failure
@@ -213,7 +221,7 @@ Pioglitazone reduces insulin resistance. It is used as a third- or fourth-line a
 - Previous bladder cancer
 - Pregnancy or breastfeeding
 
-**Starting dose:** 15 mg daily, increased by 15 mg per month up to a maximum of 45 mg daily. Each dose change takes 6–8 weeks for full effect.
+**Starting dose:** 15 mg daily. Your doctor may increase it by 15 mg each month, up to a maximum of 45 mg daily. Each dose change takes 6–8 weeks for full effect.
 
 **Sick days:** Stop pioglitazone during acute gastrointestinal illness. Restart once well.
 
@@ -221,10 +229,9 @@ Pioglitazone reduces insulin resistance. It is used as a third- or fourth-line a
 
 ## Sulfonylureas (e.g. gliclazide, glipizide)
 
-Sulfonylureas stimulate the pancreas to produce more insulin. They are older medications used as third-line agents.
+Sulfonylureas stimulate the pancreas to produce more insulin. They are older medications used as third-line agents. Your doctor may consider switching you to a newer medication to lower the risk of low blood sugar and weight gain.
 
 **Benefits:**
-- Effective blood sugar lowering
 - First-choice for steroid-induced high blood sugar
 
 **Disadvantages:**
@@ -234,19 +241,20 @@ Sulfonylureas stimulate the pancreas to produce more insulin. They are older med
 
 **Who is at higher risk of hypoglycaemia:**
 - Those with previous episodes of severe hypoglycaemia
-- Elderly or people with cognitive impairment
+- Those who do not notice the warning signs of low blood sugar
+- Frail older people or people with cognitive impairment
 - Kidney or liver impairment
 - Reduced food intake or significant alcohol use
 
 **Not suitable if:**
 - Type 1 diabetes or severe insulin deficiency
-- Severe kidney or liver failure
+- End-stage liver failure, or kidney failure needing dialysis
 - Allergy to sulfur drugs
 - Pregnancy or breastfeeding
 
 **Starting doses:**
-- Glipizide 2.5 mg, or gliclazide 40 mg — taken 15 minutes before your largest meal
-- Doses are increased every 1–2 weeks if needed (maximum: glipizide 40 mg/day or gliclazide 320 mg/day)
+- Glipizide 2.5 mg, or gliclazide 40 mg, taken 15 minutes before your largest meal
+- If needed, the dose may be doubled every 1–2 weeks (maximum: glipizide 40 mg/day or gliclazide 320 mg/day)
 - Glipizide is preferred if you have kidney disease
 
 **Sick days:** If you are eating less than usual, reduce or skip your sulfonylurea dose. Restart your normal dose once well. Contact your doctor if unsure.
@@ -260,14 +268,15 @@ Acarbose slows the digestion and absorption of carbohydrates, reducing blood sug
 **Benefits:**
 - Weight neutral
 - Does not cause hypoglycaemia on its own
-- Does not require dose adjustment for kidney disease until eGFR <25 mL/min
 
 **Side effects:**
-- Bloating and gas (very common)
+- Bloating and gas
 - Diarrhoea
 - Rarely: liver test abnormalities
 
-**Note on hypoglycaemia treatment:** If you take acarbose and have low blood sugar, treat with pure glucose (glucose tablets or gel) — not ordinary sugar (sucrose), because acarbose blocks sucrose absorption.
+**Not suitable if:** Your eGFR is less than 25 mL/min.
+
+**Note on hypoglycaemia treatment:** If you take acarbose and have low blood sugar, treat with pure glucose (glucose tablets or gel), not ordinary sugar (sucrose), because acarbose blocks sucrose absorption.
 
 **Dose:** 50 mg three times daily with meals, increased to 100 mg three times daily if needed.
 
@@ -284,7 +293,7 @@ When you are unwell, your blood sugar can change significantly. All people with 
 - Avoid strenuous exercise
 - Drink at least 125–250 mL (half to one cup) of fluid every hour
   - If eating normally: water or sugar-free drinks
-  - If not eating normal meals (and on insulin or sulfonylurea): try small amounts of food (e.g. crackers, toast). If your blood glucose is below 8 mmol/L, drink carbohydrate-containing fluids (flat soft drinks, juice, sports drinks, or oral rehydration solution)
+  - If not eating normal meals (and on insulin or sulfonylurea): try small amounts of food (e.g. crackers, toast). If your blood glucose is lower than 8 mmol/L, drink carbohydrate-containing fluids (cordial, flat soft drinks, sports drinks, or oral rehydration solution)
 - Monitor your blood glucose more frequently than usual
 - Avoid NSAIDs (e.g. ibuprofen, naproxen)
 - Contact your doctor or practice if you are unsure what to do
@@ -296,16 +305,16 @@ When you are unwell, your blood sugar can change significantly. All people with 
 | Metformin | Stop during vomiting/diarrhoea or dehydration. Restart once well. |
 | DPP-4 inhibitors | Stop during acute GI illness. Restart once well. |
 | SGLT2 inhibitors | Stop when sick. Get ketones checked urgently if nausea, vomiting, or abdominal pain. Stop at least 3 days before major procedures. |
-| GLP-1 agonists | Stop during acute GI illness or if risk of dehydration. Restart once well. |
+| GLP-1 agonists | Stop during acute GI illness. Consider stopping if at risk of dehydration. Restart once well. |
 | Pioglitazone | Stop during GI illness. Restart once well. |
 | Sulfonylureas | Reduce or skip dose if eating less. Restart normally once well. |
 | Acarbose | Stop during GI illness. Restart once well. Treat hypoglycaemia with glucose, not sucrose. |
-| Insulin | Reduce bolus/premixed insulin if eating less. Reduce basal insulin by 20–30%. Correction insulin every 4 hours as needed. |
+| Insulin | Reduce or skip bolus insulin if eating less. Reduce basal or premixed insulin by 20–30%. Correction insulin every 4 hours as needed. |
 
 ---
 
 ## Patient Resources
 
-- Healthify He Puna Waiora: [Medicines for Type 2 Diabetes](https://healthify.nz)
-- Healthify He Puna Waiora: [Diabetes Type 2 Sick Day Plan](https://healthify.nz)
-- Healthify He Puna Waiora: [Empagliflozin information](https://healthify.nz) (available in English, Te reo Māori, Samoan, Tongan)
+- Healthify He Puna Waiora: [Medicines for Type 2 Diabetes](https://healthify.nz/health-a-z/d/diabetes-type-2-medications)
+- Healthify He Puna Waiora: [Diabetes Type 2 Sick Day Plan](https://healthify.nz/health-a-z/d/diabetes-type-2-sick-day-plan)
+- Healthify He Puna Waiora: [Empagliflozin information](https://healthify.nz/assets/Brochures/empagliflozin-english-factsheet-v2.pdf) (also available in Te reo Māori, Samoan, Tongan)
