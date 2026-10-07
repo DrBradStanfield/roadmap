@@ -105,7 +105,7 @@ Taurine is frequently included in pre-workout and muscle supplements, but the ev
 
 **Taurine plus BCAAs for recovery:** A small controlled study in untrained men found that 2 grams of taurine plus 3.2 grams of branched-chain amino acids (BCAAs), three times a day for two weeks before and three days after high-intensity exercise, reduced delayed-onset muscle soreness (DOMS) and muscle damage compared to placebo (Ra et al., *J Int Soc Sports Nutr*, 2013) [17]. ConsumerLab adds that neither supplement alone helped [1]. This suggests a potential synergistic effect between taurine and BCAAs.
 
-**High-dose taurine for muscle recovery:** A small study in 10 recreationally-fit young men found that taurine powder taken twice daily (morning and evening) for 72 hours following eccentric exercise decreased exercise-induced muscle damage and improved performance recovery of the biceps muscle. The dose was 100 mg per kg of bodyweight — up to 10 grams per day (Yanita et al., *Antioxidants (Basel)*, 2017) [18].
+**High-dose taurine for muscle recovery:** A small crossover study in 10 recreationally-fit men found that taurine taken twice daily (morning and evening) for 72 hours following eccentric exercise may help performance recovery of the biceps muscle. Only peak eccentric torque improved significantly, and creatine kinase, a marker of muscle damage, did not differ from placebo. The dose was 100 mg per kg of bodyweight a day (McLeay et al., *Antioxidants (Basel)*, 2017) [18].
 
 **Practical takeaway:** The evidence suggests a small to moderate benefit of taurine for exercise performance and a more consistent benefit for post-exercise recovery and muscle damage reduction. In the Waldron meta-analysis, single doses worked as well as supplementation over several days [16].
 
@@ -119,7 +119,7 @@ The potential role of taurine in aging has received significant scientific atten
 
 **Human healthspan markers:** While no human lifespan data exist, the 2024 meta-analysis by Tzang et al. of 25 RCTs (1,024 participants, doses 0.5–6 g/day) found that taurine supplementation improved metabolic markers in adults, including reductions in blood pressure, fasting glucose, and triglycerides. These are risk factors for cardiovascular disease and diabetes [6].
 
-**DNA and cellular protection:** Laboratory research suggests taurine may help protect DNA in cells from oxidative damage and other stressors (Messina et al., *Adv Exp Med Biol*, 2000; Husain et al., *Amino Acids*, 2020) [19][20].
+**DNA and cellular protection:** Laboratory research suggests taurine may help protect DNA from oxidative damage, both in isolated DNA and in human blood cells exposed to hexavalent chromium (Messina et al., *Adv Exp Med Biol*, 2000; Husain et al., *Amino Acids*, 2020) [19][20].
 
 **Limitations and outlook:** Research is needed to determine if long-term supplementation with taurine yields similar benefits in humans and is safe. The animal data are provocative but the gap between animal lifespan extension and human evidence remains large. Larger, long-term human studies are needed to confirm benefits and address potential non-translatability from animal models [1][3].
 
@@ -282,11 +282,11 @@ Diet-associated DCM in dogs first came to light in the 1990s and may have increa
 
 [17] Ra SG, Miyazaki T, Ishikura K, et al. "Combined effect of branched-chain amino acids and taurine supplementation on delayed onset muscle soreness and muscle damage in high-intensity eccentric exercise." *J Int Soc Sports Nutr*. 2013;10(1):51. doi: [10.1186/1550-2783-10-51](https://doi.org/10.1186/1550-2783-10-51) PMID: 24195702. https://pubmed.ncbi.nlm.nih.gov/24195702/
 
-[18] Yanita. *Antioxidants (Basel)*. 2017. Cited as "Yanita, Antioxidants (Basel) 2017" in the ConsumerLab review; full citation pending a PubMed check.
+[18] McLeay Y, Stannard S, Barnes M. "The Effect of Taurine on the Recovery from Eccentric Exercise-Induced Muscle Damage in Males." *Antioxidants (Basel)*. 2017;6(4):79. doi: [10.3390/antiox6040079](https://doi.org/10.3390/antiox6040079)
 
-[19] Messina. *Adv Exp Med Biol*. 2000. Cited as "Messina, Adv Exp Med Biol 2000" in the ConsumerLab review; full citation pending a PubMed check.
+[19] Messina SA, Dawson R Jr. "Attenuation of oxidative damage to DNA by taurine and taurine analogs." *Adv Exp Med Biol*. 2000;483:355-367. doi: [10.1007/0-306-46838-7_40](https://doi.org/10.1007/0-306-46838-7_40)
 
-[20] Husain. *Amino Acids*. 2020. Cited as "Husain, Amino Acids 2020" in the ConsumerLab review; full citation pending a PubMed check.
+[20] Husain N, Mahmood R. "Taurine attenuates Cr(VI)-induced cellular and DNA damage: an in vitro study using human erythrocytes and lymphocytes." *Amino Acids*. 2020;52(1):35-53. doi: [10.1007/s00726-019-02807-1](https://doi.org/10.1007/s00726-019-02807-1)
 
 [21] Shao A, Hathcock JN. "Risk assessment for the amino acids taurine, L-glutamine and L-arginine." *Regul Toxicol Pharmacol*. 2008;50(3):376-399. doi: [10.1016/j.yrtph.2008.01.004](https://doi.org/10.1016/j.yrtph.2008.01.004)
 
