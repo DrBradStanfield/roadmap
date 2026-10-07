@@ -33,7 +33,7 @@ Not all creatine supplements deliver the same amount of usable creatine. Differe
 
 | Form | Free Creatine (%) | Solubility | Evidence Base | Key Notes |
 |------|:-:|:-:|:-:|------|
-| Creatine Monohydrate | 88% | Low in cold water; dissolves in warm water | Extensive | Most common and most studied form [1][3]. Micronized powders have shown no clear advantage over standard powders [1]. |
+| Creatine Monohydrate | 88% | Low in cold water; dissolves in warm water | Extensive | Most common and most studied form [1]. Micronized powders have shown no clear advantage over standard powders [1]. |
 | Creatine Hydrochloride (HCl) | 79% | More soluble than monohydrate in cool water | Limited | No evidence of better absorption or greater muscle creatine storage vs. monohydrate. About 10% less creatine per gram [1][7][8]. |
 | Creatine Ethyl Ester | 86% | Moderate | Limited | One study found effects similar to the hydrochloride form. May be more likely to increase creatinine. Not recommended [1][9]. |
 | Dicreatine Malate / Tricreatine Malate | ~70% | Moderate | Minimal | Significantly less creatine per gram. Limited evidence of any advantage [1]. |
@@ -84,7 +84,7 @@ Creatine may temporarily increase muscle size and, according to some (but not al
 
 **Prostate cancer patients on ADT:** A 12-week RCT in 30 previously untrained men (mean age 70) with prostate cancer undergoing androgen deprivation therapy found that creatine (5 g loading 4x daily for 5 days, then 5 g/day maintenance) with resistance exercise 3x/week did not result in greater increases in lean muscle mass, strength, or function compared to placebo (Fairman, *J Sci Med Sport* 2024) [24].
 
-**Older adults without exercise:** Short-term supplementation (10 days, 8–25 g/day) without resistance exercise did not improve strength, endurance, or functionality in older adults (mean age 58) (Chami, *J Nutr Health Aging* 2018) [25].
+**Older adults without exercise:** Short-term supplementation (10 days) with daily doses ranging from 8 g to 25 g without resistance exercise did not improve strength, endurance, or functionality in older adults (mean age 58) (Chami, *J Nutr Health Aging* 2018) [25].
 
 **Psychological component:** A study of 15 men found that those told they were receiving creatine (but actually receiving placebo) completed the same total volume in squat press as those receiving actual creatine, and both outperformed a group told they were receiving placebo. This suggests that belief of benefit may partially account for some of creatine's strength effects (Aguiar, *Res Sports Med* 2022) [26].
 
@@ -110,7 +110,7 @@ Creatine helps supply energy to brain cells [1]. One review reports that females
 
 **Older adults:** A small study in the UK found that creatine monohydrate (5 g of Creapure 4x daily for 7 days) slightly improved long-term memory and certain intelligence tasks in elderly adults, but not attention, executive function, word fluency, reaction time, or mental fatigue (McMorris, *Aging Neuro Cog* 2007) [41]. A study of 36 healthy perimenopausal and menopausal women (mean age 50) found that 750 mg creatine HCl daily for 8 weeks improved alertness, executive control, and reaction time vs. placebo, but did not improve test accuracy, information processing, or cognitive inhibition. Higher (1,500 mg/day) and lower (400 mg/day) doses did not yield significant benefits (Korovljev, *J Am Nutr Assoc* 2025) [42].
 
-**Vegetarians:** A double-blind crossover trial in 45 young adult vegetarians found that 5 g/day for 6 weeks significantly improved working memory (backward digit span) and intelligence/reasoning (Raven's Advanced Progressive Matrices, p < 0.0001) (Rae et al., 2003) [43].
+**Vegetarians:** A double-blind crossover trial in 45 young adult vegetarians found that 5 g/day for six weeks significantly improved working memory (backward digit span) and intelligence/reasoning (Raven's Advanced Progressive Matrices, p < 0.0001) (Rae et al., 2003) [43].
 
 **Mental fatigue reduction:** In a double-blind study, 8 g/day for 5 days reduced mental fatigue during repeated simple mathematical calculations and reduced the task-evoked rise in cerebral oxygenated hemoglobin, which is compatible with greater oxygen use in the brain [44].
 
@@ -146,7 +146,7 @@ Creatine may improve exercise tolerance in congestive heart failure (CHF) patien
 
 **Huntington's disease:** In a 16-week trial of 64 people with Huntington disease, 8 g/day was well tolerated and raised serum and brain creatine levels [52].
 
-**Alzheimer's disease (preliminary):** A 2025 single-arm pilot study administered 20 g/day for 8 weeks to approximately 20 patients, reporting improved cognition and elevated brain creatine levels. These findings require confirmation in larger RCTs [53].
+**Alzheimer's disease (preliminary):** A 2025 single-arm pilot study administered creatine for 8 weeks to approximately 20 patients, reporting improved cognition and elevated brain creatine levels. These findings require confirmation in larger RCTs [53].
 
 ### BCAAs: Muscle Enhancement
 
@@ -154,7 +154,7 @@ The evidence for BCAA supplementation for muscle building is mixed and depends h
 
 **Around exercise:** BCAA supplementation before and after exercise may help reduce or delay muscle soreness, improve muscle recovery, and improve immune function after intense exercise (Negro, *J Sports Med Phys Fitness* 2008; Shimomura, *J Nutr* 2006) [54][55].
 
-**Peri-surgical:** A study of adults aged 60–80 found that 20 g of essential amino acids (including 8 g BCAAs) twice daily for 1 week before and 2 weeks after total knee replacement reduced postoperative muscle loss and accelerated return of functional mobility vs. placebo (Dreyer, *J Clin Invest* 2013) [56]. A repeat study with longer supplementation (6 weeks post-surgery) showed reduced muscle loss in the quadriceps (-8.5% vs. -13.4%) and hamstrings (-7.4% vs. -12.2%) but no differences in functional mobility or strength (Dreyer, *JB JS Open Access* 2018) [57]. However, a Japanese study of 80 older individuals after lumbar spinal surgery found that 6 g EAAs (including 2.5 g BCAAs) plus vitamin D twice daily for 3 weeks post-surgery did not improve symptoms, physical function, muscle mass, or mobility (Minetama, *Spine J* 2023) [58].
+**Peri-surgical:** A study of adults aged 60–80 found that 20 g of essential amino acids (including 8 g BCAAs) twice daily for 1 week before and 2 weeks after total knee replacement reduced postoperative muscle loss and accelerated return of functional mobility vs. placebo (Dreyer, *J Clin Invest* 2013) [56]. A repeat study with longer supplementation (six weeks post-surgery) showed reduced muscle loss in the quadriceps (-8.5% vs. -13.4%) and hamstrings (-7.4% vs. -12.2%) but no differences in functional mobility or strength (Dreyer, *JB JS Open Access* 2018) [57]. However, a Japanese study of 80 older individuals after lumbar spinal surgery found that 6 g EAAs (including 2.5 g BCAAs) plus vitamin D twice daily for 3 weeks post-surgery did not improve symptoms, physical function, muscle mass, or mobility (Minetama, *Spine J* 2023) [58].
 
 **Prolonged bed rest:** A well-controlled study in 19 active middle-aged adults found that 4 g leucine with each of three meals during 14 days of continuous bed rest partially protected knee function (-7% vs. -15%) and endurance (-2% vs. -14%) vs. alanine control (English, *Am J Clin Nutr* 2016) [59]. However, two studies using single-leg immobilization (5 g leucine 3x daily) found no protection against muscle loss in either young or older adults (Edwards, *Am J Clin Nutr* 2020; Churchward-Venne, *Am J Clin Nutr* 2026) [60][61].
 
@@ -172,7 +172,7 @@ The evidence for BCAA supplementation for muscle building is mixed and depends h
 
 **L-Glutamine:** Does not improve exercise performance but may reduce infection incidence in overtrained athletes (Castell, *Eur J Appl Physiol* 1996) and reduce markers of muscle damage after strenuous exercise (Cordova-Martinez, *Nutrients* 2021) [66][67][68].
 
-**Taurine with BCAAs:** One study found that 2 g taurine plus 3.2 g BCAAs daily for 2 weeks before and 3 days after intense exercise reduced delayed-onset muscle soreness and muscle damage compared to placebo, although neither supplement alone provided benefit (Ra, *J Int Soc Sports Nutr* 2013) [69][70].
+**Taurine with BCAAs:** One study found that 2 g taurine plus 3.2 g BCAAs daily for two weeks before and 3 days after intense exercise reduced delayed-onset muscle soreness and muscle damage compared to placebo, although neither supplement alone provided benefit (Ra, *J Int Soc Sports Nutr* 2013) [69][70].
 
 ## 4. Recommended Dosing
 
@@ -186,7 +186,7 @@ The evidence for BCAA supplementation for muscle building is mixed and depends h
 
 **General health dose:** The ISSN position stand suggests that habitual low dietary creatine intake (for example, 3 g/day) throughout life may provide significant health benefits [72].
 
-**Emerging higher-dose considerations:** Recent expert commentary suggests that for brain health and cognitive support, minimum doses of ~4 g/day may be needed for noticeable increases in brain creatine, with higher amounts (up to 10 g/day) potentially needed for broader tissue saturation beyond muscle. A maintenance dose of 10 g/day has been used safely long-term in clinical studies. For bone health, a minimum effective dose of ~8 g/day has been proposed, though this remains preliminary [73].
+**Emerging higher-dose considerations:** Recent expert commentary suggests that for brain health and cognitive support, minimum doses of ~4 g/day may be needed for noticeable increases in brain creatine, with higher amounts (up to 10 g/day) potentially needed for broader tissue saturation beyond muscle [73]. A maintenance dose of 10 g/day has been used safely long-term in clinical studies.
 
 ### Timing and Practical Recommendations
 
@@ -220,7 +220,7 @@ Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/micr
 
 **For muscle recovery and soreness prevention:** 1–5 grams daily [6].
 
-**Around surgery (knee replacement):** 20 g of essential amino acids (including ~8 g BCAAs) twice daily, starting 1 week before and continuing 2–6 weeks after surgery [56][57].
+**Around surgery (knee replacement):** 20 g of essential amino acids (including ~8 g BCAAs) twice daily, starting 1 week before and continuing 2 weeks after surgery (six weeks in a repeat study) [56][57].
 
 **During bed rest:** ~4 g leucine with each meal (three times daily) [59].
 
@@ -242,11 +242,11 @@ Little is known about potential long-term adverse effects of creatine, and there
 
 **Gastrointestinal symptoms:** Despite anecdotal reports, creatine generally does not seem to cause diarrhea [1].
 
-**Creatinine levels:** Creatine supplementation increases serum creatinine (a marker used to assess kidney function), but this does not indicate actual kidney damage. A 2025 meta-analysis of 12 studies (177 people taking creatine and 263 controls) found a small but statistically significant rise in serum creatinine, likely due to metabolic turnover rather than kidney impairment. Creatine did not significantly change glomerular filtration rate (GFR), a more reliable measure of kidney function (Naeini, *BMC Nephrol* 2025) [77]. A blood test for cystatin C, instead of or in addition to a creatinine test, can be more accurate in some people because it is less affected by age, sex, and muscle size [1]. If you take creatine, inform your physician before blood tests measuring creatinine, or stop supplementation 2 weeks beforehand.
+**Creatinine levels:** Creatine supplementation increases serum creatinine (a marker used to assess kidney function), but this does not indicate actual kidney damage. A 2025 meta-analysis of 12 studies (177 people taking creatine and 263 controls) found a small but statistically significant rise in serum creatinine, likely due to metabolic turnover rather than kidney impairment. Creatine did not significantly change glomerular filtration rate (GFR), a more reliable measure of kidney function (Naeini, *BMC Nephrol* 2025) [77]. A blood test for cystatin C, instead of or in addition to a creatinine test, can be more accurate in some people because it is less affected by age, sex, and muscle size [1]. If you take creatine, inform your physician before blood tests measuring creatinine, or stop supplementation two weeks beforehand.
 
 **Hair loss concerns:** A 2009 study in rugby players found creatine increased DHT levels by 56% after a loading phase (van der Merwe, *Clin J Sport Med* 2009) [78]. However, the creatine group started with 23% lower DHT than placebo, and levels only increased to within the normal range. This finding has NOT been replicated. A subsequent 2025 RCT of 45 resistance-trained men given 5 g/day for 12 weeks found no differences in DHT levels, DHT-to-testosterone ratio, or hair growth between creatine and placebo groups (Mohammadyasin, *J Int Soc Sport Nutr* 2025) [79]. A 2021 review noted that no clinical study of creatine has reported hair loss or balding as a side effect (Antonio, *J Int Soc Sports Nutr* 2021) [1][4].
 
-**Sleep disturbance:** Despite anecdotal reports, placebo-controlled studies using 5–20 g/day for 1–8 weeks have not shown creatine to cause insomnia or sleep disturbances [80].
+**Sleep disturbance:** Despite anecdotal reports, placebo-controlled studies using 5 to 6 g daily for 6 to 8 weeks, or 20 g daily for 1 week, have not shown creatine to cause insomnia or sleep disturbances [80].
 
 **Muscle cramping and dehydration:** Despite anecdotal reports, creatine generally does not seem to cause muscle cramping or dehydration [1]. A systematic review found no evidence that creatine hinders the body's ability to dissipate heat or harms body fluid balance during exercise [75].
 
