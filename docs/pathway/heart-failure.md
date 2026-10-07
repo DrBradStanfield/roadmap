@@ -8,15 +8,17 @@ summary: "Clinical pathway for heart failure in adults: types (HFrEF, HFmrEF, HF
 
 # Heart Failure
 
-*Source: Auckland Region HealthPathways*
+*Source: Auckland Region HealthPathways. Last reviewed: August 2025.*
 
 This pathway covers the diagnosis and management of heart failure in adults, including the different types, how it is assessed, and the medications used to treat it.
+
+> **Always discuss your symptoms and any medication changes with your doctor.** This information is a clinical reference, not a substitute for individual medical advice.
 
 ---
 
 ## Red Flags — Seek Emergency Care
 
-Call an ambulance or go to the emergency department if you have:
+Call 111 or go to the emergency department if you are acutely unwell or have:
 
 - Chest pain
 - Acute breathlessness or severe difficulty breathing (acute pulmonary oedema)
@@ -31,15 +33,15 @@ Heart failure (HF) is the inability of the heart to pump sufficiently to meet th
 
 ### Types of Heart Failure
 
-Heart failure is classified by the heart's ejection fraction (EF) — the percentage of blood pumped out with each beat:
+Heart failure is classified by the heart's ejection fraction (EF), the percentage of blood pumped out with each beat:
 
 | Type | Ejection Fraction | Description |
 |------|------------------|-------------|
-| **HFrEF** — Heart failure with reduced ejection fraction | Less than 40% | Most evidence-based treatments target this type |
-| **HFmrEF** — Heart failure with mildly reduced ejection fraction | 41–49% | Intermediate category |
-| **HFpEF** — Heart failure with preserved ejection fraction | 50% or more | Management focuses mainly on treating underlying causes and symptoms |
+| **HFrEF**: Heart failure with reduced ejection fraction | 40% or less | Four medication classes (the "four pillars") are started as early as possible |
+| **HFmrEF**: Heart failure with mildly reduced ejection fraction | 41 to 49% | Intermediate category |
+| **HFpEF**: Heart failure with preserved ejection fraction | 50% or more | Management focuses mainly on treating underlying causes and symptoms |
 
-The underlying causes and management differ between types.
+The underlying causes and management can differ between types.
 
 ### Who Is at Higher Risk?
 
@@ -89,7 +91,7 @@ Your doctor will consider heart failure in newly breathless patients, particular
 - Hepatomegaly or ascites
 - Cold extremities
 
-*Note: Physical examination is often normal, especially in older people and those with obesity or other health conditions. A normal examination does not rule out heart failure.*
+*Note: Physical examination is often normal. Diagnosis can be more challenging, especially in older people and in people who are obese or have other health conditions.*
 
 ### Causes and Precipitating Factors
 
@@ -105,14 +107,15 @@ Your doctor will consider heart failure in newly breathless patients, particular
 **Things that can worsen or trigger a deterioration (precipitants):**
 - Anaemia, atrial fibrillation, infection or sepsis
 - Thyrotoxicosis, pulmonary embolus
-- Acute dehydration (can mimic fluid overload — more common in hot weather)
-- Poor medication adherence
+- Acute dehydration (some deteriorations may be due to dehydration, not fluid overload; this may be more common in hot summer months)
+- Poor medication adherence or changes to medications
 
 **Medications that can contribute to heart failure:**
 - NSAIDs (including COX-2 inhibitors)
 - Corticosteroids
 - Tricyclic antidepressants
 - Clozapine
+- Urinary alkalinisers (because of their high sodium content)
 - Glitazones (e.g., pioglitazone)
 - Non-dihydropyridine calcium channel blockers (diltiazem, verapamil)
 - TNF-alpha receptor antagonists (e.g., etanercept)
@@ -135,15 +138,15 @@ NT-proBNP is a blood test useful for distinguishing heart failure from other cau
   - Aged 50–75 years and NT-proBNP is greater than 138 pmol/L
   - Older than 75 years and NT-proBNP is greater than 279 pmol/L
 
-**Causes of falsely elevated NT-proBNP** (non-heart failure causes): atrial fibrillation, left ventricular hypertrophy, valvular disease, pulmonary embolism, pulmonary hypertension, sepsis, COPD with cor pulmonale, cirrhosis, hyperthyroidism, severe renal impairment.
+**Other causes of increased levels:** after myocardial infarction (heart attack) in older adults, atrial fibrillation, left ventricular hypertrophy, valvular heart disease, pulmonary embolism, pulmonary hypertension, sepsis, COPD with cor pulmonale, cirrhosis, hyperthyroidism, severe renal impairment.
 
-**Causes of falsely lower NT-proBNP:** obesity, hypothyroidism, treatment with diuretics, vasodilators, or ACE inhibitors.
+**Causes of decreased levels:** obesity, hypothyroidism, treatment with diuretics, vasodilators, or ACE inhibitors.
 
-Very high NT-proBNP levels carry a poor prognosis.
+Unlike BNP, NT-proBNP levels are not affected by sacubitril (in sacubitril/valsartan). Very high levels carry a poor prognosis.
 
 ### ECG (12-lead)
 
-Useful for identifying the cause of heart failure. Only about 10% of patients with heart failure have a completely normal ECG. Your doctor will look for ischaemia, arrhythmias (e.g., atrial fibrillation), left ventricular hypertrophy, previous heart attack, and conduction abnormalities.
+Useful for identifying the cause of heart failure. Only about 10% of patients with heart failure have a normal ECG. Your doctor will look for ischaemia, arrhythmias (e.g., atrial fibrillation), left ventricular hypertrophy, previous heart attack, and conduction abnormalities.
 
 ### Blood Tests
 
@@ -154,7 +157,7 @@ Useful for identifying the cause of heart failure. Only about 10% of patients wi
 
 ### Echocardiogram
 
-An echocardiogram (heart ultrasound) confirms the diagnosis and type of heart failure, detects valvular disease, and guides treatment decisions. Your doctor will arrange this.
+An echocardiogram (heart ultrasound) distinguishes between the types of heart failure (HFrEF, HFmrEF, and HFpEF). It also detects valvular heart disease, pulmonary hypertension, and other causes such as fluid around the heart (pericardial effusion). Your doctor will arrange this.
 
 ---
 
@@ -165,8 +168,8 @@ Your doctor will grade your symptoms using the New York Heart Association (NYHA)
 | Class | Description |
 |-------|-------------|
 | **Class I** | No symptoms with ordinary physical activity (asymptomatic) |
-| **Class II** | Slight limitation — ordinary activity causes fatigue, breathlessness, or palpitations (mild heart failure) |
-| **Class III** | Marked limitation — less than ordinary activity causes symptoms (moderate heart failure) |
+| **Class II** | Slight limitation: ordinary activity causes fatigue, breathlessness, or palpitations (mild heart failure) |
+| **Class III** | Marked limitation: less than ordinary activity causes symptoms (moderate heart failure) |
 | **Class IV** | Unable to do any physical activity without discomfort; symptoms at rest (severe heart failure) |
 
 ---
@@ -177,22 +180,28 @@ Heart failure is a complex condition. All medication decisions should be made by
 
 ### When to Seek Urgent Care
 
-Contact your doctor or seek emergency care if heart failure worsens significantly. Your doctor may refer to a specialist cardiologist in certain situations, such as ejection fraction of 40% or less, new heart failure not responding to treatment, heart failure in pregnancy, or significant valvular disease.
+If you have red flags or are acutely unwell, call 111 or go to the emergency department.
+
+Your doctor may refer you to a cardiologist if you have:
+- an ejection fraction of 40% or less (unless you have significant other health conditions)
+- new heart failure that is not responding to treatment
+- newly diagnosed or worsening heart failure in pregnancy
+- significant valvular or structural heart disease on the echocardiogram
 
 ### General Measures — For All Patients
 
 **Lifestyle and self-care:**
 
-- **Salt reduction:** Avoid adding salt to food. A low-sodium diet (less than 1.5 g per day, about half a teaspoon) is associated with improved quality of life
+- **Salt reduction:** Do not add salt to cooking or extra salt at the table. A low-sodium diet (less than 1.5 g per day, about half a teaspoon) is associated with improved quality of life
 - **Fluid intake:** Avoid excessive fluid intake; fluid restriction is usually only needed with significant hyponatraemia in the context of congestion
 - **Alcohol:** No more than one standard drink per day; if alcohol-related cardiomyopathy, abstinence is advised
 - **Caffeine:** Habitual coffee consumption is likely safe; limit total caffeine to less than 400 mg per day; if on diuretics, limit to 1–2 cups per day
-- **Smoking:** Stop smoking
-- **Exercise:** A gradual, supervised exercise programme improves symptoms and functional capacity. Many patients fear exercise will be harmful, but evidence shows the opposite — gradually increasing activity provides long-term benefit. Cardiac rehabilitation is recommended if available
+- **Smoking and methamphetamine:** Stop smoking and avoid methamphetamine
+- **Exercise:** A rehabilitative exercise plan improves symptoms and functional capacity. Many patients are frightened of doing harm by being active, but evidence shows that gradually increasing activity provides long-term benefit. Your doctor may refer you to a cardiac rehabilitation programme if you have not already done one
 
-**Self-monitoring — what to watch for:**
+**Self-monitoring (what to watch for):**
 
-Contact your doctor if you notice:
+Your doctor may give you an action plan and ask you to do daily checks of your weight, swelling, and breathing. Contact your doctor if you notice:
 - Weight gain or loss of more than 2 kg over 2 days
 - Worsening breathlessness with normal activities
 - Heart beating very quickly
@@ -202,12 +211,12 @@ Contact your doctor if you notice:
 - Increased ankle or leg swelling
 - Feeling more tired or more down than usual
 
-**Target weight (dry weight):** This is your stable baseline weight before symptoms of fluid overload began. Your doctor will record this and use it as a reference.
+**Target weight (dry weight):** This is your average weight before you began to have symptoms or signs of fluid overload. Your doctor will record this and use it as a reference.
 
 **Other important considerations:**
-- **Vaccination:** Heart failure increases the risk of respiratory infections, which can cause decompensation. Stay up to date with influenza, COVID-19, and pneumococcal vaccines
-- **Driving and travel:** High-altitude travel should be avoided; air travel is not recommended if symptoms are poorly controlled; discuss with your doctor
-- **Sexual activity:** Sexual problems are common in heart failure. Sexual activity is generally safe in stable heart failure (equivalent to climbing 3 flights of stairs). Phosphodiesterase type-5 inhibitors (e.g., sildenafil) are generally safe in stable heart failure but should be avoided with nitrates or in high cardiac-risk patients
+- **Vaccination:** Heart failure increases the risk of respiratory infections, and these infections are a major cause of decompensation (sudden worsening). Stay up to date with influenza, COVID-19, pneumococcal, and RSV vaccines
+- **Driving and travel:** High-altitude destinations should be avoided because of lower oxygen levels. Air travel is not recommended if symptoms are poorly controlled. For longer flights, your doctor may discuss preventing blood clots (DVT). In very hot or humid climates, ask your doctor about dehydration and adjusting your diuretic dose. Discuss driving rules with your doctor
+- **Sexual activity:** Sexual problems are common in heart failure. During a worsening of heart failure, or in advanced heart failure, wait until symptoms are controlled. Sexual activity needs mild to moderate exertion, similar to climbing 3 flights of stairs, general housework, or gardening. Erectile dysfunction may be worsened by thiazide diuretics, spironolactone, and beta-blockers. Phosphodiesterase type-5 inhibitors are generally safe in stable heart failure but should be avoided with nitrates or in high cardiac-risk patients
 - **Depression and anxiety:** These are common in heart failure and should be addressed
 - **Mental and social wellbeing:** Your doctor can discuss advance care planning and support options
 
@@ -217,18 +226,24 @@ Contact your doctor if you notice:
 
 ### Guideline-Directed Medical Therapy (GDMT) — The "Four Pillars" for HFrEF
 
-For heart failure with reduced ejection fraction (HFrEF), four medication classes work together to reduce death and hospitalisations. Your doctor will aim to start all four as soon as possible and gradually increase doses to the maximum tolerated:
+For heart failure with reduced ejection fraction (HFrEF), reducing illness and death relies on increasing some medications to target (or maximum tolerated) doses without delay. Your doctor will aim to start all four as soon as possible and gradually increase doses to the maximum tolerated:
 
 1. **ACE inhibitor or ARB or ARNI** (see below)
 2. **Beta-blocker** (only started once fluid overload is controlled)
 3. **Mineralocorticoid receptor antagonist (MRA)** (spironolactone or eplerenone)
 4. **SGLT2 inhibitor** (empagliflozin or dapagliflozin)
 
+**Increasing doses:**
+- Doses are usually doubled every 2 weeks or as tolerated, aiming for optimal doses within 3 months
+- The beta-blocker is generally increased first, unless you are congested or your heart rate is less than 50 beats per minute
+- One medicine should not be increased at the cost of starting the others
+- Your doctor will check blood pressure, heart rate, kidney function, and potassium after starting each medicine and after each dose increase
+
 ---
 
 ### ACE Inhibitors (ACEi)
 
-ACE inhibitors reduce the workload on the heart and improve survival.
+ACE inhibitors are started at a low dose and increased every 2 to 3 weeks to the highest tolerated dose, up to evidence-based target doses.
 
 **Examples and typical dosing:**
 - Enalapril: starting 2.5 mg twice daily, target 10–20 mg twice daily
@@ -237,19 +252,31 @@ ACE inhibitors reduce the workload on the heart and improve survival.
 - Perindopril: starting 2 mg once daily, target 8 mg once daily
 - Ramipril: starting 1.25 mg once daily, target 5 mg twice daily
 
+*Note (August 2026): The salts in Coversyl (perindopril) are changing. This needs a switch to a slightly different dose and a new prescription.*
+
 **Key points:**
-- Doses are started low and increased gradually every 2–3 weeks
 - Blood tests (creatinine and electrolytes) are checked 1 week after starting and after each dose change
 - A rise in creatinine of up to 30% is generally acceptable
-- First-dose low blood pressure is more likely if blood pressure is already low, or if on high-dose diuretics — taking the first doses in the evening reduces this risk
+- First-dose low blood pressure is more likely if:
+  - systolic blood pressure is under 90 mm Hg, or
+  - you take 80 mg or more of furosemide daily
+- Starting low and taking the first few doses in the evening can help reduce this risk
+- In older adults, your doctor will assess the risk of falls and may consider a lower starting dose
 - If not tolerated, switch to an ARB; do not combine ACEi with ARB
-- Contraindicated in pregnancy, with high potassium (greater than 5 mmol/L), low blood pressure, or significant kidney disease
+- Contraindications and precautions include:
+  - potassium greater than 5 mmol/L
+  - creatinine greater than 250 micromole/L or eGFR less than 30 mL/min
+  - symptomatic severe aortic stenosis
+  - symptomatic low blood pressure
+  - systolic blood pressure less than 80 mm Hg (caution if less than 90 mmHg)
+  - angio-oedema
+  - pregnancy
 
 ---
 
 ### Angiotensin Receptor Blockers (ARBs)
 
-Used if ACE inhibitors are not tolerated (e.g., due to cough).
+Used if ACE inhibitors are not tolerated.
 
 **Examples:**
 - Losartan: starting 12.5 mg once daily, target 150 mg once daily
@@ -259,17 +286,26 @@ Used if ACE inhibitors are not tolerated (e.g., due to cough).
 
 ### Angiotensin Receptor Neprilysin Inhibitor (ARNI) — Sacubitril/Valsartan (Entresto)
 
-ARNIs are now recommended as a preferred treatment over ACEi/ARB for HFrEF with NYHA Class II–IV symptoms. They reduce mortality and hospitalisation.
+Current international guidelines recommend ARNIs as first-line treatment for heart failure with reduced or mildly reduced ejection fraction. In this pathway, your doctor starts an ACE inhibitor or ARB, and may switch to an ARNI if you have NYHA Class II–IV symptoms. ARNIs reduce mortality and hospitalisation.
 
-**How it works:** Combines a neprilysin inhibitor (which increases beneficial natriuretic peptides) with an angiotensin receptor blocker.
+**How it works:** Combines an angiotensin receptor blocker with a neprilysin inhibitor, which prevents the breakdown of natriuretic peptides.
 
-**Important:** ACE inhibitor must be stopped at least 36 hours before starting — there is a risk of serious angioedema if they overlap. No washout period is needed when switching from an ARB.
+**Important:** ACE inhibitor must be stopped at least 36 hours before starting, to avoid potentially serious side effects. No washout period is needed when switching from an ARB.
 
-**Starting dose:** 49 mg/51 mg (sacubitril/valsartan) twice daily; increase to 97 mg/103 mg twice daily after 2–4 weeks if tolerated. A lower starting dose (24 mg/26 mg twice daily) is used if blood pressure is low (less than 110 mmHg), age 75 or older, switching from low-dose or no ACEi/ARB, or with significant kidney or liver disease.
+**Starting dose:** 49 mg/51 mg (sacubitril/valsartan) twice daily; increase to 97 mg/103 mg twice daily after 2–4 weeks if tolerated.
+
+A lower starting dose (24 mg/26 mg twice daily) may be used if:
+- systolic blood pressure is less than 110 mmHg
+- you are aged 75 or older
+- you were not previously on an ACE inhibitor or ARB, or were on a low dose
+- you have severe kidney impairment (eGFR less than 30 mL/min)
+- you have moderate liver impairment
+
+It is avoided if systolic blood pressure is less than 100 mmHg.
 
 **Contraindications:** End-stage kidney failure, severe liver impairment, history of angioedema with an ACE inhibitor or hereditary angioedema, pregnancy, concurrent ACE inhibitor use.
 
-**Monitoring:** Weekly potassium, creatinine, and blood pressure during initiation and dose titration; then every 6–12 months once stable.
+**Monitoring:** Weekly potassium, creatinine, and blood pressure during initiation and dose titration; then every 6–12 months once stable. Women of reproductive age must use contraception.
 
 ---
 
@@ -284,21 +320,23 @@ Beta-blockers improve survival, reduce hospitalisations, and improve heart funct
 
 **Key points:**
 - Start at a low dose and double every 2–4 weeks, aiming for target dose within 3 months
-- Do not stop beta-blockers suddenly — this can cause rebound hypertension and arrhythmias; reduce gradually over 1–2 weeks if stopping is necessary
+- Do not stop beta-blockers suddenly. This can cause rebound hypertension and arrhythmias; reduce gradually over 1–2 weeks if stopping is necessary
 - Beta-1 selective agents (bisoprolol, metoprolol) may be considered in patients with well-controlled asthma or COPD
-- If fluid overload worsens on beta-blockers, increase diuretics or halve the beta-blocker dose
+- If you already take a beta-blocker and become fluid overloaded, your doctor will continue it
+- If heart failure worsens on beta-blockers, your doctor may increase diuretics or halve the beta-blocker dose
 
 ---
 
 ### Mineralocorticoid Receptor Antagonists (MRAs)
 
-Spironolactone and eplerenone reduce fluid retention and improve survival.
+The MRAs are spironolactone and eplerenone. Eplerenone may be used in HFrEF if spironolactone is not tolerated or causes a significant side effect.
 
 **Dosing:** Starting dose 12.5–25 mg daily; titrate to 25–50 mg daily.
 
 **Key monitoring:**
-- Monitor creatinine and potassium at 1, 4, 8, and 12 weeks, then every 3 months
-- Avoid if potassium is greater than 5 mmol/L or significant kidney disease (creatinine clearance less than 30 mL/min)
+- Monitor creatinine and potassium at 1, 4, 8, and 12 weeks, then every 3 months or during an intercurrent illness
+- Avoid or use cautiously with stage 4 or 5 chronic kidney disease, creatinine clearance less than 30 mL/min, or potassium greater than 5 mmol/L
+- Other medicines that raise potassium are not added unless they are specifically needed for heart failure
 - SGLT2 inhibitors reduce the risk of high potassium when used together
 - Monitor for low blood pressure and falls (particularly in older adults)
 
@@ -306,12 +344,12 @@ Spironolactone and eplerenone reduce fluid retention and improve survival.
 
 ### SGLT2 Inhibitors (Empagliflozin, Dapagliflozin)
 
-SGLT2 inhibitors reduce cardiovascular death and heart failure hospitalisation in HFrEF, HFmrEF, and HFpEF. They are the newest pillar of heart failure therapy.
+SGLT2 inhibitors reduce cardiovascular death and heart failure hospitalisation in HFrEF, HFmrEF, and HFpEF.
 
 **Dose:** 10 mg once daily for both agents.
 
 **Key points:**
-- Creatinine may rise and kidney function (eGFR) may decline in the first 6–8 weeks of starting — this does not usually require stopping the medication
+- Creatinine may rise and kidney function (eGFR) may decline in the first 6–8 weeks of starting. This does not usually require stopping the medication
 - Can be started when eGFR is greater than 20 mL/min
 
 **Contraindications:**
@@ -319,9 +357,11 @@ SGLT2 inhibitors reduce cardiovascular death and heart failure hospitalisation i
 - Ketogenic diet (risk of diabetic ketoacidosis)
 - Do not initiate if eGFR is less than 20 mL/min
 
-**Cautions:** Pregnancy and breastfeeding; kidney disease (eGFR 20–30 mL/min — maximum dose 10 mg); Type 1 diabetes or previous diabetic ketoacidosis (specialist approval required); severe alcohol use disorder.
+**Cautions:** Pregnancy and breastfeeding; kidney disease (eGFR 20–30 mL/min: maximum dose 10 mg); Type 1 diabetes or previous diabetic ketoacidosis (specialist approval required); severe alcohol use disorder.
 
-**Signs of diabetic ketoacidosis (DKA):** If you develop nausea/vomiting, abdominal pain, rapid breathing, confusion, or feel unwell while on an SGLT2 inhibitor, seek urgent medical attention. Note: blood sugar may be near-normal in DKA on these medications (euglycaemic DKA).
+**Signs of diabetic ketoacidosis (DKA):** If you develop nausea or vomiting, abdominal pain, rapid breathing, or confusion while on an SGLT2 inhibitor, seek urgent medical attention.
+
+Note: blood glucose may be less than 11 mmol/L in DKA in people on empagliflozin (euglycaemic DKA).
 
 ---
 
@@ -334,11 +374,11 @@ Diuretics are used to relieve fluid overload (congestion). They are used in HFrE
 - Moderate to severe heart failure: furosemide 40 mg daily initially
 - Aim for weight loss of about 1 kg per day, returning to target dry weight
 - Bumetanide has more reliable absorption and may be used when furosemide is not working well (1 mg bumetanide = 40 mg furosemide)
-- A thiazide diuretic (e.g., bendroflumethiazide or metolazone) can be added as a short-term measure if not responding to the loop diuretic alone — this can cause very potent fluid loss (up to 5 litres or more in a day)
+- A thiazide diuretic (e.g., bendroflumethiazide or metolazone) can be added as a short-term measure if not responding to the loop diuretic alone. This can cause very potent fluid loss (up to 5 litres or more in a day)
 
-**Important:** Avoid NSAIDs while taking diuretics — they can cause kidney injury and worsen heart failure.
+**Important:** Avoid NSAIDs while taking diuretics. They can cause kidney injury and worsen heart failure.
 
-**Monitoring:** Potassium and creatinine weekly during titration, then every 3 months. Diuretics are titrated up and down according to symptoms and weight; the dose is reduced to the minimum needed once fluid overload is resolved.
+**Monitoring:** Potassium and creatinine weekly during titration, then every 3 months. Diuretics are titrated up and down according to symptoms and weight. Once fluid overload has resolved, the dose is reduced to the lowest effective dose, or stopped.
 
 ---
 
@@ -346,7 +386,7 @@ Diuretics are used to relieve fluid overload (congestion). They are used in HFrE
 
 Considered for patients in atrial fibrillation needing rate control, or in those with NYHA Class III–IV symptoms not adequately controlled with standard therapy.
 
-- Aim for the lowest dose that improves symptoms (usual maintenance: 0.065–0.125 mg daily)
+- Aim for the lowest dose that improves symptoms (usual maintenance: 0.0625 to 0.125 mg daily)
 - Check levels 7–10 days after starting (take blood at least 6 hours after the last dose)
 - **Toxicity signs:** confusion, loss of appetite, nausea, visual disturbances, arrhythmias
 - Do not raise the dose simply to reach a "therapeutic level" if the patient is doing well
@@ -359,20 +399,22 @@ Considered for patients in atrial fibrillation needing rate control, or in those
 
 Iron deficiency is present in about 50% of heart failure patients and is defined as ferritin less than 100 microgram/L, or ferritin 100–300 microgram/L with transferrin saturation less than 20%.
 
-- Intravenous iron (ferric carboxymaltose) is used in HFrEF and HFmrEF — it improves symptoms, quality of life, and reduces hospitalisations, even without anaemia
+- Intravenous iron (ferric carboxymaltose) is used in HFrEF and HFmrEF. It improves symptoms, quality of life, and reduces hospitalisations, even without anaemia
 - Oral iron is not effective at correcting iron deficiency in heart failure patients
 
 ---
 
 ## Management by Heart Failure Type
 
-### HFrEF (Ejection Fraction Less Than 40%)
+If an echocardiogram is not available or the result is not known, your doctor will treat it as HFrEF until proven otherwise.
 
-Start all four GDMT pillars (ACEi/ARB/ARNI, beta-blocker, MRA, SGLT2 inhibitor) as soon as possible. If fluid overloaded, start a loop diuretic first and delay beta-blocker until fluid is controlled. Continue GDMT even if ejection fraction normalises with treatment.
+### HFrEF (Ejection Fraction 40% or Less)
+
+Start all four GDMT pillars (ACEi/ARB/ARNI, beta-blocker, MRA, SGLT2 inhibitor) as soon as possible. If fluid overloaded, a loop diuretic is started alongside GDMT, and the beta-blocker is delayed until fluid is controlled. Continue GDMT even if ejection fraction normalises with treatment.
 
 ### HFmrEF (Ejection Fraction 41–49%)
 
-Treat symptoms with a loop diuretic. SGLT2 inhibitors are recommended (reduce cardiovascular mortality and hospitalisation). Consider ACEi/ARB/ARNI, MRA, or beta-blocker — each has lower absolute benefit than in HFrEF, and strict dose titration may not be as necessary. Discuss with your doctor or cardiologist.
+Treat symptoms with a loop diuretic. SGLT2 inhibitors are recommended (reduce cardiovascular mortality and hospitalisation). Consider ACEi/ARB/ARNI, MRA, or beta-blocker. Each has lower absolute benefit than in HFrEF, and strict dose titration may not be as necessary. Discuss with your doctor or cardiologist.
 
 ### HFpEF (Ejection Fraction 50% or More)
 
@@ -382,16 +424,17 @@ Focus management on:
 - **SGLT2 inhibitors:** recommended to reduce cardiovascular mortality and hospitalisation
 - **Comorbidities:** diabetes, obesity, ischaemic heart disease, sleep apnoea
 - **Exercise training:** cardiac rehabilitation, supervised exercise
+- **Low-dose MRA:** may be considered to reduce hospital admissions for heart failure (TOPCAT trial), with close monitoring of kidney function and potassium
 
-*Note: Several medications used in HFpEF can reduce blood pressure significantly. Your doctor will review medications carefully. NSAIDs, digoxin (unless in atrial fibrillation), glitazones, and non-dihydropyridine calcium channel blockers (diltiazem, verapamil) can worsen HFpEF and should generally be avoided.*
+*Note: Your doctor will review medications carefully. Too much diuresis, or venodilators (e.g., isosorbide dinitrate), can lead to a severe fall in cardiac output and blood pressure; venodilators are not stopped without specialist advice, as some patients may benefit. Non-dihydropyridine calcium channel blockers (diltiazem, verapamil) may worsen heart failure. NSAIDs and glitazones can cause salt and fluid retention. Digoxin is avoided unless you have atrial fibrillation.*
 
 ---
 
 ## Exacerbations (Worsening of Heart Failure)
 
-If heart failure worsens, your doctor will assess fluid and heart status and look for a cause. Common causes include ischaemia, medication changes or non-adherence, infection, uncontrolled blood pressure, arrhythmia (especially atrial fibrillation), poor diet adherence, anaemia, kidney problems, or acute dehydration.
+If heart failure worsens, your doctor will assess fluid and heart status and look for a cause. Common causes include ischaemia, medication changes or non-adherence, infection, uncontrolled blood pressure, arrhythmia (especially atrial fibrillation), poor adherence to salt and fluid restrictions, anaemia (including iron deficiency), kidney problems, or acute dehydration. If you are dehydrated, your doctor may lower the diuretic dose back to the minimum needed to reach your target weight.
 
-If fluid overloaded: diuretics will be increased and a temporary fluid restriction (around 1.5 litres per day) may be recommended. Regular weight and symptom monitoring is essential.
+If fluid overloaded: diuretics may be increased and a temporary fluid restriction (around 1.5 litres per day) may be recommended. Regular weight and symptom monitoring is essential. Your doctor may also start an SGLT2 inhibitor, as there is evidence of benefit in the acute phase. If you are not responding, your doctor may seek urgent cardiology advice.
 
 If the heart failure does not respond to outpatient treatment, or if performance status is poor, your doctor will discuss further specialist options or advance care planning.
 
@@ -399,5 +442,8 @@ If the heart failure does not respond to outpatient treatment, or if performance
 
 ## Patient Resources
 
-- New Zealand Heart Foundation: [Staying Well with Heart Failure](https://www.heartfoundation.org.nz/your-heart/heart-conditions/heart-failure/staying-well-with-heart-failure), [Action Plan](https://www.heartfoundation.org.nz/your-heart/heart-conditions/heart-failure/action-plan), [Daily Checks Record Sheet](https://www.heartfoundation.org.nz/your-heart/heart-conditions/heart-failure/daily-checks-record-sheet)
-- Healthify He Puna Waiora: [Heart Failure](https://healthify.nz/health-a-z/h/heart-failure), [Medicines for Heart Problems](https://healthify.nz/medicines-a-z/m/medicines-used-for-heart-problems), [Sodium and Salt](https://healthify.nz/health-a-z/s/sodium)
+- New Zealand Heart Foundation: [Staying Well with Heart Failure](https://assets.heartfoundation.org.nz/documents/heart-healthcare/heart-failure/staying-well-with-heart-failure-2022.pdf)
+- New Zealand Heart Foundation: [Heart Failure Action Plan](https://assets.heartfoundation.org.nz/documents/heart-healthcare/heart-failure/heart-failure-action-plan.pdf)
+- New Zealand Heart Foundation: [Daily Checks Record Sheet](https://assets.heartfoundation.org.nz/documents/heart-healthcare/heart-failure/heart-failure-daily-checks-record-2022.pdf)
+- New Zealand Heart Foundation: [Supporting Someone with Heart Failure](https://assets.heartfoundation.org.nz/documents/shop/heart-healthcare/supporting-someone-with-heart-failure1.pdf)
+- Healthify He Puna Waiora: [Heart Failure](https://healthify.nz/health-a-z/h/heart-failure), [Medicines Used for Heart Problems](https://healthify.nz/medicines-a-z/c/cardiovascular-medications), [Sodium and Salt](https://healthify.nz/hauora-wellbeing/s/sodium-salt)
