@@ -67,7 +67,7 @@
               "description": "File the results from a lab report dropped into the chat. ChatGPT reads the file itself; it never reaches our server. Attach the synthetic report at the file attachment URL: invented data for app review, not a real person's report.",
               "prompt": "Here is my blood test. Add the results to my record.",
               "tools_triggered": "file_results",
-              "expected_behavior": "The first call writes nothing to the record and returns each printed result matched against the record, with units and collection date, plus a receipt. After the user confirms in their own words, a second call, carrying the user's approval quoted, commits: values appended, document filed as a metadata-only row. If an earlier reviewer already filed the same file, the first call says it was already imported and offers nothing to commit; that is correct too.",
+              "expected_behavior": "The first call writes nothing to the record and returns each printed result matched against the record, with units and collection date, plus a receipt. After the user confirms in their own words, a second call, carrying the user's approval quoted, commits: values appended, document filed as a metadata-only row. If an earlier reviewer already filed the same file, the first call says it was already imported and offers nothing to commit; that is correct too. Please confirm with a short sentence, such as \"Yes, add them\" or \"Yes, apply the correction\": ChatGPT's own safety check blocks a permanent write approved by a bare \"yes\".",
               "file_attachment_urls": [
                 "https://cdn.shopify.com/s/files/1/0790/6109/0503/files/sample-lab-report.pdf?v=1790902633"
               ]
@@ -76,7 +76,7 @@
               "description": "Correct a value entered wrongly. The record is append-only, so the old row is superseded rather than edited.",
               "prompt": "My most recent ferritin should be 10 ug/L higher than it shows.",
               "tools_triggered": "read_record, correct_value",
-              "expected_behavior": "Reads the record for the most recent ferritin row, its id and its current value, then returns a confirm receipt naming that value and the value 10 ug/L higher, and writes nothing. After the user's own yes, a second call, carrying the user's approval quoted, appends a ferritin row with the higher value at the original date and marks the old row entered-in-error. Nothing is deleted and nothing is invented."
+              "expected_behavior": "Reads the record for the most recent ferritin row, its id and its current value, then returns a confirm receipt naming that value and the value 10 ug/L higher, and writes nothing. After the user's own yes, a second call, carrying the user's approval quoted, appends a ferritin row with the higher value at the original date and marks the old row entered-in-error. Nothing is deleted and nothing is invented. Please confirm with a short sentence, such as \"Yes, add them\" or \"Yes, apply the correction\": ChatGPT's own safety check blocks a permanent write approved by a bare \"yes\"."
             }
           ],
           "negative": [

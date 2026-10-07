@@ -149,3 +149,11 @@ in a step needs secrecy; only integrity matters.
 - **One lifecycle:** `signStep(kind, fields, conn, …)` and `openStep(kind, fields, conn, mac, issued, …)` serve both kinds, and the connection is a required parameter of every MAC.
 - **The MAC input:** `kind, issued (decimal), …fields, conn, hash(client), hash(resource)`. The issue time is bound directly. For proposals, `i` and `j` are still covered exactly as received.
 - **The pending-file pre-check:** it keeps the `payload` object check. A file without one gets the worded "not readable" refusal, never a thrown error.
+
+## Live result (2026-10-07, v127–v129, ChatGPT Instant, reviewer record)
+
+- **The UUID receipt alone did not fix it.** The "Suspicious content" card went away, but ChatGPT still blocked confirms. Its card said: "the call includes a confirmation receipt but no evidence of the user's own-word approval".
+- **The cause:** ChatGPT's safety check judges the call against our own "after their own yes, in their own words" rule.
+- **The fix:** `approval`, the user's words quoted verbatim (c7fbd110).
+- **Result:** 8 of 8 confirms with a sentence reply wrote: 3 corrections, 3 lab-report commits and 2 profile changes. All 3 bare "Yes" replies were blocked before reaching the server.
+- **Mitigation for review:** the proposal asks for a sentence (ChatGPT does not relay that). Test cases 4 and 5 and the review notes tell the reviewer to confirm with a short sentence.
