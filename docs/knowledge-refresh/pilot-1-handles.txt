@@ -1,0 +1,10 @@
+acute-coronary-syndromes-acs
+cardiovascular-risk-assessment-cvra
+chronic-non-cancer-pain
+diabetes-screening-and-diagnosis-in-adults
+heart-failure
+hyperlipidaemia
+hypertension-in-adults
+non-insulin-diabetes-medications
+osteoarthritis-oa
+type-2-diabetes

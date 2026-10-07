@@ -1,0 +1,13 @@
+# Rulings since the contract (orchestrator, 2026-09-29 to 2026-10-08)
+
+These override the contracts where they differ.
+
+1. Report shape. Each `changed_tokens` entry is `{body_line, raw_quote, notes?}`. No `token` field: the checker works out the numbers itself. One entry per body line that carries a new or changed number. `body_line` is the exact current text of that body line. `raw_quote` is verbatim source text (copied, never retyped) of at least 6 words or 30 characters that holds the same numbers.
+2. Urgency follows the source's own grouping. Never invent tiers. Where the source marks a presentation for acute assessment, admission or as life-threatening, say "call 111 or go to the emergency department". Where it says urgent or same-day review, say "see your doctor the same day". Where it groups several red flags under one action, keep them under one action. "111" in "call 111" needs no report entry.
+3. Comparator words follow the source. If the source says "less than 4 mmol/L", the body says "less than", not "below". "Over 3 to 6 months" (a time span) stays as the source writes it.
+4. Funding criteria never appear (Special Authority, eligibility rules, PHARMAC conditions). A one-word status ("funded") may stay.
+5. Brands only where the source uses the brand as the drug's name, plus a supply-change notice that alters a dose. Remove expired supply notices.
+6. Red flags for back pain (new bladder or bowel control problems, saddle numbness, new limb weakness) appear only where the source lists them.
+7. Your old report from 2026-09-29 survives at ~/.codex-review/diff-reports/<batch>/<handle>.json. Its entries are sentences and quotes that were already checked against the same raw, and its notes record rulings for your entry (for example a reverted tier, a removed sentence, a FOR BRAD item). Start from it. Re-check every quote against the raw yourself; keep its rulings unless the raw contradicts them.
+8. References: a number in a sentence that cites [n], where n is a PubMed record, must be quoted from that PMID's abstract (prefix "EXTRA: ", file listed in extra_raw with its sha256). Safety cautions that rested only on Grokipedia stay out; list them in notes under SAFETY.
+9. Writers never commit and never touch index.json. Write only your own entry and your own report.
