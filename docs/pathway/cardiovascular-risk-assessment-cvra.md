@@ -58,7 +58,7 @@ Your doctor will also record your smoking status, ethnicity, personal cardiovasc
 
 ### Family History Risk Factors
 
-- Premature CVD: a first-degree relative hospitalised or who died from a heart attack or stroke before age 50
+- Premature CVD: a first-degree relative hospitalised or who died from a heart attack or stroke before age 50 years
 - Type 2 diabetes
 - Genetic lipid disorder
 

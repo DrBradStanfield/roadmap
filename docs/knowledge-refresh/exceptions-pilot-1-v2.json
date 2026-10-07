@@ -22,5 +22,29 @@
   "reason": "The source now defines HFrEF as 40% or less; the heading follows it. Ruled 2026-09-29.",
   "by": "orchestrator",
   "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "cardiovascular-risk-assessment-cvra",
+  "match": "changed_tokens[2] raw_quote shares no number with its body_line: - Diabetes with overt nephropathy (albumin:creatinine ratio 30 mg/mmol or more, or urinary albumi...",
+  "reason": "The scrape prints the nephropathy thresholds bare; the entry keeps 'or more' following HISO 10071:2019, which defines them as floors (Codex content review R1, 2026-10-08). FOR BRAD to confirm.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "hyperlipidaemia",
+  "match": "changed_tokens[1] raw_quote shares no number with its body_line: - Diabetes with overt nephropathy (albumin/creatinine ratio 30 mg/mmol or more, or urinary albumi...",
+  "reason": "As for CVRA: 'or more' follows HISO 10071:2019 (Codex content review R1, 2026-10-08). FOR BRAD to confirm.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "heart-failure",
+  "match": "changed_tokens[33] raw_quote shares no number with its body_line: If fluid overloaded: diuretics may be increased and a temporary fluid restriction (around 1.5 lit...",
+  "reason": "The source says 'Use 1.5 litres as a starting point' for a temporary fluid restriction; the entry adds 'per day', which every fluid restriction means, so a patient is not misled. Orchestrator 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
  }
 ]
