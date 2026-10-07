@@ -156,7 +156,7 @@ export function validateReport(o: unknown): string[] {
   if (Array.isArray(r.changed_tokens)) (r.changed_tokens as { void?: unknown; void_reason?: unknown }[]).forEach((x, i) => {
     if (!x || x.void === undefined) return;
     if (typeof x.void !== "boolean") e.push(`changed_tokens[${i}].void: boolean expected`);
-    else if (x.void && (typeof x.void_reason !== "string" || !x.void_reason.trim())) e.push(`changed_tokens[${i}].void_reason: a reason is required when void is true`);
+    else if (x.void && (typeof x.void_reason !== "string" || !x.void_reason.trim())) e.push(`changed_tokens[${i}].void_reason: void entry without void_reason`);
   });
   if (r.new !== undefined && typeof r.new !== "boolean") e.push("new: boolean expected");
   if (r.extra_raw !== undefined) {
@@ -302,17 +302,40 @@ function stripNoise(line: string): string {
     .replace(/([A-Za-z])\s*[∙·⋅]\s*([A-Za-z]+)\s*(?:[-−]|⁻)[1¹]\b/g, "$1/$2") // "g∙kg-1" is g/kg
     .replace(/(\d)\s*-\s*(month|week|hour|year)ly\b/gi, "$1 $2")
     .replace(/\baged\s+(\d+(?:\.\d+)?)(?![\d.])(?!\s*(?:years?|y\b|months?|weeks?|days?|(?:[-–]|to\s|and\s)\s*\d))/gi, "aged $1 years")
-    .replace(NUMWORD_UNIT, (_, w: string) => `${wordValue(w)} `)
-    .replace(NUMWORD_OPEN, (m, lead: string, w: string, noun: string) => (/^[A-Za-z]+s$/.test(noun) && !/(?:ss|us|is)$|^(?:was|has|does|as|this|thus)$/i.test(noun) ? `${lead}${wordValue(w)}` : m));
+    .replace(NUMWORD_UNIT, (m, w: string, sp: string) => { const v = wordValue(w); return v === null ? m : `${v}${sp}`; })
+    .replace(NUMWORD_OPEN, (m, lead: string, w: string, noun: string) => {
+      const v = wordValue(w);
+      return v !== null && /^[A-Za-z]+s$/.test(noun) && !/(?:ss|us|is)$|^(?:was|has|does|as|this|thus)$/i.test(noun) ? `${lead}${v}` : m;
+    });
 }
 
 // "six weeks" = "6 weeks"; a bare number word counts only when it opens a sentence before a plural noun ("Forty-five adults").
-const ONES = "one|two|three|four|five|six|seven|eight|nine";
-const WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, fifteen: 15,
+// A number-word expression is parsed whole ("one hundred twenty" = 120). One that does not parse yields no token, never its tail.
+const WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12,
+  thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
   twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
-const NW = `(?:(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:-(?:${ONES}))?|a\\s+hundred|one\\s+hundred|${ONES}|ten|eleven|twelve|fifteen)`;
-const wordValue = (w: string) => /hundred/i.test(w) ? 100 : w.toLowerCase().split("-").reduce((n, p) => n + WORDS[p], 0);
-const NUMWORD_UNIT = new RegExp(`\\b(${NW})[\\s-]+(?=(?:${UNIT})(?![A-Za-z]))`, "gi");
+const W = `${Object.keys(WORDS).join("|")}|hundred|thousand`;
+const NW = `(?:a(?=\\s+(?:hundred|thousand)\\b)|${W})(?:(?:(?<=hundred|thousand)\\s+and\\s+|[\\s-]+)(?:${W}))*`;
+/** Value of a whole number-word expression, or null when it is not one. */
+function wordValue(expr: string): number | null {
+  const ws = expr.toLowerCase().split(/[\s-]+/).filter((w, i, a) => w !== "and" || /^(?:hundred|thousand)$/.test(a[i - 1] ?? ""));
+  const under = (p: string[]): number | null => {
+    let h = 0, i = 0;
+    if (p[1] === "hundred" && (p[0] === "a" || (WORDS[p[0]] ?? 99) < 10)) { h = (p[0] === "a" ? 1 : WORDS[p[0]]) * 100; i = 2; }
+    const r = p.slice(i).filter((w) => w !== "and");
+    if (!r.length) return h || null;
+    const v = r.map((w) => WORDS[w]);
+    if (v.some((x) => x === undefined)) return null;
+    if (r.length === 1) return h + v[0];
+    return r.length === 2 && v[0] >= 20 && v[0] % 10 === 0 && v[1] < 10 ? h + v[0] + v[1] : null;
+  };
+  const t = ws.indexOf("thousand");
+  if (t < 0) return under(ws);
+  if (ws.indexOf("thousand", t + 1) >= 0) return null;
+  const hi = ws.slice(0, t).join() === "a" ? 1 : under(ws.slice(0, t)), lo = t + 1 < ws.length ? under(ws.slice(t + 1)) : 0;
+  return hi === null || lo === null ? null : hi * 1000 + lo;
+}
+const NUMWORD_UNIT = new RegExp(`(?<!\\b(?:${W})[\\s-]+)(?<!(?:hundred|thousand)\\s+and\\s+)\\b(${NW})([\\s-]+)(?=(?:${UNIT})(?![A-Za-z]))`, "gi");
 const NUMWORD_OPEN = new RegExp(`(^[\\s>*_-]*|(?<=[.?!][)"'\\]*]*\\s+))(${NW})(?=\\s+([A-Za-z]+)\\b)`, "gi");
 
 /** Number tokens of a text, unit-normalised ("1 g" -> "1000 mg"). Reference lines are skipped unless keepRefs. */
@@ -673,7 +696,7 @@ function linesWith(body: string, tok: string): string {
 type PairSentence = { sentence: string; inPlace: boolean };
 type PairInfo = { pairs: Map<string, PairSentence[]>; orphans: { sentence: string; tokens: string[] }[] };
 /** The sentence with its numbers masked: two sentences with the same frame differ only in their values. */
-const frame = (t: string) => t.toLowerCase().replace(TOKEN_RE(), "#").replace(/\s+/g, " ").trim();
+const frame = (t: string) => stripNoise(normChars(t)).toLowerCase().replace(TOKEN_RE(), "#").replace(/\s+/g, " ").trim();
 // Bare one- or two-digit integers ("type 2", "1 in 36") are identifiers or counts; AC4 covers their sentences.
 const carriesValue = (tok: string) => /^[≥≤><]/.test(tok) || tok.includes(" ") || tok.includes(".") || /^\d{3,}/.test(tok);
 

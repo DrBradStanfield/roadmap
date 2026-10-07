@@ -550,6 +550,28 @@ describe("US-42 AC2/AC4 sentence pairs", () => {
     expect(f).toContain('token "2000 mg" changed between paired sentences and no entry covers it');
     expect(f).toContain('token "200 mg" changed between paired sentences and no entry covers it');
   });
+  const withRaw = (extra: string) => {
+    const raw = `${fx("alpha.raw.txt")}\n${extra}`;
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+  };
+  it("R1: a source saying 'one hundred twenty mg' does not verify a body saying 20 mg", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Take it with food", "Participants took 20 mg daily for six weeks.\nTake it with food"));
+    withRaw("Participants took one hundred twenty mg daily for six weeks.");
+    reps.alpha.changed_tokens.push({ body_line: "Participants took 20 mg daily for six weeks.", raw_quote: "Participants took one hundred twenty mg daily for six weeks." });
+    expect(fails(run().AC2).join("\n")).toContain("20 mg");
+    reps.alpha.changed_tokens[reps.alpha.changed_tokens.length - 1].body_line = "Participants took 120 mg daily for six weeks.";
+  });
+  it("R2: swapping 'six mg' and 'twelve mg' between two sentences needs an entry on each line", () => {
+    const base = fx("alpha.new.md").replace("Take it with food", "Adults took six mg before breakfast.\nChildren took twelve mg after dinner.\nTake it with food");
+    put("docs/blog/alpha.md", base);
+    sh(["add", "docs/blog/alpha.md"]); sh(["commit", "-q", "-m", "words", "--", "docs/blog/alpha.md"]);
+    put("docs/blog/alpha.md", base.replace("six mg", "TMP").replace("twelve mg", "six mg").replace("TMP", "twelve mg"));
+    withRaw("Adults took twelve mg before breakfast. Children took six mg after dinner.");
+    const f = fails(run().AC2).join("\n");
+    expect(f).toContain('token "12 mg" changed between paired sentences and no entry covers it');
+    expect(f).toContain('token "6 mg" changed between paired sentences and no entry covers it');
+  });
   it("fails a swap when only one of the two changed lines has an entry", () => {
     put("docs/blog/alpha.md", swapped());
     swapReport();
@@ -1426,7 +1448,7 @@ describe("US-42 AC2 void entries, number words, abbreviations (v3)", () => {
     const r = { ...exampleReport("x"), changed_tokens: [{ body_line: "a", raw_quote: "b", void: "yes" }] };
     expect(validateReport(r).join()).toContain("void");
     const v = { ...exampleReport("x"), changed_tokens: [{ body_line: "a", raw_quote: "b", void: true }] };
-    expect(validateReport(v).join()).toContain("void_reason");
+    expect(validateReport(v).join()).toContain("void entry without void_reason");
     expect(JSON.stringify(REPORT_SCHEMA)).toContain("void_reason");
   });
   it("reads number words before a unit", () => {
@@ -1438,6 +1460,15 @@ describe("US-42 AC2 void entries, number words, abbreviations (v3)", () => {
     expect(t("for twenty-one days")).toEqual(["21 day"]);
     expect(t("for Ninety days")).toEqual(["90 day"]);
     expect(t("for fifteen minutes")).toEqual(["15 min"]);
+  });
+  it("parses compound number words whole, and yields nothing for a part it cannot parse", () => {
+    expect(t("took one hundred twenty mg")).toEqual(["120 mg"]);
+    expect(t("took two hundred and fifty mg")).toEqual(["250 mg"]);
+    expect(t("took one thousand mg")).toEqual(["1000 mg"]);
+    expect(t("took twenty-five mg")).toEqual(["25 mg"]);
+    expect(t("took five six mg")).toEqual([]);
+    expect(t("took twenty twenty mg")).toEqual([]);
+    expect(t("between six and twelve mg")).toEqual(["12 mg"]);
   });
   it("reads a number word with no unit only when it opens a sentence before a counted noun", () => {
     expect(t("Forty-five adults took it.")).toEqual(["45"]);
