@@ -63,7 +63,8 @@
       "cardiovascular-risk-assessment-cvra"
     ],
     "must_mention": [
-      "benefit"
+      "secondary prevention",
+      "younger"
     ],
     "must_not_mention": [
       "too old"
@@ -358,8 +359,8 @@
       "type-2-diabetes"
     ],
     "must_mention": [
-      "doctor",
-      "insulin"
+      "intermediate-acting",
+      "sulfonylurea"
     ],
     "notes": "Changed. New entry: steroids \"persistently more than 15 mmol/L\" need more monitoring; \"If glucose is higher (e.g. more than 15 mmol/L) or not on target with a sulfonylurea, intermediate-acting insulin may be considered\"."
   }
