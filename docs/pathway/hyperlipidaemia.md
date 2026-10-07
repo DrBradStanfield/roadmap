@@ -43,7 +43,7 @@ Your doctor will place you in the high risk category, because of your clinical c
 - eGFR < 30 mL/min/1.73 m² (severely reduced kidney function)
 - Asymptomatic carotid or coronary disease
 - Certain genetic lipid disorders: familial hypercholesterolaemia (FH), familial defective ApoB (FDB), or familial combined dyslipidaemia (FCH)
-- Diabetes with overt nephropathy (albumin/creatinine ratio 30 mg/mmol or urinary albumin 200 mg/L)
+- Diabetes with overt nephropathy (albumin/creatinine ratio 30 mg/mmol or more, or urinary albumin 200 mg/L or more)
 
 ### Patients Aged ≥ 75 Years
 

@@ -10,3 +10,12 @@ gpt-6.1-sol reviewed main..41becc66 (all four batches, no raw included, so INCOM
 - R6 ACCEPTED: answer fixtures (AC5) for every refreshed handle must be registered before sign-off; the 2026-09-29 fixtures were lost with the scratchpad.
 - R7 PARTLY ACCEPTED: removals ruled 2026-09-29 stay, recorded in exceptions files; US-42 AC4 is amended to say so.
 - R8 DISPUTED: the drafts are on branch knowledge-refresh/batches, not main; only main deploys. AC8 sign-off gates the merge.
+
+## Pilot content review with sources included (2026-10-08, gpt-6.1-sol)
+
+- R1 ACCEPTED: nephropathy thresholds in CVRA and hyperlipidaemia read "30 mg/mmol or more ... 200 mg/L or more", following HISO 10071:2019 (the scrape prints them bare; the live entries had the comparator). FOR BRAD to confirm.
+- R2 FOR BRAD: hyperlipidaemia's ezetimibe "about 11% fewer events" follows the scrape; IMPROVE-IT's primary endpoint shows about 6.4% relative (32.7% vs 34.7% at 7 years).
+- R3 ACCEPTED: heart failure now says ARNIs are first-line in reduced ejection fraction and "may be considered" in mildly reduced, matching the source's own HFmrEF section.
+- R4 DISPUTED: Codex ran main's checker; the token-free report format is checker v2 on branch knowledge-refresh/checker-v2, which passes the pilot.
+- R5 ACCEPTED: answer fixtures (AC5) before sign-off.
+- R6 noted: review branch declared docs only, net production LOC 0.

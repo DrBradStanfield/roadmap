@@ -100,7 +100,7 @@ Some patients are in a very high-risk group without needing a full risk calculat
   - Familial hypercholesterolaemia
   - Familial defective ApoB
   - Familial combined dyslipidaemia
-- Diabetes with overt nephropathy (albumin:creatinine ratio 30 mg/mmol or urinary albumin 200 mg/L)
+- Diabetes with overt nephropathy (albumin:creatinine ratio 30 mg/mmol or more, or urinary albumin 200 mg/L or more)
 - Diabetes with other renal disease causing renal impairment (eGFR ≤ 60 mL/min/1.73 m²)
 
 ---

@@ -286,7 +286,7 @@ Used if ACE inhibitors are not tolerated.
 
 ### Angiotensin Receptor Neprilysin Inhibitor (ARNI) — Sacubitril/Valsartan (Entresto)
 
-Current international guidelines recommend ARNIs as first-line treatment for heart failure with reduced or mildly reduced ejection fraction. In this pathway, your doctor starts an ACE inhibitor or ARB, and may switch to an ARNI if you have NYHA Class II–IV symptoms. ARNIs reduce mortality and hospitalisation.
+Current international guidelines recommend ARNIs as first-line treatment for heart failure with reduced ejection fraction; for mildly reduced ejection fraction, an ARNI may be considered. In this pathway, your doctor starts an ACE inhibitor or ARB, and may switch to an ARNI if you have NYHA Class II–IV symptoms. ARNIs reduce mortality and hospitalisation.
 
 **How it works:** Combines an angiotensin receptor blocker with a neprilysin inhibitor, which prevents the breakdown of natriuretic peptides.
 
