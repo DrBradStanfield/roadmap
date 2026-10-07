@@ -72,16 +72,30 @@ jobs:
               )] | length')
           [ "${verdict}" -ge 1 ] || { echo "No trusted APPROVE verdict for ${HEAD_SHA} — not shipping."; exit 0; }
 
-          # The named 'test' check must be green on this exact commit. The review
-          # (~80 s) usually ends before 'test' (~3 min), so wait up to 10 min for
-          # it to finish instead of reading it once (#124/#129 stalled, 2026-10-07).
+          # The named 'test' check must be green on this exact commit, and it must
+          # be ci.yml's job run by GitHub Actions (a branch could add its own
+          # workflow with a 'test' job). The review (~80 s) usually ends before
+          # 'test' (~3 min), so wait up to 10 min for it instead of reading it
+          # once (#124/#129 stalled, 2026-10-07). An API blip counts as pending.
+          ci_test() {
+            gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs?check_name=test" \
+              | jq -c '[.check_runs[] | select(.app.slug == "github-actions")]' || echo '[]'
+          }
+          from_ci() {
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs?check_suite_id=$1" \
+              | jq -e '.workflow_runs[0].path == ".github/workflows/ci.yml"' >/dev/null 2>&1
+          }
+          st=pending
           for _ in $(seq 40); do
-            st=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs?check_name=test" \
-              | jq -r '[.check_runs[].conclusion] | if any(. == "success") then "success"
-                  elif length > 0 and all(. != null) then "failed" else "pending" end')
-            [ "${st}" = "pending" ] || break; sleep 15
+            runs=$(ci_test)
+            for suite in $(jq -r '.[] | select(.conclusion == "success") | .check_suite.id' <<<"${runs}"); do
+              from_ci "${suite}" && st=success && break
+            done
+            [ "${st}" = success ] && break
+            if jq -e 'length > 0 and all(.conclusion != null)' <<<"${runs}" >/dev/null; then st=failed; break; fi
+            sleep 15
           done
-          [ "${st}" = "success" ] || { echo "'test' check ${st} on ${HEAD_SHA} — not shipping."; exit 0; }
+          [ "${st}" = success ] || { echo "'test' check ${st} on ${HEAD_SHA} — not shipping."; [ "${st}" = failed ] && exit 0; exit 1; }
 
           # Veto window: notify (native email via issue), wait 30 minutes.
           # The email must stand alone — what the change is, why it exists, and
