@@ -31,6 +31,7 @@ import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase.server';
 import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
 import { routeQuery, sanitizeForRouter, ROUTER_VERSION, type RouterResult } from './chat-router.server';
+import { cutText } from '../../packages/health-core/src/chat-history';
 import { findBlogByVideoId, type BlogIndexEntry } from './blog-index.server';
 import { loadBlogArticle } from './matched-content';
 import {
@@ -541,9 +542,9 @@ export async function readPostingCaps(): Promise<{ dailyCount: number; videoPost
  * signal about whether the bot behaved correctly.
  *
  * Failure is non-fatal and never blocks posting — the reply is already live on
- * YouTube by the time this runs.
+ * YouTube by the time this runs. Exported for tests.
  */
-async function persistYouTubeTurn(p: {
+export async function persistYouTubeTurn(p: {
   thread: YouTubeThread;
   outcome: PipelineOutcome;
   postedYoutubeId: string | null;
@@ -569,7 +570,7 @@ async function persistYouTubeTurn(p: {
         .from('chat_conversations')
         .insert({
           user_id: BOT_PROFILE_ID,
-          title: thread.text.slice(0, 80),
+          title: cutText(thread.text, 80),
           platform: PLATFORM_YOUTUBE,
           external_id: thread.topLevelCommentId,
         })
@@ -647,7 +648,7 @@ async function persistYouTubeTurn(p: {
       router_cache_hit: r?.cacheHit ?? null,
       router_input_tokens: r?.usage.inputTokens ?? null,
       router_cache_read_tokens: r?.usage.cacheReadTokens ?? null,
-      router_raw: r?.error ? (r.rawJson?.slice(0, 500) ?? null) : null,
+      router_raw: r?.error && r.rawJson != null ? cutText(r.rawJson, 500) : null,
       router_error: r?.error ?? null,
       classification: outcome.classification ?? 'ERROR',
       router_skipped: outcome.routerSkipped ?? false,

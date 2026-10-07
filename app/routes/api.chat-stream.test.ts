@@ -348,3 +348,22 @@ describe('US-15 AC19 — tools only for a client that applies edits', () => {
     expect(mocks.getChatCompletion.mock.calls.map((c) => c[2])).toEqual([true, false]);
   });
 });
+
+// US-15 AC27 (Sentry 6Y): a 500-unit cut through an emoji left a lone
+// surrogate, and PostgREST rejected the row as invalid JSON.
+describe('US-15 AC27 — stored cuts keep surrogate pairs whole', () => {
+  it('router_raw and error_detail drop an emoji astride the 500-unit cut', async () => {
+    mocks.fireRouter = true;
+    vi.mocked(routeQuery).mockResolvedValueOnce({
+      handles: [], latencyMs: 0, cacheHit: false, usage: { inputTokens: 0, cacheReadTokens: 0 },
+      error: 'parse', rawJson: 'r'.repeat(499) + '😀',
+    } as Awaited<ReturnType<typeof routeQuery>>);
+    Object.assign(mocks.completion, { errorDetail: 'e'.repeat(499) + '😀' });
+    await lines(await post({ message: 'hello', stream: true }));
+    await new Promise((resolve) => setImmediate(resolve));
+    const row = (table: string) => inserts.find((i) => i.table === table && i.row.role !== 'user')?.row;
+    expect(row('chat_messages')?.error_detail).toBe('e'.repeat(499));
+    expect(row('chat_match_events')?.router_raw).toBe('r'.repeat(499));
+    expect(JSON.stringify(inserts)).not.toMatch(/\\u[dD][89a-fA-F]/);
+  });
+});

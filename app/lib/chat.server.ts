@@ -15,6 +15,7 @@ import { buildChatContextJson } from '../../packages/health-core/src/chat-contex
 import { CHAT_EDIT_TOOLS, parseProposedEdits, toolOnlyAck, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
 import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicStreamEvent, type AnthropicUsage, type RefusalCategory } from './anthropic.server';
 import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, modelParams } from '../../packages/health-core/src/models';
+import { cutText } from '../../packages/health-core/src/chat-history';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -597,7 +598,7 @@ export function generateTitle(firstMessage: string): string {
     return sentenceMatch[1];
   }
   if (firstMessage.length <= 80) return firstMessage;
-  const truncated = firstMessage.slice(0, 80);
+  const truncated = cutText(firstMessage, 80);
   const lastSpace = truncated.lastIndexOf(' ');
   return lastSpace > 40 ? truncated.slice(0, lastSpace) + '…' : truncated + '…';
 }

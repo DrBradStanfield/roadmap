@@ -368,7 +368,9 @@ export async function routeQuery(
       usage: EMPTY_USAGE,
       latencyMs,
       cacheHit: false,
-      error: errorMsg,
+      // JSON.parse quotes a snippet of the bad input that can end mid-pair
+      // (US-15 AC27). This is toWellFormed(), which the ES2022 lib lacks.
+      error: errorMsg.replace(/[\uD800-\uDFFF]/gu, '\uFFFD'),
     };
   }
 }

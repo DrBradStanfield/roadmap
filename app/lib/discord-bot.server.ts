@@ -22,6 +22,7 @@ import { sleep } from './cron-helpers.server';
 import { reportChatFallback } from './chat.server';
 import { generateTitle, CHAT_MODEL } from './chat.server';
 import { ROUTER_VERSION, type RouterResult } from './chat-router.server';
+import { cutText } from '../../packages/health-core/src/chat-history';
 import { supabaseAdmin } from './supabase.server';
 import { createRateLimiter } from './rate-limiter';
 
@@ -260,7 +261,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       }
     } catch { /* best-effort typing indicator */ }
 
-    const truncatedInput = strippedContent.slice(0, DISCORD_MAX_MESSAGE_CHARS);
+    const truncatedInput = cutText(strippedContent, DISCORD_MAX_MESSAGE_CHARS);
 
     // Explicit reply chain wins. Otherwise, outside a thread (threads carry their
     // own history via loadThreadHistory), continue this user's recent conversation
@@ -666,8 +667,8 @@ interface PersistParams {
 // model actually answers. This was a hard-coded 'claude-haiku-4-5-20251001'
 // until 2026-08-07 and did not follow the Sonnet 5 cutover, so every Discord
 // row persisted since then is labelled with the wrong model. Rows created
-// before this fix cannot be trusted on the `model` column.
-async function persistConversation(p: PersistParams): Promise<void> {
+// before this fix cannot be trusted on the `model` column. Exported for tests.
+export async function persistConversation(p: PersistParams): Promise<void> {
   if (!supabaseAdmin || !DISCORD_BOT_PROFILE_ID) return;
 
   let conversationId = p.conversationId;
@@ -730,7 +731,7 @@ async function persistConversation(p: PersistParams): Promise<void> {
       discord_message_id: firstSentId,
       is_fallback: p.isFallback,
       failure_mode: p.failureMode ?? null,
-      error_detail: p.errorDetail?.slice(0, 500) ?? null,
+      error_detail: p.errorDetail != null ? cutText(p.errorDetail, 500) : null,
     });
   if (asstErr) {
     Sentry.captureException(new Error('Discord: failed to save assistant message'), {
@@ -761,7 +762,7 @@ async function persistConversation(p: PersistParams): Promise<void> {
       router_cache_hit: r?.cacheHit ?? null,
       router_input_tokens: r?.usage.inputTokens ?? null,
       router_cache_read_tokens: r?.usage.cacheReadTokens ?? null,
-      router_raw: r?.error ? (r.rawJson?.slice(0, 500) ?? null) : null,
+      router_raw: r?.error && r.rawJson != null ? cutText(r.rawJson, 500) : null,
       router_error: r?.error ?? null,
       classification: p.classifier.classification,
       router_skipped: p.classifier.routerSkipped,
