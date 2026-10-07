@@ -210,5 +210,5 @@ Your doctor will:
 ## Patient Resources
 
 - Healthify He Puna Waiora: [Angina](https://healthify.nz/health-a-z/a/angina), [Chest Pain](https://healthify.nz/health-a-z/c/chest-pain), [Heart Attack | Hē Manawa](https://healthify.nz/health-a-z/h/heart-attack), [New Zealand Sign Language (NZSL) Chest Pain Videos](https://healthify.nz/translations/n/nzsl-chest-pain-videos)
-- Health New Zealand Te Whatu Ora: [Chest Pain](https://info.health.nz/health-topics/conditions-treatments/heart-health/chest-pain)
+- Health New Zealand: [Chest Pain](https://info.health.nz/health-topics/conditions-treatments/heart-health/chest-pain)
 - Heart Foundation: [Angina Action Plan](https://assets.heartfoundation.org.nz/documents/shop/marketing/non-stock-resources/angina-action-plan.pdf), [Uma Tino Mamae](https://assets.heartfoundation.org.nz/documents/shop/heart-healthcare/angina-pamphlet-maori.pdf) (te reo Māori angina pamphlet)

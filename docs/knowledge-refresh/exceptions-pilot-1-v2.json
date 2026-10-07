@@ -10,7 +10,7 @@
  {
   "check": "AC2",
   "handle": "diabetes-screening-and-diagnosis-in-adults",
-  "match": "    FAIL diabetes-screening-and-diagnosis-in-adults: token \">90 cm\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Waist circumference more than 102 cm (men) or more than 88 cm (women); in Indo-Asian individuals, more than 80 cm i...\"",
+  "match": "token \">90 cm\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Waist circumference more than 102 cm (men) or more than 88 cm (women); in Indo-Asian individuals, more than 80 cm i...\"",
   "reason": "The source writes the men's waist cutoff as 'more than 90 in men' with no unit beside it; the unit is clear from the paired 80 cm figure. Ruled 2026-09-29.",
   "by": "orchestrator",
   "date": "2026-10-08"
