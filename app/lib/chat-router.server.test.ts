@@ -97,3 +97,18 @@ describe('US-15 AC26 — sanitizeForRouter', () => {
     expect(sanitizeForRouter('a'.repeat(1999) + '😀')).toBe('a'.repeat(1999));
   });
 });
+
+// US-15 AC27 (Sentry 6Y): V8's JSON.parse message quotes a 10-unit snippet of
+// the bad input, which can end mid-pair. router_error stores that message, so
+// a lone surrogate there makes PostgREST reject the whole match-event row.
+describe('US-15 AC27: router_error carries no lone surrogate', () => {
+  it('a prose reply with an emoji at the snippet edge yields a well-formed error', async () => {
+    vi.mocked(callAnthropicWithUsage).mockResolvedValueOnce({
+      content: 'Hi there 😀 how can I help',
+      usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 },
+    } as Awaited<ReturnType<typeof callAnthropicWithUsage>>);
+    const r = await routeQuery('hello');
+    expect(r.error).toBeTruthy();
+    expect(JSON.stringify(r.error)).not.toMatch(/\\u[dD][89a-fA-F]/);
+  });
+});
