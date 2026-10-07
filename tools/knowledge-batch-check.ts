@@ -582,7 +582,7 @@ const hasQuote = (hay: string, q: string) => {
 };
 
 /** Find `q` in `hay`, then re-tokenise the whole words around each hit: the token must be a whole token there ("7 mmol/L" is not "1.7 mmol/L"). */
-function findWhole(hay: string, q: string, tok: string): "ok" | "partial" | "absent" {
+function findWhole(hay: string, q: string, tok: string, lined = false): "ok" | "partial" | "absent" {
   let found = false;
   for (let i = hay.indexOf(q); i >= 0; i = hay.indexOf(q, i + 1)) {
     found = true;
@@ -590,7 +590,9 @@ function findWhole(hay: string, q: string, tok: string): "ok" | "partial" | "abs
     let a = i, b = i + q.length;
     while (a > 0 && !/\s/.test(hay[a - 1])) a--;
     while (b < hay.length && !/\s/.test(hay[b])) b++;
-    if (tokenise(hay.slice(a, b), { keepRefs: true }).has(tok)) return "ok";
+    const words = tokenise(hay.slice(a, b), { keepRefs: true });
+    // A multi-line quote carries its own comparator line; the flattened raw cannot show it, the bare number must still stand.
+    if (words.has(tok) || (lined && /^[≥≤><]/.test(tok) && words.has(tok.slice(1)))) return "ok";
   }
   return found ? "partial" : "absent";
 }
@@ -619,9 +621,10 @@ function citedPubmedIds(body: string, bodyLine: string): Set<string> | null {
 }
 
 /** PMIDs of the PubMed records cited by the sentences of `bodyLine` that hold `tok`, or null when they cite none. */
-function citedForEntry(bodyLine: string, tok: string, body: string): Set<string> | null {
+function citedForEntry(bodyLine: string, tok: string, body: string, tokensOf: (s: string) => Set<string>): Set<string> | null {
   let out: Set<string> | null = null;
-  for (const sn of sentences(bodyLine).filter((x) => tokenCounts(x, { keepRefs: true }).has(tok))) {
+  const holding = sentences(bodyLine).filter((x) => tokensOf(x).has(tok));
+  for (const sn of holding.length ? holding : [bodyLine]) {
     const ids = citedPubmedIds(body, sn);
     if (ids) { out = out ?? new Set(); ids.forEach((i) => out!.add(i)); }
   }
@@ -716,7 +719,7 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
     let partial = false;
     for (const x of sources(!!prefixed)) {
       for (const tok of shared) {
-        const r = findWhole(x.norm, q, tok);
+        const r = findWhole(x.norm, q, tok, /\n/.test(quote.trim()));
         if (r === "ok") hits.set(tok, [...(hits.get(tok) ?? []), { pmid: x.pmid, path: "path" in x ? x.path : "" }]); else if (r === "partial") partial = true;
       }
     }
@@ -724,7 +727,7 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
     // A number whose own sentence cites a PubMed record must be quoted from that record's abstract, not ConsumerLab or NIH text.
     const ok = new Set<string>();
     for (const [tok, ms] of hits) {
-      const cited = c.type === "reference" ? citedForEntry(entry.body_line, tok, c.newBody) : null;
+      const cited = c.type === "reference" ? citedForEntry(entry.body_line, tok, c.newBody, lineTokens) : null;
       if (!cited || ms.some((m) => m.pmid !== null && cited.has(m.pmid))) ok.add(tok);
     }
     if (!ok.size) return fail(`number cited to a primary study without its abstract in reach: ${line}`);
@@ -749,7 +752,8 @@ function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairIn
     const holding = valid.filter((e) => e.ok.has(tok));
     needed.add(tok);
     if (!holding.length) {
-      const attempted = rep.changed_tokens.some((e) => tokenise(e.body_line, { keepRefs: true }).has(tok) && tokenise(e.raw_quote, { keepRefs: true }).has(tok));
+      // Suppress the duplicate diagnostic only when an entry for this token actually failed and said so.
+      const attempted = entries.some((x) => !x.ok && lineTokens(x.e.body_line).has(tok) && tokenise(x.e.raw_quote, { keepRefs: true }).has(tok));
       failed.add(tok);
       if (!attempted) ac2.fails.push(isNew
         ? `${tag} token "${tok}" is new in the body and no entry has a body line and a source quote that both carry it${linesWith(c.newBody, tok)}`

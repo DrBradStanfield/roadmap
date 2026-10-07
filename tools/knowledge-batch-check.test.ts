@@ -308,6 +308,22 @@ describe("US-42 AC2 multiset and body_line", () => {
     reps.alpha.changed_tokens.push({ body_line: "- 5 mg a day", raw_quote: "more than 5 mg a day were not studied" });
     expect(fails(run().AC2)).toEqual([]);
   });
+  it("US-42 AC2: a number with no verified coverage fails even when its entry verified another number (R1)", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Trials used 300 mg in adults [1].", "Review after 12 weeks. Take 300 mg."));
+    const raw = "Review after 12 weeks before taking 300 mg/kg.";
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.changed_tokens = [{ body_line: "Review after 12 weeks. Take 300 mg.", raw_quote: "Review after 12 weeks before taking 300 mg" }];
+    expect(fails(run().AC2).join()).toContain('"300 mg"');
+  });
+  it("US-42 AC2: a verbatim multi-line quote with a list-item comparator verifies end to end (R3)", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md").replace("Some evidence suggests benefit.", "Seek care if you take more than:\n- 5 mg a day"));
+    const raw = `${fx("alpha.raw.txt")}\nSeek care if you take more than:\n- 5 mg a day\n`;
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.changed_tokens.push({ body_line: "- 5 mg a day", raw_quote: "Seek care if you take more than:\n- 5 mg a day" });
+    expect(fails(run().AC2)).toEqual([]);
+  });
   it("US-42 AC2: a quote that supports no number must still be verbatim in the raw", () => {
     reps.alpha.changed_tokens[0].raw_quote = "the participants were followed for twelve weeks";
     expect(fails(run().AC2).join()).toContain("not in the raw file");
@@ -1250,6 +1266,20 @@ describe("US-42 AC2 primary study cited without its abstract (R14d)", () => {
     ];
     expect(flagged()).not.toContain("without its abstract");
     reps.alpha.changed_tokens[0].raw_quote = "participants took 300 mg in adults for 12 weeks";
+    expect(flagged()).toContain("without its abstract in reach");
+  });
+  it("looks up the citation of a list item with its comparator from the line above (R2)", () => {
+    put("docs/blog/alpha.md", fx("alpha.new.md")
+      .replace("[1] Smith A. Synthetic trial. 2019.", `[1] Smith A. Synthetic trial. PMID: ${pm} https://pubmed.ncbi.nlm.nih.gov/${pm}/`)
+      .replace("Some evidence suggests benefit.", "Seek care if you take more than:\n- 5 mg a day [1]."));
+    const raw = `${fx("alpha.raw.txt")}\nSafety limits: more than 5 mg a day were evaluated in adults.`;
+    writeFileSync(join(reports, "alpha.raw.txt"), raw);
+    reps.alpha.raw_sha256 = sha256(raw);
+    reps.alpha.extra_raw = [abstract(pm)];
+    reps.alpha.changed_tokens = [
+      { body_line: "Trials used 300 mg in adults [1].", raw_quote: "EXTRA: participants took 300 mg in adults every day" },
+      { body_line: "- 5 mg a day [1].", raw_quote: "more than 5 mg a day were evaluated in adults" },
+    ];
     expect(flagged()).toContain("without its abstract in reach");
   });
   it("does not apply when the cited reference is not a PubMed record", () => {
