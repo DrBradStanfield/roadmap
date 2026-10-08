@@ -20,7 +20,7 @@ AC6 "unexpected change" lines list other batches on the same branch: expected. E
 |---|---|---|
 | pathways-pilot-1-v2 | 10 | MERGED to main 2026-10-08 (AC8 approved; AC5 after 2026-11-01) |
 | references-1-v2 | 5 | MERGED to main 2026-10-08 (AC8 approved; AC5 after 2026-11-01) |
-| pathways-batch-2 | 20 | CHECKED on checker v3 2026-10-08 (48dde744; only AC6 fails, expected): Sonnet report fixer + style audit, one Opus prose worker (funding rule 4, house safety lines, 2 source mismatches, 31 style fixes), 11 exceptions. Review branch `knowledge-refresh/review-batch-2` (local, from main). IN REVIEW: fresh Opus adversary + Codex (`runs/codex-batch-2.{log,json}`). Next: fix accepted findings, sign-off sheet, Brad AC8 |
+| pathways-batch-2 | 20 | REVIEWED 2026-10-08: adversary + Codex findings ruled in batch-2-adversary-fixes-2026-10-08.md; body fixes committed 3f02c4fc; 40 AC5 fixtures pre-registered. BLOCKED: auto mode denied the report edits in ~/.codex-review/diff-reports/pathways-batch-2 (about 55 AC2/AC4 fails in runs/batch-2-check-6.log); needs Brad to allow writes there. Then: one Sonnet report fixer, rebuild review-batch-2 from main, Codex round 2 (say AC5 deferred), sign-off sheet (include adversary rows 11-12 and the cardiac arrhythmia grouping), Brad AC8 |
 | pathways-new-1 | 40 | parked v1 drafts; known safety fixes: analgesia-in-children tramadol after tonsillectomy under 18 (Medsafe contraindication), IBD calprotectin unit (/L vs /g) |
 
 ## Next steps, in order
