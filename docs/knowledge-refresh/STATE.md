@@ -20,7 +20,7 @@ AC6 "unexpected change" lines list other batches on the same branch: expected. E
 |---|---|---|
 | pathways-pilot-1-v2 | 10 | MERGED to main 2026-10-08 (AC8 approved; AC5 after 2026-11-01) |
 | references-1-v2 | 5 | MERGED to main 2026-10-08 (AC8 approved; AC5 after 2026-11-01) |
-| pathways-batch-2 | 20 | parked v1 drafts; v1 reports; not re-checked on checker v3 |
+| pathways-batch-2 | 20 | CHECKED on checker v3 2026-10-08 (48dde744; only AC6 fails, expected): Sonnet report fixer + style audit, one Opus prose worker (funding rule 4, house safety lines, 2 source mismatches, 31 style fixes), 11 exceptions. Review branch `knowledge-refresh/review-batch-2` (local, from main). IN REVIEW: fresh Opus adversary + Codex (`runs/codex-batch-2.{log,json}`). Next: fix accepted findings, sign-off sheet, Brad AC8 |
 | pathways-new-1 | 40 | parked v1 drafts; known safety fixes: analgesia-in-children tramadol after tonsillectomy under 18 (Medsafe contraindication), IBD calprotectin unit (/L vs /g) |
 
 ## Next steps, in order
