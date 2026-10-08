@@ -80,7 +80,7 @@ Basal insulin is taken at night. Its main role is to reduce overnight glucose pr
 
 ## Step 2: Adding or Switching Insulin
 
-If HbA1c remains above target despite optimised basal insulin, your doctor will move to a second-step regimen. There are two main options:
+If HbA1c remains above target despite fully adjusted basal insulin, your doctor will move to a second-step regimen. There are two main options:
 
 ### Choosing between Basal-Bolus and Premixed
 
@@ -198,6 +198,8 @@ Your doctor should explain how to manage hypoglycaemia, sick days, and driving w
 - [Driving](https://t2dm.nzssd.org.nz/Section-100-Diabetes-and-driving)
 - [Sick days](https://t2dm.nzssd.org.nz/Section-95-Sick-day-management-in-patients-with-diabetes)
 
+If someone with diabetes is unconscious, having a seizure, or cannot swallow safely, call 111. Do not give food or drink by mouth.
+
 ---
 
 ## HbA1c Targets and Thresholds
@@ -206,7 +208,7 @@ HbA1c is usually measured 3 months after starting a new regimen or reaching a st
 
 If HbA1c stays above target, your doctor may first try non-insulin options before changing regimens:
 
-- Optimising lifestyle and other treatment
+- Improving lifestyle and other treatment
 - Checking how and where you inject, and whether doses are being missed
 - Referral to a dietitian or diabetes service
 - Screening for depression and diabetes distress

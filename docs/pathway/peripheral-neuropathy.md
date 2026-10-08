@@ -74,7 +74,7 @@ The diagnosis is usually made from the history, examination, and blood tests.
 
 ### Treating the underlying cause
 
-This is the most important step where a cause is found:
+This is the main step where a cause is found:
 
 - **Diabetes:** good blood glucose and blood pressure control may slow progression
 - **B12 deficiency:** treat any vitamin B12 deficiency
@@ -97,13 +97,13 @@ Neuropathic pain is difficult to treat. Your doctor may consider:
 - A TCA combined with an anticonvulsant is more effective than either alone
 
 **Topical treatments:**
-- **Capsaicin 0.075%** cream (funded only for diabetic neuropathy)
+- **Capsaicin 0.075%** cream
   - Works by depleting substance P; it acts on the nerves, not directly on inflammation
   - Takes 1 week for initial response; 4–6 weeks for full effect
   - Build up to full use. There may be a burning sensation at first, which goes away with continued regular use
   - Use regularly 3–4 times daily; do not massage in; wash hands after, unless your hands are being treated
   - Do not use on broken skin or on areas you do not mean to treat
-- **Lidocaine (lignocaine)** topical: may be useful, although it is not funded for this indication
+- **Lidocaine (lignocaine)** topical: may be useful (not funded)
 
 ### TENS machine
 
@@ -164,9 +164,9 @@ Specialist input can change the outcome in inflammatory demyelinating or vasculi
 
 ## Key Points for Patients
 
-1. Finding and treating the cause (especially diabetes, B12 deficiency, or alcohol) is the most important step
+1. Finding and treating the cause (especially diabetes, B12 deficiency, or alcohol) is the main step
 2. Pain management takes time and patience. Medications need gradual titration
-3. Protecting your feet from injury is essential when sensation is reduced
+3. Protecting your feet from injury is necessary when sensation is reduced
 4. Most cases are managed in general practice. Specialist referral is for specific complex presentations
 
 ---

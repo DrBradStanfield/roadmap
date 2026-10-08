@@ -31,7 +31,7 @@ Gout is caused by deposition of monosodium urate (MSU) crystals in and around jo
 ## Background
 
 - Affects about 5.7% of New Zealand adults. Māori men have a prevalence of about 14% and Pacific men approximately 23%.
-- The gold standard for diagnosis is demonstration of MSU crystals in synovial fluid or tophi, but in most cases the diagnosis is made clinically.
+- The most reliable diagnostic test is demonstration of MSU crystals in synovial fluid or tophi, but in most cases the diagnosis is made clinically.
 - Long-term management targets serum urate below 0.36 mmol/L with urate-lowering therapy (ULT). There is no evidence to support ULT in asymptomatic hyperuricaemia.
 - Poorly controlled gout is associated with: cardiovascular disease, renal failure, erosive joint damage, and significant social impact.
 
@@ -84,7 +84,7 @@ Your doctor may ask about:
 
 ## Management
 
-> **Practice point:** For all patients with gout, encourage early initiation and long-term urate-lowering therapy. The goal is sustained urate control, not just treating flares.
+> **Practice point:** For all patients with gout, encourage early initiation and long-term urate-lowering therapy. The goal is sustained urate control between flares.
 
 ### Acute gout flare treatment
 
@@ -153,7 +153,7 @@ There is no evidence to support ULT for asymptomatic hyperuricaemia.
 - Once at target, serum urate is checked every 6–12 months.
 - It can take **more than 12 months** after reaching target for flares to stop, and years for tophi to dissolve.
 - Continue long-term medication even if a flare occurs.
-- Think of your serum urate like HbA1c in diabetes. It needs to be maintained, not just treated during flares.
+- Think of your serum urate like HbA1c in diabetes. It needs to be maintained long term, between flares.
 
 ### Allopurinol (first-line ULT)
 
@@ -265,7 +265,7 @@ Your doctor will refer you or seek advice if:
 
 ## Key Concepts for Patients
 
-- Gout needs long-term treatment, not just treatment of flares.
+- Gout needs long-term treatment between flares.
 - The target serum urate is below 0.36 mmol/L. Ask your doctor for your result.
 - Even after reaching your target urate, it can take more than a year for flares to stop.
 - Do not stop allopurinol if you have a flare. Continue it and treat the flare separately.

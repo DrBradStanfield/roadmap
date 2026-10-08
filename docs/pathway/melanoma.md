@@ -10,7 +10,7 @@ summary: "Clinical pathway for melanoma: assessment of pigmented skin lesions us
 
 *Source: Auckland Region HealthPathways. Last reviewed: September 2021.*
 
-This pathway covers pigmented skin lesions, particularly melanoma. Melanoma can be found at an early, survivable stage, so early diagnosis is essential.
+This pathway covers pigmented skin lesions, particularly melanoma. Melanoma can be found at an early, survivable stage.
 
 > This information is for background understanding. Your doctor will assess and manage any skin lesion of concern.
 

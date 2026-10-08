@@ -34,6 +34,10 @@ Full prescribing information is not included here. Your doctor will check the Ne
 
 Your blood glucose may be normal or only slightly raised, even with ketoacidosis.
 
+If you are confused, very drowsy, or struggling to breathe, call 111 or go to the emergency department.
+
+If a finger-prick test shows blood ketones over 1.5 mmol/L while you take an SGLT2 inhibitor, call 111 or go to the emergency department.
+
 **Contact your doctor** if you notice:
 
 - Palpitations or feeling faint. Your doctor may repeat an ECG.
@@ -101,7 +105,7 @@ Most side effects take time to develop, but some can occur early and may be seve
 
 ### Drug Interactions
 
-Amiodarone has many important interactions. Your doctor will check the full list before prescribing. Interactions can persist after amiodarone is stopped, due to its long and variable half-life.
+Amiodarone interacts with many medicines. Your doctor will check the full list before prescribing. Interactions can persist after amiodarone is stopped, due to its long and variable half-life.
 
 Key interactions include:
 - **Simvastatin:** If combined with amiodarone, the simvastatin dose must not exceed 20 mg daily (increased risk of muscle breakdown, called rhabdomyolysis). An alternative statin may be considered for people on long-term amiodarone.
@@ -363,7 +367,7 @@ Your doctor will:
 
 ### Drug Interactions
 
-- Ticagrelor is a mild CYP 3A4 inhibitor, with important interactions with CYP 3A4 inhibitors and inducers
+- Ticagrelor is a mild CYP 3A4 inhibitor, and interacts with CYP 3A4 inhibitors and inducers
 - Ticagrelor is a p-glycoprotein inhibitor
 
 ---
@@ -521,7 +525,7 @@ Sacubitril + valsartan (Entresto) is the currently available angiotensin recepto
 Sodium glucose co-transporter 2 (SGLT2) inhibitors are one of the pillars of treatment for heart failure with reduced ejection fraction.
 
 - Dapagliflozin is registered for heart failure but not funded.
-- Empagliflozin is funded for heart failure.
+- Empagliflozin is funded.
 - The dose of both is 10 mg per day.
 - Creatinine may rise (and eGFR may fall) within the first 6 to 8 weeks. Unless dialysis or other renal replacement therapy is needed, this does not require stopping or a dose change.
 

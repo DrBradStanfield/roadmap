@@ -18,7 +18,7 @@ This pathway covers assessment and management of vitamin D deficiency in childre
 
 ## Background
 
-Vitamin D is important for bone health and metabolism across all age groups. There is increasing evidence for its role in immune modulation and anti-inflammatory properties.
+Vitamin D supports bone health and metabolism across all age groups. There is increasing evidence for its role in immune modulation and anti-inflammatory properties.
 
 If left untreated, vitamin D deficiency can result in rickets and hypocalcaemia.
 

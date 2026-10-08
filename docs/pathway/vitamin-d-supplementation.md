@@ -20,7 +20,7 @@ For vitamin D deficiency in children, see the separate Vitamin D Deficiency in C
 
 ## Background
 
-- Vitamin D maintains calcium and phosphate homeostasis, and optimises bone health and muscle function.
+- Vitamin D maintains calcium and phosphate homeostasis, and supports bone health and muscle function.
 - Low vitamin D is linked to osteoporosis and osteomalacia in adults, and rickets in children. Deficiency may result from poor nutrition, malabsorption, or lack of sun exposure.
 - Treatment of **mild** vitamin D deficiency does not appear to have significant benefits for fracture risk or bone mineral density.
 - Supplementation may reduce falls in older people in residential care, though evidence is not strong.

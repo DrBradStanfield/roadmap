@@ -55,7 +55,7 @@ Asymptomatic people without risk factors do not need routine thyroid screening. 
 - Mental health concerns, such as major depression, anxiety, declining cognition
 - Pregnancy with known positive TPO antibodies
 
-**Note on biotin:** Biotin supplements do not affect thyroid hormone levels but can interfere with thyroid blood test measurements, producing false results. Inform your doctor if you take biotin.
+**Note on biotin:** Biotin supplements do not affect thyroid hormone levels but can interfere with thyroid blood test measurements and give false results. Inform your doctor if you take biotin.
 
 ---
 

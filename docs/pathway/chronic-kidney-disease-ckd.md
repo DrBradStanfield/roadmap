@@ -39,7 +39,7 @@ CKD is defined as either:
   - Blood in the urine (haematuria), after ruling out urological causes
   - Structural abnormalities on kidney imaging
 
-Staging is based on both eGFR and uACR combined. Finding the underlying cause of CKD is important.
+Staging is based on both eGFR and uACR combined. Your doctor will look for the underlying cause of CKD.
 
 ### Why It Matters
 
@@ -151,7 +151,7 @@ Your doctor may arrange:
 
 **Additional tests your doctor may consider:**
 - Hepatitis B, C, or HIV serology if relevant risk factors
-- Myeloma tests (serum and urinary protein electrophoresis, serum free light chain) if myeloma is suspected, especially if uACR is greater than 30, or there is back pain, constipation, and elevated calcium
+- Myeloma tests (serum and urinary protein electrophoresis, serum free light chain) if myeloma is suspected, especially if uACR is greater than 30 mg/mmol, or there is back pain, constipation, and elevated calcium
 - Autoimmune markers (dsDNA, ANA, ENA, complement, ANCAs, anti-GBM) if signs of systemic disease such as rash, arthritis, rapidly declining function, or fever, night sweats, and unexplained weight loss. Prompt specialist referral is then likely.
 - Renal ultrasound if eGFR is below 30, below 45 with diabetes, below 60 with progressive decline (a drop of more than 15 over the previous year), or uACR greater than 250
 
@@ -169,7 +169,7 @@ Your doctor may arrange:
 
 ## Management
 
-> Mortality in people with CKD is primarily from cardiovascular disease. Your doctor will focus on managing your heart and blood vessel health aggressively alongside your kidney disease. Maximum tolerated ACE inhibitor or ARB therapy and SGLT2 inhibitors are critical to slowing both CKD and cardiovascular disease.
+> Mortality in people with CKD is primarily from cardiovascular disease. Your doctor will focus on managing your heart and blood vessel health aggressively alongside your kidney disease. Maximum tolerated ACE inhibitor or ARB therapy and SGLT2 inhibitors slow both CKD and cardiovascular disease.
 
 ### Addressing Reversible Causes
 
@@ -195,11 +195,11 @@ Your doctor will typically advise:
 
 ### Sick Day Advice
 
-Your doctor may give you specific instructions about which medications to stop for a short time during illness, for example with dehydration or pneumonia, and to restart as soon as you have recovered. This is important to protect your kidneys during periods of illness-related stress.
+Your doctor may give you specific instructions about which medications to stop for a short time during illness, for example with dehydration or pneumonia, and to restart as soon as you have recovered. This protects your kidneys during periods of illness-related stress.
 
 ### Diabetes Management
 
-Your doctor will work to optimise your blood sugar control if you have diabetes.
+Your doctor will work to bring your blood sugar into the target range if you have diabetes.
 
 ### Blood Pressure
 
@@ -212,7 +212,7 @@ Your doctor will aim for blood pressure of 130/80 or less.
 ### Medications to Slow CKD Progression
 
 **ACE inhibitors or ARBs:**
-- Your doctor may prescribe an ACE inhibitor or ARB at the maximum tolerated dose. This is a key pillar of CKD treatment regardless of blood pressure.
+- Your doctor may prescribe an ACE inhibitor or ARB at the maximum tolerated dose. This is a pillar of CKD treatment regardless of blood pressure.
 - These are recommended if uACR is greater than 3 mg/mmol, when there are no concerns about low blood pressure. Older people and those with autonomic neuropathy are at higher risk of symptomatic low blood pressure.
 - They are not used if you already take Entresto
 - Women of childbearing age need to be sure they are not pregnant, and to use effective contraception, before starting

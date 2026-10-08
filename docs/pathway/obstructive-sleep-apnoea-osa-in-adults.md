@@ -24,7 +24,7 @@ OSA is the most common form of sleep-disordered breathing, with an estimated pre
 ## Who is at risk?
 
 **Main risk factors:**
-- Overweight or obesity (the most important risk factor, thought to account for up to 50% of the risk of OSA)
+- Overweight or obesity (the main risk factor, thought to account for up to 50% of the risk of OSA)
 - Male sex (twice the incidence of females)
 - Post-menopausal women (similar prevalence to men)
 - Age over 50 years
@@ -210,7 +210,7 @@ If you snore but have no other features of OSA, your doctor can manage this: tre
 
 ## Managing co-morbidities
 
-Your doctor may optimise management of other conditions linked to OSA and address cardiovascular risk:
+Your doctor may improve management of other conditions linked to OSA and address cardiovascular risk:
 - **Cardiovascular:** Hypertension, atrial fibrillation, heart failure, arrhythmias
 - **Endocrine:** Diabetes, impaired glucose tolerance, thyroid disease
 - **Respiratory:** COPD, asthma, allergic rhinitis

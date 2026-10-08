@@ -219,7 +219,7 @@ Preventive treatment is worth considering if you have 2 or more disabling migrai
 - Topiramate: must not be used in pregnancy, as it has been linked to birth defects and neurodevelopmental disorders. A pregnancy test and effective contraception are needed first for anyone who could become pregnant. If pregnancy occurs, stop it immediately and seek advice
 - Candesartan: must not be used in pregnancy; kidney function and electrolytes are checked after each dose increase
 - Sodium valproate: used only with specialist recommendation and where there is no suitable alternative, because of risks in pregnancy
-- Not funded: atogepant (daily), galcanezumab and fremanezumab (injections every 4 weeks). These are not more likely to work than funded medicines but are well tolerated and need no dose build-up. Avoid before or during pregnancy and when breastfeeding. Approximate cost (as of June 2025) is $300 to $400 a month
+- Not funded: atogepant (daily), galcanezumab and fremanezumab (injections every 4 weeks). These are not more likely to work than funded medicines but are well tolerated and need no dose build-up. Avoid before or during pregnancy and when breastfeeding. Approximate cost (as of June 2025): atogepant $350 to $400 per month, galcanezumab $350 to $400 per dose, and fremanezumab $300 to $330 per 225 mg/1.5 mL injection. Prices may vary.
 - Second-line options: Botox every 12 weeks (given in a hospital clinic after neurology referral), venlafaxine, lamotrigine, gabapentin, or pregabalin
 
 Doses are increased slowly. Trial a medication for 2–3 months before changing. Consider gradual withdrawal after 6 to 12 months of effective prevention.
@@ -232,7 +232,7 @@ Doses are increased slowly. Trial a medication for 2–3 months before changing.
 
 ### Medication Overuse Headache — Management
 
-The key to recovery is stopping all pain medications.
+Recovery depends on stopping all pain medications.
 
 - **Abrupt withdrawal** is the preferred method for most medications. The headache will initially worsen, but most people improve within 14 days
 - **Gradual withdrawal** is needed for opioids and benzodiazepines, or if you feel you cannot stop abruptly (reducing by 2 days per month, on average)

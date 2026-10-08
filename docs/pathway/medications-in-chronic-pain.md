@@ -10,7 +10,7 @@ summary: "Clinical guidance on medications used in chronic non-cancer pain: drug
 
 *Source: Auckland Region HealthPathways. Last reviewed: May 2024.*
 
-This pathway covers the medications used to manage chronic non-cancer pain, including which drug classes to consider for different pain types, dosing principles, and important safety information.
+This pathway covers the medications used to manage chronic non-cancer pain, including which drug classes to consider for different pain types, dosing principles, and safety information.
 
 > This is general information from a pathway written for doctors. Do not start, stop, or change a pain medicine without talking to your doctor.
 
@@ -57,7 +57,7 @@ If a medication is not providing significant benefit, it should be stopped and a
 
 **Topical capsaicin:**
 - Works by depleting substance P in nerve endings (not directly anti-inflammatory)
-- 0.025% strength is recommended for osteoarthritis. 0.075% is funded for postherpetic neuralgia and diabetic neuropathy.
+- 0.025% strength is recommended for osteoarthritis. 0.075% is used for postherpetic neuralgia and diabetic neuropathy.
 - Takes 1 week for initial response, 4–6 weeks for full effect
 - Apply regularly 3–4 times a day; do not massage in
 - Initial burning sensation is normal and reduces with continued use
@@ -80,7 +80,7 @@ Your doctor may consider *nortriptyline* or *amitriptyline*.
 
 These carry special risks and require careful prescribing.
 
-*Important safety note:* Gabapentinoids enhance the effects of opioids, alcohol, and recreational drugs, increasing the risk of side-effects and accidental overdose. They also carry a risk of dependence and misuse. Special precautions apply if you are taking opioids or have a history of substance or alcohol use disorder. Your doctor may consider:
+*Important safety note:* Gabapentinoids enhance the effects of opioids, alcohol, and recreational drugs. This raises the risk of side-effects and accidental overdose. They also carry a risk of dependence and misuse. Special precautions apply if you are taking opioids or have a history of substance or alcohol use disorder. Your doctor may consider:
 - naloxone (an opioid antagonist) if you are at risk of opioid overdose
 - monthly dispensing instead of every 3 months in general
 - weekly dispensing if you are on opioid substitution treatment, benzodiazepines, or opioids, or have a history of substance or alcohol use disorder

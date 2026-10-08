@@ -6,5 +6,85 @@
   "reason": "The 2026-09 source no longer covers prasugrel (grep of health_pathways/cardiac-drugs-and-monitoring.md finds no mention); the section and its Healthdirect link go with it. Ruled 2026-10-08.",
   "by": "orchestrator",
   "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "cardiac-drugs-and-monitoring",
+  "match": "body line has no entry quoting \"2\": Two formulations exist: standard and controlled release (CR). Dose increases are made slowly, together with a cardiol...",
+  "reason": "Checker limit: the raw says \"two formulations\" mid-sentence and the checker reads a number word only at a sentence start. The body matches the raw. Rule 10: text left as it should read.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "inflammatory-arthritis",
+  "match": "changed_tokens[4] raw_quote shares no number with its body_line: - ANA (antinuclear antibody) test: only requested if there is a high suspicion of a connective ti...",
+  "reason": "Checker limit (logged in the tool header): this list item inherits the \">\" comparator of the line above (\"more than 6 weeks:\"). The ANA quote is verbatim from the raw. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "inflammatory-arthritis",
+  "match": "changed_tokens[5] raw_quote shares no number with its body_line: - ANA (antinuclear antibody) test: only requested if there is a high suspicion of a connective ti...",
+  "reason": "Checker limit (logged in the tool header): this list item inherits the \">\" comparator of the line above (\"more than 6 weeks:\"). The ANA quote is verbatim from the raw. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "inflammatory-arthritis",
+  "match": "token \">1\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker limit (logged in the tool header): this list item inherits the \">\" comparator of the line above (\"more than 6 weeks:\"). The ANA quote is verbatim from the raw. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "inflammatory-arthritis",
+  "match": "token \">160\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker limit (logged in the tool header): this list item inherits the \">\" comparator of the line above (\"more than 6 weeks:\"). The ANA quote is verbatim from the raw. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "inflammatory-arthritis",
+  "match": "token \">5 %\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker limit (logged in the tool header): this list item inherits the \">\" comparator of the line above (\"more than 6 weeks:\"). The ANA quote is verbatim from the raw. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "insomnia",
+  "match": "body line has no entry quoting \"2 hour\": Avoid screens and devices for at least 2 hours before bed",
+  "reason": "Checker limit: bold markers between \"at least\" and \"2 hours\" break the comparator token. Raw: \"at least 2 hours before sleep\". Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-deficiency-in-children",
+  "match": "changed_tokens[36] raw_quote shares no number with its body_line: | Mild deficiency | 26 to 49 nmol/L |",
+  "reason": "Checker limit: the raw writes nanomol/L and the body nmol/L; the checker does not treat them as one unit. Numbers match the raw. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-deficiency-in-children",
+  "match": "changed_tokens[37] raw_quote shares no number with its body_line: | Moderate deficiency | 12.5 to 25 nmol/L |",
+  "reason": "Checker limit: the raw writes nanomol/L and the body nmol/L; the checker does not treat them as one unit. Numbers match the raw. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "vitamin-d-deficiency-in-children",
+  "match": "body line has no entry quoting \"25 nmol/L\": Moderate deficiency | 12.5 to 25 nmol/L |",
+  "reason": "Checker limit: the raw writes nanomol/L and the body nmol/L; the checker does not treat them as one unit. Numbers match the raw. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
  }
 ]

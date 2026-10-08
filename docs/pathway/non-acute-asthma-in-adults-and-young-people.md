@@ -39,7 +39,7 @@ Your doctor will ask about:
   - History of atopy, rhinosinusitis
   - Childhood asthma symptoms
 - Smoking history, including vaping, cannabis, or other drugs
-- Occupational exposures (high-risk work includes baking, woodwork, spray painting, welding, laboratory animal work, healthcare, farming, food/chemical/textile processing). Recognising and controlling exposure to the cause is the most important way to control occupational asthma.
+- Occupational exposures (high-risk work includes baking, woodwork, spray painting, welding, laboratory animal work, healthcare, farming, food/chemical/textile processing). Recognising and controlling exposure to the cause is the main way to control occupational asthma.
 - Factors affecting access to care (e.g. socio-economic situation, housing)
 
 ### Physical Examination
@@ -96,7 +96,7 @@ A diagnosis of asthma is less likely if you have:
 
 ### Investigations
 
-- **Spirometry**: gold standard for airflow obstruction; perform if diagnosis is uncertain. Normal spirometry in a symptomatic patient most likely indicates an alternative diagnosis.
+- **Spirometry**: the most reliable test for airflow obstruction; perform if diagnosis is uncertain. Normal spirometry in a symptomatic patient most likely indicates an alternative diagnosis.
 - **Blood eosinophil count**: check at diagnosis and if control is poor (ideally before systemic steroids):
   - High eosinophils (>0.3): correlates with eosinophilic airway inflammation; predicts response to corticosteroids; higher risk of exacerbations. Prompts: check adherence and technique, increase ICS dose, consider ultra-fine particle inhalers (e.g. Qvar) for small airway disease.
   - Low eosinophils (≤0.3) at exacerbation: suggests a neutrophilic process, more likely to respond to antibiotics than corticosteroids.
@@ -166,7 +166,7 @@ At every review, your doctor will:
 
 ## Trigger Avoidance and Education
 
-- **Workplace exposures**: avoiding or protecting against occupational triggers is essential
+- **Workplace exposures**: avoiding or protecting against occupational triggers is necessary
 - **Home heating**: unflued gas heaters can worsen asthma; electric heat pumps preferred
 - **Hand and cough hygiene** protect against respiratory infections
 - **Allergens**: house dust mite avoidance is labour- and cost-intensive and does not significantly alter control; cat removal evidence is unclear; food sensitivities unlikely to affect control unless associated with anaphylaxis; reducing mould exposure may be worthwhile

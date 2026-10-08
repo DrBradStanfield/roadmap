@@ -37,7 +37,7 @@ Key points:
 - In early disease, diagnosis may be difficult. Positive blood test results support a diagnosis but are not on their own diagnostic.
 - Many patients cannot be classified, particularly in the first 4–6 months (called "undifferentiated inflammatory arthritis")
 - Swollen joints indicate inflammation of the joint lining (synovium) and suggest inflammatory arthritis
-- Features outside the joints (e.g. rashes, dry eyes, bowel symptoms) are often the key to the diagnosis
+- Features outside the joints (e.g. rashes, dry eyes, bowel symptoms) often point to the diagnosis
 
 ---
 
@@ -72,7 +72,7 @@ Your doctor will take a detailed history and examine your joints. All decisions 
 
 - **Palindromic rheumatism**: episodes of pain affecting 1 to several joints in turn, for hours to days, with symptom-free periods lasting days to months; approximately 30% develop rheumatoid arthritis
 - **Connective tissue disorders** (e.g. lupus/SLE, Sjögren's syndrome): suggested by dry eyes or mouth, Raynaud's phenomenon, thickened skin (especially of the fingers), hair loss, mouth ulcers, rashes, sensitivity to sun, or abnormal urine or blood tests. The arthritis is often symmetrical and involves the small joints.
-- **Crystal arthropathy**: gout or calcium pyrophosphate disease (CPPD/pseudogout). More common in middle-aged men, older people, and Māori and Pacific peoples. Often a single acutely inflamed joint, but may affect several joints. May occur alongside osteoarthritis. Testing fluid drawn from the joint is the gold standard if the diagnosis needs confirming.
+- **Crystal arthropathy**: gout or calcium pyrophosphate disease (CPPD/pseudogout). More common in middle-aged men, older people, and Māori and Pacific peoples. Often a single acutely inflamed joint, but may affect several joints. May occur alongside osteoarthritis. Testing fluid drawn from the joint is the most reliable way to confirm the diagnosis.
 - **Viral arthritis**: associated with infections such as parvovirus or hepatitis B; may mimic other forms of inflammatory arthritis, but symptoms typically resolve within 12 weeks
 - **Rheumatic fever**: considered especially in people at high risk who have any painful, warm, or swollen joints. High risk means a personal, family, or household history of rheumatic fever or rheumatic heart disease, or 2 or more of: Māori or Pacific peoples; aged 3–35 years (especially 4 to 19 years); living in crowded housing or deprivation.
 - **Polymyalgia rheumatica, osteoarthritis, fibromyalgia**: also considered as part of the differential
@@ -108,7 +108,7 @@ If septic arthritis or ankylosing spondylitis is suspected, your doctor will fol
 
 Once a diagnosis is made, your doctor will refer you to a **rheumatologist** (specialist) to start a DMARD (disease-modifying anti-rheumatic drug):
 
-- Rheumatologists will ideally start a DMARD within 3 months of symptom onset. In rheumatoid arthritis, early treatment with a DMARD is essential to maintain function and prevent disability.
+- Rheumatologists will ideally start a DMARD within 3 months of symptom onset. In rheumatoid arthritis, early treatment with a DMARD helps maintain function and prevent disability.
 - In other forms of inflammatory arthritis, the evidence for early treatment is less compelling. If there are markers of a poorer outcome (strong CCP positivity, persistent synovitis, functional impairment, developing deformity, or joint erosions), a DMARD may be considered before a formal diagnosis is made.
 - **Methotrexate** is the preferred first choice. Other options include sulphasalazine, hydroxychloroquine, and leflunomide.
 - When your condition is stable, specialist reviews become less frequent (e.g. annual), and if you reach remission you will be referred back to your GP
