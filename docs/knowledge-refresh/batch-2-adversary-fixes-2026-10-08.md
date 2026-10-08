@@ -20,3 +20,9 @@ Fresh Opus adversary on knowledge-refresh/review-batch-2 (8cd8882a). Line number
 ## Codex (gpt-6.1-sol, snapshot 1af613b7+e6c5417c+48feeb11, status incomplete: it could not verify AC5)
 - R1 (vitamin D children, calcium less than 2 mmol/L without symptoms): ACCEPT, see row 7.
 - R2 (no AC5 fixtures for batch 2): ACCEPT. Pre-register fixed-handle answer checks for the 20 handles now; run them with the pilot's after 2026-11-01 (Brad's deferral).
+
+## Codex round 2 (gpt-6.1-sol, snapshot 1af613b7+a707f2fe+f49e9d52, status incomplete: AC5 not run, by Brad's deferral)
+- R1 (headaches: topiramate contraception lost the source's "combined pill with a barrier method"): ACCEPT, fixed (the source's examples restored).
+- R2 (cardiac: confusion listed under both the same-day and the 111 action): ACCEPT, confusion removed from the same-day list. The pilot entry non-insulin-diabetes-medications on main has the same overlap: FOR BRAD (sign-off sheet item 13).
+- R3 (fixtures not loaded by the harness): DISPUTED. The 40 cases are in tools/test-queries.json on knowledge-refresh/batches (870c44c9); the review branch left that file out.
+- R4 (fixture notes quote licensed raw text in the repo): ACCEPT. Notes rewritten to quote our own entries. The merge to main must be built fresh from main (as for the pilot), so commit 870c44c9, which holds the raw quotes, never reaches main.

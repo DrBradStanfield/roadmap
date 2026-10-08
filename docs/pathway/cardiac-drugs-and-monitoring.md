@@ -30,7 +30,7 @@ Full prescribing information is not included here. Your doctor will check the Ne
 **See your doctor or go to hospital the same day to have your blood ketones checked** if you take an SGLT2 inhibitor and develop:
 
 - Nausea, vomiting, or abdominal pain
-- A fast heart rate, excessive thirst, shortness of breath, loss of appetite, dizziness, or confusion
+- A fast heart rate, excessive thirst, shortness of breath, loss of appetite, or dizziness
 
 Your blood glucose may be normal or only slightly raised, even with ketoacidosis.
 

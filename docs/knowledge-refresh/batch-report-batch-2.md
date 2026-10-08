@@ -11,9 +11,9 @@ Counts and hashes only. Raw text never enters this repo.
 |---|---|---|---|
 | AC1 index.json and categories.json unchanged (except approved summary corrections) | PASS | 0 | 0 |
 | AC2 raw fidelity of every new number token | WARN | 0 | 54 |
-| AC3 hedging held; hardening words listed | WARN | 0 | 130 |
+| AC3 hedging held; hardening words listed | WARN | 0 | 129 |
 | AC4 deleted sentences justified; headings kept | WARN | 0 | 0 |
-| AC6 diff touches only batch files | FAIL | 47 | 0 |
+| AC6 diff touches only batch files | FAIL | 48 | 0 |
 | AC7 grokipedia, products, references, banned phrases, exclusions | PASS | 0 | 0 |
 | PATHWAY source line, deferral blockquote, no NZ logistics | PASS | 0 | 0 |
 
@@ -23,12 +23,12 @@ Counts and hashes only. Raw text never enters this repo.
 |---|---|---|---|---|---|---|---|---|---|
 | ace-inhibitor-and-arb-use-in-renal-impairment | pathway | refresh-2026-09-29/health_pathways/ace-inhibitor-and-arb-use-in-renal-impairment.md | 6ac4d234392e41e43b3ae4ab000d523a88278bb1ce336c1487e9553c8e5df720 | 94f89e494cde23bc | 0 | 0 | 17 | 3>6 | 0>0 |
 | atrial-fibrillation-af | pathway | refresh-2026-09-29/health_pathways/atrial-fibrillation-af.md | d1015e9841254e73009ce352fdc70337a31164265fca6f4400563e42f1068eaa | c11d2d8e3a2e3e2a | 8 | 7 | 81 | 17>32 | 0>0 |
-| cardiac-drugs-and-monitoring | pathway | refresh-2026-09-29/health_pathways/cardiac-drugs-and-monitoring.md | 6a6674c2c889d737f66337b3a303d9845f652eabbdafd40204db675365eb6bfc | ab79f225aaba9606 | 76 | 74 | 123 | 16>54 | 0>0 |
+| cardiac-drugs-and-monitoring | pathway | refresh-2026-09-29/health_pathways/cardiac-drugs-and-monitoring.md | 6a6674c2c889d737f66337b3a303d9845f652eabbdafd40204db675365eb6bfc | e4c11d24cdf17886 | 76 | 74 | 123 | 16>54 | 0>0 |
 | chronic-kidney-disease-ckd | pathway | refresh-2026-09-29/health_pathways/chronic-kidney-disease-ckd.md | 191a17348e8fe8aee86d222f96553620689657c419a87d3360ba8b4cc7b36586 | e87042a2322eafa2 | 21 | 20 | 58 | 31>47 | 0>0 |
 | direct-oral-anticoagulants | pathway | refresh-2026-09-29/health_pathways/direct-oral-anticoagulants.md | 38086dcd36b9cebd6681b3946ca04a6ac6cc86b8ec3d487cd8eff409bca4a667 | b997aba3f6a77781 | 13 | 12 | 65 | 7>21 | 0>0 |
 | eye-disease-in-diabetes | pathway | refresh-2026-09-29/health_pathways/eye-disease-in-diabetes.md | 079712d49fe1f623bd86204e881685e9040f5164ebf64413e22e41f1b0c8a723 | 5fa3a22c2ef77551 | 12 | 11 | 68 | 6>22 | 0>0 |
 | gout | pathway | refresh-2026-09-29/health_pathways/gout.md | ad130dbf24699d06c8e479afe7bf9cde14525871dbdb16c99b651a1f1f6f3644 | 78593ece64da8bbd | 3 | 2 | 40 | 23>32 | 0>0 |
-| headaches-in-adults | pathway | refresh-2026-09-29/health_pathways/headaches-in-adults.md | 2adf405098fccee740b057da35235bf0db5b95a73329dfc0be5c453924283ff8 | 5e894e9d5bfef337 | 17 | 16 | 92 | 18>34 | 0>0 |
+| headaches-in-adults | pathway | refresh-2026-09-29/health_pathways/headaches-in-adults.md | 2adf405098fccee740b057da35235bf0db5b95a73329dfc0be5c453924283ff8 | effd947938a17aa3 | 17 | 16 | 92 | 18>34 | 0>0 |
 | hypothyroidism | pathway | refresh-2026-09-29/health_pathways/hypothyroidism.md | 9045b96d7d4004539a5967d45729d854704a7c196a377a8b3c3b789a551b65f3 | b4222aaa4df3b3f4 | 5 | 4 | 20 | 9>16 | 0>0 |
 | inflammatory-arthritis | pathway | refresh-2026-09-29/health_pathways/inflammatory-arthritis.md | d1ea0c8a4d714db70b5fa2c7630e8c49b5011c83688d3642d2ba2ac02f051018 | e11ab14950df67ad | 13 | 10 | 51 | 17>26 | 0>0 |
 | insomnia | pathway | refresh-2026-09-29/health_pathways/insomnia.md | 3907b0aa4d832347d834a9fbfb2fecc2f28f5914ef246b33b5f3570a6ac3663b | e92268057b9fa4c3 | 10 | 10 | 97 | 29>44 | 0>0 |
