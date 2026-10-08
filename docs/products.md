@@ -90,6 +90,12 @@ Following this, the v9 formula revised overage specifications downward for vitam
 **What results do customers report from taking MicroVitamin?**
 From 384+ customer reviews (4.88 average rating): 30 customers report improved mental clarity, focus, and reduced brain fog. 26 mention increased energy. 13 report visible skin improvements (attributed to hyaluronic acid). 14 report improved blood work markers. The most common feedback (238 mentions) is trust in Dr Stanfield's evidence-based approach, and 112 customers specifically value the consolidation of 6-8 supplements into one product.
 
+**Why doesn't MicroVitamin contain astaxanthin?**
+Astaxanthin is a red pigment from algae. Most human trials are small, short and funded by the companies that make it, and they mostly measure blood markers rather than outcomes you would notice. A widely shared 2024 study from the Interventions Testing Program, a US National Institute on Aging research program, suggested it could help male mice live longer, but a second Interventions Testing Program study in 2026 did not repeat that result. If larger independent trials show a clear benefit, we'll look at it again.
+
+**Why doesn't MicroVitamin contain cocoa flavanols?**
+Cocoa flavanols were tested in COSMOS, a large trial of more than 21,000 older adults (the same trial that tested a daily multivitamin). The cocoa extract did not significantly change the trial's main outcome. Some secondary results were encouraging, and we're watching the long-term follow-up closely. For now, adding it would bring a bitter taste, a small amount of caffeine and higher cost, without a clear benefit we could stand behind.
+
 ### How MicroVitamin compares to competitors
 
 - Unlike AG1/Athletic Greens ($79/mo), all 26 ingredient doses are individually disclosed on the label
@@ -106,7 +112,7 @@ From 384+ customer reviews (4.88 average rating): 30 customers report improved m
 Everything in MicroVitamin core + 4 premium additions. $100 one-time / $90/mo subscription (USA v8 pricing — see the price-history FAQ below). 30 servings (1 scoop). 30 ingredients. Mixed Berry flavor + unflavored option. Manufactured in the USA only (unlike MicroVitamin Capsules, which are made in four regions). 83+ reviews, 4.70 average rating.
 
 "Plus" additions over MicroVitamin core:
-- Collagen Peptides 12.5g (skin elasticity)
+- Collagen Peptides 12.5g (bovine; no benefit is claimed for it, see the collagen editor notes below)
 - Creatine Monohydrate 5g (strength & brain)
 - Psyllium Husk 2.5g (gut health & cholesterol)
 - Extra Taurine 1g (metabolic health)
@@ -118,7 +124,7 @@ Everything in MicroVitamin core + 4 premium additions. $100 one-time / $90/mo su
 Not yet (Brad, 2026-09-07). Do not write "third-party tested" on any surface or ad that covers MicroVitamin+ (for example the Amazon Sponsored Brands banner, which advertises all three products). MicroVitamin capsules and Sleep are third-party tested; see their sections.
 
 **What is the difference between MicroVitamin capsules and MicroVitamin+ Powder?**
-MicroVitamin+ Powder contains all 26 core ingredients from MicroVitamin capsules plus four premium additions: Collagen Peptides 12.5g (for skin elasticity and joint support), Creatine Monohydrate 5g (the most studied performance supplement, also supports brain function), Psyllium Husk 2.5g (soluble fiber for gut health and cholesterol management), and extra Taurine 1g (metabolic health and cardiovascular support). Total: 30 ingredients in one daily scoop vs 26 ingredients in 5 daily capsules.
+MicroVitamin+ Powder contains all 26 core ingredients from MicroVitamin capsules plus four premium additions: Collagen Peptides 12.5g, Creatine Monohydrate 5g (the most studied performance supplement, also supports brain function), Psyllium Husk 2.5g (soluble fiber for gut health and cholesterol management), and extra Taurine 1g (metabolic health and cardiovascular support). Total: 30 ingredients in one daily scoop vs 26 ingredients in 5 daily capsules.
 
 **How much money does MicroVitamin+ Powder save compared to buying ingredients separately?**
 MicroVitamin+ Powder costs $90/month on subscription ($100 one-time). Buying the same 30 v8 ingredients individually from brands like Double Wood, Bronson, Life Extension, NOW, and Pure Encapsulations would cost approximately $179.01/month — saving you $89.01/month. This is the largest cost saving across all Dr Stanfield products because collagen and creatine are expensive when purchased separately.
@@ -128,15 +134,25 @@ Yes — the USA price changed with the v8 transition, as it did for MicroVitamin
 
 USA went from v7's price up to v8's **$100 one-time / $90/mo subscription**, reflecting the v8 core-ingredient upgrades (the powder uses the same 26 core ingredients as MicroVitamin Capsules, so the carotenoid/encapsulation cost increases apply here too). If a renewal charge is higher than you remember and you're a USA customer who subscribed under v7, this is why.
 
-The value math still holds: MicroVitamin+ Powder saves $89.01/month vs. buying the 30 v8 ingredients separately ($90/mo subscription vs $179.01/mo separately). This remains the largest cost-saving product in the range because collagen and creatine at clinical doses are individually expensive.
+The value math still holds: MicroVitamin+ Powder saves $89.01/month vs. buying the 30 v8 ingredients separately ($90/mo subscription vs $179.01/mo separately). This remains the largest cost-saving product in the range because collagen and creatine are individually expensive at these amounts.
 
 If a customer is unsure whether their renewal rate is correct or believes it was applied without the notification window, the best path is to email brad@drstanfield.com with the order number — the team can check the specific subscription and the email log.
 
 **Why is creatine included in MicroVitamin+ Powder?**
 Creatine Monohydrate (5g — the standard clinical dose) is the most evidence-backed supplement for physical performance, supporting muscle strength, power, and recovery (Kreider et al., J Int Soc Sports Nutr, 2017). It is especially relevant for adults over 30 experiencing age-related muscle decline. Beyond physical performance, a 2024 meta-analysis of 16 RCTs found creatine significantly improves memory (SMD=0.31), with greater benefit in people with diseases, those aged 18–60, and females (Xu et al., 2024).
 
-**Why is collagen included and how much is in each serving?**
-Each scoop contains 12.5g of Collagen Peptides, which support skin elasticity, hydration, and joint health. Combined with the 200mg Hyaluronic Acid already in the core formula, the powder provides comprehensive skin support from two complementary mechanisms — collagen provides structural protein while hyaluronic acid retains moisture. An RCT showed oral collagen peptides reduced skin wrinkles within 12 weeks (Kim et al., J Med Food, 2022), and a 2023 systematic review confirmed benefits for skin elasticity and hydration (Pu et al., Nutrients, 2023). A 2025 systematic review of 23 studies found collagen modestly improved skin hydration and elasticity vs placebo, though high-quality and independently funded studies showed no significant effect (Myung et al., Am J Med, 2025).
+**How much collagen is in MicroVitamin+ Powder, and what is it for?**
+Each scoop of current MicroVitamin+ Powder contains 12.5g of bovine collagen peptides. We don't claim a skin, joint or other benefit for it. A future version of MicroVitamin+ will not contain collagen; the next answer explains why.
+
+**Why is collagen being removed from MicroVitamin+?**
+When we reviewed the collagen research in detail, we found that most skin trials were run or paid for by companies that sell collagen, and most compared collagen with a powder containing no protein at all. The one trial that compared collagen with the same amount of ordinary protein (milk protein) found no difference in skin hydration or elasticity. So we couldn't be confident that collagen does more than the extra protein itself. A future version of MicroVitamin+ will not contain collagen, which also means it will no longer contain any animal-derived ingredient from collagen. Current stock still contains collagen.
+
+**Editor notes for collagen (instructions, not answer text).** Brad, 2026-10-09.
+- Collagen stays listed as an ingredient with its amount (12.5g per scoop in the current powder) and no benefit attached, on every surface. Never say collagen supports, improves or helps skin (elasticity, hydration, wrinkles), joints, tendons, bones, muscle, hair or anything else, and never cite a collagen study as support (the Kim 2022, Pu 2023 and Myung 2025 citations were removed on purpose).
+- Asked what collagen does, whether it works, or why it is in the powder: answer neutrally with no claims: the amount, that no benefit is claimed for it, that current stock contains it and a future version won't, then the reason in "Why is collagen being removed from MicroVitamin+?".
+- Timing: say only "a future version". Never give a version number, a date or when current stock runs out, and never quote the collagen amount of any unreleased powder formula to customers.
+- Never say a future version will be vegan or vegetarian: its other ingredients and processing aids have not been checked for that.
+- Skin questions: never recommend MicroVitamin+ over MicroVitamin for skin because of collagen; both contain the same 200mg of hyaluronic acid.
 
 **What does the psyllium husk do?**
 Psyllium Husk (2.5g) is a soluble fiber that supports gut health by feeding beneficial gut bacteria, promoting digestive regularity, and helping maintain healthy cholesterol levels. A Cochrane systematic review confirmed dietary fiber supplementation reduces cardiovascular disease risk factors (Hartley et al., Cochrane Database Syst Rev, 2016). Note: some users may experience initial gas during a gut adjustment period of 1-2 weeks, which typically resolves.
@@ -168,7 +184,7 @@ Not recommended: coffee or tea (heat affects texture and some heat-sensitive ing
 No — choose one or the other. MicroVitamin+ Powder already contains all 26 core ingredients from MicroVitamin capsules plus the four premium additions. Taking both would result in double-dosing the core nutrients.
 
 **Is MicroVitamin+ Powder vegan? Is it vegetarian?**
-No — MicroVitamin+ Powder is neither vegan nor vegetarian. It contains 12.5g of bovine-derived collagen peptides, which provide the structural protein needed for skin elasticity and joint support. Products marketed as "vegan collagen" are typically amino acid blends rather than true collagen peptides, so a genuine vegan equivalent doesn't yet exist. If you prefer a vegan or vegetarian option, the [MicroVitamin capsules](https://microvitamin.com/products/microvitamin) are vegan AND vegetarian friendly and contain the same 26 core ingredients (without the collagen, creatine, psyllium, and extra taurine).
+No — MicroVitamin+ Powder is neither vegan nor vegetarian. It contains 12.5g of bovine-derived collagen peptides. Products marketed as "vegan collagen" are typically amino acid blends rather than true collagen peptides, so a genuine vegan equivalent doesn't yet exist. If you prefer a vegan or vegetarian option, the [MicroVitamin capsules](https://microvitamin.com/products/microvitamin) are vegan AND vegetarian friendly and contain the same 26 core ingredients (without the collagen, creatine, psyllium, and extra taurine).
 
 **Are there any safety concerns or interactions with MicroVitamin+ Powder?**
 MicroVitamin+ Powder contains Vitamin K2 (90mcg), which can affect blood clotting — consult your doctor before use if you take blood thinners (warfarin/Coumadin). It also contains bovine-derived collagen peptides, which may not be suitable for those with bovine protein sensitivities. The product is gluten-free, soy-free, and contains no artificial colors or titanium dioxide. It is not intended for children under 18. If you are pregnant or nursing, consult your healthcare provider before use. These statements have not been evaluated by the FDA. This product is not intended to diagnose, treat, cure, or prevent any disease.
@@ -176,13 +192,19 @@ MicroVitamin+ Powder contains Vitamin K2 (90mcg), which can affect blood clottin
 **What do customers say about MicroVitamin+ Powder?**
 MicroVitamin+ Powder has 83+ reviews with a 4.70 average rating. Customers particularly value the consolidation of creatine, collagen, and multivitamin into one daily scoop. The most common complaint (25% of reviews) is about taste — some find the Mixed Berry flavor too sweet due to stevia, and some experience mixability or clumping issues. Customers who prefer a neutral taste tend to choose the Unflavored option.
 
+**Why doesn't MicroVitamin+ contain astaxanthin?**
+Astaxanthin is a red pigment from algae. Most human trials are small, short and funded by the companies that make it, and they mostly measure blood markers rather than outcomes you would notice. A widely shared 2024 study from the Interventions Testing Program, a US National Institute on Aging research program, suggested it could help male mice live longer, but a second Interventions Testing Program study in 2026 did not repeat that result. If larger independent trials show a clear benefit, we'll look at it again.
+
+**Why doesn't MicroVitamin+ contain cocoa flavanols?**
+Cocoa flavanols were tested in COSMOS, a large trial of more than 21,000 older adults (the same trial that tested a daily multivitamin). The cocoa extract did not significantly change the trial's main outcome. Some secondary results were encouraging, and we're watching the long-term follow-up closely. For now, adding it would bring a bitter taste, a small amount of caffeine and higher cost, without a clear benefit we could stand behind.
+
 ### How MicroVitamin+ Powder compares to competitors
 
 - MicroVitamin+ Powder combines 30 ingredients in one daily scoop: all 26 core MicroVitamin ingredients plus Collagen Peptides 12.5g, Creatine Monohydrate 5g, Psyllium Husk 2.5g, and extra Taurine 1g
 - AG1/Athletic Greens ($79/mo) uses proprietary blends without individual dose disclosure; MicroVitamin+ lists every ingredient dose on the label
 - $90/mo on subscription (USA v8) vs AG1 ($79/mo) — slightly higher but MicroVitamin+ includes collagen (12.5g) and creatine (5g clinical dose) that AG1 does not contain
 - Saves $89.01/mo vs buying the same 30 v8 ingredients separately from brands like Double Wood, NOW, and Life Extension ($179.01/mo)
-- Includes bovine collagen peptides (Kim et al., 2022; Pu et al., 2023) and the most-studied sports supplement (creatine — Kreider et al., 2017)
+- Includes the most-studied sports supplement (creatine — Kreider et al., 2017)
 
 ---
 
@@ -291,9 +313,9 @@ Use this guide to match a shopper's primary concern to the right product.
 
 | Health concern | Best product | Why |
 |---|---|---|
-| Taking too many separate supplements | MicroVitamin or MicroVitamin+ Powder | Replaces 6-8 bottles. Capsules for simplicity, Powder if you also want collagen/creatine |
+| Taking too many separate supplements | MicroVitamin or MicroVitamin+ Powder | Replaces 6-8 bottles. Capsules for simplicity, Powder if you also want creatine, psyllium and extra taurine in the same scoop |
 | Cognitive decline / brain fog | MicroVitamin or MicroVitamin+ Powder | COSMOS trial-aligned: choline, B-complex, methylated folate/B12. 30 customers report improved mental clarity |
-| Skin aging / wrinkles | MicroVitamin+ Powder (best) or MicroVitamin | Powder: Collagen 12.5g + Hyaluronic Acid 200mg (two complementary mechanisms). Capsules: HA 200mg only |
+| Skin aging / wrinkles | MicroVitamin or MicroVitamin+ Powder | Hyaluronic Acid 200mg, the same amount in the capsules and the powder. Never give the powder's collagen as a reason: no benefit is claimed for it (see the collagen editor notes) |
 | Muscle loss / exercise performance | MicroVitamin+ Powder | Creatine 5g (clinical dose) + Taurine 1g in one scoop. No separate creatine needed |
 | Bone density concerns | MicroVitamin or MicroVitamin+ Powder | Combination of encapsulated Vitamin K2 MK-7 90mcg as K2VITAL® DELTA (USA; Australia: K2VITAL® Vitamin K2) (directs calcium to bones via osteocalcin activation) + encapsulated Vitamin D3 1,000IU as AlgeD3™ (USA; UK/EU v9 capsules: 25mcg as Vitashine®, from lichen) (calcium absorption) + Boron 1mg (USA capsules, and MicroVitamin+ Powder in every market; UK and EU v9 capsules 3 mg as sodium borate; Canadian capsules 0.7 mg per serving (5 capsules); if your bottle shows NPN 80132012, go by the label or contact us; Australian capsules 3 mg as borax) (UK, EU and Canada: give the dose only and attach no bone benefit to boron; content map §7) (bone metabolism). Meta-analyses of K+D combination supplementation show increased BMD and improved bone turnover markers (Kuang 2020; Zhang 2025) |
 | Vision / macular health | MicroVitamin or MicroVitamin+ Powder | Lutein 10mg + Zeaxanthin 2mg as Lutemax® 2020 (encapsulated) — RCTs show this dose increases macular pigment optical density |
@@ -307,8 +329,8 @@ Use this guide to match a shopper's primary concern to the right product.
 
 ### Capsules vs Powder — how to decide
 
-- **Choose MicroVitamin Capsules if:** you want the core 26 ingredients (USA v8 / Australia v8.5) / 25 ingredients (UK/EU v9, Canada v7), prefer swallowing capsules over mixing a drink, don't need collagen/creatine, or want the lower price point ($58.50/mo USA v8 subscription; UK v9 £40.50 and EU v9 €45 on subscription; $49.50/mo Canada v7 subscription)
-- **Choose MicroVitamin+ Powder if:** you want collagen for skin, creatine for muscle/brain, fiber for gut health, or want everything in one scoop. Best value — saves $89.01/mo vs buying separately. Available in Mixed Berry or Unflavored
+- **Choose MicroVitamin Capsules if:** you want the core 26 ingredients (USA v8 / Australia v8.5) / 25 ingredients (UK/EU v9, Canada v7), prefer swallowing capsules over mixing a drink, don't need the powder's creatine, psyllium and extra taurine, or want the lower price point ($58.50/mo USA v8 subscription; UK v9 £40.50 and EU v9 €45 on subscription; $49.50/mo Canada v7 subscription)
+- **Choose MicroVitamin+ Powder if:** you want creatine for muscle/brain, fiber for gut health, or want everything in one scoop. Best value — saves $89.01/mo vs buying separately. Available in Mixed Berry or Unflavored
 - **Do NOT take both** — the Powder contains the US v8 core formula (26 core ingredients) in every market, so taking it with any MicroVitamin Capsules would double-dose the vitamins and minerals. It matches the US v8 capsules; it is NOT the same as the UK/EU v9 capsules (the Powder has choline bitartrate, not the v9 capsules' 500 mg CDP-citicoline, and lower doses of several vitamins and minerals), so a UK/EU customer switching from capsules to powder gets a different formula
 
 ### Can I take Sleep alongside MicroVitamin or MicroVitamin+ Powder?
@@ -853,7 +875,6 @@ These may reflect differences between the formula files (design intent) and what
 - Melatonin physiology + pharmacokinetics (Sleep v2): Fourtillan 2001 — https://doi.org/10.1152/ajpendo.2001.280.1.E11; DeMuro 2000 (15% bioavailability) — https://doi.org/10.1177/00912700022009422; Zhdanova 2001 (0.1/0.3/3mg) — https://doi.org/10.1210/jcem.86.10.7901; Thanawala 2024 (sustained- vs immediate-release PK) — https://doi.org/10.3390/pharmaceutics16101248; Kor 2014 (10-80mcg range statement) — https://doi.org/10.4103/2230-8210.137521
 - Creatine (performance): Kreider et al., 2017 — https://doi.org/10.1186/s12970-017-0173-z
 - Creatine (cognition, 16 RCTs meta-analysis): Xu et al., 2024 — https://doi.org/10.3389/fnut.2024.1424972 — memory SMD=0.31, greater benefit in people with diseases, those aged 18–60, and females
-- Collagen peptides: Kim et al., 2022 — https://doi.org/10.1089/jmf.2022.k.0097; Pu et al., 2023 — https://doi.org/10.3390/nu15092080
 - Psyllium husk / fiber: Hartley et al., 2016 — https://doi.org/10.1002/14651858.CD011472
 - Psyllium safety / no effect on vitamin & mineral status: Anderson et al., 2000 — https://doi.org/10.1093/ajcn/71.2.472 (see Safety analyses section, page 476). ⚠️ **Verified 2026-08-06:** this paper is an 8-trial cholesterol meta-analysis; its ABSTRACT contains no micronutrient data, so do NOT cite it alone for the absorption claim. The two papers that DO carry it are the next two entries — Pal 2022 (15 g/day, 3 months, micronutrient status) and Heaney & Weaver 1995 (calcium from the same meal). Cite all three together.
 - Psyllium / no effect on micronutrient status (3-month RCT): Pal et al., 2022 — https://pubmed.ncbi.nlm.nih.gov/35505399/
@@ -863,7 +884,6 @@ These may reflect differences between the formula files (design intent) and what
 - Hyaluronic acid (150-person RCT, 2025): Scientific Reports — https://doi.org/10.1038/s41598-025-32758-5
 - Hyaluronic acid (earlier RCT): Oe et al., 2017 — https://doi.org/10.2147/CCID.S141845
 - Hyaluronic acid (129-person RCT, skin hydration): 2023 — https://doi.org/10.1111/srt.13531
-- Collagen (2025 systematic review, 23 studies): Myung et al., Am J Med — https://doi.org/10.1016/j.amjmed.2025.04.034
 - Glycine mechanism (temperature regulation): Bannai & Kawai, 2012 — https://doi.org/10.1254/jphs.11R04FM
 - TMG/Betaine + exercise (body composition): Cholewa et al., 2013 — https://doi.org/10.1186/1550-2783-10-39
 - TMG/Betaine + exercise (soccer performance): Nobari et al., 2021 — https://doi.org/10.1186/s12970-021-00464-y

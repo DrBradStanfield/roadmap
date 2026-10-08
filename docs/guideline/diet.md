@@ -240,7 +240,6 @@ However, Brad's position is that while a healthy diet is foundational, specific 
 - **Magnesium**: intakes are commonly below the RDA. Magnesium taurate in MicroVitamin supports cardiovascular and metabolic health.
 - **Omega-3**: the VITAL trial showed a 28% reduction in myocardial infarction, and omega-3 is necessary for B-vitamins to exert their neuroprotective effect (Jerneren 2015, Oulhaj 2016). See Feature 4 divergence above.
 - **Multivitamin/mineral**: the COSMOS trial (Baker 2023) demonstrated that daily multivitamin/mineral supplementation (Centrum Silver vs placebo) improved cognitive function in older adults over 2-3 years — providing justification for broad micronutrient support beyond cardiovascular endpoints.
-- **Collagen**: Kim 2022 RCT showed reduced skin wrinkles after 12 weeks of supplementation.
 - **Creatine**: evidence supports muscle preservation, cognitive function, and exercise performance — difficult to obtain in adequate amounts from diet alone without high red meat intake.
 
 Brad's approach: diet first, supplements to fill specific evidence-based gaps. See the algorithm's supplement recommendations (`supplement-microvitamin`, `supplement-omega3`, `supplement-sleep`) and products.md for full clinical rationale and ingredient details.

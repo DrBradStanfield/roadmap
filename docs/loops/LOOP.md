@@ -127,7 +127,10 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   (inverted 2026-08-10; `scripts/check-symlinks.mjs` enforces).
 - **Landing check — the run's LAST git act**: `git rev-list --count
   origin/main..HEAD` prints 0, or an OPEN Tier 3 PR holds the commits — else
-  push to main before ending. Session branches strand work invisibly
+  push to main before ending. **Push rejected** (someone pushed meanwhile):
+  `git fetch origin main && git merge origin/main` (never force or rebase;
+  conflicts keep BOTH sides' rows), push again, up to 3 tries; the cloud copy
+  is discarded, so unpushed work is lost. Session branches strand work invisibly
   (chat-health W34, twice, 2026-08). Backstop: `stranded-branch-watch.yml`.
 - Never print secret values; never commit real user data or health values;
   anonymize quoted user content.
