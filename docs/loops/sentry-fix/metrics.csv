@@ -44,3 +44,4 @@ run_date,new_issues,ours,not_ours,prs_opened,noop
 2026-10-05,1,1,0,0,false
 2026-10-06,0,0,0,0,true
 2026-10-07,1,1,0,1,false
+2026-10-08,0,0,0,0,true
