@@ -86,5 +86,13 @@
   "reason": "Checker limit: the raw writes nanomol/L and the body nmol/L; the checker does not treat them as one unit. Numbers match the raw. Rule 10.",
   "by": "orchestrator",
   "date": "2026-10-08"
+ },
+ {
+  "check": "AC2",
+  "handle": "cardiac-drugs-and-monitoring",
+  "match": "token \"2.5 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- The usual starting dose is 2.5 mg. After the first dose, your response is reassessed the next day, and kidney funct...\"",
+  "reason": "Checker limit: the raw misspells the unit (\"Usual initial dose is 2.5 m.g.\"); the report quotes it verbatim and the body gives 2.5 mg. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
  }
 ]
