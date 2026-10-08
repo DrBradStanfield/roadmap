@@ -22,8 +22,8 @@ Full prescribing information is not included here. Your doctor will check the Ne
 
 **Call 111 or go to the emergency department** if, while taking one of these medicines, you have:
 
-- Fainting (syncope). Amiodarone and sotalol can cause dangerous heart rhythms.
-- Severe or abnormal shortness of breath
+- Palpitations, fainting (syncope), or abnormal shortness of breath. Amiodarone and sotalol can cause dangerous heart rhythms.
+- Severe shortness of breath
 - Blurred vision, eye pain, or reduced vision while taking amiodarone (possible optic neuritis)
 - Signs of a severe infection of the genitals or the skin around the genitals or anus while taking an SGLT2 inhibitor. This may be Fournier's gangrene, which is rare but can be life-threatening.
 
@@ -40,7 +40,6 @@ If a finger-prick test shows blood ketones over 1.5 mmol/L while you take an SGL
 
 **Contact your doctor** if you notice:
 
-- Palpitations or feeling faint. Your doctor may repeat an ECG.
 - Signs of bleeding, such as from the gut, while taking clopidogrel or ticagrelor. Do not stop the medicine without advice.
 - A slower change in vision while taking amiodarone. This needs an eye assessment within 1 to 2 weeks.
 
@@ -90,7 +89,7 @@ Most side effects take time to develop, but some can occur early and may be seve
 **Heart**
 - Prolonged QT interval, torsades de pointes (a dangerous heart rhythm)
 - Sinus bradycardia or AV block
-- These may present as palpitations, fainting, or abnormal shortness of breath.
+- These may present as palpitations, fainting, or abnormal shortness of breath. Call 111 or go to the emergency department.
 
 **Lungs**
 - Pneumonitis or pulmonary fibrosis: typically dry cough and shortness of breath, sometimes with fever, weight loss, or pleuritic pain. Usually develops months to years after starting. This can be severe and life-threatening, and amiodarone is stopped if it occurs. Your doctor will investigate any unexplained breathlessness. If breathlessness is severe, call 111 or go to the emergency department.
@@ -441,7 +440,7 @@ Metolazone helps the kidneys remove sodium, chloride, and water.
 ### How Your Doctor Will Use It
 
 - Kidney function and electrolytes are checked before starting, and any imbalance is corrected.
-- After the first dose, your response is reassessed the next day, and kidney function and electrolytes are checked within 2 to 3 days.
+- The usual starting dose is 2.5 mg. After the first dose, your response is reassessed the next day, and kidney function and electrolytes are checked within 2 to 3 days.
 - The usual maintenance dose is 2.5 to 5 mg once daily in the morning. The maximum dose is 20 mg daily.
 - The lowest effective dose and frequency is used, which can include alternate-day or weekly dosing.
 
@@ -551,7 +550,7 @@ Sodium glucose co-transporter 2 (SGLT2) inhibitors are one of the pillars of tre
 
 ### Ketoacidosis Risk
 
-Ketoacidosis may occur with near-normal or only slightly raised glucose. Finger-prick blood ketones over 1.5 mmol/L on an SGLT2 inhibitor need urgent medical advice. Your doctor may advise you to:
+Ketoacidosis may occur with near-normal or only slightly raised glucose. If a finger-prick test shows blood ketones over 1.5 mmol/L on an SGLT2 inhibitor, call 111 or go to the emergency department. Your doctor may advise you to:
 - Stop the SGLT2 inhibitor while you have an illness or severe dehydration
 - Stop it for at least 3 days, including the day of surgery, before any major elective procedure, or any elective procedure with reduced eating or drinking for more than 12 hours, including dental surgery
 - Stop it at least 3 days before any bowel preparation (such as for a colonoscopy) or a low-carbohydrate diet before a procedure (such as bariatric surgery)

@@ -27,12 +27,10 @@ Call 111 or go to the emergency department if you have a headache with any of th
 - Headache following a head injury in the last month
 - Headache made markedly worse by coughing, sneezing, bending, or exertion
 - Neck pain and a headache at the back of the head after blunt trauma or neck manipulation, including for treatment
-- New or different headache if you are over 50 years old
-
-See a doctor the same day if you have:
-
+- A headache severe enough to wake you, or present on waking
 - Vomiting with no other features of migraine
 - A headache that started recently, over weeks, or keeps getting worse without any break
+- A significant new headache, or a change in your usual headache pattern, if you are older than 50 years, HIV positive or immunosuppressed, pregnant or postpartum, drink heavily, take anticoagulants or two antiplatelet medicines, have had cancer (especially lung, breast, or melanoma), or have a family history of subarachnoid haemorrhage
 
 ---
 

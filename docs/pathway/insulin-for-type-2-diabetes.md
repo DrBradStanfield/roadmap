@@ -53,7 +53,7 @@ Other diabetes medicines are usually continued.
 Your doctor will calculate your starting dose:
 
 - **Standard dose:** 0.2 units/kg daily
-- **Lower starting dose (0.1 units/kg)** if: HbA1c below 64 mmol/mol, low BMI (under 18 kg/m²), elderly, or kidney/liver problems
+- **Lower starting dose (0.1 units/kg)** if: HbA1c less than 64 mmol/mol, low BMI (less than 18 kg/m²), elderly, or kidney/liver problems
 
 Basal insulin is taken at night. Its main role is to reduce overnight glucose production by the liver.
 
@@ -61,7 +61,7 @@ Basal insulin is taken at night. Its main role is to reduce overnight glucose pr
 
 - Check your fasting blood glucose each morning
 - If fasting blood glucose stays above 7 mmol/L on 3 consecutive days, increase dose by 10% (or 2 units)
-- Stop increasing when fasting glucose is below 7 mmol/L, or if hypoglycaemia occurs, or if daily dose reaches 0.5 units/kg
+- Stop increasing when fasting glucose is less than 7 mmol/L, or if hypoglycaemia occurs, or if daily dose reaches 0.5 units/kg
 - Your doctor may consider reducing the dose with major changes in diet (e.g. Ramadan), significant weight loss, or when new glucose-lowering medicines are added, especially if HbA1c is less than 64 mmol/mol
 - A dose reduction of 20% or more may be considered for frequent or severe hypoglycaemia
 
@@ -98,7 +98,7 @@ If HbA1c remains above target despite fully adjusted basal insulin, your doctor 
 
 Your doctor will add a rapid-acting insulin before your largest meal.
 
-**When considered:** Fasting glucose below 7 mmol/L but HbA1c still above target, or maximum basal dose reached (0.5 units/kg/day).
+**When considered:** Fasting glucose less than 7 mmol/L but HbA1c still above target, or maximum basal dose reached (0.5 units/kg/day).
 
 #### Rapid-acting insulins used
 
@@ -113,7 +113,7 @@ Your doctor will add a rapid-acting insulin before your largest meal.
 
 - Check blood glucose before the meal and 2 hours after
 - Increase rapid-acting dose by 2 units if the rise with the meal is consistently above 3 mmol/L (on 3 occasions)
-- Stop increasing if the meal rise is typically below 3 mmol/L, or if hypoglycaemia occurs
+- Stop increasing if the meal rise is typically less than 3 mmol/L, or if hypoglycaemia occurs
 
 #### Administration tips
 
@@ -131,7 +131,7 @@ A dietitian can help match your insulin dose to your carbohydrate intake. Bolus 
 
 Combines a basal and rapid/short-acting insulin in one injection.
 
-**When considered (with largest meal):** HbA1c above target on basal insulin despite fasting glucose below 7 mmol/L and/or a basal dose of 0.5 units/kg/day, and the patient eats one regular meal per day.
+**When considered (with largest meal):** HbA1c above target on basal insulin despite fasting glucose less than 7 mmol/L and/or a basal dose of 0.5 units/kg/day, and the patient eats one regular meal per day.
 
 **When considered (breakfast and dinner):** As above, but the patient regularly eats both breakfast and dinner.
 

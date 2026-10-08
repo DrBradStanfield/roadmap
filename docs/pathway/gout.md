@@ -21,9 +21,6 @@ Gout is caused by deposition of monosodium urate (MSU) crystals in and around jo
 **Call 111 or go to the emergency department if:**
 - A joint is exquisitely painful with reduced movement, especially with fever, rapid heart rate, or low blood pressure. This may be **septic arthritis**, which needs acute assessment in hospital.
 
-**See your doctor the same day if:**
-- A single swollen, painful joint came on over a 6 to 12 hour period. This can be gout or septic arthritis, and 40 to 60% of people with septic arthritis may have no fever. If this is your first such episode, see your doctor the same day.
-
 **Septic arthritis vs gout:** Both can present as a single swollen painful joint developing over 6–12 hours. They can occur at the same time (especially in patients with tophi). 40–60% of patients with septic arthritis may be afebrile, particularly older patients, so do not rely on the absence of fever to rule it out. A low-grade fever can also occur with gout.
 
 ---

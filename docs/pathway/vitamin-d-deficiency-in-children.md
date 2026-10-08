@@ -50,6 +50,8 @@ Low calcium (hypocalcaemia) is life-threatening and can get worse quickly. Signs
 
 If your child has any of these signs, call 111 or go to the emergency department.
 
+If your child's blood test shows corrected calcium < 2 mmol/L, or confirms vitamin B12 deficiency, call 111 or go to the emergency department, even if your child has no symptoms.
+
 ---
 
 ## Risk Factors
@@ -196,7 +198,7 @@ If vitamin D deficiency is confirmed but calcium and phosphate are normal, your 
 
 **Hypocalcaemia:**
 - If corrected calcium is > 2 mmol/L, your doctor will seek urgent paediatric advice on whether hospital admission or other urgent tests are needed. The specialist will advise whether calcium supplementation is needed.
-- If corrected calcium is < 2 mmol/L, or if your child has symptomatic hypocalcaemia, urgent hospital assessment is required. Hypocalcaemia is life-threatening and can deteriorate rapidly. Low calcium may cause no symptoms.
+- If corrected calcium is < 2 mmol/L, or if your child has symptomatic hypocalcaemia, call 111 or go to the emergency department, whether or not your child has symptoms. Hypocalcaemia is life-threatening and can deteriorate rapidly. Low calcium may cause no symptoms.
 
 **Hypophosphataemia (low phosphate):**
 - If it occurs together with hypocalcaemia, it is managed as for hypocalcaemia
@@ -208,7 +210,7 @@ If vitamin D deficiency is confirmed but calcium and phosphate are normal, your 
 - Iron supplements should be stored securely, as they can be toxic in overdose
 
 **Vitamin B12 deficiency:**
-- Requires urgent hospital assessment
+- If vitamin B12 deficiency is confirmed, call 111 or go to the emergency department, even if your child has no symptoms
 
 ---
 
@@ -228,9 +230,11 @@ Children treated for vitamin D deficiency are followed up at 3 months. Your doct
 
 Your healthcare provider will arrange a specialist paediatric assessment if:
 
-**Urgent (hospital assessment):**
-- Symptomatic hypocalcaemia, or corrected calcium < 2 mmol/L
-- Confirmed vitamin B12 deficiency
+**Call 111 or go to the emergency department:**
+- Corrected calcium < 2 mmol/L, even if your child has no symptoms, or symptomatic hypocalcaemia
+- Confirmed vitamin B12 deficiency, even if your child has no symptoms
+
+**Urgent specialist advice:**
 - Hypocalcaemia with corrected calcium > 2 mmol/L needs urgent specialist advice on whether admission is needed
 
 If your child has signs of low calcium, such as seizures, spasms, or breathing problems, call 111 or go to the emergency department.

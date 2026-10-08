@@ -21,17 +21,16 @@ This pathway covers the use of direct oral anticoagulants (DOACs), dabigatran an
 If you have serious or life-threatening bleeding while on a DOAC:
 
 - **Call 111 or go to the emergency department immediately.**
+- Signs of serious bleeding include coughing up blood, a bad headache, or dizziness.
 - Dabigatran has a specific reversal agent, idarucizumab (Praxbind). It is given into a vein in the emergency department.
 - Rivaroxaban has no direct antidote. The hospital may give prothrombin complex concentrate, although data on its use for this are limited.
 
 **Signs of abnormal bleeding to report to your doctor:**
 - Prolonged nosebleed
 - Red or dark urine, or red or black bowel motions
-- Coughing up blood
 - Excessive bleeding, or bleeding that lasts longer than usual
 - Heavier than usual menstrual periods
 - Unexplained bruising, or bruising that gets bigger without cause
-- Bad headache or dizziness
 
 ---
 
@@ -63,7 +62,7 @@ Dabigatran and rivaroxaban are not used if you have:
 
 - **Mechanical heart valves.** DOACs are not recommended. Warfarin is suitable for all indications.
 - **Significant liver disease** with coagulopathy (for example, moderate or severe hepatic impairment) or a higher bleeding risk (for example, cirrhosis with oesophageal varices)
-- **Marked kidney impairment:** creatinine clearance below 30 mL/min for dabigatran, or below 15 mL/min for rivaroxaban (or dialysis)
+- **Marked kidney impairment:** creatinine clearance less than 30 mL/min for dabigatran, or less than 15 mL/min for rivaroxaban (or dialysis)
 - **Active bleeding, or a risk of serious bleeding** that outweighs the benefit of anticoagulation. Examples include a recent stomach or gut ulcer, a cancer with high bleeding risk, oesophageal varices, recent brain, spine or eye surgery, a recent bleed in the brain, a vascular aneurysm, or a low platelet count.
 - **Pregnancy or breastfeeding.** In pregnancy, oral anticoagulants are not used. Long-term treatment with injections (LMWH) is needed instead.
 
@@ -99,7 +98,7 @@ Your doctor will choose a dose based on your indication, age, kidney function, a
 
 ### Kidney Function Monitoring on Dabigatran
 
-Your doctor will check your kidney function (creatinine clearance using the Cockcroft-Gault equation) before starting, then every 6 to 12 months during long-term treatment. Some people need more frequent checks. Dabigatran is stopped if kidney function falls significantly or creatinine clearance falls below 30 mL/min. Your doctor may then consider another anticoagulant, such as warfarin or enoxaparin.
+Your doctor will check your kidney function (creatinine clearance using the Cockcroft-Gault equation) before starting, then every 6 to 12 months during long-term treatment. Some people need more frequent checks. Dabigatran is stopped if kidney function falls significantly or creatinine clearance is less than 30 mL/min. Your doctor may then consider another anticoagulant, such as warfarin or enoxaparin.
 
 ---
 
@@ -122,12 +121,12 @@ No bridging with enoxaparin is needed. Rivaroxaban can be started on its own at 
 - Similar overall bleeding risk to warfarin, but **fewer intracranial bleeds** and **more gastrointestinal bleeds**
 - Can cause **menorrhagia** (heavier periods). The risk is lower with dabigatran.
 - **No direct antidote.** For life-threatening bleeding, the hospital may use prothrombin complex concentrate, with haematology advice.
-- Cannot be used if creatinine clearance is below 15 mL/min, or on dialysis
+- Cannot be used if creatinine clearance is less than 15 mL/min, or on dialysis
 - Not used with HIV protease inhibitors or ketoconazole
 
 ### Kidney Function Monitoring on Rivaroxaban
 
-Your doctor will check creatinine clearance before starting, then every 6 to 12 months during long-term treatment. Some people need more frequent checks. Rivaroxaban is stopped if kidney function falls significantly or creatinine clearance falls below 30 mL/min. Your doctor may then consider another anticoagulant, such as warfarin or enoxaparin.
+Your doctor will check creatinine clearance before starting, then every 6 to 12 months during long-term treatment. Some people need more frequent checks. Rivaroxaban is stopped if kidney function falls significantly or creatinine clearance is less than 30 mL/min. Your doctor may then consider another anticoagulant, such as warfarin or enoxaparin.
 
 ---
 
@@ -161,7 +160,7 @@ Your doctor will also check your medicines for interactions through the CYP3A en
 
 Your doctor will time any switch carefully:
 
-- **Warfarin to a DOAC:** warfarin is stopped, and the DOAC is started once INR is below 2.0. Starting a DOAC when INR is over 2.0 carries a high risk of bleeding.
+- **Warfarin to a DOAC:** warfarin is stopped, and the DOAC is started once INR is less than 2.0. Starting a DOAC when INR is over 2.0 carries a high risk of bleeding.
 - **Enoxaparin to dabigatran:** dabigatran is started 0 to 2 hours before the next enoxaparin dose would have been due. They are never given at the same time.
 - **Enoxaparin to rivaroxaban:** the same timing applies.
 

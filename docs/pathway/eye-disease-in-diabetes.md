@@ -138,7 +138,7 @@ Eye specialist treatments for retinopathy may include:
 - New, significant floaters or flashes of light
 - Eye pain
 
-These need same-day hospital eye assessment: call 111 if you cannot get there, or go to the emergency department.
+If you have any of these, call 111 or go to the emergency department.
 
 See your doctor promptly if you notice any other worsening of your vision.
 

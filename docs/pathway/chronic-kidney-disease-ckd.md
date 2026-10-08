@@ -33,7 +33,7 @@ Contact your doctor promptly if you have CKD and develop:
 ### What Is Chronic Kidney Disease?
 
 CKD is defined as either:
-- An estimated glomerular filtration rate (eGFR) below 60 for 3 months or longer, with or without evidence of kidney damage, or
+- An estimated glomerular filtration rate (eGFR) less than 60 for 3 months or longer, with or without evidence of kidney damage, or
 - Evidence of kidney damage present for 3 months or longer (regardless of cause), shown by one or more of:
   - Albuminuria (urinary albumin:creatinine ratio (uACR) greater than 3 mg/mmol)
   - Blood in the urine (haematuria), after ruling out urological causes
@@ -94,12 +94,12 @@ Your doctor may consider screening **every 2 years** if you have:
 
 **uACR:**
 - A result greater than 3 mg/mmol is confirmed with a repeat test in 2 weeks (other causes are considered: UTI, high animal protein, heart failure, fever, heavy exercise, menstruation)
-- If the repeat is below 3, a third test is arranged in 3 months
+- If the repeat is less than 3, a third test is arranged in 3 months
 - If uACR is greater than 70 mg/mmol, nephrotic syndrome is considered. Signs can include swelling (oedema), facial puffiness, weight gain, and "frothy" urine.
 
 **eGFR:**
-- If eGFR is below 60 on the first test, your doctor will repeat it within 2 weeks when you are well hydrated
-- If it remains stable, it is repeated again in 3 months. An eGFR persistently below 60 for over 3 months confirms CKD.
+- If eGFR is less than 60 on the first test, your doctor will repeat it within 2 weeks when you are well hydrated
+- If it remains stable, it is repeated again in 3 months. An eGFR persistently less than 60 for over 3 months confirms CKD.
 - A single eGFR can be unreliable, for example with acute kidney injury, unusual diets (vegetarian, high protein, creatine supplements), very high or low muscle mass, severe liver disease, pregnancy, or some drugs (trimethoprim, fenofibrate)
 - A drop of more than 20% between tests may indicate acute kidney injury
 
@@ -111,7 +111,7 @@ Your doctor may consider screening **every 2 years** if you have:
 
 Your doctor will diagnose CKD if:
 - 2 out of 3 uACR results are greater than 3 mg/mmol, or
-- eGFR is persistently below 60 for over 3 months
+- eGFR is persistently less than 60 for over 3 months
 
 ### Physical Examination
 
@@ -153,7 +153,7 @@ Your doctor may arrange:
 - Hepatitis B, C, or HIV serology if relevant risk factors
 - Myeloma tests (serum and urinary protein electrophoresis, serum free light chain) if myeloma is suspected, especially if uACR is greater than 30 mg/mmol, or there is back pain, constipation, and elevated calcium
 - Autoimmune markers (dsDNA, ANA, ENA, complement, ANCAs, anti-GBM) if signs of systemic disease such as rash, arthritis, rapidly declining function, or fever, night sweats, and unexplained weight loss. Prompt specialist referral is then likely.
-- Renal ultrasound if eGFR is below 30, below 45 with diabetes, below 60 with progressive decline (a drop of more than 15 over the previous year), or uACR greater than 250
+- Renal ultrasound if eGFR is less than 30, less than 45 with diabetes, less than 60 with progressive decline (a drop of more than 15 over the previous year), or uACR greater than 250
 
 ### Common Causes of CKD
 
@@ -222,7 +222,7 @@ Your doctor will aim for blood pressure of 130/80 or less.
 - Your doctor will first look for other causes, such as other medicines, foods, or recent illness
 - If creatinine increases by less than 30%: no dose change is needed. Creatinine is rechecked monthly, and if stable over 2 months, treatment continues.
 - If creatinine increases by 30% or more: the medication may be withheld and creatinine rechecked at 2 to 4 weeks. If it improves, the medication is restarted at half dose and increased as kidney function allows.
-- Nephrology advice will be sought if creatinine rises and eGFR is below 20, or there are ongoing concerns
+- Nephrology advice will be sought if creatinine rises and eGFR is less than 20, or there are ongoing concerns
 
 **If potassium becomes elevated (hyperkalaemia):**
 - Your doctor will check this is not a false reading (from the blood sample haemolysing or delayed processing)
@@ -262,15 +262,15 @@ Your doctor will review doses of many medications when kidney function is reduce
 | Others | NSAIDs, methotrexate, penicillamine |
 
 **Gout management:**
-Your doctor will aim to keep uric acid below 0.36 mmol/L to prevent flares. Preventing flares reduces the use of NSAIDs and high-dose prednisone, which can harm the kidneys. Studies have not shown that normalising uric acid slows CKD progression.
+Your doctor will aim to keep uric acid less than 0.36 mmol/L to prevent flares. Preventing flares reduces the use of NSAIDs and high-dose prednisone, which can harm the kidneys. Studies have not shown that normalising uric acid slows CKD progression.
 
 ### Cardiovascular Risk Management
 
 CKD increases cardiovascular risk. Kidney specialists recommend adjusting CVD risk for kidney disease, though this is not yet part of the New Zealand CVD risk calculation. Your doctor may reclassify your CVD risk as follows:
 
 CVD risk is considered greater than 10% if any of:
-- You have diabetes and eGFR below 60, or uACR greater than 3
-- eGFR is persistently below 45
+- You have diabetes and eGFR less than 60, or uACR greater than 3
+- eGFR is persistently less than 45
 - uACR is persistently greater than 30
 
 Your doctor may consider reclassifying risk one category higher if:
@@ -323,12 +323,12 @@ Where a range is given, your own circumstances guide how often tests are done.
 - Your doctor will investigate and treat the cause
 - If iron deficiency anaemia:
   - eGFR above 30: diet advice and oral iron
-  - eGFR below 30: IV iron infusion may be considered, as oral iron is usually ineffective at this level
+  - eGFR less than 30: IV iron infusion may be considered, as oral iron is usually ineffective at this level
 - Correcting iron deficiency may improve restless legs and fatigue
-- If haemoglobin is below 100 g/L with normal iron stores: your doctor will seek nephrology advice for erythropoietin therapy, which needs available iron stores to work
+- If haemoglobin is less than 100 g/L with normal iron stores: your doctor will seek nephrology advice for erythropoietin therapy, which needs available iron stores to work
 
 **Abnormal calcium, phosphate, or parathyroid hormone:**
-- Your doctor will seek nephrology advice if corrected calcium is below 2.0, phosphate is above 2.4, or parathyroid hormone is more than 5 times the upper limit of normal
+- Your doctor will seek nephrology advice if corrected calcium is less than 2.0, phosphate is above 2.4, or parathyroid hormone is more than 5 times the upper limit of normal
 
 ### Depression and Complications
 
@@ -336,14 +336,14 @@ Depression is common with CKD. Your doctor will assess for this and other compli
 
 ### Future Planning
 
-Your doctor will discuss future planning early, particularly if eGFR is below 30. Conversations about dialysis or kidney transplantation are best made collaboratively with a nephrologist. For some patients, dialysis or transplantation may not offer survival or quality of life benefits. These discussions may be part of an advance care plan.
+Your doctor will discuss future planning early, particularly if eGFR is less than 30. Conversations about dialysis or kidney transplantation are best made collaboratively with a nephrologist. For some patients, dialysis or transplantation may not offer survival or quality of life benefits. These discussions may be part of an advance care plan.
 
 ### When Your Doctor May Seek Kidney Specialist Input
 
 Your doctor may request a non-urgent kidney specialist (nephrology) assessment if:
 - eGFR is less than 30
 - eGFR is less than 45, you have diabetes, and uACR stays above 30
-- You are at risk of progressive CKD: eGFR below 60 with a decline of more than 10 in the previous 12 months, or uACR above 70 on more than two occasions
+- You are at risk of progressive CKD: eGFR less than 60 with a decline of more than 10 in the previous 12 months, or uACR above 70 on more than two occasions
 - You have CKD at any stage with a family history of, or known, inherited kidney disease such as polycystic kidney disease
 
 Your doctor may also seek nephrology advice if there is uncertainty about the diagnosis or treatment. The assessment may be face to face or virtual.

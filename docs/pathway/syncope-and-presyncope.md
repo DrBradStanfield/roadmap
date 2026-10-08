@@ -26,6 +26,8 @@ These features can point to a heart cause, which carries a higher risk of seriou
 - Syncope with palpitations, chest pain, or shortness of breath
 - Family history of sudden cardiac death
 
+Syncope with abdominal or back pain can point to a leaking aortic aneurysm or a ruptured ectopic pregnancy.
+
 If you faint with any of these, call 111 or go to the emergency department.
 
 ---
