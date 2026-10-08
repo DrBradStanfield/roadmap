@@ -1,0 +1,10 @@
+[
+ {
+  "check": "AC4",
+  "handle": "cardiac-drugs-and-monitoring",
+  "match": "heading missing from new body: ## Prasugrel",
+  "reason": "The 2026-09 source no longer covers prasugrel (grep of health_pathways/cardiac-drugs-and-monitoring.md finds no mention); the section and its Healthdirect link go with it. Ruled 2026-10-08.",
+  "by": "orchestrator",
+  "date": "2026-10-08"
+ }
+]
