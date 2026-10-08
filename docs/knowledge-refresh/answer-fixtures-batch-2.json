@@ -9,7 +9,7 @@
     "must_mention": [
       "unapproved"
     ],
-    "notes": "Changed. New raw: \"Irbesartan (not funded, Section 29 unapproved)\" Old: the entry said only that irbesartan is not funded in New Zealand, with no mention that it is an unapproved medicine."
+    "notes": "Changed. New entry: \"irbesartan is not funded and is an unapproved medicine in New Zealand\" Old: the entry said only that irbesartan is not funded in New Zealand, with no mention that it is an unapproved medicine."
   },
   {
     "query": "I'm on ramipril for my kidneys and I have a bad chest infection with low oxygen. Should I keep taking it?",
@@ -21,7 +21,7 @@
     "must_mention": [
       "temporar"
     ],
-    "notes": "Changed. New raw: \"Withhold temporarily in any condition where tissue hypoperfusion and hypoxia may be a problem e.g., cardiac or respiratory failure, myocardial infarction (MI), dehydration, or serious infection.\" Old: the entry listed dehydration, heart failure, serious infection and heart attack, and left out respiratory failure and the low blood flow or oxygen rationale."
+    "notes": "Changed. New entry: \"The medicine is temporarily stopped in any condition where the body's tissues may not get enough blood flow or oxygen, such as heart or respiratory failure, a heart attack, dehydration, or serious infection\" Old: the entry listed dehydration, heart failure, serious infection and heart attack, and left out respiratory failure and the low blood flow or oxygen rationale."
   },
   {
     "query": "I have atrial fibrillation and I just fainted at home. Is that something I can raise at my next check-up?",
@@ -33,7 +33,7 @@
     "must_mention": [
       "111"
     ],
-    "notes": "Safety. New raw: \"Request acute general medicine assessment, regardless of the length of time AF has been present, if: chest pain. symptomatic hypotension. new or worsened heart failure. syncope.\" Old: the entry said to go to the emergency department or call an ambulance; the new entry gives 111 and the same list."
+    "notes": "Safety. New entry: \"Call 111 or go to the emergency department if you have AF with any of these, however long the AF has been present:\" Old: the entry said to go to the emergency department or call an ambulance; the new entry gives 111 and the same list."
   },
   {
     "query": "I take aspirin and clopidogrel after my heart stent. Do I still need a blood thinner for my atrial fibrillation?",
@@ -46,7 +46,7 @@
       "bleeding",
       "stroke"
     ],
-    "notes": "Changed. New raw: \"Dual antiplatelet therapy has bleeding risks similar to oral anticoagulants, and is less effective at stroke prevention.\" Old: the entry covered aspirin alone; it did not say that two antiplatelet medicines carry bleeding risk like anticoagulants and prevent stroke less well."
+    "notes": "Changed. New entry: \"Two antiplatelet medicines together carry a bleeding risk similar to anticoagulants and prevent stroke less well.\" Old: the entry covered aspirin alone; it did not say that two antiplatelet medicines carry bleeding risk like anticoagulants and prevent stroke less well."
   },
   {
     "query": "I take amiodarone and the vision in one eye suddenly went blurry and sore. Can I wait until my next blood test to mention it?",
@@ -58,7 +58,7 @@
     "must_mention": [
       "111"
     ],
-    "notes": "Safety. New raw: \"Request acute ophthalmology assessment\" Old: the entry said optic neuritis requires urgent assessment, with no 111 or emergency department action."
+    "notes": "Safety. New entry: \"Optic neuritis (rare but serious): presents with blurred vision, eye pain, and reduced visual acuity. Call 111 or go to the emergency department.\" Old: the entry said optic neuritis requires urgent assessment, with no 111 or emergency department action."
   },
   {
     "query": "I'm on amiodarone and my doctor has added eplerenone for heart failure. What is the highest dose I should be on?",
@@ -70,7 +70,7 @@
     "must_mention": [
       "25 mg"
     ],
-    "notes": "Changed. New raw: \"Use with caution in the elderly and those on amiodarone – the recommended maximum dose is 25 mg daily.\" Old: eplerenone was not covered in the entry."
+    "notes": "Changed. New entry: \"Used with caution in older people and those taking amiodarone. For them, the recommended maximum dose is 25 mg daily.\" Old: eplerenone was not covered in the entry."
   },
   {
     "query": "My blood test shows potassium of 6.7 and the practice says they will sort it out next week. Should I just wait?",
@@ -82,7 +82,7 @@
     "must_mention": [
       "111"
     ],
-    "notes": "Safety. New raw: \"Potassium 6.5 or more – potential medical emergency.\" Old: the entry said same-day advice would be sought, with no 111 or emergency department action for the patient."
+    "notes": "Safety. New entry: \"Potassium 6.5 or above: a potential medical emergency. Your doctor will seek same-day hospital advice by phone. If you are told your potassium is this high, call 111 or go to the emergency department unless your doctor has already arranged urgent care.\" Old: the entry said same-day advice would be sought, with no 111 or emergency department action for the patient."
   },
   {
     "query": "My creatinine rose 40% after I started my ACE inhibitor and it was stopped. If my kidneys recover, will I restart at the same dose?",
@@ -94,7 +94,7 @@
     "must_mention": [
       "half"
     ],
-    "notes": "Changed. New raw: \"Withhold ACE inhibitor or ARB and reassess creatinine at 2 to 4 weeks. If improvement: Reintroduce at half dose\" Old: the entry said only that the medicine is reintroduced at a lower dose once stable, with no 2 to 4 week recheck or half dose."
+    "notes": "Changed. New entry: \"If creatinine increases by 30% or more: the medication may be withheld and creatinine rechecked at 2 to 4 weeks. If it improves, the medication is restarted at half dose and increased as kidney function allows.\" Old: the entry said only that the medicine is reintroduced at a lower dose once stable, with no 2 to 4 week recheck or half dose."
   },
   {
     "query": "Can I take my rivaroxaban 20 mg on an empty stomach in the morning?",
@@ -107,7 +107,7 @@
       "food",
       "66"
     ],
-    "notes": "Changed. New raw: \"Advise patient to take rivaroxaban with food. Bioavailability is reduced to approximately 66% if taken on an empty stomach, compared with over 99% if taken with a meal.\" Old: the entry said only 'with food', with no absorption figures."
+    "notes": "Changed. New entry: \"On an empty stomach, only about 66% of the dose is absorbed, compared with over 99% with a meal.\" Old: the entry said only 'with food', with no absorption figures."
   },
   {
     "query": "I have a heart stent and take aspirin. Do I have to stop the aspirin when I start dabigatran?",
@@ -120,7 +120,7 @@
       "both",
       "doctor"
     ],
-    "notes": "Changed. New raw: \"In a patient with ischaemic heart disease, both aspirin or clopidogrel and dabigatran or warfarin are likely to be needed, especially if they have had coronary surgery or stenting.\" Old: the entry said aspirin is usually stopped when dabigatran starts and to discuss with your doctor if you have ischaemic heart disease or a stent; the new entry says both may be needed and, if bleeding risk is high, to treat the most serious condition or seek specialist advice."
+    "notes": "Changed. New entry: \"If you have ischaemic heart disease, especially after coronary surgery or a stent, both may be needed. Your doctor may seek specialist advice.\" Old: the entry said aspirin is usually stopped when dabigatran starts and to discuss with your doctor if you have ischaemic heart disease or a stent; the new entry says both may be needed and, if bleeding risk is high, to treat the most serious condition or seek specialist advice."
   },
   {
     "query": "My HbA1c came back at 49. Do I count as having diabetes now?",
@@ -133,7 +133,7 @@
       "48",
       "confirm"
     ],
-    "notes": "Changed. New raw: \"Diabetes – HbA1c 48 mmol/mol or greater (lowered from the current 50 mmol/mol or greater)\" Old: the old raw said type 2 diabetes is diagnosed at HbA1c 50 mmol/mol or above, with no confirmatory-test rule for 48 to 52."
+    "notes": "Changed. New entry: \"if you have confirmed diabetes with an HbA1c of 48 to 52 mmol/mol and the diabetes has been present for 2 years or more, or for an unknown time\" Old: the entry used the earlier HbA1c 50 mmol/mol or above diagnostic cut-off, with no confirmatory-test rule for 48 to 52."
   },
   {
     "query": "I was diagnosed with type 2 diabetes with an HbA1c of 50, and my HbA1c a year ago was normal. When should I have my first eye screening?",
@@ -145,7 +145,7 @@
     "must_mention": [
       "3 years"
     ],
-    "notes": "Changed. New raw: \"Refer for retinal screening in 3 years if confirmed diabetes with HbA1c 48 to 52 mmol/mol, and clear onset within the last 2 years\" Old: type 2 diabetes screening started at diagnosis for everyone."
+    "notes": "Changed. New entry: \"if you have confirmed diabetes with an HbA1c of 48 to 52 mmol/mol and it clearly started within the last 2 years\" Old: type 2 diabetes screening started at diagnosis for everyone."
   },
   {
     "query": "My knee is red, hot and very painful, I have a fever and my heart is racing. I've had gout before, so is it fine to book my GP for next week?",
@@ -158,7 +158,7 @@
       "111",
       "septic"
     ],
-    "notes": "Safety. New raw: \"If septic arthritis is the most likely diagnosis, do not delay hospital transfer by performing joint aspiration in primary care.\" Old: the entry said to get same-day or urgent medical review, with no 111 or emergency department action."
+    "notes": "Safety. New entry: \"If septic arthritis is the most likely diagnosis, hospital transfer should not be delayed to aspirate the joint in primary care.\"; \"septic arthritis is the most likely diagnosis. Call 111 or go to the emergency department.\" Old: the entry said to get same-day or urgent medical review, with no 111 or emergency department action."
   },
   {
     "query": "My doctor wants me to take colchicine for gout, but my grandchildren stay at my house a lot. Is that a problem?",
@@ -170,7 +170,7 @@
     "must_mention": [
       "children"
     ],
-    "notes": "Changed. New raw: \"Avoid if there are any children or people vulnerable to overdose in the patient's environment.\" Old: the entry said only to keep colchicine out of reach and ask for child-proof packaging; it did not say colchicine is avoided when children are in the household."
+    "notes": "Changed. New entry: \"Colchicine is avoided if children or people vulnerable to overdose are in your household or surroundings.\" Old: the entry said only to keep colchicine out of reach and ask for child-proof packaging; it did not say colchicine is avoided when children are in the household."
   },
   {
     "query": "I'm on warfarin and I've had a new headache that is different from my usual ones and getting worse. Should I just take paracetamol?",
@@ -182,7 +182,7 @@
     "must_mention": [
       "111"
     ],
-    "notes": "Safety. New raw: \"Significant new headache, or change to previous headache pattern, and any of the following risk factors:\"; \"Anticoagulation or dual antiplatelet therapy\" Old: the entry listed only 'new or different headache if you are over 50' and told patients to go to the emergency department or call an ambulance."
+    "notes": "Safety. New entry: \"A significant new headache, or a change in your usual headache pattern, if you are older than 50 years, HIV positive or immunosuppressed, pregnant or postpartum, drink heavily, take anticoagulants or two antiplatelet medicines, have had cancer (especially lung, breast, or melanoma), or have a family history of subarachnoid haemorrhage\" Old: the entry listed only 'new or different headache if you are over 50' and told patients to go to the emergency department or call an ambulance."
   },
   {
     "query": "I'm 30 and on the pill. My doctor suggested topiramate to prevent migraines. Is there anything I need to know about contraception?",
@@ -194,7 +194,7 @@
     "must_mention": [
       "barrier"
     ],
-    "notes": "Changed. New raw: \"Emphasise the importance of effective contraception e.g., contraceptive injection, an intrauterine device (IUD), or combined oral contraceptive (COC) with a barrier method.\" Old: the entry said topiramate is contraindicated in pregnancy and needs a pregnancy test, with no mention of barrier contraception."
+    "notes": "Changed. New entry: \"A pregnancy test and effective contraception are needed first for anyone who could become pregnant: for example, a contraceptive injection, an intrauterine device (IUD), or the combined pill plus a barrier method.\" Old: the entry said topiramate is contraindicated in pregnancy and needs a pregnancy test, with no mention of barrier contraception."
   },
   {
     "query": "My TSH is still high even though I take 200 micrograms of thyroxine. What happens next?",
@@ -207,7 +207,7 @@
       "empty stomach",
       "weeks"
     ],
-    "notes": "Changed. New raw: \"If TSH remains elevated despite titrating thyroxine to 200 micrograms per day, check adherence and advise the patient to take it on an empty stomach 1 hour before breakfast. Recheck in 6 to 8 weeks and seek endocrinology advice if TSH is still elevated.\" Old: the entry said only that specialist advice is sought if TSH stays high at maximum dose with confirmed adherence, with no empty stomach advice or 6 to 8 week recheck."
+    "notes": "Changed. New entry: \"If TSH stays elevated at 200 mcg/day, check you are taking it on an empty stomach, 1 hour before breakfast\"; \"If so, your doctor may recheck TSH in 6 to 8 weeks and seek specialist advice if it is still elevated\" Old: the entry said only that specialist advice is sought if TSH stays high at maximum dose with confirmed adherence, with no empty stomach advice or 6 to 8 week recheck."
   },
   {
     "query": "A friend takes natural thyroid extract. Should I swap my levothyroxine for it, or add T3?",
@@ -220,7 +220,7 @@
       "evidence",
       "T3"
     ],
-    "notes": "Changed. New raw: \"There is no robust evidence that shows a benefit of such products, or the addition of T3 to T4.\" Old: the entry said natural extracts are not recommended and are harder to monitor; it did not address adding T3."
+    "notes": "Changed. New entry: \"There is no robust evidence of benefit from these products, or from adding T3 to T4.\" Old: the entry said natural extracts are not recommended and are harder to monitor; it did not address adding T3."
   },
   {
     "query": "My ANA blood test came back positive at 1 in 160 and I have no other symptoms. Does that mean I have lupus?",
@@ -232,7 +232,7 @@
     "must_mention": [
       "5%"
     ],
-    "notes": "Changed. New raw: \"An ANA of 1 in 160 is found in 5% of the normal population, more in females and in the older population.\" Old: the entry did not give the ANA 1 in 160 figure."
+    "notes": "Changed. New entry: \"An ANA of 1 in 160 is found in 5% of the normal population.\" Old: the entry did not give the ANA 1 in 160 figure."
   },
   {
     "query": "My GP wants to start prednisone for my joint inflammation while I wait to see the rheumatologist. What dose is usual and how is it reduced?",
@@ -245,7 +245,7 @@
       "15",
       "5 mg"
     ],
-    "notes": "Changed. New raw: \"Start prednisone 15 to 20 mg daily for 2 to 4 weeks. After 2 to 4 weeks, decrease by 5 mg every 2 to 4 weeks and titrate to lowest dose patient can tolerate.\" Old: the entry said 15 to 20 mg daily, then gradually reduced over weeks."
+    "notes": "Changed. New entry: \"Typical starting dose: 15–20 mg daily for 2 to 4 weeks, then reduced by 5 mg every 2 to 4 weeks to the lowest dose you can tolerate.\" Old: the entry said 15 to 20 mg daily, then gradually reduced over weeks."
   },
   {
     "query": "I work rotating shifts and want to nap before driving home. How long should my naps be?",
@@ -257,7 +257,7 @@
     "must_mention": [
       "40 minutes"
     ],
-    "notes": "Changed. New raw: \"Naps should be 40 minutes or less.\" Old: the entry did not cover shift work napping."
+    "notes": "Changed. New entry: \"Keep naps to 40 minutes or less, and allow time to fully wake before driving or safety-critical tasks.\" Old: the entry did not cover shift work napping."
   },
   {
     "query": "I do night shifts and want to use coffee to stay alert. How much caffeine is sensible?",
@@ -270,7 +270,7 @@
       "100 mg",
       "300 mg"
     ],
-    "notes": "Changed. New raw: \"start with 100 mg and titrate up as needed\"; \"avoid using more than 300 mg a day so sleep is not adversely affected\" Old: the entry did not cover caffeine for shift work."
+    "notes": "Changed. New entry: \"Start with 100 mg (about an average cup of coffee) early in the shift, and avoid more than 300 mg a day from all sources.\" Old: the entry did not cover caffeine for shift work."
   },
   {
     "query": "My pharmacist says Protaphane is being discontinued. What will I be switched to, and will my dose change?",
@@ -283,7 +283,7 @@
       "Humulin NPH",
       "same dose"
     ],
-    "notes": "Changed. New raw: \"Supply of Protaphane will be discontinued at the end of 2026. The most like-for-like alternative is Humulin NPH and patients can be switched over to the same dose, but they will require a Savvio pen.\" Old: the entry said only that Protaphane is being discontinued in 2026 and to switch to Humulin NPH; it gave no dose or pen advice."
+    "notes": "Changed. New entry: \"Protaphane supply will end at the end of 2026. People on Protaphane can be switched to Humulin NPH at the same dose, but will need a different pen.\" Old: the entry said only that Protaphane is being discontinued in 2026 and to switch to Humulin NPH; it gave no dose or pen advice."
   },
   {
     "query": "NovoMix 30 is being discontinued and my doctor mentioned Ryzodeg. Will my dose stay the same?",
@@ -296,7 +296,7 @@
       "Humalog Mix 25",
       "lower"
     ],
-    "notes": "Changed. New raw: \"Supply of NovoMix 30 will also likely be discontinued at the end of 2026. The most like-for-like alternatives are Humalog Mix 25 (requires Savvio pen)\" Old: the entry said only that NovoMix 30 is being discontinued in 2026, with no replacement or dose advice."
+    "notes": "Changed. New entry: \"NovoMix 30 supply will likely end at the end of 2026. Your doctor may switch you dose for dose to Humalog Mix 25 or Ryzodeg. With Ryzodeg, a lower dose may be needed if you are at risk of hypoglycaemia (e.g. older age, kidney problems).\" Old: the entry said only that NovoMix 30 is being discontinued in 2026, with no replacement or dose advice."
   },
   {
     "query": "I've been on pregabalin for six weeks and my nerve pain hasn't changed. Should I keep going?",
@@ -308,7 +308,7 @@
     "must_mention": [
       "month"
     ],
-    "notes": "Changed. New raw: \"Start at a low dose and increase, if required, especially if there is partial response. Stop if no improvement after a trial of one month.\" Old: the entry did not give a one month trial limit for gabapentinoids."
+    "notes": "Changed. New entry: \"Gabapentinoids are started at a low dose and increased if needed. They are stopped if there is no improvement after a trial of one month.\" Old: the entry did not give a one month trial limit for gabapentinoids."
   },
   {
     "query": "Why does my pharmacy give me my gabapentin only one month at a time?",
@@ -321,7 +321,7 @@
       "monthly",
       "opioid"
     ],
-    "notes": "Changed. New raw: \"monthly dispensing instead of every 3 months in general\" Old: the entry said dispensing may be weekly for higher-risk people, with no monthly dispensing for gabapentinoids in general."
+    "notes": "Changed. New entry: \"monthly dispensing instead of every 3 months in general\" Old: the entry said dispensing may be weekly for higher-risk people, with no monthly dispensing for gabapentinoids in general."
   },
   {
     "query": "When should I put on sunscreen and how often should I reapply?",
@@ -334,7 +334,7 @@
       "20 minutes",
       "2 hours"
     ],
-    "notes": "Changed. New raw: \"at least 20 minutes before going outside, 10 to 20 minutes after going outside and every 2 hours after that.\" Old: the entry said SPF 50+ applied 20 minutes before going outside and reapplied every 2 hours, with no application after going outside."
+    "notes": "Changed. New entry: \"Apply sunscreen at least 20 minutes before going outside, again 10 to 20 minutes after going outside, and every 2 hours after that\" Old: the entry said SPF 50+ applied 20 minutes before going outside and reapplied every 2 hours, with no application after going outside."
   },
   {
     "query": "Nodular melanoma sounds rare. Why do doctors worry about it so much?",
@@ -347,7 +347,7 @@
       "60%",
       "thick"
     ],
-    "notes": "Changed. New raw: \"Approximately 15% of all melanomas are nodular melanomas, but they comprise more than 60% of melanomas > 3 mm in thickness.\" Old: the entry gave 'over 60% of thick melanomas' without the 15% share or the 3 mm cut-off."
+    "notes": "Changed. New entry: \"About 15% of melanomas are nodular, but they make up more than 60% of melanomas that are more than 3 mm thick.\" Old: the entry gave 'over 60% of thick melanomas' without the 15% share or the 3 mm cut-off."
   },
   {
     "query": "I keep going to the after-hours clinic and sometimes the emergency department for my asthma. Does that mean anything?",
@@ -359,7 +359,7 @@
     "must_mention": [
       "risk"
     ],
-    "notes": "Changed. New raw: \"Frequent attenders for emergency treatment (general practice, after hour surgeries, emergency departments)\" Old: the entry listed hospital admissions and emergency department visits in the past year, but not frequent attendance at general practice and after-hours clinics."
+    "notes": "Changed. New entry: \"Frequently needing emergency treatment (general practice, after-hours clinics, emergency departments)\" Old: the entry listed hospital admissions and emergency department visits in the past year, but not frequent attendance at general practice and after-hours clinics."
   },
   {
     "query": "Should I replace the carpets and buy mite-proof covers to control my asthma?",
@@ -372,7 +372,7 @@
       "cost",
       "control"
     ],
-    "notes": "Changed. New raw: \"House dust mites – The available avoidance strategies are labour- and cost-intensive, and don't significantly alter asthma control.\" Old: the entry said avoidance is labour-intensive and may not significantly alter control, with no mention of cost."
+    "notes": "Changed. New entry: \"house dust mite avoidance is labour- and cost-intensive and does not significantly alter control\" Old: the entry said avoidance is labour-intensive and may not significantly alter control, with no mention of cost."
   },
   {
     "query": "I have insomnia and think I might have sleep apnoea. Is a home overnight oximetry test a good idea?",
@@ -385,7 +385,7 @@
       "insomnia",
       "confus"
     ],
-    "notes": "Changed. New raw: \"Patients with insomnia may also have confusing results from a basic sleep test.\" Old: the entry said to avoid the basic home test if you have insomnia, without saying why; the new entry says results can be confusing."
+    "notes": "Changed. New entry: \"has insomnia (results can be confusing)\" Old: the entry said to avoid the basic home test if you have insomnia, without saying why; the new entry says results can be confusing."
   },
   {
     "query": "Can I use Otrivine nasal spray every night for my blocked nose and snoring?",
@@ -397,7 +397,7 @@
     "must_mention": [
       "1 week"
     ],
-    "notes": "Changed. New raw: \"Otrivine, 1 to 2 sprays at night – maximum duration 1 week to avoid rebound congestion\" Old: the entry did not give the Otrivine and nasal steroid course lengths."
+    "notes": "Changed. New entry: \"Otrivine, 1 to 2 sprays at night, maximum duration 1 week to avoid rebound congestion\" Old: the entry did not give the Otrivine and nasal steroid course lengths."
   },
   {
     "query": "My feet went numb over two days and now my legs feel weak and it seems to be spreading upwards. Should I book a GP appointment for next week?",
@@ -409,7 +409,7 @@
     "must_mention": [
       "111"
     ],
-    "notes": "Safety. New raw: \"Acute onset or rapid progression is uncommon and suggests Guillain-Barré syndrome, vasculitis, or toxins, and usually needs acute admission.\" Old: the entry called it a medical emergency needing urgent assessment, with no 111 or emergency department action."
+    "notes": "Safety. New entry: \"It suggests Guillain-Barré syndrome, vasculitis, or toxins, and usually needs hospital admission. If symptoms come on suddenly or get worse quickly, call 111 or go to the emergency department.\" Old: the entry called it a medical emergency needing urgent assessment, with no 111 or emergency department action."
   },
   {
     "query": "How do I use capsaicin cream for the nerve pain in my feet? Should I rub it in well?",
@@ -421,7 +421,7 @@
     "must_mention": [
       "massage"
     ],
-    "notes": "Changed. New raw: \"to use regularly 3 to 4 times a day. Do not massage in.\" Old: the entry said apply 3 to 4 times daily and wash hands, and described the 0.075% cream as funded; the new entry says to use it regularly and not on broken skin."
+    "notes": "Changed. New entry: \"Use regularly 3–4 times daily; do not massage in; wash hands after, unless your hands are being treated\" Old: the entry said apply 3 to 4 times daily and wash hands, and described the 0.075% cream as funded; the new entry says to use it regularly and not on broken skin."
   },
   {
     "query": "I fainted while jogging yesterday and feel fine today. Do I need to do anything about it?",
@@ -433,7 +433,7 @@
     "must_mention": [
       "111"
     ],
-    "notes": "Safety. New raw: \"Exertional syncope\" Old: the entry said you need urgent assessment; the new entry says to call 111 or go to the emergency department."
+    "notes": "Safety. New entry: \"Syncope during exercise (exertional syncope)\"; \"If you faint with any of these, call 111 or go to the emergency department.\" Old: the entry said you need urgent assessment; the new entry says to call 111 or go to the emergency department."
   },
   {
     "query": "I fainted when I stood up after starting a new blood pressure tablet, and my doctor stopped it. Can I drive again?",
@@ -446,7 +446,7 @@
       "stop",
       "drive"
     ],
-    "notes": "Changed. New raw: \"Likewise for a patient newly started on antihypertensives who has postural syncope and the triggering medication is withdrawn.\" Old: the entry gave stand-down rules by cause but did not cover fainting from a new blood pressure medicine that has been stopped."
+    "notes": "Changed. New entry: \"The same applies to fainting on standing caused by a new blood pressure medicine once that medicine is stopped\" Old: the entry gave stand-down rules by cause but did not cover fainting from a new blood pressure medicine that has been stopped."
   },
   {
     "query": "My 2-month-old's vitamin D level came back at 20 nmol/L. What treatment is usual?",
@@ -463,7 +463,7 @@
       "2000",
       "5 drops"
     ],
-    "notes": "Changed. New raw: \"Younger than 3 months | Less than 25 nmol/L | 800 units (2 drops) a day for 3 months\" Old: under 6 months with a level below 30 nmol/L, the entry gave 2000 units (5 drops) daily for 3 months."
+    "notes": "Changed. New entry: \"If 25(OH)D less than 25 nmol/L: vitamin D drops 800 units (2 drops) daily for 3 months\" Old: under 6 months with a level below 30 nmol/L, the entry gave 2000 units (5 drops) daily for 3 months."
   },
   {
     "query": "My toddler's vitamin D is low and the lab note says corrected calcium is 1.9, but he seems perfectly well. Can we wait for the doctor to review it next week?",
@@ -475,7 +475,7 @@
     "must_mention": [
       "111"
     ],
-    "notes": "Safety. New raw: \"Corrected calcium < 2 mmol/L May be asymptomatic. Hypocalcaemia is a life-threatening condition, with the potential for rapid deterioration.\" Old: the entry said urgent hospital assessment; the new entry says call 111 or go to the emergency department even if the child has no symptoms."
+    "notes": "Safety. New entry: \"If your child's blood test shows corrected calcium < 2 mmol/L, or confirms vitamin B12 deficiency, call 111 or go to the emergency department, even if your child has no symptoms.\" Old: the entry said urgent hospital assessment; the new entry says call 111 or go to the emergency department even if the child has no symptoms."
   },
   {
     "query": "My baby is mostly formula fed but only drinks about 300 mL a day. Does she need vitamin D drops?",
@@ -488,7 +488,7 @@
       "500",
       "4 weeks"
     ],
-    "notes": "Changed. New raw: \"Infants who are exclusively breastfed or receive less than 500 mL of formula a day are recommended to receive vitamin D supplementation before age 4 weeks\" Old: the entry said exclusively breastfed infants need supplementation from before 4 weeks, with no formula volume threshold."
+    "notes": "Changed. New entry: \"Infants who are exclusively breastfed, or who receive less than 500 mL of formula a day, are recommended to start vitamin D supplementation before 4 weeks of age\" Old: the entry said exclusively breastfed infants need supplementation from before 4 weeks, with no formula volume threshold."
   },
   {
     "query": "Is my multivitamin enough to cover my vitamin D?",
@@ -500,6 +500,6 @@
     "must_mention": [
       "vitamin A"
     ],
-    "notes": "Changed. New raw: \"Many multivitamin preparations (funded and unfunded) do not provide sufficient colecalciferol unless excessive doses of other vitamins (e.g. vitamin A) are taken.\" Old: the entry said many multivitamins lack enough vitamin D unless taken in excess; the new entry names vitamin A as the excess risk and adds that plain vitamin D is available over the counter."
+    "notes": "Changed. New entry: \"Many multivitamins do not provide enough vitamin D unless excessive doses of other vitamins (e.g. vitamin A) are taken. Over-the-counter vitamin D on its own, without other vitamins and minerals, is available.\" Old: the entry said many multivitamins lack enough vitamin D unless taken in excess; the new entry names vitamin A as the excess risk and adds that plain vitamin D is available over the counter."
   }
 ]

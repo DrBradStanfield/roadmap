@@ -23,11 +23,11 @@ Clinical content:
 10. Headaches: topiramate now lists the source's contraception examples (injection, IUD, or the combined pill plus a barrier method), after Codex round 2. The costs now follow the source drug by drug: atogepant $350 to $400 a month, galcanezumab $350 to $400 a dose, fremanezumab $300 to $330 an injection (June 2025, "prices may vary"). The old draft merged them into "$300 to $400". Keep the costs at all?
 11. ACE inhibitors and ARBs in kidney impairment (2019 source) says stop if eGFR falls by more than 25% at 1 week. The CKD page (2025 source) says withhold if creatinine rises by 30% or more. Each matches its own source, so the chatbot may quote either. Keep both as written, or add a line to the ACE/ARB page pointing to the newer CKD page?
 
-Pilot follow-up:
-13. Non-insulin diabetes medications (on main since 1af613b7) lists confusion under "see your doctor the same day" and under "call 111". Codex found the same overlap in cardiac drugs, where confusion now appears only under 111. Make the same one-word fix on main? It is a clinical edit, so it gets a quick adversary and Codex check first.
-
 Stale sources:
 12. ACE/ARB (last reviewed 2019, next review due 2022), DOAC and AF are past their own next-review dates. The entries follow the pages as published.
+
+Pilot follow-up:
+13. Non-insulin diabetes medications (on main since 1af613b7) lists confusion under "see your doctor the same day" and under "call 111". Codex found the same overlap in cardiac drugs, where confusion now appears only under 111. Make the same one-word fix on main? It is a clinical edit, so it gets a quick adversary and Codex check first.
 
 ## Sign-off
 
