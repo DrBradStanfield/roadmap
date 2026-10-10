@@ -61,8 +61,9 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   But `routeQuery`/`classifyMessage` get the bare comment with no video
   context, so oblique comments ("could it cause blindness?") are unroutable.
   Categorise YT empties against the companion blog before calling them misses.
-  On YouTube a GREETING label means NO reply, and the classifier labels most
-  opinion comments GREETING (W41: 35 of 55 events, incl. a direct question).
+  On YouTube a GREETING label means NO reply, and the classifier labels many
+  comments GREETING (W41: 35 of 55 events; 16 substantive health claims and
+  one direct question among them, the rest reactions, thanks and spam).
 - **2026-08-10 [retrieval]** Term presence in the visible summary is necessary
   but NOT sufficient: before any summary edit, check what the router picked
   INSTEAD. On the Haiku router, steals (a theme neighbour beating the named
@@ -119,7 +120,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   v1 1,225 / 1,666 ms (n=19); v2 cache misses median 2,826 ms vs hits 1,340.
   The harness reads p50 ~1,260 ms on a warm cache, so harness latency
   understates production. W41 (v1 retired, n=39 all v2): median 1,627 ms,
-  p90 2,989 ms, so the W40 gap did not persist; still re-measure, never act on one week.
+  p90 2,989 ms: W40's v2 slowness did not repeat, but v2 stays slower than
+  v1 was (W40 v1 1,225 / 1,666). Never act on one week.
 - **2026-09-19 [loop]** Production brownout signature (09-11 04:45–06:18Z):
   5 router timeouts at 11,006–11,013 ms — the router's 5 s call + 1 s backoff
   + 5 s retry (`callAnthropicWithUsage(body, 5_000)`, `RETRY_MAX_ATTEMPTS`
