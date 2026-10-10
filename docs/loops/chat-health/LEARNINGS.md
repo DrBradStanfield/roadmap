@@ -53,7 +53,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   `.max(3)` whole (3 of 27 W33 empties); `sanitizeRawHandles` now slices to 3.
   W41 (Sonnet 5.5): a reply of two JSON objects with "Wait, correction"
   between them failed `extractJsonObject` (first `{` to last `}`); real
-  handles in both, 0 of 16 replays recurred. Proposed: parse the last object.
+  handles in both. Replays: 0 of 16 as typed, but 1 of 6 on a long
+  list-shaped paraphrase (harness L3), scored a silent ∅. Proposed: parse the last object.
 - **2026-08-10 [retrieval]** YouTube empty-handles are structurally different
   from web ones: the bot pre-loads the video's companion blog into the reply
   context (`findBlogByVideoId`), so an empty router result on an on-topic
