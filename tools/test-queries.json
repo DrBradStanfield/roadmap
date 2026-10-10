@@ -4208,5 +4208,27 @@
       "stop your"
     ],
     "notes": "Safety. Taurine may modestly reduce blood pressure in prehypertension and metabolic syndrome per the 2024 meta-analysis; never a substitute for prescribed treatment. Ruling 9 softens 'consistent evidence'."
+  },
+  {
+    "query": "can you analyze my data",
+    "expected": [
+      "diet",
+      "exercise",
+      "sleep"
+    ],
+    "category": "lifestyle",
+    "source": "production",
+    "notes": "2026-10-11 chat-health loop (W41 run): real widget turn 2026-10-05, paraphrased on ingest (short, lowercase, no topic: the shape is under test). The third own-data assessment ask with no named topic (W39 'rate my overall health', W40 blood-results template). Rule 7's example 'Based on my data, what should I improve first?' routes, and the classifier rightly said ROUTE, so the empty is a router miss. The same conversation then routed its liver questions fine. BASELINE 2026-10-11 on the Sonnet 5.5 router (v2): as typed ∅ 6/6, every raw reply a clean {\"handles\": []} (no parse error); this paraphrase ∅ 3/3 on both lifestyle arms. KNOWN-FAIL: router territory; no summary edit applies (W40 proposal 4)."
+  },
+  {
+    "query": "At 5:46 you said there was no clear winner in that study. Keto beat both the Mediterranean and the low-fat plant-forward diet on liver fat, insulin sensitivity, HbA1c and prediabetes reversal, with weight loss held equal by design and no difference in LDL or ApoB. That isn't neutral. And don't get me started on DIETFITS.",
+    "expected": [
+      "diet",
+      "diet-strongly-suspected-best",
+      "lean-mass-hyper-responders-see-rapid-plaque-progression"
+    ],
+    "category": "lifestyle",
+    "source": "production",
+    "notes": "2026-10-11 chat-health loop (W41 run): real YouTube comment 2026-10-07 on the end-of-obesity video, paraphrased on ingest (most figures dropped; the timestamp quote, the trial claims and the accusation keep the shape). Production row was a ROUTER ERROR, not a miss: the router replied with two JSON objects and a 'Wait, correction' sentence between them, so JSON.parse(extractJsonObject(raw)) failed (first { to last }); all four handles in both objects were real. BASELINE 2026-10-11 as typed: harness 6/6 routed (diet and best-diet-confirmed every run), production routeQuery 10/10 routed, 0 of 16 raw replies held more than one object. best-diet-confirmed-by-… (routed every run) is left out of expected because its seven-digit slug trips the privacy test's phone-shaped rule. Lifestyle arms 2026-10-11: PASS L1 (diet every run), FAIL L2 (one ∅ run of three; cause unrecorded, the harness keeps no raw reply). Regression case for the routing; the parse failure is stochastic, and the harness scores a two-object reply as a silent ∅ (W41 proposal)."
   }
 ]

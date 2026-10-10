@@ -42,7 +42,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   response as ∅ — an API-400 brownout mid-session read as a 92.8%→19%
   "regression" (and ∅ scores as PASS on expected-empty fixtures). Fixed:
   errors now print, count, and fail the exit code. A sudden collapse across
-  unrelated categories at once is the API, not your edit.
+  unrelated categories at once is the API, not your edit. Sixth, 2026-10-11:
+  a router reply that fails JSON.parse still scores as a silent ∅.
 - **2026-08-07 [content]** Drug-centric queries miss condition-centric
   summaries. "Which statin has the mildest side effects" failed against
   `hyperlipidaemia` whose summary described the *condition*; the answer was in
@@ -50,6 +51,9 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   document's summary names it too.
 - **2026-08-10 [retrieval]** A router reply with >3 handles once failed Zod's
   `.max(3)` whole (3 of 27 W33 empties); `sanitizeRawHandles` now slices to 3.
+  W41 (Sonnet 5.5): a reply of two JSON objects with "Wait, correction"
+  between them failed `extractJsonObject` (first `{` to last `}`); real
+  handles in both, 0 of 16 replays recurred. Proposed: parse the last object.
 - **2026-08-10 [retrieval]** YouTube empty-handles are structurally different
   from web ones: the bot pre-loads the video's companion blog into the reply
   context (`findBlogByVideoId`), so an empty router result on an on-topic
@@ -57,6 +61,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   But `routeQuery`/`classifyMessage` get the bare comment with no video
   context, so oblique comments ("could it cause blindness?") are unroutable.
   Categorise YT empties against the companion blog before calling them misses.
+  On YouTube a GREETING label means NO reply, and the classifier labels most
+  opinion comments GREETING (W41: 35 of 55 events, incl. a direct question).
 - **2026-08-10 [retrieval]** Term presence in the visible summary is necessary
   but NOT sufficient: before any summary edit, check what the router picked
   INSTEAD. On the Haiku router, steals (a theme neighbour beating the named
@@ -112,7 +118,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   the Haiku one it replaced: W40 v2 median 2,234 ms, p90 3,469 ms (n=24) vs
   v1 1,225 / 1,666 ms (n=19); v2 cache misses median 2,826 ms vs hits 1,340.
   The harness reads p50 ~1,260 ms on a warm cache, so harness latency
-  understates production. Small n: re-measure before acting.
+  understates production. W41 (v1 retired, n=39 all v2): median 1,627 ms,
+  p90 2,989 ms, so the W40 gap did not persist; still re-measure, never act on one week.
 - **2026-09-19 [loop]** Production brownout signature (09-11 04:45–06:18Z):
   5 router timeouts at 11,006–11,013 ms — the router's 5 s call + 1 s backoff
   + 5 s retry (`callAnthropicWithUsage(body, 5_000)`, `RETRY_MAX_ATTEMPTS`
