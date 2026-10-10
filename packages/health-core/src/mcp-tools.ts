@@ -559,19 +559,20 @@ export function redactRecord(file: RoadmapFile) {
 }
 
 function matchesMetric(name: string, query: string): boolean {
-  return name.toLowerCase() === query || labSlotKey(name) === query;
+  return name.toLowerCase() === query || resolveCoreMetricName(name) === query || labSlotKey(name) === query;
 }
 
 /**
  * The record as JSON, filtered. `metric` narrows the two value arrays to one
- * test — by catalogue key, so "Gamma GT" and `ggt` are the same question —
+ * test — by core metric name or catalogue key, so "LDL-C" and `ldl`, or
+ * "Gamma GT" and `ggt`, are the same question —
  * and `since` drops rows recorded before that day. Everything else (profile,
  * medications, supplements, screenings, documents) comes back whole: a filter
  * that silently hid a medication would make the plan unreadable.
  */
 export function readRecord(file: RoadmapFile, request: z.infer<typeof readRecordInput>): ToolOutcome {
   const record = redactRecord(file);
-  const metric = request.metric ? labSlotKey(request.metric) : undefined;
+  const metric = request.metric ? resolveCoreMetricName(request.metric) ?? labSlotKey(request.metric) : undefined;
   const since = request.since;
   const keep = (row: { recordedAt?: string | null }) => !since || dayOf(row.recordedAt ?? '') >= since;
 

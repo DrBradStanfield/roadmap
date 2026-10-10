@@ -55,7 +55,7 @@ import {
 import { computePlan, REPO_PUBLIC, REPO_SLUG, REPO_URL, SCHEMA_URL } from './plan';
 import { dayOf, mergeFiles, stampFields } from './merge';
 import { migrateFile } from './migrate';
-import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
+import { createEmptyFile, createLabValue, createMeasurement, type RoadmapFile } from './roadmap-file';
 import { METRIC_TYPES } from './validation';
 
 const CTX = { deviceId: 'us32_test', now: '2026-09-01T09:00:00Z' };
@@ -366,6 +366,67 @@ describe('US-32 — a read answers compactly', () => {
 });
 
 describe('US-32 — read_record filters', () => {
+  it.each([
+    ['ldl', 'LDL Cholesterol'],
+    ['ldl', 'LDL-C'],
+    ['lpa', 'Lp(a)'],
+    ['lpa', 'Lipoprotein(a)'],
+    ['hba1c', 'A1C'],
+    ['apob', 'Apo B'],
+    ['creatinine', 'Serum Creatinine'],
+  ] as const)('US-32 AC1/AC26: reads %s by its recognized name %s', (metricType, alias) => {
+    const file = base();
+    file.measurements = [];
+    file.measurements.push(createMeasurement({
+      id: 'wanted', metricType, value: 1, recordedAt: TODAY, createdAt: NOW,
+    }));
+    file.labValues.push(createLabValue({
+      id: 'unrelated', metricName: 'tsh', value: 2.3, unit: 'mIU/L', recordedAt: TODAY, createdAt: NOW,
+    }));
+    const before = JSON.stringify(file);
+    const canonical = JSON.parse(ok(readRecord(file, { metric: metricType })).text);
+    const byAlias = JSON.parse(ok(readRecord(file, { metric: alias })).text);
+
+    expect(byAlias).toEqual(canonical);
+    expect(byAlias.measurements.map((row: { id: string }) => row.id)).toEqual(['wanted']);
+    expect(byAlias.labValues).toEqual([]);
+    expect(JSON.stringify(file)).toBe(before);
+  });
+
+  it('US-32 AC1/AC26: keeps a legacy core-alias lab row readable without migrating it', () => {
+    const file = base();
+    file.labValues.push(createLabValue({
+      id: 'legacy', metricName: 'ldl-c', value: 2.1, unit: 'mmol/L', recordedAt: TODAY, createdAt: NOW,
+    }));
+    const before = JSON.stringify(file);
+    const canonical = JSON.parse(ok(readRecord(file, { metric: 'ldl' })).text);
+    const byAlias = JSON.parse(ok(readRecord(file, { metric: 'LDL-C' })).text);
+
+    expect(byAlias).toEqual(canonical);
+    expect(byAlias.labValues.map((row: { id: string }) => row.id)).toEqual(['legacy']);
+    expect(byAlias.measurements.map((row: { id: string }) => row.id)).toEqual(['m1']);
+    expect(JSON.stringify(file)).toBe(before);
+  });
+
+  it('US-32 AC1/AC26: keeps non-HDL cholesterol separate from the core HDL metric', () => {
+    const file = base();
+    file.measurements.push(createMeasurement({
+      id: 'hdl', metricType: 'hdl', value: 1.3, recordedAt: TODAY, createdAt: NOW,
+    }));
+    const written = ok(addLabValues(file, { values: [
+      { metricName: 'Non-HDL Cholesterol', value: 3.2, unit: 'mmol/L', recordedAt: TODAY },
+    ] }, { now: NOW }));
+    expect(written.file).toBeDefined();
+    const nonHdl = JSON.parse(ok(readRecord(written.file!, { metric: 'Non-HDL Cholesterol' })).text);
+    const hdl = JSON.parse(ok(readRecord(written.file!, { metric: 'HDL Cholesterol' })).text);
+
+    expect(nonHdl.measurements).toEqual([]);
+    expect(nonHdl.labValues).toHaveLength(1);
+    expect(nonHdl.labValues[0].metricName).toBe('non-hdl cholesterol');
+    expect(hdl.measurements.map((row: { id: string }) => row.id)).toEqual(['hdl']);
+    expect(hdl.labValues).toEqual([]);
+  });
+
   it('narrows to one metric, by catalogue key as well as name', () => {
     const parsed = JSON.parse(ok(readRecord(base(), { metric: 'Ferritin' })).text);
 
@@ -518,6 +579,46 @@ describe('US-32 — add_measurement', () => {
 });
 
 describe('US-32 — add_lab_values is a batch, and all or nothing', () => {
+  it('US-32 AC4: refuses a core alias after a valid lab without writing any row', () => {
+    const file = base();
+    const before = JSON.stringify(file);
+    const outcome = callTool('add_lab_values', {
+      values: [
+        { metricName: 'tsh', value: 2.3, unit: 'mIU/L', recordedAt: TODAY },
+        { metricName: 'LDL-C', value: 2.1, unit: 'mmol/L', recordedAt: TODAY },
+      ],
+    }, { file, now: NOW });
+
+    expect(outcome.status).toBe('rejected');
+    expect(outcome.reason).toBe('core-metric');
+    expect(outcome.text).toContain('values[1] (LDL-C)');
+    expect(outcome.text).toContain('write it as a measurement, in SI units');
+    expect(outcome.text).toContain('No row from this call was written');
+    expect(outcome.file).toBeUndefined();
+    expect(JSON.stringify(file)).toBe(before);
+  });
+
+  it('US-32 AC4: refuses Height after a valid lab atomically with profile-edit guidance', () => {
+    const file = base();
+    const before = JSON.stringify(file);
+    const outcome = callTool('add_lab_values', {
+      values: [
+        { metricName: 'tsh', value: 2.3, unit: 'mIU/L', recordedAt: TODAY },
+        { metricName: 'Height', value: 180, unit: 'cm', recordedAt: TODAY },
+      ],
+    }, { file, now: NOW });
+
+    expect(outcome.status).toBe('rejected');
+    expect(outcome.reason).toBe('core-metric');
+    expect(outcome.file).toBeUndefined();
+    expect(JSON.stringify(file)).toBe(before);
+    expect(outcome.text).toContain('values[1] (Height)');
+    expect(outcome.text).toContain('No row from this call was written');
+    expect(outcome.text).toContain('heightCm');
+    expect(outcome.text).toContain('update_profile');
+    expect(outcome.text).not.toContain('write it as a measurement');
+  });
+
   it('writes a whole panel in one call', () => {
     const outcome = ok(addLabValues(base(), {
       values: [
