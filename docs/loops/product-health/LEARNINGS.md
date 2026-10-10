@@ -146,7 +146,10 @@ duplicates.
   Read the week's sibling-loop reports before the pulls, and read "0 Actions
   runs" as a question about the account, never a quiet week. While the relay is
   dead an issue is the durable record, not a delivery. (Cousin of the 09-19
-  silent-fleet entry: that one was our routines, this one is the platform.)
+  silent-fleet entry: that one was our routines, this one is the platform. **Lifted 10-05;
+  push and event triggers returned 10-06, but the cron schedules did not** (Workflow
+  Integrity and Stranded branch watch: 0 runs 09-18 → 10-10, W41). After any outage,
+  check runs per workflow, crons included, not just "Actions runs again".)
 - **2026-09-26 [usage]** Reach can double in a week with no source we hold able
   to say why: `results_viewed` 172 → 384, the 09-20 spike (91 views, 73 visitors,
   22 of 24 hours), while Clarity's 3-day window had already rolled past it and
@@ -157,7 +160,8 @@ duplicates.
 - **2026-10-03 [usage]** The plan-ready email's button brings a guest's plan
   back only in the browser that made it, and mostly lands elsewhere: 14 of 17
   W40 clicks fired `email_landing_empty` within ~3.4 s (16 of 21 since 09-24);
-  1 of 8 visitors clearly recovered. A connect is not a recovery: require
+  1 of 8 visitors clearly recovered. W41: 9 of 20, about 8 clicks opened a plan,
+  2 of 9 recovered; none of the 9 ids had any earlier event (an unused browser). A connect is not a recovery: require
   `results_viewed` after it (W39's "recovered" visitor connected, saw nothing,
   and kept looking). Pair clicks to landings by timestamp; the email events'
   constant `visitor_id` cannot.
