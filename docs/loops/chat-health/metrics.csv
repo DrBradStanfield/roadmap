@@ -88,3 +88,23 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W40,lint_due_entries,86,,,tools/knowledge-lint.ts,weekly lint
 2026-W40,routing_miss_share_pct,80,23.1,246,manual categorisation,"4/5 after the adversarial review (R1, R2), all on router_version 1 (Haiku 4.5). On the Sonnet 5.5 router: statin + bowel-screening/FIT ask PASS 6/6, HbA1c dashboard-analysis paste PASS 6/6, generic blood-results template ∅ 6/6 (KNOWN-FAIL, own-data shape), 'search again' follow-up replayed through production routeQuery with its first turn as first+recent: routed 6/6 (ibd-medications, suspected-b12-deficiency every run; no fixture: the harness takes no context); fixtures added 324 → 327 (router 304 → 307)"
 2026-W40,harness_full_suite_pass_pct,97.7,92.7,5,tools/test-chatbot-matching.ts,"arm A 297/304 (A2 295/304, 97.0%), claude-sonnet-5-5 thinking off, --runs 3, 0 API errors, $13.98/arm; prior = W39 arm A 281/303 on Haiku 4.5. NOT like-for-like (review R4): the router model, rule 7, 12 fixtures' expected/must_not_route and ~300 harness lines all changed between the arms"
+2026-W41,lint_unresolved_marker,87,87,0,tools/knowledge-lint.ts,weekly lint
+2026-W41,lint_uncited_reference,206,207,0,tools/knowledge-lint.ts,weekly lint
+2026-W41,lint_uncited_list,39,39,0,tools/knowledge-lint.ts,weekly lint
+2026-W41,lint_doi_shape,1,1,0,tools/knowledge-lint.ts,weekly lint
+2026-W41,lint_pmid_shape,1,1,0,tools/knowledge-lint.ts,weekly lint
+2026-W41,lint_id_mismatch,3,3,0,tools/knowledge-lint.ts,weekly lint
+2026-W41,lint_link_dead,21,0,,tools/knowledge-lint.ts,weekly lint
+2026-W41,lint_grokipedia,62,67,-7,tools/knowledge-lint.ts,weekly lint
+2026-W41,lint_dose_mismatch,12,12,0,tools/knowledge-lint.ts,weekly lint
+2026-W41,lint_product_rise,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W41,lint_grokipedia_only_sentences,608,703,-14,tools/knowledge-lint.ts,weekly lint
+2026-W41,lint_due_entries,89,86,3,tools/knowledge-lint.ts,weekly lint
+2026-W41,empty_handle_turns,3,5,-40,chat_match_events,"window 2026-10-03T22:25Z → 10-10T22:25Z; split youtube 2 / widget 1 / shopify 0 / discord 0; total match events 94 = 55 skipped + 39 ran (all ROUTE, all router_version 2: v1 retired); W40 slice re-measured 5 of 72 = published"
+2026-W41,classifier_catchable_share_pct,0,0,0,manual categorisation,"0/3 — seventh consecutive zero; classifier skipped 55 upstream (GREETING 37 / PRODUCT 12 / MEASUREMENT 5 / ACCOUNT 1)"
+2026-W41,router_errors_7d,1,0,,chat_match_events,"1 youtube row 2026-10-07T12:13Z at 3,145 ms: JSON parse failure (the model returned two JSON objects with a self-correction sentence between them; extractJsonObject slices first { to last }); fallbacks 0 (match events and chat_messages)"
+2026-W41,router_latency_median_ms,1627,1524,7,chat_match_events,"n=39, all v2; vs W40 v2-only 2234.5 (n=24): -27%; identical excluding the error row (n=38)"
+2026-W41,router_latency_p90_ms,2989,3194,-6,chat_match_events,"nearest-rank n=39; vs W40 v2-only 3469: -14%; excluding the error row 2895"
+2026-W41,router_cache_hit_rate_pct,49,53,-8,chat_match_events,"19/39 (all v2); hits 12 within 300 s of the previous v2 call, 7 at 300–3,600 s, 0 beyond; misses: min gap 3,576 s (one borderline), next 3,605 s — the 1-hour TTL again; hit median 1504 ms vs miss 1931.5"
+2026-W41,yt_reply_median_words,78,68,15,chat_messages,"n=18 excluding 2 SKIP_NO_REPLY sentinels (20 assistant rows); all 18 carry the tag; tag-stripped median 72"
+2026-W41,yt_reply_gt90w_count_7d,1,1,0,chat_messages,"1/18 (6%) raw, max 96; tag-stripped 0/18, max 90; >5 sentences tag-stripped 2 (six each); any sentence >25 words 5/18 (splitter caveat)"
