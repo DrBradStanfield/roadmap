@@ -67,12 +67,12 @@ before deploying.
 ## Anti-Entropy & Writing Style
 
 **File budgets (split, never grow — the universal remedy):**
-- This file: target ≤250 lines, one-in-one-out within 20 of it. Detail goes to
-  docs/reference.md or docs/deploy-runbook.md, not new sections here.
-- Skills (`.claude/`) and on-demand docs (docs/reference.md,
-  docs/deploy-runbook.md): ≤500 lines — split by topic at the cap. Loop files:
-  per [docs/loops/LOOP.md](docs/loops/LOOP.md) (always-loaded ≤200; notes
-  ≤500; reports ≤150; changelogs + CSVs are history/data, cap-exempt).
+- This file: target ≤250 lines, one-in-one-out within 20 of it; detail goes to docs/reference.md or docs/deploy-runbook.md.
+- Skills (`.claude/`) and on-demand docs (docs/reference.md, docs/deploy-runbook.md): ≤500 lines — split by topic
+  at the cap. Loop files: per [docs/loops/LOOP.md](docs/loops/LOOP.md) (always-loaded ≤200; notes ≤500;
+  reports ≤150; changelogs + CSVs are history/data, cap-exempt).
+- **Docs are Markdown; Artifacts are built from them (HARD, Brad 2026-10-12, both repos):** `node tools/md-artifact.mjs
+  <file.md>`, republish to its front-matter `artifact:` URL; never hand-edit an Artifact; convert HTML docs when next edited.
 - Memory: 200 lines/25KB, hard-enforced. Structured records → CSV, never prose.
 
 **Code entropy — deletion-first (production code; tests/comments never count):**
