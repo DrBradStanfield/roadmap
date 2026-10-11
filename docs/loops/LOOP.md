@@ -3,7 +3,7 @@ Every scheduled cloud loop reads THIS file first, then its own charter at
 `docs/loops/<name>/LOOP.md`. The charter holds only that loop's deltas
 (mission, data sources, write scope, delivery); this file holds everything
 shared. A charter can never override the Guardrails below. Full rationale +
-research citations: [loop-master-architecture-explanation.html](loop-master-architecture-explanation.html).
+research citations: [loop-master-architecture-explanation.md](loop-master-architecture-explanation.md).
 The fleet index is [REGISTRY.md](REGISTRY.md).
 
 ## Orchestration
