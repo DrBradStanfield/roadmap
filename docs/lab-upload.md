@@ -4,7 +4,7 @@
 
 **Status**: Shipped (v341 March 2026 · FHIR `replaces` redesign May 2026 · **v2 local-first extension June 2026** · connector import US-35 September 2026). **Production cutover done 2026-06-12** — `/pages/roadmap` serves the v2 local-first build; the v1 Supabase path is gone (tables purged, endpoints deleted) and is mentioned here only where a decision came from it. Architecture map: [`architecture-v2.html`](architecture-v2.html).
 
-> **Visual reference:** [`lab-upload-overview.html`](lab-upload-overview.html) — pipeline diagrams, storage map, the upload-conflict rule, defence-in-depth tables. Start there if you're new. **The connector route** (a user's own assistant importing files through `import_documents`) has its own doc: [`lab-upload-connector.md`](lab-upload-connector.md).
+> **Visual reference:** [`lab-upload-overview.md`](lab-upload-overview.md) — pipeline diagrams, storage map, the upload-conflict rule, defence-in-depth tables. Start there if you're new. **The connector route** (a user's own assistant importing files through `import_documents`) has its own doc: [`lab-upload-connector.md`](lab-upload-connector.md).
 
 Last audited against the code: 2026-09-07 (drift fixed: file cap, token cap, retry shape, where the prompt lives, the archive path for connector-imported originals).
 
