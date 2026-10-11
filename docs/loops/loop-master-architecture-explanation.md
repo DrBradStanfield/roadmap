@@ -1,5 +1,6 @@
 ---
 title: Loop Fleet Architecture
+artifact: https://claude.ai/artifact/Bpg2bnSoeQFDYC9SC4af1d
 ---
 
 # Loop Fleet Architecture
