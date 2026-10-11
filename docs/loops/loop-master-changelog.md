@@ -5,6 +5,11 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-10-11 (Brad-directed: no Codex in loops):** Brad: "we aren't doing codex reviews in these loops
+  anymore. fix this, so that future loops don't try and run it". The sentry-fix run of 10-07 had still asked
+  him for a Codex run or waiver on PR #134, because CLAUDE.md made a cloud session's security-class change wait
+  for one. Orchestration's Codex bullet now says loops never run, request or wait on Codex, and nothing
+  mentions it; CLAUDE.md, the codex-review skill and US-40 AC10 say the same. Net -2 lines (196).
 - **2026-10-07 (Brad-directed: final brief):** Brad, live in the sentry-fix
   run: "you need to give me a brief summary of what was done, why, and what's
   outstanding (with context so that I can make informed decisions) for your
