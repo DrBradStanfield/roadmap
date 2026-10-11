@@ -2,7 +2,7 @@
  * Generate docs/user-stories.html from docs/user-stories.md.
  *
  * The .md is the SOURCE OF TRUTH (agents read/edit it, tests cite its US-ids);
- * the .html is the browser-readable companion linked from architecture-v2.html.
+ * the .html is the browser-readable companion linked from architecture-v2.md.
  * Regenerate after every .md edit:  npx tsx scripts/build-user-stories-html.ts
  * (Same derived-artifact pattern as rebuild-blog-index.ts.)
  *
@@ -154,7 +154,7 @@ function main(): void {
 <body>
 <div class="layout">
 <nav class="toc">
-  <a href="architecture-v2.html">← Architecture (v2)</a>
+  <a href="architecture-v2.md">← Architecture (v2)</a>
   ${toc}
 </nav>
 <main>

@@ -235,7 +235,7 @@ network tab recording and use the widget.
 ## Where to read next
 
 - [CLAUDE.md](CLAUDE.md): the working contract for this repo.
-- [docs/architecture-v2.html](docs/architecture-v2.html): the visual system
+- [docs/architecture-v2.md](docs/architecture-v2.md): the visual system
   map, and the best entry point.
 - [docs/reference.md](docs/reference.md): file inventory, data model,
   endpoints, gotcha archive.

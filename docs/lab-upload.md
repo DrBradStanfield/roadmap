@@ -2,7 +2,7 @@
 
 **Feature**: Upload lab report PDFs, images, or ZIPs → LLM extracts blood test values → user reviews → bulk save into the user's **own cloud** (the local-first file). Nothing health-related touches Brad's server except the extraction call.
 
-**Status**: Shipped (v341 March 2026 · FHIR `replaces` redesign May 2026 · **v2 local-first extension June 2026** · connector import US-35 September 2026). **Production cutover done 2026-06-12** — `/pages/roadmap` serves the v2 local-first build; the v1 Supabase path is gone (tables purged, endpoints deleted) and is mentioned here only where a decision came from it. Architecture map: [`architecture-v2.html`](architecture-v2.html).
+**Status**: Shipped (v341 March 2026 · FHIR `replaces` redesign May 2026 · **v2 local-first extension June 2026** · connector import US-35 September 2026). **Production cutover done 2026-06-12** — `/pages/roadmap` serves the v2 local-first build; the v1 Supabase path is gone (tables purged, endpoints deleted) and is mentioned here only where a decision came from it. Architecture map: [`architecture-v2.md`](architecture-v2.md).
 
 > **Visual reference:** [`lab-upload-overview.md`](lab-upload-overview.md) — pipeline diagrams, storage map, the upload-conflict rule, defence-in-depth tables. Start there if you're new. **The connector route** (a user's own assistant importing files through `import_documents`) has its own doc: [`lab-upload-connector.md`](lab-upload-connector.md).
 
@@ -375,7 +375,7 @@ import (`source: 'apple_health'`, `externalId` for dedup).
 
 ## v2: Local-first lab uploads (June 2026)
 
-The local-first re-architecture extends this feature in five ways. [architecture-v2.html](architecture-v2.html) is the current map; dated migration decisions remain in git history. The extraction/review/FHIR-correction *pipeline* is unchanged; what changed is where originals + values are stored (the user's own cloud) and how the extraction endpoint is authenticated (app-proxy HMAC).
+The local-first re-architecture extends this feature in five ways. [architecture-v2.md](architecture-v2.md) is the current map; dated migration decisions remain in git history. The extraction/review/FHIR-correction *pipeline* is unchanged; what changed is where originals + values are stored (the user's own cloud) and how the extraction endpoint is authenticated (app-proxy HMAC).
 
 ### 1. Originals are KEPT — archived in the user's own cloud
 

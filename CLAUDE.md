@@ -4,7 +4,7 @@ Context for Claude Code in this repo. Depth lives in on-demand docs:
 [docs/reference.md](docs/reference.md) (FHIR detail, file inventory, data model,
 A/B, endpoints, gotcha archive) · [docs/deploy-runbook.md](docs/deploy-runbook.md)
 (manual deploy, build flags, two-app split, env vars, scaling) ·
-[docs/architecture-v2.html](docs/architecture-v2.html) (visual system map; the entry point for new threads).
+[docs/architecture-v2.md](docs/architecture-v2.md) (visual system map; the entry point for new threads).
 
 ## Project Overview
 
@@ -60,8 +60,8 @@ before deploying.
   holds the symlink). Edit it here; claude_business edits arrive uncommitted — sweep-commit them.
   `scripts/check-symlinks.mjs` keeps it a REAL file (mode 100644), never a symlink.
 - `docs/blog/*.md` — chatbot blog cache from claude_business `/blog-post`; rebuild `npx tsx scripts/build-blog-content.ts`.
-- **Customer-service gateway (planned, Brad 2026-10-12):** email + chatbot order/subscription actions on the
-  chatbot's knowledge; its OWN Fly app, never inside health-tool-app/edu. Spec: claude_business `docs/customer-service.md`.
+- **Customer-service gateway (planned, Brad 2026-10-12):** email + chatbot order/subscription actions; its OWN Fly app,
+  code in the private claude_business repo (`gateway/`), never in this public repo; the chatbot calls it for account actions. Spec: claude_business `docs/customer-service.md`.
 - Chatbot work starts at `claude_business/docs/chat-start-here.md`.
 
 ## Anti-Entropy & Writing Style

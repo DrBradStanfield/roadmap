@@ -26,7 +26,7 @@ Users drag a lab PDF/image/ZIP into the widget. Claude Haiku calls extract targe
 > - **Upload conflicts** — an uploaded value that disagrees with a saved one (usually written by a connected assistant through the MCP connector) is shown as a conflict with an unchecked **Replace** box, never dropped and never auto-applied — [§9](#conflict), US-32 AC24.
 > - **BYOK option** — the GitHub Pages / self-host build runs extraction **browser → Anthropic direct** with the user's own key (`byok-upload.ts`); no Brad server in the path.
 >
-> Current architecture map: [architecture-v2.html](architecture-v2.html) · live behaviour detail: the **"v2: Local-first lab uploads"** section of [lab-upload.md](lab-upload.md).
+> Current architecture map: [architecture-v2.md](architecture-v2.md) · live behaviour detail: the **"v2: Local-first lab uploads"** section of [lab-upload.md](lab-upload.md).
 
 > **Customer report — a customer (a physicist) · the failure that prompted the redesign**
 >
