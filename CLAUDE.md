@@ -72,7 +72,7 @@ before deploying.
   at the cap. Loop files: per [docs/loops/LOOP.md](docs/loops/LOOP.md) (always-loaded ≤200; notes ≤500;
   reports ≤150; changelogs + CSVs are history/data, cap-exempt).
 - **Docs are Markdown; Artifacts are built from them (HARD, Brad 2026-10-12, both repos):** `node tools/md-artifact.mjs
-  <file.md>`, republish to its front-matter `artifact:` URL; never hand-edit an Artifact; convert HTML docs when next edited.
+  <file.md>`, republish to its front-matter `artifact:` URL; never hand-edit an Artifact or write a new HTML doc (all converted 2026-10-12).
 - Memory: 200 lines/25KB, hard-enforced. Structured records → CSV, never prose.
 
 **Code entropy — deletion-first (production code; tests/comments never count):**
