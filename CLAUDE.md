@@ -56,12 +56,12 @@ before deploying.
 
 (`~/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/`)
 
-- **`docs/products.md` is the MASTER here — a real tracked file** (inverted
-  2026-08-10; claude_business holds the symlink pointing here). Edit it here;
-  claude_business edits arrive as uncommitted changes here — sweep-commit them.
+- **`docs/products.md` is the MASTER here — a real tracked file** (inverted 2026-08-10; claude_business
+  holds the symlink). Edit it here; claude_business edits arrive uncommitted — sweep-commit them.
   `scripts/check-symlinks.mjs` keeps it a REAL file (mode 100644), never a symlink.
-- `docs/blog/*.md` — chatbot blog cache, written by claude_business's
-  `/blog-post`. Rebuild: `npx tsx scripts/build-blog-content.ts`.
+- `docs/blog/*.md` — chatbot blog cache from claude_business `/blog-post`; rebuild `npx tsx scripts/build-blog-content.ts`.
+- **Customer-service gateway (planned, Brad 2026-10-12):** email + chatbot order/subscription actions on the
+  chatbot's knowledge; its OWN Fly app, never inside health-tool-app/edu. Spec: claude_business `docs/customer-service.md`.
 - Chatbot work starts at `claude_business/docs/chat-start-here.md`.
 
 ## Anti-Entropy & Writing Style
@@ -211,9 +211,9 @@ same commit).
   keeps the calls: clinical logic, merge semantics, FHIR shapes, security, synthesis. All delegated
   work goes to `worker`, every adversarial check to a FRESH `adversary`: both Opus at high effort,
   pinned in `.claude/agents/`. Spawn them by name, never with a per-call `model`; never set
-  `CLAUDE_CODE_SUBAGENT_MODEL`; no Haiku. **Amendment (Brad, 2026-09-29):** Sonnet 5.5
-  (`general-purpose` + `model: sonnet`, the one allowed per-call model) does mechanical work:
-  fetching, scraping, tool fixes, data pulls, inventories. Opus 5.5 writes every knowledge-base
+  `CLAUDE_CODE_SUBAGENT_MODEL`. Sonnet 5.5 (`general-purpose` + `model: sonnet`, 2026-09-29)
+  does mechanical work: fetching, scraping, tool fixes, data pulls. The newest Haiku is allowed
+  (2026-10-12; first use: customer-service email triage). Opus 5.5 writes every knowledge-base
   entry and web page. Never a Fable subagent. Loops: docs/loops/LOOP.md.
 - **Every adversarial Claude check gets a Codex one beside it** (Brad, 2026-09-21): a fresh
   Opus 5.5 `adversary` plus Codex on `gpt-6.1-sol`, high effort (default since 2026-10-02).
