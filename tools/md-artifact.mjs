@@ -74,7 +74,8 @@ const mdJson = JSON.stringify(body).replace(/</g, '\\u003c');
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const built = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
 
-const html = `<title>${esc(title)}</title>
+const html = `<meta charset="utf-8">
+<title>${esc(title)}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: one readable column; tables and diagrams scroll inside their own boxes. */
