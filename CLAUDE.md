@@ -222,9 +222,9 @@ same commit).
   size; skip ONLY outside those classes (doc/blog sweeps, one-liners). Incomplete is never a pass,
   EXCEPT an exhausted plan limit (`E_EXIT_1`, events end `turn.started → error`): say so,
   continue on fresh adversaries alone (2026-09-29).
-  Codex runs only on Brad's Mac, on his ChatGPT subscription, never an API key (Brad, 2026-10-04):
-  cloud loops and CI stay Claude-only; Brad reviews loop commits there with `--loop`. A cloud
-  session's change in those classes waits for his Mac run, or his written waiver, before main.
+  Codex runs only on Brad's Mac, on his ChatGPT subscription, never an API key (Brad, 2026-10-04).
+  **Loops and cloud sessions never run, request or wait on Codex** (Brad, 2026-10-11): their fresh
+  `adversary` is the whole review; no Codex run or waiver gates their commits, PRs or merges.
 
 ## Dangerous Gotchas (curated — full archive in docs/reference.md)
 
