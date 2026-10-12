@@ -350,6 +350,8 @@ describe('US-21 AC14 — normalizeLabUnit folds gm/dL, Unit or Units, and cmm', 
       'mU/L', 'IU/L', 'µU/mL', 'mIU/L', 'µIU/mL', 'µmol/L', 'g/dL', 'g/L', 'mmol/L', 'U/L', 'mg/mmol', 'mg/g',
       'mm/hr', 'fL', 'pg', '%', 'mg/dL', 'pg/mL', 'ng/dL', 'kU/L', 'mInt-unit(s)/mL', 'µUnits/mL',
       'milliunits/L', 'kUnits/L', 'gm%', 'mgm/dL', 'gm/L', 'GM/L', 'mg/gm', 'gm/dL%', 'Unit(s)/L', 'mmol/mol', 'mL/min/1.73m²', 'cells/µL', 'lakhs/µL',
+      // US-21 AC16: mm3 and mm³ fold only as a whole token.
+      'xmm3/L', 'mm3s/L', 'cmm3', 'mm³x', '10mm3', 'mm33', 'mmm3', 'mm²',
     ]) {
       expect(normalizeLabUnit(unit), unit).toBe(unit);
     }
@@ -373,7 +375,7 @@ describe('US-21 AC14 — normalizeLabUnit folds gm/dL, Unit or Units, and cmm', 
 
   it('US-21 AC14 — no spelling the catalogue accepts contains a folded token, so nothing accepted before changes', () => {
     // The folds run last in normalizeLabUnit, so they can change only an
-    // output that holds a gm/dL, Unit, Units or cmm token. Every accepted spelling is
+    // output that holds a gm/dL, Unit, Units, cmm or (AC16) mm3/mm³ token. Every accepted spelling is
     // a fixed point, so no input that matched one before matches differently.
     for (const entry of LAB_CATALOG) {
       for (const spelling of [entry.unit, ...LAB_CONVERSIONS.filter((c) => c.key === entry.key).map((c) => c.spelling)]) {
@@ -566,5 +568,75 @@ describe('US-21 AC15 — cells/µL, cumm, and a differential in %', () => {
     expect(canonicalLabValue(entryOf('tsh'), 1.8, 'mInt-unit(s)/mL')).toBeNull();
     expect(canonicalLabValue(entryOf('tsh'), 1.8, 'mInt-units/mL')).toBeNull();
     expect(canonicalLabValue(entryOf('ft4'), 2.1, 'T7 index')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-21 AC16 — a cubic millimetre written mm3 or mm³ is a µL.
+// ---------------------------------------------------------------------------
+// product-health W41 `lab_unit_refused`: one upload printed platelets and WBC
+// in `10^3/mm³` and RBC in `10^6/mm³` (superscript ³), and all three were
+// refused. 1 mm³ is 1 µL, so mm3 and mm³ fold to µL as cmm does (AC14), only
+// as a whole token. A fold is spelling only: no factor changes.
+describe('US-21 AC16 — mm3 and mm³ fold to µL', () => {
+  const entryOf = (name: string) => resolveLabCatalogEntry(name)!;
+  const PER_THOUSAND = ['wbc', 'platelets', 'neutrophils', 'lymphocytes', 'monocytes', 'eosinophils', 'basophils'];
+
+  it('US-21 AC16 — folds mm3 and mm³, any case, after a slash or space', () => {
+    expect(normalizeLabUnit('10^3/mm³')).toBe('×10³/µL');
+    expect(normalizeLabUnit('10^3/mm3')).toBe('×10³/µL');
+    expect(normalizeLabUnit('10^6/mm³')).toBe('×10⁶/µL');
+    expect(normalizeLabUnit('10^6/mm3')).toBe('×10⁶/µL');
+    expect(normalizeLabUnit('10^3/MM3')).toBe('×10³/µL');
+    expect(normalizeLabUnit('x10e3/mm³')).toBe('×10³/µL');
+    expect(normalizeLabUnit('cells/mm³')).toBe('cells/µL');
+    expect(normalizeLabUnit('cells/mm3')).toBe('cells/µL');
+    expect(normalizeLabUnit('cells per mm3')).toBe('cells per µL');
+  });
+
+  it('US-21 AC16 — 10^3/mm³ reaches WBC, platelets and the differentials at ×1 to ×10⁹/L', () => {
+    for (const key of PER_THOUSAND) {
+      for (const spelling of ['10^3/mm³', '10^3/mm3']) {
+        expect(canonicalLabValue(entryOf(key), 6.2, spelling), `${key} ${spelling}`).toEqual({ value: 6.2, unit: '×10⁹/L', factor: 1 });
+      }
+    }
+    expect(canonicalLabRow(entryOf('Platelets'), { value: 250, unit: '10^3/mm³', referenceLow: 150, referenceHigh: 400 }))
+      .toEqual({ stored: { value: 250, unit: '×10⁹/L', referenceLow: 150, referenceHigh: 400 }, factor: 1 });
+    expect(canonicalLabRow(entryOf('WBC'), { value: 6.2, unit: '10^3/mm³', referenceLow: 4, referenceHigh: 11 }))
+      .toEqual({ stored: { value: 6.2, unit: '×10⁹/L', referenceLow: 4, referenceHigh: 11 }, factor: 1 });
+  });
+
+  it('US-21 AC16 — 10^6/mm³ reaches RBC at ×1 to ×10¹²/L', () => {
+    for (const spelling of ['10^6/mm³', '10^6/mm3']) {
+      expect(canonicalLabValue(entryOf('rbc'), 4.8, spelling), spelling).toEqual({ value: 4.8, unit: '×10¹²/L', factor: 1 });
+    }
+    expect(canonicalLabRow(entryOf('RBC'), { value: 4.8, unit: '10^6/mm³', referenceLow: 4.5, referenceHigh: 5.9 }))
+      .toEqual({ stored: { value: 4.8, unit: '×10¹²/L', referenceLow: 4.5, referenceHigh: 5.9 }, factor: 1 });
+  });
+
+  it('US-21 AC16 — cells/mm³ takes the cells/µL path: a whole number at ×0.001, a decimal refused', () => {
+    for (const key of PER_THOUSAND) {
+      for (const spelling of ['cells/mm³', 'cells/mm3']) {
+        expect(canonicalLabValue(entryOf(key), 2400, spelling), `${key} ${spelling}`).toEqual({ value: 2.4, unit: '×10⁹/L', factor: 0.001 });
+        expect(canonicalLabValue(entryOf(key), 2.4, spelling), `${key} ${spelling}`).toBeNull();
+      }
+    }
+    // The magnitude guard and the refusal's wording come with it.
+    expect(labCountFault(entryOf('platelets'), { value: 250000, unit: 'cells/mm³', referenceLow: 150, referenceHigh: 400 })).toBe('scale');
+    expect(labUnitRefusalNote(entryOf('neutrophils'), 'cells/mm³')).toContain('whole number');
+    expect(canonicalLabValue(entryOf('rbc'), 4800000, 'cells/mm³')).toBeNull();
+  });
+
+  it('US-21 AC16 — a folded spelling gets exactly the answer its µL spelling gets, on every test', () => {
+    const pairs: Array<[string, string]> = [
+      ['10^3/mm³', '×10³/µL'], ['10^3/mm3', '×10³/µL'], ['10^6/mm³', '×10⁶/µL'], ['10^6/mm3', '×10⁶/µL'],
+      ['cells/mm³', 'cells/µL'], ['cells/mm3', 'cells/µL'],
+    ];
+    for (const entry of LAB_CATALOG) {
+      for (const [folded, canonical] of pairs) {
+        expect(canonicalLabValue(entry, 7, folded), `${entry.key} ${folded}`).toEqual(canonicalLabValue(entry, 7, canonical));
+      }
+    }
+    expect(canonicalLabValue(entryOf('mcv'), 90, '10^3/mm³')).toBeNull();
   });
 });

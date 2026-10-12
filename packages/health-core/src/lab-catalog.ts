@@ -72,7 +72,7 @@ export interface LabCatalogEntry {
 
 /** Cell counts: every analyser spelling of ×10⁹/L. "G/L" is giga-per-litre —
  *  grams per litre only where an entry's canonical unit says so. */
-const COUNT_ALIASES_9 = ['×10³/µl', 'k/µl', 'thou/µl', 'thousand/µl', '×10³/mm3', 'g/l'];
+const COUNT_ALIASES_9 = ['×10³/µl', 'k/µl', 'thou/µl', 'thousand/µl', 'g/l'];
 /** The same, one thousand times over: ×10¹²/L. */
 const COUNT_ALIASES_12 = ['×10⁶/µl', 'm/µl', 'million/µl', 't/l'];
 /** A count printed per microlitre (US-21 AC15; `cells/cmm` and `cells/cumm`
@@ -217,13 +217,14 @@ export function normalizeLabUnit(raw: string): string {
   u = u.replace(/m\^?2\b/g, 'm²');
   // Three spellings of one unit (US-21 AC14), any case, only as a whole token
   // between the ends, a slash or a space: "gm/dL" is g/dL, "Unit" or "Units"
-  // is U, and a cubic millimetre ("cmm", "cumm", "cu mm", "cu.mm", "c.mm") is a µL.
+  // is U, and a cubic millimetre ("cmm", "cumm", "cu mm", "cu.mm", "c.mm", and
+  // AC16's "mm3", "mm³") is a µL.
   // Run last, so they cannot change a spelling the catalogue already accepted.
   // Only gm/dL folds: a bare "gm/L" would land on g/L, which a count test reads
   // as G/L. A bracketed "Unit(s)" is not a whole token, so it is not folded.
   u = u.replace(/(^|[\s/])gm(?=\/dl(?:$|[\s/]))/gi, '$1g');
   u = u.replace(/(^|[\s/])units?(?=$|[\s/])/gi, '$1U');
-  u = u.replace(/(^|[\s/])(?:cmm|cumm|cu[ .]mm|c\.mm)(?=$|[\s/])/gi, '$1µL');
+  u = u.replace(/(^|[\s/])(?:cmm|cumm|cu[ .]mm|c\.mm|mm[3³])(?=$|[\s/])/gi, '$1µL');
   return u;
 }
 
