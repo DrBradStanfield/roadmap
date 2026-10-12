@@ -94,7 +94,7 @@ Testing should only be done for a person with:
 - For people without symptoms who have a strong family history of VTE, when the combined oral contraceptive pill or hormone replacement therapy is being considered. Current British guidelines recommend avoiding hormone therapy in these settings. A negative test result may be falsely reassuring.
 
 **A strong family history of VTE means:**
-- A first-degree relative has had an unprovoked clot aged under 45 years, or
+- A first-degree relative has had an unprovoked clot aged younger than 45 years, or
 - Two or more first-degree relatives have had unprovoked clots, or
 - A first-degree relative has had VTE and a confirmed inherited thrombophilia.
 

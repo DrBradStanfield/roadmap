@@ -18,13 +18,15 @@ Motor neurone disease (MND) is a group of progressive neurological disorders of 
 
 ## When to Contact Your Doctor Promptly
 
-**See your doctor soon if:**
+**See your doctor if:**
 - You take riluzole and develop a fever or feverish illness. Your doctor may check for a low white cell count (neutropenia). If it is low, riluzole is stopped.
 - You take riluzole and develop a dry cough, or your breathlessness rapidly worsens. Your doctor may consider a chest X-ray to check for lung inflammation (interstitial lung disorders).
 - Your mobility changes. Changes in mobility can happen quickly, and your general practice team can advocate for rapid help from providers.
 - Your condition changes a lot. Your doctor may refer you back to the same neurologist.
 
 Choking on food is possible. Ask your doctor or nurse to teach you and your family the correct [first aid techniques for choking](https://www.healthinfo.org.nz/choking.htm).
+
+If you have noisy, high-pitched breathing (stridor), call 111 or go to the emergency department.
 
 ---
 
@@ -48,7 +50,7 @@ Choking on food is possible. Ask your doctor or nurse to teach you and your fami
 - A variable mix of arm, leg, or head and neck muscles, for example foot drop, focal weakness, cramps, muscle twitching (fasciculation), slurred speech, a weak or hoarse voice, and swallowing difficulty.
 - Other symptoms include cough, pain, drooling, and shortness of breath.
 - MND spreads to nearby areas, usually limb to limb.
-- The key feature is a combination of upper motor neurone signs and lower motor neurone signs. A wasted, twitching muscle with brisk reflexes and no sensory changes must raise suspicion of MND.
+- The main feature is a combination of upper motor neurone signs and lower motor neurone signs. A wasted, twitching muscle with brisk reflexes and no sensory changes must raise suspicion of MND.
 
 ### Types of MND
 
@@ -118,7 +120,7 @@ Your doctor may also arrange home and community support, for example respite car
 Once you have adjusted to the diagnosis, your doctor may encourage you to:
 - Talk openly with your family about your preferences and wishes.
 - Make a will.
-- Appoint an [Enduring Power of Attorney (EPA)](https://www.officeforseniors.govt.nz/our-work/promoting-enduring-power-of-attorney). This is a legal process and can be costly, but it is important if you have, or are likely to lose, capacity.
+- Appoint an [Enduring Power of Attorney (EPA)](https://www.officeforseniors.govt.nz/our-work/promoting-enduring-power-of-attorney). This is a legal process and can be costly, but it is advised if you have, or are likely to lose, capacity.
 - Complete an [Advance Care Plan (ACP)](https://www.myacp.org.nz/), with help from your MND clinical nurse specialist or general practitioner.
 - Think about how you would like end-of-life issues managed. Start these talks early, before changes in communication or thinking make them difficult.
 
@@ -242,7 +244,7 @@ Your doctor may involve palliative care specialists early. In the final phase of
 - **Breathing failure** from muscle weakness, aspiration, or infection. Breathlessness is managed. Some people depend on bilevel positive airway pressure (BiPAP) ventilation; a request to stop it needs careful consideration. Palliative care services are contacted, as decline is likely to be rapid.
 - **Gut failure.** A PEG tube may be used for medicines until absorption fails. Some medicines are not suitable through a PEG. Stopping tube feeding is reviewed, often prompted by leakage around the tube, more secretions, and aspiration. Without a PEG, medicines are likely to be needed under the skin, for example by syringe driver. Fluids under the skin can cause harm and are usually not recommended.
 - **Pain** can be a big issue in the last few days. Opioids give background pain relief, with extra doses for breakthrough pain.
-- **Carer fatigue.** Respite can be difficult, as usual care cannot always be kept up in residential care. Support for families to plan regular breaks and self-care is vital.
+- **Carer fatigue.** Respite can be difficult, as usual care cannot always be kept up in residential care. Support for families to plan regular breaks and self-care is needed.
 
 ---
 

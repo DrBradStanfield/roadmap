@@ -147,7 +147,7 @@ If there is no response at 3 months, or iron deficiency comes back, your doctor 
 
 The infusion used is ferric carboxymaltose.
 
-**Safety concern:** IV ferric carboxymaltose has been shown to impair bone formation, cause osteomalacia (soft bones), and increase fracture risk, even after a single dose. Oral iron should be optimised, and checked that it is being taken correctly, before IV iron is offered.
+**Safety concern:** IV ferric carboxymaltose has been shown to impair bone formation, cause osteomalacia (soft bones), and increase fracture risk, even after a single dose. Before IV iron is offered, oral iron should be taken in the way it is best absorbed, and checked that it is being taken correctly.
 
 **Your doctor may consider IV iron for:**
 - Intolerance to, poor response to, or poor absorption of oral iron.

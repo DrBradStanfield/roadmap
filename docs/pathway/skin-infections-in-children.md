@@ -19,15 +19,15 @@ This pathway covers skin infections in children aged 3 months to 14 years. It in
 ## When to Seek Urgent Medical Attention
 
 **Call 111 or go to the emergency department if your child:**
-- Seems very unwell with a skin infection, or you are very concerned about them. This may be **sepsis**, which is life-threatening and often recognised late. Early recognition and treatment are vital.
-- Is unwell in themselves, including a fever of more than 38ºC or a fast heart rate.
+- Seems very unwell with a skin infection, or you are very concerned about them. This may be **sepsis**, which is life-threatening and often recognised late. Sepsis needs early recognition and treatment.
+- Is unwell in themselves, including a fever of more than 38ºC, shivering, or a fast heart rate.
 - Is under 3 months old and has a skin infection.
 - Has a weakened immune system (is immunocompromised).
 - Has swelling and redness around a joint or around the eyes. This may be a joint infection or periorbital cellulitis.
 - Has marked pain that seems out of proportion to how the skin looks, or an infected area that is spreading fast. This may be **necrotising fasciitis**, a medical and surgical emergency.
 - May have **eczema herpeticum** (rapidly worsening, painful eczema with fever and clustered blisters; see below).
 
-Your doctor will arrange same-day hospital assessment for any of these.
+Your doctor will arrange acute hospital assessment for any of these.
 
 **See a doctor or nurse the same day if a sore or red area:**
 - Is the size of a 10 cent piece or bigger.
@@ -57,7 +57,7 @@ Your doctor may ask about:
 - Whole-body symptoms such as fever, vomiting, chills and rigors, lethargy, or being unable to drink.
 - How long the symptoms have lasted and how they are changing.
 - Recent breaks in the skin, such as insect bites, grazes, cuts, or bite wounds.
-- Immunisation history. *Haemophilus influenzae* is an important cause of infection in unimmunised children.
+- Immunisation history. *Haemophilus influenzae* is a cause of infection in unimmunised children.
 - Any creams or medicines already being used on the skin.
 - Previous skin infections.
 - Eczema or other skin problems in the child or family.
@@ -129,7 +129,7 @@ Your doctor will consider the most likely diagnosis:
 **School and early childhood centre:** If there are open sores that cannot be covered, keep your child away until the sores have dried up, or until at least 24 hours after oral antibiotics have been started.
 
 **Healthy skin:**
-- Good food and nutrition are important for healthy skin.
+- Good food and nutrition support healthy skin.
 - Clean hands with soap and water often.
 - Cut and file fingernails.
 - Cover sores and cuts with plasters.

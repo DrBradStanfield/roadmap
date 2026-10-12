@@ -23,6 +23,7 @@ The most common cause of palpitations is an increased awareness of the normal he
 - Breathlessness
 - Loss of consciousness (fainting)
 - A fast heart rhythm that keeps going
+- An abnormal rhythm from the heart's lower chambers (ventricular arrhythmia)
 
 Your doctor will also send you to the emergency department if a fast rhythm called supraventricular tachycardia (SVT) cannot be safely treated in the clinic, or if treatment there has not worked.
 
@@ -81,7 +82,7 @@ Your doctor may also ask about:
 - Significant thickening of the left or right side of the heart
 - Pathological Q waves or T wave inversion
 
-If the ECG does not help, go back during an episode to your general practice, the nearest after-hours centre, or the emergency department, so an ECG can be taken while you have symptoms. Matching symptoms to the ECG rhythm is the gold standard for diagnosis. This may not be possible, and an ECG diagnosis is not needed to rule out serious causes.
+If the ECG does not help, go back during an episode to your general practice, the nearest after-hours centre, or the emergency department, so an ECG can be taken while you have symptoms. Matching symptoms to the ECG rhythm is the most reliable way to diagnose it. This may not be possible, and an ECG diagnosis is not needed to rule out serious causes.
 
 **Blood tests, if needed:** FBC, creatinine, sodium, potassium, CRP, and thyroid function.
 

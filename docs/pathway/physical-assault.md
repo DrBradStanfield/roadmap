@@ -25,10 +25,12 @@ This pathway covers adults (aged 18 years or over) who have experienced physical
 - Glass injuries. These need an X-ray and thorough exploration.
 - Penetrating trauma, e.g. a stab wound or gunshot wound.
 
-**Tell your doctor straight away if:**
+**Tell your doctor if:**
 - Someone tried to strangle you (sometimes called "choking"). Strangulation carries a high risk of serious injury and a significantly increased risk of future homicide. Your doctor will follow the non-fatal strangulation and/or suffocation pathway.
+  - If someone has tried to strangle you, see a doctor the same day, even if you feel fine. If you have trouble breathing or swallowing, a changed voice, or new weakness or numbness, call 111 or go to the emergency department.
 - You are at risk of serious assault. With your consent, your doctor may notify the police and/or seek emergency refuge support.
-- You are at risk of suicide or self-harm. Your doctor may request an urgent mental health assessment at hospital. If you are in immediate danger, call 111 or go to the emergency department.
+
+**If you are thinking about suicide or self-harm,** see your doctor the same day, or call or text 1737 (free, any time). If you have a plan or feel you might act on it, call 111 or go to the emergency department. Your doctor may request an acute mental health assessment at hospital.
 
 ---
 
@@ -104,7 +106,7 @@ Accurate records matter because you or the police may request your medical recor
 - Follow the non-fatal strangulation and/or suffocation pathway if strangulation occurred.
 - Follow the family violence pathway if there are safety concerns about children, and may seek advice from Oranga Tamariki if unsure about the risk to children.
 - With your consent, notify the police and/or seek emergency refuge support if you are at risk of serious assault.
-- Request an urgent mental health assessment at hospital if you are at risk of suicide or self-harm.
+- Request an acute mental health assessment at hospital if you are at risk of suicide or self-harm.
 - Arrange emergency department or other hospital assessment for a significant injury (see above). Otherwise, treat any wounds with standard wound care.
 - Complete ACC injury documentation.
 - Arrange assault or abuse community support.

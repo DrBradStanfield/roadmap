@@ -1,1 +1,18 @@
-[]
+[
+ {
+  "check": "AC2",
+  "handle": "osteoporosis-in-adults",
+  "match": "token \"\u22655 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**High risk:** 10-year hip fracture risk of 3% or more, major osteoporotic fracture risk of 20% or more, a hip or spi...\"",
+  "reason": "Checker limit: \"per day\" sits far from the dose in the body (\"5 mg or more of prednisone equivalent per day\"), so the body reads as mg/day and the raw (\"5 mg or more per day prednisone equivalent\") as mg. Numbers agree. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
+ },
+ {
+  "check": "AC2",
+  "handle": "physical-assault",
+  "match": "token \"1737\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**If you are thinking about suicide or self-harm,** see your doctor the same day, or call or text 1737 (free, any tim...\"",
+  "reason": "House line (ruling 11, suicide): 1737 is New Zealand's free national counselling line; it is not in the raw.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
+ }
+]

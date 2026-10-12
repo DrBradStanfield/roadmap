@@ -28,7 +28,7 @@ Osteoporosis is a progressive condition in which bones become more fragile and t
 - Osteoporosis can result from bone loss and changes in bone structure as people age, from an underlying condition, or from certain medications at any age.
 - The WHO defines osteoporosis as a T-score less than −2.5. In practice, this has been superseded by fracture risk assessment.
 - **Osteopenia** is a T-score between −1 and −2.5. Fracture risk is lower than with osteoporosis, but because many more people have osteopenia, most fractures occur in this group.
-- Studies show higher bone density and fewer fractures in people of Polynesian descent, including Māori.
+- Higher bone density and fewer fractures are seen in people of Polynesian descent, including Māori.
 
 **Hip fractures** are the most serious fractures caused by osteoporosis:
 - Fewer than 50% of people who survive a hip fracture walk unaided again.
@@ -97,7 +97,7 @@ Hip fracture risk is low in women younger than 70 years, so major osteoporotic f
 
 ### Bone density (DXA) scan
 
-A DXA scan measures bone mineral density using a very low level of radiation. Your doctor may consider one if your risk is moderate or high and you have not had one. DXA scans are funded only when certain criteria are met; you may also choose to pay for one yourself.
+A DXA scan measures bone mineral density using a very low level of radiation. Your doctor may consider one if your risk is moderate or high and you have not had one. Some DXA scans are funded, and you may also choose to pay for one yourself.
 
 Results are reported as:
 - **T-score:** how far your bone density is from that of healthy young adults.

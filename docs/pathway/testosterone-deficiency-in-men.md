@@ -107,7 +107,7 @@ Results are interpreted in the context of the clinical picture. Your doctor may 
 ## Management
 
 - If you are overweight, weight loss improves gonadal function and general health.
-- Treating or optimising chronic disease (e.g. sleep apnoea, type 2 diabetes, obesity) can help to improve testosterone level.
+- Treating chronic disease, or improving its control (e.g. sleep apnoea, type 2 diabetes, obesity), can help to improve testosterone level.
 - Your doctor may consider reducing corticosteroids or opiate pain relief.
 
 ### Before testosterone replacement therapy

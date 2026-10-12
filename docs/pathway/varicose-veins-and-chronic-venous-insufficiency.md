@@ -104,7 +104,7 @@ If your BMI is more than 40, you are best managed by a specialist nursing team, 
 ### Controlling swelling
 
 - Raise the foot of the bed, and raise the leg high when resting.
-- Simple elevation is an essential part of managing venous (stasis) ulcers.
+- Venous (stasis) ulcers need simple elevation as part of their care.
 - Walking is encouraged if you are also wearing graduated elastic compression.
 
 ### Lifestyle

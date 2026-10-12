@@ -121,7 +121,7 @@ Your doctor may:
 
 Your doctor may seek specialist palliative care support and advice for:
 - symptoms that are difficult to manage
-- planning ahead, and urgent management if needed
+- planning ahead, and acute management if needed
 - arranging a joint visit
 - considering admission to a hospice
 

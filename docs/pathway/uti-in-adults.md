@@ -18,7 +18,7 @@ This pathway covers the assessment and treatment of urinary tract infections (UT
 
 ## When Urgent Advice May Be Needed
 
-**Your doctor may seek urgent specialist advice if you have a UTI and:**
+**Your doctor may seek acute specialist advice if you have a UTI and:**
 - You have a kidney transplant.
 - You have a urinary tract abnormality, such as hydronephrosis (a swollen kidney), stones, or a bladder that does not empty properly.
 - You have a spinal cord impairment.
@@ -80,7 +80,7 @@ Your doctor may consider causes other than infection:
 
 If you have sterile pyuria or are at increased risk of a sexually transmitted infection (STI), your doctor may consider testing for chlamydia, gonorrhoea, and mycoplasma genitalium urethritis.
 
-**Sterile pyuria** means raised numbers of white cells in a urine sample that appears sterile on standard culture. Raised white cells can come from contamination of the urine with cells from the lining (mucosal cells), so a clean sample is important before making this diagnosis. Possible causes include:
+**Sterile pyuria** means raised numbers of white cells in a urine sample that appears sterile on standard culture. Raised white cells can come from contamination of the urine with cells from the lining (mucosal cells), so a clean sample is needed before making this diagnosis. Possible causes include:
 - A treated UTI within 2 weeks of treatment, or an inadequately treated UTI.
 - A UTI with bacteria that are hard to grow in culture.
 - Kidney stones.

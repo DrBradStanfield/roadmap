@@ -59,7 +59,7 @@ Eye injuries like these should be assessed by a doctor, not an optometrist.
   - **Lacerations** are usually caused by a sharp object. They include a penetrating injury (an entrance wound with no exit wound), an intraocular foreign body (an object left inside the eye), and a perforating injury (an entrance and an exit wound from the same object, usually a sharp object or projectile).
 - **Closed globe injuries** are commonly due to blunt trauma. The wall of the eye stays intact, but there may be damage inside the eye. They are caused by burns, blunt trauma or bruising, or partial-thickness cuts. Examples are corneal abrasions, foreign bodies, and acid or alkali burns.
 - **Severe blunt trauma** can also cause bleeding behind the eye (retrobulbar haemorrhage) or a "blow-out" fracture of the eye socket wall.
-- **Hyphaema** is blood in the front chamber of the eye. Sometimes it is only a haze. It needs urgent review because there is a 50% incidence of further bleeding and a 7% incidence of glaucoma.
+- **Hyphaema** is blood in the front chamber of the eye. Sometimes it is only a haze. Call 111 or go to the emergency department, because there is a 50% incidence of further bleeding and a 7% incidence of glaucoma.
 
 ---
 
@@ -106,10 +106,10 @@ After the immediate rinse, your doctor may:
 - turn the eyelid to clear any foreign material with a moist cotton bud.
 - give pain relief, including more numbing drops as needed.
 - wait 5 minutes after rinsing, then check the pH of your tears if pH strips are available. If it is still abnormal, rinsing continues. Severe burns may need rinsing for over 30 minutes.
-- seek urgent eye specialist advice.
+- seek acute eye specialist advice.
 
 **Follow-up depends on the chemical:**
-- **Alkali burn:** your doctor will seek urgent eye specialist advice, and you will be assessed in hospital if the specialist directs.
+- **Alkali burn:** your doctor will seek acute eye specialist advice, and you will be assessed in hospital if the specialist directs.
 - **Acid burn with a small corneal defect** (≤ 3 mm across) and an otherwise clear cornea: your doctor may give chloramphenicol ointment and pad the eye, with a general practice check the next day. You cannot legally drive or operate machinery while your eye is patched. If there are ongoing concerns, your doctor will seek eye specialist advice.
 - **Acid burn with a larger corneal defect** (more than 3 mm) or a hazy cornea: hospital eye assessment.
 
@@ -126,12 +126,12 @@ If an open globe injury is suspected, you will be sent for hospital eye assessme
 
 ### Hyphaema
 
-Hyphaema needs same-day hospital eye assessment. Your doctor will check that the eye is not ruptured. You should sit up (ideally with the head raised 30 degrees) and be moved by stretcher or wheelchair. Do not drive or go home.
+Hyphaema needs acute hospital eye assessment: call 111 or go to the emergency department. Your doctor will check that the eye is not ruptured. You should sit up (ideally with the head raised 30 degrees) and be moved by stretcher or wheelchair. Do not drive or go home.
 
 ### Other injuries
 
 - **Retrobulbar haemorrhage:** hospital eye assessment if suspected.
-- **Orbital wall fracture:** hospital assessment for a CT scan if strongly suspected. If your doctor is unsure, they will seek urgent specialist advice.
+- **Orbital wall fracture:** hospital assessment for a CT scan if strongly suspected. If your doctor is unsure, they will seek acute specialist advice.
 - **Corneal foreign body** (including rust rings): managed as for a foreign body in the eye.
 - **Eyelid cuts:** if the cut goes through the full thickness of the lid margin or involves the inner corner of the eye, you will be sent to hospital for surgery. The tear ducts are often cut and need surgical repair. Other eyelid cuts can be stitched in general practice by an experienced clinician.
 - Your doctor will complete an ACC form for every eye injury.

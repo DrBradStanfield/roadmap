@@ -282,7 +282,7 @@ Symptoms include vaginal dryness, irritation, itching, pain with sex, light blee
 - Products designed for men are not recommended, as they may cause masculinising effects (virilisation). Testosterone gel and oral testosterone are not recommended.
 - A testosterone cream designed for women (10 mg/mL) is licensed in Australia and New Zealand but not funded.
 - Not used with known or suspected breast cancer or androgen-dependent cancer, nephrotic syndrome, a history of blood clots or high calcium, pregnancy or breastfeeding, or in women of reproductive age without adequate contraception. Avoided with severe acne or excess hair growth.
-- Before starting, your doctor may optimise MHT first (estrogen through the skin may raise free testosterone) and check baseline total testosterone and SHBG.
+- Before starting, your doctor may first adjust MHT (estrogen through the skin may raise free testosterone) and check baseline total testosterone and SHBG.
 - The usual dose is 0.5 mL (5 mg) daily, or a lower 0.25 mL (2.5 mg) if SHBG is low. It is applied to the lower torso or outer thigh. Applying it to the arms risks transfer to children or pets.
 - The most common side effects are acne and increased hair growth. At 5 mg/day, studies have not shown clitoral enlargement, male pattern baldness, or voice deepening. Higher doses increase these risks.
 - **Monitoring:** testosterone is rechecked after 3 to 6 weeks, and the dose lowered (e.g. 3 to 4 mg/day) if it is high. Response is reviewed at 3 months; improvement can take up to 8 to 12 weeks. Treatment stops if there is no benefit after 6 months.
