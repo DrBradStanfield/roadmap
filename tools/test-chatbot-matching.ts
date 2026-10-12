@@ -60,6 +60,9 @@
  *                             'doctor'. An explicit {} is production's empty context ('{}', no data
  *                             entered). Any other payload that makes no plan, has a key the widget never
  *                             sends, or loses a field to its range exits the harness before any API call.
+ *   expect_empty_context?: true  with user_context: production collapses this payload to '{}' (no sex
+ *                             or height, so no plan), and the answer gets '{}' as production sends it.
+ *                             A payload that does make a plan then exits the harness before any API call.
  *
  * A fetch that throws (timeout, DNS, reset) counts as an API error, like a non-2xx:
  * visible, scored as ∅, and the run continues but never exits green. So does a
@@ -377,6 +380,7 @@ interface TestQuery {
   answer_handles?: string[];   // fixed-handle answer check, no `expected` (see the header)
   surface?: 'doctor' | 'brand'; // answer check adds that surface's posture block (see the header)
   user_context?: unknown;      // answer check sends this widget payload as the user's data (see the header)
+  expect_empty_context?: true; // production collapses user_context to '{}' (see the header)
 }
 
 const ALL_QUERIES: TestQuery[] = JSON.parse(
@@ -424,9 +428,9 @@ for (const q of ALL_QUERIES.filter(q => q.user_context !== undefined)) {
     console.error(`user_context needs a surface on: ${q.query}`);
     process.exit(1);
   }
-  // As /api/chat. Only an explicit {} may resolve to the empty context.
+  // As /api/chat. Only an explicit {}, or a payload declared to collapse, may resolve to the empty context.
   const ctx = resolveChatContext(q.user_context);
-  const empty = JSON.stringify(q.user_context) === '{}';
+  const empty = JSON.stringify(q.user_context) === '{}' || q.expect_empty_context === true;
   const unknown = Object.keys(q.user_context ?? {}).filter(k => !CONTEXT_KEYS.has(k));
   if ((ctx === EMPTY_CHAT_CONTEXT) !== empty || unknown.length > 0 || JSON.parse(ctx.userContextJson).excludedFields) {
     console.error(`user_context does not parse${unknown.length ? ` (unknown keys: ${unknown.join(', ')})` : ''} on: ${q.query}`);

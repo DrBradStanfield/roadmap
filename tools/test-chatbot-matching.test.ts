@@ -391,14 +391,14 @@ describe('test-chatbot-matching router reply parsing (US-15 AC28)', () => {
 describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
   interface Entry {
     query: string; category: string; surface?: string; answer_handles?: string[]; user_context?: unknown;
-    must_mention?: string[]; must_match?: string[]; must_not_match?: string[];
+    must_mention?: string[]; must_match?: string[]; must_not_match?: string[]; expect_empty_context?: true;
   }
   const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
   const CATEGORIES = 'own-data-analysis,algorithm-precedence';
   const cases = all.filter(q => CATEGORIES.split(',').includes(q.category));
 
   /** Run the harness offline; `fixtures` (if given) replaces tools/test-queries.json. Returns the answer calls' systems. */
-  function run(fixtures?: Entry[], answer = 'stub answer') {
+  function run(fixtures?: Entry[], answer: string | Record<string, string> = 'stub answer') {
     const dir = mkdtempSync(join(tmpdir(), 'chatbot-user-context-'));
     try {
       const stub = join(dir, 'fetch-stub.mjs');
@@ -408,11 +408,13 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
         const fixtures = ${JSON.stringify(fixtures ?? null)};
         const read = fs.readFileSync;
         if (fixtures) fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? JSON.stringify(fixtures) : read(p, ...rest);
+        const answers = ${JSON.stringify(answer)};
         globalThis.fetch = async (_url, init) => {
           const body = JSON.parse(init.body);
           fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ query: body.messages[0].content, system: body.system, tools: !!body.tools }) + '\\n');
+          const text = typeof answers === 'string' ? answers : answers[body.messages[0].content];
           return new Response(JSON.stringify({
-            content: [{ type: 'text', text: ${JSON.stringify(answer)} }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+            content: [{ type: 'text', text }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
           }), { status: 200, headers: { 'content-type': 'application/json' } });
         };
       `);
@@ -474,6 +476,77 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     expect(noSurface.status).toBe(1);
   }, 60_000);
 
+  // Adversary round 2 (2026-10-12, R2): production sends '{}' whenever sex or height is missing, so a
+  // fixture may declare that its payload collapses; the harness then sends '{}' as production does.
+  it('a payload declared expect_empty_context sends production\'s \'{}\'; undeclared, or making a plan, it exits', () => {
+    const noSex = { heightCm: 168, systolicBp: 138, diastolicBp: 88, ldlC: 3.9, unitSystem: 'si', medications: [], screenings: [] };
+    const fixture = (extra: Partial<Entry>): Entry => ({ query: 'can you analyze my data', category: 'own-data-analysis', surface: 'doctor', answer_handles: [], user_context: noSex, must_mention: ['x'], ...extra });
+    const declared = run([fixture({ expect_empty_context: true })]);
+    expect(declared.calls.length, declared.stderr).toBe(1);
+    expect(declared.calls[0].system.map(b => b.text)).toContain('## Current User Health Data\n\n{}');
+    for (const bad of [fixture({}), fixture({ expect_empty_context: true, user_context: { ...noSex, sex: 'female' } })]) {
+      const { status, stderr, calls } = run([bad]);
+      expect(stderr).toMatch(/user_context does not parse.* on: can you analyze my data/);
+      expect(calls).toEqual([]);
+      expect(status).toBe(1);
+    }
+  }, 120_000);
+
+  /** One offline run scoring each answer against the fixture's own checks: each answer gets a copy with its own query. */
+  function verdicts(q: Entry, answers: string[]): Array<'pass' | 'fail'> {
+    const copies = answers.map((_, i) => ({ ...q, query: `${q.query} [case ${i}]` }));
+    const { out, stderr, calls } = run(copies, Object.fromEntries(copies.map((c, i) => [c.query, answers[i]])));
+    expect(calls.length, stderr).toBe(answers.length); // every answer was scored
+    // The harness lists only failures (✗ "query") without --verbose.
+    return copies.map(c => out.split('\n').some(l => l.trim().startsWith('✗') && l.includes(`"${c.query}"`)) ? 'fail' : 'pass');
+  }
+  const fixtureOf = (query: string, weightKg?: number) =>
+    cases.find(q => q.query.startsWith(query) && (weightKg === undefined || (q.user_context as { weightKg?: number }).weightKg === weightKg))!;
+
+  // Adversary round 2 (2026-10-12, R5): these synthetic bad answers passed the old regexes. Negation now
+  // counts only before the claim in its sentence; the good answers include excerpts of logged real ones.
+  it('the pregnancy case fails a GLP-1 given as her or the roadmap\'s first step (US-15 AC30)', () => {
+    const bad = [
+      "Your roadmap's cascade starts with a GLP-1 such as tirzepatide, not metformin. Insulin is another option.",
+      "For you, the roadmap would start with a GLP-1, since you don't take one yet. Metformin and insulin are also options.",
+      'Your roadmap starts with tirzepatide (a GLP-1). Metformin or insulin can follow. It is not a diagnosis.',
+      "The roadmap's cascade puts a GLP-1 first for you. GLP-1s are not for everyone. Metformin and insulin are options.",
+    ];
+    const good = [
+      "Pregnancy changes which medicines are used, so your roadmap's weight and diabetes medication cascade (GLP-1, then SGLT2 inhibitor, then metformin) doesn't apply to you. Metformin and insulin are the options. GLP-1 medicines, SGLT2 inhibitors and sulfonylureas should not be used in pregnancy.",
+      'Metformin and insulin are the only medicines the pathway recommends in pregnancy. GLP-1 medicines should not be used. Your roadmap would normally start with a GLP-1, but that does not apply in pregnancy.',
+      "Insulin or metformin. Your roadmap's cascade starts with a GLP-1, but GLP-1s are not used in pregnancy, so set that card aside.",
+    ];
+    expect(verdicts(fixtureOf("I'm 28 weeks pregnant"), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
+  }, 120_000);
+
+  it('the insulin case fails the roadmap\'s screening cut-offs given as her target (US-15 AC30)', () => {
+    const bad = [
+      'Your target, per the roadmap, is to get under 47.5 mmol/mol. Watch for hypoglycaemia.',
+      'Your target is below 38.8 mmol/mol, not 53. Hypoglycaemia is a risk on insulin.',
+      'Your roadmap target is below 5.7%. Hypoglycaemia risk matters.',
+    ];
+    const good = [
+      "Your roadmap doesn't set a target for diagnosed diabetes. It only flags HbA1c at or above 47.5 mmol/mol as the diabetic range, and your latest value is 58 mmol/mol. - **Lower target (below 48 mmol/mol):** used when hypoglycaemia risk is low (not on insulin or sulfonylureas).",
+      "HbA1c targets are individualised. The roadmap's 38.8 is a screening cut-off, not a target for you. On insulin the pathway lists 53 to 70 to limit hypoglycaemia.",
+    ];
+    expect(verdicts(fixtureOf("I have type 2 diabetes and I'm on insulin"), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
+  }, 120_000);
+
+  it('the BMI 23 case fails a GLP-1-first order the roadmap does not give her, in either word order or as a list (US-15 AC30)', () => {
+    const bad = [
+      "The roadmap's cascade puts a GLP-1 first for you, then an SGLT2 inhibitor, then metformin.",
+      "The roadmap's medication cascade runs in this order:\n1. GLP-1\n2. SGLT2i\n3. Metformin",
+      'Your roadmap starts with a GLP-1 for you.',
+    ];
+    const good = [
+      "The roadmap's weight-and-diabetes medication cascade (GLP-1, then SGLT2 inhibitor, then metformin) is not triggered for you. The roadmap therefore does not name a first drug for you. The loaded Auckland HealthPathways page says healthy lifestyle measures plus metformin are first-line for type 2 diabetes.",
+      "Your roadmap's cascade (GLP-1 first) is not triggered at a BMI of 23. The pathway starts with metformin.",
+      "The roadmap's cascade starts with a GLP-1, but it only applies when the weight card shows, which it does not for you.",
+    ];
+    expect(verdicts(fixtureOf('Which diabetes medicine would come first', 73), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
+  }, 120_000);
+
   // Adversary 2026-10-12: the BMI 32 case passed its must_mention on the baseline, and failed an
   // answer that gave metformin first-line as the NZ pathway's. Its regexes score whose order it is.
   it('must_match and must_not_match score whose first step it is (the BMI 32 diabetes case)', () => {
@@ -489,6 +562,15 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     // Metformin as the roadmap's first step fails, even beside a GLP-1 first step.
     expect(verdict('Your roadmap starts with a GLP-1. Metformin is first in your roadmap for diabetes.')).toBe(1);
     expect(verdict('The roadmap’s first step is a GLP-1 medication, and your plan’s first step would be metformin.')).toBe(1);
+    // Round 2 (R5): the pathway's order with GLP-1 second, a GLP-1 'later', or metformin first for her, all fail.
+    expect(verdicts(p3, [
+      'Your roadmap shows a weight card, but the pathway puts metformin first, and GLP-1 second.',
+      "The roadmap's GLP-1 card is separate. For diabetes, metformin comes first under the pathway, and your plan's first step is to see your doctor about a GLP-1 later.",
+      'Your roadmap starts with a GLP-1. Metformin would come first for you.',
+      "Your roadmap puts a GLP-1 first. The pathway's first-line medicine is metformin, so metformin would come first for you under the pathway.",
+      // A logged answer on the round-2 prompt that the first regex missed ("a GLP-1 medication first").
+      "The Health Roadmap's order for you is a GLP-1 medication first, then an SGLT2 inhibitor, then metformin. This is the roadmap's suggestion to discuss with your doctor, not a prescription.",
+    ])).toEqual(['fail', 'fail', 'fail', 'pass', 'pass']);
   }, 120_000);
 
   it('a must_match or must_not_match regex that does not compile exits before any API call', () => {
