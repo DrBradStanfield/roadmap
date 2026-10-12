@@ -27,3 +27,13 @@ Fresh Opus adversary on knowledge-refresh/review-new-1a (4b23d30b). Line numbers
 - R7 (AC5 not run): DISPUTED. Brad deferred all AC5 runs to after 2026-11-01; the 40 fixtures are pre-registered.
 
 Applied 2026-10-12 by one Opus worker: every ACCEPT row. Ruling 12 decisions: hoarse voice (stridor, coughing up blood -> 111; the slow signs -> same day), dyspepsia (vomiting blood, black stools, persistent vomiting -> 111; difficulty swallowing, weight loss, anaemia, abdominal lump -> same day), IBD (fever, fast heart rate, low blood pressure, acute severe flare -> 111; abdominal pain -> same day, severe pain -> 111). Epilepsy gains a red-flag section for the seizure house line.
+
+## Codex round 2 (gpt-6.1-sol, snapshot 4df581d9+255977d2+ee7f76c9, status incomplete: AC5 not run). Rounds now capped; fixes below are NOT YET APPLIED.
+- R1 (IBD L156: no live vaccines for 6 months after infliximab exposure in pregnancy): ACCEPT, SAFETY CORRECTION, FOR BRAD. Medsafe Remicade data sheet: 12 months (fatal disseminated BCG recorded); the baby's doctor decides timing.
+- R2 (anxiety L217: SSRI maxima for over-65s): ACCEPT, SAFETY CORRECTION. Over 65: citalopram up to 20 mg, escitalopram up to 10 mg a day (Medsafe data sheets).
+- R3 (antenatal L221, abortion L85: iodine): ACCEPT. "150 micrograms of iodine a day (as potassium iodate)".
+- R4 (IBD calprotectin unit): already sheet item 12; Codex supports micrograms per g.
+- R5 (IBD L163: first surveillance colonoscopy at 10 years): ACCEPT. NZSG 2025 guidance linked by the raw: 8 years after diagnosis (consider symptom onset if diagnosis was delayed). Fix the matching answer fixture.
+- R6 (abortion L38: sex-selection "prohibited"): ACCEPT. The Act states Parliament's opposition to abortion sought solely because of the baby's sex; it is not a ban.
+- R7 (eczema L179, abortion L92: funding conditions): ACCEPT, remove (rule 4).
+- R8 (AC5): DISPUTED, Brad's deferral.

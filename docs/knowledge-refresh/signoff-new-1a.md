@@ -27,6 +27,11 @@ Units and doses:
 12. IBD: the faecal calprotectin cut-off is printed as "less than 50 micrograms per L", as the source has it. Labs report micrograms per g, and our calprotectin page uses micrograms per g. Change it to "per g"? I recommend yes. The source looks wrong, but the change is yours to make.
 13. Antenatal: the calcium dose reads "two tablets a day, each giving 500 mg of elemental calcium (1.25 g calcium carbonate)". The source names the brand (Calci-Tab) without the elemental dose.
 
+Safety corrections from Codex round 2 (accepted, not yet applied):
+14. IBD: after infliximab in pregnancy, no live vaccines for the baby for 12 months (Medsafe data sheet), not the source's 6 months.
+15. Anxiety: for people over 65, the maximum is citalopram 20 mg and escitalopram 10 mg a day (Medsafe data sheets). The source table gives only the adult maxima.
+16. IBD: the first surveillance colonoscopy comes 8 years after diagnosis, per the 2025 NZSG guidance the source links. The source text still says 10.
+
 ## Sign-off
 
-AC8 sign-off (Brad): PENDING. Codex round 2 on the fixed batch: PENDING.
+AC8 sign-off (Brad): PENDING. Codex round 2: done 2026-10-12. Its 7 accepted fixes (rows R1-R7 in new-1a-review-fixes-2026-10-12.md) are not yet applied.
