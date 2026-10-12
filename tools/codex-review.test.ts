@@ -442,10 +442,10 @@ describe('US-40 AC8 — the invocation policy says the same thing in all three p
       // precedence: a one-line change in a required class is still reviewed
       expect(/only outside those classes|required classes win|whatever (their|its) size/i.test(text)).toBe(true);
     }
-    // CI stays Claude-only, and loops run it with --loop (Brad, 2026-09-28): stated in ALL THREE, not just two
+    // Loops and cloud sessions never run, request or wait on Codex (Brad, 2026-10-11, superseding the
+    // 2026-09-28 "--loop" rule): stated in ALL THREE, not just two
     for (const text of [claude, skill, story]) {
-      expect(/Claude-only|Claude only|not available there/i.test(text)).toBe(true);
-      expect(text).toContain('--loop');
+      expect(/never run, request or wait on/i.test(text)).toBe(true);
     }
     // The skill is only discoverable if its frontmatter is valid YAML, and the way
     // to break it while editing prose is a ": " inside an unquoted value.
