@@ -479,8 +479,8 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
       expect(proposed.text).not.toContain('github.com/DrBradStanfield/roadmap/issues/new'); // the proposal is not a link to submit
       const data = OUTPUTS.report_feedback.parse(proposed.structured);
       expect(data).toMatchObject({ filed: false, proposal: true });
-      // US-32 AC39: no structured link that 404s while the project's GitHub is hidden.
-      expect(data.url.includes('github.com')).toBe(REPO_PUBLIC);
+      // US-32 AC39: no structured link on a proposal, public or hidden: the confirm files it.
+      expect(data.url).toBe('');
 
       const other = await callToolAt(access, 'report_feedback', { ...report, detail: 'Something else entirely.', confirm: data.confirm, approval: APPROVED }, at(11));
       expect(other.isError).toBe(true);

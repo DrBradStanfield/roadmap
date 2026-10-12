@@ -1384,14 +1384,14 @@ describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () 
   const description = (mod: typeof import('./mcp-tools')) => mod.MCP_TOOLS.find((t) => t.name === 'report_feedback')!.description;
   const filer: FeedbackFiler = async () => ({ ok: true, url: 'https://github.com/DrBradStanfield/roadmap/issues/7', number: 7 });
 
-  it('while public, the description, the proposal and the tokenless link read exactly as before', async () => {
+  it('while public, the description, the proposal and the tokenless link read as published (2026-10-12)', async () => {
     const mod = await withRepoPublic(true);
     expect(description(mod)).toBe(
       'This files a public GitHub issue. Do not include diagnoses, names, contact details, or values; describe the ' +
       'behaviour, not the person — dates of results and file paths too. Say it is public before you call it, and only ' +
       'when the user asked you to. Offer it when a tool refuses something they expected, the record cannot hold what ' +
-      'they want to track, or a result looks wrong. Without a GitHub token the server answers with a link they ' +
-      'submit themselves; the answer says which. On the hosted server this takes two calls: the first answers with ' +
+      'they want to track, or a result looks wrong. Without a GitHub token it returns a link for them ' +
+      'to submit; the answer says which. On the hosted server this takes two calls: the first answers with ' +
       'what it would do and a `confirm` receipt; show it to the user and call again with `confirm` and `approval` (the user’s own words, quoted verbatim) only after their ' +
       'own yes, in their own words.',
     );
@@ -1414,7 +1414,7 @@ describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () 
     expect(text).toContain('Do not include diagnoses, names, contact details, or values');
     expect(text).toContain('Say it will be public before you call it');
     expect(text).not.toContain('public GitHub issue');
-    expect(text).not.toContain('link they submit');
+    expect(text).not.toContain('Without a GitHub token');
   });
 
   it('while hidden, the proposal says the same and still shows the detail as it will be filed', async () => {
@@ -1427,13 +1427,16 @@ describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () 
     expect(text).not.toContain('github.com');
   });
 
-  it('hands the proposal’s structured url only while public, and says so in the published schema', async () => {
+  it('never hands a proposal a structured url, only the tokenless answer, and says so in the published schema', async () => {
     const urlDescription = (mod: typeof import('./mcp-tools')) =>
       (mod.MCP_TOOLS.find((t) => t.name === 'report_feedback')!.outputSchema.properties as Record<string, { description?: string }>).url.description;
     const shown = await withRepoPublic(true);
+    // A proposal's link, submitted beside the confirm, would file a second issue under the user's own account.
     const open = ok(shown.reportFeedback(GOOD, NOW, true)) as unknown as { data: { url: string } };
-    expect(open.data.url.startsWith('https://github.com/DrBradStanfield/roadmap/issues/new?')).toBe(true);
-    expect(urlDescription(shown)).toBe('The issue, or the prefilled link the user opens.');
+    expect(open.data.url).toBe('');
+    const tokenless = ok(shown.reportFeedback(GOOD, NOW)) as unknown as { data: { url: string } };
+    expect(tokenless.data.url.startsWith('https://github.com/DrBradStanfield/roadmap/issues/new?')).toBe(true);
+    expect(urlDescription(shown)).toBe('The filed issue, or the prefilled link the user submits; empty on a proposal.');
 
     const hidden = await withRepoPublic(false);
     const proposal = ok(hidden.reportFeedback(GOOD, NOW, true, true)) as unknown as { data: { url: string } };

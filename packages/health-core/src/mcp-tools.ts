@@ -92,7 +92,7 @@ export const FEEDBACK_REPO = REPO_SLUG;
  */
 export const OPEN_SOURCE_NOTE = REPO_PUBLIC
   ? ` These tools are open source at ${REPO_URL}, MIT licensed. Read the code if the user asks how something ` +
-    'works, and use report_feedback to propose a change.'
+    'works, and, if the user asks, use report_feedback to suggest a change.'
   // US-32 AC39: no URL while the repository 404s to the public.
   // No report_feedback either: a tokenless surface can only refuse one while the repository is hidden.
   : ' These tools are open source, MIT licensed.';
@@ -1044,8 +1044,9 @@ export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now
     : `${url}\n\nShow the user this link. Ask them to read the title and body first — they must contain no ` +
       'health values, no names and no file paths — and to submit it themselves; it needs a GitHub account. ' +
       'Nothing has been sent anywhere.';
-  // US-32 AC39: only a dry run gets here while hidden, and its link would 404.
-  return { status: 'ok', text, data: { filed: false, url: REPO_PUBLIC ? url : '', kind: request.kind, title: prepared.title } };
+  // A proposal carries no link (US-32 AC39): the server files the issue itself on confirm, and a link
+  // submitted beside it would file a second one under the user's own GitHub account.
+  return { status: 'ok', text, data: { filed: false, url: dryRun ? '' : url, kind: request.kind, title: prepared.title } };
 }
 
 /**
@@ -2426,7 +2427,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'when the user asked you to. Offer it when a tool refuses something they expected, the record cannot hold what ' +
       'they want to track, or a result looks wrong.' +
       // US-32 AC39: while hidden the tokenless link would 404, so that path refuses and says so itself.
-      (REPO_PUBLIC ? ' Without a GitHub token the server answers with a link they submit themselves; the answer says which.' : ''),
+      (REPO_PUBLIC ? ' Without a GitHub token it returns a link for them to submit; the answer says which.' : ''),
     inputSchema: {
       type: 'object',
       properties: {
@@ -2440,10 +2441,10 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     outputSchema: {
       type: 'object',
       properties: {
-        filed: { type: 'boolean', description: 'True if the issue now exists. False if the user must submit it.' },
+        filed: { type: 'boolean', description: 'True if the issue now exists. False on a proposal, or when the user must submit the link in `url`.' },
         url: {
           type: 'string',
-          description: REPO_PUBLIC ? 'The issue, or the prefilled link the user opens.' : 'Empty while the project’s GitHub is not public; `number` names a filed issue.',
+          description: REPO_PUBLIC ? 'The filed issue, or the prefilled link the user submits; empty on a proposal.' : 'Empty while the project’s GitHub is not public; `number` names a filed issue.',
         },
         number: { type: 'integer', description: 'The issue number, when one was filed.' },
         kind: { type: 'string', enum: ['bug', 'feature'] },
