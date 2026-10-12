@@ -4,6 +4,11 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-10-12 (Brad-directed, after the W41 run: "Yes, do it"): Gather's
+  account-status check now lists Actions runs per workflow, crons included.
+  In W41 both cron workflows had no scheduled run for 22 days while push
+  runs worked, and no Gather step asked. Net +3 lines (`wc -l -c`: 144 9380 →
+  147 9633; cap 200 / 25KB).
 - 2026-09-29 (orchestrator session, chat audit §4.3): Gather adds the
   newer-Sonnet check. `tools/check-newer-model.ts` exits 10 when a Sonnet
   newer than the `models.ts` pin exists; the run qualifies it with the four
