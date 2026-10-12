@@ -9,6 +9,8 @@ const API = '2025-07';
 const shop = process.env.SHOPIFY_EDU_SHOP;
 const token = process.env.SHOPIFY_EDU_ACCESS_TOKEN;
 if (!shop || !token) throw new Error('SHOPIFY_EDU_SHOP and SHOPIFY_EDU_ACCESS_TOKEN are needed');
+// The token goes only to a Shopify store's own admin host, never to a configured look-alike.
+if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(shop)) throw new Error('SHOPIFY_EDU_SHOP must be <store>.myshopify.com');
 const file = process.argv[2] ?? path.join(import.meta.dirname, 'out/review-demo.mp4');
 const bytes = fs.readFileSync(file);
 

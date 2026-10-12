@@ -13,6 +13,19 @@ const FPS = 30;
 const PAD_SECONDS = 0.8;
 
 const narration = JSON.parse(fs.readFileSync(path.join(HERE, 'narration.json'), 'utf8'));
+/** Scenes drawn from captured frames; s0 and s9 are cards and s1 is the screen recording. */
+const FRAME_SCENES = ['s2', 's3', 's4', 's5', 's6', 's7', 's8'];
+
+// Every input is checked before anything is replaced: a scene with no frames would render blank
+// while its narration plays.
+for (const id of FRAME_SCENES) {
+  const dir = path.join(HERE, 'out/frames', id);
+  if (!fs.existsSync(dir) || !fs.readdirSync(dir).some((f) => f.endsWith('.jpg'))) throw new Error(`no frames for ${id} in ${dir}`);
+}
+if (!fs.existsSync(path.join(HERE, 'out/seg1.mp4'))) throw new Error('out/seg1.mp4 (scene 1) is missing');
+for (const { id } of narration) {
+  if (!fs.existsSync(path.join(HERE, 'audio', `${id}.mp3`))) throw new Error(`no voice-over clip for ${id}: run tts.mjs`);
+}
 
 /** Captions: the segment's sentences, each starting when its first character is spoken. */
 function captions(text, alignment) {
