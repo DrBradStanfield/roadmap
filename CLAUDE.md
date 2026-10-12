@@ -61,7 +61,7 @@ before deploying.
   `scripts/check-symlinks.mjs` keeps it a REAL file (mode 100644), never a symlink.
 - `docs/blog/*.md` — chatbot blog cache from claude_business `/blog-post`; rebuild `npx tsx scripts/build-blog-content.ts`.
 - **Customer-service gateway (planned, Brad 2026-10-12):** email + chatbot order/subscription actions; its OWN Fly app,
-  code in the private claude_business repo (`gateway/`), never in this public repo; the chatbot calls it for account actions. Spec: claude_business `docs/customer-service.md`.
+  code in the private claude_business repo (`customer-service-gateway/`), never in this public repo; the chatbot calls it for account actions. Spec: claude_business `docs/customer-service.md`.
 - Chatbot work starts at `claude_business/docs/chat-start-here.md`.
 
 ## Anti-Entropy & Writing Style
