@@ -130,6 +130,8 @@ Your doctor may talk with you about VTE symptoms and risk factors. Clot risk bui
 - Obesity.
 - Varicose veins.
 
+If you have a painful, swollen leg, see your doctor the same day. If you have sudden breathlessness, chest pain or coughing up blood, call 111 or go to the emergency department.
+
 **Your individual risk if you have been tested:** your doctor may explain your risk if your results were positive, or if they were negative but you have a strong family history and no previous VTE.
 - With antithrombin, protein C, or protein S deficiency, the yearly risk of a first VTE is 1.5% (15 to 19 times the risk of people in the general community).
 - With factor V Leiden or the prothrombin 20210A mutation, the yearly risk of a first VTE is 0.34% (3 to 5 times the risk of people in the general community).
@@ -145,7 +147,7 @@ Your doctor may consider preventive treatment (thromboprophylaxis) at times of h
   - an intrauterine device (IUD)
   - non-hormonal contraception.
 
-  If you have been taking the OCP without problems and are then found to have the factor V Leiden mutation, it is reasonable to continue it.
+  If you are found to carry factor V Leiden, talk to your doctor about your contraception. Combined pills, patches and rings are usually not recommended.
 - **Pregnancy:** your doctor will follow the Venous Thromboembolism (VTE) Risk in Pregnancy pathway.
 - **Air travel:** your doctor will first decide whether you are at higher risk of VTE, based on a previous VTE, active cancer, or recent surgery on the legs. If any of these apply, your doctor may advise you to:
   - stand up and move every 3 hours during the flight
