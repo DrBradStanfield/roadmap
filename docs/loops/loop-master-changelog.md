@@ -5,6 +5,10 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-10-13 (Brad-directed: Haiku allowed in loops):** Brad agreed to remove "never Haiku" here too, matching
+  claude_business's constitution (changed 2026-10-12: "haiku 5.5 is not too bad"). Orchestration's model
+  bullet now allows Sonnet 5.5 and the newest Haiku for mechanical routines; the Opus pins on `worker` and
+  `adversary` are unchanged. Line count unchanged.
 - **2026-10-11 (Brad-directed: no Codex in loops):** Brad: "we aren't doing codex reviews in these loops
   anymore. fix this, so that future loops don't try and run it". The sentry-fix run of 10-07 had still asked
   him for a Codex run or waiver on PR #134, because CLAUDE.md made a cloud session's security-class change wait
