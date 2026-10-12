@@ -32,6 +32,7 @@ title: Main
 - html: <a href="sub/plan.md#top">rawhtml</a> and <code>[incode](notes.txt)</code>
 - untracked: [stray](stray.txt), [ignored](output/draft.txt)
 - colon: [colon](notes:x.md), [win](C:\\docs\\a.md)
+- crlf: [crlf](\r\nnotes.txt), and a tracked file named like a prototype key: [proto](__proto__)
 - images by reference: ![logo][logo], ![both][shared], and a link [see][shared]
 - [reflink][ref]
 - \`\`\`
@@ -81,7 +82,7 @@ beforeAll(() => {
   git('remote', 'add', 'origin', 'git@github.com:acme/widgets.git');
   mkdirSync(join(repo, 'sub'));
   writeFileSync(join(repo, 'sub', 'plan.md'), `---\nartifact: ${ART}\n---\n# Plan\n`);
-  for (const f of ['notes.txt', 'my file.txt', 'notes:x.md', 'notes(1).md', 'image.png']) writeFileSync(join(repo, f), 'n\n');
+  for (const f of ['notes.txt', 'my file.txt', 'notes:x.md', 'notes(1).md', 'image.png', '__proto__']) writeFileSync(join(repo, f), 'n\n');
   writeFileSync(join(repo, 'main.md'), SOURCE);
   writeFileSync(join(repo, '.gitignore'), 'output/\n');
   git('add', '-A');
@@ -91,14 +92,14 @@ beforeAll(() => {
   result = spawnSync('node', [TOOL, join(repo, 'main.md')], { encoding: 'utf8' });
   html = readFileSync(join(repo, '.artifacts', 'main.html'), 'utf8');
   md = JSON.parse(html.match(/window\.__MD__ = (".*?");\n/s)![1]);
-  links = JSON.parse(html.match(/window\.__LINKS__ = (\{.*?\});<\/script>/s)![1]);
+  links = JSON.parse(JSON.parse(html.match(/window\.__LINKS__ = JSON\.parse\((".*?")\);<\/script>/s)![1]));
 });
 afterAll(() => rmSync(repo, { recursive: true, force: true }));
 
 describe('md-artifact link map (build time)', () => {
   it('builds and prints the summary line (distinct targets by kind)', () => {
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('links:    1 mapped to artifacts, 7 to GitHub, 5 unresolved (distinct targets)');
+    expect(result.stdout).toContain('links:    1 mapped to artifacts, 8 to GitHub, 5 unresolved (distinct targets)');
   });
 
   it('embeds the Markdown body exactly as written (front matter stripped) and never changes the .md', () => {
@@ -107,7 +108,7 @@ describe('md-artifact link map (build time)', () => {
   });
 
   it('maps .md links with artifact: front matter to the Artifact, other tracked files to GitHub', () => {
-    expect(links).toEqual({
+    expect(Object.fromEntries(Object.entries(links).filter(([k]) => k !== '__proto__'))).toEqual({
       'sub/plan.md': ART,
       'notes.txt': `${GH}/blob/main/notes.txt`,
       'sub/': `${GH}/tree/main/sub`,
@@ -117,6 +118,9 @@ describe('md-artifact link map (build time)', () => {
       'notes:x.md': `${GH}/blob/main/notes%3Ax.md`, // a colon that is not a scheme is a path
       'my%20file.txt': `${GH}/blob/main/my%20file.txt`,
     });
+    // A literal '__proto__' key would set the prototype, so check that own key separately (Codex).
+    expect(Object.hasOwn(links, '__proto__')).toBe(true);
+    expect(Object.getOwnPropertyDescriptor(links, '__proto__')!.value).toBe(`${GH}/blob/main/__proto__`);
   });
 
   it('leaves missing, untracked, gitignored and Windows targets out of the map, with a warning', () => {
@@ -173,6 +177,7 @@ describe('md-artifact rendered page (WebKit e2e)', () => {
         notes: `${GH}/blob/main/notes.txt#L3`, dir: `${GH}/tree/main/sub`, spaced: `${GH}/blob/main/my%20file.txt`,
         parens: `${GH}/blob/main/notes(1).md`, escaped: `${GH}/blob/main/notes(1).md`,
         colon: `${GH}/blob/main/notes%3Ax.md`, see: `${GH}/blob/main/my%20file.txt`,
+        crlf: `${GH}/blob/main/notes.txt`, proto: `${GH}/blob/main/__proto__`, // CRLF before the destination; __proto__ key (Codex)
         reflink: `${GH}/blob/main/notes.txt`, incode: `${GH}/blob/main/notes.txt`, quoted: `${GH}/blob/main/notes.txt`, listprose: `${GH}/blob/main/notes.txt`,
         gone: 'nope.md#x', ctor: 'constructor', stray: 'stray.txt', ignored: 'output/draft.txt',
         web: 'https://example.com/a.md', anchor: '#main', abs: '/etc/hosts', mail: 'mailto:a@b.c',

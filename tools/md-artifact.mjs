@@ -163,8 +163,8 @@ function collect(target, at, linkish) {
   counts.unresolved++;
   console.error(`md-artifact: unresolved link: ${target}`);
 }
-for (const m of mdBody.matchAll(/\]\([ \t]*\n?[ \t]*/g)) collect(destAt(mdBody, m.index + m[0].length), m.index, !closesImage(mdBody, m.index));
-for (const m of mdBody.matchAll(/^([ \t>]*(?:(?:[-*+]|\d{1,9}[.)])[ \t]+)?)\[(?!\^)(?:[^\]\\\n]|\\.)+\]:[ \t]*\n?[ \t]*/gm)) collect(destAt(mdBody, m.index + m[0].length), m.index + m[1].length, true);
+for (const m of mdBody.matchAll(/\]\([ \t]*(?:\r\n|\r|\n)?[ \t]*/g)) collect(destAt(mdBody, m.index + m[0].length), m.index, !closesImage(mdBody, m.index));
+for (const m of mdBody.matchAll(/^([ \t>]*(?:(?:[-*+]|\d{1,9}[.)])[ \t]+)?)\[(?!\^)(?:[^\]\\\n]|\\.)+\]:[ \t]*(?:\r\n|\r|\n)?[ \t]*/gm)) collect(destAt(mdBody, m.index + m[0].length), m.index + m[1].length, true);
 const links = Object.fromEntries([...resolved].filter(([, url]) => url));
 
 const outDir = path.join(repoRoot, '.artifacts');
@@ -173,7 +173,9 @@ const out = path.join(outDir, path.basename(abs, '.md') + '.html');
 // Embed the Markdown as a JSON string. `<` is escaped to < so no sequence in
 // the document can close the script element early.
 const mdJson = JSON.stringify(mdBody).replace(/</g, '\\u003c');
-const linksJson = JSON.stringify(links).replace(/</g, '\\u003c');
+// Embedded as a JSON string and parsed on the page, so every key (even "__proto__")
+// stays an own property of the map; an object literal would not keep that one.
+const linksJson = JSON.stringify(JSON.stringify(links)).replace(/</g, '\\u003c');
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const built = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
 
@@ -240,7 +242,7 @@ nav.toc ol { margin: 0; columns: 2 16rem; column-gap: 2rem; }
 </div>
 
 <script>window.__MD__ = ${mdJson};
-window.__LINKS__ = ${linksJson};</script>
+window.__LINKS__ = JSON.parse(${linksJson});</script>
 <script src="${MARKED}"></script>
 <script src="${MERMAID}"></script>
 <script>
