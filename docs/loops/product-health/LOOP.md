@@ -34,7 +34,10 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   question (check Gmail for a GitHub Support thread) before it is a quiet week
   — a flag silently removes Actions, Pages and the `loop-issue-notify` relay
   at once (W39). While the relay is down, a decision issue is the durable
-  record, not the delivery: say so in the report.
+  record, not the delivery: say so in the report. Then list Actions runs PER
+  WORKFLOW, scheduled ones included: a cron workflow (Workflow Integrity,
+  Stranded branch watch) with no `schedule` run in its last 2 days is dark,
+  even while push runs flow (W41: both dark 22 days after the flag lifted).
 - **Feedback emails** (Gmail MCP): `subject:"Health Roadmap Feedback" newer_than:8d`.
 - **Supabase** (env: `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
   `SUPABASE_PRODUCT_HEALTH_KEY` — a READ-ONLY role, SELECT-only on the 8
