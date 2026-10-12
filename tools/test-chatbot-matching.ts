@@ -49,7 +49,8 @@
  *                             no posture block (the harness's behaviour before 2026-10-07).
  *
  * A fetch that throws (timeout, DNS, reset) counts as an API error, like a non-2xx:
- * visible, scored as ∅, and the run continues but never exits green.
+ * visible, scored as ∅, and the run continues but never exits green. So does a
+ * router reply with no JSON object that parses (US-15 AC28).
  *
  * Usage:
  *   npx tsx tools/test-chatbot-matching.ts
@@ -94,6 +95,7 @@ import {
 } from '../packages/health-core/src/models';
 import { CHAT_EDIT_TOOLS } from '../packages/health-core/src/chat-edits';
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
+import { parseRouterReply } from '../app/lib/router-reply';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -319,15 +321,10 @@ async function routeQuery(currentMessage: string, retryOnRateLimit = true, recor
   if (record) callStats.push(toStat(Date.now() - t0, data.usage));
   const text = data.content?.find(c => c.type === 'text')?.text ?? '';
 
-  // Haiku sometimes adds prose after the JSON (esp. on urgent-sounding symptom
-  // queries). Extract the JSON object between first { and last } — same logic
-  // as app/lib/anthropic.server.ts:extractJsonObject.
-  const first = text.indexOf('{');
-  const last = text.lastIndexOf('}');
-  const stripped = first !== -1 && last > first ? text.slice(first, last + 1) : text;
-
+  // Production's parser (US-15 AC28): prose around the JSON, or a corrected
+  // second object, still routes.
   try {
-    const parsed = JSON.parse(stripped) as { handles?: unknown };
+    const parsed = parseRouterReply(text) as { handles?: unknown };
     if (!Array.isArray(parsed.handles)) return { handles: [], rateLimited: false };
     const handles = parsed.handles
       .filter((h): h is string => typeof h === 'string' && /^[a-z0-9-]+$/.test(h) && h.length <= 120)
@@ -335,7 +332,11 @@ async function routeQuery(currentMessage: string, retryOnRateLimit = true, recor
       .filter(h => VALID_HANDLES.has(h))
       .slice(0, 3);
     return { handles, rateLimited: false };
-  } catch {
+  } catch (err) {
+    // A reply nothing parses is a router_error in production: count it like an
+    // API error, never a silent ∅ (chat-health W41).
+    apiErrorCount++;
+    process.stdout.write(` [parse-error: ${String((err as Error).message ?? err).slice(0, 100)}]`);
     return { handles: [], rateLimited: false };
   }
 }
@@ -636,7 +637,7 @@ for (const r of results) {
 }
 
 console.log(`\n${BOLD}=== Results (${elapsed}s) ===${RESET}\n`);
-if (apiErrorCount > 0) console.log(`${RED}⚠ ${apiErrorCount} API calls errored and scored as ∅ — this run's numbers are NOT trustworthy${RESET}\n`);
+if (apiErrorCount > 0) console.log(`${RED}⚠ ${apiErrorCount} API calls errored or did not parse, scored as ∅ — this run's numbers are NOT trustworthy${RESET}\n`);
 console.log(`Total:       ${results.length}`);
 console.log(`${GREEN}Passing:     ${passed.length}${RESET}`);
 console.log(`${RED}Failing:     ${failed.length}${RESET}`);
