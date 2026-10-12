@@ -20,3 +20,14 @@ Fresh Opus adversary on knowledge-refresh/review-new-1b (bda4c44d). Line numbers
 | 14 | motor-neurone-disease L204 | Quinine for cramps with no caution. | ACCEPT, SAFETY CORRECTION, FOR BRAD: "Quinine can cause rare but serious side effects, including blood problems, and is very dangerous in overdose; keep it away from children." |
 | 15 | otitis-media-with-effusion L102 | Fluticasone "safe at any age" is less hedged than current evidence. | ACCEPT, FOR BRAD: remove "safely at any age"; say evidence of benefit for glue ear is limited. |
 | 16 | osteoporosis L136 | Dropped the raw's moderate-risk criterion (T-score over -1.5 on long-term glucocorticoids). | ACCEPT: restore. Jaw osteonecrosis caution: not in the raw, left out. |
+
+## Codex (gpt-6.1-sol, snapshot 4df581d9+dadf86a7+2d5ddb82, status incomplete: AC5 not run)
+- R1 (factor V Leiden): ACCEPT, same as row 1.
+- R2 (osteoporosis L154: bisphosphonate holiday presented as routine): ACCEPT, SAFETY CORRECTION, FOR BRAD. "After 5 years of tablets (or 3 years of zoledronic acid infusions) your doctor will reassess your fracture risk. A break of 1 to 2 years may suit people whose risk is now lower; people still at high risk usually continue treatment."
+- R3 (urethral-catheterisation L118: doxazosin starts at 2 mg): ACCEPT, SAFETY CORRECTION, FOR BRAD. Start at 1 mg once a day and increase gradually (NZ data sheet); keep the source's usual maintenance dose.
+- R4 (glue ear fluticasone): ACCEPT, same as row 15, stronger: steroid nasal sprays are not recommended for glue ear on its own; a doctor may use one for a coexisting allergic nose (age limits apply).
+- R5 (menopause L253: vaginal oestrogen on an aromatase inhibitor): ACCEPT, SAFETY CORRECTION, FOR BRAD. Only with the breast cancer specialist, after non-hormonal options have not helped; the evidence is uncertain.
+- R6 (uti-in-adults L133, urethral-catheterisation L144: never change the catheter for a UTI): ACCEPT, SAFETY CORRECTION, FOR BRAD. If the catheter has been in for more than 7 days, the doctor may replace it; this must not delay antibiotics.
+- R7 (osteoporosis moderate-risk criterion): ACCEPT, same as row 16.
+- R8 (the 20 new handles are not in docs/blog/index.json): ACCEPT as a MERGE STEP for all 40 new pathways: rebuild the index and register categories on the merge branch, then check retrieval. Writers never touch index.json (ruling 9).
+- R9 (AC5): DISPUTED. 40 fixtures pre-registered in 7b251d9d (outside the review branch); runs deferred by Brad to after 2026-11-01.
