@@ -1,0 +1,265 @@
+{
+ "fps": 30,
+ "total": 3852,
+ "segments": [
+  {
+   "id": "s0",
+   "start": 0,
+   "dur": 638,
+   "audio": "review/s0.mp3",
+   "frames": [],
+   "captions": [
+    {
+     "text": "This is Health by Dr Brad, in ChatGPT.",
+     "at": 0
+    },
+    {
+     "text": "It keeps your health record as one file in your own Dropbox or Google Drive, and works out a plan from it.",
+     "at": 101
+    },
+    {
+     "text": "This is a live ChatGPT session.",
+     "at": 283
+    },
+    {
+     "text": "It uses a developer connection to the same server the plugin uses, signed in to the review account, which holds invented data.",
+     "at": 360
+    },
+    {
+     "text": "Long waits are cut.",
+     "at": 575
+    }
+   ]
+  },
+  {
+   "id": "s1",
+   "start": 638,
+   "dur": 379,
+   "audio": "review/s1.mp3",
+   "frames": [],
+   "captions": [
+    {
+     "text": "Connecting opens our page.",
+     "at": 0
+    },
+    {
+     "text": "You sign in here, with the username and password from the review notes.",
+     "at": 60
+    },
+    {
+     "text": "Real users choose Dropbox or Google Drive instead.",
+     "at": 178
+    },
+    {
+     "text": "Then you're back in ChatGPT, connected.",
+     "at": 274
+    }
+   ]
+  },
+  {
+   "id": "s2",
+   "start": 1017,
+   "dur": 307,
+   "audio": "review/s2.mp3",
+   "frames": [
+    "review/s2/001.jpg",
+    "review/s2/002.jpg",
+    "review/s2/003.jpg",
+    "review/s2/004.jpg",
+    "review/s2/005.jpg"
+   ],
+   "captions": [
+    {
+     "text": "First: what's in my health record?",
+     "at": 0
+    },
+    {
+     "text": "ChatGPT calls read record, and shows the profile, the measurements and the lab results.",
+     "at": 77
+    },
+    {
+     "text": "Nothing is written.",
+     "at": 250
+    }
+   ]
+  },
+  {
+   "id": "s3",
+   "start": 1324,
+   "dur": 538,
+   "audio": "review/s3.mp3",
+   "frames": [
+    "review/s3/001.jpg",
+    "review/s3/002.jpg",
+    "review/s3/003.jpg"
+   ],
+   "captions": [
+    {
+     "text": "Second: record a weight.",
+     "at": 0
+    },
+    {
+     "text": "We use a different date from your test case, so your own test starts fresh.",
+     "at": 70
+    },
+    {
+     "text": "ChatGPT calls add measurement, and adds one row for that day.",
+     "at": 202
+    },
+    {
+     "text": "It's one value per test per day, so a second weight on the same day is offered as a correction instead.",
+     "at": 329
+    }
+   ]
+  },
+  {
+   "id": "s4",
+   "start": 1862,
+   "dur": 312,
+   "audio": "review/s4.mp3",
+   "frames": [
+    "review/s4/001.jpg",
+    "review/s4/002.jpg",
+    "review/s4/003.jpg"
+   ],
+   "captions": [
+    {
+     "text": "Third: what should I do next?",
+     "at": 0
+    },
+    {
+     "text": "Get plan returns what's due, and suggestions, with reasons and citations.",
+     "at": 72
+    },
+    {
+     "text": "It's educational, not medical advice.",
+     "at": 216
+    }
+   ]
+  },
+  {
+   "id": "s5",
+   "start": 2174,
+   "dur": 482,
+   "audio": "review/s5.mp3",
+   "frames": [
+    "review/s5/001.jpg",
+    "review/s5/002.jpg",
+    "review/s5/003.jpg",
+    "review/s5/004.jpg",
+    "review/s5/005.jpg"
+   ],
+   "captions": [
+    {
+     "text": "Fourth: a lab report dropped into the chat.",
+     "at": 0
+    },
+    {
+     "text": "Again, a different file from yours.",
+     "at": 86
+    },
+    {
+     "text": "ChatGPT reads the file itself, and nothing is saved to the record yet.",
+     "at": 161
+    },
+    {
+     "text": "It lists what it found, and asks.",
+     "at": 290
+    },
+    {
+     "text": "After a yes in a short sentence, the results are filed.",
+     "at": 362
+    }
+   ]
+  },
+  {
+   "id": "s6",
+   "start": 2656,
+   "dur": 581,
+   "audio": "review/s6.mp3",
+   "frames": [
+    "review/s6/001.jpg",
+    "review/s6/002.jpg",
+    "review/s6/003.jpg",
+    "review/s6/004.jpg",
+    "review/s6/005.jpg"
+   ],
+   "captions": [
+    {
+     "text": "Fifth: a correction.",
+     "at": 0
+    },
+    {
+     "text": "ChatGPT reads the latest ferritin, then shows the change and waits.",
+     "at": 60
+    },
+    {
+     "text": "Confirm with a short sentence, like, yes, apply the correction.",
+     "at": 194
+    },
+    {
+     "text": "ChatGPT's own safety check blocks a bare yes.",
+     "at": 312
+    },
+    {
+     "text": "Then the new value is added, and the old one is kept, marked entered in error.",
+     "at": 422
+    }
+   ]
+  },
+  {
+   "id": "s7",
+   "start": 3237,
+   "dur": 336,
+   "audio": "review/s7.mp3",
+   "frames": [
+    "review/s7/001.jpg",
+    "review/s7/002.jpg",
+    "review/s7/003.jpg"
+   ],
+   "captions": [
+    {
+     "text": "And three requests the app doesn't cover: booking a flight, a poem about autumn, and booking a doctor's appointment.",
+     "at": 0
+    },
+    {
+     "text": "ChatGPT handles each one without calling the app.",
+     "at": 221
+    }
+   ]
+  },
+  {
+   "id": "s8",
+   "start": 3573,
+   "dur": 149,
+   "audio": "review/s8.mp3",
+   "frames": [
+    "review/s8/001.jpg",
+    "review/s8/002.jpg"
+   ],
+   "captions": [
+    {
+     "text": "And the same on a phone-sized screen: the plan, from the same record.",
+     "at": 0
+    }
+   ]
+  },
+  {
+   "id": "s9",
+   "start": 3722,
+   "dur": 130,
+   "audio": "review/s9.mp3",
+   "frames": [],
+   "captions": [
+    {
+     "text": "That's Health by Dr Brad.",
+     "at": 0
+    },
+    {
+     "text": "Thank you for reviewing it.",
+     "at": 66
+    }
+   ]
+  }
+ ]
+}

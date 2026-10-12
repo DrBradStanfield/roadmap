@@ -70,3 +70,5 @@ docs/chatgpt-review/demo/out/
 
 # Built Artifact pages (md-artifact.mjs output; the .md is the source)
 .artifacts/
+# Review demo frames and clips copied by docs/chatgpt-review/demo/build-timeline.mjs
+demo-video/public/review/
