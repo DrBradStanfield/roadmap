@@ -25,6 +25,20 @@
  *
  * Mermaid: ```mermaid fences render as diagrams. Tables, task lists and all
  * GitHub-flavoured Markdown render as on GitHub.
+ *
+ * Links: a relative link would resolve against claude.ai on the published page
+ * and 404, so the EMBEDDED copy (never the .md on disk) has each relative link
+ * target rewritten at build time, resolved against the .md's own directory: to
+ * the linked .md's `artifact:` URL when it has one, else to its GitHub blob URL
+ * (owner/repo from that file's own repo's `origin`, branch main), keeping any
+ * #fragment. Missing targets stay as written and print `unresolved link` on
+ * stderr. Only files git tracks get a GitHub URL; an untracked or gitignored
+ * file would 404 there, so it counts as unresolved too. Applies to
+ * [text](target), reference definitions (blockquoted ones too) and raw
+ * <a href>. Left alone: URLs with a scheme (`x://`, mailto:, tel:, data:,
+ * javascript:), #anchors, /paths, images (inline, and any reference definition
+ * an image uses, even if a link shares it) and code (spans, raw <code>/<pre>,
+ * fenced and indented blocks). A Windows path (C:\...) is unresolved.
  */
 
 import fs from 'node:fs';
@@ -45,26 +59,145 @@ const raw = fs.readFileSync(abs, 'utf8');
 
 // Front matter: a leading --- block of `key: value` lines. Only `artifact` and
 // `title` are read; anything else is ignored and stays out of the rendered page.
-let body = raw;
-const meta = {};
-const fm = raw.match(/^---\n([\s\S]*?)\n---\n?/);
-if (fm) {
-  body = raw.slice(fm[0].length);
+function frontMatter(text) {
+  const meta = {};
+  const fm = text.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (!fm) return { body: text, meta };
   for (const line of fm[1].split('\n')) {
     const m = line.match(/^([A-Za-z_]+):\s*(.*)$/);
     if (m) meta[m[1]] = m[2].trim();
   }
+  return { body: text.slice(fm[0].length), meta };
 }
+const { body: mdBody, meta } = frontMatter(raw);
 
-const h1 = body.match(/^#\s+(.+)$/m);
+const h1 = mdBody.match(/^#\s+(.+)$/m);
 const title = (meta.title || (h1 && h1[1]) || path.basename(abs, '.md'))
   .replace(/[`*_]/g, '').replace(/\s+[—–-]\s+.*$/, '').trim();
 
-let repoRoot;
-try {
-  repoRoot = execFileSync('git', ['-C', path.dirname(abs), 'rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
-} catch { die('the .md must live inside a git repository'); }
+// The git repo holding `dir` and its GitHub web base, cached per directory.
+const repos = new Map();
+function repoOf(dir) {
+  if (!repos.has(dir)) {
+    let r = null;
+    try {
+      const root = execFileSync('git', ['-C', dir, 'rev-parse', '--show-toplevel'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+      let web = null;
+      try {
+        const url = execFileSync('git', ['-C', root, 'remote', 'get-url', 'origin'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+        const m = url.match(/github\.com[:/]([^/]+)\/(.+?)(?:\.git)?\/?$/);
+        if (m) web = `https://github.com/${m[1]}/${m[2]}`;
+      } catch {}
+      r = { root, web };
+    } catch {}
+    repos.set(dir, r);
+  }
+  return repos.get(dir);
+}
+
+const repo = repoOf(path.dirname(abs));
+if (!repo) die('the .md must live inside a git repository');
+const repoRoot = repo.root;
 const rel = path.relative(repoRoot, abs);
+
+// Rewrite relative link targets (see header). Code blocks (fenced or
+// indented) pass through whole; in the rest, code spans and raw <code>/<pre>
+// are matched first so nothing inside them is touched.
+const counts = { artifact: 0, github: 0, unresolved: 0 };
+function isTracked(r, relPath, dir) {
+  r.files ??= new Set(execFileSync('git', ['-C', r.root, 'ls-files', '-z'], { encoding: 'utf8', maxBuffer: 1 << 28 }).split('\0'));
+  if (!dir) return r.files.has(relPath);
+  const pre = relPath ? relPath + '/' : '';
+  for (const f of r.files) if (f && f.startsWith(pre)) return true;
+  return false;
+}
+function rewriteTarget(target) {
+  const bare = target.replace(/^<(.*)>$/, '$1');
+  if (!bare || /^(#|\/|[a-z][a-z0-9+.-]*:\/\/|(mailto|tel|data|javascript):)/i.test(bare)) return target;
+  const hash = bare.indexOf('#');
+  const p = hash < 0 ? bare : bare.slice(0, hash);
+  const frag = hash < 0 ? '' : bare.slice(hash);
+  let file = p;
+  try { file = decodeURI(p); } catch {}
+  file = path.resolve(path.dirname(abs), file);
+  if (!/^[a-z]:[\\/]/i.test(bare) && fs.existsSync(file)) { // a Windows path never resolves
+    file = path.join(fs.realpathSync(path.dirname(file)), path.basename(file)); // git reports real paths
+    const dir = fs.statSync(file).isDirectory();
+    if (!dir && file.endsWith('.md')) {
+      const url = frontMatter(fs.readFileSync(file, 'utf8')).meta.artifact;
+      if (url) { counts.artifact++; return url + frag; }
+    }
+    const r = repoOf(dir ? file : path.dirname(file));
+    const relPath = r && path.relative(r.root, file).split(path.sep).join('/');
+    // Only tracked files exist on GitHub: untracked or gitignored ones would 404.
+    if (r && r.web && !relPath.startsWith('..') && isTracked(r, relPath, dir)) {
+      counts.github++;
+      return `${r.web}/${dir ? 'tree' : 'blob'}/main/${relPath.split('/').map(encodeURIComponent).join('/')}${frag}`;
+    }
+  }
+  counts.unresolved++;
+  console.error(`md-artifact: unresolved link: ${target}`);
+  return target;
+}
+
+// Split the body into code chunks (verbatim) and prose chunks. Indented code
+// follows CommonMark, conservatively: a line indented 4+ columns past the
+// enclosing list item's content column, after a blank line, a heading or a
+// fence. Indented code inside a blockquote is not detected.
+function chunks(text) {
+  const out = [];
+  const add = (code, line) => { const last = out.at(-1); if (last && last.code === code) last.text += line; else out.push({ code, text: line }); };
+  const cols = s => { let c = 0; for (const ch of s) c = ch === '\t' ? c + 4 - (c % 4) : c + 1; return c; };
+  const items = []; // content columns of the open list items
+  let fence = null, codeCol = -1, boundary = true;
+  for (const line of text.split(/(?<=\n)/)) {
+    const blank = !line.trim();
+    const ind = cols(line.match(/^[ \t]*/)[0]);
+    if (fence) {
+      add(true, line);
+      const f = line.match(/^[ \t]*(`{3,}|~{3,})\s*$/);
+      if (f && f[1][0] === fence[0] && f[1].length >= fence.length) { fence = null; boundary = true; }
+      continue;
+    }
+    if (codeCol >= 0 && (blank || ind >= codeCol)) { add(true, line); boundary = blank; continue; }
+    codeCol = -1;
+    if (blank) { add(false, line); boundary = true; continue; }
+    const item = line.match(/^[ \t]*(?:[-*+]|\d{1,9}[.)])(?: {1,4}(?! )|[ \t]|(?=\r?\n|$))/);
+    if (boundary || item) while (items.length && ind < items.at(-1)) items.pop();
+    if (boundary && ind >= (items.at(-1) ?? 0) + 4) { codeCol = (items.at(-1) ?? 0) + 4; add(true, line); boundary = false; continue; }
+    const f = line.match(/^[ \t]*(`{3,}|~{3,})/);
+    if (f) fence = f[1];
+    else if (item) items.push(cols(item[0]) + (/\S$/.test(item[0]) ? 1 : 0));
+    add(!!f, line);
+    boundary = /^ {0,3}#{1,6}(\s|$)/.test(line);
+  }
+  return out;
+}
+
+const CODE = String.raw`(?<tick>` + '`' + String.raw`+)(?:[^\n]|\n(?![ \t]*\n))*?[^` + '`' + String.raw`]\k<tick>(?!` + '`' + String.raw`)|<(?<tag>code|pre)\b[^>]*>[\s\S]*?<\/\k<tag>\s*>`;
+const LINKISH = new RegExp(CODE + '|' + [
+  String.raw`!\[[^\]\n]*\]\([^)\n]*\)`, // inline image
+  String.raw`(?<linkPre>\]\(\s*)(?<linkT><[^>\n]*>|[^\s)]+)`,
+  String.raw`(?<defPre>^(?: {0,3}>[ \t]?)* {0,3}\[(?<label>(?!\^)[^\]\n]+)\]:[ \t]*)(?<defT><[^>\n]*>|\S+)`,
+  String.raw`(?<aPre><a\s[^>]*?\bhref\s*=\s*)(?<q>["'])(?<aT>.*?)\k<q>`,
+].join('|'), 'gim');
+// Reference-style images: ![alt][label], ![label][], ![label]. Their
+// definitions keep their destinations, even when a link shares them.
+const IMAGE_REF = new RegExp(CODE + '|' + String.raw`!\[(?<alt>[^\]\n]*)\](?:\[(?<ref>[^\]\n]*)\])?(?!\()`, 'gi');
+const label = s => s.trim().replace(/\s+/g, ' ').toLowerCase();
+const parts = chunks(mdBody);
+const imageLabels = new Set();
+for (const c of parts) if (!c.code) for (const m of c.text.matchAll(IMAGE_REF)) if (m.groups.alt !== undefined) imageLabels.add(label(m.groups.ref || m.groups.alt));
+function rewriteLinks(text) {
+  return text.replace(LINKISH, (m, ...args) => {
+    const g = args.at(-1);
+    if (g.linkPre !== undefined) return g.linkPre + rewriteTarget(g.linkT);
+    if (g.defPre !== undefined) return imageLabels.has(label(g.label)) ? m : g.defPre + rewriteTarget(g.defT);
+    if (g.aPre !== undefined) return g.aPre + g.q + rewriteTarget(g.aT) + g.q;
+    return m;
+  });
+}
+const body = parts.map(c => (c.code ? c.text : rewriteLinks(c.text))).join('');
 const outDir = path.join(repoRoot, '.artifacts');
 const out = path.join(outDir, path.basename(abs, '.md') + '.html');
 
@@ -201,6 +334,14 @@ nav.toc ol { margin: 0; columns: 2 16rem; column-gap: 2rem; }
     window.mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'strict' });
     window.mermaid.run({ querySelector: 'pre.mermaid' });
   }
+  // The page renders after load, so the browser's own jump to #fragment found
+  // nothing; scroll to it now that the anchors exist.
+  if (location.hash) {
+    var id = location.hash.slice(1);
+    try { id = decodeURIComponent(id); } catch (e) {} // a malformed % stays raw
+    var target = document.getElementById(id);
+    if (target) target.scrollIntoView();
+  }
 })();
 </script>
 `;
@@ -211,6 +352,7 @@ fs.writeFileSync(out, html);
 console.log(`built:    ${out}`);
 console.log(`title:    ${title}`);
 console.log(`source:   ${rel}`);
+console.log(`links:    ${counts.artifact} rewritten to artifacts, ${counts.github} to GitHub, ${counts.unresolved} unresolved`);
 console.log(meta.artifact
   ? `publish:  ${meta.artifact}   (Artifact tool: file_path = the built file, url = this)`
   : 'publish:  no `artifact:` URL in the front matter yet — first publish, then record the URL there');
