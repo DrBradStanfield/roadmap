@@ -21,11 +21,12 @@ Dysphagia is difficulty in the act of swallowing. Swallowing is usually divided 
 **Call 111 or go to the emergency department if:**
 - You cannot swallow your own saliva. This is a total obstruction and needs hospital assessment.
 - Food or an object is stuck and will not go down, such as a soft food bolus or a chicken or fish bone. This needs hospital assessment.
+- You have stridor (noisy, high-pitched breathing).
 
 **Red flags your doctor will look for:**
 - Swallowing difficulty that keeps getting worse (progressive dysphagia).
 - Silent aspiration. Some people do not cough when food or drink goes into the airway.
-- A neck lump with a sore throat on one side, ear pain, a change in voice, or noisy breathing (stridor).
+- A neck lump with a sore throat on one side, ear pain, a change in voice, or stridor.
 
 **See your doctor the same day** if you cough or choke when swallowing, or have signs of aspiration pneumonia: fever, cough, chest pain, or shortness of breath. Your doctor may seek acute specialist advice about protecting your airway.
 

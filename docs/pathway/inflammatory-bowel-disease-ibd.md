@@ -22,13 +22,14 @@ Inflammatory bowel disease (IBD) includes Crohn's disease, ulcerative colitis, a
 - Fever.
 - A fast heart rate.
 - Low blood pressure.
-- Abdominal pain.
+
+**See your doctor the same day if you have suspected or known IBD and abdominal pain.** Your doctor may arrange an acute hospital assessment. If the pain is severe, call 111 or go to the emergency department.
 
 **Also call 111 or go to the emergency department if you are acutely unwell with a flare-up.** In ulcerative colitis, doctors treat a flare as acute when there are more than 6 bloody bowel motions per day, plus one or more of:
 - Temperature more than 37.8°C.
 - Heart rate more than 90.
-- Haemoglobin (Hb) less than 105 on a blood test.
-- CRP more than 30 on a blood test.
+- Haemoglobin (Hb) less than 105 g/L on a blood test.
+- CRP more than 30 mg/L on a blood test.
 
 Serious causes your doctor may consider in a flare include megacolon or a bowel perforation in ulcerative colitis, and bowel obstruction or an abscess in Crohn's disease.
 
@@ -164,7 +165,7 @@ Young women may want to discuss contraception, fertility, and pregnancy with the
 
 ### Flare-ups
 
-If you have any red flags or are acutely unwell, call 111 or go to the emergency department (see above).
+If you have any red flags or are acutely unwell, you need an acute hospital assessment. See above for when to call 111 and when to see your doctor the same day.
 
 **Tests your doctor may consider:**
 - Faecal culture and *Clostridioides difficile* toxin. Relapses are often linked to infections, or to *C. difficile* after antibiotics.

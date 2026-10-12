@@ -16,6 +16,12 @@ This pathway is for people with an established diagnosis of epilepsy.
 
 ---
 
+## When to Seek Urgent Medical Attention
+
+**Call 111 if** a seizure lasts more than 5 minutes, or seizures come one after another without recovery in between.
+
+---
+
 ## Topiramate and Pregnancy
 
 A safety update from October 2025:

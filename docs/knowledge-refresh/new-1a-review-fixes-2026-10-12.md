@@ -9,7 +9,7 @@ Fresh Opus adversary on knowledge-refresh/review-new-1a (4b23d30b). Line numbers
 | 3 | anxiety-in-adults L21-22 | "High risk of suicide" is not a trigger a reader can judge; "Tell your doctor" has no timing. | ACCEPT, ruling 11 house line: "If you are thinking about suicide, see your doctor the same day, or call or text 1737 (free, any time). If you have a plan or feel you might act on it, call 111 or go to the emergency department." |
 | 4 | HIV L103-106, L200 | CD4 values lack the raw's unit. | ACCEPT: "cells × 10⁶/L" as the raw gives. |
 | 5 | IBD L30-31 | "Hb less than 105", "CRP more than 30" have no units (nor does the raw). | ACCEPT: add g/L and mg/L, the NZ reporting units; an exception records that the raw prints none. FOR BRAD (sheet). |
-| 6 | dysmenorrhoea L39 | Risk factors beyond smoking are not in the raw. | ACCEPT: smoking only. |
+| 6 | dysmenorrhoea L39 | Risk factors beyond smoking are not in the raw. | REVERSED on checking: the raw lists all five ("Longer duration of menses, early menarche, smoking, alcohol, and obesity are all risk factors associated with dysmenorrhoea"). Entry unchanged. |
 | 7 | cognitive-impairment L163 | EPA activation sentence contradicts the raw (EPA Property can be active from set-up). | ACCEPT: add the exception. |
 | 8 | abortion L125-128 | Day 1 baseline beta hCG test dropped; completion at L165 relies on it. | ACCEPT: restore "if possible, a blood test for beta hCG". |
 | 9 | contraceptive-implant L51 | Contraindication widened to past breast cancer. | ACCEPT: "active breast cancer". |
@@ -25,3 +25,5 @@ Fresh Opus adversary on knowledge-refresh/review-new-1a (4b23d30b). Line numbers
 - R5 (implant: non-radiopaque warning extended to all etonogestrel implants): ACCEPT. Only the older Implanon is not radiopaque; Implanon NXT can be found by X-ray.
 - R6 (familial cancer: public-service eligibility restriction): ACCEPT, remove (rule 4, AC9).
 - R7 (AC5 not run): DISPUTED. Brad deferred all AC5 runs to after 2026-11-01; the 40 fixtures are pre-registered.
+
+Applied 2026-10-12 by one Opus worker: every ACCEPT row. Ruling 12 decisions: hoarse voice (stridor, coughing up blood -> 111; the slow signs -> same day), dyspepsia (vomiting blood, black stools, persistent vomiting -> 111; difficulty swallowing, weight loss, anaemia, abdominal lump -> same day), IBD (fever, fast heart rate, low blood pressure, acute severe flare -> 111; abdominal pain -> same day, severe pain -> 111). Epilepsy gains a red-flag section for the seizure house line.

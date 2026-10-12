@@ -20,7 +20,9 @@ This pathway covers general care of all acute and chronic wounds. A wound more t
 
 **Call 111 or go to the emergency department if you may have critical limb ischaemia** (a severe lack of blood supply to a limb). Signs are pain in the limb at rest and/or tissue loss, with absent pulses. This needs hospital assessment by the vascular surgery team.
 
-**See your doctor or nurse if you have signs of spreading or body-wide infection:** severe, excessive, or increasing pain out of proportion to the wound (which may be a sign of necrotising fasciitis), redness, hardening, swelling, or crackling under the skin (crepitus) spreading more than 2 cm from the wound edge, red streaks following a blood vessel (lymphangitis), feeling generally unwell, fever, chills, or shaking (rigors), a fast heart rate, or an abscess forming.
+**Call 111 or go to the emergency department if you have a spreading skin infection with fever, shivering or a racing heart, or pain far worse than the wound looks.** Severe, excessive, or increasing pain out of proportion to the wound may be a sign of necrotising fasciitis.
+
+**See your doctor or nurse if you have other signs of spreading or body-wide infection:** redness, hardening, swelling, or crackling under the skin (crepitus) spreading more than 2 cm from the wound edge, red streaks following a blood vessel (lymphangitis), feeling generally unwell, or an abscess forming.
 
 **If a leg wound is at risk of becoming an ulcer, your doctor may consider an early referral to a specialist wound care nurse.** This includes an injury to the lower leg in someone with chronic venous insufficiency, leg swelling (oedema), or a past venous ulcer, and any wound that has not got smaller within 2 weeks.
 

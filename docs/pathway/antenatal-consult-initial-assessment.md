@@ -228,7 +228,7 @@ If you are not already taking it, your doctor may advise:
 
 If you have a **major risk factor** for pre-eclampsia (see Assessment), your doctor may recommend:
 - **Low-dose enteric-coated aspirin 100 mg at night** from 12 weeks of pregnancy, and
-- **Calcium carbonate, 2 × 500 mg tablets once daily**, from booking until birth.
+- **Calcium carbonate, 2 tablets once daily**, each giving 500 mg of elemental calcium (1.25 g calcium carbonate), from booking until birth.
 
 Your doctor will discuss the risks and benefits of aspirin in pregnancy, and check for reasons not to take it: a previous peptic ulcer, asthma triggered by anti-inflammatory medicines (NSAIDs), or an aspirin allergy.
 

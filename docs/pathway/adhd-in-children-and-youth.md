@@ -18,7 +18,8 @@ This pathway covers the assessment of possible attention deficit hyperactivity d
 
 ## When to Seek Urgent Help
 
-- If a child or anyone else is in immediate danger, call 111. Concerns about a child's safety can also be raised with child protection services (Oranga Tamariki).
+- If a child or anyone else is in immediate danger, call 111.
+- If severe behaviour problems are threatening the safety of the child or others, your doctor may notify Oranga Tamariki or the police.
 - If ADHD-like symptoms are happening in the context of emotional, sexual, or physical abuse or neglect, your doctor will follow child abuse and neglect guidance.
 
 ---

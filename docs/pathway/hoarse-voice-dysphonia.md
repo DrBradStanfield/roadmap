@@ -18,9 +18,11 @@ This pathway covers the assessment and management of a hoarse voice (dysphonia).
 
 ## When to Seek Urgent Medical Attention
 
-**Call 111 or go to the emergency department if you have any of these. You need a hospital ear, nose and throat (ENT) assessment:**
+**Call 111 or go to the emergency department if you have:**
 - Stridor (noisy, high-pitched breathing).
 - Coughing up blood (haemoptysis).
+
+**See your doctor the same day if you have any of these. Your doctor may arrange a hospital ear, nose and throat (ENT) assessment:**
 - Constant hoarseness for more than 4 weeks.
 - Trouble swallowing solid food (dysphagia to solids).
 - Fluids going down the wrong way (aspiration of fluids).

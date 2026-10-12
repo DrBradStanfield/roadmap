@@ -31,7 +31,7 @@ Cognitive impairment is a broad term for any impairment in a person's ability to
 - Unsteady walking (gait ataxia) or incontinence.
 - A history of cancers more likely to spread to the brain (e.g. lung, melanoma, breast).
 
-**A sudden change is different.** Delirium usually starts suddenly, often at twilight, lasts days or weeks, and fluctuates. Dementia cannot be diagnosed while delirium is present. Tell your doctor about any sudden change in thinking.
+**A sudden change is different.** Delirium usually starts suddenly, often at twilight, lasts days or weeks, and fluctuates. Dementia cannot be diagnosed while delirium is present. If confusion comes on suddenly, see your doctor the same day. If the person is very drowsy or hard to wake, call 111.
 
 ---
 
@@ -160,7 +160,7 @@ With consent, and as soon as possible, people with dementia and their family/whÄ
 ### Planning ahead
 
 Legal and end-of-life planning should start early, before changes in thinking affect your capacity to decide.
-- **Enduring Power of Attorney (EPA):** a legal authority you set up while able, so a trusted person can decide for you if you later lose capacity. An EPA can cover care and welfare decisions (EPA Welfare), property and money (EPA Property), or both. An EPA Welfare is held by only one person at a time; an EPA Property may be held jointly by 2 or more people. An EPA is activated only after a health practitioner formally assesses that you can no longer manage that part of your affairs. An ordinary power of attorney is not the same, and stops working when capacity is lost.
+- **Enduring Power of Attorney (EPA):** a legal authority you set up while able, so a trusted person can decide for you if you later lose capacity. An EPA can cover care and welfare decisions (EPA Welfare), property and money (EPA Property), or both. An EPA Welfare is held by only one person at a time; an EPA Property may be held jointly by 2 or more people. An EPA Property can be set up to be active from the start, and the document will say so. Otherwise, an EPA is activated only after a health practitioner formally assesses that you can no longer manage that part of your affairs. An ordinary power of attorney is not the same, and stops working when capacity is lost.
 - **A will.**
 - **Advance care planning:** talk about aged residential care, resuscitation, and limits on future medical treatment. Naming someone in an advance care plan does not give them legal authority; an EPA does.
 - If cost is a barrier, consider getting quotes from more than one solicitor.

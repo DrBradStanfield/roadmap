@@ -18,15 +18,17 @@ Heartburn is a burning sensation rising from the upper abdomen (epigastrium) tow
 
 ## When to Seek Urgent Medical Attention
 
-**Call 111 or go to the emergency department if you have any of these red flags:**
+**Call 111 or go to the emergency department if you have:**
+- Vomiting blood (haematemesis) or passing black, tarry stools (melaena)
+- Persistent or protracted vomiting
+
+**See your doctor the same day if you have any of these red flags:**
 - Difficulty swallowing
 - Unexplained weight loss with gut symptoms
 - Unexplained iron deficiency anaemia
-- Vomiting blood (haematemesis) or passing black, tarry stools (melaena)
 - A lump in the abdomen (palpable abdominal mass)
-- Persistent or protracted vomiting
 
-The guideline advises acute hospital gastroenterology assessment for all of these red flags.
+The guideline advises acute hospital gastroenterology assessment for all of these red flags. For the second group, your doctor arranges it.
 
 ---
 
@@ -208,7 +210,7 @@ The same advice applies: finish the course, stop smoking, and avoid alcohol with
 ### Dyspepsia and heartburn in pregnancy
 
 GORD is common in pregnancy. Heartburn and reflux have been shown to worsen nausea and vomiting, so managing them may help improve those symptoms.
-- **First:** lifestyle and diet changes. Raise the head of the bed. Eat smaller meals, reduce fatty food, avoid eating before bed, and consider a trial of a low FODMAP diet. Reduce weight, stop smoking, limit alcohol, and avoid triggers.
+- **First:** lifestyle and diet changes. Raise the head of the bed. Eat smaller meals, reduce fatty food, avoid eating before bed, and consider a trial of a low FODMAP diet. Stop smoking, avoid alcohol, and avoid other triggers.
 - **If symptoms persist:** antacids or alginates. Alginates are particularly useful when heartburn is the main symptom. Antacids containing aluminium or calcium are safe. Avoid antacids containing sodium bicarbonate and magnesium trisilicate.
 - **If symptoms are more severe or persist:** your doctor may consider an acid-suppressing medicine such as omeprazole. As with any medicine in pregnancy, especially in the first trimester, the aim is the minimum effective dose for the shortest possible time.
 
@@ -224,7 +226,7 @@ GORD is common in pregnancy. Heartburn and reflux have been shown to worsen naus
 
 ## When to See a Specialist
 
-- **Emergency department:** any red flag (see above).
+- **Acute hospital gastroenterology assessment:** any red flag (see above for when to call 111).
 - **Non-urgent gastroenterology assessment,** often for gastroscopy, may be arranged for:
   - Risk factors for significant organic disease, or a positive coeliac blood test.
   - *H. pylori* that persists after 2 attempts at eradication.

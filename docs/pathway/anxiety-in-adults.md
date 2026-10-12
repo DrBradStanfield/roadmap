@@ -18,8 +18,8 @@ Anxiety is the most common of all the mental health disorders. Symptoms vary fro
 
 ## When to Seek Urgent Help
 
-- **If you are at high risk of suicide, call 111 or go to the emergency department.** This needs an urgent (acute) mental health assessment.
-- **Suicidal thoughts** are a red flag. Tell your doctor.
+- **Suicidal thoughts** are a red flag. If you are thinking about suicide, see your doctor the same day, or call or text 1737 (free, any time).
+- **If you have a plan or feel you might act on it, call 111 or go to the emergency department.** This needs an urgent (acute) mental health assessment.
 
 ---
 
@@ -207,7 +207,7 @@ Your doctor may discuss starting an SSRI if lifestyle measures, community suppor
 **Choosing an SSRI:**
 - In women of child-bearing age, escitalopram and sertraline are safer and easier to stop.
 - SSRIs are linked to a higher risk of bleeding. Your doctor may consider adding a stomach-protecting medicine if you take NSAIDs or aspirin.
-- Citalopram has fewer drug interactions for most people, including those with chronic health issues. Like all SSRIs, it has been linked to dose-related QTc prolongation (a heart rhythm change), so the maximum dose should not be exceeded. Escitalopram does not appear to have this risk.
+- Citalopram has fewer drug interactions for most people, including those with chronic health issues. Like all SSRIs, it has been linked to dose-related QTc prolongation (a heart rhythm change), so the maximum dose should not be exceeded. Escitalopram can also affect heart rhythm (the QT interval).
 
 **Typical SSRI doses:**
 
@@ -239,7 +239,7 @@ Your doctor may monitor the dose for the following 6 weeks:
 
 ## When to See a Specialist
 
-- **High risk of suicide:** call 111 or go to the emergency department for urgent mental health assessment.
+- **Suicidal thoughts with a plan, or feeling you might act on them:** call 111 or go to the emergency department for urgent mental health assessment.
 - **No response to treatment after 8 to 10 weeks:** your doctor may seek mental health advice or refer you for a non-urgent specialist mental health assessment.
 - **Severe anxiety that continues despite a trial of medicine:** your doctor may refer you for a non-urgent specialist mental health assessment or seek mental health advice.
 

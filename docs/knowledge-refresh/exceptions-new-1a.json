@@ -22,5 +22,93 @@
   "reason": "Safety override, not in the raw: Medsafe (June 2020) contraindicates tramadol after tonsillectomy or adenoidectomy under 18 (Codex R1, 2026-10-08). The raw still gives a reduced post-tonsillectomy dose; the line is removed. FOR BRAD on the sign-off sheet.",
   "by": "orchestrator",
   "date": "2026-10-12"
+ },
+ {
+  "check": "AC2",
+  "handle": "antenatal-consult-initial-assessment",
+  "match": "token \"500 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Calcium carbonate, 2 tablets once daily**, each giving 500 mg of elemental calcium (1.25 g calcium carbonate), fr...\"",
+  "reason": "Codex R1 (2026-10-12): the raw prints \"2 \u00d7 500 mg calci-tab\"; the entry states the elemental dose (500 mg) and the carbonate mass (1.25 g, from the Pharmac schedule) so the dose is not ambiguous. Checker cannot match the rewritten form. Orchestrator ruling.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
+ },
+ {
+  "check": "AC2",
+  "handle": "antenatal-consult-initial-assessment",
+  "match": "token \"1250 mg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Calcium carbonate, 2 tablets once daily**, each giving 500 mg of elemental calcium (1.25 g calcium carbonate), fr...\"",
+  "reason": "Codex R1 (2026-10-12): the raw prints \"2 \u00d7 500 mg calci-tab\"; the entry states the elemental dose (500 mg) and the carbonate mass (1.25 g, from the Pharmac schedule) so the dose is not ambiguous. Checker cannot match the rewritten form. Orchestrator ruling.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
+ },
+ {
+  "check": "AC2",
+  "handle": "anxiety-in-adults",
+  "match": "changed_tokens[62] raw_quote shares no number with its body_line: - **Suicidal thoughts** are a red flag. If you are thinking about suicide, see your doctor the sa...",
+  "reason": "House line (ruling 11, suicide): 1737 is New Zealand's free national counselling line; not in the raw.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
+ },
+ {
+  "check": "AC2",
+  "handle": "anxiety-in-adults",
+  "match": "token \"1737\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Suicidal thoughts** are a red flag. If you are thinking about suicide, see your doctor the same day, or call or t...\"",
+  "reason": "House line (ruling 11, suicide): 1737 is New Zealand's free national counselling line; not in the raw.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
+ },
+ {
+  "check": "AC2",
+  "handle": "epilepsy",
+  "match": "changed_tokens[32] raw_quote shares no number with its body_line: **Call 111 if** a seizure lasts more than 5 minutes, or seizures come one after another without r...",
+  "reason": "House line (ruling 11): a seizure lasting more than 5 minutes calls for 111; not in the raw.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
+ },
+ {
+  "check": "AC2",
+  "handle": "epilepsy",
+  "match": "token \">5 min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"**Call 111 if** a seizure lasts more than 5 minutes, or seizures come one after another without recovery in between.\"",
+  "reason": "House line (ruling 11): a seizure lasting more than 5 minutes calls for 111; not in the raw.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
+ },
+ {
+  "check": "AC2",
+  "handle": "human-immunodeficiency-virus-hiv",
+  "match": "token \"10\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A normal CD4 count is about 1000 (range 500 to 1500 cells \u00d7 10\u2076/L).\" | \"- Without treatment, the CD4 count usually drops by about 60 to 80 cells \u00d7 10\u2076/L each year.\" | \"- Most people with HIV will not develop an AIDS illness until their CD4 count falls below 200 cells \u00d7 10\u2076/L. The lowe...\"",
+  "reason": "Checker limit: the raw's \"cells x 106/L\" lost its superscript in the scrape (10^6); the body writes 10\u2076/L. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
+ },
+ {
+  "check": "AC2",
+  "handle": "inflammatory-bowel-disease-ibd",
+  "match": "changed_tokens[33] raw_quote shares no number with its body_line: - Haemoglobin (Hb) less than 105 g/L on a blood test.",
+  "reason": "Units added (adversary row 5, FOR BRAD): the raw prints \"Hb < 105\" and \"CRP > 30\" with no units; NZ labs report g/L and mg/L.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
+ },
+ {
+  "check": "AC2",
+  "handle": "inflammatory-bowel-disease-ibd",
+  "match": "changed_tokens[34] raw_quote shares no number with its body_line: - CRP more than 30 mg/L on a blood test.",
+  "reason": "Units added (adversary row 5, FOR BRAD): the raw prints \"Hb < 105\" and \"CRP > 30\" with no units; NZ labs report g/L and mg/L.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
+ },
+ {
+  "check": "AC2",
+  "handle": "inflammatory-bowel-disease-ibd",
+  "match": "token \"<105 g/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Haemoglobin (Hb) less than 105 g/L on a blood test.\"",
+  "reason": "Units added (adversary row 5, FOR BRAD): the raw prints \"Hb < 105\" and \"CRP > 30\" with no units; NZ labs report g/L and mg/L.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
+ },
+ {
+  "check": "AC2",
+  "handle": "inflammatory-bowel-disease-ibd",
+  "match": "token \">30 mg/L\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- CRP more than 30 mg/L on a blood test.\"",
+  "reason": "Units added (adversary row 5, FOR BRAD): the raw prints \"Hb < 105\" and \"CRP > 30\" with no units; NZ labs report g/L and mg/L.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
  }
 ]

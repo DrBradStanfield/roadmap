@@ -100,10 +100,10 @@ Testing needs your informed consent. This means you agree to the test, understan
 ### CD4 count
 
 - CD4 (helper) lymphocytes help regulate the immune system.
-- A normal CD4 count is about 1000 (range 500 to 1500).
-- Without treatment, the CD4 count usually drops by about 60 to 80 each year.
-- Most people with HIV will not develop an AIDS illness until their CD4 count falls below 200. The lower it falls, the higher the risk.
-- Treatment usually leads to a gradual recovery of about 70 each year, and prevents AIDS illnesses.
+- A normal CD4 count is about 1000 (range 500 to 1500 cells × 10⁶/L).
+- Without treatment, the CD4 count usually drops by about 60 to 80 cells × 10⁶/L each year.
+- Most people with HIV will not develop an AIDS illness until their CD4 count falls below 200 cells × 10⁶/L. The lower it falls, the higher the risk.
+- Treatment usually leads to a gradual recovery of about 70 cells × 10⁶/L each year, and prevents AIDS illnesses.
 
 ### The HIV test
 
@@ -197,7 +197,7 @@ Your doctor will make sure your vaccinations are up to date, including:
 - Pneumococcal
 - Meningococcal
 
-A CD4 count of less than 200 means live vaccines should not be given. Examples include MMR (measles, mumps, rubella), oral rotavirus, oral polio, oral typhoid, BCG (tuberculosis), varicella zoster (chickenpox and Zostavax), and yellow fever.
+A CD4 count of less than 200 cells × 10⁶/L means live vaccines should not be given. Examples include MMR (measles, mumps, rubella), oral rotavirus, oral polio, oral typhoid, BCG (tuberculosis), varicella zoster (chickenpox and Zostavax), and yellow fever.
 
 ---
 

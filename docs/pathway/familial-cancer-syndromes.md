@@ -76,8 +76,6 @@ Your doctor may refer you for genetic assessment by a genetic health service or 
 - Cancers have occurred at a younger age, excluding childhood cancers.
 - There have been 2 or more primary cancers of the same or different type.
 
-Public genetic services currently see people who have a relative with a confirmed hereditary cause; your doctor can advise whether a referral is possible.
-
 Private genetic services are available for people who do not meet public service criteria.
 
 If you do not meet the criteria for genetic referral, your doctor will follow the usual population screening guidelines, such as breast screening and bowel screening.

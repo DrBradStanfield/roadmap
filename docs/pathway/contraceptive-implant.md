@@ -48,7 +48,7 @@ Your doctor will first talk through all your contraception options. If you choos
 
 **Not used if:**
 - You are pregnant or might be pregnant.
-- You have active breast cancer, or have had it within the last 5 years.
+- You have had active breast cancer within the last 5 years.
 
 **Your doctor will weigh the risks carefully if you have:**
 - Unexplained vaginal bleeding.
@@ -238,7 +238,7 @@ These medicines can be used throughout the life of the implant and it still work
 - If both rods are in a suitable position, they can stay until they are due out, and you can rely on them for contraception. Rods deeper than just under the skin can still be relied on.
 - A rod buried in muscle has a higher risk of moving further. A rod that gets into the basilic vein may move to the armpit or chest, so removal under ultrasound guidance may be considered.
 - If a rod cannot be seen in the arm on X-ray, further imaging is arranged. A chest X-ray is likely to be next.
-- The single-rod etonogestrel implant does not show on X-ray, so other imaging is needed.
+- The older single-rod Implanon does not show on X-ray, so other imaging is needed. The newer Implanon NXT can be found by X-ray.
 - When removal is planned for a rod that cannot be felt, ultrasound is normally used to find it and guide removal.
 
 ### Pregnancy with an implant

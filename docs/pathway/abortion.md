@@ -126,6 +126,7 @@ Your doctor or abortion provider will give you written instructions. A typical s
 - Mifepristone 200 mg by mouth, ideally in the morning.
 - If you already have pregnancy-related vomiting, an anti-sickness medicine (such as ondansetron) may be taken 30 to 60 minutes before the mifepristone.
 - If you vomit within 1 hour of taking mifepristone, the dose is repeated.
+- If possible, a blood test for beta-hCG.
 
 **Day 2 to 3 (at least 24 hours, ideally 36 to 48 hours, after mifepristone):**
 - One hour before the misoprostol, take paracetamol 1 g, ibuprofen 400 mg, and ondansetron 4 mg by mouth to reduce side effects and discomfort.
@@ -174,7 +175,7 @@ Routine follow-up and examination are not required. Your doctor may offer follow
 - Bleeding after a surgical abortion should generally stop by day 10.
 
 **Concerning features (contact your doctor or abortion provider):**
-- At any time: heavy bleeding (2 or more soaked pads per hour for 2 consecutive hours, or passing large clots), or feeling unwell.
+- At any time: heavy bleeding (2 or more soaked pads per hour for 2 consecutive hours, or passing large clots), or feeling unwell. With heavy bleeding, contact your abortion provider straight away; if you feel faint or dizzy, call 111 or go to the emergency department.
 - At 7 days: bleeding heavier than a normal period, bleeding with clots, or cramps not helped by simple pain relief.
 - At 14 days: heavy or persistent bleeding that has not reduced.
 - At 4 to 5 weeks: ongoing bleeding after your expected period.
@@ -221,11 +222,11 @@ Most complications cause ongoing bleeding and lower abdominal cramps or pelvic t
 
 ### Ongoing pregnancy
 
-If a viable pregnancy continues, your doctor will talk through your options: repeat the EMA (if under 10 weeks), have a surgical abortion, or continue the pregnancy. The EMA medicines are considered teratogenic, and continuing carries risks such as miscarriage and malformations. If you choose to continue, your doctor will seek specialist advice and help you [find a midwife](https://www.findyourmidwife.co.nz).
+If a viable pregnancy continues, your doctor will talk through your options: repeat the EMA (if under 10 weeks), have a surgical abortion, or continue the pregnancy. The EMA medicines are considered teratogenic, and continuing carries risks such as miscarriage and malformations. If you choose to continue, your doctor will seek acute gynaecology advice and help you [find a midwife](https://www.findyourmidwife.co.nz).
 
 ### Uterine injury
 
-Significant abdominal or pelvic pain after a surgical abortion may mean a perforation or other injury to the womb or cervix. This needs hospital assessment.
+Significant abdominal or pelvic pain after a surgical abortion may mean a perforation or other injury to the womb or cervix. This needs hospital assessment. Call 111 or go to the emergency department.
 
 ---
 
