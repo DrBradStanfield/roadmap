@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { acceptedLabUnits, canonicalLabRow, canonicalLabValue, LAB_CATALOG, labCountFault, LAB_CONVERSIONS, LAB_GROUPS, labUnitRefusal, labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, normalizeLabUnit, labSlotKey } from './lab-catalog';
+import { acceptedLabUnits, canonicalLabRow, displayLabUnit, canonicalLabValue, LAB_CATALOG, labCountFault, LAB_CONVERSIONS, LAB_GROUPS, labUnitRefusal, labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, normalizeLabUnit, labSlotKey } from './lab-catalog';
 
 // US-21 · Additional blood tests — catalogue integrity (phase-1 scaffold).
 describe('lab catalogue integrity (US-21)', () => {
@@ -576,13 +576,14 @@ describe('US-21 AC15 — cells/µL, cumm, and a differential in %', () => {
 // ---------------------------------------------------------------------------
 // product-health W41 `lab_unit_refused`: one upload printed platelets and WBC
 // in `10^3/mm³` and RBC in `10^6/mm³` (superscript ³), and all three were
-// refused. 1 mm³ is 1 µL, so mm3 and mm³ fold to µL as cmm does (AC14), only
-// as a whole token. A fold is spelling only: no factor changes.
+// refused. 1 mm³ is 1 µL, so mm3 and mm³ fold to µL as cmm does (AC14), but
+// only as a whole-token denominator after a slash: a bare mm³ is a volume.
+// A fold is spelling only: no factor changes.
 describe('US-21 AC16 — mm3 and mm³ fold to µL', () => {
   const entryOf = (name: string) => resolveLabCatalogEntry(name)!;
   const PER_THOUSAND = ['wbc', 'platelets', 'neutrophils', 'lymphocytes', 'monocytes', 'eosinophils', 'basophils'];
 
-  it('US-21 AC16 — folds mm3 and mm³, any case, after a slash or space', () => {
+  it('US-21 AC16 — folds mm3 and mm³, any case, only as a denominator after a slash', () => {
     expect(normalizeLabUnit('10^3/mm³')).toBe('×10³/µL');
     expect(normalizeLabUnit('10^3/mm3')).toBe('×10³/µL');
     expect(normalizeLabUnit('10^6/mm³')).toBe('×10⁶/µL');
@@ -591,7 +592,25 @@ describe('US-21 AC16 — mm3 and mm³ fold to µL', () => {
     expect(normalizeLabUnit('x10e3/mm³')).toBe('×10³/µL');
     expect(normalizeLabUnit('cells/mm³')).toBe('cells/µL');
     expect(normalizeLabUnit('cells/mm3')).toBe('cells/µL');
-    expect(normalizeLabUnit('cells per mm3')).toBe('cells per µL');
+    // The existing µL aliases over mm3: K, thou, thousand reach ×10⁹/L; M, million reach ×10¹²/L.
+    for (const unit of ['K/mm3', 'k/mm³', 'thou/mm3', 'thousand/mm³']) {
+      expect(canonicalLabValue(entryOf('wbc'), 6.2, unit), unit).toEqual({ value: 6.2, unit: '×10⁹/L', factor: 1 });
+    }
+    for (const unit of ['M/mm3', 'm/mm³', 'million/mm3']) {
+      expect(canonicalLabValue(entryOf('rbc'), 4.8, unit), unit).toEqual({ value: 4.8, unit: '×10¹²/L', factor: 1 });
+    }
+  });
+
+  it('US-21 AC16 — a bare mm³ is a volume, never folded', () => {
+    // A plaque volume of 18.8 mm³ is a volume, not a denominator.
+    for (const unit of ['mm³', 'mm3', 'MM3', 'cells per mm3', 'per mm³']) {
+      expect(normalizeLabUnit(unit), unit).toBe(unit);
+    }
+    expect(normalizeLabUnit('mm3 ')).toBe('mm3');
+    // An uncatalogued test reported in mm³ still displays mm³.
+    expect(resolveLabCatalogEntry('plaque volume')).toBeUndefined();
+    expect(displayLabUnit('mm³', resolveLabCatalogEntry('plaque volume'))).toBe('mm³');
+    expect(displayLabUnit('mm3')).toBe('mm3');
   });
 
   it('US-21 AC16 — 10^3/mm³ reaches WBC, platelets and the differentials at ×1 to ×10⁹/L', () => {
