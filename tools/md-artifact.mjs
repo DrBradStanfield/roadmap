@@ -26,19 +26,18 @@
  * Mermaid: ```mermaid fences render as diagrams. Tables, task lists and all
  * GitHub-flavoured Markdown render as on GitHub.
  *
- * Links: a relative link would resolve against claude.ai on the published page
- * and 404, so the EMBEDDED copy (never the .md on disk) has each relative link
- * target rewritten at build time, resolved against the .md's own directory: to
- * the linked .md's `artifact:` URL when it has one, else to its GitHub blob URL
- * (owner/repo from that file's own repo's `origin`, branch main), keeping any
- * #fragment. Missing targets stay as written and print `unresolved link` on
- * stderr. Only files git tracks get a GitHub URL; an untracked or gitignored
- * file would 404 there, so it counts as unresolved too. Applies to
- * [text](target), reference definitions (blockquoted ones too) and raw
- * <a href>. Left alone: URLs with a scheme (`x://`, mailto:, tel:, data:,
- * javascript:), #anchors, /paths, images (inline, and any reference definition
- * an image uses, even if a link shares it) and code (spans, raw <code>/<pre>,
- * fenced and indented blocks). A Windows path (C:\...) is unresolved.
+ * Links: a relative link would 404 on claude.ai. The embedded Markdown is NOT
+ * modified; the build maps every candidate relative target path (collected
+ * liberally, code included), resolved against the .md's own directory, to the
+ * linked .md's `artifact:` URL, else its GitHub blob/tree URL on main (only for
+ * files git tracks; owner/repo from that repo's `origin`). A missing, untracked,
+ * gitignored or Windows (C:\...) target stays out of the map and prints
+ * `unresolved link` when a cheap check says it is outside code. On the page a
+ * marked walkTokens hook swaps the href of each `link` token in the map (and
+ * raw <a href> outside <pre>/<code> blocks), keeping its #fragment, so the real
+ * parser decides what is a link: code and images are never touched. Scheme URLs
+ * (`x://`, mailto:, tel:, data:, javascript:), #anchors and /paths are left
+ * alone; a colon that is not a scheme (`notes:x.md`) is a path.
  */
 
 import fs from 'node:fs';
@@ -100,9 +99,7 @@ if (!repo) die('the .md must live inside a git repository');
 const repoRoot = repo.root;
 const rel = path.relative(repoRoot, abs);
 
-// Rewrite relative link targets (see header). Code blocks (fenced or
-// indented) pass through whole; in the rest, code spans and raw <code>/<pre>
-// are matched first so nothing inside them is touched.
+// Map relative link targets (see header).
 const counts = { artifact: 0, github: 0, unresolved: 0 };
 function isTracked(r, relPath, dir) {
   r.files ??= new Set(execFileSync('git', ['-C', r.root, 'ls-files', '-z'], { encoding: 'utf8', maxBuffer: 1 << 28 }).split('\0'));
@@ -111,99 +108,72 @@ function isTracked(r, relPath, dir) {
   for (const f of r.files) if (f && f.startsWith(pre)) return true;
   return false;
 }
-function rewriteTarget(target) {
-  const bare = target.replace(/^<(.*)>$/, '$1');
-  if (!bare || /^(#|\/|[a-z][a-z0-9+.-]*:\/\/|(mailto|tel|data|javascript):)/i.test(bare)) return target;
-  const hash = bare.indexOf('#');
-  const p = hash < 0 ? bare : bare.slice(0, hash);
-  const frag = hash < 0 ? '' : bare.slice(hash);
+// A path (no #fragment, as marked hands it over) -> its URL, or null.
+function resolveTarget(p) {
   let file = p;
   try { file = decodeURI(p); } catch {}
   file = path.resolve(path.dirname(abs), file);
-  if (!/^[a-z]:[\\/]/i.test(bare) && fs.existsSync(file)) { // a Windows path never resolves
-    file = path.join(fs.realpathSync(path.dirname(file)), path.basename(file)); // git reports real paths
-    const dir = fs.statSync(file).isDirectory();
-    if (!dir && file.endsWith('.md')) {
-      const url = frontMatter(fs.readFileSync(file, 'utf8')).meta.artifact;
-      if (url) { counts.artifact++; return url + frag; }
-    }
-    const r = repoOf(dir ? file : path.dirname(file));
-    const relPath = r && path.relative(r.root, file).split(path.sep).join('/');
-    // Only tracked files exist on GitHub: untracked or gitignored ones would 404.
-    if (r && r.web && !relPath.startsWith('..') && isTracked(r, relPath, dir)) {
-      counts.github++;
-      return `${r.web}/${dir ? 'tree' : 'blob'}/main/${relPath.split('/').map(encodeURIComponent).join('/')}${frag}`;
-    }
+  if (/^[a-z]:[\\/]/i.test(p) || !fs.existsSync(file)) return null; // a Windows path never resolves
+  file = path.join(fs.realpathSync(path.dirname(file)), path.basename(file)); // git reports real paths
+  const dir = fs.statSync(file).isDirectory();
+  if (!dir && file.endsWith('.md')) {
+    const url = frontMatter(fs.readFileSync(file, 'utf8')).meta.artifact;
+    if (url) { counts.artifact++; return url; }
   }
+  const r = repoOf(dir ? file : path.dirname(file));
+  const relPath = r && path.relative(r.root, file).split(path.sep).join('/');
+  // Only tracked files exist on GitHub: untracked or gitignored ones would 404.
+  if (!r || !r.web || relPath.startsWith('..') || !isTracked(r, relPath, dir)) return null;
+  counts.github++;
+  return `${r.web}/${dir ? 'tree' : 'blob'}/main/${relPath.split('/').map(encodeURIComponent).join('/')}`;
+}
+
+// The destination at i: <angle> form, else up to whitespace or an unbalanced
+// `)` (CommonMark's balanced-parentheses rule).
+function destAt(s, i) {
+  if (s[i] === '<') return s.slice(i).match(/^<([^<>\n]*)>/)?.[1];
+  let depth = 0, j = i;
+  for (; j < s.length && !/\s/.test(s[j]) && !(s[j] === ')' && depth-- === 0); j++) {
+    if (s[j] === '\\') j++; else if (s[j] === '(') depth++;
+  }
+  return s.slice(i, j);
+}
+// Whether the `]` at i closes an image's (possibly nested-bracket) alt text.
+function closesImage(s, i) {
+  for (let depth = 0; --i >= 0;) if (s[i] === ']') depth++; else if (s[i] === '[' && depth-- === 0) return s[i - 1] === '!';
+}
+// The body with fences, code spans, raw <pre>/<code> and maybe-indented code
+// blanked: a cheap "not code" guess, used ONLY to decide whether to warn.
+const blank = m => m.replace(/[^\n]/g, ' ');
+const prose = mdBody
+  .replace(/^[ \t>]*(?:(?:[-*+]|\d{1,9}[.)])[ \t]+)?(`{3,}|~{3,})[^]*?(?:^[ \t>]*\1|(?![^]))/gm, blank)
+  .replace(/(`+)[^`](?:[^\n]|\n(?![ \t]*\n))*?\1|<(pre|code)\b[^]*?<\/\2\s*>/gi, blank)
+  .replace(/(?<=\n[ \t]*\n)(?:(?: {4}|\t)[^\n]*\n?)+/g, blank);
+const SKIP = /^(#|\/|[a-z][a-z0-9+.-]*:\/\/|(mailto|tel|data|javascript):)/i;
+const resolved = new Map(); // path as marked will hand it over -> URL or null
+const warned = new Set();
+function collect(target, at, linkish) {
+  if (target == null) return;
+  const p = target.replace(/\\([!-/:-@[-`{-~])/g, '$1').split('#')[0]; // marked unescapes `\(`
+  if (!p || SKIP.test(p)) return;
+  if (!resolved.has(p)) resolved.set(p, resolveTarget(p));
+  if (resolved.get(p) || !linkish || prose[at] !== mdBody[at] || warned.has(p)) return;
+  warned.add(p);
   counts.unresolved++;
   console.error(`md-artifact: unresolved link: ${target}`);
-  return target;
 }
+for (const m of mdBody.matchAll(/\]\([ \t]*\n?[ \t]*/g)) collect(destAt(mdBody, m.index + m[0].length), m.index, !closesImage(mdBody, m.index));
+for (const m of mdBody.matchAll(/^([ \t>]*(?:(?:[-*+]|\d{1,9}[.)])[ \t]+)?)\[(?!\^)(?:[^\]\\\n]|\\.)+\]:[ \t]*\n?[ \t]*/gm)) collect(destAt(mdBody, m.index + m[0].length), m.index + m[1].length, true);
+for (const m of mdBody.matchAll(/\bhref\s*=\s*(?:"([^"]*)"|'([^']*)')/gi)) collect(m[1] ?? m[2], m.index, true);
+const links = Object.fromEntries([...resolved].filter(([, url]) => url));
 
-// Split the body into code chunks (verbatim) and prose chunks. Indented code
-// follows CommonMark, conservatively: a line indented 4+ columns past the
-// enclosing list item's content column, after a blank line, a heading or a
-// fence. Indented code inside a blockquote is not detected.
-function chunks(text) {
-  const out = [];
-  const add = (code, line) => { const last = out.at(-1); if (last && last.code === code) last.text += line; else out.push({ code, text: line }); };
-  const cols = s => { let c = 0; for (const ch of s) c = ch === '\t' ? c + 4 - (c % 4) : c + 1; return c; };
-  const items = []; // content columns of the open list items
-  let fence = null, codeCol = -1, boundary = true;
-  for (const line of text.split(/(?<=\n)/)) {
-    const blank = !line.trim();
-    const ind = cols(line.match(/^[ \t]*/)[0]);
-    if (fence) {
-      add(true, line);
-      const f = line.match(/^[ \t]*(`{3,}|~{3,})\s*$/);
-      if (f && f[1][0] === fence[0] && f[1].length >= fence.length) { fence = null; boundary = true; }
-      continue;
-    }
-    if (codeCol >= 0 && (blank || ind >= codeCol)) { add(true, line); boundary = blank; continue; }
-    codeCol = -1;
-    if (blank) { add(false, line); boundary = true; continue; }
-    const item = line.match(/^[ \t]*(?:[-*+]|\d{1,9}[.)])(?: {1,4}(?! )|[ \t]|(?=\r?\n|$))/);
-    if (boundary || item) while (items.length && ind < items.at(-1)) items.pop();
-    if (boundary && ind >= (items.at(-1) ?? 0) + 4) { codeCol = (items.at(-1) ?? 0) + 4; add(true, line); boundary = false; continue; }
-    const f = line.match(/^[ \t]*(`{3,}|~{3,})/);
-    if (f) fence = f[1];
-    else if (item) items.push(cols(item[0]) + (/\S$/.test(item[0]) ? 1 : 0));
-    add(!!f, line);
-    boundary = /^ {0,3}#{1,6}(\s|$)/.test(line);
-  }
-  return out;
-}
-
-const CODE = String.raw`(?<tick>` + '`' + String.raw`+)(?:[^\n]|\n(?![ \t]*\n))*?[^` + '`' + String.raw`]\k<tick>(?!` + '`' + String.raw`)|<(?<tag>code|pre)\b[^>]*>[\s\S]*?<\/\k<tag>\s*>`;
-const LINKISH = new RegExp(CODE + '|' + [
-  String.raw`!\[[^\]\n]*\]\([^)\n]*\)`, // inline image
-  String.raw`(?<linkPre>\]\(\s*)(?<linkT><[^>\n]*>|[^\s)]+)`,
-  String.raw`(?<defPre>^(?: {0,3}>[ \t]?)* {0,3}\[(?<label>(?!\^)[^\]\n]+)\]:[ \t]*)(?<defT><[^>\n]*>|\S+)`,
-  String.raw`(?<aPre><a\s[^>]*?\bhref\s*=\s*)(?<q>["'])(?<aT>.*?)\k<q>`,
-].join('|'), 'gim');
-// Reference-style images: ![alt][label], ![label][], ![label]. Their
-// definitions keep their destinations, even when a link shares them.
-const IMAGE_REF = new RegExp(CODE + '|' + String.raw`!\[(?<alt>[^\]\n]*)\](?:\[(?<ref>[^\]\n]*)\])?(?!\()`, 'gi');
-const label = s => s.trim().replace(/\s+/g, ' ').toLowerCase();
-const parts = chunks(mdBody);
-const imageLabels = new Set();
-for (const c of parts) if (!c.code) for (const m of c.text.matchAll(IMAGE_REF)) if (m.groups.alt !== undefined) imageLabels.add(label(m.groups.ref || m.groups.alt));
-function rewriteLinks(text) {
-  return text.replace(LINKISH, (m, ...args) => {
-    const g = args.at(-1);
-    if (g.linkPre !== undefined) return g.linkPre + rewriteTarget(g.linkT);
-    if (g.defPre !== undefined) return imageLabels.has(label(g.label)) ? m : g.defPre + rewriteTarget(g.defT);
-    if (g.aPre !== undefined) return g.aPre + g.q + rewriteTarget(g.aT) + g.q;
-    return m;
-  });
-}
-const body = parts.map(c => (c.code ? c.text : rewriteLinks(c.text))).join('');
 const outDir = path.join(repoRoot, '.artifacts');
 const out = path.join(outDir, path.basename(abs, '.md') + '.html');
 
 // Embed the Markdown as a JSON string. `<` is escaped to < so no sequence in
 // the document can close the script element early.
-const mdJson = JSON.stringify(body).replace(/</g, '\\u003c');
+const mdJson = JSON.stringify(mdBody).replace(/</g, '\\u003c');
+const linksJson = JSON.stringify(links).replace(/</g, '\\u003c');
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const built = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
 
@@ -269,7 +239,8 @@ nav.toc ol { margin: 0; columns: 2 16rem; column-gap: 2rem; }
   <p class="src-note">Built from <code>${esc(rel)}</code> on ${built}. The Markdown file is the source of truth; edit it, never this page.</p>
 </div>
 
-<script>window.__MD__ = ${mdJson};</script>
+<script>window.__MD__ = ${mdJson};
+window.__LINKS__ = ${linksJson};</script>
 <script src="${MARKED}"></script>
 <script src="${MERMAID}"></script>
 <script>
@@ -283,6 +254,25 @@ nav.toc ol { margin: 0; columns: 2 16rem; column-gap: 2rem; }
     doc.appendChild(pre);
     return;
   }
+  // Relative links: the build mapped each target path to a URL (see header).
+  // Only link tokens and raw <a href> outside <pre>/<code> blocks change, so
+  // code, code spans and images keep exactly what the .md says.
+  var links = window.__LINKS__;
+  var own = function (p) { return Object.prototype.hasOwnProperty.call(links, p); };
+  var mapHref = function (href) {
+    var i = (href + '#').indexOf('#'), p = href.slice(0, i), d = p;
+    try { d = decodeURI(p); } catch (e) {}
+    return own(p) ? links[p] + href.slice(i) : own(d) ? links[d] + href.slice(i) : null;
+  };
+  window.marked.use({ walkTokens: function (t) {
+    if (t.type === 'link') t.href = mapHref(t.href) || t.href;
+    else if (t.type === 'html' && !/^\\s*<(pre|code|script|style|textarea)\\b/i.test(t.text)) {
+      t.text = t.text.replace(/(<a\\s[^>]*?\\bhref\\s*=\\s*)(["'])(.*?)\\2/gi, function (m, pre, q, href) {
+        var url = mapHref(href);
+        return url ? pre + q + url + q : m;
+      });
+    }
+  } });
   doc.innerHTML = window.marked.parse(window.__MD__, { gfm: true });
 
   doc.querySelectorAll('table').forEach(function (t) {
@@ -352,7 +342,7 @@ fs.writeFileSync(out, html);
 console.log(`built:    ${out}`);
 console.log(`title:    ${title}`);
 console.log(`source:   ${rel}`);
-console.log(`links:    ${counts.artifact} rewritten to artifacts, ${counts.github} to GitHub, ${counts.unresolved} unresolved`);
+console.log(`links:    ${counts.artifact} mapped to artifacts, ${counts.github} to GitHub, ${counts.unresolved} unresolved (distinct targets)`);
 console.log(meta.artifact
   ? `publish:  ${meta.artifact}   (Artifact tool: file_path = the built file, url = this)`
   : 'publish:  no `artifact:` URL in the front matter yet — first publish, then record the URL there');
