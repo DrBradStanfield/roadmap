@@ -139,7 +139,7 @@ Young women may want to discuss contraception, fertility, and pregnancy with the
 
 #### Pregnancy and breastfeeding
 
-- Before conception, good control of IBD is important. All medicines except methotrexate are continued before and during pregnancy.
+- Before conception, good control of IBD is advised. All medicines except methotrexate are continued before and during pregnancy.
 - Fertility:
   - In ulcerative colitis, fertility is no different unless you have had "pouch surgery".
   - In Crohn's disease, the main factor is good disease control. The better the control, the more likely you are to get pregnant.
@@ -170,14 +170,14 @@ If you have any red flags or are acutely unwell, call 111 or go to the emergency
 - Faecal culture and *Clostridioides difficile* toxin. Relapses are often linked to infections, or to *C. difficile* after antibiotics.
 - Blood tests: FBC, CRP, LFTs, and electrolytes.
 
-**In ulcerative colitis, your doctor may consider optimising 5-ASA:**
+**In ulcerative colitis, your doctor may consider adjusting 5-ASA:**
 - Increasing oral 5-ASA, such as mesalazine 4 g per day, which can be taken as a once-daily dose.
 - Starting rectal 5-ASA, such as mesalazine enemas, if the disease is on the left side of the colon. These can be difficult to hold, but it is worth persisting.
 - Suppositories for proctitis (inflammation of the rectum).
 - If you are on the maximal 5-ASA dose, or the response is limited after 1 week, starting prednisone and referral to a gastroenterologist. Options include starting an immunomodulator or changing current medicines.
 
 **In Crohn's disease, your doctor may consider:**
-- Starting prednisone and referral to a gastroenterologist. It is important to consider starting an immunomodulator or a biologic, or changing current medicines.
+- Starting prednisone and referral to a gastroenterologist. Your doctor may consider starting an immunomodulator or a biologic, or changing current medicines.
 
 If there are concerns about the best medicine to use, your doctor may seek specialist advice or referral, especially if you already take an immunomodulator or a biologic.
 

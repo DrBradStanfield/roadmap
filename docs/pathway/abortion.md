@@ -21,7 +21,7 @@ This pathway covers early medical abortion (EMA), referral for other types of ab
 **Call 111 or go to the emergency department if:**
 - You have heavy vaginal bleeding and feel faint, dizzy, or collapse.
 - You have signs of a possible **ectopic pregnancy** (a pregnancy outside the womb): abdominal or pelvic pain, vaginal bleeding, shoulder tip pain, dizziness, or fainting. Pain can come and go. Intermittent pain does not rule out an ectopic pregnancy.
-- You feel very unwell with severe or persistent pelvic pain after an abortion, with or without fever or bleeding. This may be a serious infection. Sepsis is life-threatening, and early recognition and treatment are vital.
+- You feel very unwell with severe or persistent pelvic pain after an abortion, with or without fever or bleeding. This may be a serious infection. Sepsis is life-threatening and needs early recognition and treatment.
 - You have significant abdominal or pelvic pain after a surgical abortion. This may mean an injury to the womb or cervix.
 
 **Contact your doctor or abortion provider if** you have any of the concerning bleeding features listed under Follow-Up and Aftercare, ongoing pregnancy symptoms, persistent pain or cramping, or a bad-smelling vaginal discharge.

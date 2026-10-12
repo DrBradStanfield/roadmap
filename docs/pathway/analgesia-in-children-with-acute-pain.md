@@ -18,7 +18,7 @@ This pathway covers pain relief for children with acute (short-term) pain, such 
 
 ## When to Seek Urgent Medical Attention
 
-- If your child is injured and the pain keeps going despite pain relief by mouth, or seems bad enough to need strong (opioid) pain relief, see a doctor promptly; the doctor may call an ambulance.
+- If your child is injured and the pain keeps going despite pain relief by mouth, or seems bad enough to need strong (opioid) pain relief, consider calling an ambulance.
 - If a child who has been given an opioid becomes very drowsy or their breathing slows, this can be life-threatening. Call 111 or go to the emergency department.
 
 ---
@@ -68,7 +68,7 @@ Your doctor may consider adding these to paracetamol.
 - Not for children aged less than 12 years.
 - Can be added to other pain relief for moderate pain, but is not suitable on its own.
 - 1 to 2 mg/kg (to a maximum of 100 mg per dose) every 6 hours.
-- A reduced dose (0.5 to 1 mg/kg, to a maximum of 100 mg, every 6 to 8 hours) is used after tonsillectomy, adenoidectomy, or throat surgery.
+- Tramadol must not be used for pain after tonsillectomy or adenoidectomy in anyone under 18 (Medsafe).
 - Given as a 10 mg/mL liquid made up by pharmacists.
 
 ### Severe pain: opioids
@@ -85,7 +85,7 @@ Your doctor may consider these for severe pain.
 - Not for children aged less than 2 years.
 - The child must be alert, with a breathing rate for their age of:
   - 2 to 8 years: at least 14 breaths per minute
-  - Over 8 years: at least 12 breaths per minute
+  - More than 8 years: at least 12 breaths per minute
 - It is likely to work slowly and unpredictably, and is not suitable on its own.
 
 **Intravenous (IV) morphine:**

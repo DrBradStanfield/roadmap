@@ -39,13 +39,13 @@ The word "spectrum" reflects the breadth of differences autistic people may expe
 
 ### How your doctor may adapt your appointment
 
-A neurodiversity-affirming approach is essential for a good assessment. Your doctor may:
+A neurodiversity-affirming approach supports a good assessment. Your doctor may:
 - Take time to understand how you usually interact, how you prefer to communicate, how you cope with change, which situations raise your anxiety, your living environment, your support people, and any recent or significant life changes.
 - Be clear and direct, ask specific questions, and avoid leading or complex questions, medical jargon, idioms, and figures of speech.
 - Check that you have understood, allow extra time to respond (especially if you use non-speech communication such as gestures, sign language, or electronic devices), and encourage your questions.
 - Consider communication aids, such as pictures.
 - Respect personal space and varying eye contact, for example by changing the seating layout.
-- Keep in mind that you may experience body sensations, such as pain, differently.
+- You may experience body sensations, such as pain, differently.
 - Ask whether you want to speak to them alone. A support person, if present, should be someone who knows you well and whom you trust.
 
 Practices may also help by:
@@ -59,12 +59,12 @@ Practices may also help by:
 Autism is usually diagnosed in childhood. However, many adults may never have been diagnosed, or may have been misdiagnosed, and may have learnt to mask autistic behaviours in social situations. Some may lose contact with health services when moving into adulthood. This can lead to social and economic isolation, a high risk of mental health conditions, contact with the justice system (as victims or offenders), and a higher risk of physical health problems and death.
 
 An accurate diagnosis:
-- Is important for an appropriate management plan.
+- Is needed for an appropriate management plan.
 - Gives clarity and reassurance.
 - May allow access to more support in the community.
 - Can be difficult, because many related conditions overlap with autism.
 
-If you have traits of autism but no formal diagnosis, or there is doubt about a previous diagnosis, your doctor may discuss screening with you. An adult autism diagnosis is a significant event, and it is your choice whether to pursue it. Screening tools that can help include the **Ritvo Autism and Asperger Diagnostic Scale (RAADS-14)** and the **Autism Quotient (AQ)**. Results are attached to any referral for diagnostic assessment.
+If you have traits of autism but no formal diagnosis, or there is doubt about a previous diagnosis, your doctor may discuss screening with you. It is your choice whether to pursue an adult autism diagnosis. Screening tools that can help include the **Ritvo Autism and Asperger Diagnostic Scale (RAADS-14)** and the **Autism Quotient (AQ)**. Results are attached to any referral for diagnostic assessment.
 
 ### Traits of autism
 

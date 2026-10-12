@@ -22,7 +22,7 @@ A safety update from October 2025:
 
 - Topiramate taken during pregnancy increases the risk of birth defects, neurodevelopmental disorders (including learning and behavioural problems), and the baby being small for gestational age.
 - Anyone who could become pregnant should have a pregnancy test before starting topiramate.
-- Effective contraception is important, e.g. a contraceptive injection, an intrauterine device (IUD), or the combined oral contraceptive pill with a barrier method.
+- Effective contraception is advised, e.g. a contraceptive injection, an intrauterine device (IUD), or the combined oral contraceptive pill with a barrier method.
 - If you become pregnant while taking topiramate, tell your doctor promptly. Your doctor will seek prompt specialist advice. Referral for antenatal monitoring and counselling is also recommended.
 
 See Medsafe: [Topiramate: New Measures and Advice to Prevent Exposure During Pregnancy](https://www.medsafe.govt.nz/safety/Alerts/Topiramate-pregnancy.asp).

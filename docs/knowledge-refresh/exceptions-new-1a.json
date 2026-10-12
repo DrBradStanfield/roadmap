@@ -1,1 +1,26 @@
-[]
+[
+ {
+  "check": "AC2",
+  "handle": "adhd-in-children-and-youth",
+  "match": "changed_tokens[17] raw_quote shares no number with its body_line: - were present before the age of 12 years, and are excessive for the child's developmental level",
+  "reason": "Checker limit (logged in the tool header): this list item inherits the lead line's comparator (\"at least 6 ... symptoms\"), so \"before the age of 12 years\" reads as at least 12. Raw: \"prior to the age of 12 years\". Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
+ },
+ {
+  "check": "AC2",
+  "handle": "adhd-in-children-and-youth",
+  "match": "token \"\u226512 year\" is new in the body and no entry has a body line and a source quote that both carry it",
+  "reason": "Checker limit (logged in the tool header): this list item inherits the lead line's comparator (\"at least 6 ... symptoms\"), so \"before the age of 12 years\" reads as at least 12. Raw: \"prior to the age of 12 years\". Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
+ },
+ {
+  "check": "AC2",
+  "handle": "analgesia-in-children-with-acute-pain",
+  "match": "token \"<18\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Tramadol must not be used for pain after tonsillectomy or adenoidectomy in anyone under 18 (Medsafe).\"",
+  "reason": "Safety override, not in the raw: Medsafe (June 2020) contraindicates tramadol after tonsillectomy or adenoidectomy under 18 (Codex R1, 2026-10-08). The raw still gives a reduced post-tonsillectomy dose; the line is removed. FOR BRAD on the sign-off sheet.",
+  "by": "orchestrator",
+  "date": "2026-10-12"
+ }
+]

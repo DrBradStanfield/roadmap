@@ -10,7 +10,7 @@ summary: "Clinical pathway for HIV (human immunodeficiency virus) for people wit
 
 *Source: Auckland Region HealthPathways. Last reviewed: June 2020.*
 
-HIV is usually passed on through exposure to the genital secretions or blood of a person whose HIV infection is not being treated. Modern treatment usually removes any risk of passing it on, lets the immune system recover, and prevents AIDS illnesses, allowing an essentially normal life expectancy.
+HIV is usually passed on through exposure to the genital secretions or blood of a person whose HIV infection is not being treated. Modern treatment usually removes any risk of passing it on, lets the immune system recover, and prevents AIDS illnesses. Life expectancy is essentially normal.
 
 > **Always discuss your symptoms, testing and any medication changes with your doctor.** This information is a clinical reference, not a substitute for individual medical advice.
 
@@ -18,7 +18,7 @@ HIV is usually passed on through exposure to the genital secretions or blood of 
 
 ## When to Seek Urgent Medical Attention
 
-**Seek urgent medical advice if:**
+**See your doctor the same day if:**
 - You may have been exposed to HIV in the last 72 hours. Your doctor may consider urgent post-exposure prophylaxis (PEP). This applies to sexual exposures and to needlestick or other blood or body fluid exposures.
 ---
 
@@ -30,7 +30,7 @@ HIV is usually passed on through exposure to the genital secretions or blood of 
 - Approximately 3,500 people in New Zealand have HIV infection, including about 700 who have not been tested and do not know they have it.
 - Approximately 70% of people with HIV infection are MSM. Most heterosexual men and women with HIV acquired it before moving to New Zealand.
 - Transmission by injecting drug use, paid sex, or from mother to baby is very rare in New Zealand.
-- New infections peaked in 2016 and have declined since, probably due largely to pre-exposure prophylaxis (PrEP) being funded for MSM at high risk.
+- New infections peaked in 2016 and have declined since, probably due largely to pre-exposure prophylaxis (PrEP) use among men who have sex with men at high risk.
 
 **Course of infection:**
 - The usual period of infection without symptoms is about 8 years.
@@ -143,7 +143,7 @@ Testing needs your informed consent. This means you agree to the test, understan
 
 - Your doctor will choose how to tell you the result (in person, by phone, or another way). Your result is confidential and will not be shared with partners, family, friends, or clinicians not involved in your care without your permission.
 - If your most recent risk was in the last 3 to 4 weeks, the result may be a false negative. Your doctor may recommend a follow-up test in 2 to 4 weeks.
-- If you are at ongoing risk of HIV, your doctor may discuss pre-exposure prophylaxis (PrEP). PrEP is the use of antiretroviral medicines by people without HIV to reduce their risk of getting it. It is funded in New Zealand for some people at high risk.
+- If you are at ongoing risk of HIV, your doctor may discuss pre-exposure prophylaxis (PrEP). PrEP is the use of antiretroviral medicines by people without HIV to reduce their risk of getting it.
 - Your doctor may also talk with you about what led to the risk and ways to reduce it.
 
 ### If the result is indeterminate
@@ -174,7 +174,7 @@ Testing needs your informed consent. This means you agree to the test, understan
 The hospital team will regularly check your HIV viral load, but may not need to check your CD4 count.
 
 - **CD4 count:** the best guide to the risk of an AIDS illness in the coming months. It is usually measured at diagnosis but rarely after that, because it is expected to rise once treatment starts. Treatment is now recommended for everyone, whatever the CD4 count.
-- **Viral load:** key to judging the response to treatment. It is measured at diagnosis, then at 6 weeks, 3 months and 6 months after starting treatment, then every 6 months.
+- **Viral load:** used to judge the response to treatment. It is measured at diagnosis, then at 6 weeks, 3 months and 6 months after starting treatment, then every 6 months.
 - Treatment aims to lower the viral load below the limit of detection, which is less than 20 copies/mL. In most people with successfully treated HIV, results are either below this limit or "undetected".
 - Brief, modest rises ("blips") can happen, for example during infections, after vaccinations, or for no clear reason. They almost never harm long-term control.
 
@@ -197,7 +197,7 @@ Your doctor will make sure your vaccinations are up to date, including:
 - Pneumococcal
 - Meningococcal
 
-A CD4 count below 200 means live vaccines should not be given. Examples include MMR (measles, mumps, rubella), oral rotavirus, oral polio, oral typhoid, BCG (tuberculosis), varicella zoster (chickenpox and Zostavax), and yellow fever.
+A CD4 count of less than 200 means live vaccines should not be given. Examples include MMR (measles, mumps, rubella), oral rotavirus, oral polio, oral typhoid, BCG (tuberculosis), varicella zoster (chickenpox and Zostavax), and yellow fever.
 
 ---
 

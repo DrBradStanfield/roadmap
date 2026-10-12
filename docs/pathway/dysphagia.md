@@ -27,7 +27,7 @@ Dysphagia is difficulty in the act of swallowing. Swallowing is usually divided 
 - Silent aspiration. Some people do not cough when food or drink goes into the airway.
 - A neck lump with a sore throat on one side, ear pain, a change in voice, or noisy breathing (stridor).
 
-**Tell your doctor promptly** if you cough or choke when swallowing, or have signs of aspiration pneumonia: fever, cough, chest pain, or shortness of breath. Concerns about protecting the airway may need same-day specialist advice.
+**See your doctor the same day** if you cough or choke when swallowing, or have signs of aspiration pneumonia: fever, cough, chest pain, or shortness of breath. Your doctor may seek acute specialist advice about protecting your airway.
 
 ---
 

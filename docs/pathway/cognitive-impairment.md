@@ -21,7 +21,7 @@ Cognitive impairment is a broad term for any impairment in a person's ability to
 **Red flag:** a subdural haematoma (bleeding between the brain and the skull) can cause cognitive impairment.
 
 **Hospital assessment is needed if:**
-- A head CT shows a significant abnormality, such as a bleed, a space-occupying lesion (a mass), or hydrocephalus (fluid build-up in the brain). Your doctor may arrange acute hospital assessment by the neurosurgery team or seek their advice. If you are sent to hospital, call 111 or go to the emergency department.
+- A head CT shows a significant abnormality, such as a bleed, a space-occupying lesion (a mass), or hydrocephalus (fluid build-up in the brain). Call 111 or go to the emergency department. Your doctor may arrange acute hospital assessment by the neurosurgery team or seek their advice.
 
 **Your doctor may arrange an urgent head CT (within 2 weeks) if there is:**
 - Rapid cognitive decline over weeks.
@@ -176,7 +176,7 @@ Whatever the diagnosis, your doctor may:
 - Strongly encourage cutting down alcohol and other substances. Switching to lower-alcohol or no-alcohol drinks is reasonable, because the alcohol dose is what matters.
 - Discuss good sleep habits. People with cognitive impairment are more sensitive to side effects of sleep medicines, so non-drug approaches come first.
 - Review medicines and consider stopping or changing those that may worsen confusion.
-- Encourage cognitive stimulation. "Use it or lose it" applies. Regular social activity is the key intervention. Puzzles may help people who enjoy them. Web-based brain-training programmes may help but cost money.
+- Encourage cognitive stimulation. "Use it or lose it" applies. Regular social activity is the main intervention. Puzzles may help people who enjoy them. Web-based brain-training programmes may help but cost money.
 
 ### Nutrition
 
@@ -208,7 +208,7 @@ Your doctor will watch for health changes that affect fitness to drive. With you
 ### Mild cognitive impairment (MCI)
 
 - Cholinesterase inhibitors are **not** prescribed for MCI.
-- Brain health strategies are important.
+- Brain health strategies help.
 - Review in 6 months to 1 year, with updated tests, cognitive testing, and an informant questionnaire.
 - If a scan was done within the past 12 months, it is not repeated unless a new, acute event is strongly suspected.
 - If impairment progresses, your doctor will consider whether it now meets the criteria for dementia.
@@ -217,7 +217,7 @@ Your doctor will watch for health changes that affect fitness to drive. With you
 
 Some people have subjective memory concerns with no other supporting findings.
 - Conditions that can mimic dementia are reconsidered.
-- Brain health strategies are important.
+- Brain health strategies help.
 - 6-monthly reviews with updated tests, cognitive testing, and an informant questionnaire.
 - If still uncertain longer than 1 year after the first assessment, your doctor may request a specialist older person's health assessment.
 

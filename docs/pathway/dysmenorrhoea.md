@@ -75,7 +75,7 @@ Your doctor may suggest trying NSAIDs or the combined pill for 3 months before j
 
 Extended or continuous use of the combined pill gives better relief of period symptoms than the usual monthly cycle.
 
-- **Continuous use** (no hormone-free breaks): studies show no increase in serious adverse events, however long it is used. Breakthrough bleeding is likely to improve with time, or it can be managed as in tricycling.
+- **Continuous use** (no hormone-free breaks): no increase in serious adverse events has been reported, however long it is used. Breakthrough bleeding is likely to improve with time, or it can be managed as in tricycling.
 - **Tricycling:** skip the placebo tablets and take 3 packets of hormone tablets in a row.
   - Breakthrough bleeding can sometimes happen. If it is bothersome, your doctor may suggest a hormone-free break of 4 to 7 days. Shorter 4-day breaks cause fewer hormone withdrawal side effects and give better contraceptive protection.
   - You will have a withdrawal bleed during the break.

@@ -54,7 +54,7 @@ Your doctor may ask about:
   - **R**egularity and duration of sleep: bedtimes and wake times on school days and weekends.
   - **S**noring or noisy breathing on most nights.
   - Your doctor may also ask about bedtime routines, signs of obstructive sleep apnoea, and any behavioural measures or over-the-counter remedies you have tried.
-- **Home situation:** parental separation and who the child lives with; siblings and other important relationships; any involvement with social services.
+- **Home situation:** parental separation and who the child lives with; siblings and other close relationships; any involvement with social services.
 - **Adverse childhood experiences (ACEs):** highly stressful or traumatic events, such as abuse, neglect, exposure to domestic violence, loss of a parent, or living with someone who abuses drugs or alcohol, has a serious mental illness, or has been in prison. ACEs may produce symptoms that look like ADHD. For this reason, assessment is best avoided during periods of significant stress or change, such as current trauma or active changes in the family.
 
 For older children, your doctor may use the HEEADSSS framework. It covers home, education and employment, eating and exercise, activities and friends, drugs, cigarettes, and alcohol, sexuality and gender identity, suicide, self-harm, depression, and mood, and safety.
@@ -88,7 +88,7 @@ Your doctor may consider a diagnosis of ADHD if, for 6 months or longer, the chi
 - **Sleep difficulties:** short or poor-quality sleep can affect attention and behaviour. Obstructive sleep apnoea and restless leg syndrome are more common in ADHD.
 - **Autism spectrum disorder (ASD):** having both is common. About half of those with ASD have ADHD-type symptoms. Signs of ASD include little interest in others or joint play, loss of language skills, unusual use of language, restricted interests, repetitive play, difficulty coping with change, and over- or under-sensitivity to sounds, movement, touch, or sights.
 - **Learning disorders:** specific learning disorders such as dyslexia and dyspraxia are often present alongside ADHD. With intellectual disability, a child may be several years behind in their behaviour.
-- **Mental health conditions:** mood or anxiety disorders and eating disorders can share symptoms with ADHD, such as poor concentration. The key difference is that ADHD symptoms date back to childhood.
+- **Mental health conditions:** mood or anxiety disorders and eating disorders can share symptoms with ADHD, such as poor concentration. The difference is that ADHD symptoms date back to childhood.
 - **Oppositional defiant disorder (ODD) and conduct disorder (CD):** a child with ADHD can also have ODD or CD, and has a higher risk of developing both. ODD is a pattern of negative, hostile, and defiant behaviour lasting 6 months. CD is a persistent pattern of aggression, deceitfulness, destruction of property, or breaking rules.
 
 ---
@@ -136,7 +136,7 @@ Screen time is worth managing, balancing its benefits and potential harms.
 
 - Regular physical activity and good sleep habits are recommended: limit night-time screen time, keep a short but consistent bedtime routine, and keep consistent sleep and wake times.
 - Your doctor may consider melatonin if the child takes a long time to fall asleep despite good sleep habits.
-- A healthy diet is important. There is no conclusive evidence for dietary supplements or elimination diets.
+- A healthy diet is advised. There is no conclusive evidence for dietary supplements or elimination diets.
 
 ### Management by age
 

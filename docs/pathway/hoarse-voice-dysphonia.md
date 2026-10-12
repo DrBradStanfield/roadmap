@@ -18,10 +18,8 @@ This pathway covers the assessment and management of a hoarse voice (dysphonia).
 
 ## When to Seek Urgent Medical Attention
 
-**Call 111 or go to the emergency department if you have:**
+**Call 111 or go to the emergency department if you have any of these. You need a hospital ear, nose and throat (ENT) assessment:**
 - Stridor (noisy, high-pitched breathing).
-
-**See your doctor the same day if you have any of these. Your doctor will arrange an urgent ear, nose and throat (ENT) assessment:**
 - Coughing up blood (haemoptysis).
 - Constant hoarseness for more than 4 weeks.
 - Trouble swallowing solid food (dysphagia to solids).
@@ -88,7 +86,7 @@ Your doctor may consider:
 ## When to See a Specialist
 
 Your doctor may refer you:
-- **For an urgent ENT assessment** if there are any red flags (see above).
+- **For a hospital ENT assessment** if there are any red flags (see above).
 - **For a non-urgent ENT assessment** if:
   - there is no improvement after more than 4 weeks on a PPI, Gaviscon or stopping smoking, or
   - symptoms have not resolved after more than 8 weeks despite a PPI, Gaviscon or stopping smoking.

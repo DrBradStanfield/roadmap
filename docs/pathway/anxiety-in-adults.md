@@ -19,7 +19,7 @@ Anxiety is the most common of all the mental health disorders. Symptoms vary fro
 ## When to Seek Urgent Help
 
 - **If you are at high risk of suicide, call 111 or go to the emergency department.** This needs an urgent (acute) mental health assessment.
-- **Suicidal thoughts** are a red flag. Tell your doctor straight away.
+- **Suicidal thoughts** are a red flag. Tell your doctor.
 
 ---
 
@@ -40,7 +40,7 @@ Anxiety is the most common of all the mental health disorders. Symptoms vary fro
 - GAD in older people is usually long-standing, with flare-ups caused by changes in social situation or loss of health and other resources.
 - Fear of falling is common. It is linked with becoming housebound, worsening depression, and less mobility.
 - Older people may show anxiety through physical symptoms, such as restlessness, fatigue, muscle tension, and insomnia.
-- New-onset GAD is rare in older people. When it happens, it is important to rule out other disorders.
+- New-onset GAD is rare in older people. When it happens, other disorders need to be ruled out.
 
 ---
 
@@ -177,7 +177,7 @@ Many people will not need tests. Your doctor may talk with you about whether to 
 ### Severe anxiety
 
 - **Talking therapies come first**, with the same options as for moderate anxiety.
-- Regular follow-up, by phone and in person, is key to good outcomes whatever the treatment.
+- Regular follow-up, by phone and in person, supports good outcomes whatever the treatment.
 
 #### Short-term benzodiazepines
 

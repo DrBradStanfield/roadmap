@@ -144,7 +144,7 @@ Your doctor may ask about female genital mutilation (FGM, also called traditiona
 
 - **Blood pressure:** a baseline reading is recorded. High blood pressure increases risk in pregnancy and is a major risk factor for pre-eclampsia. Blood pressure is considered high in pregnancy if the systolic pressure is 140 or higher, or the diastolic pressure is 90 or higher, on 2 or more readings in a row, at least 4 hours apart.
 - **Heart murmurs:** these need careful assessment in pregnancy, and early referral if there are concerns.
-- **Height, weight, and BMI:** these are essential at the first visit. A healthy weight gain chart can help you track your weight during pregnancy.
+- **Height, weight, and BMI:** these are recorded at the first visit. A healthy weight gain chart can help you track your weight during pregnancy.
 - **Size of the uterus:** checked by pelvic and abdominal examination, especially if dates are uncertain. This can help detect twins early. By 12 weeks the uterus can usually be felt above the pubic bone.
 - **External genitals:** checked for warts, ulcers, or other abnormalities.
 
@@ -216,7 +216,7 @@ If you are not already taking it, your doctor may advise:
 
 ### Iodine
 
-- Iodine supplements are recommended if you are pregnant, considering pregnancy, or breastfeeding. Iodine is essential for both mother and child.
+- Iodine supplements are recommended if you are pregnant, considering pregnancy, or breastfeeding. Both mother and child need iodine.
 - Iodine deficiency in pregnancy is associated with goitre and thyroid problems in the mother, and with reduced head circumference at birth, ADHD, and impaired cognitive outcomes in the child. Supplements have shown significant benefits in severe deficiency, with fewer benefits seen in mild to moderate deficiency.
 - The recommended dose, if your thyroid works normally, is **potassium iodate 150 micrograms daily**. This is funded.
 - Start at conception and continue until you finish breastfeeding. If you are vegetarian or vegan and do not use iodised salt or eat seaweed, start when you begin planning a pregnancy.
@@ -305,7 +305,7 @@ Your doctor may discuss:
   - If you were vaccinated before and your pregnancy is healthy, an extra dose is a personal choice, given from 12 months after your last COVID-19 vaccine.
   - An extra dose is recommended from 6 months after your last dose if you have a high-risk pregnancy (such as gestational diabetes, high blood pressure, blood clots, BMI greater than 40, or past pregnancy complications), are severely immunocompromised, have conditions that raise the risk of severe COVID-19, or are aged 35 years and older.
   - Antibodies pass to the baby through the placenta and breast milk, and give protection against hospitalisation for up to 6 months.
-- Comirnaty, Boostrix, and flu vaccines can be given at the same time. Studies show no increase in side effects.
+- Comirnaty, Boostrix, and flu vaccines can be given at the same time. No increase in side effects has been reported.
 
 ### Handover to your midwife
 
