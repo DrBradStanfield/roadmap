@@ -4210,6 +4210,28 @@
     "notes": "Safety. Taurine may modestly reduce blood pressure in prehypertension and metabolic syndrome per the 2024 meta-analysis; never a substitute for prescribed treatment. Ruling 9 softens 'consistent evidence'."
   },
   {
+    "query": "can you analyze my data",
+    "expected": [
+      "diet",
+      "exercise",
+      "sleep"
+    ],
+    "category": "lifestyle",
+    "source": "production",
+    "notes": "2026-10-11 chat-health loop (W41 run): real widget turn 2026-10-05, paraphrased on ingest (short, lowercase, no topic: the shape is under test). The third own-data assessment ask with no named topic (W39 'rate my overall health', W40 blood-results template). Rule 7's example 'Based on my data, what should I improve first?' routes, and the classifier rightly said ROUTE, so the empty is a router miss. The same conversation then routed its liver questions fine. BASELINE 2026-10-11 on the Sonnet 5.5 router (v2): as typed ∅ 6/6, every raw reply a clean {\"handles\": []} (no parse error); this paraphrase ∅ on all 12 runs of four lifestyle arms, each a clean empty reply. KNOWN-FAIL: router territory; no summary edit applies (W40 proposal 4)."
+  },
+  {
+    "query": "\"when you read the study, they're was no clear winner\".\n\nWhat are you even talking about?\n\nKeto beat the Mediterranean and the low-fat plant-forward diet head to head:\n\n- much greater liver insulin sensitivity\n- about 60% less liver fat (vs about 40%)\n- bigger drops in liver fat production\n- bigger drops in HbA1c\n- bigger drops in 24-hour glucose (about -20% vs -10%)\n- bigger drops in 24-hour insulin (about -70% vs -40% and -30%)\n- more prediabetes reversal (50% vs 30% and 10%)\n- a bigger fall in fasting glucose\n- reached the 10% weight-loss target about a month sooner\n\nAll while keeping weight loss equal on purpose, with no difference in LDL or ApoB.\n\nI get you want to be a neutral voice of reason but that still takes honesty, especially in a glorified GLP-1 ad.\n\nAnd don't get me started on the drug-confounded DIETFITS trial you cited before.",
+    "expected": [
+      "diet",
+      "diet-strongly-suspected-best",
+      "lean-mass-hyper-responders-see-rapid-plaque-progression"
+    ],
+    "category": "lifestyle",
+    "source": "production",
+    "notes": "2026-10-11 chat-health loop (W41 run): real YouTube comment 2026-10-07 on the end-of-obesity video, paraphrased on ingest (re-paraphrased after the W41 adversarial review: the quoted line with its misspelling, the bulleted list and the accusation keep the shape; figures become typical values; the video timestamp is gone). Production row was a ROUTER ERROR, not a miss: the router replied with two JSON objects and a 'Wait, correction' sentence between them, so JSON.parse(extractJsonObject(raw)) failed (first { to last }); all four handles in both objects were real. BASELINE 2026-10-11 as typed: harness 6/6 routed (diet and best-diet-confirmed every run), production routeQuery 10/10 routed, 0 of 16 raw replies held more than one object. best-diet-confirmed-by-… (routed every run) is left out of expected because its seven-digit slug trips the privacy test's phone-shaped rule. Lifestyle arms 2026-10-11 on THIS text with raw replies logged: L3 FAIL (run 3 was the production shape again, two objects with 'Correction: copying handles exactly from the index' between them, scored a silent ∅), L4 PASS 3/3. The first, shorter paraphrase: PASS L1, FAIL L2 (one unlogged ∅). Regression case for the routing; the parse failure is stochastic, and the harness scores a two-object reply as a silent ∅ (W41 proposal)."
+  },
+  {
     "query": "My pharmacist says irbesartan isn't funded. Can I still get it through my doctor?",
     "category": "pathway-refresh-batch-2",
     "source": "knowledge-refresh-batch-2-2026-10-08",

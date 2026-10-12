@@ -3,7 +3,7 @@ Every scheduled cloud loop reads THIS file first, then its own charter at
 `docs/loops/<name>/LOOP.md`. The charter holds only that loop's deltas
 (mission, data sources, write scope, delivery); this file holds everything
 shared. A charter can never override the Guardrails below. Full rationale +
-research citations: [loop-master-architecture-explanation.html](loop-master-architecture-explanation.html).
+research citations: [loop-master-architecture-explanation.md](loop-master-architecture-explanation.md).
 The fleet index is [REGISTRY.md](REGISTRY.md).
 
 ## Orchestration
@@ -25,11 +25,9 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   ledger row; re-judge customer-facing output through its full compliance and quality gates with fresh eyes; and
   hunt for the claim whose evidence is missing. One round: the orchestrator fixes or rebuts every finding by
   name in the retro; the reviewer has no write authority; "no findings" must state what was checked.
-- **No Codex in cloud loops** (Brad, 2026-10-04, superseding 2026-09-28): Codex signs in only with Brad's ChatGPT
-  subscription on his Mac, never an API key, so a cloud loop cannot run it. The fresh `adversary` above is the
-  run's whole review; the retro says "Codex: not run (cloud)" in one line, and that is not a gap or a failure.
-  Brad may run `node tools/codex-review.mjs --loop --range <commits>` on a loop's commits from his Mac; handle
-  any findings he relays like the adversary's.
+- **No Codex in loops** (Brad, 2026-10-11, superseding 2026-10-04): loops never run, request or wait on Codex;
+  no Codex run or waiver gates a loop's commit, PR or merge, and neither PRs nor retros mention it. The fresh
+  `adversary` above is the run's whole review.
 ## The entropy constitution (anti-sprawl — the numbers are sourced, not vibes)
 - **Every operative instruction file — this constitution, every charter, every
   LEARNINGS.md — is capped at 200 lines / 25KB** (past it, models silently drop rules).
@@ -127,7 +125,10 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   (inverted 2026-08-10; `scripts/check-symlinks.mjs` enforces).
 - **Landing check — the run's LAST git act**: `git rev-list --count
   origin/main..HEAD` prints 0, or an OPEN Tier 3 PR holds the commits — else
-  push to main before ending. Session branches strand work invisibly
+  push to main before ending. **Push rejected** (someone pushed meanwhile):
+  `git fetch origin main && git merge origin/main` (never force or rebase;
+  conflicts keep BOTH sides' rows), push again, up to 3 tries; the cloud copy
+  is discarded, so unpushed work is lost. Session branches strand work invisibly
   (chat-health W34, twice, 2026-08). Backstop: `stranded-branch-watch.yml`.
 - Never print secret values; never commit real user data or health values;
   anonymize quoted user content.

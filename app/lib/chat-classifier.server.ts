@@ -16,7 +16,7 @@
  * Design docs:
  *   - chat-architecture.md § Pre-router classifier (full spec)
  *   - chat-knowledge-map-v2.md § Pre-router classifier (the "why")
- *   - chat-overview.html Diagram 6 (the picture)
+ *   - chat-overview.md Diagram 6 (the picture)
  *
  * Failure mode is fail-safe: any classifier error → router still fires
  * (matches today's behavior). The classifier can only OMIT a router call,

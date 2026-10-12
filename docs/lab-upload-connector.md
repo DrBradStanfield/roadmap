@@ -1,7 +1,7 @@
 # Lab Upload — the connector routes (`import_documents`, US-35; `file_results`, US-36)
 
 Companion to [lab-upload.md](lab-upload.md) (the website upload) and
-[lab-upload-overview.html](lab-upload-overview.html) (the visual map). Decision
+[lab-upload-overview.md](lab-upload-overview.md) (the visual map). Decision
 record: [mcp-import-design.md](mcp-import-design.md). Acceptance criteria:
 US-35 in [user-stories.md](user-stories.md). Code:
 `app/lib/mcp-import.server.ts` (the hosted surface),

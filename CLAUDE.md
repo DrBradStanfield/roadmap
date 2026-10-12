@@ -4,7 +4,7 @@ Context for Claude Code in this repo. Depth lives in on-demand docs:
 [docs/reference.md](docs/reference.md) (FHIR detail, file inventory, data model,
 A/B, endpoints, gotcha archive) · [docs/deploy-runbook.md](docs/deploy-runbook.md)
 (manual deploy, build flags, two-app split, env vars, scaling) ·
-[docs/architecture-v2.html](docs/architecture-v2.html) (visual system map; the entry point for new threads).
+[docs/architecture-v2.md](docs/architecture-v2.md) (visual system map; the entry point for new threads).
 
 ## Project Overview
 
@@ -56,23 +56,23 @@ before deploying.
 
 (`~/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/`)
 
-- **`docs/products.md` is the MASTER here — a real tracked file** (inverted
-  2026-08-10; claude_business holds the symlink pointing here). Edit it here;
-  claude_business edits arrive as uncommitted changes here — sweep-commit them.
+- **`docs/products.md` is the MASTER here — a real tracked file** (inverted 2026-08-10; claude_business
+  holds the symlink). Edit it here; claude_business edits arrive uncommitted — sweep-commit them.
   `scripts/check-symlinks.mjs` keeps it a REAL file (mode 100644), never a symlink.
-- `docs/blog/*.md` — chatbot blog cache, written by claude_business's
-  `/blog-post`. Rebuild: `npx tsx scripts/build-blog-content.ts`.
+- `docs/blog/*.md` — chatbot blog cache from claude_business `/blog-post`; rebuild `npx tsx scripts/build-blog-content.ts`.
+- **Customer-service gateway (planned, Brad 2026-10-12):** email + chatbot order/subscription actions; its OWN Fly app,
+  code in the private claude_business repo (`customer-service-gateway/`), never in this public repo; the chatbot calls it for account actions. Spec: claude_business `docs/customer-service.md`.
 - Chatbot work starts at `claude_business/docs/chat-start-here.md`.
 
 ## Anti-Entropy & Writing Style
 
 **File budgets (split, never grow — the universal remedy):**
-- This file: target ≤250 lines, one-in-one-out within 20 of it. Detail goes to
-  docs/reference.md or docs/deploy-runbook.md, not new sections here.
-- Skills (`.claude/`) and on-demand docs (docs/reference.md,
-  docs/deploy-runbook.md): ≤500 lines — split by topic at the cap. Loop files:
-  per [docs/loops/LOOP.md](docs/loops/LOOP.md) (always-loaded ≤200; notes
-  ≤500; reports ≤150; changelogs + CSVs are history/data, cap-exempt).
+- This file: target ≤250 lines, one-in-one-out within 20 of it; detail goes to docs/reference.md or docs/deploy-runbook.md.
+- Skills (`.claude/`) and on-demand docs (docs/reference.md, docs/deploy-runbook.md): ≤500 lines — split by topic
+  at the cap. Loop files: per [docs/loops/LOOP.md](docs/loops/LOOP.md) (always-loaded ≤200; notes ≤500;
+  reports ≤150; changelogs + CSVs are history/data, cap-exempt).
+- **Docs are Markdown; Artifacts are built from them (HARD, Brad 2026-10-12, both repos):** `node tools/md-artifact.mjs
+  <file.md>`, republish to its front-matter `artifact:` URL; never hand-edit an Artifact or write a new HTML doc (all converted 2026-10-12).
 - Memory: 200 lines/25KB, hard-enforced. Structured records → CSV, never prose.
 
 **Code entropy — deletion-first (production code; tests/comments never count):**
@@ -211,9 +211,9 @@ same commit).
   keeps the calls: clinical logic, merge semantics, FHIR shapes, security, synthesis. All delegated
   work goes to `worker`, every adversarial check to a FRESH `adversary`: both Opus at high effort,
   pinned in `.claude/agents/`. Spawn them by name, never with a per-call `model`; never set
-  `CLAUDE_CODE_SUBAGENT_MODEL`; no Haiku. **Amendment (Brad, 2026-09-29):** Sonnet 5.5
-  (`general-purpose` + `model: sonnet`, the one allowed per-call model) does mechanical work:
-  fetching, scraping, tool fixes, data pulls, inventories. Opus 5.5 writes every knowledge-base
+  `CLAUDE_CODE_SUBAGENT_MODEL`. Sonnet 5.5 (`general-purpose` + `model: sonnet`, 2026-09-29)
+  does mechanical work: fetching, scraping, tool fixes, data pulls. The newest Haiku is allowed
+  (2026-10-12; first use: customer-service email triage). Opus 5.5 writes every knowledge-base
   entry and web page. Never a Fable subagent. Loops: docs/loops/LOOP.md.
 - **Every adversarial Claude check gets a Codex one beside it** (Brad, 2026-09-21): a fresh
   Opus 5.5 `adversary` plus Codex on `gpt-6.1-sol`, high effort (default since 2026-10-02).
@@ -222,9 +222,9 @@ same commit).
   size; skip ONLY outside those classes (doc/blog sweeps, one-liners). Incomplete is never a pass,
   EXCEPT an exhausted plan limit (`E_EXIT_1`, events end `turn.started → error`): say so,
   continue on fresh adversaries alone (2026-09-29).
-  Codex runs only on Brad's Mac, on his ChatGPT subscription, never an API key (Brad, 2026-10-04):
-  cloud loops and CI stay Claude-only; Brad reviews loop commits there with `--loop`. A cloud
-  session's change in those classes waits for his Mac run, or his written waiver, before main.
+  Codex runs only on Brad's Mac, on his ChatGPT subscription, never an API key (Brad, 2026-10-04).
+  **Loops and cloud sessions never run, request or wait on Codex** (Brad, 2026-10-11): their fresh
+  `adversary` is the whole review; no Codex run or waiver gates their commits, PRs or merges.
 
 ## Dangerous Gotchas (curated — full archive in docs/reference.md)
 

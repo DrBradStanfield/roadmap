@@ -11,9 +11,9 @@
    "fix_handle": "this-2-remedy-beats-every-cold-medicine",
    "item": "[17]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "770ef254928a",
@@ -25,9 +25,9 @@
    "fix_handle": "the-anti-aging-supplement-scam-new-evidence",
    "item": "[2]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b646772c189a",
@@ -39,9 +39,9 @@
    "fix_handle": "surprising-heart-results-from-this-huge-melatonin-study",
    "item": "0.3 mg",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ac44a903101c",
@@ -53,9 +53,9 @@
    "fix_handle": "pcsk9i-breakthrough-cuts-heart-disease",
    "item": "58 %",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c123f8a13528",
@@ -69,8 +69,9 @@
    "detail": "11 reference entries (11 via), 11 mentions, 0 sentences resting only on Grokipedia (9 counting via)",
    "first_seen": "2026-10-03",
    "last_seen": "2026-10-03",
-   "status": "open",
-   "last_checked": "2026-10-03"
+   "status": "resolved",
+   "last_checked": "2026-10-10",
+   "resolved": "2026-10-10"
   },
   {
    "id": "201632242e68",
@@ -82,9 +83,9 @@
    "fix_handle": "exercise-snacks-are-a-longevity-cheat-code",
    "item": "[4]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "5c6c8eeb8bfa",
@@ -96,9 +97,9 @@
    "fix_handle": "blood-pressure-targets-just-changed",
    "item": "120 mmHg",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "2346aa2896a2",
@@ -110,9 +111,9 @@
    "fix_handle": "shocking-study-links-melatonin-to-89-heart-failure-spike",
    "item": "0.3 mg",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "9b938c57169f",
@@ -124,9 +125,9 @@
    "fix_handle": "fatty-liver-treatment-breakthrough",
    "item": "63 %",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "6c56f66a91fe",
@@ -139,9 +140,9 @@
    "item": "cites Grokipedia",
    "detail": "14 reference entries (14 via), 14 mentions, 0 sentences resting only on Grokipedia (28 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "505801adb33a",
@@ -153,9 +154,9 @@
    "fix_handle": "ashwagandha-supplement-fails-in-new-study",
    "item": "10 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "6377f1cfbe20",
@@ -167,9 +168,9 @@
    "fix_handle": "5-supplements-that-actually-work",
    "item": "[46]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "cc082f114024",
@@ -181,9 +182,9 @@
    "fix_handle": "5-supplements-that-actually-work",
    "item": "[50]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3b1a7ad5223f",
@@ -196,9 +197,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 3 sentences resting only on Grokipedia (3 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ef3776d822f2",
@@ -210,9 +211,9 @@
    "fix_handle": "this-amino-acid-was-accidentally-found-to-improve-our-sleep",
    "item": "19 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "995a27392d52",
@@ -224,9 +225,9 @@
    "fix_handle": "harvard-says-this-is-the-healthiest-way-to-eat",
    "item": "20 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "31e3182cc8c0",
@@ -239,9 +240,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 31 sentences resting only on Grokipedia (31 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "33f0125dee1b",
@@ -253,9 +254,9 @@
    "fix_handle": "hard-to-believe-dementia-effects-found",
    "item": "https://cardiab.biomedcentral.com/articles/10.1186/s12933-020-01071- -> https://cardiab.biomedcentral.com/articles/10.1186/s12933-020-01071-y",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c3cceb7e1049",
@@ -267,9 +268,9 @@
    "fix_handle": "what-is-the-best-magnesium-dose-form-14-studies-later",
    "item": "[15]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "5b76ee9b6c4d",
@@ -281,9 +282,9 @@
    "fix_handle": "what-is-the-best-magnesium-dose-form-14-studies-later",
    "item": "[16]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "71b5a02e3703",
@@ -297,8 +298,9 @@
    "detail": "22 reference entries (5 via), 56 mentions, 43 sentences resting only on Grokipedia (55 counting via)",
    "first_seen": "2026-10-03",
    "last_seen": "2026-10-03",
-   "status": "open",
-   "last_checked": "2026-10-03"
+   "status": "resolved",
+   "last_checked": "2026-10-10",
+   "resolved": "2026-10-10"
   },
   {
    "id": "7a768c43c864",
@@ -310,9 +312,9 @@
    "fix_handle": "the-food-pyramids-replacement-is-a-huge-upgrade",
    "item": "[11]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "99efdbcb28f1",
@@ -324,9 +326,9 @@
    "fix_handle": "aloe-vera-benefits-forms-dosing-and-side-effects",
    "item": "[25]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "29751d740418",
@@ -339,9 +341,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 0 sentences resting only on Grokipedia (0 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "deeb16ac76dd",
@@ -353,9 +355,9 @@
    "fix_handle": "ezetimibe-is-the-most-underrated-weapon-against-heart-disease",
    "item": "1 mg",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "562af7113bec",
@@ -367,9 +369,9 @@
    "fix_handle": "ezetimibe-is-the-most-underrated-weapon-against-heart-disease",
    "item": "2 mg",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "dd2bee9e9fa2",
@@ -382,9 +384,9 @@
    "item": "cites Grokipedia",
    "detail": "19 reference entries (18 via), 23 mentions, 11 sentences resting only on Grokipedia (38 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "953a456ad8f9",
@@ -397,9 +399,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 3 sentences resting only on Grokipedia (3 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "4c28516d76be",
@@ -411,9 +413,9 @@
    "fix_handle": "maca-benefits-forms-dosing-and-side-effects",
    "item": "[51]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ef2aa7fb4b98",
@@ -426,9 +428,9 @@
    "item": "cites Grokipedia",
    "detail": "10 reference entries (6 via), 12 mentions, 11 sentences resting only on Grokipedia (19 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "71f7b8db67d9",
@@ -440,9 +442,9 @@
    "fix_handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
    "item": "[61]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "1d62b6bc8f9a",
@@ -454,9 +456,9 @@
    "fix_handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
    "item": "[62]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3ab1bff6cb11",
@@ -468,9 +470,9 @@
    "fix_handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
    "item": "[63]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "89f3be402167",
@@ -482,9 +484,9 @@
    "fix_handle": "saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects",
    "item": "[64]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "5e9228d18c72",
@@ -497,9 +499,9 @@
    "item": "cites Grokipedia",
    "detail": "11 reference entries (10 via), 13 mentions, 6 sentences resting only on Grokipedia (18 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "537e13e02f33",
@@ -511,9 +513,9 @@
    "fix_handle": "ginger-benefits-best-forms-dosing-and-side-effects",
    "item": "[45]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ee59eccf4b22",
@@ -525,9 +527,9 @@
    "fix_handle": "ginger-benefits-best-forms-dosing-and-side-effects",
    "item": "[46]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "6edf935fea6f",
@@ -539,9 +541,9 @@
    "fix_handle": "ginger-benefits-best-forms-dosing-and-side-effects",
    "item": "[47]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "9de4591d5d73",
@@ -553,9 +555,9 @@
    "fix_handle": "ginger-benefits-best-forms-dosing-and-side-effects",
    "item": "[48]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "dc1a659e2342",
@@ -568,9 +570,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 24 sentences resting only on Grokipedia (24 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "cd1c5df87a88",
@@ -583,8 +585,9 @@
    "item": "[27]",
    "first_seen": "2026-10-03",
    "last_seen": "2026-10-03",
-   "status": "open",
-   "last_checked": "2026-10-03"
+   "status": "resolved",
+   "last_checked": "2026-10-10",
+   "resolved": "2026-10-10"
   },
   {
    "id": "602e992e77bc",
@@ -598,8 +601,9 @@
    "detail": "2 reference entries (1 via), 5 mentions, 39 sentences resting only on Grokipedia (40 counting via)",
    "first_seen": "2026-10-03",
    "last_seen": "2026-10-03",
-   "status": "open",
-   "last_checked": "2026-10-03"
+   "status": "resolved",
+   "last_checked": "2026-10-10",
+   "resolved": "2026-10-10"
   },
   {
    "id": "84ea68d3dd05",
@@ -612,9 +616,9 @@
    "item": "cites Grokipedia",
    "detail": "4 reference entries (2 via), 9 mentions, 18 sentences resting only on Grokipedia (19 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3923640b8ddc",
@@ -627,9 +631,9 @@
    "item": "cites Grokipedia",
    "detail": "4 reference entries (0 via), 12 mentions, 2 sentences resting only on Grokipedia (2 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "82a091c2bcc1",
@@ -642,9 +646,9 @@
    "item": "cites Grokipedia",
    "detail": "10 reference entries (9 via), 12 mentions, 3 sentences resting only on Grokipedia (21 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "9624727d12e1",
@@ -657,9 +661,9 @@
    "item": "cites Grokipedia",
    "detail": "2 reference entries (1 via), 4 mentions, 0 sentences resting only on Grokipedia (1 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "914999719a2d",
@@ -673,8 +677,9 @@
    "detail": "15 reference entries (0 via), 45 mentions, 8 sentences resting only on Grokipedia (8 counting via)",
    "first_seen": "2026-10-03",
    "last_seen": "2026-10-03",
-   "status": "open",
-   "last_checked": "2026-10-03"
+   "status": "resolved",
+   "last_checked": "2026-10-10",
+   "resolved": "2026-10-10"
   },
   {
    "id": "c0de8d21a4c1",
@@ -686,9 +691,9 @@
    "fix_handle": "echinacea-benefits-dosing-and-side-effects",
    "item": "[42]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a88451daeb2e",
@@ -701,9 +706,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 1 sentences resting only on Grokipedia (1 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "481bde81f0e8",
@@ -716,9 +721,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 8 sentences resting only on Grokipedia (8 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "8e08bf8c0652",
@@ -731,9 +736,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 27 sentences resting only on Grokipedia (27 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ac7ed256cc36",
@@ -745,9 +750,9 @@
    "fix_handle": "garlic-benefits-best-forms-dosing-and-side-effects",
    "item": "[48]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "e52bfecd239c",
@@ -759,9 +764,9 @@
    "fix_handle": "garlic-benefits-best-forms-dosing-and-side-effects",
    "item": "[49]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "700a06e0df4c",
@@ -773,9 +778,9 @@
    "fix_handle": "garlic-benefits-best-forms-dosing-and-side-effects",
    "item": "[50]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "e20b890c8ae6",
@@ -788,9 +793,9 @@
    "item": "cites Grokipedia",
    "detail": "7 reference entries (0 via), 9 mentions, 13 sentences resting only on Grokipedia (13 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "dafb8167d698",
@@ -803,9 +808,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 11 sentences resting only on Grokipedia (11 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "9d056a413a60",
@@ -818,9 +823,9 @@
    "item": "cites Grokipedia",
    "detail": "22 reference entries (0 via), 24 mentions, 17 sentences resting only on Grokipedia (17 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "52bbafbabe9d",
@@ -833,9 +838,9 @@
    "item": "cites Grokipedia",
    "detail": "25 reference entries (24 via), 27 mentions, 2 sentences resting only on Grokipedia (30 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c1047082e3e5",
@@ -848,9 +853,9 @@
    "item": "cites Grokipedia",
    "detail": "2 reference entries (0 via), 6 mentions, 2 sentences resting only on Grokipedia (2 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "af241493f564",
@@ -863,9 +868,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 4 mentions, 3 sentences resting only on Grokipedia (3 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "8f2219c049a2",
@@ -878,9 +883,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 1 sentences resting only on Grokipedia (1 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "6944c5ad623a",
@@ -893,9 +898,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 4 mentions, 0 sentences resting only on Grokipedia (0 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "8f7125995aad",
@@ -908,9 +913,9 @@
    "item": "cites Grokipedia",
    "detail": "2 reference entries (0 via), 6 mentions, 15 sentences resting only on Grokipedia (15 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "613341f8a351",
@@ -923,9 +928,9 @@
    "item": "cites Grokipedia",
    "detail": "16 reference entries (1 via), 18 mentions, 15 sentences resting only on Grokipedia (17 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "694b65c561e8",
@@ -937,9 +942,9 @@
    "fix_handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
    "item": "[64]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "0db5c3d5dba2",
@@ -951,9 +956,9 @@
    "fix_handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
    "item": "[65]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b71835a3e4f0",
@@ -965,9 +970,9 @@
    "fix_handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
    "item": "[66]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "42cbe6219070",
@@ -979,9 +984,9 @@
    "fix_handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
    "item": "[67]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "f387235414b6",
@@ -993,9 +998,9 @@
    "fix_handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
    "item": "[68]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3ef2f4762856",
@@ -1007,9 +1012,9 @@
    "fix_handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
    "item": "[69]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "348e35eba10a",
@@ -1022,9 +1027,9 @@
    "item": "cites Grokipedia",
    "detail": "18 reference entries (17 via), 19 mentions, 4 sentences resting only on Grokipedia (24 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "659a08f456ab",
@@ -1037,9 +1042,9 @@
    "item": "cites Grokipedia",
    "detail": "37 reference entries (36 via), 39 mentions, 8 sentences resting only on Grokipedia (36 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "d7f3de284cfb",
@@ -1052,9 +1057,9 @@
    "item": "cites Grokipedia",
    "detail": "18 reference entries (4 via), 21 mentions, 7 sentences resting only on Grokipedia (10 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "25c0bd9e4edb",
@@ -1067,9 +1072,9 @@
    "item": "cites Grokipedia",
    "detail": "13 reference entries (0 via), 39 mentions, 45 sentences resting only on Grokipedia (45 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "01ce751d922d",
@@ -1082,9 +1087,9 @@
    "item": "cites Grokipedia",
    "detail": "21 reference entries (1 via), 61 mentions, 17 sentences resting only on Grokipedia (18 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "7805bb505964",
@@ -1097,9 +1102,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 3 sentences resting only on Grokipedia (3 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ba6b9d9aa112",
@@ -1112,9 +1117,9 @@
    "item": "cites Grokipedia",
    "detail": "14 reference entries (11 via), 22 mentions, 7 sentences resting only on Grokipedia (16 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "710656d6cbc1",
@@ -1126,9 +1131,9 @@
    "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
    "item": "[46]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "e5799a69f0e3",
@@ -1140,9 +1145,9 @@
    "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
    "item": "[47]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "8257a0ac989a",
@@ -1154,9 +1159,9 @@
    "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
    "item": "[48]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "4b7e3c987493",
@@ -1168,9 +1173,9 @@
    "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
    "item": "[49]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "bbeaff5c27d0",
@@ -1183,9 +1188,9 @@
    "item": "cites Grokipedia",
    "detail": "2 reference entries (0 via), 6 mentions, 6 sentences resting only on Grokipedia (6 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "6282cf321b01",
@@ -1198,9 +1203,9 @@
    "item": "cites Grokipedia",
    "detail": "8 reference entries (7 via), 10 mentions, 9 sentences resting only on Grokipedia (14 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3995c6f85c35",
@@ -1213,9 +1218,9 @@
    "item": "cites Grokipedia",
    "detail": "33 reference entries (3 via), 93 mentions, 27 sentences resting only on Grokipedia (39 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a7c1abd45add",
@@ -1227,9 +1232,9 @@
    "fix_handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
    "item": "[65]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "60f392258c0f",
@@ -1241,9 +1246,9 @@
    "fix_handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
    "item": "[66]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c544f56f57ca",
@@ -1256,9 +1261,9 @@
    "item": "cites Grokipedia",
    "detail": "6 reference entries (5 via), 8 mentions, 13 sentences resting only on Grokipedia (17 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ce4fbbe697b4",
@@ -1271,9 +1276,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 0 sentences resting only on Grokipedia (0 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "432a1bc306e8",
@@ -1285,9 +1290,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[12]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3a7936d873a6",
@@ -1299,9 +1304,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[13]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "54625e1bfb0f",
@@ -1313,9 +1318,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[14]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "080761a6f5e3",
@@ -1327,9 +1332,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[15]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ca5067c97b69",
@@ -1341,9 +1346,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[16]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "dd26b6253f04",
@@ -1355,9 +1360,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[17]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "11114c43eca1",
@@ -1369,9 +1374,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[18]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "6d59fcdf375c",
@@ -1383,9 +1388,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[19]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b9aa3f54cf19",
@@ -1397,9 +1402,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[20]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a572fa95a925",
@@ -1411,9 +1416,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[21]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b3e9765c2871",
@@ -1425,9 +1430,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[22]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "d34c6f9f4496",
@@ -1439,9 +1444,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[23]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "892a4b02c66e",
@@ -1453,9 +1458,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[24]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "276114a04947",
@@ -1467,9 +1472,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[25]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "4eb7a76a6377",
@@ -1481,9 +1486,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[26]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "1a1fdc63654d",
@@ -1495,9 +1500,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[27]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "2d6a7045f118",
@@ -1509,9 +1514,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[28]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "2285d9ffcaaa",
@@ -1523,9 +1528,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[29]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "efae95f2628e",
@@ -1537,9 +1542,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[30]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "85d0b3245857",
@@ -1551,9 +1556,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[31]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "55b20282d2fc",
@@ -1565,9 +1570,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[32]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "870fdf6035ae",
@@ -1579,9 +1584,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[33]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "9903231e2829",
@@ -1593,9 +1598,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[34]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "8f60cc09e181",
@@ -1607,9 +1612,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[35]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "52bf8a439810",
@@ -1621,9 +1626,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[36]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "9f26d89918c7",
@@ -1635,9 +1640,9 @@
    "fix_handle": "omega-3-fish-oil-benefits-forms-dosing-and-side-effects",
    "item": "[37]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "e1b1620ee2dd",
@@ -1649,9 +1654,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[10]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "f3b6ec80f9ba",
@@ -1663,9 +1668,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[36]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "768962ef2def",
@@ -1677,9 +1682,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[37]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "715f9e098522",
@@ -1691,9 +1696,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[39]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "6699f1838943",
@@ -1705,9 +1710,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[62]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "fbf97f57fddf",
@@ -1719,9 +1724,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[63]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ff5974067b15",
@@ -1733,9 +1738,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[71]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "759fb5f9c4a5",
@@ -1747,9 +1752,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[72]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "e062b7644391",
@@ -1761,9 +1766,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[105]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "5a6b00cd278a",
@@ -1775,9 +1780,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[115]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "bd9bf764892e",
@@ -1789,9 +1794,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[152]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a1eed4486f09",
@@ -1803,9 +1808,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[171]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "503d2ba90995",
@@ -1817,9 +1822,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[180]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3afb05f6010f",
@@ -1831,9 +1836,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[182]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "6928fa2a1280",
@@ -1845,9 +1850,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[183]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c31d18b50c4b",
@@ -1859,9 +1864,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[185]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "39ed123c435f",
@@ -1873,9 +1878,9 @@
    "fix_handle": "weight-loss-supplements-benefits-evidence-and-safety",
    "item": "[190]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "4ff4e4248bbe",
@@ -1887,9 +1892,9 @@
    "fix_handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
    "item": "[29]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "f94b9afa2625",
@@ -1901,9 +1906,9 @@
    "fix_handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
    "item": "[30]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "4242ca112374",
@@ -1915,9 +1920,9 @@
    "fix_handle": "garcinia-cambogia-benefits-dosing-and-side-effects",
    "item": "[31]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "815c1cadb4bd",
@@ -1929,9 +1934,9 @@
    "fix_handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
    "item": "[35]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "5e96d2071aa7",
@@ -1943,9 +1948,9 @@
    "fix_handle": "ginkgo-biloba-benefits-best-forms-dosing-and-side-effects",
    "item": "[36]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3b699fbfddb0",
@@ -1958,9 +1963,9 @@
    "item": "cites Grokipedia",
    "detail": "19 reference entries (2 via), 54 mentions, 8 sentences resting only on Grokipedia (9 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "80b2495c6f36",
@@ -1972,9 +1977,9 @@
    "fix_handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
    "item": "[70]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "d965d1519c22",
@@ -1986,9 +1991,9 @@
    "fix_handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
    "item": "[71]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "d9659e91629b",
@@ -2000,9 +2005,9 @@
    "fix_handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
    "item": "[72]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "15e604134afc",
@@ -2014,9 +2019,9 @@
    "fix_handle": "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
    "item": "[73]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "79f25d8b3750",
@@ -2029,9 +2034,9 @@
    "item": "cites Grokipedia",
    "detail": "2 reference entries (1 via), 4 mentions, 6 sentences resting only on Grokipedia (7 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ee0529c480b7",
@@ -2044,9 +2049,9 @@
    "item": "cites Grokipedia",
    "detail": "2 reference entries (1 via), 4 mentions, 1 sentences resting only on Grokipedia (1 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "1fe953e753b4",
@@ -2059,9 +2064,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 3 sentences resting only on Grokipedia (3 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "0bb9c0797135",
@@ -2074,9 +2079,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 11 sentences resting only on Grokipedia (11 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ae55a206c402",
@@ -2089,9 +2094,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 8 sentences resting only on Grokipedia (8 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ad3e05b87ce4",
@@ -2103,9 +2108,9 @@
    "fix_handle": "lean-mass-hyper-responders-see-rapid-plaque-progression",
    "item": "[14]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "6cff54284ba8",
@@ -2117,9 +2122,9 @@
    "fix_handle": "lean-mass-hyper-responders-see-rapid-plaque-progression",
    "item": "[11]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "0b08ec04a626",
@@ -2131,9 +2136,9 @@
    "fix_handle": "acai-berry-benefits-forms-dosing-and-side-effects",
    "item": "https://www.sciencedirect.com/science/article/pii/S1756464625000908 -> https://www.sciencedirect.com/science/article/pii/S1756464625300908",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "8c9a7cda34ea",
@@ -2146,9 +2151,9 @@
    "item": "cites Grokipedia",
    "detail": "16 reference entries (15 via), 16 mentions, 4 sentences resting only on Grokipedia (16 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c3eaeef63a5a",
@@ -2160,9 +2165,9 @@
    "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
    "item": "[38]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "5c193de9da12",
@@ -2174,9 +2179,9 @@
    "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
    "item": "[39]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "e258ef7852f5",
@@ -2188,9 +2193,9 @@
    "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
    "item": "[40]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "927b80832943",
@@ -2202,9 +2207,9 @@
    "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
    "item": "[41]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "903d8bbe46ce",
@@ -2216,9 +2221,9 @@
    "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
    "item": "[42]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "aca973b4b8e1",
@@ -2230,9 +2235,9 @@
    "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
    "item": "[43]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "96292ebbd937",
@@ -2244,9 +2249,9 @@
    "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
    "item": "[44]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "2ce6588745d3",
@@ -2258,9 +2263,9 @@
    "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
    "item": "[45]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "89407a6ed043",
@@ -2272,9 +2277,9 @@
    "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
    "item": "[46]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "5687abfd8b59",
@@ -2286,9 +2291,9 @@
    "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
    "item": "[47]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "946b2f3db23c",
@@ -2300,9 +2305,9 @@
    "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
    "item": "[48]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "273c3afad5e1",
@@ -2314,9 +2319,9 @@
    "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
    "item": "[49]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "4afc7b293c6e",
@@ -2328,9 +2333,9 @@
    "fix_handle": "berberine-benefits-forms-dosing-and-side-effects",
    "item": "[50]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "dc1637787c1a",
@@ -2343,9 +2348,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 51 sentences resting only on Grokipedia (51 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "81fae6ca24f8",
@@ -2357,9 +2362,9 @@
    "fix_handle": "boron-benefits-forms-dosing-and-side-effects",
    "item": "[48]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "e0ba6ae9d2db",
@@ -2371,9 +2376,9 @@
    "fix_handle": "boron-benefits-forms-dosing-and-side-effects",
    "item": "[49]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "90fad7340d6e",
@@ -2385,9 +2390,9 @@
    "fix_handle": "boron-benefits-forms-dosing-and-side-effects",
    "item": "[50]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "169767d7c266",
@@ -2399,9 +2404,9 @@
    "fix_handle": "boron-benefits-forms-dosing-and-side-effects",
    "item": "[51]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "84c9cc4a3557",
@@ -2413,9 +2418,9 @@
    "fix_handle": "boron-benefits-forms-dosing-and-side-effects",
    "item": "[52]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ffd5ebc1d06e",
@@ -2427,9 +2432,9 @@
    "fix_handle": "boron-benefits-forms-dosing-and-side-effects",
    "item": "[53]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "6068f280efb0",
@@ -2441,9 +2446,9 @@
    "fix_handle": "boron-benefits-forms-dosing-and-side-effects",
    "item": "[55]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "474f0fbfdf44",
@@ -2456,9 +2461,9 @@
    "item": "cites Grokipedia",
    "detail": "2 reference entries (1 via), 4 mentions, 5 sentences resting only on Grokipedia (5 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "72a99e7e4c17",
@@ -2470,9 +2475,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[22]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b6d1a5d7e059",
@@ -2484,9 +2489,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[23]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "1bda26c7ca32",
@@ -2498,9 +2503,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[24]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "2374d0909496",
@@ -2512,9 +2517,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[25]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "831337181861",
@@ -2526,9 +2531,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[26]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "054fc5ee7e56",
@@ -2540,9 +2545,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[27]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a6b7876490ff",
@@ -2554,9 +2559,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[28]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "805dd7c383a1",
@@ -2568,9 +2573,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[29]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ae3f0d816556",
@@ -2582,9 +2587,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[30]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "1d5df5495f35",
@@ -2596,9 +2601,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[31]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "1a4f99bffc3f",
@@ -2610,9 +2615,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[32]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "99bec733560f",
@@ -2624,9 +2629,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[33]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c635ef3f6ffa",
@@ -2638,9 +2643,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[34]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a819d986949f",
@@ -2652,9 +2657,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[35]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b9c1dd97bfdc",
@@ -2666,9 +2671,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[36]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "572a93a86d5d",
@@ -2680,9 +2685,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[37]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "7753bd6e3ddc",
@@ -2694,9 +2699,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[38]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "7d1314073626",
@@ -2708,9 +2713,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[39]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "586a233e64f7",
@@ -2722,9 +2727,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[40]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "f4db12d0c030",
@@ -2736,9 +2741,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[41]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "67546f7c6ade",
@@ -2750,9 +2755,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[42]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "349ceb7cfbf5",
@@ -2764,9 +2769,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[43]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "1d3a9245f4b5",
@@ -2778,9 +2783,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[44]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "84ab60182907",
@@ -2792,9 +2797,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[45]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "4bb0bfb88591",
@@ -2806,9 +2811,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[46]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "4a0d26a59234",
@@ -2820,9 +2825,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[47]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "fb1adec3e264",
@@ -2834,9 +2839,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[48]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "18b568d518c8",
@@ -2848,9 +2853,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[49]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "cdaca300bb6a",
@@ -2862,9 +2867,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[50]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a18e33cad552",
@@ -2876,9 +2881,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[51]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c75c08c5bb31",
@@ -2890,9 +2895,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[52]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "26f60a8381ea",
@@ -2904,9 +2909,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[53]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "7427b52eda56",
@@ -2918,9 +2923,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[54]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "bea37e832f5c",
@@ -2932,9 +2937,9 @@
    "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
    "item": "[55]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a86cf59a6a51",
@@ -2947,9 +2952,9 @@
    "item": "cites Grokipedia",
    "detail": "17 reference entries (16 via), 19 mentions, 19 sentences resting only on Grokipedia (38 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "6f220974bfd4",
@@ -2961,9 +2966,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[12]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "1bf773594cf0",
@@ -2975,9 +2980,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[13]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c8fb4c952958",
@@ -2989,9 +2994,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[14]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "610b06f297dd",
@@ -3003,9 +3008,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[15]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "61f1534f0f86",
@@ -3017,9 +3022,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[16]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "72115295de5d",
@@ -3031,9 +3036,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[17]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "f7ec56b7616d",
@@ -3045,9 +3050,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[18]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "54a807f8b06a",
@@ -3059,9 +3064,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[19]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ccc8196c8fef",
@@ -3073,9 +3078,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[20]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c7aada262e75",
@@ -3087,9 +3092,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[21]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a766ded4c53a",
@@ -3101,9 +3106,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[22]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "073c4e90d441",
@@ -3115,9 +3120,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[23]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3d5b39bd69a2",
@@ -3129,9 +3134,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[24]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "99a335265610",
@@ -3143,9 +3148,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[25]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "4043cfa73f92",
@@ -3157,9 +3162,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[26]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a743faf71518",
@@ -3171,9 +3176,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[27]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "02a0f02f8882",
@@ -3185,9 +3190,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[28]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "bf5fd6cfd968",
@@ -3199,9 +3204,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[29]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "7398d4140819",
@@ -3213,9 +3218,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[30]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "f5019f3b56dd",
@@ -3227,9 +3232,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[31]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "26944d360c51",
@@ -3241,9 +3246,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[32]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "27e641943902",
@@ -3255,9 +3260,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[33]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "bc4e3d0c3791",
@@ -3269,9 +3274,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[34]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "618d3b456702",
@@ -3283,9 +3288,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[35]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "d91d9807f948",
@@ -3297,9 +3302,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[36]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "457d988708a8",
@@ -3311,9 +3316,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[37]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "161ebccd8b0b",
@@ -3325,9 +3330,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[38]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "5e9269c589b0",
@@ -3339,9 +3344,9 @@
    "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
    "item": "[39]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "e3e6363f6558",
@@ -3355,8 +3360,9 @@
    "detail": "1 reference entries (0 via), 3 mentions, 5 sentences resting only on Grokipedia (5 counting via)",
    "first_seen": "2026-10-03",
    "last_seen": "2026-10-03",
-   "status": "open",
-   "last_checked": "2026-10-03"
+   "status": "resolved",
+   "last_checked": "2026-10-10",
+   "resolved": "2026-10-10"
   },
   {
    "id": "2faca49c6c1c",
@@ -3369,9 +3375,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 4 sentences resting only on Grokipedia (4 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "d3b4db395313",
@@ -3383,9 +3389,9 @@
    "fix_handle": "why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking",
    "item": "[15]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "833d689b9d82",
@@ -3397,9 +3403,9 @@
    "fix_handle": "the-fastest-way-to-reverse-skin-aging-new-science",
    "item": "[5]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "dcb426fe9f31",
@@ -3411,9 +3417,9 @@
    "fix_handle": "new-studies-reveal-the-best-type-of-intermittent-fasting",
    "item": "[9]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "fcbeccf8561a",
@@ -3425,9 +3431,9 @@
    "fix_handle": "how-to-prevent-a-heart-attack-for-5-45",
    "item": "[17]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "0ef47b2c4c48",
@@ -3439,9 +3445,9 @@
    "fix_handle": "zma-supplements-benefits-research",
    "item": "10 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "f490dbbcfc33",
@@ -3453,9 +3459,9 @@
    "fix_handle": "supplement-gummies-compared-capsules",
    "item": "3 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "58ecd340ef88",
@@ -3467,9 +3473,9 @@
    "fix_handle": "elderberry-benefits-dosing-and-side-effects",
    "item": "10.1007/s10620-019-5511-5 -> https://doi.org/10.1007/s10620-019-05511-5",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "29545a41edd3",
@@ -3482,9 +3488,9 @@
    "item": "cites Grokipedia",
    "detail": "20 reference entries (19 via), 22 mentions, 3 sentences resting only on Grokipedia (22 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "bb3aafaa84d4",
@@ -3497,9 +3503,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 39 sentences resting only on Grokipedia (39 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "7a8f7fa451b6",
@@ -3511,9 +3517,9 @@
    "fix_handle": "trace-minerals-vitamins-fad",
    "item": "19 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "4787b646235c",
@@ -3525,9 +3531,9 @@
    "fix_handle": "study-exercise-blood-pressure",
    "item": "[1]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "21e3986ae04c",
@@ -3539,9 +3545,9 @@
    "fix_handle": "losing-weight-intermittent-fasting",
    "item": "9 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b27277458f9f",
@@ -3553,9 +3559,9 @@
    "fix_handle": "supplements-best-skin-tightening",
    "item": "22 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ac4e18c3d71b",
@@ -3567,9 +3573,9 @@
    "fix_handle": "greens-powders-benefits-forms-dosing-and-side-effects",
    "item": "[63]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "7c367f1a594d",
@@ -3581,9 +3587,9 @@
    "fix_handle": "greens-powders-benefits-forms-dosing-and-side-effects",
    "item": "[64]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ccc9e0b04ec0",
@@ -3596,9 +3602,9 @@
    "item": "cites Grokipedia",
    "detail": "2 reference entries (1 via), 4 mentions, 0 sentences resting only on Grokipedia (1 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "7a9410bec8d4",
@@ -3610,9 +3616,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[26]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "e50fa9b20f2d",
@@ -3624,9 +3630,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[27]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "85601a4024ff",
@@ -3638,9 +3644,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[28]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "9fedf8e13175",
@@ -3652,9 +3658,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[29]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "17d15c90242c",
@@ -3666,9 +3672,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[30]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "5e3878ffc044",
@@ -3680,9 +3686,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[31]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "09f1b384601c",
@@ -3694,9 +3700,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[32]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "52be6637ff52",
@@ -3708,9 +3714,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[33]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "7a9e66309a29",
@@ -3722,9 +3728,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[34]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "4e81962194c0",
@@ -3736,9 +3742,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[35]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "72d7dcd2dfd4",
@@ -3750,9 +3756,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[36]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "4000f1fa594e",
@@ -3764,9 +3770,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[37]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "1bc99e547276",
@@ -3778,9 +3784,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[38]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "9c61944d1a4c",
@@ -3792,9 +3798,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[39]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "18f957be95fd",
@@ -3806,9 +3812,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[40]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b16534dc7bd8",
@@ -3820,9 +3826,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[41]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "0545928b4e9a",
@@ -3834,9 +3840,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[42]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "d66f4884c7fc",
@@ -3848,9 +3854,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[43]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b2a41c8628fb",
@@ -3862,9 +3868,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[44]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "13c708ba2372",
@@ -3876,9 +3882,9 @@
    "fix_handle": "green-tea-benefits-forms-dosing-and-side-effects",
    "item": "[45]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "91eaa4f595e3",
@@ -3891,9 +3897,9 @@
    "item": "cites Grokipedia",
    "detail": "6 reference entries (5 via), 8 mentions, 0 sentences resting only on Grokipedia (5 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a7dbb6fb36ed",
@@ -3905,9 +3911,9 @@
    "fix_handle": "reverse-signs-skin-aging",
    "item": "[24]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "7d218115d715",
@@ -3919,9 +3925,9 @@
    "fix_handle": "liposomal-vitamin-c-worth",
    "item": "11 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "9303e231f760",
@@ -3933,9 +3939,9 @@
    "fix_handle": "nutrient-deficiency-blood-pressure",
    "item": "[1]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "7d13b96757bc",
@@ -3947,9 +3953,9 @@
    "fix_handle": "nutrient-deficiency-blood-pressure",
    "item": "[2]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b0471133fb2a",
@@ -3961,9 +3967,9 @@
    "fix_handle": "nutrient-deficiency-blood-pressure",
    "item": "[3]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "d38f4b90ffa2",
@@ -3975,9 +3981,9 @@
    "fix_handle": "nutrient-deficiency-blood-pressure",
    "item": "[4]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b435e2337ff4",
@@ -3989,9 +3995,9 @@
    "fix_handle": "nutrient-deficiency-blood-pressure",
    "item": "[5]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "0dac3a39b51b",
@@ -4003,9 +4009,9 @@
    "fix_handle": "nutrient-deficiency-blood-pressure",
    "item": "[6]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "18f19da8c876",
@@ -4017,9 +4023,9 @@
    "fix_handle": "nutrient-deficiency-blood-pressure",
    "item": "[7]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c0dd8660ea07",
@@ -4031,9 +4037,9 @@
    "fix_handle": "nutrient-deficiency-blood-pressure",
    "item": "[8]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "e682aab32801",
@@ -4045,9 +4051,9 @@
    "fix_handle": "nutrient-deficiency-blood-pressure",
    "item": "[9]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c34662e2ee15",
@@ -4059,9 +4065,9 @@
    "fix_handle": "nutrient-deficiency-blood-pressure",
    "item": "7 mmHg",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b2f720205f9f",
@@ -4073,9 +4079,9 @@
    "fix_handle": "blood-type-diet-needs",
    "item": "12 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ed67cae24e06",
@@ -4087,9 +4093,9 @@
    "fix_handle": "best-worst-forms-magnesium",
    "item": "14 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "49a324e3e11d",
@@ -4101,9 +4107,9 @@
    "fix_handle": "methylated-multivitamin-regular-ones",
    "item": "10 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "eff76fc62002",
@@ -4115,9 +4121,9 @@
    "fix_handle": "only-supplements-work-2025",
    "item": "[15]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "670e06311be9",
@@ -4129,9 +4135,9 @@
    "fix_handle": "only-supplements-work-2025",
    "item": "[16]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "1ef3fb0faa07",
@@ -4143,9 +4149,9 @@
    "fix_handle": "food-proven-trigger-gout",
    "item": "11 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3282a905cf89",
@@ -4157,9 +4163,9 @@
    "fix_handle": "ginseng-benefits-forms-dosing-and-side-effects",
    "item": "[31]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "dbbb6300be30",
@@ -4171,9 +4177,9 @@
    "fix_handle": "ginseng-benefits-forms-dosing-and-side-effects",
    "item": "[32]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "99bec9245f3f",
@@ -4185,9 +4191,9 @@
    "fix_handle": "ginseng-benefits-forms-dosing-and-side-effects",
    "item": "[33]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "9499634d4996",
@@ -4199,9 +4205,9 @@
    "fix_handle": "human-studies-nmn-supplements",
    "item": "28 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "87b5f6dd2b52",
@@ -4213,9 +4219,9 @@
    "fix_handle": "avoiding-cancer-easier-ever",
    "item": "[20]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ff33f3d001dd",
@@ -4227,9 +4233,9 @@
    "fix_handle": "avoiding-cancer-easier-ever",
    "item": "50 %",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "d281fbf92b3e",
@@ -4241,9 +4247,9 @@
    "fix_handle": "theanine-anti-aging-longevity",
    "item": "10 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "2bf0e41bcaf9",
@@ -4255,9 +4261,9 @@
    "fix_handle": "resting-heart-rate-health",
    "item": "6 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "98049c78ae11",
@@ -4269,9 +4275,9 @@
    "fix_handle": "mobile-iv-vitamin-therapy",
    "item": "8 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "880571b2e78c",
@@ -4283,9 +4289,9 @@
    "fix_handle": "best-anti-wrinkle-cream",
    "item": "[9]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a45a04c916a3",
@@ -4297,9 +4303,9 @@
    "fix_handle": "diet-strongly-suspected-best",
    "item": "[19]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ee1253e465df",
@@ -4311,9 +4317,9 @@
    "fix_handle": "diet-strongly-suspected-best",
    "item": "[20]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ee135972a25d",
@@ -4325,9 +4331,9 @@
    "fix_handle": "calcium-rich-foods-diet",
    "item": "6 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "eab5209010ff",
@@ -4339,9 +4345,9 @@
    "fix_handle": "tmg-betaine-exploding-popularity",
    "item": "14 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "fd70764f5f6d",
@@ -4353,9 +4359,9 @@
    "fix_handle": "difference-magnesium-oxide-glycinate",
    "item": "13 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "bd301e539ddf",
@@ -4367,9 +4373,9 @@
    "fix_handle": "seed-oils-toxic-inflammatory",
    "item": "[9]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "cc2b05122b56",
@@ -4381,9 +4387,9 @@
    "fix_handle": "iron-supplementation-good-health",
    "item": "8 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "5a91fd6adac1",
@@ -4395,9 +4401,9 @@
    "fix_handle": "multivitamin-contains-enough-riboflavin",
    "item": "11 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3ac2dd1bb6b3",
@@ -4409,9 +4415,9 @@
    "fix_handle": "alpha-lipoic-acid-antioxidant",
    "item": "[10]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "1e73292800cb",
@@ -4423,9 +4429,9 @@
    "fix_handle": "alpha-lipoic-acid-antioxidant",
    "item": "NBK564301",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "cf87a128267d",
@@ -4437,9 +4443,9 @@
    "fix_handle": "difference-between-curcumin-turmeric",
    "item": "19 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "105c3795f58f",
@@ -4451,9 +4457,9 @@
    "fix_handle": "foods-help-unclog-arteries",
    "item": "11 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "16f9cdfb71c6",
@@ -4465,9 +4471,9 @@
    "fix_handle": "benefits-apple-cider-vinegar",
    "item": "7 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "e92e2d30460a",
@@ -4480,9 +4486,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 1 sentences resting only on Grokipedia (1 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a8d54b3e253b",
@@ -4494,9 +4500,9 @@
    "fix_handle": "5-livesaving-blog-tests",
    "item": "13 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "77c224bfe6de",
@@ -4508,9 +4514,9 @@
    "fix_handle": "breaking-reduce-dementia-risk-45-percent",
    "item": "3 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "007a307282ad",
@@ -4522,9 +4528,9 @@
    "fix_handle": "longevity-experts-warning-fasting",
    "item": "7 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "f3d74bfdfc86",
@@ -4536,9 +4542,9 @@
    "fix_handle": "fastest-reverse-skin-aging",
    "item": "17 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "8810269bbe44",
@@ -4550,9 +4556,9 @@
    "fix_handle": "popular-supplements-try-avoid",
    "item": "27 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "8f4b959154e4",
@@ -4564,9 +4570,9 @@
    "fix_handle": "controversial-supplement-cognitive-decline",
    "item": "7 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "d272bd4ff6f8",
@@ -4578,9 +4584,9 @@
    "fix_handle": "sleep-schedule-wake-refreshed",
    "item": "6 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ed66320163dc",
@@ -4592,9 +4598,9 @@
    "fix_handle": "medications-potentially-improve-longevity",
    "item": "17 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c608135234dc",
@@ -4606,9 +4612,9 @@
    "fix_handle": "omega-3-heart-arrhythmia",
    "item": "9 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a80dfb9ce021",
@@ -4620,9 +4626,9 @@
    "fix_handle": "omega-3-heart-arrhythmia",
    "item": "25 %",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c19e29c0a0af",
@@ -4634,9 +4640,9 @@
    "fix_handle": "mistakes-people-make-magnesium",
    "item": "9 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "de6da1d5b4ff",
@@ -4649,9 +4655,9 @@
    "item": "cites Grokipedia",
    "detail": "9 reference entries (7 via), 13 mentions, 3 sentences resting only on Grokipedia (14 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "280ff69d3748",
@@ -4663,9 +4669,9 @@
    "fix_handle": "older-adults-seniors-creatine-supplements",
    "item": "7 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "69adbd0dd290",
@@ -4677,9 +4683,9 @@
    "fix_handle": "exaple-home-workout-schedule",
    "item": "4 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "73a414a55ad4",
@@ -4692,9 +4698,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 7 sentences resting only on Grokipedia (7 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "7539c21e9941",
@@ -4706,9 +4712,9 @@
    "fix_handle": "vitamin-d3-k2-benefits-differences",
    "item": "9 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "bb116a9b6caf",
@@ -4721,9 +4727,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 3 sentences resting only on Grokipedia (3 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "47de32d94b8f",
@@ -4735,9 +4741,9 @@
    "fix_handle": "magnesium-l-threonate-effects-sleep",
    "item": "10 references, no marker",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "cbfacc7c5da3",
@@ -4750,9 +4756,9 @@
    "item": "cites Grokipedia",
    "detail": "2 reference entries (1 via), 4 mentions, 0 sentences resting only on Grokipedia (1 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "8c7079df8d04",
@@ -4765,9 +4771,9 @@
    "item": "cites Grokipedia",
    "detail": "3 reference entries (2 via), 5 mentions, 30 sentences resting only on Grokipedia (33 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "f51bb473aec6",
@@ -4779,9 +4785,9 @@
    "fix_handle": "bilberry-benefits-forms-dosing-and-side-effects",
    "item": "[35]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "84fc69b871b3",
@@ -4793,9 +4799,9 @@
    "fix_handle": "bilberry-benefits-forms-dosing-and-side-effects",
    "item": "[36]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "30dee08d2060",
@@ -4808,9 +4814,9 @@
    "item": "cites Grokipedia",
    "detail": "10 reference entries (8 via), 14 mentions, 1 sentences resting only on Grokipedia (11 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "30e37da1f73c",
@@ -4823,9 +4829,9 @@
    "item": "cites Grokipedia",
    "detail": "3 reference entries (2 via), 5 mentions, 16 sentences resting only on Grokipedia (16 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "1487c4daa2ab",
@@ -4838,9 +4844,9 @@
    "item": "cites Grokipedia",
    "detail": "1 reference entries (0 via), 3 mentions, 12 sentences resting only on Grokipedia (12 counting via)",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "248cfc52f65c",
@@ -4852,9 +4858,9 @@
    "fix_handle": "diet",
    "item": "[3]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "328b0f0a33e7",
@@ -4866,9 +4872,9 @@
    "fix_handle": "diet",
    "item": "[22]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ffcee83f8f1c",
@@ -4880,9 +4886,9 @@
    "fix_handle": "diet",
    "item": "[23]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "1c15bfcbc2bb",
@@ -4894,9 +4900,9 @@
    "fix_handle": "diet",
    "item": "[24]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "4a19887ff232",
@@ -4908,9 +4914,9 @@
    "fix_handle": "diet",
    "item": "[25]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "d944be883b53",
@@ -4922,9 +4928,9 @@
    "fix_handle": "diet",
    "item": "[26]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b480f368792c",
@@ -4936,9 +4942,9 @@
    "fix_handle": "diet",
    "item": "[17]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3460e9e8db7c",
@@ -4950,9 +4956,9 @@
    "fix_handle": "diet",
    "item": "[18]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "9f459710727d",
@@ -4964,9 +4970,9 @@
    "fix_handle": "diet",
    "item": "[20]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "9090ad3ff07e",
@@ -4978,9 +4984,9 @@
    "fix_handle": "diet",
    "item": "[21]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "8d16cbf76154",
@@ -4992,9 +4998,9 @@
    "fix_handle": "diet",
    "item": "[27]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "1d86f1346dfd",
@@ -5006,9 +5012,9 @@
    "fix_handle": "diet",
    "item": "[28]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "d9cfe7e0edf3",
@@ -5020,9 +5026,9 @@
    "fix_handle": "diet",
    "item": "[29]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "9addf2ac8696",
@@ -5034,9 +5040,9 @@
    "fix_handle": "diet",
    "item": "[30]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "50e4f41f2ae0",
@@ -5048,9 +5054,9 @@
    "fix_handle": "diet",
    "item": "[31]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b1289d3c6900",
@@ -5062,9 +5068,9 @@
    "fix_handle": "diet",
    "item": "[32]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "beb9a0604739",
@@ -5076,9 +5082,9 @@
    "fix_handle": "diet",
    "item": "[33]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ebe24a303f6d",
@@ -5090,9 +5096,9 @@
    "fix_handle": "diet",
    "item": "[34]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "66da37f3a8e6",
@@ -5104,9 +5110,9 @@
    "fix_handle": "diet",
    "item": "[35]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "4b736fdd206d",
@@ -5118,9 +5124,9 @@
    "fix_handle": "diet",
    "item": "[36]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "d26f62c24b7d",
@@ -5132,9 +5138,9 @@
    "fix_handle": "diet",
    "item": "[37]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "e73879f5bbe6",
@@ -5146,9 +5152,9 @@
    "fix_handle": "diet",
    "item": "[38]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "f297980eaca1",
@@ -5160,9 +5166,9 @@
    "fix_handle": "diet",
    "item": "[39]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "fde94a976082",
@@ -5174,9 +5180,9 @@
    "fix_handle": "diet",
    "item": "[40]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "0bfa22902a26",
@@ -5188,9 +5194,9 @@
    "fix_handle": "diet",
    "item": "[41]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "0dd469485a62",
@@ -5202,9 +5208,9 @@
    "fix_handle": "diet",
    "item": "[42]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "0dcbe9000bc5",
@@ -5216,9 +5222,9 @@
    "fix_handle": "diet",
    "item": "[43]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3687c6cea564",
@@ -5230,9 +5236,9 @@
    "fix_handle": "diet",
    "item": "[44]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3c09ca393ff6",
@@ -5244,9 +5250,9 @@
    "fix_handle": "diet",
    "item": "[45]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "e8096f1dbda2",
@@ -5258,9 +5264,9 @@
    "fix_handle": "diet",
    "item": "[46]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "e1ecdc4a9dbb",
@@ -5272,9 +5278,9 @@
    "fix_handle": "diet",
    "item": "[47]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "cc11f43015db",
@@ -5286,9 +5292,9 @@
    "fix_handle": "diet",
    "item": "[48]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "0e9711df6ec9",
@@ -5300,9 +5306,9 @@
    "fix_handle": "diet",
    "item": "[49]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "cfa9ffebb5e6",
@@ -5314,9 +5320,9 @@
    "fix_handle": "diet",
    "item": "[50]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "61911015f57d",
@@ -5328,9 +5334,9 @@
    "fix_handle": "diet",
    "item": "[51]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "eea724e3dcd0",
@@ -5342,9 +5348,9 @@
    "fix_handle": "diet",
    "item": "[52]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "72b670450a87",
@@ -5356,9 +5362,9 @@
    "fix_handle": "diet",
    "item": "[53]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ec17c0db4101",
@@ -5370,9 +5376,9 @@
    "fix_handle": "diet",
    "item": "[54]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "8178e0471d96",
@@ -5384,9 +5390,9 @@
    "fix_handle": "diet",
    "item": "[55]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c45137bcb3a5",
@@ -5398,9 +5404,9 @@
    "fix_handle": "diet",
    "item": "[56]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "2734360ed6e1",
@@ -5412,9 +5418,9 @@
    "fix_handle": "diet",
    "item": "[62]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c2ecb48b5bff",
@@ -5426,9 +5432,9 @@
    "fix_handle": "diet",
    "item": "[67]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "bb79382bde84",
@@ -5440,9 +5446,9 @@
    "fix_handle": "diet",
    "item": "[68]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "568d9eefda40",
@@ -5454,9 +5460,9 @@
    "fix_handle": "diet",
    "item": "[69]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c22ac8dfacb9",
@@ -5468,9 +5474,9 @@
    "fix_handle": "diet",
    "item": "[70]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "f82a1e0bfa81",
@@ -5482,9 +5488,9 @@
    "fix_handle": "diet",
    "item": "[71]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "982dbd49b514",
@@ -5496,9 +5502,9 @@
    "fix_handle": "diet",
    "item": "[73]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3a3b8fb07734",
@@ -5510,9 +5516,9 @@
    "fix_handle": "diet",
    "item": "[74]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "ae6dd172523c",
@@ -5524,9 +5530,9 @@
    "fix_handle": "diet",
    "item": "[75]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "d0e428a7334d",
@@ -5538,9 +5544,9 @@
    "fix_handle": "diet",
    "item": "[76]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "cce7e82c27b8",
@@ -5552,9 +5558,9 @@
    "fix_handle": "diet",
    "item": "[79]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "9b6ee71d510c",
@@ -5566,9 +5572,9 @@
    "fix_handle": "diet",
    "item": "[80]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "5079ff6898c0",
@@ -5580,9 +5586,9 @@
    "fix_handle": "diet",
    "item": "[82]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "982223034625",
@@ -5594,9 +5600,9 @@
    "fix_handle": "diet",
    "item": "[88]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b348c276dfe5",
@@ -5608,9 +5614,9 @@
    "fix_handle": "diet",
    "item": "[84]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "566bdea28d3e",
@@ -5622,9 +5628,9 @@
    "fix_handle": "diet",
    "item": "[85]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "b57c91c60850",
@@ -5636,9 +5642,9 @@
    "fix_handle": "diet",
    "item": "[86]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "410d3c825e85",
@@ -5650,9 +5656,9 @@
    "fix_handle": "diet",
    "item": "[83]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "58e929413c47",
@@ -5664,9 +5670,9 @@
    "fix_handle": "diet",
    "item": "[87]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "3d02f1114350",
@@ -5678,9 +5684,9 @@
    "fix_handle": "diet",
    "item": "[89]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "1ea59d39482e",
@@ -5692,9 +5698,9 @@
    "fix_handle": "diet",
    "item": "[90]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a6d00f46026b",
@@ -5706,9 +5712,9 @@
    "fix_handle": "diet",
    "item": "[100]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "121b9f9d54ff",
@@ -5720,9 +5726,9 @@
    "fix_handle": "diet",
    "item": "[101]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "01f26ac6778b",
@@ -5734,9 +5740,9 @@
    "fix_handle": "diet",
    "item": "[102]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "58621fd3ef83",
@@ -5748,9 +5754,9 @@
    "fix_handle": "diet",
    "item": "[103]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "a0be143b701d",
@@ -5762,9 +5768,9 @@
    "fix_handle": "diet",
    "item": "[104]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "debb80e8f37c",
@@ -5776,9 +5782,9 @@
    "fix_handle": "diet",
    "item": "[105]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "2bff39293b33",
@@ -5790,9 +5796,9 @@
    "fix_handle": "diet",
    "item": "[106]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "89cad409166d",
@@ -5804,9 +5810,9 @@
    "fix_handle": "diet",
    "item": "[107]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "c575dbb22aa9",
@@ -5818,9 +5824,9 @@
    "fix_handle": "diet",
    "item": "[108]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "0e40d336e5ed",
@@ -5832,9 +5838,9 @@
    "fix_handle": "diet",
    "item": "[9]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "5f2b4057ce94",
@@ -5846,9 +5852,9 @@
    "fix_handle": "diet",
    "item": "[8]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "5337284d80a1",
@@ -5860,9 +5866,9 @@
    "fix_handle": "diet",
    "item": "[99]",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "618445461055",
@@ -5874,9 +5880,9 @@
    "fix_handle": "diet",
    "item": "doi: odphp.health.gov",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "6447bda5dd66",
@@ -5888,9 +5894,9 @@
    "fix_handle": "suspected-b12-deficiency",
    "item": "110 pmol/L",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "0c7a1389d9e8",
@@ -5902,9 +5908,9 @@
    "fix_handle": "suspected-b12-deficiency",
    "item": "170 pmol/L",
    "first_seen": "2026-10-03",
-   "last_seen": "2026-10-03",
+   "last_seen": "2026-10-10",
    "status": "open",
-   "last_checked": "2026-10-03"
+   "last_checked": "2026-10-10"
   },
   {
    "id": "9ee3d064ad80",
@@ -6057,6 +6063,471 @@
    "last_seen": "2026-10-04",
    "status": "open",
    "last_checked": "2026-10-04"
+  },
+  {
+   "id": "40ad2dc9216a",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "shingles-vaccine-dementia"
+   ],
+   "fix_handle": "shingles-vaccine-dementia",
+   "item": "10.1093/nutrit/nuac064/6671817",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "6678e4d278c2",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "5-supplements-that-actually-work"
+   ],
+   "fix_handle": "5-supplements-that-actually-work",
+   "item": "10.1093/nutrit/nuac064/6671817",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "a5a115f58902",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "microdosing-tirzepatide-ozempic-glp1-for-longevity"
+   ],
+   "fix_handle": "microdosing-tirzepatide-ozempic-glp1-for-longevity",
+   "item": "10.1101/2024.05.06.592653v1",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "5c8f084e0352",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "lithium-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "lithium-benefits-forms-dosing-and-side-effects",
+   "item": "10.1001/jama.1949.02900280012004",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "f3b97e33d479",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "extra-virgin-olive-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+   "item": "10.1001/jamacardio.2022.3899",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "ab70d4b56c24",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "extra-virgin-olive-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+   "item": "10.1080/10408398.2018.1436511",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "fe0fcbc0106f",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "extra-virgin-olive-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+   "item": "10.1161/STROKEAHA.121.034717",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "fc34a7a05bb9",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "extra-virgin-olive-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+   "item": "10.1007/s00394-015-1063-9",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "e6abb6aa41ae",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "extra-virgin-olive-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+   "item": "10.2337/dc18-2348",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "701300e35864",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "extra-virgin-olive-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "extra-virgin-olive-oil-benefits-dosing-and-side-effects",
+   "item": "10.1017/S0007114520004899",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "23fdc9702fe6",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "flaxseed-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+   "item": "10.1017/S0007114522000940",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "52acb75cc668",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "flaxseed-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+   "item": "10.3389/fnut.2025.1507037",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "1bd56d655232",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "flaxseed-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+   "item": "10.1194/jlr.M035378",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "57f278b91e8c",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "flaxseed-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+   "item": "10.1016/S0301-0546(03)79180-3",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "c251d5f3e068",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "flaxseed-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+   "item": "10.1016/S0091-6749(96)70174-3",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "6acc87c4a6fa",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "flaxseed-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+   "item": "10.1089/can.2017.0045",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "1f7619850b71",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "flaxseed-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+   "item": "10.4103/pm.pm_420_17",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "71d193620a89",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects",
+   "item": "10.1007/s11325-020-02198-y",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "60e3673457db",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects",
+   "item": "10.1001/jama.1990.03450130058029",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "7e701b8d5ace",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects",
+   "item": "10.1001/jama.1992.03480010085034",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "3624969af5d6",
+   "rule": "link-dead",
+   "side": "knowledge",
+   "handles": [
+    "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "l-tryptophan-and-5-htp-benefits-forms-dosing-and-side-effects",
+   "item": "10.1001/jama.1990.03450020075024",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "9192f427e050",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "chia-seed-benefits-forms-dosing-and-side-effects",
+    "flaxseed-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+   "quote_a": "Chia seeds' omega-3 fatty acid content (particularly ALA) may exhibit mild antiplatelet effects that could theoretically enhance the action of anticoagulant or antiplatelet medications, including [2][21]:",
+   "quote_b": "**Chia seeds,** another ALA source, can modestly increase blood EPA levels (but not DHA) and have not been shown to improve risk factors for cardiovascular disease [16].",
+   "severity": "low",
+   "summary": "A says chia's ALA content may raise EPA-related effects only theoretically on platelets, while B states chia raises blood EPA but does not improve cardiovascular risk factors, whereas A cites clinical trials showing blood pressure and triglyceride benefits at 25-30 g/day.",
+   "suggested_fix": "Reconcile the chia cardiovascular evidence statements, either noting B's claim covers only specific trials or softening A's claim that trials show blood pressure and triglyceride effects.",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "7e6b92c86f5b",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "chia-seed-benefits-forms-dosing-and-side-effects",
+    "flaxseed-oil-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "flaxseed-oil-benefits-dosing-and-side-effects",
+   "quote_a": "**For blood pressure and cardiometabolic support:** Clinical trials showing effects on blood pressure and triglycerides typically used 25–30 g per day [9][11].",
+   "quote_b": "**Chia seeds,** another ALA source, can modestly increase blood EPA levels (but not DHA) and have not been shown to improve risk factors for cardiovascular disease [16].",
+   "severity": "medium",
+   "summary": "A reports clinical trials showing chia effects on blood pressure and triglycerides (cardiovascular risk factors), while B says chia has not been shown to improve cardiovascular risk factors.",
+   "suggested_fix": "Align the evidence statements, clarifying which trials show effects on blood pressure and triglycerides and which evidence supports the claim of no demonstrated cardiovascular risk-factor improvement.",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "43e1071a7a2a",
+   "kind": "pathway-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "heart-failure",
+    "electrolytes-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "electrolytes-benefits-dosing-and-side-effects",
+   "quote_a": "potassium greater than 5 mmol/L",
+   "quote_b": "Patients on ACE inhibitors or ARBs (which reduce aldosterone and renal potassium excretion)",
+   "severity": "low",
+   "summary": "The heart-failure pathway lists potassium above 5 mmol/L as a contraindication or precaution for ACE inhibitors, while the electrolyte reference lists ACE-inhibitor users as only needing monitoring, with no threshold given.",
+   "suggested_fix": "This is largely a difference in scope rather than a direct contradiction. The electrolyte reference could note that ACE inhibitors are contraindicated or need caution when potassium is above 5 mmol/L, in line with the pathway.",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "1c29a76597db",
+   "kind": "pathway-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "hypertension-in-pregnancy-and-postpartum",
+    "magnesium-benefits-best-forms-dosing"
+   ],
+   "fix_handle": "magnesium-benefits-best-forms-dosing",
+   "quote_a": "Magnesium sulphate to control or prevent further seizures (2.5 g into each buttock if actively seizing, total 5 g)",
+   "quote_b": "In the Magpie Trial, magnesium sulphate for pre-eclampsia halved the risk of eclampsia, but 24% of women reported side effects versus 5% on placebo [40].",
+   "severity": "low",
+   "summary": "The magnesium excerpt states the 58% reduction in eclampsia risk and also says it 'halved' the risk, which are not the same figure.",
+   "suggested_fix": "Use one consistent figure for the Magpie eclampsia risk reduction (58% as given in the trial summary), or describe it as 'more than halved', so the two statements agree.",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "b80842a6f402",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "calcium-benefits-best-forms-dosing-and-side-effects",
+    "magnesium-benefits-best-forms-dosing"
+   ],
+   "fix_handle": "calcium-benefits-best-forms-dosing-and-side-effects",
+   "quote_a": "Building bone in adolescent girls (ages 9-13):** 800 mg calcium with 400 IU vitamin D3 and 400 mg magnesium daily [32]",
+   "quote_b": "The UL for supplemental magnesium (not including food sources) is **350 mg/day** for adults [1].",
+   "severity": "low",
+   "summary": "The calcium page recommends 400 mg magnesium daily for girls aged 9-13, which exceeds the supplemental magnesium UL of 350 mg/day given on the magnesium page.",
+   "suggested_fix": "Clarify whether the 400 mg magnesium refers to supplemental or total intake, or reconcile it with the 350 mg/day UL. Note that the UL as stated is for adults, so child-specific limits would need to be cited.",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "cd8735c1feb3",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "prebiotics-benefits-types-dosing-and-side-effects",
+    "probiotics-benefits-strains-dosing-and-side-effects"
+   ],
+   "fix_handle": "prebiotics-benefits-types-dosing-and-side-effects",
+   "quote_a": "Take medications at least 1 hour before or 2-4 hours after gel-forming fiber supplements [19][22].",
+   "quote_b": "Take probiotics at least 2 hours apart from antibiotics [12].",
+   "severity": "low",
+   "summary": "The prebiotics excerpt's own separation guidance is internally inconsistent, saying 2-4 hours after gel-forming fiber in one place and 'at least 1-2 hours' in another; this is not a conflict with the probiotics excerpt, which covers a different pairing (probiotics and antibiotics).",
+   "suggested_fix": "This is a prebiotics-excerpt internal inconsistency, not a cross-excerpt conflict; reconcile the 2-4 hour and 1-2 hour separation statements within the prebiotics reference.",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "400096897a89",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects",
+    "vitamin-c-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "quote_a": "Restless legs syndrome (ferritin <75 ng/mL):** 65 mg iron (from 325 mg ferrous sulfate) with 200 mg vitamin C, twice daily (Winkelman, Neurology 2016) [8].",
+   "quote_b": "**For men, people with a history of kidney stones, or those with known defects in oxalate or vitamin C metabolism, it may be wise to limit supplemental vitamin C to RDA levels (75-90 mg) or no more than 250 mg per day [125].**",
+   "severity": "low",
+   "summary": "A's restless-legs regimen pairs iron with 200 mg vitamin C twice daily (400 mg/day, a male-relevant dose above the 250 mg/day limit B suggests for men and stone-prone people) without any caveat.",
+   "suggested_fix": "Note that the 400 mg/day vitamin C in the RLS regimen exceeds the 250 mg/day limit B suggests for men and people with kidney stone history, or cross-reference B's caution.",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "ce368b6811a9",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "vitamin-c-benefits-forms-dosing-and-side-effects",
+    "vitamin-e-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+   "quote_a": "**AREDS formula (AMD progression):** 500 mg/day as part of the AREDS combination supplement, recommended only for people with intermediate or advanced AMD in one eye [101][102].",
+   "quote_b": "The Age-Related Eye Disease Study (AREDS), a landmark RCT, found that a combination supplement containing vitamin E (400 IU synthetic), beta-carotene, vitamin C (500 mg), zinc (80 mg), and copper (2 mg) reduced the risk of developing advanced AMD by 25% over 5 years in people already at high risk (intermediate AMD or advanced AMD in one eye) [43].",
+   "severity": "low",
+   "summary": "Excerpt A restricts the AREDS formula to intermediate AMD or advanced AMD in one eye, while B describes the same population as at high risk, with advanced AMD in one eye as one qualifying group; the wording is inconsistent between the two.",
+   "suggested_fix": "Align the eligibility description for AREDS in both articles. Note that the trial population was people at high risk (intermediate AMD or advanced AMD in one eye).",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
+  },
+  {
+   "id": "e536e009474d",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "vitamin-c-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+   "quote_a": "Doses above 400 mg show diminishing returns in absorption. Too much can cause diarrhea and may increase cataract risk [15].",
+   "quote_b": "Low-to-moderate doses (60-250 mg/day) may be protective rather than harmful (see Section 3).",
+   "severity": "low",
+   "summary": "A links vitamin C excess generally to increased cataract risk, while B ties the increased risk to about 1,000 mg/day long-term (in women) and says low-to-moderate doses may be protective.",
+   "suggested_fix": "Qualify the cataract statement in A to say the risk was seen with long-term intake around 1,000 mg/day, and that lower doses (60-250 mg/day) may be protective, as B describes.",
+   "first_seen": "2026-10-10",
+   "last_seen": "2026-10-10",
+   "status": "open",
+   "last_checked": "2026-10-10"
   }
  ]
 }

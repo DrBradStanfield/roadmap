@@ -3,8 +3,9 @@
  * the USER's own cloud (Google Drive / Dropbox / GitHub / self-host).
  *
  * This is the local-first replacement for the Supabase tables. Brad's servers
- * never store this. See `claude_business/docs/health-roadmap-v2-implementation.md`
- * §3 for the schema and §5.3 for the merge/conflict model.
+ * never store this. See `docs/architecture-v2/client-architecture.md`
+ * ("The `RoadmapFile`" and "Merge & conflict model") for the schema and the
+ * merge/conflict model.
  *
  * Design rules (from the decision record):
  *  - All clinical values in SI canonical units, exactly as today.
