@@ -56,4 +56,16 @@ describe('US-15 AC28: parseRouterReply takes the correction', () => {
   it('uses the last object that parses, skipping a later one that does not', () => {
     expect(parseRouterReply('{"handles":["diet"]}\nNote: {not json}')).toEqual({ handles: ['diet'] });
   });
+  it('a later object with no handles list never overrides the answer', () => {
+    for (const tail of ['{"note":"x"}', '{}', '{"result":{"handles":["sleep"]}}']) {
+      expect(parseRouterReply(`{"handles":["diet"]}\n${tail} }`)).toEqual({ handles: ['diet'] });
+    }
+  });
+
+  it('with no handles object at all, it throws the error it throws today', () => {
+    const text = '{"note":"x"}\n{"other":1}';
+    let today: unknown;
+    try { before(text); } catch (err) { today = err; }
+    expect(() => parseRouterReply(text)).toThrow((today as Error).message);
+  });
 });

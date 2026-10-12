@@ -324,8 +324,9 @@ async function routeQuery(currentMessage: string, retryOnRateLimit = true, recor
   // Production's parser (US-15 AC28): prose around the JSON, or a corrected
   // second object, still routes.
   try {
-    const parsed = parseRouterReply(text) as { handles?: unknown };
-    if (!Array.isArray(parsed.handles)) return { handles: [], rateLimited: false };
+    const parsed = parseRouterReply(text) as { handles?: unknown } | null;
+    // No handles list is a router_error in production too (RouterOutput).
+    if (!Array.isArray(parsed?.handles)) throw new Error('reply has no handles list');
     const handles = parsed.handles
       .filter((h): h is string => typeof h === 'string' && /^[a-z0-9-]+$/.test(h) && h.length <= 120)
       .map(repairHandle)
@@ -333,8 +334,8 @@ async function routeQuery(currentMessage: string, retryOnRateLimit = true, recor
       .slice(0, 3);
     return { handles, rateLimited: false };
   } catch (err) {
-    // A reply nothing parses is a router_error in production: count it like an
-    // API error, never a silent ∅ (chat-health W41).
+    // A reply nothing parses, or one with no handles list, is a router_error in
+    // production: count it like an API error, never a silent ∅ (chat-health W41).
     apiErrorCount++;
     process.stdout.write(` [parse-error: ${String((err as Error).message ?? err).slice(0, 100)}]`);
     return { handles: [], rateLimited: false };

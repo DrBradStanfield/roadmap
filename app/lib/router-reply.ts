@@ -7,7 +7,8 @@
  * fails, the model may have corrected itself: on 2026-10-07 the router sent
  * JSON, then "Wait — correction", then a second object, and the turn got no
  * handles. So the reply is scanned for its top-level `{…}` objects, braces
- * inside JSON strings not counted, and the last one that parses wins. If none
+ * inside JSON strings not counted, and the last one that parses AND holds a
+ * `handles` list wins (a trailing note or example object never overrides it). If none
  * parses, the first error is thrown, so router_error is unchanged.
  */
 import { extractJsonObject } from '../../packages/health-core/src/lab-extraction';
@@ -29,7 +30,10 @@ export function parseRouterReply(text: string): unknown {
       else if (c === '}' && depth > 0 && --depth === 0) objects.push(text.slice(start, i + 1));
     }
     for (const candidate of objects.reverse()) {
-      try { return JSON.parse(candidate); } catch { /* try the one before */ }
+      try {
+        const parsed = JSON.parse(candidate) as { handles?: unknown } | null;
+        if (Array.isArray(parsed?.handles)) return parsed;
+      } catch { /* try the one before */ }
     }
     throw err;
   }
