@@ -32,7 +32,7 @@ title: Main
 - html: <a href="sub/plan.md#top">rawhtml</a> and <code>[incode](notes.txt)</code>
 - untracked: [stray](stray.txt), [ignored](output/draft.txt)
 - colon: [colon](notes:x.md), [win](C:\\docs\\a.md)
-- crlf: [crlf](\r\nnotes.txt), and a tracked file named like a prototype key: [proto](__proto__)
+- crlf: [crlf](\r\ncrlf.txt), [cr](\rcr.txt), [crref][crref], and a tracked file named like a prototype key: [proto](__proto__)
 - images by reference: ![logo][logo], ![both][shared], and a link [see][shared]
 - [reflink][ref]
 - \`\`\`
@@ -40,6 +40,7 @@ title: Main
   \`\`\`
 
 [ref]: notes.txt
+[crref]:\r\ncrref.txt
 [logo]: notes.txt
 [shared]: my%20file.txt
 
@@ -82,7 +83,7 @@ beforeAll(() => {
   git('remote', 'add', 'origin', 'git@github.com:acme/widgets.git');
   mkdirSync(join(repo, 'sub'));
   writeFileSync(join(repo, 'sub', 'plan.md'), `---\nartifact: ${ART}\n---\n# Plan\n`);
-  for (const f of ['notes.txt', 'my file.txt', 'notes:x.md', 'notes(1).md', 'image.png', '__proto__']) writeFileSync(join(repo, f), 'n\n');
+  for (const f of ['notes.txt', 'my file.txt', 'notes:x.md', 'notes(1).md', 'image.png', '__proto__', 'crlf.txt', 'cr.txt', 'crref.txt']) writeFileSync(join(repo, f), 'n\n');
   writeFileSync(join(repo, 'main.md'), SOURCE);
   writeFileSync(join(repo, '.gitignore'), 'output/\n');
   git('add', '-A');
@@ -99,7 +100,7 @@ afterAll(() => rmSync(repo, { recursive: true, force: true }));
 describe('md-artifact link map (build time)', () => {
   it('builds and prints the summary line (distinct targets by kind)', () => {
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('links:    1 mapped to artifacts, 8 to GitHub, 5 unresolved (distinct targets)');
+    expect(result.stdout).toContain('links:    1 mapped to artifacts, 11 to GitHub, 5 unresolved (distinct targets)');
   });
 
   it('embeds the Markdown body exactly as written (front matter stripped) and never changes the .md', () => {
@@ -117,6 +118,8 @@ describe('md-artifact link map (build time)', () => {
       'image.png': `${GH}/blob/main/image.png`, // collected liberally; the page never touches images
       'notes:x.md': `${GH}/blob/main/notes%3Ax.md`, // a colon that is not a scheme is a path
       'my%20file.txt': `${GH}/blob/main/my%20file.txt`,
+      // reached only after a CRLF / bare CR (inline and reference), so these prove the line-ending fix (Codex)
+      'crlf.txt': `${GH}/blob/main/crlf.txt`, 'cr.txt': `${GH}/blob/main/cr.txt`, 'crref.txt': `${GH}/blob/main/crref.txt`,
     });
     // A literal '__proto__' key would set the prototype, so check that own key separately (Codex).
     expect(Object.hasOwn(links, '__proto__')).toBe(true);
@@ -177,7 +180,7 @@ describe('md-artifact rendered page (WebKit e2e)', () => {
         notes: `${GH}/blob/main/notes.txt#L3`, dir: `${GH}/tree/main/sub`, spaced: `${GH}/blob/main/my%20file.txt`,
         parens: `${GH}/blob/main/notes(1).md`, escaped: `${GH}/blob/main/notes(1).md`,
         colon: `${GH}/blob/main/notes%3Ax.md`, see: `${GH}/blob/main/my%20file.txt`,
-        crlf: `${GH}/blob/main/notes.txt`, proto: `${GH}/blob/main/__proto__`, // CRLF before the destination; __proto__ key (Codex)
+        crlf: `${GH}/blob/main/crlf.txt`, cr: `${GH}/blob/main/cr.txt`, crref: `${GH}/blob/main/crref.txt`, proto: `${GH}/blob/main/__proto__`, // CRLF before the destination; __proto__ key (Codex)
         reflink: `${GH}/blob/main/notes.txt`, incode: `${GH}/blob/main/notes.txt`, quoted: `${GH}/blob/main/notes.txt`, listprose: `${GH}/blob/main/notes.txt`,
         gone: 'nope.md#x', ctor: 'constructor', stray: 'stray.txt', ignored: 'output/draft.txt',
         web: 'https://example.com/a.md', anchor: '#main', abs: '/etc/hosts', mail: 'mailto:a@b.c',
