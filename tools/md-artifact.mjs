@@ -33,11 +33,12 @@
  * files git tracks; owner/repo from that repo's `origin`). A missing, untracked,
  * gitignored or Windows (C:\...) target stays out of the map and prints
  * `unresolved link` when a cheap check says it is outside code. On the page a
- * marked walkTokens hook swaps the href of each `link` token in the map (and
- * raw <a href> outside <pre>/<code> blocks), keeping its #fragment, so the real
- * parser decides what is a link: code and images are never touched. Scheme URLs
- * (`x://`, mailto:, tel:, data:, javascript:), #anchors and /paths are left
- * alone; a colon that is not a scheme (`notes:x.md`) is a path.
+ * marked walkTokens hook swaps the href of each Markdown `link` token in the
+ * map, keeping its #fragment, so the real parser decides what is a link: code
+ * and images are never touched, and raw HTML (including <a href>) is left as
+ * written. Scheme URLs (`x://`, mailto:, tel:, data:, javascript:), #anchors
+ * and /paths are left alone; a colon that is not a scheme (`notes:x.md`) is a
+ * path.
  */
 
 import fs from 'node:fs';
@@ -164,7 +165,6 @@ function collect(target, at, linkish) {
 }
 for (const m of mdBody.matchAll(/\]\([ \t]*\n?[ \t]*/g)) collect(destAt(mdBody, m.index + m[0].length), m.index, !closesImage(mdBody, m.index));
 for (const m of mdBody.matchAll(/^([ \t>]*(?:(?:[-*+]|\d{1,9}[.)])[ \t]+)?)\[(?!\^)(?:[^\]\\\n]|\\.)+\]:[ \t]*\n?[ \t]*/gm)) collect(destAt(mdBody, m.index + m[0].length), m.index + m[1].length, true);
-for (const m of mdBody.matchAll(/\bhref\s*=\s*(?:"([^"]*)"|'([^']*)')/gi)) collect(m[1] ?? m[2], m.index, true);
 const links = Object.fromEntries([...resolved].filter(([, url]) => url));
 
 const outDir = path.join(repoRoot, '.artifacts');
@@ -255,8 +255,8 @@ window.__LINKS__ = ${linksJson};</script>
     return;
   }
   // Relative links: the build mapped each target path to a URL (see header).
-  // Only link tokens and raw <a href> outside <pre>/<code> blocks change, so
-  // code, code spans and images keep exactly what the .md says.
+  // Only Markdown link tokens change, so code, code spans, images and raw HTML
+  // (including <a href>) keep exactly what the .md says.
   var links = window.__LINKS__;
   var own = function (p) { return Object.prototype.hasOwnProperty.call(links, p); };
   var mapHref = function (href) {
@@ -266,12 +266,6 @@ window.__LINKS__ = ${linksJson};</script>
   };
   window.marked.use({ walkTokens: function (t) {
     if (t.type === 'link') t.href = mapHref(t.href) || t.href;
-    else if (t.type === 'html' && !/^\\s*<(pre|code|script|style|textarea)\\b/i.test(t.text)) {
-      t.text = t.text.replace(/(<a\\s[^>]*?\\bhref\\s*=\\s*)(["'])(.*?)\\2/gi, function (m, pre, q, href) {
-        var url = mapHref(href);
-        return url ? pre + q + url + q : m;
-      });
-    }
   } });
   doc.innerHTML = window.marked.parse(window.__MD__, { gfm: true });
 

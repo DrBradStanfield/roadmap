@@ -3,8 +3,9 @@
  * tools/md-artifact.mjs embeds the .md unchanged plus a build-time map
  * {relative target path -> URL} (the linked doc's Artifact, else GitHub; else
  * left out with a warning). The page's marked walkTokens hook applies the map
- * to link tokens only, so the real parser decides what is a link: the e2e test
- * renders the built page in WebKit and checks code and images are untouched.
+ * to Markdown link tokens only, so the real parser decides what is a link: the
+ * e2e test renders the built page in WebKit and checks code, images and raw HTML
+ * (including <a href>) are untouched.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -60,6 +61,11 @@ An indented code block:
 - a list item
 
     [listprose](notes.txt)
+
+<div>
+<pre><a href="notes.txt">divpre</a></pre>
+<a href="sub/plan.md">divplain</a>
+</div>
 `;
 
 let repo: string;
@@ -137,7 +143,7 @@ describe('md-artifact link map (build time)', () => {
 
 // The page itself, rendered by the real marked in WebKit (every iPhone browser).
 describe('md-artifact rendered page (WebKit e2e)', () => {
-  it('rewrites link tokens only: code, raw <pre> and images keep what the .md says', async (ctx) => {
+  it('rewrites Markdown link tokens only: code, raw HTML and images keep what the .md says', async (ctx) => {
     const online = await fetch(MARKED, { method: 'HEAD', signal: AbortSignal.timeout(5000) }).then(r => r.ok, () => false);
     if (!online) {
       console.warn(`SKIPPED md-artifact e2e: cannot reach ${MARKED} (the page loads marked from cdnjs)`);
@@ -163,14 +169,15 @@ describe('md-artifact rendered page (WebKit e2e)', () => {
         return { a, img, code: [...doc.querySelectorAll('code')].map(c => c.textContent), pre: pre?.textContent };
       });
       expect(got.a).toMatchObject({
-        plan: `${ART}#goals`, bare: ART, rawhtml: `${ART}#top`,
+        plan: `${ART}#goals`, bare: ART,
         notes: `${GH}/blob/main/notes.txt#L3`, dir: `${GH}/tree/main/sub`, spaced: `${GH}/blob/main/my%20file.txt`,
         parens: `${GH}/blob/main/notes(1).md`, escaped: `${GH}/blob/main/notes(1).md`,
         colon: `${GH}/blob/main/notes%3Ax.md`, see: `${GH}/blob/main/my%20file.txt`,
         reflink: `${GH}/blob/main/notes.txt`, incode: `${GH}/blob/main/notes.txt`, quoted: `${GH}/blob/main/notes.txt`, listprose: `${GH}/blob/main/notes.txt`,
         gone: 'nope.md#x', ctor: 'constructor', stray: 'stray.txt', ignored: 'output/draft.txt',
         web: 'https://example.com/a.md', anchor: '#main', abs: '/etc/hosts', mail: 'mailto:a@b.c',
-        preanchor: 'notes.txt', // inside a raw <pre> block: untouched
+        // raw HTML <a href> is left as written, wherever it sits (Codex: a <div> nesting a <pre>)
+        rawhtml: 'sub/plan.md#top', preanchor: 'notes.txt', divpre: 'notes.txt', divplain: 'sub/plan.md',
       });
       for (const t of ['span', 'span2', 'codegone', 'listfence', 'fencegone', 'fenced', 'indented', 'pre']) {
         expect(Object.hasOwn(got.a, t)).toBe(false);
