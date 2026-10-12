@@ -5254,5 +5254,526 @@
     ],
     "must_not_mention": [],
     "notes": "New. Entry: \"A baseline colonoscopy is offered at about 10 years after the disease starts.\""
+  },
+  {
+    "query": "I have the 52 mg hormone coil (Mirena). How many years can it stay in for contraception?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "intrauterine-contraception"
+    ],
+    "must_mention": [
+      "8"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Duration of use is 8 years.\""
+  },
+  {
+    "query": "I have a copper coil, my period is late, and now I have low belly pain and my shoulder tip hurts. Can I wait and see how it goes?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "intrauterine-contraception"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Call 111 or go to the emergency department if you have an IUD, you may be pregnant, and you have symptoms that could mean an ectopic pregnancy:\""
+  },
+  {
+    "query": "What haemoglobin level counts as anaemia for a woman?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "iron-deficiency-in-adults"
+    ],
+    "must_mention": [
+      "115"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Women: lower than 115 g/L (including in pregnancy).\""
+  },
+  {
+    "query": "I'm bleeding from my bowel right now, I'm dizzy with a racing pulse, and my last blood test showed haemoglobin of 55. Can I wait for my GP appointment next week?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "iron-deficiency-in-adults"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"You feel unwell from blood loss, for example severe anaemia (Hb less than 60)\""
+  },
+  {
+    "query": "My eyes are dry and gritty and I have never used drops. How often should I use lubricant drops to start with, and for how long?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "irritated-and-dry-eyes"
+    ],
+    "must_mention": [
+      "6 times"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"lubricant drops 6 times during the day, and an ointment at night, for 2 weeks\""
+  },
+  {
+    "query": "I have used drops and ointment for my dry eyes for 6 weeks, including a stronger routine, and nothing has changed. Who else can look at them?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "irritated-and-dry-eyes"
+    ],
+    "must_mention": [
+      "optometrist"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"If there is no improvement after 6 weeks, but no marked corneal changes or unexplained reduced vision, an optometrist is another option.\""
+  },
+  {
+    "query": "My dad is dying at home in bed. How often should he be turned if he can cope with it?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "last-days-of-life-care-adults"
+    ],
+    "must_mention": [
+      "2 hour"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"If the person can tolerate it, they are turned 2 hourly.\""
+  },
+  {
+    "query": "Mum is in her last days and can no longer swallow her tablets. How will her essential medicines be given?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "last-days-of-life-care-adults"
+    ],
+    "must_mention": [
+      "skin"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"change essential medicines to injections under the skin (subcutaneous)\""
+  },
+  {
+    "query": "At what age do most women reach menopause on average?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "menopause"
+    ],
+    "must_mention": [
+      "51"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"The average age of menopause is 51 years.\""
+  },
+  {
+    "query": "I'm 47 and my periods have stopped. How long after my last period do I still need contraception?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "menopause"
+    ],
+    "must_mention": [
+      "2 years"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"If younger than 50 years: for two years after your final period.\""
+  },
+  {
+    "query": "What is the usual dose of riluzole for motor neurone disease?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "motor-neurone-disease"
+    ],
+    "must_mention": [
+      "50 mg"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"The usual dose is 50 mg 12 hourly.\""
+  },
+  {
+    "query": "I have MND and take riluzole. I've developed a fever. What might my doctor check for?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "motor-neurone-disease"
+    ],
+    "must_mention": [
+      "white cell"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"You take riluzole and develop a fever or feverish illness. Your doctor may check for a low white cell count (neutropenia).\""
+  },
+  {
+    "query": "My mother is 80 and losing weight. What BMI is low enough that we should ask for a dietitian referral?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "older-adults-weight-and-nutrition"
+    ],
+    "must_mention": [
+      "18.5"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"your BMI is less than 18.5, or you have lost more than 10% of your weight unintentionally in the past 3 to 6 months\""
+  },
+  {
+    "query": "My dad is 78 and has been eating more food-first meals for a while but is no better. When might supplement drinks be considered?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "older-adults-weight-and-nutrition"
+    ],
+    "must_mention": [
+      "4 weeks"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"If there is no improvement after 4 weeks of Food First, your doctor may consider oral nutrition supplements\""
+  },
+  {
+    "query": "I am having zoledronic acid infusions for osteoporosis. How often are the first doses given?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "osteoporosis-in-adults"
+    ],
+    "must_mention": [
+      "18 months"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"optimal initial treatment is 5 mg every 18 months for 4 doses\""
+  },
+  {
+    "query": "I take alendronate for osteoporosis and have developed an aching pain in my thigh and groin. Should I mention it?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "osteoporosis-in-adults"
+    ],
+    "must_mention": [
+      "thigh"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"an early sign of a rare atypical thigh bone (femoral) fracture\""
+  },
+  {
+    "query": "My 5 year old has glue ear. How long does it usually take to clear up without treatment?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "otitis-media-with-effusion-glue-ear"
+    ],
+    "must_mention": [
+      "3 months"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Most cases resolve within 3 months without treatment.\""
+  },
+  {
+    "query": "My child has glue ear with a blocked nose and the doctor mentioned a nasal steroid spray. How long is a trial?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "otitis-media-with-effusion-glue-ear"
+    ],
+    "must_mention": [
+      "6 weeks"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"fluticasone 50 micrograms into each nostril once daily for 6 weeks\""
+  },
+  {
+    "query": "The doctor said they might give adenosine into a vein for my fast heart rhythm (SVT). What dose do they usually start with?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "palpitations"
+    ],
+    "must_mention": [
+      "6 mg"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"The first dose is usually 6 mg.\""
+  },
+  {
+    "query": "My heart is fluttering and I have chest pain and I am short of breath. Should I just book a GP visit for next week?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "palpitations"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Call 111 or go to the emergency department if you feel unwell with palpitations and any of:\""
+  },
+  {
+    "query": "I was attacked in a fight and cut by broken glass on my forearm. It is bleeding and I feel okay. Do I need to go to hospital?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "physical-assault"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Glass injuries. These need an X-ray and thorough exploration.\""
+  },
+  {
+    "query": "I was punched in an assault last night. If I see my doctor, do I have to report it to the police?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "physical-assault"
+    ],
+    "must_mention": [
+      "choose"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"You can choose whether to make a police report or seek counselling.\""
+  },
+  {
+    "query": "I wear contact lenses and one of my eyes is red and sore. Can I just wait a few days?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "red-eye"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"You wear contact lenses and your eye is red.\""
+  },
+  {
+    "query": "My eye is red but I can see fine and the cause is not clear. When might a doctor want to check it again?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "red-eye"
+    ],
+    "must_mention": [
+      "24 hours"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"If the cause is unclear, your doctor may review you again in 24 hours to check for a condition that is getting worse.\""
+  },
+  {
+    "query": "My 2 month old has a red patch with some pus on her arm. Can I just put cream on it and wait?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "skin-infections-in-children"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Is under 3 months old and has a skin infection.\""
+  },
+  {
+    "query": "My son has sores on his skin that we can't cover. When can he go back to school?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "skin-infections-in-children"
+    ],
+    "must_mention": [
+      "24 hours"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"or until at least 24 hours after oral antibiotics have been started\""
+  },
+  {
+    "query": "What testosterone level counts as unequivocally low for diagnosing testosterone deficiency in a man?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "testosterone-deficiency-in-men"
+    ],
+    "must_mention": [
+      "5 nmol"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"unequivocally and consistently low serum total testosterone (less than 5 nmol/L)\""
+  },
+  {
+    "query": "I'm starting testosterone treatment. How often will I need a full blood count rechecked?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "testosterone-deficiency-in-men"
+    ],
+    "must_mention": [
+      "6"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"An FBC every 6 to 12 months for all patients, as testosterone therapy may cause polycythaemia.\""
+  },
+  {
+    "query": "I have a strong family history of blood clots and I'm taking a long flight. What dose of preventive rivaroxaban might my doctor suggest?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "thrombotic-disorders"
+    ],
+    "must_mention": [
+      "10 mg"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"take preventive rivaroxaban 10 mg for four days, starting on the day of flying\""
+  },
+  {
+    "query": "How long does a flight have to be to count as a clot risk factor?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "thrombotic-disorders"
+    ],
+    "must_mention": [
+      "6 hours"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Travel: an airline flight more than 6 hours.\""
+  },
+  {
+    "query": "Some cement splashed into my eye at work. How long should I rinse it for?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "trauma-in-eyes"
+    ],
+    "must_mention": [
+      "20 minutes"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Best practice is to rinse for at least 20 minutes.\""
+  },
+  {
+    "query": "My son was hit in the eye with a cricket ball and there is a reddish haze in the front of his eye. His vision seems fine. Is it okay to watch it?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "trauma-in-eyes"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Sometimes it is only a haze. Call 111 or go to the emergency department\""
+  },
+  {
+    "query": "How much weight do I have to lose before it counts as unintentional weight loss, and over what time?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "unintentional-weight-loss-in-adults"
+    ],
+    "must_mention": [
+      "5%"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Unintentional weight loss means losing greater than 5% of total body weight over 6 to 12 months\""
+  },
+  {
+    "query": "I've lost about 12% of my body weight over 4 months without trying. Should I see my doctor?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "unintentional-weight-loss-in-adults"
+    ],
+    "must_mention": [
+      "10%"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Lost greater than 10% of your body weight over 3 to 6 months without trying.\""
+  },
+  {
+    "query": "I fell on my bike frame, there is blood at the tip of my penis and I can't pass urine. Can the GP just put a catheter in?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "urethral-catheterisation"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Call 111 or go to the emergency department if urethral trauma is possible.\""
+  },
+  {
+    "query": "When is the first change of a long-term urinary catheter usually planned?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "urethral-catheterisation"
+    ],
+    "must_mention": [
+      "6 weeks"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"the first catheter change is planned for 6 weeks\""
+  },
+  {
+    "query": "What is the usual first-choice antibiotic and course length for a bladder infection in an adult?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "uti-in-adults"
+    ],
+    "must_mention": [
+      "nitrofurantoin",
+      "5 days"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"nitrofurantoin 100 mg modified release tablets twice daily for 5 days\""
+  },
+  {
+    "query": "I'm a 40 year old woman with a simple UTI. Can a pharmacist give me antibiotics without a prescription?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "uti-in-adults"
+    ],
+    "must_mention": [
+      "trimethoprim"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"accredited pharmacists may supply a single course of 3 trimethoprim tablets for uncomplicated UTIs in women aged 16 to 65 years\""
+  },
+  {
+    "query": "How long should I try compression stockings for my varicose veins before other options are considered?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "varicose-veins-and-chronic-venous-insufficiency"
+    ],
+    "must_mention": [
+      "3 months"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"A trial of compression therapy for at least 3 months\""
+  },
+  {
+    "query": "I have varicose veins and a leg ulcer, and my ankle brachial pressure index was under 0.5. What does that mean for me?",
+    "category": "pathway-refresh-new-1b",
+    "source": "knowledge-refresh-new-1b-2026-10-12",
+    "answer_handles": [
+      "varicose-veins-and-chronic-venous-insufficiency"
+    ],
+    "must_mention": [
+      "urgent"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"An ankle brachial pressure index (ABPI) test is less than 0.5, which indicates severe arterial disease.\""
   }
 ]
