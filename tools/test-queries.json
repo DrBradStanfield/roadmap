@@ -4230,5 +4230,205 @@
     "category": "lifestyle",
     "source": "production",
     "notes": "2026-10-11 chat-health loop (W41 run): real YouTube comment 2026-10-07 on the end-of-obesity video, paraphrased on ingest (re-paraphrased after the W41 adversarial review: the quoted line with its misspelling, the bulleted list and the accusation keep the shape; figures become typical values; the video timestamp is gone). Production row was a ROUTER ERROR, not a miss: the router replied with two JSON objects and a 'Wait, correction' sentence between them, so JSON.parse(extractJsonObject(raw)) failed (first { to last }); all four handles in both objects were real. BASELINE 2026-10-11 as typed: harness 6/6 routed (diet and best-diet-confirmed every run), production routeQuery 10/10 routed, 0 of 16 raw replies held more than one object. best-diet-confirmed-by-… (routed every run) is left out of expected because its seven-digit slug trips the privacy test's phone-shaped rule. Lifestyle arms 2026-10-11 on THIS text with raw replies logged: L3 FAIL (run 3 was the production shape again, two objects with 'Correction: copying handles exactly from the index' between them, scored a silent ∅), L4 PASS 3/3. The first, shorter paraphrase: PASS L1, FAIL L2 (one unlogged ∅). Regression case for the routing; the parse failure is stochastic, and the harness scores a two-object reply as a silent ∅ (W41 proposal)."
+  },
+  {
+    "query": "can you analyze my data",
+    "category": "own-data-analysis",
+    "source": "us-15-2026-10-12",
+    "surface": "doctor",
+    "answer_handles": [],
+    "user_context": {
+      "unitSystem": "si",
+      "medications": [],
+      "screenings": [],
+      "sex": "male",
+      "heightCm": 178,
+      "weightKg": 75,
+      "waistCm": 84,
+      "birthYear": 1975,
+      "birthMonth": 3,
+      "hba1c": 34,
+      "ldlC": 3.6,
+      "systolicBp": 136,
+      "diastolicBp": 86
+    },
+    "must_mention": [
+      "34",
+      "136",
+      "statin"
+    ],
+    "must_not_claim": [
+      "blood pressure is normal",
+      "blood pressure is on target",
+      "blood pressure is healthy"
+    ],
+    "notes": "Issue #135 (a), Brad 2026-10-12: a no-topic analysis ask answers through the algorithm: on target, needs work, the suggested plan. Made-up profile, age 51: HbA1c 34 mmol/mol, BMI 23.7 and waist 84 cm on target; LDL 3.6 mmol/L (borderline) and BP 136/86 (stage 1, target under 120/80) not. Medications tracked, none entered, so the plan holds med-statin ('Consider starting a statin'), bp-stage1, ldl-borderline, low-salt and lipid-diet. Pass: the good value's number (34), the bad value's number (136) and a plan title's word (statin). Nothing routes, so no handles. BASELINE 2026-10-12, prompt before #135, 3 runs: PASS 3/3. Every answer already split needs attention / looks fine / missing data, with the numbers and the statin card; one run said 'no medications are tracked' (they are, none entered)."
+  },
+  {
+    "query": "how am I doing overall?",
+    "category": "own-data-analysis",
+    "source": "us-15-2026-10-12",
+    "surface": "doctor",
+    "answer_handles": [],
+    "user_context": {
+      "unitSystem": "si",
+      "medications": [],
+      "screenings": [],
+      "sex": "female",
+      "heightCm": 165,
+      "weightKg": 61,
+      "waistCm": 76,
+      "birthYear": 1981,
+      "birthMonth": 6,
+      "hba1c": 35,
+      "systolicBp": 116,
+      "diastolicBp": 74
+    },
+    "must_mention": [
+      "apob"
+    ],
+    "must_not_claim": [
+      "cholesterol is normal",
+      "cholesterol is healthy",
+      "cholesterol is fine",
+      "cholesterol is on target",
+      "lipids are normal",
+      "lipids are healthy"
+    ],
+    "notes": "Issue #135 (a), Brad 2026-10-12: a missing value the algorithm uses is named as what would complete the picture. Made-up profile, age 45, no lipid values at all; everything entered is on target. Pass: names ApoB, the algorithm's preferred lipid marker (the fibre card's evidence mentions cholesterol, so 'cholesterol' alone could pass on an answer that never flags the gap), and never calls the absent cholesterol normal. KNOWN LIMIT: an answer that asks only for 'a lipid panel' fails here; read the answer before trusting a fail. BASELINE 2026-10-12, prompt before #135, 3 runs: PASS 3/3. Every answer named the missing lipids (ApoB, LDL, non-HDL) and Lp(a), and creatinine."
+  },
+  {
+    "query": "Is my HbA1c of 40 prediabetes?",
+    "category": "algorithm-precedence",
+    "source": "us-15-2026-10-12",
+    "surface": "doctor",
+    "answer_handles": [
+      "diabetes-screening-and-diagnosis-in-adults"
+    ],
+    "user_context": {
+      "unitSystem": "si",
+      "medications": [],
+      "screenings": [],
+      "sex": "female",
+      "heightCm": 163,
+      "weightKg": 64,
+      "waistCm": 80,
+      "birthYear": 1972,
+      "birthMonth": 9,
+      "hba1c": 40
+    },
+    "must_mention": [
+      "38.8",
+      "prediabet"
+    ],
+    "must_not_claim": [
+      "40 is normal",
+      "40 mmol/mol is normal",
+      "40 is in the normal range",
+      "40 mmol/mol is in the normal range",
+      "is not prediabetes",
+      "isn't prediabetes"
+    ],
+    "notes": "Issue #135 (b), Brad 2026-10-12: the algorithm's number wins over a loaded NZ pathway's. The algorithm calls HbA1c 38.8 mmol/mol or more prediabetes; the loaded pathway says 42 to 47. At 40 the roadmap says prediabetes (hba1c-prediabetic is in the plan). Pass: names 38.8 and prediabetes, and never says 40 is normal or not prediabetes. Attributing the 42 cut-off to the pathway is allowed, but a sentence 'under the pathway it is not prediabetes' fails here too. BASELINE 2026-10-12, prompt before #135, 3 runs: PASS 3/3. Each gave the roadmap's 38.8 first and the pathway's 42 to 47 second, attributed, but then left it to 'which definition your doctor uses'."
+  },
+  {
+    "query": "Is my blood pressure on target?",
+    "category": "algorithm-precedence",
+    "source": "us-15-2026-10-12",
+    "surface": "doctor",
+    "answer_handles": [
+      "hypertension-in-adults"
+    ],
+    "user_context": {
+      "unitSystem": "si",
+      "medications": [],
+      "screenings": [],
+      "sex": "male",
+      "heightCm": 180,
+      "weightKg": 78,
+      "waistCm": 86,
+      "birthYear": 1976,
+      "birthMonth": 2,
+      "systolicBp": 125,
+      "diastolicBp": 78
+    },
+    "must_mention": [
+      "120/80"
+    ],
+    "must_not_claim": [
+      "your blood pressure is on target",
+      "your bp is on target",
+      "blood pressure is at target",
+      "blood pressure is within target",
+      "blood pressure is within your target",
+      "125/78 is on target",
+      "125/78 is at target",
+      "125/78 is within",
+      "you're on target",
+      "you are on target",
+      "you're at target",
+      "you are at target"
+    ],
+    "notes": "Issue #135 (b), Brad 2026-10-12: the algorithm's BP target under 65 is below 120/80; the loaded pathway says below 130/80. Made-up profile, age 50, BP 125/78: above the roadmap target (low-salt is in the plan; no stage card, since stage 1 starts at 130 or a diastolic over 80). Pass: names 120/80 and never says the reading is on target. The diastolic alone being under 80 is true, so the claims name the whole reading. BASELINE 2026-10-12, prompt before #135, 3 runs: PASS 3/3. Each said above the roadmap's under-120/80 target, and named the pathway's 140/90 and 130/80 as other guidelines."
+  },
+  {
+    "query": "Which diabetes medicine would come first for me?",
+    "category": "algorithm-precedence",
+    "source": "us-15-2026-10-12",
+    "surface": "doctor",
+    "answer_handles": [
+      "non-insulin-diabetes-medications"
+    ],
+    "user_context": {
+      "unitSystem": "si",
+      "medications": [
+        {
+          "medicationKey": "glp1",
+          "drugName": "none",
+          "doseValue": null
+        },
+        {
+          "medicationKey": "sglt2i",
+          "drugName": "none",
+          "doseValue": null
+        },
+        {
+          "medicationKey": "metformin",
+          "drugName": "none",
+          "doseValue": null
+        }
+      ],
+      "screenings": [],
+      "sex": "male",
+      "heightCm": 175,
+      "weightKg": 98,
+      "waistCm": 108,
+      "birthYear": 1968,
+      "birthMonth": 5,
+      "hba1c": 54
+    },
+    "must_mention": [
+      "glp-1",
+      "sglt2"
+    ],
+    "must_not_claim": [
+      "metformin is the usual first-line",
+      "metformin is usually first",
+      "metformin is first-line",
+      "metformin is the first-line",
+      "metformin is the usual first",
+      "metformin would come first",
+      "metformin comes first",
+      "metformin is first",
+      "first medicine would be metformin",
+      "first medication would be metformin",
+      "first step would be metformin",
+      "first step is metformin",
+      "you'd start with metformin",
+      "you would start with metformin",
+      "start you on metformin",
+      "roadmap starts with metformin"
+    ],
+    "notes": "Issue #135 (b), Brad 2026-10-12: algorithm section 6 orders GLP-1, then SGLT2i, then metformin; the loaded pathway says metformin first-line. Made-up profile, age 58, BMI 32, HbA1c 54 mmol/mol, no GLP-1, SGLT2i or metformin, so the plan holds weight-med-glp1 ('Consider a GLP-1 medication') and hba1c-diabetic. Pass: names GLP-1 and SGLT2 (the roadmap's sequence) and never states metformin as first or first-line. Sharpened after the first baseline: all three answers opened 'Metformin is the usual first-line medicine' (attributed to the pathway) and never gave the roadmap's order, yet passed the first draft, which only caught 'for you' and 'the roadmap' phrasings. KNOWN LIMIT: 'In the NZ pathway, metformin is first-line' also fails; the rule allows naming the pathway's order, so read a fail before trusting it. BASELINE 2026-10-12, prompt before #135, 3 runs: FAIL 0/3 (scored against the sharpened checks; the logged answers replayed through the harness). All three led with the pathway's metformin first-line and never gave the roadmap's GLP-1, SGLT2i, metformin order; GLP-1 appeared only as the roadmap's separate weight card."
   }
 ]

@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { REPO_ROOT, tsxSpawn } from './test-helpers';
 import { loadBlogArticle } from '../app/lib/matched-content';
+import { buildChatContextJson } from '../packages/health-core/src/chat-context';
 
 interface Case { category: string; expected: string[]; must_mention?: string[] }
 
@@ -380,4 +381,80 @@ describe('test-chatbot-matching router reply parsing (US-15 AC28)', () => {
     expect(out).toMatch(/SUMMARY .* apiErrors=1 /);
     expect(status).toBe(1);
   }, 60_000);
+});
+
+// US-15 (issue #135, 2026-10-12): a fixture's `user_context` reaches the answer as
+// production builds it: the widget payload through buildChatContextJson, the system
+// through buildSystemBlocks with the fixture's posture. A payload that would not
+// make the intended plan exits the harness before any API call.
+describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
+  interface Entry { query: string; category: string; surface?: string; answer_handles?: string[]; user_context?: unknown; must_mention?: string[] }
+  const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
+  const CATEGORIES = 'own-data-analysis,algorithm-precedence';
+  const cases = all.filter(q => CATEGORIES.split(',').includes(q.category));
+
+  /** Run the harness offline; `fixtures` (if given) replaces tools/test-queries.json. Returns the answer calls' systems. */
+  function run(fixtures?: Entry[]) {
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-user-context-'));
+    try {
+      const stub = join(dir, 'fetch-stub.mjs');
+      const log = join(dir, 'calls.jsonl');
+      writeFileSync(stub, `
+        import fs from 'node:fs';
+        const fixtures = ${JSON.stringify(fixtures ?? null)};
+        const read = fs.readFileSync;
+        if (fixtures) fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? JSON.stringify(fixtures) : read(p, ...rest);
+        globalThis.fetch = async (_url, init) => {
+          const body = JSON.parse(init.body);
+          fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ query: body.messages[0].content, system: body.system, tools: !!body.tools }) + '\\n');
+          return new Response(JSON.stringify({
+            content: [{ type: 'text', text: 'stub answer' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+          }), { status: 200, headers: { 'content-type': 'application/json' } });
+        };
+      `);
+      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
+        '--category', CATEGORIES, '--fixed-handles-only', '--answer-check-runs', '1']);
+      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
+      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
+      let calls: Array<{ query: string; system: Array<{ text: string }>; tools: boolean }> = [];
+      try { calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l)); } catch { /* no call made */ }
+      return { status: res.status, stderr: res.stderr, calls };
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it('each answer call carries its own user data block, after the doctor posture and before the articles', () => {
+    expect(cases.length).toBeGreaterThan(0);
+    const { stderr, calls } = run();
+    expect(calls.length, stderr).toBe(cases.length);
+    for (const q of cases) {
+      const call = calls.find(c => c.query === q.query)!;
+      expect(call.tools).toBe(true); // an answer call, never the router
+      const texts = call.system.map(b => b.text);
+      const json = buildChatContextJson(q.user_context);
+      expect(json).not.toBeNull();
+      const user = texts.indexOf(`## Current User Health Data\n\n${json}`);
+      const posture = texts.findIndex(t => t.startsWith('## SURFACE CONTEXT — Dr Brad education assistant'));
+      const articles = texts.findIndex(t => t.startsWith('## Referenced Blog Articles'));
+      expect(texts[0].startsWith(readFileSync(join(REPO_ROOT, 'app/lib/chat-system-prompt.md'), 'utf-8'))).toBe(true);
+      expect(posture).toBeGreaterThan(0);
+      expect(user).toBe(posture + 1);
+      if (q.answer_handles!.length > 0) expect(articles).toBe(user + 1);
+      else expect(articles).toBe(-1);
+    }
+  }, 60_000);
+
+  it('a payload that makes no plan, carries an unknown key or loses a value exits before any API call', () => {
+    const good = { sex: 'male', heightCm: 178, unitSystem: 'si', medications: [], screenings: [] };
+    const fixture = (user_context: unknown): Entry => ({ query: 'how am I doing?', category: 'own-data-analysis', answer_handles: [], user_context, must_mention: ['x'] });
+    expect(run([fixture(good)]).calls.length).toBe(1); // liveness: the good payload is answered
+    for (const bad of [{ ...good, sex: undefined }, { ...good, ldl: 3.6 }, { ...good, hba1c: 400 }, 'male, 178 cm']) {
+      const { status, stderr, calls } = run([fixture(bad)]);
+      expect(stderr).toMatch(/user_context does not parse.* on: how am I doing\?/);
+      expect(calls).toEqual([]);
+      expect(status).toBe(1);
+    }
+  }, 120_000);
 });

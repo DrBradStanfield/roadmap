@@ -47,6 +47,13 @@
  *   surface?: 'doctor' | 'brand'  answer check only: adds app/lib/chat-posture-<surface>.md after the
  *                             products block, where production's buildSystemBlocks puts it. Omitted =
  *                             no posture block (the harness's behaviour before 2026-10-07).
+ *   user_context?: object      answer check only: the raw payload a widget sends as the chat's context
+ *                             (chatContextOf's shape: form fields, unitSystem, medications, screenings).
+ *                             It goes through production's buildChatContextJson, and the answer call
+ *                             gets production's buildSystemBlocks (so the evidence and knowledge-overview
+ *                             blocks too) with the fixture's posture; the widget's is 'doctor'. A payload
+ *                             that makes no plan, has a key the widget never sends, or loses a field to
+ *                             its range exits the harness before any API call.
  *
  * A fetch that throws (timeout, DNS, reset) counts as an API error, like a non-2xx:
  * visible, scored as ∅, and the run continues but never exits green. So does a
@@ -67,7 +74,7 @@
  * (system prompt + algorithm + products knowledge) PLUS matched pathway/blog content
  * loaded from the handles the router returned, or from `answer_handles` (block 4). The check runs N times
  * (matching --answer-check-runs, default = --runs) and requires majority pass so
- * a single stochastic blip doesn't flip the test. Does not load user data.
+ * a single stochastic blip doesn't flip the test. Loads user data only from a fixture's user_context.
  *
  * COST DISCIPLINE — read this before iterating, the audit cycle of 2026-05-14/15
  * burned ~$30 because of these mistakes:
@@ -96,6 +103,9 @@ import {
 import { CHAT_EDIT_TOOLS } from '../packages/health-core/src/chat-edits';
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
 import { parseRouterReply } from '../app/lib/router-reply';
+import { buildSystemBlocks } from '../app/lib/chat.server';
+import { buildChatContextJson } from '../packages/health-core/src/chat-context';
+import { healthInputSchema } from '../packages/health-core/src/validation';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -146,7 +156,7 @@ console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 
 // Dynamic portion (per-query, in checkAnswer): block 4 matched pathway/blog
 // content, loaded via loadMatchedContent() from the routing intersection
 // (or a fixture's answer_handles).
-// Does NOT load user data (per-user, would require a fake profile).
+// User data comes only from a fixture's made-up user_context (see the header).
 // ---------------------------------------------------------------------------
 
 // --answer-model qualifies a candidate answer model; the body shape follows its family.
@@ -359,6 +369,7 @@ interface TestQuery {
   max_length_chars?: number;   // answer must be at most this many characters
   answer_handles?: string[];   // fixed-handle answer check, no `expected` (see the header)
   surface?: 'doctor' | 'brand'; // answer check adds that surface's posture block (see the header)
+  user_context?: unknown;      // answer check sends this widget payload as the user's data (see the header)
 }
 
 const ALL_QUERIES: TestQuery[] = JSON.parse(
@@ -396,6 +407,18 @@ for (const q of ALL_QUERIES) {
     process.exit(1);
   }
   POSTURES.set(q.surface, fs.readFileSync(file, 'utf-8'));
+}
+// A payload that makes no plan, or silently loses a key or a value, would score a context the fixture never meant.
+const CONTEXT_KEYS = new Set([...Object.keys(healthInputSchema.shape), 'unitSystem', 'medications', 'screenings', 'measurementHistory']);
+const USER_CONTEXTS = new Map<TestQuery, string>();
+for (const q of ALL_QUERIES.filter(q => q.user_context !== undefined)) {
+  const json = buildChatContextJson(q.user_context);
+  const unknown = Object.keys(q.user_context ?? {}).filter(k => !CONTEXT_KEYS.has(k));
+  if (json === null || unknown.length > 0 || JSON.parse(json).excludedFields) {
+    console.error(`user_context does not parse${unknown.length ? ` (unknown keys: ${unknown.join(', ')})` : ''} on: ${q.query}`);
+    process.exit(1);
+  }
+  USER_CONTEXTS.set(q, json);
 }
 // --category takes a comma list, so several categories share one run and one cache warmup.
 const categories = categoryFilter?.split(',');
@@ -461,9 +484,12 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = [], retryOnR
   const matchedContent = loadMatchedContent(matchedHandles).content;
   // Production order (buildSystemBlocks): products, then the surface posture, then articles.
   const base = surface ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n${POSTURES.get(surface)}` : ANSWER_SYSTEM_CONTEXT;
-  const system = matchedContent
-    ? `${base}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
-    : base;
+  const userContextJson = USER_CONTEXTS.get(q);
+  const system = userContextJson !== undefined
+    ? buildSystemBlocks(userContextJson, { surfaceContext: surface && POSTURES.get(surface), blogArticles: matchedContent || null })
+    : matchedContent
+      ? `${base}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
+      : base;
   const body = {
     ...modelParams(ANSWER_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system,
