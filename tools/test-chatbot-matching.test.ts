@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { REPO_ROOT, tsxSpawn } from './test-helpers';
 import { loadBlogArticle } from '../app/lib/matched-content';
-import { buildChatContextJson } from '../packages/health-core/src/chat-context';
+import { resolveChatContext } from '../app/lib/chat.server';
 
 interface Case { category: string; expected: string[]; must_mention?: string[] }
 
@@ -384,17 +384,21 @@ describe('test-chatbot-matching router reply parsing (US-15 AC28)', () => {
 });
 
 // US-15 (issue #135, 2026-10-12): a fixture's `user_context` reaches the answer as
-// production builds it: the widget payload through buildChatContextJson, the system
+// production builds it: the widget payload through resolveChatContext, the system
 // through buildSystemBlocks with the fixture's posture. A payload that would not
-// make the intended plan exits the harness before any API call.
+// make the intended plan, or a fixture with no posture, exits the harness before
+// any API call; an explicit {} is production's empty context.
 describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
-  interface Entry { query: string; category: string; surface?: string; answer_handles?: string[]; user_context?: unknown; must_mention?: string[] }
+  interface Entry {
+    query: string; category: string; surface?: string; answer_handles?: string[]; user_context?: unknown;
+    must_mention?: string[]; must_match?: string[]; must_not_match?: string[];
+  }
   const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
   const CATEGORIES = 'own-data-analysis,algorithm-precedence';
   const cases = all.filter(q => CATEGORIES.split(',').includes(q.category));
 
   /** Run the harness offline; `fixtures` (if given) replaces tools/test-queries.json. Returns the answer calls' systems. */
-  function run(fixtures?: Entry[]) {
+  function run(fixtures?: Entry[], answer = 'stub answer') {
     const dir = mkdtempSync(join(tmpdir(), 'chatbot-user-context-'));
     try {
       const stub = join(dir, 'fetch-stub.mjs');
@@ -408,7 +412,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
           const body = JSON.parse(init.body);
           fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ query: body.messages[0].content, system: body.system, tools: !!body.tools }) + '\\n');
           return new Response(JSON.stringify({
-            content: [{ type: 'text', text: 'stub answer' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+            content: [{ type: 'text', text: ${JSON.stringify(answer)} }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
           }), { status: 200, headers: { 'content-type': 'application/json' } });
         };
       `);
@@ -419,7 +423,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
       const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
       let calls: Array<{ query: string; system: Array<{ text: string }>; tools: boolean }> = [];
       try { calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l)); } catch { /* no call made */ }
-      return { status: res.status, stderr: res.stderr, calls };
+      return { status: res.status, stderr: res.stderr, out: res.stdout.replace(/\x1b\[[0-9;]*m/g, ''), calls };
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -430,12 +434,13 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     const { stderr, calls } = run();
     expect(calls.length, stderr).toBe(cases.length);
     for (const q of cases) {
-      const call = calls.find(c => c.query === q.query)!;
+      // Two fixtures may share a query; the user data block tells them apart.
+      const block = `## Current User Health Data\n\n${resolveChatContext(q.user_context).userContextJson}`;
+      const call = calls.find(c => c.query === q.query && c.system.some(b => b.text === block))!;
+      expect(call, q.query).toBeDefined();
       expect(call.tools).toBe(true); // an answer call, never the router
       const texts = call.system.map(b => b.text);
-      const json = buildChatContextJson(q.user_context);
-      expect(json).not.toBeNull();
-      const user = texts.indexOf(`## Current User Health Data\n\n${json}`);
+      const user = texts.indexOf(block);
       const posture = texts.findIndex(t => t.startsWith('## SURFACE CONTEXT — Dr Brad education assistant'));
       const articles = texts.findIndex(t => t.startsWith('## Referenced Blog Articles'));
       expect(texts[0].startsWith(readFileSync(join(REPO_ROOT, 'app/lib/chat-system-prompt.md'), 'utf-8'))).toBe(true);
@@ -448,7 +453,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
 
   it('a payload that makes no plan, carries an unknown key or loses a value exits before any API call', () => {
     const good = { sex: 'male', heightCm: 178, unitSystem: 'si', medications: [], screenings: [] };
-    const fixture = (user_context: unknown): Entry => ({ query: 'how am I doing?', category: 'own-data-analysis', answer_handles: [], user_context, must_mention: ['x'] });
+    const fixture = (user_context: unknown): Entry => ({ query: 'how am I doing?', category: 'own-data-analysis', surface: 'doctor', answer_handles: [], user_context, must_mention: ['x'] });
     expect(run([fixture(good)]).calls.length).toBe(1); // liveness: the good payload is answered
     for (const bad of [{ ...good, sex: undefined }, { ...good, ldl: 3.6 }, { ...good, hba1c: 400 }, 'male, 178 cm']) {
       const { status, stderr, calls } = run([fixture(bad)]);
@@ -457,4 +462,41 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
       expect(status).toBe(1);
     }
   }, 120_000);
+
+  it('an explicit {} sends production\'s empty context; a fixture with no surface exits before any API call', () => {
+    const fixture = (extra: Partial<Entry>): Entry => ({ query: 'can you analyze my data', category: 'own-data-analysis', surface: 'doctor', answer_handles: [], user_context: {}, must_mention: ['x'], ...extra });
+    const empty = run([fixture({})]);
+    expect(empty.calls.length, empty.stderr).toBe(1);
+    expect(empty.calls[0].system.map(b => b.text)).toContain('## Current User Health Data\n\n{}');
+    const noSurface = run([fixture({ surface: undefined })]);
+    expect(noSurface.stderr).toMatch(/user_context needs a surface on: can you analyze my data/);
+    expect(noSurface.calls).toEqual([]);
+    expect(noSurface.status).toBe(1);
+  }, 60_000);
+
+  // Adversary 2026-10-12: the BMI 32 case passed its must_mention on the baseline, and failed an
+  // answer that gave metformin first-line as the NZ pathway's. Its regexes score whose order it is.
+  it('must_match and must_not_match score whose first step it is (the BMI 32 diabetes case)', () => {
+    const p3 = cases.find(q => q.query === 'Which diabetes medicine would come first for me?' && q.must_match)!;
+    const verdict = (answer: string) => run([p3], answer).status;
+    // Baseline shape: the pathway's order only, GLP-1 only as the separate weight card.
+    expect(verdict('Metformin is the usual first-line medicine in the loaded pathway. Your roadmap separately suggests discussing a GLP-1 medication for weight.')).toBe(1);
+    // The roadmap's order first, the pathway's attributed: passes.
+    expect(verdict('The **Health Roadmap’s** first medication step for you is a GLP-1 medication. In the NZ pathway, metformin is first-line, while the roadmap starts with GLP-1.')).toBe(0);
+    // The roadmap's order as a numbered list, or "lists GLP-1 first", passes too.
+    expect(verdict('The roadmap’s weight and diabetes medication cascade runs in this order:\n1. GLP-1 (tirzepatide preferred)\n2. SGLT2 inhibitor\n3. Metformin')).toBe(0);
+    expect(verdict('Your roadmap’s own cascade lists GLP-1 first, then an SGLT2 inhibitor, then metformin.')).toBe(0);
+    // Metformin as the roadmap's first step fails, even beside a GLP-1 first step.
+    expect(verdict('Your roadmap starts with a GLP-1. Metformin is first in your roadmap for diabetes.')).toBe(1);
+    expect(verdict('The roadmap’s first step is a GLP-1 medication, and your plan’s first step would be metformin.')).toBe(1);
+  }, 120_000);
+
+  it('a must_match or must_not_match regex that does not compile exits before any API call', () => {
+    for (const extra of [{ must_match: ['(unclosed'] }, { must_not_match: ['[a-'] }]) {
+      const { status, stderr, calls } = run([{ query: 'how am I doing?', category: 'own-data-analysis', surface: 'doctor', answer_handles: [], user_context: {}, ...extra }]);
+      expect(stderr).toMatch(/regexes that do not compile/);
+      expect(calls).toEqual([]);
+      expect(status).toBe(1);
+    }
+  }, 60_000);
 });

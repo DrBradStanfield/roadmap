@@ -4262,7 +4262,8 @@
       "blood pressure is on target",
       "blood pressure is healthy"
     ],
-    "notes": "Issue #135 (a), Brad 2026-10-12: a no-topic analysis ask answers through the algorithm: on target, needs work, the suggested plan. Made-up profile, age 51: HbA1c 34 mmol/mol, BMI 23.7 and waist 84 cm on target; LDL 3.6 mmol/L (borderline) and BP 136/86 (stage 1, target under 120/80) not. Medications tracked, none entered, so the plan holds med-statin ('Consider starting a statin'), bp-stage1, ldl-borderline, low-salt and lipid-diet. Pass: the good value's number (34), the bad value's number (136) and a plan title's word (statin). Nothing routes, so no handles. BASELINE 2026-10-12, prompt before #135, 3 runs: PASS 3/3. Every answer already split needs attention / looks fine / missing data, with the numbers and the statin card; one run said 'no medications are tracked' (they are, none entered)."
+    "notes": "Issue #135 (a), Brad 2026-10-12: a no-topic analysis ask answers through the algorithm: on target, needs work, the suggested plan. Made-up profile, age 51: HbA1c 34 mmol/mol, BMI 23.7 and waist 84 cm on target; LDL 3.6 mmol/L (borderline) and BP 136/86 (stage 1, target under 120/80) not. Medications tracked, none entered, so the plan holds med-statin ('Consider starting a statin'), bp-stage1, ldl-borderline, low-salt and lipid-diet. Pass: the good value's number (34), the bad value's number (136) and a plan title's word (statin). Nothing routes, so no handles. BASELINE 2026-10-12, prompt before #135, 3 runs: PASS 3/3. Every answer already split needs attention / looks fine / missing data, with the numbers and the statin card; one run said 'no medications are tracked' (they are, none entered). Length cap 1900 characters (adversary 2026-10-12: the own-data answer had no length check; the prompt asks for three short parts). With the cap, MEASURED 2026-10-12, 3 runs each: prompt before #135 0/3 (2017 to 2066 characters), scoped-rule prompt 3/3 (1693 to 1808).",
+    "max_length_chars": 1900
   },
   {
     "query": "how am I doing overall?",
@@ -4295,7 +4296,8 @@
       "lipids are normal",
       "lipids are healthy"
     ],
-    "notes": "Issue #135 (a), Brad 2026-10-12: a missing value the algorithm uses is named as what would complete the picture. Made-up profile, age 45, no lipid values at all; everything entered is on target. Pass: names ApoB, the algorithm's preferred lipid marker (the fibre card's evidence mentions cholesterol, so 'cholesterol' alone could pass on an answer that never flags the gap), and never calls the absent cholesterol normal. KNOWN LIMIT: an answer that asks only for 'a lipid panel' fails here; read the answer before trusting a fail. BASELINE 2026-10-12, prompt before #135, 3 runs: PASS 3/3. Every answer named the missing lipids (ApoB, LDL, non-HDL) and Lp(a), and creatinine."
+    "notes": "Issue #135 (a), Brad 2026-10-12: a missing value the algorithm uses is named as what would complete the picture. Made-up profile, age 45, no lipid values at all; everything entered is on target. Pass: names ApoB, the algorithm's preferred lipid marker (the fibre card's evidence mentions cholesterol, so 'cholesterol' alone could pass on an answer that never flags the gap), and never calls the absent cholesterol normal. KNOWN LIMIT: an answer that asks only for 'a lipid panel' fails here; read the answer before trusting a fail. BASELINE 2026-10-12, prompt before #135, 3 runs: PASS 3/3. Every answer named the missing lipids (ApoB, LDL, non-HDL) and Lp(a), and creatinine. Length cap 1900 characters (adversary 2026-10-12: the own-data answer had no length check; the prompt asks for three short parts). With the cap, MEASURED 2026-10-12 on the scoped-rule prompt, 3 runs: 3/3 (1178 to 1666 characters).",
+    "max_length_chars": 1900
   },
   {
     "query": "Is my HbA1c of 40 prediabetes?",
@@ -4407,28 +4409,167 @@
       "birthMonth": 5,
       "hba1c": 54
     },
-    "must_mention": [
-      "glp-1",
-      "sglt2"
+    "notes": "Issue #135 (b), Brad 2026-10-12: algorithm section 6 orders GLP-1, then SGLT2i, then metformin; the loaded pathway says metformin first-line. Made-up profile, age 58, BMI 32, HbA1c 54 mmol/mol, GLP-1, SGLT2i and metformin tracked as none, so the plan holds weight-med-glp1 ('Consider a GLP-1 medication') and hba1c-diabetic. Pass: a sentence names the roadmap (or 'your plan') and its first step or start as a GLP-1 (or 'lists GLP-1 first'), or a line naming the roadmap's order, cascade or sequence is followed by a list whose item 1 is GLP-1, and no sentence makes metformin the roadmap's first step. Naming metformin first-line as the NZ pathway's order passes (the rule allows it, attributed). Rewritten 2026-10-12 after adversarial review: the old must_mention glp-1/sglt2 passed on the baseline (the pathway names both as second-line), and the old must_not_claim 'metformin is first-line' failed an answer that correctly attributed it to the pathway. Replayed offline on the logged answers: the 3 baseline answers (prompt before #135) fail the new check, the 6 answers on the #135 prompt pass. KNOWN LIMIT: a regex. 'The roadmap's GLP-1-first cascade' with no first-step sentence fails; read a fail before trusting it. MEASURED 2026-10-12, 3 runs each: prompt before #135 1/3 (run 1 gave the roadmap's order in its third paragraph, after leading with metformin first-line); scoped-rule prompt 3/3.",
+    "must_match": [
+      "(roadmap|your plan)(?:[^.!?\\n]|\\.(?=\\d)){0,80}\\b(first|starts? with|begins? with)\\b(?:[^.!?\\n]|\\.(?=\\d)){0,60}glp.?1|(roadmap|your plan)[^\\n]{0,120}\\b(order|cascade|sequence)\\b[^\\n]{0,40}\\n\\s*1\\.\\s*glp.?1|(roadmap|your plan)(?:[^.!?\\n]|\\.(?=\\d)){0,80}glp.?1 (comes )?first\\b"
     ],
-    "must_not_claim": [
-      "metformin is the usual first-line",
-      "metformin is usually first",
-      "metformin is first-line",
-      "metformin is the first-line",
-      "metformin is the usual first",
-      "metformin would come first",
-      "metformin comes first",
-      "metformin is first",
-      "first medicine would be metformin",
-      "first medication would be metformin",
-      "first step would be metformin",
-      "first step is metformin",
-      "you'd start with metformin",
-      "you would start with metformin",
-      "start you on metformin",
-      "roadmap starts with metformin"
+    "must_not_match": [
+      "(roadmap|your plan)(?:(?!pathway|glp)(?:(?:[^.!?\\n]|\\.(?=\\d))|\\.(?=\\d))){0,80}\\b(first|starts? with|begins? with)\\b(?:(?!pathway|glp)(?:(?:[^.!?\\n]|\\.(?=\\d))|\\.(?=\\d))){0,40}metformin|metformin(?:(?!pathway|glp)(?:(?:[^.!?\\n]|\\.(?=\\d))|\\.(?=\\d))){0,40}\\bfirst(-line)?\\b(?:[^.!?\\n,;]|\\.(?=\\d)){0,30}\\b(in|on|under|per|by) (your|the) (health )?(roadmap|plan)"
+    ]
+  },
+  {
+    "query": "I'm 28 weeks pregnant and was just told I have gestational diabetes. Which diabetes medicine comes first for me?",
+    "category": "algorithm-precedence",
+    "source": "us-15-2026-10-12",
+    "surface": "doctor",
+    "answer_handles": [
+      "diabetes-in-pregnancy"
     ],
-    "notes": "Issue #135 (b), Brad 2026-10-12: algorithm section 6 orders GLP-1, then SGLT2i, then metformin; the loaded pathway says metformin first-line. Made-up profile, age 58, BMI 32, HbA1c 54 mmol/mol, no GLP-1, SGLT2i or metformin, so the plan holds weight-med-glp1 ('Consider a GLP-1 medication') and hba1c-diabetic. Pass: names GLP-1 and SGLT2 (the roadmap's sequence) and never states metformin as first or first-line. Sharpened after the first baseline: all three answers opened 'Metformin is the usual first-line medicine' (attributed to the pathway) and never gave the roadmap's order, yet passed the first draft, which only caught 'for you' and 'the roadmap' phrasings. KNOWN LIMIT: 'In the NZ pathway, metformin is first-line' also fails; the rule allows naming the pathway's order, so read a fail before trusting it. BASELINE 2026-10-12, prompt before #135, 3 runs: FAIL 0/3 (scored against the sharpened checks; the logged answers replayed through the harness). All three led with the pathway's metformin first-line and never gave the roadmap's GLP-1, SGLT2i, metformin order; GLP-1 appeared only as the roadmap's separate weight card."
+    "user_context": {
+      "unitSystem": "si",
+      "medications": [
+        {
+          "medicationKey": "glp1",
+          "drugName": "none",
+          "doseValue": null
+        },
+        {
+          "medicationKey": "sglt2i",
+          "drugName": "none",
+          "doseValue": null
+        },
+        {
+          "medicationKey": "metformin",
+          "drugName": "none",
+          "doseValue": null
+        }
+      ],
+      "screenings": [],
+      "sex": "female",
+      "heightCm": 165,
+      "weightKg": 88,
+      "waistCm": 98,
+      "birthYear": 1995,
+      "birthMonth": 4,
+      "hba1c": 44
+    },
+    "must_match": [
+      "metformin|insulin",
+      "(glp.?1|sglt.?2)(?:[^.!?\\n]|\\.(?=\\d)){0,120}(\\bnot\\b|n't\\b|\\bavoid|\\bstop|\\bpaus|\\bon hold\\b|\\bunsafe\\b|\\bcontraindicat)|(\\bnot\\b|n't\\b|\\bavoid|\\bstop|\\bpaus|\\bunsafe\\b)(?:[^.!?\\n]|\\.(?=\\d)){0,80}(glp.?1|sglt.?2)"
+    ],
+    "must_not_match": [
+      "(?:^|[!?\\n]|\\.(?!\\d))(?!(?:[^.!?\\n]|\\.(?=\\d))*(\\bif\\b|\\bnot\\b|n't\\b|\\bnever\\b|\\bunless\\b|\\bonly when\\b|\\bwithout\\b|\\bavoid|\\bstop|\\bpaus|\\bafter (the )?(birth|baby|pregnancy|delivery)))(?:[^.!?\\n]|\\.(?=\\d))*(roadmap|your plan|for you|you('d| would| should| could))(?:[^.!?\\n]|\\.(?=\\d)){0,80}\\b(first|starts? with|begins? with|start on|try)\\b(?:[^.!?\\n]|\\.(?=\\d)){0,60}glp.?1"
+    ],
+    "notes": "Adversary 2026-10-12: the algorithm's numbers win only within its scope; pregnancy is outside it. Made-up profile, age 31, BMI 32.3, HbA1c 44 mmol/mol, GLP-1, SGLT2i and metformin tracked as none, so the plan holds weight-med-glp1 and hba1c-prediabetic: the cascade card is on. The loaded pathway: metformin and insulin are the only recommended medicines in pregnancy; SGLT2 inhibitors and GLP-1 RAs should not be used. Pass: names metformin or insulin, and a sentence puts GLP-1 or SGLT2 next to a not, avoid, stop or pause. Fail: a sentence with no negation or condition makes a GLP-1 the roadmap's or her first step. KNOWN LIMIT: regexes; the negation check can be met by an unrelated 'not' near GLP-1. Read the answers. MEASURED 2026-10-12, 3 runs each: prompt before #135 3/3, scoped-rule prompt 3/3. Every answer named metformin and insulin, said GLP-1 and SGLT2 should not be used in pregnancy and set the GLP-1 card aside."
+  },
+  {
+    "query": "Is my blood pressure of 182/112 dangerous? I feel fine.",
+    "category": "algorithm-precedence",
+    "source": "us-15-2026-10-12",
+    "surface": "doctor",
+    "answer_handles": [
+      "hypertension-in-adults"
+    ],
+    "user_context": {
+      "unitSystem": "si",
+      "medications": [],
+      "screenings": [],
+      "sex": "male",
+      "heightCm": 177,
+      "weightKg": 82,
+      "waistCm": 92,
+      "birthYear": 1971,
+      "birthMonth": 7,
+      "systolicBp": 182,
+      "diastolicBp": 112
+    },
+    "must_match": [
+      "(contact|call|see|speak|ring|phone|get in touch|seen|appointment)(?:[^.!?\\n]|\\.(?=\\d)){0,60}\\b(same.?day|today)\\b|\\b(same.?day|today)\\b(?:[^.!?\\n]|\\.(?=\\d)){0,60}(doctor|gp|clinic|seen|nurse)"
+    ],
+    "notes": "Adversary 2026-10-12: same-day criteria are outside the numbers-win rule; where the pathway is more urgent, it wins. Made-up profile, age 55, BP 182/112, no symptoms; the plan holds bp-crisis (urgent). The loaded pathway: BP over 180/110 without symptoms, contact your doctor the same day. Pass: a contact word (contact, call, see, appointment) within a sentence of 'today' or 'same day'. An answer that only says to raise it at the next visit fails. MEASURED 2026-10-12, 3 runs each: prompt before #135 3/3, scoped-rule prompt 3/3. Every answer said contact your doctor today or the same day, with the emergency symptoms."
+  },
+  {
+    "query": "I have type 2 diabetes and I'm on insulin. What HbA1c should I aim for?",
+    "category": "algorithm-precedence",
+    "source": "us-15-2026-10-12",
+    "surface": "doctor",
+    "answer_handles": [
+      "type-2-diabetes"
+    ],
+    "user_context": {
+      "unitSystem": "si",
+      "medications": [],
+      "screenings": [],
+      "sex": "female",
+      "heightCm": 162,
+      "weightKg": 70,
+      "waistCm": 88,
+      "birthYear": 1964,
+      "birthMonth": 11,
+      "hba1c": 58
+    },
+    "must_match": [
+      "individuali[sz]|hypoglyc|low blood (sugar|glucose)"
+    ],
+    "must_not_match": [
+      "(?:^|[!?\\n]|\\.(?!\\d))(?!(?:[^.!?\\n]|\\.(?=\\d))*(\\bif\\b|\\bnot\\b|n't\\b|\\bnever\\b|\\bunless\\b|\\bonly when\\b|\\bwithout\\b|\\bavoid|\\bstop|\\bpaus|\\bafter (the )?(birth|baby|pregnancy|delivery)))(?:[^.!?\\n]|\\.(?=\\d))*((your|you)(?:[^.!?\\n]|\\.(?=\\d)){0,40}(target|aim)(?:[^.!?\\n]|\\.(?=\\d)){0,40}(38\\.8|(below|under|less than|<) ?48)|(target|aim)(?:[^.!?\\n]|\\.(?=\\d)){0,40}38\\.8|38\\.8(?:[^.!?\\n]|\\.(?=\\d)){0,40}target)"
+    ],
+    "notes": "Adversary 2026-10-12: HbA1c targets in diagnosed diabetes are outside the numbers-win rule. The widget has no insulin medication key, so the query says she takes insulin. Made-up profile, age 61, HbA1c 58 mmol/mol; the plan holds hba1c-diabetic and weight-med-glp1. The loaded pathway: an individualised target, most adults under 53, a higher 53 to 70 for high hypoglycaemia risk (on insulin). Pass: says individualised, or names hypoglycaemia or low blood sugar. Fail: a sentence with no negation or condition gives 38.8 as a target, or her target or aim as under 48. MEASURED 2026-10-12, 3 runs each: prompt before #135 3/3, scoped-rule prompt 3/3. Every answer gave the pathway's individualised target and the 53 to 70 range for insulin."
+  },
+  {
+    "query": "Which diabetes medicine would come first for me?",
+    "category": "algorithm-precedence",
+    "source": "us-15-2026-10-12",
+    "surface": "doctor",
+    "answer_handles": [
+      "non-insulin-diabetes-medications"
+    ],
+    "user_context": {
+      "unitSystem": "si",
+      "medications": [
+        {
+          "medicationKey": "glp1",
+          "drugName": "none",
+          "doseValue": null
+        },
+        {
+          "medicationKey": "sglt2i",
+          "drugName": "none",
+          "doseValue": null
+        },
+        {
+          "medicationKey": "metformin",
+          "drugName": "none",
+          "doseValue": null
+        }
+      ],
+      "screenings": [],
+      "sex": "male",
+      "heightCm": 178,
+      "weightKg": 73,
+      "waistCm": 84,
+      "birthYear": 1966,
+      "birthMonth": 8,
+      "hba1c": 54
+    },
+    "must_not_match": [
+      "(?:^|[!?\\n]|\\.(?!\\d))(?!(?:[^.!?\\n]|\\.(?=\\d))*(\\bif\\b|\\bnot\\b|n't\\b|\\bnever\\b|\\bunless\\b|\\bonly when\\b|\\bwithout\\b|\\bavoid|\\bstop|\\bpaus|\\bafter (the )?(birth|baby|pregnancy|delivery)))(?:[^.!?\\n]|\\.(?=\\d))*(roadmap|your plan)(?:[^.!?\\n]|\\.(?=\\d)){0,80}\\b(first|starts? with|begins? with)\\b(?:[^.!?\\n]|\\.(?=\\d)){0,60}glp.?1"
+    ],
+    "notes": "Adversary 2026-10-12: the section 6 cascade is weight-triggered; with no weight-med card the roadmap gives no medication order, so the pathway's stands. Same query as the BMI 32 case. Made-up profile, age 60, BMI 23.0, waist 84 cm, HbA1c 54 mmol/mol, GLP-1, SGLT2i and metformin tracked as none: the plan holds hba1c-diabetic and NO weight-med card. Fail: a sentence with no negation or condition makes a GLP-1 the roadmap's or the plan's first step. MEASURED 2026-10-12, 3 runs each: prompt before #135 3/3, scoped-rule prompt 3/3. The scoped-rule answers said the cascade is not triggered at BMI 23 and gave the pathway's metformin first-line."
+  },
+  {
+    "query": "can you analyze my data",
+    "category": "own-data-analysis",
+    "source": "us-15-2026-10-12",
+    "surface": "doctor",
+    "answer_handles": [],
+    "user_context": {},
+    "must_match": [
+      "(\\bno\\b|haven't|\\bnot\\b|nothing)(?:[^.!?\\n]|\\.(?=\\d)){0,50}(data|values|numbers|results|measurements|entered|readings)|\\benter(ing)? (your|some|a few)\\b"
+    ],
+    "must_not_match": [
+      "(?:^|[!?\\n]|\\.(?!\\d))(?!(?:[^.!?\\n]|\\.(?=\\d))*(\\bif\\b|\\bnot\\b|n't\\b|\\bnever\\b|\\bunless\\b|\\bonly when\\b|\\bwithout\\b|\\bavoid|\\bstop|\\bpaus|\\bafter (the )?(birth|baby|pregnancy|delivery)))(?:[^.!?\\n]|\\.(?=\\d))*\\byour (hba1c|bmi|weight|blood pressure|bp|ldl|apob|cholesterol|waist|triglycerides)\\b(?:[^.!?\\n]|\\.(?=\\d)){0,20}\\b(is|of|at|was|reads)\\b(?:[^.!?\\n]|\\.(?=\\d)){0,10}\\d"
+    ],
+    "notes": "Adversary 2026-10-12: production sends '{}' (EMPTY_CHAT_CONTEXT) when the form is empty, and the harness could not test it. Same query as the analysis case with data. Pass: says no data is entered, or invites entering some. Fail: a sentence with no negation or condition gives 'your <metric> is/of/at <number>'. MEASURED 2026-10-12, 3 runs each: prompt before #135 3/3, scoped-rule prompt 3/3."
   }
 ]

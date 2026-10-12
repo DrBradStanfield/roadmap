@@ -44,16 +44,22 @@
  *                             "without doubt", "none other than") never count as a negation.
  *                             Markdown * and _ are stripped, curly quotes straightened. A heuristic:
  *                             keep the phrases claim-shaped.
+ *   must_match?: string[]      answer check only: regexes that must each match, and must_not_match?:
+ *                             string[] regexes none may match. Both run on the answer as must_not_claim
+ *                             sees it (lower case, straight quotes, no markdown * or _). For a claim a
+ *                             phrase list cannot pin down, such as whose order a first step belongs to.
+ *                             A regex that does not compile exits the harness before any API call.
  *   surface?: 'doctor' | 'brand'  answer check only: adds app/lib/chat-posture-<surface>.md after the
  *                             products block, where production's buildSystemBlocks puts it. Omitted =
  *                             no posture block (the harness's behaviour before 2026-10-07).
  *   user_context?: object      answer check only: the raw payload a widget sends as the chat's context
  *                             (chatContextOf's shape: form fields, unitSystem, medications, screenings).
- *                             It goes through production's buildChatContextJson, and the answer call
+ *                             It goes through production's resolveChatContext, and the answer call
  *                             gets production's buildSystemBlocks (so the evidence and knowledge-overview
- *                             blocks too) with the fixture's posture; the widget's is 'doctor'. A payload
- *                             that makes no plan, has a key the widget never sends, or loses a field to
- *                             its range exits the harness before any API call.
+ *                             blocks too) with the fixture's posture, which it must name: the widget's is
+ *                             'doctor'. An explicit {} is production's empty context ('{}', no data
+ *                             entered). Any other payload that makes no plan, has a key the widget never
+ *                             sends, or loses a field to its range exits the harness before any API call.
  *
  * A fetch that throws (timeout, DNS, reset) counts as an API error, like a non-2xx:
  * visible, scored as ∅, and the run continues but never exits green. So does a
@@ -103,8 +109,7 @@ import {
 import { CHAT_EDIT_TOOLS } from '../packages/health-core/src/chat-edits';
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
 import { parseRouterReply } from '../app/lib/router-reply';
-import { buildSystemBlocks } from '../app/lib/chat.server';
-import { buildChatContextJson } from '../packages/health-core/src/chat-context';
+import { buildSystemBlocks, EMPTY_CHAT_CONTEXT, resolveChatContext } from '../app/lib/chat.server';
 import { healthInputSchema } from '../packages/health-core/src/validation';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -366,6 +371,8 @@ interface TestQuery {
   must_mention?: string[];     // answer must contain ALL of these (case-insensitive)
   must_not_mention?: string[]; // answer must contain NONE of these (case-insensitive)
   must_not_claim?: string[];   // no un-negated sentence may hold these (see the header)
+  must_match?: string[];       // regexes the answer must each match (see the header)
+  must_not_match?: string[];   // regexes the answer must not match (see the header)
   max_length_chars?: number;   // answer must be at most this many characters
   answer_handles?: string[];   // fixed-handle answer check, no `expected` (see the header)
   surface?: 'doctor' | 'brand'; // answer check adds that surface's posture block (see the header)
@@ -412,13 +419,28 @@ for (const q of ALL_QUERIES) {
 const CONTEXT_KEYS = new Set([...Object.keys(healthInputSchema.shape), 'unitSystem', 'medications', 'screenings', 'measurementHistory']);
 const USER_CONTEXTS = new Map<TestQuery, string>();
 for (const q of ALL_QUERIES.filter(q => q.user_context !== undefined)) {
-  const json = buildChatContextJson(q.user_context);
+  // Production always sends a posture with the user's data; without one the answer is not production's.
+  if (q.surface === undefined) {
+    console.error(`user_context needs a surface on: ${q.query}`);
+    process.exit(1);
+  }
+  // As /api/chat. Only an explicit {} may resolve to the empty context.
+  const ctx = resolveChatContext(q.user_context);
+  const empty = JSON.stringify(q.user_context) === '{}';
   const unknown = Object.keys(q.user_context ?? {}).filter(k => !CONTEXT_KEYS.has(k));
-  if (json === null || unknown.length > 0 || JSON.parse(json).excludedFields) {
+  if ((ctx === EMPTY_CHAT_CONTEXT) !== empty || unknown.length > 0 || JSON.parse(ctx.userContextJson).excludedFields) {
     console.error(`user_context does not parse${unknown.length ? ` (unknown keys: ${unknown.join(', ')})` : ''} on: ${q.query}`);
     process.exit(1);
   }
-  USER_CONTEXTS.set(q, json);
+  USER_CONTEXTS.set(q, ctx.userContextJson);
+}
+// A regex that cannot compile would throw mid-run, after money is spent.
+const badRegex = ALL_QUERIES.flatMap(q => [...q.must_match ?? [], ...q.must_not_match ?? []].filter(r => {
+  try { new RegExp(r); return false; } catch { return true; }
+}));
+if (badRegex.length > 0) {
+  console.error(`must_match / must_not_match regexes that do not compile: ${badRegex.join(', ')}`);
+  process.exit(1);
 }
 // --category takes a comma list, so several categories share one run and one cache warmup.
 const categories = categoryFilter?.split(',');
@@ -460,9 +482,12 @@ const CLAUSE_BREAK = /[;—–]|\bbut\b|\band\b/g;
 // Idioms that hold a negation word but affirm ("there is no doubt it can …").
 const AFFIRMING = /\b(no doubt|not only|no wonder|no question|without (a )?doubt|none other than)\b/g;
 
+/** The answer as must_not_claim and the regex checks see it: lower case, straight quotes, no markdown * or _. */
+const plain = (response: string) => response.toLowerCase().replace(/[’‘]/g, "'").replace(/[*_]/g, '');
+
 /** Phrases stated as fact: no negation in the up-to-12 words before them, within their clause. */
 function claimed(response: string, phrases: string[]): string[] {
-  const text = response.toLowerCase().replace(/[’‘]/g, "'").replace(/[*_]/g, '');
+  const text = plain(response);
   const sentences = text.split(/(?<=[.!?])\s+|\n+/);
   return phrases.filter(p => sentences.some(s => {
     const phrase = p.toLowerCase().replace(/[’‘]/g, "'");
@@ -534,6 +559,8 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = [], retryOnR
     if (!lower.includes(term.toLowerCase())) failures.push(`missing: "${term}"`);
   }
   for (const term of claimed(response, q.must_not_claim ?? [])) failures.push(`claimed: "${term}"`);
+  for (const re of q.must_match ?? []) if (!new RegExp(re).test(plain(response))) failures.push(`no match: /${re}/`);
+  for (const re of q.must_not_match ?? []) if (new RegExp(re).test(plain(response))) failures.push(`matched forbidden: /${re}/`);
   for (const term of mustNotMention) {
     if (lower.includes(term.toLowerCase())) failures.push(`found forbidden: "${term}"`);
   }
@@ -566,7 +593,7 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
   if (forbidden.length > 0) routingPassed = false;
 
   let answerCheck: AnswerCheckResult | null = null;
-  if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || q.must_not_claim?.length || typeof q.max_length_chars === 'number')) {
+  if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || q.must_not_claim?.length || q.must_match?.length || q.must_not_match?.length || typeof q.max_length_chars === 'number')) {
     const answerRuns: AnswerCheckResult[] = [];
     for (let i = 0; i < answerCheckRuns; i++) {
       answerRuns.push(await checkAnswer(q, intersection));
