@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { baseIdOf, mergeFiles, stampFields } from './merge';
+import { migrateFile } from './migrate';
 import {
   createEmptyFile,
   stableStringify,
@@ -1134,5 +1135,42 @@ describe('stableStringify with keys to drop', () => {
 
   it('keeps every key when told of none', () => {
     expect(stableStringify(value)).toBe('{"a":{"lamport":2,"rows":[{"updatedAt":"t","y":1}]},"b":1}');
+  });
+});
+
+// US-05 AC2: the Lp(a) unit the user chose is a profile preference. It merges
+// as any profile field does, with no code of its own.
+describe('US-05 AC2 — profile.lpaUnit merges as an ordinary profile field', () => {
+  it('two devices choose different units: the later stamp wins, whichever side merges', () => {
+    const phone = emptyFile();
+    phone.profile = { sex: 'female', updatedAt: T0, lamport: 1 };
+    const laptop = structuredClone(phone);
+    laptop.profile = stampFields(laptop.profile, { lpaUnit: 'nmol/L' }, T1);
+    phone.profile = stampFields(phone.profile, { lpaUnit: 'mg/L' }, T2);
+    for (const merged of [mergeFiles(phone, laptop, OPTS), mergeFiles(laptop, phone, OPTS)]) {
+      expect(merged.profile).toMatchObject({ sex: 'female', lpaUnit: 'mg/L' });
+    }
+    // A later choice on the other device wins back.
+    laptop.profile = stampFields(mergeFiles(phone, laptop, OPTS).profile, { lpaUnit: 'mg/dL' }, '2026-05-03T00:00:00Z');
+    expect(mergeFiles(phone, laptop, OPTS).profile.lpaUnit).toBe('mg/dL');
+  });
+
+  it('a unit chosen on one device survives another device’s later write to a different field', () => {
+    const a = emptyFile();
+    a.profile = { heightCm: 170, updatedAt: T0, lamport: 1 };
+    const b = structuredClone(a);
+    a.profile = stampFields(a.profile, { lpaUnit: 'mg/dL' }, T1);
+    b.profile = stampFields(b.profile, { heightCm: 171 }, T2);
+    for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS)]) {
+      expect(merged.profile).toMatchObject({ heightCm: 171, lpaUnit: 'mg/dL' });
+    }
+  });
+
+  it('a file written before the field reads it as absent, with no migration', () => {
+    const old = emptyFile();
+    old.profile = { sex: 'male', unitSystem: 'conventional', updatedAt: T0, lamport: 1 };
+    const read = migrateFile(JSON.parse(JSON.stringify(old)), { deviceId: 'dev_new', now: T1 });
+    expect(read.profile.lpaUnit).toBeUndefined();
+    expect(mergeFiles(read, emptyFile(), OPTS).profile.lpaUnit).toBeUndefined();
   });
 });

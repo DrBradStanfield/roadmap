@@ -3,8 +3,9 @@
  * the USER's own cloud (Google Drive / Dropbox / GitHub / self-host).
  *
  * This is the local-first replacement for the Supabase tables. Brad's servers
- * never store this. See `claude_business/docs/health-roadmap-v2-implementation.md`
- * §3 for the schema and §5.3 for the merge/conflict model.
+ * never store this. See `docs/architecture-v2/client-architecture.md`
+ * ("The `RoadmapFile`" and "Merge & conflict model") for the schema and the
+ * merge/conflict model.
  *
  * Design rules (from the decision record):
  *  - All clinical values in SI canonical units, exactly as today.
@@ -22,6 +23,7 @@
  */
 import type { Suggestion, ScreeningInputs } from './types';
 import type { MeasurementSource, MeasurementStatus, DocumentType } from './validation';
+import type { LpaUnit } from './units';
 
 /** Bump only when the on-disk shape changes in a way `migrate.ts` must handle. */
 export const CURRENT_SCHEMA_VERSION = 1;
@@ -72,6 +74,8 @@ export interface RoadmapProfile extends FieldStamped {
   unitSystem?: 'si' | 'conventional';
   /** Per-metric display-unit overrides (was localStorage-only `health_roadmap_unit_overrides`). */
   unitOverrides?: Record<string, 'si' | 'conventional'>;
+  /** The unit the user last chose for Lp(a)'s field (US-05 AC2). Absent: US units give mg/dL, any other nmol/L. */
+  lpaUnit?: LpaUnit;
   /**
    * Shopify-surface lead step: true once the user has submitted their email at
    * "Get Your Personalized Plan" (→ Klaviyo). Monotonic (only ever set true).

@@ -44,6 +44,7 @@ import {
   measurementsToInputs,
   mergeFiles,
   migrateFile,
+  parseLocalisedNumber,
   PREFILL_FIELDS,
   SchemaTooNewError,
   screeningFieldName,
@@ -59,6 +60,7 @@ import {
   type FileSupplement,
   type HealthInputs,
   type LabUnitRefusal,
+  type LpaUnit,
   type MeasurementSource,
   type ReminderScheduleItem,
   type RoadmapFile,
@@ -69,7 +71,7 @@ import { ROADMAP_DOC, SyncManager, type SyncContext } from '@roadmap/health-core
 import { LocalStorageAdapter, NAMED_FILE_PREFIX } from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
-import { clearMatrixDrafts, clearOffFileHealthData, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { clearMatrixDrafts, clearOffFileHealthData, LPA_CHECK_KEPT_KEY, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { recordFailure, storageFailureClass } from '../lib/error-diagnostics';
 
@@ -523,7 +525,8 @@ export class RoadmapStore {
 
   saveScreening(screeningKey: string, value: string): boolean {
     const field = screeningFieldName(screeningKey);
-    const parsed = NUMERIC_SCREENING_KEYS.has(screeningKey) ? parseFloat(value) : value;
+    // A blank or unreadable number is stored as null, which clears the field (US-10 AC6).
+    const parsed = NUMERIC_SCREENING_KEYS.has(screeningKey) ? parseLocalisedNumber(value) ?? null : value;
     // Stamp this answer's clock, and only its own (US-10 AC6). Unstamped it
     // stays lamport:0 like the empty remote, and the merge can discard it; with
     // the whole object's stamp it would carry this copy of every other answer.
@@ -704,6 +707,18 @@ export class RoadmapStore {
   markReportEmailCaptured(): void {
     if (this.file.profile.reportEmailCaptured) return; // idempotent — only ever set true
     this.file.profile = stampFields(this.file.profile, { reportEmailCaptured: true }, new Date().toISOString());
+    this.touch();
+  }
+
+  /** The unit the user chose for Lp(a)'s field (US-05 AC2), as the record holds it: unchecked. */
+  getLpaUnit(): unknown {
+    return this.file.profile.lpaUnit;
+  }
+
+  /** Remember Lp(a)'s field unit: a profile preference, stamped like the others so it syncs (US-05 AC2). */
+  setLpaUnit(unit: LpaUnit): void {
+    if (this.file.profile.lpaUnit === unit) return;
+    this.file.profile = stampFields(this.file.profile, { lpaUnit: unit }, new Date().toISOString());
     this.touch();
   }
 
@@ -1010,11 +1025,14 @@ export class RoadmapStore {
   /** Take a merge in as the working copy, and answer whether it brought in
    *  something a person would see, for the caller to announce. One that
    *  carries an erase made on another device (a higher eraseEpoch than this
-   *  copy's) clears the drafts typed here, as the erase clears them where it
-   *  is made (US-11). */
+   *  copy's) clears the drafts typed here and the Lp(a) check's kept answers,
+   *  as the erase clears them where it is made (US-11, US-05 AC3). */
   private adopt(merged: RoadmapFile): boolean {
     const seen = visibleContentOf(this.file);
-    if ((merged.meta.eraseEpoch ?? 0) > (this.file.meta.eraseEpoch ?? 0)) clearMatrixDrafts();
+    if ((merged.meta.eraseEpoch ?? 0) > (this.file.meta.eraseEpoch ?? 0)) {
+      clearMatrixDrafts();
+      safeRemoveItem(LPA_CHECK_KEPT_KEY);
+    }
     this.file = merged;
     return visibleContentOf(merged) !== seen;
   }

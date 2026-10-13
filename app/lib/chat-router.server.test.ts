@@ -97,3 +97,41 @@ describe('US-15 AC26 — sanitizeForRouter', () => {
     expect(sanitizeForRouter('a'.repeat(1999) + '😀')).toBe('a'.repeat(1999));
   });
 });
+
+// US-15 AC27 (Sentry 6Y): V8's JSON.parse message quotes a 10-unit snippet of
+// the bad input, which can end mid-pair. router_error stores that message, so
+// a lone surrogate there makes PostgREST reject the whole match-event row.
+describe('US-15 AC27: router_error carries no lone surrogate', () => {
+  it('a prose reply with an emoji at the snippet edge yields a well-formed error', async () => {
+    vi.mocked(callAnthropicWithUsage).mockResolvedValueOnce({
+      content: 'Hi there 😀 how can I help',
+      usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 },
+    } as Awaited<ReturnType<typeof callAnthropicWithUsage>>);
+    const r = await routeQuery('hello');
+    expect(r.error).toBeTruthy();
+    expect(JSON.stringify(r.error)).not.toMatch(/\\u[dD][89a-fA-F]/);
+  });
+});
+
+// US-15 AC28 (2026-10-07, YouTube): JSON, then "Wait — correction", then the
+// corrected JSON. The first-to-last-brace slice threw, so the turn got no handles.
+describe('US-15 AC28: a corrected second object routes the turn', () => {
+  const reply = (content: string) => vi.mocked(callAnthropicWithUsage).mockResolvedValueOnce({
+    content,
+    usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 },
+  } as Awaited<ReturnType<typeof callAnthropicWithUsage>>);
+
+  it('routes on the correction, with no router_error', async () => {
+    reply('{"handles": ["diet", "this-study-proved-we-were-wrong-about-vitamin-d"]}\n\nWait — correction. The second handle was a mistake; returning only the relevant ones:\n\n{"handles": ["diet", "best-diet-confirmed-by-5248916-person-year-study", "diet-strongly-suspected-best"]}');
+    const r = await routeQuery('what is the best diet');
+    expect(r.error).toBeNull();
+    expect(r.handles).toEqual(['diet', 'best-diet-confirmed-by-5248916-person-year-study', 'diet-strongly-suspected-best']);
+  });
+
+  it('a reply with no object still fails with the same router_error', async () => {
+    reply('Sorry, nothing fits.');
+    const r = await routeQuery('hello');
+    expect(r.handles).toEqual([]);
+    expect(r.error).toMatch(/^Unexpected token/);
+  });
+});

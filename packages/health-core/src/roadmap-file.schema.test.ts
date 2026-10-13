@@ -123,6 +123,7 @@ function representativeFile(): RoadmapFile {
     heightCm: 165,
     unitSystem: 'si',
     unitOverrides: { weight: 'conventional' },
+    lpaUnit: 'mg/L',
     reportEmailCaptured: true,
     lamport: 3,
     updatedAt: '2026-05-02T00:00:00Z',
@@ -263,6 +264,17 @@ describe('docs/health-roadmap-file.schema.json (US-29)', () => {
         expect(check(file).ok, `${part}.${key} object`).toBe(false);
       }
     }
+  });
+
+  it('US-05 AC2: takes the three Lp(a) units in profile.lpaUnit, and no other', () => {
+    for (const unit of ['nmol/L', 'mg/dL', 'mg/L'] as const) {
+      const file = representativeFile();
+      file.profile.lpaUnit = unit;
+      expect(check(file).errors, unit).toBe('No errors');
+    }
+    const file = representativeFile();
+    (file.profile as unknown as Record<string, unknown>).lpaUnit = 'mmol/L';
+    expect(check(file).ok).toBe(false);
   });
 
   it('never allows null on a clock', () => {

@@ -353,7 +353,6 @@ export type LabImportRequest = z.infer<typeof labImportRequestSchema>;
 export const batchImportRequestSchema = z.object({
   batch: z.literal(true),
   files: z.array(z.object({
-    fileName: z.string(),
     pages: z.array(labImportPageSchema).min(1).max(100),
   })).min(1).max(200),
 });

@@ -34,7 +34,10 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   question (check Gmail for a GitHub Support thread) before it is a quiet week
   — a flag silently removes Actions, Pages and the `loop-issue-notify` relay
   at once (W39). While the relay is down, a decision issue is the durable
-  record, not the delivery: say so in the report.
+  record, not the delivery: say so in the report. Then list Actions runs PER
+  WORKFLOW, scheduled ones included: a cron workflow (Workflow Integrity,
+  Stranded branch watch) with no `schedule` run in its last 2 days is dark,
+  even while push runs flow (W41: both dark 22 days after the flag lifted).
 - **Feedback emails** (Gmail MCP): `subject:"Health Roadmap Feedback" newer_than:8d`.
 - **Supabase** (env: `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
   `SUPABASE_PRODUCT_HEALTH_KEY` — a READ-ONLY role, SELECT-only on the 8
@@ -67,7 +70,13 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   route, reason, and `backend` local|cloud, since a guest's second tab counts
   too; value-free by design — while n is tiny these are Brad's own
   verification, not adoption); `guide_opened` split by `placement`
-  (header|footer), read against `results_viewed`;
+  (header|footer), read against `results_viewed`; `lpa_unit_selected`
+  split by `unit` and `from` (the Lp(a) control's three units, labels only,
+  US-05 AC2), read against `results_viewed`; `lpa_check_answered` split
+  by `answer` (the Lp(a) check's mg/dL, nmol/L, mg/L or keep, the first
+  three a correction written; keep = Neither, or any answer that would
+  save the stored value; labels only, US-05 AC3). It is
+  sent once per tab, so the split counts each tab's first answer only;
   `reminder_optin_v2` total by `provider`. Read `mcp_authorize_shown` with a
   clock: more than two rows a second from one client, with no
   `mcp_consent_posted` following, is a probe scanning the door, not people

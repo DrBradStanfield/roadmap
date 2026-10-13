@@ -5,6 +5,20 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-10-13 (Brad-directed: Haiku allowed in loops):** Brad agreed to remove "never Haiku" here too, matching
+  claude_business's constitution (changed 2026-10-12: "haiku 5.5 is not too bad"). Orchestration's model
+  bullet now allows Sonnet 5.5 and the newest Haiku for mechanical routines; the Opus pins on `worker` and
+  `adversary` are unchanged. Line count unchanged.
+- **2026-10-11 (Brad-directed: no Codex in loops):** Brad: "we aren't doing codex reviews in these loops
+  anymore. fix this, so that future loops don't try and run it". The sentry-fix run of 10-07 had still asked
+  him for a Codex run or waiver on PR #134, because CLAUDE.md made a cloud session's security-class change wait
+  for one. Orchestration's Codex bullet now says loops never run, request or wait on Codex, and nothing
+  mentions it; CLAUDE.md, the codex-review skill and US-40 AC10 say the same. Net -2 lines (196).
+- **2026-10-07 (Brad-directed: final brief):** Brad, live in the sentry-fix
+  run: "you need to give me a brief summary of what was done, why, and what's
+  outstanding (with context so that I can make informed decisions) for your
+  final message". Reporting gains that rule. Net 0 lines: the email and
+  commit-early bullets were compressed to make room (195 lines).
 - **2026-10-04 (Brad-directed: no Codex in cloud loops):** Brad: "run Codex only on your Mac, and let
   the cloud loops rely on the Claude adversary alone." Codex signs in only with his ChatGPT
   subscription on his Mac; he does not want API credits spent. Orchestration's "Codex beside the

@@ -3,7 +3,7 @@ Every scheduled cloud loop reads THIS file first, then its own charter at
 `docs/loops/<name>/LOOP.md`. The charter holds only that loop's deltas
 (mission, data sources, write scope, delivery); this file holds everything
 shared. A charter can never override the Guardrails below. Full rationale +
-research citations: [loop-master-architecture-explanation.html](loop-master-architecture-explanation.html).
+research citations: [loop-master-architecture-explanation.md](loop-master-architecture-explanation.md).
 The fleet index is [REGISTRY.md](REGISTRY.md).
 
 ## Orchestration
@@ -12,8 +12,8 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   on synthesis, judgment, verification and the retro. Delegate all other work, parallel when independent: one
   crisp verifiable deliverable per worker, spend proportionate to the output's worth; justify unusual scale.
 - **Workers and reviewers are Opus at high effort**: spawn `worker` and `adversary` by name (their
-  `.claude/agents/*.md` pin `model: opus`, `effort: high`); never a per-call `model` (it overrides the pin),
-  never Sonnet or Haiku. You run at high effort: the cloud environment sets `CLAUDE_CODE_EFFORT_LEVEL=high`
+  `.claude/agents/*.md` pin `model: opus`, `effort: high`); never a per-call `model` (it overrides the pin).
+  Sonnet 5.5 (Brad 2026-10-07) and the newest Haiku (Brad 2026-10-13) are allowed for mechanical routines. You run at high effort: the cloud environment sets `CLAUDE_CODE_EFFORT_LEVEL=high`
   (Brad, 2026-09-28; the Opus default was medium). It overrides every agent's pin, which is also high; never set
   it lower.
 - Judgment that shapes the loop's conclusions is never delegated: what a finding means, what to propose, what to
@@ -25,11 +25,9 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   ledger row; re-judge customer-facing output through its full compliance and quality gates with fresh eyes; and
   hunt for the claim whose evidence is missing. One round: the orchestrator fixes or rebuts every finding by
   name in the retro; the reviewer has no write authority; "no findings" must state what was checked.
-- **No Codex in cloud loops** (Brad, 2026-10-04, superseding 2026-09-28): Codex signs in only with Brad's ChatGPT
-  subscription on his Mac, never an API key, so a cloud loop cannot run it. The fresh `adversary` above is the
-  run's whole review; the retro says "Codex: not run (cloud)" in one line, and that is not a gap or a failure.
-  Brad may run `node tools/codex-review.mjs --loop --range <commits>` on a loop's commits from his Mac; handle
-  any findings he relays like the adversary's.
+- **No Codex in loops** (Brad, 2026-10-11, superseding 2026-10-04): loops never run, request or wait on Codex;
+  no Codex run or waiver gates a loop's commit, PR or merge, and neither PRs nor retros mention it. The fresh
+  `adversary` above is the run's whole review.
 ## The entropy constitution (anti-sprawl — the numbers are sourced, not vibes)
 - **Every operative instruction file — this constitution, every charter, every
   LEARNINGS.md — is capped at 200 lines / 25KB** (past it, models silently drop rules).
@@ -102,17 +100,17 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   unreachable source is a NAMED gap — silence is never success; never fabricate
   numbers.** Distinguish signal (repeated, actionable) from noise.
 - **No email by default (Brad, 2026-08-10): the committed report IS the
-  delivery.** Contact Brad ONLY when a run needs his decision: open a GitHub
-  issue "🎯 Decision needed: <topic>" — decision, options, recommendation,
-  report link, fleet-dashboard URL (in REGISTRY.md) — **assign + @mention
-  @DrBradStanfield**. Cloud sessions author issues AS Brad, whom GitHub never
-  notifies of self-actions (probe-verified 2026-08-13) — the `loop-issue-notify`
-  workflow's bot comment is what emails him (missing/disabled = a delivery
-  gap in the retro). Never Gmail drafts.
-- **Commit early — truncation-proof the run**: commit the report with its data
-  as soon as the numbers are in, BEFORE polish and retro (runs share a
-  plan-usage pool and can be cut off mid-flight; a truncated run must still
-  leave its data on main, marked "run truncated after <step>").
+  delivery.** A decision for Brad → GitHub issue "🎯 Decision needed: <topic>"
+  (decision, options, recommendation, report link, fleet-dashboard URL from
+  REGISTRY.md), **assigned + @mentioning @DrBradStanfield**. Issues are authored
+  AS Brad, so GitHub never notifies him; the `loop-issue-notify` bot comment
+  emails him (missing = a retro gap). Never Gmail drafts.
+- **Commit early — truncation-proof the run**: commit report + data as soon as
+  the numbers are in, before polish and retro; a cut-off run still leaves its
+  data on main, marked "run truncated after <step>".
+- **Final chat message = a brief for Brad (Brad, 2026-10-07)**: what was done
+  and why, what is outstanding, what needs his decision — each with the context
+  (options, risk, recommendation) to decide unaided. Nothing needed → say so.
 
 ## Repo rules (inherited from CLAUDE.md — binding)
 - **READ `CLAUDE.md` yourself at the start of every run — never assume it
@@ -127,7 +125,10 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   (inverted 2026-08-10; `scripts/check-symlinks.mjs` enforces).
 - **Landing check — the run's LAST git act**: `git rev-list --count
   origin/main..HEAD` prints 0, or an OPEN Tier 3 PR holds the commits — else
-  push to main before ending. Session branches strand work invisibly
+  push to main before ending. **Push rejected** (someone pushed meanwhile):
+  `git fetch origin main && git merge origin/main` (never force or rebase;
+  conflicts keep BOTH sides' rows), push again, up to 3 tries; the cloud copy
+  is discarded, so unpushed work is lost. Session branches strand work invisibly
   (chat-health W34, twice, 2026-08). Backstop: `stranded-branch-watch.yml`.
 - Never print secret values; never commit real user data or health values;
   anonymize quoted user content.

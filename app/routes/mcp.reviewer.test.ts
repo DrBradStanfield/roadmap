@@ -48,7 +48,7 @@ const LATER = new Date(Date.parse(NOW) + 11_000).toISOString();
 /** A normal username: a plain lowercase word, not hex. */
 const USERNAME = 'openaireview';
 /** 26 characters from the unambiguous alphabet: no l, 1, o, 0. */
-const PASSWORD = 'abcdefghijkmnpqrstuvwxyz23';
+const PASSWORD = 'abcdefghijkmnpqrstuvwxyz23'; // gitleaks:allow, not a secret: test fixture
 const sha256hex = (text: string) => crypto.createHash('sha256').update(text, 'utf8').digest('hex');
 const REVIEWER_RT = 'reviewer-dropbox-refresh-token';
 const REVIEWER_ACCESS = 'reviewer-dropbox-access-token';
@@ -252,6 +252,8 @@ async function callTool(access: string, name: string, args: unknown, now = NOW) 
 }
 
 const SEED_DAY = '2026-08-30';
+/** The user's own words, quoted in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
+const APPROVED = 'Yes, go ahead';
 
 /** The synthetic reviewer record: a profile and one recent measurement. */
 function seedReviewerRecord(): void {
@@ -593,7 +595,7 @@ describe('US-32 AC38 — the two-phase tools work on a reviewer bearer (one shar
     const args = { id: row.id, newValue: 2.8, expectedValue: 3.2 };
     const proposed = await callTool(access, 'correct_value', args);
     expect(proposed.isError).toBe(false);
-    const confirmed = await callTool(access, 'correct_value', { ...args, confirm: proposed.structured.confirm }, LATER);
+    const confirmed = await callTool(access, 'correct_value', { ...args, confirm: proposed.structured.confirm, approval: APPROVED }, LATER);
     expect(confirmed.isError, confirmed.text).toBe(false);
     expect(storedRecord().measurements.find((m) => m.correctsId === row.id)?.value).toBe(2.8);
   });
@@ -607,7 +609,7 @@ describe('US-32 AC38 — the two-phase tools work on a reviewer bearer (one shar
     });
     expect(proposed.isError, proposed.text).toBe(false);
     const receipt = proposed.structured.receipt as string;
-    const committed = await callTool(access, 'file_results', { commit: { receipt, accept: ['c1'], replace: [] } });
+    const committed = await callTool(access, 'file_results', { commit: { receipt, accept: ['c1'], replace: [], approval: APPROVED } });
     expect(committed.isError, committed.text).toBe(false);
     expect(storedRecord().labValues.some((row) => row.metricName === 'Ferritin')).toBe(true);
   });
@@ -619,7 +621,7 @@ describe('US-32 AC38 — the two-phase tools work on a reviewer bearer (one shar
     const row = storedRecord().measurements[0];
     const args = { id: row.id, newValue: 2.9, expectedValue: 3.2 };
     const proposed = await callTool(first.access, 'correct_value', args);
-    const confirmed = await callTool(second.access, 'correct_value', { ...args, confirm: proposed.structured.confirm }, LATER);
+    const confirmed = await callTool(second.access, 'correct_value', { ...args, confirm: proposed.structured.confirm, approval: APPROVED }, LATER);
     expect(confirmed.isError, confirmed.text).toBe(false);
   });
 });

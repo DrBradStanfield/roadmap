@@ -8,11 +8,15 @@ summary: "Alpha summary, 200 mg in adults."
 
 ## Dosing
 
-Trials used 200 mg in adults [1]. Some evidence suggests benefit. Take it with food, e.g. at lunch. MicroVitamin has a small dose.
+Trials used 200 mg in adults [1].
+Some evidence suggests benefit.
+Take it with food, e.g. at lunch.
+MicroVitamin has a small dose.
 
 ## Safety
 
-Doses of 2 g may cause upset [2]. Dr. Smith noted vs. placebo results.
+Doses of 2 g may cause upset [2].
+Dr. Smith noted vs. placebo results.
 
 ## References
 

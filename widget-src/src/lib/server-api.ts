@@ -1,5 +1,6 @@
 /** Shopify services only. Health records are read and written by roadmap-data. */
-import type { GUIDE_PLACEMENTS, ProductEventName, REMOTE_CHANGE_BACKENDS } from '@roadmap/health-core';
+import type { GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, LpaUnit, ProductEventName, REMOTE_CHANGE_BACKENDS } from '@roadmap/health-core';
+import { PER_ACTION_EVENT_NAMES, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { safeGetItem, safeSetItem } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
@@ -129,7 +130,7 @@ export function trackABConversion(): void { trackABEvent('conversion'); }
 // Product funnel events (anonymous behavioral counters — usage-audit 2026-08)
 // ---------------------------------------------------------------------------
 
-export interface ProductEventMetadata {
+export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey, number>> {
   provider?: 'google-drive' | 'dropbox' | 'github' | 'webdav' | 'local' | 'typed';
   count?: number;
   placement?: (typeof GUIDE_PLACEMENTS)[number];
@@ -138,6 +139,10 @@ export interface ProductEventMetadata {
    *  unit spelling the record would not take. Never a value. */
   key?: string;
   unit?: string;
+  /** `lpa_unit_selected` (US-05 AC2): the unit shown before the change; `unit` is the one chosen. */
+  from?: LpaUnit;
+  /** `lpa_check_answered` (US-05 AC3): the answer, a label only. */
+  answer?: (typeof LPA_CHECK_ANSWERS)[number];
 }
 
 /**
@@ -147,7 +152,8 @@ export interface ProductEventMetadata {
  * - Only fires on the Shopify surface: the Pages/self-host build has no Brad
  *   server, so this must no-op there (VITE_SHOPIFY_SURFACE gate).
  * - Throttled to once per event name per tab session (sessionStorage), so
- *   re-renders and repeat actions don't spam the endpoint.
+ *   re-renders and repeat actions don't spam the endpoint, except
+ *   PER_ACTION_EVENT_NAMES, where each occurrence is the count.
  * - Never attach health values or free text — metadata is a closed allow-list.
  */
 export function trackProductEvent(
@@ -155,13 +161,15 @@ export function trackProductEvent(
   metadata?: ProductEventMetadata,
 ): void {
   if (!SHOPIFY_SURFACE) return;
-  try {
-    // Counted per (test, spelling): collapsing them would hide every spelling
-    // but the first — the very list this signal exists to build.
-    const sentKey = `hr_pe_${eventName}${metadata?.key ? `_${metadata.key}_${metadata.unit}` : ''}`;
-    if (sessionStorage.getItem(sentKey)) return;
-    sessionStorage.setItem(sentKey, '1');
-  } catch { /* sessionStorage unavailable — still send once */ }
+  if (!(PER_ACTION_EVENT_NAMES as readonly string[]).includes(eventName)) {
+    try {
+      // Counted per (test, spelling): collapsing them would hide every spelling
+      // but the first — the very list this signal exists to build.
+      const sentKey = `hr_pe_${eventName}${metadata?.key ? `_${metadata.key}_${metadata.unit}` : ''}`;
+      if (sessionStorage.getItem(sentKey)) return;
+      sessionStorage.setItem(sentKey, '1');
+    } catch { /* sessionStorage unavailable — still send once */ }
+  }
   const visitorId = getVisitorId();
   apiCall(
     () => fetch(`${PROXY_PATH}/api/events`, {

@@ -55,7 +55,7 @@ this loop on reasoning alone: if you cannot measure it, you propose it.
 
 1. This charter + `LEARNINGS.md` + `metrics.csv` here.
 2. The two most recent reports in this folder.
-3. `docs/chat-overview.html` "Current state at a glance" (claude_business):
+3. `docs/chat-overview.md` "Current state at a glance" (claude_business):
    build sessions only; from the cloud runner it is a standing named gap.
 
 ## Gather (fan out workers; every unreachable source is a NAMED gap)

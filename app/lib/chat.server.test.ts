@@ -4,6 +4,7 @@ import path from 'path';
 import {
   buildConversationMessages,
   buildSystemBlocks,
+  generateTitle,
   matchDocumentTitle,
   resolveChatContext,
   EMPTY_CHAT_CONTEXT,
@@ -325,6 +326,16 @@ describe('constants', () => {
 
   it('US-15 AC26: a question that fits the limit travels whole as a later history turn', () => {
     expect(MAX_HISTORY_TURN_CHARS).toBeGreaterThanOrEqual(MAX_MESSAGE_LENGTH);
+  });
+});
+
+describe('generateTitle', () => {
+  it('US-15 AC27: a cut through an emoji drops the emoji, never leaves half of it (Sentry 6Y)', () => {
+    // No sentence break and no space past 40, so the plain 80-unit cut applies;
+    // unit 80 is the emoji's high surrogate.
+    const title = generateTitle('hi ' + 'x'.repeat(76) + '😀' + ' and more');
+    expect(title).toBe('hi ' + 'x'.repeat(76) + '…');
+    expect(JSON.stringify(title)).not.toMatch(/\\u[dD][89a-fA-F]/);
   });
 });
 

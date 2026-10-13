@@ -225,7 +225,8 @@ result and carries no structure.
 
 **Shipped.** The eighth tool, hosted-only: extract (read files, no write) and commit
 (write, guarded) as two calls sharing one sealed receipt (`RECEIPT_LIFETIME_SECONDS`,
-one hour). Two sources: the root of the Dropbox app folder (`DROPBOX_APP_FOLDER`,
+one hour; since 2026-10-07 the receipt is the pending file's UUID and the MAC lives in
+the file, US-35 AC7). Two sources: the root of the Dropbox app folder (`DROPBOX_APP_FOLDER`,
 `Apps/Health Plan by Dr Brad`), and a file dropped into ChatGPT on a computer, fetched
 by `download_url` from ChatGPT's file hosts (`files.oaiusercontent.com` or its Azure blob
 store; a phone hands over a bare reference and is refused). Both land in the same

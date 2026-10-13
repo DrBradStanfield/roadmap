@@ -12,4 +12,5 @@ summary: "Clinical pathway for beta."
 
 ## Red Flags
 
-Go to the emergency department if symptoms are severe. Review again in 6 weeks.
+Go to the emergency department if symptoms are severe.
+Review again in 6 weeks.

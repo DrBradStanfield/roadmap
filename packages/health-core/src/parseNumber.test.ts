@@ -51,6 +51,18 @@ describe('parseLocalisedNumber', () => {
     expect(parseLocalisedNumber('NaN')).toBeUndefined();
   });
 
+  // US-12 AC8: plain decimals only. Number() also reads hex, binary, octal
+  // and exponents, so "0x10" was 16 and "1e3" was 1000.
+  it('US-12 AC8: refuses hex, binary, octal and exponent forms', () => {
+    for (const s of ['0x10', '0b1', '0o7', '1e3', '1E-2', '-Infinity']) {
+      expect(parseLocalisedNumber(s)).toBeUndefined();
+    }
+    expect(parseLocalisedNumber('+5')).toBe(5);
+    expect(parseLocalisedNumber('5.')).toBe(5);
+    expect(parseLocalisedNumber('.5')).toBe(0.5);
+    expect(parseLocalisedNumber(',5')).toBe(0.5);
+  });
+
   // Multiple separators — we just replace all commas with periods. With
   // multiple periods this becomes invalid, returning undefined. We don't
   // try to interpret thousands separators because lab values never need them.

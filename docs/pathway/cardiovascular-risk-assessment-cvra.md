@@ -8,9 +8,11 @@ summary: "Clinical pathway for cardiovascular risk assessment in adults: who to 
 
 # Cardiovascular Risk Assessment (CVRA)
 
-*Source: Auckland Region HealthPathways*
+*Source: Auckland Region HealthPathways. Last reviewed: May 2019.*
 
-This pathway covers how cardiovascular risk is assessed in adults — who should be screened, what factors are considered, and how risk level guides management.
+This pathway covers how cardiovascular risk is assessed in adults: who should be screened, what factors are considered, and how risk level guides management.
+
+> **Always discuss your results and any treatment decisions with your doctor.** This information is a clinical reference, not a substitute for individual medical advice.
 
 ---
 
@@ -20,7 +22,7 @@ This pathway covers how cardiovascular risk is assessed in adults — who should
 - The goal of CVRA is to identify modifiable cardiovascular risk factors, in order to guide behaviour change and medical management.
 - Recommendations are based on the combined risk estimate, current evidence of benefits and harms, and the patient's overall health, co-morbidities, and frailty.
 - Treatment decisions use a shared decision-making model, based on informed personal choice.
-- The relative benefit of interventions (particularly medication) is roughly constant across patients, so the absolute benefit is proportional to the estimated combined CVD risk — meaning the higher your risk, the more you benefit from treatment.
+- In general, the relative benefit of interventions (particularly medication) is constant, so the absolute benefit is proportional to the estimated combined CVD risk. The higher your risk, the more you are likely to benefit from treatment.
 
 ---
 
@@ -56,7 +58,7 @@ Your doctor will also record your smoking status, ethnicity, personal cardiovasc
 
 ### Family History Risk Factors
 
-- Premature CVD — a first-degree relative hospitalised or who died from a heart attack or stroke before age 50
+- Premature CVD: a first-degree relative hospitalised or who died from a heart attack or stroke before age 50 years
 - Type 2 diabetes
 - Genetic lipid disorder
 
@@ -98,7 +100,7 @@ Some patients are in a very high-risk group without needing a full risk calculat
   - Familial hypercholesterolaemia
   - Familial defective ApoB
   - Familial combined dyslipidaemia
-- Diabetes with overt nephropathy (albumin:creatinine ratio ≥ 30 mg/mmol or urinary albumin ≥ 200 mg/L)
+- Diabetes with overt nephropathy (albumin:creatinine ratio 30 mg/mmol or more, or urinary albumin 200 mg/L or more)
 - Diabetes with other renal disease causing renal impairment (eGFR ≤ 60 mL/min/1.73 m²)
 
 ---
@@ -110,18 +112,19 @@ Some patients are in a very high-risk group without needing a full risk calculat
 - Risk calculators can be used but will calculate risk as if the patient were 30 years old
 - Risk factors considered include:
   - Low HDL < 0.7 mmol/L (possible genetic lipid disorder)
-  - Known or suspected familial dyslipidaemias or genetic lipid disorders
-  - Type 1 or Type 2 diabetes with microalbuminuria, or Type 2 diabetes of long duration (10 years or more)
-- Results are approximations but can guide shared decision-making
-- Some risk factors in young people may warrant more intensive intervention or specialist referral
+  - Known familial dyslipidaemias or suspected genetic lipid disorders
+  - Type 1 or Type 2 diabetes with microalbuminuria, or Type 2 diabetes of long duration (10 years)
+- Results are approximations but can be useful to guide shared decision-making
+- Some risk factors in young people might require more intensive intervention or specialist referral
 
 ### Aged 75 Years or Older
 
-- Management depends on co-morbidities, though many older people benefit from the same interventions as younger people
-- In secondary prevention (existing CVD), statins have consistent benefit in people aged 75 and over
-- Evidence for lipid-lowering as primary prevention in the elderly is more limited — cardiovascular events may decrease, particularly in those with diabetes, but mortality benefit has not been clearly established
-- Blood pressure treatment continues to benefit older people, but so do the potential harms (especially in the very elderly) — treatment should be reviewed regularly
-- Risk estimates in this age group are approximations, as they are outside the range of the NZ Primary Prevention Equations
+- Management depends on co-morbidities, though many older people will benefit from the same interventions as younger people
+- In secondary prevention (existing CVD), the relative benefit of statins in people aged 75 and over is consistent with that in younger people
+- Evidence for lipid-lowering as primary prevention in the elderly is limited. Cardiovascular events may decrease, particularly in people with diabetes, but a mortality benefit has yet to be established
+- The benefits of lowering blood pressure continue into older age, but so do the potential harms of treatment (especially in the very elderly), so treatment should be reviewed regularly
+- Weighing the harms and benefits of treatment is more difficult in older people. Co-morbidity is more common, and the time available to gain benefit is shorter
+- Risk estimates in this age group are approximations only, as they are outside the range of the NZ Primary Prevention Equations, but they are potentially useful
 - Your doctor will discuss your expectations and priorities when making treatment decisions
 
 ---
@@ -132,26 +135,29 @@ Your doctor will use shared decision-making to discuss your risk category and wh
 
 - **Low risk (< 5%):** Promote lifestyle changes. Drug treatment is usually not required.
 - **Moderate risk (5 to < 15%):** Discussion about the benefits and harms of blood pressure or lipid-lowering medication, versus lifestyle-only management.
-- **High risk (≥ 15%):** Most patients benefit from blood pressure and lipid-lowering medication, plus intensive lifestyle changes. For some, aspirin or another antiplatelet agent may also be considered.
+- **High risk (≥ 15%):** Most patients with high risk, and all patients with a personal history of CVD, are likely to benefit from blood pressure and lipid-lowering medication, plus intensive lifestyle changes. For some groups, aspirin or another antiplatelet agent may also be considered.
+
+If your total cholesterol to HDL cholesterol (TC:HDL-C) ratio is 8 or higher, lipid-lowering treatment is usually recommended.
 
 ### Aspirin
 
 - Recommended if you have had a prior cardiovascular event (secondary prevention)
-- May be considered for primary prevention if you are under 70 with a 5-year CV risk of 15% or more and are not at increased bleeding risk. Potential benefits include reduction in non-fatal heart attack and colorectal cancer (though the colorectal cancer benefit takes at least 10 years to appear)
-- Not recommended for primary prevention if:
+- May be considered for primary prevention if you are under 70 with a 5-year CV risk of 15% or more and are not at increased bleeding risk. Potential benefits include reduction in non-fatal heart attack and colorectal cancer, and possibly a small gain in years of life.
+- The colorectal cancer benefit does not appear until 10 years after starting aspirin
+- Not recommended for primary prevention alone if:
   - Aged over 70, regardless of CV risk
   - 5-year CV risk is below 15%
 
 ### Lifestyle Interventions
 
-Lifestyle changes are recommended for all patients, regardless of risk level:
+Lifestyle changes are recommended for all patients, regardless of risk level. Ongoing support and follow-up is often needed to make these changes last:
 
 - **Diet:** Reduce saturated fat and cholesterol intake. The [Heart Foundation guide to eating for a healthy heart](https://www.heartfoundation.org.nz/wellbeing/healthy-eating/eating-for-a-healthy-heart) is a useful resource.
 - **Physical activity:** Aim for at least 30 minutes of moderately intense exercise on most days of the week
 - **Weight:** Weight loss if overweight
-- **Smoking:** Quitting smoking is one of the most effective ways to reduce cardiovascular risk. Note: stopping smoking does not worsen mental illness.
-- **Flu vaccination:** Annual influenza immunisation is recommended for eligible patients
-- **Diabetes:** If you have diabetes, good blood sugar control is an important part of cardiovascular risk management
+- **Smoking:** Stop smoking. For people with severe mental illness, stopping smoking does not worsen mental illness.
+- **Flu vaccination:** Annual influenza immunisation is recommended
+- **Diabetes:** If you have diabetes, your doctor will advise you about diabetes control
 
 ---
 
@@ -181,7 +187,7 @@ Lifestyle changes are recommended for all patients, regardless of risk level:
 | 15% or more | Every year |
 | Severe mental illness | Every 2 years, or annually if risk is 15% or more |
 
-Between formal assessments, your doctor may still see you opportunistically to support lifestyle changes — especially if you have modifiable risk factors.
+Between formal assessments, your doctor may still support lifestyle changes, even when your risk is low. A younger person with a low 5-year risk, who does not need a repeat assessment for 5 years, may still have several modifiable risk factors.
 
 ---
 

@@ -38,7 +38,7 @@ interface IndexEntry {
    * this post exists. `url` stays the drstanfield.com (education) URL; this is
    * its commerce twin. The chatbot cites `commerceUrl` in brand posture and
    * `url` in doctor posture (falling back to `url` when this is absent).
-   * See docs/blog-website-update.html (two-store blog plan).
+   * See docs/blog-website-update.md (two-store blog plan).
    */
   commerceUrl?: string;
   tags: string[];

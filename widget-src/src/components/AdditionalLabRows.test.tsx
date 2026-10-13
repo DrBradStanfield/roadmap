@@ -9,7 +9,7 @@
  * strips instead — visually disconnected from the matrix directly above.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, fireEvent, cleanup, act } from '@testing-library/react';
+import { render, fireEvent, cleanup, act, within } from '@testing-library/react';
 
 afterEach(cleanup);
 import type { ApiLabValue } from '../lib/api-types';
@@ -144,7 +144,31 @@ describe('US-21 AC5 — closing a group never drops a correction', () => {
     fireEvent.click(header);
     await vi.waitFor(() => expect(onCorrect).toHaveBeenCalledTimes(1));
     fireEvent.click(header);
-    await vi.waitFor(() => expect(view.getByText('Could not save. Check your connection and try again.')).toBeTruthy());
-    expect((view.container.querySelector('.bt-cell-correcting input') as HTMLInputElement).value).toBe('142');
+    // In the cell: the matrix's live region says it too, a task later.
+    const cell = () => view.container.querySelector('.bt-cell-correcting') as HTMLElement;
+    await vi.waitFor(() => expect(within(cell()).getByText('Could not save. Check your connection and try again.')).toBeTruthy());
+    expect((cell().querySelector('input') as HTMLInputElement).value).toBe('142');
+  });
+});
+
+/**
+ * Adversary R4 (2026-10-13): the lab matrices' editors showed their messages
+ * in the cell only; the blood-test and vitals matrices also say them in one
+ * polite live region. US-04 AC1.
+ */
+describe('US-04 AC1 — a lab matrix says its cells\' messages', () => {
+  it('a refused correction is said in the group matrix\'s one live region, there from the first render', async () => {
+    const onCorrect = vi.fn().mockResolvedValue('error');
+    const { container, getByRole } = render(<AdditionalLabRows labValues={ROWS} onCorrect={onCorrect} />);
+    fireEvent.click(getByRole('button', { name: /Renal/ }));
+    const region = container.querySelector('.alr-matrix [role="status"].bt-cell-messages') as HTMLElement;
+    expect(region).toBeTruthy();
+    expect(region.tagName).toBe('P');
+    expect(region.textContent).toBe('\u00a0');
+    fireEvent.click(Array.from(container.querySelectorAll('.bt-cell-clickable')).find((c) => c.textContent === '141') as HTMLElement);
+    const input = container.querySelector('.bt-cell-correcting input') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '142' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await vi.waitFor(() => expect(region.textContent).toBe('Could not save. Check your connection and try again.'));
   });
 });

@@ -19,8 +19,8 @@ Tools that enforce this contract for you: `tools/get-plan.ts`, `tools/edit-recor
 - TypeScript source of truth: `packages/health-core/src/roadmap-file.ts`
 - Compute the plan from the file: `npx tsx tools/get-plan.ts <file>` (in this repo), see `--help`
 - Something wrong or missing? The MCP server's `report_feedback` tool reports it. On the
-  hosted server it FILES the GitHub issue itself, with no user action, and the issue is
-  public; a server with no GitHub token prepares a link the user submits instead. Tell the
+  hosted server it proposes the issue first and, once the user confirms, files it itself;
+  the issue is public; a server with no GitHub token prepares a link the user submits instead. Tell the
   user before you call it, and put no health value in it, one is refused.
 
 ## Where the file is
@@ -115,7 +115,9 @@ someone's medical history, or lose their data at the next device sync.
    `lamport` exactly as you found it, or absent.
 8. **Units.** `measurements[].value` is the SI canonical unit, kg, cm, mmHg, mmol/mol
    for HbA1c, mmol/L for lipids, g/L for ApoB, µmol/L for creatinine, ng/mL for PSA,
-   nmol/L for Lp(a). Convert before you write. **Lab values are SI at rest too, since
+   nmol/L for Lp(a). Convert before you write. Lp(a) converts at the factor the app uses,
+   2.5 nmol/L per mg/dL (0.25 per mg/L; the EAS 2022 interim factor), so your rows
+   match the app's. **Lab values are SI at rest too, since
    2026-09-18 (US-21 phase 3).** Send `labValues[].value` and `unit` as the lab PRINTED
    them and let the record convert: a test in `lab-catalog.ts` is stored in that
    catalogue's canonical unit — reference bounds by the same factor — and a unit
@@ -236,8 +238,10 @@ unit must be one the metric is measured in, the value must sit inside the app's 
 range, and a value that looks like a unit swap comes back as a question. `import_documents`
 is the folder route: it reads lab PDFs or images (or a ZIP of them; 5 MB per file, 20 MB
 per ZIP, 30 files a day; no HEIC) from the root of the Dropbox app folder and proposes
-values for you to accept, in the record's own unit system. It writes nothing to the
-record until the user confirms; the candidates wait in a pending file in the user's own
+values for you to accept, in the record's own unit system. A file inside a ZIP is named
+`<zip>/<path inside it>` (`labs.zip/2026/results.pdf`), as the website's upload names it, in
+`files`, in a `fileDates` answer and on the filed document; `fileNames` names the ZIP itself.
+It writes nothing to the record until the user confirms; the candidates wait in a pending file in the user's own
 folder (`imports/pending-<id>.json`), and the receipt naming it expires after an hour. Those files are sent to
 Anthropic's API for extraction, under our key, at the extract step and before the user
 confirms anything. We keep none of them. Anthropic's [commercial
@@ -253,10 +257,12 @@ the Dropbox folder and the next time you ask your assistant anything about your 
 it offers them ("2 files in your folder are not in your record"); nothing runs while you
 are away, and nothing updates itself. A file it cannot read comes back
 with a `hint` in plain words (the type, the size limit, the day's quota, a missing date
-, answered with `fileDates: [{ file, date }]`), and `next` says what to do with what it found.
+, answered with `fileDates: [{ file, date }]`). A report it read only in part carries `droppedValues` (how many values it left out) and a `hint` to relay, since once filed it dedups as already imported (US-12 AC8, 2026-10-13). `next` says what to do with what it found.
 Three tools are permanent — `correct_value`, `update_profile`, `report_feedback` — and on
 the hosted server they take two calls: a proposal with a `confirm` receipt, then the same
-call with it after your yes (the mechanism and its limits: docs/mcp-architecture.md §3).
+call with it after your yes, carrying your words as `approval`, quoted. An import's
+`commit` carries `approval` the same way. The server holds those words for one request
+and never stores or logs them (the mechanism and its limits: docs/mcp-architecture.md §3).
 Every tool declares an `outputSchema` and answers with `structuredContent` beside the
 text: the same answer typed, so a row id is read, not parsed out of a sentence. A refusal
 carries none, it is an error result.

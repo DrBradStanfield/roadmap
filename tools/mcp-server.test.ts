@@ -559,6 +559,7 @@ describe('US-36 AC1 — file_results runs here: the receipt lives in this proces
     expect(stranger.result!.isError).toBe(true);
     expect(text(stranger)).toMatch(/not one this server is holding.*loses it on restart.*Nothing was written/);
 
+    // No `approval`: the stdio server does not require the user's quoted words (US-35 AC7, 2026-10-07).
     const commit = await call(path, 'file_results', { commit: { receipt: data.receipt, accept: ['c1', 'c2'], replace: [] } });
     expect(commit.result!.isError).toBeUndefined();
     expect(text(commit)).toContain('Saved (backup:');
@@ -583,6 +584,14 @@ describe('US-36 AC9 — the stdio server ignores `confirm`: a person is watching
     expect(text(response)).toContain('Corrected ldl 2.8');
     const saved = JSON.parse(readFileSync(path, 'utf8')) as RoadmapFile;
     expect(saved.measurements.find((m) => m.id === 'm1')!.status).toBe('entered-in-error');
+    rmSync(dir, { recursive: true, force: true });
+  });
+  it('accepts and ignores `approval` too (US-36 AC9, 2026-10-07): the published field is the hosted server’s, never a refusal here', async () => {
+    const { dir, path } = writeFixture(fixture());
+    const response = await call(path, 'correct_value', { id: 'm1', newValue: 2.8, expectedValue: 3.4, approval: 'Yes, correct it' });
+    expect(response.result!.isError).toBeUndefined();
+    expect(text(response)).toContain('Corrected ldl 2.8');
+    expect(text(response)).not.toContain('Yes, correct it');
     rmSync(dir, { recursive: true, force: true });
   });
 });

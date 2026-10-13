@@ -12,8 +12,9 @@ import * as Sentry from '@sentry/react-router';
 import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
-import { callAnthropicWithUsage, extractJsonObject, type AnthropicUsage } from './anthropic.server';
+import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { parseRouterReply } from './router-reply';
 // The router's model lives with the other pins; modelParams gives its family's body shape.
 import { PROMPT_CACHE, ROUTER_MODEL, modelParams } from '../../packages/health-core/src/models';
 import { cutText } from '../../packages/health-core/src/chat-history';
@@ -339,7 +340,7 @@ export async function routeQuery(
     const result = await callAnthropicWithUsage(body, 5_000);
     rawJson = result.content;
 
-    const rawParsed = JSON.parse(extractJsonObject(rawJson)) as { handles?: unknown };
+    const rawParsed = parseRouterReply(rawJson) as { handles?: unknown };
     rawParsed.handles = sanitizeRawHandles(rawParsed.handles);
     const parsed = RouterOutput.parse(rawParsed);
 
@@ -368,7 +369,9 @@ export async function routeQuery(
       usage: EMPTY_USAGE,
       latencyMs,
       cacheHit: false,
-      error: errorMsg,
+      // JSON.parse quotes a snippet of the bad input that can end mid-pair
+      // (US-15 AC27). This is toWellFormed(), which the ES2022 lib lacks.
+      error: errorMsg.replace(/[\uD800-\uDFFF]/gu, '\uFFFD'),
     };
   }
 }

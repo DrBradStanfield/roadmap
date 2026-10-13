@@ -13,7 +13,7 @@ import {
   EXTRACTION_MAX_TOKENS,
   parseUnifiedResult,
   toUnifiedResult,
-  extractJsonObject,
+  parseExtractionJson,
   pagesToContentBlocks,
   type DocumentPromptMode,
   type PageContent,
@@ -113,7 +113,7 @@ async function extractOrClassifyOnce(
 
   let parsed: ReturnType<typeof parseUnifiedResult>;
   try {
-    parsed = parseUnifiedResult(JSON.parse(extractJsonObject(responseText)));
+    parsed = parseUnifiedResult(parseExtractionJson(responseText));
   } catch {
     // Prefill `{` to coerce malformed responses into valid JSON shape.
     const retryBody = {
@@ -125,7 +125,7 @@ async function extractOrClassifyOnce(
     };
     responseText = await callAnthropic(apiKey, retryBody, left(), httpAttempts);
     try {
-      parsed = parseUnifiedResult(JSON.parse(extractJsonObject('{' + responseText)));
+      parsed = parseUnifiedResult(parseExtractionJson('{' + responseText));
     } catch {
       // The error CLASS only: a SyntaxError quotes ~10 chars of the model's
       // answer and Zod names the values it received — both are document text,
@@ -498,14 +498,10 @@ export async function streamAnthropicWithUsage(
 // Batch API — processes all files in a single batch request
 // ---------------------------------------------------------------------------
 
-interface BatchFileInput {
-  fileName: string;
-  pages: PageContent[];
-}
-
-/** Create a batch of LLM requests — one per file. Returns the batch ID. */
+/** Create a batch of LLM requests — one per file, named by its index alone
+ *  (`file-N`): the browser keeps the file names. Returns the batch ID. */
 export async function createBatch(
-  files: BatchFileInput[],
+  files: Array<{ pages: PageContent[] }>,
 ): Promise<{ batchId: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
@@ -544,6 +540,11 @@ export async function createBatch(
   return { batchId: data.id };
 }
 
+/** One batch result, named by its request index (`file-N`): the client maps
+ *  it back to the file it sent at that position. `errorCode` marks a file the
+ *  provider did not read. */
+type BatchFileResult = { index: number } & (UnifiedExtractionResult | { errorCode: 'server_error' });
+
 /** Poll batch status. Returns completed count or full results when done. */
 export async function pollBatch(
   batchId: string,
@@ -551,7 +552,7 @@ export async function pollBatch(
   status: 'processing' | 'ended' | 'failed';
   completed: number;
   total: number;
-  results?: UnifiedExtractionResult[];
+  results?: BatchFileResult[];
 }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
@@ -610,7 +611,7 @@ export async function pollBatch(
   }
 
   // Parse each JSONL line and extract results, sorted by custom_id
-  const resultMap = new Map<number, UnifiedExtractionResult>();
+  const resultMap = new Map<number, BatchFileResult>();
 
   for (const line of lines) {
     try {
@@ -622,8 +623,8 @@ export async function pollBatch(
         const textBlock = entry.result.message?.content?.find((b: any) => b.type === 'text');
         if (textBlock?.text) {
           try {
-            const parsed = parseUnifiedResult(JSON.parse(extractJsonObject(textBlock.text)));
-            resultMap.set(index, toUnifiedResult(parsed));
+            const parsed = parseUnifiedResult(parseExtractionJson(textBlock.text));
+            resultMap.set(index, { ...toUnifiedResult(parsed), index });
             continue;
           } catch {
             // JSON parse or Zod validation failed
@@ -631,24 +632,16 @@ export async function pollBatch(
         }
       }
 
-      // Error or failed to parse — store error result
-      resultMap.set(index, {
-        classification: 'other',
-        reportDate: null,
-        values: [],
-        additionalValues: [],
-        unrecognized: [],
-        document: null,
-      });
+      // Errored, expired or unparseable: marked, so the file is not reported
+      // as one with no values (US-12 AC9).
+      resultMap.set(index, { index, errorCode: 'server_error' });
     } catch {
-      // Skip malformed JSONL lines
+      // Skip malformed JSONL lines; the index each result carries keeps the
+      // rest on their own files, and the client names the missing one.
     }
   }
 
-  // Sort by index and return
-  const results = Array.from(resultMap.entries())
-    .sort((a, b) => a[0] - b[0])
-    .map(([, r]) => r);
+  const results = Array.from(resultMap.values()).sort((a, b) => a.index - b.index);
 
   return { status: 'ended', completed, total, results };
 }

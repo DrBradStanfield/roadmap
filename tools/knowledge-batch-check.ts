@@ -6,6 +6,9 @@
  *
  *   npx tsx tools/knowledge-batch-check.ts --batch <name> --handles <file> \
  *     [--reports <dir>] [--base <git ref>] [--out <file>]
+ * A report entry is {body_line, raw_quote, notes?}: an exact body line and verbatim source text. The checker
+ * derives the numbers itself (a legacy `token` field is ignored). Each new number needs one entry whose line and
+ * quote both carry it; each entry must share a number between its line and quote. "call 111" is exempt.
  * Decisions reviewers have disputed and Brad kept (do not "fix" them):
  *  - A number that RELOCATED into a restructured sentence (whole-body count equal, token already in the base,
  *    the sentence wording around it changed) is a WARN. A number changed IN PLACE (same wording, a different
@@ -13,9 +16,13 @@
  *  - The hedge count may fall only by the hedges inside sentences the report lists in deleted_sentences with a
  *    justification (US-42 AC3): each such loss is a WARN, anything else is a FAIL, in every article type. A
  *    hedge lost from a sentence that SURVIVES (not declared deleted, its other words still present) is a FAIL.
+ *  - Known limits (not fixed): a list item whose inherited comparator changes while its own text stays the same is not
+ *    re-checked; two identical list items under different comparator lead-ins resolve to the first occurrence.
  *  - Comparator words are matched longest-first ("no more than" is <=, never ">" from "more than").
  *  - An unchanged (frozen) summary passes even with a proposed correction: the orchestrator applies
  *    corrections later under the paired-arm rule. A summary that changed must equal the proposal.
+ *  - A changed_tokens entry may carry "void": true and a "void_reason". Reports are append-only, so a wrong entry is
+ *    voided, not deleted: every AC2 check skips it, it never covers a token, and the report lists "VOID <i>: <reason>".
  *  - AC6 allows the --out report path inside the repo: the batch report commits with the batch.
  *
  *   npx tsx tools/knowledge-batch-check.ts --print-schema
@@ -31,13 +38,15 @@ import { pathToFileURL } from "node:url";
 export type Status = "PASS" | "FAIL" | "WARN";
 export interface Exception { check: string; handle: string; match: string; reason: string; by: string; date: string }
 export interface Result { id: string; title: string; status: Status; evidence: string[]; excepted?: Exception[] }
+export interface Entry { body_line: string; raw_quote: string; notes?: string; void?: boolean; void_reason?: string }
 export interface Report {
   handle: string;
   type: "pathway" | "reference" | "video" | "guideline";
   raw_path: string;
   raw_sha256: string;
   old_raw_path: string | null;
-  changed_tokens: { token: string; body_line: string; raw_quote: string }[];
+  /** One entry per body line and its verbatim source quote; the checker derives the numbers. A `token` field is ignored. */
+  changed_tokens: Entry[];
   deleted_sentences: { sentence: string; justification: string; pattern?: boolean }[];
   headings_before: string[];
   headings_after: string[];
@@ -68,8 +77,14 @@ export const REPORT_SCHEMA = {
     changed_tokens: {
       type: "array",
       items: {
-        type: "object", additionalProperties: false, required: ["token", "body_line", "raw_quote"],
-        properties: { token: { type: "string" }, body_line: { type: "string" }, raw_quote: { type: "string" } },
+        type: "object", additionalProperties: true, required: ["body_line", "raw_quote"], // a legacy `token` is ignored
+        properties: {
+          body_line: { type: "string", description: "an exact current line of the body" },
+          raw_quote: { type: "string", description: "verbatim source text (6 words or 30 characters) sharing a number with body_line" },
+          notes: { type: "string" },
+          void: { type: "boolean", description: "true: skip this entry in every AC2 check; it covers no token and is listed as a VOID line (reports are append-only)" },
+          void_reason: { type: "string", description: "required when void is true" },
+        },
       },
     },
     deleted_sentences: {
@@ -103,7 +118,7 @@ export function exampleReport(handle: string): Report {
     raw_path: `/abs/path/to/knowledge-map-raw/refresh-2026-09-29/${handle}.md`,
     raw_sha256: "0".repeat(64),
     old_raw_path: null,
-    changed_tokens: [{ token: "200 mg", body_line: "Trials used 200 mg per day [3].", raw_quote: "participants took 200 mg daily" }],
+    changed_tokens: [{ body_line: "Trials used 200 mg per day [3].", raw_quote: "participants took 200 mg daily" }],
     deleted_sentences: [{ sentence: "The old sentence, verbatim from the previous body.", justification: "Absent from the new raw; the source dropped it." }],
     headings_before: ["## Dosing"], headings_after: ["## Dosing"],
     proposed_summary_correction: null,
@@ -133,10 +148,15 @@ export function validateReport(o: unknown): string[] {
   strOrNull("old_raw_path"); strOrNull("proposed_summary_correction");
   num("product_mentions_before"); num("product_mentions_after");
   strArr("headings_before"); strArr("headings_after");
-  objArr("changed_tokens", ["token", "body_line", "raw_quote"]);
+  objArr("changed_tokens", ["body_line", "raw_quote"]);
   objArr("deleted_sentences", ["sentence", "justification"]);
   if (Array.isArray(r.deleted_sentences)) (r.deleted_sentences as { pattern?: unknown }[]).forEach((x, i) => {
     if (x && x.pattern !== undefined && typeof x.pattern !== "boolean") e.push(`deleted_sentences[${i}].pattern: boolean expected`);
+  });
+  if (Array.isArray(r.changed_tokens)) (r.changed_tokens as { void?: unknown; void_reason?: unknown }[]).forEach((x, i) => {
+    if (!x || x.void === undefined) return;
+    if (typeof x.void !== "boolean") e.push(`changed_tokens[${i}].void: boolean expected`);
+    else if (x.void && (typeof x.void_reason !== "string" || !x.void_reason.trim())) e.push(`changed_tokens[${i}].void_reason: void entry without void_reason`);
   });
   if (r.new !== undefined && typeof r.new !== "boolean") e.push("new: boolean expected");
   if (r.extra_raw !== undefined) {
@@ -175,16 +195,16 @@ export const normChars = (s: string) => decodeEntities(s).replace(/\u00a0/g, " "
 export const normQuote = (s: string) => unescapeMd(normChars(s)).replace(/\s+/g, " ").trim().toLowerCase();
 
 const squash = (t: string) => t.replace(/\s+/g, " ").trim();
-const REFS_HEADING = /^#{1,4}\s*(?:\d+[.)]?\s*)?(?:references|sources|citations|bibliography)\b/i;
+const REFS_HEADING = /^#{1,6}\s*(?:\d+[.)]?\s*)?(?:references|sources|citations|bibliography)\b/i;
 const REF_LINE = /^\s*\[(\d+)\]\s+\S/;
 
 /** Lines of a body with their reference-section status. */
 function classifyLines(body: string): { line: string; ref: boolean }[] {
-  let inRefs = false;
+  let refLevel = 0; // level of the open References heading; a heading at that level or higher closes it
   return body.split(/\r?\n/).map((line) => {
-    const isHeading = /^#{1,6}\s/.test(line);
-    if (isHeading) inRefs = REFS_HEADING.test(line);
-    return { line, ref: (inRefs && !isHeading) || REF_LINE.test(line) };
+    const level = /^(#{1,6})\s/.exec(line)?.[1].length ?? 0;
+    if (level && (!refLevel || level <= refLevel)) refLevel = REFS_HEADING.test(line) ? level : 0;
+    return { line, ref: (refLevel > 0 && !level) || REF_LINE.test(line) };
   });
 }
 
@@ -194,8 +214,8 @@ const UNIT = [
   "mL/min/1\\.73m2", "mmol/mol", "mmol/L", "nmol/L", "pmol/L", "[µμ]mol/L", "umol/L", "micromol/L", "micromole/L", "mg/mmol", "mg/dL", "mg/kg", "mg/L",
   "mL/min", "L/min", "breaths/min", "IU/L", "U/L", "g/dL", "g/L", "ng/mL", "ng/dL", "ng/L", "nanogram/L", "[µμ]g/dL", "mcg/dL", "[µμ]g/L", "mcg/L",
   "mmHg", "bpm", "x/day", "times daily", "percent", "%",
-  "kilograms?", "milligrams?", "micrograms?", "millilitres?", "milliliters?", "litres?", "liters?", "grams?",
-  "mcg", "[µμ]g", "mg", "IU", "mL", "kg", "cm", "g", "hours?", "days?", "weeks?", "months?", "years?", "minutes?", "mins?", "seconds?", "secs?",
+  "kilograms?", "milligrams?", "micrograms?", "microg", "nanograms?", "millilitres?", "milliliters?", "litres?", "liters?", "grams?",
+  "mcg", "[µμ]g", "mg", "IU", "mL", "kg", "cm", "g", "hours?", "hrs?", "h", "days?", "d", "weeks?", "wks?", "months?", "years?", "minutes?", "mins?", "seconds?", "secs?",
   "(?<=[\\s-])s", // "30-s chair stand", "5 s", but not the "s" of "1990s"
 ].join("|");
 const NUM = "\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+(?:\\.\\d+)?|\\.\\d+";
@@ -206,7 +226,7 @@ const CMP_WORDS = [...["no more than", "not more than", "no less than", "not les
 const CMP_PRE = `(?:(≥|≤|>=|<=|>|<|\\b(?:${CMP_WORDS}))\\s*)?`;
 const CMP_POST = "or more|or higher|or above|or less";
 // "/day", "per dose", "a day", "each week", "daily", "weekly" straight after a unit.
-const SUFFIX = "(?:\\s*/\\s*|\\s+per\\s+)(?:day|dose|week|kg)|\\s+(?:a|each)\\s+(?:day|week)|\\s+(?:daily|weekly)";
+const SUFFIX = "(?:\\s*/\\s*|\\s+per\\s+)(?:day|dose|week|kg|d)|\\s+(?:a|each)\\s+(?:day|week)|\\s+(?:daily|weekly)";
 const suffixOf = (raw: string | undefined) => (!raw ? "" : /week/i.test(raw) ? "/week" : /dose/i.test(raw) ? "/dose" : /kg/i.test(raw) ? "/kg" : "/day");
 // Groups: 1 leading comparator, 2 and 3 numbers, 4 trailing comparator, 5 unit, 6 unit suffix (/day, per dose ...),
 // 7 any other attached "/x/y" (kept: "5 mg/m2" is not "5 mg"), 8 trailing comparator. A range may read "X-Y", "X to Y" or "X and Y".
@@ -224,6 +244,13 @@ const genericOf = (raw: string | undefined) => (!raw ? "" : raw.toLowerCase().sp
   .map((seg) => (/^minutes?$/.test(seg) ? "min" : /^seconds?$/.test(seg) ? "sec" : seg)).map((seg) => `/${seg}`).join(""));
 const canonCmp = (c: string | undefined) => (!c ? "" : /^maximum\b/i.test(c) ? "≤" : CMP_CANON[c.toLowerCase().replace(/\s+/g, " ")] ?? "");
 
+// "150 mg enteric coated, daily": "daily" or "per day" up to three words after a dose unit still means /day.
+const FAR_DAILY = /^(?:\s+(?!and\b|or\b|to\b)[A-Za-z][A-Za-z-]*,?){1,3}\s+(?:daily|per\s+day)\b/i;
+const FAR_DAILY_UNITS = new Set(["mg", "mcg", "g", "IU", "mL", "kg"]);
+const RANGE_TAIL = new RegExp(`^\\s+(?:to|and)\\s+(?:${NUM})\\s*(?:${UNIT})(?![A-Za-z])`, "i");
+const DAILY_NEAR = /^\s+(?:daily|per\s+day|a\s+day|\/\s*day)\b/i;
+const LIST_ITEM = /^\s*(?:[-*+]|\d+[.)])\s+/;
+const LEAD_CMP = new RegExp(`\\b(${CMP_WORDS})\\b[^:.]*:\\s*$`, "i");
 const COMPOUND_UNITS: Record<string, string> = { "mmol/l": "mmol/L", "mg/dl": "mg/dL", "ml/min": "mL/min", "ng/l": "ng/L", "pmol/l": "pmol/L", "nmol/l": "nmol/L",
   "µmol/l": "umol/L", "μmol/l": "umol/L", "umol/l": "umol/L", "micromol/l": "umol/L", "micromole/l": "umol/L", "nanogram/l": "ng/L",
   "ml/min/1.73m2": "mL/min/1.73m2", "mmol/mol": "mmol/mol", "mg/mmol": "mg/mmol", "mg/kg": "mg/kg", "mg/l": "mg/L", "l/min": "L/min",
@@ -234,8 +261,9 @@ function normUnit(u: string): string {
   const l = u.toLowerCase();
   if (COMPOUND_UNITS[l]) return COMPOUND_UNITS[l];
   if (l === "percent" || l === "%") return "%";
-  if (/^(µg|μg|mcg|micrograms?)$/.test(l)) return "mcg";
+  if (/^(µg|μg|mcg|microg|micrograms?)$/.test(l)) return "mcg";
   if (/^milligrams?$/.test(l)) return "mg";
+  if (/^nanograms?$/.test(l)) return "ng";
   if (/^kilograms?$/.test(l)) return "kg";
   if (/^grams?$/.test(l)) return "g";
   if (/^(litres?|liters?)$/.test(l)) return "L";
@@ -246,12 +274,16 @@ function normUnit(u: string): string {
   if (l === "times daily" || l === "x/day") return "x/day";
   if (l === "iu") return "IU";
   if (l === "mmhg") return "mmHg";
+  if (/^wks?$/.test(l)) return "week";
+  if (/^(h|hrs?)$/.test(l)) return "hour";
+  if (l === "d") return "day";
   return l.replace(/s$/, "");
 }
 
 function normNumber(n: string, unit: string): { value: string; unit: string } {
   let v = parseFloat(n.replace(/,/g, ""));
   if (unit === "g") { v = Number((v * 1000).toFixed(6)); unit = "mg"; }
+  else if (unit === "mcg" && v >= 1000) { v = Number((v / 1000).toFixed(6)); unit = "mg"; } // "1,000 micrograms" is "1 mg"
   return { value: String(v), unit };
 }
 
@@ -264,29 +296,80 @@ function stripNoise(line: string): string {
     .replace(/\bPMIDs?:?\s*\d+(?:\s*[,;]\s*\d+)*/gi, " ")
     .replace(/\b\d{4}-\d{2}-\d{2}\b/g, " ")
     .replace(/\[\d+(?:\s*[,–-]\s*\d+)*\]/g, " ")
-    .replace(/^\s*(?:[-*+]\s+)?\d+[.)]\s+/, " ");
+    .replace(/\b(?:type\s+[12](?:\s*(?:and|or|\/|-)\s*[12])?|stage\s+[1-5])\b/gi, " ") // disease and category names, not values
+    .replace(/^\s*(?:[-*+]\s+)?\d+[.)]\s+/, " ")
+    .replace(/\b(micrograms?|microg|[µμ]g|mcg|milligrams?|mg|nanograms?|ng|grams?|g|IU|U)((?:\s+[A-Za-z-]+){0,4})\s+per\s+(?:liters?|litres?|L)\b/gi, "$1/L$2")
+    .replace(/([A-Za-z])\s*[∙·⋅]\s*([A-Za-z]+)\s*(?:[-−]|⁻)[1¹]\b/g, "$1/$2") // "g∙kg-1" is g/kg
+    .replace(/(\d)\s*-\s*(month|week|hour|year)ly\b/gi, "$1 $2")
+    .replace(/\baged\s+(\d+(?:\.\d+)?)(?![\d.])(?!\s*(?:years?|y\b|months?|weeks?|days?|(?:[-–]|to\s|and\s)\s*\d))/gi, "aged $1 years")
+    .replace(NUMWORD_UNIT, (m, w: string, sp: string) => { const v = wordValue(w); return v === null ? m : `${v}${sp}`; })
+    .replace(NUMWORD_OPEN, (m, lead: string, w: string, noun: string) => {
+      const v = wordValue(w);
+      return v !== null && /^[A-Za-z]+s$/.test(noun) && !/(?:ss|us|is)$|^(?:was|has|does|as|this|thus)$/i.test(noun) ? `${lead}${v}` : m;
+    });
 }
+
+// "six weeks" = "6 weeks"; a bare number word counts only when it opens a sentence before a plural noun ("Forty-five adults").
+// A number-word expression is parsed whole ("one hundred twenty" = 120). One that does not parse yields no token, never its tail.
+const WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12,
+  thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
+  twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
+const W = `${Object.keys(WORDS).join("|")}|hundred|thousand`;
+const NW = `(?:a(?=\\s+(?:hundred|thousand)\\b)|${W})(?:(?:(?<=hundred|thousand)\\s+and\\s+|[\\s-]+)(?:${W}))*`;
+/** Value of a whole number-word expression, or null when it is not one. */
+function wordValue(expr: string): number | null {
+  const ws = expr.toLowerCase().split(/[\s-]+/).filter((w, i, a) => w !== "and" || /^(?:hundred|thousand)$/.test(a[i - 1] ?? ""));
+  const under = (p: string[]): number | null => {
+    let h = 0, i = 0;
+    if (p[1] === "hundred" && (p[0] === "a" || (WORDS[p[0]] ?? 99) < 10)) { h = (p[0] === "a" ? 1 : WORDS[p[0]]) * 100; i = 2; }
+    const r = p.slice(i).filter((w) => w !== "and");
+    if (!r.length) return h || null;
+    const v = r.map((w) => WORDS[w]);
+    if (v.some((x) => x === undefined)) return null;
+    if (r.length === 1) return h + v[0];
+    return r.length === 2 && v[0] >= 20 && v[0] % 10 === 0 && v[1] < 10 ? h + v[0] + v[1] : null;
+  };
+  const t = ws.indexOf("thousand");
+  if (t < 0) return under(ws);
+  if (ws.indexOf("thousand", t + 1) >= 0) return null;
+  const hi = ws.slice(0, t).join() === "a" ? 1 : under(ws.slice(0, t)), lo = t + 1 < ws.length ? under(ws.slice(t + 1)) : 0;
+  return hi === null || lo === null ? null : hi * 1000 + lo;
+}
+const NUMWORD_UNIT = new RegExp(`(?<!\\b(?:${W})[\\s-]+)(?<!(?:hundred|thousand)\\s+and\\s+)\\b(${NW})([\\s-]+)(?=(?:${UNIT})(?![A-Za-z]))`, "gi");
+const NUMWORD_OPEN = new RegExp(`(^[\\s>*_-]*|(?<=[.?!][)"'\\]*]*\\s+))(${NW})(?=\\s+([A-Za-z]+)\\b)`, "gi");
 
 /** Number tokens of a text, unit-normalised ("1 g" -> "1000 mg"). Reference lines are skipped unless keepRefs. */
 export function tokenCounts(text: string, opts: { keepRefs?: boolean } = {}): Map<string, number> {
   const out = new Map<string, number>();
   text = normChars(text);
   const lines = opts.keepRefs ? text.split(/\r?\n/).map((line) => ({ line, ref: false })) : classifyLines(text);
+  let listCmp = ""; // a comparator word that ends a line with ":" governs the list items below it
   for (const { line, ref } of lines) {
     if (ref) continue;
+    const isItem = LIST_ITEM.test(line);
+    if (!isItem && line.trim()) listCmp = canonCmp(LEAD_CMP.exec(line.trim())?.[1]);
+    const itemCmp = isItem ? listCmp : "";
     // "> " is a blockquote marker only on body lines; a token or quote may start with a ">" comparator.
     const s = stripNoise(opts.keepRefs ? line : line.replace(/^\s*>+ /, ""));
     for (const m of s.matchAll(TOKEN_RE())) {
       const unit = m[5] ? normUnit(m[5]) : "";
       // "over 12 to 72 hours" is a time span, not a comparator; "over 12 hours" is > 12.
       const lead = m[1]?.toLowerCase();
-      const cmp = m[3] && (lead === "over" || lead === "above") ? "" : canonCmp(m[1] ?? m[4] ?? m[8]);
+      const cmp = m[3] && (lead === "over" || lead === "above") ? "" : canonCmp(m[1] ?? m[4] ?? m[8]) || itemCmp;
       // A digit glued to a hyphen and letters ("5-ASA", "6-MP", "5-HT3") is a name, not a number.
       if (!m[5] && !m[3] && /^-[A-Za-z]/.test(s.slice(m.index! + m[0].length))) continue;
+      const gen = genericOf(m[7]);
+      // "micrograms/L" is "mcg/L": a spelled unit plus its /denominator, matched case-insensitively.
+      const comp = unit && gen ? COMPOUND_UNITS[`${unit}${gen}`.toLowerCase()] : undefined;
+      const rest = s.slice(m.index! + m[0].length);
+      // "2 mg to 20 mg of the compound daily": the suffix after the second value covers the first too.
+      const tail = unit && !m[3] && !gen ? RANGE_TAIL.exec(rest) : null;
+      const after = tail ? rest.slice(tail[0].length) : rest;
+      const per = m[6] ?? (unit && FAR_DAILY_UNITS.has(unit) && !gen && (FAR_DAILY.test(after) || (tail && DAILY_NEAR.test(after))) ? "daily" : undefined);
       for (const n of [m[2], m[3]].filter(Boolean) as string[]) {
         if (!unit && !cmp && !n.includes(",") && !n.includes(".") && /^(19|20)\d\d$/.test(n)) continue;
-        const { value, unit: u } = normNumber(n, unit);
-        const key = `${cmp}${u ? `${value} ${u}${suffixOf(m[6])}${genericOf(m[7])}` : value}`;
+        const { value, unit: u } = normNumber(n, comp ?? unit);
+        const key = `${cmp}${u ? `${value} ${u}${suffixOf(per)}${comp ? "" : gen}` : value}`;
         out.set(key, (out.get(key) ?? 0) + 1);
       }
     }
@@ -296,7 +379,7 @@ export function tokenCounts(text: string, opts: { keepRefs?: boolean } = {}): Ma
 
 export const tokenise = (text: string, opts: { keepRefs?: boolean } = {}): Set<string> => new Set(tokenCounts(text, opts).keys());
 
-const ABBREV = /\b(e\.g|i\.e|vs|Dr|mg|etc|approx|Mr|Mrs|Ms|Prof|al|Fig)\./gi;
+const ABBREV = /\b(e\.g|i\.e|vs|Dr|Jr|Sr|mg|etc|approx|Mr|Mrs|Ms|Prof|al|Fig)\./gi;
 export const cleanSentence = (s: string) =>
   s.replace(/[*_]/g, "").replace(/^\s*(?:[>#-]+|\d+[.)]|\|)\s+/, "").replace(/\s+/g, " ").trim();
 
@@ -540,15 +623,48 @@ function loadRaw(rep: Report, o: Options, tag: string, ac2: Check): RawSet {
   return { main, extras, abstracts };
 }
 
+/** A quote hit must not start or end inside a number or word: "7 mg for 12 weeks" is not inside "1.7 mg for 12 weeks". */
+const atBoundary = (hay: string, q: string, i: number) => {
+  const alnum = /[\p{L}\d]/u, end = i + q.length;
+  const before = alnum.test(hay[i - 1] ?? "") || (/[.,]/.test(hay[i - 1] ?? "") && /\d/.test(hay[i - 2] ?? ""));
+  const after = alnum.test(hay[end] ?? "") || (/[.,]/.test(hay[end] ?? "") && /\d/.test(hay[end + 1] ?? ""));
+  return !(alnum.test(q[0]) && before) && !(alnum.test(q[q.length - 1]) && after);
+};
+
+const hasQuote = (hay: string, q: string) => {
+  for (let i = hay.indexOf(q); i >= 0; i = hay.indexOf(q, i + 1)) if (atBoundary(hay, q, i)) return true;
+  return false;
+};
+
+/** True when the quote starts or ends inside a number-word expression of `hay` ("twenty mg" cut from "one hundred twenty mg"). */
+function splitsNumberWords(hay: string, q: string, i: number): boolean {
+  const nw = new RegExp(`^(?:${W})$`, "i");
+  const first = /^[a-z]+/i.exec(q)?.[0] ?? "", last = /[a-z]+$/i.exec(q)?.[0] ?? "";
+  if (nw.test(first)) {
+    const before = hay.slice(0, i).trimEnd().split(/\s+/).slice(-2).map((w) => w.replace(/^[^a-z]+/i, ""));
+    const p1 = before[before.length - 1] ?? "";
+    if (nw.test(p1) || (/^and$/i.test(p1) && /^(?:hundred|thousand)$/i.test(before[0] ?? "") && before.length === 2)) return true;
+  }
+  if (nw.test(last)) {
+    const after = hay.slice(i + q.length).trimStart().split(/\s+/).slice(0, 2).map((w) => w.replace(/^[^a-z]+/i, ""));
+    if (nw.test(after[0] ?? "") || (/^and$/i.test(after[0] ?? "") && /^(?:hundred|thousand)$/i.test(last) && nw.test(after[1] ?? ""))) return true;
+  }
+  return false;
+}
+
 /** Find `q` in `hay`, then re-tokenise the whole words around each hit: the token must be a whole token there ("7 mmol/L" is not "1.7 mmol/L"). */
-function findWhole(hay: string, q: string, tok: string): "ok" | "partial" | "absent" {
+function findWhole(hay: string, q: string, tok: string, lined = false): "ok" | "partial" | "absent" {
   let found = false;
   for (let i = hay.indexOf(q); i >= 0; i = hay.indexOf(q, i + 1)) {
     found = true;
+    if (!atBoundary(hay, q, i)) continue;
     let a = i, b = i + q.length;
+    if (splitsNumberWords(hay, q, i)) continue;
     while (a > 0 && !/\s/.test(hay[a - 1])) a--;
     while (b < hay.length && !/\s/.test(hay[b])) b++;
-    if (tokenise(hay.slice(a, b), { keepRefs: true }).has(tok)) return "ok";
+    const words = tokenise(hay.slice(a, b), { keepRefs: true });
+    // A multi-line quote carries its own comparator line; the flattened raw cannot show it, the bare number must still stand.
+    if (words.has(tok) || (lined && /^[≥≤><]/.test(tok) && words.has(tok.slice(1)))) return "ok";
   }
   return found ? "partial" : "absent";
 }
@@ -576,14 +692,11 @@ function citedPubmedIds(body: string, bodyLine: string): Set<string> | null {
   return any ? pmids : null;
 }
 
-/** PMIDs of the PubMed records cited by the sentence of `bodyLine` that holds `tok` (the body sentence it names, else its own text), or null when that sentence cites none. */
-function citedForEntry(body: string, tok: string, bodyLine: string): Set<string> | null {
-  const text = classifyLines(body).filter((x) => !x.ref).map((x) => x.line).join("\n");
-  const holds = (sn: string) => tokenCounts(sn, { keepRefs: true }).has(tok);
-  const inBody = sentences(text).filter((sn) => holds(sn) && relates(bodyLine, sn));
-  const own = inBody.length ? inBody : sentences(bodyLine).filter(holds);
+/** PMIDs of the PubMed records cited by the sentences of `bodyLine` that hold `tok`, or null when they cite none. */
+function citedForEntry(bodyLine: string, tok: string, body: string, tokensOf: (s: string) => Set<string>): Set<string> | null {
   let out: Set<string> | null = null;
-  for (const sn of own) {
+  const holding = sentences(bodyLine).filter((x) => tokensOf(x).has(tok));
+  for (const sn of holding.length ? holding : [bodyLine]) {
     const ids = citedPubmedIds(body, sn);
     if (ids) { out = out ?? new Set(); ids.forEach((i) => out!.add(i)); }
   }
@@ -592,7 +705,7 @@ function citedForEntry(body: string, tok: string, bodyLine: string): Set<string>
 
 /** Body lines where the checker finds `tok`, for the writer to locate. */
 function linesWith(body: string, tok: string): string {
-  const hits = body.split(/\r?\n/).filter((l) => tokenCounts(l).has(tok)).slice(0, 3).map((l) => `"${clip(l, 120)}"`);
+  const hits = classifyLines(body).filter((x) => !x.ref).map((x) => x.line).filter((l) => tokenCounts(l).has(tok)).slice(0, 3).map((l) => `"${clip(l, 120)}"`);
   return hits.length ? `; found in: ${hits.join(" | ")}` : "";
 }
 
@@ -600,7 +713,7 @@ function linesWith(body: string, tok: string): string {
 type PairSentence = { sentence: string; inPlace: boolean };
 type PairInfo = { pairs: Map<string, PairSentence[]>; orphans: { sentence: string; tokens: string[] }[] };
 /** The sentence with its numbers masked: two sentences with the same frame differ only in their values. */
-const frame = (t: string) => t.toLowerCase().replace(TOKEN_RE(), "#").replace(/\s+/g, " ").trim();
+const frame = (t: string) => stripNoise(normChars(t)).toLowerCase().replace(TOKEN_RE(), "#").replace(/\s+/g, " ").trim();
 // Bare one- or two-digit integers ("type 2", "1 in 36") are identifiers or counts; AC4 covers their sentences.
 const carriesValue = (tok: string) => /^[≥≤><]/.test(tok) || tok.includes(" ") || tok.includes(".") || /^\d{3,}/.test(tok);
 
@@ -631,73 +744,116 @@ const relates = (bodyLine: string, sentence: string) => {
   return b.length > 0 && (b.includes(sentence) || sentence.includes(b));
 };
 
+/** New Zealand's emergency number is not a clinical value: "111" in sentences that all read "call 111". */
+const emergencyOnly = (body: string, tok: string) => {
+  const holding = sentences(body).filter((sn) => tokenCounts(sn, { keepRefs: true }).has(tok));
+  return tok === "111" && holding.length > 0 && holding.every((sn) => /call 111/i.test(sn));
+};
+
 function checkAc2(c: Ctx, added: string[], ac2: Check, raw: RawSet, info: PairInfo): number {
-  const rep = c.rep!, tag = `${c.handle}:`, pairs = info.pairs;
-  let quoted = 0;
-  const verifyEntry = (tok: string, entry: { body_line: string; raw_quote: string }, moved: boolean): boolean => {
-    if (!moved && !tokenise(entry.body_line, { keepRefs: true }).has(tok)) { ac2.fails.push(`${tag} token "${tok}": body_line does not contain it${linesWith(c.newBody, tok)}`); return false; }
-    if (!entry.raw_quote.trim()) { ac2.fails.push(`${tag} token "${tok}" has an empty raw_quote`); return false; }
-    if (/\.\.\.|\u2026/.test(entry.raw_quote)) { ac2.fails.push(`${tag} token "${tok}": raw_quote contains an ellipsis (a paraphrase marker); quote the raw verbatim`); return false; }
+  const rep = c.rep!, tag = `${c.handle}:`;
+  const bodyLines = new Set(c.newBody.split(/\r?\n/).map(cleanSentence).filter(Boolean));
+  const proseLines = new Set(classifyLines(c.newBody).filter((x) => !x.ref).map((x) => cleanSentence(x.line)).filter(Boolean)); // reference-list lines never need an entry
+  const ctxLines = c.newBody.split(/\r?\n/);
+  /** Tokens of a body line as the whole-body pass reads them: a list item inherits the comparator of the line above it. */
+  const lineTokens = (bl: string): Set<string> => {
+    const target = cleanSentence(bl), idx = ctxLines.findIndex((l) => cleanSentence(l) === target);
+    if (idx < 0 || !LIST_ITEM.test(ctxLines[idx])) return tokenise(bl, { keepRefs: true });
+    let head = idx - 1;
+    while (head >= 0 && (LIST_ITEM.test(ctxLines[head]) || !ctxLines[head].trim())) head--;
+    if (head < 0) return tokenise(bl, { keepRefs: true });
+    const base = tokenCounts(ctxLines[head], { keepRefs: true });
+    return new Set([...tokenCounts(`${ctxLines[head]}\n${ctxLines[idx]}`, { keepRefs: true })].filter(([t, n]) => n > (base.get(t) ?? 0)).map(([t]) => t));
+  };
+  const sources = (prefixed: boolean) => (prefixed ? raw.extras : raw.main ? [{ ...raw.main, path: "" }] : []);
+  /** Validate one entry on its own; returns the numbers it supports (body_line and verbatim quote share them), or null after a FAIL. */
+  const verifyEntry = (entry: Entry, n: number): Set<string> | null => {
+    const label = `${tag} changed_tokens[${n}]`;
+    const fail = (msg: string) => { ac2.fails.push(`${label} ${msg}`); return null; };
+    const line = clip(entry.body_line, 100);
+    if (!bodyLines.has(cleanSentence(entry.body_line))) {
+      const hint = [...tokenise(entry.raw_quote, { keepRefs: true })].map((t) => linesWith(c.newBody, t)).find(Boolean) ?? "";
+      return fail(`body_line is not a current body line: ${line}${hint}`);
+    }
+    if (!entry.raw_quote.trim()) return fail(`has an empty raw_quote: ${line}`);
+    if (/\.\.\.|\u2026/.test(entry.raw_quote)) return fail("raw_quote contains an ellipsis (a paraphrase marker); quote the raw verbatim");
     const prefixed = /^\s*(?:NIH|EXTRA):\s*/.exec(entry.raw_quote);
     const quote = prefixed ? entry.raw_quote.slice(prefixed[0].length) : entry.raw_quote;
-    if (!tokenise(quote, { keepRefs: true }).has(tok)) { ac2.fails.push(`${tag} token "${tok}" does not occur in its raw_quote`); return false; }
     const q = normQuote(quote);
-    if (q.length < 30 && q.split(" ").length < 6) { ac2.fails.push(`${tag} raw_quote too short for "${tok}" (need 6 words or 30 characters)`); return false; }
-    const matches: { pmid: string | null; path: string }[] = [];
+    if (q.length < 30 && q.split(" ").length < 6) return fail(`raw_quote too short (need 6 words or 30 characters): ${line}`);
+    const inQuote = tokenise(quote, { keepRefs: true });
+    const shared = [...lineTokens(entry.body_line)].filter((t) => inQuote.has(t));
+    if (!shared.length) {
+      const verbatim = sources(!!prefixed).some((x) => hasQuote(x.norm, q));
+      if (!verbatim) return fail(`raw_quote is not in the raw file: ${line}`);
+      if (lineTokens(entry.body_line).size) return fail(`raw_quote shares no number with its body_line: ${line}`);
+      ac2.warns.push(`${label} entry supports no number in its body_line: ${line}`); return new Set(); }
+    const hits = new Map<string, { pmid: string | null; path: string }[]>();
     let partial = false;
-    if (prefixed) {
-      for (const x of raw.extras) {
-        const r = findWhole(x.norm, q, tok);
-        if (r === "ok") matches.push({ pmid: x.pmid, path: x.path }); else if (r === "partial") partial = true;
+    for (const x of sources(!!prefixed)) {
+      for (const tok of shared) {
+        const r = findWhole(x.norm, q, tok, /\n/.test(quote.trim()));
+        if (r === "ok") hits.set(tok, [...(hits.get(tok) ?? []), { pmid: x.pmid, path: "path" in x ? x.path : "" }]); else if (r === "partial") partial = true;
       }
-    } else {
-      if (raw.main === null) return false;
-      const r = findWhole(raw.main.norm, q, tok);
-      if (r === "ok") matches.push({ pmid: raw.main.pmid, path: "" }); else if (r === "partial") partial = true;
     }
-    if (!matches.length) {
-      ac2.fails.push(partial ? `${tag} raw_quote for "${tok}": the token is not a whole token in the raw` : `${tag} raw_quote for "${tok}" is not in the raw file`);
-      return false;
-    }
-    const cited = c.type === "reference" ? citedForEntry(c.newBody, tok, entry.body_line) : null;
+    if (!hits.size) return fail(partial ? `raw_quote: its numbers are not whole tokens in the raw: ${line}` : `raw_quote is not in the raw file: ${line}`);
     // A number whose own sentence cites a PubMed record must be quoted from that record's abstract, not ConsumerLab or NIH text.
-    if (cited && !matches.some((m) => m.pmid !== null && cited.has(m.pmid))) {
-      ac2.fails.push(`${tag} token "${tok}": number cited to a primary study without its abstract in reach: ${clip(entry.body_line, 100)}`);
-      return false;
+    const ok = new Set<string>();
+    for (const [tok, ms] of hits) {
+      const cited = c.type === "reference" ? citedForEntry(entry.body_line, tok, c.newBody, lineTokens) : null;
+      if (!cited || ms.some((m) => m.pmid !== null && cited.has(m.pmid))) ok.add(tok);
     }
-    const where = matches.find((m) => m.path);
-    if (where) ac2.infos.push(`${tag} "${tok}" matched in extra_raw ${where.path}`);
-    return true;
+    if (!ok.size) return fail(`number cited to a primary study without its abstract in reach: ${line}`);
+    const where = [...hits.values()].flat().find((m) => m.path);
+    if (where) ac2.infos.push(`${label} matched in extra_raw ${where.path}`);
+    return ok;
   };
-  for (const tok of new Set([...added, ...pairs.keys()])) {
+  const entries = rep.changed_tokens.flatMap((e, i) => {
+    if (!e.void) return [{ e, ok: verifyEntry(e, i) }];
+    ac2.infos.push(`${tag} VOID ${i}: ${e.void_reason ?? "(no reason)"} [body: ${e.body_line.replace(/\s+/g, " ").slice(0, 60)}]`);
+    return [];
+  });
+  const valid = entries.filter((x) => x.ok).map((x) => ({ ...x.e, ok: x.ok! }));
+  let quoted = 0;
+  const needed = new Set<string>(), failed = new Set<string>();
+  const pairs = new Map([...info.pairs].filter(([t]) => !emergencyOnly(c.newBody, t)));
+  for (const tok of new Set([...added, ...pairs.keys()].filter((t) => !emergencyOnly(c.newBody, t)))) {
     const pl = pairs.get(tok) ?? [];
-    const named = rep.changed_tokens.filter((e) => tokenise(e.token, { keepRefs: true }).has(tok));
     // A token new to the body, or changed in place in a paired sentence (same wording, another value), needs an entry.
     // One that only relocated into a restructured sentence (count unchanged, already in the base) is a WARN.
     const isNew = added.includes(tok);
     const sents = (isNew ? pl : pl.filter((x) => x.inPlace)).map((x) => x.sentence);
     const moved = !isNew && sents.length === 0;
     for (const x of pl) if (!sents.includes(x.sentence)) ac2.warns.push(`${tag} number moved between sentences: "${tok}" in: ${clip(x.sentence, 120)}`);
-    if (!named.length) {
-      if (moved) continue;
-      ac2.fails.push(isNew
-        ? `${tag} token "${tok}" is new in the body and has no changed_tokens entry${linesWith(c.newBody, tok)}`
-        : `${tag} token "${tok}" changed between paired sentences and has no changed_tokens entry: ${clip(sents[0], 120)}`);
+    if (moved) continue;
+    const holding = valid.filter((e) => e.ok.has(tok));
+    needed.add(tok);
+    if (!holding.length) {
+      // Suppress the duplicate diagnostic only when an entry for this token actually failed and said so.
+      const attempted = entries.some((x) => !x.ok && lineTokens(x.e.body_line).has(tok) && tokenise(x.e.raw_quote, { keepRefs: true }).has(tok));
+      failed.add(tok);
+      if (!attempted) ac2.fails.push(isNew
+        ? `${tag} token "${tok}" is new in the body and no entry has a body line and a source quote that both carry it${linesWith(c.newBody, tok)}`
+        : `${tag} token "${tok}" changed between paired sentences and no entry covers it: ${clip(sents[0], 120)}`);
       continue;
     }
-    const holding = named.filter((e) => tokenise(e.body_line, { keepRefs: true }).has(tok));
-    if (!moved && !holding.length) { ac2.fails.push(`${tag} token "${tok}": body_line does not contain it${linesWith(c.newBody, tok)}`); continue; }
-    const missing = moved ? [] : sents.filter((sn) => !holding.some((e) => relates(e.body_line, sn)));
-    if (missing.length) { for (const sn of missing) ac2.fails.push(`${tag} token "${tok}" changed between paired sentences: no changed_tokens entry has this sentence as its body_line: ${clip(sn, 120)}`); continue; }
-    // Every entry that names the token is checked, not just the first.
-    let ok = true;
-    for (const entry of named) if (!verifyEntry(tok, entry, moved)) ok = false;
-    if (ok) quoted++;
+    quoted++;
   }
-  // A new sentence with no base match that carries a number needs an entry naming that sentence.
+  // Each new or changed body line holding a needed number has entries whose quotes together carry all of that line's needed numbers.
+  const baseLines = new Set(c.baseBody.split(/\r?\n/).map(cleanSentence));
+  for (const line of proseLines) {
+    if (baseLines.has(line)) continue;
+    const want = [...lineTokens(line)].filter((t) => needed.has(t) && !failed.has(t));
+    const have = new Set(valid.filter((e) => cleanSentence(e.body_line) === line).flatMap((e) => [...e.ok]));
+    const lack = want.filter((t) => !have.has(t));
+    if (lack.length) ac2.fails.push(`${tag} body line has no entry quoting ${lack.map((t) => `"${t}"`).join(", ")}: ${clip(line, 120)}`);
+  }
+  // A new sentence with no base match that carries a number needs an entry on that sentence.
   for (const o of info.orphans) {
-    if (o.tokens.some((tk) => added.includes(tk))) continue; // already reported as a new token
-    if (!rep.changed_tokens.some((e) => relates(e.body_line, o.sentence))) ac2.fails.push(`${tag} new numeric sentence has no changed_tokens entry: ${clip(o.sentence, 120)}`);
+    const toks = o.tokens.filter((t) => !emergencyOnly(c.newBody, t));
+    if (!toks.length || toks.some((tk) => added.includes(tk))) continue; // none, or already reported as a new token
+    const bare = (t: string) => t.replace(/^[≥≤><]/, ""); // a list item's comparator comes from the line above it
+    if (!valid.some((e) => relates(e.body_line, o.sentence) && toks.some((t) => [...e.ok].some((k) => bare(k) === bare(t))))) ac2.fails.push(`${tag} new numeric sentence has no entry: ${clip(o.sentence, 120)}`);
   }
   ac2.infos.push(`${tag} ${added.length} new tokens, ${quoted} verified against raw`);
   return quoted;
@@ -1085,6 +1241,8 @@ export function renderReport(batch: string, base: string, baseSha: string, resul
     L.push(`| ${r.handle} | ${r.type} | ${r.rawRel} | ${r.rawSha} | ${r.bodySha.slice(0, 16)} | ${r.tokensNew} | ${r.quoted} | ${r.deleted} | ${r.hedgeBefore}>${r.hedgeAfter} | ${r.productsBefore}>${r.productsAfter} |`);
   }
   if (rows.length > cap) L.push("", `${rows.length - cap} more handles omitted to stay under the line cap.`);
+  const voids = results.flatMap((r) => r.evidence).filter((e) => /^\S+: VOID \d+: /.test(e));
+  if (voids.length) L.push("", "## Voided entries", "", ...voids.map((v) => `- ${v.replace(/\|/g, "/")}`));
   const ex = results.flatMap((r) => r.excepted ?? []);
   if (ex.length) {
     L.push("", "## Accepted exceptions", "", "| check | handle | by | date | reason | match sha256 |", "|---|---|---|---|---|---|");

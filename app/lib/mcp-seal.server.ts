@@ -18,11 +18,8 @@ import crypto from 'node:crypto';
 import { resourceUrl, sealKeys } from './mcp-config.server';
 import { isProvider, type McpProvider } from './mcp-providers.server';
 
-/** `import` and `proposal` are the two sealed steps (`issueStep` below): an
- *  import receipt names a pending payload in the user's own folder (US-35
- *  AC7); a proposal is the first call of a two-phase write (US-36 AC9). */
-export type StepKind = 'import' | 'proposal';
-export type BlobType = 'state' | 'code' | 'access' | 'refresh' | StepKind;
+/** The blobs that carry a credential. A two-call step is not one of them: it is MACed (`mcp-step.server.ts`). */
+export type BlobType = 'state' | 'code' | 'access' | 'refresh';
 
 /**
  * Fixed-length buckets for the padded plaintext. Without padding the blob's
@@ -38,7 +35,12 @@ const BUCKETS = [256, 512, 1024, 2048, 4096];
  * from the info string and every other test still passes.
  */
 export function typeKey(key: Buffer, typ: BlobType): Buffer {
-  return Buffer.from(crypto.hkdfSync('sha256', key, Buffer.alloc(0), `mcp/${typ}/v1`, 32));
+  return deriveKey(key, `mcp/${typ}/v1`);
+}
+
+/** HKDF-SHA256 to 32 bytes under `info`: the one derivation behind every blob key and every step key. */
+export function deriveKey(key: Buffer, info: string): Buffer {
+  return Buffer.from(crypto.hkdfSync('sha256', key, Buffer.alloc(0), info, 32));
 }
 
 export function b64url(buf: Buffer): string {
@@ -201,50 +203,4 @@ export function unpackSealed<T extends { clientId: string }>(
   // default belongs.
   if (!isProvider(payload.provider)) (payload as { provider: McpProvider }).provider = 'dropbox';
   return payload;
-}
-
-// ---------------------------------------------------------------------------
-// A sealed step: the second call of a two-call tool carries this back
-// ---------------------------------------------------------------------------
-
-/**
- * What both two-call tools hand out between their calls (US-35 AC7, US-36
- * AC9): a hash of what the user saw — `subject` — bound to the connection
- * and to a window. `jti` is the single-use id: the pending file's name for an
- * import, a spend-map key for a proposal. One shape, so a fix to the window
- * or the connection check reaches both.
- */
-export interface StepClaims {
-  subject: string;
-  /** The connection hash: a step cannot be finished over another connection to the same client. */
-  conn: string;
-  jti: string;
-  /** Not before / expiry, epoch seconds. `exp` is enforced by `unseal`; `nbf` is the caller's to word. */
-  nbf: number;
-  exp: number;
-}
-
-export function issueStep(
-  kind: StepKind,
-  step: { subject: string; conn: string; jti?: string; nbfSeconds?: number; ttlSeconds: number },
-  audience: SealAudience,
-  nowMs: number,
-): { token: string; claims: StepClaims } {
-  const issued = Math.floor(nowMs / 1000);
-  const claims: StepClaims = {
-    subject: step.subject, conn: step.conn, jti: step.jti ?? crypto.randomUUID(),
-    nbf: issued + (step.nbfSeconds ?? 0), exp: issued + step.ttlSeconds,
-  };
-  return { token: seal(kind, claims, audience), claims };
-}
-
-/**
- * The claims back, or null: not ours, another kind, another client, expired,
- * another connection, or a shape we never sealed. The caller compares
- * `subject`, words `nbf` and spends `jti`.
- */
-export function openStep(kind: StepKind, token: string, audience: SealAudience, conn: string, nowMs: number): StepClaims | null {
-  const claims = unseal<Partial<StepClaims>>(kind, token, audience, nowMs);
-  if (!claims || claims.conn !== conn || typeof claims.subject !== 'string' || typeof claims.jti !== 'string' || typeof claims.nbf !== 'number') return null;
-  return claims as StepClaims;
 }

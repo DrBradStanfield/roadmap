@@ -439,6 +439,17 @@ describe('screeningsToInputs', () => {
     expect(inputs.prostateLastDate).toBe('2024-06');
   });
 
+  // US-12 AC8: parseFloat read a decimal comma as its integer part, so a PSA
+  // of "4,5" became 4 and missed the >4.0 suggestion.
+  it('US-12 AC8: reads decimal-comma pack years and PSA as decimals', () => {
+    const inputs = screeningsToInputs([
+      { screeningKey: 'lung_pack_years', value: '22,5' },
+      { screeningKey: 'prostate_psa_value', value: '4,5' },
+    ]);
+    expect(inputs.lungPackYears).toBe(22.5);
+    expect(inputs.prostatePsaValue).toBe(4.5);
+  });
+
   it('converts endometrial screening fields', () => {
     const screenings: ApiScreening[] = [
       { id: '1', screeningKey: 'endometrial_discussion', value: 'discussed', updatedAt: '' },

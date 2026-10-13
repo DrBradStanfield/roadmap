@@ -209,7 +209,8 @@ records, extract-only, never write test data, never commit their contents.
 Drive refusal; the full log is in `docs/user-stories.md` US-35. `tools/list` shows `import_documents` with
 `_meta["openai/fileParams"]`. With a test PDF sitting in a connected Dropbox account's
 folder root, `import_documents {}` returns candidates plus a receipt. Then
-`{commit:{receipt, accept:[], replace:[]}}` writes no values but files the PDF itself as
+`{commit:{receipt, accept:[], replace:[], approval:"Yes, file it"}}` (since 2026-10-07 a
+commit without `approval`, the user's quoted words, is refused) writes no values but files the PDF itself as
 one metadata-only `documents[]` row (so the rev moves once); extracting the same file
 again is `already_imported`, and an empty commit of a file already on record is the
 true no-op. On a Google Drive connection, the same call is refused, naming the website
@@ -218,12 +219,14 @@ upload or a ChatGPT drag as the way in.
 **8b. `file_results` (US-36) and the nudge (US-37). NOT YET VERIFIED LIVE (built
 2026-09-07).** On the scratch Dropbox: `tools/list` shows nine tools and no
 `openai/fileParams`; `file_results` with two rows answers candidates plus a receipt and
-writes nothing; `commit` writes them and the document row carries
+writes nothing; `{commit:{receipt, accept:[...], replace:[], approval:"Yes, file them"}}`
+writes them (without `approval` it is refused, nothing written) and the document row carries
 `metadata.importedVia: assistant`; the same file re-sent is `already_imported`; a
 `replace` on a held value passes the 90-day guard; a row named "Lipoprotein(a)" under
 `apob` is refused; `correct_value` without `confirm` answers a proposal and writes
-nothing, `confirm` inside 10 s is refused, after 10 s it writes once, a replay is
-refused; `get_plan` with a PDF in the folder root lists it under `folder`. Then ChatGPT
+nothing, `confirm` inside 10 s is refused, after 10 s `{...same arguments, confirm,
+approval:"Yes, correct it"}` writes once (the same call without `approval` is refused and
+does not spend the receipt), a replay is refused; `get_plan` with a PDF in the folder root lists it under `folder`. Then ChatGPT
 on Brad's record, propose only (never commit), a real PDF and a photo, desktop AND
 phone, after a Refresh of the connector; Claude web on the scratch Dropbox, one commit;
 one commit on the scratch Drive.
@@ -270,7 +273,7 @@ Today a user needs **developer mode** to add our connector to ChatGPT, because O
 keeps unreviewed connectors behind it. Claude needs no equivalent: a custom connector is
 available on any plan. Publishing through OpenAI's review is what removes that step.
 
-**When `REPO_PUBLIC` (plan.ts) flips back to true**, the code follows on its own; these static texts do not, so edit them back in the same commit: `docs/guides/chatgpt-app.md`, `connect-chatgpt.md`, `connect-claude-desktop.md`, `command-line.md` (If something goes wrong) and `getting-started.md` (front matter, the GitHub links, the `report_feedback` paragraphs and the setup prompt's read-only fallback), `docs/privacy-connector-addendum.md` (Bug reports), `docs/chatgpt-app-listing.md` (the `report_feedback` justification row and refusal 3), `docs/mcp-architecture.md` (`report_feedback`), then republish the guides and the privacy page.
+**`REPO_PUBLIC` (plan.ts) is true again since 2026-10-12**, when GitHub lifted the 2026-09-18 flag and the repository answered 200 publicly. It stays a kill switch. If it ever goes false, the code follows on its own; these static texts do not, so edit them in the same commit (`git show ba6bc358` has the hidden wording): `docs/guides/chatgpt-app.md`, `connect-chatgpt.md`, `connect-claude-desktop.md`, `command-line.md` (If something goes wrong) and `getting-started.md` (front matter, the GitHub links, the `report_feedback` paragraphs and the setup prompt's read-only fallback), `docs/privacy-connector-addendum.md` (Bug reports), `docs/chatgpt-app-listing.md` (the `report_feedback` justification row and refusal 3), `docs/mcp-architecture.md` (`report_feedback`), then republish the guides and the privacy page.
 
 **Submitted twice and rejected twice (1.0.0, 1.0.1); 1.0.2 is the resubmission.** The package is
 [`chatgpt-review/plugin/`](chatgpt-review/plugin/): `plugin.json` holds the descriptions, category,

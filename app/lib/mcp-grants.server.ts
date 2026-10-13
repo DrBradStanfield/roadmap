@@ -149,21 +149,22 @@ const spentCodes = new Map<string, number>();
  * Proposal receipts already confirmed (US-36 AC9), per machine, the same
  * best-effort single-use as `spentCodes`: a replay on a second Fly machine
  * meets `not-active` on `correct_value` and an `expected` mismatch on
- * `update_profile`, and could file a second public issue. Pruned at the
- * receipt's own lifetime.
+ * `update_profile`, and could file a second public issue. Keyed on the whole
+ * receipt AND the connection hash, so a receipt seen elsewhere cannot spend
+ * this connection's. Pruned at the receipt's own lifetime.
  */
 const spentProposals = new Map<string, number>();
 
 /** Spend one id once: prune what has outlived `lifetimeMs`, then refuse a repeat. */
-function claimOnce(spent: Map<string, number>, jti: string, lifetimeMs: number, nowMs: number): boolean {
+function claimOnce(spent: Map<string, number>, key: string, lifetimeMs: number, nowMs: number): boolean {
   for (const [id, at] of spent) if (nowMs - at > lifetimeMs) spent.delete(id);
-  if (spent.has(jti)) return false;
-  spent.set(jti, nowMs);
+  if (spent.has(key)) return false;
+  spent.set(key, nowMs);
   return true;
 }
 
 export const claimCode = (jti: string, nowMs = Date.now()): boolean => claimOnce(spentCodes, jti, CODE_LIFETIME_SECONDS * 1000, nowMs);
-export const claimProposal = (jti: string, lifetimeMs: number, nowMs = Date.now()): boolean => claimOnce(spentProposals, jti, lifetimeMs, nowMs);
+export const claimProposal = (receipt: string, conn: string, lifetimeMs: number, nowMs = Date.now()): boolean => claimOnce(spentProposals, `${conn} ${receipt}`, lifetimeMs, nowMs);
 
 /**
  * Writes already spent by one CONNECTION this hour, per machine. Keyed on the

@@ -144,14 +144,14 @@ describe('resolveLabValues', () => {
 // ---------------------------------------------------------------------------
 // Bug: resolveUnit for Lp(a) mg/L was previously broken (stored as nmol/L),
 // then over-corrected (×2.4 per mg/L; the factor is per mg/dL). 93 mg/L is
-// ~22 nmol/L, not 223.
+// 23.25 nmol/L at 2.5 nmol/L per mg/dL (US-05 AC1), not 223.
 // ---------------------------------------------------------------------------
 
 describe('resolveUnit edge cases', () => {
   it('converts Lp(a) from mg/L to nmol/L', () => {
     const result = resolveUnit('lpa', 'mg/L', 93);
     expect(result.system).toBe('conventional');
-    expect(result.valueSI).toBeCloseTo(22.3, 0);
+    expect(result.valueSI).toBeCloseTo(23.25, 9);
     expect(result.confident).toBe(true);
   });
 
@@ -210,14 +210,134 @@ describe('parseUnifiedResult — tolerates string-typed numeric values', () => {
     expect(result.additionalValues.map(v => v.name)).toEqual(['sodium', 'potassium']);
   });
 
-  it('coerces european thousand-separator strings ("1,234")', () => {
+  // US-12 AC8: a comma is the decimal point, as in parseLocalisedNumber;
+  // stripping it read a European "5,2" as 52. But 1-3 digits, a comma, then
+  // exactly 3 digits is either a US thousands separator or a European decimal,
+  // and the two readings differ 1000x: "250,000" platelets read as 250 (with a
+  // range scaled the same way) passes the count guard, and "1,050" pg/mL B12
+  // read as 1.05 is just as silent. Such a string is refused, never guessed.
+  it('US-12 AC8: refuses "1,234", "250,000", "1,050", "1,020", "5,200", "-1,050" as ambiguous (thousands or decimal, 1000x apart)', () => {
+    const result = parseUnifiedResult({
+      ...base,
+      values: [
+        { metric: 'ldl', value: '1,234', unit: 'mg/dL', confidence: 'high' as const },
+        { metric: 'hdl', value: 1.3, unit: 'mmol/L', confidence: 'high' as const },
+      ],
+      additionalValues: [
+        { name: 'platelets', value: '250,000', unit: 'cells/uL', referenceLow: '150,000', referenceHigh: '400,000' },
+        { name: 'vitamin_b12', value: '1,050', unit: 'pg/mL' },
+        { name: 'urine_specific_gravity', value: '1,020', unit: '' },
+        { name: 'wbc', value: '5,200', unit: 'cells/uL' },
+        { name: 'base_excess', value: '-1,050', unit: 'mmol/L' },
+        { name: 'signed', value: '+1,050', unit: '' },
+        { name: 'neutrophils', value: 3000, unit: 'cells/uL', referenceLow: '1,500', referenceHigh: '7,500' },
+      ],
+    });
+    expect(result.values.map(v => v.metric)).toEqual(['hdl']);
+    // A count row whose printed bounds read as nothing is refused too: with no
+    // range left, the count guard cannot check its scale (Codex round 6).
+    expect(result.additionalValues).toEqual([]);
+    expect(result.droppedValueCount).toBe(8);
+  });
+
+  it('US-12 AC8: unambiguous decimal commas are decimals ("5,2" → 5.2, "0,87" → 0.87, "0,870" → 0.87, "5,2000" → 5.2)', () => {
+    const result = parseUnifiedResult({
+      ...base,
+      values: [{ metric: 'ldl', value: '5,2', unit: 'mmol/L', confidence: 'high' as const }],
+      additionalValues: [
+        { name: 'creatinine', value: '0,87', unit: 'mg/dL' },
+        { name: 'tsh', value: '0,870', unit: 'mIU/L' },
+        { name: 'ferritin', value: '5,2000', unit: 'ug/L' },
+      ],
+    });
+    expect(result.values[0].value).toBe(5.2);
+    expect(result.additionalValues.map(v => v.value)).toEqual([0.87, 0.87, 5.2]);
+  });
+
+  it('US-12 AC8: a number followed by a flag or unit keeps the number ("5.2 H", "5,2 H", "141 mmol/L", "5.2*", "6.1 ↑", "5.2-"); a unit holding a digit ("250 x10^9/L") is refused, as any digit after the number is', () => {
     const result = parseUnifiedResult({
       ...base,
       additionalValues: [
-        { name: 'platelets', value: '1,234', unit: 'x 10e9/L' },
+        { name: 'sodium', value: 141, unit: 'mmol/L' },
+        { name: 'potassium', value: '4.5', unit: 'mmol/L' },
+        { name: 'glucose', value: ' 5 ', unit: 'mmol/L' },
+        { name: 'ferritin', value: '5.2 H', unit: 'ug/L' },
+        { name: 'iron', value: '5,2 H', unit: 'umol/L' },
+        { name: 'chloride', value: '141 mmol/L', unit: 'mmol/L' },
+        { name: 'urea', value: '5.2*', unit: 'mmol/L' },
+        { name: 'hba1c', value: '6.1 ↑', unit: '%' },
+        { name: 'platelets', value: '250 x10^9/L', unit: 'x10^9/L' },
+        { name: 'calcium', value: '5.2-', unit: 'mmol/L' },
       ],
     });
-    expect(result.additionalValues[0].value).toBe(1234);
+    expect(result.additionalValues.map(v => [v.name, v.value])).toEqual([
+      ['sodium', 141], ['potassium', 4.5], ['glucose', 5], ['ferritin', 5.2],
+      ['iron', 5.2], ['chloride', 141], ['urea', 5.2], ['hba1c', 6.1],
+      ['calcium', 5.2],
+    ]);
+    expect(result.droppedValueCount).toBe(1);
+  });
+
+  // The leading token stops at the first non-digit, so "1e3" read as 1 and
+  // "0-2" as 0: an exponent, a hex/binary/octal prefix or a range right after
+  // the number is a different number, never the first digit of it.
+  it('US-12 AC8: drops, never guesses, "1 234", "<5", ">2000", "trace", "", "1.234,5", "1,234.5", "1,234,567", "250,000 H", "1e3", "5.2e3", "0x10", "0-2", "5 – 7"', () => {
+    const refused = [
+      '1 234', '<5', '>2000', 'trace', '', '1.234,5', '1,234.5', '1,234,567', '250,000 H',
+      '1e3', '5.2e3', '5,2E-3', '1e+3', '0x10', '0X1f', '0b1', '0o7', '0-2', '0 - 2', '3.5–5.1', '5 — 7',
+    ];
+    const result = parseUnifiedResult({
+      ...base,
+      additionalValues: [
+        ...refused.map((value, i) => ({ name: `r${i}`, value, unit: '' })),
+        { name: 'sodium', value: 141, unit: 'mmol/L' },
+      ],
+    });
+    expect(result.additionalValues.map(v => v.name)).toEqual(['sodium']);
+  });
+
+  it('US-12 AC8: one malformed row is dropped and the good rows kept, instead of failing the file', () => {
+    const result = parseUnifiedResult({
+      ...base,
+      values: [
+        { metric: 'ldl', value: 2.5, unit: null, confidence: 'high' },
+        { metric: 'hdl', value: 1.3, unit: 'mmol/L', confidence: 'very high' },
+        { metric: 'apob', value: 0.9, unit: 'g/L', confidence: 'high' },
+      ],
+      additionalValues: [
+        { name: null, value: 141, unit: 'mmol/L' },
+        { name: 'potassium', value: { amount: 4.5 }, unit: 'mmol/L' },
+        { name: 'sodium', value: 141, unit: 'mmol/L' },
+      ],
+    });
+    expect(result.values.map(v => v.metric)).toEqual(['apob']);
+    expect(result.additionalValues.map(v => v.name)).toEqual(['sodium']);
+  });
+
+  it('US-12 AC8: a malformed file shape still fails the whole file', () => {
+    expect(() => parseUnifiedResult({ ...base, classification: 'not_a_type' })).toThrow();
+    expect(() => parseUnifiedResult({ ...base, values: null })).toThrow();
+  });
+
+  it('US-12 AC8: string reference bounds parse ("3,5" and "3.5"); an unreadable bound is null and keeps the row', () => {
+    const result = parseUnifiedResult({
+      ...base,
+      additionalValues: [
+        { name: 'potassium', value: '4,1', unit: 'mmol/L', referenceLow: '3,5', referenceHigh: '5.1' },
+        { name: 'albumin', value: 40, unit: 'g/L', referenceLow: '3.5', referenceHigh: '<50' },
+      ],
+    });
+    expect(result.additionalValues).toHaveLength(2);
+    expect(result.additionalValues[0]).toMatchObject({ value: 4.1, referenceLow: 3.5, referenceHigh: 5.1 });
+    expect(result.additionalValues[1]).toMatchObject({ value: 40, referenceLow: 3.5, referenceHigh: null });
+  });
+
+  it('US-12 AC8: a null unit on an additional value does not fail the file', () => {
+    const result = parseUnifiedResult({
+      ...base,
+      additionalValues: [{ name: 'urine_ph', value: '6,0', unit: null }],
+    });
+    expect(result.additionalValues[0]).toMatchObject({ name: 'urine_ph', value: 6, unit: '' });
   });
 
   it('applies the same coercion to core values[] entries', () => {

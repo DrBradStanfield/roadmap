@@ -14,6 +14,8 @@ build/
 .claude/*
 !.claude/agents/
 !.claude/skills/
+!.claude/hooks/
+!.claude/settings.json
 .mcp.json
 fly.toml
 *.js.map
@@ -65,3 +67,8 @@ docs/chatgpt-review/sample-lab-report-proof.pdf
 # Review demo: voice-over audio and the rendered video (docs/chatgpt-review/demo-script.md)
 docs/chatgpt-review/demo/audio/
 docs/chatgpt-review/demo/out/
+
+# Built Artifact pages (md-artifact.mjs output; the .md is the source)
+.artifacts/
+# Review demo frames and clips copied by docs/chatgpt-review/demo/build-timeline.mjs
+demo-video/public/review/
