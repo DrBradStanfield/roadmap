@@ -589,12 +589,11 @@ describe('US-32 — add_lab_values is a batch, and all or nothing', () => {
       ],
     }, { file, now: NOW });
 
-    expect(outcome.status).toBe('rejected');
-    expect(outcome.reason).toBe('core-metric');
+    expect(outcome).toMatchObject({ status: 'rejected', reason: 'core-metric' });
+    expect(outcome).not.toHaveProperty('file');
     expect(outcome.text).toContain('values[1] (LDL-C)');
     expect(outcome.text).toContain('write it as a measurement, in SI units');
     expect(outcome.text).toContain('No row from this call was written');
-    expect(outcome.file).toBeUndefined();
     expect(JSON.stringify(file)).toBe(before);
   });
 
@@ -608,9 +607,8 @@ describe('US-32 — add_lab_values is a batch, and all or nothing', () => {
       ],
     }, { file, now: NOW });
 
-    expect(outcome.status).toBe('rejected');
-    expect(outcome.reason).toBe('core-metric');
-    expect(outcome.file).toBeUndefined();
+    expect(outcome).toMatchObject({ status: 'rejected', reason: 'core-metric' });
+    expect(outcome).not.toHaveProperty('file');
     expect(JSON.stringify(file)).toBe(before);
     expect(outcome.text).toContain('values[1] (Height)');
     expect(outcome.text).toContain('No row from this call was written');
@@ -1747,7 +1745,8 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     const { payload, files, unrecognized } = prepareImport(base(), bundleOf([
       extracted('bad.pdf', labReport({
         values: [{ metric: 'ldl', valueSI: 99, displayValue: 99, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' }],
-        additionalValues: [{ name: 'LDL', value: 2.1, unit: 'mmol/L' }, { name: 'tsh', value: 1.2, unit: 'mIU/L' }],
+        // An alias of a core metric is one too (US-31 AC5), and Height belongs to the profile.
+        additionalValues: [{ name: 'LDL', value: 2.1, unit: 'mmol/L' }, { name: 'LDL-C', value: 2.1, unit: 'mmol/L' }, { name: 'Height', value: 180, unit: 'cm' }, { name: 'tsh', value: 1.2, unit: 'mIU/L' }],
         unrecognized: [],
       })),
       extracted('future.pdf', labReport({ reportDate: '2099-01-01' })),
@@ -1755,9 +1754,11 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
       { name: 'broken.pdf', status: 'failed', reason: 'unreadable' },
     ]), IMPORT_CTX);
     expect(payload.candidates.map((c) => c.metric)).toEqual(['tsh']);
-    expect(unrecognized).toHaveLength(2);
+    expect(unrecognized).toHaveLength(4);
     expect(unrecognized[0]).toMatch(/^ldl: /);
-    expect(unrecognized[1]).toMatch(/core metric/);
+    expect(unrecognized[1]).toMatch(/^LDL: .*core metric/);
+    expect(unrecognized[2]).toMatch(/^LDL-C: .*core metric/);
+    expect(unrecognized[3]).toMatch(/^Height: .*heightCm/);
     expect(files.slice(1).map((f) => [f.status, f.reason])).toEqual([['failed', 'no_date'], ['failed', 'no_date'], ['failed', 'unreadable']]);
     // Every file that was not read carries the sentence the assistant relays (AC13).
     expect(files.slice(1).map((f) => f.hint)).toEqual([importHint('no_date'), importHint('no_date'), importHint('unreadable')]);
