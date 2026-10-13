@@ -49,3 +49,19 @@ describe('US-12 AC9: batch results keep their file identity', () => {
     expect(results!.map(r => [r.index, errorOf(r)])).toEqual([[0, undefined], [1, 'server_error'], [2, 'server_error'], [3, 'server_error']]);
   });
 });
+
+// US-12 AC8: a dot-thousands count the model wrote as a JSON number ("250.000"
+// platelets per µL) is refused and counted on the batch path too.
+describe('US-12 AC8: a batch result keeps a dot-thousands JSON number a string', () => {
+  it('refuses 250.000 cells/µL and counts it', async () => {
+    const text = '{"classification":"lab_report","reportDate":null,"values":[],"additionalValues":['
+      + '{"name":"platelets","value":250.000,"unit":"cells/µL","referenceLow":150.000,"referenceHigh":450.000},'
+      + '{"name":"tsh","value":2.345,"unit":"mIU/L"}],"document":null}';
+    stubBatch([JSON.stringify({ custom_id: 'file-0', result: { type: 'succeeded', message: { content: [{ type: 'text', text }] } } })]);
+    const [result] = (await pollBatch('batch_synthetic')).results!;
+    expect('errorCode' in result).toBe(false);
+    const read = result as Extract<typeof result, { additionalValues: unknown }>;
+    expect(read.additionalValues.map(v => [v.name, v.value])).toEqual([['tsh', 2.345]]);
+    expect(read.droppedValueCount).toBe(1);
+  });
+});

@@ -21,6 +21,7 @@ import {
   type ExtractedValue,
   FOLDER_IMPORT_EXTENSIONS,
   isImportableEntryName,
+  MAX_FILE_NAME_LENGTH,
   resolveCoreMetricName,
   type UnifiedExtractionResult,
   VALID_METRICS,
@@ -67,7 +68,7 @@ export const MAX_LAB_ROWS_PER_CALL = 50;
  */
 export const MAX_NAME_LENGTH = 120;
 /** Longest file name a source or a folder entry keeps: a file system's own bound, and what `fileNames` must match. */
-export const MAX_FILE_NAME_LENGTH = 255;
+export { MAX_FILE_NAME_LENGTH };
 /** Unrecognized lines one extract answers with; the model's output cap would otherwise bound them at ~30 KB. */
 export const MAX_UNRECOGNIZED_LINES = 50;
 /** One such line: a printed name, a value, a unit, the reason and the way round it (US-36 AC2). */
@@ -244,9 +245,9 @@ export const importCommitInput = z.object({
 
 /** `commit` stands alone; the tool refuses it beside a source in its own words. */
 export const importDocumentsInput = z.object({
-  fileNames: z.array(z.string().min(1).max(255)).max(MAX_IMPORT_FILES_PER_CALL).optional(),
+  fileNames: z.array(z.string().min(1).max(MAX_FILE_NAME_LENGTH)).max(MAX_IMPORT_FILES_PER_CALL).optional(),
   /** The user's own answer to "what date was this test?" for a file that printed none (AC13); it wins over the file's date. */
-  fileDates: z.array(z.object({ file: z.string().min(1).max(255), date: z.string().regex(ISO_DATE) }).strict()).max(MAX_IMPORT_FILES_PER_CALL).optional(),
+  fileDates: z.array(z.object({ file: z.string().min(1).max(MAX_FILE_NAME_LENGTH), date: z.string().regex(ISO_DATE) }).strict()).max(MAX_IMPORT_FILES_PER_CALL).optional(),
   commit: importCommitInput.optional(),
   /** US-37: this extract answers a read's folder nudge; carried on the extract's counter, nothing else. */
   fromNudge: z.boolean().optional(),
@@ -1096,7 +1097,7 @@ export type ImportFileStatus = (typeof IMPORT_FILE_STATUSES)[number];
  * carries neither it nor a type.
  */
 export interface ExtractedFile {
-  /** The file's own name, control characters stripped, as `sourceFileName`. */
+  /** The file's own name, control characters stripped, as `sourceFileName`; a ZIP member's is `zip/member`, as on the website. */
   name: string;
   contentHash?: string;
   mimeType?: string;
@@ -2515,7 +2516,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
           items: {
             type: 'object',
             properties: {
-              file: { type: 'string', maxLength: 255, description: 'The file name as listed in files.' },
+              file: { type: 'string', maxLength: MAX_FILE_NAME_LENGTH, description: 'The file name as listed in files.' },
               date: { type: 'string', pattern: ISO_DATE.source, description: 'The date the test was taken, YYYY-MM-DD.' },
             },
             required: ['file', 'date'],

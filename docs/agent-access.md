@@ -238,8 +238,10 @@ unit must be one the metric is measured in, the value must sit inside the app's 
 range, and a value that looks like a unit swap comes back as a question. `import_documents`
 is the folder route: it reads lab PDFs or images (or a ZIP of them; 5 MB per file, 20 MB
 per ZIP, 30 files a day; no HEIC) from the root of the Dropbox app folder and proposes
-values for you to accept, in the record's own unit system. It writes nothing to the
-record until the user confirms; the candidates wait in a pending file in the user's own
+values for you to accept, in the record's own unit system. A file inside a ZIP is named
+`<zip>/<path inside it>` (`labs.zip/2026/results.pdf`), as the website's upload names it, in
+`files`, in a `fileDates` answer and on the filed document; `fileNames` names the ZIP itself.
+It writes nothing to the record until the user confirms; the candidates wait in a pending file in the user's own
 folder (`imports/pending-<id>.json`), and the receipt naming it expires after an hour. Those files are sent to
 Anthropic's API for extraction, under our key, at the extract step and before the user
 confirms anything. We keep none of them. Anthropic's [commercial

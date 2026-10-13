@@ -4,6 +4,7 @@
  * plain reason, and each run sends one count-only `upload_outcome` event.
  * Same harness shape as UploadModal.session.test.tsx.
  */
+import { zipMemberName } from '@roadmap/health-core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
@@ -20,6 +21,10 @@ vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), attachOriginals: vi.fn(async results => results), synthesizeLabArchiveEntries: vi.fn(() => []) }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
+// The build decides the wording (US-12 AC9): the Shopify page reads through
+// our server, the Pages build through the user's own Anthropic key.
+const build = vi.hoisted(() => ({ shopify: true }));
+vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return build.shopify; }, LOCAL_FIRST: true }));
 
 type Import = Awaited<ReturnType<typeof labImport>>;
 const withValues: Import = { result: { classification: 'lab_report', document: null, reportDate: '2024-06-01', values: [{ metric: 'ldl', valueSI: 3.9, displayValue: 3.9, displayUnit: 'mmol/L', confidence: 'high' }], additionalValues: [] } } as unknown as Import;
@@ -50,6 +55,7 @@ function outcomes() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  build.shopify = true;
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(withValues);
   vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0 } as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
@@ -357,6 +363,17 @@ describe('US-12 AC9: members of two ZIPs on one path stay apart', () => {
     vi.mocked(labImport).mockImplementation(async p => ({ result: { ...withValues.result!, reportDate: p[0].content } }) as Import);
   });
 
+  // The website half of "one name on both surfaces": a member path past the
+  // 255-character limit is named by the shared zipMemberName, as the connector names it.
+  it('names a member path past 255 characters exactly as zipMemberName does (US-35 AC5)', async () => {
+    const long = 'Pathology/' + 'p'.repeat(300) + '/results.pdf';
+    twoZips([long]);
+    render_(); pick(zip('labs-a.zip'));
+    const results = await attached;
+    expect(results.map(r => r.fileName)).toEqual([zipMemberName('labs-a.zip', long)]);
+    expect(results[0].fileName.length).toBeLessThanOrEqual(255);
+  });
+
   it('the pipeline (under 20 files) names each by its ZIP and pairs its values with its own original', async () => {
     twoZips(['results.pdf']);
     render_(); pick(zip('labs-a.zip'), zip('labs-b.zip'));
@@ -426,8 +443,65 @@ describe('US-12 AC9: a ZIP member over the per-file limit is named and never rea
     await screen.findAllByDisplayValue('3.9');
     expect(reasonFor('huge.pdf')).toBe('Too large to read. The limit is 10 MB per file.');
     expect(extractFromPdf.mock.calls.map(([f]) => (f as File).name)).not.toContain('huge.pdf');
-    expect(vi.mocked(labImportBatch).mock.calls[0]![0].map(f => f.fileName)).not.toContain('labs.zip/huge.pdf');
+    expect(vi.mocked(labImportBatch).mock.calls[0]![0]).toHaveLength(20);
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 21, tooLarge: 1, withValues: 20, openFailed: 0 }));
+  });
+});
+
+// US-12 AC9: the GitHub Pages build has no server of ours and no daily limit.
+// It reads with the user's own Anthropic key, so a 429 is that key's
+// per-minute rate limit, and a failure is Anthropic's, never "our server".
+describe('US-12 AC9: the Pages build names its own transport', () => {
+  beforeEach(() => { build.shopify = false; });
+
+  it('says a file was not read because the user\'s key hit its rate limit, or Anthropic could not read it', async () => {
+    vi.mocked(labImport).mockImplementation(async pages => (
+      pages[0].content === 'broken.pdf' ? { result: null, error: 'Network error reaching Anthropic. Check your connection.', errorCode: 'network' }
+        : pages[0].content === 'late.pdf' ? { result: null, error: 'Your Anthropic account is rate-limited right now. Wait a minute and try again.', errorCode: 'rate_limit' }
+          : withValues));
+    render_(); pick(pdf('good.pdf'), pdf('broken.pdf'), pdf('late.pdf'));
+    await screen.findByDisplayValue('3.9');
+    expect(reasonFor('broken.pdf')).toBe('Not read. Anthropic could not be reached or could not read it. Please try again.');
+    expect(reasonFor('late.pdf')).toBe('Not read. Your Anthropic key hit its rate limit. Wait a minute and try again.');
+    // The usage signal keeps its keys: a rate limit is still limitError.
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 1, limitError: 1 }));
+  });
+
+  it('says the key was refused, or its account has no credit, rather than "try again", and counts both as serverError', async () => {
+    vi.mocked(labImport).mockImplementation(async pages => (
+      pages[0].content === 'refused.pdf' ? { result: null, error: 'x', errorCode: 'key_refused' }
+        : pages[0].content === 'broke.pdf' ? { result: null, error: 'x', errorCode: 'no_credit' }
+          : withValues));
+    render_(); pick(pdf('good.pdf'), pdf('refused.pdf'), pdf('broke.pdf'));
+    await screen.findByDisplayValue('3.9');
+    expect(reasonFor('refused.pdf')).toBe('Not read. Anthropic refused your API key. Check the key in the "Ask about your plan" panel.');
+    expect(reasonFor('broke.pdf')).toBe('Not read. Your Anthropic account has no credit. Check its billing, then try again.');
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 2, limitError: 0 }));
+  });
+
+  it.each([
+    ['rate_limit', 'Your Anthropic key hit its rate limit. Wait a minute and try again.'],
+    ['server_error', 'Anthropic could not read these files. Please try again.'],
+    ['network', 'Could not reach Anthropic. Check your connection and try again.'],
+  ] as const)('a whole run that fails with %s says so on the error screen', async (errorCode, text) => {
+    vi.mocked(labImportBatch).mockResolvedValue({ batchId: null, error: 'x', errorCode });
+    render_(); pick(...Array.from({ length: 20 }, (_, i) => pdf(`r${i}.pdf`)));
+    await screen.findByText(text);
+    expect(screen.queryByText(/server|daily/i)).toBeNull();
+  });
+});
+
+describe('US-12 AC9: the Shopify build keeps its server wording', () => {
+  it.each([
+    ['rate_limit', 'Daily upload limit reached. You can upload more tomorrow.'],
+    ['server_error', 'Something went wrong on the server. Please try again.'],
+    ['network', 'Network error. Please check your connection and try again.'],
+  ] as const)('a whole run that fails with %s says so on the error screen', async (errorCode, text) => {
+    vi.mocked(labImportBatch).mockResolvedValue({ batchId: null, error: 'x', errorCode });
+    render_(); pick(...Array.from({ length: 20 }, (_, i) => pdf(`r${i}.pdf`)));
+    await screen.findByText(text);
   });
 });

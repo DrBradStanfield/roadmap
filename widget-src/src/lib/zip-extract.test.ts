@@ -127,3 +127,17 @@ describe.skipIf(!existsSync(REAL_ZIP_PATH))('US-12: getZipEntries — real fixtu
     }
   });
 });
+
+// US-12 AC9 / US-35: the website and the connector choose members on the same
+// cleaned name (fileNameLine), so a control code in a path never makes one
+// surface read a file the other skips.
+describe('US-12 AC9: getZipEntries filters on the cleaned name, as the connector does', () => {
+  it('reads "results.pdf" with a trailing control code and skips a dot-folder hidden behind one', async () => {
+    const zip = new JSZip();
+    zip.file('results.pdf\u0000', 'pdf');
+    zip.file('\u0001.hidden/x.pdf', 'pdf');
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const entries = await getZipEntries(new File([blob], 'labs.zip', { type: 'application/zip' }));
+    expect(entries.map(e => e.name)).toEqual(['results.pdf']);
+  });
+});

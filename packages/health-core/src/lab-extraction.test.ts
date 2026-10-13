@@ -14,12 +14,16 @@ import {
   resolveUnit,
   resolveLabValues,
   parseUnifiedResult,
+  parseExtractionJson,
   toUnifiedResult,
   pagesToContentBlocks,
   VALID_METRICS,
   DOCUMENT_CLASSIFICATIONS,
   type PageContent,
+  zipMemberName,
+  fileNameLine,
 } from './lab-extraction';
+import { oneLine } from './plan';
 
 describe('US-12: pagesToContentBlocks', () => {
   it('converts a text page to a text content block', () => {
@@ -512,5 +516,106 @@ describe('US-12 AC8: an ambiguous number is refused, and the refusal is counted'
     expect(mixed.droppedValueCount).toBe(4);
     // A document's stray value rows are discarded with the values, not reported.
     expect(toUnifiedResult({ ...mixed, classification: 'clinic_letter' }).droppedValueCount).toBe(0);
+  });
+});
+
+// US-12 AC8: the count guard reads strings. A model that copies a German or
+// Brazilian "250.000" as a JSON NUMBER hands JSON.parse 250, the guard never
+// sees the print, and 0.25 ×10⁹/L is stored. Every caller parses through
+// parseExtractionJson, which keeps that print a string.
+describe('US-12 AC8: a dot-thousands JSON number is read as the string it was printed as', () => {
+  const doc = (rows: string, markdown = '') =>
+    `{"classification":"lab_report","reportDate":null,"values":[],"additionalValues":[${rows}],` +
+    `"document":{"title":"t","documentDate":null,"contentMarkdown":${JSON.stringify(markdown)},"metadata":{}}}`;
+
+  it('refuses 250.000 cells/µL between 150.000 and 450.000, and counts it', () => {
+    const parsed = parseUnifiedResult(parseExtractionJson(doc(
+      '{"name":"platelets","value": 250.000,"unit":"cells/µL","referenceLow": 150.000,"referenceHigh":450.000}')));
+    expect(parsed.additionalValues).toEqual([]);
+    expect(parsed.droppedValueCount).toBe(1);
+  });
+
+  it('refuses the row when only a bound carries the shape, across whitespace and line breaks', () => {
+    const parsed = parseUnifiedResult(parseExtractionJson(doc(
+      '{"name":"platelets","value":250,"unit":"cells/µL","referenceLow" :\n 150.000 ,\n"referenceHigh":450}')));
+    expect(parsed.additionalValues).toEqual([]);
+    expect(parsed.droppedValueCount).toBe(1);
+  });
+
+  it('reads "1.020" SG and "2.345" TSH JSON numbers as before, bounds too', () => {
+    const parsed = parseUnifiedResult(parseExtractionJson(doc(
+      '{"name":"urine_specific_gravity","value":1.020,"unit":""},' +
+      '{"name":"tsh","value":2.345,"unit":"mIU/L","referenceLow":0.400,"referenceHigh":4.000},' +
+      '{"name":"potassium","value":-1.050,"unit":"mmol/L"}')));
+    expect(parsed.additionalValues.map(v => [v.value, v.referenceLow ?? null, v.referenceHigh ?? null]))
+      .toEqual([[1.02, null, null], [2.345, 0.4, 4], [-1.05, null, null]]);
+    expect(parsed.droppedValueCount).toBe(0);
+  });
+
+  it('leaves a JSON string holding the pattern untouched, and other numbers alone', () => {
+    const markdown = 'Platelets {"value": 250.000, "referenceLow": 150.000}';
+    const text = doc('{"name":"x","value":250.0000,"unit":"cells/µL"},{"name":"y","value":2500.000,"unit":"cells/µL"}', markdown);
+    expect(parseExtractionJson(text)).toEqual(JSON.parse(text));
+    const parsed = parseUnifiedResult(parseExtractionJson(text));
+    expect(parsed.document?.contentMarkdown).toBe(markdown);
+  });
+
+  it('touches only the three keys: other numeric fields stay numbers', () => {
+    expect(parseExtractionJson('{"count": 250.000, "values": [{"value": 1.000}]}')).toEqual({ count: 250, values: [{ value: '1.000' }] });
+  });
+
+  it('takes the text around the object the way extractJsonObject does, and still throws on non-JSON', () => {
+    expect(parseExtractionJson('```json\n{"value": 7.500}\n```')).toEqual({ value: '7.500' });
+    expect(() => parseExtractionJson('not json')).toThrow();
+  });
+});
+
+// US-12 AC9 / US-35: one name for a ZIP member on every surface.
+describe('US-12 AC9 / US-35 — zipMemberName', () => {
+  it('names a member zip/member, one line, as both the website and the connector file it', () => {
+    expect(zipMemberName('labs.zip', 'Pathology/results.pdf')).toBe('labs.zip/Pathology/results.pdf');
+    expect(zipMemberName('la\nbs\u0007.zip', 'res\u2028ults.pdf')).toBe('la bs.zip/res ults.pdf');
+  });
+
+  it('cuts a long ZIP name, never the member path, so two members stay apart at 255 characters', () => {
+    const zip = 'z'.repeat(400) + '.zip';
+    const a = zipMemberName(zip, 'a/results.pdf');
+    const b = zipMemberName(zip, 'b/results.pdf');
+    expect(a.length).toBe(255);
+    expect(a.endsWith('/a/results.pdf')).toBe(true);
+    expect(a).not.toBe(b);
+  });
+
+  // Codex (follow-up review): a cut must not collapse two files into one dedup key.
+  it('keeps two long ZIP names that differ only past the cut apart, and two long member paths too', () => {
+    const stem = 'z'.repeat(300);
+    const one = zipMemberName(`${stem}-january.zip`, 'results.pdf');
+    const two = zipMemberName(`${stem}-february.zip`, 'results.pdf');
+    expect(one).not.toBe(two);
+    expect(one.length).toBeLessThanOrEqual(255);
+    expect(one.endsWith('/results.pdf')).toBe(true);
+    const deep = 'd'.repeat(300);
+    const p1 = zipMemberName('labs.zip', `a/${deep}/results.pdf`);
+    const p2 = zipMemberName('labs.zip', `b/${deep}/results.pdf`);
+    expect(p1).not.toBe(p2);
+    expect(p1.length).toBeLessThanOrEqual(255);
+    expect(zipMemberName(`${stem}-january.zip`, 'results.pdf')).toBe(one);
+  });
+});
+
+describe('US-12 AC9 / US-35 — one line cleaner for names, never a split character', () => {
+  it('fileNameLine is the record\'s own oneLine, so website and connector names cannot drift', () => {
+    for (const text of ['a\u0000b\u0007c', 'x\ny\u2028z\u2029', 'é\u0085f', '😀 results.pdf', '\u001bE.pdf']) {
+      expect(fileNameLine(text)).toBe(oneLine(text));
+    }
+  });
+
+  it('never cuts an emoji in half, in a long member path or a long ZIP name', () => {
+    const lone = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+    for (let n = 120; n < 260; n++) {
+      expect(zipMemberName('a.zip', 'x/' + '😀'.repeat(n) + '.pdf')).not.toMatch(lone);
+      expect(zipMemberName('😀'.repeat(n) + '.zip', 'results.pdf')).not.toMatch(lone);
+      expect(zipMemberName('z'.repeat(n) + '😀'.repeat(20) + '.zip', 'results.pdf')).not.toMatch(lone);
+    }
   });
 });

@@ -1,7 +1,7 @@
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota } from '../lib/upload-api';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { IMPORT_LIMITS, type LabUnitRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
+import { IMPORT_LIMITS, zipMemberName, type LabUnitRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
@@ -13,6 +13,7 @@ import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
 import { recordFailure } from '../lib/error-diagnostics';
 import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
+import { SHOPIFY_SURFACE } from '../lib/build-flags';
 
 class UploadError extends Error {
   constructor(message: string, public code: UploadErrorCode) {
@@ -20,13 +21,27 @@ class UploadError extends Error {
   }
 }
 
+/** The Pages build's own key or its account, not the file, so "try again"
+ *  never helps: each says what to check (US-12 AC9). */
+const KEY_ERROR_MESSAGES = {
+  key_refused: 'Anthropic refused your API key. Check the key in the "Ask about your plan" panel.',
+  no_credit: 'Your Anthropic account has no credit. Check its billing, then try again.',
+};
 const UPLOAD_ERROR_MESSAGES: Record<UploadErrorCode, string> = {
+  ...KEY_ERROR_MESSAGES,
   rate_limit: 'Daily upload limit reached. You can upload more tomorrow.',
   timeout: 'Processing took too long. Try uploading fewer files at once.',
   server_restart: 'The server restarted during processing. Please try again.',
   no_files: 'No readable files found. Please check your files and try again.',
   server_error: 'Something went wrong on the server. Please try again.',
   network: 'Network error. Please check your connection and try again.',
+};
+/** The Pages build reads each file with the user's own Anthropic key, browser
+ *  direct: no server of ours, no daily limit, only that key's rate limit (US-12 AC9). */
+const BYOK_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
+  rate_limit: 'Your Anthropic key hit its rate limit. Wait a minute and try again.',
+  server_error: 'Anthropic could not read these files. Please try again.',
+  network: 'Could not reach Anthropic. Check your connection and try again.',
 };
 
 type ModalState = 'select' | 'processing' | 'review' | 'done' | 'error';
@@ -124,12 +139,16 @@ const FILE_NOTICE_TEXT: Record<Exclude<FileNoticeReason, 'valuesDropped'>, strin
   serverError: 'Our server could not read it. Please try again.',
   limitError: 'Not read. The daily upload limit was reached.',
 };
+const BYOK_NOTICE_TEXT: Partial<Record<FileNoticeReason, string>> = {
+  serverError: 'Not read. Anthropic could not be reached or could not read it. Please try again.',
+  limitError: 'Not read. Your Anthropic key hit its rate limit. Wait a minute and try again.',
+};
 const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 
 function noticeText({ reason, count = 1, text }: FileNotice): string {
   if (text) return text;
   if (reason === 'valuesDropped') return `${count} value${count === 1 ? '' : 's'} could not be read.`;
-  return FILE_NOTICE_TEXT[reason];
+  return (!SHOPIFY_SURFACE && BYOK_NOTICE_TEXT[reason]) || FILE_NOTICE_TEXT[reason];
 }
 
 const shortName = (fileName: string) => fileName.split('/').pop() || fileName;
@@ -179,7 +198,8 @@ function readResult(fileName: string, result: LabImportResult, notices: FileNoti
 
 /** A file the server did not read, named with why: the daily limit, or anything else. */
 function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, error: string, notices: FileNotice[]): FileResult {
-  notices.push({ name: fileName, reason: errorCode === 'rate_limit' ? 'limitError' : 'serverError' });
+  const keyError = errorCode === 'key_refused' || errorCode === 'no_credit' ? `Not read. ${KEY_ERROR_MESSAGES[errorCode]}` : undefined;
+  notices.push({ name: fileName, reason: errorCode === 'rate_limit' ? 'limitError' : 'serverError', text: keyError });
   return { fileName, reportDate: null, values: [], additionalValues: [], error };
 }
 
@@ -392,7 +412,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
           continue;
         }
         for (const { name, entry } of entries) {
-          inputs.push({ fileName: `${zip.name}/${name}`, getFile: async () => new File([await entry.async('blob')], shortName(name)) });
+          inputs.push({ fileName: zipMemberName(zip.name, name), getFile: async () => new File([await entry.async('blob')], shortName(name)) });
         }
       }
       inputs.push(...otherFiles.map(file => ({ fileName: file.name, getFile: async () => file })));
@@ -435,7 +455,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         failUnread(code === 'rate_limit' ? 'limitError' : 'serverError');
         finish([]);
         setError(err instanceof UploadError
-          ? UPLOAD_ERROR_MESSAGES[err.code]
+          ? (!SHOPIFY_SURFACE && BYOK_ERROR_MESSAGES[err.code]) || UPLOAD_ERROR_MESSAGES[err.code]
           : 'An error occurred while processing files. Please try again.');
         setState('error');
         abortRef.current = null;

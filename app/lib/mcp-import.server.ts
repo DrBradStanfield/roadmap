@@ -38,6 +38,8 @@ import {
   isImportableEntryName,
   type PageContent,
   type UnifiedExtractionResult,
+  zipMemberName,
+  fileNameLine,
 } from '../../packages/health-core/src/lab-extraction';
 import {
   type ExtractedFile,
@@ -117,7 +119,7 @@ export function sniff(bytes: Uint8Array): SniffedType | null {
   return null;
 }
 
-/** A file's own name as `sourceFileName`: printable, bounded, never a path. Empty stays empty — a made-up name would dedup every nameless file against the first. */
+/** A file's name as `sourceFileName`: printable, bounded; a label, never a path anything is read from. Empty stays empty — a made-up name would dedup every nameless file against the first. */
 function cleanName(name: string): string {
   return oneLine(name).slice(0, MAX_FILE_NAME_LENGTH);
 }
@@ -133,8 +135,10 @@ export interface ZipEntryBytes {
  * importable entries, each at most `MAX_IMPORT_FILE_BYTES` INFLATED — the
  * bytes are counted as they inflate and the stream is stopped past the cap,
  * so a bomb declaring 1 MB never fills memory. Entries are taken by position;
- * a name is a label, never a path. Nested zips and anything the junk filter
- * drops are skipped by name.
+ * a name is a label (the entry's path inside the ZIP), never a path anything
+ * is read from. Nested zips and anything the junk filter drops are skipped by name.
+ * A name is one line but NOT cut: `zipMemberName` does the only cut, from the
+ * whole path, as the website's upload does, so both file it under one name.
  */
 export async function unzip(bytes: Uint8Array): Promise<{ entries: ZipEntryBytes[]; skipped: Array<{ name: string; reason: string }> }> {
   const zip = await JSZip.loadAsync(bytes);
@@ -143,7 +147,7 @@ export async function unzip(bytes: Uint8Array): Promise<{ entries: ZipEntryBytes
   const listed: Array<{ name: string; entry: JSZip.JSZipObject }> = [];
   zip.forEach((relativePath, entry) => {
     if (entry.dir) return;
-    listed.push({ name: cleanName(relativePath), entry });
+    listed.push({ name: fileNameLine(relativePath), entry });
   });
   for (const { name, entry } of listed) {
     if (!isImportableEntryName(name)) {
@@ -420,10 +424,13 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
             results[i] = fail(unit.name, 'failed', 'unreadable');
             return;
           }
+          // A member is named `zip/member`, as the website's upload names it (US-12 AC9): unique in a
+          // call, and one `sourceFileName` for the same member on both surfaces.
+          const member = (path: string) => zipMemberName(unit.name, path);
           const inside: ExtractedFile[] = new Array<ExtractedFile>(opened.entries.length);
           results[i] = inside;
-          opened.entries.forEach((entry, k) => queue.push(async () => { inside[k] = await extractOne(entry.name, entry.bytes, entry.mimeType); }));
-          for (const skip of opened.skipped) inside.push(fail(skip.name, 'skipped', skip.reason));
+          opened.entries.forEach((entry, k) => queue.push(async () => { inside[k] = await extractOne(member(entry.name), entry.bytes, entry.mimeType); }));
+          for (const skip of opened.skipped) inside.push(fail(member(skip.name), 'skipped', skip.reason));
           return;
         }
         if (!mimeType) {

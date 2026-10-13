@@ -13,7 +13,7 @@ import {
   EXTRACTION_MAX_TOKENS,
   parseUnifiedResult,
   toUnifiedResult,
-  extractJsonObject,
+  parseExtractionJson,
   pagesToContentBlocks,
   type DocumentPromptMode,
   type PageContent,
@@ -113,7 +113,7 @@ async function extractOrClassifyOnce(
 
   let parsed: ReturnType<typeof parseUnifiedResult>;
   try {
-    parsed = parseUnifiedResult(JSON.parse(extractJsonObject(responseText)));
+    parsed = parseUnifiedResult(parseExtractionJson(responseText));
   } catch {
     // Prefill `{` to coerce malformed responses into valid JSON shape.
     const retryBody = {
@@ -125,7 +125,7 @@ async function extractOrClassifyOnce(
     };
     responseText = await callAnthropic(apiKey, retryBody, left(), httpAttempts);
     try {
-      parsed = parseUnifiedResult(JSON.parse(extractJsonObject('{' + responseText)));
+      parsed = parseUnifiedResult(parseExtractionJson('{' + responseText));
     } catch {
       // The error CLASS only: a SyntaxError quotes ~10 chars of the model's
       // answer and Zod names the values it received — both are document text,
@@ -498,14 +498,10 @@ export async function streamAnthropicWithUsage(
 // Batch API — processes all files in a single batch request
 // ---------------------------------------------------------------------------
 
-interface BatchFileInput {
-  fileName: string;
-  pages: PageContent[];
-}
-
-/** Create a batch of LLM requests — one per file. Returns the batch ID. */
+/** Create a batch of LLM requests — one per file, named by its index alone
+ *  (`file-N`): the browser keeps the file names. Returns the batch ID. */
 export async function createBatch(
-  files: BatchFileInput[],
+  files: Array<{ pages: PageContent[] }>,
 ): Promise<{ batchId: string }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
@@ -627,7 +623,7 @@ export async function pollBatch(
         const textBlock = entry.result.message?.content?.find((b: any) => b.type === 'text');
         if (textBlock?.text) {
           try {
-            const parsed = parseUnifiedResult(JSON.parse(extractJsonObject(textBlock.text)));
+            const parsed = parseUnifiedResult(parseExtractionJson(textBlock.text));
             resultMap.set(index, { ...toUnifiedResult(parsed), index });
             continue;
           } catch {

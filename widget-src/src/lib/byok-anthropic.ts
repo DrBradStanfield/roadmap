@@ -75,7 +75,7 @@ export async function callAnthropicDirectRaw(
   }
 
   if (!response.ok) {
-    if (response.status === 401) {
+    if (response.status === 401 || response.status === 403) {
       throw new ByokAnthropicError(
         'unauthorized',
         'Anthropic rejected your API key. Disconnect it (link below the chat box) and reconnect with a valid key.',
@@ -84,7 +84,7 @@ export async function callAnthropicDirectRaw(
     if (response.status === 429) {
       throw new ByokAnthropicError(
         'rate_limit',
-        'Your Anthropic account is rate-limited right now — wait a minute and try again.',
+        'Your Anthropic account is rate-limited right now. Wait a minute and try again.',
       );
     }
     if (response.status === 400) {

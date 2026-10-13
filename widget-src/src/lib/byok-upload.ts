@@ -21,8 +21,8 @@
 import {
   EXTRACTION_MAX_TOKENS,
   UNIFIED_SYSTEM_PROMPT,
-  extractJsonObject,
   pagesToContentBlocks,
+  parseExtractionJson,
   parseUnifiedResult,
   toUnifiedResult,
 } from '@roadmap/health-core/lab-extraction';
@@ -44,14 +44,26 @@ export async function checkLabImportQuota(): Promise<{ allowed: boolean; remaini
 const UPLOAD_ERROR_CODE: Record<ByokErrorCode, UploadErrorCode> = {
   network: 'network',
   rate_limit: 'rate_limit',
-  unauthorized: 'server_error',
+  unauthorized: 'key_refused',
   bad_request: 'server_error',
   empty: 'server_error',
   server_error: 'server_error',
 };
 
+/** A 400 that names credit or billing is the key's account, not the file:
+ *  trying again never helps, so the modal says what to check (US-12 AC9). */
+function uploadErrorCode(error: ByokAnthropicError): UploadErrorCode {
+  return error.code === 'bad_request' && /credit|billing/i.test(error.message) ? 'no_credit' : UPLOAD_ERROR_CODE[error.code];
+}
+
 /** One direct extraction call; retries once with a `{` prefill on bad JSON
  *  (same recovery as the server's extractOrClassifyOnce). */
+/** What a failure was, never what it said: a SyntaxError or ZodError message
+ *  can quote report text, and the console must not carry it. */
+function errorKind(error: unknown): string {
+  return error instanceof Error ? error.name : typeof error;
+}
+
 async function extractDirect(apiKey: string, pages: PageContent[]): Promise<LabImportResult> {
   const content = pagesToContentBlocks(pages);
   const body = {
@@ -82,7 +94,7 @@ function toResult(responseText: string): LabImportResult {
   // document.classification typed DocumentType instead of string. The widening
   // cast is safe because the review UI reads document.classification as a plain
   // string; the extra `unrecognized` field is harmless if present.
-  return toUnifiedResult(parseUnifiedResult(JSON.parse(extractJsonObject(responseText)))) as LabImportResult;
+  return toUnifiedResult(parseUnifiedResult(parseExtractionJson(responseText))) as LabImportResult;
 }
 
 export async function labImport(
@@ -95,9 +107,10 @@ export async function labImport(
     return { result: await extractDirect(apiKey, pages) };
   } catch (error) {
     if (error instanceof ByokAnthropicError) {
-      return { result: null, error: error.message, errorCode: UPLOAD_ERROR_CODE[error.code] };
+      return { result: null, error: error.message, errorCode: uploadErrorCode(error) };
     }
-    console.warn('BYOK extraction error:', error);
+    // The error's kind only: a parse error can quote the report it failed on.
+    console.warn('BYOK extraction error:', errorKind(error));
     return { result: null, error: 'Could not read this document. Try again.', errorCode: 'server_error' };
   }
 }
@@ -115,7 +128,7 @@ const activeBatches = new Map<string, ByokBatch>();
 const BATCH_CONCURRENCY = 2;
 
 export async function labImportBatch(
-  files: Array<{ fileName: string; pages: PageContent[] }>,
+  files: Array<{ pages: PageContent[] }>,
 ): Promise<{ batchId: string | null; error?: string; errorCode?: UploadErrorCode }> {
   const apiKey = getAnthropicKey();
   if (!apiKey) return { batchId: null, error: NO_KEY_MESSAGE, errorCode: 'server_error' };
@@ -130,7 +143,7 @@ export async function labImportBatch(
 
 async function runBatch(
   apiKey: string,
-  files: Array<{ fileName: string; pages: PageContent[] }>,
+  files: Array<{ pages: PageContent[] }>,
   batch: ByokBatch,
 ): Promise<void> {
   const results: ByokBatch['results'] = new Array(files.length);
@@ -144,8 +157,9 @@ async function runBatch(
       } catch (error) {
         // Marked by position, like the server batch path (pollBatch in
         // anthropic.server.ts), so the modal names the file and why (US-12 AC9).
-        console.warn(`BYOK batch: ${files[index].fileName} failed:`, error);
-        results[index] = { index, errorCode: error instanceof ByokAnthropicError ? UPLOAD_ERROR_CODE[error.code] : 'server_error' };
+        // By index and kind: a file name can hold a patient's name, an error message the report.
+        console.warn(`BYOK batch: file ${index} failed:`, errorKind(error));
+        results[index] = { index, errorCode: error instanceof ByokAnthropicError ? uploadErrorCode(error) : 'server_error' };
       }
       batch.completed += 1;
     }

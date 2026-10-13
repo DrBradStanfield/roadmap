@@ -339,6 +339,11 @@ function readModelNumber(v: unknown): unknown {
   return parseLocalisedNumber(m[1]) ?? null;
 }
 
+/** 1-3 digits, a dot and exactly 3 digits: "250.000", dot thousands on a count
+ *  row. One pattern for the count guard and the JSON quoting, so they cannot drift. */
+const DOT_THOUSANDS = String.raw`[1-9]\d{0,2}\.\d{3}`;
+const DOT_THOUSANDS_TOKEN = new RegExp(`^[+-]?${DOT_THOUSANDS}$`);
+
 const COUNT_STRING = /^\s*[+-]?[\d.,]+\s*(?:[(\[]?\s*(?:HH|LL|H|L|\*|↑|↓)\s*[)\]]?)?\s*$/i;
 
 /**
@@ -363,7 +368,7 @@ function refusedCountRow(row: unknown): boolean {
   return (/(?:^|\/)\s*(?:[µμu]l|mcl|mm[3³])\s*$|cumm/i.test(unit) || /(?:^|\/)\s*µl\s*$/i.test(folded))
     && !/×10|10[\^*eE⁰¹²³⁴⁵⁶⁷⁸⁹]/.test(folded) && !/(?:^|[\s(])(?:k|m|thou|thousand|tsd|tys|mio|mln|mil|million)\s*\//i.test(unit)
     && [value, referenceLow, referenceHigh].some(v => typeof v === 'string'
-      && (!COUNT_STRING.test(v) || readModelNumber(v) === null || /^[+-]?[1-9]\d{0,2}\.\d{3}$/.test(NUMBER_TOKEN.exec(v)?.[1] ?? '')));
+      && (!COUNT_STRING.test(v) || readModelNumber(v) === null || DOT_THOUSANDS_TOKEN.test(NUMBER_TOKEN.exec(v)?.[1] ?? '')));
 }
 
 const labValue = z.preprocess(readModelNumber, z.number());
@@ -418,6 +423,21 @@ export function parseUnifiedResult(raw: unknown) {
   const additionalValues = readableRows(additionalValueRow, parsed.additionalValues);
   const droppedValueCount = parsed.values.length + parsed.additionalValues.length - values.length - additionalValues.length;
   return { ...parsed, values, additionalValues, droppedValueCount };
+}
+
+const BARE_DOT_THOUSANDS = new RegExp(String.raw`([{,]\s*"(?:value|referenceLow|referenceHigh)"\s*:\s*)(-?${DOT_THOUSANDS})(?=\s*[,}\]])`, 'g');
+
+/**
+ * Parse the model's extraction JSON: the outermost object (`extractJsonObject`),
+ * with each `value`, `referenceLow` or `referenceHigh` written as a bare number
+ * with exactly three decimals quoted first (US-12 AC8). "250.000" platelets per
+ * µL copied as a JSON number parsed to 250, and the count guard reads strings,
+ * so 0.25 ×10⁹/L was stored. As a string a count row refuses it, and any other
+ * row reads "1.020" as 1.02, as before. Only a key that follows `{` or `,` is
+ * matched, so a JSON string (where a quote is escaped) is never touched.
+ */
+export function parseExtractionJson(text: string): unknown {
+  return JSON.parse(extractJsonObject(text).replace(BARE_DOT_THOUSANDS, '$1"$2"'));
 }
 
 /** Build a UnifiedExtractionResult from a parsed-and-filtered unified response. */
@@ -496,6 +516,53 @@ export function pagesToContentBlocks(pages: PageContent[]): Array<Record<string,
 export const IMPORTABLE_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png'] as const;
 /** What the connector's folder route reads: the same, plus a ZIP of them (US-35 AC2; the nudge lists by it too, US-37 AC1). */
 export const FOLDER_IMPORT_EXTENSIONS = [...IMPORTABLE_EXTENSIONS, '.zip'] as const;
+
+/** A file name's limit wherever one is stored or shown (`sourceFileName`, the connector's output). */
+export const MAX_FILE_NAME_LENGTH = 255;
+
+/**
+ * The name a ZIP member is filed under on every surface, website and connector
+ * alike (US-12 AC9, US-35): `zip/member`, so two ZIPs holding one path stay
+ * apart and the same member keeps one `sourceFileName`, the dedup key for a
+ * document with no archived original. One line, control codes gone, at most
+ * MAX_FILE_NAME_LENGTH. A name that must be cut keeps the member's own end and
+ * gains `~` plus an 8-hex FNV-1a hash of the whole name, so two long names that
+ * differ only past the cut never share a dedup key.
+ */
+export function zipMemberName(zipName: string, memberPath: string): string {
+  const zip = fileNameLine(zipName);
+  const member = fileNameLine(memberPath);
+  const full = `${zip}/${member}`;
+  if (full.length <= MAX_FILE_NAME_LENGTH) return full;
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < full.length; i++) hash = Math.imul(hash ^ full.charCodeAt(i), 0x01000193);
+  const tail = `~${(hash >>> 0).toString(16).padStart(8, '0')}/${member}`;
+  return tail.length >= MAX_FILE_NAME_LENGTH
+    ? tail.slice(0, 10) + keepEnd(tail, MAX_FILE_NAME_LENGTH - 10)
+    : keepStart(zip, MAX_FILE_NAME_LENGTH - tail.length) + tail;
+}
+
+/**
+ * A file name on one line with its control codes gone: the record's own
+ * `oneLine` (plan.ts), restated here so the upload bundle need not import the
+ * plan. A test holds the two equal, so the website and the connector, which
+ * runs `oneLine` first, can never name one member two ways.
+ */
+export function fileNameLine(text: string): string {
+  return text.replace(/[\x00-\x09\x0b-\x1f\x7f-\x9f]/g, '').replace(/[\n\u2028\u2029]+/g, ' ');
+}
+
+/** The first `n` UTF-16 units, never ending on half an emoji. */
+function keepStart(text: string, n: number): string {
+  const cut = text.slice(0, n);
+  return /[\uD800-\uDBFF]$/.test(cut) ? cut.slice(0, -1) : cut;
+}
+
+/** The last `n` UTF-16 units, never starting on half an emoji. */
+function keepEnd(text: string, n: number): string {
+  const cut = text.slice(-n);
+  return /^[\uDC00-\uDFFF]/.test(cut) ? cut.slice(1) : cut;
+}
 
 const JUNK_PATTERNS = ['__macosx/', '.ds_store', 'thumbs.db'];
 

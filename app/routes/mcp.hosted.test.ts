@@ -1330,6 +1330,7 @@ describe('OpenAI domain verification (docs/chatgpt-app-listing.md)', () => {
 // ---------------------------------------------------------------------------
 // US-35 — import_documents over a folder, end to end
 // ---------------------------------------------------------------------------
+import JSZip from 'jszip';
 import { setImportSeams } from '../lib/mcp-import.server';
 import { IMPORT_FILES_PER_DAY } from '../lib/mcp-grants.server';
 import { machineFiles } from '../lib/rate-limiter';
@@ -1595,6 +1596,63 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     const dated = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fileDates: [{ file: 'photo.png', date: '2026-08-12' }] })).structured);
     expect(dated.files[0]).toMatchObject({ status: 'extracted', documentDate: '2026-08-12' });
     expect(dated.candidates.map((c) => c.recordedAt)).toEqual(['2026-08-12', '2026-08-12']);
+  });
+
+  /** ZIPs dropped in the folder root, and an extractor that answers per member's bytes. */
+  async function stubZips(zips: Record<string, Record<string, Uint8Array>>, answer: (bytes: Uint8Array) => UnifiedExtractionResult) {
+    const members = Object.values(zips).flatMap((zip) => Object.values(zip));
+    for (const [zipName, files] of Object.entries(zips)) {
+      const zip = new JSZip();
+      for (const [path, bytes] of Object.entries(files)) zip.file(path, bytes);
+      cloud.docs.set(zipName, new Blob([await zip.generateAsync({ type: 'uint8array' })]));
+    }
+    setImportSeams({ extract: async (pages) => answer(members.find((m) => Buffer.from(m).toString('base64') === pages[0].content)!) });
+  }
+
+  it('US-35 AC2/AC6, US-12 AC9 — a ZIP member is named zip/member, as the website names it: two ZIPs holding one path are two files, the same bytes in a third are its twin, and the same ZIP again is already imported by hash', async () => {
+    seedRecord();
+    const { access } = await connect();
+    const first = new Uint8Array([...PDF_BYTES, 1]);
+    const second = new Uint8Array([...PDF_BYTES, 2]);
+    await stubZips(
+      { 'a.zip': { 'labs/results.pdf': first }, 'b.zip': { 'labs/results.pdf': second }, 'c.zip': { 'labs/results.pdf': first } },
+      (bytes) => labReport({ reportDate: bytes === second ? '2026-08-21' : LAB_DAY }),
+    );
+    const data = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', {})).structured);
+    expect(data.files.map((f) => [f.name, f.status])).toEqual([
+      ['a.zip/labs/results.pdf', 'extracted'],
+      ['b.zip/labs/results.pdf', 'extracted'],
+      ['c.zip/labs/results.pdf', 'already_imported'],
+    ]);
+    expect(data.files[2].hint).toBe('The same file as a.zip/labs/results.pdf in this call. Nothing to do.');
+    expect(data.documents.map((d) => [d.sourceFileName, d.date])).toEqual([['a.zip/labs/results.pdf', LAB_DAY], ['b.zip/labs/results.pdf', '2026-08-21']]);
+    expect(data.candidates.map((c) => [c.sourceFileName, c.recordedAt])).toEqual([
+      ['a.zip/labs/results.pdf', LAB_DAY], ['a.zip/labs/results.pdf', LAB_DAY],
+      ['b.zip/labs/results.pdf', '2026-08-21'], ['b.zip/labs/results.pdf', '2026-08-21'],
+    ]);
+
+    const commit = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [], approval: APPROVED } });
+    expect(commit.isError).toBe(false);
+    expect(storedRecord().documents.map((d) => d.sourceFileName).sort()).toEqual(['a.zip/labs/results.pdf', 'b.zip/labs/results.pdf']);
+
+    const again = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fileNames: ['a.zip'] })).structured);
+    expect(again.files).toEqual([{ name: 'a.zip/labs/results.pdf', status: 'already_imported', hint: `Already in the record: the same file was filed on ${LAB_DAY} as a.zip/labs/results.pdf. Nothing to do.` }]);
+    expect(again.receipt).toBeUndefined();
+  });
+
+  it('US-35 AC13 — a ZIP member with no printed date: fileDates names it as files[] did (zip/member), and the next call files it under that name', async () => {
+    seedRecord();
+    const { access } = await connect();
+    await stubZips({ 'labs.zip': { 'scans/photo.png': new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1]) } }, () => labReport({ reportDate: null }));
+    const undated = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', {})).structured);
+    expect(undated.files[0]).toMatchObject({ name: 'labs.zip/scans/photo.png', status: 'failed', reason: 'no_date' });
+    const dated = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', {
+      fileNames: ['labs.zip'], fileDates: [{ file: undated.files[0].name, date: '2026-08-12' }],
+    })).structured);
+    expect(dated.files[0]).toMatchObject({ name: 'labs.zip/scans/photo.png', status: 'extracted', documentDate: '2026-08-12' });
+    expect(dated.candidates.map((c) => [c.sourceFileName, c.recordedAt])).toEqual([
+      ['labs.zip/scans/photo.png', '2026-08-12'], ['labs.zip/scans/photo.png', '2026-08-12'],
+    ]);
   });
 
   it('a Dropbox token the provider now refuses on a download ends the call with the reconnect hint, not "unreadable" (finding 15)', async () => {
