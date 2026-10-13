@@ -1086,7 +1086,8 @@ describe('another writer changes a value the user is working on', () => {
     const ferritin = (await recordOnDisk()).labValues.filter((l) => l.metricName === 'ferritin');
     expect(active(ferritin).map((l) => l.value)).toEqual([60]);
     expect(ferritin).toHaveLength(2);
-    expect(within(wrap).getByText(CHANGED)).toBeTruthy();
+    // The cell, not the matrix's live region, which repeats the message a tick later.
+    expect(within(row(wrap.querySelector('.alr-matrix') as HTMLElement, 'Ferritin')).getByText(CHANGED)).toBeTruthy();
   });
 
   it('US-03 AC2: a New value whose day another writer filled after it was typed is an error, never a correction', async () => {
