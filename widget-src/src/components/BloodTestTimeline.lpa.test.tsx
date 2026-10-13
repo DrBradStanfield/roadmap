@@ -9,7 +9,7 @@ import { render, cleanup, fireEvent, act, within } from '@testing-library/react'
 import { localDay, parseProposedEdit, PROPOSE_FIELD_EDIT_TOOL, type ApiMeasurement, type MetricType, type ProposedFieldEdit, type UnitSystem } from '@roadmap/health-core';
 import type { MutableRefObject } from 'react';
 import { BloodTestTimeline, ValueCell, type BloodTestPrefillFn } from './BloodTestTimeline';
-import { press, showPage, typeInto } from '../testing/matrix-gestures';
+import { press, pressMouse, pressWithoutFocus, releaseMouse, showPage, typeInto } from '../testing/matrix-gestures';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import type { SaveTask } from '../lib/matrix-save';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
@@ -73,7 +73,17 @@ function matrix({ unitSystem = 'si' as UnitSystem, rows = [] as ApiMeasurement[]
   /** Into the matrix, and out: the gesture that commits the draft (US-03 AC5). */
   const leave = async () => { press(draft()); press(view.getByRole('button', { name: 'Elsewhere' })); await wait(0); };
   const sent = (call = 0) => onSaveBatch.mock.calls[call][0] as SaveTask[];
-  return { view, row, lpa, draft, units, active, choose, hint, tick, leave, sent, onSaveBatch, onCorrectValue, onToggleFieldUnit, prefillRef };
+  /** Another device's choice of unit, merged in: the page re-reads the record. */
+  const remote = (unit: string) => {
+    record.lpaUnit = unit;
+    act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+  };
+  /** A click on a unit of the control, as a mouse makes it: the press, the release, the click. */
+  const clickUnit = (unit: string) => {
+    pressMouse(within(lpa()).getByRole('radio', { name: unit }));
+    releaseMouse(within(lpa()).getByRole('radio', { name: unit }));
+  };
+  return { view, row, lpa, draft, units, active, choose, hint, tick, leave, sent, remote, clickUnit, onSaveBatch, onCorrectValue, onToggleFieldUnit, prefillRef };
 }
 
 describe('US-05 AC2 — the Lp(a) field: three units on one control', () => {
@@ -133,16 +143,54 @@ describe('US-05 AC2 — the Lp(a) field: three units on one control', () => {
     expect(m.sent(1)[0].values.lpa).toBeCloseTo(23.25, 9);
   });
 
-  it('a unit switch after typing keeps the quantity: 60 mg/dL shows 150 nmol/L, Elevated, and saves 150', async () => {
+  // Brad's ruling, 2026-10-13: a unit chosen on this page says what the
+  // number typed is in. "Type 40, click mg/dL" means 40 mg/dL, as in every
+  // other field's draft cells, which read their text in the unit shown.
+  it('a unit clicked here after typing re-reads the number typed: 40 in nmol/L, then mg/dL, shows 40 and saves 100 nmol/L', async () => {
+    record.lpaUnit = 'nmol/L';
+    const m = matrix();
+    typeInto(m.draft(), '40');
+    m.clickUnit('mg/dL');
+    expect(m.active()).toBe('mg/dL');
+    expect(m.draft().value).toBe('40');
+    await m.leave();
+    expect(m.sent(0)).toEqual([expect.objectContaining({ values: { lpa: 100 }, unit: 'mg/dL' })]);
+  });
+
+  it('in a saved column\'s empty cell, too: 40 in nmol/L, then mg/dL, saves 100 nmol/L', async () => {
+    record.lpaUnit = 'nmol/L';
+    const m = matrix({ rows: history([['ldl', 3.2, '2026-08-15']]) });
+    const cell = () => m.lpa().querySelector('.bt-cell-backfill input') as HTMLInputElement;
+    typeInto(cell(), '40');
+    m.clickUnit('mg/dL');
+    expect(cell().value).toBe('40');
+    await m.leave();
+    expect(m.sent(0)).toEqual([expect.objectContaining({ date: '2026-08-15', values: { lpa: 100 } })]);
+  });
+
+  it('another device\'s switch keeps the unit typed in: 60 mg/dL shows 150 nmol/L, Elevated, and saves 150', async () => {
     const m = matrix({ unitSystem: 'conventional' });
     typeInto(m.draft(), '60');
-    m.choose('nmol/L');
+    m.remote('nmol/L');
+    expect(m.active()).toBe('nmol/L');
     expect(m.draft().value).toBe('150');
     expect(m.tick()).toBe('bt-status-bad');
-    m.choose('mg/L');
+    m.remote('mg/L');
     expect(m.draft().value).toBe('600');
     await m.leave();
     expect(m.sent(0)[0].values.lpa).toBeCloseTo(150, 9);
+  });
+
+  it('a cell kept in its own unit by another device\'s switch keeps it through a click here: 40 nmol/L shown as 16 mg/dL, then mg/L, saves 40', async () => {
+    record.lpaUnit = 'nmol/L';
+    const m = matrix();
+    typeInto(m.draft(), '40');
+    m.remote('mg/dL');
+    expect(m.draft().value).toBe('16.0');
+    m.clickUnit('mg/L');
+    expect(m.draft().value).toBe('160');
+    await m.leave();
+    expect(m.sent(0)[0].values.lpa).toBe(40);
   });
 
   it('typing after a switch is in the unit now shown', async () => {
@@ -166,11 +214,11 @@ describe('US-05 AC2 — the Lp(a) field: three units on one control', () => {
   // US-05 AC2 / US-03 AC5: a number out of range in the unit it was typed in
   // keeps its error after a switch, though it rounds onto the bound in the
   // unit now shown (750.1 nmol/L reads "300.0" mg/dL), and nothing saves.
-  it('a number out of range in its own unit keeps its error after a switch, and saves nothing', async () => {
+  it('a number out of range in its own unit keeps its error after another device\'s switch, and saves nothing', async () => {
     record.lpaUnit = 'nmol/L';
     const m = matrix();
     typeInto(m.draft(), '750.1');
-    m.choose('mg/dL');
+    m.remote('mg/dL');
     expect(m.draft().value).toBe('300.0');
     expect(within(m.lpa()).getByText('Max 750 nmol/L')).toBeTruthy();
     await m.leave();
@@ -182,7 +230,7 @@ describe('US-05 AC2 — the Lp(a) field: three units on one control', () => {
     const m = matrix({ rows: history([['ldl', 3.2, '2026-08-15']]) });
     const cell = () => m.lpa().querySelector('.bt-cell-backfill input') as HTMLInputElement;
     typeInto(cell(), '750.1');
-    m.choose('mg/dL');
+    m.remote('mg/dL');
     expect(cell().value).toBe('300.0');
     expect(within(m.lpa()).getByText('Max 750 nmol/L')).toBeTruthy();
     await m.leave();
@@ -212,7 +260,7 @@ describe('US-05 AC2 — the usage signal: lpa_unit_selected { unit, from }', () 
     const m = matrix({ unitSystem: 'conventional' });
     typeInto(m.draft(), '60');
     m.choose('nmol/L');
-    expect(m.draft().value).toBe('150');
+    expect(m.draft().value).toBe('60');
     const [meta] = sent();
     expect(Object.keys(meta).sort()).toEqual(['from', 'unit']);
     for (const label of Object.values(meta)) expect(['nmol/L', 'mg/dL', 'mg/L']).toContain(label);
@@ -247,6 +295,40 @@ describe('US-05 AC2 — legacy: an Lp(a) draft restored with no unit is never gu
     expect(within(m.lpa()).getByText(UNCLEAR)).toBeTruthy();
     await m.leave();
     expect(m.onSaveBatch).not.toHaveBeenCalled();
+  });
+
+  // Adversary R2, clinical ruling: a restored cell was not typed on this
+  // page, so a unit click here keeps its stamp and its quantity.
+  it('a restored draft keeps its quantity through a click: 40 nmol/L, then mg/dL, shows 16.0 and saves 40', async () => {
+    record.lpaUnit = 'nmol/L';
+    restore({ draft: { values: { lpa: '40' } }, backfills: {}, meta: { 'new|lpa': { unit: 'nmol/L', typedOn: 'an earlier load' } } });
+    const m = matrix();
+    expect(m.draft().value).toBe('40');
+    m.clickUnit('mg/dL');
+    expect(m.draft().value).toBe('16.0');
+    await m.leave();
+    expect(m.sent(0)[0].values.lpa).toBe(40);
+  });
+
+  it('a restored saved column’s empty cell keeps its quantity too', async () => {
+    record.lpaUnit = 'nmol/L';
+    restore({ draft: { values: {} }, backfills: { '2026-08-15': { lpa: '40' } }, meta: { '2026-08-15|lpa': { unit: 'nmol/L' } } });
+    const m = matrix({ rows: history([['ldl', 3.2, '2026-08-15']]) });
+    m.clickUnit('mg/dL');
+    expect((m.lpa().querySelector('.bt-cell-backfill input') as HTMLInputElement).value).toBe('16.0');
+    await m.leave();
+    expect(m.sent(0)).toEqual([expect.objectContaining({ date: '2026-08-15', values: { lpa: 40 } })]);
+  });
+
+  it('a restored cell typed into on this page is typed by hand: 40 retyped in nmol/L, then mg/dL, saves 100', async () => {
+    record.lpaUnit = 'nmol/L';
+    restore({ draft: { values: { lpa: '4' } }, backfills: {}, meta: { 'new|lpa': { unit: 'nmol/L' } } });
+    const m = matrix();
+    typeInto(m.draft(), '40');
+    m.clickUnit('mg/dL');
+    expect(m.draft().value).toBe('40');
+    await m.leave();
+    expect(m.sent(0)[0].values.lpa).toBe(100);
   });
 
   it('other fields’ restored drafts are read as before, in the field’s unit', async () => {
@@ -288,53 +370,196 @@ describe('US-05 AC2 — the click-to-correct cell compares in the unit it shows'
     expect(e.onCorrect).toHaveBeenCalledWith('r1', expect.closeTo(77.5, 9));
   });
 
-  // Another device switches the unit while the editor is open: the editor
-  // closes and writes nothing, as Escape does. Re-expressing its text rounded
-  // twice: a saved 124.4 opened as "49.8" mg/dL came back as "125" nmol/L, and
-  // click-away wrote 125, Elevated, over a Borderline value nobody touched.
+  // A unit switch while the editor is open (US-05 AC2, US-04 AC1) never saves
+  // the typed text: a user who types 40 and then clicks mg/dL means "this
+  // number is in mg/dL", and saving 40 in the old unit is the falsely
+  // reassuring error. The switch closes the editor, cancels the click-away
+  // save its click armed, writes nothing and says so. Re-expressing the text
+  // was wrong too: a saved 124.4 opened as "49.8" mg/dL came back as "125"
+  // nmol/L, and click-away wrote 125, Elevated, over a Borderline value
+  // nobody touched.
   const openOver124point4 = (typed?: string) => {
     record.lpaUnit = 'mg/dL';
     const m = matrix({ rows: history([['lpa', 124.4, '2026-08-15']]) });
     fireEvent.click(m.lpa().querySelector('.bt-cell-clickable')!);
     const input = m.lpa().querySelector('.bt-cell-correcting input') as HTMLInputElement;
     expect(input.value).toBe('49.8');
+    expect(document.activeElement).toBe(input);
     if (typed !== undefined) fireEvent.change(input, { target: { value: typed } });
-    fireEvent.blur(input); // a click-away's save is pending when the switch lands
+    return m;
+  };
+  /** Another device's switch: the focus is still in the editor. */
+  const remoteSwitch = (m: ReturnType<typeof matrix>) => {
     record.lpaUnit = 'nmol/L';
     act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     return m;
   };
+  const radio = (m: ReturnType<typeof matrix>, unit: string) => within(m.lpa()).getByRole('radio', { name: unit });
+  /** A click on the row's own unit control, as a mouse makes it: the press,
+   *  then the release and the click, which switches the unit. */
+  const clickUnit = (m: ReturnType<typeof matrix>, unit: string) => {
+    pressMouse(radio(m, unit));
+    releaseMouse(radio(m, unit));
+  };
   const editorOpen = (m: ReturnType<typeof matrix>) => m.lpa().querySelector('.bt-cell-correcting input');
   const savedCell = (m: ReturnType<typeof matrix>) => m.lpa().querySelector('.bt-cell-clickable .bt-value-num')?.textContent;
+  const UNIT_CHANGED = 'The unit changed, so your edit was not saved. Type it again in the new unit.';
+  const UNIT_FIRST = 'Not saved: choose the unit first, then type the value.';
 
-  it('a remote unit change closes an untouched editor: nothing written, the cell shows 124 nmol/L', async () => {
+  // Codex + adversary R1: a press held past the 150 ms click-away save ran
+  // that save in the old unit before the click switched it, unannounced.
+  it('a slow press on the unit control (held 200 ms) that takes the focus (Chrome) writes nothing and says to choose the unit first', async () => {
+    const m = openOver124point4('60');
+    pressMouse(radio(m, 'nmol/L'));
+    await wait(200);
+    releaseMouse(radio(m, 'nmol/L'));
+    expect(m.active()).toBe('nmol/L');
+    expect(editorOpen(m)).toBeNull();
+    expect(within(m.lpa()).getByText(UNIT_FIRST)).toBeTruthy();
+    await wait(300);
+    expect(m.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  it('a slow press that blurs the editor with the focus going nowhere (Safari) closes it at the press, writes nothing and says to choose the unit first', async () => {
+    const m = openOver124point4('60');
+    pressWithoutFocus(radio(m, 'nmol/L'));
+    expect(editorOpen(m)).toBeNull(); // the press decides
+    await wait(200);
+    expect(m.onCorrectValue).not.toHaveBeenCalled();
+    releaseMouse(radio(m, 'nmol/L'));
+    expect(m.active()).toBe('nmol/L');
+    await wait(300);
+    expect(m.onCorrectValue).not.toHaveBeenCalled();
+    expect(within(m.lpa()).getByText(UNIT_FIRST)).toBeTruthy();
+  });
+
+  // Adversary R1 (2026-10-13): the release wait was capped at a second, so a
+  // press held 1.2 s ran the save while the unit was still nmol/L, and
+  // 156 nmol/L was saved for a report in mg/dL.
+  it('156 typed in nmol/L, then mg/dL held 1200 ms (Safari): nothing written, and it says to choose the unit first', async () => {
+    record.lpaUnit = 'nmol/L';
+    const m = matrix({ rows: history([['lpa', 37.44, '2026-08-15']]) });
+    fireEvent.click(m.lpa().querySelector('.bt-cell-clickable')!);
+    fireEvent.change(editorOpen(m)!, { target: { value: '156' } });
+    pressWithoutFocus(radio(m, 'mg/dL'));
+    await wait(1200);
+    expect(m.onCorrectValue).not.toHaveBeenCalled();
+    releaseMouse(radio(m, 'mg/dL'));
+    expect(m.active()).toBe('mg/dL');
+    expect(editorOpen(m)).toBeNull();
+    await wait(300);
+    expect(m.onCorrectValue).not.toHaveBeenCalled();
+    expect(within(m.lpa()).getByText(UNIT_FIRST)).toBeTruthy();
+  });
+
+  it('Tab from the editor to the unit control writes nothing and says to choose the unit first', async () => {
+    const m = openOver124point4('60');
+    act(() => radio(m, 'mg/dL').focus()); // the checked unit: the group's one tab stop
+    expect(editorOpen(m)).toBeNull();
+    expect(within(m.lpa()).getByText(UNIT_FIRST)).toBeTruthy();
+    expect(document.activeElement).toBe(radio(m, 'mg/dL'));
+    await wait(300);
+    expect(m.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  it('a click on the unit control mid-correction writes nothing: 60 typed, then mg/dL to nmol/L, says so and leaves the focus on the control', async () => {
+    const m = openOver124point4('60');
+    clickUnit(m, 'nmol/L');
+    expect(m.active()).toBe('nmol/L');
+    expect(editorOpen(m)).toBeNull();
+    expect(savedCell(m)).toBe('124');
+    expect(within(m.lpa()).getByText(UNIT_FIRST)).toBeTruthy();
+    expect(document.activeElement).toBe(within(m.lpa()).getByRole('radio', { name: 'nmol/L' }));
+    await wait(300);
+    expect(m.onCorrectValue).not.toHaveBeenCalled();
+    expect(within(m.lpa()).getByText(UNIT_FIRST)).toBeTruthy();
+  });
+
+  it('a click on the unit control that takes no focus (Safari) writes nothing and says to choose the unit first', async () => {
+    const m = openOver124point4('60');
+    pressWithoutFocus(radio(m, 'nmol/L'));
+    releaseMouse(radio(m, 'nmol/L'));
+    expect(editorOpen(m)).toBeNull();
+    expect(within(m.lpa()).getByText(UNIT_FIRST)).toBeTruthy();
+    await wait(300);
+    expect(m.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  // Adversary R6: an editor nobody typed in has nothing to lose, so leaving
+  // it for its own unit control closes it with no "Not saved" message.
+  it('a click on the unit control over an untouched editor writes nothing and closes it silently: "49.8" mg/dL over a saved 124.4', async () => {
     const m = openOver124point4();
+    clickUnit(m, 'nmol/L');
+    expect(m.active()).toBe('nmol/L');
+    expect(editorOpen(m)).toBeNull();
+    expect(savedCell(m)).toBe('124');
+    expect(within(m.lpa()).queryByText(UNIT_FIRST)).toBeNull();
+    expect(within(m.lpa()).queryByText(UNIT_CHANGED)).toBeNull();
+    await wait(300);
+    expect(m.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  it('Tab from an untouched editor to the unit control closes it silently', async () => {
+    const m = openOver124point4();
+    act(() => radio(m, 'mg/dL').focus());
+    expect(editorOpen(m)).toBeNull();
+    expect(within(m.lpa()).queryByText(UNIT_FIRST)).toBeNull();
+    await wait(300);
+    expect(m.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  it('a remote unit change closes an untouched editor: nothing written, the cell shows 124 nmol/L and says so', async () => {
+    const m = remoteSwitch(openOver124point4());
     expect(editorOpen(m)).toBeNull();
     expect(m.active()).toBe('nmol/L');
     expect(savedCell(m)).toBe('124');
+    expect(within(m.lpa()).getByText(UNIT_CHANGED)).toBeTruthy();
     await wait(300);
     expect(m.onCorrectValue).not.toHaveBeenCalled();
   });
 
-  it('a remote unit change discards a number typed: 50 typed in mg/dL writes nothing', async () => {
-    const m = openOver124point4('50');
+  it('a remote unit change discards a number typed: 50 typed in mg/dL writes nothing, says so, and the focus is on the cell', async () => {
+    const m = remoteSwitch(openOver124point4('50'));
     expect(editorOpen(m)).toBeNull();
     expect(savedCell(m)).toBe('124');
+    expect(within(m.lpa()).getByText(UNIT_CHANGED)).toBeTruthy();
+    expect(document.activeElement).toBe(m.lpa().querySelector('.bt-cell-clickable'));
     await wait(300);
     expect(m.onCorrectValue).not.toHaveBeenCalled();
+    expect(within(m.lpa()).getByText(UNIT_CHANGED)).toBeTruthy(); // until the next open
   });
 
   it('reopened after a remote unit change, the editor is in the unit now shown: 130 corrects to 130', async () => {
-    const m = openOver124point4('50');
+    const m = remoteSwitch(openOver124point4('50'));
     await wait(300);
     fireEvent.click(m.lpa().querySelector('.bt-cell-clickable')!);
     const input = m.lpa().querySelector('.bt-cell-correcting input') as HTMLInputElement;
     expect(input.value).toBe('124');
+    expect(within(m.lpa()).queryByText(UNIT_CHANGED)).toBeNull();
     fireEvent.change(input, { target: { value: '130' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     await wait(0);
     expect(m.onCorrectValue).toHaveBeenCalledTimes(1);
     expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 130);
+  });
+
+  // US-04 AC1: a click-away save that fails leaves the editor open for a
+  // retry, with the focus already elsewhere. A unit click then closes it and
+  // says so, but the focus stays on the unit control the user just pressed.
+  it('after a failed click-away save, a unit click closes the editor, says so, and leaves the focus on the unit control', async () => {
+    const m = openOver124point4('60');
+    m.onCorrectValue.mockResolvedValue('error');
+    press(m.view.getByRole('button', { name: 'Elsewhere' }));
+    await wait(300);
+    expect(m.onCorrectValue).toHaveBeenCalledTimes(1);
+    expect(editorOpen(m)).not.toBeNull();
+    expect(within(m.lpa()).getByText('Could not save. Check your connection and try again.')).toBeTruthy();
+    clickUnit(m, 'nmol/L');
+    expect(editorOpen(m)).toBeNull();
+    expect(within(m.lpa()).getByText(UNIT_FIRST)).toBeTruthy();
+    expect(document.activeElement).toBe(within(m.lpa()).getByRole('radio', { name: 'nmol/L' }));
+    await wait(300);
+    expect(m.onCorrectValue).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -389,17 +614,48 @@ describe('US-05 AC2 — a value from the chat saves exactly what was stated', ()
     expect([m.draft().value, m.tick()]).toEqual(['75', 'bt-status-ok']);
   });
 
-  it('a stated value switched to another unit keeps its quantity and saves exactly', async () => {
+  // A stated value shown in another unit than it was stated in is not the
+  // number on screen: a click here keeps its unit, so it saves exactly.
+  it('a stated value shown in another unit keeps its quantity through a click and saves exactly', async () => {
+    record.lpaUnit = 'nmol/L';
+    const m = matrix();
+    const [displayValue, system] = said(49.6, 'mg/dL');
+    act(() => { m.prefillRef.current!('lpa' as MetricType, displayValue, system, null); });
+    expect(m.draft().value).toBe('124');
+    m.clickUnit('mg/L');
+    expect(m.draft().value).toBe('496');
+    m.remote('nmol/L');
+    expect(m.draft().value).toBe('124');
+    await m.leave();
+    expect(m.sent(0)[0].values.lpa).toBe(124);
+  });
+
+  // Adversary R2, clinical ruling (2026-10-13): a unit click re-reads only
+  // the numbers the user typed by hand on this page. A chat value is the
+  // chat's number in the chat's unit, whatever the field showed: it keeps its
+  // quantity, and the number shown is re-expressed.
+  it('a chat value stated in the unit shown keeps its quantity through a click: 49.6 mg/dL, then nmol/L, shows and saves 124', async () => {
     record.lpaUnit = 'mg/dL';
     const m = matrix();
     const [displayValue, system] = said(49.6, 'mg/dL');
     act(() => { m.prefillRef.current!('lpa' as MetricType, displayValue, system, null); });
-    m.choose('nmol/L');
+    expect(m.draft().value).toBe('49.6');
+    m.clickUnit('nmol/L');
     expect(m.draft().value).toBe('124');
-    m.choose('mg/L');
-    expect(m.draft().value).toBe('496');
     await m.leave();
     expect(m.sent(0)[0].values.lpa).toBe(124);
+  });
+
+  it('a chat value edited by hand is typed by hand: 49.6 mg/dL retyped 50, then nmol/L, saves 50 nmol/L', async () => {
+    record.lpaUnit = 'mg/dL';
+    const m = matrix();
+    const [displayValue, system] = said(49.6, 'mg/dL');
+    act(() => { m.prefillRef.current!('lpa' as MetricType, displayValue, system, null); });
+    typeInto(m.draft(), '50');
+    m.clickUnit('nmol/L');
+    expect(m.draft().value).toBe('50');
+    await m.leave();
+    expect(m.sent(0)[0].values.lpa).toBe(50);
   });
 
   it('into a saved column’s empty cell, too: 29.8 mg/dL with the field in nmol/L shows 75 and saves 74.5', async () => {

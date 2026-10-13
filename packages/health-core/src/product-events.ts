@@ -90,7 +90,15 @@ export const PRODUCT_EVENT_NAMES = [
   // US-05 AC2: the Lp(a) field's unit was changed. Metadata is the two unit
   // labels, `{ unit, from }` (LPA_UNITS) — never the value in the field.
   'lpa_unit_selected',
+  // US-05 AC3: the Lp(a) check was answered, sent once the answer took effect.
+  // Metadata `{ answer }`, one of LPA_CHECK_ANSWERS, never a value.
+  'lpa_check_answered',
 ] as const;
+
+/** US-05 AC3: the Lp(a) check's answers. The report's unit, when the answer
+ *  wrote a correction, or `keep`: the report matches neither number, or its
+ *  correction would save the value already stored. */
+export const LPA_CHECK_ANSWERS = ['mg/dL', 'nmol/L', 'mg/L', 'keep'] as const;
 
 export type ProductEventName = (typeof PRODUCT_EVENT_NAMES)[number];
 

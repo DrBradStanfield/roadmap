@@ -602,6 +602,30 @@ describe('the Lp(a) unit counter', () => {
   });
 });
 
+/** US-05 AC3 — the Lp(a) check: which answer the user gave, a label only. */
+describe('the Lp(a) check counter', () => {
+  it('takes the answer, one of mg/dL, nmol/L, mg/L and keep, from a browser', () => {
+    for (const answer of ['mg/dL', 'nmol/L', 'mg/L', 'keep']) {
+      expect(parseProductEvent({ eventName: 'lpa_check_answered', visitorId: VISITOR, metadata: { answer } }))
+        .toEqual({ eventName: 'lpa_check_answered', visitorId: VISITOR, metadata: { answer } });
+    }
+  });
+
+  it('refuses another word, a number, or any other key', () => {
+    for (const metadata of [
+      { answer: 'mg/l' }, { answer: 'mmol/L' }, { answer: '156' }, { answer: 390 },
+      { answer: 'mg/dL', value: 390 }, { answer: 'mg/dL', count: 1 }, { answer: 'mg/dL', unit: 'mg/dL' },
+    ]) {
+      expect(parseProductEvent({ eventName: 'lpa_check_answered', visitorId: VISITOR, metadata }), JSON.stringify(metadata)).toBeNull();
+    }
+  });
+
+  it('lets no other event carry an answer', () => {
+    expect(parseProductEvent({ eventName: 'lpa_unit_selected', visitorId: VISITOR, metadata: { unit: 'mg/dL', from: 'nmol/L', answer: 'mg/dL' } })).toBeNull();
+    expect(parseProductEvent({ eventName: 'correction_made', visitorId: VISITOR, metadata: { answer: 'mg/dL' } })).toBeNull();
+  });
+});
+
 describe('the upload outcome counter (US-12 AC10)', () => {
   const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, valuesDropped: 3 };
 

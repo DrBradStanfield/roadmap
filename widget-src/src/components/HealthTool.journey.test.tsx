@@ -44,7 +44,7 @@ import {
 } from '../lib/roadmap-data';
 import { BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY } from '../lib/storage';
 import { trackProductEvent } from '../lib/server-api';
-import { hidePage, pickDraftDate, press, showPage, typeInto, typeWithoutTap } from '../testing/matrix-gestures';
+import { hidePage, pickDraftDate, press, pressMouse, pressWithoutFocus, releaseMouse, showPage, typeInto, typeWithoutTap } from '../testing/matrix-gestures';
 import { SAME_SLOT, SAVE_ERRORS } from './BloodTestTimeline';
 
 // What the chat is told: the context the page hands the chat column. And how
@@ -1704,5 +1704,93 @@ describe('US-03 AC3, US-04 AC1, US-07 AC5: the number a matrix shows, typed agai
     await typeInEditor(after);
     await waitFor(async () => expect(await activeOn(metric)).toEqual([[toCanonicalValue(metric as 'ldl', Number(after), unit), RIGHT_DAY]]));
     expect((await rowsOf(metric)).map((m) => m.status).sort()).toEqual(['active', 'entered-in-error', 'entered-in-error']);
+  });
+});
+
+// US-05 AC3: a US user typed her lab's "Lp(a) 156" (mg/dL) into the field
+// while it was labelled mg/L, and it was stored as 37.44 nmol/L, Normal. The
+// page asks; her answer is a correction, through the click-to-correct path.
+describe('US-05 AC3: the Lp(a) check, over the real record', () => {
+  it('"My report says 156 mg/dL" corrects 37.44 to 390 (the old row entered-in-error, the new one naming it), and the question is gone', async () => {
+    localStorage.setItem('health_roadmap_unit_system', 'conventional');
+    vi.setSystemTime(new Date('2026-09-20T04:00:00.000Z')); // typed into the mislabelled field
+    await guest({ weight: 82 });
+    await addMeasurement('lpa', 37.44, '2026-09-18T00:00:00.000Z');
+    vi.setSystemTime(new Date('2026-10-14T00:00:00.000Z')); // the fixed page
+    const view = render(<HealthTool />);
+    const notice = await shown(view.container, '.lpa-check');
+    fireEvent.click(within(notice).getByRole('button', { name: 'My report says 156 mg/dL (saves 390 nmol/L)' }));
+
+    await waitFor(() => expect(view.container.querySelector('.lpa-check')).toBeNull());
+    const rows = await rowsOf('lpa');
+    const old = rows.find((m) => m.value === 37.44)!;
+    expect(old.status).toBe('entered-in-error');
+    expect(active(rows)).toEqual([expect.objectContaining({ value: 390, correctsId: old.id, source: 'manual_correction' })]);
+    expect(trackProductEvent).toHaveBeenCalledWith('lpa_check_answered', { answer: 'mg/dL' });
+  });
+});
+
+// US-04 AC1 / US-05 AC2: a typed correction is saved only in the unit shown
+// when it was typed. A press held on the page's Units pill, outside every
+// matrix, ran the click-away save in the old unit before its click switched
+// the units (2026-10-13). Then the release wait's one-second cap did the same
+// for a press held 1.2 s (adversary R1): the press decides now.
+describe('US-04 AC1 / US-05 AC2: the Units pill held while a value is being corrected', () => {
+  const UNIT_FIRST = 'Not saved: choose the unit first, then type the value.';
+  const pill = (view: RenderResult) => view.getByRole('button', { name: /Switch units/ });
+
+  it('85 typed in kg, the pill held 200 ms: nothing written, and the cell says to choose the unit first', async () => {
+    const view = await returningGuest();
+    const editor = openEditor(row(vitalsMatrix(view.container), 'Weight'));
+    fireEvent.change(editor, { target: { value: '85' } });
+    pressMouse(pill(view));
+    await wait(200);
+    releaseMouse(pill(view));
+    await wait(1000);
+    expect(view.getByRole('button', { name: 'Switch units. Current: US' })).toBeTruthy();
+    expect(await activeOn('weight')).toEqual([[82, '2026-09-01']]);
+    expect(within(row(vitalsMatrix(view.container), 'Weight')).getByText(UNIT_FIRST)).toBeTruthy();
+  });
+
+  it('85 typed in kg, the pill held 1200 ms in Safari: nothing written, and the cell says to choose the unit first', async () => {
+    const view = await returningGuest();
+    const editor = openEditor(row(vitalsMatrix(view.container), 'Weight'));
+    fireEvent.change(editor, { target: { value: '85' } });
+    pressWithoutFocus(pill(view));
+    await wait(1200);
+    releaseMouse(pill(view));
+    await wait(300);
+    expect(view.getByRole('button', { name: 'Switch units. Current: US' })).toBeTruthy();
+    expect(await activeOn('weight')).toEqual([[82, '2026-09-01']]);
+    expect(within(row(vitalsMatrix(view.container), 'Weight')).getByText(UNIT_FIRST)).toBeTruthy();
+  });
+
+  it('the Height cm pill switches the same units: 85 typed in kg, the cm pill held 1200 ms in Safari writes nothing', async () => {
+    const view = await returningGuest();
+    const editor = openEditor(row(vitalsMatrix(view.container), 'Weight'));
+    fireEvent.change(editor, { target: { value: '85' } });
+    const cm = () => view.container.querySelector('label[for="heightCm"] .unit-toggle-pill, label[for="heightFeet"] .unit-toggle-pill') as HTMLElement;
+    pressWithoutFocus(cm());
+    await wait(1200);
+    releaseMouse(cm());
+    await wait(300);
+    expect(view.getByRole('button', { name: 'Switch units. Current: US' })).toBeTruthy();
+    expect(await activeOn('weight')).toEqual([[82, '2026-09-01']]);
+    expect(within(row(vitalsMatrix(view.container), 'Weight')).getByText(UNIT_FIRST)).toBeTruthy();
+  });
+
+  it('3.5 typed over a blood test\'s LDL in mmol/L, the pill held 1200 ms in Safari: nothing written, and the cell says to choose the unit first', async () => {
+    await guest({ weight: 82 });
+    await addMeasurement('ldl', 3.2, '2026-08-15');
+    const view = await secondVisit();
+    const editor = openEditor(row(bloodMatrix(view.container), 'LDL Cholesterol'), 'last');
+    fireEvent.change(editor, { target: { value: '3.5' } });
+    pressWithoutFocus(pill(view));
+    await wait(1200);
+    releaseMouse(pill(view));
+    await wait(300);
+    expect(view.getByRole('button', { name: 'Switch units. Current: US' })).toBeTruthy();
+    expect(await activeOn('ldl')).toEqual([[3.2, '2026-08-15']]);
+    expect(within(row(bloodMatrix(view.container), 'LDL Cholesterol')).getByText(UNIT_FIRST)).toBeTruthy();
   });
 });

@@ -5370,6 +5370,22 @@ a.action-btn-small.action-btn-small:hover {
   gap: 8px;
   margin-top: 10px;
 }
+/* US-05 AC3: the Lp(a) check under the blood-test matrix: four answers that wrap at phone width. */
+.lpa-check { margin: 12px 0 0; }
+.lpa-check p { margin: 0; }
+.lpa-check .alr-add-actions { flex-wrap: wrap; }
+.lpa-check .lpa-check-note { margin-top: 8px; }
+.lpa-check-wait { align-self: center; }
+.lpa-check-status { margin: 8px 0 0; }
+/* US-04 AC1: a matrix's live region for its cells' messages; each shows in its cell. */
+.bt-cell-messages {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .alr-add-save,
 .alr-add-cancel {
   font-family: inherit;

@@ -1,5 +1,5 @@
 /** Shopify services only. Health records are read and written by roadmap-data. */
-import type { GUIDE_PLACEMENTS, LpaUnit, ProductEventName, REMOTE_CHANGE_BACKENDS } from '@roadmap/health-core';
+import type { GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, LpaUnit, ProductEventName, REMOTE_CHANGE_BACKENDS } from '@roadmap/health-core';
 import { PER_ACTION_EVENT_NAMES, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { safeGetItem, safeSetItem } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';
@@ -141,6 +141,8 @@ export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey, n
   unit?: string;
   /** `lpa_unit_selected` (US-05 AC2): the unit shown before the change; `unit` is the one chosen. */
   from?: LpaUnit;
+  /** `lpa_check_answered` (US-05 AC3): the answer, a label only. */
+  answer?: (typeof LPA_CHECK_ANSWERS)[number];
 }
 
 /**

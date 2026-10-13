@@ -25,9 +25,10 @@ const PAGE = Math.random().toString(36).slice(2);
  *  US-05; an Lp(a) cell keeps its unit's label, AC2); the
  *  rows the page showed under its slots when the user began typing there,
  *  kept until the cell is emptied, never retaken by typing again (US-03 AC2);
- *  the load of the page it was typed on; and why a commit refused its value,
- *  until it is typed into again. */
-interface CellMeta { unit?: CellUnit; expected?: Expected; typedOn?: string; refused?: string }
+ *  the load of the page it was typed on, by the user or the chat; the load
+ *  the user last typed into it by hand, never the chat's (`restamp`); and why
+ *  a commit refused its value, until it is typed into again. */
+interface CellMeta { unit?: CellUnit; expected?: Expected; typedOn?: string; byHand?: string; refused?: string }
 
 export interface MatrixDraft<K extends string> {
   /** `date` is kept only when the user picked it: an unpicked draft column is
@@ -139,9 +140,10 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     draft: { date, values },
     backfills: state.backfills,
     /** What the user typed into a cell, verbatim, and the unit it is in when
-     *  a unit switch must keep the quantity. */
-    type: (cell: CellRef<K>, typed: string, unit?: CellUnit) => setState((s) => set(s, cell, typed, (was) => ({
-      unit, expected: was?.expected ?? rowsUnder(cell[0] ?? dayOf(s), cell[1]), typedOn: PAGE,
+     *  a unit switch must keep the quantity. `byHand` false: the chat filled
+     *  it, and the user has not typed into it since. */
+    type: (cell: CellRef<K>, typed: string, unit?: CellUnit, byHand = true) => setState((s) => set(s, cell, typed, (was) => ({
+      unit, expected: was?.expected ?? rowsUnder(cell[0] ?? dayOf(s), cell[1]), typedOn: PAGE, byHand: byHand ? PAGE : undefined,
     }))),
     /** The day the user picked. Anything else is never taken: iOS's Reset
      *  hands back '', and the column keeps its day. Another day is another
@@ -166,6 +168,22 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
       const unit = metaOf(cell)?.unit;
       return (LPA_UNITS as readonly unknown[]).includes(unit) ? unit as LpaUnit : undefined;
     },
+    /** A unit chosen on this page says what the numbers typed are in (US-05
+     *  AC2): every cell of `key` the user typed by hand on this load of the
+     *  page, in `from`, the unit shown until now, is read in `to` from here
+     *  on, its text kept. Every other cell keeps its stamp and its quantity,
+     *  its number shown again in the new unit (adversary R2, clinical
+     *  ruling): one the chat filled, one restored from the device, one typed
+     *  in another unit, and one with no unit kept, which stays without. A
+     *  save takes a cell out of the draft, its mark with it. */
+    restamp: (key: K, from: CellUnit, to: CellUnit) => setState((s) => {
+      const meta = { ...s.meta };
+      for (const column of [null, ...Object.keys(s.backfills)]) {
+        const id = idOf([column, key]);
+        if (meta[id]?.unit === from && meta[id]?.byHand === PAGE) meta[id] = { ...meta[id], unit: to };
+      }
+      return { ...s, meta };
+    }),
     /** The rows a cell expects under its slots, for its commit to name
      *  (`SaveTask.expected`): what the page showed when the user began
      *  typing there. None known: empty slots. */

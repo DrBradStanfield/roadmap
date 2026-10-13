@@ -943,6 +943,20 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     expect(file.measurements).toEqual([]);
   });
 
+  // US-11 AC1 / US-05 AC3: the Lp(a) check's "keep as saved" answers name
+  // rows of the record on this device, so an erase takes them too, in both modes.
+  it('clears the Lp(a) check\'s kept answers, for a localStorage-only and a cloud user', async () => {
+    const KEPT_KEY = 'health_roadmap_lpa_check_kept';
+    for (const adapter of [new LocalStorageAdapter(), new MemoryAdapter(new MemoryCloud())]) {
+      localStorage.setItem(KEPT_KEY, '["row-1"]');
+      const store = await RoadmapStore.create(adapter);
+      store.addMeasurement('lpa', 120, '2026-09-18T00:00:00.000Z');
+      expect((await store.deleteUserData()).success).toBe(true);
+      expect(localStorage.getItem(KEPT_KEY), adapter.id).toBeNull();
+      for (const [k, v] of Object.entries(KEEP)) expect(localStorage.getItem(k), k).toBe(v);
+    }
+  });
+
   it('clears the same keys for a cloud user', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
@@ -1014,6 +1028,31 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
     expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
     expect(heard).toHaveBeenCalledTimes(2);
+    for (const [k, v] of Object.entries(KEEP)) expect(localStorage.getItem(k)).toBe(v);
+  });
+
+  // US-11 AC1 / US-05 AC3 (Codex R2, adversary R7): the Lp(a) check's kept
+  // answers name rows of the erased record, so an erase made on another
+  // device takes them here too, by a re-read or by a save.
+  it('clears the Lp(a) check\'s kept answers when an erase made on another device arrives, by a re-read or by a save', async () => {
+    const KEPT_KEY = 'health_roadmap_lpa_check_kept';
+    vi.stubGlobal('window', new EventTarget());
+    const cloud = new MemoryCloud();
+    const page = await RoadmapStore.create(new MemoryAdapter(cloud));
+    page.addMeasurement('lpa', 37.44, '2026-09-18T00:00:00.000Z');
+    await page.flush();
+    const otherPage = await RoadmapStore.create(new MemoryAdapter(cloud));
+
+    await (await RoadmapStore.create(new MemoryAdapter(cloud))).deleteUserData(); // the other device
+    localStorage.setItem(KEPT_KEY, '["row-1"]'); // jsdom has one localStorage for every device: this device's goes back
+    expect(await page.refreshFromRemote()).toBe(true);
+    expect(localStorage.getItem(KEPT_KEY)).toBeNull();
+
+    localStorage.setItem(KEPT_KEY, '["row-1"]');
+    otherPage.addMeasurement('weight', 81, '2024-02-01T00:00:00.000Z'); // made before it heard of the erase
+    await otherPage.flush();
+    expect(otherPage.loadAllHistory()).toEqual([]);
+    expect(localStorage.getItem(KEPT_KEY)).toBeNull();
     for (const [k, v] of Object.entries(KEEP)) expect(localStorage.getItem(k)).toBe(v);
   });
 });

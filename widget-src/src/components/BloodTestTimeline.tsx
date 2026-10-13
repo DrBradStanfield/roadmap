@@ -2,20 +2,23 @@
 // Rows = metrics; columns = older batches → 2 most recent → draft column.
 // Values stored in SI canonical throughout; inputs converted on commit.
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactElement } from 'react';
 import {
   type ApiMeasurement,
   type UnitSystem,
   type LpaUnit,
   type MetricType,
   type HealthInputs,
+  healthInputSchema,
   toCanonicalValue,
   BLOOD_TEST_METRICS,
   METRIC_TO_FIELD,
   METRIC_LABELS,
   parseLocalisedNumber,
+  reportedToCanonical,
+  UNIT_DEFS,
 } from '@roadmap/health-core';
-import { MONTHS_SHORT } from '../lib/constants';
+import { formatShortDate, MONTHS_SHORT } from '../lib/constants';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import { useDraftMirror, useMatrixDraft } from '../lib/useMatrixDraft';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
@@ -37,7 +40,8 @@ import {
   validateTypedValue,
   statusOf,
 } from '../lib/blood-test-cell';
-import { useLpaUnit } from '../lib/lpa-unit';
+import { keepLpaAsIs, lpaRowsToCheck, useLpaUnit, type LpaCheck } from '../lib/lpa-unit';
+import { trackProductEvent } from '../lib/server-api';
 import { NumericInputCell } from './NumericInputCell';
 import { CommitTickButton } from './CommitTickButton';
 import { DraftDateCell } from './DraftDateCell';
@@ -183,13 +187,31 @@ export function BloodTestTimeline({
   const rowsUnder = (day: string, metric: MetricType) => ({ [metric]: batches.find(b => b.date === day)?.ids[metric] ?? null });
   const latestDay = (metric: MetricType) => [...batches].reverse().find(b => b.values[metric] != null)?.date;
   const {
-    draft, backfills, type, setDate: setDraftDate, lpaUnitOf, expected, clashes, taken, lends, settle, refusal,
+    draft, backfills, type, setDate: setDraftDate, lpaUnitOf, restamp, expected, clashes, taken, lends, settle, refusal,
   } = useMatrixDraft<MetricType>(BT_TIMELINE_DRAFT_KEY, { onScreen, rowsUnder, latestDay });
   const [activeCell, setActiveCell] = useState<string | null>(null);
+  // A cell leaving clears only its own mark: another may have taken it since
+  // (an editor opened from it, the chat's flash).
+  const unmark = (cellId: string) => () => setActiveCell(prev => (prev === cellId ? null : prev));
+  const [say, cellMessages] = useLiveRegion('bt-cell-messages');
+  // The Lp(a) values whose editor is open. The Lp(a) check waits while any
+  // is, so the two never correct one row at once (US-05 AC3). Counted from
+  // the editors' own open and close, never from the highlight, which another
+  // cell takes while an editor is still open, and a refused save leaves behind.
+  const [lpaEditors, setLpaEditors] = useState(0);
 
   // Lp(a) has three units on its own control, kept in the record (US-05 AC2);
   // every other field, the two-way toggle.
   const [lpaUnit, chooseLpaUnit] = useLpaUnit(unitSystem);
+  // A unit chosen here says what the numbers typed in it are in (Brad,
+  // 2026-10-13): "type 40, click mg/dL" is 40 mg/dL, as in this matrix's
+  // other draft cells (the vitals drafts still keep the quantity). Another device's choice keeps each cell's own unit.
+  // Only a number typed by hand on this page is re-read; one the chat filled
+  // or the device restored keeps its quantity (useMatrixDraft's `restamp`).
+  const pickLpaUnit = (unit: LpaUnit) => {
+    restamp('lpa', lpaUnit, unit);
+    chooseLpaUnit(unit);
+  };
   const fieldUnit = (field: string): CellUnit => (field === 'lpa' ? lpaUnit : unitOverrides[field] ?? unitSystem);
   // The unit a typed cell is read in. An Lp(a) cell keeps the one it was typed
   // in, and one restored from before that was kept has none: its value waits
@@ -309,13 +331,13 @@ export function BloodTestTimeline({
     // through the click-to-edit ValueCell path, not chat pre-fill).
     const existingBatch = date ? batches.find(b => b.date === date) : undefined;
     if (date && existingBatch && existingBatch.values[metric] == null) {
-      type([date, metric], typed, stated);
+      type([date, metric], typed, stated, false);
       const cellId = `${date}.${metric}`;
       setActiveCell(cellId);
       return cellId;
     }
     if (date) setDraftDate(date);
-    type([null, metric], typed, stated); // the plan and the chat read it while it may stand in
+    type([null, metric], typed, stated, false); // the plan and the chat read it while it may stand in
     const cellId = `draft.${metric}`;
     setActiveCell(cellId);
     return cellId;
@@ -354,7 +376,7 @@ export function BloodTestTimeline({
   return (
     <div ref={rootRef} className="bt-timeline">
       <div className="bt-timeline-header">
-        <h3 className="bt-timeline-title">Blood Test Results</h3>
+        <h3 className="bt-timeline-title" tabIndex={-1}>Blood Test Results</h3>
         <div className="bt-timeline-actions">
           {uploadDisabled ? (
             <div className="upload-lab-wrapper">
@@ -422,11 +444,11 @@ export function BloodTestTimeline({
             const lastStatus = last != null ? statusOf(row.metric, last, sex) : null;
 
             return (
-              <div key={row.field} className={`bt-row${rowIdx === ROWS.length - 1 ? ' bt-row-last' : ''}`}>
+              <div key={row.field} className={`bt-row${rowIdx === ROWS.length - 1 ? ' bt-row-last' : ''}`} data-metric={row.metric}>
                 <div className="bt-cell-name">
                   <div className="bt-name-label">{row.label}</div>
                   {row.metric === 'lpa'
-                    ? <LpaUnitControl unit={lpaUnit} onChange={chooseLpaUnit}/>
+                    ? <LpaUnitControl unit={lpaUnit} onChange={pickLpaUnit}/>
                     : <UnitChip label={cellLabel(row.metric, display)} onToggle={() => onToggleFieldUnit(row.field)}/>}
                   {ref && <div className="bt-ref-label">{ref}</div>}
                 </div>
@@ -445,7 +467,7 @@ export function BloodTestTimeline({
                         error={unreadable(null, row.metric, row.field, typed) ?? (clashes(row.metric) || taken(row.metric) ? SAME_SLOT : refusal([null, row.metric]))}
                         active={activeCell === cellId}
                         onFocus={() => setActiveCell(cellId)}
-                        onBlur={() => setActiveCell(null)}
+                        onBlur={unmark(cellId)}
                         onEnter={saveNow}
                         onChange={v => setDraftValue(row.metric, v)}
                       />
@@ -464,7 +486,7 @@ export function BloodTestTimeline({
                         error={unreadable(c.date, row.metric, row.field, typed) ?? (c.date === draft.date && clashes(row.metric) ? SAME_SLOT : refusal([c.date, row.metric]))}
                         active={activeCell === cellId}
                         onFocus={() => setActiveCell(cellId)}
-                        onBlur={() => setActiveCell(null)}
+                        onBlur={unmark(cellId)}
                         onEnter={saveNow}
                         onChange={v => setBackfillValue(c.date, row.metric, v)}
                       />
@@ -485,9 +507,16 @@ export function BloodTestTimeline({
                       rowId={rowId}
                       status={status}
                       pinned={isPinned}
-                      onActivate={() => setActiveCell(cellId)}
-                      onDeactivate={() => setActiveCell(null)}
+                      onActivate={() => {
+                        setActiveCell(cellId);
+                        if (row.metric === 'lpa') setLpaEditors(n => n + 1);
+                      }}
+                      onDeactivate={() => {
+                        unmark(cellId)();
+                        if (row.metric === 'lpa') setLpaEditors(n => n - 1);
+                      }}
                       onCorrect={onCorrectValue}
+                      say={say}
                     />
                   );
                 })}
@@ -504,9 +533,141 @@ export function BloodTestTimeline({
           </div>
         </div>
       </div>
+      {cellMessages}
+      {onCorrectValue && <LpaChecks rows={bloodTestHistory} unitSystem={unitSystem} onCorrect={onCorrectValue} waiting={lpaEditors > 0}/>}
     </div>
   );
 }
+
+// US-05 AC3: one question per Lp(a) row typed while the US field was labelled
+// mg/L (lpaRowsToCheck), under the matrix's last row, Lp(a). The user answers
+// with a number and its unit, so a row stored right (a connector's 120 nmol/L)
+// has an honest answer that writes nothing. "My report says <typed> mg/dL",
+// "... nmol/L" or "... mg/L" is a correction at today's factor, as a
+// click-to-correct makes one (US-04), offered only when the record takes its
+// value. A report above 300 mg/dL saves the record's ceiling, 750 nmol/L.
+// "Neither", or any answer that would save what is stored, keeps the row and
+// is remembered on this device.
+type ReportUnit = 'mg/dL' | 'nmol/L' | 'mg/L';
+const LPA_MAX = UNIT_DEFS.lpa.validationRange.si.max;
+
+function LpaChecks({ rows, unitSystem, onCorrect, waiting }: {
+  rows: ApiMeasurement[]; unitSystem: UnitSystem; onCorrect: CorrectFn; waiting: boolean;
+}) {
+  const [answered, setAnswered] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  // After an answer every answer button rests a moment, so the second click
+  // of a double click never answers the notice that moved into its place
+  // (adversary R1).
+  const [resting, setResting] = useState(false);
+  const restTimer = useRef<number>();
+  useEffect(() => () => window.clearTimeout(restTimer.current), []);
+  const rest = () => {
+    setResting(true);
+    window.clearTimeout(restTimer.current);
+    restTimer.current = window.setTimeout(() => setResting(false), 600);
+  };
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  // What the last answer did, said in a region that outlives its notice: on
+  // the page from the first question, so an answer is heard, and kept once
+  // the last notice goes.
+  const [say, status] = useLiveRegion('lpa-check-status');
+  const [asked, setAsked] = useState(false);
+  // Where an answer was given, so the focus can move on once its notice goes.
+  const focusFrom = useRef<{ root: Element; index: number } | null>(null);
+  const checks = useMemo(
+    () => lpaRowsToCheck(rows, unitSystem).filter(check => !answered.includes(check.row.id)),
+    [rows, unitSystem, answered]);
+
+  // After an answer the focus goes to the next notice, else to the Lp(a)
+  // row's latest value, else the matrix heading; after a refusal it can retry, back to its
+  // own notice (a button disabled while saving drops the focus). Never to the page.
+  useLayoutEffect(() => {
+    const from = focusFrom.current;
+    if (!from) return;
+    focusFrom.current = null;
+    const cells = from.root.querySelectorAll<HTMLElement>('[data-metric="lpa"] .bt-cell-clickable');
+    (from.root.querySelectorAll<HTMLElement>('.lpa-check')[from.index]
+      ?? cells[cells.length - 1]
+      ?? from.root.querySelector<HTMLElement>('.bt-timeline-title'))?.focus();
+  });
+
+  // A report in nmol/L, clean of float noise (12 significant digits).
+  const nmolOf = (typed: number, unit: ReportUnit) => Number(reportedToCanonical('lpa', typed, unit)!.valueSI.toPrecision(12));
+  // What an answer writes, as its button says: mg/dL past the ceiling saves the ceiling.
+  const saves = (typed: number, unit: ReportUnit) => unit === 'mg/dL' ? Math.min(nmolOf(typed, unit), LPA_MAX) : nmolOf(typed, unit);
+
+  const answer = async (event: React.MouseEvent, { row, typed }: LpaCheck, index: number, unit: ReportUnit | 'keep') => {
+    if (event.detail > 1) return; // the second click of a double click
+    rest();
+    const root = event.currentTarget.closest('.bt-timeline')!;
+    // An answer that would save what is stored writes nothing: kept.
+    const kept = unit === 'keep' || saves(typed, unit) === Number(row.value.toPrecision(12));
+    if (kept) keepLpaAsIs(row.id);
+    else {
+      setSaving(true);
+      const status = await onCorrect(row.id, saves(typed, unit));
+      setSaving(false);
+      if (status === 'changed') {
+        // Replaced on another device: the page re-reads the record and the
+        // notice goes, so the reason is said where it outlives it (adversary
+        // R8), and the focus goes to the next notice or there (adversary R5).
+        say(CHECK_CHANGED);
+        (root.querySelectorAll<HTMLElement>('.lpa-check')[index + 1] ?? root.querySelector<HTMLElement>('.lpa-check-status'))?.focus();
+        return;
+      }
+      if (status !== 'ok') {
+        focusFrom.current = { root, index };
+        setErrors(e => ({ ...e, [row.id]: SAVE_ERRORS[status] }));
+        return;
+      }
+    }
+    // Names the result's day, so a second answer in a row reads differently.
+    const day = formatShortDate(row.recordedAt);
+    say(kept ? `Kept the result from ${day} as saved.` : `Saved the result from ${day}.`);
+    trackProductEvent('lpa_check_answered', { answer: kept ? 'keep' : unit }); // after the outcome; the label, never a value
+    focusFrom.current = { root, index };
+    rest();
+    setAnswered(ids => [...ids, row.id]);
+  };
+
+  const notices = checks.map((check, index) => {
+    const offered = (['mg/dL', 'nmol/L', 'mg/L'] as const)
+      .filter(unit => healthInputSchema.shape.lpa.safeParse(saves(check.typed, unit)).success);
+    const over = nmolOf(check.typed, 'mg/dL') > LPA_MAX;
+    const label = (unit: ReportUnit) => `My report says ${check.typed} ${unit}` + (unit === 'nmol/L' ? ''
+      : unit === 'mg/dL' && over ? ` (saves ${LPA_MAX} nmol/L, the highest value this tool records)`
+        : ` (saves ${saves(check.typed, unit)} nmol/L)`);
+    return (
+    <div key={check.row.id} className="screening-notice lpa-check" tabIndex={-1}>
+      <p>
+        {`Please check this Lp(a) result from ${formatShortDate(check.row.recordedAt)}. It is saved as`
+          + ` ${check.row.value.toFixed(0)} nmol/L. Between 6 September and 13 October this box was labelled mg/L,`
+          + ' so a number copied from a lab report may have been saved wrongly. What does your lab report say?'}
+      </p>
+      <div className="alr-add-actions">
+        {offered.map(unit => (
+          <button key={unit} type="button" className="alr-add-cancel" disabled={saving || resting || waiting}
+            onClick={e => void answer(e, check, index, unit)}>{label(unit)}</button>
+        ))}
+        <button type="button" className="alr-add-cancel" disabled={saving || resting || waiting}
+          onClick={e => void answer(e, check, index, 'keep')}>Neither of these (keep as saved)</button>
+        {waiting && <span className="lpa-check-wait">Finish editing the Lp(a) value first.</span>}
+      </div>
+      {over && <p className="lpa-check-note">This tool records Lp(a) up to 300 mg/dL (750 nmol/L).
+        If your report shows a higher number, that result is very high: please discuss it with your doctor.</p>}
+      <p className="lpa-check-note">You can also correct any value by clicking it in the table.</p>
+      {/* A p, never a div: the storefront theme hides an empty div (div:empty). */}
+      <p className="alr-add-notice lpa-check-note" aria-live="polite">{errors[check.row.id] || '\u00a0'}</p>
+    </div>
+    );
+  });
+  if (checks.length > 0 && !asked) setAsked(true);
+  return <>{notices}{asked && status}</>;
+}
+
+/** What the check says when another device replaced the result it was answering (US-05 AC3). */
+const CHECK_CHANGED = 'This result changed on another device. Nothing was saved.';
 
 // Exported so StartingInfoVitals can reuse the exact same saved-date header
 // cell — keeps the two matrices pixel-identical without copy-paste drift.
@@ -540,10 +701,38 @@ interface ValueCellProps {
   onActivate?: () => void;
   onDeactivate?: () => void;
   onCorrect?: CorrectFn;
+  /** Says a message in the matrix's live region (`useLiveRegion`). */
+  say?: (message: string) => void;
+}
+
+/** A polite live region (`role="status"`, a p) that says every message, a
+ *  repeat too: it is cleared, then set a task later, so the page changes
+ *  each time (Codex R2, adversary R3). A non-breaking space holds it while it
+ *  says nothing: the storefront theme hides `div:empty`, and may hide
+ *  `p:empty`. Each matrix renders one for its cells' messages
+ *  (`bt-cell-messages`, hidden on screen: each message shows in its cell;
+ *  US-04 AC1, US-05 AC2), on the page from the first render so a screen
+ *  reader hears the first. Hands back how to say one, and the region. */
+export function useLiveRegion(className: string): [(message: string) => void, ReactElement] {
+  const [said, setSaid] = useState('');
+  const timer = useRef<number>();
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  const say = useCallback((message: string) => {
+    window.clearTimeout(timer.current);
+    setSaid('');
+    timer.current = window.setTimeout(() => setSaid(message), 0);
+  }, []);
+  // Focusable from script only: the Lp(a) check moves the focus here when its notice goes.
+  return [say, <p className={className} role="status" tabIndex={-1}>{said || '\u00a0'}</p>];
 }
 
 /** What a matrix says when a save did not all land (US-03 AC4). */
 export const SAVE_FAILED = 'Some values did not save. Try again.';
+
+/** What an editor closed by a unit switch says (US-05 AC2). */
+const UNIT_CHANGED = 'The unit changed, so your edit was not saved. Type it again in the new unit.';
+/** What an editor left for its own unit control says (US-05 AC2). */
+const UNIT_FIRST = 'Not saved: choose the unit first, then type the value.';
 
 /** What a refused correction says, wherever one is made. */
 export const SAVE_ERRORS: Record<Exclude<CorrectStatus, 'ok'>, string> = {
@@ -556,7 +745,7 @@ export const SAVE_ERRORS: Record<Exclude<CorrectStatus, 'ok'>, string> = {
 // (StartingInfoVitals) and the additional lab rows. Click a value to correct
 // it in place: a FHIR correction, never an edit of the saved row.
 export function ValueCell({
-  metric, display, sex, value, unit, rowId, status, pinned, onActivate, onDeactivate, onCorrect,
+  metric, display, sex, value, unit, rowId, status, pinned, onActivate, onDeactivate, onCorrect, say,
 }: ValueCellProps) {
   // `typed === null` ⇒ read-only; otherwise the in-place edit form is open.
   // One field replaces the old (editing, typed) pair — impossible state gone.
@@ -567,8 +756,75 @@ export function ValueCell({
   // refuses it once another writer has replaced that row (US-04 AC1).
   const openedOn = useRef<string>();
   const blurTimerRef = useRef<number | null>(null);
+  // A typed correction is saved only in the unit shown when the editor
+  // opened, never across a unit change (US-05 AC2, US-04 AC1). The unit
+  // shown then, and now: a save that runs late reads both.
+  const openedIn = useRef<CellUnit>();
+  const shownIn = useRef(display);
+  shownIn.current = display;
+  // The focus comes back to this cell when another device's switch closes
+  // the editor that had it.
+  const refocusRef = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Pointers down while the editor is open (as useSaveOnLeave tracks them),
+  // and a click-away save that came due during a press: its click has not
+  // run yet, so the save waits for the release, at most a second (a release
+  // can be lost), and never past the page going away (adversary R5). Its own
+  // submit then checks the unit. A press on a unit control that governs this
+  // editor never gets that far: the press closes it (`leaveForUnit`).
+  const pointersDown = useRef(new Set<number>());
+  const leaveForUnitRef = useRef<() => void>();
+  const afterRelease = useRef<(() => void) | null>(null);
+  const editing = typed !== null;
+  // The editor opens and closes, unmounted or not, through the matrix's
+  // callbacks, each called once (US-05 AC3 counts the open Lp(a) editors).
+  useEffect(() => {
+    if (!editing) return;
+    onActivate?.();
+    const down = pointersDown.current;
+    down.clear();
+    // The save waiting for a release: a task on, or now.
+    const runWaiting = (later: boolean) => {
+      const save = afterRelease.current;
+      if (!save) return;
+      clearBlurTimer();
+      if (later) blurTimerRef.current = window.setTimeout(save, 0);
+      else save();
+    };
+    const onDown = (e: PointerEvent) => {
+      if (governs(e.target)) leaveForUnitRef.current?.();
+      else down.add(e.pointerId);
+    };
+    const onUp = (e: PointerEvent) => {
+      down.delete(e.pointerId);
+      if (down.size === 0) runWaiting(true); // the click, and any switch it made, run first
+    };
+    const onHide = () => { if (document.visibilityState === 'hidden') runWaiting(false); };
+    const onPageHide = () => runWaiting(false);
+    const listeners = [['pointerdown', onDown], ['pointerup', onUp], ['pointercancel', onUp]] as const;
+    for (const [type, listener] of listeners) document.addEventListener(type, listener, true);
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      for (const [type, listener] of listeners) document.removeEventListener(type, listener, true);
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', onPageHide);
+      onDeactivate?.();
+    };
+  }, [editing]);
+  // Whether `target` is in this row's own unit control.
+  const ownUnitControl = (target: EventTarget | null) => {
+    const control = target instanceof Element ? target.closest('[data-unit-control]') : null;
+    return !!control && !!inputRef.current?.closest('.bt-row')?.contains(control);
+  };
+  // Whether `target` is in a unit control that can change this editor's
+  // unit: its row's own, or the page's (`data-unit-control="all"`), which
+  // changes every core metric's but never a lab value's.
+  const governs = (target: EventTarget | null) => ownUnitControl(target)
+    || (!!metric && target instanceof Element && !!target.closest('[data-unit-control="all"]'));
 
   const clearBlurTimer = () => {
+    afterRelease.current = null;
     if (blurTimerRef.current != null) {
       window.clearTimeout(blurTimerRef.current);
       blurTimerRef.current = null;
@@ -581,28 +837,56 @@ export function ValueCell({
   const canCorrect = !!(rowId && onCorrect);
 
   const beginEdit = () => {
-    if (!canCorrect) return;
+    if (!canCorrect || saving) return;
     // Cancel any pending blur-cancel from a previous cell — otherwise it
     // would fire after this cell mounts and clobber our active state.
     clearBlurTimer();
     setSaveError(null);
     openedOn.current = rowId;
+    openedIn.current = display;
     setTyped(initialDisplay);
-    onActivate?.();
   };
 
   const cancel = () => {
     clearBlurTimer();
     setTyped(null);
     setSaveError(null);
-    onDeactivate?.();
   };
-  // A unit switch from another device closes the editor unsaved, as Escape
-  // does, and clears a pending click-away save. Re-expressing the text rounded
-  // twice: a saved 124.4 shown "49.8" mg/dL came back "125" nmol/L and saved
-  // 125 (US-05 AC2). A layout effect, so no keystroke or timer reads the text
-  // in the new unit first.
-  useLayoutEffect(() => { if (typed !== null) cancel(); }, [display]);
+  // Leaving for a unit control that governs this editor (US-05 AC2, US-04
+  // AC1): the number typed is in a unit the user is about to change, so the
+  // editor closes unsaved and says so, at the press, before any click can
+  // switch the unit; a save's wait for the release once ran past a held
+  // press (adversary R1, 2026-10-13). An editor nobody typed in loses
+  // nothing: it closes silently.
+  const leaveForUnit = () => {
+    if (saving) return;
+    cancel();
+    openedOn.current = undefined; // a late blur's save, from a handler of the render before, has no row
+
+    if (typed !== initialDisplay) setSaveError(UNIT_FIRST);
+  };
+  leaveForUnitRef.current = leaveForUnit;
+  // A unit switch while the editor is open never saves the typed text
+  // (US-05 AC2, US-04 AC1): a user who types 40 and then clicks mg/dL
+  // means "this number is in mg/dL", and saving 40 in the old unit is the
+  // falsely reassuring error. It closes the editor, as Escape does, clears
+  // any click-away save, waiting or not, and says so; a save already
+  // running (Enter) reports its own result. The focus stays where the
+  // browser put it, except that it comes back to the cell from an editor
+  // that had it (another device's switch).
+  // Re-expressing the text in the new unit rounded twice: a saved 124.4 shown
+  // "49.8" mg/dL came back "125" nmol/L and saved 125. A layout effect, so no
+  // keystroke or timer reads the text in the new unit first.
+  useLayoutEffect(() => {
+    if (typed === null) return;
+    const hadFocus = document.activeElement === inputRef.current;
+    cancel();
+    if (saving) return;
+    setSaveError(UNIT_CHANGED);
+    refocusRef.current = hadFocus;
+  }, [display]);
+  // Each message is said in the matrix's live region too.
+  useEffect(() => { if (saveError) say?.(saveError); }, [saveError]);
 
   // Text the editor cannot save: outside the metric's range, or no number.
   const unusable = (text: string) => core
@@ -612,6 +896,8 @@ export function ValueCell({
   const submit = async () => {
     const opened = openedOn.current;
     if (!opened || !onCorrect || typed === null) return;
+    // The unit changed since the editor opened: the text is in the old one.
+    if (shownIn.current !== openedIn.current) { cancel(); setSaveError(UNIT_CHANGED); return; }
     // An emptied editor is a change of mind: it closes and writes nothing.
     if (typed.trim() === '') { cancel(); return; }
     if (unusable(typed)) return;
@@ -641,20 +927,35 @@ export function ValueCell({
         active
         autoFocus
         disabled={saving}
+        inputRef={inputRef}
         onKeyDown={e => {
           blockBadNumericKeys(e);
           if (e.key === 'Enter') { e.preventDefault(); void submit(); }
           if (e.key === 'Escape') { e.preventDefault(); cancel(); }
         }}
-        onBlur={() => {
+        onBlur={e => {
+          // The focus going to this row's own unit control (Tab): never arm
+          // the save. A press closed the editor already.
+          if (ownUnitControl(e.relatedTarget)) return leaveForUnit();
           // Save on click-away when the typed value passes validation —
           // matches the Enter key. If the value is invalid we revert
           // rather than leaving a half-open form with no focus.
           // 150ms defer lets clicks on adjacent affordances intercept.
-          blurTimerRef.current = window.setTimeout(() => {
+          const leave = () => {
             if (saving || typed === null) return;
             if (unusable(typed)) cancel();
             else void submit();
+          };
+          // Due while a pointer is down, the save waits for its release, a
+          // second at most.
+          blurTimerRef.current = window.setTimeout(() => {
+            blurTimerRef.current = null;
+            if (pointersDown.current.size === 0) return leave();
+            afterRelease.current = leave;
+            blurTimerRef.current = window.setTimeout(() => {
+              afterRelease.current = null;
+              leave();
+            }, 1000);
           }, 150);
         }}
       />
@@ -680,6 +981,9 @@ export function ValueCell({
   return (
     <button
       type="button"
+      ref={el => {
+        if (el && refocusRef.current) { refocusRef.current = false; el.focus(); }
+      }}
       className={`bt-cell-value bt-cell-clickable${pinned ? ' bt-cell-pinned' : ''}`}
       onClick={beginEdit}
       title="Click to correct this value"

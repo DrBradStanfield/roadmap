@@ -46,6 +46,7 @@ export interface NumericInputCellProps {
   onFocus?: () => void;
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  inputRef?: React.Ref<HTMLInputElement>;
 }
 
 export function NumericInputCell({
@@ -53,7 +54,7 @@ export function NumericInputCell({
   wrapperClass, inputClass = 'bt-input',
   sex, showStatusPreview = true,
   active, autoFocus, disabled, placeholder, ariaLabel, externalError,
-  onFocus, onBlur, onKeyDown = blockBadNumericKeys,
+  onFocus, onBlur, onKeyDown = blockBadNumericKeys, inputRef,
 }: NumericInputCellProps) {
   const validationError = metric && display ? validateTypedValue(metric, value, display).error : null;
   const error = externalError ?? validationError;
@@ -63,6 +64,7 @@ export function NumericInputCell({
   return (
     <div className={`bt-cell-value ${wrapperClass}`}>
       <input
+        ref={inputRef}
         // type="text" not "number" — number inputs strip comma decimals in
         // European locales before parseLocalisedNumber can normalise them.
         type="text"

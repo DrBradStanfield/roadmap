@@ -20,7 +20,7 @@ export function LpaUnitControl({ unit, onChange }: { unit: LpaUnit; onChange: (u
     onChange(LPA_UNITS[next]);
   };
   return (
-    <div className="bt-unit-segments" role="radiogroup" aria-label="Lp(a) unit" onKeyDown={onKeyDown}>
+    <div className="bt-unit-segments" role="radiogroup" aria-label="Lp(a) unit" data-unit-control onKeyDown={onKeyDown}>
       {LPA_UNITS.map((u, i) => (
         <button
           key={u}

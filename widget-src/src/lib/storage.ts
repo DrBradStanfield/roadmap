@@ -130,14 +130,18 @@ export const DOC_KEY_PREFIX = 'health_roadmap_doc_v2:';
 export const BT_TIMELINE_DRAFT_KEY = 'health_roadmap_bt_timeline_draft';
 /** The vitals matrix's typed-but-unsaved values (StartingInfoVitals). */
 export const VITALS_DRAFT_KEY = 'health_roadmap_vitals_draft';
+/** The Lp(a) rows the user kept as saved when asked (US-05 AC3, lpa-unit.ts). */
+export const LPA_CHECK_KEPT_KEY = 'health_roadmap_lpa_check_kept';
 
 /**
- * Remove every stored document blob and both matrices' unsaved drafts — the
- * on-device health data an erase would otherwise leave behind.
+ * Remove every stored document blob, both matrices' unsaved drafts and the
+ * Lp(a) check's kept answers — the on-device health data an erase would
+ * otherwise leave behind.
  */
 export function clearOffFileHealthData(): void {
   clearMatrixDrafts();
   removeByPrefix(DOC_KEY_PREFIX);
+  safeRemoveItem(LPA_CHECK_KEPT_KEY);
 }
 
 /** Fired by `clearMatrixDrafts`: a matrix on screen drops its own copy of

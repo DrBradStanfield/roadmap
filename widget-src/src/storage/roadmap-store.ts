@@ -71,7 +71,7 @@ import { ROADMAP_DOC, SyncManager, type SyncContext } from '@roadmap/health-core
 import { LocalStorageAdapter, NAMED_FILE_PREFIX } from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
-import { clearMatrixDrafts, clearOffFileHealthData, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { clearMatrixDrafts, clearOffFileHealthData, LPA_CHECK_KEPT_KEY, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 import { recordFailure, storageFailureClass } from '../lib/error-diagnostics';
 
@@ -1025,11 +1025,14 @@ export class RoadmapStore {
   /** Take a merge in as the working copy, and answer whether it brought in
    *  something a person would see, for the caller to announce. One that
    *  carries an erase made on another device (a higher eraseEpoch than this
-   *  copy's) clears the drafts typed here, as the erase clears them where it
-   *  is made (US-11). */
+   *  copy's) clears the drafts typed here and the Lp(a) check's kept answers,
+   *  as the erase clears them where it is made (US-11, US-05 AC3). */
   private adopt(merged: RoadmapFile): boolean {
     const seen = visibleContentOf(this.file);
-    if ((merged.meta.eraseEpoch ?? 0) > (this.file.meta.eraseEpoch ?? 0)) clearMatrixDrafts();
+    if ((merged.meta.eraseEpoch ?? 0) > (this.file.meta.eraseEpoch ?? 0)) {
+      clearMatrixDrafts();
+      safeRemoveItem(LPA_CHECK_KEPT_KEY);
+    }
     this.file = merged;
     return visibleContentOf(merged) !== seen;
   }

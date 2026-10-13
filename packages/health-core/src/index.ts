@@ -313,7 +313,7 @@ export {
 export { chatContextOf, buildChatContextJson, type ChatContextPayload } from './chat-context';
 
 // Product funnel events — anonymous behavioral counters (client tracker + server enum)
-export { PRODUCT_EVENT_NAMES, GUIDE_PLACEMENTS, REMOTE_CHANGE_BACKENDS, isLabUnitWord, type ProductEventName } from './product-events';
+export { PRODUCT_EVENT_NAMES, GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, REMOTE_CHANGE_BACKENDS, isLabUnitWord, type ProductEventName } from './product-events';
 
 // US-21 additional blood-test catalogue (phase-1 scaffold — units/groups/aliases)
 export {

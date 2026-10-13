@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
+import { EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
 import { LPA_UNITS } from '../../packages/health-core/src/units';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
 import { supabaseAdmin } from './supabase.server';
@@ -44,6 +44,8 @@ const metadataSchema = z
     unit: z.string().refine(isLabUnitWord).optional(),
     /** US-05 AC2: the Lp(a) unit the field showed before a change; `unit` is the one chosen. */
     from: z.enum(LPA_UNITS).optional(),
+    /** US-05 AC3: the Lp(a) check's answer, a label only. */
+    answer: z.enum(LPA_CHECK_ANSWERS).optional(),
     ...(Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, uploadOutcomeCount])) as Record<UploadOutcomeKey, typeof uploadOutcomeCount>),
   })
   .strict();
@@ -74,6 +76,7 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   key: ['lab_unit_refused'],
   unit: ['lab_unit_refused', 'lpa_unit_selected'],
   from: ['lpa_unit_selected'],
+  answer: ['lpa_check_answered'],
   via: ['mcp_connect'],
   step: ['mcp_tool_call'],
   ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, ['upload_outcome']])),
@@ -84,6 +87,7 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
 const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   upload_outcome: UPLOAD_OUTCOME_KEYS,
   lpa_unit_selected: ['unit', 'from'],
+  lpa_check_answered: ['answer'],
 };
 
 /**

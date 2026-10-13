@@ -7,8 +7,9 @@ export function UnitChip({ label, onToggle, title }: { label: string; onToggle?:
     // at least answers the tap on desktop; the chip stays non-interactive.
     return <span className="bt-unit-chip bt-unit-chip--static" title={title ?? 'This unit is fixed'}>{label}</span>;
   }
+  // ValueCell knows its row's unit control by `data-unit-control` (US-05 AC2).
   return (
-    <button type="button" className="bt-unit-chip" title="Click to switch units" onClick={onToggle}>
+    <button type="button" className="bt-unit-chip" title="Click to switch units" data-unit-control onClick={onToggle}>
       {label}
     </button>
   );
