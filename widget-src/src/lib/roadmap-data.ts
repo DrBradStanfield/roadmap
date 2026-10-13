@@ -3,6 +3,7 @@ import {
   type ApiMeasurement,
   type FileReminderOptIn,
   type HealthInputs,
+  type LpaUnit,
   isLabUnitWord,
   labUnitTaken,
   type ReminderScheduleItem,
@@ -79,6 +80,14 @@ export function getReportEmailCaptured(): boolean {
 }
 export function markReportEmailCaptured(): void {
   store?.markReportEmailCaptured();
+}
+
+// --- Lp(a)'s field unit, a profile preference (US-05 AC2; lpa-unit.ts reads it) ---
+export function getLpaUnit(): unknown {
+  return store?.getLpaUnit();
+}
+export function setLpaUnit(unit: LpaUnit): void {
+  store?.setLpaUnit(unit);
 }
 
 // --- email reminders (§10) — used by the standalone RemindersControl ---

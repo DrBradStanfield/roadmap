@@ -61,15 +61,22 @@ const TRIGLYCERIDES_FACTOR = 88.57;
 const APOB_FACTOR = 100; // g/L ↔ mg/dL
 const CREATININE_FACTOR = 88.4; // µmol/L ↔ mg/dL
 /**
- * Lp(a) mass → molar: ~2.4 nmol/L per mg/dL, so 0.24 per mg/L (NZ/AU/UK
- * labs print mg/L; US labs mg/dL). Approximate: the true factor runs ~2.0–2.5
- * with apo(a) isoform size, which is why guidelines prefer nmol/L. Sources:
- * Kronenberg et al., EAS consensus, Eur Heart J 2022 (pairs 180 mg/dL with
- * 430 nmol/L and 300 mg/dL with 750 nmol/L); Marcovina & Albers, J Lipid Res
- * 2016;57:526. Not 2.4 per mg/L: that stored every mg/L reading 10× high
- * (found live 2026-09-07).
+ * Lp(a) mass → molar: 2.5 nmol/L per mg/dL. US labs print mg/dL (Quest and
+ * LabCorp also print nmol/L); NZ/AU/UK labs print mg/L, a scaled alias below
+ * (×0.25 per mg/L). 2.5 is the interim factor EAS 2022 itself uses, and the
+ * pairing of the cut-points the plan grades against: 30 mg/dL with 75 nmol/L and 50 mg/dL with 125 nmol/L (Kronenberg et
+ * al., EAS consensus, Eur Heart J 2022; the ACC/AHA risk enhancer ≥50 mg/dL ≈
+ * ≥125 nmol/L), and EAS pairs 300 mg/dL with 750 nmol/L. It also pairs 180
+ * mg/dL with 430 nmol/L (≈2.39) and does not recommend a standard conversion
+ * factor: 2.5 is its interim one. Approximate: the true factor runs ~2.0–2.5
+ * with apo(a) isoform size (Marcovina & Albers, J Lipid Res 2016;57:526),
+ * which is why guidelines prefer nmol/L. The field takes all three units
+ * (US-05 AC2). Found live: 2.4 per
+ * mg/L stored every mg/L reading 10× high (2026-09-07); a US-units field
+ * labelled mg/L stored every US mg/dL reading 10× low, and at the old 2.4 an
+ * imported US 50 mg/dL graded Borderline (120 nmol/L), not Elevated (2026-10-13).
  */
-const LPA_FACTOR = 0.24; // nmol/L per mg/L
+const LPA_FACTOR = 2.5; // nmol/L per mg/dL
 
 // Feet/inches conversion
 const INCHES_PER_FOOT = 12;
@@ -243,20 +250,22 @@ export const UNIT_DEFS: Record<MetricType, UnitDef> = {
   psa: makeIdentityUnit('ng/mL', { min: 0, max: 100 }, 1),
   lpa: {
     canonical: 'nmol/L',
-    label: { si: 'nmol/L', conventional: 'mg/L' },
+    label: { si: 'nmol/L', conventional: 'mg/dL' },
     toCanonical: {
       si: identity,
-      conventional: (v) => v * LPA_FACTOR, // mg/L → nmol/L
+      conventional: (v) => v * LPA_FACTOR, // mg/dL → nmol/L
     },
     fromCanonical: {
       si: identity,
-      conventional: (v) => v / LPA_FACTOR, // nmol/L → mg/L
+      conventional: (v) => v / LPA_FACTOR, // nmol/L → mg/dL
     },
     validationRange: {
       si: { min: 0, max: 750 },                      // nmol/L (EAS 2022: >300 mg/dL ≈ 750 nmol/L)
-      conventional: { min: 0, max: 750 / LPA_FACTOR }, // 3125 mg/L, the same bound
+      conventional: { min: 0, max: 750 / LPA_FACTOR }, // 300 mg/dL: EAS pairs 300 mg/dL with 750 nmol/L
     },
-    decimalPlaces: { si: 0, conventional: 0 },
+    // mg/dL at 0.1: a whole mg/dL is 2.5 nmol/L, which hid the cut-points
+    // (a stored 74, Normal, read "30" beside "<30"; US-05 AC2).
+    decimalPlaces: { si: 0, conventional: 1 },
   },
 };
 
@@ -282,6 +291,15 @@ export function fromCanonicalValue(
   return UNIT_DEFS[metric].fromCanonical[system](canonicalValue);
 }
 
+/**
+ * Decimal places for `system`, or for a printed unit `scale` times its label
+ * (`UnitAlias.scale`), which keeps the label's step: Lp(a) in mg/L, a tenth
+ * of mg/dL, shows whole numbers beside mg/dL's one place (US-05 AC2).
+ */
+export function unitDecimalPlaces(metric: MetricType, system: UnitSystem, scale = 1): number {
+  return Math.max(0, UNIT_DEFS[metric].decimalPlaces[system] + Math.round(Math.log10(scale)));
+}
+
 /** Format a canonical value for display (converted + rounded). */
 export function formatDisplayValue(
   metric: MetricType,
@@ -299,21 +317,24 @@ export function formatDisplayValue(
  * then reads on the side of X the plan grades it: 54 mg/dL of LDL is 1.396
  * mmol/L, below the 1.4 target, so the target prints as 55 (US-07 AC5).
  * `graded` is the plan's own test on a canonical value, for a line the plan
- * does not compare directly (the waist, US-06 AC5).
+ * does not compare directly (the waist, US-06 AC5). `unitScale` walks a
+ * printed unit that is a multiple of `system`'s label (`UnitAlias.scale`:
+ * Lp(a) in mg/L, US-05 AC2) at its own step.
  */
 export function formatTargetLine(
   metric: MetricType,
   line: number,
   system: UnitSystem,
   graded: (canonical: number) => boolean = (v) => v >= line,
+  unitScale = 1,
 ): string {
   // No step is past a line that is not finite: the walk would never end.
   if (!Number.isFinite(line)) return formatDisplayValue(metric, line, system);
-  const dp = UNIT_DEFS[metric].decimalPlaces[system];
+  const dp = unitDecimalPlaces(metric, system, unitScale);
   const scale = 10 ** dp;
   // Start a step below the line's own display value and walk up.
-  let steps = Math.floor(fromCanonicalValue(metric, line, system) * scale) - 1;
-  while (!graded(toCanonicalValue(metric, steps / scale, system))) steps++;
+  let steps = Math.floor(fromCanonicalValue(metric, line, system) / unitScale * scale) - 1;
+  while (!graded(toCanonicalValue(metric, steps / scale * unitScale, system))) steps++;
   return (steps / scale).toFixed(dp);
 }
 
@@ -374,8 +395,8 @@ function normaliseUnit(raw: string): string {
 /**
  * A unit spelling a report may print, and how to read the number under it:
  * which of the metric's two systems it belongs to, and `scale` when the
- * printed unit is a multiple of that system's label (Lp(a) in mg/dL is ten
- * times mg/L; ApoB in mg/L is a thousandth of g/L).
+ * printed unit is a multiple of that system's label (Lp(a) in mg/L is a
+ * tenth of mg/dL; ApoB in mg/L is a thousandth of g/L).
  */
 export interface UnitAlias {
   system: UnitSystem;
@@ -404,8 +425,8 @@ const UNIT_ALIASES: Partial<Record<MetricType, Record<string, UnitAlias>>> = {
   // PSA — NZ/AU labs print µg/L, the same number as ng/mL.
   psa: { 'ug/l': SI },
   apob: { 'mg/dl': CONVENTIONAL, 'mg/l': { system: 'si', scale: 0.001 } },
-  // Lp(a) — NZ/AU/UK labs report in mg/L, US labs in mg/dL; guidelines prefer nmol/L.
-  lpa: { 'mg/l': CONVENTIONAL, 'mg/dl': { system: 'conventional', scale: 10 } },
+  // Lp(a) — US labs report in mg/dL (the label), NZ/AU/UK labs in mg/L; guidelines prefer nmol/L.
+  lpa: { 'mg/l': { system: 'conventional', scale: 0.1 } },
   systolic_bp: { mmhg: SI },
   diastolic_bp: { mmhg: SI },
 };
@@ -425,7 +446,9 @@ export function lookupUnit(metric: MetricType, statedUnit: string): UnitAlias | 
   const wanted = normaliseUnit(statedUnit);
   if (normaliseUnit(def.label.si) === wanted) return SI;
   if (normaliseUnit(def.label.conventional) === wanted) return CONVENTIONAL;
-  return UNIT_ALIASES[metric]?.[wanted] ?? null;
+  const aliases = UNIT_ALIASES[metric];
+  // Own keys only: "__proto__" or "constructor" must not read as a unit.
+  return aliases && Object.prototype.hasOwnProperty.call(aliases, wanted) ? aliases[wanted] : null;
 }
 
 /** A printed number under a printed unit, as the record stores it (SI canonical) and which system it was printed in; null when the unit is not one this metric is measured in. */
@@ -435,16 +458,11 @@ export function reportedToCanonical(metric: MetricType, value: number, statedUni
   return { valueSI: toCanonicalValue(metric, value * (alias.scale ?? 1), alias.system), system: alias.system };
 }
 
-/**
- * Which of a metric's two systems a stated unit names, over the same table
- * as `lookupUnit`. A SCALED alias answers null here: this signature cannot
- * carry the scale, and a caller converting by system alone would mis-scale
- * the value. Every caller refuses rather than guesses, because a silently
- * mis-scaled value is worse than a rejected one.
- */
-export function resolveUnitSystem(metric: MetricType, statedUnit: string): UnitSystem | null {
+/** A stored (SI canonical) value in a printed unit, the inverse of `reportedToCanonical`; null when the metric is not measured in that unit. */
+export function canonicalToReported(metric: MetricType, valueSI: number, statedUnit: string): number | null {
   const alias = lookupUnit(metric, statedUnit);
-  return alias && alias.scale === undefined ? alias.system : null;
+  // × 1/scale, not ÷ scale: 300 ÷ 0.1 is 2999.9999999999995.
+  return alias && fromCanonicalValue(metric, valueSI, alias.system) * (1 / (alias.scale ?? 1));
 }
 
 /**
@@ -457,7 +475,7 @@ export function resolveUnitSystem(metric: MetricType, statedUnit: string): UnitS
  * sync. HbA1c and creatinine need none: their ranges have real floors.
  */
 export const UNIT_SWAP_FLOORS: Partial<Record<MetricType, number>> = {
-  ldl: 0.3, total_cholesterol: 0.3, hdl: 0.3, triglycerides: 0.3, apob: 0.1, lpa: 0.5, // Lp(a) 0.5 nmol/L ≈ 2 mg/L
+  ldl: 0.3, total_cholesterol: 0.3, hdl: 0.3, triglycerides: 0.3, apob: 0.1, lpa: 0.5, // Lp(a) 0.5 nmol/L ≈ 0.2 mg/dL
 };
 
 // ---------------------------------------------------------------------------
@@ -627,7 +645,11 @@ export const PSA_THRESHOLDS = {
   normal: 4.0,  // General upper limit of normal (varies by age)
 } as const;
 
-/** Lp(a) thresholds in nmol/L (same in both unit systems) */
+/** The units Lp(a)'s field takes, one control for all three (US-05 AC2): what US, NZ/AU/UK and guideline labs print. */
+export const LPA_UNITS = ['nmol/L', 'mg/dL', 'mg/L'] as const;
+export type LpaUnit = (typeof LPA_UNITS)[number];
+
+/** Lp(a) thresholds in nmol/L, the canonical unit (30 / 50 mg/dL at LPA_FACTOR) */
 export const LPA_THRESHOLDS = {
   normal: 75,     // <75 nmol/L is normal
   elevated: 125,  // ≥125 nmol/L is elevated

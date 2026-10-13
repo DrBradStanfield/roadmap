@@ -4,6 +4,7 @@ import { z } from 'zod';
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
 import { EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
+import { LPA_UNITS } from '../../packages/health-core/src/units';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
 import { supabaseAdmin } from './supabase.server';
 
@@ -41,6 +42,8 @@ const metadataSchema = z
      */
     key: z.string().refine(isLabKeyWord).optional(),
     unit: z.string().refine(isLabUnitWord).optional(),
+    /** US-05 AC2: the Lp(a) unit the field showed before a change; `unit` is the one chosen. */
+    from: z.enum(LPA_UNITS).optional(),
     ...(Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, uploadOutcomeCount])) as Record<UploadOutcomeKey, typeof uploadOutcomeCount>),
   })
   .strict();
@@ -69,7 +72,8 @@ const serverMetadataSchema = metadataSchema.extend({
  *  `unit` could ride on any counter. */
 const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   key: ['lab_unit_refused'],
-  unit: ['lab_unit_refused'],
+  unit: ['lab_unit_refused', 'lpa_unit_selected'],
+  from: ['lpa_unit_selected'],
   via: ['mcp_connect'],
   step: ['mcp_tool_call'],
   ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, ['upload_outcome']])),
@@ -79,6 +83,7 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
  *  `provider` or `count` would make a counts-only row carry something else. */
 const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   upload_outcome: UPLOAD_OUTCOME_KEYS,
+  lpa_unit_selected: ['unit', 'from'],
 };
 
 /**
@@ -104,6 +109,10 @@ function checkEventKeys(
     if (only && !only.includes(key)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', key], message: 'key is not one this event may carry' });
     }
+  }
+  // `unit` is any lab spelling on `lab_unit_refused`; here, only an Lp(a) unit.
+  if (event.eventName === 'lpa_unit_selected' && metadata.unit !== undefined && !(LPA_UNITS as readonly unknown[]).includes(metadata.unit)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', 'unit'], message: 'unit is not one this event may carry' });
   }
   const reason = metadata.reason;
   if (reason === undefined) return;

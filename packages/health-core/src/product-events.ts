@@ -87,6 +87,9 @@ export const PRODUCT_EVENT_NAMES = [
   // US-38: the open-source hub link in the tool (metadata: placement, header
   // or footer). The usage signal for the entry-point story.
   'guide_opened',
+  // US-05 AC2: the Lp(a) field's unit was changed. Metadata is the two unit
+  // labels, `{ unit, from }` (LPA_UNITS) — never the value in the field.
+  'lpa_unit_selected',
 ] as const;
 
 export type ProductEventName = (typeof PRODUCT_EVENT_NAMES)[number];

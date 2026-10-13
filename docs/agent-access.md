@@ -115,7 +115,9 @@ someone's medical history, or lose their data at the next device sync.
    `lamport` exactly as you found it, or absent.
 8. **Units.** `measurements[].value` is the SI canonical unit, kg, cm, mmHg, mmol/mol
    for HbA1c, mmol/L for lipids, g/L for ApoB, µmol/L for creatinine, ng/mL for PSA,
-   nmol/L for Lp(a). Convert before you write. **Lab values are SI at rest too, since
+   nmol/L for Lp(a). Convert before you write. Lp(a) converts at the factor the app uses,
+   2.5 nmol/L per mg/dL (0.25 per mg/L; the EAS 2022 interim factor), so your rows
+   match the app's. **Lab values are SI at rest too, since
    2026-09-18 (US-21 phase 3).** Send `labValues[].value` and `unit` as the lab PRINTED
    them and let the record convert: a test in `lab-catalog.ts` is stored in that
    catalogue's canonical unit — reference bounds by the same factor — and a unit

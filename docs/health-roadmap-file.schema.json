@@ -123,6 +123,10 @@
           "description": "Per-metric display-unit overrides, keyed by metric type.",
           "additionalProperties": { "enum": ["si", "conventional"] }
         },
+        "lpaUnit": {
+          "enum": ["nmol/L", "mg/dL", "mg/L", null],
+          "description": "The unit the app's Lp(a) field shows and reads typed values in. Display only; stored Lp(a) values are always nmol/L. Absent: US units give mg/dL, any other nmol/L."
+        },
         "reportEmailCaptured": {
           "type": ["boolean", "null"],
           "description": "Monotonic: set true once the user submits an email for their plan. Never set back to false."

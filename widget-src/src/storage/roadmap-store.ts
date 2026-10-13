@@ -60,6 +60,7 @@ import {
   type FileSupplement,
   type HealthInputs,
   type LabUnitRefusal,
+  type LpaUnit,
   type MeasurementSource,
   type ReminderScheduleItem,
   type RoadmapFile,
@@ -706,6 +707,18 @@ export class RoadmapStore {
   markReportEmailCaptured(): void {
     if (this.file.profile.reportEmailCaptured) return; // idempotent — only ever set true
     this.file.profile = stampFields(this.file.profile, { reportEmailCaptured: true }, new Date().toISOString());
+    this.touch();
+  }
+
+  /** The unit the user chose for Lp(a)'s field (US-05 AC2), as the record holds it: unchecked. */
+  getLpaUnit(): unknown {
+    return this.file.profile.lpaUnit;
+  }
+
+  /** Remember Lp(a)'s field unit: a profile preference, stamped like the others so it syncs (US-05 AC2). */
+  setLpaUnit(unit: LpaUnit): void {
+    if (this.file.profile.lpaUnit === unit) return;
+    this.file.profile = stampFields(this.file.profile, { lpaUnit: unit }, new Date().toISOString());
     this.touch();
   }
 

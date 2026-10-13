@@ -2,20 +2,17 @@
 // Rows = metrics; columns = older batches → 2 most recent → draft column.
 // Values stored in SI canonical throughout; inputs converted on commit.
 
-import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import {
   type ApiMeasurement,
   type UnitSystem,
+  type LpaUnit,
   type MetricType,
   type HealthInputs,
   toCanonicalValue,
-  fromCanonicalValue,
-  formatDisplayValue,
-  getDisplayLabel,
   BLOOD_TEST_METRICS,
   METRIC_TO_FIELD,
   METRIC_LABELS,
-  refHintFor,
   parseLocalisedNumber,
 } from '@roadmap/health-core';
 import { MONTHS_SHORT } from '../lib/constants';
@@ -27,16 +24,24 @@ import { usePrefillRef } from '../lib/usePrefillRef';
 import { slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import type { CorrectStatus } from '../storage/roadmap-store';
 import {
+  type CellUnit,
   type Status,
   blockBadNumericKeys,
+  cellFromSI,
+  cellHint,
+  cellLabel,
+  cellText,
+  cellToSI,
   formatLabValue,
   sameAsSaved,
   validateTypedValue,
   statusOf,
 } from '../lib/blood-test-cell';
+import { useLpaUnit } from '../lib/lpa-unit';
 import { NumericInputCell } from './NumericInputCell';
 import { CommitTickButton } from './CommitTickButton';
 import { DraftDateCell } from './DraftDateCell';
+import { LpaUnitControl } from './LpaUnitControl';
 import { UnitChip } from './UnitChip';
 
 // PSA is omitted from the matrix — rendered separately in the men's section
@@ -158,6 +163,9 @@ export type BloodTestPrefillFn = (
 /** What two typed cells for one test on one day say, on both (US-03 AC3). */
 export const SAME_SLOT = 'This test already has a value on that day in another column.';
 
+/** What an Lp(a) cell restored from before its unit was kept says (US-05 AC2). */
+export const UNCLEAR_UNIT = 'Re-enter this value: its unit is unclear after an update.';
+
 const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
 
 export function BloodTestTimeline({
@@ -175,11 +183,34 @@ export function BloodTestTimeline({
   const rowsUnder = (day: string, metric: MetricType) => ({ [metric]: batches.find(b => b.date === day)?.ids[metric] ?? null });
   const latestDay = (metric: MetricType) => [...batches].reverse().find(b => b.values[metric] != null)?.date;
   const {
-    draft, backfills, type, setDate: setDraftDate, expected, clashes, taken, lends, settle, refusal,
+    draft, backfills, type, setDate: setDraftDate, lpaUnitOf, expected, clashes, taken, lends, settle, refusal,
   } = useMatrixDraft<MetricType>(BT_TIMELINE_DRAFT_KEY, { onScreen, rowsUnder, latestDay });
   const [activeCell, setActiveCell] = useState<string | null>(null);
 
-  const fieldUnit = (field: string): UnitSystem => unitOverrides[field] ?? unitSystem;
+  // Lp(a) has three units on its own control, kept in the record (US-05 AC2);
+  // every other field, the two-way toggle.
+  const [lpaUnit, chooseLpaUnit] = useLpaUnit(unitSystem);
+  const fieldUnit = (field: string): CellUnit => (field === 'lpa' ? lpaUnit : unitOverrides[field] ?? unitSystem);
+  // The unit a typed cell is read in. An Lp(a) cell keeps the one it was typed
+  // in, and one restored from before that was kept has none: its value waits
+  // to be typed again, never guessed (US-05 AC2).
+  const typedUnit = (column: string | null, metric: MetricType, field: string): CellUnit | undefined =>
+    metric === 'lpa' ? lpaUnitOf([column, metric]) : fieldUnit(field);
+  // Why a typed cell cannot be read: its unit unclear, or its number out of
+  // range in the unit it was typed in. The cell shows this whatever unit it
+  // is shown in: 750.1 nmol/L reads "300.0" mg/dL, inside that range.
+  const unreadable = (column: string | null, metric: MetricType, field: string, typed: string) => {
+    if (!typed) return null;
+    const unit = typedUnit(column, metric, field);
+    return unit ? validateTypedValue(metric, typed, unit).error : UNCLEAR_UNIT;
+  };
+  // What a typed cell shows: as typed, or, for an Lp(a) cell typed in another
+  // unit, the same quantity in the field's unit.
+  const shownText = (column: string | null, metric: MetricType, field: string, typed: string) => {
+    const unit = typedUnit(column, metric, field);
+    const n = parseLocalisedNumber(typed);
+    return !unit || unit === fieldUnit(field) || n === undefined ? typed : cellText(metric, cellToSI(metric, n, unit), fieldUnit(field));
+  };
 
   // Per-metric SI series (oldest → newest) + lastSi for trend column.
   // One pass through batches for all rows; downstream lookups are O(1).
@@ -229,9 +260,9 @@ export function BloodTestTimeline({
     ROWS.flatMap(({ metric, field }) => {
       const typed = typedMap[metric];
       if (!typed || (column !== null && !onScreen(column, metric))) return [];
-      const unit = fieldUnit(field);
-      const blocked = !!validateTypedValue(metric, typed, unit).error || ((column ?? draft.date) === draft.date && clashes(metric));
-      return [{ column, date: column ?? draft.date, metric, unit, si: blocked ? null : toCanonicalValue(metric, parseLocalisedNumber(typed)!, unit) }];
+      const unit = typedUnit(column, metric, field);
+      const blocked = !!unreadable(column, metric, field, typed) || ((column ?? draft.date) === draft.date && clashes(metric));
+      return [{ column, date: column ?? draft.date, metric, unit: unit ?? fieldUnit(field), si: blocked ? null : cellToSI(metric, parseLocalisedNumber(typed)!, unit!) }];
     });
   const cells = [...Object.entries(backfills).flatMap(([date, typed]) => cellsOf(date, typed)), ...cellsOf(null, draft.values)];
   const ready = cells.filter(c => c.si !== null);
@@ -252,21 +283,25 @@ export function BloodTestTimeline({
     lends(metric) ? cells.find(c => c.column === null && c.metric === metric)?.si ?? undefined : undefined,
   ]), onDraftValue);
 
-  const setDraftValue = (metric: MetricType, typed: string) => type([null, metric], typed);
-  const setBackfillValue = (batchDate: string, metric: MetricType, typed: string) => type([batchDate, metric], typed);
+  // An Lp(a) cell is stamped with the unit it is typed in (US-05 AC2).
+  const unitStamp = (metric: MetricType) => (metric === 'lpa' ? lpaUnit : undefined);
+  const setDraftValue = (metric: MetricType, typed: string) => type([null, metric], typed, unitStamp(metric));
+  const setBackfillValue = (batchDate: string, metric: MetricType, typed: string) => type([batchDate, metric], typed, unitStamp(metric));
 
-  // Inject an external value (from the chatbot) into the matrix. Converts the
-  // value from its stated unit into THIS cell's display unit, formats it, and
-  // routes it to the matching existing batch (backfill) or the draft column.
-  // Returns the cell key so the parent can scroll/highlight it.
+  // Inject an external value (from the chatbot) into the matrix, routed to
+  // the matching existing batch (backfill) or the draft column. Returns the
+  // cell key so the parent can scroll/highlight it.
   const prefillCell: BloodTestPrefillFn = (metric, value, fromUnit, date) => {
     const row = ROWS.find(r => r.metric === metric);
     if (!row) return null; // e.g. PSA — not in this matrix
-    const cellUnit = fieldUnit(row.field);
-    // Re-express the value in the cell's display unit (chat sends the user's
-    // stated unit; the cell may be showing the other system).
-    const si = toCanonicalValue(metric, value, fromUnit);
-    const typed = formatDisplayValue(metric, si, cellUnit);
+    // An Lp(a) cell takes the number as stated, stamped with the unit it was
+    // stated in (its system's label; mg/L arrives as mg/dL), and shows it in
+    // the field's unit: rounded into that unit first, 49.6 mg/dL (124 nmol/L)
+    // read "50" and saved 125 (US-05 AC2). Other cells read their text in the
+    // field's unit, so the value is re-expressed there, rounded.
+    const stated = metric === 'lpa' ? cellLabel(metric, fromUnit) as LpaUnit : undefined;
+    // toPrecision strips the float noise of a rescale (498 mg/L × 0.1 is 49.800000000000004).
+    const typed = stated ? String(Number(value.toPrecision(12))) : cellText(metric, toCanonicalValue(metric, value, fromUnit), fieldUnit(row.field));
 
     // Use the backfill column only when an existing batch on that date has an
     // EMPTY cell for this metric. If a value already exists there, route to the
@@ -274,13 +309,13 @@ export function BloodTestTimeline({
     // through the click-to-edit ValueCell path, not chat pre-fill).
     const existingBatch = date ? batches.find(b => b.date === date) : undefined;
     if (date && existingBatch && existingBatch.values[metric] == null) {
-      setBackfillValue(date, metric, typed);
+      type([date, metric], typed, stated);
       const cellId = `${date}.${metric}`;
       setActiveCell(cellId);
       return cellId;
     }
     if (date) setDraftDate(date);
-    setDraftValue(metric, typed); // the plan and the chat read it while it may stand in
+    type([null, metric], typed, stated); // the plan and the chat read it while it may stand in
     const cellId = `draft.${metric}`;
     setActiveCell(cellId);
     return cellId;
@@ -376,13 +411,13 @@ export function BloodTestTimeline({
           {/* Body — metric rows */}
           {ROWS.map((row, rowIdx) => {
             const display = fieldUnit(row.field);
-            const unitLabel = getDisplayLabel(row.metric, display);
+            const ref = cellHint(row.metric, display, sex);
 
             // Sparkline points in display units. Series is precomputed in SI;
             // converting to display unit here keeps the y-axis monotonic when
             // the user toggles SI ↔ conventional.
             const sparkPoints = (series[row.metric] ?? [])
-              .map(siVal => fromCanonicalValue(row.metric, siVal, display));
+              .map(siVal => cellFromSI(row.metric, siVal, display));
             const last = lastSi[row.metric];
             const lastStatus = last != null ? statusOf(row.metric, last, sex) : null;
 
@@ -390,11 +425,10 @@ export function BloodTestTimeline({
               <div key={row.field} className={`bt-row${rowIdx === ROWS.length - 1 ? ' bt-row-last' : ''}`}>
                 <div className="bt-cell-name">
                   <div className="bt-name-label">{row.label}</div>
-                  <UnitChip label={unitLabel} onToggle={() => onToggleFieldUnit(row.field)}/>
-                  {(() => {
-                    const ref = refHintFor(row.metric, display, sex);
-                    return ref ? <div className="bt-ref-label">{ref}</div> : null;
-                  })()}
+                  {row.metric === 'lpa'
+                    ? <LpaUnitControl unit={lpaUnit} onChange={chooseLpaUnit}/>
+                    : <UnitChip label={cellLabel(row.metric, display)} onToggle={() => onToggleFieldUnit(row.field)}/>}
+                  {ref && <div className="bt-ref-label">{ref}</div>}
                 </div>
                 {columns.map((c, colIdx) => {
                   if (c.kind === 'draft') {
@@ -406,8 +440,9 @@ export function BloodTestTimeline({
                         metric={row.metric}
                         display={display}
                         sex={sex}
-                        value={typed}
-                        error={clashes(row.metric) || taken(row.metric) ? SAME_SLOT : refusal([null, row.metric])}
+                        value={shownText(null, row.metric, row.field, typed)}
+                        valueSI={cells.find(cell => cell.column === null && cell.metric === row.metric)?.si ?? undefined}
+                        error={unreadable(null, row.metric, row.field, typed) ?? (clashes(row.metric) || taken(row.metric) ? SAME_SLOT : refusal([null, row.metric]))}
                         active={activeCell === cellId}
                         onFocus={() => setActiveCell(cellId)}
                         onBlur={() => setActiveCell(null)}
@@ -425,8 +460,8 @@ export function BloodTestTimeline({
                         key={cellId}
                         metric={row.metric}
                         display={display}
-                        value={typed}
-                        error={c.date === draft.date && clashes(row.metric) ? SAME_SLOT : refusal([c.date, row.metric])}
+                        value={shownText(c.date, row.metric, row.field, typed)}
+                        error={unreadable(c.date, row.metric, row.field, typed) ?? (c.date === draft.date && clashes(row.metric) ? SAME_SLOT : refusal([c.date, row.metric]))}
                         active={activeCell === cellId}
                         onFocus={() => setActiveCell(cellId)}
                         onBlur={() => setActiveCell(null)}
@@ -492,7 +527,7 @@ interface ValueCellProps {
   /** A core metric: shown in `display` units and range-checked. Absent for a
    *  lab value, which is edited in the unit it is stored in. */
   metric?: MetricType;
-  display?: UnitSystem;
+  display?: CellUnit;
   sex?: 'male' | 'female';
   /** As stored: SI for a core metric, the stored unit for a lab value. */
   value: number;
@@ -542,7 +577,7 @@ export function ValueCell({
   useEffect(() => clearBlurTimer, []); // also fires on unmount
 
   const core = metric && display ? { metric, display } : null;
-  const initialDisplay = core ? formatDisplayValue(core.metric, value, core.display) : formatLabValue(value);
+  const initialDisplay = core ? cellText(core.metric, value, core.display) : formatLabValue(value);
   const canCorrect = !!(rowId && onCorrect);
 
   const beginEdit = () => {
@@ -562,6 +597,12 @@ export function ValueCell({
     setSaveError(null);
     onDeactivate?.();
   };
+  // A unit switch from another device closes the editor unsaved, as Escape
+  // does, and clears a pending click-away save. Re-expressing the text rounded
+  // twice: a saved 124.4 shown "49.8" mg/dL came back "125" nmol/L and saved
+  // 125 (US-05 AC2). A layout effect, so no keystroke or timer reads the text
+  // in the new unit first.
+  useLayoutEffect(() => { if (typed !== null) cancel(); }, [display]);
 
   // Text the editor cannot save: outside the metric's range, or no number.
   const unusable = (text: string) => core
@@ -575,7 +616,7 @@ export function ValueCell({
     if (typed.trim() === '') { cancel(); return; }
     if (unusable(typed)) return;
     const parsed = parseLocalisedNumber(typed)!;
-    const newValue = core ? toCanonicalValue(core.metric, parsed, core.display) : parsed;
+    const newValue = core ? cellToSI(core.metric, parsed, core.display) : parsed;
     if (sameAsSaved(parsed, initialDisplay, newValue, value)) { cancel(); return; }
     setSaving(true);
     setSaveError(null);
@@ -650,9 +691,12 @@ export function ValueCell({
 
 interface DraftCellProps {
   metric: MetricType;
-  display: UnitSystem;
+  display: CellUnit;
   sex?: 'male' | 'female';
   value: string;
+  /** What the cell saves, graded instead of its shown text (an Lp(a) cell
+   *  typed in another unit, US-05 AC2). */
+  valueSI?: number;
   /** Why the typed value cannot be saved as it stands (`SAME_SLOT`). */
   error?: string | null;
   active: boolean;
@@ -662,13 +706,14 @@ interface DraftCellProps {
   onChange: (v: string) => void;
 }
 
-function DraftCell({ metric, display, sex, value, error, active, onFocus, onBlur, onEnter, onChange }: DraftCellProps) {
+function DraftCell({ metric, display, sex, value, valueSI, error, active, onFocus, onBlur, onEnter, onChange }: DraftCellProps) {
   return (
     <NumericInputCell
       metric={metric}
       display={display}
       sex={sex}
       value={value}
+      valueSI={valueSI}
       externalError={error}
       onChange={onChange}
       wrapperClass="bt-cell-input bt-cell-draft"
@@ -686,7 +731,7 @@ function DraftCell({ metric, display, sex, value, error, active, onFocus, onBlur
 
 interface BackfillCellProps {
   metric: MetricType;
-  display: UnitSystem;
+  display: CellUnit;
   value: string;
   /** Why the typed value cannot be saved as it stands (`SAME_SLOT`). */
   error?: string | null;

@@ -104,7 +104,7 @@ The system prompt (metric aliases, disambiguation rules, output schema) is `unif
 
 After the LLM returns `{ metric: "ldl", value: 130, unit: "mg/dL" }`, `resolveLabValues()` resolves this to SI canonical (`valueSI: 3.36 mmol/L`) before the client sees it. Unit logic stays in `units.ts` + `lab-extraction.ts`; the client receives values ready to save.
 
-**Resolution approach**: a deterministic `UNIT_LOOKUP` keyed by `(metric, normalized_unit_string)`, auto-populated from `UNIT_DEFS` labels plus aliases (`addAlias('lpa', 'mg/l', 'conventional')`). Unrecognised unit? Check which validation range the value fits; if it fits one and not the other, use that, else mark `confidence: 'low'`.
+**Resolution approach**: a deterministic lookup (`lookupUnit` in `units.ts`) keyed by `(metric, normalized_unit_string)`: the two `UNIT_DEFS` labels plus the `UNIT_ALIASES` spellings (Lp(a) `mg/l` is a scaled alias, a tenth of the `mg/dL` label). Unrecognised unit? Check which validation range the value fits; if it fits one and not the other, use that, else mark `confidence: 'low'`.
 
 ### Why pdf.js Worker as Blob URL?
 
@@ -248,11 +248,13 @@ picker and lost the day; `FullDate` with an explicit `day` field fixed it.)
 
 ## Lp(a) Unit Conversion
 
-The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: "lpa", value: 93, unit: "mg/L" }`. But `UNIT_DEFS.lpa` was an identity unit (both SI and conventional nmol/L). The resolver couldn't match "mg/L", fell back to the range heuristic (93 fits 0-750 nmol/L), and stored 93 as nmol/L. The correct value is ~22 nmol/L.
+The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: "lpa", value: 93, unit: "mg/L" }`. But `UNIT_DEFS.lpa` was an identity unit (both SI and conventional nmol/L). The resolver couldn't match "mg/L", fell back to the range heuristic (93 fits 0-750 nmol/L), and stored 93 as nmol/L. The correct value is ~23 nmol/L (22.3 at the 2.4 factor used until 2026-10-13).
 
-**Fix**: `lpa` in `units.ts` is a dual-unit definition — SI nmol/L, conventional mg/L, nmol/L = mg/L × 0.24 — plus the `mg/l` alias and a scaled `mg/dl` alias (×10) in `units.ts`. The population factor is ~2.4 nmol/L per **mg/dL** (EAS 2022 consensus; Marcovina & Albers 2016), so 0.24 per mg/L. Lp(a) molecular weight varies (300-800 kDa) with kringle IV repeats, which is why WHO and IFCC recommend nmol/L; the factor is an average (~2.0–2.5), a documented limitation.
+**Fix**: `lpa` in `units.ts` is a dual-unit definition — SI nmol/L, conventional mg/dL (the US print), nmol/L = mg/dL × 2.5 — plus a scaled `mg/l` alias (×0.1, the NZ/AU/UK print) in `units.ts`. The factor is per **mg/dL**, so 0.25 per mg/L: 93 mg/L ≈ 23 nmol/L. 2.5 is the pairing of the guideline cut-points the plan grades against (EAS 2022 consensus: 30 mg/dL with 75 nmol/L, 50 mg/dL with 125 nmol/L); it was 2.4 until 2026-10-13, which graded a US 50 mg/dL Borderline instead of Elevated. Until 2026-10-13 the conventional label was mg/L and mg/dL the scaled alias; see the second data-impact note. Lp(a) molecular weight varies (300-800 kDa) with kringle IV repeats, which is why WHO and IFCC recommend nmol/L; the factor is an average (~2.0–2.5), a documented limitation.
 
-**Data impact (2026-09-07)**: from the first fix until this one the code applied 2.4 per mg/L, so every Lp(a) entered in mg/L (the usual NZ/AU print, by upload, chatbot or connector) was stored 10× high, and the plan fired `lpa-elevated` on normal results. There is no migration (house rule): each affected row needs a correction row — the website's fix-this-value on the Lp(a) cell, or the connector's `correct_value` with `expectedValue` set to the stored number. Brad's own record holds one: lpa 223 nmol/L on 2023-01-24 from a report printing "Lipoprotein(a) 93 mg/L"; the right value is 22.3 nmol/L. Values entered in nmol/L were never affected.
+**Data impact (2026-09-07)**: from the first fix until this one the code applied 2.4 per mg/L, so every Lp(a) entered in mg/L (the usual NZ/AU print, by upload, chatbot or connector) was stored 10× high, and the plan fired `lpa-elevated` on normal results. There is no migration (house rule): each affected row needs a correction row — the website's fix-this-value on the Lp(a) cell, or the connector's `correct_value` with `expectedValue` set to the stored number. Brad's own record holds one: lpa 223 nmol/L on 2023-01-24 from a report printing "Lipoprotein(a) 93 mg/L"; the right value is 23.25 nmol/L (≈23) at today's 2.5 per mg/dL (22.3 at the 2.4 used until 2026-10-13). Values entered in nmol/L were never affected.
+
+**Data impact (2026-10-13)**: the 09-07 fix kept the US-units form field labelled mg/L, a unit US labs never print. A US user typing the mg/dL number off her report got it read as mg/L, stored 10× low: 156 mg/dL landed as 37 nmol/L (Normal) instead of 390 (Elevated). Every value typed into the US-units Lp(a) field from 2026-09-07 to this fix is affected; uploads, the connector and the CLI read the printed unit and were not. Again no migration: each affected row needs a correction row. Separately, an Lp(a) imported in mg/dL before 2026-10-13 was stored at 2.4 nmol/L per mg/dL (50 mg/dL → 120 nmol/L) and now displays as "48.0 mg/dL": that is the factor change, not an error, and those rows stay as stored. Separately, mg/L imports made between 2026-09-07 and 2026-10-13 were stored at 0.24 nmol/L per mg/L, not today's 0.25: 93 mg/L was stored as 22.32 nmol/L and now shows "89 mg/L"; re-uploading the same report raises a conflict (22.32 held against 23.25), Replace unticked; and an NZ print of 500–520 mg/L was stored as 120–124.8 nmol/L, Borderline, where today it would be 125–130, Elevated. These rows stay as stored (no migration).
 
 ---
 
@@ -330,7 +332,7 @@ Found with Brad's real lab reports and fixed before shipping:
 |---|---|---|
 | 1 | Unsaved weight wiped after upload | `onStart` persists longitudinal form values before extraction |
 | 2 | Blood-test section hidden after upload | `formStage` forced to 4 when saved blood-test metrics exist |
-| 3 | Lp(a) 93 mg/L stored as 93 nmol/L, then as 223 (×2.4 per mg/L) | dual-unit `lpa` definition at 0.24 nmol/L per mg/L (see above) |
+| 3 | Lp(a) 93 mg/L stored as 93 nmol/L, then as 223 (×2.4 per mg/L) | dual-unit `lpa` definition at 2.5 nmol/L per mg/dL (2.4 until 2026-10-13), mg/L a scaled alias (see above) |
 | 4 | Day precision lost (always saved as 01) | `FullDate` with a day field + `buildRecordedAt()` |
 | 5 | ZIP progress stuck at 100% | two-phase progress (extract, then process) |
 | 6 | Letter with an em dash in its title filed twice, no blob (2026-09-06) | `dropboxApiArg()` + no metadata-only fallback behind a connector row (§1) |
@@ -484,7 +486,7 @@ Our server validates and writes only: it resolves the printed name (`CORE_METRIC
 in `lab-extraction.ts`, the same table the extraction prompt is rendered from; the lab
 catalogue) and refuses a row whose name disagrees with its metric ("Lipoprotein(a)" is
 not ApoB); converts the unit through the one table (`lookupUnit` in `units.ts`, which
-`add_measurement` and the website's extractor consult too); dry-runs the real append
+`add_measurement`, the website's extractor and the chatbot's edits consult too); dry-runs the real append
 (range, day, slot); and marks a value under the metric's display floor (`UNIT_SWAP_FLOORS`)
 as a low-confidence question, because a unit swap on a floor-0 lipid passes every range.
 The candidates, the receipt, the commit and the 90-day guard are `import_documents`' own

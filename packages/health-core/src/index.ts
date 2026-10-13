@@ -200,13 +200,18 @@ export {
   bpTargetFor,
   formatTargetLine,
   formatGradedValue,
+  unitDecimalPlaces,
   // Feet/inches height conversion helpers
   inchesToFeetInches,
   feetInchesToInches,
   cmToFeetInches,
   feetInchesToCm,
   formatHeightDisplay,
-  resolveUnitSystem,
+  reportedToCanonical,
+  canonicalToReported,
+  lookupUnit,
+  LPA_UNITS,
+  type LpaUnit,
   type MetricType,
   type UnitSystem,
   type UnitDef,
@@ -234,7 +239,7 @@ export { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence 
 
 // Reference-range hints (blood-test matrix + legacy form labels)
 export type { RefHint, SexedRefHint } from './reference-hints';
-export { REFERENCE_HINTS, refHintFor, refLineFor } from './reference-hints';
+export { REFERENCE_HINTS, refHintFor, refLineFor, lpaRefHint } from './reference-hints';
 
 // Sentry PII/PHI scrubbing
 export {

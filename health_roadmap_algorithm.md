@@ -139,7 +139,7 @@ Source: `units.ts`
 | systolic_bp | mmHg | mmHg | (same) |
 | diastolic_bp | mmHg | mmHg | (same) |
 | psa | ng/mL | ng/mL | (same) |
-| lpa | nmol/L | mg/L | / 0.24 (nmol/L ≈ 2.4 × mg/dL = 0.24 × mg/L; approximate, see Lp(a) below) |
+| lpa | nmol/L | mg/dL | / 2.5 (nmol/L ≈ 2.5 × mg/dL; approximate, see Lp(a) below) |
 
 ### Height Display (Conventional)
 
@@ -158,7 +158,7 @@ Source: `units.ts`
 | apob | 2 | 0 |
 | creatinine | 0 | 2 |
 | psa | 1 | 1 |
-| lpa | 0 | 0 |
+| lpa | 0 | 1 (mg/dL; mg/L, a tenth of it, at 0) |
 
 ### Lab catalogue conversions
 
@@ -394,7 +394,11 @@ Normal upper limit: 4.0 ng/mL.
 | Borderline | 75–125 | 30–50 | 300–500 |
 | Elevated | >= 125 | >= 50 | >= 500 |
 
-Mass → molar is approximate: nmol/L ≈ 2.4 × mg/dL, so 0.24 × mg/L (NZ/AU/UK labs print mg/L; US labs mg/dL). The true factor runs ~2.0–2.5 with apo(a) isoform size, which is why guidelines prefer nmol/L (Kronenberg et al., EAS consensus, Eur Heart J 2022, pairs 180 mg/dL with 430 nmol/L and 300 mg/dL with 750 nmol/L; Marcovina & Albers, J Lipid Res 2016;57:526). Corrected 2026-09-07: the code had applied 2.4 per mg/L, storing every mg/L reading 10× high.
+The plan grades in nmol/L. At the interim factor 2.5 nmol/L per mg/dL the mg/dL and mg/L columns convert exactly, so a value typed in either unit grades at the cut-point the guideline names.
+
+Mass → molar is approximate: the plan uses nmol/L = 2.5 × mg/dL, the interim conversion factor EAS 2022 itself uses and the pairing of the cut-points it grades against: 30 mg/dL with 75 nmol/L and 50 mg/dL with 125 nmol/L (Kronenberg et al., EAS consensus, Eur Heart J 2022; the ACC/AHA risk enhancer ≥50 mg/dL ≈ ≥125 nmol/L). EAS also pairs 300 mg/dL with 750 nmol/L, and 180 mg/dL with 430 nmol/L (≈2.39); it does not recommend a standard conversion factor, and 2.5 is the interim one it uses itself. The true factor still runs ~2.0–2.5 with apo(a) isoform size, which is why guidelines prefer nmol/L (Marcovina & Albers, J Lipid Res 2016;57:526). The conventional (US) unit is mg/dL, the unit US labs print. NZ/AU/UK labs print mg/L (a tenth of mg/dL, so nmol/L ≈ 0.25 × mg/L; 93 mg/L ≈ 23 nmol/L): every import and agent writer accepts it through the unit alias table. The reference hint follows the "<X" rule of the on-treatment targets below (`formatTargetLine` on the 75 nmol/L line): "Normal: <75 nmol/L" in SI and "Normal: <30 mg/dL" in US units, since 29 mg/dL is 72.5 nmol/L (Normal) and 30 mg/dL is 75 (Borderline).
+
+**The Lp(a) field takes three units** (US-05 AC2, 2026-10-13): nmol/L, mg/dL and mg/L, on one control where every other field has a two-way toggle, because US labs print mg/dL or nmol/L (Quest and LabCorp print nmol/L) and NZ/AU/UK labs print mg/L. The thresholds do not change: the plan grades in nmol/L, and a typed number is converted through the unit table (`reportedToCanonical`; mg/L is a tenth of mg/dL). nmol/L and mg/L show whole numbers; mg/dL shows one decimal place, the same step as whole mg/L (display only, 2026-10-13: at 2.5 nmol/L per mg/dL a whole mg/dL is 2.5 nmol/L, so whole numbers hid the cut-points: a stored 74 nmol/L, Normal, read "30 mg/dL" beside "Normal: <30 mg/dL", and 124, Borderline, read "50"; now 29.6 and 49.6). The hint is in the field's unit, by the same "<X" rule at that unit's display step, printed without a trailing zero: "Normal: <75 nmol/L", "Normal: <30 mg/dL" (29.9 mg/dL is 74.75 nmol/L), "Normal: <300 mg/L" (299 mg/L is 74.75 nmol/L). A value stated in the chat fills the cell as stated, in the unit it was stated in, and saves exactly that (49.6 mg/dL saves 124 nmol/L in any field unit). Default with no unit chosen: mg/dL in US units, nmol/L in any other. The unit chosen is kept in the record (`profile.lpaUnit`), so it follows the user across devices. Legacy reads, never rewritten: with no `lpaUnit`, the old build's two-way toggle for Lp(a) on the device ('conventional', which then meant mg/L) opens the field in mg/L, and 'si' in nmol/L. An unsaved Lp(a) draft from before the change has no unit kept with it, so it is never guessed: the cell asks for it to be typed again. The plan's own displays (stat card, suggestion titles and text) keep printing Lp(a) in nmol/L. Corrected 2026-09-07: the code had applied 2.4 per mg/L, storing every mg/L reading 10× high. Corrected 2026-10-13: the US-units field was labelled mg/L, a unit US labs never print, so a US mg/dL result typed into it (from 2026-09-07) was stored 10× low (156 mg/dL as 37 nmol/L, Normal, instead of 390, Elevated). Until then the US hint read "Normal: <75 nmol/L" beside the mg/L field. The same day the factor moved from 2.4 to 2.5 nmol/L per mg/dL: at 2.4 an imported US 50 mg/dL (the mg/dL alias, 50 × 10 × 0.24) graded Borderline (120 nmol/L) against the guideline's Elevated; the form read a typed 50 as mg/L, 12 nmol/L. Three-file sync: `evidence.ts` ("≥125 nmol/L") and `roadmap_text.html` ("Ideal level: <75nmol/L") state only the canonical nmol/L thresholds and no conversion factor, and those thresholds did not change, so neither file needs an edit.
 
 ### On-Treatment Lipid Targets
 
@@ -906,7 +910,7 @@ Source: `units.ts` (UNIT_DEFS) + `validation.ts`
 | systolic_bp | 60 mmHg | 250 mmHg | 60 mmHg | 250 mmHg |
 | diastolic_bp | 40 mmHg | 150 mmHg | 40 mmHg | 150 mmHg |
 | psa | 0 ng/mL | 100 ng/mL | 0 ng/mL | 100 ng/mL |
-| lpa | 0 nmol/L | 750 nmol/L | 0 mg/L | 3125 mg/L (= 750 / 0.24) |
+| lpa | 0 nmol/L | 750 nmol/L | 0 mg/dL | 300 mg/dL (= 750 / 2.5; EAS pairs 300 mg/dL with 750 nmol/L) |
 
 ### Profile Validation
 

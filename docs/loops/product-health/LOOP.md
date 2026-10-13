@@ -70,7 +70,9 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   route, reason, and `backend` local|cloud, since a guest's second tab counts
   too; value-free by design — while n is tiny these are Brad's own
   verification, not adoption); `guide_opened` split by `placement`
-  (header|footer), read against `results_viewed`;
+  (header|footer), read against `results_viewed`; `lpa_unit_selected`
+  split by `unit` and `from` (the Lp(a) control's three units, labels only,
+  US-05 AC2), read against `results_viewed`;
   `reminder_optin_v2` total by `provider`. Read `mcp_authorize_shown` with a
   clock: more than two rows a second from one client, with no
   `mcp_consent_posted` following, is a probe scanning the door, not people

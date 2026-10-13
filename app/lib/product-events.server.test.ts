@@ -580,6 +580,28 @@ describe('the refused-unit counter', () => {
   });
 });
 
+/** US-05 AC2 — the Lp(a) unit counter: which unit was chosen, and from which. */
+describe('the Lp(a) unit counter', () => {
+  it('takes the two unit labels, from a browser', () => {
+    expect(parseProductEvent({ eventName: 'lpa_unit_selected', visitorId: VISITOR, metadata: { unit: 'mg/dL', from: 'nmol/L' } }))
+      .toEqual({ eventName: 'lpa_unit_selected', visitorId: VISITOR, metadata: { unit: 'mg/dL', from: 'nmol/L' } });
+  });
+
+  it('refuses a label that is not an Lp(a) unit, a number, or any other key', () => {
+    for (const metadata of [
+      { unit: 'mmol/L', from: 'nmol/L' }, { unit: 'mg/dL', from: '75' }, { unit: '30', from: 'mg/dL' },
+      { unit: 'mg/dL', from: 'nmol/L', count: 1 }, { unit: 'mg/dL', from: 'nmol/L', value: 30 }, { unit: 'mg/dL', from: 'nmol/L', key: 'lpa' },
+    ]) {
+      expect(parseProductEvent({ eventName: 'lpa_unit_selected', visitorId: VISITOR, metadata }), JSON.stringify(metadata)).toBeNull();
+    }
+  });
+
+  it('lets no other event carry a from', () => {
+    expect(parseProductEvent({ eventName: 'lab_unit_refused', visitorId: VISITOR, metadata: { key: 'ldl_cholesterol', unit: 'mg/dL', from: 'mg/dL' } })).toBeNull();
+    expect(parseProductEvent({ eventName: 'lab_row_added', visitorId: VISITOR, metadata: { from: 'mg/dL' } })).toBeNull();
+  });
+});
+
 describe('the upload outcome counter (US-12 AC10)', () => {
   const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, valuesDropped: 3 };
 

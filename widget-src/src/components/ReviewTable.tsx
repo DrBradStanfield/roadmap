@@ -1,15 +1,11 @@
 import { useState, useMemo, useEffect, useCallback, useRef, memo } from 'react';
-import type { UnitSystem, MetricType, MeasurementSource, ApiMeasurement, DocumentType } from '@roadmap/health-core';
+import type { LpaUnit, UnitSystem, MetricType, MeasurementSource, ApiMeasurement, DocumentType } from '@roadmap/health-core';
 import {
-  toCanonicalValue,
   UNIT_DEFS,
   METRIC_LABELS,
   METRIC_TO_FIELD,
-  formatDisplayValue,
-  getDisplayLabel,
   parseLocalisedNumber,
   BLOOD_TEST_METRICS,
-  refHintFor,
   isScreeningEligible,
   displayLabUnit,
   resolveLabCatalogEntry,
@@ -20,8 +16,11 @@ import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, Docu
 import { labValueLabel } from '../lib/lab-value-labels';
 import { unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
+import { type CellUnit, cellHint, cellLabel, cellText, cellToSI } from '../lib/blood-test-cell';
+import { useLpaUnit } from '../lib/lpa-unit';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
+import { LpaUnitControl } from './LpaUnitControl';
 import { UnitChip } from './UnitChip';
 import { MONTHS_SHORT } from '../lib/constants';
 
@@ -154,6 +153,12 @@ function isDocDuplicate(sourceFileName: string | null, idx: Set<string>): boolea
   return idx.has(sourceFileName);
 }
 
+/** Two stored values are the same value when only float noise from a unit
+ *  conversion separates them. */
+function sameValue(a: number, b: number): boolean {
+  return Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(a), Math.abs(b));
+}
+
 /** Lab-value name → cell key. Lower + trim for dedup, and strip `|`
  *  because the cellKey format is `${rowKey}|${dateKey}` — an LLM-emitted
  *  name like "ALT | AST ratio" would otherwise collide. */
@@ -204,15 +209,19 @@ type MatrixRow = CoreRow | AdditionalRow;
  *  (typically written by a connector). The cell edits like any other; it only
  *  saves when the user ticks "Replace". `id` is what the save sends as
  *  `correctsId`. */
-interface ExistingCell { id: string; display: string }
+interface ExistingCell { id: string; display: string; valueSI?: number }
 
 type EditableMatrixCell =
   | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; valueSI: number; displayUnit: string; existing?: ExistingCell }
   | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; existing?: ExistingCell };
 
+/** A core cell as rendered: its text in the row's unit and the value it saves. */
+interface CoreCellView { text: string; valueSI?: number }
+
 type MatrixCell =
   | { state: 'empty' }
-  | { state: 'context'; id: string; displayValue: string }
+  /** `valueSI` (core metrics): the stored value, which a collision compares. */
+  | { state: 'context'; id: string; displayValue: string; valueSI?: number }
   | EditableMatrixCell;
 
 /** Build the matrix view. A saved row owns its cell: an upload value that
@@ -224,26 +233,31 @@ export function buildMatrixModel(
   bloodTestHistory: ApiMeasurement[],
   labValueHistory: ApiLabValue[],
   unitSystem: UnitSystem,
-  metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>,
+  metricUnitOverrides?: Partial<Record<MetricType, CellUnit>>,
 ): { columns: MatrixColumn[]; coreRows: CoreRow[]; additionalRows: AdditionalRow[]; cells: Map<string, MatrixCell> } {
   const cells = new Map<string, MatrixCell>();
   const columnsByKey = new Map<DateKey, MatrixColumn>();
   const coreMetricsSeen = new Set<MetricType>();
   const additionalByKey = new Map<string, AdditionalRow>();
 
-  /** Resolved display system for a core metric, honouring per-metric override. */
-  const displayFor = (metric: MetricType): UnitSystem => metricUnitOverrides?.[metric] ?? unitSystem;
+  /** Resolved display unit for a core metric, honouring per-metric override. */
+  const displayFor = (metric: MetricType): CellUnit => metricUnitOverrides?.[metric] ?? unitSystem;
 
   /** Resolve an upload value against whatever already holds the cell:
    *  'skip' = leave the cell alone (equal value already saved, or an earlier
    *  file in this batch already claimed it); an ExistingCell = conflict;
-   *  undefined = free slot. What "equal" means is health-core's `slotState`,
-   *  shared with the connector's import (US-35 AC6). */
-  const collide = (cellKey: string, display: string): ExistingCell | 'skip' | undefined => {
+   *  undefined = free slot. A core metric compares stored values: its rounded
+   *  display can hide a real difference (Lp(a) 124.9 and 125 nmol/L both read
+   *  "50.0" mg/dL, either side of the Elevated line, US-13 AC3). Other rows
+   *  compare text with health-core's `slotState`, as the connector does (US-35 AC6). */
+  const collide = (cellKey: string, display: string, valueSI?: number): ExistingCell | 'skip' | undefined => {
     const prev = cells.get(cellKey);
     if (!prev) return undefined;
     if (prev.state !== 'context') return 'skip';
-    return slotState(prev.displayValue, display) === 'held_equal' ? 'skip' : { id: prev.id, display: prev.displayValue };
+    const equal = valueSI !== undefined && prev.valueSI !== undefined
+      ? sameValue(prev.valueSI, valueSI)
+      : slotState(prev.displayValue, display) === 'held_equal';
+    return equal ? 'skip' : { id: prev.id, display: prev.displayValue, valueSI: prev.valueSI };
   };
 
   const addColumn = (dateKey: DateKey, date: FullDate, fileIndex: number | null) => {
@@ -268,9 +282,9 @@ export function buildMatrixModel(
     const metric = m.metricType as MetricType;
     coreMetricsSeen.add(metric);
     const display = UNIT_DEFS[metric]
-      ? formatDisplayValue(metric, m.value, displayFor(metric))
+      ? cellText(metric, m.value, displayFor(metric))
       : String(m.value);
-    cells.set(`${metric}|${dateKey}`, { state: 'context', id: m.id, displayValue: display });
+    cells.set(`${metric}|${dateKey}`, { state: 'context', id: m.id, displayValue: display, valueSI: m.value });
   }
   for (const lv of labValueHistory) {
     const dateKey = lv.recordedAt.slice(0, 10);
@@ -310,9 +324,9 @@ export function buildMatrixModel(
       coreMetricsSeen.add(metric);
       const cellKey = `${metric}|${dateKey}`;
       const initialDisplay = UNIT_DEFS[metric]
-        ? formatDisplayValue(metric, v.valueSI, displayFor(metric))
+        ? cellText(metric, v.valueSI, displayFor(metric))
         : String(v.displayValue);
-      const existing = collide(cellKey, initialDisplay);
+      const existing = collide(cellKey, initialDisplay, v.valueSI);
       if (existing === 'skip') return;
       cells.set(cellKey, {
         state: 'editable', kind: 'core', fi, vi,
@@ -406,6 +420,10 @@ export function ReviewTable({
   error,
 }: ReviewTableProps) {
   const docHistoryIndex = useMemo(() => buildDocHistoryIndex(history.documents), [history.documents]);
+  // Lp(a) has its own three units, kept in the record, as in the blood-test
+  // matrix (US-05 AC2); a two-way override for it drives nothing.
+  const [lpaUnit, chooseLpaUnit] = useLpaUnit(unitSystem);
+  const units = useMemo<Partial<Record<MetricType, CellUnit>>>(() => ({ ...metricUnitOverrides, lpa: lpaUnit }), [metricUnitOverrides, lpaUnit]);
 
   // Per-file full date state (day/month/year)
   const [fileDates, setFileDates] = useState<Record<number, FullDate>>(() => {
@@ -477,8 +495,8 @@ export function ReviewTable({
   // `editable` cells come from this upload. Save selection = an editable
   // cell whose `editedDisplayValues` entry is non-empty (clear-to-skip).
   const matrix = useMemo(
-    () => buildMatrixModel(results, fileDates, history.bloodTests, history.labValues, unitSystem, metricUnitOverrides),
-    [results, fileDates, history.bloodTests, history.labValues, unitSystem, metricUnitOverrides],
+    () => buildMatrixModel(results, fileDates, history.bloodTests, history.labValues, unitSystem, units),
+    [results, fileDates, history.bloodTests, history.labValues, unitSystem, units],
   );
 
   // Initial display values are derived from the matrix (not from raw results)
@@ -499,7 +517,7 @@ export function ReviewTable({
   // the touched-stays-on-toggle behaviour below). `display` is the row's
   // display unit at the moment of edit, read at save time so a unit toggle
   // *after* typing doesn't misconvert the typed value into the wrong SI.
-  const touchedRef = useRef<Map<string, { display?: UnitSystem }>>(new Map());
+  const touchedRef = useRef<Map<string, { display?: CellUnit }>>(new Map());
 
   // Conflict cells only: "Replace the saved value with this one". Default
   // off — the record already holds a value, so replacing is the user's call.
@@ -508,7 +526,7 @@ export function ReviewTable({
     setReplaceChecked(prev => ({ ...prev, [cellKey]: on }));
   }, []);
 
-  const updateEditedDisplayValue = useCallback((cellKey: string, value: string, display?: UnitSystem) => {
+  const updateEditedDisplayValue = useCallback((cellKey: string, value: string, display?: CellUnit) => {
     const existing = touchedRef.current.get(cellKey);
     touchedRef.current.set(cellKey, { display: display ?? existing?.display });
     setEditedDisplayValues(prev => ({ ...prev, [cellKey]: value }));
@@ -532,6 +550,29 @@ export function ReviewTable({
     });
   }, [initialDisplayValues]);
 
+  const metricOf = (cell: EditableMatrixCell) =>
+    cell.kind === 'core' ? results[cell.fi]?.values[cell.vi]?.metric as MetricType | undefined : undefined;
+  // Edited = differs from the extracted value as shown in the unit the user
+  // typed in; a toggle after typing re-renders initialDisplay in the other unit.
+  const isEditedText = (cellKey: string, cell: EditableMatrixCell, editedStr: string) => {
+    const typedIn = touchedRef.current.get(cellKey)?.display;
+    const metric = metricOf(cell);
+    return editedStr !== (typedIn && metric && UNIT_DEFS[metric] ? cellText(metric, cell.valueSI, typedIn) : cell.initialDisplay);
+  };
+
+  /** The value a cell saves (SI for a core metric): the extracted one while
+   *  untouched, which re-deriving from its rounded display would move (Lp(a)
+   *  124.9 nmol/L shows "50.0" mg/dL → 125); once edited, the typed number in the
+   *  unit it was typed in, so a toggle after typing never misconverts it. */
+  const savedValue = (cellKey: string, cell: EditableMatrixCell, editedStr: string): number | undefined => {
+    const parsed = parseLocalisedNumber(editedStr);
+    if (parsed === undefined) return undefined;
+    if (!isEditedText(cellKey, cell, editedStr)) return cell.valueSI;
+    const metric = metricOf(cell);
+    if (!metric || !UNIT_DEFS[metric]) return parsed;
+    return cellToSI(metric, parsed, touchedRef.current.get(cellKey)?.display ?? units[metric] ?? unitSystem);
+  };
+
   /** Walks the matrix cells, returns the editable ones with a non-empty
    *  edited display value — the cells that will save. Shared by both the
    *  summary counts and handleSave so they stay in sync. */
@@ -540,7 +581,7 @@ export function ReviewTable({
       cellKey: string;
       dateKey: DateKey;
       cell: EditableMatrixCell;
-      parsed: number;
+      value: number;
       isEdited: boolean;
     }
     const out: CellPayload[] = [];
@@ -550,20 +591,45 @@ export function ReviewTable({
       if (cell.existing && !replaceChecked[cellKey]) continue;
       const editedStr = (editedDisplayValues[cellKey] ?? cell.initialDisplay).trim();
       if (!editedStr) continue;
+      const value = savedValue(cellKey, cell, editedStr);
+      if (value === undefined) continue;
       // A "replacement" that matches what is already saved would append a
       // correction row that corrects nothing. The slot is already right.
-      if (cell.existing && editedStr === cell.existing.display) continue;
-      const parsed = parseLocalisedNumber(editedStr);
-      if (parsed === undefined) continue;
+      if (cell.existing && (cell.existing.valueSI !== undefined
+        ? sameValue(value, cell.existing.valueSI)
+        : editedStr === cell.existing.display)) continue;
       // dateKey is the suffix after the LAST `|` — robust against the
       // (rare) chance the rowKey itself contains a separator.
       const dateKey = cellKey.slice(cellKey.lastIndexOf('|') + 1);
-      out.push({ cellKey, dateKey, cell, parsed, isEdited: editedStr !== cell.initialDisplay });
+      out.push({ cellKey, dateKey, cell, value, isEdited: isEditedText(cellKey, cell, editedStr) });
     }
     return out;
   };
 
   const saveableCells = useMemo(collectSaveableCells, [matrix, editedDisplayValues, replaceChecked]);
+  // What each core cell shows, and the value its colour grades: the value it
+  // saves (US-13 AC4), in the row's unit. Typed text is kept verbatim in the
+  // unit it was typed in, so a unit toggle shows the same quantity in the new
+  // unit and edits nothing (as a typed weight is kept, US-05).
+  const coreCellViews = useMemo(() => {
+    const views = new Map<string, CoreCellView>();
+    for (const [cellKey, cell] of matrix.cells) {
+      if (cell.state !== 'editable') continue;
+      const metric = metricOf(cell);
+      if (!metric) continue;
+      const text = (editedDisplayValues[cellKey] ?? cell.initialDisplay).trim();
+      const valueSI = savedValue(cellKey, cell, text);
+      const shownIn = units[metric] ?? unitSystem;
+      const typedIn = touchedRef.current.get(cellKey)?.display ?? shownIn;
+      views.set(cellKey, {
+        valueSI,
+        text: !isEditedText(cellKey, cell, text) ? cell.initialDisplay
+          : typedIn === shownIn || valueSI === undefined || !UNIT_DEFS[metric] ? text
+          : cellText(metric, valueSI, shownIn),
+      });
+    }
+    return views;
+  }, [matrix, editedDisplayValues]);
   const selectedCount = useMemo(() => saveableCells.filter(c => c.cell.kind === 'core').length, [saveableCells]);
   const selectedAdditionalCount = useMemo(() => saveableCells.filter(c => c.cell.kind === 'additional').length, [saveableCells]);
   const totalEditableCells = useMemo(() => {
@@ -622,19 +688,11 @@ export function ReviewTable({
       const recordedAt = buildRecordedAt(col.date);
       const cell = c.cell;
       if (cell.kind === 'core') {
-        const metric = results[cell.fi]?.values[cell.vi]?.metric as MetricType | undefined;
+        const metric = metricOf(cell);
         if (!metric) continue;
-        // Use the display unit stamped at edit time; without this, a
-        // toggle-after-typing converts the typed value through the wrong unit.
-        const display = touchedRef.current.get(c.cellKey)?.display
-          ?? metricUnitOverrides?.[metric]
-          ?? unitSystem;
-        const valueSI = UNIT_DEFS[metric]
-          ? toCanonicalValue(metric, c.parsed, display)
-          : c.parsed;
         selected.push({
           metric,
-          valueSI,
+          valueSI: c.value,
           recordedAt,
           source: c.isEdited ? 'lab_import_edited' : undefined,
           correctsId: cell.existing?.id,
@@ -644,7 +702,7 @@ export function ReviewTable({
         if (!av) continue;
         selectedLabValues.push({
           name: av.name,
-          value: c.isEdited ? c.parsed : av.value,
+          value: c.value,
           unit: av.unit,
           referenceLow: av.referenceLow,
           referenceHigh: av.referenceHigh,
@@ -703,10 +761,12 @@ export function ReviewTable({
         <ReviewMatrix
           matrix={matrix}
           unitSystem={unitSystem}
-          metricUnitOverrides={metricUnitOverrides}
+          metricUnitOverrides={units}
           onToggleFieldUnit={onToggleFieldUnit}
+          onChooseLpaUnit={chooseLpaUnit}
           sex={sex}
           editedDisplayValues={editedDisplayValues}
+          coreCellViews={coreCellViews}
           onCellChange={updateEditedDisplayValue}
           onColumnDateChange={handleColumnDateChange}
           replaceChecked={replaceChecked}
@@ -836,19 +896,21 @@ export function ReviewTable({
 interface ReviewMatrixProps {
   matrix: ReturnType<typeof buildMatrixModel>;
   unitSystem: UnitSystem;
-  metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>;
+  metricUnitOverrides?: Partial<Record<MetricType, CellUnit>>;
   onToggleFieldUnit?: (field: string) => void;
+  onChooseLpaUnit: (unit: LpaUnit) => void;
   sex?: 'male' | 'female';
   editedDisplayValues: Record<string, string>;
-  onCellChange: (cellKey: string, value: string, display?: UnitSystem) => void;
+  coreCellViews: ReadonlyMap<string, CoreCellView>;
+  onCellChange: (cellKey: string, value: string, display?: CellUnit) => void;
   onColumnDateChange: (col: MatrixColumn, update: Partial<FullDate>) => void;
   replaceChecked: Record<string, boolean>;
   onReplaceToggle: (cellKey: string, on: boolean) => void;
 }
 
 function ReviewMatrix({
-  matrix, unitSystem, metricUnitOverrides, onToggleFieldUnit, sex,
-  editedDisplayValues, onCellChange, onColumnDateChange, replaceChecked, onReplaceToggle,
+  matrix, unitSystem, metricUnitOverrides, onToggleFieldUnit, onChooseLpaUnit, sex,
+  editedDisplayValues, coreCellViews, onCellChange, onColumnDateChange, replaceChecked, onReplaceToggle,
 }: ReviewMatrixProps) {
   const scrollSync = useMatrixScrollSync(matrix.columns.length);
 
@@ -877,9 +939,11 @@ function ReviewMatrix({
             unitSystem={unitSystem}
             metricUnitOverrides={metricUnitOverrides}
             onToggleFieldUnit={onToggleFieldUnit}
+            onChooseLpaUnit={onChooseLpaUnit}
             sex={sex}
             scrollSync={scrollSync}
             editedDisplayValues={editedDisplayValues}
+            coreCellViews={coreCellViews}
             onCellChange={onCellChange}
             replaceChecked={replaceChecked}
             onReplaceToggle={onReplaceToggle}
@@ -899,9 +963,11 @@ function ReviewMatrix({
                 unitSystem={unitSystem}
                 metricUnitOverrides={metricUnitOverrides}
                 onToggleFieldUnit={onToggleFieldUnit}
+                onChooseLpaUnit={onChooseLpaUnit}
                 sex={sex}
                 scrollSync={scrollSync}
                 editedDisplayValues={editedDisplayValues}
+                coreCellViews={coreCellViews}
                 onCellChange={onCellChange}
                 replaceChecked={replaceChecked}
                 onReplaceToggle={onReplaceToggle}
@@ -953,19 +1019,21 @@ interface MatrixRowViewProps {
   columns: MatrixColumn[];
   cells: Map<string, MatrixCell>;
   unitSystem: UnitSystem;
-  metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>;
+  metricUnitOverrides?: Partial<Record<MetricType, CellUnit>>;
   onToggleFieldUnit?: (field: string) => void;
+  onChooseLpaUnit: (unit: LpaUnit) => void;
   sex?: 'male' | 'female';
   scrollSync: ReturnType<typeof useMatrixScrollSync>;
   editedDisplayValues: Record<string, string>;
-  onCellChange: (cellKey: string, value: string, display?: UnitSystem) => void;
+  coreCellViews: ReadonlyMap<string, CoreCellView>;
+  onCellChange: (cellKey: string, value: string, display?: CellUnit) => void;
   replaceChecked: Record<string, boolean>;
   onReplaceToggle: (cellKey: string, on: boolean) => void;
 }
 
 function MatrixRowView({
-  row, rowIdx, columns, cells, unitSystem, metricUnitOverrides, onToggleFieldUnit,
-  sex, scrollSync, editedDisplayValues, onCellChange, replaceChecked, onReplaceToggle,
+  row, rowIdx, columns, cells, unitSystem, metricUnitOverrides, onToggleFieldUnit, onChooseLpaUnit,
+  sex, scrollSync, editedDisplayValues, coreCellViews, onCellChange, replaceChecked, onReplaceToggle,
 }: MatrixRowViewProps) {
   const rowKey = matrixRowKey(row);
   const rowDisplay = row.kind === 'core' ? (metricUnitOverrides?.[row.metric] ?? unitSystem) : unitSystem;
@@ -978,7 +1046,9 @@ function MatrixRowView({
     <div className="bt-row">
       <div className="bt-cell-name">
         <div className="bt-name-label">{label}</div>
-        {unitLabel && <UnitChip label={unitLabel} onToggle={toggleUnit}/>}
+        {row.kind === 'core' && row.metric === 'lpa'
+          ? <LpaUnitControl unit={rowDisplay as LpaUnit} onChange={onChooseLpaUnit}/>
+          : unitLabel && <UnitChip label={unitLabel} onToggle={toggleUnit}/>}
         {refLabel && <div className="bt-ref-label">{refLabel}</div>}
       </div>
       <div ref={el => scrollSync.registerRow(rowIdx, el)} onScroll={scrollSync.onScroll} className="bt-cell-strip">
@@ -994,7 +1064,8 @@ function MatrixRowView({
                 row={row}
                 unitSystem={rowDisplay}
                 sex={sex}
-                editedValue={editedDisplayValues[cellKey] ?? ''}
+                editedValue={coreCellViews.get(cellKey)?.text ?? editedDisplayValues[cellKey] ?? ''}
+                valueSI={coreCellViews.get(cellKey)?.valueSI}
                 onCellChange={onCellChange}
                 replace={replaceChecked[cellKey] ?? false}
                 onReplaceToggle={onReplaceToggle}
@@ -1012,14 +1083,14 @@ function MatrixRowView({
  *  METRIC_LABELS / getDisplayLabel; additional rows use the LLM-extracted
  *  unit and (if present) a reference range. Caller passes the resolved
  *  display unit (already honours per-metric overrides). */
-function describeRow(row: MatrixRow, display: UnitSystem, sex?: 'male' | 'female'): { label: string; unitLabel: string | null; refLabel: string | null } {
+function describeRow(row: MatrixRow, display: CellUnit, sex?: 'male' | 'female'): { label: string; unitLabel: string | null; refLabel: string | null } {
   if (row.kind === 'core') {
     const label = METRIC_LABELS[row.metric] || row.metric;
-    const unitLabel = UNIT_DEFS[row.metric] ? getDisplayLabel(row.metric, display) : null;
+    const unitLabel = UNIT_DEFS[row.metric] ? cellLabel(row.metric, display) : null;
     // Same reference-range hint InputPanel + BloodTestTimeline show so
     // users have the same context when reviewing as when reading the
     // live timeline.
-    const refLabel = refHintFor(row.metric, display, sex);
+    const refLabel = cellHint(row.metric, display, sex);
     return { label, unitLabel, refLabel };
   }
   const refLabel = (row.referenceLow != null || row.referenceHigh != null)
@@ -1032,16 +1103,18 @@ interface MatrixCellViewProps {
   cell: MatrixCell;
   cellKey: string;
   row: MatrixRow;
-  unitSystem: UnitSystem;
+  unitSystem: CellUnit;
   sex?: 'male' | 'female';
   editedValue: string;
-  onCellChange: (cellKey: string, value: string, display?: UnitSystem) => void;
+  /** The value a core cell saves, which its colour grades (US-13 AC4). */
+  valueSI?: number;
+  onCellChange: (cellKey: string, value: string, display?: CellUnit) => void;
   replace: boolean;
   onReplaceToggle: (cellKey: string, on: boolean) => void;
 }
 
 const MatrixCellView = memo(function MatrixCellView({
-  cell, cellKey, row, unitSystem, sex, editedValue, onCellChange, replace, onReplaceToggle,
+  cell, cellKey, row, unitSystem, sex, editedValue, valueSI, onCellChange, replace, onReplaceToggle,
 }: MatrixCellViewProps) {
   if (cell.state === 'empty') {
     // NBSP keeps :empty from matching — the theme has a global
@@ -1067,6 +1140,7 @@ const MatrixCellView = memo(function MatrixCellView({
       display={unitSystem}
       sex={sex}
       value={editedValue}
+      valueSI={valueSI}
       onChange={handleChange}
       wrapperClass={`bt-cell-input bt-cell-review${lowConfClass}`}
     />

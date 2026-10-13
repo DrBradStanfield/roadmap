@@ -7,7 +7,8 @@
 // StartingInfoVitals.
 
 import { useEffect, useRef, useState } from 'react';
-import { localDay, type UnitSystem } from '@roadmap/health-core';
+import { LPA_UNITS, localDay, type LpaUnit, type UnitSystem } from '@roadmap/health-core';
+import type { CellUnit } from './blood-test-cell';
 import { DRAFTS_CLEARED_EVENT, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
 import type { SaveTask } from './matrix-save';
 
@@ -20,12 +21,13 @@ type Expected = SaveTask['expected'];
 const PAGE = Math.random().toString(36).slice(2);
 
 /** What a draft keeps about a typed cell beside its text: the unit it was
- *  typed in, where a unit switch keeps the quantity (the vitals, US-05); the
+ *  typed in, where a unit switch keeps the quantity (the vitals and Lp(a),
+ *  US-05; an Lp(a) cell keeps its unit's label, AC2); the
  *  rows the page showed under its slots when the user began typing there,
  *  kept until the cell is emptied, never retaken by typing again (US-03 AC2);
  *  the load of the page it was typed on; and why a commit refused its value,
  *  until it is typed into again. */
-interface CellMeta { unit?: UnitSystem; expected?: Expected; typedOn?: string; refused?: string }
+interface CellMeta { unit?: CellUnit; expected?: Expected; typedOn?: string; refused?: string }
 
 export interface MatrixDraft<K extends string> {
   /** `date` is kept only when the user picked it: an unpicked draft column is
@@ -138,7 +140,7 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     backfills: state.backfills,
     /** What the user typed into a cell, verbatim, and the unit it is in when
      *  a unit switch must keep the quantity. */
-    type: (cell: CellRef<K>, typed: string, unit?: UnitSystem) => setState((s) => set(s, cell, typed, (was) => ({
+    type: (cell: CellRef<K>, typed: string, unit?: CellUnit) => setState((s) => set(s, cell, typed, (was) => ({
       unit, expected: was?.expected ?? rowsUnder(cell[0] ?? dayOf(s), cell[1]), typedOn: PAGE,
     }))),
     /** The day the user picked. Anything else is never taken: iOS's Reset
@@ -157,6 +159,12 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     unitOf: (cell: CellRef<K>): UnitSystem | undefined => {
       const unit = metaOf(cell)?.unit;
       return unit === 'si' || unit === 'conventional' ? unit : undefined;
+    },
+    /** The Lp(a) unit a cell was typed in (US-05 AC2). None: typed before
+     *  this was kept, so its unit is unknown. */
+    lpaUnitOf: (cell: CellRef<K>): LpaUnit | undefined => {
+      const unit = metaOf(cell)?.unit;
+      return (LPA_UNITS as readonly unknown[]).includes(unit) ? unit as LpaUnit : undefined;
     },
     /** The rows a cell expects under its slots, for its commit to name
      *  (`SaveTask.expected`): what the page showed when the user began

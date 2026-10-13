@@ -6,10 +6,12 @@
 // to position the cell + signal mode (input / correcting / draft / review).
 
 import type React from 'react';
-import type { MetricType, UnitSystem } from '@roadmap/health-core';
+import type { MetricType } from '@roadmap/health-core';
 import {
+  type CellUnit,
   blockBadNumericKeys,
   previewStatus,
+  statusOf,
   validateTypedValue,
 } from '../lib/blood-test-cell';
 
@@ -18,8 +20,12 @@ export interface NumericInputCellProps {
    *  metric the cell skips validation + status preview and renders a plain
    *  input with an empty footer. */
   metric?: MetricType;
-  display?: UnitSystem;
+  display?: CellUnit;
   value: string;
+  /** Grade this SI value instead of the typed text: a review cell saves the
+   *  extracted value while untouched, not one re-derived from its rounded
+   *  display, and after a unit toggle the number typed in the other unit. */
+  valueSI?: number;
   onChange: (v: string) => void;
   /** Outer wrapper class (appended to bt-cell-value). */
   wrapperClass: string;
@@ -43,7 +49,7 @@ export interface NumericInputCellProps {
 }
 
 export function NumericInputCell({
-  metric, display, value, onChange,
+  metric, display, value, valueSI, onChange,
   wrapperClass, inputClass = 'bt-input',
   sex, showStatusPreview = true,
   active, autoFocus, disabled, placeholder, ariaLabel, externalError,
@@ -53,7 +59,7 @@ export function NumericInputCell({
   const error = externalError ?? validationError;
   const status = !showStatusPreview || error || !metric || !display
     ? null
-    : previewStatus(metric, value, display, sex);
+    : valueSI !== undefined ? statusOf(metric, valueSI, sex) : previewStatus(metric, value, display, sex);
   return (
     <div className={`bt-cell-value ${wrapperClass}`}>
       <input

@@ -4729,6 +4729,54 @@ a.action-btn-small.action-btn-small:hover {
 .bt-unit-chip--static {
   cursor: default;
 }
+/* US-05 AC2: Lp(a)'s three units, one segmented pill in the chip's place.
+   Doubled classes hold off the storefront theme's global button rules. */
+.bt-unit-segments {
+  align-self: flex-start;
+  display: inline-flex;
+  margin-top: 3px;
+  border: 1px solid var(--bt-ink-200);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bt-ink-50);
+  /* The review table is portaled outside .health-tool; without this the
+     pill takes the storefront theme's font there. */
+  font-family: var(--font-family-base);
+}
+.bt-unit-segment.bt-unit-segment {
+  margin: 0;
+  min-height: 24px; /* WCAG 2.2 2.5.8: each target at least 24×24 */
+  min-width: 24px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  color: var(--bt-ink-500);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-transform: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.bt-unit-segment.bt-unit-segment + .bt-unit-segment {
+  border-left: 1px solid var(--bt-ink-200);
+}
+.bt-unit-segment.bt-unit-segment--active {
+  background: var(--color-brand);
+  color: var(--bt-ink-900); /* 5.82:1 on the brand; white was 3.18:1 (WCAG 1.4.3 asks 4.5:1) */
+  cursor: default;
+}
+.bt-unit-segment.bt-unit-segment:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: -2px;
+}
+.bt-unit-segment.bt-unit-segment--active:focus-visible {
+  outline-color: #fff;
+}
 .bt-ref-label {
   font-size: 9px;
   color: var(--bt-ink-400);

@@ -12,6 +12,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   resolveUnit,
+  resolveLabValues,
   parseUnifiedResult,
   toUnifiedResult,
   pagesToContentBlocks,
@@ -52,6 +53,19 @@ describe('US-12: pagesToContentBlocks', () => {
 
   it('handles an empty page array', () => {
     expect(pagesToContentBlocks([])).toEqual([]);
+  });
+});
+
+// US-05: the website's lab upload reads Lp(a) as either lab prints it.
+describe('US-05 AC1 — the lab-upload extractor reads Lp(a) in mg/dL and in mg/L', () => {
+  it('156 mg/dL (a US report) → 390 nmol/L and 93 mg/L (an NZ report) → 23.25, both confident', () => {
+    const [us, nz] = resolveLabValues([
+      { metric: 'lpa', value: 156, unit: 'mg/dL', confidence: 'high' },
+      { metric: 'lpa', value: 93, unit: 'mg/L', confidence: 'high' },
+    ]);
+    expect(us.valueSI).toBeCloseTo(390, 9);
+    expect(nz.valueSI).toBeCloseTo(23.25, 9);
+    expect([us.confidence, nz.confidence]).toEqual(['high', 'high']);
   });
 });
 

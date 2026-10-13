@@ -660,6 +660,7 @@ describe('US-34 — update_profile changes who the record is about', () => {
   it('AC1 — writes each field, one line per change, and leaves the rest of the profile alone', () => {
     const file = base();
     file.profile.unitOverrides = { ldl: 'conventional' };
+    file.profile.lpaUnit = 'mg/L';
     (file.profile as unknown as Record<string, unknown>).somethingNewerAppsKnow = 'keep me';
 
     const outcome = ok(updateProfile(file, { sex: 'female', birthYear: 1972, birthMonth: 4, heightCm: 165 }, NOW));
@@ -668,7 +669,7 @@ describe('US-34 — update_profile changes who the record is about', () => {
       sex: 'female', birthYear: 1972, birthMonth: 4, heightCm: 165,
       // Untouched: display preferences are out of reach, and a field this
       // version has never heard of survives a read-modify-write of the object.
-      unitSystem: 'si', unitOverrides: { ldl: 'conventional' }, somethingNewerAppsKnow: 'keep me',
+      unitSystem: 'si', unitOverrides: { ldl: 'conventional' }, lpaUnit: 'mg/L', somethingNewerAppsKnow: 'keep me',
     });
     expect(outcome.text.split('\n')).toEqual([
       'sex: male → female', 'birthYear: 1971 → 1972', 'birthMonth: not set → 4', 'heightCm: 178 → 165',
@@ -875,6 +876,7 @@ describe('US-32 — the dispatcher', () => {
       ['correct_value', { id: 'm1' }],
       ['update_profile', { sex: 'other' }],
       ['update_profile', { sex: 'female', wat: true }],
+      ['update_profile', { lpaUnit: 'mg/dL' }], // a display preference: out of reach (US-05 AC2)
       ['update_profile', { expected: { sex: 'male', wat: 1 } }],
       ['read_record', { since: '14/07/2026' }],
     ];
@@ -2494,16 +2496,16 @@ describe('US-36 AC4 — units: one table, converted to canonical, refused by nam
     expect(by.ldl.value).toBeCloseTo(2.586, 2);
     expect(by.ldl.unit).toBe('mmol/L');
     expect(by.hba1c.value).toBeCloseTo(42, 0);
-    expect(by.lpa.value).toBeCloseTo(24, 5); // 10 mg/dL = 100 mg/L × 0.24 (≈ 2.4 nmol/L per mg/dL)
+    expect(by.lpa.value).toBeCloseTo(25, 9); // 10 mg/dL × 2.5 nmol/L per mg/dL (US-05 AC1)
     expect(by.apob.value).toBeCloseTo(0.9, 6);
     expect(by.creatinine.value).toBe(80);
     expect(by.ferritin).toMatchObject({ kind: 'lab', value: 210, unit: 'µg/L', printedName: 'Ferritin' });
     // The same table serves add_measurement (review 1.3): micromol/L is one spelling, not two answers.
     expect(addMeasurement(base(), { metricType: 'creatinine', value: 80, unit: 'micromol/L', recordedAt: TODAY }, CTX).status).toBe('ok');
     expect(reportedToCanonical('lpa', 10, 'mg/dL')).toMatchObject({ system: 'conventional' });
-    expect(reportedToCanonical('lpa', 10, 'mg/dL')!.valueSI).toBeCloseTo(24, 5);
+    expect(reportedToCanonical('lpa', 10, 'mg/dL')!.valueSI).toBeCloseTo(25, 9);
     // A normal US print is accepted, not refused as out of range (live 2026-09-07: 45 mg/dL was read as 1080 nmol/L).
-    expect(prepared(labCall([row('lpa', 'Lp(a)', 45, 'mg/dL')])).payload.candidates[0]).toMatchObject({ value: 108, confidence: 'high' });
+    expect(prepared(labCall([row('lpa', 'Lp(a)', 45, 'mg/dL')])).payload.candidates[0]).toMatchObject({ value: 112.5, confidence: 'high' });
   });
 
   it('refuses a unit the metric is not measured in, naming both labels', () => {
@@ -2517,7 +2519,7 @@ describe('US-36 AC4 — units: one table, converted to canonical, refused by nam
       row('total_cholesterol', 'Cholesterol', 5.2, 'mg/dL'),
       row('hdl', 'HDL Cholesterol', 1.3, 'mg/dL'),
       row('apob', 'ApoB', 0.9, 'mg/dL'),
-      row('lpa', 'Lp(a)', 2, 'mg/L'),
+      row('lpa', 'Lp(a)', 1, 'mg/L'), // 0.25 nmol/L, under the 0.5 floor (2 mg/L is 0.5 at 2.5 per mg/dL)
     ]), { ...base(), measurements: [] });
     expect(out.unrecognized).toEqual([]);
     expect(out.payload.candidates.map((c) => c.confidence)).toEqual(['low', 'low', 'low', 'low', 'low']);
@@ -2531,6 +2533,28 @@ describe('US-36 AC4 — units: one table, converted to canonical, refused by nam
     const us = { ...base(), measurements: [], profile: { ...base().profile, unitSystem: 'conventional' as const } };
     const out = prepared(labCall([row('ldl', 'LDL Cholesterol', 2.6, 'mmol/L')]), us);
     expect(out.payload.candidates[0]).toMatchObject({ displayValue: '101', displayUnit: 'mg/dL', unit: 'mmol/L' });
+  });
+});
+
+// US-05: every connector write door reads Lp(a) as either lab prints it.
+describe('US-05 AC1 — file_results, add_measurement and correct_value read Lp(a) in mg/dL and in mg/L', () => {
+  const lpa = (f: RoadmapFile) => f.measurements.filter((m) => m.metricType === 'lpa' && m.status === 'active');
+
+  it('file_results: 156 mg/dL → 390 nmol/L, 93 mg/L → 23.25', () => {
+    const [us] = prepared(labCall([row('lpa', 'Lp(a)', 156, 'mg/dL')])).payload.candidates;
+    const [nz] = prepared(labCall([row('lpa', 'Lipoprotein(a)', 93, 'mg/L')])).payload.candidates;
+    expect(us).toMatchObject({ confidence: 'high' });
+    expect(us.value).toBeCloseTo(390, 9);
+    expect(nz).toMatchObject({ confidence: 'high' });
+    expect(nz.value).toBeCloseTo(23.25, 9);
+  });
+
+  it('add_measurement then correct_value: 93 mg/L → 23.25 nmol/L, corrected to 156 mg/dL → 390', () => {
+    const added = ok(addMeasurement(base(), { metricType: 'lpa', value: 93, unit: 'mg/L', recordedAt: TODAY }, CTX)).file!;
+    const [first] = lpa(added);
+    expect(first.value).toBeCloseTo(23.25, 9);
+    const corrected = ok(correctValueTool(added, { id: first.id, newValue: 156, unit: 'mg/dL' }, NOW)).file!;
+    expect(lpa(corrected).map((m) => m.value)).toEqual([expect.closeTo(390, 9)]);
   });
 });
 
