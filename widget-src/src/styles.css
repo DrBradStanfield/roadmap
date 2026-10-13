@@ -2523,6 +2523,32 @@ a.action-btn-small.action-btn-small:hover {
   font-size: 15px;
 }
 
+/* US-12 AC9: the files a run did not fully read */
+.upload-file-notices {
+  text-align: left;
+  font-size: 13.5px;
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+  max-width: 480px;
+  margin: 8px auto 16px;
+}
+
+.upload-file-notices-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.upload-file-notices ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.upload-file-notice-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
 /* ---------------------------------------------------------------------------
    Review Table
    --------------------------------------------------------------------------- */

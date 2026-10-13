@@ -12,6 +12,9 @@ export const PRODUCT_EVENT_NAMES = [
   'upload_started',
   'upload_extract_failed',
   'upload_saved',
+  // US-12 AC10: one per upload run, how many files ended each way. Metadata is
+  // the UPLOAD_OUTCOME_KEYS counts below and nothing else: never a file name.
+  'upload_outcome',
   'cloud_connect_started',
   'cloud_connect_success',
   'cloud_connect_refused',
@@ -112,6 +115,13 @@ export const SERVER_ONLY_EVENT_NAMES = [
 ] as const satisfies readonly ProductEventName[];
 
 /**
+ * Events the browser sends on every occurrence, not once per tab: each one is
+ * a distinct user action whose count is the signal (US-12 AC10, one per upload
+ * run). The events route's per-visitor and per-IP limits still bound them.
+ */
+export const PER_ACTION_EVENT_NAMES = ['upload_outcome'] as const satisfies readonly ProductEventName[];
+
+/**
  * The hosted connector's tool names, as a counter may name them. They live in
  * this leaf, not in `mcp-tools.ts`: the events layer must not drag the tool
  * layer (and the whole clinical engine under it) into a server route. A test
@@ -135,6 +145,13 @@ export type McpToolName = (typeof MCP_TOOL_NAMES)[number];
 export const MCP_IMPORT_ROUTES = ['dropbox', 'drive_refused', 'assistant'] as const;
 /** The `guide_opened` counter's surfaces (US-38): the column header, or its mobile foot. */
 export const GUIDE_PLACEMENTS = ['header', 'footer'] as const;
+/** The `upload_outcome` counter's integer counts (US-12 AC10): files seen, then
+ *  how each ended. `truncated` overlaps the rest and `valuesDropped` counts value
+ *  rows the parse refused, not files; the others sum to `picked`. */
+export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'valuesDropped'] as const;
+export type UploadOutcomeKey = (typeof UPLOAD_OUTCOME_KEYS)[number];
+/** The most one count may say; the server refuses more, so the client clamps. */
+export const UPLOAD_OUTCOME_MAX = 1000;
 /** The `remote_change_applied` counter's tiers (US-34): another tab, or a cloud. */
 export const REMOTE_CHANGE_BACKENDS = ['local', 'cloud'] as const;
 /** `nudge`: a read found folder files not in the record and said so (US-37). */
@@ -278,16 +295,69 @@ export const EVENT_REASONS = {
 /**
  * The two words a `lab_unit_refused` row may carry (US-21 phase 3), checked
  * where the row is written. A catalogue key is a lower-case word; a unit is a
- * short printed spelling, and it must not BE a number — a bare number is the
- * one thing a health value could arrive as, and no unit is spelled that way.
+ * short printed spelling, and it must not BE or HOLD a value. Both halves of
+ * the check fail closed (US-21 AC11).
+ *
+ * Digits are structural. The only digits are ASCII and the superscripts (no
+ * "１４１", "Ⅴ" or "½"), and once the few constructions units are spelled with
+ * are cut out, no digit may remain. Those are a power of ten (10^9, 10E9,
+ * 10*3, ×10⁹), eGFR's /1.73 m², a cubic millimetre (mm3, mm³), /100 WBC and
+ * /24h. A number units use is no licence elsewhere: "10 mmol/L", "6%",
+ * "mmol/L12", "3·6 mmol/L" and "¹⁴¹ mmol/L" are refused. A power of ten takes
+ * only the exponents units use (3, 4, 5, 6, 9, 12), so "x10^47/L" is refused
+ * too, and a "*" left once 10*3 is cut is a flag, not a unit.
+ *
+ * Words are an allowlist of unit atoms, because a result is a value too
+ * ("mmol/L H" on a potassium row says it was high; "Reactive" is the result)
+ * and no list of flag words in every language is ever complete. Once the
+ * constructions are cut, every run of letters, in any case, must be one of
+ * UNIT_ATOMS, and the unit must hold at least one atom, a '%' or a
+ * construction. A letter standing alone as a token (split on spaces, brackets
+ * and , ; : . - * ! ? ·) is refused even when it is an atom: "mmol/L L" and
+ * "mmol/L-H" are flags, while "U/L" and "g/dL" are one token each. So is a
+ * token made only of dashes ("-", "mmol/L --"). "Unit(s)" reads as "Units".
  * Anything else is dropped rather than stored: a counter must never become a
  * log of somebody's results.
  */
 const LAB_KEY_PATTERN = /^[a-z][a-z0-9_]{0,39}$/;
-const LAB_UNIT_PATTERN = /^[\p{L}\p{N}µ×°%^/().·\- ]{1,24}$/u;
+const LAB_UNIT_PATTERN = /^[\p{L}0-9⁰¹²³⁴⁵⁶⁷⁸⁹⁻µ×°%^*/().·\- ]{1,24}$/u;
+const UNIT_CONSTRUCTIONS = /10(?:[\^*eE][+-]?(?:12|[34569])(?!\d)|⁻?(?:¹²|[³⁴⁵⁶⁹])(?![⁰¹²³⁴⁵⁶⁷⁸⁹]))|\/1\.73(?: ?m[2²])?|mm[3³]|\/100|\/24 ?h/g;
+/** The same cut for the word checks, taking the "x" of "x10^9" with it. */
+const MULTIPLIED_CONSTRUCTIONS = new RegExp(`[xX×]?(?:${UNIT_CONSTRUCTIONS.source})`, 'g');
+
+/** Every word a unit may be built of, lower case. Gathered from the catalogue
+ *  and UNIT_DEFS spellings (a test holds them to it) and the count, time and
+ *  pressure words labs print in English, Polish, German, Spanish, Portuguese
+ *  and French. Never a flag or a result word. */
+const UNIT_ATOMS = new Set([
+  // Amount, mass, volume, equivalents, katals, osmoles.
+  'mol', 'mmol', 'µmol', 'umol', 'nmol', 'pmol', 'fmol',
+  'g', 'gm', 'kg', 'mg', 'µg', 'ug', 'mcg', 'ng', 'pg', 'fg',
+  'l', 'dl', 'ml', 'µl', 'ul', 'mcl', 'fl', 'nl',
+  'eq', 'meq', 'kat', 'ukat', 'µkat', 'nkat', 'osm', 'mosm',
+  // Enzyme and international units, English and Romance spellings.
+  'u', 'iu', 'miu', 'µiu', 'uiu', 'kiu', 'ku', 'mu', 'µu', 'uu', 'ui', 'mui', 'µui', 'au', 'unit', 'units',
+  // Counts and what is counted.
+  'cells', 'cell', 'cel', 'células', 'celulas', 'cellules', 'komórek', 'komorek', 'zellen', 'leu', 'wbc', 'rbc', 'lymphs',
+  'tys', 'mln', 'mio', 'tsd', 'thou', 'thousand', 'million', 'mil', 'k', 'giga', 'tera', 't', 'gpt', 'tpt',
+  'cumm', 'cmm', 'cu', 'c', 'mm', 'hpf', 'lpf', 'feu', 'ddu',
+  'ratio', 'index', 'fraction', 'titre', 'titer',
+  // Time, pressure, length and weight.
+  'min', 'sec', 'seg', 's', 'h', 'hr', 'hrs', 'hour', 'hours', 'day', 'd',
+  'mmhg', 'kpa', 'pa', 'm', 'cm', 'in', 'ft', 'lb', 'lbs',
+]);
 
 export function isLabUnitWord(value: unknown): value is string {
-  return typeof value === 'string' && LAB_UNIT_PATTERN.test(value) && !Number.isFinite(Number(value));
+  if (typeof value !== 'string' || !LAB_UNIT_PATTERN.test(value)) return false;
+  if (/[0-9⁰¹²³⁴⁵⁶⁷⁸⁹*]/.test(value.replace(UNIT_CONSTRUCTIONS, ' '))) return false;
+  // '#' marks a cut construction; LAB_UNIT_PATTERN lets none in. "/24 h" keeps
+  // its h, so "g/24hr" reads as g # hr.
+  const words = value.replace(/(\p{L})\(s\)/gu, '$1s').replace(MULTIPLIED_CONSTRUCTIONS, (cut) => (cut.endsWith('h') ? '#h' : '#'));
+  const runs = words.match(/\p{L}+/gu) ?? [];
+  return runs.every((run) => UNIT_ATOMS.has(run.toLowerCase().replace(/μ/g, 'µ')))
+    && !words.split(/[\s()]+/).some((token) => /^[-+]|[-+]$/.test(token))
+    && !words.split(/[\s(),;:.\-+*!?·]+/).some((token) => /^\p{L}$/u.test(token))
+    && (runs.length > 0 || /[%#]/.test(words));
 }
 
 export function isLabKeyWord(value: unknown): value is string {

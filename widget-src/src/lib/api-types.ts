@@ -115,6 +115,9 @@ export interface LabImportResult {
   values: ExtractedValue[];
   additionalValues: AdditionalLabValue[];
   document: DocumentResult | null;
+  /** Lab rows the parse refused, so the review can say some were left out
+   *  (US-12 AC8). Absent from a server that predates it. */
+  droppedValueCount?: number;
 }
 
 /** Saved lab value from the API */
@@ -152,7 +155,9 @@ export interface BatchPollResponse {
   status: 'processing' | 'ended';
   completed: number;
   total: number;
-  results?: Array<LabImportResult & { fileName: string }>;
+  /** Each result carries the position of the file it answers in the batch
+   *  request; `errorCode` marks a file that was not read. */
+  results?: Array<{ index: number } & (LabImportResult | { errorCode: UploadErrorCode })>;
   error?: string;
   errorCode?: UploadErrorCode;
 }

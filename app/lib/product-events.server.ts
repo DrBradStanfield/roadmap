@@ -3,9 +3,12 @@ import { z } from 'zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, type McpOAuthReason, type McpRefusalReason, type ProductEventName } from '../../packages/health-core/src/product-events';
+import { EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, isLabUnitWord, MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
 import { supabaseAdmin } from './supabase.server';
+
+/** US-12 AC10: one upload run's counts. A whole number in range, never text. */
+const uploadOutcomeCount = z.number().int().min(0).max(UPLOAD_OUTCOME_MAX).optional();
 
 // Metadata is a closed allow-list: no free text, no health values, everything
 // else rejected by .strict(). Enforced at recordProductEvent, the single door
@@ -38,6 +41,7 @@ const metadataSchema = z
      */
     key: z.string().refine(isLabKeyWord).optional(),
     unit: z.string().refine(isLabUnitWord).optional(),
+    ...(Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, uploadOutcomeCount])) as Record<UploadOutcomeKey, typeof uploadOutcomeCount>),
   })
   .strict();
 
@@ -68,6 +72,13 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   unit: ['lab_unit_refused'],
   via: ['mcp_connect'],
   step: ['mcp_tool_call'],
+  ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, ['upload_outcome']])),
+};
+
+/** Events whose metadata is ONLY their own keys: a shared key such as
+ *  `provider` or `count` would make a counts-only row carry something else. */
+const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
+  upload_outcome: UPLOAD_OUTCOME_KEYS,
 };
 
 /**
@@ -85,6 +96,12 @@ function checkEventKeys(
   if (!metadata) return;
   for (const [key, owners] of Object.entries(EVENT_KEY_OWNERS)) {
     if (metadata[key] !== undefined && !owners.includes(event.eventName)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', key], message: 'key is not one this event may carry' });
+    }
+  }
+  const only = EVENT_ONLY_KEYS[event.eventName];
+  for (const key of Object.keys(metadata)) {
+    if (only && !only.includes(key)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['metadata', key], message: 'key is not one this event may carry' });
     }
   }

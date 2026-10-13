@@ -15,7 +15,8 @@
  */
 import { z } from 'zod';
 import { reportedToCanonical, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from './units';
-import { foldName } from './lab-catalog';
+import { foldName, normalizeLabUnit } from './lab-catalog';
+import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES } from './validation';
 
 // ---------------------------------------------------------------------------
@@ -89,6 +90,10 @@ export interface UnifiedExtractionResult {
   unrecognized: string[];
   /** Document data (populated when classification is NOT lab_report) */
   document: DocumentResult | null;
+  /** Lab rows the parse refused (an unreadable or ambiguous number, a
+   *  malformed row), so the person is told some were left out (US-12 AC8).
+   *  Absent where nothing was parsed from a model's reply. */
+  droppedValueCount?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -301,45 +306,90 @@ export const EXTRACTION_MAX_TOKENS = 8192; // Higher limit for markdown conversi
 // Response parsing
 // ---------------------------------------------------------------------------
 
+const NUMBER_TOKEN = /^\s*([+-]?[\d.,]+)/;
+
 /**
  * Lab values frequently encode non-numeric measurements as strings:
  *   "<5"       (below detection limit)
  *   ">2000"    (above range)
  *   "trace", "POS", "Not detected"
- *   "1,234"    (european thousands separator)
+ *   "5,2"      (European decimal comma)
+ *   "5.2 H"    (a flag or unit after the number)
  *
  * The LLM sometimes mirrors those strings into the `value` field even
- * though the prompt asks for numbers. Coerce numeric-looking strings to
- * numbers, leave true non-numerics as null so the post-parse filter can
- * drop the row (rather than throwing on the whole batch).
+ * though the prompt asks for numbers. Read the leading number as the form
+ * does (a comma is the decimal point, US-12 AC8) only when no digit follows
+ * it, outside one closing bracket ("6.5 % (48 mmol/mol)"). Fail closed: a
+ * range ("0-2", "5 to 7"), a ratio ("1:160"), an exponent ("1e3", "7 x 10^3"),
+ * Swiss thousands ("250'000") or a second decimal ("5·2") each says a
+ * different number, and listing them one by one always missed the next.
+ * A minus sign printed as U+2212 ("−2.5") is a minus. 1-3 digits, a comma
+ * and exactly 3 digits ("250,000", "1,050") is refused too: US thousands and
+ * a European decimal read 1000x apart, and both pass the count guard.
+ * Anything unreadable becomes null: the row drops, and a reference bound is
+ * unknown. A dot in that place, or any text but a flag, is refused on a
+ * count row only (see `refusedCountRow`).
  */
-const numericValue = z.preprocess(v => {
-  if (typeof v === 'number') return v;
+function readModelNumber(v: unknown): unknown {
   if (typeof v !== 'string') return v;
-  // Strip european thousand separators, then parse. parseFloat returns NaN
-  // for "<5", "trace", etc. — we surface that as null to drop the row.
-  const cleaned = v.replace(/,/g, '');
-  const n = parseFloat(cleaned);
-  return Number.isFinite(n) ? n : null;
-}, z.number().nullable());
+  const s = v.replace(/−/g, '-');
+  const m = NUMBER_TOKEN.exec(s);
+  const rest = s.slice(m?.[0].length).replace(/\s\([^()x×*^]*\)\s*$/u, '');
+  if (!m || /\p{N}/u.test(rest) || /^[+-]?[1-9]\d{0,2},\d{3}$/.test(m[1])) return null;
+  return parseLocalisedNumber(m[1]) ?? null;
+}
+
+const COUNT_STRING = /^\s*[+-]?[\d.,]+\s*(?:[(\[]?\s*(?:HH|LL|H|L|\*|↑|↓)\s*[)\]]?)?\s*$/i;
+
+/**
+ * A count row: a per-µL or per-mm³ denominator, whatever comes before it
+ * ("cells/uL", "células/µL", "/mm3", "cells/cumm", and every cubic
+ * millimetre `normalizeLabUnit` folds to µL: "cmm", "cu mm", "cu.mm",
+ * "c.mm"), unless a multiplier already carries the thousands: a power of ten
+ * ("×10³/µL", "10 ^ 3/uL") or a word before the slash ("K/uL", "M/µL",
+ * "Mio/µl", "tys/µl"). On it a string value or bound is a readable bare number
+ * and at most one flag (H, L, HH, LL, *, ↑, ↓, bracketed or not); anything
+ * else refuses the row, bounds included: a bound that reads as nothing
+ * ("150,000") leaves no range for the count guard to check the scale with. "7 (X10³)", "7 (E3)", "250 K" or "7 thousand" read as 7 or 250,
+ * a range printed the same way scales with it, the count guard passes, and
+ * the record holds 0.007 ×10⁹/L. So does "250.000": 250 thousand platelets
+ * in Brazil or Germany, 250 elsewhere, refused here and nowhere else (under
+ * "1.020" urine SG or "2.345" TSH the dot is a decimal point).
+ */
+function refusedCountRow(row: unknown): boolean {
+  const { value, unit, referenceLow, referenceHigh } = (row ?? {}) as Record<string, unknown>;
+  if (typeof unit !== 'string') return false;
+  const folded = normalizeLabUnit(unit);
+  return (/(?:^|\/)\s*(?:[µμu]l|mcl|mm[3³])\s*$|cumm/i.test(unit) || /(?:^|\/)\s*µl\s*$/i.test(folded))
+    && !/×10|10[\^*eE⁰¹²³⁴⁵⁶⁷⁸⁹]/.test(folded) && !/(?:^|[\s(])(?:k|m|thou|thousand|tsd|tys|mio|mln|mil|million)\s*\//i.test(unit)
+    && [value, referenceLow, referenceHigh].some(v => typeof v === 'string'
+      && (!COUNT_STRING.test(v) || readModelNumber(v) === null || /^[+-]?[1-9]\d{0,2}\.\d{3}$/.test(NUMBER_TOKEN.exec(v)?.[1] ?? '')));
+}
+
+const labValue = z.preprocess(readModelNumber, z.number());
+const labBound = z.preprocess(readModelNumber, z.number().nullable()).optional();
+
+const coreValueRow = z.object({
+  metric: z.string(),
+  value: labValue,
+  unit: z.string(),
+  confidence: z.enum(['high', 'medium', 'low']),
+  question: z.string().nullish().transform(q => q ?? undefined),
+});
+
+const additionalValueRow = z.object({
+  name: z.string().trim().min(1),
+  value: labValue,
+  unit: z.string().nullish().transform(u => u ?? ''),
+  referenceLow: labBound,
+  referenceHigh: labBound,
+});
 
 const unifiedResultSchema = z.object({
   classification: z.enum(DOCUMENT_CLASSIFICATIONS),
   reportDate: z.string().nullable(),
-  values: z.array(z.object({
-    metric: z.string(),
-    value: numericValue,
-    unit: z.string(),
-    confidence: z.enum(['high', 'medium', 'low']),
-    question: z.string().optional(),
-  })).default([]),
-  additionalValues: z.array(z.object({
-    name: z.string().default(''),
-    value: numericValue,
-    unit: z.string().default(''),
-    referenceLow: z.number().nullable().optional(),
-    referenceHigh: z.number().nullable().optional(),
-  })).default([]),
+  values: z.array(z.unknown()).default([]),
+  additionalValues: z.array(z.unknown()).default([]),
   unrecognized: z.array(z.string()).optional(),
   document: z.object({
     title: z.string(),
@@ -350,15 +400,24 @@ const unifiedResultSchema = z.object({
   }).nullable().default(null),
 });
 
-/** Wraps schema parse + drops rows whose value field couldn't be coerced to
- *  a finite number (the schema marks those null). Exposed for testing. */
+/** The rows of `rows` that `schema` reads; the rest are dropped. */
+function readableRows<T extends z.ZodTypeAny>(schema: T, rows: unknown[]): Array<z.output<T>> {
+  return rows.flatMap(row => {
+    const r = schema.safeParse(row);
+    return r.success && !refusedCountRow(row) ? [r.data] : [];
+  });
+}
+
+/** Parses the file's shape, then each value row on its own (US-12 AC8): a row
+ *  whose value isn't a readable number, or that is otherwise malformed, is
+ *  dropped rather than failing the whole file, and counted in
+ *  `droppedValueCount`. Exposed for testing. */
 export function parseUnifiedResult(raw: unknown) {
   const parsed = unifiedResultSchema.parse(raw);
-  return {
-    ...parsed,
-    values: parsed.values.filter(v => v.value !== null) as Array<typeof parsed.values[number] & { value: number }>,
-    additionalValues: parsed.additionalValues.filter(v => v.value !== null) as Array<typeof parsed.additionalValues[number] & { value: number }>,
-  };
+  const values = readableRows(coreValueRow, parsed.values);
+  const additionalValues = readableRows(additionalValueRow, parsed.additionalValues);
+  const droppedValueCount = parsed.values.length + parsed.additionalValues.length - values.length - additionalValues.length;
+  return { ...parsed, values, additionalValues, droppedValueCount };
 }
 
 /** Build a UnifiedExtractionResult from a parsed-and-filtered unified response. */
@@ -369,7 +428,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>): 
     classification: parsed.classification,
     reportDate: parsed.reportDate,
     values,
-    additionalValues: isLab ? parsed.additionalValues.filter(v => v.name.length > 0) : [],
+    additionalValues: isLab ? parsed.additionalValues : [],
     unrecognized: parsed.unrecognized || [],
     document: parsed.document ? {
       classification: parsed.classification,
@@ -379,6 +438,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>): 
       ...(parsed.document.summary !== undefined ? { summary: parsed.document.summary } : null),
       metadata: parsed.document.metadata as Record<string, unknown>,
     } : null,
+    droppedValueCount: isLab ? parsed.droppedValueCount : 0,
   };
 }
 

@@ -169,7 +169,7 @@ Health data must never be auto-saved without explicit user confirmation. The rev
 ### PDF Handling (`pdf-extract.ts`)
 
 1. Load PDF via `pdfjsLib.getDocument()`
-2. For each page (`MAX_PAGES = 20`):
+2. For each page, up to `IMPORT_LIMITS.websitePdfPages` (20). A longer PDF returns `truncated: true`, and the upload names it (US-12 AC9):
    - Extract text via `page.getTextContent()` → join text items
    - If meaningful text found (`TEXT_THRESHOLD` = 50 chars): send as `{ type: "text" }` — cheaper LLM call
    - If text layer is empty/sparse (scanned PDF): render to canvas at 1.5x scale → JPEG base64 (quality 0.8) → send as `{ type: "image" }` — vision LLM call
@@ -181,7 +181,7 @@ JPG/PNG uploaded directly → resize to max 1500px dimension (canvas, preserving
 
 ### ZIP Handling (`zip-extract.ts`)
 
-`JSZip.loadAsync(file)` enumerates entries recursively, filtered to `.pdf`, `.jpg`, `.jpeg`, `.png` and skipping junk (`__MACOSX/`, `.DS_Store`, `Thumbs.db`, dotfiles). Files process sequentially to manage memory, with a progress callback and AbortController cancellation.
+`JSZip.loadAsync(file)` enumerates entries recursively, filtered to `.pdf`, `.jpg`, `.jpeg`, `.png` and skipping junk (`__MACOSX/`, `.DS_Store`, `Thumbs.db`, dotfiles). Files process sequentially to manage memory, with a progress callback and AbortController cancellation. Since 2026-10-13 a member is named `zip/member` (`labs.zip/results.pdf`), its document's dedup key `sourceFileName`, so two ZIPs' same-path members stay apart; a ZIP imported before then, or renamed, offers its document-only members again (pre-ticked; off-cloud, saving one adds a second metadata row; lab values and hash-deduped originals unaffected). A member over 10 MB once inflated is named too large and never read (US-12 AC9).
 
 ---
 
@@ -192,7 +192,7 @@ The upload modal (`UploadModal.tsx`) is a 4-state machine: `'select' | 'processi
 ### State 1: Select
 - Drag-and-drop zone + file browser
 - Accepts `.pdf`, `.jpg`, `.jpeg`, `.png`, `.zip`
-- `MAX_FILES = 200` per session; `MAX_FILE_SIZE` = `IMPORT_LIMITS.websiteFileMb` (10 MB), client-side; over-size files are listed with an error, not silently dropped
+- `MAX_FILES = 200` per session; `MAX_FILE_SIZE` = `IMPORT_LIMITS.websiteFileMb` (10 MB), client-side; over-size files are listed by name with the limit, beside the files that were read, and never processed
 - Device-only users first see "Keep your original documents" (connect a cloud) with a "Continue without keeping my files" skip
 - "Extract Values" starts processing
 
@@ -211,6 +211,7 @@ The upload modal (`UploadModal.tsx`) is a 4-state machine: `'select' | 'processi
 
 ### State 4: Done
 - "Saved N blood test values, M additional lab values, K documents"; skipped-duplicate and "could not be saved" notices
+- **Files to check (US-12 AC9–10, 2026-10-13):** a guest's nine lab PDFs once saved with no word about the files that vanished. Review, done and error screens now list every file not fully read, by name, inside the Clarity-masked modal: could not open (pdf.js threw, the 30 s read timed out, or no pages; `readPages` notes it; a ZIP that will not open, or holds nothing readable, is named itself), too large, only the first 20 pages read, filed as a document with no values (`toUnifiedResult` discards a non-lab file's values), no values found, N values could not be read (`droppedValueCount`, rows the parse refused), server error (a failed or missing batch entry too), daily limit. A run that fails whole (batch refused, poll failed) gives every file without a verdict the server-error or daily-limit reason. Each run past the quota check, and each pick of only oversize files, fires one `upload_outcome` with integer counts only (`picked`, `withValues`, `documentOnly`, `noValues`, `openFailed`, `tooLarge`, `truncated`, `serverError`, `limitError`, `valuesDropped`, clamped to 1000), and the server refuses any other key on it; `truncated` overlaps the rest and `valuesDropped` counts values, not files. It is the one event `trackProductEvent` does not throttle per tab.
 - "Done" closes the modal and triggers a store refresh
 
 ### Entry Point
@@ -419,7 +420,7 @@ The `health-upload.js` extraction bundle (pdf.js/JSZip — transport-independent
 ### 3. Anthropic integration notes
 
 - Pipeline mode (< `BATCH_THRESHOLD` = 20 files): client extracts (EXTRACT_CONCURRENCY=3) feeding LLM_CONCURRENCY=5 concurrent single-file calls — extraction runs ahead so the queue stays full
-- Batch mode (≥ 20 files): Anthropic **Message Batches API** (50% cheaper; poll-based; per-machine poll state, see the route)
+- Batch mode (≥ 20 files): Anthropic **Message Batches API** (50% cheaper; poll-based; per-machine poll state, see the route). Each result carries its request index (`custom_id` `file-N`) and the client maps it to the file it sent; an errored, expired or unparseable entry carries `errorCode`, and a missing one is a server error too (US-12 AC9)
 - **Prompt caching is NOT applicable**: the system prompts are ~600–1,000 tokens, below Haiku 4.5's 4,096-token minimum cacheable prefix; the per-call cost is dominated by the unique document content anyway
 
 ### 4. Save-path performance (shipped June 2026)

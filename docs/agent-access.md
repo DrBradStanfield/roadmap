@@ -253,7 +253,7 @@ the Dropbox folder and the next time you ask your assistant anything about your 
 it offers them ("2 files in your folder are not in your record"); nothing runs while you
 are away, and nothing updates itself. A file it cannot read comes back
 with a `hint` in plain words (the type, the size limit, the day's quota, a missing date
-, answered with `fileDates: [{ file, date }]`), and `next` says what to do with what it found.
+, answered with `fileDates: [{ file, date }]`). A report it read only in part carries `droppedValues` (how many values it left out) and a `hint` to relay, since once filed it dedups as already imported (US-12 AC8, 2026-10-13). `next` says what to do with what it found.
 Three tools are permanent — `correct_value`, `update_profile`, `report_feedback` — and on
 the hosted server they take two calls: a proposal with a `confirm` receipt, then the same
 call with it after your yes, carrying your words as `approval`, quoted. An import's

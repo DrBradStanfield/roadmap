@@ -2059,6 +2059,23 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(fits(commit.structured).written).toEqual({ measurements: 1, labValues: 0, corrections: 0, documents: 3 });
   });
 
+  // US-35 / US-12 AC8: a value the parse refused ("250,000", a malformed row)
+  // left the report silently, and the commit's document row then made the next
+  // extract `already_imported`. The count rides on the file entry, with a hint.
+  it('AC13 — a partially refused report carries its dropped-value count and a hint, and validates against the published outputSchema', async () => {
+    const sync = syncOver(new MemoryCloud());
+    const partial: ImportSurface = { ...surface, async extract() {
+      return { route: 'dropbox', remaining: [], files: [extracted('partial.pdf', { ...ldlOnly(2.8, LAB_DAY), droppedValueCount: 2 }), extracted('clean.pdf', { ...ldlOnly(2.9, '2026-08-21'), droppedValueCount: 0 })] };
+    } };
+    const data = fits((await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: partial, latestDay: TODAY })).structured);
+    expect(data.files).toEqual([
+      { name: 'partial.pdf', status: 'extracted', classification: 'lab_report', documentDate: LAB_DAY, droppedValues: 2, hint: '2 values on this report could not be read and were left out. Check the report for them.' },
+      { name: 'clean.pdf', status: 'extracted', classification: 'lab_report', documentDate: '2026-08-21' },
+    ]);
+    expect(data.candidates.map((c) => c.sourceFileName)).toEqual(['partial.pdf', 'clean.pdf']);
+    expect(data.next).toContain("1 file(s) had values that could not be read: relay that file's hint.");
+  });
+
   it('AC8 — a document-only extract names the documents to file and tells the assistant to offer an empty commit', async () => {
     // Live 2026-09-05: a clinic letter came back as "0 value(s) are new" and
     // ChatGPT never offered to file it. The result must carry the documents

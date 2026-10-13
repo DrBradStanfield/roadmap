@@ -791,6 +791,21 @@ describe('RoadmapStore.saveScreening (US-06)', () => {
     expect(typeof file.screenings.lungPackYears).toBe('number');
   });
 
+  // US-12 AC8: parseFloat stored a decimal-comma PSA "4,5" as 4. A blank
+  // answer still writes null, the way a field is cleared (US-10 AC6).
+  it('US-12 AC8: stores a decimal-comma PSA as a decimal, and a blank answer as null', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.saveScreening('prostate_psa_value', '4,5');
+    store.saveScreening('lung_pack_years', '');
+    await store.flush();
+
+    const file = readCloudFile(cloud);
+    expect(file.screenings.prostatePsaValue).toBe(4.5);
+    expect(file.screenings.lungPackYears).toBeNull();
+    expect(store.loadLatestMeasurements().screenings.map((s) => s.screeningKey)).not.toContain('lung_pack_years');
+  });
+
   it('is a singleton merge, not a replace: setting a second key preserves the first', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));

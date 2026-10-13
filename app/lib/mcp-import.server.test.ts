@@ -382,6 +382,21 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
     expect(again.isError).toBe(true);
     expect(again.text).toContain('names no pending import');
   });
+
+  // US-35 / US-12 AC8: a row the parse refused ("250,000") vanished, and once
+  // the report was filed the next extract answered already_imported.
+  it('a partially refused report says how many values it left out before the document dedups', async () => {
+    const cloud = new MemoryCloud();
+    cloud.docs.set('labs.pdf', new Blob([PDF]));
+    const adapter = new MemoryAdapter(cloud);
+    await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'test', now: NOW }), null);
+    setImportSeams({ extract: async () => ({ ...report, droppedValueCount: 3 }) });
+    const extract = await runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', {}, NOW, {
+      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 }),
+    });
+    const data = OUTPUTS.import_documents.parse(extract.structured);
+    expect(data.files).toEqual([expect.objectContaining({ name: 'labs.pdf', status: 'extracted', droppedValues: 3, hint: expect.stringMatching(/^3 values on this report could not be read/) })]);
+  });
 });
 
 describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete that fails is only counted', () => {

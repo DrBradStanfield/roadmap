@@ -44,6 +44,7 @@ import {
   measurementsToInputs,
   mergeFiles,
   migrateFile,
+  parseLocalisedNumber,
   PREFILL_FIELDS,
   SchemaTooNewError,
   screeningFieldName,
@@ -523,7 +524,8 @@ export class RoadmapStore {
 
   saveScreening(screeningKey: string, value: string): boolean {
     const field = screeningFieldName(screeningKey);
-    const parsed = NUMERIC_SCREENING_KEYS.has(screeningKey) ? parseFloat(value) : value;
+    // A blank or unreadable number is stored as null, which clears the field (US-10 AC6).
+    const parsed = NUMERIC_SCREENING_KEYS.has(screeningKey) ? parseLocalisedNumber(value) ?? null : value;
     // Stamp this answer's clock, and only its own (US-10 AC6). Unstamped it
     // stays lamport:0 like the empty remote, and the merge can discard it; with
     // the whole object's stamp it would carry this copy of every other answer.

@@ -3,6 +3,7 @@ import {
   type ApiMeasurement,
   type FileReminderOptIn,
   type HealthInputs,
+  isLabUnitWord,
   labUnitTaken,
   type ReminderScheduleItem,
   resolveLabCatalogEntry,
@@ -142,8 +143,11 @@ export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<Bu
   const result = store.bulkSaveLabValues(values);
   // The one place every lab writer passes, so each refused row is counted once:
   // only a spelling the test does not take, the signal for the next one to teach it (US-21 AC15).
+  // A unit that is not a unit word is counted without it (US-21 AC11).
   for (const row of result.refused) {
-    if (!labUnitTaken(resolveLabCatalogEntry(row.key), row.unit)) trackProductEvent('lab_unit_refused', { key: row.key, unit: row.unit });
+    if (!labUnitTaken(resolveLabCatalogEntry(row.key), row.unit)) {
+      trackProductEvent('lab_unit_refused', isLabUnitWord(row.unit) ? { key: row.key, unit: row.unit } : { key: row.key });
+    }
   }
   return result;
 }

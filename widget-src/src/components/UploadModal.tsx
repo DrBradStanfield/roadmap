@@ -2,9 +2,10 @@ import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota } from 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { IMPORT_LIMITS, type LabUnitRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
+import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
-import type { PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
+import type { LabImportResult, PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
 import { labUnitRefusalLine } from '../lib/lab-value-labels';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
@@ -98,7 +99,7 @@ const PROGRESS_MESSAGES = [
 
 // Types for the upload processing bundle (loaded lazily)
 interface HealthUploadAPI {
-  extractFromPdf: (file: File) => Promise<PageContent[]>;
+  extractFromPdf: (file: File) => Promise<{ pages: PageContent[]; truncated: boolean }>;
   isPdf: (file: File) => boolean;
   getZipEntries: (file: File) => Promise<Array<{ name: string; entry: { async: (type: 'blob') => Promise<Blob> } }>>;
   isZip: (file: File) => boolean;
@@ -108,6 +109,103 @@ interface HealthUploadAPI {
 
 const MAX_FILES = 200;
 const MAX_FILE_SIZE = IMPORT_LIMITS.websiteFileMb * 1024 * 1024; // the connector's hint names this number
+
+/** Why a file was not fully read (US-12 AC9). Each is also its `upload_outcome` count. */
+type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues'>;
+/** `name` is the file's whole path, its identity; the list shows it short (`noticeName`).
+ *  `count` is how many the notice stands for (values dropped); `text` overrides the reason's. */
+interface FileNotice { name: string; reason: FileNoticeReason; count?: number; text?: string }
+const FILE_NOTICE_TEXT: Record<Exclude<FileNoticeReason, 'valuesDropped'>, string> = {
+  openFailed: 'Could not open it. It may be password-protected, damaged, or not a PDF or photo.',
+  tooLarge: `Too large to read. The limit is ${IMPORT_LIMITS.websiteFileMb} MB per file.`,
+  truncated: `Only the first ${IMPORT_LIMITS.websitePdfPages} pages were read.`,
+  documentOnly: 'Filed as a document. No blood test values found.',
+  noValues: 'No blood test values found.',
+  serverError: 'Our server could not read it. Please try again.',
+  limitError: 'Not read. The daily upload limit was reached.',
+};
+const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
+
+function noticeText({ reason, count = 1, text }: FileNotice): string {
+  if (text) return text;
+  if (reason === 'valuesDropped') return `${count} value${count === 1 ? '' : 's'} could not be read.`;
+  return FILE_NOTICE_TEXT[reason];
+}
+
+const shortName = (fileName: string) => fileName.split('/').pop() || fileName;
+/** A file's short name, or its whole path when another listed file shares the short one. */
+const noticeName = (name: string, notices: FileNotice[]) =>
+  notices.some(n => n.name !== name && shortName(n.name) === shortName(name)) ? name : shortName(name);
+const hasValues = (r: FileResult) => r.values.length + r.additionalValues.length > 0;
+function withTimeout<T>(work: Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT); });
+  return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
+}
+
+/** One file to read. A ZIP member's `fileName` is its ZIP's name, then its
+ *  path (`labs.zip/results.pdf`): two ZIPs can hold one path, and the name is
+ *  the document's `sourceFileName`, stable across uploads of the same ZIP. */
+interface ReadInput { fileName: string; getFile: () => Promise<File> }
+
+/** Reads one file's pages (pdf.js or image resize), with the file they came
+ *  from: its original travels with its result. A file that will not open, or
+ *  has no pages, is noted and gives none; it is never silently dropped. The
+ *  size limit is checked here too: a small ZIP can hold a member past it. */
+async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: ReadInput, notices: FileNotice[]): Promise<{ pages: PageContent[]; file?: File }> {
+  try {
+    const file = await getFile();
+    if (file.size > MAX_FILE_SIZE) {
+      notices.push({ name, reason: 'tooLarge' });
+      return { pages: [] };
+    }
+    if (upload.isPdf(file)) {
+      const { pages, truncated } = await withTimeout(upload.extractFromPdf(file));
+      if (truncated) notices.push({ name, reason: 'truncated' });
+      if (pages.length > 0) return { pages, file };
+    } else if (upload.isImage(file)) {
+      return { pages: [{ type: 'image', content: await withTimeout(upload.resizeImage(file, 1200)), mimeType: 'image/jpeg' }], file };
+    }
+  } catch { /* noted below: the reason is the user's, the error is pdf.js's */ }
+  notices.push({ name, reason: 'openFailed' });
+  return { pages: [] };
+}
+
+/** A file the server read, as a review row; values its parse refused are named (US-12 AC9). */
+function readResult(fileName: string, result: LabImportResult, notices: FileNotice[]): FileResult {
+  if (result.droppedValueCount) notices.push({ name: fileName, reason: 'valuesDropped', count: result.droppedValueCount });
+  return { fileName, reportDate: result.reportDate, values: result.values, additionalValues: result.additionalValues || [], document: result.document ?? undefined };
+}
+
+/** A file the server did not read, named with why: the daily limit, or anything else. */
+function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, error: string, notices: FileNotice[]): FileResult {
+  notices.push({ name: fileName, reason: errorCode === 'rate_limit' ? 'limitError' : 'serverError' });
+  return { fileName, reportDate: null, values: [], additionalValues: [], error };
+}
+
+/** US-12 AC10: one run's counts, integers only. Never a name, unit or value. */
+function trackUploadOutcome(picked: number, withValues: number, notices: FileNotice[]): void {
+  const counts: Partial<Record<UploadOutcomeKey, number>> = { picked, withValues };
+  for (const n of notices) counts[n.reason] = (counts[n.reason] ?? 0) + (n.count ?? 1);
+  trackProductEvent('upload_outcome', Object.fromEntries(
+    UPLOAD_OUTCOME_KEYS.map(k => [k, Math.min(counts[k] ?? 0, UPLOAD_OUTCOME_MAX)]),
+  ));
+}
+
+/** The files a run did not fully read, each with its reason (US-12 AC9). */
+function FileNotices({ notices }: { notices: FileNotice[] }) {
+  if (notices.length === 0) return null;
+  return (
+    <div className="upload-file-notices">
+      <p className="upload-file-notices-title">Check these files:</p>
+      <ul aria-label="Files to check">
+        {notices.map((n, i) => (
+          <li key={i}><span className="upload-file-notice-name">{noticeName(n.name, notices)}</span> {noticeText(n)}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, age, sex, open, onOpen }: UploadModalProps) {
   const [state, setState] = useState<ModalState>('select');
@@ -119,6 +217,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   const [progress, setProgress] = useState({ current: 0, total: 0, fileName: '' });
   const [results, setResults] = useState<FileResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [notices, setNotices] = useState<FileNotice[]>([]);
   const [savedCount, setSavedCount] = useState(0);
   const [skippedMeasurements, setSkippedMeasurements] = useState(0);
   const [skippedLabValues, setSkippedLabValues] = useState(0);
@@ -142,6 +241,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     setFiles([]);
     setResults([]);
     setError(null);
+    setNotices([]);
     setProgress({ current: 0, total: 0, fileName: '' });
     setSavedCount(0);
     setSkippedMeasurements(0);
@@ -208,18 +308,13 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   const handleFileSelect = (selectedFiles: FileList | null) => {
     if (!selectedFiles) return;
     const fileArray = Array.from(selectedFiles).slice(0, MAX_FILES);
-    const valid = fileArray.filter(f => {
-      if (f.size > MAX_FILE_SIZE) {
-        setError(`${f.name} exceeds 10MB limit and was skipped`);
-        return false;
-      }
-      return true;
-    });
+    const valid = fileArray.filter(f => f.size <= MAX_FILE_SIZE);
+    const tooLarge = fileArray.filter(f => f.size > MAX_FILE_SIZE).map(f => ({ name: f.name, reason: 'tooLarge' as const }));
     setFiles(valid);
-    if (valid.length > 0) {
-      setError(null);
-      void handleProcess(valid);
-    }
+    setError(null);
+    setNotices(tooLarge);
+    if (valid.length > 0) void handleProcess(valid, tooLarge);
+    else if (tooLarge.length > 0) trackUploadOutcome(tooLarge.length, 0, tooLarge);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -227,7 +322,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     handleFileSelect(e.dataTransfer.files);
   };
 
-  const handleProcess = async (filesToProcess: File[]) => {
+  const handleProcess = async (filesToProcess: File[], tooLarge: FileNotice[]) => {
     // Claim synchronously: React state alone cannot guard two selections in
     // the same render, especially while quota/draft flushing is still pending.
     if (abortRef.current || savingRef.current || filesToProcess.length === 0) return;
@@ -241,6 +336,30 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     };
 
     const fileCount = filesToProcess.length;
+    // Every file the run did not fully read, oversize ones first (US-12 AC9).
+    // `names` is every other file seen, by whole path: a ZIP's members once it is listed.
+    const runNotices = [...tooLarge];
+    let names = filesToProcess.map(f => f.name);
+    /** The run failed as a whole: each file without a verdict yet gets this one.
+     *  Verdicts are matched one for one, so two files on one path count twice. */
+    const failUnread = (reason: 'serverError' | 'limitError') => {
+      const settled = runNotices.filter(n => n.reason !== 'truncated' && n.reason !== 'valuesDropped').map(n => n.name);
+      for (const name of names) {
+        const i = settled.indexOf(name);
+        if (i >= 0) settled.splice(i, 1);
+        else runNotices.push({ name, reason });
+      }
+    };
+    const finish = (finished: FileResult[]) => {
+      let withValues = 0;
+      for (const r of finished) {
+        if (r.error) continue;
+        if (hasValues(r)) withValues++;
+        else runNotices.push({ name: r.fileName, reason: r.document ? 'documentOnly' : 'noValues' });
+      }
+      setNotices(runNotices);
+      trackUploadOutcome(tooLarge.length + names.length, withValues, runNotices);
+    };
 
     try {
       const quota = await checkLabImportQuota();
@@ -259,19 +378,29 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       const zipFiles = filesToProcess.filter(f => upload.isZip(f));
       const otherFiles = filesToProcess.filter(f => !upload.isZip(f));
 
-      // Count total files for progress (need to peek inside ZIPs)
-      let totalFiles = otherFiles.length;
-      const zipEntryLists: Array<{ name: string; entry: { async: (type: 'blob') => Promise<Blob> } }[]> = [];
+      // Every file to read, ZIP members first (named with their ZIP: `ReadInput`).
+      // A ZIP that will not open, or holds nothing readable, is itself the file named.
+      const inputs: ReadInput[] = [];
+      names = [];
       for (const zip of zipFiles) {
         if (abort.signal.aborted) break;
         updateProgress({ current: 0, total: 100, fileName: `Opening ${zip.name}...` });
-        const entries = await upload.getZipEntries(zip);
-        zipEntryLists.push(entries);
-        totalFiles += entries.length;
+        const entries = await upload.getZipEntries(zip).catch(() => null);
+        if (!entries?.length) {
+          names.push(zip.name);
+          runNotices.push({ name: zip.name, reason: 'openFailed', text: entries ? EMPTY_ZIP_TEXT : undefined });
+          continue;
+        }
+        for (const { name, entry } of entries) {
+          inputs.push({ fileName: `${zip.name}/${name}`, getFile: async () => new File([await entry.async('blob')], shortName(name)) });
+        }
       }
+      inputs.push(...otherFiles.map(file => ({ fileName: file.name, getFile: async () => file })));
+      names.push(...inputs.map(i => i.fileName));
 
-      if (totalFiles === 0 || abort.signal.aborted) {
+      if (inputs.length === 0 || abort.signal.aborted) {
         if (!abort.signal.aborted) {
+          finish([]);
           setError('No readable files found.');
           setState('error');
           abortRef.current = null;
@@ -279,52 +408,20 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         return;
       }
 
-      // For batch path (>=20 files): extract all, then batch
-      if (totalFiles >= BATCH_THRESHOLD) {
-        const allFileObjects: Array<{ fileName: string; file: File }> = [];
-        for (const entries of zipEntryLists) {
-          for (const { name, entry } of entries) {
-            if (abort.signal.aborted) return;
-            const blob = await entry.async('blob');
-            if (abort.signal.aborted) return;
-            allFileObjects.push({ fileName: name, file: new File([blob], name.split('/').pop() || name) });
-          }
-        }
-        for (const file of otherFiles) {
-          allFileObjects.push({ fileName: file.name, file });
-        }
-        const allResults = await processBatch(upload, allFileObjects, abort, updateProgress);
-        if (abort.signal.aborted) return;
-        // Originals are only kept when the backend can archive them — off-cloud,
-        // skip the blob bookkeeping entirely (the bytes would be stripped anyway).
-        const keepBlobs = getDocumentArchiveMode() === 'cloud';
-        const batchBlobs = keepBlobs
-          ? new Map<string, Blob>(allFileObjects.map((f) => [f.fileName, f.file as Blob]))
-          : new Map<string, Blob>();
-        const attached = await attachOriginals(allResults, batchBlobs);
-        if (abort.signal.aborted) return;
-        abortRef.current = null;
-        setResults(attached);
-        setState('review');
-        return;
-      }
-
-      // Pipeline path (<20 files): producer extracts, consumer sends to LLM.
-      // Keep the original bytes by name so the save step can archive them in
-      // the user's cloud (v2) — ZIP members are re-read (cheap, in-memory).
-      // Off-cloud the bytes would be stripped at save, so skip the work.
-      const fileBlobs = new Map<string, Blob>();
-      if (getDocumentArchiveMode() === 'cloud') {
-        for (const entries of zipEntryLists) {
-          for (const { name, entry } of entries) fileBlobs.set(name, await entry.async('blob'));
-        }
-        for (const file of otherFiles) fileBlobs.set(file.name, file);
-      }
-      const allResults = await processPipeline(upload, zipEntryLists, otherFiles, totalFiles, abort, updateProgress, unitSystem);
+      // Batch path (>=20 files): extract all, then batch. Pipeline path (<20):
+      // a producer extracts, a consumer sends each file to the LLM.
+      const allResults = inputs.length >= BATCH_THRESHOLD
+        ? await processBatch(upload, inputs, abort, updateProgress, runNotices)
+        : await processPipeline(upload, inputs, abort, updateProgress, unitSystem, runNotices);
       if (abort.signal.aborted) return;
-      const attached = await attachOriginals(allResults, fileBlobs);
+      // Each result carries its own original. It is kept only when the backend
+      // can archive it: off-cloud the bytes would be stripped at save.
+      const attached = getDocumentArchiveMode() === 'cloud'
+        ? await attachOriginals(allResults)
+        : allResults.map(r => ({ ...r, file: undefined }));
       if (abort.signal.aborted) return;
       abortRef.current = null;
+      finish(attached);
       setResults(attached);
       setState('review');
     } catch (err) {
@@ -335,6 +432,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
           tags: { feature: 'upload', uploadErrorCode: code },
         });
         trackProductEvent('upload_extract_failed');
+        failUnread(code === 'rate_limit' ? 'limitError' : 'serverError');
+        finish([]);
         setError(err instanceof UploadError
           ? UPLOAD_ERROR_MESSAGES[err.code]
           : 'An error occurred while processing files. Please try again.');
@@ -344,23 +443,6 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     }
   };
 
-  /** Extract pages from a File (pdf.js or image resize) with timeout. */
-  async function extractPages(upload: HealthUploadAPI, file: File): Promise<PageContent[]> {
-    if (upload.isPdf(file)) {
-      return Promise.race([
-        upload.extractFromPdf(file),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT)),
-      ]);
-    } else if (upload.isImage(file)) {
-      const base64 = await Promise.race([
-        upload.resizeImage(file, 1200),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT)),
-      ]);
-      return [{ type: 'image', content: base64, mimeType: 'image/jpeg' }];
-    }
-    return [];
-  }
-
   /**
    * Pipeline: producer extracts files (ZIP blob → pdf.js → pages), consumer
    * sends pages to LLM one at a time. Extraction runs ahead of LLM calls —
@@ -368,14 +450,14 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
    */
   async function processPipeline(
     upload: HealthUploadAPI,
-    zipEntryLists: Array<Array<{ name: string; entry: { async: (type: 'blob') => Promise<Blob> } }>>,
-    otherFiles: File[],
-    totalFiles: number,
+    allInputs: ReadInput[],
     abort: AbortController,
     updateProgress: (p: { current: number; total: number; fileName: string }) => void,
     us: UnitSystem,
+    notices: FileNotice[],
   ): Promise<FileResult[]> {
-    const queue: Array<{ fileName: string; pages: PageContent[] }> = [];
+    const totalFiles = allInputs.length;
+    const queue: Array<{ fileName: string; pages: PageContent[]; file?: File }> = [];
     const allResults: FileResult[] = [];
     let completedCount = 0;
     let activeWorkers = 0;
@@ -395,24 +477,15 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         if (abort.signal.aborted) break;
         activeWorkers++;
         const item = queue.shift()!;
-        const shortName = item.fileName.split('/').pop() || item.fileName;
-        updateProgress({ current: Math.round((completedCount / totalFiles) * 100), total: 100, fileName: shortName });
+        updateProgress({ current: Math.round((completedCount / totalFiles) * 100), total: 100, fileName: shortName(item.fileName) });
 
         // Send to LLM
-        labImport(item.pages, us).then(({ result, error: importError }) => {
-          if (result) {
-            allResults.push({
-              fileName: item.fileName,
-              reportDate: result.reportDate,
-              values: result.values,
-              additionalValues: result.additionalValues || [],
-              document: result.document ?? undefined,
-            });
-          } else {
-            allResults.push({ fileName: item.fileName, reportDate: null, values: [], additionalValues: [], error: importError || 'Extraction failed' });
-          }
+        labImport(item.pages, us).then(({ result, error: importError, errorCode }) => {
+          allResults.push(result
+            ? { ...readResult(item.fileName, result, notices), file: item.file }
+            : unreadResult(item.fileName, errorCode, importError || 'Extraction failed', notices));
         }).catch(() => {
-          allResults.push({ fileName: item.fileName, reportDate: null, values: [], additionalValues: [], error: 'Processing failed' });
+          allResults.push(unreadResult(item.fileName, undefined, 'Processing failed', notices));
         }).finally(() => {
           completedCount++;
           activeWorkers--;
@@ -427,42 +500,19 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       }
     }
 
-    // Producer: collect all inputs, then run a pool of extractors in parallel.
-    // Sequential extraction starved LLM workers (extraction ~2s vs LLM ~5s);
-    // EXTRACT_CONCURRENCY parallel extractors keep the LLM queue full.
-    const allInputs: Array<{ fileName: string; getFile: () => Promise<File> }> = [];
-    for (const entries of zipEntryLists) {
-      for (const { name, entry } of entries) {
-        allInputs.push({
-          fileName: name,
-          getFile: async () => {
-            const blob = await entry.async('blob');
-            return new File([blob], name.split('/').pop() || name);
-          },
-        });
-      }
-    }
-    for (const file of otherFiles) {
-      allInputs.push({ fileName: file.name, getFile: async () => file });
-    }
-
+    // Producer: a pool of extractors in parallel. Sequential extraction starved
+    // LLM workers (extraction ~2s vs LLM ~5s); EXTRACT_CONCURRENCY parallel
+    // extractors keep the LLM queue full.
     let extractIndex = 0;
     async function extractWorker() {
       while (extractIndex < allInputs.length) {
         if (abort.signal.aborted) break;
-        const i = extractIndex++;
-        const { fileName, getFile } = allInputs[i];
-        try {
-          const file = await getFile();
-          if (abort.signal.aborted) return;
-          const pages = await extractPages(upload, file);
-          if (abort.signal.aborted) return;
-          if (pages.length > 0) {
-            queue.push({ fileName, pages });
-            tryStartWorker();
-          }
-        } catch (err) {
-          console.warn('Failed to extract a file');
+        const input = allInputs[extractIndex++];
+        const { pages, file } = await readPages(upload, input, notices);
+        if (abort.signal.aborted) return;
+        if (pages.length > 0) {
+          queue.push({ fileName: input.fileName, pages, file });
+          tryStartWorker();
         }
       }
     }
@@ -484,21 +534,21 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   /** Batch: send all files in one request, poll for results. For 20+ files. */
   async function processBatch(
     upload: HealthUploadAPI,
-    queue: Array<{ fileName: string; file: File }>,
+    queue: ReadInput[],
     abort: AbortController,
     updateProgress: (p: { current: number; total: number; fileName: string }) => void,
+    notices: FileNotice[],
   ): Promise<FileResult[]> {
     const allFiles: Array<{ fileName: string; pages: PageContent[] }> = [];
+    const originals: Array<File | undefined> = []; // by position in allFiles
     for (let i = 0; i < queue.length; i++) {
       if (abort.signal.aborted) break;
-      const { fileName, file } = queue[i];
-      const shortName = fileName.split('/').pop() || fileName;
-      updateProgress({ current: Math.round((i / queue.length) * 30), total: 100, fileName: `Reading ${shortName}...` });
-      try {
-        const pages = await extractPages(upload, file);
-        if (pages.length > 0) allFiles.push({ fileName, pages });
-      } catch (err) {
-        console.warn('Failed to extract a file');
+      const { fileName } = queue[i];
+      updateProgress({ current: Math.round((i / queue.length) * 30), total: 100, fileName: `Reading ${shortName(fileName)}...` });
+      const { pages, file } = await readPages(upload, queue[i], notices);
+      if (pages.length > 0) {
+        allFiles.push({ fileName, pages });
+        originals.push(file);
       }
     }
 
@@ -511,7 +561,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     if (abort.signal.aborted) return [];
     if (!batchId) throw new UploadError(batchError || 'Failed to start processing', batchErrorCode || 'server_error');
 
-    const fileNames = allFiles.map(f => (f.fileName.split('/').pop() || f.fileName));
+    const fileNames = allFiles.map(f => shortName(f.fileName));
     let fakeProgress = 35;
     let realCompleted = 0;
     let tickCount = 0;
@@ -544,13 +594,19 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         if (poll.status === 'ended' && poll.results) {
           clearInterval(fakeTimer);
           updateProgress({ current: 100, total: 100, fileName: 'All files processed!' });
-          return poll.results.map(r => ({
-            fileName: r.fileName || 'Unknown file',
-            reportDate: r.reportDate,
-            values: r.values || [],
-            additionalValues: r.additionalValues || [],
-            document: r.document ?? undefined,
-          }));
+          // Each result names its request's position, so a lost or failed one
+          // is reported against its own file, never "Unknown file" (US-12 AC9).
+          // An old server (the deploy window) sends no index, only the order,
+          // which says nothing when the counts differ: then every file is unread.
+          const indexed = poll.results.some(r => typeof r.index === 'number');
+          const byIndex = new Map(indexed || poll.results.length === allFiles.length
+            ? poll.results.map((r, i) => [indexed ? r.index : i, r]) : []);
+          return allFiles.map(({ fileName }, i) => {
+            const r = byIndex.get(i);
+            return r && !('errorCode' in r)
+              ? { ...readResult(fileName, r, notices), file: originals[i] }
+              : unreadResult(fileName, r?.errorCode, 'Extraction failed', notices);
+          });
         }
       }
       return [];
@@ -730,6 +786,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                 </div>
               )}
               {error && <p className="upload-error">{error}</p>}
+              <FileNotices notices={notices} />
             </div>
           )}
 
@@ -748,6 +805,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
             </div>
           )}
 
+          {state === 'review' && <FileNotices notices={notices} />}
           {state === 'review' && (
             <ReviewTable
               results={results}
@@ -799,6 +857,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                   {saveErrorCount} item{saveErrorCount !== 1 ? 's' : ''} could not be saved. Please try again.
                 </p>
               )}
+              <FileNotices notices={notices} />
               <button className="btn-primary upload-done-btn" onClick={handleClose}>
                 Done
               </button>

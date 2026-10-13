@@ -34,12 +34,6 @@ import type { BatchPollResponse, LabImportResult, PageContent, UploadErrorCode }
 const NO_KEY_MESSAGE =
   'Connect your Anthropic API key (in the "Ask about your plan" panel) to process documents on this page.';
 
-/** An empty 'other' result — what a failed extraction degrades to (mirrors the
- *  server's pollBatch per-file fallback so the review UI behaves identically). */
-const EMPTY_RESULT: LabImportResult = {
-  classification: 'other', reportDate: null, values: [], additionalValues: [], document: null,
-};
-
 export async function checkLabImportQuota(): Promise<{ allowed: boolean; remaining: number; message?: string }> {
   if (!getAnthropicKey()) return { allowed: false, remaining: 0, message: NO_KEY_MESSAGE };
   // The user's own key — any limits are theirs, enforced by Anthropic per call.
@@ -114,7 +108,7 @@ interface ByokBatch {
   total: number;
   completed: number;
   done: boolean;
-  results: Array<LabImportResult & { fileName: string }>;
+  results: NonNullable<BatchPollResponse['results']>;
 }
 
 const activeBatches = new Map<string, ByokBatch>();
@@ -139,23 +133,20 @@ async function runBatch(
   files: Array<{ fileName: string; pages: PageContent[] }>,
   batch: ByokBatch,
 ): Promise<void> {
-  const results = new Array<LabImportResult & { fileName: string }>(files.length);
+  const results: ByokBatch['results'] = new Array(files.length);
   let next = 0;
 
   async function worker(): Promise<void> {
     while (next < files.length) {
       const index = next++;
-      const file = files[index];
-      let result: LabImportResult;
       try {
-        result = await extractDirect(apiKey, file.pages);
+        results[index] = { ...await extractDirect(apiKey, files[index].pages), index };
       } catch (error) {
-        // Per-file failure → empty 'other' result, matching the server batch
-        // path (pollBatch in anthropic.server.ts) so review UI behaves the same.
-        console.warn(`BYOK batch: ${file.fileName} failed:`, error);
-        result = EMPTY_RESULT;
+        // Marked by position, like the server batch path (pollBatch in
+        // anthropic.server.ts), so the modal names the file and why (US-12 AC9).
+        console.warn(`BYOK batch: ${files[index].fileName} failed:`, error);
+        results[index] = { index, errorCode: error instanceof ByokAnthropicError ? UPLOAD_ERROR_CODE[error.code] : 'server_error' };
       }
-      results[index] = { ...result, fileName: file.fileName };
       batch.completed += 1;
     }
   }

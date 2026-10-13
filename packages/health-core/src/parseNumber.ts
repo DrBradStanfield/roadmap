@@ -7,11 +7,11 @@
  * normalise on parse rather than relying on the input element.
  */
 export function parseLocalisedNumber(s: string): number | undefined {
-  const trimmed = s.trim();
-  if (trimmed === '' || trimmed === '-') return undefined;
   // Replace ALL commas with periods — if a user has both (thousands + decimal),
   // we don't try to be clever. Lab values never need thousands separators.
-  const normalised = trimmed.replace(/,/g, '.');
+  // Plain decimals only: Number() would also read "0x10", "1e3", "Infinity".
+  const normalised = s.trim().replace(/,/g, '.');
+  if (!/^[+-]?(\d+(\.\d*)?|\.\d+)$/.test(normalised)) return undefined;
   const n = Number(normalised);
   return Number.isFinite(n) ? n : undefined;
 }
