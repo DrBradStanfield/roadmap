@@ -106,6 +106,11 @@ async function identityFor(backend: ReminderBackend): Promise<Identity | null> {
   return email ? { provider: 'github', email } : null;
 }
 
+/** One address, however the provider cased or padded it. */
+function sameAddress(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
 /** The ID token for a Drive-verified cancel (hard delete); null on any other lane or failure. */
 async function cancelProofFor(backend: Backend): Promise<string | null> {
   if (backend !== 'google-drive') return null;
@@ -210,22 +215,42 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
   if (optIn?.status === 'active' && optIn.provider === backend) return;
 
   try {
-    // Switched clouds (Drive → Dropbox): the live row points at the account
-    // they left, so reminders would keep going to an inbox they no longer read
-    // — and the fresh enrolment below can't replace it, because rows are keyed
-    // by email. Drop it first. Deliberately NOT cancelReminders(): a storage
-    // switch is not a user opting out, and must not be counted as one.
-    // A refused cancel stops here: enrolling now would write the new token
-    // over the old one, the only key to that row. The file keeps the old
-    // opt-in, so the next visit on the new cloud tries the cancel again.
     if (optIn?.status === 'active') {
+      // Switched clouds, same address (AC12): rows are keyed by email, so the
+      // old token still owns the one row there is. Cancelling it and opting in
+      // again only gets a tokenless `refreshed`, and the file never moves on.
+      const identity = await identityFor(backend);
+      if (identity && 'email' in identity && sameAddress(identity.email, optIn.email)) {
+        setReminderOptIn({ ...optIn, provider: backend });
+        await flushRoadmapStore();
+        return;
+      }
+      // The new cloud gives no address yet: keep the old row and its reminders
+      // (the control still reads "on → old address") rather than cancel a row
+      // nothing can replace. The next visit tries again.
+      if (!identity) return;
+      // Switched clouds (Drive → Dropbox): the live row points at the account
+      // they left, so reminders would keep going to an inbox they no longer read
+      // — and the fresh enrolment below can't replace it, because rows are keyed
+      // by email. Drop it first. Deliberately NOT cancelReminders(): a storage
+      // switch is not a user opting out, and must not be counted as one.
+      // A refused cancel stops here: enrolling now would write the new token
+      // over the old one, the only key to that row. The file keeps the old
+      // opt-in, so the next visit on the new cloud tries the cancel again.
       const res = await postCancel(optIn.token, await cancelProofFor(optIn.provider));
-      if (!res.ok) throw new Error(`Old reminder row cancel failed (${res.status}).`);
+      if (!res.ok) {
+        // The status code only: no address, no schedule (CLAUDE.md telemetry rule).
+        const refused = new Error(`Old reminder row cancel failed (${res.status}).`);
+        Sentry.captureException(refused, { tags: { area: 'reminders', op: 'switch-cancel' } });
+        throw refused;
+      }
     }
 
     // An already-enrolled address (token lost with the file, or enrolled from
     // another lane) is refreshed server-side and nothing is written here —
     // there is no enrolment to announce, and the next visit refreshes again.
+    // After a switch the file keeps the old opt-in (no token to replace it),
+    // so pushReminderSchedule holds off and no 404 can mark it cancelled.
     if ((await optInToReminders(backend, { silent: true })).refreshed) return;
     try { sessionStorage.setItem(ENROL_NOTICE_KEY, '1'); } catch { /* the live event still fires */ }
     window.dispatchEvent(new Event('hr:reminders-changed'));  // re-render the control
@@ -282,7 +307,7 @@ export async function cancelReminders({ count = true, keepalive = false } = {}):
  * from an email link — flip the stale opt-in to cancelled so the UI offers
  * reminders again (and the cancel syncs to their other devices).
  */
-export async function pushReminderSchedule(keepalive = false): Promise<void> {
+export async function pushReminderSchedule(backend: Backend, keepalive = false): Promise<void> {
   const optIn = getReminderOptIn();
   if (optIn?.status !== 'active') return;
   // US-07 AC6: a known minor is due nothing, and the server fills any pushed
@@ -297,6 +322,10 @@ export async function pushReminderSchedule(keepalive = false): Promise<void> {
     } catch { /* retried next visit */ }
     return;
   }
+  // A cloud switch is pending (US-17 AC12): autoEnrolReminders owns the old
+  // token until it lands. A push racing its cancel could refill the tombstone,
+  // or 404 into a "cancelled" the user never chose.
+  if (SHOPIFY_SURFACE && remindersSupported(backend) && optIn.provider !== backend) return;
   try {
     const res = await post(
       { op: 'update', token: optIn.token, schedule: computeCurrentReminderSchedule() },

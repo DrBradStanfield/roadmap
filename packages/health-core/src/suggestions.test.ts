@@ -3429,7 +3429,15 @@ describe('US-07 AC6: who the plan is for', () => {
     // medicine trigger at once, with no medicine taken (a medicine the user
     // takes is a fact the Lp(a) checklist states, at any age). The adult twin
     // of each record proves the triggers are on.
+    // "medication" is left out on purpose (adversary R3, 2026-10-14): `ldl-high`
+    // keeps "discuss medication options" for an unknown age, by decision. It
+    // names no medicine, and discussing is not suggesting. The pin below holds it.
     const MEDICINE_NAMES = /statin|ezetimibe|pcsk9|glp-1|semaglutide|tirzepatide|sglt2|metformin|bempedoic|nexletol|empagliflozin|dapagliflozin|mounjaro|zepbound/i;
+    it('ldl-high keeps "discuss medication options" for an unknown age, and names no medicine', () => {
+      const card = plan({ heightCm: 175, sex: 'male', weightKg: 70, ldlC: ldl(170) }).find((s) => s.id === 'ldl-high');
+      expect(card?.description).toMatch(/Consider lifestyle modifications and discuss medication options\.$/);
+      expect(card?.description).not.toMatch(MEDICINE_NAMES);
+    });
     const UNKNOWN_AGE_RECORDS: [name: string, record: HealthInputs][] = [
       ['BMI 37, diabetic HbA1c, high LDL, very high triglycerides, high Lp(a), stage 2 BP', { heightCm: 175, sex: 'male', weightKg: 115, waistCm: 115, hba1c: hba1c(7.0), ldlC: ldl(190), triglycerides: trig(600), lpa: 200, systolicBp: 150, diastolicBp: 95 }],
       ['BMI 35, prediabetic HbA1c, very high LDL and ApoB, stage 1 BP', { heightCm: 165, sex: 'female', weightKg: 95, hba1c: hba1c(6.0), ldlC: ldl(200), apoB: apoB(130), triglycerides: trig(200), lpa: 150, systolicBp: 135, diastolicBp: 85 }],

@@ -401,6 +401,150 @@ describe('US-17 — switching clouds moves the reminders, it does not duplicate 
 
     expect(f).toHaveBeenCalledTimes(1);
     expect(setReminderOptIn).not.toHaveBeenCalled();
+    // The user's own network, not a refusal: nothing for Sentry.
+    expect(captureException).not.toHaveBeenCalled();
+  });
+
+  // Adversary R2 (2026-10-14): a refused switch cancel is retried on every
+  // visit, and console.warn was the only trace. The error names the status
+  // code and nothing else: no address, no schedule, no age.
+  it('a refused switch cancel goes to Sentry with the status code only', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"error":"Too many requests"}', { status: 429 })));
+    const { autoEnrolReminders } = await loadReminders();
+
+    await autoEnrolReminders('dropbox');
+
+    expect(captureException).toHaveBeenCalledTimes(1);
+    const [err, context] = captureException.mock.calls[0];
+    expect((err as Error).message).toBe('Old reminder row cancel failed (429).');
+    expect(context).toEqual({ tags: { area: 'reminders', op: 'switch-cancel' } });
+    expect(JSON.stringify([(err as Error).message, context])).not.toMatch(/@|example|lipid|blood/i);
+  });
+
+  // Adversary R1 (2026-10-14): the new address may already hold a row (a typed
+  // capture, another device). The server refreshes it and returns no token, so
+  // there is nothing to write. The file keeps the old opt-in and the next visit
+  // tries again; no push may 404 the old token into a "cancelled" they never chose.
+  it('a different-email switch answered "refreshed": no file write, no notice, and no push in the meantime', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE); // active on google-drive, user@example.com
+    const f = mockFetchOk({ refreshed: true, email: 'dbx@example.com' });
+    const { autoEnrolReminders, pushReminderSchedule } = await loadReminders();
+
+    await autoEnrolReminders('dropbox');
+    expect(postedBody(f, 0).op).toBe('cancel');
+    expect(postedBody(f, 1)).toMatchObject({ op: 'optin', provider: 'dropbox', email: 'dbx@example.com' });
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('hr_reminders_notice')).toBeNull();
+
+    await pushReminderSchedule('dropbox');
+    await pushReminderSchedule('dropbox', true);
+    expect(f).toHaveBeenCalledTimes(2);
+  });
+});
+
+// US-17 AC12 (adversary R1, 2026-10-14): rows are keyed by email, so a switch
+// to a cloud with the SAME address has nothing to move. The old token still
+// owns that row. Cancelling it and opting the address in again got a
+// `refreshed` reply with no token, so the file kept the old provider and every
+// load cancelled and refreshed again, until the limiter's 429 left the row
+// tombstoned and the next push's 404 wrote a "cancelled" nobody chose.
+describe('US-17 AC12 — a switch to a cloud with the same email keeps the row', () => {
+  it.each([
+    ['dropbox', 'github', ' GH@Example.com'],
+    ['google-drive', 'dropbox', 'dbx@example.com'],
+  ] as const)('%s to %s: no cancel, no opt-in; the file takes the new provider and the next load does nothing', async (from, to, email) => {
+    let file: FileReminderOptIn | undefined = { ...ACTIVE, provider: from, email };
+    getReminderOptIn.mockImplementation(() => file);
+    setReminderOptIn.mockImplementationOnce((fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>) => {
+      file = { ...fields, updatedAt: '2026-10-14T00:00:00.000Z', lamport: 4 };
+    });
+    const f = mockFetchOk();
+    const { autoEnrolReminders, pushReminderSchedule } = await loadReminders();
+
+    await autoEnrolReminders(to);
+
+    expect(f).not.toHaveBeenCalled();
+    expect(setReminderOptIn).toHaveBeenCalledTimes(1);
+    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'active', token: 'cap-token', email, provider: to }));
+    expect(flushRoadmapStore).toHaveBeenCalledTimes(1);
+    expect(trackProductEvent).not.toHaveBeenCalled();
+
+    await autoEnrolReminders(to);
+    expect(f).not.toHaveBeenCalled();
+    expect(setReminderOptIn).toHaveBeenCalledTimes(1);
+
+    // The old token keeps the row's schedule current from the new cloud.
+    await pushReminderSchedule(to);
+    expect(f).toHaveBeenCalledTimes(1);
+    expect(postedBody(f)).toMatchObject({ op: 'update', token: 'cap-token' });
+  });
+});
+
+// Orchestrator decision (2026-10-14): a switch to a cloud that gives no address
+// yet keeps the old row. Cancelling it first left a tombstoned row while the
+// control still read "on".
+describe('US-17 AC12 — a switch to a cloud with no address keeps the old row', () => {
+  it('dropbox to github with no GitHub email: no cancel, no opt-in, the file is untouched', async () => {
+    githubAccountEmail.mockResolvedValue(null);
+    getReminderOptIn.mockReturnValue({ ...ACTIVE, provider: 'dropbox', email: 'dbx@example.com' });
+    const f = mockFetchOk();
+    const { autoEnrolReminders } = await loadReminders();
+
+    await autoEnrolReminders('github');
+
+    expect(f).not.toHaveBeenCalled();
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+  });
+});
+
+// Adversary R4 (2026-10-14): app load fires the push and the auto-enrolment
+// together. A push carrying the old token could land after the switch's cancel
+// had tombstoned the row and fill it again, or 404 into a "cancelled" the user
+// never chose. While the file's opt-in belongs to another cloud, the switch
+// owns the row and the push waits.
+describe('US-17 AC12 — no schedule push while a cloud switch is pending', () => {
+  it('an opt-in from another cloud is not pushed, on load or on tab hide', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE); // active on google-drive
+    const f = mockFetchOk({ ok: true });
+    const { pushReminderSchedule } = await loadReminders();
+
+    await pushReminderSchedule('dropbox');
+    await pushReminderSchedule('github', true);
+
+    expect(f).not.toHaveBeenCalled();
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+  });
+
+  it.each(['local', 'self-host'] as const)('no switch can run on %s, so the push goes ahead as before', async (backend) => {
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    const f = mockFetchOk({ ok: true });
+    const { pushReminderSchedule } = await loadReminders();
+
+    await pushReminderSchedule(backend);
+
+    expect(postedBody(f)).toMatchObject({ op: 'update', token: 'cap-token' });
+  });
+
+  it('the Pages build never switches, so the push goes ahead as before', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    const f = mockFetchOk({ ok: true });
+    const { pushReminderSchedule } = await loadReminders(false);
+
+    await pushReminderSchedule('dropbox');
+
+    expect(postedBody(f)).toMatchObject({ op: 'update', token: 'cap-token' });
+  });
+
+  it('a known minor mid-switch is still turned off (auto-enrolment never runs for them)', async () => {
+    isKnownMinorNow.mockReturnValue(true);
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    const f = mockFetchOk({ ok: true });
+    const { pushReminderSchedule } = await loadReminders();
+
+    await pushReminderSchedule('dropbox');
+
+    expect(postedBody(f)).toMatchObject({ op: 'cancel', token: 'cap-token' });
   });
 });
 
@@ -506,7 +650,7 @@ describe('US-07 AC6 — a known minor is never enrolled and their schedule is ne
     getReminderOptIn.mockReturnValue(ACTIVE);
     const f = mockFetchOk({ success: true });
     const { pushReminderSchedule } = await loadReminders();
-    await pushReminderSchedule();
+    await pushReminderSchedule('google-drive');
     expect(f).toHaveBeenCalledTimes(1);
     expect(postedBody(f).op).toBe('cancel');
     expect(postedBody(f).token).toBe('cap-token');
@@ -519,7 +663,7 @@ describe('US-07 AC6 — a known minor is never enrolled and their schedule is ne
     getReminderOptIn.mockReturnValue(ACTIVE);
     mockFetchOk({ success: true });
     const { pushReminderSchedule } = await loadReminders();
-    await pushReminderSchedule();
+    await pushReminderSchedule('google-drive');
     expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }));
     expect(trackProductEvent).not.toHaveBeenCalled();
   });
@@ -531,7 +675,7 @@ describe('US-07 AC6 — a known minor is never enrolled and their schedule is ne
     getReminderIdToken.mockReturnValue(new Promise(() => {})); // a proof that never arrives
     const f = mockFetchOk({ success: true });
     const { pushReminderSchedule } = await loadReminders();
-    void pushReminderSchedule(true);
+    void pushReminderSchedule('google-drive', true);
     await vi.waitFor(() => expect(f).toHaveBeenCalledTimes(1));
     expect(postedBody(f).op).toBe('cancel');
     expect(postedBody(f).token).toBe('cap-token');
@@ -546,7 +690,7 @@ describe('US-07 AC6 — a known minor is never enrolled and their schedule is ne
     const f = mockFetchOk({ error: 'boom' });
     f.mockResolvedValue(new Response('{}', { status: 500 }));
     const { pushReminderSchedule } = await loadReminders();
-    await expect(pushReminderSchedule()).resolves.toBeUndefined();
+    await expect(pushReminderSchedule('google-drive')).resolves.toBeUndefined();
     expect(f).toHaveBeenCalledTimes(1);
     expect(postedBody(f).op).toBe('cancel');
     expect(captureException).not.toHaveBeenCalled();
@@ -558,7 +702,7 @@ describe('US-07 AC6 — a known minor is never enrolled and their schedule is ne
     getReminderOptIn.mockReturnValue(ACTIVE);
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline'); }));
     const { pushReminderSchedule } = await loadReminders();
-    await pushReminderSchedule();
+    await pushReminderSchedule('google-drive');
     expect(captureException).toHaveBeenCalledTimes(1);
   });
 
@@ -567,7 +711,7 @@ describe('US-07 AC6 — a known minor is never enrolled and their schedule is ne
     getReminderOptIn.mockReturnValue(ACTIVE);
     const f = mockFetchOk({ success: true });
     const { pushReminderSchedule } = await loadReminders();
-    await pushReminderSchedule();
+    await pushReminderSchedule('google-drive');
     expect(f).toHaveBeenCalledTimes(1);
     expect(postedBody(f).op).toBe('update');
   });

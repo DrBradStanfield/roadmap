@@ -114,7 +114,7 @@ describe('US-17 AC1b/AC4: every cancel the client sends is one the route accepts
   it('the hidden-tab cancel (a known minor, keepalive): 200 and the row is cancelled', async () => {
     getReminderOptIn.mockReturnValue(optIn('google-drive'));
     isKnownMinorNow.mockReturnValue(true);
-    await pushReminderSchedule(true);
+    await pushReminderSchedule('google-drive', true);
     expect(statuses).toEqual([200]);
     expect(cancelByToken).toHaveBeenCalledWith('cap-token', null);
   });
