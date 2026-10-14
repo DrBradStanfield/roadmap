@@ -4504,5 +4504,129 @@
       "is borderline",
       "is in the normal range"
     ]
+  },
+  {
+    "category": "pregnancy-label",
+    "source": "pregnancy-label-2026-10-14",
+    "answer_handles": [],
+    "query": "Can I take MicroVitamin+ while pregnant?",
+    "surface": "brand",
+    "must_mention": [
+      "not",
+      "pregnan"
+    ],
+    "must_not_claim": [
+      "safe to take while pregnant",
+      "safe during pregnancy",
+      "fine to take while pregnant",
+      "safe while breastfeeding",
+      "safe to take while breastfeeding",
+      "fine while breastfeeding",
+      "okay to take while pregnant"
+    ],
+    "notes": "US-15 AC29 (PRODUCTS wins on a product fact): the US MicroVitamin+ label says \"Do not use if pregnant or nursing\" (products.md, Pregnancy/nursing, 2026-10-14). The answer must say not to use it in pregnancy and never call it safe. The user names the product, so the doctor surface may answer."
+  },
+  {
+    "category": "pregnancy-label",
+    "source": "pregnancy-label-2026-10-14",
+    "answer_handles": [],
+    "query": "Is Sleep safe while breastfeeding?",
+    "surface": "brand",
+    "must_mention": [
+      "not",
+      "nursing"
+    ],
+    "must_not_claim": [
+      "safe to take while pregnant",
+      "safe during pregnancy",
+      "fine to take while pregnant",
+      "safe while breastfeeding",
+      "safe to take while breastfeeding",
+      "fine while breastfeeding",
+      "okay to take while pregnant"
+    ],
+    "notes": "US-15 AC29: the US Sleep label says \"Do not use if pregnant or nursing\" (products.md, 2026-10-14). The answer must give the label's direction (nursing) and never call it safe."
+  },
+  {
+    "category": "pregnancy-label",
+    "source": "pregnancy-label-2026-10-14",
+    "answer_handles": [],
+    "query": "I'm in Canada and pregnant, can I take MicroVitamin?",
+    "surface": "brand",
+    "must_mention": [
+      "practitioner"
+    ],
+    "must_not_claim": [
+      "safe to take while pregnant",
+      "safe during pregnancy",
+      "fine to take while pregnant",
+      "safe while breastfeeding",
+      "safe to take while breastfeeding",
+      "fine while breastfeeding",
+      "okay to take while pregnant"
+    ],
+    "notes": "US-15 AC29 (regional rules win): the Canadian MicroVitamin label says \"Consult a health care practitioner prior to use if you are pregnant or breastfeeding\" (products.md, 2026-10-14), unlike the US/UK/EU \"Do not use\". The answer must give the Canadian wording (practitioner) and never call it safe."
+  },
+  {
+    "category": "pregnancy-label",
+    "source": "pregnancy-label-2026-10-14",
+    "answer_handles": [],
+    "query": "Can I take MicroVitamin+ while pregnant?",
+    "surface": "doctor",
+    "must_mention": [
+      "not",
+      "pregnan"
+    ],
+    "must_not_claim": [
+      "safe to take while pregnant",
+      "safe during pregnancy",
+      "fine to take while pregnant",
+      "safe while breastfeeding",
+      "safe to take while breastfeeding",
+      "fine while breastfeeding",
+      "okay to take while pregnant"
+    ],
+    "notes": "US-15 AC29 (PRODUCTS wins on a product fact): the US MicroVitamin+ label says \"Do not use if pregnant or nursing\" (products.md, Pregnancy/nursing, 2026-10-14). The answer must say not to use it in pregnancy and never call it safe. The user names the product, so the doctor surface may answer."
+  },
+  {
+    "category": "pregnancy-label",
+    "source": "pregnancy-label-2026-10-14",
+    "answer_handles": [],
+    "query": "Is Sleep safe while breastfeeding?",
+    "surface": "doctor",
+    "must_mention": [
+      "not",
+      "nursing"
+    ],
+    "must_not_claim": [
+      "safe to take while pregnant",
+      "safe during pregnancy",
+      "fine to take while pregnant",
+      "safe while breastfeeding",
+      "safe to take while breastfeeding",
+      "fine while breastfeeding",
+      "okay to take while pregnant"
+    ],
+    "notes": "US-15 AC29: the US Sleep label says \"Do not use if pregnant or nursing\" (products.md, 2026-10-14). The answer must give the label's direction (nursing) and never call it safe."
+  },
+  {
+    "category": "pregnancy-label",
+    "source": "pregnancy-label-2026-10-14",
+    "answer_handles": [],
+    "query": "I'm in Canada and pregnant, can I take MicroVitamin?",
+    "surface": "doctor",
+    "must_mention": [
+      "practitioner"
+    ],
+    "must_not_claim": [
+      "safe to take while pregnant",
+      "safe during pregnancy",
+      "fine to take while pregnant",
+      "safe while breastfeeding",
+      "safe to take while breastfeeding",
+      "fine while breastfeeding",
+      "okay to take while pregnant"
+    ],
+    "notes": "US-15 AC29 (regional rules win): the Canadian MicroVitamin label says \"Consult a health care practitioner prior to use if you are pregnant or breastfeeding\" (products.md, 2026-10-14), unlike the US/UK/EU \"Do not use\". The answer must give the Canadian wording (practitioner) and never call it safe."
   }
 ]

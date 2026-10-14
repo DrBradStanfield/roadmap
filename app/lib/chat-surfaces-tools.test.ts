@@ -36,13 +36,13 @@ describe('US-15 AC19: Discord and YouTube never send the form tools', () => {
     expect(bodies()[0]).not.toHaveProperty('tools');
   });
 
-  // US-15 AC29: the answer bank is for the websites only.
-  it('Discord gets the writing style but never the answer bank (US-15 AC29)', async () => {
+  // US-15 AC29 (Brad, 2026-10-14): Discord and YouTube get the answer bank too.
+  it('Discord gets the writing style and the answer bank (US-15 AC29)', async () => {
     const bodies = stubAnthropic();
     await platformChatCompletion({ message: 'Can the biotin interfere with blood tests?', history: [] });
     const system = bodies()[0].system.map((b: { text: string }) => b.text).join('\n');
     expect(system).toContain('## WRITING STYLE');
-    expect(system).not.toContain('## ANSWER BANK');
+    expect(system).toContain('## ANSWER BANK');
   });
 
   it('YouTube', async () => {
@@ -53,9 +53,9 @@ describe('US-15 AC19: Discord and YouTube never send the form tools', () => {
     expect(outcome.llmOutput).toBe('An answer.');
     expect(bodies()).toHaveLength(1);
     expect(bodies()[0]).not.toHaveProperty('tools');
-    // US-15 AC29: YouTube gets the writing style but never the answer bank.
+    // US-15 AC29: YouTube gets the writing style and the answer bank.
     const system = bodies()[0].system.map((b: { text: string }) => b.text).join('\n');
     expect(system).toContain('## WRITING STYLE');
-    expect(system).not.toContain('## ANSWER BANK');
+    expect(system).toContain('## ANSWER BANK');
   });
 });

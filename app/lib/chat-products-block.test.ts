@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { productsBlockText } from './chat-products-block';
 
-// US-15 AC29: the products block carries the writing style everywhere and the
-// answer bank only for the websites, under neutral headings.
+// US-15 AC29: the products block carries the writing style and the answer bank
+// on every surface, under neutral headings.
 describe('productsBlockText (US-15 AC29)', () => {
   it('puts products, then the writing style, then the answer bank, under fixed headings', () => {
     const text = productsBlockText({ products: 'P', writingStyle: 'W', answerBank: 'A' });
@@ -12,9 +12,8 @@ describe('productsBlockText (US-15 AC29)', () => {
     expect(text).not.toContain("Brad's answers");
   });
 
-  it('leaves out a missing file instead of sending an empty heading; no answer bank for the bots', () => {
+  it('leaves out a missing file instead of sending an empty heading', () => {
     expect(productsBlockText({ products: 'P', writingStyle: '', answerBank: 'A' })).not.toContain('WRITING STYLE');
-    expect(productsBlockText({ products: 'P', writingStyle: 'W' })).not.toContain('ANSWER BANK');
     expect(productsBlockText({ products: '', writingStyle: '', answerBank: '' })).toBe('');
   });
 });

@@ -11,7 +11,7 @@ import {
   MAX_MESSAGE_LENGTH,
   loadMatchedArticlesFromHandles,
 } from './chat.server';
-import { chatContextOf } from '../../packages/health-core/src/chat-context';
+import { chatContextOf, MINOR_CHAT_RULE } from '../../packages/health-core/src/chat-context';
 import { MAX_HISTORY_TURN_CHARS } from '../../packages/health-core/src/chat-history';
 import { loadBlogIndex } from './blog-index.server';
 
@@ -94,6 +94,8 @@ describe('buildSystemBlocks', () => {
     for (const surfaceContext of [undefined, 'DOCTOR', 'BRAND']) {
       const text = buildSystemBlocks('{}', { surfaceContext })[0].text;
       expect(text).toContain('`profile.knownMinor: true`');
+      // US-07 AC6: the prompt's rule and health-core's MINOR_CHAT_RULE stay byte-identical.
+      expect(text).toContain(MINOR_CHAT_RULE);
       expect(text).toContain("Don't grade their values");
       expect(text).toContain("don't suggest or discuss starting a medicine for them");
       expect(text).toContain('the plan is built for adults');
@@ -106,10 +108,10 @@ describe('buildSystemBlocks', () => {
     expect(blocks[1].text).toContain('Clinical Evidence Reference');
   });
 
-  // US-15 AC29: the writing style rides in the cached products block on every
-  // surface; the answer bank only when the caller is a website chat.
-  it('US-15 AC29: a website chat gets the writing style and the answer bank inside the cached products block (no fifth breakpoint)', () => {
-    const blocks = buildSystemBlocks('{}', { answerBank: true });
+  // US-15 AC29 (Brad, 2026-10-14): every surface gets the same cached products
+  // block, with the writing style and the answer bank.
+  it('US-15 AC29: the cached products block carries the writing style and the answer bank (no fifth breakpoint)', () => {
+    const blocks = buildSystemBlocks('{}');
     const products = blocks[2];
     expect(products.text).toContain("## Dr Stanfield's Products");
     expect(products.text).toContain('## WRITING STYLE');
@@ -123,21 +125,10 @@ describe('buildSystemBlocks', () => {
     }
   });
 
-  it('US-15 AC29: without the website option (YouTube, Discord, any new caller) the block has the writing style but no answer bank', () => {
-    const products = buildSystemBlocks('{}')[2];
-    expect(products.text).toContain('## WRITING STYLE');
-    expect(products.text).not.toContain('## ANSWER BANK');
-    expect(buildSystemBlocks('{}').filter(b => b.cache_control).length).toBe(4);
-    // The two website surfaces share one byte-identical cached base.
-    const web = (s: string) => buildSystemBlocks('{}', { answerBank: true, surfaceContext: s }).filter(b => b.cache_control).map(b => b.text);
-    expect(web('DOCTOR')).toEqual(web('BRAND'));
-  });
-
-  it('US-15 AC29: the web chat route asks for the answer bank, and the bots do not', () => {
-    const src = (f: string) => fs.readFileSync(path.join(process.cwd(), f), 'utf-8');
-    expect(src('app/routes/api.chat.ts')).toMatch(/buildSystemBlocks\([^)]*answerBank: true/);
-    expect(src('app/lib/youtube-bot.server.ts')).not.toContain('answerBank');
-    expect(src('app/lib/platform-chat.server.ts')).not.toContain('answerBank');
+  it('US-15 AC29: every surface shares one byte-identical cached base', () => {
+    const cached = (surfaceContext?: string) => buildSystemBlocks('{}', { surfaceContext }).filter(b => b.cache_control).map(b => b.text);
+    expect(cached('DOCTOR')).toEqual(cached('BRAND'));
+    expect(cached()).toEqual(cached('BRAND'));
   });
 
   it('includes user context in last base block', () => {

@@ -10,8 +10,8 @@
  * claude_business repo (its tools/sync-shared-docs.mjs); never edit them here.
  * The prompt rules that use them are in chat-system-prompt.md.
  *
- * The answer bank is for the two websites only (US-15 AC29): the YouTube and
- * Discord bots build this block without it and cache their own variant.
+ * Every surface gets the same block, answer bank included (US-15 AC29, Brad
+ * 2026-10-14: the websites, YouTube and Discord), so there is one cached base.
  */
 export const PRODUCTS_BLOCK_FILES = {
   products: 'docs/products.md',
@@ -19,7 +19,7 @@ export const PRODUCTS_BLOCK_FILES = {
   answerBank: 'docs/chatbot/answer-bank.md',
 } as const;
 
-export function productsBlockText(docs: { products: string; writingStyle: string; answerBank?: string }): string {
+export function productsBlockText(docs: { products: string; writingStyle: string; answerBank: string }): string {
   return [
     docs.products && `## Dr Stanfield's Products\n\n${docs.products}`,
     docs.writingStyle && `## WRITING STYLE (applies to every answer)\n\n${docs.writingStyle}`,
