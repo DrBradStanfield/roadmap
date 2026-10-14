@@ -258,7 +258,7 @@ const NOT_OURS = 'does not match these arguments on this connection, or is not o
 /** What the user said when they agreed, carried in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, go ahead';
 const QUOTE_APPROVAL = (name: string) =>
-  `This call carries no approval. The second ${name} call has the same arguments, the same receipt, and approval (${APPROVAL_MEANS}). There is no second call until the user agrees. Nothing was written.`;
+  `This call carries no approval. Show the user the proposal and await their reply; the message that asked for the change is not that reply. The second ${name} call has the same arguments, the same receipt, and approval (${APPROVAL_MEANS}). There is no second call until the user agrees. Nothing was written.`;
 import { WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 
 const at = (seconds: number) => new Date(Date.parse(NOW) + seconds * 1000).toISOString();
@@ -311,7 +311,8 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     const proposed = await callToolAt(access, 'correct_value', FIX, NOW);
     expect(proposed.isError).toBe(false);
     expect(proposed.text).toMatch(/^PROPOSAL — nothing written yet\./);
-    expect(proposed.text).toContain('This proposal is for the user to review.');
+    // Round 3, R7: as firm as the import's next. A tool result, so it says what to show, and that the request is not the reply.
+    expect(proposed.text).toContain('Show this proposal to the user and await their reply; the message that asked for the change is not that reply.');
     expect(proposed.text).toContain('An auto-approve setting in the client is not the user agreeing.'); // a client set to allow every action has not agreed
     // US-36 (2026-10-14): the proposal describes the protocol and never directs the model ("Suspicious Instruction",
     // live 2026-10-12); the afterAll blocklist checks it. It keeps one neutral note about the reply, with no safety-check
@@ -324,7 +325,8 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     // UUID-shaped: ChatGPT read the old 400-character sealed blob as a disguised payload and blocked the confirm (2026-10-07).
     expect(receipt).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     expect(proposed.text).toContain(`confirm: ${receipt}`);
-    expect(proposed.text).toContain(`approval (${APPROVAL_MEANS})`);
+    // Round 3, R3: approval carries the text of the user's reply.
+    expect(proposed.text).toContain(`approval (${APPROVAL_MEANS}): the text of the user’s reply.`);
     expect(storedRecord().measurements).toHaveLength(1);
     expect(storedRecord().measurements[0].status).toBe('active');
 

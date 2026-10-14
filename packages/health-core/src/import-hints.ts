@@ -91,10 +91,10 @@ export const IMPORT_REFUSALS = {
   emptyFolder:
     `There are no ${IMPORT_ACCEPTED_TYPES} files in the folder root (${DROPBOX_APP_FOLDER}). ` +
     'Put the files there and ask again, or drop them into the chat from a computer. Nothing was read.',
-  /** A `commit` block that does not parse. */
+  /** A `commit` block that does not parse, an approval over 200 characters among them (the cap is `MAX_APPROVAL_LENGTH`). */
   commit:
     'The commit was malformed. Pass the receipt exactly as the extract returned it, with accept and replace as lists of candidate ids, ' +
-    `and approval (${APPROVAL_MEANS}). Nothing was written.`,
+    `and approval (${APPROVAL_MEANS}, at most 200 characters). Nothing was written.`,
   /** Anything else that does not parse: a fileNames or fileDates shape. */
   arguments:
     `The call was malformed: fileNames is a list of file names as listed, fileDates is a list of {file, date} pairs (${FILE_DATES_SHAPE}). Nothing was read.`,

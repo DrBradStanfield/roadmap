@@ -296,7 +296,8 @@ describe('US-35 AC7 / US-36 AC9 — a commit quotes the user’s approval, check
   const PENDING = `imports/pending-${PAYLOAD.id}.json`;
   const file = createEmptyFile({ deviceId: 'test', now: NOW });
   const deadline = () => Date.now() + MCP_IMPORT_BUDGET_MS;
-  const QUOTE = `This call carries no approval. The commit has the same receipt, and approval (${APPROVAL_MEANS}). There is no commit until the user agrees. Nothing was written.`;
+  // Round 3, R1: it says what to show and that the request is not the reply, as the confirm refusal does.
+  const QUOTE = `This call carries no approval. Show the user the candidates and await their reply; the message that asked for this import is not that reply. The commit has the same receipt, and approval (${APPROVAL_MEANS}). There is no commit until the user agrees. Nothing was written.`;
 
   beforeEach(() => resetMcpMemory());
 

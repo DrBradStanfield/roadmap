@@ -2269,6 +2269,14 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     const refused = OUTPUTS.import_documents.parse((await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: sized, latestDay: TODAY })).structured);
     expect(refused.next).toBe(`Nothing was imported.\n2 file(s) were not read: relay each file's hint to the user in plain words.`);
     expect(refused.files[0].hint).toBe(importHint('too_large'));
+    // US-36 round 3, R4: with nothing to commit there is no receipt, so the continuation names no commit.
+    const unreached: ImportSurface = { ...surface, async extract() {
+      return { route: 'dropbox', remaining: ['later.pdf'], files: [{ name: 'big.pdf', status: 'failed', reason: 'too_large' }] };
+    } };
+    const bare = OUTPUTS.import_documents.parse((await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: unreached, latestDay: TODAY })).structured);
+    expect(bare.receipt).toBeUndefined();
+    expect(bare.next).toContain('1 file(s) were not reached: a call with fileNames set to remaining reads them.');
+    expect(bare.next).not.toContain('receipt');
     expect(data.next).toContain('1 file(s) were not reached. After the user’s reply, this receipt’s commit comes first; a call with fileNames set to remaining then reads the rest.');
     // The question itself stays on the candidate (AC9): the instruction field carries no document text.
     expect(data.next).not.toContain('Smudged');
@@ -2291,19 +2299,24 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     // The user decides before anything is filed (US-35 AC7). A tool result, not tool documentation, so it says what to
     // show: only the model can show the user anything (US-36, 2026-10-14, R1; "is shown to the user" was passive and false).
     expect(data.next).toContain('Show the user each candidate (value, unit, date, file) and document; nothing is written until a commit made after their reply.');
+    // Round 3, R1: the request that started the import is not the reply the commit waits on.
+    expect(data.next).toContain('The message that asked for this import is not the reply to them.');
     // The order that keeps one receipt at a time: commit, then the rest (finding 16), and the commit after the reply (R1).
     expect(data.next).toContain('After the user’s reply, this receipt’s commit comes first; a call with fileNames set to remaining then reads the rest.');
     // R3/R4 (2026-10-14): the import preview carries the two notes the permanent tools' proposals carry.
     expect(data.next).toContain('An auto-approve setting in the client is not the user agreeing. A reply that names what to file is clearer than “yes” alone.');
     // US-35 AC7 (2026-10-07): the commit carries the user's reply agreeing to the candidates, and never a document's text.
-    expect(data.next).toContain(`approval (${APPROVAL_MEANS}; never a document’s text)`);
+    // Round 3, R3: approval carries the text of that reply.
+    expect(data.next).toContain(`approval (${APPROVAL_MEANS}): the text of the user’s reply, never a document’s text.`);
     // US-36 AC5 (2026-10-14): the import commit has no time window, so its words carry the order: the reply follows the preview.
     expect(data.next).toMatch(AFTER_THE_REPLY);
     // Short: the counts, one instruction and the continuation; detail rides on the things themselves (live 2026-09-07 it ran past 600 with the counts said twice).
     // 800 became 850 on 2026-10-14 for the words that put the user's reply after the preview (R1); this fixture was 820.
     // 850 became 960 the same day, round 2: the auto-approve and reply notes (+125, R3/R4) and "After the user’s reply"
-    // on the continuation (+24), less the shorter imperative first line (-31). This fixture is now 938.
-    expect(data.next.length).toBeLessThan(960);
+    // on the continuation (+24), less the shorter imperative first line (-31). This fixture was 938.
+    // 960 became 1,060 in round 3: "The message that asked for this import is not the reply to them." (+65, R1) and
+    // "the text of the user’s reply" on the commit line (+30, R3). This fixture is now 1,033.
+    expect(data.next.length).toBeLessThan(1_060);
     expect(cloud.files.get(ROADMAP_FILE_NAME)).toBe(before);
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
   });
@@ -2835,6 +2848,8 @@ describe('US-36 AC9 / US-35 AC7 — the confirming call carries the user’s quo
 
   it('publishes approval beside every confirm and inside every commit, bare and capped at 200, and zod refuses 201', () => {
     expect(MAX_APPROVAL_LENGTH).toBe(200);
+    // Round 3, R9: the import commit's refusal, which an over-long approval gets, names the cap as the permanent path's does.
+    expect(IMPORT_REFUSALS.commit).toContain(`approval (${APPROVAL_MEANS}, at most ${MAX_APPROVAL_LENGTH} characters)`);
     const published: string[] = [];
     for (const tool of MCP_TOOLS) {
       const props = tool.inputSchema.properties as Record<string, { maxLength?: number; properties?: Record<string, { maxLength?: number }> }>;

@@ -362,8 +362,9 @@ function withProposal(token: AccessPayload, name: string, args: Record<string, u
   const { receipt: confirm, notBefore: confirmFrom } = issueProposal(callIdentity(name, args), hash(connectionKey(token)), audienceFor(token.clientId), Date.parse(now));
   const text =
     `PROPOSAL — nothing written yet. ${answer.text}\n\n` +
-    `This proposal is for the user to review. The write is a second ${name} call with the same arguments, confirm set to the receipt below, ` +
-    `and approval (${APPROVAL_MEANS}). An auto-approve setting in the client is not the user agreeing. ` +
+    'Show this proposal to the user and await their reply; the message that asked for the change is not that reply. ' +
+    `The write is a second ${name} call with the same arguments, confirm set to the receipt below, ` +
+    `and approval (${APPROVAL_MEANS}): the text of the user’s reply. An auto-approve setting in the client is not the user agreeing. ` +
     'A reply that names the change (for example “Yes, apply this change”) is clearer than “yes” alone. ' +
     `The receipt is valid from ${confirmFrom} for ${STEP_WINDOWS.proposal.ttlSeconds / 60} minutes and works once.\nconfirm: ${confirm}`;
   return { text, isError: false, structured: { ...(answer.structured as Record<string, unknown>), proposal: true, confirm, confirmFrom } };
@@ -403,7 +404,7 @@ function checkConfirm(token: AccessPayload, name: string, args: Record<string, u
   // After the window checks, so a chained call hears the window rather than the approval; before the claim, so a
   // missing approval spends no receipt and, like every refusal here, costs nothing.
   if (!approval?.trim()) {
-    return `This call carries no approval. The second ${name} call has the same arguments, the same receipt, and approval (${APPROVAL_MEANS}). There is no second call until the user agrees. Nothing was written.`;
+    return `This call carries no approval. Show the user the proposal and await their reply; the message that asked for the change is not that reply. The second ${name} call has the same arguments, the same receipt, and approval (${APPROVAL_MEANS}). There is no second call until the user agrees. Nothing was written.`;
   }
   if (approval.length > MAX_APPROVAL_LENGTH) {
     return `approval (${APPROVAL_MEANS}) is at most ${MAX_APPROVAL_LENGTH} characters. Nothing was written.`;

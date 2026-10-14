@@ -36,10 +36,14 @@ export const AFTER_THE_REPLY = /after (the user’s|their) reply|in their reply 
 /** A test or suite as the runner holds it: `suite` is the parent, absent at the top of the file. */
 interface RunnerTask { type: string; name: string; suite?: RunnerTask; tasks?: RunnerTask[] }
 
-/** The `-t` pattern of this run, which vitest keeps in the worker's state (checked on 4.1.11); undefined for a whole run. */
-function namePattern(): RegExp | undefined {
-  const pattern = (globalThis as { __vitest_worker__?: { config?: { testNamePattern?: RegExp | string } } }).__vitest_worker__?.config?.testNamePattern;
-  return pattern === undefined ? undefined : new RegExp(pattern);
+/**
+ * The `-t` pattern of this run, which vitest keeps in the worker's state (checked on 4.1.11): a RegExp or a
+ * string. Null for a whole run, and for any other shape, so a pattern this cannot read runs the count floor,
+ * which fails loudly on a filtered run rather than passing silently.
+ */
+function namePattern(): RegExp | string | null {
+  const pattern = (globalThis as { __vitest_worker__?: { config?: { testNamePattern?: unknown } } }).__vitest_worker__?.config?.testNamePattern;
+  return typeof pattern === 'string' || pattern instanceof RegExp ? pattern : null;
 }
 
 /**
@@ -47,13 +51,16 @@ function namePattern(): RegExp | undefined {
  * check their minimum count only on a whole-file run, so a filtered run still passes (the adversary's R5,
  * 2026-10-14). It reads the filter, not each test's mode: a test parked with `it.skip` or `skipIf` has the same
  * "skip" mode as one the filter left out, and would otherwise switch the count off on every run (R6, round 2).
- * A test's full name is its suites' names and its own, joined by spaces, as the runner matches it. A run narrowed
- * by line number or `.only` is not seen here; the count then fails, loudly, rather than passing silently.
+ * A test's full name is its suites' names and its own, joined by spaces, as the runner matches it. `pattern`
+ * defaults to the live run's; pass `null` for "no filter", which a caller must say explicitly, since an omitted
+ * argument reads the live pattern (round 3, R5). A run narrowed by line number or `.only` is not seen here, and
+ * need not be: the count test is outside that narrowing too, so the runner skips it and never asks.
  */
-export function isPartialRun(file: RunnerTask | undefined, pattern = namePattern()): boolean {
+export function isPartialRun(file: RunnerTask | undefined, pattern: RegExp | string | null = namePattern()): boolean {
   if (!file) return true;
-  if (!pattern) return false;
+  if (pattern == null) return false;
+  const filter = new RegExp(pattern);
   const fullName = (task: RunnerTask): string => (task.suite ? `${fullName(task.suite)} ` : '') + task.name;
-  const walk = (task: RunnerTask): boolean => (task.type === 'test' ? !pattern.test(fullName(task)) : (task.tasks ?? []).some(walk));
+  const walk = (task: RunnerTask): boolean => (task.type === 'test' ? !filter.test(fullName(task)) : (task.tasks ?? []).some(walk));
   return walk(file);
 }

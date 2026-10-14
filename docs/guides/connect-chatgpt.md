@@ -2,7 +2,7 @@
 title: "Connect ChatGPT to your health record"
 description: "Add the Health by Dr Brad connector to ChatGPT on the web, and it can read your blood tests, work out your plan and file new results."
 slug: "connect-chatgpt"
-updated: "2026-10-12"
+updated: "2026-10-14"
 stories: ["US-32"]
 ---
 
@@ -105,7 +105,7 @@ Your record still lives only in your Dropbox or Google Drive. To answer one call
 
 Check what it files. An AI can misread a lab report the same way a person can, and the record is yours, so the last look at a new value should be yours too.
 
-Keep ChatGPT asking before it acts. By default ChatGPT asks you before a connector writes anything, and that prompt is your last look. ChatGPT has a setting for the connector, "Allow all actions" (the wording varies by account), that turns the prompt off. Leave it off. The connector still shows you every permanent change and waits for your own yes in your own words before it makes one, but with the prompt gone, that reply is the only gate left.
+Keep ChatGPT asking before it acts. By default ChatGPT asks you before a connector writes anything, and that prompt is your last look. ChatGPT has a setting for the connector, "Allow all actions" (the wording varies by account), that turns the prompt off. Leave it off. ChatGPT is told to show you every permanent change and wait for your reply, and the call that makes the change carries that reply. Our server checks that the reply is there, but it cannot check that it is yours or that it came after the preview. ChatGPT's own prompt is the other guard, and the only one that sees you.
 
 Take care with the web tool open in another tab while ChatGPT is writing. The page now notices a change and re-reads your record within seconds, and sooner when you switch back to that tab, so what you are looking at catches up on its own. But there is still no lock: a value you are typing at that moment and a value ChatGPT is writing at that moment can still collide, and one of the two loses.
 
