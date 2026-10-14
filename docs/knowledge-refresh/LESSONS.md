@@ -29,3 +29,6 @@ The first run hit Claude's session limits twice; most of the spend was rework. T
 18. Auto mode can block report edits that record departures from the source ("Audit Tampering", "Instruction Poisoning"). Brad added Edit/Write allow rules for ~/.codex-review/diff-reports/**; a blocked worker stops and reports; retry only with Brad's word.
 19. Pre-registered answer checks quote our entries, never the licensed raw (Codex R4, batch 2).
 20. Fetch main immediately before building a review branch. A stale origin/main made Codex review newer main commits as reversions (new-1b round 2: five void findings).
+21. Auto mode blocks are intermittent. The same report or body edits passed in one run and were blocked ("Audit Tampering", "Instruction Poisoning", "Self-Modification") in the next. A worker stops and reports; one retry on Brad's word has worked every time so far. Never route around a block.
+22. House safety lines are a recurring gap: sources defer TIA, GCA, angle closure, disseminated shingles and worsening COVID to other pathways, so a faithful rewrite drops the action. The orchestrator reads every writer's FOR BRAD list for missing urgent actions before review.
+23. The currency check pays for itself: every batch had HIGH items (sotalol maxima, co-trimoxazole age, colchicine contraindications) the reviews had not caught.

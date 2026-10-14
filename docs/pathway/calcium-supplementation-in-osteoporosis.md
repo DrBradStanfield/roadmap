@@ -8,51 +8,55 @@ summary: "Clinical guidance on calcium supplementation in osteoporosis: routine 
 
 # Calcium Supplementation in Osteoporosis
 
-*Source: Auckland Region HealthPathways*
+*Source: Auckland Region HealthPathways. Last reviewed: April 2017.*
 
-This pathway covers when calcium supplementation is and isn't indicated for bone health in osteoporosis, and how it should be used when needed. Decisions about supplementation should be made with your doctor based on your individual circumstances.
+> This is general information. Talk with your doctor before you start or stop a calcium supplement. The right choice depends on your diet, your age and your other health conditions.
+
+This pathway covers when calcium supplements are and are not needed for bone health in osteoporosis, and how to take them when they are.
 
 ---
 
 ## Key Points
 
 - Adequate calcium intake and vitamin D levels are required for long-term bone health.
-- **Routine calcium supplementation is no longer recommended** for improving bone health. Evidence shows it lacks fracture reduction efficacy and may increase cardiovascular risk.
-- Most adults can meet their calcium needs (around 500 mg/day) through diet alone.
-- The effect of calcium supplements on cardiovascular disease is controversial — some studies show an association with increased risk of myocardial infarction (heart attack) at doses of 1000 mg/day, particularly in older women.
-- International guidance suggests only offering calcium supplements to people who cannot obtain enough calcium from their diet.
+- **Calcium supplements are no longer routinely recommended** to improve bone health. They lack fracture reduction efficacy and may increase cardiovascular events.
+- An adequate daily calcium intake for an adult is about 500 mg. Most people can get this from their diet alone, so a supplement is not necessary.
+- The effect of calcium supplements on cardiovascular disease is controversial, and study results have been mixed. A study in Auckland found an association between a daily 1000 mg calcium supplement in elderly women and a higher risk of heart attack (myocardial infarction).
+- Until more data is available, international recommendations suggest offering calcium supplements only to people who do not get enough calcium from their diet.
 
 ---
 
 ## Dietary Calcium
 
-A dietary calcium intake of about 500 mg/day is sufficient for most adults. Your doctor will encourage food-first approaches before recommending supplements.
+A dietary calcium intake of about 500 mg/day is sufficient for an adult. Food sources of calcium are preferred.
 
-Good dietary sources (aim for 2–3 servings per day):
+Aim for 2 to 3 servings of calcium-rich foods each day:
 
-- Dairy products — milk, yoghurt, cheese
-- Calcium-fortified foods — soy and rice milks, cereals, orange juice
+- Dairy products like milk, yoghurt and cheese
+- Calcium-fortified products: fortified soy and rice milks, fortified cereals, and fortified orange juice
 - Tofu
-- Calcium-rich vegetables — Chinese cabbage, choy sum
-- Tinned sardines or salmon (including the bones)
-- Calcium-rich fruits and nuts — especially almonds and brazil nuts
+- Calcium-rich vegetables, such as Chinese cabbage and choy sum
+- Tinned sardines or salmon, including the bones
+- Calcium-rich fruits and nuts, especially almonds and brazil nuts
 
 ---
 
 ## When Supplements May Be Considered
 
-Your doctor may consider calcium supplementation if you cannot get enough calcium through diet. The decision involves weighing up individual risks and benefits.
+If you cannot get enough calcium from food, your doctor may consider a calcium supplement. They will weigh up the risks and benefits for you.
 
 **Who should avoid non-dietary calcium supplements:**
 
-- People aged over 70 years — due to possible increased cardiovascular risk
-- People with coronary heart disease — for the same reason
+Because of a possible higher risk of cardiovascular disease, avoid non-dietary calcium supplements if you:
+
+- Are aged over 70 years
+- Have coronary heart disease
 
 **Special situations your doctor will consider:**
 
-- If you are taking bisphosphonates (for osteoporosis or Paget disease), a total calcium intake of 1 g/day is advised, as there is a theoretical risk of mild low calcium (hypocalcaemia)
-- The maximum elemental calcium supplement dose needed with most diets is 500–600 mg/day
-- Do not take more than recommended — higher doses provide no extra benefit and may increase side effects
+- If you take bisphosphonates for osteoporosis or Paget disease, a total calcium intake of 1 g/day is advised. This is because there is a theoretical risk of mild low calcium (hypocalcaemia).
+- With most diets, the most elemental calcium you need from a supplement is usually 500 to 600 mg/day.
+- Do not increase your calcium intake above recommended levels. Doing so gives no added benefit and may increase the risk of side effects.
 
 ---
 
@@ -60,25 +64,25 @@ Your doctor may consider calcium supplementation if you cannot get enough calciu
 
 Your doctor may prescribe or recommend:
 
-- **Calcium carbonate 500 mg elemental calcium** — a subsidised prescription option in New Zealand
-- Taken with food, preferably the evening meal
-- If large tablets are difficult to swallow, they can be crushed, or an effervescent form can be used (calcium carbonate 1.7 g + calcium lactate gluconate 2.263 g) — also fully subsidised
+- **Calcium carbonate 500 mg elemental calcium:** a funded supplement
+- Take it with food, preferably with the evening meal.
+- If large tablets are hard to swallow, they can be crushed, or an effervescent form can be used (calcium carbonate 1.7 g + calcium lactate gluconate 2.263 g). This is also fully subsidised.
 
 **Common side effects:**
 
 - Constipation and other gastrointestinal disturbances
 
-**Important interactions — tell your doctor if you take:**
+**Common interactions (tell your doctor if you take):**
 
-- Iron supplements
+- Iron
 - Tetracycline antibiotics
-- Oral bisphosphonates (e.g., alendronate)
+- Oral bisphosphonates
 
-These reduce calcium absorption. Your doctor will advise spacing calcium supplements at least 2 hours apart from these medicines.
+Calcium can reduce how well these medicines are absorbed. It is best to take calcium supplements 2 hours apart from other medicines. Your doctor will weigh this against two risks: a harder routine may make medicines easier to miss, and the other medicine may work less well.
 
 **Over-the-counter supplements:**
 
-Many OTC calcium supplements also contain magnesium or vitamin D. Let your doctor know if you're already taking these, to avoid unintentional double-dosing.
+Over-the-counter calcium supplements are available and often also contain magnesium or vitamin D. Tell your doctor if you take any of these.
 
 ---
 

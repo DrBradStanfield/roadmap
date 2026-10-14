@@ -8,21 +8,26 @@ summary: "Clinical pathway for COVID-19 antiviral treatment in adults and childr
 
 # COVID-19 Therapeutics
 
-*Source: Auckland Region HealthPathways*
+*Source: Auckland Region HealthPathways. Last reviewed: August 2023.*
 
-This pathway covers antiviral treatment options for COVID-19, including who is eligible, which medications may be considered, and important safety information.
+> This is general information. Your doctor or pharmacist can tell you whether antiviral treatment is right for you and safe with your other medicines.
+
+This pathway covers antiviral treatment options for COVID-19, including who may be offered them, which medications may be considered, and safety information.
 
 ---
 
 ## Who May Be Eligible for Antivirals
 
-As of 1 September 2025, eligibility criteria for COVID-19 therapeutics include:
+In June 2026, routine use of antiviral treatment (Paxlovid) for COVID-19 stopped being recommended for most people. This reflects New Zealand consensus guidance based on emerging local and international evidence. Pharmac's eligibility criteria have not changed.
 
-- Patients aged **65 years or older**
-- Patients aged **50 years or older** considered at high risk of hospitalisation or death from COVID-19
-- Other high-risk groups as defined by Pharmac access criteria (e.g., severe immunocompromise, certain underlying conditions)
+Antiviral treatment may be considered for people at highest risk of severe COVID-19, including people who:
 
-Your doctor will assess your individual eligibility. Eligibility depends on your health status, current medications, and kidney function.
+- Are unvaccinated
+- Have never had COVID-19 before (infection naive)
+- Have end organ dysfunction (a major organ that is not working properly)
+- Are severely immunocompromised
+
+Your doctor will assess your individual situation. HealthPathways says the rest of this pathway will be updated to reflect the June 2026 change.
 
 ---
 
@@ -32,74 +37,75 @@ Your doctor may consider antivirals in this order: **Paxlovid first, then remdes
 
 ### Paxlovid (nirmatrelvir with ritonavir)
 
-**What it is:** An oral antiviral taken at home for 5 days.
+**What it is:** An antiviral taken by mouth for 5 days.
 
-**Standard dose:** 300 mg nirmatrelvir (two pink tablets) with 100 mg ritonavir (one white tablet), taken together twice daily for 5 days.
+**Standard dose:** 300 mg nirmatrelvir (two pink tablets) with 100 mg ritonavir (one white tablet), taken together every 12 hours for 5 days.
 
-**Dose may be reduced** if you have kidney disease (reduced eGFR). Your doctor will check your kidney function before prescribing.
+**Dose is reduced** if you have kidney disease (reduced eGFR). Your doctor uses your most recent eGFR result, however old it is, and you do not need a new blood test first. If your doctor is unsure, they may start the higher dose, because early treatment is more effective than delayed treatment.
 
-- eGFR 30–59 mL/min: reduced dose (one each of nirmatrelvir 150 mg and ritonavir 100 mg, twice daily)
-- eGFR < 30 mL/min: further dose adjustment — your doctor will advise
+- eGFR 30 to 59 mL/min: reduced dose (one each of nirmatrelvir 150 mg and ritonavir 100 mg, taken together twice a day)
+- eGFR less than 30 mL/min/1.73m2: nirmatrelvir 300 mg with ritonavir 100 mg on day 1, then nirmatrelvir 150 mg with ritonavir 100 mg once a day for four days
 
 **Important contraindications** (reasons your doctor may not prescribe it):
 
 - Allergy to nirmatrelvir or ritonavir
-- Pregnancy (use is not routinely recommended; specialist advice is sought if benefits may outweigh risks)
+- Pregnancy (not recommended, as little information is available; it may be considered case by case if the benefit may outweigh the risks, after specialist advice)
 - Severe liver disease (Child-Pugh Class C)
 
 **Precautions your doctor will discuss:**
 
-- If you are pregnant or trying to conceive, additional contraception is recommended during and for 7 days after treatment
+- If you could become pregnant, use contraception during treatment and for 7 days after
 - If you use oral contraceptives containing ethinylestradiol, additional contraception is needed
-- Breastfeeding: manufacturer advises avoiding breastfeeding during and for 7 days after treatment
-- Some medications taken intermittently (e.g., for erectile dysfunction, colchicine, loratadine) must be avoided — your doctor will check
+- Breastfeeding: the effects on a breastfed baby are not known, and a risk cannot be ruled out. The Medsafe data sheet advises stopping breastfeeding during treatment and for 48 hours after finishing the course
+- Contraception: Paxlovid can make combined contraceptive pills, patches and rings less effective. The Medsafe data sheet advises using another method as well during treatment and until your next period.
+- Avoid medicines that do not mix with Paxlovid, even ones you take only now and then, such as erectile dysfunction medicines, colchicine, or loratadine
 
-**Common side effects:** vomiting, diarrhoea, headache, altered taste
+**Common side effects:** vomiting, diarrhoea, headache, altered sense of taste
 
-**Less common side effects:** muscle aches, elevated blood pressure
+**Less common side effects:** muscle aches, high blood pressure
 
-**Drug interactions:** Paxlovid has significant drug interaction potential. Your doctor will review all your current medications before prescribing. If you are under specialist care (e.g., oncology, rheumatology, psychiatry), your doctor may contact your specialist before prescribing.
+**Drug interactions:** Paxlovid interacts with many medicines. Your doctor or pharmacist will check all your current medicines before you take it. If a specialist service manages any of your medicines (e.g., oncology, rheumatology, psychiatry), your doctor will seek advice from that specialist before prescribing.
 
 ---
 
 ### Remdesivir
 
-**What it is:** An intravenous antiviral given by infusion over 3 consecutive days. It is used for patients who cannot take Paxlovid, and is most commonly considered for people with severe immunocompromise (e.g., transplant recipients).
+**What it is:** An intravenous antiviral given by infusion on 3 consecutive days. It is most likely to be used for transplant recipients and people with a similar level of immune deficiency, after discussion with an infectious diseases specialist.
 
-**How it is given:** Infusion of 30–120 minutes per day for 3 days. You are observed for at least 1 hour after the first dose.
+**How it is given:** Infusion of 30 to 120 minutes per day for 3 days. You are observed for at least 1 hour after the first dose, possibly less after the second and third doses.
 
 **Important contraindications:**
 
 - Allergy to remdesivir
-- Elevated liver enzymes (ALT 5 or more times the upper limit of normal) or severe liver dysfunction
-- eGFR ≤ 30 mL/min (remdesivir is generally not used with severe kidney impairment)
 
 **Precautions:**
 
-- Pregnancy (first trimester): generally avoided unless benefits clearly outweigh risks
+- Elevated liver enzymes (ALT 5 or more times the upper limit of normal) or severe liver dysfunction
+- Pregnancy: not usually used in the first trimester
+- Kidney disease: no dose change is needed, but with an eGFR less than 30, a 2-dose regimen (leaving out the day 3 dose) may be appropriate, after specialist advice
 - Compatible with breastfeeding
-- Drug interactions should be checked — your doctor will review your medications
+- Theoretical drug interactions have been found. Your doctor will review your medications
 
 **Common side effects:** nausea, headache, rash
 
 **Significant side effects:** liver dysfunction, hypersensitivity reactions
 
-Remdesivir is administered in a hospital or clinic setting. Your doctor will refer you to an infectious diseases specialist if remdesivir is appropriate for you.
+Remdesivir is given in a hospital or clinic setting. Your doctor will only refer you once you have discussed it fully, accept the referral, and are willing to have an infusion on 3 consecutive days.
 
 ---
 
 ## Antivirals in Children and Young People (17 years and younger)
 
-Antivirals for children are only prescribed when recommended by a paediatrician or relevant hospital specialist. Your child's GP will liaise with the appropriate specialist before prescribing.
+Antivirals for children are only prescribed when recommended by a paediatrician or relevant hospital specialist. Your child's GP will discuss it with the appropriate specialist before prescribing.
 
-- **Paxlovid:** Generally for those aged 12 years or older who weigh 40 kg or more and can swallow tablets whole. Prescribing under 18 is off-label — specialist recommendation is required.
-- **Remdesivir:** Licensed for those aged 12 and over. May be used off-label in younger children in exceptional circumstances, after specialist advice.
+- **Paxlovid:** For those aged 12 years or older who weigh 40 kg or more and can swallow tablets whole. The tablets cannot be cut or crushed, and there is no liquid form. Prescribing for those aged 17 years and younger is off-label, so specialist recommendation is required.
+- **Remdesivir:** May be considered if Paxlovid is not suitable, after specialist assessment. Its data sheet licenses it from 4 weeks of age and 3 kg for COVID-19 pneumonia that needs oxygen, and for those who weigh 40 kg or more and are at high risk but do not need oxygen. It is not used with an allergy to remdesivir, elevated liver enzymes (ALT 5 or more times the upper limit of normal) or severe liver dysfunction. The data sheet says no dose change is needed for kidney problems, including dialysis.
 
 ---
 
 ## Inhaled Corticosteroids
 
-Inhaled corticosteroids (e.g., for asthma or COPD) are **no longer recommended** as treatment for COVID-19. If you are already on inhaled steroids for another condition, continue them as usual.
+Inhaled corticosteroids are **no longer recommended** as treatment for COVID-19. If you already use inhaled steroids for another condition (e.g., asthma or COPD), continue them as usual.
 
 ---
 
@@ -107,29 +113,25 @@ Inhaled corticosteroids (e.g., for asthma or COPD) are **no longer recommended**
 
 If you are at high risk, your doctor may write a prescription in advance so you have medication ready if you get COVID-19. Key points:
 
-- You must meet Pharmac eligibility criteria (other than having a current COVID-19 infection)
 - Scripts are valid for 90 days
-- The medication **cannot be dispensed** until you have COVID-19, are symptomatic, and are within 5 days of symptom onset
+- The medication **cannot be dispensed** until you have COVID-19 (or probably have it), are symptomatic, and are within 5 days of symptom onset
 - When you collect it, the pharmacist will review your medications, confirm your COVID-19 diagnosis, and check for any dose adjustments needed
 
 ---
 
 ## Pharmacist Supply
 
-Some community pharmacists are trained to supply Paxlovid without a prescription (pharmacist-initiated supply). The pharmacist will assess your eligibility, check for contraindications and interactions, and may refer you back to your GP if needed. This does not replace your ongoing COVID-19 care from your GP.
+Paxlovid is a pharmacist-only medicine. Community pharmacists who opt into the service and complete training can supply it without a prescription. The pharmacist will check that you are well enough to be managed without further assessment, and will refer you to your GP or the emergency department if you are not. They also check for contraindications and review your other medicines. This does not replace your ongoing COVID-19 care from your GP.
 
 ---
 
 ## When to See Your Doctor
 
-Discuss treatment with your doctor or call Healthline if:
+Talk to your doctor or pharmacist soon after a positive COVID-19 test if you are in one of the highest-risk groups above, or if you have questions about whether antiviral treatment is appropriate for you.
 
-- You test positive for COVID-19 and have significant health conditions or are on multiple medications
-- You are aged 65 or older, or 50 or older with health risk factors
-- Your symptoms are worsening
-- You have questions about whether antiviral treatment is appropriate for you
+Early treatment is more effective than delayed treatment. Paxlovid from an advance prescription can only be dispensed within **5 days of symptom onset**.
 
-Treatment is most effective when started early — ideally within **5 days of symptom onset**.
+If you have COVID-19 and become short of breath at rest, have chest pain, or become confused or very drowsy, call 111 or go to the emergency department.
 
 ---
 
