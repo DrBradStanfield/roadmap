@@ -12,7 +12,7 @@ US-35 in [user-stories.md](user-stories.md). Code:
 
 A user's own assistant (ChatGPT or Claude, through mcp.drstanfield.com) offers
 lab values as candidates, and nothing is written until a second call commits
-what the user confirmed. Two routes share that second half. On the FOLDER
+the candidates the assistant selected, carrying an approval text. Two routes share that second half. On the FOLDER
 route (`import_documents`) our server reads the file from the Dropbox folder
 and the extraction model is the same Haiku pipeline the website uses
 (`extractOrClassify` in `app/lib/anthropic.server.ts`), with a shorter budget

@@ -29,9 +29,13 @@ const RETIRED =
 /** Tool results: answers, refusals, hints and `next`. They may say what to show the user and to wait for the reply. */
 export const RESULT_BLOCKLIST = new RegExp(RETIRED, 'i');
 
-/** Tool documentation: every `tools/list` field and both INSTRUCTIONS. The retired phrases, and no directive about when to call. */
+/**
+ * Tool documentation: every `tools/list` field and both INSTRUCTIONS. The retired phrases, and no directive about
+ * when to call or what to show. Round 5, R5: "await", "wait until", "end the turn" and "show the user" join, since
+ * the stdio INSTRUCTIONS said "then show the user the candidates". A result may say all four.
+ */
 export const DOC_BLOCKLIST = new RegExp(
-  `${RETIRED}|WAIT for|end your turn|before they confirm|until you confirm|Do not call before|only after`,
+  String.raw`${RETIRED}|WAIT for|\bawait\b|wait until|end your turn|end the turn|show the user|before they confirm|until you confirm|Do not call before|only after`,
   'i',
 );
 

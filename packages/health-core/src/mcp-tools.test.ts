@@ -2299,9 +2299,8 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(data.remaining).toEqual(['later.pdf']);
     // The user decides before anything is filed (US-35 AC7). A tool result, not tool documentation, so it says what to
     // show: only the model can show the user anything (US-36, 2026-10-14, R1; "is shown to the user" was passive and false).
-    expect(data.next).toContain('Show the user each candidate (value, unit, date, file) and document; nothing is written until a commit made after their reply.');
-    // Round 3, R1: the request that started the import is not the reply the commit waits on.
-    expect(data.next).toContain('The message that asked for this import is not the reply to them.');
+    // Round 5, R1: the result says to wait for the reply, as the docs say it does, and the request is not that reply.
+    expect(data.next).toContain('Show the user each candidate (value, unit, date, file) and document and wait for their reply; the message that asked for this import is not that reply. Nothing is written until the commit.');
     // The order that keeps one receipt at a time: commit, then the rest (finding 16), and the commit after the reply (R1).
     expect(data.next).toContain('After the user’s reply, this receipt’s commit comes first; a call with fileNames set to remaining then reads the rest.');
     // R3/R4 (2026-10-14): the import preview carries the two notes the permanent tools' proposals carry.
@@ -2318,7 +2317,9 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     // on the continuation (+24), less the shorter imperative first line (-31). This fixture was 938.
     // 960 became 1,060 in round 3: "The message that asked for this import is not the reply to them." (+65, R1) and
     // "the text of the user’s reply" on the commit line (+30, R3). This fixture was 1,033.
-    // 1,060 became 1,080 in round 4: ", up to 200 characters" on the commit line (+22, R2). This fixture is now 1,055.
+    // 1,060 became 1,080 in round 4: ", up to 200 characters" on the commit line (+22, R2). This fixture was 1,055.
+    // Round 5, R1: "and wait for their reply; … is not that reply. Nothing is written until the commit." replaced two sentences
+    // (-3). The bound stays 1,080; this fixture is now 1,052.
     expect(data.next.length).toBeLessThan(1_080);
     expect(cloud.files.get(ROADMAP_FILE_NAME)).toBe(before);
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
@@ -2917,6 +2918,8 @@ describe('US-36 (OPEN 2026-10-14) — no approval directive in any text a surfac
     }
     const directives = [
       'WAIT for their reply', 'end your turn', 'until you confirm', 'Do not call before it.', 'before they confirm', 'only after the reply',
+    // Round 5, R5.
+    'await their reply', 'wait until the user agrees', 'end the turn', 'then show the user the candidates',
     ];
     for (const directive of directives) {
       expect(directive).toMatch(DOC_BLOCKLIST);
@@ -2925,6 +2928,8 @@ describe('US-36 (OPEN 2026-10-14) — no approval directive in any text a surfac
     for (const fine of [
       'Ask them to read the title and body first', 'ask them to try again, and to reconnect if it persists.',
       'in your own words', 'A reply that names the change (for example “Yes, apply this change”) is clearer than “yes” alone.',
+      // Round 5, R5: "await" counts only as a word, and showing is banned only when aimed at the user.
+      'awaiting the commit', 'the preview shows the value', 'returns a preview for the user',
     ]) {
       expect(fine).not.toMatch(DOC_BLOCKLIST);
       expect(fine).not.toMatch(RESULT_BLOCKLIST);

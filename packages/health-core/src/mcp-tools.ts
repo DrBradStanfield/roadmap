@@ -1344,7 +1344,7 @@ function extractNext(prepared: PreparedImport, remaining: string[], route: Impor
     lines.push(
       `${count('free')} new value(s), ${count('held_equal')} already recorded, ${count('held_different')} differ from the record` +
         `${docs ? `, ${docs} document(s) to file (titles in documents)` : ''}. ` +
-        'Show the user each candidate (value, unit, date, file)' + (docs ? ' and document' : '') + '; nothing is written until a commit made after their reply. The message that asked for this import is not the reply to them.' + dropped,
+        'Show the user each candidate (value, unit, date, file)' + (docs ? ' and document' : '') + ' and wait for their reply; the message that asked for this import is not that reply. Nothing is written until the commit.' + dropped,
     );
     if (questions.length) lines.push(`${questions.length} candidate(s) carry a question from the extractor (${questions.slice(0, 5).join(', ')}): show it beside the value.`);
     if (shared) lines.push(`${shared} candidate(s) share a day with another (sameDayAs): the record keeps one value per metric per day, so the user picks one.`);

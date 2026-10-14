@@ -339,7 +339,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     expect(early.isError).toBe(true);
     expect(early.text).toContain(`is valid from ${at(PROPOSAL_NBF_SECONDS)}`);
     // R2 (2026-10-14): a tool result, so it may say what to show; it names what the second call carries, and when.
-    expect(early.text).toContain(`for a second call made after the user’s reply and carrying approval (${APPROVAL_MEANS}). Show the proposal to the user.`);
+    expect(early.text).toContain(`for a second call made after the user’s reply and carrying approval (${APPROVAL_MEANS}). Show the proposal to the user and wait for their reply; the message that asked for the change is not that reply.`);
     expect(early.text).toMatch(AFTER_THE_REPLY);
 
     // 3. After the pause, but with the number changed under the user's yes.
@@ -427,7 +427,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     // The window is checked before the words: an assistant chaining the second call is sent back to the user.
     const chained = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt }, at(2));
     expect(chained.isError).toBe(true);
-    expect(chained.text).toBe(`That confirm receipt is not valid yet: it is valid from ${at(PROPOSAL_NBF_SECONDS)}, for a second call made after the user’s reply and carrying approval (${APPROVAL_MEANS}). Show the proposal to the user. Nothing was written.`);
+    expect(chained.text).toBe(`That confirm receipt is not valid yet: it is valid from ${at(PROPOSAL_NBF_SECONDS)}, for a second call made after the user’s reply and carrying approval (${APPROVAL_MEANS}). Show the proposal to the user and wait for their reply; the message that asked for the change is not that reply. Nothing was written.`);
     expect(storedRecord().measurements).toHaveLength(1);
     const written = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(11));
     expect(written.isError).toBe(false);
