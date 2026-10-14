@@ -34,7 +34,8 @@ AC6 "unexpected change" lines list other batches on the same branch: expected. E
 ## Merge checklist (every batch, after AC8)
 1. Build a merge branch FRESH from main: the batch's docs/pathway files, its answer fixtures (data-merged into tools/test-queries.json), its docs/knowledge-refresh files. Never merge knowledge-refresh/batches itself (870c44c9 holds raw quotes).
 2. New pathways only (new-1a, new-1b): rebuild docs/blog/index.json with `npx tsx scripts/rebuild-blog-index.ts` (dry run 2026-10-14: adds exactly the 40 new pathways, removes none), register categories (new-entry-addendum.md), and check the chatbot can retrieve each new handle (Codex R8, 2026-10-12). CI fails on index drift.
-3. `npm run test:all` in a worker, merge, push. Brad deploys from Actions.
+3. Dry run 2026-10-14 (all 60 + index rebuild): the only content failure is app/lib/chat-router-guard.test.ts, which pins population counts. With the 40 new pages: paediatric 89 -> 92 (adhd-in-children-and-youth, analgesia-in-children-with-acute-pain, skin-infections-in-children), pregnancy 32 -> 33 (antenatal). Update the pin after reading the newly marked handles; check whether last-days-of-life-care-adults should carry the palliative mark (count stayed 27). The other failures were environment: stale kr-batches node_modules (no ajv) and codex-review test timeouts under load. Run test:all in the main checkout.
+4. `npm run test:all` in a worker, merge, push. Brad deploys from Actions.
 
 ## Open items for Brad
 - ConsumerLab captcha guard edit: blocked by the permission system as a security change; needs Brad to allow it directly.

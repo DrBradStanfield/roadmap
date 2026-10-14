@@ -13,7 +13,7 @@ Counts and hashes only. Raw text never enters this repo.
 | AC2 raw fidelity of every new number token | WARN | 0 | 49 |
 | AC3 hedging held; hardening words listed | WARN | 0 | 236 |
 | AC4 deleted sentences justified; headings kept | PASS | 0 | 0 |
-| AC6 diff touches only batch files | FAIL | 271 | 0 |
+| AC6 diff touches only batch files | FAIL | 170 | 0 |
 | AC7 grokipedia, products, references, banned phrases, exclusions | PASS | 0 | 0 |
 | PATHWAY source line, deferral blockquote, no NZ logistics | PASS | 0 | 0 |
 
@@ -28,7 +28,7 @@ Counts and hashes only. Raw text never enters this repo.
 | menopause | pathway | refresh-2026-09-29/health_pathways/menopause.md | ead9b879585db964ad7db89484c5d69155ac201f2dbbe781ec737e922cfc104e | 6a0cc72f08fb2b0b | 85 | 85 | 0 | 0>78 | 0>0 |
 | motor-neurone-disease | pathway | refresh-2026-09-29/health_pathways/motor-neurone-disease.md | 7eaa8625134abdad1984fec8ed486c55161787b1a429286119ed7c3cc577c61b | aed792e7bc5e4e74 | 42 | 41 | 0 | 0>61 | 0>0 |
 | older-adults-weight-and-nutrition | pathway | refresh-2026-09-29/health_pathways/older-adults-weight-and-nutrition.md | 033a9be3baa402318c6f05b2879cfe4fa75b81cc47e057d67b4820aec64c7d34 | 3f9e16938628c924 | 21 | 21 | 0 | 0>21 | 0>0 |
-| osteoporosis-in-adults | pathway | refresh-2026-09-29/health_pathways/osteoporosis-in-adults.md | 909967890e3c76ef28ba8cc203053aae383228974ef7d5f4ac94bb8bf44f67ee | 40aff444ad846c39 | 53 | 51 | 0 | 0>42 | 0>0 |
+| osteoporosis-in-adults | pathway | refresh-2026-09-29/health_pathways/osteoporosis-in-adults.md | 909967890e3c76ef28ba8cc203053aae383228974ef7d5f4ac94bb8bf44f67ee | 40aff444ad846c39 | 53 | 52 | 0 | 0>42 | 0>0 |
 | otitis-media-with-effusion-glue-ear | pathway | refresh-2026-09-29/health_pathways/otitis-media-with-effusion-glue-ear.md | e2bc9a6b7af0ae6d5cf4bd73423427a56f0ff17ab9bee1695e74f34c47e118a8 | 8366c1dd18ae9944 | 27 | 27 | 0 | 0>27 | 0>0 |
 | palpitations | pathway | refresh-2026-09-29/health_pathways/palpitations.md | 36875278b77d20ce04a5c3e38ff73c79f07ab8c38ace9d1bcaca71e0e782c934 | a978fac679767373 | 20 | 19 | 0 | 0>41 | 0>0 |
 | physical-assault | pathway | refresh-2026-09-29/health_pathways/physical-assault.md | e43bbb4ad31f11a5cd081c525d6dfd749631988464cb731403695895e9344221 | 8216cc24ccf5991c | 6 | 4 | 0 | 0>15 | 0>0 |
@@ -38,7 +38,7 @@ Counts and hashes only. Raw text never enters this repo.
 | thrombotic-disorders | pathway | refresh-2026-09-29/health_pathways/thrombotic-disorders.md | 5361e6dcd3a149b3d5e515d64ee6460ea4ab88bcd835cab09492a24d5526aa9d | 654937226c393a56 | 19 | 18 | 0 | 0>21 | 0>0 |
 | trauma-in-eyes | pathway | refresh-2026-09-29/health_pathways/trauma-in-eyes.md | 955e09b1a14a7c4541d2cdb2a8342f5271339d23901733918757e6e00f7e2207 | e166f609439876ed | 10 | 9 | 0 | 0>23 | 0>0 |
 | unintentional-weight-loss-in-adults | pathway | refresh-2026-09-29/health_pathways/unintentional-weight-loss-in-adults.md | 4da2b3c0a6dc7974949697df134dcbb75fe38eb95bb0914eae2c6f5e04047c72 | 1d8eda92f8c4f704 | 30 | 30 | 0 | 0>15 | 0>0 |
-| urethral-catheterisation | pathway | refresh-2026-09-29/health_pathways/urethral-catheterisation.md | b77716ed087c1ee3d8b98e4fc7ca90612ff6ab4339b819449e0c60c8f0d1f531 | ecd861c1369f9f4e | 20 | 17 | 0 | 0>43 | 0>0 |
+| urethral-catheterisation | pathway | refresh-2026-09-29/health_pathways/urethral-catheterisation.md | b77716ed087c1ee3d8b98e4fc7ca90612ff6ab4339b819449e0c60c8f0d1f531 | ecd861c1369f9f4e | 20 | 18 | 0 | 0>43 | 0>0 |
 | uti-in-adults | pathway | refresh-2026-09-29/health_pathways/uti-in-adults.md | bc4756b9daad9eab8df46112ec624bbe6551b9505479f073280f266ad6057831 | beaf44f8a1e97162 | 22 | 20 | 0 | 0>33 | 0>0 |
 | varicose-veins-and-chronic-venous-insufficiency | pathway | refresh-2026-09-29/health_pathways/varicose-veins-and-chronic-venous-insufficiency.md | 104787b76af14a26a54def9c66888371cc450e93bd70739be21902df860f32f6 | 2a7f808d5771b0c9 | 11 | 10 | 0 | 0>25 | 0>0 |
 
@@ -134,10 +134,8 @@ Counts and hashes only. Raw text never enters this repo.
 | AC2 | iron-deficiency-in-adults | orchestrator | 2026-10-14 | Unit added (adversary row 2): the raw prints "Hb < 60" with no unit; NZ labs report g/L, as the entry's own L37 does. | c8aba6dedf7acad9 |
 | AC2 | iron-deficiency-in-adults | orchestrator | 2026-10-14 | Unit added (adversary row 2): the raw prints "Hb < 60" with no unit; NZ labs report g/L, as the entry's own L37 does. | c69bce3ae32837e6 |
 | AC2 | osteoporosis-in-adults | orchestrator | 2026-10-12 | Checker limit: "per day" sits far from the dose in the body ("5 mg or more of prednisone equivalent per day"), so the body reads as mg/day and the raw ("5 mg or more per day prednisone equivalent") as mg. Numbers agree. Rule 10. | 21e7b43acdfec78d |
-| AC2 | osteoporosis-in-adults | orchestrator | 2026-10-14 | Currency check (ruling 13): zoledronic acid not used below creatinine clearance 35 mL/min, from the Medsafe data sheet; not in the raw. | b18a7996fae60b22 |
 | AC2 | physical-assault | orchestrator | 2026-10-12 | House line (ruling 11, suicide): 1737 is New Zealand's free national counselling line; it is not in the raw. | 418be51981243d4b |
 | AC2 | testosterone-deficiency-in-men | orchestrator | 2026-10-14 | Safety correction (adversary row 7, FOR BRAD): the 2023 TRAVERSE trial's follow-up of about 2 years; not in the raw. | bd518d166d8845a8 |
-| AC2 | urethral-catheterisation | orchestrator | 2026-10-14 | Safety corrections (Codex R3 and R6, FOR BRAD): doxazosin starts at 1 mg (Medsafe data sheet); catheter replacement after more than 7 days (NICE NG113). Not in the raw. | 766aa106bab6aba8 |
 | AC2 | urethral-catheterisation | orchestrator | 2026-10-14 | Safety corrections (Codex R3 and R6, FOR BRAD): doxazosin starts at 1 mg (Medsafe data sheet); catheter replacement after more than 7 days (NICE NG113). Not in the raw. | d3fdc0f12a477b66 |
 | AC2 | uti-in-adults | orchestrator | 2026-10-14 | Safety correction (Codex R6, FOR BRAD): catheter replacement after more than 7 days (NICE NG113); not in the raw. | 681d7824298c23bf |
 

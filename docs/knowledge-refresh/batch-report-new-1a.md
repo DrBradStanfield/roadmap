@@ -1,6 +1,6 @@
 # Knowledge batch report: pathways-new-1a
 
-Base: main (e96e033364e7bd5ce652b4a19b83dda2359d87e6)
+Base: main (3a51d3eadec5f8735bd407a79021ec7e9ebf451f)
 Handles: 20
 
 Counts and hashes only. Raw text never enters this repo.
@@ -13,7 +13,7 @@ Counts and hashes only. Raw text never enters this repo.
 | AC2 raw fidelity of every new number token | WARN | 0 | 32 |
 | AC3 hedging held; hardening words listed | WARN | 0 | 245 |
 | AC4 deleted sentences justified; headings kept | PASS | 0 | 0 |
-| AC6 diff touches only batch files | FAIL | 267 | 0 |
+| AC6 diff touches only batch files | FAIL | 170 | 0 |
 | AC7 grokipedia, products, references, banned phrases, exclusions | PASS | 0 | 0 |
 | PATHWAY source line, deferral blockquote, no NZ logistics | PASS | 0 | 0 |
 
@@ -29,7 +29,7 @@ Counts and hashes only. Raw text never enters this repo.
 | autism-in-adults | pathway | refresh-2026-09-29/health_pathways/autism-in-adults.md | db40b58eb09694d1981b0e1dd67c4fcfa3174e160efcd1c4c1cc18ab380959b1 | 71ec276b7c653cb7 | 10 | 10 | 0 | 0>65 | 0>0 |
 | bariatric-surgery | pathway | refresh-2026-09-29/health_pathways/bariatric-surgery.md | 8a5b621afcd9493877635e3c6d134bbbfc2338de3e8d08fb958f0238217b41ac | c98e62bdfb99e4a0 | 16 | 16 | 0 | 0>20 | 0>0 |
 | cognitive-impairment | pathway | refresh-2026-09-29/health_pathways/cognitive-impairment.md | 90eff58ab75d6427886237e123aca4595b1ce7b2fddcce4a651e03787a3dd896 | 3045142a0ed0333d | 20 | 19 | 0 | 0>80 | 0>0 |
-| contraceptive-implant | pathway | refresh-2026-09-29/health_pathways/contraceptive-implant.md | ba4e677a2ce11b12e24ca8b2a0253b66ae9ddea46b54383e3df0355d0431ecf0 | c78c95a62918a335 | 43 | 42 | 0 | 0>70 | 0>0 |
+| contraceptive-implant | pathway | refresh-2026-09-29/health_pathways/contraceptive-implant.md | ba4e677a2ce11b12e24ca8b2a0253b66ae9ddea46b54383e3df0355d0431ecf0 | c78c95a62918a335 | 43 | 43 | 0 | 0>70 | 0>0 |
 | dysmenorrhoea | pathway | refresh-2026-09-29/health_pathways/dysmenorrhoea.md | 1eea27c4efb8130fae36ff89f3c1b26945b3c0d0d1122ca95d20af155c22c908 | 01ae36c37cf986c9 | 11 | 11 | 0 | 0>18 | 0>0 |
 | dyspepsia-and-heartburn-gord | pathway | refresh-2026-09-29/health_pathways/dyspepsia-and-heartburn-gord.md | 05d29a9c8ba39638a3a1058562736ccea5e55cd29339311d1f77e0ff97abb951 | d7a67786ae0cc017 | 35 | 34 | 0 | 0>41 | 0>0 |
 | dysphagia | pathway | refresh-2026-09-29/health_pathways/dysphagia.md | 15276e63ce41b8087743dd6147fa5be479d9524b18dfed066f1a23a613f9d841 | ef585f676fd16db4 | 7 | 6 | 0 | 0>35 | 0>0 |
@@ -40,7 +40,7 @@ Counts and hashes only. Raw text never enters this repo.
 | general-wound-care | pathway | refresh-2026-09-29/health_pathways/general-wound-care.md | 00152e8b31d836802d38396e48c2ad991794e4fc3321282becbd35966cbbb6e9 | cd7e7ea4066c9696 | 6 | 5 | 0 | 0>29 | 0>0 |
 | hoarse-voice-dysphonia | pathway | refresh-2026-09-29/health_pathways/hoarse-voice-dysphonia.md | 96e0e60c4b7b6220c1ea6c8744477439a109e82f2d8f0a63ec3c262e90c0f225 | 9cb112f67fa64d3a | 7 | 6 | 0 | 0>15 | 0>0 |
 | human-immunodeficiency-virus-hiv | pathway | refresh-2026-09-29/health_pathways/human-immunodeficiency-virus-hiv.md | bfe4963b433930daa283159b7897a0450ee33f59ac612557515130ff0e78727a | d9c9b996bb871573 | 35 | 34 | 0 | 0>34 | 0>0 |
-| inflammatory-bowel-disease-ibd | pathway | refresh-2026-09-29/health_pathways/inflammatory-bowel-disease-ibd.md | ac6d015ce00d05eee7dde0f72a8aafd84976fe6ba355d81b90809abd1e600eae | 9aa9c3825b93b30e | 20 | 14 | 0 | 0>42 | 0>0 |
+| inflammatory-bowel-disease-ibd | pathway | refresh-2026-09-29/health_pathways/inflammatory-bowel-disease-ibd.md | ac6d015ce00d05eee7dde0f72a8aafd84976fe6ba355d81b90809abd1e600eae | 9aa9c3825b93b30e | 20 | 15 | 0 | 0>42 | 0>0 |
 
 ## Voided entries
 
@@ -71,6 +71,8 @@ Counts and hashes only. Raw text never enters this repo.
 - anxiety-in-adults: VOID 8: Failed AC2 check 1 (raw_quote too short (need 6 words or 30 characters)); replaced by a current entry. [body: Your doctor may screen people at higher risk using the **GAD]
 - anxiety-in-adults: VOID 18: Failed AC2 check 1 (raw_quote too short (need 6 words or 30 characters)); replaced by a current entry. [body: - Metabolic disorders, such as porphyria and vitamin B12 def]
 - anxiety-in-adults: VOID 42: Failed AC2 check 1 (raw_quote shares no number with its body_line); replaced by a current entry. [body: - **1 to 2 weeks:** a check in person, by phone, text, or em]
+- anxiety-in-adults: VOID 64: Checker tokens '>65' and '<=20 mg/day' cannot match the data sheet's '(>65 years)' and '20 mg/day'; sheet frozen in extra_raw, exception stays. [body: - Over 65, the maximum is lower: citalopram up to 20 mg a da]
+- anxiety-in-adults: VOID 65: Checker tokens '>65' and '<=20 mg/day' cannot match the data sheet's '(>65 years)' and '20 mg/day'; sheet frozen in extra_raw, exception stays. [body: - Over 65, the maximum is lower: citalopram up to 20 mg a da]
 - bariatric-surgery: VOID 12: Failed AC2 check 1 (raw_quote shares no number with its body_line); replaced by a current entry. [body: - **HbA1c every 6 months.** Regular testing is recommended b]
 - cognitive-impairment: VOID 0: Failed AC2 check 1 (raw_quote too short (need 6 words or 30 characters)); replaced by a current entry. [body: *Source: Auckland Region HealthPathways. Last reviewed: Apri]
 - cognitive-impairment: VOID 2: Failed AC2 check 1 (raw_quote shares no number with its body_line); replaced by a current entry. [body: - A head CT shows a significant abnormality, such as a bleed]
@@ -149,8 +151,6 @@ Counts and hashes only. Raw text never enters this repo.
 | AC2 | anxiety-in-adults | orchestrator | 2026-10-14 | Safety correction (Codex round 2 R2, currency): over-65 maxima from the Medsafe citalopram and escitalopram data sheets; not in the raw. | a47b1569d6f14b8e |
 | AC2 | anxiety-in-adults | orchestrator | 2026-10-14 | Safety correction (Codex round 2 R2, currency): over-65 maxima from the Medsafe citalopram and escitalopram data sheets; not in the raw. | ba50e2657dc93a08 |
 | AC2 | anxiety-in-adults | orchestrator | 2026-10-14 | Safety correction (Codex round 2 R2, currency): over-65 maxima from the Medsafe citalopram and escitalopram data sheets; not in the raw. | 4a5c4f86279468fe |
-| AC2 | contraceptive-implant | orchestrator | 2026-10-14 | Currency check (ruling 13): 4 years and 60 kg come from the Medsafe Jadelle data sheet, not the raw. | e904b73f03bf66e1 |
-| AC2 | contraceptive-implant | orchestrator | 2026-10-14 | Currency check (ruling 13): 4 years and 60 kg come from the Medsafe Jadelle data sheet, not the raw. | 2bb93c47eeafb285 |
 | AC2 | epilepsy | orchestrator | 2026-10-12 | House line (ruling 11): a seizure lasting more than 5 minutes calls for 111; not in the raw. | cf372f42d08eae25 |
 | AC2 | epilepsy | orchestrator | 2026-10-12 | House line (ruling 11): a seizure lasting more than 5 minutes calls for 111; not in the raw. | 47a129c77bd65213 |
 | AC2 | human-immunodeficiency-virus-hiv | orchestrator | 2026-10-12 | Checker limit: the raw's "cells x 106/L" lost its superscript in the scrape (10^6); the body writes 10⁶/L. Rule 10. | f1093bf8152d8400 |
@@ -161,7 +161,6 @@ Counts and hashes only. Raw text never enters this repo.
 | AC2 | inflammatory-bowel-disease-ibd | orchestrator | 2026-10-12 | Units added (adversary row 5, FOR BRAD): the raw prints "Hb < 105" and "CRP > 30" with no units; NZ labs report g/L and mg/L. | a908bd759f483dde |
 | AC2 | inflammatory-bowel-disease-ibd | orchestrator | 2026-10-12 | Units added (adversary row 5, FOR BRAD): the raw prints "Hb < 105" and "CRP > 30" with no units; NZ labs report g/L and mg/L. | 61bdd2cef476785f |
 | AC2 | inflammatory-bowel-disease-ibd | orchestrator | 2026-10-14 | Safety corrections and Brad's ruling: calprotectin per g (Brad 2026-10-14; the raw prints per L in error), 12 months after infliximab (Medsafe Remicade data sheet), first surveillance at 8 years (NZSG 2025 guidance the raw links). Not in the raw text. | e04a46537f6aee44 |
-| AC2 | inflammatory-bowel-disease-ibd | orchestrator | 2026-10-14 | Safety corrections and Brad's ruling: calprotectin per g (Brad 2026-10-14; the raw prints per L in error), 12 months after infliximab (Medsafe Remicade data sheet), first surveillance at 8 years (NZSG 2025 guidance the raw links). Not in the raw text. | 2153ca42e2f5061d |
 | AC2 | inflammatory-bowel-disease-ibd | orchestrator | 2026-10-14 | Safety corrections and Brad's ruling: calprotectin per g (Brad 2026-10-14; the raw prints per L in error), 12 months after infliximab (Medsafe Remicade data sheet), first surveillance at 8 years (NZSG 2025 guidance the raw links). Not in the raw text. | e13d95bee460ce68 |
 
 Body hashes are the first 16 hex characters of sha256; raw hashes are in full.
