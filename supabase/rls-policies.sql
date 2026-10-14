@@ -1530,3 +1530,12 @@ NOTIFY pgrst, 'reload schema';
 -- ===== Bubble/embed transcripts join the 30-day purge (US-15 AC8, 2026-09-10) =====
 ALTER TABLE chat_messages ALTER COLUMN content DROP NOT NULL;
 NOTIFY pgrst, 'reload schema';
+
+-- ===== chat_match_events.router_output_tokens (US-15 AC31, 2026-10-14) =====
+-- Apply to production BEFORE deploying the code that writes it: every surface
+-- inserts this column, so without it every match-event insert fails.
+-- The router's output token count, so a router timeout can be judged against
+-- reply length (Sentry 6Z). 0 on a router error row, like
+-- router_input_tokens; NULL when the router did not run.
+ALTER TABLE chat_match_events ADD COLUMN IF NOT EXISTS router_output_tokens integer;
+NOTIFY pgrst, 'reload schema';

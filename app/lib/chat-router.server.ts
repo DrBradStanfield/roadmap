@@ -163,8 +163,8 @@ export function sanitizeForRouter(s: string): string {
 const WIDGET_ROW_COLUMNS = [
   'message_id', 'conversation_id', 'user_id', 'message', 'router_context', 'matched_handles',
   'router_version', 'router_latency_ms', 'router_cache_hit', 'router_input_tokens',
-  'router_cache_read_tokens', 'router_raw', 'router_error', 'classification', 'router_skipped',
-  'is_fallback', 'failure_mode',
+  'router_cache_read_tokens', 'router_output_tokens', 'router_raw', 'router_error', 'classification',
+  'router_skipped', 'is_fallback', 'failure_mode',
 ] as const;
 
 export interface MatchEventRow extends Record<string, unknown> {

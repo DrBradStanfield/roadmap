@@ -278,3 +278,14 @@ describe('US-15 AC26 — clean cuts and the length signal', () => {
     expect(JSON.stringify(timing)).not.toContain('xxxx');
   });
 });
+
+// US-15 AC31: when the router did not run, its output count is null, not
+// missing, on the widget row and in chat_timing (the classifier skips it here).
+describe('US-15 AC31 — router output tokens when the router did not run', () => {
+  it('US-15 AC31: the row and chat_timing read null', async () => {
+    await post({ message: 'hello', localFirst: true });
+    expect(matchEvent().router_output_tokens).toBeNull();
+    const timing = consoleLog.mock.calls.map((c) => JSON.parse(String(c[0]))).find((l) => l.evt === 'chat_timing');
+    expect(timing.routerOutputTokens).toBeNull();
+  });
+});
