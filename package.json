@@ -87,6 +87,9 @@
   "overrides": {
     "minimatch": "9.0.9",
     "tar": "^7.5.11",
+    "tsup": {
+      "esbuild": "^0.28.1"
+    },
     "vite": "^6.2.2"
   },
   "author": "bradstanfield"

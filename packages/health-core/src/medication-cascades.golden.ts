@@ -76,7 +76,7 @@ const BEMPEDOIC = ['not_yet', 'bempedoic_acid', 'bempedoic_acid_ezetimibe', 'non
 
 const CASCADES: Record<'weight' | 'lipid', Cascade> = {
   weight: {
-    inputs: { heightCm: 178, sex: 'male', weightKg: 101.4 }, // BMI 32, no lipid
+    inputs: { heightCm: 178, sex: 'male', birthYear: 1980, weightKg: 101.4 }, // BMI 32, no lipid; an adult (US-07 AC6)
     prefix: 'weight-med-',
     explicit: {
       glp1: [undefined, { drug: '' }, { drug: 'none', dose: null }, { drug: 'not_tolerated', dose: null }, { drug: 'other', dose: null },
@@ -98,7 +98,7 @@ const CASCADES: Record<'weight' | 'lipid', Cascade> = {
     },
   },
   lipid: {
-    inputs: { heightCm: 178, sex: 'male', weightKg: 70, ldlC: 3.0 }, // BMI 22, LDL above its target
+    inputs: { heightCm: 178, sex: 'male', birthYear: 1980, weightKg: 70, ldlC: 3.0 }, // BMI 22, LDL above its target; an adult
     prefix: 'med-',
     explicit: {
       statin: [undefined, { drug: '' }, { drug: 'none', dose: null }, { drug: 'not_tolerated', dose: null }, { drug: 'tier_1', dose: null },

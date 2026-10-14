@@ -5,8 +5,9 @@
  * Lists the Anthropic Models API and reports every `claude-sonnet-*` id whose
  * created_at is newer than the pinned CHAT_MODEL's, plus the harness commands
  * that qualify a candidate for the answer hop. It never changes the pin: a
- * bump goes through a `claude/` PR, labelled `hold` for Brad's merge, with the
- * harness numbers (product-health loop charter, US-15 AC18).
+ * bump goes through a `claude/` PR with both models' harness numbers. It
+ * auto-ships when the candidate scores at least the pinned model on each, and
+ * is labelled `hold` for Brad otherwise (product-health loop charter, US-15 AC18).
  *
  * Usage:
  *   export $(grep -E "^ANTHROPIC_(TEST_)?API_KEY=" .env | xargs) && npx tsx tools/check-newer-model.ts
@@ -51,7 +52,7 @@ const day = (iso: string) => iso.slice(0, 10);
 /** The answer-hop qualification commands, then the router and classifier ones, marked. */
 export function qualificationLines(id: string): string[] {
   return [
-    `Qualify ${id} for the answer hop before a pin-bump PR (labelled hold, for Brad's merge):`,
+    `Qualify ${id} for the answer hop before a pin-bump PR (run the same commands with the pinned id; it auto-ships only if ${id} scores at least as well on each):`,
     `  npx tsx tools/test-chatbot-matching.ts --answer-model ${id} --runs 3 --answer-check`,
     `  npx tsx tools/test-tool-edits.ts --model ${id}`,
     'Run these only if the router or classifier pin is changed:',

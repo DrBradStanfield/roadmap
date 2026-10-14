@@ -35,6 +35,7 @@ beforeEach(async () => {
 });
 afterEach(() => {
   cleanup();
+  vi.resetAllMocks();
   vi.restoreAllMocks();
 });
 

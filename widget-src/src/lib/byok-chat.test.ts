@@ -20,7 +20,7 @@ vi.mock('./byok-anthropic', () => ({
   },
 }));
 
-import { buildChatContextJson } from '@roadmap/health-core';
+import { buildChatContextJson, MINOR_CHAT_RULE } from '@roadmap/health-core';
 import { sendMessage } from './byok-chat';
 
 const SNAPSHOT = {
@@ -112,5 +112,33 @@ describe('BYOK chat context — per-field sanitizing', () => {
     const context = JSON.parse(system.slice(system.indexOf('User data:\n') + 'User data:\n'.length));
     expect(context.latestValues.ldlC).toBe('3.4');
     expect(context.latestValues.weightKg).toBe('88');
+  });
+});
+
+// US-07 AC6 (Codex R2, 2026-10-14): the Pages chat sends its own prompt, never
+// the website chat's, so it carries the minor rule itself, from the one text.
+describe('US-07 AC6: the Pages chat and a known minor', () => {
+  beforeEach(() => {
+    const store = new Map([['hr_anthropic_key', 'sk-ant-test']]);
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    });
+  });
+  const MINOR = { ...SNAPSHOT, birthYear: new Date().getFullYear() - 15, ldlC: 4.2 };
+
+  it('US-07 AC6: the outgoing request carries the minor rule and the knownMinor profile', async () => {
+    const context = await contextSent(MINOR);
+    expect(state.sent!.system).toContain(MINOR_CHAT_RULE);
+    expect(context!.profile).toMatchObject({ knownMinor: true });
+  });
+
+  it('US-07 AC6: a known minor with no height still sends a context marked knownMinor (Codex R1)', async () => {
+    const { heightCm: _, ...noHeight } = MINOR;
+    const context = await contextSent(noHeight);
+    expect(context!.profile).toMatchObject({ knownMinor: true });
+    expect(context!.latestValues.ldlC).toBe('4.2');
+    expect(state.sent!.system).toContain(MINOR_CHAT_RULE);
   });
 });

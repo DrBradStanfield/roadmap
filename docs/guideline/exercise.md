@@ -3,7 +3,7 @@ title: "Exercise: Clinical Exercise Guidance"
 type: "guideline"
 tags: ["Guideline"]
 keywords: ["exercise", "resistance training", "strength training", "cardio", "aerobic", "vigorous", "walking", "steps", "muscle", "sarcopenia", "hypertrophy", "vo2max", "fitness", "physical activity", "weight training", "power training", "isometric", "plank", "wall squat", "blood pressure", "knee arthritis", "osteoarthritis", "bone density", "osteoporosis", "depression", "anxiety", "cognitive", "brain health", "diabetes", "hba1c", "heart attack", "cardiovascular", "atherosclerosis", "plaque", "coronary", "mortality", "longevity", "aging", "creatine", "protein", "sets", "reps", "volume", "frequency", "hiit", "interval training"]
-summary: "Exercise — how much per week, what intensity, cardio vs resistance training, strength and power training, specific guidance for blood pressure, knee arthritis, diabetes, cognition, and bone density. Covers minimum effective dose, the high-volume plaque paradox, and Brad's 150+ min/wk cardio + 2–3 resistance sessions baseline. Built from AHA 2024 resistance exercise statement, US Physical Activity Guidelines, WHO 2020, Schoenfeld meta-analyses, 2025 UK Biobank dose-response data, and condition-specific RCTs."
+summary: "Exercise — how much per week, what intensity, cardio vs resistance training, strength and power training, specific guidance for blood pressure, knee arthritis, diabetes, cognition, and bone density. Covers minimum effective dose, the high-volume plaque paradox, and Brad's baseline of at least 150 min/wk moderate cardio (or 75 vigorous, or a mix) + 2–3 resistance sessions. Built from AHA 2024 resistance exercise statement, US Physical Activity Guidelines, WHO 2020, Schoenfeld meta-analyses, 2025 UK Biobank dose-response data, and condition-specific RCTs."
 ---
 
 # Exercise: Clinical Exercise Guidance
@@ -20,7 +20,7 @@ This guideline covers exercise prescription for cardiovascular health, mortality
 
 **Guideline position:** The US Physical Activity Guidelines (2018) and WHO (2020) recommend ≥150 min/week of moderate-intensity aerobic activity OR ≥75 min/week of vigorous-intensity activity, plus ≥2 days/week of muscle-strengthening activities [Piercy 2018, WHO 2020].
 
-**Brad's position:** Aligns as a minimum. The algorithm recommends "150+ min cardio + 2-3 resistance sessions/week" (`exercise` suggestion, always-show). However, recent evidence shows this understates the benefit of vigorous activity and overestimates the minimum dose needed for health benefits.
+**Brad's position:** Aligns as a minimum. The algorithm recommends "at least 150 min moderate cardio, or 75 min vigorous, or a mix (1 vigorous min = 2 moderate) + 2-3 resistance sessions/week" (`exercise` suggestion, always-show; vigorous counting double since 2026-10-15). However, recent evidence shows this understates the benefit of vigorous activity and overestimates the minimum dose needed for health benefits.
 
 ### Even small amounts matter
 
@@ -279,7 +279,7 @@ Exercise-related recommendations that the algorithm could expand:
 
 | Current Algorithm | Gap | Evidence |
 |---|---|---|
-| "150+ min cardio" | Doesn't differentiate moderate vs vigorous intensity | 2025 UK Biobank: vigorous is 4-9x more effective |
+| "150 min moderate or 75 vigorous" | Counts a vigorous minute as two (since 2026-10-15), but not the larger per-minute benefit the newest data suggest | 2025 UK Biobank: vigorous is 4-9x more effective |
 | "2-3 resistance sessions/week" | No volume prescription (sets/muscle/week) | Schoenfeld 2017: 10+ sets/muscle/week near-optimal; 1-4 sets yields 64% |
 | No power training mention | Power predicts mortality better than strength | 2025 Mayo Clinic |
 | No isometric exercise mention | Isometric may be most effective for BP reduction | 2024 Nature Reviews: ~7.5 mmHg systolic |

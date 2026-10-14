@@ -34,7 +34,7 @@ function Harness({ onStart, archived, completedHistory }: { onStart?: () => Prom
   const [history, setHistory] = useState(emptyHistory);
   return <><button onClick={() => setOpen(true)}>Upload records</button><UploadModal
     open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)}
-    unitSystem="si" history={history} onStart={onStart}
+    unitSystem="si" grading={{}} history={history} onStart={onStart}
     onComplete={() => { onComplete(); if (completedHistory) setHistory(completedHistory); if (archived) setHistory({ ...emptyHistory, documents: [archived] }); }}
   /></>;
 }

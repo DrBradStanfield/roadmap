@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type React from 'react';
 import { formatDisplayValue, fromCanonicalValue, parseLocalisedNumber, toCanonicalValue } from '@roadmap/health-core';
-import { formatLabValue, sameAsSaved, statusOf, validateTypedValue } from './blood-test-cell';
+import { cellHint, formatLabValue, previewStatus, sameAsSaved, statusOf, validateTypedValue } from './blood-test-cell';
 
 // ---------------------------------------------------------------------------
 // Bug: user typed a value in the Lp(a) text box, hit Enter, the value
@@ -216,12 +216,21 @@ describe('statusOf — LDL cells (US-07 AC5)', () => {
   it.each([
     [1.39, 'ok'], [1.4, 'warn'], [3.2, 'warn'], [3.37, 'warn'], [4.13, 'warn'], [4.14, 'bad'],
   ])('LDL %s is %s', (value, status) => {
-    expect(statusOf('ldl', value)).toBe(status);
+    expect(statusOf('ldl', value, {})).toBe(status);
   });
 
   it('ApoB is unchanged: warn from 0.5, bad from 0.7', () => {
-    expect(statusOf('apob', 0.49)).toBe('ok');
-    expect(statusOf('apob', 0.5)).toBe('warn');
-    expect(statusOf('apob', 0.7)).toBe('bad');
+    expect(statusOf('apob', 0.49, {})).toBe('ok');
+    expect(statusOf('apob', 0.5, {})).toBe('warn');
+    expect(statusOf('apob', 0.7, {})).toBe('bad');
+  });
+});
+
+// US-07 AC6: one grading value; null (a known minor) grades nothing and hints nothing.
+describe('grading null — no adult grade or hint', () => {
+  it('statusOf, previewStatus and cellHint all answer null', () => {
+    expect([statusOf('ldl', 4.2, {}), cellHint('ldl', 'si', {}) === null]).toEqual(['bad', false]);
+    expect([statusOf('ldl', 4.2, null), previewStatus('ldl', '4.2', 'si', null), cellHint('ldl', 'si', null), cellHint('lpa', 'mg/dL', null)])
+      .toEqual([null, null, null, null]);
   });
 });

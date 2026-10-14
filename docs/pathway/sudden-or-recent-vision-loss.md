@@ -8,20 +8,25 @@ summary: "Clinical pathway for sudden or recent non-traumatic vision loss: red f
 
 # Sudden or Recent Vision Loss
 
-*Source: Auckland Region HealthPathways*
+*Source: Auckland Region HealthPathways. Last reviewed: October 2023.*
 
-This pathway covers sudden or recent **non-traumatic** vision loss in adults — assessing the cause and determining urgency.
+This pathway covers sudden or recent **non-traumatic** vision loss: finding the cause and deciding how urgent it is.
+
+> **Always discuss your symptoms and any medication changes with your doctor.** This information is a clinical reference, not a substitute for individual medical advice.
 
 ---
 
 ## Red Flags — Seek Emergency Care
 
-Go to the emergency department or call an ambulance immediately if:
+Call 111 or go to the emergency department if:
 
-- Recent profound vision loss (e.g. can only detect hand movements, light perception, or worse) **with** an afferent pupillary defect
+- Recent profound vision loss (e.g. can only detect hand movements, light perception, or worse) **with** an afferent pupillary defect. This points to serious damage to the retina or optic nerve.
 - Sudden and profound vision loss within the **last 2 hours**
-- Visual field defects affecting **both eyes**
-- Any of the above in a patient **older than 50 years**
+- Sudden vision loss in a patient **older than 50 years**
+- Severe eye pain with blurred vision, halos around lights, headache, nausea or vomiting (possible acute angle-closure glaucoma)
+- Sudden loss of the same side of vision in both eyes (possible stroke)
+
+Visual field defects affecting **both eyes** that are found only on testing are also a red flag. See your doctor, who may arrange an eye assessment within 1 week or a neurology assessment.
 
 ---
 
@@ -29,7 +34,7 @@ Go to the emergency department or call an ambulance immediately if:
 
 Sudden or recent vision loss can result from disorders of the eye itself, or from a lesion anywhere along the optic tract.
 
-**Common causes include:**
+**Possible causes include:**
 
 - Retinal detachment or retinal tear
 - Retinal artery occlusion
@@ -46,31 +51,32 @@ Sudden or recent vision loss can result from disorders of the eye itself, or fro
 
 Your doctor will take a history including:
 
-- **Onset and duration** — sudden or progressive? Symptoms of long duration or uncertain onset often indicate a non-acute problem (e.g. cataract), sometimes only noticed when covering one eye.
-- **Monocular or binocular** — which eye(s) are affected?
-- **Symptoms suggesting infection** — red eye, pain, discharge, blurred vision (if present, a Red Eye assessment is needed)
+- **Onset and duration:** sudden or progressive? Symptoms of long duration or uncertain onset usually indicate a non-acute problem (e.g. cataract). They may be noticed by chance when one eye is covered.
+- **Monocular or binocular:** is one eye affected, or both?
+- **Symptoms suggesting infection:** red eye, pain, discharge, blurred vision (if present, a Red Eye assessment is needed)
 - **Characteristic symptoms:**
-  - Bumping into objects — possible visual field defect
-  - Difficulty seeing faces or the TV — consider macular disease
-  - Difficulty seeing in dim light — consider inherited retinal disease
+  - Bumping into objects: possible visual field defect
+  - Difficulty seeing faces or the TV: consider macular disease
+  - Difficulty seeing in dim light: consider inherited retinal disease
 - **Associated symptoms that point to a specific diagnosis:**
-  - Floaters or flashes — consider retinal detachment
-  - Painful eye (sharp, dull, boring, or worse with eye movement) — consider acute angle-closure glaucoma or optic neuritis
-  - Temporal headache, jaw pain when chewing, scalp tenderness — consider giant cell arteritis (GCA)
-  - Halos around lights with nausea — consider acute angle-closure glaucoma
-- **Trauma history** — this pathway does not cover traumatic vision loss
+  - Floaters or flashes: consider retinal detachment
+  - Painful eye (sharp, dull, boring, or worse with eye movement): consider acute angle-closure glaucoma or optic neuritis
+  - Temporal headache, jaw pain when chewing, scalp tenderness: consider giant cell arteritis (GCA)
+  - Halos around lights with nausea: consider acute angle-closure glaucoma
+- **Trauma history:** this pathway does not cover traumatic vision loss
 - **Relevant medical history:**
-  - Stroke, TIA, or vascular risk factors
+  - Stroke, TIA, previous retinal vessel occlusion, or vascular risk factors
   - Diabetes
   - Giant cell arteritis or polymyalgia rheumatica
   - Autoimmune conditions (e.g. rheumatoid arthritis, lupus)
   - Blood clotting disorders or conditions that increase clot risk
   - Macular degeneration
   - Previous eye surgery or trauma
+  - Previous cancer and its treatment, including radiotherapy to the head or neck
   - Glaucoma (open angle or acute angle-closure)
-  - High short-sightedness (myopia) — higher risk of retinal detachment
-  - High long-sightedness (hyperopia) — higher risk of acute angle-closure glaucoma
-  - Marfan syndrome — increased risk of lens subluxation and retinal detachment
+  - High short-sightedness (myopia): higher risk of retinal detachment
+  - High long-sightedness (hyperopia): higher risk of acute angle-closure glaucoma
+  - Marfan syndrome: increased risk of lens subluxation and retinal detachment
 
 If vision loss recovered after a few seconds or minutes, your doctor will assess this separately as transient monocular vision loss.
 
@@ -80,7 +86,7 @@ Physical examination typically includes:
 - Checking for red reflex and cataract
 - Testing for relative afferent pupillary defect (RAPD) using the swinging flashlight test
 - Visual field testing to confrontation
-- Fundus examination — assessing optic disc, blood vessels, peripheral retina, and macula
+- Fundus examination: assessing optic disc, blood vessels, peripheral retina, and macula
 - Pulse, blood pressure, and heart rhythm check
 - Checking for temporal artery tenderness
 
@@ -117,10 +123,10 @@ Physical examination typically includes:
 **Retinal tear and retinal detachment**
 - Retinal tear: sudden appearance of floaters, flashes, and reduced vision; may have minimal symptoms but can progress to detachment
 - Retinal detachment: recent onset profound symptoms, large floaters, obvious daytime flashes; visual field defect plus floaters usually indicates detachment
-- Higher risk if past history of retinal detachment, family history, short-sightedness, or trauma
+- Your doctor may refer sooner if there is a past history of retinal detachment, a family history, short-sightedness, or trauma
 
 **Vitreous haemorrhage**
-- More common in people with diabetes, especially with known retinopathy, previous retinal vein occlusion, or posterior vitreous detachment
+- Mostly occurs in people with diabetes, especially with known retinopathy, previous retinal vein occlusion, or posterior vitreous detachment
 
 **Keratitis** (viral, bacterial, or fungal)
 - Red eye, painful, tearing and irritated; fluorescein uptake present
@@ -134,10 +140,11 @@ Physical examination typically includes:
 ### Disorders of the Optic Nerve
 
 **Optic neuritis**
-- Typically affects people aged 17–50 years; outside this range, demyelinating disease is unlikely
-- Progressive vision loss over 1–2 weeks, usually unilateral; vision may drop to 6/30–6/60 or worse
-- Retro-ocular pain on eye movement is common
+- Typically affects people aged 17–50 years; outside this range, optic neuritis due to demyelinating disease is extremely unlikely
+- Progressive vision loss in one eye over 1–2 weeks; vision usually drops to 6/30–6/60 but may be as bad as hand movements
+- Some people have pain behind the eye, especially when trying to move it
 - Examination shows positive RAPD; the cornea and lens are normal (normal red reflex)
+- A red eye, double vision, abnormal eye movements, a bulging eye, or a drooping eyelid suggest another diagnosis
 
 **Anterior ischaemic optic neuropathy** (generally in patients older than 50 years)
 - Infarction of the front of the optic nerve causing a horizontal visual field defect (upper or lower vision loss)
@@ -146,14 +153,14 @@ Physical examination typically includes:
 
 ### Binocular Visual Field Defects (Neurological)
 
-- **Bitemporal visual field loss** — suggests a chiasmal lesion (e.g. pituitary tumour); requires MRI
-- **Homonymous hemianopia or quadrantanopia** — loss of the same half (or quarter) of the visual field in both eyes; usually caused by stroke affecting the middle or posterior cerebral artery; in younger patients, consider other cerebral lesions
+- **Bitemporal visual field loss:** suggests a chiasmal lesion (e.g. pituitary tumour); requires MRI
+- **Homonymous hemianopia or quadrantanopia:** loss of the same half (or quarter) of the visual field in both eyes; usually caused by stroke affecting the middle or posterior cerebral artery; in younger patients, consider other cerebral lesions
 - Other causes: TIA, migraine, other brain lesion (rare)
 
 ### Other Causes
 
-- **Syphilis** — can affect virtually all eye structures (conjunctivitis, scleritis, uveitis, retinitis, vasculitis)
-- **Non-organic causes** (conversion disorder, functional, malingering) — subjective test results are grossly inconsistent with observed function
+- **Syphilis:** can affect virtually all eye structures (conjunctivitis, scleritis, uveitis, retinitis, vasculitis)
+- **Non-organic causes** (conversion disorder, functional, malingering): subjective test results are grossly inconsistent with observed function
 
 ---
 
@@ -161,22 +168,15 @@ Physical examination typically includes:
 
 Your doctor will manage vision loss based on the cause and urgency:
 
-- **Total vision loss (hand movements or worse) within the last 12 hours:** Emergency ophthalmology assessment is needed. High-flow oxygen may be given if available. The most frequent cause is central retinal vessel occlusion, which may be treatable. If giant cell arteritis is suspected, your doctor may consider starting **prednisone** immediately.
-- **Recent onset vision loss:** Your doctor will arrange urgent ophthalmology assessment.
-- **Specific identified diagnosis:** Your doctor will manage according to the relevant condition — for example:
-  - Giant cell arteritis: corticosteroids (usually prednisone)
-  - Macular disease: ophthalmology referral for anti-VEGF injections or other treatment
-  - Retinal detachment: urgent surgical ophthalmology assessment
-  - Acute angle-closure glaucoma: emergency ophthalmology assessment; medications to lower intraocular pressure
-  - Iritis: ophthalmology assessment; topical corticosteroids and cycloplegic drops
-  - Keratitis: antimicrobial eye drops depending on the causative organism
-  - Cataracts: non-urgent ophthalmology referral; surgical removal
+- **Total vision loss (hand movements or worse) within the last 12 hours:** call 111 or go to the emergency department. This needs immediate ophthalmology assessment in hospital. High-flow oxygen may be given if available. The most frequent cause is central retinal vessel occlusion, which may be treatable. If giant cell arteritis is suspected, your doctor may consider starting **prednisone** immediately.
+- **Recent onset vision loss:** this needs acute ophthalmology assessment in hospital. If it came on suddenly, call 111 or go to the emergency department. If it has come on slowly over weeks, see your doctor the same day so they can arrange it.
+- **Specific identified diagnosis:** your doctor will manage it under the pathway for that condition, for example giant cell arteritis, macular disease, retinal detachment, acute angle-closure glaucoma, iritis, keratitis, or cataracts.
 - **Symptoms suggesting eye infection:** Your doctor will follow a Red Eye assessment pathway.
 - **Visual field defects:**
-  - Bitemporal defect: MRI scan (not CT); ophthalmology or neurology assessment within 1 week
+  - Bitemporal defect: MRI scan (not CT); ophthalmology assessment within 1 week, or neurology assessment
   - Homonymous hemianopia in older patients or those with vascular risk factors: managed as stroke
   - Homonymous hemianopia in younger patients with minimal stroke risk: your doctor may consider a CT head scan to look for a brain lesion
-  - Uncertain visual field defect: non-urgent ophthalmology or optometry assessment
+  - Uncertain visual field defect: ophthalmology assessment within 1 week, or optometry assessment
 - **Mild, non-acute reduction in vision** without relevant eye history, or vision that improves to 6/9 or better with a pinhole: your doctor may refer to an optometrist
 
 ---
@@ -184,4 +184,4 @@ Your doctor will manage vision loss based on the cause and urgency:
 ## Patient Resources
 
 - Healthify He Puna Waiora: [Eye problems](https://healthify.nz/health-a-z/e/eye-problems), [Glaucoma](https://healthify.nz/health-a-z/g/glaucoma), [Macular degeneration](https://healthify.nz/health-a-z/m/macular-degeneration)
-- Health New Zealand Te Whatu Ora: [Eye health](https://info.health.nz/health-topics/conditions-treatments/eye-health)
+- Health New Zealand: [Eye health](https://info.health.nz/health-topics/conditions-treatments/eye-health)

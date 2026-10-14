@@ -3,7 +3,9 @@
     "Child Speech Language Therapy Assessment",
     "Podiatry and Orthotics Services",
     "Special Authority for Special Foods",
-    "Weight-related Concerns in Adults"
+    "Weight-related Concerns in Adults",
+    "General Wound Care",
+    "Urethral Catheterisation"
   ],
   "COVID-19": [
     "COVID-19",
@@ -121,10 +123,15 @@
     "Vitamin D Deficiency in Children",
     "Weight Management in Children",
     "Wrist and Forearm Fractures in Children",
-    "Youth Mental Health Counselling and Therapy"
+    "Youth Mental Health Counselling and Therapy",
+    "ADHD in Children and Youth",
+    "Analgesia in Children with Acute Pain",
+    "Otitis Media with Effusion (Glue Ear)",
+    "Skin Infections in Children"
   ],
   "End of Life": [
-    "Advance Care Planning (ACP)"
+    "Advance Care Planning (ACP)",
+    "Last Days of Life Care (Adults)"
   ],
   "Investigations": [
     "Allergy Testing",
@@ -456,7 +463,23 @@
     "Weakness and Fatigue in Palliative Care",
     "Zika Virus",
     "Zoledronic Acid Infusion",
-    "Zoledronic Acid Infusion Checklist"
+    "Zoledronic Acid Infusion Checklist",
+    "Dyspepsia and Heartburn / GORD",
+    "Dysphagia",
+    "Eczema (Dermatitis) in Adults",
+    "Epilepsy",
+    "Familial Cancer Syndromes",
+    "Fibromyalgia",
+    "Human Immunodeficiency Virus (HIV)",
+    "Inflammatory Bowel Disease (IBD)",
+    "Iron Deficiency in Adults",
+    "Motor Neurone Disease",
+    "Osteoporosis in Adults",
+    "Palpitations",
+    "Testosterone Deficiency in Men",
+    "Thrombotic Disorders",
+    "Unintentional Weight Loss in Adults",
+    "UTI in Adults"
   ],
   "Mental Health and Addiction": [
     "ADHD in Adults",
@@ -488,7 +511,9 @@
     "Responding to Drug-Seeking Behaviour",
     "Substance Use in Pregnancy",
     "Suicide Prevention in Adults",
-    "Trauma-informed Care"
+    "Trauma-informed Care",
+    "Anxiety in Adults",
+    "Autism in Adults"
   ],
   "Older Adults' Health": [
     "Before Entering Aged Residential Care",
@@ -498,7 +523,9 @@
     "Falls Prevention",
     "Health and Frailty Assessment for Older Adults",
     "Medication Management in Older Adults",
-    "Unexpected Deterioration in an Older Adult"
+    "Unexpected Deterioration in an Older Adult",
+    "Cognitive Impairment",
+    "Older Adults Weight and Nutrition"
   ],
   "Pharmacology": [
     "Acute Dystonic Reactions",
@@ -540,7 +567,8 @@
     "Refugee Health in Adults",
     "Refugee Health in Children and Adolescents",
     "Respiratory Syncytial Virus (RSV) Immunisation",
-    "Vaccine Storage and Cold Chain Breaches"
+    "Vaccine Storage and Cold Chain Breaches",
+    "Physical Assault"
   ],
   "Reproductive Health": [
     "Combined Oral Contraceptive Pill",
@@ -554,7 +582,10 @@
     "Intrauterine Device Removal",
     "Permanent Contraception",
     "Progestogen-only Contraceptive Pills",
-    "Sub-fertility"
+    "Sub-fertility",
+    "Antenatal Consult - Initial Assessment",
+    "Contraceptive Implant",
+    "Intrauterine Contraception"
   ],
   "Surgical": [
     "ACC Musculoskeletal Integrated Care (ICP-MSK)",
@@ -698,7 +729,13 @@
     "Vertigo",
     "Wound Infections",
     "Wrist Fractures in Adults",
-    "Wrist Pain in Adults"
+    "Wrist Pain in Adults",
+    "Bariatric Surgery: Before and After Care",
+    "Hoarse Voice (Dysphonia)",
+    "Irritated and Dry Eyes",
+    "Red Eye",
+    "Trauma in Eyes",
+    "Varicose Veins and Chronic Venous Insufficiency"
   ],
   "Women's Health": [
     "Abnormal Uterine Bleeding",
@@ -735,6 +772,9 @@
     "UTIs and Asymptomatic Bacteriuria in Pregnancy",
     "Bartholin's Cyst or Abscess",
     "Vaginal Prolapse",
-    "Venous Thromboembolism (VTE) Risk in Pregnancy"
+    "Venous Thromboembolism (VTE) Risk in Pregnancy",
+    "Abortion",
+    "Dysmenorrhoea",
+    "Menopause"
   ]
 }

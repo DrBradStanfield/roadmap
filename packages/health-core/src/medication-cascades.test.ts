@@ -37,7 +37,7 @@ function planSteps(inputs: HealthInputs, prefix: string): (meds: MedicationInput
 }
 
 describe('US-06 AC5: weightCascade agrees with the plan on every medication combination', () => {
-  const bmi32: HealthInputs = { heightCm: 178, weightKg: 101.4, sex: 'male' }; // BMI 32: the trigger is on
+  const bmi32: HealthInputs = { heightCm: 178, weightKg: 101.4, sex: 'male', birthYear: 1980 }; // BMI 32: the trigger is on
   const glp1s = withUnset([
     { drug: 'none', dose: null }, { drug: 'not_tolerated', dose: null }, { drug: 'other', dose: null },
     ...drugsWithDoses(GLP1_DRUGS, 'liraglutide'),
@@ -81,7 +81,7 @@ describe('US-06 AC5: weightCascade agrees with the plan on every medication comb
 });
 
 describe('US-06 AC5: lipidCascade agrees with the plan on every medication combination', () => {
-  const ldl3: HealthInputs = { heightCm: 178, weightKg: 80, sex: 'male', ldlC: 3.0 }; // above the 1.4 target
+  const ldl3: HealthInputs = { heightCm: 178, weightKg: 80, sex: 'male', birthYear: 1980, ldlC: 3.0 }; // above the 1.4 target
   const statins = withUnset([
     { drug: 'none', dose: null }, { drug: 'not_tolerated', dose: null },
     ...drugsWithDoses(STATIN_DRUGS, 'tier_1'),
@@ -190,8 +190,8 @@ describe('US-06 AC8: a listed GLP-1 or statin with no dose recorded asks for the
 // that drug's nearest listed dose, the lower on a tie, so a step up is never
 // skipped. Before, rosuvastatin 2.5 mg went straight to the PCSK9 inhibitor.
 describe('US-06 AC10: a dose the form does not list is graded as the nearest listed dose', () => {
-  const lipidSteps = planSteps({ heightCm: 178, weightKg: 80, sex: 'male', ldlC: 3.0 }, 'med-');
-  const weightSteps = planSteps({ heightCm: 178, weightKg: 101.4, sex: 'male' }, 'weight-med-');
+  const lipidSteps = planSteps({ heightCm: 178, weightKg: 80, sex: 'male', birthYear: 1980, ldlC: 3.0 }, 'med-');
+  const weightSteps = planSteps({ heightCm: 178, weightKg: 101.4, sex: 'male', birthYear: 1980 }, 'weight-med-');
 
   // Ezetimibe and bempedoic acid answered, the step up not: one card, the dose's own.
   it.each([
@@ -245,7 +245,7 @@ describe('US-06 AC5: the plan\'s cascade cards match the golden record exactly',
   // field at all, but the next step for one with a null dose. Today both are
   // "no dose recorded", as a statin's always were.
   it('a GLP-1 row with no dose field reads as no dose recorded: the plan asks for the dose (US-06 AC8)', () => {
-    const ids = (meds: MedicationInputs) => calculateHealthResults({ heightCm: 178, sex: 'male', weightKg: 101.4 }, 'si', meds)
+    const ids = (meds: MedicationInputs) => calculateHealthResults({ heightCm: 178, sex: 'male', birthYear: 1980, weightKg: 101.4 }, 'si', meds)
       .suggestions.map((s) => s.id).filter((id) => id.startsWith('weight-med-'));
     const noField = { drug: 'semaglutide_injection' } as MedicationInputs['glp1'];
     expect(ids({ glp1: noField })).toEqual(['weight-med-glp1-dose']);

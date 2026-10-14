@@ -41,7 +41,7 @@ const RULES: { population: Population; handle: RegExp; byTitle?: string[]; signa
     handle: /(^|-)(child|children|infants?|infantile|babies|newborn|preterm|preschool|paediatric|school|young-people)(-|$)|(^|-)(in|and)-youth(-|$)|^youth-/,
     // Children's pathways by title: Croup; Failure to Thrive; Developmental
     // Dysplasia of the Hip; Impetigo (School Sores).
-    byTitle: ['croup', 'failure-to-thrive', 'developmental-dysplasia-of-the-hip-ddh', 'impetigo'],
+    byTitle: ['croup', 'failure-to-thrive', 'developmental-dysplasia-of-the-hip-ddh', 'impetigo', 'otitis-media-with-effusion-glue-ear'],
     signal: /\b(child|children|kids?|toddlers?|bab(y|ies)|infants?|newborns?|premature|prem(ie|mie)s?|preemies?|sons?|daughters?|grand(son|daughter|child|children|kids?)s?|boys?|girls?|teens?|teenagers?|teenage|adolescen\w*|youths?|young (people|person)|schools?|preschool\w*|students?|nursery|paediatric|pediatric|parenting|\d{1,2}[\s-]*(months?|mo|weeks?|wks?|days?)[\s-]*old)\b/i,
     orSignal: hasChildAge,
     spareMixedAdult: true,
@@ -62,8 +62,9 @@ const RULES: { population: Population; handle: RegExp; byTitle?: string[]; signa
   {
     population: 'palliative',
     handle: /(^|-)palliative(-|$)/,
-    // Both titles end "(Palliative Care)".
-    byTitle: ['fentanyl-guide', 'raised-intracranial-pressure'],
+    // The first two titles end "(Palliative Care)"; last-days-of-life-care-adults
+    // joined in the 2026-10 knowledge refresh (US-42).
+    byTitle: ['fentanyl-guide', 'raised-intracranial-pressure', 'last-days-of-life-care-adults'],
     // Closed list, the same words as router rule 2.
     signal: /\b(dying|hospice|terminal\w*|end[\s-]of[\s-]life|palliative|cancers?)\b/i,
   },

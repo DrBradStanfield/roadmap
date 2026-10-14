@@ -61,6 +61,7 @@ function renderReview(documents: ApiDocument[], files: FileResult[] = results, s
   const onSave = vi.fn();
   const utils = render(
     <ReviewTable
+      grading={{}}
       results={files}
       history={{ bloodTests: savedBloodTests, labValues: [], documents }}
       unitSystem="si"
@@ -147,6 +148,7 @@ describe('ReviewTable — screening eligibility reads the plan\'s age (US-06 AC5
   }];
   const renderAt = (age: number | undefined) => render(
     <ReviewTable
+      grading={{}}
       results={psaLetter}
       history={{ bloodTests: [], labValues: [], documents: [] }}
       unitSystem="si"
@@ -185,11 +187,11 @@ describe('ReviewTable — untouched core cells keep the extracted SI value (US-0
   const history = { bloodTests: [], labValues: [], documents: [] };
   const renderAt = (unitSystem: 'si' | 'conventional', onSave = vi.fn()) => {
     const utils = render(
-      <ReviewTable results={files} history={history} unitSystem={unitSystem}
+      <ReviewTable grading={{}} results={files} history={history} unitSystem={unitSystem}
         onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />,
     );
     const rerenderAt = (u: 'si' | 'conventional') => utils.rerender(
-      <ReviewTable results={files} history={history} unitSystem={u}
+      <ReviewTable grading={{}} results={files} history={history} unitSystem={u}
         onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />,
     );
     const inputs = () => [...utils.container.querySelectorAll<HTMLInputElement>('.bt-cell-review input')];
@@ -272,7 +274,7 @@ describe('ReviewTable — an edited cell after a unit toggle shows what Save wri
   const setup = (first: Props) => {
     const onSave = vi.fn();
     const el = ({ unitSystem, overrides }: Props) => (
-      <ReviewTable results={files} history={history} unitSystem={unitSystem} metricUnitOverrides={overrides}
+      <ReviewTable grading={{}} results={files} history={history} unitSystem={unitSystem} metricUnitOverrides={overrides}
         onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />
     );
     const utils = render(el(first));
@@ -323,7 +325,7 @@ describe('ReviewTable — an edited cell after a unit toggle shows what Save wri
     const one: FileResult[] = [{ ...files[0], values: [{ ...files[0].values[0], valueSI: 23.25 }] }];
     const onSave = vi.fn();
     const { container } = render(
-      <ReviewTable results={one} history={history} unitSystem="conventional"
+      <ReviewTable grading={{}} results={one} history={history} unitSystem="conventional"
         onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />,
     );
     expect(container.querySelector<HTMLInputElement>('.bt-cell-review input')!.value).toBe('93');
@@ -382,7 +384,7 @@ describe('ReviewTable — same-day conflicts compare stored values, not rounded 
   const renderConflict = (record: number, uploaded: number) => {
     const onSave = vi.fn();
     const utils = render(
-      <ReviewTable results={upload(uploaded)} history={{ bloodTests: held(record), labValues: [], documents: [] }}
+      <ReviewTable grading={{}} results={upload(uploaded)} history={{ bloodTests: held(record), labValues: [], documents: [] }}
         unitSystem="conventional" onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />,
     );
     return { ...utils, onSave, replace: () => utils.container.querySelector<HTMLInputElement>('.bt-cell-conflict-replace input') };

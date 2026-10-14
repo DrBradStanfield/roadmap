@@ -114,6 +114,7 @@ import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content'
 import { parseRouterReply } from '../app/lib/router-reply';
 import { buildSystemBlocks, EMPTY_CHAT_CONTEXT, resolveChatContext } from '../app/lib/chat.server';
 import { healthInputSchema } from '../packages/health-core/src/validation';
+import { PRODUCTS_BLOCK_FILES, productsBlockText } from '../app/lib/chat-products-block';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -160,7 +161,9 @@ console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 
 
 // ---------------------------------------------------------------------------
 // Answer-check context — loaded only when --answer-check is set
-// Static portion: prompt cache blocks 1-3 (system prompt + algorithm + products).
+// Static portion: prompt cache blocks 1 and 3 (system prompt + algorithm, then
+// products with writing-style.md and the answer bank, the block every surface gets,
+// US-15 AC29). Blocks 2 (evidence) and 4 (knowledge overview) are not sent, as before.
 // Dynamic portion (per-query, in checkAnswer): block 4 matched pathway/blog
 // content, loaded via loadMatchedContent() from the routing intersection
 // (or a fixture's answer_handles).
@@ -174,14 +177,19 @@ let apiErrorCount = 0;
 
 if (answerCheckMode) {
   try {
+    const read = (file: string) => fs.readFileSync(path.join(REPO_ROOT, file), 'utf-8');
     ANSWER_SYSTEM_CONTEXT =
-      fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-system-prompt.md'), 'utf-8') +
+      read('app/lib/chat-system-prompt.md') +
       '\n\n---\n\n' +
-      fs.readFileSync(path.join(REPO_ROOT, 'health_roadmap_algorithm.md'), 'utf-8') +
-      '\n\n---\n\n## Dr Stanfield\'s Products\n\n' +
-      fs.readFileSync(path.join(REPO_ROOT, 'docs/products.md'), 'utf-8');
+      read('health_roadmap_algorithm.md') +
+      '\n\n---\n\n' +
+      productsBlockText({
+        products: read(PRODUCTS_BLOCK_FILES.products),
+        writingStyle: read(PRODUCTS_BLOCK_FILES.writingStyle),
+        answerBank: read(PRODUCTS_BLOCK_FILES.answerBank),
+      });
   } catch {
-    console.error('Error: --answer-check requires app/lib/chat-system-prompt.md, health_roadmap_algorithm.md, and docs/products.md');
+    console.error('Error: --answer-check requires app/lib/chat-system-prompt.md, health_roadmap_algorithm.md, docs/products.md, docs/writing-style.md and docs/chatbot/answer-bank.md');
     process.exit(1);
   }
 }

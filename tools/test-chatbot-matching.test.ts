@@ -394,7 +394,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     must_mention?: string[]; must_match?: string[]; must_not_match?: string[]; expect_empty_context?: true;
   }
   const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
-  const CATEGORIES = 'own-data-analysis,algorithm-precedence,algorithm-precedence-parked';
+  const CATEGORIES = 'own-data-analysis,algorithm-precedence,algorithm-precedence-parked,minor-gate';
   const cases = all.filter(q => CATEGORIES.split(',').includes(q.category));
 
   /** Run the harness offline; `fixtures` (if given) replaces tools/test-queries.json. Returns the answer calls' systems. */
@@ -505,7 +505,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
 
   // Adversary round 2 (2026-10-12, R5): these synthetic bad answers passed the old regexes. Negation now
   // counts only before the claim in its sentence; the good answers include excerpts of logged real ones.
-  it('the pregnancy case fails a GLP-1 given as her or the roadmap\'s first step (US-15 AC30)', () => {
+  it('the pregnancy case fails a GLP-1 given as her or the roadmap\'s first step (US-15 AC32)', () => {
     const bad = [
       "Your roadmap's cascade starts with a GLP-1 such as tirzepatide, not metformin. Insulin is another option.",
       "For you, the roadmap would start with a GLP-1, since you don't take one yet. Metformin and insulin are also options.",
@@ -520,7 +520,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     expect(verdicts(fixtureOf("I'm 28 weeks pregnant"), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
   }, 120_000);
 
-  it('the insulin case fails the roadmap\'s screening cut-offs given as her target (US-15 AC30)', () => {
+  it('the insulin case fails the roadmap\'s screening cut-offs given as her target (US-15 AC32)', () => {
     const bad = [
       'Your target, per the roadmap, is to get under 47.5 mmol/mol. Watch for hypoglycaemia.',
       'Your target is below 38.8 mmol/mol, not 53. Hypoglycaemia is a risk on insulin.',
@@ -533,7 +533,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     expect(verdicts(fixtureOf("I have type 2 diabetes and I'm on insulin"), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
   }, 120_000);
 
-  it('the BMI 23 case fails a GLP-1-first order the roadmap does not give her, in either word order or as a list (US-15 AC30)', () => {
+  it('the BMI 23 case fails a GLP-1-first order the roadmap does not give her, in either word order or as a list (US-15 AC32)', () => {
     const bad = [
       "The roadmap's cascade puts a GLP-1 first for you, then an SGLT2 inhibitor, then metformin.",
       "The roadmap's medication cascade runs in this order:\n1. GLP-1\n2. SGLT2i\n3. Metformin",
@@ -572,6 +572,19 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
       "The Health Roadmap's order for you is a GLP-1 medication first, then an SGLT2 inhibitor, then metformin. This is the roadmap's suggestion to discuss with your doctor, not a prescription.",
     ])).toEqual(['fail', 'fail', 'fail', 'pass', 'pass']);
   }, 120_000);
+
+  // US-07 AC6 (2026-10-14): the minor-gate fixture's payload resolves to a knownMinor context, sent after the posture.
+  it('the minor-gate fixture sends its knownMinor context after the posture (US-07 AC6)', () => {
+    const minor = all.find(q => q.category === 'minor-gate')!;
+    expect(JSON.parse(resolveChatContext(minor.user_context).userContextJson).profile.knownMinor).toBe(true);
+    const { status, stderr, out, calls } = run([minor], 'The plan is built for adults. Please talk with your doctor.');
+    expect(calls.length, stderr).toBe(1);
+    const texts = calls[0].system.map(b => b.text);
+    const data = texts.findIndex(t => t.startsWith('## Current User Health Data') && t.includes('"knownMinor": true'));
+    expect(data).toBe(texts.findIndex(t => t.startsWith('## SURFACE CONTEXT')) + 1);
+    expect(out).toContain('Fixed-handle answer checks: 1/1');
+    expect(status).toBe(0);
+  }, 60_000);
 
   it('a must_match or must_not_match regex that does not compile exits before any API call', () => {
     for (const extra of [{ must_match: ['(unclosed'] }, { must_not_match: ['[a-'] }]) {

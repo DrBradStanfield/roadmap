@@ -73,7 +73,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 function render_() {
-  render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" history={history} onComplete={() => {}} />);
+  render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" grading={{}} history={history} onComplete={() => {}} />);
 }
 
 describe('US-12 AC9: every file not fully read is named with a reason', () => {

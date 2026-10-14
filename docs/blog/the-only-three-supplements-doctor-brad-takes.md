@@ -183,7 +183,7 @@ Manganese, Zinc, and Boron were already in their glycinate forms in formula 6, s
 
 And of course there are no fillers or binders, and the vegetarian capsule is titanium dioxide free.
 
-**MicroVitamin** is produced in the USA by an FDA-approved and GMP-certified facility, as well as in Canada, UK, Europe, and Australia, to make sure that it’s high quality.
+**MicroVitamin** is made in the USA in an FDA-registered, GMP-compliant facility, as well as in Canada, UK, Europe, and Australia, to make sure that it’s high quality.
 
 ## **The Benefits of MicroVitamin+ Powder**
 

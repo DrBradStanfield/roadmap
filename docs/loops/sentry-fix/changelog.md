@@ -4,6 +4,10 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-10-14 (Brad, live): fast path also re-reads ledgered issues whose
+  row names a resurface rule, when `lastSeen` moves, and tests rules on other
+  sources every run. Evidence: the 10-13 run skipped 6X's /.env event, and
+  6Z's Supabase timeout rule could never fire. +4 lines.
 - 2026-08-12: Gather section — documented that Sentry's issues-list ignores
   statsPeriod for filtering and `count` is lifetime (first run ranked a
   dormant issue #1 before catching it); newness = lastSeen vs ledger. +4 lines.

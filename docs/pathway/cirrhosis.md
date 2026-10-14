@@ -8,41 +8,44 @@ summary: "Clinical pathway for known cirrhosis: red flags requiring emergency as
 
 # Cirrhosis
 
-*Source: Auckland Region HealthPathways*
+*Source: Auckland Region HealthPathways. Last reviewed: June 2024.*
 
-This pathway covers the management of patients with known cirrhosis — a late stage of liver scarring that impairs normal liver function.
+> **Always discuss your symptoms and any medication changes with your doctor.** This information is a clinical reference, not a substitute for individual medical advice.
+
+This pathway covers the management of patients with known cirrhosis: scarring of the liver that impairs normal liver function.
 
 ---
 
 ## Red Flags — Seek Emergency Care Immediately
 
-Go to the emergency department or call an ambulance if you have cirrhosis and experience:
+Call 111 or go to the emergency department if you have cirrhosis and experience:
 
-- Fever with abdominal pain or swelling (possible infected abdominal fluid)
-- Signs of sepsis (very unwell, rapidly deteriorating)
+- Fever or abdominal pain with fluid in the abdomen (possible infected abdominal fluid)
+- Signs of sepsis (an infection with feeling very unwell)
 - Confusion or drowsiness (possible hepatic encephalopathy)
 - Vomiting blood or black tarry stools (gastrointestinal bleeding)
-- New onset jaundice (yellow skin or eyes)
+
+See your doctor the same day if you develop new jaundice (yellow skin or eyes). If jaundice comes with confusion, drowsiness, vomiting blood or black stools, call 111.
 
 ---
 
 ## About Cirrhosis
 
-Cirrhosis is caused by repeated episodes of liver inflammation and injury, leading to progressive scarring (fibrosis) that replaces normal liver tissue. This impairs blood flow through the liver and reduces its ability to perform vital functions.
+Cirrhosis occurs in people with chronic liver disease. Repeated episodes of liver inflammation and injury cause progressive scarring (fibrosis) that replaces normal liver tissue. This impairs blood flow through the liver and its normal function.
 
 Key points:
 - Many people have no symptoms in early stages
-- It is a pre-malignant condition — regular screening for liver cancer is essential
-- Liver transplant may be considered if severe complications develop; five-year survival post-transplant is approximately 90%
+- It is a pre-malignant condition, so screening for liver cancer is required
+- A liver transplant may be considered if decompensation or liver cancer develops; five-year survival after transplant is almost 90%
 
 ### Common Causes
 
 - Heavy alcohol use (including binge drinking)
 - Chronic hepatitis B
-- Fatty liver disease (MASLD/NAFLD)
+- Fatty liver disease (MASLD)
 - Chronic hepatitis C
 
-Less common causes include autoimmune hepatitis, primary biliary cirrhosis, primary sclerosing cholangitis, inherited diseases (haemochromatosis, Wilson's disease, alpha-1 antitrypsin deficiency), and heart failure causing liver congestion.
+Less common causes include autoimmune hepatitis, primary biliary cirrhosis, primary sclerosing cholangitis, inherited diseases (haemochromatosis, Wilson's disease, alpha-1 antitrypsin deficiency), and heart failure causing liver congestion. In approximately 10% of cases no cause is found.
 
 ---
 
@@ -52,9 +55,10 @@ Many patients have no symptoms in early cirrhosis. Symptoms that may develop inc
 
 - Fatigue and weakness
 - Loss of appetite, nausea
+- Weight loss
 - Easy bruising or bleeding
 - Itching
-- Jaundice (yellow skin/eyes, dark urine, pale stools)
+- Jaundice (yellow skin or eyes, dark urine, pale stools)
 - Abdominal swelling or pain
 - Confusion or difficulty thinking
 - Erectile dysfunction or absent periods
@@ -66,19 +70,19 @@ Many patients have no symptoms in early cirrhosis. Symptoms that may develop inc
 
 ## Decompensated Cirrhosis
 
-Cirrhosis is called "decompensated" when the liver can no longer maintain its essential functions. This is a serious development. Signs include:
+Cirrhosis is called "decompensated" when the liver can no longer maintain its essential functions. Signs include:
 
 - New jaundice
 - Confusion or drowsiness (encephalopathy)
 - Fluid build-up in the abdomen (ascites)
-- Shortness of breath (from fluid around the lungs)
-- Rapid swelling in the legs
+- Shortness of breath, or breathlessness lying flat (usually fluid around the lungs)
+- Swelling that comes on quickly
 - Rapid worsening of kidney function
 - Severe malnutrition
 
-**Seek urgent medical attention if any of these develop.**
+**See your doctor the same day if any of these develop.** Confusion and drowsiness are red flags: call 111 or go to the emergency department.
 
-Common triggers for decompensation include infection, dehydration, constipation, alcohol use, sedating medications, and gastrointestinal bleeding.
+Common triggers for decompensation include infection, dehydration, constipation, alcohol, opioids or benzodiazepines, gastrointestinal bleeding, new or growing liver cancer, and a clot in the portal vein.
 
 ---
 
@@ -86,13 +90,13 @@ Common triggers for decompensation include infection, dehydration, constipation,
 
 Your doctor will arrange appropriate tests. These typically include:
 
-- **Liver function tests** (LFTs), albumin, bilirubin, INR — to assess liver function
-- **Full blood count** (FBC) — low platelets suggest portal hypertension
+- **Liver function tests** (LFTs), albumin, bilirubin, INR. LFTs may be only mildly abnormal in severe disease.
+- **Full blood count** (FBC). Low platelets suggest cirrhosis and portal hypertension.
 - **Kidney function and electrolytes**
-- **Iron studies and alpha fetoprotein** (a liver cancer marker)
+- **Iron studies and alpha fetoprotein** (sometimes raised in liver cancer)
 - **Hepatitis B and C testing** if cause not established
-- **Abdominal ultrasound** — to assess for portal hypertension signs and liver cancer
-- **Child-Pugh score** — to estimate prognosis
+- **Abdominal ultrasound**, if you are not under specialist care or have not had one in the last 6 months, to check for portal hypertension signs and liver cancer
+- **Child-Pugh score**, to estimate prognosis
 
 Additional tests for specific causes (autoantibodies, ceruloplasmin for Wilson's disease, etc.) may be arranged based on clinical context.
 
@@ -100,71 +104,74 @@ Additional tests for specific causes (autoantibodies, ceruloplasmin for Wilson's
 
 ## Management
 
-Cirrhosis is a specialist condition. Your doctor will coordinate care with liver specialists (gastroenterologists or hepatologists). The following outlines the main areas of management.
+Cirrhosis is generally managed under specialist care. Your doctor will refer anyone newly diagnosed to liver specialists (gastroenterologists or hepatologists) for assessment and long-term monitoring.
 
 ### Alcohol Cessation
 
-If alcohol contributed to your cirrhosis, **complete alcohol abstinence is essential** — any amount of alcohol causes further liver damage. Your doctor can refer you to appropriate support services.
+**Stop drinking alcohol.** Any alcohol will lead to more liver damage. Your doctor can refer you to alcohol and drug services for help.
 
 ### Medications to Be Aware Of
 
-Several commonly used medications can be harmful in cirrhosis. Always inform any doctor, pharmacist, or prescriber that you have cirrhosis before starting a new medication. Medications that require caution include:
+Some commonly prescribed medicines may harm the liver, and your doctor may stop, swap or lower the dose of some. Always tell anyone who prescribes for you that you have cirrhosis. Medicines that may harm the liver include:
 
-- Certain antibiotics (flucloxacillin, erythromycin, amoxicillin-clavulanate)
-- Anti-inflammatory drugs (NSAIDs like ibuprofen)
-- Statins
+- Certain antibiotics (especially flucloxacillin, erythromycin, amoxicillin-clavulanate)
+- Anti-inflammatory drugs (NSAIDs)
 - Anticonvulsants (seizure medications)
-- Paracetamol (in high doses)
+- Paracetamol, in high doses
+
+Paracetamol at the lower dose your doctor advises is usually the preferred pain reliever in cirrhosis. Anti-inflammatory drugs (such as ibuprofen) are usually best avoided because they can harm the kidneys and cause bleeding.
+
+Do not stop a statin without talking to your doctor. In advanced cirrhosis, your doctor may lower the dose.
 
 Check with your doctor or pharmacist before taking any over-the-counter medicines.
 
 ### Nutrition
 
-Good nutrition is a cornerstone of cirrhosis management:
+Good nutrition is central to cirrhosis management:
 
-- Maintain adequate protein intake to preserve muscle mass and reduce encephalopathy risk
-- Reduce salt (sodium) intake to help prevent fluid build-up
-- If severely ill, your doctor may recommend nutritional supplements
+- Eat enough, with extra protein, to preserve muscle and reduce encephalopathy risk
+- Reduce salt to 80 to 120 mmol a day (4.6 to 6.9 g per day) to reduce fluid build-up
+- In decompensated cirrhosis, your doctor may suggest a nutritional supplement, taken in the evening
 - A referral to a dietitian may be helpful
 
 ### Vaccinations
 
 Vaccinations are recommended early (the immune response weakens as cirrhosis progresses):
 
-- Hepatitis B (if not already immune)
-- Influenza and COVID-19 (annual)
+- Hepatitis B
+- Influenza and COVID-19
 - Pneumococcus (if eligible)
-- Hepatitis A (if at risk and non-immune — e.g., planning international travel)
+- Hepatitis A (if at risk and non-immune, for example planning overseas travel). Hepatitis A is much more dangerous with cirrhosis.
 
-*Ask your doctor which vaccinations apply to you.*
+Vaccination may not be funded. *Ask your doctor which vaccinations apply to you.*
 
 ### Treating the Underlying Cause
 
-Treating the cause of cirrhosis can slow progression:
+Treating the cause of cirrhosis can stop it progressing and help prevent other complications:
 
-- **Alcohol-related:** Alcohol cessation is the most important intervention
-- **Fatty liver (MASLD):** Weight management, blood sugar control, and cardiovascular risk reduction
+- **Alcohol-related:** Stopping alcohol, with referral to alcohol and drug services if needed
+- **Fatty liver (MASLD):** Managing insulin resistance and other metabolic risk factors, to reduce cardiovascular deaths
 - **Hepatitis B or C:** Antiviral therapy may be recommended
 - **Haemochromatosis:** Regular therapeutic blood removal (venesection)
 - **Autoimmune hepatitis:** Immunosuppressant medications under specialist guidance
 - **Wilson's disease:** Copper-chelating medications or zinc under specialist guidance
-- **Heart failure:** Optimising heart failure treatment
+- **Heart failure:** Treating heart failure as well as possible
 
 ### Pregnancy and Contraception
 
-Cirrhosis affects hormone regulation and can cause absent periods — but this does not always mean you cannot get pregnant.
+Cirrhosis affects hormone regulation and can cause absent periods, but this does not always mean you cannot get pregnant.
 
 Important points for women of reproductive age:
-- Pregnancy in cirrhosis carries increased risk to mother and baby; pregnancy in decompensated cirrhosis should be avoided
-- Use effective contraception if not wishing to become pregnant (your doctor will advise which method is safest for your degree of cirrhosis)
-- If planning pregnancy, discuss with your doctor first — lifestyle optimisation (nutrition, alcohol cessation, weight loss) may improve fertility
+- Pregnancy may carry an increased risk of death for mother and baby; pregnancy in decompensated cirrhosis should be avoided because the risk is very high
+- Use effective contraception if not wishing to become pregnant. Any method may suit well-compensated cirrhosis; with any sign of decompensation, generally only the copper IUD is offered.
+- If planning pregnancy, see a specialist obstetric physician first. Good nutrition, stopping alcohol, and weight loss if overweight may improve fertility.
 - If you become pregnant, your doctor will arrange early specialist obstetric care
 
 ---
 
 ## Surveillance
 
-Regular monitoring is essential because cirrhosis increases the risk of liver cancer.
+Regular monitoring is needed because cirrhosis increases the risk of liver cancer. Māori are more often diagnosed with advanced liver cancer because surveillance is missed, so your doctor will support you to take part.
 
 ### Blood Tests (Every 6 Months)
 
@@ -174,17 +181,19 @@ Regular monitoring is essential because cirrhosis increases the risk of liver ca
 - Iron studies
 - Alpha fetoprotein (liver cancer marker)
 
+Your doctor may seek liver specialist advice if results suggest decompensation: albumin less than 32 g/L, INR greater than 1.2, bilirubin greater than 20 micromole/L, or platelets less than 150 × 10^9/L.
+
 ### Abdominal Ultrasound (Every 6 Months)
 
-Screens for hepatocellular carcinoma (liver cancer). Liver cancer can develop at any stage of cirrhosis.
+Screens for hepatocellular carcinoma (liver cancer). Liver cancer can develop at any stage of cirrhosis. Your doctor may consider stopping or not starting surveillance if expected survival is less than 5 years, with significant other illnesses, in decompensated cirrhosis (unless a transplant is planned), or if you choose not to have it.
 
 ### Bone Health
 
-Cirrhosis increases osteoporosis risk approximately 2.5-fold. Your doctor will assess your fracture risk every 2 years and arrange a bone density scan if indicated.
+People with cirrhosis are 2.5 times more likely to have osteoporosis. Your doctor will assess your fracture risk every 2 years and arrange a bone density scan if indicated.
 
 ### Testosterone (Men)
 
-Men with cirrhosis may develop low testosterone (gonadal insufficiency). Your doctor will check this every 2 years.
+Men with cirrhosis may develop low testosterone (gonadal insufficiency). Your doctor will check this every 2 years, using a fasting sample taken before 9.00 am.
 
 ---
 
@@ -192,60 +201,61 @@ Men with cirrhosis may develop low testosterone (gonadal insufficiency). Your do
 
 ### Portal Hypertension (Increased Liver Blood Pressure)
 
-Portal hypertension underlies most serious complications of cirrhosis. Your doctor will monitor for:
+Portal hypertension underlies most serious complications of cirrhosis. Your doctor will monitor every 6 months for:
 - Development of fluid in the abdomen (ascites)
-- Swelling in the legs
+- Fluid retention
 - Kidney function
 
-Regular monthly weight monitoring helps detect fluid retention early. Report weight gain to your doctor promptly.
+Weigh yourself monthly at the same time of day, in the same clothing. Report weight gain to your doctor.
 
 ### Oesophageal Varices (Dilated Veins in the Oesophagus)
 
-Varices are enlarged blood vessels that can burst and bleed dangerously.
+Varices are enlarged veins that can bleed, with a high risk of death.
 
-- **Vomiting blood or passing black tarry stools is a medical emergency — call an ambulance immediately**
-- Regular endoscopy (camera test) screens for varices
-- If varices are found, your doctor may prescribe a beta-blocker (carvedilol) to reduce bleeding risk — this is an off-label but evidence-supported use
+- **Vomiting blood or passing black tarry stools is a medical emergency: call 111 or go to the emergency department**
+- An endoscopy (camera test) screens for varices at diagnosis, then at intervals your specialist sets
+- Your doctor may prescribe a beta-blocker (usually carvedilol) to treat varices, after liver specialist advice. The usual starting dose is 3.125 mg a day. Your specialist adjusts the dose while keeping your blood pressure safe. This is an off-label use.
 
 ### Ascites (Fluid in the Abdomen)
 
-- Reduce dietary salt to approximately 4–7 g per day
-- Your doctor may prescribe diuretics (water tablets), typically spironolactone with or without furosemide
-- Doses are adjusted gradually; kidney function and electrolytes are monitored closely
+- Reduce dietary salt to 80 to 120 mmol a day (4.6 to 6.9 g per day)
+- Your doctor may prescribe diuretics (water tablets) after liver specialist advice, usually spironolactone 100 mg in the morning with or without furosemide 40 mg
+- If needed, doses may rise every 2 to 4 weeks, spironolactone first, to a maximum of 400 mg spironolactone and 160 mg furosemide; kidney function and electrolytes are checked weekly before each increase
 - Weight should not reduce by more than 1 kg per day (with leg swelling) or 0.5 kg per day (without)
-- If ascites does not respond to maximum diuretic doses, specialist management including fluid drainage (paracentesis) may be required
+- If ascites does not respond to maximum tolerated diuretic doses, specialist management including fluid drainage (paracentesis) may be required
 
 ### Encephalopathy (Liver-Related Confusion)
 
-Encephalopathy occurs when the liver cannot filter toxins from the blood, affecting brain function.
+Encephalopathy is a decline in brain function in liver disease. Mild forms can affect driving and coordination and raise the risk of accidents and falls.
 
 Early warning signs include:
-- Sleep disturbance or reversed sleep pattern
+- Changes in sleep pattern, such as a reversed sleep pattern
 - Forgetfulness or difficulty concentrating
 - Personality or mood changes
+- Poor judgement
 - Reduced coordination
 
-If you have overt encephalopathy (confusion or drowsiness): **do not drive or operate heavy machinery.**
+If you have overt encephalopathy: **do not drive or operate heavy machinery.**
 
 Management:
-- Lactulose (laxative medication) is used to reduce toxin build-up — typically titrated to produce 2–3 loose bowel motions daily
-- Avoid sedating medications and opioid painkillers
-- If episodes are recurrent, your specialist may prescribe rifaximin (an antibiotic that reduces recurrence risk)
-- Severe encephalopathy requires emergency hospital assessment
+- Lactulose (laxative medication) is adjusted to produce 2 to 3 loose bowel motions a day
+- Your doctor will stop sedating medications and opioid painkillers
+- If episodes recur, your specialist may add rifaximin, an antibiotic that cuts the risk of recurrence from 46% to 21%
+- Severe encephalopathy (confusion or drowsiness) needs hospital assessment: call 111 or go to the emergency department
 
-*Triggers include constipation, dehydration, infection, sedating medications, and gastrointestinal bleeding — addressing these can reverse an episode.*
+*Overt episodes are usually temporary and linked to a trigger, such as sedating medications, constipation, dehydration, infection, or gastrointestinal bleeding.*
 
 ### Spontaneous Bacterial Peritonitis (SBP) — Infected Abdominal Fluid
 
-SBP is a life-threatening bacterial infection of abdominal fluid (ascites).
+SBP is a bacterial infection of abdominal fluid (ascites) with a poor prognosis.
 
-Suspect if you have ascites and develop fever or abdominal pain — **seek emergency medical care immediately.**
+Suspect it if you have ascites and develop fever or abdominal pain: **call 111 or go to the emergency department.**
 
-After surviving an episode of SBP, your doctor will likely prescribe ongoing low-dose antibiotic prophylaxis to prevent recurrence.
+After surviving an episode of SBP, your specialist will likely recommend ongoing antibiotics to prevent recurrence, for example trimethoprim/sulfamethoxazole 480 mg once daily.
 
 ### Infections
 
-Cirrhosis impairs immune function, making infections such as UTIs, pneumonia, and skin infections more dangerous. Report any signs of infection to your doctor promptly. Early treatment is essential.
+The risk of infections such as UTIs, pneumonia, and skin infections rises as liver function worsens. Tell your doctor about any signs of infection.
 
 ---
 
@@ -253,11 +263,16 @@ Cirrhosis impairs immune function, making infections such as UTIs, pneumonia, an
 
 *All decisions about referral and specialist involvement are made by your doctor. This section summarises when escalation is typically required.*
 
-**Emergency (immediate) assessment is needed for:**
+**Call 111 or go to the emergency department for:**
 - Vomiting blood or black tarry stools (bleeding varices)
 - Severe confusion or drowsiness (hepatic encephalopathy)
-- Fever with abdominal pain or swelling (possible SBP/sepsis)
-- Other acute deterioration (new jaundice, severe abdominal swelling, acute kidney worsening, breathing difficulty)
+- Fever or abdominal pain with ascites (possible SBP), or sepsis
+
+**See your doctor the same day (hospital admission or an urgent clinic visit may be needed) for:**
+- New jaundice
+- Severe abdominal swelling (ascites), rapid swelling, or breathlessness
+- Acute kidney worsening
+- Severe malnutrition
 
 **Non-urgent specialist assessment is typically arranged for:**
 - All newly diagnosed cirrhosis
@@ -274,4 +289,4 @@ Cirrhosis impairs immune function, making infections such as UTIs, pneumonia, an
 ## Patient Resources
 
 - Healthify He Puna Waiora: [Cirrhosis](https://healthify.nz/health-a-z/c/cirrhosis)
-- British Liver Trust: [Diet and Cirrhosis](https://britishlivertrust.org.uk/information-and-support/living-with-a-liver-condition/liver-nutrition/)
+- British Liver Trust: [Diet and Cirrhosis](https://britishlivertrust.org.uk/information-and-support/living-with-a-liver-condition/diet-and-liver-disease/cirrhosis-and-diet/)

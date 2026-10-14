@@ -63,12 +63,15 @@ interface GuestRecord {
   meds?: [string, string, number?][];
 }
 
-/** A guest whose record holds these values, and the page showing it. */
+/** A guest whose record holds these values, and the page showing it. Born
+ *  1980 unless the record says otherwise: medicine cards need a known adult
+ *  age (US-07 AC6). `birthYear: undefined` is a guest with no birth year. */
 async function guestWith(r: GuestRecord): Promise<RenderResult> {
   const day = '2026-09-01';
+  const birthYear = 'birthYear' in r ? r.birthYear : 1980;
   await initRoadmapStore(new LocalStorageAdapter());
   await saveChangedMeasurements({
-    ...(r.sex ? { sex: r.sex } : {}), ...(r.birthYear ? { birthYear: r.birthYear } : {}),
+    ...(r.sex ? { sex: r.sex } : {}), ...(birthYear ? { birthYear } : {}),
     ...(r.birthMonth ? { birthMonth: r.birthMonth } : {}), heightCm: r.height ?? 178,
   }, {});
   await addMeasurement('weight', r.weight, day);
@@ -137,6 +140,7 @@ beforeEach(() => {
 afterEach(async () => {
   cleanup();
   await flushRoadmapStore();
+  vi.resetAllMocks();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -492,5 +496,122 @@ describe('US-06 AC6: from BMI 25 a raised marker counts even with a healthy wais
     await waitFor(() => expect(bmiTile(view.container)).toBe('26'));
     expect(planGlp1(view.container)).toBeUndefined();
     expect(await weightMedsIntro(view.container)).toBe(NEUTRAL);
+  });
+});
+
+// US-07 AC6 amendment (2026-10-14): medicines need a known age of 18 or over.
+// For a known minor, and (US-06 AC5: the form follows the plan) for an unknown
+// age, the form drops its medicine wording: plain fields that still record
+// what someone takes, and no recommendation the plan does not make.
+describe('US-07 AC6: the form withholds its medicine wording when the plan does', () => {
+  const STATIN_HINT = 'Statins are the most effective first step. They reduce cholesterol production in the liver.';
+  /** BMI 32, an HbA1c of 40 and LDL 3.0: an adult gets both cascades. */
+  const MEDICINE_RECORD: GuestRecord = { sex: 'male', weight: 101.4, hba1c: 40, lipids: { ldl: 3 } };
+  const hints = (container: HTMLElement) => Array.from(container.querySelectorAll('.med-step-hint')).map((h) => h.textContent);
+
+  it('an adult (born 1980): the plan and the form both recommend, with the cascade hints', async () => {
+    const view = await guestWith({ ...MEDICINE_RECORD, birthYear: 1980, birthMonth: 1 });
+    await waitFor(() => expect(planCard(view.container, 'Consider starting a statin')).toBeDefined());
+    expect(await weightMedsIntro(view.container)).toBe(recommends('32', 'prediabetic HbA1c'));
+    expect(await cholesterolIntro(view.container)).toMatch(/the treatment target is below 1\.4 mmol\/L/);
+    expect(hints(view.container)).toContain(STATIN_HINT);
+  });
+
+  it('a known minor: the adults-only card, and the form is neutral with no medicine hint, but can still record', async () => {
+    const view = await guestWith({ ...MEDICINE_RECORD, birthYear: new Date().getFullYear() - 15, birthMonth: 1 });
+    await waitFor(() => expect(planCard(view.container, 'This plan is built for adults')).toBeDefined());
+    expect(await weightMedsIntro(view.container)).toBe(NEUTRAL);
+    expect(await cholesterolIntro(view.container)).toBe(CHOLESTEROL_NEUTRAL);
+    expect(hints(view.container)).toEqual([]);
+    expect(view.container.textContent).not.toContain('treatment target');
+    // Plain fields: the medicines they take can still be recorded.
+    for (const id of ['glp1-name', 'sglt2i-name', 'metformin', 'statin-name', 'ezetimibe']) {
+      expect(view.container.querySelector(`#${id}`)).not.toBeNull();
+    }
+  });
+
+  // Amended 2026-10-14: the form withholds its adult readings for a known
+  // minor too. Values stay and stay editable; the waist line (half the
+  // height) is kept, as it is also used in children.
+  describe('a known minor: the form shows the values with no adult target, colour or hint', () => {
+    const MINOR: GuestRecord = { sex: 'male', birthYear: new Date().getFullYear() - 15, birthMonth: 1, weight: 80, waist: 100, bp: [150, 95], hba1c: 48, lipids: { ldl: 4 } };
+    const row = (container: HTMLElement, test: (r: Element) => boolean) => Array.from(container.querySelectorAll('.bt-row')).find(test);
+    const vitalsRow = (container: HTMLElement, label: string) => row(container, (r) => r.querySelector('.bt-name-label')?.textContent === label);
+    const colours = (r: Element) => Array.from(r.querySelectorAll('.bt-status-tick')).map((t) => t.className.replace('bt-status-tick ', ''))
+      .filter((c) => c !== 'bt-status-none');
+
+    it('the vitals and blood-test matrices: values, no weight or BP target, no colour, no hint; the waist line stays', async () => {
+      localStorage.setItem('health_roadmap_data', SAVED_WEIGHT_MIRROR); // opens the vitals matrix at mount
+      const view = await guestWith(MINOR);
+      await waitFor(() => expect(planCard(view.container, 'This plan is built for adults')).toBeDefined());
+      await waitFor(() => expect(vitalsRow(view.container, 'Waist Circumference')?.querySelector('.bt-ref-label')?.textContent).toMatch(/^Target: </));
+
+      const weight = vitalsRow(view.container, 'Weight')!;
+      expect(weight.querySelector('.bt-ref-label')).toBeNull();
+      expect(weight.textContent).toContain('80');
+      expect(colours(weight)).toEqual([]);
+
+      const bp = vitalsRow(view.container, 'Blood Pressure')!;
+      expect(bp.querySelector('.bt-ref-label')).toBeNull();
+      expect(bp.textContent).toContain('150');
+      expect(colours(bp)).toEqual([]);
+
+      for (const metric of ['hba1c', 'ldl']) {
+        const lab = await waitFor(() => {
+          const r = view.container.querySelector(`.bt-row[data-metric="${metric}"]`);
+          if (!r?.querySelector('.bt-value-num')) throw new Error(`no ${metric} value on the page`);
+          return r;
+        });
+        expect(lab.querySelector('.bt-ref-label')).toBeNull();
+        expect(colours(lab)).toEqual([]);
+      }
+      // Still editable: correcting a value opens its editor, which previews no colour.
+      fireEvent.click(view.container.querySelector('.bt-row[data-metric="hba1c"] .bt-cell-clickable')!);
+      const hba1cRow = view.container.querySelector('.bt-row[data-metric="hba1c"]')!;
+      await waitFor(() => expect(hba1cRow.querySelector('.bt-cell-correcting input')).not.toBeNull());
+      expect(colours(hba1cRow)).toEqual([]);
+      // The draft column previews no colour either.
+      fireEvent.change(view.container.querySelector('.bt-row[data-metric="ldl"] .bt-cell-draft input')!, { target: { value: '5' } });
+      expect(colours(view.container.querySelector('.bt-row[data-metric="ldl"]')!)).toEqual([]);
+      expect(view.container.textContent).not.toMatch(/Target: <\d+\/80/);
+    });
+
+    // Codex R1 (2026-10-14): with no plan (no height, no sex, or a height the
+    // plan sets aside) the blood-test matrix still shows, and the gate must
+    // hold there too: it reads the birth year, not whether a plan exists.
+    it.each([
+      ['no height', { height: 0 }],
+      ['no sex', { sex: undefined }],
+      ['an invalid height', { height: 260 }],
+    ] as const)('with %s, a saved LDL shows with no hint and no colour', async (_, gap) => {
+      const view = await guestWith({ ...MINOR, ...gap });
+      const ldl = await waitFor(() => {
+        const r = view.container.querySelector('.bt-row[data-metric="ldl"]');
+        if (!r?.querySelector('.bt-value-num')) throw new Error('no LDL value on the page');
+        return r;
+      });
+      expect(view.container.querySelector('.plan-empty-preview')).not.toBeNull(); // no plan
+      expect(ldl.querySelector('.bt-ref-label')).toBeNull();
+      expect(colours(ldl)).toEqual([]);
+    });
+
+    it('the first-visit form: the blood pressure is shown with no target', async () => {
+      const view = await guestWith(MINOR);
+      await waitFor(() => expect(planCard(view.container, 'This plan is built for adults')).toBeDefined());
+      await waitFor(() => expect(Array.from(view.container.querySelectorAll('.collapsed-field-value'))
+        .some((v) => v.textContent?.includes('150/95'))).toBe(true));
+      expect(Array.from(view.container.querySelectorAll('.field-hint')).map((h) => h.textContent)
+        .filter((t) => t?.includes('/80 mmHg'))).toEqual([]);
+    });
+  });
+
+  it('no birth year: the add-birth-year card, and the form is neutral too', async () => {
+    const view = await guestWith({ ...MEDICINE_RECORD, birthYear: undefined });
+    await waitFor(() => expect(planCard(view.container, 'Add your birth year')).toBeDefined());
+    expect(planCard(view.container, 'Consider starting a statin')).toBeUndefined();
+    expect(planCard(view.container, 'weight-med')).toBeUndefined();
+    expect(await weightMedsIntro(view.container)).toBe(NEUTRAL);
+    expect(await cholesterolIntro(view.container)).toBe(CHOLESTEROL_NEUTRAL);
+    expect(hints(view.container)).toEqual([]);
   });
 });

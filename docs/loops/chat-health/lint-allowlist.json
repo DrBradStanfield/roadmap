@@ -41,7 +41,7 @@
     "algorithm:glycaemia"
    ],
    "item": "prediabetes HbA1c cut-off",
-   "reason": "Deliberate: the algorithm uses the ADA prediabetes cut-off (HbA1c 38.8 mmol/mol, 5.7%); the NZ pathway's prediabetes range starts at 42 mmol/mol. The pathway body stays faithful to Auckland HealthPathways; a chatbot rule giving the algorithm's number precedence is parked (US-15 AC30, Brad 2026-10-14).",
+   "reason": "Deliberate: the algorithm uses the ADA prediabetes cut-off (HbA1c 38.8 mmol/mol, 5.7%); the NZ pathway's prediabetes range starts at 42 mmol/mol. The pathway body stays faithful to Auckland HealthPathways; a chatbot rule giving the algorithm's number precedence is parked (US-15 AC32, Brad 2026-10-14).",
    "date": "2026-10-12",
    "who": "Brad (in session 2026-10-12, issue #135)"
   },
@@ -52,7 +52,7 @@
     "algorithm:glycaemia"
    ],
    "item": "diabetes HbA1c cut-off",
-   "reason": "Deliberate: the algorithm uses the ADA diabetes cut-off (HbA1c 47.5 mmol/mol, 6.5%); the NZ pathway diagnoses at 48 mmol/mol. The pathway body stays faithful to Auckland HealthPathways; a chatbot rule giving the algorithm's number precedence is parked (US-15 AC30, Brad 2026-10-14).",
+   "reason": "Deliberate: the algorithm uses the ADA diabetes cut-off (HbA1c 47.5 mmol/mol, 6.5%); the NZ pathway diagnoses at 48 mmol/mol. The pathway body stays faithful to Auckland HealthPathways; a chatbot rule giving the algorithm's number precedence is parked (US-15 AC32, Brad 2026-10-14).",
    "date": "2026-10-12",
    "who": "Brad (in session 2026-10-12, issue #135)"
   },
@@ -63,7 +63,7 @@
     "algorithm:glycaemia"
    ],
    "item": "metformin order in the medication cascade",
-   "reason": "Deliberate: the algorithm's Weight & Diabetes Medication Cascade offers GLP-1, then SGLT2i, then metformin; the NZ pathway calls metformin first-line. The pathway body stays faithful to Auckland HealthPathways; a chatbot rule giving the algorithm's number precedence is parked (US-15 AC30, Brad 2026-10-14).",
+   "reason": "Deliberate: the algorithm's Weight & Diabetes Medication Cascade offers GLP-1, then SGLT2i, then metformin; the NZ pathway calls metformin first-line. The pathway body stays faithful to Auckland HealthPathways; a chatbot rule giving the algorithm's number precedence is parked (US-15 AC32, Brad 2026-10-14).",
    "date": "2026-10-12",
    "who": "Brad (in session 2026-10-12, issue #135)"
   },
@@ -74,7 +74,7 @@
     "algorithm:blood-pressure"
    ],
    "item": "blood pressure target under 65",
-   "reason": "Deliberate: the algorithm's target under 65 is below 120/80; the NZ pathway's target is below 130/80. The pathway body stays faithful to Auckland HealthPathways; a chatbot rule giving the algorithm's number precedence is parked (US-15 AC30, Brad 2026-10-14).",
+   "reason": "Deliberate: the algorithm's target under 65 is below 120/80; the NZ pathway's target is below 130/80. The pathway body stays faithful to Auckland HealthPathways; a chatbot rule giving the algorithm's number precedence is parked (US-15 AC32, Brad 2026-10-14).",
    "date": "2026-10-12",
    "who": "Brad (in session 2026-10-12, issue #135)"
   },
@@ -85,7 +85,7 @@
     "algorithm:blood-pressure"
    ],
    "item": "stage 2 boundary at exactly 140/90",
-   "reason": "Deliberate: the algorithm counts 140/90 itself as stage 2 (sys >= 140 OR dia >= 90); the NZ pathway diagnoses above 140/90. The pathway body stays faithful to Auckland HealthPathways; a chatbot rule giving the algorithm's number precedence is parked (US-15 AC30, Brad 2026-10-14).",
+   "reason": "Deliberate: the algorithm counts 140/90 itself as stage 2 (sys >= 140 OR dia >= 90); the NZ pathway diagnoses above 140/90. The pathway body stays faithful to Auckland HealthPathways; a chatbot rule giving the algorithm's number precedence is parked (US-15 AC32, Brad 2026-10-14).",
    "date": "2026-10-12",
    "who": "Brad (in session 2026-10-12, issue #135)"
   },
@@ -96,7 +96,7 @@
     "algorithm:blood-pressure"
    ],
    "item": "blood pressure target under 65",
-   "reason": "Deliberate: the algorithm's target under 65 is below 120/80; the NZ pathway's office target is below 130/80. The pathway body stays faithful to Auckland HealthPathways; a chatbot rule giving the algorithm's number precedence is parked (US-15 AC30, Brad 2026-10-14).",
+   "reason": "Deliberate: the algorithm's target under 65 is below 120/80; the NZ pathway's office target is below 130/80. The pathway body stays faithful to Auckland HealthPathways; a chatbot rule giving the algorithm's number precedence is parked (US-15 AC32, Brad 2026-10-14).",
    "date": "2026-10-12",
    "who": "Brad (in session 2026-10-12, issue #135)"
   }

@@ -34,6 +34,10 @@ import type React from 'react';
 
 export type Status = 'ok' | 'warn' | 'bad' | null;
 
+/** Whom a value is graded for against adult thresholds: their sex (some lines
+ *  differ by it), or null to grade nothing, as for a known minor (US-07 AC6). */
+export type Grading = { sex?: 'male' | 'female' } | null;
+
 /** The unit a core cell is typed and shown in: one of its metric's two
  *  systems, or, for Lp(a), one of the three units its field takes (US-05
  *  AC2), read through the unit table (mg/L is a tenth of mg/dL). */
@@ -65,8 +69,9 @@ export function cellLabel(metric: MetricType, unit: CellUnit): string {
 }
 
 /** The reference hint under the unit: the metric's, or Lp(a)'s in its unit. */
-export function cellHint(metric: MetricType, unit: CellUnit, sex?: 'male' | 'female'): string | null {
-  return isSystem(unit) ? refHintFor(metric, unit, sex) : lpaRefHint(unit);
+export function cellHint(metric: MetricType, unit: CellUnit, grading: Grading): string | null {
+  if (!grading) return null;
+  return isSystem(unit) ? refHintFor(metric, unit, grading.sex) : lpaRefHint(unit);
 }
 
 /** The range a value typed in `unit` must fall in: the system's, or the
@@ -158,8 +163,9 @@ export function validateTypedValue(
 
 /** Clinical threshold mapping. Returns null for metrics whose status is
  *  judged elsewhere (e.g. creatinine → eGFR). */
-export function statusOf(metric: MetricType, siValue: number, sex?: 'male' | 'female'): Status {
-  if (siValue == null || Number.isNaN(siValue)) return null;
+export function statusOf(metric: MetricType, siValue: number, grading: Grading): Status {
+  if (!grading || siValue == null || Number.isNaN(siValue)) return null;
+  const { sex } = grading;
   switch (metric) {
     case 'hba1c':
       if (siValue >= HBA1C_THRESHOLDS.diabetes) return 'bad';
@@ -212,9 +218,9 @@ export function statusOf(metric: MetricType, siValue: number, sex?: 'male' | 'fe
 
 /** Live status from a typed display value (parsed + canonicalised). */
 export function previewStatus(
-  metric: MetricType, typed: string, display: CellUnit, sex?: 'male' | 'female',
+  metric: MetricType, typed: string, display: CellUnit, grading: Grading,
 ): Status {
   const n = parseLocalisedNumber(typed);
   if (n === undefined) return null;
-  return statusOf(metric, cellToSI(metric, n, display), sex);
+  return statusOf(metric, cellToSI(metric, n, display), grading);
 }

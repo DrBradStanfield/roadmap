@@ -628,7 +628,7 @@ describe('formatGradedValue (US-07 AC5, US-06 AC5)', () => {
         }
       }
     }
-  });
+  }, 240_000); // an exhaustive sweep: 5-43 s alone, 85 s under a loaded full run
 });
 
 // US-07 AC5: the reference hints state each lipid target the way the plan's

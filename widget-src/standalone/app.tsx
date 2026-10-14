@@ -129,7 +129,7 @@ async function main() {
       flushRoadmapStoreSync();
       // Session-end snapshot of the reminder schedule (keepalive survives the
       // tab going away). No-op unless opted in.
-      void pushReminderSchedule(true);
+      void pushReminderSchedule(backend, true);
     }
   });
   window.addEventListener('beforeunload', () => {
@@ -139,13 +139,14 @@ async function main() {
   // Keep the server's reminder schedule tracking the user's data (§10): one
   // push per visit — it also discovers email-link unsubscribes (404 → the
   // stale opt-in is cleared). Fire-and-forget — never blocks the app.
-  void pushReminderSchedule();
-
   // Default-on reminders (US-17): a connected cloud IS the consent. No-ops
   // unless this file records no decision yet, so it never overrides an
   // opt-out. After render, so the notice's listener is mounted; after the
-  // store, so the pushed schedule is the user's real one.
-  void autoEnrolReminders(backend);
+  // store, so the pushed schedule is the user's real one. The push follows the
+  // enrolment, so it never races a cloud switch's cancel (US-17 AC12).
+  void autoEnrolReminders(backend)
+    .catch(() => undefined)
+    .then(() => pushReminderSchedule(backend));
 }
 
 void main();

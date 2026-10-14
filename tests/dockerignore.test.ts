@@ -70,6 +70,8 @@ describe('.dockerignore covers the .gitignore data patterns', () => {
       'app/lib/chat.server.ts',
       'packages/health-core/src/merge.ts',
       'docs/products.md',
+      'docs/writing-style.md',
+      'docs/chatbot/answer-bank.md',
       'docs/pathway/categories.json',
       'health_roadmap_algorithm.md',
       'instrument.server.mjs',

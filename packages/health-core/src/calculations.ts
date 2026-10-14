@@ -2,6 +2,7 @@ import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } f
 import type { UnitSystem, MetricType } from './units';
 import { EGFR_THRESHOLDS, LPA_THRESHOLDS, HBA1C_THRESHOLDS, waistToHeightRatio, isWaistToHeightElevated } from './units';
 import { generateSuggestions } from './suggestions';
+import { validateInputValue } from './validation';
 
 /**
  * Calculate Ideal Body Weight using the Peterson Formula (2016)
@@ -36,12 +37,11 @@ export function calculateBMI(weightKg: number, heightCm: number): number {
 }
 
 /**
- * Calculate age from birth year and month
+ * Calculate age from birth year and month, at `now`
  */
-export function calculateAge(birthYear: number, birthMonth: number): number {
-  const today = new Date();
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth() + 1; // getMonth() is 0-indexed
+export function calculateAge(birthYear: number, birthMonth: number, now = new Date()): number {
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // getMonth() is 0-indexed
 
   let age = currentYear - birthYear;
 
@@ -51,6 +51,31 @@ export function calculateAge(birthYear: number, birthMonth: number): number {
   }
 
   return Math.max(age, 0);
+}
+
+/**
+ * The plan's adults-only gate (US-07 AC6): a known age under 18. For this gate
+ * alone a missing birth month is a minor until 1 January of the year after
+ * they turn 18 (birthYear + 19), and the date is judged at UTC-12, the zone
+ * furthest behind, whatever zone this runs in (Fly runs in UTC). So no one
+ * anywhere counts as 18 early. Every other age keeps the January default and
+ * the local date.
+ */
+export function isKnownMinor(birthYear: number | undefined, birthMonth: number | undefined, now = new Date()): boolean {
+  if (!birthYear) return false;
+  const behind = new Date(now.getTime() - 12 * 3_600_000);
+  const year = behind.getUTCFullYear();
+  if (!birthMonth) return year - birthYear < 19;
+  return year - birthYear - (behind.getUTCMonth() + 1 < birthMonth ? 1 : 0) < 18;
+}
+
+/**
+ * The gate over the birth info the plan keeps: a birth year or month outside
+ * the plan's bounds is dropped first, as `computePlan` drops it. Every surface
+ * asks this one, so none calls someone a minor while the plan says unknown age.
+ */
+export function knownMinorOf(birth: { birthYear?: number; birthMonth?: number }, now = new Date()): boolean {
+  return isKnownMinor(validateInputValue('birthYear', birth.birthYear), validateInputValue('birthMonth', birth.birthMonth), now);
 }
 
 /**
@@ -148,7 +173,7 @@ export function getProteinRate(eGFR?: number): number {
 /**
  * Main calculation function - takes all inputs and returns all results
  */
-export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSystem, medications?: MedicationInputs, screenings?: ScreeningInputs, unitOverrides?: Partial<Record<MetricType, UnitSystem>>): HealthResults {
+export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSystem, medications?: MedicationInputs, screenings?: ScreeningInputs, unitOverrides?: Partial<Record<MetricType, UnitSystem>>, now = new Date()): HealthResults {
   // Calculate ideal body weight and protein target (always available with height + sex)
   const ibw = calculateIBW(inputs.heightCm, inputs.sex);
   const proteinTarget = calculateProteinTarget(ibw);
@@ -204,8 +229,9 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
 
   // Calculate age if birth year is provided (default to January if month not set)
   if (inputs.birthYear) {
-    results.age = calculateAge(inputs.birthYear, inputs.birthMonth ?? 1);
+    results.age = calculateAge(inputs.birthYear, inputs.birthMonth ?? 1, now);
   }
+  if (knownMinorOf(inputs, now)) results.knownMinor = true;
 
   // Calculate eGFR if creatinine + age + sex are available
   if (inputs.creatinine !== undefined && results.age !== undefined) {

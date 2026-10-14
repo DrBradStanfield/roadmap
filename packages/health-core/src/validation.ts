@@ -152,11 +152,12 @@ export function sanitizeInputs(inputs: Partial<HealthInputs>): Partial<HealthInp
 /**
  * The field names sanitizeInputs strips. Always schema field names (unknown
  * keys are never stripped), so they are safe to name to the model — the
- * invalid VALUES are not, and never appear here.
+ * invalid VALUES are not, and never appear here. A field with no value
+ * (undefined) is not named: there is nothing the user entered.
  */
 export function excludedInputFields(inputs: Partial<HealthInputs>): string[] {
   return Object.entries(inputs)
-    .filter(([key, value]) => !isInputFieldValid(key, value))
+    .filter(([key, value]) => value !== undefined && !isInputFieldValid(key, value))
     .map(([key]) => key);
 }
 

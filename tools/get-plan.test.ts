@@ -155,6 +155,21 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
     expect(text).toContain('https://doi.org/10.1016/j.jacc.2025.11.016');
   });
 
+  // US-07 AC6 (2026-10-14): ten years old at NOW. The values print; the BMI
+  // category, eGFR and the schedule do not, and the plan is the one card.
+  it('US-07 AC6: a minor\'s text shows the values and the adults-only card, and no adult reading', () => {
+    const file = fixture();
+    file.profile.birthYear = 2016;
+    const text = renderText(computePlan(file, NOW));
+    expect(text).toContain('10y · male · 178cm · BMI 29.2');
+    expect(text).not.toMatch(/BMI 29\.2 \(/);
+    expect(text).not.toContain('eGFR');
+    expect(text).toMatch(/LDL Cholesterol\s+2\.1 mmol\/L\s+2026-07-14/);
+    expect(text).toContain('WHAT’S DUE\n  (nothing scheduled)');
+    expect(text).toContain('This plan is built for adults');
+    expect(text).not.toContain('Ezetimibe');
+  });
+
   it('AC3: --json is parseable and stable in shape', () => {
     const json = JSON.parse(renderJson(plan()));
     expect(Object.keys(json)).toEqual([

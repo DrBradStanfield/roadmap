@@ -214,6 +214,58 @@ describe('US-15 AC11: nothing reaches the prompt unless it is allowlisted or bou
   });
 });
 
+// US-07 AC6 (2026-10-14): every chat surface's model learns that the plan's
+// adults-only gate applies, from the profile it reads.
+describe('US-07 AC6: the chat context marks a known minor', () => {
+  const profileFor = (birthYear?: number) => {
+    const json = buildChatContextJson(chatContextOf({ sex: 'female', heightCm: 160, ...(birthYear ? { birthYear } : {}) }, 'si', [], [], []));
+    return JSON.parse(json!).profile;
+  };
+
+  it('a known minor: knownMinor true beside the age', () => {
+    expect(profileFor(new Date().getFullYear() - 15)).toMatchObject({ age: 15, knownMinor: true });
+  });
+
+  it('an adult or an unknown age: no knownMinor key', () => {
+    expect(profileFor(1970)).not.toHaveProperty('knownMinor');
+    expect(profileFor()).not.toHaveProperty('knownMinor');
+  });
+
+  // Codex R1 (2026-10-14): with no usable sex or height there is no plan, and
+  // the builder returned null, so the server sent the empty context and the
+  // chat graded a minor's saved LDL against adult targets.
+  const MINOR = { sex: 'female' as const, heightCm: 160, birthYear: new Date().getFullYear() - 15, ldlC: 4.2 };
+  const contextWithout = (inputs: Record<string, unknown>) => {
+    const json = buildChatContextJson(chatContextOf(inputs, 'si', [], [], []));
+    return json === null ? null : JSON.parse(json);
+  };
+
+  it.each([
+    ['no sex', { ...MINOR, sex: undefined }],
+    ['no height', { ...MINOR, heightCm: undefined }],
+    ['an invalid height', { ...MINOR, heightCm: 9999 }],
+  ])('US-07 AC6: a known minor with %s still gets a context marked knownMinor, with the saved values and no plan', (_, inputs) => {
+    const context = contextWithout(inputs);
+    expect(context).not.toBeNull();
+    expect(context.profile).toMatchObject({ unitSystem: 'si', knownMinor: true });
+    expect(context.latestValues).toEqual({ ldlC: '4.2' });
+    expect(context).not.toHaveProperty('currentSuggestions');
+    expect(JSON.stringify(context)).not.toContain('9999');
+  });
+
+  it('US-07 AC6: an invalid height is named in excludedFields, a missing one is not', () => {
+    expect(contextWithout({ ...MINOR, heightCm: 9999 }).excludedFields).toEqual(['heightCm']);
+    expect(contextWithout({ ...MINOR, heightCm: undefined })).not.toHaveProperty('excludedFields');
+  });
+
+  it('US-07 AC6: an adult or an unknown age with no height still gets no context (unchanged)', () => {
+    expect(contextWithout({ ...MINOR, birthYear: 1970, heightCm: undefined })).toBeNull();
+    expect(contextWithout({ ...MINOR, birthYear: undefined, heightCm: undefined })).toBeNull();
+    // A birth year outside the plan's bounds is no age, as knownMinorOf reads it.
+    expect(contextWithout({ ...MINOR, birthYear: new Date().getFullYear() + 1, heightCm: undefined })).toBeNull();
+  });
+});
+
 // US-15 AC11: an unlisted drug name for a known medication key (a name the
 // chat's medication tool wrote, such as liraglutide) is used for the plan
 // only, as the widget uses it, and reaches the prompt as "unlisted": "other"

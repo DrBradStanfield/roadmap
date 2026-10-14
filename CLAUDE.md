@@ -58,7 +58,7 @@ before deploying.
 
 - **`docs/products.md` is the MASTER here — a real tracked file** (inverted 2026-08-10; claude_business
   holds the symlink). Edit it here; claude_business edits arrive uncommitted — sweep-commit them.
-  `scripts/check-symlinks.mjs` keeps it a REAL file (mode 100644), never a symlink.
+- **`docs/chatbot/` is GENERATED (claude_business `tools/sync-shared-docs.mjs`), never edit.** `scripts/check-symlinks.mjs` keeps it, products.md and writing-style.md REAL files (mode 100644) and checks the synced hashes.
 - `docs/blog/*.md` — chatbot blog cache from claude_business `/blog-post`; rebuild `npx tsx scripts/build-blog-content.ts`.
 - **Customer-service gateway (planned, Brad 2026-10-12):** email + chatbot order/subscription actions; its OWN Fly app,
   code in the private claude_business repo (`customer-service-gateway/`), never in this public repo; the chatbot calls it for account actions. Spec: claude_business `docs/customer-service.md`.
@@ -97,8 +97,8 @@ support", "evidence suggests") — never flatten uncertainty for style.
 **Prose the audience reads** (blogs, emails, product copy, guides, ads, video
 scripts) also obeys [docs/writing-style.md](docs/writing-style.md) — the
 don't-sound-like-AI rules: banned phrases, tier-1/2 vocabulary caps, no em
-dashes outside scripts. It is a symlink to the claude_business master, so it
-is absent on CI and other machines; edit it there, not here.
+dashes outside scripts. A real file kept identical with claude_business's copy
+by its `tools/sync-shared-docs.mjs`; edit either copy, then run the sync.
 
 ## Tech Stack & Key Directories
 

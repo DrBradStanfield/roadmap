@@ -30,7 +30,7 @@ beforeEach(() => {
     errors.push(args.map((a) => (a instanceof Error ? a.message : String(a))).join(' '));
   });
 });
-afterEach(() => { vi.restoreAllMocks(); });
+afterEach(() => { vi.resetAllMocks(); vi.restoreAllMocks(); });
 
 describe('a Resend failure never names the recipient', () => {
   it('keeps the address out of the thrown message, ours and Resend’s alike', async () => {

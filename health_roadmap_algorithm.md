@@ -164,7 +164,7 @@ Source: `units.ts`
 
 Source: `packages/health-core/src/lab-catalog.ts` (`LAB_CONVERSIONS`, `canonicalLabValue`). Since US-21 phase 3, a lab test the catalogue knows is **stored** in its canonical SI unit, not in the unit the lab printed. A writer sends the number and the unit as printed; the record converts it once, on the write, and converts `referenceLow`/`referenceHigh` by the same factor.
 
-Factor = the number a reported value is multiplied by to reach the canonical unit. Spellings are matched lower case, after `normalizeLabUnit` folds report and LLM spelling (`umol/L` → `µmol/L`, `mcg` → `µg`, `uL` → `µL`, `x 10e9/L` → `×10⁹/L`, `1.73m2` → `1.73m²`, `gm/dL` → `g/dL`, `Units/L` → `U/L`, `10^3/cmm` or `10^3/cumm` → `×10³/µL`, `cells/uL`, `cells/cmm` or `cells/cumm` → `cells/µL`). A factor of 1 is a different notation for the same scale, not a conversion.
+Factor = the number a reported value is multiplied by to reach the canonical unit. Spellings are matched lower case, after `normalizeLabUnit` folds report and LLM spelling (`umol/L` → `µmol/L`, `mcg` → `µg`, `uL` → `µL`, `x 10e9/L` → `×10⁹/L`, `1.73m2` → `1.73m²`, `gm/dL` → `g/dL`, `Units/L` → `U/L`, `10^3/cmm`, `10^3/cumm`, `10^3/mm3` or `10^3/mm³` → `×10³/µL`, `10^6/mm3` or `10^6/mm³` → `×10⁶/µL`, `cells/uL`, `cells/cmm`, `cells/cumm`, `cells/mm3` or `cells/mm³` → `cells/µL`). A cubic millimetre is a microlitre, so these folds rescale nothing. `mm3` and `mm³` fold only after a slash: a bare `mm³` is a volume and is never folded. A factor of 1 is a different notation for the same scale, not a conversion.
 
 A spelling this table does not carry for that test is **refused** — never rescaled by guess. The refusal names the canonical unit and every spelling the test accepts, and the website counts it as `lab_unit_refused`. Five things follow from that:
 
@@ -207,49 +207,42 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `wbc` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `wbc` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `wbc` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
-| `wbc` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `wbc` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `wbc` | ×10⁹/L | cells/µl | 0.001 | a microlitre is 10⁻⁶ L, so 2400 cells/µL is 2.4 ×10⁹/L. Whole numbers only: a decimal is refused |
 | `platelets` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `platelets` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `platelets` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `platelets` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
-| `platelets` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `platelets` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `platelets` | ×10⁹/L | cells/µl | 0.001 | a microlitre is 10⁻⁶ L, so 2400 cells/µL is 2.4 ×10⁹/L. Whole numbers only: a decimal is refused |
 | `neutrophils` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `neutrophils` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `neutrophils` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `neutrophils` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
-| `neutrophils` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `neutrophils` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `neutrophils` | ×10⁹/L | cells/µl | 0.001 | a microlitre is 10⁻⁶ L, so 2400 cells/µL is 2.4 ×10⁹/L. Whole numbers only: a decimal is refused |
 | `lymphocytes` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `lymphocytes` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `lymphocytes` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `lymphocytes` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
-| `lymphocytes` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `lymphocytes` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `lymphocytes` | ×10⁹/L | cells/µl | 0.001 | a microlitre is 10⁻⁶ L, so 2400 cells/µL is 2.4 ×10⁹/L. Whole numbers only: a decimal is refused |
 | `monocytes` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `monocytes` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `monocytes` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `monocytes` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
-| `monocytes` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `monocytes` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `monocytes` | ×10⁹/L | cells/µl | 0.001 | a microlitre is 10⁻⁶ L, so 2400 cells/µL is 2.4 ×10⁹/L. Whole numbers only: a decimal is refused |
 | `eosinophils` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `eosinophils` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `eosinophils` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `eosinophils` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
-| `eosinophils` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `eosinophils` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `eosinophils` | ×10⁹/L | cells/µl | 0.001 | a microlitre is 10⁻⁶ L, so 2400 cells/µL is 2.4 ×10⁹/L. Whole numbers only: a decimal is refused |
 | `basophils` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `basophils` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `basophils` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `basophils` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
-| `basophils` | ×10⁹/L | ×10³/mm3 | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `basophils` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `basophils` | ×10⁹/L | cells/µl | 0.001 | a microlitre is 10⁻⁶ L, so 2400 cells/µL is 2.4 ×10⁹/L. Whole numbers only: a decimal is refused |
 | `mchc` | g/L | g/dl | 10 | a decilitre is a tenth of a litre |
@@ -416,13 +409,42 @@ Used when medications are tracked and a lipid is at or above its target: the val
 
 Source: `suggestions.ts` -> `generateSuggestions()`
 
+### Who the Plan Is For
+
+The plan is built for adults aged 18 and over (US-07 AC6, 2026-10-14; amended the same day). Its thresholds, targets and medicines come from adult guidelines.
+
+| Age | Plan |
+|-----|------|
+| Known and under 18 | No suggestions of any kind. One card in their place: `adults-only` (general, info), "This plan is built for adults": "The suggestions here, including medicines, are designed for people aged 18 and over. For anyone younger, talk with their doctor." |
+| 18 or over | The plan below, unchanged. |
+| Unknown (no birth year) | The plan below, except the medicine cards. Medicine cards need a known age of 18 or over. When the plan would show any, they give way to one card where the first stood: `add-birth-year` (general, info), "Add your birth year": "Medicine suggestions need your age. Add your birth year to see them." Every other card is unchanged. The standalone lipid cards (`apob-*`, `non-hdl-*`, `ldl-*`, `total-chol-*`) never give way to the lipid cascade here, because the cascade is not shown. No weight card gives way to the weight cascade, at any age. The kept cards suggest no medicine in their own text: `apob-very-high` ends "Discuss treatment, including lifestyle changes, with your doctor." and `ldl-very-high` "Discuss treatment with your doctor." in place of their statin sentence, `bp-stage2` says "Discuss treatment with your doctor." in place of "Medication is typically recommended at this level.", `bp-stage1` and `bp-stage2` keep their weight-loss sentences but leave out "GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.", and the `lpa-elevated` checklist leaves out its "not started" medicine lines. One exception, by decision: `ldl-high` keeps "Consider lifestyle modifications and discuss medication options." It names no medicine, and discussing is not suggesting. |
+
+The medicine cards are the `medication` category: `weight-glp1`; `weight-med-glp1`, `-glp1-dose`, `-glp1-increase`, `-glp1-switch`, `-sglt2i`, `-metformin`; `med-statin`, `-ezetimibe`, `-bempedoic-acid`, `-statin-dose`, `-statin-increase`, `-statin-switch`, `-pcsk9i`.
+
+The gate's age (`isKnownMinor`) is the one in section 1, except that a missing birth month is strict: the person is a minor until 1 January of the year after the year they turn 18 (birth year + 19), so no one counts as 18 early. Someone born in 2008 with no month is a minor through 31 December 2026 and an adult from 1 January 2027. A known month keeps the birthday-month rule. The gate reads the date at UTC−12, the zone furthest behind, whatever zone it runs in (the hosted server runs in UTC), so no one anywhere counts as 18 early: the new month or year starts for the gate at 12:00 UTC on its first day (born November 2008: an adult from 1 November 2026 12:00 UTC; born 2008 with no month: from 1 January 2027 12:00 UTC). Every other age keeps the January default and the local date, so that person's profile reads 18 beside the adults-only card through 2026 (accepted). Every surface (the plan, the reminder schedule, the form, the chat context) asks the gate over the birth year and month the plan keeps (`knownMinorOf`): one outside the plan's bounds (birth year 1900 to this year, month 1 to 12) counts as missing, so no surface calls someone a minor while the plan has no age for them.
+
+For a known minor, every surface also withholds:
+
+- **Adult readings.** The BMI category, ideal body weight, protein target and eGFR, and the status labels on the lipid, HbA1c and Lp(a) tiles, with the "why" behind each. The website tiles and the PDF show the raw numbers only (BMI, lipid marker, Lp(a), HbA1c); the ideal body weight, protein and eGFR tiles go. `get_plan` returns `bmiCategory`, `eGFR`, `idealBodyWeightKg` and `proteinTargetG` as `null`; the CLI prints the BMI with no category and no eGFR. Raw values (weight, height, waist, each lab value with its unit and date) are untouched.
+- **The schedule.** `computeReminderSchedule` returns nothing, not even the annual check-in floor, so `get_plan`'s `due` is empty. The browser never enrols a known minor in reminders, never pushes their schedule (the server would add its annual check-in to any schedule it is sent), and turns off a row enrolled earlier with the widget's own cancel. That cancel is the age gate's, not the user's: it is permanent (at 18 they turn reminders on by hand) and is not counted as an opt-out.
+- **The form's medicine wording.** The medication sections are plain fields with their neutral sentence: no recommendation, target sentence or step hint. People can still record what they take. The form does the same for an unknown age, because it follows the plan (US-06 AC5).
+- **The form's adult targets.** The weight row's "Target: <ideal body weight>", the blood-pressure target and its status colours, and the reference hints and status colours of the blood-test matrix (saved values, the draft column and the correction editor) and the upload review matrix. The form reads the validated birth year and month alone, so this holds with no plan too (no height or sex). The values stay and stay editable, and no empty box is left. The waist line, its colour and the waist-to-height tile stay: the 0.5 ratio is also used in children.
+
+Measurements, lab values and the record are untouched: they are still stored and shown. There is no usage signal: an event would record that a visitor is under 18.
+
+**Reasons stay for every age.** A card's "Why this suggestion?" reason is keyed by its id and explains the guideline, so it does not change with age: `apob-very-high` still says statin therapy "is typically recommended" and `ldl-very-high` that guidelines "recommend statin therapy at this level". A reason does not suggest a medicine to this person; the card text does, and that is what changes for an unknown age.
+
+Three-file sync for this section's 2026-10-14 amendments (the strict missing-month rule, the UTC−12 date, the lipid cards kept for an unknown age and their medicine-free text, the BP cards' GLP-1 sentence withheld for an unknown age, the form's and review's withheld readings):
+- `evidence.ts`: no change. No card's reason, guideline tag or citation changed; the `adults-only` and `add-birth-year` reasons still hold.
+- `roadmap_text.html`: no change. Its two sentences still hold: the plan "is built for adults aged 18 and over", and the medicines are suggested "only when your birth year shows you are 18 or over" (the strict rule and the UTC−12 date only make that later; with no birth year no card's text suggests one, and the reasons explain the guideline, as above).
+
 ### Always-Show Lifestyle Suggestions
 
 | ID | Category | What | Evidence |
 |----|----------|------|----------|
 | `protein-target` | nutrition | Daily protein target (CKD-adjusted if eGFR < 45) | ISSN 2017 |
 | `fiber` | nutrition | 25-35g fiber daily | Reynolds 2019 |
-| `exercise` | exercise | 150+ min cardio + 2-3 resistance sessions/week | Physical Activity Guidelines 2018 |
+| `exercise` | exercise | At least 150 min moderate cardio, or 75 min vigorous, or a mix (1 vigorous min = 2 moderate) + 2-3 resistance sessions/week | WHO 2020; Physical Activity Guidelines 2018 |
 | `sleep` | sleep | 7-9 hours nightly | Cappuccio 2010 |
 
 ### Conditional Lifestyle Suggestions
@@ -454,6 +476,8 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 
 **Total cholesterol** is suppressed when an elevated atherogenic marker already produced an attention/urgent suggestion, or when the lipid medication cascade is active.
 
+**The lipid medication cascade is active** when a statin status is recorded, the plan's marker is at or above its target, and the age is known. Then the marker's own card and total cholesterol give way to the cascade, whose cards carry the value. With no birth year the cascade is not shown (US-07 AC6), so nothing gives way to it.
+
 ### Lp(a)
 
 **Guidelines:** 2026 ACC/AHA Dyslipidemia Guideline (Class I: measure Lp(a) at least once in all adults), EAS 2022.
@@ -469,7 +493,7 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 - Blood pressure (the age-dependent target: < 120/80 under 65, < 130/80 at 65 or older)
 - BMI (target < 25; shows ✅ when BMI 25–29.9 with WHtR < 0.5)
 - HbA1c (target < 38.8 mmol/mol)
-- Medication status (statin, ezetimibe, PCSK9i — when tracked)
+- Medication status (statin, ezetimibe, PCSK9i — when tracked; with no birth year the "not started" lines are left out, and what the user takes or did not tolerate stays)
 - PCSK9i note: also lowers Lp(a) ~25-30%
 
 ### HDL and Triglycerides
@@ -491,7 +515,7 @@ Stage 1 shows age-dependent target: < 120/80 for age < 65, < 130/80 for age >= 6
 
 Stage 1 and 2 include conditional extra paragraphs:
 - If eGFR >= 45: potassium recommendation
-- If the weight-medication trigger is on (section 6): weight loss + GLP-1 mention
+- If the weight-medication trigger is on (section 6): weight loss + GLP-1 mention (the GLP-1 sentence only for a known age of 18 or over; US-07 AC6)
 
 ---
 
@@ -806,7 +830,7 @@ Result-based intervals:
 
 Source: `suggestions.ts`
 
-### Skin Health (age >= 18)
+### Skin Health (adults, like the whole plan)
 
 | ID | Title | Key Details |
 |----|-------|-------------|

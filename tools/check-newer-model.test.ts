@@ -42,7 +42,7 @@ describe('newerSonnets (audit §4.3: the pin moves only by a qualified PR)', () 
 // and classifier lines are marked for a change to those pins.
 describe('check-newer-model (US-15 AC18)', () => {
   const REAL_FETCH = global.fetch;
-  afterEach(() => { global.fetch = REAL_FETCH; vi.unstubAllEnvs(); vi.restoreAllMocks(); });
+  afterEach(() => { global.fetch = REAL_FETCH; vi.unstubAllEnvs(); vi.resetAllMocks(); vi.restoreAllMocks(); });
   const serve = (data: unknown[], status = 200) => {
     global.fetch = vi.fn(async () => new Response(JSON.stringify({ data, has_more: false, last_id: null }), { status })) as unknown as typeof fetch;
   };
