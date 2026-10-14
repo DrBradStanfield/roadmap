@@ -56,7 +56,8 @@ Your doctor may consider antivirals in this order: **Paxlovid first, then remdes
 
 - If you could become pregnant, use contraception during treatment and for 7 days after
 - If you use oral contraceptives containing ethinylestradiol, additional contraception is needed
-- Breastfeeding: the effects on a breastfed baby are not known. The manufacturer and Medsafe advise avoiding breastfeeding during treatment and for 7 days after
+- Breastfeeding: the effects on a breastfed baby are not known, and a risk cannot be ruled out. The Medsafe data sheet advises stopping breastfeeding during treatment and for 48 hours after finishing the course
+- Contraception: Paxlovid can make combined contraceptive pills, patches and rings less effective. The Medsafe data sheet advises using another method as well during treatment and until your next period.
 - Avoid medicines that do not mix with Paxlovid, even ones you take only now and then, such as erectile dysfunction medicines, colchicine, or loratadine
 
 **Common side effects:** vomiting, diarrhoea, headache, altered sense of taste

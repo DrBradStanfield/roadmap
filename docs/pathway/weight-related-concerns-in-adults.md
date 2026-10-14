@@ -131,7 +131,7 @@ Your healthcare provider may recommend:
 - Referral to a dietitian, health psychologist, or a structured exercise programme (e.g., Green Prescription)
 - Review of any medications contributing to weight gain
 
-**The four older anti-obesity medicines** in the table below produce only modest weight loss, are not effective in the long term, and must always be used with lifestyle changes. They may be considered if:
+**The four older anti-obesity medicines** in the table below produce only modest weight loss and must always be used with lifestyle changes. The benefit lasts while a medicine is continued, and weight usually returns after stopping. They may be considered if:
 - Lifestyle changes (supervised diet, exercise, and behaviour change) over at least 6 months have not produced significant benefit, and
 - Your BMI is ≥30
 

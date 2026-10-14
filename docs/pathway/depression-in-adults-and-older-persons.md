@@ -219,7 +219,7 @@ Your doctor will monitor for potential complications of antidepressant treatment
 
 **Stopping medication:**
 
-- Antidepressants should be reduced gradually over 4 weeks (not needed for fluoxetine). Paroxetine and venlafaxine need a longer taper due to their shorter half-life.
+- Antidepressants should be reduced gradually over 4 weeks. At low doses, fluoxetine can often be stopped without a slow taper because it leaves the body slowly. At higher doses, or after other antidepressants, your doctor will plan a gradual reduction. Paroxetine and venlafaxine need a longer taper due to their shorter half-life.
 - You may notice some symptoms while reducing or stopping. These are usually mild and self-limiting, but can be severe, particularly if the medicine is stopped suddenly. Tell your doctor if they are hard to bear.
 
 **Hyponatraemia (low sodium):**

@@ -40,17 +40,15 @@ Your doctor will take these into account when timing vaccination:
 
 The Shingrix vaccine is recommended and **funded** for:
 
-- **All people aged 65 years.** The course must be started at age 65. The second dose is given two to six months later (no upper age limit for the second dose).
-- **People aged 18 years or older** (including those aged 66 or over) with any of the following conditions:
+- **People aged 65 years.**
+- **People aged 18 years or older** with any of the following conditions:
   - Before or after haematopoietic stem cell transplant or cellular therapy
   - Before or after organ transplant
   - Haematological malignancies (blood cancers)
   - Poorly controlled HIV infection, meaning advanced or untreated HIV
   - Planning or receiving disease-modifying antirheumatic drugs (DMARDs) for polymyalgia rheumatica, systemic lupus erythematosus (SLE), or rheumatoid arthritis
-  - End-stage kidney disease (CKD stage 4 or 5, eGFR 29 or less)
+  - End-stage kidney disease (CKD stage 4 or 5)
   - Primary immunodeficiency
-
-If you are aged 66 years or older and in one of these groups, your doctor may offer Shingrix even if you have had Zostavax before, as Shingrix provides greater immune protection.
 
 ---
 
@@ -58,7 +56,7 @@ If you are aged 66 years or older and in one of these groups, your doctor may of
 
 Your doctor may recommend Shingrix (at your own cost) for:
 
-- People aged 50 years or older (including those aged 66 or over)
+- People aged 50 years or older
 - People aged 18 years or older with conditions that increase shingles risk, including:
   - Diabetes
   - COPD
