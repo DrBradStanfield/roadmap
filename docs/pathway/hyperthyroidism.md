@@ -8,22 +8,22 @@ summary: "Clinical pathway for hyperthyroidism and subclinical hyperthyroidism i
 
 # Hyperthyroidism
 
-*Source: Auckland Region HealthPathways*
+*Source: Auckland Region HealthPathways. Last reviewed: April 2024.*
 
 This pathway covers the assessment and management of hyperthyroidism and subclinical hyperthyroidism in adults.
 
-> **Note:** Diagnosis and treatment of thyroid disease requires a doctor. This information helps you understand what your doctor is assessing and why — it is not a substitute for medical care.
+> **Note:** Diagnosis and treatment of thyroid disease requires a doctor. This information helps you understand what your doctor is assessing and why. It is not a substitute for medical care.
 
 ---
 
 ## When to Seek Emergency Care
 
-Go to the emergency department or call for urgent medical help if you have hyperthyroidism with any of:
+If you have hyperthyroidism and any of these, call 111 or go to the emergency department:
 
 - Significantly unwell, especially with fever or dehydration
-- Heart problems — rapid atrial fibrillation or heart failure
-- Altered mental state — confusion, agitation, psychosis, or seizures
-- Serious eye symptoms — sudden drop in vision or altered colour perception
+- Heart or breathing problems, such as rapid atrial fibrillation or heart failure
+- A change in mental state, such as confusion, agitation, psychosis, or seizures
+- Serious, sight-threatening eye problems, such as a drop in vision or altered colour perception
 
 ---
 
@@ -31,11 +31,11 @@ Go to the emergency department or call for urgent medical help if you have hyper
 
 ### Types of Hyperthyroidism
 
-**Overt hyperthyroidism** is defined by a low TSH with elevated FT4 and/or FT3. Common causes include Graves' disease, toxic thyroid adenoma, multinodular goitre, and thyroiditis.
+**Overt hyperthyroidism** is defined by a low TSH with raised FT4 and/or FT3. The most common causes are Graves' disease, a toxic adenoma or multinodular goitre, and thyroiditis.
 
-**Secondary hyperthyroidism** is very rare. It may be caused by TSH-secreting pituitary tumours and shows a normal or elevated TSH with elevated thyroid hormones.
+**Secondary hyperthyroidism** is very rare. It may be caused by TSH-secreting pituitary tumours and shows a normal or raised TSH with raised thyroid hormones.
 
-**Subclinical hyperthyroidism** means a low TSH with normal FT4 and FT3, with few or no symptoms. Affects about 6% of people over 55. Most common causes are thyroxine treatment and autonomously functioning thyroid nodules. About 50% of cases resolve within 1 year without treatment; 1–4% progress to overt hyperthyroidism per year. It increases the risk of atrial fibrillation and osteoporosis, especially when TSH is fully suppressed or suppression is prolonged.
+**Subclinical hyperthyroidism** means a low TSH with normal FT4 and FT3, with few or no symptoms. It affects 6% of people older than 55 years. The most common causes are thyroxine treatment and thyroid nodules or multinodular goitres that make hormone on their own. Half of cases resolve within 1 year without treatment, and 1 to 4% develop overt hyperthyroidism per year. It increases the risk of atrial fibrillation and osteoporosis, especially when TSH is fully suppressed or suppression is prolonged.
 
 ---
 
@@ -46,15 +46,15 @@ Asymptomatic people without risk factors do not need routine thyroid screening. 
 - A palpable thyroid nodule or goitre
 - A past history of thyroid disorder, neck surgery, or radiation exposure
 - A significant lipid disorder
-- Medications that can affect thyroid function — amiodarone, lithium, antithyroid drugs, immune checkpoint inhibitors (e.g. pembrolizumab, nivolumab)
+- Medications that can affect thyroid function, such as amiodarone, lithium, antithyroid drugs, or immune checkpoint inhibitors (for example pembrolizumab or nivolumab)
 - A significant family history of thyroid disorder
-- Persistent unexplained symptoms — fatigue, heat intolerance
-- Cardiovascular problems — heart failure, resting tachycardia (>90 bpm) or bradycardia (<60 bpm)
+- Persistent unexplained symptoms, such as fatigue or heat intolerance
+- Heart problems, such as heart failure, a fast resting heart rate (greater than 90 beats per minute) or a slow one (less than 60 beats per minute)
 - Menstrual disturbance or subfertility
-- Another autoimmune condition — type 1 diabetes, coeliac disease, pernicious anaemia, adrenal insufficiency
+- Another autoimmune condition, such as type 1 diabetes, coeliac disease, pernicious anaemia, or adrenal insufficiency
 - Down syndrome or Turner syndrome
 - Malabsorptive conditions (coeliac disease, IBD, H. pylori) that may affect thyroxine absorption
-- Mental health concerns — major depression, anxiety, declining cognition
+- Mental health concerns, such as major depression, anxiety, or declining cognition
 - Pregnancy with known positive TPO antibodies
 
 **Note on biotin:** Biotin does not affect thyroid hormone levels but can interfere with thyroid blood test measurements, producing false results. Inform your doctor if you take biotin.
@@ -74,7 +74,7 @@ Symptoms can range from mild to severe and life-threatening. They include:
 - Fatigue or weakness
 - Tremor
 - Proximal muscle weakness
-- Menstrual disturbances (irregular or absent periods)
+- Menstrual disturbances (infrequent or absent periods)
 - Sexual dysfunction
 
 ### Signs Your Doctor Will Look For
@@ -92,7 +92,7 @@ Symptoms can range from mild to severe and life-threatening. They include:
 
 ## Eye Problems in Hyperthyroidism (Thyroid Eye Disease)
 
-Thyroid eye disease (also called Graves' orbitopathy) affects approximately 20–40% of people with Graves' disease. It may occur before thyroid disease is diagnosed. Smoking is the main reversible risk factor.
+Thyroid eye disease (also called Graves' orbitopathy) affects approximately 20–40% of people with Graves' disease. It may occur before thyroid disease is diagnosed. Smoking is the main reversible risk factor. Sight-threatening eye disease is rare, but it can happen without eye bulging.
 
 **Mild:**
 - Gritty, irritable eyes
@@ -105,11 +105,14 @@ Thyroid eye disease (also called Graves' orbitopathy) affects approximately 20�
 - Moderate proptosis (eye bulging) and/or lid retraction
 - Any new-onset double vision
 
-**Severe (seek urgent medical attention):**
+**Severe:**
 - Any reduction in vision
 - Constant double vision
-- Severe eyelid swelling or eye bulging
+- Severe eyelid swelling
+- Severe eye bulging and/or lid retraction
 - Altered colour perception
+
+Severe eye disease needs an urgent hospital eye assessment. If you notice a drop in vision, constant double vision, or altered colour perception, call 111 or go to the emergency department. If severe eyelid swelling or eye bulging has built up over time, see your doctor the same day.
 
 Your doctor will always check visual acuity and colour vision.
 
@@ -117,19 +120,19 @@ Your doctor will always check visual acuity and colour vision.
 
 ## Severe Complications
 
-**Thyroid storm** is a life-threatening emergency:
-- High fever (>38°C)
-- Rapid heart rate or atrial fibrillation, labile blood pressure, heart failure
+**Thyroid storm** is a severe complication:
+- Fever (greater than 38°C)
+- A very fast heart rate or rapid atrial fibrillation, unstable blood pressure, or heart failure
 - Confusion, agitation, psychosis, or seizures
 - Severe vomiting, diarrhoea, or jaundice
 - Severe dehydration
 
-**Thyrotoxic periodic paralysis** is rare but serious:
+**Thyrotoxic periodic paralysis** is rare but may have life-threatening complications:
 - Hyperthyroidism with low potassium (hypokalaemia) or paralysis
-- Can cause cardiac arrhythmia or respiratory failure
-- More common in young Asian males
+- Can cause an abnormal heart rhythm or breathing failure
+- Common in young Asian males
 
-Both require emergency medical assessment.
+Both need hospital assessment: call 111 or go to the emergency department. Atrial fibrillation or new heart failure with hyperthyroidism needs the same.
 
 ---
 
@@ -137,9 +140,9 @@ Both require emergency medical assessment.
 
 Your doctor will typically:
 
-- Order a **TSH blood test** first. If TSH is abnormal, FT4 and FT3 are usually added automatically.
-- If TSH is low and FT4 or FT3 is high, arrange an **anti-TSH receptor antibody (TRAb)** test — this is highly specific for Graves' disease.
-- **Thyroid ultrasound** is generally NOT useful for investigating the cause of hyperthyroidism unless there is a palpable thyroid lump. It will only be arranged if specifically indicated after specialist advice.
+- Order a **TSH blood test** first. If TSH is abnormal, the lab adds FT4 and FT3 automatically.
+- If TSH is low and FT4 or FT3 is high, arrange an **anti-TSH receptor antibody (TRAb)** test. It is highly sensitive and specific for Graves' disease.
+- **Thyroid ultrasound** is not usually helpful for finding the cause of hyperthyroidism unless there is a thyroid lump or nodule. It is arranged only after specialist advice.
 
 ---
 
@@ -155,16 +158,16 @@ The second most common cause. More common in older people and in iodine-deficien
 
 ### Thyroiditis
 
-Inflammation and destruction of thyroid tissue releasing stored thyroid hormone.
+Inflammation and destruction of thyroid tissue.
 
 - **Painless thyroiditis** (most common): includes postpartum thyroiditis, drug-induced (amiodarone, lithium, interferon, pembrolizumab, nivolumab), Hashimoto toxicosis, and sporadic forms.
-- **Subacute painful (de Quervain) thyroiditis**: Tender diffuse goitre with transient hyperthyroidism followed by hypothyroidism before recovery. Presumed to be viral or post-viral. Elevated CRP/ESR. Treated with NSAIDs and beta blockers; prednisone may be needed under specialist guidance. **Does not respond to carbimazole.**
+- **Subacute painful (de Quervain) thyroiditis** (less common): Tender diffuse goitre with transient hyperthyroidism followed by hypothyroidism before recovery. Presumed to be viral or post-viral. Elevated CRP/ESR. Beta blockers and NSAIDs may be used for symptom control. Prednisone may be needed if symptoms do not settle on an NSAID, under specialist guidance. **Does not respond to carbimazole.**
 
 ### Other Causes
 
-- Iodine-induced hyperthyroidism (IV contrast, excess dietary iodine, kelp, alternative therapies) — generally self-limiting
+- Iodine-induced hyperthyroidism is very rare. It may follow large amounts of iodine (IV contrast, excess dietary iodine, kelp, alternative therapies) and generally settles on its own unless there is underlying thyroid disease.
 - Exogenous thyroid hormone (thyroxine tablets, other thyroid supplements)
-- Amiodarone-induced thyrotoxicosis
+- Amiodarone-induced thyroiditis
 
 ---
 
@@ -178,72 +181,77 @@ A different clinical pathway applies to thyroid disease in pregnancy.
 
 ### All New-Onset Hyperthyroidism
 
-For all patients with newly diagnosed hyperthyroidism (including recurrent episodes), your doctor will refer you to an endocrinologist (hormone specialist) and begin appropriate treatment in the meantime.
+For all patients with newly diagnosed hyperthyroidism (including recurrent episodes), your doctor will refer you to an endocrinologist (hormone specialist) and begin appropriate treatment in the meantime. People with a recurrence are likely to need definitive treatment, such as radioiodine or surgery.
 
 ---
 
 ### Subclinical Hyperthyroidism
 
 - Your doctor will stop any iodine supplementation.
-- If you are taking thyroxine for thyroid disease, the dose will be adjusted to bring TSH back into the normal range (unless you have thyroid cancer — in that case, suppressed TSH may be the intended goal).
-- If TSH is persistently low for more than 12 months, your doctor will assess your risk of atrial fibrillation and bone thinning and may arrange further tests (TRAb, radionuclide thyroid scan, bone density scan).
+- If you take thyroxine for benign thyroid disease, the dose will be reduced to bring TSH back into the reference range. TSH is rechecked 6 to 8 weeks after any dose change.
+- If you have had thyroid cancer, a suppressed TSH may be the intended goal. Your doctor will seek specialist advice on the target unless it has already been given.
+- If TSH stays at 0.1 to 0.4 mIU/L for more than 12 months, your doctor will assess your risk of atrial fibrillation and fracture. At low risk, TSH is monitored every 6 to 12 months. At high risk, your doctor may arrange a TRAb test, and if it is negative or there is a nodular goitre, a radionuclide thyroid scan and a bone density scan.
+- It is managed as hyperthyroidism if TSH falls persistently to less than 0.1, symptoms develop, or FT4 or FT3 rises above the reference range.
 - TSH is monitored every 6–12 months; risk factors for AF and osteoporosis are reviewed yearly.
 
 ---
 
 ### Graves' Disease or Toxic Nodular Goitre
 
-**Carbimazole** is the main treatment. Your doctor will discuss the risks and benefits before starting.
+**Carbimazole** is the main treatment. Your doctor will warn you about its side effects before you start, especially agranulocytosis.
 
 **Dosing (guided by thyroid function results):**
 - Mild: 5–10 mg daily
 - Moderate: 10 mg twice daily
-- Severe or with marked symptoms: 15 mg twice daily, usually with a beta blocker
+- Severe or with marked symptoms: 15 mg twice daily plus a beta blocker
 
-**Important safety warning — agranulocytosis:**
-Carbimazole can rarely (1 in 200–500 patients) cause a dangerous drop in white blood cells (agranulocytosis). If you develop **fever, flu-like symptoms, sore throat, or mouth ulcers** while taking carbimazole, **stop taking it immediately and seek same-day medical attention.** A same-day blood count will be arranged.
+**Important safety warning about agranulocytosis:**
+Carbimazole can rarely (1 in 200 to 1 in 500 patients) cause a dangerous drop in white blood cells (agranulocytosis). If you develop **fever, flu-like symptoms, sore throat, or mouth ulcers** while taking carbimazole, **stop taking it and see a doctor straight away.** Your doctor will arrange an urgent blood count with results the same day. If your neutrophil count is less than 1 × 10⁹/L, you need hospital assessment: call 111 or go to the emergency department.
 
 **Other carbimazole side effects:**
 - Rashes, joint pain, or gastritis (less serious)
-- Rarely, hepatitis — seek medical attention for jaundice or abdominal pain
-- Routine blood count monitoring is not needed, but your doctor will take baseline tests before starting
+- Hepatitis, which is rare
+- Routine blood count and liver test monitoring is not needed, but your doctor will take baseline tests before starting
 
 **Beta blockers** (e.g. propranolol) are often added initially to control symptoms such as rapid heart rate, palpitations, and tremor. If you have severe asthma or COPD, discuss this with your doctor before starting.
 
-**Smoking cessation** is strongly encouraged to reduce the risk of thyroid eye disease.
+**Smoking cessation** is encouraged to reduce the risk of thyroid eye disease.
 
 **Ongoing monitoring:**
 - Thyroid function tests every 4–6 weeks
 - Carbimazole dose adjusted based on FT4/FT3 levels (TSH may remain suppressed for months)
-- For Graves' disease: treatment is typically continued for 12–18 months; about 50% of patients relapse
-- For toxic nodular goitre: hyperthyroidism will not resolve permanently with medication alone — radioiodine or surgery will likely be needed (arranged through the endocrinologist)
-- If long-term carbimazole is problematic, alternatives (propylthiouracil, radioiodine) can be discussed with the specialist
+- For Graves' disease: the aim is to treat most people for 12 to 18 months, and 50% of patients relapse
+- For toxic nodular goitre: the hyperthyroidism will not resolve, so the endocrinologist will consider radioiodine or surgery
+- If carbimazole causes problems, alternatives (propylthiouracil, radioiodine) can be discussed with the specialist
+- Too much carbimazole can make the thyroid underactive (hypothyroidism)
 
 ---
 
 ### Thyroiditis
 
-- **Carbimazole is not used** — it does not help thyroiditis.
+- **Carbimazole is stopped** if you are taking it. It does not help thyroiditis.
 - If the thyroiditis was triggered by a medication, your doctor may consider stopping it if safe to do so.
 - A beta blocker can help control symptoms (palpitations, tremor) while the thyroid is overactive.
+- NSAIDs may help thyroid pain. Prednisone is sometimes needed, and your doctor will seek specialist advice first.
+- 80% of people recover on their own within weeks to months. Some become underactive for a while before recovering.
 - Thyroid function tests are monitored every 4–6 weeks for 3–4 months, or until two successive normal results.
-- If the thyroid then becomes underactive (hypothyroid) or TSH rises above 10 milliunits/L, your doctor may start a temporary course of thyroxine.
+- If the thyroid becomes underactive with symptoms, or TSH is greater than 10 milliunits/L, your doctor may consider a temporary course of thyroxine and an endocrinology referral.
 
 ---
 
 ### Thyroid Eye Disease
 
 **Symptomatic measures your doctor may recommend:**
-- Selenium 100 mcg twice daily (available over the counter) — helpful in mild thyroid eye disease
-- Lubricating eye drops (e.g. Poly-Tears or Lacri-Lube)
+- Selenium 100 micrograms twice daily (not funded, available over the counter) can be useful in mild thyroid eye disease
+- Lubricating eye drops
 - Elevate head of bed
 - Cold packs to eyes
-- Oral anti-inflammatories (NSAIDs)
+- Oral anti-inflammatories (NSAIDs) may also help
 
-**Important:** Patients with thyroid eye disease should **not** receive radioiodine treatment — it can worsen eye symptoms.
+**Important:** Patients with proven thyroid eye disease should **not** receive radioiodine treatment. It can worsen eye symptoms.
 
 **Referrals based on severity:**
-- Severe eye disease → urgent ophthalmology (eye specialist) assessment + endocrinology assessment
+- Severe eye disease → urgent hospital eye assessment + non-urgent endocrinology assessment (see the eye section above for when to call 111)
 - Mild or moderate eye disease → non-urgent ophthalmology + endocrinology assessment
 
 ---
@@ -252,21 +260,20 @@ Carbimazole can rarely (1 in 200–500 patients) cause a dangerous drop in white
 
 Your doctor will refer you to an endocrinologist (and/or other specialists) in the following situations:
 
-- **All new-onset hyperthyroidism** — including recurrent episodes
-- **Thyroid storm or severe complications** — urgent/emergency referral
-- **Thyroid eye disease** — ophthalmology and endocrinology
-- **Long-term treatment for Graves' disease** — to consider radioiodine or surgery
-- **Toxic nodular goitre** — to consider radioiodine or surgery
-- **Subclinical hyperthyroidism** persisting more than 12 months, or with cardiac or bone health risks
-- **Problems with carbimazole** — to discuss alternative treatments
-- **Medication-induced hyperthyroidism** that cannot be stopped
-- **Thyroid cancer patients** with questions about optimal TSH levels
-- **Severe compressive symptoms** from a goitre (e.g. difficulty swallowing, voice change, stridor) → urgent ear, nose and throat (ORL) assessment
+- **All new-onset hyperthyroidism**, including recurrent episodes
+- **Thyroid storm or other severe complications**: call 111 or go to the emergency department
+- **Thyroid eye disease**: ophthalmology and endocrinology
+- **Long-term treatment for Graves' disease**, to consider radioiodine or surgery
+- **Toxic nodular goitre**, to consider radioiodine or surgery
+- **Subclinical hyperthyroidism** persisting more than 12 months, or with conditions that raise the risk of atrial fibrillation and osteoporosis (such as ischaemic heart disease or older age)
+- **Problems with carbimazole**, to discuss alternative treatments
+- **Medication-induced hyperthyroidism** when the medicine cannot be safely reduced or stopped
+- **Thyroid cancer patients** taking thyroxine who have not yet had advice about optimal TSH levels
+- **Severe pressure symptoms from a goitre**, such as hoarseness or difficulty swallowing, need an urgent hospital ear, nose and throat (ORL) assessment. See your doctor the same day. A swollen face with swollen veins in the neck and chest can mean the goitre is pressing on a large vein: call 111 or go to the emergency department. Noisy breathing (stridor) or struggling to breathe: call 111 or go to the emergency department.
 
 ---
 
 ## Patient Resources
 
-- Healthify He Puna Waiora: [Hyperthyroidism](https://healthify.nz/health-a-z/h/hyperthyroidism/)
-- Healthify He Puna Waiora: [Graves' disease](https://healthify.nz/health-a-z/g/graves-disease/)
-- Healthify He Puna Waiora: [Thyroiditis](https://healthify.nz/health-a-z/t/thyroiditis/)
+- Healthify He Puna Waiora: [Overactive thyroid](https://healthify.nz/health-a-z/o/overactive-thyroid)
+- Healthify He Puna Waiora: [DEXA scan](https://healthify.nz/health-a-z/d/dexa-scan)
