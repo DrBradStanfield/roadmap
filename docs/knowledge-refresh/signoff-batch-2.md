@@ -36,4 +36,4 @@ Pilot follow-up:
 
 ## Sign-off
 
-AC8 sign-off (Brad): PENDING.
+AC8 sign-off (Brad): APPROVED 2026-10-15, in chat: "yes, sign off". Every decision above is accepted as the entry currently reads (the orchestrator's defaults).
