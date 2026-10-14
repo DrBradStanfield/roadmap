@@ -5801,5 +5801,31 @@
     ],
     "must_not_mention": [],
     "notes": "Changed. New entry: \"The data sheet advises against amiodarone in people with current or past thyroid problems, and in pregnancy or while breastfeeding.\" Old: the entry said amiodarone is not used in people with current or past thyroid problems, or in pregnancy or while breastfeeding."
+  },
+  {
+    "query": "I take domperidone for bloating and my doctor wants to treat H. pylori with clarithromycin. Is that combination OK?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-currency-2026-10-14",
+    "answer_handles": [
+      "dyspepsia-and-heartburn-gord"
+    ],
+    "must_mention": [
+      "heart rhythm"
+    ],
+    "must_not_mention": [],
+    "notes": "New (currency check, Codex R1). Entry: \"- **Dysmotility-type symptoms** (discomfort, bloating, early fullness, nausea rather than pain): your doctor may try a prokinetic medicine such as domperidone 10 mg three times a day first. Domperidone can affect heart rhythm and is not used with some medicines, including clarithromycin. H2-receptor antagonists come next. They have a better response rate than PPIs in this group.\""
+  },
+  {
+    "query": "I weigh 75 kg and my Jadelle implant has been in for just over 4 years. Do I need to replace it before 5 years?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-currency-2026-10-14",
+    "answer_handles": [
+      "contraceptive-implant"
+    ],
+    "must_mention": [
+      "60 kg"
+    ],
+    "must_not_mention": [],
+    "notes": "New (currency check, Codex R1). Entry: \"Early replacement is not routinely recommended. The data sheet notes that effectiveness may fall after 4 years in people weighing more than 60 kg, so your doctor may discuss an earlier replacement. Using the implant beyond 5 years is not recommended.\""
   }
 ]

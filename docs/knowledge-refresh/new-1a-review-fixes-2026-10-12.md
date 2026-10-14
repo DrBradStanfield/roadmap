@@ -44,3 +44,4 @@ Applied 2026-10-12 by one Opus worker: every ACCEPT row. Ruling 12 decisions: ho
 - Eczema herpeticum valaciclovir 1 g three times daily: KEEP, standard off-label practice.
 - Dyspepsia domperidone: ACCEPT, added that it can affect heart rhythm and is not used with some medicines, including clarithromycin (the entry's own H. pylori regimen).
 - Contraceptive implant: ACCEPT, added the Jadelle data sheet's note that effectiveness may fall after 4 years in people over 60 kg, beside the raw's "early replacement not routinely recommended".
+- Codex on the currency commit 2941414f (complete): R1 ACCEPT, two US-42 answer checks added (domperidone with clarithromycin; Jadelle after 4 years over 60 kg). R2 ACCEPT, commits cite US-42.
