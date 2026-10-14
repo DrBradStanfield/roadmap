@@ -1,0 +1,549 @@
+[
+  {
+    "query": "I'm 9 weeks pregnant and want to do the abortion with pills at home. What's the latest stage I can take them?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "abortion"
+    ],
+    "must_mention": [
+      "10"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"An EMA is only offered in the community up to 10+0 weeks (≤ 70 days) of pregnancy, so timing matters.\""
+  },
+  {
+    "query": "I took the abortion pills yesterday and now I have sharp pain low on one side, pain at the tip of my shoulder and I feel dizzy. Can it wait until the clinic opens?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "abortion"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"You have signs of a possible **ectopic pregnancy** (a pregnancy outside the womb): abdominal or pelvic pain, vaginal bleeding, shoulder tip pain, dizziness, or fainting.\""
+  },
+  {
+    "query": "My 14 year old daughter's teacher thinks she has ADHD. Do the symptoms need to have started when she was little?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "adhd-in-children-and-youth"
+    ],
+    "must_mention": [
+      "12"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"were present before the age of 12 years, and are excessive for the child's developmental level\""
+  },
+  {
+    "query": "My 8 year old has ADHD-type behaviour and takes hours to fall asleep even with a good bedtime routine. What might the doctor consider?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "adhd-in-children-and-youth"
+    ],
+    "must_mention": [
+      "melatonin"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Your doctor may consider melatonin if the child takes a long time to fall asleep despite good sleep habits.\""
+  },
+  {
+    "query": "What is the paracetamol dose per kg for a child with a painful broken arm?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "analgesia-in-children-with-acute-pain"
+    ],
+    "must_mention": [
+      "15 mg/kg"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"15 mg/kg (to a maximum of 1 g per dose) every 4 hours, up to 4 times per day (to a maximum of 60 mg/kg/day).\""
+  },
+  {
+    "query": "My child was given strong pain medicine for a fracture and is now very sleepy and breathing slowly. What do I do?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "analgesia-in-children-with-acute-pain"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"If a child who has been given an opioid becomes very drowsy or their breathing slows, this can be life-threatening. Call 111 or go to the emergency department.\""
+  },
+  {
+    "query": "I'm 6 weeks pregnant and I have epilepsy and take anti-seizure medicine. What dose of folic acid should I take?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "antenatal-consult-initial-assessment"
+    ],
+    "must_mention": [
+      "5 mg"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"**5 mg once daily** if you have:\""
+  },
+  {
+    "query": "I have lupus and I'm newly pregnant. What aspirin dose is used to lower pre-eclampsia risk, and when does it start?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "antenatal-consult-initial-assessment"
+    ],
+    "must_mention": [
+      "100 mg",
+      "12 weeks"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"**Low-dose enteric-coated aspirin 100 mg at night** from 12 weeks of pregnancy, and\""
+  },
+  {
+    "query": "My GAD-7 score came back as 12. What level of anxiety is that?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "anxiety-in-adults"
+    ],
+    "must_mention": [
+      "moderate"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"| GAD-7 score | 5 to 9 | 10 to 14 | ≥ 15 |\""
+  },
+  {
+    "query": "My anxiety has got so bad that I've started thinking about ending my life and I have a plan. Should I wait for my next appointment?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "anxiety-in-adults"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"- **If you have a plan or feel you might act on it, call 111 or go to the emergency department.** This needs an urgent (acute) mental health assessment.\""
+  },
+  {
+    "query": "I think I might be autistic as an adult. Can I get a diagnosis through the public system?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "autism-in-adults"
+    ],
+    "must_mention": [
+      "private"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Adult autism assessments are not publicly funded.\""
+  },
+  {
+    "query": "I'm autistic and my sleep is terrible. Is there a supplement with evidence behind it?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "autism-in-adults"
+    ],
+    "must_mention": [
+      "melatonin"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Existing evidence suggests **melatonin** can be recommended for sleep problems.\""
+  },
+  {
+    "query": "I had a gastric bypass 3 months ago and now I want to start trying for a baby. How long should I wait?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "bariatric-surgery"
+    ],
+    "must_mention": [
+      "18 months"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Avoid pregnancy for 12 to 18 months after bariatric surgery.\""
+  },
+  {
+    "query": "My dietitian wants me on a very low calorie diet before my weight loss operation. How many calories a day is that?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "bariatric-surgery"
+    ],
+    "must_mention": [
+      "700"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"plans a very low calorie diet (700 kcal a day) for at least 2 weeks before surgery\""
+  },
+  {
+    "query": "My mum did the Mini-ACE memory test. What score means cognitive impairment is likely?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "cognitive-impairment"
+    ],
+    "must_mention": [
+      "25"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"A score of 25 or less suggests cognitive impairment is likely.\""
+  },
+  {
+    "query": "Dad has been getting more confused and his head CT shows bleeding on the brain. The GP says he needs hospital. Can we take him in a day or two?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "cognitive-impairment"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"A head CT shows a significant abnormality, such as a bleed, a space-occupying lesion (a mass), or hydrocephalus (fluid build-up in the brain). Call 111 or go to the emergency department.\""
+  },
+  {
+    "query": "I took St John's wort for a month while I have a Jadelle implant and I've now stopped it. How long should I keep using condoms?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "contraceptive-implant"
+    ],
+    "must_mention": [
+      "28 days"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"The effect takes 28 days to wear off, even after a single dose.\""
+  },
+  {
+    "query": "I can't feel one of my implant rods in my arm any more. How do doctors find it?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "contraceptive-implant"
+    ],
+    "must_mention": [
+      "X-ray"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"For the two-rod levonorgestrel implant, an X-ray of the arm with the insertion site marked can find the rods.\""
+  },
+  {
+    "query": "I run my contraceptive pill packs together for period pain and keep getting breakthrough bleeding. How long a break from the hormone pills should I take?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "dysmenorrhoea"
+    ],
+    "must_mention": [
+      "4"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"your doctor may suggest a hormone-free break of 4 to 7 days.\""
+  },
+  {
+    "query": "My period pain is severe and nothing I have tried has worked. How long does the doctor try treatment before referring me to a gynaecologist?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "dysmenorrhoea"
+    ],
+    "must_mention": [
+      "3 months"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Your doctor may refer you for a gynaecology assessment if severe symptoms have not responded after at least 3 months of treatment.\""
+  },
+  {
+    "query": "I'm about to do a stool test for H. pylori and I take omeprazole every day. Do I need to stop it first?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "dyspepsia-and-heartburn-gord"
+    ],
+    "must_mention": [
+      "2 weeks"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Your doctor will make sure you have stopped PPI treatment for 2 weeks before testing and have not taken antibiotics within the last month.\""
+  },
+  {
+    "query": "I've had indigestion for weeks and this morning I vomited blood. Should I book a GP appointment for next week?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "dyspepsia-and-heartburn-gord"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Vomiting blood (haematemesis) or passing black, tarry stools (melaena)\""
+  },
+  {
+    "query": "I have food stuck in my throat after eating chicken and I can't even swallow my own saliva. What should I do?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "dysphagia"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"You cannot swallow your own saliva. This is a total obstruction and needs hospital assessment.\""
+  },
+  {
+    "query": "Solid food has become hard to swallow but drinks go down fine. What does that usually point to?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "dysphagia"
+    ],
+    "must_mention": [
+      "narrow"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Difficulty with solid food usually points to a structural narrowing (mechanical obstruction).\""
+  },
+  {
+    "query": "How often and how much steroid cream should I put on an adult eczema flare?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "eczema-dermatitis-in-adults"
+    ],
+    "must_mention": [
+      "once"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"**Apply liberally once daily**, enough to see a good shiny layer on the skin.\""
+  },
+  {
+    "query": "My eczema flared and now I have clusters of small punched-out sores spreading fast, with a fever. Can I wait to see my GP?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "eczema-dermatitis-in-adults"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"You may have **extensive eczema herpeticum** (eczema-prone skin infected with the herpes simplex virus).\""
+  },
+  {
+    "query": "I have epilepsy and had a minor seizure. How long must I stop driving?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "epilepsy"
+    ],
+    "must_mention": [
+      "12 months"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"You must stop driving for 12 months after any seizure, minor seizure, or aura.\""
+  },
+  {
+    "query": "I'm a 25 year old woman with epilepsy and I'm not planning a pregnancy. Should I still take folic acid, and how much?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "epilepsy"
+    ],
+    "must_mention": [
+      "5 mg"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Recommend folic acid 5 mg daily, especially if you take sodium valproate, even if you are not planning pregnancy.\""
+  },
+  {
+    "query": "My dad was diagnosed with stomach cancer at 38. Is that worth raising with my doctor for my own risk?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "familial-cancer-syndromes"
+    ],
+    "must_mention": [
+      "genetic"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"You or a first-degree relative with gastric (stomach) cancer diagnosed aged younger than 40 years.\""
+  },
+  {
+    "query": "What proportion of breast and bowel cancers are caused by an inherited gene mutation?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "familial-cancer-syndromes"
+    ],
+    "must_mention": [
+      "5%"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Most cancer is not due to an inherited mutation. For example, only 5% of all breast and colon cancer is due to an inherited mutation.\""
+  },
+  {
+    "query": "I have fibromyalgia and three months of treatment has not helped. What is the next step?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "fibromyalgia"
+    ],
+    "must_mention": [
+      "pain service"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"**Specialised pain service:** severe disability and pain affect your quality of life or work, and/or there is no improvement at 3 months despite the treatment above.\""
+  },
+  {
+    "query": "My fibromyalgia is mostly tiredness and bad sleep. Which medicine do doctors usually try first?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "fibromyalgia"
+    ],
+    "must_mention": [
+      "amitriptyline"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"| **Fatigue** | Amitriptyline, pregabalin | Venlafaxine, pregabalin | Amitriptyline | Amitriptyline, pregabalin |\""
+  },
+  {
+    "query": "My leg hurts constantly even at rest, my toes look dark and I can't find a pulse in my foot. Should I just rest it?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "general-wound-care"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"**Call 111 or go to the emergency department if you may have critical limb ischaemia** (a severe lack of blood supply to a limb).\""
+  },
+  {
+    "query": "How old does a wound have to be before it counts as chronic?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "general-wound-care"
+    ],
+    "must_mention": [
+      "2 weeks"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"A wound more than 2 weeks old is treated as chronic.\""
+  },
+  {
+    "query": "My voice goes hoarse on and off and I clear my throat a lot, with reflux symptoms. What might my doctor try?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "hoarse-voice-dysphonia"
+    ],
+    "must_mention": [
+      "6 weeks"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"**A trial of a proton pump inhibitor (PPI)** such as omeprazole, with or without Gaviscon, for 6 weeks.\""
+  },
+  {
+    "query": "My voice has been hoarse and now my breathing has become noisy and high-pitched. Should I book an ENT appointment?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "hoarse-voice-dysphonia"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"Stridor (noisy, high-pitched breathing).\""
+  },
+  {
+    "query": "I had condomless sex 2 days ago with a partner who might have HIV. Is it too late to do anything?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "human-immunodeficiency-virus-hiv"
+    ],
+    "must_mention": [
+      "72 hours"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"You may have been exposed to HIV in the last 72 hours. Your doctor may consider urgent post-exposure prophylaxis (PEP).\""
+  },
+  {
+    "query": "What dose of doxycycline is used as doxy-PEP after condomless sex?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "human-immunodeficiency-virus-hiv"
+    ],
+    "must_mention": [
+      "200 mg"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"A single 200 mg dose of doxycycline taken within 72 hours of condomless sex is shown to significantly reduce the risk of chlamydia and syphilis infection.\""
+  },
+  {
+    "query": "I have Crohn's disease and now have a fever, a racing heart and bad belly pain. Can I wait for my gastroenterologist appointment next month?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "inflammatory-bowel-disease-ibd"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"**Call 111 or go to the emergency department if you have suspected or known IBD and you have:**\""
+  },
+  {
+    "query": "When is the first colonoscopy to check for bowel cancer offered after ulcerative colitis starts?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-2026-10-12",
+    "answer_handles": [
+      "inflammatory-bowel-disease-ibd"
+    ],
+    "must_mention": [
+      "8 years"
+    ],
+    "must_not_mention": [],
+    "notes": "New. Entry: \"- A baseline colonoscopy is offered about 8 years after diagnosis. If the diagnosis was delayed, your doctor may count from when symptoms started.\""
+  },
+  {
+    "query": "I take domperidone for bloating and my doctor wants to treat H. pylori with clarithromycin. Is that combination OK?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-currency-2026-10-14",
+    "answer_handles": [
+      "dyspepsia-and-heartburn-gord"
+    ],
+    "must_mention": [
+      "heart rhythm"
+    ],
+    "must_not_mention": [],
+    "notes": "New (currency check, Codex R1). Entry: \"- **Dysmotility-type symptoms** (discomfort, bloating, early fullness, nausea rather than pain): your doctor may try a prokinetic medicine such as domperidone 10 mg three times a day first. Domperidone can affect heart rhythm and is not used with some medicines, including clarithromycin. H2-receptor antagonists come next. They have a better response rate than PPIs in this group.\""
+  },
+  {
+    "query": "I weigh 75 kg and my Jadelle implant has been in for just over 4 years. Do I need to replace it before 5 years?",
+    "category": "pathway-refresh-new-1a",
+    "source": "knowledge-refresh-new-1a-currency-2026-10-14",
+    "answer_handles": [
+      "contraceptive-implant"
+    ],
+    "must_mention": [
+      "60 kg"
+    ],
+    "must_not_mention": [],
+    "notes": "New (currency check, Codex R1). Entry: \"Early replacement is not routinely recommended. The data sheet notes that effectiveness may fall after 4 years in people weighing more than 60 kg, so your doctor may discuss an earlier replacement. Using the implant beyond 5 years is not recommended.\""
+  }
+]

@@ -1,0 +1,39 @@
+# Sign-off sheet: batch 2 (20 changed pathways)
+
+Branch knowledge-refresh/batches. These are the 2026-09-29 drafts, rechecked on checker v3. A Sonnet fixer rebuilt the evidence reports and audited style. One Opus worker applied the funding rule, the house safety lines, two source corrections and 31 style fixes. A fresh Opus adversary and Codex, with the April and September sources included, then reviewed the batch. The accepted findings are fixed (batch-2-adversary-fixes-2026-10-08.md). Checker: AC1, AC7 and PATHWAY pass. AC2, AC3 and AC4 only warn. AC6 lists the other batches on the branch, as expected. There are 12 exceptions, all for checker limits (rule 10).
+
+Answer checks (AC5): 40 are pre-registered in tools/test-queries.json (category pathway-refresh-batch-2). They run with the pilot's 42 after 2026-11-01, as you decided.
+
+## Decisions for you
+
+House safety lines (ruling 11, the same ones you signed in the pilot):
+1. Cardiac drugs: on an SGLT2 inhibitor, blood ketones over 1.5 mmol/L, confusion, heavy drowsiness or struggling to breathe mean "call 111 or go to the emergency department". The source says "urgent general medical advice".
+2. Insulin for type 2 diabetes: someone unconscious, having a seizure, or unable to swallow safely: call 111, and nothing by mouth.
+
+Urgency, where the source gives the presentation but no patient wording:
+3. Headaches: every "concerning feature or risk factor" now says call 111. That covers a new headache while on blood thinners, with HIV or immunosuppression, in pregnancy or after birth, or with a history of cancer, and a headache that wakes you or is there on waking. The source says "emergency assessment or acute neurosurgery assessment". The invented same-day tier is gone.
+4. DOAC: a bad headache, dizziness and coughing up blood moved up to the 111 line as signs of serious bleeding. The other four bleeding signs stay "report to your doctor", because the source gives them no action.
+5. Cardiac drugs: on antiarrhythmics, palpitations, fainting and abnormal breathlessness form one "call 111" item. The source lists them together and warns of life-threatening ventricular arrhythmias. The alternative is "see your doctor the same day".
+6. Vitamin D in children: corrected calcium less than 2 mmol/L, or confirmed B12 deficiency, means call 111 even when the child seems well. The source asks for acute paediatric assessment and says the low calcium may cause no symptoms. Parents often see results in a patient portal first.
+7. Syncope: abdominal or back pain with fainting (leaking aneurysm, ruptured ectopic pregnancy) is added to the 111 group, from the source.
+8. Gout: a same-day line the old draft invented is removed. The source gives no tier.
+
+Clinical content:
+9. Cardiac drugs: the prasugrel section is removed because the 2026-09 source no longer covers it. The frontmatter summary and keywords still name prasugrel. Approve removing it there too? This is a summary correction, which AC1 lets only you approve.
+10. Headaches: topiramate now lists the source's contraception examples (injection, IUD, or the combined pill plus a barrier method), after Codex round 2. The costs now follow the source drug by drug: atogepant $350 to $400 a month, galcanezumab $350 to $400 a dose, fremanezumab $300 to $330 an injection (June 2025, "prices may vary"). The old draft merged them into "$300 to $400". Keep the costs at all?
+11. ACE inhibitors and ARBs in kidney impairment (2019 source) says stop if eGFR falls by more than 25% at 1 week. The CKD page (2025 source) says withhold if creatinine rises by 30% or more. Each matches its own source, so the chatbot may quote either. Keep both as written, or add a line to the ACE/ARB page pointing to the newer CKD page?
+
+Stale sources:
+12. ACE/ARB (last reviewed 2019, next review due 2022), DOAC and AF are past their own next-review dates. The entries follow the pages as published.
+
+Currency check against Medsafe data sheets (2026-10-14, batch-2-currency-2026-10-14.md; 12 items applied):
+14. Sotalol: the maximum drops from the source's 640 mg a day to the data sheet's 480 mg, and paroxysmal AF follows the data sheet (80 mg twice a day, at most 80 mg three times a day).
+15. Colchicine for gout keeps the NZ low-dose regimen from the source (0.5 mg again after 12 hours, then once or twice a day). The data sheet says to wait 3 days after the starting course. bpacnz and HealthPathways use the low-dose regimen, so I kept it, and the page now makes clear that the 3-day gap applies to repeating the starting course. Keep the NZ regimen, or follow the data sheet?
+16. The other ten changes bring the pages into line with the data sheets: colchicine in kidney and liver disease, clopidogrel before surgery and with omeprazole, ticagrelor, perhexiline, amiodarone contraindications, SGLT2 inhibitors in pregnancy, the levothyroxine starting dose, and rivaroxaban kidney thresholds. Read the table in that file if you want the detail.
+
+Pilot follow-up:
+13. Non-insulin diabetes medications (on main since 1af613b7) lists confusion under "see your doctor the same day" and under "call 111". Codex found the same overlap in cardiac drugs, where confusion now appears only under 111. Make the same one-word fix on main? It is a clinical edit, so it gets a quick adversary and Codex check first.
+
+## Sign-off
+
+AC8 sign-off (Brad): APPROVED 2026-10-15, in chat: "yes, sign off". Every decision above is accepted as the entry currently reads (the orchestrator's defaults).
