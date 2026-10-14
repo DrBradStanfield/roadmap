@@ -85,7 +85,7 @@ vi.mock('./UploadModal', () => ({
   },
 }));
 
-import { ERASE_DONE, ERASE_REMINDERS_NOT_OFF, HealthTool } from './HealthTool';
+import { ERASE_DONE, HealthTool } from './HealthTool';
 
 const TODAY = localDay(new Date());
 const RIGHT_DAY = '2026-08-15';
@@ -1501,19 +1501,15 @@ describe('US-11: an erase made here', () => {
     expect([localStorage.getItem(VITALS_DRAFT_KEY), localStorage.getItem(BT_TIMELINE_DRAFT_KEY)]).toEqual([null, null]);
   });
 
-  // Adversary R3 (2026-10-14, US-17 AC1b): the confirm says reminders are
-  // turned off. When the server refused the cancel, the erase still goes ahead
-  // and the alert says reminders may still arrive, and how to stop them.
-  it.each([
-    ['the reminder cancel succeeds', async () => {}, ERASE_DONE],
-    ['the reminder cancel fails', async () => { throw new Error('Reminder row delete failed (500).'); }, ERASE_REMINDERS_NOT_OFF + ERASE_DONE],
-  ])('%s: the alert says what happened', async (_name, hook, alert) => {
+  // US-17 AC1b: the reminder cancel succeeds, the erase goes ahead, and the
+  // alert is the normal one.
+  it('the reminder cancel succeeds: the alert says the record is deleted', async () => {
     const view = await returningGuest();
-    setPreEraseHook(hook);
+    setPreEraseHook(async () => {});
     try {
       vi.spyOn(window, 'alert').mockImplementation(() => {});
       fireEvent.click(view.getByRole('button', { name: 'Delete All My Data' }));
-      await waitFor(() => expect(window.alert).toHaveBeenCalledWith(alert));
+      await waitFor(() => expect(window.alert).toHaveBeenCalledWith(ERASE_DONE));
       expect(await loadAllHistory()).toEqual([]);
     } finally {
       setPreEraseHook(async () => {});

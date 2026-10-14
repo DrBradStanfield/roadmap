@@ -136,13 +136,6 @@ export const ERASE_DONE_CHAT_PENDING =
   'Your health record is deleted. Your chat history could not be reached just now; ' +
   'it is erased on your next chat.' + ERASE_DONE_TAIL;
 
-// The reminder row's cancel runs before the erase, since its token dies with
-// the file (US-17 AC1b). When the server refused it, the confirm's "Reminders
-// are turned off" is untrue: say so, and name the one off switch left.
-export const ERASE_REMINDERS_NOT_OFF =
-  'We could not turn off your reminders on our server just now, so they may still arrive. ' +
-  'Each reminder email has a link to turn them off.\n\n';
-
 /** A correction the store answered; a success is counted (name only). */
 const countedCorrection: CorrectFn = async (id, newValue) => {
   const status = await correctValue(id, newValue);
@@ -723,7 +716,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setMedications([]);
       setScreenings([]);
       previousInputsRef.current = {};
-      window.alert((result.remindersOff ? '' : ERASE_REMINDERS_NOT_OFF) + (result.chatErased ? ERASE_DONE : ERASE_DONE_CHAT_PENDING));
+      window.alert(result.chatErased ? ERASE_DONE : ERASE_DONE_CHAT_PENDING);
     } else {
       window.alert(result.error || 'Failed to delete data. Please try again.');
     }

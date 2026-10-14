@@ -328,9 +328,8 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
  * the plan-ready email to every optin→cancel→optin cycle). Reaching the one
  * copy that isn't on the user's device needs the capability token that lives
  * in the file we're about to destroy, so this cannot run afterwards.
- * A refused cancel throws. The erase still goes ahead (deleteUserData), sends
- * the failure to Sentry and tells the user reminders may still arrive, with
- * the email's off link as the way to stop them. No retry: the token is gone.
+ * A refused cancel throws. The erase still goes ahead (deleteUserData) and
+ * sends the failure to Sentry. No retry: the token is gone.
  *
  * Not counted as an opt-out: they erased everything, they didn't judge
  * reminders. Registered as a hook by the standalone entry, because `src/`
