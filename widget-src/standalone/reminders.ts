@@ -197,6 +197,9 @@ export async function optInToReminders(
   // counted). A token the file already holds active is theirs: left alone.
   const now = getReminderOptIn();
   if (silent && !sameOptIn(now, silent.from)) {
+    // The decision that superseded this enrolment (an erase, a toggle-off) owns
+    // the file now: no switch marker outlives it (US-11 AC4).
+    if (now?.status !== 'active') safeRemoveItem(SWITCH_CANCELLED_KEY);
     if (now?.status !== 'active' || now.token !== reply.token) {
       const cancel = await postCancel(reply.token, await cancelProofFor(backend));
       // The status code only (CLAUDE.md telemetry rule): this row has no token anywhere now.
@@ -280,12 +283,15 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
       // A refused cancel stops here: enrolling now would write the new token
       // over the old one, the only key to that row. The file keeps the old
       // opt-in, so the next visit on the new cloud tries the cancel again.
+      // An earlier visit's cancel of this token already landed: a refused retry
+      // proves nothing about the row, so that marker stays.
+      const cancelledBefore = safeGetItem(SWITCH_CANCELLED_KEY) === optIn.token;
       switchHoldsOldToken = true;
       safeSetItem(SWITCH_CANCELLED_KEY, optIn.token);
       const res = await postCancel(optIn.token, await cancelProofFor(optIn.provider));
       if (!res.ok) {
-        switchHoldsOldToken = false; // the old row is still live: pushes may carry on
-        safeRemoveItem(SWITCH_CANCELLED_KEY);
+        switchHoldsOldToken = cancelledBefore; // otherwise the old row is still live: pushes may carry on
+        if (!cancelledBefore) safeRemoveItem(SWITCH_CANCELLED_KEY);
         // The status code only: no address, no schedule (CLAUDE.md telemetry rule).
         const refused = new Error(`Old reminder row cancel failed (${res.status}).`);
         Sentry.captureException(refused, { tags: { area: 'reminders', op: 'switch-cancel' } });

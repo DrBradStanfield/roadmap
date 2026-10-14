@@ -813,6 +813,39 @@ describe('US-17 AC12 — a late 404 never overwrites a newer opt-in (Codex R1)',
   });
 });
 
+describe('US-17 AC12 — the switch marker survives a refused retry and an erase race (Codex, 2026-10-14)', () => {
+  it('a refused cancel RETRY keeps an earlier visit\'s marker, so the push stays held', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE); // drive, user@
+    githubAccountEmail.mockResolvedValue('other@example.com');
+    const { autoEnrolReminders, pushReminderSchedule } = await loadReminders();
+    localStorage.setItem(SWITCH_MARKER, ACTIVE.token); // visit 1 cancelled, its enrolment failed
+    const f = fetchByOp((op) => (op === 'cancel' ? json({}, 503) : json({}, 404)));
+
+    await autoEnrolReminders('github'); // the retry is refused
+    expect(localStorage.getItem(SWITCH_MARKER)).toBe(ACTIVE.token);
+    const sent = f.mock.calls.length;
+
+    await pushReminderSchedule('github');
+    expect(f).toHaveBeenCalledTimes(sent);
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+  });
+
+  it('an enrolment superseded by an erase leaves no marker behind', async () => {
+    let file: FileReminderOptIn | undefined = { ...ACTIVE };
+    getReminderOptIn.mockImplementation(() => file);
+    githubAccountEmail.mockResolvedValue('other@example.com');
+    fetchByOp((op) => {
+      if (op === 'optin') file = { status: 'cancelled', token: '', email: '', provider: 'google-drive', updatedAt: '2026-10-14T00:00:00.000Z', lamport: 9 };
+      return op === 'optin' ? json({ token: 'new-cap-token', email: 'other@example.com' }) : json({ ok: true });
+    });
+    const { autoEnrolReminders } = await loadReminders();
+
+    await autoEnrolReminders('github');
+
+    expect(localStorage.getItem(SWITCH_MARKER)).toBeNull();
+  });
+});
+
 describe('US-11 AC4 — an erase clears the switch marker', () => {
   it('cancelRemindersForErase removes hr_reminders_switch_cancelled, even with no active opt-in', async () => {
     getReminderOptIn.mockReturnValue(undefined);
