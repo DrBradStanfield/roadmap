@@ -417,7 +417,7 @@ The plan is built for adults aged 18 and over (US-07 AC6, 2026-10-14; amended th
 |-----|------|
 | Known and under 18 | No suggestions of any kind. One card in their place: `adults-only` (general, info), "This plan is built for adults": "The suggestions here, including medicines, are designed for people aged 18 and over. For anyone younger, talk with their doctor." |
 | 18 or over | The plan below, unchanged. |
-| Unknown (no birth year) | The plan below, except the medicine cards. Medicine cards need a known age of 18 or over. When the plan would show any, they give way to one card where the first stood: `add-birth-year` (general, info), "Add your birth year": "Medicine suggestions need your age. Add your birth year to see them." Every other card is unchanged. The standalone lipid cards (`apob-*`, `non-hdl-*`, `ldl-*`, `total-chol-*`) never give way to the lipid cascade here, because the cascade is not shown. No weight card gives way to the weight cascade, at any age. The kept cards suggest no medicine in their own text: `apob-very-high` ends "Discuss treatment, including lifestyle changes, with your doctor." and `ldl-very-high` "Discuss treatment with your doctor." in place of their statin sentence, `bp-stage2` says "Discuss treatment with your doctor." in place of "Medication is typically recommended at this level.", and the `lpa-elevated` checklist leaves out its "not started" medicine lines. |
+| Unknown (no birth year) | The plan below, except the medicine cards. Medicine cards need a known age of 18 or over. When the plan would show any, they give way to one card where the first stood: `add-birth-year` (general, info), "Add your birth year": "Medicine suggestions need your age. Add your birth year to see them." Every other card is unchanged. The standalone lipid cards (`apob-*`, `non-hdl-*`, `ldl-*`, `total-chol-*`) never give way to the lipid cascade here, because the cascade is not shown. No weight card gives way to the weight cascade, at any age. The kept cards suggest no medicine in their own text: `apob-very-high` ends "Discuss treatment, including lifestyle changes, with your doctor." and `ldl-very-high` "Discuss treatment with your doctor." in place of their statin sentence, `bp-stage2` says "Discuss treatment with your doctor." in place of "Medication is typically recommended at this level.", `bp-stage1` and `bp-stage2` keep their weight-loss sentences but leave out "GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.", and the `lpa-elevated` checklist leaves out its "not started" medicine lines. |
 
 The medicine cards are the `medication` category: `weight-glp1`; `weight-med-glp1`, `-glp1-dose`, `-glp1-increase`, `-glp1-switch`, `-sglt2i`, `-metformin`; `med-statin`, `-ezetimibe`, `-bempedoic-acid`, `-statin-dose`, `-statin-increase`, `-statin-switch`, `-pcsk9i`.
 
@@ -434,7 +434,7 @@ Measurements, lab values and the record are untouched: they are still stored and
 
 **Reasons stay for every age.** A card's "Why this suggestion?" reason is keyed by its id and explains the guideline, so it does not change with age: `apob-very-high` still says statin therapy "is typically recommended" and `ldl-very-high` that guidelines "recommend statin therapy at this level". A reason does not suggest a medicine to this person; the card text does, and that is what changes for an unknown age.
 
-Three-file sync for this section's 2026-10-14 amendments (the strict missing-month rule, the UTC−12 date, the lipid cards kept for an unknown age and their medicine-free text, the form's and review's withheld readings):
+Three-file sync for this section's 2026-10-14 amendments (the strict missing-month rule, the UTC−12 date, the lipid cards kept for an unknown age and their medicine-free text, the BP cards' GLP-1 sentence withheld for an unknown age, the form's and review's withheld readings):
 - `evidence.ts`: no change. No card's reason, guideline tag or citation changed; the `adults-only` and `add-birth-year` reasons still hold.
 - `roadmap_text.html`: no change. Its two sentences still hold: the plan "is built for adults aged 18 and over", and the medicines are suggested "only when your birth year shows you are 18 or over" (the strict rule and the UTC−12 date only make that later; with no birth year no card's text suggests one, and the reasons explain the guideline, as above).
 
@@ -515,7 +515,7 @@ Stage 1 shows age-dependent target: < 120/80 for age < 65, < 130/80 for age >= 6
 
 Stage 1 and 2 include conditional extra paragraphs:
 - If eGFR >= 45: potassium recommendation
-- If the weight-medication trigger is on (section 6): weight loss + GLP-1 mention
+- If the weight-medication trigger is on (section 6): weight loss + GLP-1 mention (the GLP-1 sentence only for a known age of 18 or over; US-07 AC6)
 
 ---
 

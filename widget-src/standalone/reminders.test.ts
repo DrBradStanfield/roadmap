@@ -366,6 +366,42 @@ describe('US-17 — switching clouds moves the reminders, it does not duplicate 
 
     expect(trackProductEvent).not.toHaveBeenCalledWith('reminder_optout');
   });
+
+  // Adversary R3 (2026-10-14): a refused cancel used to fall through to the
+  // enrolment, which wrote the new token over the old one. The old row then
+  // had no token anywhere and kept emailing the abandoned inbox for good.
+  it.each([400, 429, 500, 503])('a cancel answered %i stops the switch: no enrolment, the old token kept, retried next visit', async (status) => {
+    getReminderOptIn.mockReturnValue(ACTIVE); // active on google-drive
+    const f = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(async () => new Response('{}', { status }));
+    vi.stubGlobal('fetch', f);
+    const { autoEnrolReminders } = await loadReminders();
+
+    await expect(autoEnrolReminders('dropbox')).resolves.toBeUndefined();
+
+    expect(f).toHaveBeenCalledTimes(1);
+    expect(postedBody(f, 0).op).toBe('cancel');
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+    expect(window.dispatchEvent).not.toHaveBeenCalled();
+
+    // Next visit, the server answers: the old row goes, then the new cloud enrols.
+    const next = mockFetchOk();
+    await autoEnrolReminders('dropbox');
+    expect(postedBody(next, 0)).toEqual({ op: 'cancel', token: 'cap-token', idToken: 'signed-id-token' });
+    expect(postedBody(next, 1)).toMatchObject({ op: 'optin', provider: 'dropbox' });
+    expect(setReminderOptIn).toHaveBeenCalledWith({ status: 'active', token: 'new-cap-token', email: 'user@example.com', provider: 'dropbox' });
+  });
+
+  it('a cancel that never reaches the server stops the switch too', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    const f = vi.fn(async () => { throw new TypeError('Failed to fetch'); });
+    vi.stubGlobal('fetch', f);
+    const { autoEnrolReminders } = await loadReminders();
+
+    await autoEnrolReminders('dropbox');
+
+    expect(f).toHaveBeenCalledTimes(1);
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+  });
 });
 
 describe('US-17 AC1b — erasing your data reaches the server row too', () => {

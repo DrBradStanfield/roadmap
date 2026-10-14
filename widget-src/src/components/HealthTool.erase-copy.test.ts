@@ -8,7 +8,7 @@
  * asserting what the user reads.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING } from './HealthTool';
+import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_REMINDERS_NOT_OFF } from './HealthTool';
 
 /** The erase strings as one build shows them. */
 async function eraseCopyOn(shopify: boolean) {
@@ -100,6 +100,18 @@ describe('erase confirm copy (US-11)', () => {
 
   it('never claims the kept row stops reminders from restarting', () => {
     expect(ERASE_CONFIRM).not.toMatch(/does not restart/i);
+  });
+
+  // Adversary R3 (2026-10-14, US-17 AC1b): the confirm promises "Reminders
+  // are turned off." When the server refuses the cancel, the alert takes that
+  // back and names the one off switch left, since the token died with the file.
+  it('a failed reminder cancel: the alert says reminders may still arrive, and names the off link', () => {
+    expect(ERASE_CONFIRM).toContain('Reminders are turned off.');
+    expect(ERASE_REMINDERS_NOT_OFF).toBe(
+      'We could not turn off your reminders on our server just now, so they may still arrive. ' +
+      'Each reminder email has a link to turn them off.\n\n',
+    );
+    expect(ERASE_REMINDERS_NOT_OFF).not.toMatch(/—/);
   });
 
   it('still says the erase itself cannot be undone', () => {

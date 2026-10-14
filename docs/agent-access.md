@@ -227,7 +227,12 @@ Validate your result against the schema before you write it back.
   not grade such a person's values against adult targets or suggest medicines; point
   them to their doctor (the result's `instruction` says so). With no birth year, any
   medicine card gives way to one `add-birth-year` card ("Add your birth year") where the
-  first stood, and the rest of the plan is unchanged. When the plan holds the
+  first stood. The other cards stay, but those that named a medicine say none:
+  `apob-very-high` and `ldl-very-high` end "Discuss treatment…with your doctor." in
+  place of their statin sentence, `bp-stage2` says "Discuss treatment with your doctor."
+  in place of "Medication is typically recommended at this level.", `bp-stage1` and
+  `bp-stage2` leave out their GLP-1 sentence, and the `lpa-elevated` checklist leaves
+  out its "not started" medicine lines. Each card's `reason` is unchanged. When the plan holds the
   `adults-only` card, a `null` in those four profile fields means "withheld". In any
   other plan a `null` means the inputs are missing (no creatinine, no weight): read
   `missingInputs` for which.

@@ -659,7 +659,8 @@ export function generateSuggestions(
       bpExtraParagraphs.push('Increase potassium-rich foods (3,500–5,000mg/day).');
     }
     if (weightMeds.on) {
-      bpExtraParagraphs.push('Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.');
+      // The GLP-1 sentence names medicines, so it needs a known adult age (US-07 AC6).
+      bpExtraParagraphs.push(`Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference.${medicinesShown(results) ? ' GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.' : ''}`);
     }
     const bpExtra = bpExtraParagraphs.length > 0 ? '\n\n' + bpExtraParagraphs.join('\n\n') : '';
 

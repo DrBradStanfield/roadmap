@@ -3407,5 +3407,43 @@ describe('US-07 AC6: who the plan is for', () => {
       expect(unknown).toContain('\u2705 PCSK9 inhibitor: taking (also lowers Lp(a) ~25\u201330%)');
       expect(unknown).toBe(desc({ ...adultBase, lpa: 200 }, meds, 'lpa-elevated'));
     });
+
+    // Adversary R1 (2026-10-14, orchestrator's decision): the BP cards' weight
+    // paragraph named GLP-1 medicines for an unknown age. The weight-loss
+    // sentences stay; the GLP-1 sentence needs a known adult age.
+    const GLP1_SENTENCE = 'GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.';
+    it.each([
+      ['bp-stage2', { systolicBp: 145, diastolicBp: 92 }],
+      ['bp-stage1', { systolicBp: 135, diastolicBp: 85 }],
+    ])('%s with BMI 32.9: no GLP-1 sentence for an unknown age; an adult keeps it', (id, bp) => {
+      const record: HealthInputs = { heightCm: 170, sex: 'male', weightKg: 95, ...bp };
+      for (const meds of [undefined, {}]) {
+        const unknown = desc(record, meds, id);
+        expect(unknown).not.toMatch(/GLP-1|tirzepatide|semaglutide/i);
+        expect(unknown).toContain('Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference.');
+        expect(desc({ ...record, birthYear: 1980 }, meds, id)).toContain(`Even a 5% reduction can make a meaningful difference. ${GLP1_SENTENCE}`);
+      }
+    });
+
+    // Every card's own title and text, for unknown-age records that switch on every
+    // medicine trigger at once, with no medicine taken (a medicine the user
+    // takes is a fact the Lp(a) checklist states, at any age). The adult twin
+    // of each record proves the triggers are on.
+    const MEDICINE_NAMES = /statin|ezetimibe|pcsk9|glp-1|semaglutide|tirzepatide|sglt2|metformin|bempedoic|nexletol|empagliflozin|dapagliflozin|mounjaro|zepbound/i;
+    const UNKNOWN_AGE_RECORDS: [name: string, record: HealthInputs][] = [
+      ['BMI 37, diabetic HbA1c, high LDL, very high triglycerides, high Lp(a), stage 2 BP', { heightCm: 175, sex: 'male', weightKg: 115, waistCm: 115, hba1c: hba1c(7.0), ldlC: ldl(190), triglycerides: trig(600), lpa: 200, systolicBp: 150, diastolicBp: 95 }],
+      ['BMI 35, prediabetic HbA1c, very high LDL and ApoB, stage 1 BP', { heightCm: 165, sex: 'female', weightKg: 95, hba1c: hba1c(6.0), ldlC: ldl(200), apoB: apoB(130), triglycerides: trig(200), lpa: 150, systolicBp: 135, diastolicBp: 85 }],
+      ['BMI 32.9, stage 2 BP only', { heightCm: 170, sex: 'male', weightKg: 95, systolicBp: 145, diastolicBp: 92 }],
+      ['BMI 31, high non-HDL from total cholesterol and HDL, stage 2 BP', { heightCm: 180, sex: 'male', weightKg: 100, totalCholesterol: totalChol(280), hdlC: hdl(35), systolicBp: 160, diastolicBp: 100 }],
+      ['BMI 35, hypertensive crisis, very high LDL', { heightCm: 170, sex: 'female', weightKg: 101, ldlC: ldl(210), systolicBp: 185, diastolicBp: 125 }],
+    ];
+    const NOT_TAKEN: (MedicationInputs | undefined)[] = [undefined, {}, { statin: { drug: 'none', dose: null } }];
+    it.each(UNKNOWN_AGE_RECORDS)('%s: no card names a medicine for an unknown age', (_name, record) => {
+      for (const meds of NOT_TAKEN) {
+        const adult = plan({ ...record, birthYear: 1980 }, meds);
+        expect(adult.some((s) => MEDICINE_NAMES.test(s.description))).toBe(true);
+        for (const s of plan(record, meds)) expect(`${s.id}: ${s.title}. ${s.description}`).not.toMatch(MEDICINE_NAMES);
+      }
+    });
   });
 });

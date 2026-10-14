@@ -203,13 +203,17 @@ export function setPreEraseHook(fn: () => Promise<void>): void {
   preEraseHook = fn;
 }
 
-export async function deleteUserData(): Promise<{ success: boolean; error?: string; chatErased: boolean }> {
-  if (!store) return { success: false, error: 'Data store not initialised', chatErased: false };
+export async function deleteUserData(): Promise<{ success: boolean; error?: string; chatErased: boolean; remindersOff: boolean }> {
+  if (!store) return { success: false, error: 'Data store not initialised', chatErased: false, remindersOff: false };
+  let remindersOff = true;
   try {
     await preEraseHook?.();
   } catch (error) {
     // Best-effort: an unreachable server must never block a user from erasing
-    // their own device. The orphaned row is reported, not silently swallowed.
+    // their own device. The orphaned row is reported, not silently swallowed:
+    // to Sentry, and to the user, since its token dies with the file and only
+    // a reminder email's off link can stop it now (US-17 AC1b).
+    remindersOff = false;
     console.warn('Pre-erase teardown failed', error);
     Sentry.captureException(error, { tags: { area: 'reminders', op: 'pre-erase' } });
   }
@@ -230,7 +234,7 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
     console.warn('Chat-history erase failed', error);
     Sentry.captureException(error, { tags: { area: 'chat-history', op: 'erase' } });
   }
-  return { ...(await store.deleteUserData()), chatErased };
+  return { ...(await store.deleteUserData()), chatErased, remindersOff };
 }
 
 // ---------------------------------------------------------------------------

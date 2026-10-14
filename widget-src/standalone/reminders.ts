@@ -215,7 +215,13 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
     // — and the fresh enrolment below can't replace it, because rows are keyed
     // by email. Drop it first. Deliberately NOT cancelReminders(): a storage
     // switch is not a user opting out, and must not be counted as one.
-    if (optIn?.status === 'active') await postCancel(optIn.token, await cancelProofFor(optIn.provider));
+    // A refused cancel stops here: enrolling now would write the new token
+    // over the old one, the only key to that row. The file keeps the old
+    // opt-in, so the next visit on the new cloud tries the cancel again.
+    if (optIn?.status === 'active') {
+      const res = await postCancel(optIn.token, await cancelProofFor(optIn.provider));
+      if (!res.ok) throw new Error(`Old reminder row cancel failed (${res.status}).`);
+    }
 
     // An already-enrolled address (token lost with the file, or enrolled from
     // another lane) is refreshed server-side and nothing is written here —
@@ -236,6 +242,9 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
  * the plan-ready email to every optin→cancel→optin cycle). Reaching the one
  * copy that isn't on the user's device needs the capability token that lives
  * in the file we're about to destroy, so this cannot run afterwards.
+ * A refused cancel throws. The erase still goes ahead (deleteUserData), sends
+ * the failure to Sentry and tells the user reminders may still arrive, with
+ * the email's off link as the way to stop them. No retry: the token is gone.
  *
  * Not counted as an opt-out: they erased everything, they didn't judge
  * reminders. Registered as a hook by the standalone entry, because `src/`
