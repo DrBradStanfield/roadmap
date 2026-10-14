@@ -24,14 +24,14 @@ Safety corrections where the source is outdated or unsafe:
 
 Units and doses:
 11. IBD: the source prints "Hb less than 105" and "CRP more than 30" with no units. The entry adds g/L and mg/L, the NZ reporting units, because these numbers trigger a 111 line.
-12. IBD: the faecal calprotectin cut-off is printed as "less than 50 micrograms per L", as the source has it. Labs report micrograms per g, and our calprotectin page uses micrograms per g. Change it to "per g"? I recommend yes. The source looks wrong, but the change is yours to make.
+12. IBD: the faecal calprotectin cut-off is printed as "less than 50 micrograms per L", as the source has it. Labs report micrograms per g, and our calprotectin page uses micrograms per g. DECIDED by Brad 2026-10-14: now "per g".
 13. Antenatal: the calcium dose reads "two tablets a day, each giving 500 mg of elemental calcium (1.25 g calcium carbonate)". The source names the brand (Calci-Tab) without the elemental dose.
 
-Safety corrections from Codex round 2 (accepted, not yet applied):
-14. IBD: after infliximab in pregnancy, no live vaccines for the baby for 12 months (Medsafe data sheet), not the source's 6 months.
+Safety corrections from Codex round 2 (applied 2026-10-14, 4cbf36a7):
+14. IBD: after infliximab in pregnancy, no live vaccines for the baby for 12 months (Medsafe data sheet), not the source's 6 months. Other biologics keep the source's 6 months, and the baby's doctor decides.
 15. Anxiety: for people over 65, the maximum is citalopram 20 mg and escitalopram 10 mg a day (Medsafe data sheets). The source table gives only the adult maxima.
 16. IBD: the first surveillance colonoscopy comes 8 years after diagnosis, per the 2025 NZSG guidance the source links. The source text still says 10.
 
 ## Sign-off
 
-AC8 sign-off (Brad): PENDING. Codex round 2: done 2026-10-12. Its 7 accepted fixes (rows R1-R7 in new-1a-review-fixes-2026-10-12.md) are not yet applied.
+AC8 sign-off (Brad): PENDING. Codex round 2: done 2026-10-12. Its accepted fixes are applied (4cbf36a7). Currency check: running.
