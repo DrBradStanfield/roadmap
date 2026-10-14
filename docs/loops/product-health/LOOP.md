@@ -94,6 +94,13 @@ unacted for a quarter, say so in the retro and propose the fleet review.
 - **GitHub** (MCP, repo-scoped): issues labelled `from-connector` — the
   connector files a user's bug report as a public issue (US-32 AC9, live
   2026-09-03); organic ones are feedback, Brad's own path tests are not.
+- **External inbound** (US-39; Brad 2026-10-14, in place of a scheduled
+  repo-health loop): once per run, do repo-health's triage pass exactly as
+  `docs/loops/repo-health/LOOP.md` defines it: origins, classes, its Public
+  speech rules (at most two disclosed comments, each reviewed before it is
+  posted), escalations and security handling. Its schedule and report file do
+  not apply. Log in its `ledger.csv`, `metrics.csv` and `feature-backlog.csv`;
+  the report gets one line, and drafted replies for Brad go in it verbatim.
 - **OpenAI app review status** (Gmail MCP; the portal needs a login):
   search for a verdict on submission `C-udsciSnH0UNo` ("Health by Dr Brad"
   v1.0.1, receipt 2026-09-17T20:30Z; v1.0.0 `C-Ggl3RkPf6el6` was rejected
@@ -135,6 +142,8 @@ append rows to metrics.csv) · New errors · New feedback · Proposed backlog
 - Usage-evidence lines ONLY in `docs/user-stories.md` (never ACs or test
   status — those belong to build sessions), then regenerate:
   `npx tsx scripts/build-user-stories-html.ts`.
+- `docs/loops/repo-health/{ledger,metrics,feature-backlog}.csv`, and comments
+  or spam closes on external issues and PRs, for the inbound pass only.
 
 ## Code grant — Tier 3 "ship" (recorded by Brad, 2026-08-10)
 Named area: `widget-src/**` and `packages/health-core/src/**` — MINUS the

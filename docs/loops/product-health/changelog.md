@@ -4,6 +4,11 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-10-14 (Brad, on #118: "na, for now, just do it weekly with the
+  existing health roadmap loop"): Gather runs repo-health's external-inbound
+  triage once a week instead of scheduling repo-health daily, under that
+  charter's own rules, writing its three CSVs. Write scope widened to match.
+  Net +9 lines.
 - 2026-10-14 (Brad: "B: fully automatic"): the newer-Sonnet bump PR ships
   through the Tier 3 pipeline when the candidate scores at least the pinned
   model on every harness, run the same day; anything less is labelled `hold`
