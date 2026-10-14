@@ -250,7 +250,7 @@ Symptoms include vaginal dryness, irritation, itching, pain with sex, light blee
 - Effective treatment. It can help recurrent UTIs and urinary incontinence and makes pelvic floor exercises work better.
 - Not used with active endometrial cancer or undiagnosed vaginal bleeding.
 - Considered safe after a previous blood clot, and for survivors of endometrial, cervical, or ovarian cancer.
-- After estrogen-dependent breast cancer, if symptoms persist despite non-hormonal treatment, low-dose vaginal estrogen can be prescribed, even with aromatase inhibitors. There is a lack of evidence that it harms breast cancer outcomes.
+- After estrogen-dependent breast cancer, including if you take an aromatase inhibitor, low-dose vaginal estrogen may be used only with your breast cancer specialist, after non-hormonal treatment has not helped. The evidence on its safety is uncertain.
 - Absorption into the body is thought to be low, and no extra progestogen is needed.
 - Early side effects: irritation and stinging (a graduated start can help); rarely, mild breast pain or vaginal bleeding.
 - A typical regimen is estriol vaginal cream 1 mg/g, one applicator at bedtime every night for two weeks, then twice a week.

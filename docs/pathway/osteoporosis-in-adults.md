@@ -133,7 +133,7 @@ The goal is to prevent fractures. However, many people do not keep taking their 
 - Your doctor may offer medication for osteoporosis.
 - If you are younger than 50 years, your doctor may consider an endocrinology referral.
 
-**Moderate risk:** hip fracture risk of 1.5 to 3%, major osteoporotic fracture risk of 10 to 20%, or a T-score of −1 to −2.5 (osteopenia).
+**Moderate risk:** hip fracture risk of 1.5 to 3%, major osteoporotic fracture risk of 10 to 20%, a T-score of −1 to −2.5 (osteopenia), or a hip or spine T-score of over −1.5 while on long-term glucocorticoids.
 - Whether to treat depends on your preferences, other fracture risk factors, other health conditions (including falls risk), and safety. Bisphosphonate treatment has been shown to be cost-effective in this group.
 - Without treatment, fracture risk doubles every 5 to 6 years.
 - Fracture risk is usually re-evaluated every 5 years, with a follow-up DXA scan after 5 to 10 years depending on the expected rate of bone loss.
@@ -151,8 +151,8 @@ If a secondary cause is found, your doctor will manage it and may refer you to e
 ### Medications
 
 Your doctor may consider:
-- **Oral bisphosphonates** (e.g. risedronate): usually given for about 4 to 5 years, followed by a drug holiday of 1 to 2 years if fracture risk remains high. Risedronate acts for a shorter time, so a 1-year holiday may be considered.
-- **Zoledronic acid infusion:** optimal initial treatment is 5 mg every 18 months for 4 doses. The interval can then usually be extended to 2 or 3 years. Drug holidays do not apply.
+- **Oral bisphosphonates** (e.g. risedronate): usually given for about 4 to 5 years. After 5 years of tablets your doctor will reassess your fracture risk. A break of 1 to 2 years may suit people whose risk is now lower; people still at high risk usually continue treatment. Risedronate acts for a shorter time, so a 1-year break (drug holiday) may be considered.
+- **Zoledronic acid infusion:** optimal initial treatment is 5 mg every 18 months for 4 doses. The interval can then usually be extended to 2 or 3 years. Drug holidays do not apply. It is not used when kidney function is low (creatinine clearance less than 35 mL/min).
 - **Denosumab:** should be considered life-long treatment, because bone loss speeds up rapidly after stopping. If stopping cannot be avoided, most people are switched over to a bisphosphonate.
 - **Teriparatide:** given as a limited course. Your doctor will plan ongoing treatment, usually with a bisphosphonate, before the course ends.
 - **Teriparatide or denosumab** may be considered if you keep having fractures on adequate treatment, or your T-score is less than −3.

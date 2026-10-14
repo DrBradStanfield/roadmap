@@ -115,7 +115,7 @@ Your doctor will make a clear plan for when the catheter is removed or changed:
 ### Alpha-1-blockers after retention
 
 Alpha blockers work by relaxing smooth muscle.
-- **Doxazosin:** the usual dose is 2 mg at night for 7 days, then doubled every 2 weeks up to 8 mg at night. A lower starting dose, increased over several weeks, is used if you are elderly or have low blood pressure.
+- **Doxazosin:** started at 1 mg once a day and increased gradually, up to 8 mg at night. If you are elderly or have low blood pressure, the dose is increased over several weeks.
 - **Tamsulosin** may be considered if a non-selective alpha blocker is not tolerated or not suitable. It is a selective alpha-1A-blocker and causes less postural hypotension (a drop in blood pressure on standing).
 - Postural hypotension is more likely if you already take blood pressure medicine. That medicine may need to be reduced.
 
@@ -141,7 +141,7 @@ Leakage may be caused by catheter blockage, bladder spasm, or straining when ope
 
 ### Catheter-related urinary tract infection
 
-- A UTI in someone with a catheter is treated if there is fever, pain, or the person is systemically unwell. The catheter does not need to be changed.
+- A UTI in someone with a catheter is treated if there is fever, pain, or the person is systemically unwell. If the catheter has been in for more than 7 days, your doctor may replace it. This must not delay antibiotics.
 - With an indwelling catheter, bacteria in the urine become almost inevitable: 5% per day, 50% by 1 week, and almost all by 1 month.
 - If there are no symptoms, there is no reason for concern or treatment.
 - A change in the look or smell of the urine is not a reason for antibiotics.
