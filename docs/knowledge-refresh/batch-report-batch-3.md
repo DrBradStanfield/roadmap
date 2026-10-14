@@ -9,11 +9,11 @@ Counts and hashes only. Raw text never enters this repo.
 
 | Check | Status | FAIL | WARN |
 |---|---|---|---|
-| AC1 index.json and categories.json unchanged (except approved summary corrections) | FAIL | 40 | 0 |
+| AC1 index.json and categories.json unchanged (except approved summary corrections) | PASS | 0 | 0 |
 | AC2 raw fidelity of every new number token | WARN | 0 | 24 |
 | AC3 hedging held; hardening words listed | WARN | 0 | 102 |
 | AC4 deleted sentences justified; headings kept | PASS | 0 | 0 |
-| AC6 diff touches only batch files | FAIL | 141 | 0 |
+| AC6 diff touches only batch files | FAIL | 9 | 0 |
 | AC7 grokipedia, products, references, banned phrases, exclusions | PASS | 0 | 0 |
 | PATHWAY source line, deferral blockquote, no NZ logistics | WARN | 0 | 0 |
 
