@@ -34,9 +34,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
 - `[expected][sentry]` 2026-08-12 — "Chat transient upstream 5xx, retrying once"
   (info) is PR #11's retry trend: `wontfix` on sight, read, never fix. Same for
   self-probes (`level=info`, non-production `environment`; ids: docs/sentry-filter-verification-2026-09-07.md).
-- `[process][review]` 2026-08-12 — Verify a safety claim at the CALL SITE
-  that enforces it, not the helper that implements it (round-1 REJECT: dedup
-  helper was sound, but the route gates it behind `if (conversationId)`).
+- `[process][review]` 2026-08-12 — Verify a safety claim at the CALL SITE that enforces
+  it, not the helper (round-1 REJECT: sound dedup helper, gated by `if (conversationId)`).
 - `[gotcha][sentry-api]` 2026-08-12 — Issues-list `count` is LIFETIME and
   `statsPeriod` shapes only `stats` (''/24h/14d): rank by summing buckets,
   test newness by `lastSeen` vs the ledger. Only the latest event per issue
@@ -72,15 +71,17 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   `exitIframe=javascript:…`/`data:…` → "Invalid URL. Refusing to redirect"
   (`sanitizeRedirectUrl` firing); internal route misses → "No route matches URL".
   Wontfix ONLY if unsigned and a tool UA on *.fly.dev (6X: curl/8.6.0 after a
-  release; 7723659158) or a secret-file path (`/.env`, any UA/host: 6X 10-13).
-  Proxy path + browser UA = a stale caller, ours. Hygiene: propose-only, not worth it.
+  release; 7723659158) or a secret-file path (`/.env`; never `/.well-known/*`,
+  mcp's OAuth discovery). Proxy path + browser UA = stale caller, ours. 6X pools
+  every miss: read each new event.
 - `[gap][sentry]` 2026-09-07 — Widget no-op days before 09-08 are lower bounds
   (PR #73). A `release` tag means a side bundle; none means health-plan-v2.
   Storage adapters put document titles into thrown messages: READ before quoting.
 - `[base-rate][server]` 2026-10-14 — Router (Sonnet 5.5): 5 s a try, one retry on
   timeout, so a double timeout reads `latencyMs` ~11 000 (6Z); its text is in
-  `chat_match_events.router_error`. 69 good turns to 10-14: p95 3.5 s, max 4.0 s.
-  One timeout = upstream; 2+ in 7 days = budget too tight (options: 2026-10-14.md).
+  `chat_match_events.router_error`. 69 good turns 09-29..10-14: p95 3.5 s, max 4.0 s.
+  Output tokens unlogged, so one timeout is PROBABLY upstream; 2+ in 7 days on
+  any surface (Supabase count; Sentry sees only /api/chat) = act (2026-10-14.md).
 - `[class][widget]` 2026-09-17, root-fixed 2026-09-20 — Anything `main()`
   awaits before `createRoot` is a blank-widget path: an unhandled rejection
   there leaves the mount empty and the user reloads (1-4 loads per session in
