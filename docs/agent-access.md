@@ -227,8 +227,10 @@ Validate your result against the schema before you write it back.
   not grade such a person's values against adult targets or suggest medicines; point
   them to their doctor (the result's `instruction` says so). With no birth year, any
   medicine card gives way to one `add-birth-year` card ("Add your birth year") where the
-  first stood, and the rest of the plan is unchanged. Treat a `null` in those four
-  profile fields as "withheld", never as "not computable from the data".
+  first stood, and the rest of the plan is unchanged. When the plan holds the
+  `adults-only` card, a `null` in those four profile fields means "withheld". In any
+  other plan a `null` means the inputs are missing (no creatinine, no weight): read
+  `missingInputs` for which.
 
 ## The hosted path (US-32 Phase 1)
 
