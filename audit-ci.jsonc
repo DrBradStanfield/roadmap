@@ -1,49 +1,20 @@
 {
   // CI dependency-audit gate (replaces `npm audit --production --audit-level=high`).
-  // Fails on NEW high/critical advisories in production deps; known-stuck advisories
-  // with no non-breaking fix are allowlisted below WITH their exit plan. Don't add
-  // to the allowlist without a documented reason + removal trigger.
+  // Fails on NEW high/critical advisories in production deps. An advisory with no
+  // non-breaking fix may be allowlisted below, but only WITH a documented reason and
+  // a removal trigger. The list is empty today.
+  //
+  // Emptied 2026-10-14: audit-ci reported all six entries stale ("Consider not
+  // allowlisting"). The five react-router advisories (GHSA-wrjc-x8rr-h8h6,
+  // -h8fp-f39c-q6mh, -337j-9hxr-rhxg, -chx6-hx7r-mcp5, -qwww-vcr4-c8h2) are fixed in
+  // 7.18.0 / 7.18.2, and 7.18.3 is installed (package.json ^7.18.3). The esbuild
+  // advisory GHSA-gv7w-rqvm-qjhr was withdrawn 2026-06-17. A stale entry would hide
+  // the advisory if it ever fired again (a downgrade, a nested copy).
+  // If GHSA-gv7w is ever reinstated: esbuild 0.25.x ships in the prod image (vite via
+  // @react-router/dev, a `dependencies` entry the Dockerfile build needs), but the
+  // advisory hits only esbuild's Deno installer, which this repo never uses.
   "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
   "high": true,
   "skip-dev": true,
-  "allowlist": [
-    // turbo-stream <3.0.0 — REMOVED 2026-06-14 with the React Router 7 migration.
-    // RR7 (>=7.17) vendors a patched turbo-stream internally and no longer has an
-    // external `turbo-stream` dependency, so the advisory no longer fires.
-    // `npm ls turbo-stream` → empty. audit-ci confirmed: "Consider not allowlisting
-    // advisory: GHSA-rxv8-25v2-qmq8".
-    //
-    // esbuild >=0.17 <0.28.1 — RCE via NPM_CONFIG_REGISTRY in esbuild's DENO
-    // installer (published 2026-06-12). Not applicable: this repo never installs
-    // esbuild via Deno; the npm install path is unaffected. esbuild is still in the
-    // prod tree because @react-router/dev (a `dependencies` entry — the Dockerfile
-    // runs `npm ci --omit=dev` THEN `react-router build`, so the build toolchain must
-    // ship in the prod image) pulls vite -> esbuild@0.25.x. It is a build-time-only
-    // binary, never invoked at runtime. REMOVE this entry once vite/@react-router/dev
-    // resolve esbuild >=0.28.1.
-    "GHSA-gv7w-rqvm-qjhr",
-    //
-    // react-router 6.0.0–8.2.0 advisory batch (published ~2026-08-06, CI-red since).
-    // Fixed only in RR >=8.2.1 — a MAJOR upgrade this repo must canary-deploy as a
-    // dedicated task (the SSR dist/development redirect + ssr.noExternal machinery in
-    // vite.config.ts is 7.17-specific; see CLAUDE.md react-router gotcha). Per-advisory
-    // applicability (2026-08-07 review):
-    //  - GHSA-qwww-vcr4-c8h2 (high, RSC CSRF) + GHSA-h8fp-f39c-q6mh (RSC XSS): NOT
-    //    APPLICABLE — this app does not use RSC mode.
-    //  - GHSA-wrjc-x8rr-h8h6 (open redirect via backslash): admin-only surface behind
-    //    Shopify auth; no user-controlled navigation paths.
-    //  - GHSA-337j-9hxr-rhxg (deserializeErrors constructor injection): SSR hydration
-    //    of the embedded admin only; not reachable from the storefront widget.
-    //  - GHSA-chx6-hx7r-mcp5 (high, unauthenticated DoS via route matching): the one
-    //    real exposure (Fly hostname is reachable); impact bounded to CPU exhaustion +
-    //    health-check restart on a rate-limited, auto-restarting app. Accepted until
-    //    the upgrade.
-    // REMOVAL TRIGGER: the react-router >=8.2.1 migration (canary-deploy, re-verify the
-    // ssr.noExternal guard). Remove all five entries in that PR.
-    "GHSA-wrjc-x8rr-h8h6",
-    "GHSA-h8fp-f39c-q6mh",
-    "GHSA-337j-9hxr-rhxg",
-    "GHSA-chx6-hx7r-mcp5",
-    "GHSA-qwww-vcr4-c8h2"
-  ]
+  "allowlist": []
 }
