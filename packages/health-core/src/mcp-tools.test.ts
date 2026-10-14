@@ -52,7 +52,7 @@ import {
   SERVER_VERSION,
   TOOL_LAYER_VERSION,
 } from './mcp-tools';
-import { computePlan, REPO_PUBLIC, REPO_SLUG, REPO_URL, SCHEMA_URL } from './plan';
+import { computePlan, renderJson, REPO_PUBLIC, REPO_SLUG, REPO_URL, SCHEMA_URL } from './plan';
 import { dayOf, mergeFiles, stampFields } from './merge';
 import { migrateFile } from './migrate';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
@@ -402,6 +402,37 @@ describe('US-32 — get_plan', () => {
     expect(parsed.instruction).toMatch(/reference stays attached/);
     expect(parsed.suggestions.length).toBeGreaterThan(0);
     expect(parsed.currentValues).toContainEqual(expect.objectContaining({ metric: 'ldl' }));
+  });
+
+  // US-07 AC6 (2026-10-14): under 18, the agent plan is the one adults-only
+  // card, its adult interpretations are null, and nothing is due. The record
+  // it reports is untouched. Ten years old at the plan's own NOW.
+  it('US-07 AC6: a minor gets only the adults-only card; values and labs still report', () => {
+    const file = base();
+    file.profile.birthYear = 2016;
+    file.measurements.push(createMeasurement({
+      id: 'm3', metricType: 'creatinine', value: 60, recordedAt: '2026-07-14',
+      createdAt: '2026-07-14T08:00:00Z', source: 'lab_import',
+    }));
+    const parsed = JSON.parse(ok(getPlan(file, NOW)).text);
+
+    expect(parsed.suggestions.map((s: { id: string }) => s.id)).toEqual(['adults-only']);
+    expect(parsed.suggestions[0].title).toBe('This plan is built for adults');
+    expect(parsed.currentValues.map((v: { metric: string }) => v.metric)).toEqual(['creatinine', 'ldl', 'weight']);
+    expect(parsed.labValues.map((l: { id: string }) => l.id)).toEqual(['l1']);
+    // The raw BMI number stays; the adult readings of it and of the labs are withheld.
+    expect(parsed.profile).toMatchObject({ age: 10, bmi: 25.9, bmiCategory: null, eGFR: null, idealBodyWeightKg: null, proteinTargetG: null });
+    expect(parsed.due).toEqual({ overdue: [], upcoming: [] });
+    expect(() => OUTPUTS.get_plan.parse(parsed)).not.toThrow();
+    // The CLI prints the same JSON: one renderJson for both.
+    expect(JSON.parse(renderJson(computePlan(file, new Date(NOW))))).toEqual(parsed);
+  });
+
+  it('US-07 AC6: an adult\'s plan keeps its adult interpretations', () => {
+    const parsed = JSON.parse(ok(getPlan(base(), NOW)).text);
+    expect(parsed.profile.bmiCategory).toBe('Overweight');
+    expect(parsed.profile.idealBodyWeightKg).toBeGreaterThan(0);
+    expect(parsed.profile.proteinTargetG).toBeGreaterThan(0);
   });
 
   it('names the inputs the record is missing that would change the plan (US-32)', () => {

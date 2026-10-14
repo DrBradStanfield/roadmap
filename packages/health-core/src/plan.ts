@@ -194,7 +194,7 @@ export function computePlan(file: RoadmapFile, now = new Date()): Plan {
     excluded,
     generatedAt: now.toISOString(),
     today: localDay(now),
-    results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications, derived.screenings),
+    results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications, derived.screenings, undefined, now),
     due: computeReminderSchedule(file, now),
     labs: derivePlanLabs(file),
   };
@@ -267,6 +267,8 @@ const INPUT_UNITS: Record<string, string> = Object.fromEntries(
 /** The agent-facing shape. Field names are stable; add, never rename. */
 export function planPayload(plan: Plan) {
   const { overdue, upcoming } = dueSplit(plan);
+  // US-07 AC6: a known minor's raw values stay; the adult readings are null.
+  const adult = plan.results.knownMinor ? null : plan.results;
   return {
     instruction: PLAN_INSTRUCTION,
     schemaVersion: CURRENT_SCHEMA_VERSION,
@@ -279,11 +281,11 @@ export function planPayload(plan: Plan) {
       age: plan.results.age ?? null,
       heightCm: plan.results.heightCm,
       bmi: plan.results.bmi ?? null,
-      bmiCategory: plan.results.bmiCategory ?? null,
+      bmiCategory: adult?.bmiCategory ?? null,
       waistToHeightRatio: plan.results.waistToHeightRatio ?? null,
-      eGFR: plan.results.eGFR ?? null,
-      idealBodyWeightKg: plan.results.idealBodyWeight,
-      proteinTargetG: plan.results.proteinTarget,
+      eGFR: adult?.eGFR ?? null,
+      idealBodyWeightKg: adult?.idealBodyWeight ?? null,
+      proteinTargetG: adult?.proteinTarget ?? null,
     },
     inputs: plan.inputs,
     missingInputs: missingPlanInputs(plan),

@@ -416,6 +416,28 @@ Used when medications are tracked and a lipid is at or above its target: the val
 
 Source: `suggestions.ts` -> `generateSuggestions()`
 
+### Who the Plan Is For
+
+The plan is built for adults aged 18 and over (US-07 AC6, 2026-10-14; amended the same day). Its thresholds, targets and medicines come from adult guidelines.
+
+| Age | Plan |
+|-----|------|
+| Known and under 18 | No suggestions of any kind. One card in their place: `adults-only` (general, info), "This plan is built for adults": "The suggestions here, including medicines, are designed for people aged 18 and over. For anyone younger, talk with their doctor." |
+| 18 or over | The plan below, unchanged. |
+| Unknown (no birth year) | The plan below, except the medicine cards. Medicine cards need a known age of 18 or over. When the plan would show any, they give way to one card where the first stood: `add-birth-year` (general, info), "Add your birth year": "Medicine suggestions need your age. Add your birth year to see them." Every other card is unchanged. |
+
+The medicine cards are the `medication` category: `weight-glp1`; `weight-med-glp1`, `-glp1-dose`, `-glp1-increase`, `-glp1-switch`, `-sglt2i`, `-metformin`; `med-statin`, `-ezetimibe`, `-bempedoic-acid`, `-statin-dose`, `-statin-increase`, `-statin-switch`, `-pcsk9i`.
+
+The gate's age (`isKnownMinor`) is the one in section 1, except that a missing birth month counts as December, so no one counts as 18 early: someone born in 2008 with no month is a minor through November 2026. Every other age keeps the January default, so that person's profile still reads 18 from January.
+
+For a known minor, every surface also withholds:
+
+- **Adult readings.** The BMI category, ideal body weight, protein target and eGFR, and the status labels on the lipid, HbA1c and Lp(a) tiles, with the "why" behind each. The website tiles and the PDF show the raw numbers only (BMI, lipid marker, Lp(a), HbA1c); the ideal body weight, protein and eGFR tiles go. `get_plan` returns `bmiCategory`, `eGFR`, `idealBodyWeightKg` and `proteinTargetG` as `null`; the CLI prints the BMI with no category and no eGFR. Raw values (weight, height, waist, each lab value with its unit and date) are untouched.
+- **The schedule.** `computeReminderSchedule` returns nothing, not even the annual check-in floor, so `get_plan`'s `due` is empty and the browser pushes an empty schedule.
+- **The form's medicine wording.** The medication sections are plain fields with their neutral sentence: no recommendation, target sentence or step hint. People can still record what they take. The form does the same for an unknown age, because it follows the plan (US-06 AC5).
+
+Measurements, lab values and the record are untouched: they are still stored and shown. There is no usage signal: an event would record that a visitor is under 18.
+
 ### Always-Show Lifestyle Suggestions
 
 | ID | Category | What | Evidence |
@@ -806,7 +828,7 @@ Result-based intervals:
 
 Source: `suggestions.ts`
 
-### Skin Health (age >= 18)
+### Skin Health (adults, like the whole plan)
 
 | ID | Title | Key Details |
 |----|-------|-------------|

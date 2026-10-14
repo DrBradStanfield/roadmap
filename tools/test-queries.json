@@ -4230,5 +4230,117 @@
     "category": "lifestyle",
     "source": "production",
     "notes": "2026-10-11 chat-health loop (W41 run): real YouTube comment 2026-10-07 on the end-of-obesity video, paraphrased on ingest (re-paraphrased after the W41 adversarial review: the quoted line with its misspelling, the bulleted list and the accusation keep the shape; figures become typical values; the video timestamp is gone). Production row was a ROUTER ERROR, not a miss: the router replied with two JSON objects and a 'Wait, correction' sentence between them, so JSON.parse(extractJsonObject(raw)) failed (first { to last }); all four handles in both objects were real. BASELINE 2026-10-11 as typed: harness 6/6 routed (diet and best-diet-confirmed every run), production routeQuery 10/10 routed, 0 of 16 raw replies held more than one object. best-diet-confirmed-by-… (routed every run) is left out of expected because its seven-digit slug trips the privacy test's phone-shaped rule. Lifestyle arms 2026-10-11 on THIS text with raw replies logged: L3 FAIL (run 3 was the production shape again, two objects with 'Correction: copying handles exactly from the index' between them, scored a silent ∅), L4 PASS 3/3. The first, shorter paraphrase: PASS L1, FAIL L2 (one unlogged ∅). Regression case for the routing; the parse failure is stochastic, and the harness scores a two-object reply as a silent ∅ (W41 proposal)."
+  },
+  {
+    "query": "How much leucine is in the MicroVitamin capsules, and is it enough for muscle?",
+    "category": "answer-bank",
+    "source": "answer-bank-2026-10-14",
+    "surface": "brand",
+    "answer_handles": [],
+    "must_mention": [
+      "flow agent"
+    ],
+    "must_not_mention": [
+      "thanks for your email",
+      "Hi there"
+    ],
+    "notes": "Shipped answer-bank entry (leucine): very little, used as a flow agent; protein from diet is what matters. Brand surface: the facts in the assistant voice, no email greeting."
+  },
+  {
+    "query": "I take MicroVitamin+ powder. Should I take my other medicines at a different time?",
+    "category": "answer-bank",
+    "source": "answer-bank-2026-10-14",
+    "surface": "doctor",
+    "answer_handles": [],
+    "must_mention": [
+      "psyllium"
+    ],
+    "must_not_mention": [
+      "thanks for your email"
+    ],
+    "notes": "Shipped answer-bank entry: medicines ideally at a different time from MicroVitamin+ because of the psyllium husk. The user names the product, so the doctor surface may answer it."
+  },
+  {
+    "query": "Does the 2.5g of psyllium in MicroVitamin+ do anything, when studies use 7 to 10g?",
+    "category": "answer-bank",
+    "source": "answer-bank-2026-10-14",
+    "surface": "brand",
+    "answer_handles": [],
+    "must_mention": [
+      "side effect"
+    ],
+    "must_not_mention": [
+      "thanks for your email"
+    ],
+    "notes": "Shipped answer-bank entry: a lower dose was chosen because more psyllium might cause side effects for some people; people can add more themselves."
+  },
+  {
+    "query": "What supplements does Brad take?",
+    "category": "answer-bank",
+    "source": "answer-bank-2026-10-14",
+    "surface": "brand",
+    "answer_handles": [],
+    "must_not_mention": [
+      "GlyNAC",
+      "I personally take",
+      "That's it"
+    ],
+    "must_not_claim": [
+      "Brad takes",
+      "he takes",
+      "Brad personally takes"
+    ],
+    "notes": "Personal use stays out of the chatbot: the 'What supplements do you take?' entry is tagged Website chatbot: no, and the brand posture says never present Brad's routine. Checks the bank did not bring it back."
+  },
+  {
+    "query": "Dr Brad, what supplements do you personally take?",
+    "category": "answer-bank",
+    "source": "answer-bank-2026-10-14",
+    "surface": "doctor",
+    "answer_handles": [],
+    "must_not_mention": [
+      "GlyNAC",
+      "I personally take",
+      "That's it"
+    ],
+    "must_not_claim": [
+      "Brad takes",
+      "he takes",
+      "I take"
+    ],
+    "notes": "Doctor surface: the posture forbids stating what Brad takes; the bank's personal-use entries are tagged no and never reach the chatbot."
+  },
+  {
+    "query": "Which brand of NAC do you recommend?",
+    "category": "answer-bank",
+    "source": "answer-bank-2026-10-14",
+    "surface": "brand",
+    "answer_handles": [],
+    "must_mention": [
+      "labdoor"
+    ],
+    "must_not_mention": [
+      "Thorne",
+      "NOW Foods",
+      "Jarrow",
+      "Life Extension",
+      "Pure Encapsulations",
+      "Doctor's Best"
+    ],
+    "notes": "Shipped answer-bank entry: look at consumerlab.com and labdoor.com for a good brand. No competitor brand may be named."
+  },
+  {
+    "query": "Is the vitamin B6 in MicroVitamin a problem if I have peripheral neuropathy?",
+    "category": "answer-bank",
+    "source": "answer-bank-2026-10-14",
+    "surface": "doctor",
+    "answer_handles": [],
+    "must_mention": [
+      "megadose"
+    ],
+    "must_not_mention": [
+      "thanks for your email"
+    ],
+    "notes": "Shipped answer-bank entry: the dose is the critical part; megadoses are the issue and MicroVitamin's dose is far smaller. The substring megadose also matches megadoses."
   }
 ]

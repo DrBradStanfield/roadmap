@@ -696,6 +696,10 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
 
   const weightUnit = getDisplayLabel('weight', usFor('weight'));
   const ibwDisplay = formatDisplayValue('weight', results.idealBodyWeight, usFor('weight'));
+  // US-07 AC6: a known minor's tiles keep the values and drop every adult
+  // reading of them, its status and its "why"; tiles that are only a reading go.
+  const adult = !results.knownMinor;
+  const reading = <T,>(value: T): T | undefined => (adult ? value : undefined);
 
   const urgentSuggestions = results.suggestions.filter(s => s.priority === 'urgent');
   const attentionSuggestions = results.suggestions.filter(s => s.priority === 'attention');
@@ -746,22 +750,22 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
             <StatCard
               label="BMI"
               value={results.bmi}
-              status={getBmiStatus(results.bmiCategory!, results.waistToHeightRatio)}
-              evidence={sex ? getBmiEvidence(results.bmi, sex, results.waistToHeightRatio) : undefined}
+              status={reading(getBmiStatus(results.bmiCategory!, results.waistToHeightRatio))}
+              evidence={sex ? reading(getBmiEvidence(results.bmi, sex, results.waistToHeightRatio)) : undefined}
             />
           )}
-          <StatCard
+          {adult && <StatCard
             label="Ideal Body Weight"
             value={<>{ibwDisplay} {weightUnit}</>}
             status={{ label: `for ${formatHeightDisplay(results.heightCm, unitSystem)} height`, className: 'status-normal' }}
             evidence={sex ? getIbwEvidence(sex) : undefined}
-          />
-          <StatCard
+          />}
+          {adult && <StatCard
             label="Protein Target"
             value={<>{results.proteinTarget}g/day</>}
             status={{ label: `${getProteinRate(results.eGFR).toFixed(1)}g per kg IBW`, className: 'status-normal' }}
             evidence={getProteinEvidence(results.idealBodyWeight, getProteinRate(results.eGFR), results.eGFR)}
-          />
+          />}
 
           {/* Lipid tile: the plan's marker, ApoB → Non-HDL → LDL (results carry ApoB and LDL through from the inputs) */}
           {(() => {
@@ -771,22 +775,22 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
             const s = getLipidStatus(marker.value, tile.thresholds);
             const u = usFor(tile.metric);
             // The value reads on the side of the tile's optimal line, the marker's target, that its status grades it (US-07 AC5)
-            return <StatCard label={tile.label} value={<>{formatGradedValue(tile.metric, marker.value, u, marker.target)} {getDisplayLabel(tile.metric, u)}</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE[tile.evidence]} />;
+            return <StatCard label={tile.label} value={<>{formatGradedValue(tile.metric, marker.value, u, marker.target)} {getDisplayLabel(tile.metric, u)}</>} status={reading({ label: s, className: statusClassMap[s] || '' })} evidence={reading(STAT_CARD_EVIDENCE[tile.evidence])} />;
           })()}
 
-          {results.eGFR !== undefined && (() => {
+          {adult && results.eGFR !== undefined && (() => {
             const s = getEgfrStatus(results.eGFR);
             return <StatCard label="eGFR" value={<>{results.eGFR} mL/min</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['egfr']} />;
           })()}
 
           {results.lpa !== undefined && (() => {
             const s = getLpaStatus(results.lpa);
-            return <StatCard label="Lp(a)" value={<>{Math.round(results.lpa)} nmol/L</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['lpa']} />;
+            return <StatCard label="Lp(a)" value={<>{Math.round(results.lpa)} nmol/L</>} status={reading({ label: s, className: statusClassMap[s] || '' })} evidence={reading(STAT_CARD_EVIDENCE['lpa'])} />;
           })()}
 
           {results.hba1c !== undefined && (() => {
             const s = getHba1cStatus(results.hba1c);
-            return <StatCard label="HbA1c" value={<>{formatDisplayValue('hba1c', results.hba1c, usFor('hba1c'))} {getDisplayLabel('hba1c', usFor('hba1c'))}</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['hba1c']} />;
+            return <StatCard label="HbA1c" value={<>{formatDisplayValue('hba1c', results.hba1c, usFor('hba1c'))} {getDisplayLabel('hba1c', usFor('hba1c'))}</>} status={reading({ label: s, className: statusClassMap[s] || '' })} evidence={reading(STAT_CARD_EVIDENCE['hba1c'])} />;
           })()}
         </div>
       </section>

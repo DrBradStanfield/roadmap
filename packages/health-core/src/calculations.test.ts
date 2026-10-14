@@ -4,6 +4,7 @@ import {
   calculateProteinTarget,
   calculateBMI,
   calculateAge,
+  isKnownMinor,
   getBMICategory,
   calculateHealthResults,
   calculateEGFR,
@@ -133,6 +134,48 @@ describe('calculateAge', () => {
   it('returns 0 for future birth years', () => {
     const futureYear = new Date().getFullYear() + 1;
     expect(calculateAge(futureYear, 1)).toBe(0);
+  });
+
+  it('reads the clock it is given (US-07 AC6: the plan computes age at its own `now`)', () => {
+    expect(calculateAge(1990, 6, new Date(2026, 4, 1))).toBe(35);
+    expect(calculateAge(1990, 6, new Date(2026, 5, 1))).toBe(36);
+  });
+});
+
+// US-07 AC6 (2026-10-14): the adults-only gate. A missing birth month counts
+// as December for this gate alone, so no one counts as 18 early.
+describe('isKnownMinor', () => {
+  const OCT_2026 = new Date(2026, 9, 14, 12);
+
+  it('known month: 18 in the month of the birthday, a minor the month before', () => {
+    expect(isKnownMinor(2008, 10, OCT_2026)).toBe(false);
+    expect(isKnownMinor(2008, 11, OCT_2026)).toBe(true);
+  });
+
+  it('missing month in the year they turn 18: still a minor through November', () => {
+    expect(isKnownMinor(2008, undefined, OCT_2026)).toBe(true);
+    expect(isKnownMinor(2008, undefined, new Date(2026, 10, 30, 12))).toBe(true);
+    // December is the month counted, and an age turns at the start of its month.
+    expect(isKnownMinor(2008, undefined, new Date(2026, 11, 1, 12))).toBe(false);
+  });
+
+  it('missing month, the year after: an adult', () => {
+    expect(isKnownMinor(2008, undefined, new Date(2027, 0, 1, 12))).toBe(false);
+  });
+
+  it('no birth year: not a known minor', () => {
+    expect(isKnownMinor(undefined, undefined, OCT_2026)).toBe(false);
+    expect(isKnownMinor(undefined, 3, OCT_2026)).toBe(false);
+  });
+
+  it('calculateHealthResults marks the gate at its own `now`; every other age keeps the January default', () => {
+    const inputs = { heightCm: 170, sex: 'female' as const, weightKg: 60, birthYear: 2008 };
+    const october = calculateHealthResults(inputs, 'si', undefined, undefined, undefined, OCT_2026);
+    expect(october.age).toBe(18);
+    expect(october.knownMinor).toBe(true);
+    const nextYear = calculateHealthResults(inputs, 'si', undefined, undefined, undefined, new Date(2027, 0, 1, 12));
+    expect(nextYear.age).toBe(19);
+    expect(nextYear.knownMinor).toBeUndefined();
   });
 });
 

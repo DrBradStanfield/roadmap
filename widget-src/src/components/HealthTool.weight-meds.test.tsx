@@ -63,12 +63,15 @@ interface GuestRecord {
   meds?: [string, string, number?][];
 }
 
-/** A guest whose record holds these values, and the page showing it. */
+/** A guest whose record holds these values, and the page showing it. Born
+ *  1980 unless the record says otherwise: medicine cards need a known adult
+ *  age (US-07 AC6). `birthYear: undefined` is a guest with no birth year. */
 async function guestWith(r: GuestRecord): Promise<RenderResult> {
   const day = '2026-09-01';
+  const birthYear = 'birthYear' in r ? r.birthYear : 1980;
   await initRoadmapStore(new LocalStorageAdapter());
   await saveChangedMeasurements({
-    ...(r.sex ? { sex: r.sex } : {}), ...(r.birthYear ? { birthYear: r.birthYear } : {}),
+    ...(r.sex ? { sex: r.sex } : {}), ...(birthYear ? { birthYear } : {}),
     ...(r.birthMonth ? { birthMonth: r.birthMonth } : {}), heightCm: r.height ?? 178,
   }, {});
   await addMeasurement('weight', r.weight, day);
@@ -492,5 +495,47 @@ describe('US-06 AC6: from BMI 25 a raised marker counts even with a healthy wais
     await waitFor(() => expect(bmiTile(view.container)).toBe('26'));
     expect(planGlp1(view.container)).toBeUndefined();
     expect(await weightMedsIntro(view.container)).toBe(NEUTRAL);
+  });
+});
+
+// US-07 AC6 amendment (2026-10-14): medicines need a known age of 18 or over.
+// For a known minor, and (US-06 AC5: the form follows the plan) for an unknown
+// age, the form drops its medicine wording: plain fields that still record
+// what someone takes, and no recommendation the plan does not make.
+describe('US-07 AC6: the form withholds its medicine wording when the plan does', () => {
+  const STATIN_HINT = 'Statins are the most effective first step. They reduce cholesterol production in the liver.';
+  /** BMI 32, an HbA1c of 40 and LDL 3.0: an adult gets both cascades. */
+  const MEDICINE_RECORD: GuestRecord = { sex: 'male', weight: 101.4, hba1c: 40, lipids: { ldl: 3 } };
+  const hints = (container: HTMLElement) => Array.from(container.querySelectorAll('.med-step-hint')).map((h) => h.textContent);
+
+  it('an adult (born 1980): the plan and the form both recommend, with the cascade hints', async () => {
+    const view = await guestWith({ ...MEDICINE_RECORD, birthYear: 1980, birthMonth: 1 });
+    await waitFor(() => expect(planCard(view.container, 'Consider starting a statin')).toBeDefined());
+    expect(await weightMedsIntro(view.container)).toBe(recommends('32', 'prediabetic HbA1c'));
+    expect(await cholesterolIntro(view.container)).toMatch(/the treatment target is below 1\.4 mmol\/L/);
+    expect(hints(view.container)).toContain(STATIN_HINT);
+  });
+
+  it('a known minor: the adults-only card, and the form is neutral with no medicine hint, but can still record', async () => {
+    const view = await guestWith({ ...MEDICINE_RECORD, birthYear: new Date().getFullYear() - 15, birthMonth: 1 });
+    await waitFor(() => expect(planCard(view.container, 'This plan is built for adults')).toBeDefined());
+    expect(await weightMedsIntro(view.container)).toBe(NEUTRAL);
+    expect(await cholesterolIntro(view.container)).toBe(CHOLESTEROL_NEUTRAL);
+    expect(hints(view.container)).toEqual([]);
+    expect(view.container.textContent).not.toContain('treatment target');
+    // Plain fields: the medicines they take can still be recorded.
+    for (const id of ['glp1-name', 'sglt2i-name', 'metformin', 'statin-name', 'ezetimibe']) {
+      expect(view.container.querySelector(`#${id}`)).not.toBeNull();
+    }
+  });
+
+  it('no birth year: the add-birth-year card, and the form is neutral too', async () => {
+    const view = await guestWith({ ...MEDICINE_RECORD, birthYear: undefined });
+    await waitFor(() => expect(planCard(view.container, 'Add your birth year')).toBeDefined());
+    expect(planCard(view.container, 'Consider starting a statin')).toBeUndefined();
+    expect(planCard(view.container, 'weight-med')).toBeUndefined();
+    expect(await weightMedsIntro(view.container)).toBe(NEUTRAL);
+    expect(await cholesterolIntro(view.container)).toBe(CHOLESTEROL_NEUTRAL);
+    expect(hints(view.container)).toEqual([]);
   });
 });

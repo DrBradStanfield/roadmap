@@ -118,6 +118,23 @@ const GUIDELINES_BP = ['ISH/ESH 2023'];
 
 export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
 
+  // ── Who the plan is for ────────────────────────────────────
+
+  // No guideline tag or reference: this card states the plan's own scope, not
+  // a finding. The guidelines behind the other cards are written for adults.
+  'adults-only': {
+    reason: 'The thresholds, targets and medicines in this plan come from research and guidelines written for adults. Children and teenagers are still growing, and their doctors judge weight, blood pressure and blood tests against ranges for their age, so adult targets could mislead.',
+    guidelines: [],
+    references: [],
+  },
+
+  // Same scope rule, for an unknown age: it stands in for the medicine cards.
+  'add-birth-year': {
+    reason: 'The medicines this plan can suggest come from guidelines written for adults aged 18 and over. Without your birth year the plan cannot tell whether they apply to you, so it leaves them out until you add it.',
+    guidelines: [],
+    references: [],
+  },
+
   // ── Nutrition ──────────────────────────────────────────────
 
   'protein-target': {

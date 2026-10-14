@@ -94,6 +94,21 @@ describe('buildSystemBlocks', () => {
     expect(blocks[1].text).toContain('Clinical Evidence Reference');
   });
 
+  it('carries the writing style and the answer bank inside the cached products block (no fifth breakpoint)', () => {
+    const blocks = buildSystemBlocks('{}');
+    const products = blocks[2];
+    expect(products.text).toContain("## Dr Stanfield's Products");
+    expect(products.text).toContain('## WRITING STYLE');
+    expect(products.text).toContain('## ANSWER BANK');
+    expect(products.cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
+    // The API allows four cache breakpoints, and the base already uses all four.
+    expect(blocks.filter(b => b.cache_control).length).toBe(4);
+    // The generated copy, not the private master: no gateway rules, sources or tags.
+    for (const privateText of ['Rules for using an entry', '**Source:**', '**Status:**', 'Website chatbot', 'Hi [name]']) {
+      expect(products.text).not.toContain(privateText);
+    }
+  });
+
   it('includes user context in last base block', () => {
     const ctx = '{"profile":{"sex":"male"}}';
     const blocks = buildSystemBlocks(ctx);

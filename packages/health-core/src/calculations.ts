@@ -36,12 +36,11 @@ export function calculateBMI(weightKg: number, heightCm: number): number {
 }
 
 /**
- * Calculate age from birth year and month
+ * Calculate age from birth year and month, at `now`
  */
-export function calculateAge(birthYear: number, birthMonth: number): number {
-  const today = new Date();
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth() + 1; // getMonth() is 0-indexed
+export function calculateAge(birthYear: number, birthMonth: number, now = new Date()): number {
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // getMonth() is 0-indexed
 
   let age = currentYear - birthYear;
 
@@ -51,6 +50,15 @@ export function calculateAge(birthYear: number, birthMonth: number): number {
   }
 
   return Math.max(age, 0);
+}
+
+/**
+ * The plan's adults-only gate (US-07 AC6): a known age under 18. For this gate
+ * alone a missing birth month counts as December, so no one counts as 18
+ * early. Every other age keeps the January default.
+ */
+export function isKnownMinor(birthYear: number | undefined, birthMonth: number | undefined, now = new Date()): boolean {
+  return !!birthYear && calculateAge(birthYear, birthMonth ?? 12, now) < 18;
 }
 
 /**
@@ -148,7 +156,7 @@ export function getProteinRate(eGFR?: number): number {
 /**
  * Main calculation function - takes all inputs and returns all results
  */
-export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSystem, medications?: MedicationInputs, screenings?: ScreeningInputs, unitOverrides?: Partial<Record<MetricType, UnitSystem>>): HealthResults {
+export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSystem, medications?: MedicationInputs, screenings?: ScreeningInputs, unitOverrides?: Partial<Record<MetricType, UnitSystem>>, now = new Date()): HealthResults {
   // Calculate ideal body weight and protein target (always available with height + sex)
   const ibw = calculateIBW(inputs.heightCm, inputs.sex);
   const proteinTarget = calculateProteinTarget(ibw);
@@ -204,8 +212,9 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
 
   // Calculate age if birth year is provided (default to January if month not set)
   if (inputs.birthYear) {
-    results.age = calculateAge(inputs.birthYear, inputs.birthMonth ?? 1);
+    results.age = calculateAge(inputs.birthYear, inputs.birthMonth ?? 1, now);
   }
+  if (isKnownMinor(inputs.birthYear, inputs.birthMonth, now)) results.knownMinor = true;
 
   // Calculate eGFR if creatinine + age + sex are available
   if (inputs.creatinine !== undefined && results.age !== undefined) {

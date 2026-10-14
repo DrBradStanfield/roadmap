@@ -190,6 +190,18 @@ export function generateSuggestions(
   screenings?: ScreeningInputs,
   unitOverrides?: Partial<Record<MetricType, UnitSystem>>,
 ): Suggestion[] {
+  // Who the plan is for (US-07 AC6): its suggestions, medicines among them,
+  // are built for adults. A known age under 18 gets this one card instead.
+  if (results.knownMinor) {
+    return withEvidence([{
+      id: 'adults-only',
+      category: 'general',
+      priority: 'info',
+      title: 'This plan is built for adults',
+      description: 'The suggestions here, including medicines, are designed for people aged 18 and over. For anyone younger, talk with their doctor.',
+    }]);
+  }
+
   const suggestions: Suggestion[] = [];
   /** Resolve effective unit system for a given metric (per-field override or global default) */
   const us = (metric: MetricType): UnitSystem => unitOverrides?.[metric] ?? unitSystem;
@@ -1031,47 +1043,64 @@ export function generateSuggestions(
     },
   );
 
-  // === Skin health suggestions (age 18+) ===
-  if (results.age === undefined || results.age >= 18) {
-    suggestions.push(
-      {
-        id: 'skin-moisturizer',
-        category: 'skin',
-        priority: 'info',
-        title: 'Daily moisturizer with ceramides',
-        description: 'Use a moisturizer containing ceramides and nicotinamide (vitamin B3) daily. Ceramides restore the skin barrier and reduce wrinkles, while nicotinamide improves hydration and reduces pigmentation.',
-        link: 'https://amzn.to/47pGGmj',
-      },
-      {
-        id: 'skin-sunscreen',
-        category: 'skin',
-        priority: 'info',
-        title: 'Daily broad-spectrum sunscreen',
-        description: unitSystem === 'conventional'
-          ? 'Apply broad-spectrum SPF 50+ sunscreen daily to exposed skin. In the US, CeraVe 100% Mineral Sunscreen SPF 50 is a good option — mineral filters (zinc oxide, titanium dioxide) are FDA-recognized as safe and effective with no systemic absorption.'
-          : 'Apply broad-spectrum SPF 50+ sunscreen daily to exposed skin. Beauty of Joseon Relief Sun SPF50+ PA++++ uses newer-generation chemical filters (Tinosorb S, Uvinul A Plus) that are photostable and do not absorb into the bloodstream.',
-        link: unitSystem === 'conventional'
-          ? 'https://www.amazon.com/Mineral-Sunscreen-Titanium-Dioxide-Sensitive/dp/B07KLY4RYG'
-          : 'https://beautyofjoseon.com/products/relief-sun-rice-probiotics',
-      },
-      {
-        id: 'skin-retinoid',
-        category: 'skin',
-        priority: 'info',
-        title: 'Topical retinoid',
-        description: 'A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy.',
-      },
-      {
-        id: 'skin-advanced',
-        category: 'skin',
-        priority: 'info',
-        title: 'Advanced skin treatments',
-        description: 'For further skin rejuvenation, consider discussing these options with a dermatologist: red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction.',
-      },
-    );
+  // === Skin health suggestions (adults, like the whole plan) ===
+  suggestions.push(
+    {
+      id: 'skin-moisturizer',
+      category: 'skin',
+      priority: 'info',
+      title: 'Daily moisturizer with ceramides',
+      description: 'Use a moisturizer containing ceramides and nicotinamide (vitamin B3) daily. Ceramides restore the skin barrier and reduce wrinkles, while nicotinamide improves hydration and reduces pigmentation.',
+      link: 'https://amzn.to/47pGGmj',
+    },
+    {
+      id: 'skin-sunscreen',
+      category: 'skin',
+      priority: 'info',
+      title: 'Daily broad-spectrum sunscreen',
+      description: unitSystem === 'conventional'
+        ? 'Apply broad-spectrum SPF 50+ sunscreen daily to exposed skin. In the US, CeraVe 100% Mineral Sunscreen SPF 50 is a good option — mineral filters (zinc oxide, titanium dioxide) are FDA-recognized as safe and effective with no systemic absorption.'
+        : 'Apply broad-spectrum SPF 50+ sunscreen daily to exposed skin. Beauty of Joseon Relief Sun SPF50+ PA++++ uses newer-generation chemical filters (Tinosorb S, Uvinul A Plus) that are photostable and do not absorb into the bloodstream.',
+      link: unitSystem === 'conventional'
+        ? 'https://www.amazon.com/Mineral-Sunscreen-Titanium-Dioxide-Sensitive/dp/B07KLY4RYG'
+        : 'https://beautyofjoseon.com/products/relief-sun-rice-probiotics',
+    },
+    {
+      id: 'skin-retinoid',
+      category: 'skin',
+      priority: 'info',
+      title: 'Topical retinoid',
+      description: 'A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy.',
+    },
+    {
+      id: 'skin-advanced',
+      category: 'skin',
+      priority: 'info',
+      title: 'Advanced skin treatments',
+      description: 'For further skin rejuvenation, consider discussing these options with a dermatologist: red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction.',
+    },
+  );
+
+  // Medicine cards need a known age of 18 or over (US-07 AC6). With no birth
+  // year they give way to one card, where the first of them stood.
+  const firstMedicine = suggestions.findIndex((s) => s.category === 'medication');
+  if (results.age === undefined && firstMedicine !== -1) {
+    const addBirthYear: Suggestion = {
+      id: 'add-birth-year',
+      category: 'general',
+      priority: 'info',
+      title: 'Add your birth year',
+      description: 'Medicine suggestions need your age. Add your birth year to see them.',
+    };
+    const after = suggestions.slice(firstMedicine).filter((s) => s.category !== 'medication');
+    return withEvidence([...suggestions.slice(0, firstMedicine), addBirthYear, ...after]);
   }
 
-  // Attach clinical evidence (reason, guidelines, references) from evidence.ts
+  return withEvidence(suggestions);
+}
+
+/** Attach clinical evidence (reason, guidelines, references) from evidence.ts. */
+function withEvidence(suggestions: Suggestion[]): Suggestion[] {
   for (const s of suggestions) {
     // Direct match first, then prefix match for screening variants (-overdue, -upcoming, -followup)
     const evidence = SUGGESTION_EVIDENCE[s.id]
