@@ -20,11 +20,11 @@ AC6 "unexpected change" lines list other batches on the same branch: expected. E
 |---|---|---|
 | pathways-pilot-1-v2 | 10 | MERGED to main 2026-10-08 (AC8 approved; AC5 after 2026-11-01) |
 | references-1-v2 | 5 | MERGED to main 2026-10-08 (AC8 approved; AC5 after 2026-11-01) |
-| pathways-batch-2 | 20 | READY FOR AC8 (sheet signoff-batch-2.md, 16 decisions + pilot follow-up). Currency check applied 2026-10-14 (6d4c3538); Codex check of the currency commit running (runs/codex-batch-2-currency.*) |
-| pathways-new-1 | 40 | parked v1 drafts; known safety fixes: analgesia-in-children tramadol after tonsillectomy under 18 (Medsafe contraindication), IBD calprotectin unit (/L vs /g) |
-| pathways-new-1a | 20 (new-1a-handles.txt) | READY FOR AC8 2026-10-14 (sheet signoff-new-1a.md, 16 decisions). Adversary + 2 Codex rounds + currency check applied (latest 2941414f). 29 exceptions, 40 AC5 fixtures |
-| pathways-new-1b | 20 (new-1b-handles.txt) | Fixes and currency applied 2026-10-14 (9f122cbe, 3b34fdac); checker clean except AC6. Codex round 2 running (runs/codex-new-1b-r2.*). Sheet draft signoff-new-1b.md (18 decisions). Then Brad AC8 |
-| pathways-batch-3 | 20 (batch-3-handles.txt) | REVIEWED 2026-10-14: all 20 written, currency + style fixes applied (6c3204a8), 40 AC5 fixtures (6b143234), adversary + Codex ruled in batch-3-review-fixes-2026-10-14.md. Rows 1-2 applied; rows 3-15 and Codex R1, R3, R4, R6-R9 PAUSED: auto mode blocked the worker ("Audit Tampering" on body edits). Brief: runs/batch-3-review-fix-brief.md (skip rows 1-2). Sheet draft: signoff-batch-3.md |
+| pathways-batch-2 | 20 | MERGED to main 2026-10-15 (d2b0ebe1; AC8 Brad 2026-10-15; AC5 after 2026-11-01) |
+| pathways-new-1 (split into new-1a and new-1b) | 40 | parked v1 drafts; known safety fixes: analgesia-in-children tramadol after tonsillectomy under 18 (Medsafe contraindication), IBD calprotectin unit (/L vs /g) |
+| pathways-new-1a | 20 | MERGED to main 2026-10-15 (d2b0ebe1; AC8 Brad 2026-10-15; AC5 after 2026-11-01) |
+| pathways-new-1b | 20 | MERGED to main 2026-10-15 (d2b0ebe1; AC8 Brad 2026-10-15; AC5 after 2026-11-01) |
+| pathways-batch-3 | 20 (batch-3-handles.txt) | All review fixes applied 2026-10-15 (5768761f); checker clean vs main; 40 AC5 fixtures. Codex round 2 running (runs/codex-batch-3-r2.*). Then: sheet signoff-batch-3.md to Brad for AC8, merge per the checklist |
 
 ## Next steps, in order
 1. DONE 2026-10-08. Style pass on the 15: Sonnet audit done (`~/Documents/knowledge-refresh-recovery/runs/style-audit-v2.md`: all files within vocabulary caps; 14 wrap-ups, 12 vague-authority, 8 '-ing' clauses, 6 body em dashes). Bold-lead label lines are kept (chatbot uses them; orchestrator ruling). ONE fresh Opus worker fixes only flagged lines (numbers, hedges, meaning unchanged); rerun the checker on both batches. Frozen headings and frontmatter summaries keep their em dashes (Brad, 2026-10-08: "leave them as they are").
@@ -42,3 +42,8 @@ AC6 "unexpected change" lines list other batches on the same branch: expected. E
 - ConsumerLab captcha guard edit: blocked by the permission system as a security change; needs Brad to allow it directly.
 - Uncommitted edits to docs/loops/LOOP.md, .gitignore and .claude/hooks/ in the main checkout from another session (LOOP.md guardrails are Brad-only).
 - docs/knowledge-refresh-plan-2026-09-29.md on main predates all of this; this file supersedes its section 4b.
+
+## Next (Brad 2026-10-15: finish existing work only; new batches later in the week)
+- Batch 3: Codex round 2, then AC8.
+- Batch 4 onward: next 20 by traffic from ~/Documents/knowledge-refresh-recovery/runs/traffic-ranking-2026-10-14.csv (about 550 changed pathways remain). Same steps as batch 3: writers, Sonnet fixer and audit, Sonnet currency check, Opus fixes, adversary + Codex (fetch main first), fixtures, sheet.
+- Merged 2026-10-15 needs Brad to deploy from Actions.
