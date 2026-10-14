@@ -27,6 +27,8 @@ const ANTHROPIC_MESSAGES_URL = 'https://api.anthropic.com/v1/messages';
 export interface AnthropicContentBlock {
   type: string;
   text?: string;
+  /** tool_use: the id its tool_result answers (US-15 AC33). */
+  id?: string;
   name?: string;
   input?: unknown;
 }

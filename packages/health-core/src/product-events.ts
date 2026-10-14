@@ -93,6 +93,10 @@ export const PRODUCT_EVENT_NAMES = [
   // US-05 AC3: the Lp(a) check was answered, sent once the answer took effect.
   // Metadata `{ answer }`, one of LPA_CHECK_ANSWERS, never a value.
   'lpa_check_answered',
+  // US-15 AC33: the chat ran the plan code on values stated in the message
+  // (run_roadmap). Server-originated. Metadata `{ count, rejected }`: how many
+  // stated values the plan used and how many it refused. Never a value or a field.
+  'chat_run_roadmap',
 ] as const;
 
 /** US-05 AC3: the Lp(a) check's answers. The report's unit, when the answer
@@ -123,6 +127,7 @@ export const SERVER_ONLY_EVENT_NAMES = [
   'mcp_consent_posted',
   'mcp_connect_failed',
   'mcp_import',
+  'chat_run_roadmap',
 ] as const satisfies readonly ProductEventName[];
 
 /**

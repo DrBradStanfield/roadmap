@@ -19,11 +19,12 @@
  */
 import {
   buildChatContextJson,
-  CHAT_EDIT_TOOLS,
+  CHAT_TOOLS,
   MINOR_CHAT_RULE,
   MAX_HISTORY_MESSAGES,
   toolOnlyAck,
-  parseProposedEdits,
+  withRoadmapRound,
+  type ChatTurnMessage,
   type ProposedEdit,
 } from '@roadmap/health-core';
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
@@ -171,7 +172,8 @@ Updating the user's form (tools):
 - If a unit is ambiguous (e.g. cholesterol can be mmol/L or mg/dL) and the user did not state it, ASK which unit — do NOT guess and do NOT call the tool.
 - For multiple results from one blood draw, call \`propose_field_edit\` once per metric with the SAME date so they batch into one save.
 - For \`propose_medication_edit\`: medications save immediately. After the tool call, state plainly what changed (e.g. "Done — set your statin to atorvastatin 20mg") and tell them they can undo it.
-- You can answer normally without any tool when no edit is requested. Use tools only when the user is clearly giving you a value/medication to record.`;
+- You can answer normally without any tool when no edit is requested. Use tools only when the user is clearly giving you a value/medication to record.
+- When the user states values that are not in their data and wants them assessed (or asks you to analyse data that includes them), call \`run_roadmap\` with exactly the stated values and units (and sex, height or birth year only if they stated them), then answer only from its result: never grade a value yourself. Say the values are not saved, and offer to pre-fill them. If a unit is ambiguous, ask which unit first, without grading the value in any unit.`;
 
 export async function sendMessage(
   message: string,
@@ -209,18 +211,17 @@ export async function sendMessage(
   let content: string;
   let proposedEdits: ProposedEdit[] = [];
   try {
-    const { text, blocks } = await callAnthropicDirectRaw(apiKey, {
-      model: CHAT_MODEL,
-      max_tokens: 1024,
-      system,
-      tools: CHAT_EDIT_TOOLS,
-      messages: [
-        ...history.map((m) => ({ role: m.role, content: m.content })),
-        { role: 'user', content: message },
-      ],
-    });
-    content = text;
-    proposedEdits = parseProposedEdits(blocks);
+    // US-15 AC33: the same one-round run_roadmap loop as the website chat, computed here in the browser.
+    const messages: ChatTurnMessage[] = [
+      ...history.map((m) => ({ role: m.role, content: m.content })),
+      { role: 'user', content: message },
+    ];
+    const turn = await withRoadmapRound(messages, async (fields) => {
+      const { text, blocks } = await callAnthropicDirectRaw(apiKey, { model: CHAT_MODEL, max_tokens: 1024, system, tools: CHAT_TOOLS, ...fields });
+      return { text, contentBlocks: blocks };
+    }, guestInputs);
+    content = turn.final.text;
+    proposedEdits = turn.proposedEdits;
     // Tool-only response (the model proposed an edit with no prose): give the
     // chat thread something to show. The confirmation card carries the detail.
     if (!content && proposedEdits.length > 0) {

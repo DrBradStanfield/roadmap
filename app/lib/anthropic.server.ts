@@ -149,12 +149,17 @@ export interface AnthropicUsage {
   cacheReadTokens: number;
 }
 
-/** One block of an Anthropic Messages `content` array (text or tool_use). */
+/** One block of an Anthropic Messages `content` array (text, thinking or tool_use), kept whole so a tool round can replay it unmodified. */
 export interface AnthropicContentBlock {
   type: string;
   text?: string;
+  /** tool_use: the id its tool_result answers. */
+  id?: string;
   name?: string;
   input?: unknown;
+  /** thinking: the summary and the signature the API checks on replay. */
+  thinking?: string;
+  signature?: string;
 }
 
 /**

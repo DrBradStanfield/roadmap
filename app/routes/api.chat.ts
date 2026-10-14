@@ -31,6 +31,7 @@ import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../pac
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 import { findDuplicateReply, type DedupHistoryItem } from '../lib/chat-dedup.server';
 import { PURGED_TEXT } from '../lib/chat-purge-cron.server';
+import { recordServerEvent } from '../lib/product-events.server';
 
 
 // Only fixed operation descriptions enter diagnostics. Database errors can echo
@@ -516,9 +517,14 @@ export async function action({ request }: ActionFunctionArgs) {
         ? await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, (event) => {
           if (event.type === 'text' && firstTokenMs === null) firstTokenMs = Date.now() - tBeforeLlm;
           write(event);
-        })
-        : await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits);
+        }, body.guestInputs)
+        : await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, undefined, body.guestInputs);
       const tAfterLlm = Date.now();
+      // US-15 AC33 usage signal: one counter per run_roadmap round, the numbers of
+      // stated values used and rejected and nothing else. Fire-and-forget.
+      if (completion.roadmapRun) {
+        void recordServerEvent('chat_run_roadmap', { count: completion.roadmapRun.applied, rejected: completion.roadmapRun.rejected });
+      }
 
       // The assistant message id doubles as the telemetry row's message_id on
       // the stored surfaces; the widget has no message row, so null there.
@@ -652,6 +658,8 @@ export async function action({ request }: ActionFunctionArgs) {
         messageChars: message.length,
         // Ms from the LLM call to the first answer text; null when not streamed or no text came.
         firstTokenMs,
+        // US-15 AC33: the turn ran run_roadmap, so llmMs and the tokens cover two calls. A flag only.
+        roadmapRun: !!completion.roadmapRun,
       }));
 
       // The streamed path sends this as its `done` line.

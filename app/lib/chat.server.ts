@@ -12,7 +12,8 @@ import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { loadBlogArticle, loadMatchedContent } from './matched-content';
 import { SUGGESTION_EVIDENCE } from '../../packages/health-core/src/evidence';
 import { buildChatContextJson } from '../../packages/health-core/src/chat-context';
-import { CHAT_EDIT_TOOLS, parseProposedEdits, toolOnlyAck, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
+import { toolOnlyAck, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
+import { CHAT_TOOLS, withRoadmapRound, type ChatTurnMessage, type RoadmapRoundCounts } from '../../packages/health-core/src/run-roadmap';
 import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicStreamEvent, type AnthropicUsage, type RefusalCategory } from './anthropic.server';
 import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, modelParams } from '../../packages/health-core/src/models';
 import { cutText } from '../../packages/health-core/src/chat-history';
@@ -480,7 +481,22 @@ export interface ChatCompletionResult {
   errorKind?: ChatErrorKind;
   /** Form edits the model proposed via tool_use (additive — empty on normal turns). */
   proposedEdits?: ProposedEdit[];
+  /** Set when the turn ran run_roadmap (US-15 AC33): how many stated values it used and rejected. Counts only, never a value. */
+  roadmapRun?: RoadmapRoundCounts;
 }
+
+/** What the web chat streams: the model's deltas, and a status line between a tool round's two calls. */
+export type ChatStreamEvent = AnthropicStreamEvent | { type: 'status'; text: string };
+
+/** Shown while the second call of a run_roadmap round runs (US-15 AC33). */
+export const ROADMAP_STATUS = 'Running your numbers through the roadmap';
+
+const addUsage = (a: AnthropicUsage, b: AnthropicUsage): AnthropicUsage => ({
+  inputTokens: a.inputTokens + b.inputTokens,
+  outputTokens: a.outputTokens + b.outputTokens,
+  cacheCreationTokens: a.cacheCreationTokens + b.cacheCreationTokens,
+  cacheReadTokens: a.cacheReadTokens + b.cacheReadTokens,
+});
 
 /**
  * With `onEvent` the answer streams (the web chat, US-15 AC16/AC17); the
@@ -488,41 +504,55 @@ export interface ChatCompletionResult {
  * refusal or a fallback: the reply goes out with `isFallback: true`, and the
  * client replaces them with its content.
  *
- * `canApplyEdits`: the form tools go only to a client that applies them (the
+ * `canApplyEdits`: the tools go only to a client that applies them (the
  * widget's own chat, US-15 AC19). `tools` render before `system`, so the two
  * request shapes share no prompt-cache prefix and cache separately.
+ *
+ * With the tools comes run_roadmap (US-15 AC33): when the model calls it, the
+ * plan code runs on `guestInputs` plus the stated values and a second call
+ * answers from its output (health-core `withRoadmapRound`, at most one round).
+ * The answer is the second call's text; usage is the two calls' sum. A failed
+ * second call is the api-error fallback, with no tool output in it.
  */
 export async function getChatCompletion(
   systemBlocks: SystemBlock[],
-  messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+  messages: ChatTurnMessage[],
   canApplyEdits: boolean,
-  onEvent?: (event: AnthropicStreamEvent) => void,
+  onEvent?: (event: ChatStreamEvent) => void,
+  guestInputs?: unknown,
 ): Promise<ChatCompletionResult> {
   const body = {
     ...modelParams(CHAT_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: systemBlocks,
-    ...(canApplyEdits ? { tools: CHAT_EDIT_TOOLS } : {}),
-    messages,
+    ...(canApplyEdits ? { tools: CHAT_TOOLS } : {}),
   };
+  const send = (fields: { messages: ChatTurnMessage[]; tool_choice?: { type: 'none' } }) =>
+    onEvent ? streamAnthropicWithUsage({ ...body, ...fields }, onEvent) : callAnthropicWithUsage({ ...body, ...fields });
 
   try {
-    const result = onEvent ? await streamAnthropicWithUsage(body, onEvent) : await callAnthropicWithUsage(body);
+    const turn = canApplyEdits
+      ? await withRoadmapRound(messages, send, guestInputs, () => onEvent?.({ type: 'status', text: ROADMAP_STATUS }))
+      : null;
+    const result = turn ? turn.final : await send({ messages });
+    const usage = turn && turn.final !== turn.first ? addUsage(turn.first.usage, turn.final.usage) : result.usage;
+    const roadmapRun = turn?.counts ? { roadmapRun: turn.counts } : {};
     const { stopReason } = result;
     if (stopReason === 'refusal') {
       const refusalCategory = result.refusalCategory ?? 'other';
       return {
         content: refusalLine(refusalCategory),
-        usage: result.usage,
+        usage,
         isFallback: false,
         isRefusal: true,
         refusalCategory,
         stopReason,
         failureMode: 'refusal',
+        ...roadmapRun,
       };
     }
     // Truncated: keep the answer, add nothing the user sees, log the stop only.
     if (stopReason === 'max_tokens') console.warn(JSON.stringify({ evt: 'chat_truncated', stopReason }));
-    const proposedEdits = parseProposedEdits(result.contentBlocks);
+    const proposedEdits = turn?.proposedEdits ?? [];
     // Empty-response check: API returned 200 but no usable text. A tool-only
     // response (model proposed an edit with no prose) is NOT empty — give the
     // thread a short line; the confirmation card carries the detail.
@@ -530,26 +560,29 @@ export async function getChatCompletion(
       if (proposedEdits.length > 0) {
         return {
           content: toolOnlyAck(proposedEdits),
-          usage: result.usage,
+          usage,
           isFallback: false,
           stopReason,
           proposedEdits,
+          ...roadmapRun,
         };
       }
       return {
         content: FALLBACK_RESPONSE,
-        usage: result.usage,
+        usage,
         isFallback: true,
         stopReason,
         failureMode: 'empty-response',
+        ...roadmapRun,
       };
     }
     return {
       content: result.content,
-      usage: result.usage,
+      usage,
       isFallback: false,
       stopReason,
       ...(proposedEdits.length > 0 ? { proposedEdits } : {}),
+      ...roadmapRun,
     };
   } catch (err) {
     // API errors (timeout, 5xx, network, malformed response). fetchAnthropicRaw

@@ -67,6 +67,8 @@ const serverMetadataSchema = metadataSchema.extend({
   via: z.enum(['reviewer']).optional(),
   /** US-36 AC9: which half of a two-phase write a tool call was. Server-only, owned by `mcp_tool_call`. */
   step: z.enum(['propose', 'confirm']).optional(),
+  /** US-15 AC33: how many stated values run_roadmap refused. A count only. Server-only, owned by `chat_run_roadmap`. */
+  rejected: z.number().int().min(0).max(1000).optional(),
 });
 
 /** The event a metadata key belongs to, where the key has no vocabulary of its
@@ -79,6 +81,7 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   answer: ['lpa_check_answered'],
   via: ['mcp_connect'],
   step: ['mcp_tool_call'],
+  rejected: ['chat_run_roadmap'],
   ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, ['upload_outcome']])),
 };
 
@@ -88,6 +91,7 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   upload_outcome: UPLOAD_OUTCOME_KEYS,
   lpa_unit_selected: ['unit', 'from'],
   lpa_check_answered: ['answer'],
+  chat_run_roadmap: ['count', 'rejected'],
 };
 
 /**
