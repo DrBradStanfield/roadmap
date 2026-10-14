@@ -142,8 +142,9 @@ describe('calculateAge', () => {
   });
 });
 
-// US-07 AC6 (2026-10-14): the adults-only gate. A missing birth month counts
-// as December for this gate alone, so no one counts as 18 early.
+// US-07 AC6 (2026-10-14): the adults-only gate. Amended 2026-10-14: a missing
+// birth month is a minor until 1 January of the year after they turn 18
+// (birthYear + 19), so no one counts as 18 early.
 describe('isKnownMinor', () => {
   const OCT_2026 = new Date(2026, 9, 14, 12);
 
@@ -152,15 +153,14 @@ describe('isKnownMinor', () => {
     expect(isKnownMinor(2008, 11, OCT_2026)).toBe(true);
   });
 
-  it('missing month in the year they turn 18: still a minor through November', () => {
+  it('missing month: a minor through 31 December of the year they turn 18', () => {
     expect(isKnownMinor(2008, undefined, OCT_2026)).toBe(true);
-    expect(isKnownMinor(2008, undefined, new Date(2026, 10, 30, 12))).toBe(true);
-    // December is the month counted, and an age turns at the start of its month.
-    expect(isKnownMinor(2008, undefined, new Date(2026, 11, 1, 12))).toBe(false);
+    expect(isKnownMinor(2008, undefined, new Date(2026, 11, 1, 12))).toBe(true);
+    expect(isKnownMinor(2008, undefined, new Date(2026, 11, 31, 23, 59))).toBe(true);
   });
 
-  it('missing month, the year after: an adult', () => {
-    expect(isKnownMinor(2008, undefined, new Date(2027, 0, 1, 12))).toBe(false);
+  it('missing month: an adult from 1 January of the year after', () => {
+    expect(isKnownMinor(2008, undefined, new Date(2027, 0, 1, 0, 0))).toBe(false);
   });
 
   it('no birth year: not a known minor', () => {

@@ -88,11 +88,15 @@ function loadSharedDoc(file: string): string {
   }
 }
 
-const PRODUCTS_BLOCK = productsBlockText({
+const WRITING_STYLE_DOC = loadSharedDoc(PRODUCTS_BLOCK_FILES.writingStyle);
+// The answer bank is for the websites only (US-15 AC29): the YouTube and Discord
+// bots get the block without it, a second cached variant; the two websites share one.
+const PRODUCTS_BLOCK_WEBSITE = productsBlockText({
   products: PRODUCTS_DOC,
-  writingStyle: loadSharedDoc(PRODUCTS_BLOCK_FILES.writingStyle),
+  writingStyle: WRITING_STYLE_DOC,
   answerBank: loadSharedDoc(PRODUCTS_BLOCK_FILES.answerBank),
 });
+const PRODUCTS_BLOCK_BOTS = productsBlockText({ products: PRODUCTS_DOC, writingStyle: WRITING_STYLE_DOC });
 
 // ---------------------------------------------------------------------------
 // Blog article index — read once at module load
@@ -313,8 +317,10 @@ interface SystemBlock {
 
 export function buildSystemBlocks(
   userContextJson: string,
-  opts?: { surfaceContext?: string; documentContent?: string | null; orderSummary?: string; blogArticles?: string | null },
+  opts?: { surfaceContext?: string; documentContent?: string | null; orderSummary?: string; blogArticles?: string | null; answerBank?: boolean },
 ): SystemBlock[] {
+  // Off unless the caller is a website chat (api.chat.ts): a new caller never gets the bank by default.
+  const productsBlock = opts?.answerBank ? PRODUCTS_BLOCK_WEBSITE : PRODUCTS_BLOCK_BOTS;
   // Cached blocks first (shared across all users AND all surfaces — keep
   // byte-identical so the prompt cache is shared), then the per-surface posture
   // block (uncached), then per-user blocks. All four markers are 1-hour
@@ -331,9 +337,9 @@ export function buildSystemBlocks(
       text: EVIDENCE_DOC,
       cache_control: PROMPT_CACHE,
     },
-    ...(PRODUCTS_BLOCK ? [{
+    ...(productsBlock ? [{
       type: 'text' as const,
-      text: PRODUCTS_BLOCK,
+      text: productsBlock,
       cache_control: PROMPT_CACHE,
     }] : []),
     ...(KNOWLEDGE_OVERVIEW ? [{

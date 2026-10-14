@@ -424,17 +424,18 @@ The plan is built for adults aged 18 and over (US-07 AC6, 2026-10-14; amended th
 |-----|------|
 | Known and under 18 | No suggestions of any kind. One card in their place: `adults-only` (general, info), "This plan is built for adults": "The suggestions here, including medicines, are designed for people aged 18 and over. For anyone younger, talk with their doctor." |
 | 18 or over | The plan below, unchanged. |
-| Unknown (no birth year) | The plan below, except the medicine cards. Medicine cards need a known age of 18 or over. When the plan would show any, they give way to one card where the first stood: `add-birth-year` (general, info), "Add your birth year": "Medicine suggestions need your age. Add your birth year to see them." Every other card is unchanged. |
+| Unknown (no birth year) | The plan below, except the medicine cards. Medicine cards need a known age of 18 or over. When the plan would show any, they give way to one card where the first stood: `add-birth-year` (general, info), "Add your birth year": "Medicine suggestions need your age. Add your birth year to see them." Every other card is unchanged. The standalone lipid cards (`apob-*`, `non-hdl-*`, `ldl-*`, `total-chol-*`) never give way to the lipid cascade here, because the cascade is not shown. No weight card gives way to the weight cascade, at any age. |
 
 The medicine cards are the `medication` category: `weight-glp1`; `weight-med-glp1`, `-glp1-dose`, `-glp1-increase`, `-glp1-switch`, `-sglt2i`, `-metformin`; `med-statin`, `-ezetimibe`, `-bempedoic-acid`, `-statin-dose`, `-statin-increase`, `-statin-switch`, `-pcsk9i`.
 
-The gate's age (`isKnownMinor`) is the one in section 1, except that a missing birth month counts as December, so no one counts as 18 early: someone born in 2008 with no month is a minor through November 2026. Every other age keeps the January default, so that person's profile still reads 18 from January.
+The gate's age (`isKnownMinor`) is the one in section 1, except that a missing birth month is strict: the person is a minor until 1 January of the year after the year they turn 18 (birth year + 19), so no one counts as 18 early. Someone born in 2008 with no month is a minor through 31 December 2026 and an adult from 1 January 2027. A known month keeps the birthday-month rule. Every other age keeps the January default, so that person's profile reads 18 beside the adults-only card through 2026 (accepted).
 
 For a known minor, every surface also withholds:
 
 - **Adult readings.** The BMI category, ideal body weight, protein target and eGFR, and the status labels on the lipid, HbA1c and Lp(a) tiles, with the "why" behind each. The website tiles and the PDF show the raw numbers only (BMI, lipid marker, Lp(a), HbA1c); the ideal body weight, protein and eGFR tiles go. `get_plan` returns `bmiCategory`, `eGFR`, `idealBodyWeightKg` and `proteinTargetG` as `null`; the CLI prints the BMI with no category and no eGFR. Raw values (weight, height, waist, each lab value with its unit and date) are untouched.
-- **The schedule.** `computeReminderSchedule` returns nothing, not even the annual check-in floor, so `get_plan`'s `due` is empty and the browser pushes an empty schedule.
+- **The schedule.** `computeReminderSchedule` returns nothing, not even the annual check-in floor, so `get_plan`'s `due` is empty. The browser never enrols a known minor in reminders, never pushes their schedule (the server would add its annual check-in to any schedule it is sent), and turns off a row enrolled earlier with the user's own cancel.
 - **The form's medicine wording.** The medication sections are plain fields with their neutral sentence: no recommendation, target sentence or step hint. People can still record what they take. The form does the same for an unknown age, because it follows the plan (US-06 AC5).
+- **The form's adult targets.** The weight row's "Target: <ideal body weight>", the blood-pressure target and its status colours, and the blood-test matrix's reference hints and status colours (saved values, the draft column and the correction editor). The values stay and stay editable, and no empty box is left. The waist line, its colour and the waist-to-height tile stay: the 0.5 ratio is also used in children.
 
 Measurements, lab values and the record are untouched: they are still stored and shown. There is no usage signal: an event would record that a visitor is under 18.
 
@@ -475,6 +476,8 @@ ApoB is always shown when available. LDL is only shown when both ApoB AND non-HD
 Each marker has three tiers (borderline/high/very high) using the thresholds in section 3.
 
 **Total cholesterol** is suppressed when an elevated atherogenic marker already produced an attention/urgent suggestion, or when the lipid medication cascade is active.
+
+**The lipid medication cascade is active** when a statin status is recorded, the plan's marker is at or above its target, and the age is known. Then the marker's own card and total cholesterol give way to the cascade, whose cards carry the value. With no birth year the cascade is not shown (US-07 AC6), so nothing gives way to it.
 
 ### Lp(a)
 

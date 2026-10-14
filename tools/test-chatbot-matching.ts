@@ -143,8 +143,10 @@ console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 
 
 // ---------------------------------------------------------------------------
 // Answer-check context — loaded only when --answer-check is set
-// Static portion: prompt cache blocks 1-3 (system prompt + algorithm + products,
-// the products block carrying writing-style.md and the answer bank as production's does).
+// Static portion: prompt cache blocks 1 and 3 (system prompt + algorithm, then
+// products with writing-style.md and the answer bank: the WEBSITE variant, US-15
+// AC29; the YouTube and Discord bots get no answer bank). Blocks 2 (evidence) and
+// 4 (knowledge overview) are not sent, as before.
 // Dynamic portion (per-query, in checkAnswer): block 4 matched pathway/blog
 // content, loaded via loadMatchedContent() from the routing intersection
 // (or a fixture's answer_handles).

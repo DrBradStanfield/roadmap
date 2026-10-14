@@ -390,8 +390,9 @@ export function generateSuggestions(
   // so we can suppress standalone atherogenic marker cards and total cholesterol.
   // Only suppress when user has engaged with medication questions (statin status recorded).
   // When medications is {} (no statin decision), show both standalone cards and cascade.
+  // With no birth year the cascade is withheld (US-07 AC6), so nothing is absorbed.
   const statinStatusRecorded = medications?.statin?.drug !== undefined;
-  const lipidMedCascadeActive = statinStatusRecorded && (lipidMarker?.elevated ?? false);
+  const lipidMedCascadeActive = results.age !== undefined && statinStatusRecorded && (lipidMarker?.elevated ?? false);
   let hasElevatedAtherogenicSuggestion = false;
 
   // ApoB (top of hierarchy — always shown when available)

@@ -3328,4 +3328,28 @@ describe('US-07 AC6: who the plan is for', () => {
     expect(adult).toContain('med-statin');
     expect(adult).not.toContain('add-birth-year');
   });
+
+  // Amended 2026-10-14: the lipid cascade's cards carry the lipid value, so an
+  // adult's standalone lipid cards give way to them. With no birth year the
+  // cascade is not shown, so nothing may give way to it.
+  describe('unknown age: the standalone lipid cards stay, since the cascade they give way to is withheld', () => {
+    const ON_STATIN: MedicationInputs = { statin: { drug: 'atorvastatin', dose: 20 } };
+    const cases: [name: string, values: Partial<HealthInputs>, meds: MedicationInputs, cards: string[]][] = [
+      ['high LDL, on a statin', { ldlC: ldl(170) }, ON_STATIN, ['ldl-high']],
+      ['very high LDL, on a statin', { ldlC: ldl(200) }, ON_STATIN, ['ldl-very-high']],
+      ['very high ApoB, no statin', { apoB: apoB(110) }, { statin: { drug: 'none', dose: null } }, ['apob-very-high']],
+      ['high non-HDL, on a statin', { totalCholesterol: totalChol(250), hdlC: hdl(40) }, ON_STATIN, ['non-hdl-high']],
+      ['borderline LDL and high total cholesterol, on a statin', { ldlC: ldl(140), totalCholesterol: totalChol(250) }, ON_STATIN, ['ldl-borderline', 'total-chol-high']],
+    ];
+    it.each(cases)('%s: the lipid card and the add-birth-year card', (_name, values, meds, cards) => {
+      const base: HealthInputs = { heightCm: 175, sex: 'male', weightKg: 70, ...values };
+      const adult = ids({ ...base, birthYear: 1980, birthMonth: 1 }, meds);
+      expect(adult.some((id) => id.startsWith('med-'))).toBe(true);
+      for (const card of cards) expect(adult).not.toContain(card);
+
+      const unknown = ids(base, meds);
+      expect(unknown).toEqual(expect.arrayContaining([...cards, 'add-birth-year']));
+      expect(unknown.some((id) => id.startsWith('med-'))).toBe(false);
+    });
+  });
 });

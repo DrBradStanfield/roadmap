@@ -54,11 +54,13 @@ export function calculateAge(birthYear: number, birthMonth: number, now = new Da
 
 /**
  * The plan's adults-only gate (US-07 AC6): a known age under 18. For this gate
- * alone a missing birth month counts as December, so no one counts as 18
- * early. Every other age keeps the January default.
+ * alone a missing birth month is a minor until 1 January of the year after
+ * they turn 18 (birthYear + 19), so no one counts as 18 early. Every other age
+ * keeps the January default.
  */
 export function isKnownMinor(birthYear: number | undefined, birthMonth: number | undefined, now = new Date()): boolean {
-  return !!birthYear && calculateAge(birthYear, birthMonth ?? 12, now) < 18;
+  if (!birthYear) return false;
+  return birthMonth ? calculateAge(birthYear, birthMonth, now) < 18 : now.getFullYear() - birthYear < 19;
 }
 
 /**

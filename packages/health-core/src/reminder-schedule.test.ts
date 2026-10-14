@@ -346,8 +346,9 @@ describe('computeReminderSchedule — US-07 AC6: a known minor is due nothing', 
     expect(computeReminderSchedule(withHba1c(profile(2008, 6)), NOW).map((i) => i.category)).toEqual(['blood_test_hba1c']);
   });
 
-  it('no birth month counts as December for this gate: a minor all the year they turn 18, an adult the year after', () => {
+  it('no birth month: a minor all the year they turn 18, an adult from 1 January the year after', () => {
     expect(computeReminderSchedule(withHba1c(profile(2008)), NOW)).toEqual([]);
+    expect(computeReminderSchedule(withHba1c(profile(2008)), new Date(2026, 11, 31, 12))).toEqual([]);
     expect(computeReminderSchedule(withHba1c(profile(2008)), new Date(2027, 0, 5)).map((i) => i.category)).toEqual(['blood_test_hba1c']);
   });
 });

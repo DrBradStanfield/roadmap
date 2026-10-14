@@ -34,6 +34,7 @@ const computeCurrentReminderSchedule = vi.fn(() => [
   { category: 'blood_test_lipids', group: 'blood_test', label: 'Lipid panel blood test', dueAt: '2027-05-12' },
 ]);
 const trackProductEvent = vi.fn();
+const isKnownMinorNow = vi.fn(() => false);
 const getReminderIdToken = vi.fn<[], Promise<string | null>>(async () => 'signed-id-token');
 const driveAccountEmail = vi.fn<[], string | null>(() => null);
 const githubAccountEmail = vi.fn<[], Promise<string | null>>(async () => 'gh@example.com');
@@ -43,6 +44,7 @@ vi.mock('../src/lib/roadmap-data', () => ({
   setReminderOptIn: (fields: unknown) => setReminderOptIn(fields),
   flushRoadmapStore: () => flushRoadmapStore(),
   computeCurrentReminderSchedule: () => computeCurrentReminderSchedule(),
+  isKnownMinorNow: () => isKnownMinorNow(),
 }));
 
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: (...a: unknown[]) => trackProductEvent(...a) }));
@@ -108,6 +110,7 @@ async function loadReminders(shopifySurface = true) {
 beforeEach(() => {
   vi.clearAllMocks();
   getReminderOptIn.mockReturnValue(undefined);
+  isKnownMinorNow.mockReturnValue(false);
   getReminderIdToken.mockResolvedValue('signed-id-token');
   driveAccountEmail.mockReturnValue(null);
   githubAccountEmail.mockResolvedValue('gh@example.com');
@@ -435,5 +438,49 @@ describe('US-17 — turning reminders off is counted', () => {
 
     await expect(cancelReminders()).rejects.toThrow();
     expect(trackProductEvent).not.toHaveBeenCalled();
+  });
+});
+
+// US-07 AC6 (amended 2026-10-14): the plan is built for adults, and so are its
+// reminders. The server holds no age, and it refills any pushed schedule with
+// its annual check-in, so the browser is the only place a known minor can be
+// kept out: no enrolment, no schedule push, and an existing row is turned off.
+describe('US-07 AC6 — a known minor is never enrolled and their schedule is never pushed', () => {
+  beforeEach(() => isKnownMinorNow.mockReturnValue(true));
+
+  it('auto-enrolment does nothing at all for a known minor', async () => {
+    const f = mockFetchOk();
+    const { autoEnrolReminders } = await loadReminders();
+    await autoEnrolReminders('google-drive');
+    expect(f).not.toHaveBeenCalled();
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+  });
+
+  it('the manual toggle refuses, in words, and posts nothing', async () => {
+    const f = mockFetchOk();
+    const { optInToReminders } = await loadReminders();
+    await expect(optInToReminders('dropbox')).rejects.toThrow('Check-up reminders are for adults aged 18 and over.');
+    expect(f).not.toHaveBeenCalled();
+  });
+
+  it('an enrolled minor: no schedule push; the row is turned off with the existing cancel', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    const f = mockFetchOk({ success: true });
+    const { pushReminderSchedule } = await loadReminders();
+    await pushReminderSchedule();
+    expect(f).toHaveBeenCalledTimes(1);
+    expect(postedBody(f).op).toBe('cancel');
+    expect(postedBody(f).token).toBe('cap-token');
+    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }));
+  });
+
+  it('an adult is unchanged: the schedule is pushed', async () => {
+    isKnownMinorNow.mockReturnValue(false);
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    const f = mockFetchOk({ success: true });
+    const { pushReminderSchedule } = await loadReminders();
+    await pushReminderSchedule();
+    expect(f).toHaveBeenCalledTimes(1);
+    expect(postedBody(f).op).toBe('update');
   });
 });

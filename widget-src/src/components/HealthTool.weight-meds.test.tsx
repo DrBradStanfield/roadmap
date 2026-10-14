@@ -529,6 +529,62 @@ describe('US-07 AC6: the form withholds its medicine wording when the plan does'
     }
   });
 
+  // Amended 2026-10-14: the form withholds its adult readings for a known
+  // minor too. Values stay and stay editable; the waist line (half the
+  // height) is kept, as it is also used in children.
+  describe('a known minor: the form shows the values with no adult target, colour or hint', () => {
+    const MINOR: GuestRecord = { sex: 'male', birthYear: new Date().getFullYear() - 15, birthMonth: 1, weight: 80, waist: 100, bp: [150, 95], hba1c: 48, lipids: { ldl: 4 } };
+    const row = (container: HTMLElement, test: (r: Element) => boolean) => Array.from(container.querySelectorAll('.bt-row')).find(test);
+    const vitalsRow = (container: HTMLElement, label: string) => row(container, (r) => r.querySelector('.bt-name-label')?.textContent === label);
+    const colours = (r: Element) => Array.from(r.querySelectorAll('.bt-status-tick')).map((t) => t.className.replace('bt-status-tick ', ''))
+      .filter((c) => c !== 'bt-status-none');
+
+    it('the vitals and blood-test matrices: values, no weight or BP target, no colour, no hint; the waist line stays', async () => {
+      localStorage.setItem('health_roadmap_data', SAVED_WEIGHT_MIRROR); // opens the vitals matrix at mount
+      const view = await guestWith(MINOR);
+      await waitFor(() => expect(planCard(view.container, 'This plan is built for adults')).toBeDefined());
+      await waitFor(() => expect(vitalsRow(view.container, 'Waist Circumference')?.querySelector('.bt-ref-label')?.textContent).toMatch(/^Target: </));
+
+      const weight = vitalsRow(view.container, 'Weight')!;
+      expect(weight.querySelector('.bt-ref-label')).toBeNull();
+      expect(weight.textContent).toContain('80');
+      expect(colours(weight)).toEqual([]);
+
+      const bp = vitalsRow(view.container, 'Blood Pressure')!;
+      expect(bp.querySelector('.bt-ref-label')).toBeNull();
+      expect(bp.textContent).toContain('150');
+      expect(colours(bp)).toEqual([]);
+
+      for (const metric of ['hba1c', 'ldl']) {
+        const lab = await waitFor(() => {
+          const r = view.container.querySelector(`.bt-row[data-metric="${metric}"]`);
+          if (!r?.querySelector('.bt-value-num')) throw new Error(`no ${metric} value on the page`);
+          return r;
+        });
+        expect(lab.querySelector('.bt-ref-label')).toBeNull();
+        expect(colours(lab)).toEqual([]);
+      }
+      // Still editable: correcting a value opens its editor, which previews no colour.
+      fireEvent.click(view.container.querySelector('.bt-row[data-metric="hba1c"] .bt-cell-clickable')!);
+      const hba1cRow = view.container.querySelector('.bt-row[data-metric="hba1c"]')!;
+      await waitFor(() => expect(hba1cRow.querySelector('.bt-cell-correcting input')).not.toBeNull());
+      expect(colours(hba1cRow)).toEqual([]);
+      // The draft column previews no colour either.
+      fireEvent.change(view.container.querySelector('.bt-row[data-metric="ldl"] .bt-cell-draft input')!, { target: { value: '5' } });
+      expect(colours(view.container.querySelector('.bt-row[data-metric="ldl"]')!)).toEqual([]);
+      expect(view.container.textContent).not.toMatch(/Target: <\d+\/80/);
+    });
+
+    it('the first-visit form: the blood pressure is shown with no target', async () => {
+      const view = await guestWith(MINOR);
+      await waitFor(() => expect(planCard(view.container, 'This plan is built for adults')).toBeDefined());
+      await waitFor(() => expect(Array.from(view.container.querySelectorAll('.collapsed-field-value'))
+        .some((v) => v.textContent?.includes('150/95'))).toBe(true));
+      expect(Array.from(view.container.querySelectorAll('.field-hint')).map((h) => h.textContent)
+        .filter((t) => t?.includes('/80 mmHg'))).toEqual([]);
+    });
+  });
+
   it('no birth year: the add-birth-year card, and the form is neutral too', async () => {
     const view = await guestWith({ ...MEDICINE_RECORD, birthYear: undefined });
     await waitFor(() => expect(planCard(view.container, 'Add your birth year')).toBeDefined());

@@ -1,13 +1,11 @@
-<!-- generated — never edit; source hash sha256:10ff62e45e96f34daa6ed0f399a8e6fb46af4527c7ab0c25ad5910b15666f9be -->
+<!-- generated — never edit; source hash sha256:bbcc9ed72dcde0573e5bd78191529f286910f9fa56a40e1943a95c6472c31834 -->
 <!-- Built by claude_business tools/sync-shared-docs.mjs from docs/customer-service/answer-bank.md. Edit the master there and rerun the sync. -->
 
-# Answer bank
-
-Brad's answers to questions customers have asked by email, in his own words (84 entries). Each entry gives the question, then the answer.
-
-## MicroVitamin and MicroVitamin+: tolerance and side effects
+Approved answers to questions customers have asked by email (81 entries), written in the first person. Each entry gives the question, then the answer.
 
 ### Can the glycine or glycinate mineral forms in MicroVitamin cause reactions in someone sensitive to glycine or who reacted badly to magnesium glycinate?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 The minerals that are in glycinate form are trace minerals. There's about
 3mg glycine in MicroVitamin, which is a very small amount.
@@ -35,6 +33,8 @@ Looking forward to hearing from you
 
 ### Could MicroVitamin cause trouble sleeping?
 
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
+
 I can't think of anything in MicroVitamin that would cause issues with
 sleep.
 There's no caffeine for example
@@ -43,17 +43,6 @@ Maybe try 1 capsule, first thing in the morning to start with, and build up
 from there?
 
 Let me know what you think
-
-### Is the TMG (betaine) in MicroVitamin a concern for someone who felt drained after taking TMG before?
-
-500mg of TMG is within what is already found from a healthy diet
-
-As you suggested in your email, trying one capsule a day and slowly
-building up the dose is a strategy that you might want to try?
-
-What do you think?
-
-## MicroVitamin and MicroVitamin+: suitability
 
 ### Can MicroVitamin be taken by someone whose blood tests already show high vitamin B12 or folate?
 
@@ -64,11 +53,15 @@ Looking forward to hearing from you
 
 ### Do the B vitamins in MicroVitamin suit someone with an MTHFR gene variant?
 
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
+
 MicroVitamin contains methylated folate and methylated B12
 
 Please let me know if you have any other questions
 
 ### Can benfotiamine be continued while taking MicroVitamin?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 I'm not aware of a potential interaction between the ingredients in
 MicroVitamin, and Benfotiamine
@@ -89,11 +82,15 @@ Please let me know if you have any other questions
 
 ### Are folic acid and the folate in MicroVitamin the same?
 
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
+
 MicroVitamin uses the bioactive form called methyl-folate
 
 Please let me know if you have any other questions
 
 ### Are MicroVitamin's ingredients safe for someone with stage 3 chronic kidney disease?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 Best to discuss with your doctors
 
@@ -103,6 +100,8 @@ allowed for CKD stage 3
 Let me know if you have any other questions
 
 ### Is MicroVitamin suitable for a young adult?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 MicroVitamin can be used by all adults aged 18 and above, in consultation
 with your doctor
@@ -158,13 +157,9 @@ Although that might be a bit of a hassle
 
 What do you think?
 
-Shorter version:
-
-There's no downside to splitting the dosage :-)
-
-Let me know what you think
-
 ### Should medicines be taken at a different time from MicroVitamin+ powder?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 Yes, ideally medications would be taken at a different time to
 MicroVitamin+ powder, due to the psyllium husk
@@ -172,6 +167,8 @@ MicroVitamin+ powder, due to the psyllium husk
 Please let me know if you have any other questions
 
 ### Does the psyllium husk in MicroVitamin+ reduce absorption of its vitamins and minerals?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 Yes, I have an FAQ about this on my website:
 Does the psyllium husk in MicroVitamin+ reduce absorption of the vitamins
@@ -196,6 +193,8 @@ Please let me know if you have any other questions
 
 ### Does 2.5g of psyllium do anything, given studies use 7 to 10g?
 
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
+
 This is a tricky one. In a perfect world, I'd have more psyllium husk in
 MicroVitamin+, but that might cause side effects for some people.
 I thought it would be better to opt for a lower dose, and if people wanted
@@ -204,6 +203,8 @@ to add additional psyllium, then they can
 What do you think?
 
 ### Is the vitamin B6 a concern for someone with peripheral neuropathy?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 The dose of B6 is the critical part.
 Megadoses of B6 are the issue
@@ -214,6 +215,8 @@ neuropathy happens
 Please let me know if you have any other questions
 
 ### Is the niacin (vitamin B3) dose too high?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 In the latest version of MicroVitamin, I decreased the dose of Vitamin B3
 to 16mg
@@ -227,6 +230,8 @@ Please let me know if you need anything from me
 
 ### Can the biotin interfere with blood tests?
 
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
+
 Biotin, at the doses used in MicroVitamin, will not interfere with blood
 test results
 Biotin is only an issue at large doses
@@ -235,6 +240,8 @@ Please let me know if you have any other questions
 
 ### Why does MicroVitamin contain copper?
 
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
+
 I include copper, because Zinc interferes with Copper absorption.
 So to ensure that a Copper deficiency doesn't happen, I dosed Copper at
 100% of the RDA
@@ -242,6 +249,8 @@ So to ensure that a Copper deficiency doesn't happen, I dosed Copper at
 Please let me know if you have any other questions
 
 ### Is the vitamin D a concern if my levels are already high from the sun?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 Regarding Vitamin D, 1,000IU in MicroVitamin is well within the upper
 tolerable limit of 4,000IU, even with sun exposure
@@ -284,6 +293,8 @@ Let me know what you think
 
 ### How much leucine is in the capsules, and is it enough for muscle?
 
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
+
 Yes, there's very little L-Leucine in the capsules and it's primarily used
 as a flow agent.
 The best way to get enough Leucine is via a good diet that has around 1.2g
@@ -291,19 +302,9 @@ of protein per kg of ideal bodyweight per day
 
 Please let me know if you have any other questions
 
-## Sleep supplement
-
-### What can I do about next-day grogginess on the Sleep supplement?
-
-I don't produce the previous version of Sleep I'm sorry
-
-Are you taking the Sleep supplement 3 hours before you want to fall asleep?
-
-Have you tried using one capsule only (instead of 4) to see how you get on?
-
-Looking forward to hearing from you
-
 ### The Sleep supplement kept me awake; what should I do?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 Was it only one night that you tried the Sleep supplement?
 Did you take it 3 hours before wanting to fall asleep?
@@ -314,6 +315,8 @@ And final question, did you try taking only 1 capsule (instead of the usual
 Looking forward to hearing from you
 
 ### Can the Sleep supplement cause loose stools?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 For some people, magnesium can cause loose stools, however it's unusual for
 Magnesium Glycinate to cause loose stools
@@ -345,14 +348,6 @@ levels is a theoretical concern post hemorrhagic stroke
 
 Regarding Aspirin, you might find this video of mine useful:
 https://youtu.be/ulIkmIh7qL4
-
-### Personal questions about a prescription medicine (whether it suits me, what to do)
-
-Best to discuss with your own doctor.
-I'm not allowed to give individualized recommendations since I'm not your
-doctor I'm sorry
-
-## Other supplements
 
 ### Is there evidence for lion's mane?
 
@@ -389,6 +384,8 @@ https://youtu.be/DBKp8sp-Cxw
 Let me know what you think
 
 ### Is astaxanthin worth taking?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 I personally don't see the added value of Astaxanthin
 MicroVitamin already has antioxidants in the forms of lutein, zeaxanthin,
@@ -435,8 +432,6 @@ Have you looked at ConsumerLab for recommendations?
 
 Looking forward to hearing from you
 
-## Conditions, tests and evidence questions
-
 ### How much calcium does a woman after menopause need, and what are good food sources?
 
 Best to discuss with your doctor
@@ -469,16 +464,12 @@ about the recent study that raised concerns with Omega-3 and brain aging
 here:
 https://youtu.be/gAjyBJl1OF8
 
-## Brad's own supplements
-
 ### How much MicroVitamin should an older adult with a good diet take (including someone with past health problems)?
 
 MicroVitamin is designed to complement a healthy diet, not replace it.
 MicroVitamin is specifically designed for older adults
 
 Does the above help? If not, please let me know and I can try to answer your follow-up question as best as possible
-
-## Corrected answers (written 2026-10-12 at Brad's request)
 
 ### Can a supplement help stress-related eczema, fatigue or IBS?
 
@@ -490,6 +481,8 @@ Best to discuss with your doctor first, so the underlying causes can be looked a
 Please let me know if you have any other questions
 
 ### I have AMD and take an eye supplement; should I also take MicroVitamin, and is its lutein dose enough?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 Best to discuss with your ophthalmologist, as they know the details of your eyes
 
@@ -520,6 +513,8 @@ Given your history, please show the label to your doctor before starting it
 Please let me know if you have any other questions
 
 ### The psyllium in MicroVitamin+ gives me hard or painful stools (with IBS)
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 Some people with IBS find psyllium husk doesn't agree with them
 Drinking plenty of water with the powder can help
@@ -573,6 +568,8 @@ Best to discuss with your doctor whether you need more
 Please let me know if you have any other questions
 
 ### How does the Sleep supplement compare with a long-term over-the-counter sleep aid?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 My Sleep supplement has three ingredients: melatonin 0.8mg (sustained release), magnesium 126mg (as bisglycinate) and glycine 2,400mg
 It's non-habit-forming, and designed not to leave you groggy in the morning
@@ -658,6 +655,8 @@ But any abnormal kidney test is best reviewed by your doctor, so please let them
 Please let me know if you have any other questions
 
 ### Does the choline in MicroVitamin raise TMAO and heart risk?
+
+Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 TMAO is linked with heart disease in observational studies, but it isn't yet clear whether it causes it
 The amount of choline in MicroVitamin is modest

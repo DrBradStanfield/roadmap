@@ -78,7 +78,7 @@ interface StartingInfoVitalsProps {
   /** What the plan was computed from (US-06 AC5): its age sets the
    *  blood-pressure target, its weight target (kg) the weight line and its
    *  validated height (cm) the waist line. Null until there is a plan. */
-  plan: Pick<PlanBasis, 'age' | 'idealBodyWeight' | 'heightCm'> | null;
+  plan: Pick<PlanBasis, 'age' | 'idealBodyWeight' | 'heightCm' | 'knownMinor'> | null;
   /** Called after the user types a valid weight — continues the
    *  height → weight → email focus chain from the legacy form. */
   onAutoFocusEmail?: () => void;
@@ -267,15 +267,19 @@ export function StartingInfoVitals({
   prefillRef, flushRef,
 }: StartingInfoVitalsProps) {
   const sex = inputs.sex;
-  // The plan's systolic target; none, and no BP colours, with no plan.
-  const bpSysTarget = plan ? bpTargetFor(plan.age) : undefined;
-  const ibwKg = plan?.idealBodyWeight;
+  // The plan's systolic target; none, and no BP colours, with no plan. A known
+  // minor gets no adult weight or BP target or colour (US-07 AC6); the waist
+  // line, half the height, is also used in children, so it stays.
+  const adult = !plan?.knownMinor;
+  const bpSysTarget = plan && adult ? bpTargetFor(plan.age) : undefined;
+  const ibwKg = adult ? plan?.idealBodyWeight : undefined;
   const planHeightCm = plan?.heightCm;
 
   const fieldUnit = (field: 'weightKg' | 'waistCm'): UnitSystem => unitOverrides[field] ?? unitSystem;
 
   // Reference labels (per row, in the row's display unit).
-  const refLabel = (row: RowConfig): string => {
+  const refLabel = (row: RowConfig): string | null => {
+    if (!adult && (row.kind === 'bp' || row.metric === 'weight')) return null;
     if (row.kind === 'bp') return bpSysTarget !== undefined ? `Target: <${bpSysTarget}/80 mmHg` : 'Set sex + height to see target';
     if (row.metric === 'weight') {
       const u = fieldUnit('weightKg');
@@ -510,6 +514,7 @@ export function StartingInfoVitals({
             {/* Metric rows */}
             {ROWS.map((row, rowIdx) => {
               const last = rowIdx === ROWS.length - 1 ? ' bt-row-last' : '';
+              const ref = refLabel(row);
               const nameCell = (
                 <div className="bt-cell-name">
                   <div className="bt-name-label">{row.label}</div>
@@ -521,7 +526,7 @@ export function StartingInfoVitals({
                   ) : (
                     <UnitChip label="mmHg"/>
                   )}
-                  <div className="bt-ref-label">{refLabel(row)}</div>
+                  {ref && <div className="bt-ref-label">{ref}</div>}
                 </div>
               );
 
