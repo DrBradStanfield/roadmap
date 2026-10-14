@@ -6,9 +6,10 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, cleanup, fireEvent, act, within } from '@testing-library/react';
+import { useState } from 'react';
 import { localDay, toCanonicalValue, type ApiMeasurement } from '@roadmap/health-core';
 import { BloodTestTimeline, ValueCell } from './BloodTestTimeline';
-import { hidePage, pickDraftDate, press, showPage, typeInto, typeWithoutTap } from '../testing/matrix-gestures';
+import { hidePage, pickDraftDate, press, pressMouse, pressWithoutFocus, releaseMouse, showPage, typeInto, typeWithoutTap } from '../testing/matrix-gestures';
 import { slotOf, type Refused, type SaveTask } from '../lib/matrix-save';
 
 beforeEach(() => { vi.useFakeTimers(); });
@@ -103,6 +104,27 @@ describe('US-04 — the saved-value editor', () => {
     expect(onCorrect).toHaveBeenCalledWith('r1', 54);
   });
 
+  // US-05 AC2: the page's unit switch never changes a lab value's unit, so a
+  // press on it is leaving, as anywhere else: the edit saves.
+  it('a lab value\'s editor is not closed by a press on the page\'s unit switch: held 1200 ms, it saves as typed', async () => {
+    const onCorrect: Mock = vi.fn().mockResolvedValue('ok');
+    const view = render(<>
+      <ValueCell value={45} rowId="r1" status={null} pinned={false} onCorrect={onCorrect}/>
+      <button type="button" data-unit-control="all">Units</button>
+    </>);
+    fireEvent.click(view.getAllByRole('button')[0]);
+    const input = view.container.querySelector('.bt-cell-correcting input') as HTMLInputElement;
+    act(() => input.focus());
+    fireEvent.change(input, { target: { value: '54' } });
+    const pill = view.getByRole('button', { name: 'Units' });
+    pressWithoutFocus(pill);
+    await wait(1200);
+    releaseMouse(pill);
+    await wait(0);
+    expect(onCorrect).toHaveBeenCalledWith('r1', 54);
+    expect(view.queryByText('Not saved: choose the unit first, then type the value.')).toBeNull();
+  });
+
   it('a value the record refuses keeps the editor open with the reason', async () => {
     const { view, input, onCorrect } = editor();
     onCorrect.mockResolvedValue('invalid');
@@ -136,6 +158,407 @@ describe('US-04 — the saved-value editor', () => {
   it('offers no editor to a caller with no correction handler (read-only)', () => {
     const view = render(<ValueCell value={45} rowId="r1" status={null} pinned={false}/>);
     expect(view.queryByRole('button')).toBeNull();
+  });
+});
+
+// US-04 AC1 / US-05 AC2: a typed correction is saved only in the unit that
+// was shown when it was typed, never across a unit change. A user who types
+// 3.5 and then clicks the chip means "this number is in the new unit"; saving
+// it in the old one is the falsely reassuring error. One rule in the editor:
+// a press on a unit control that governs the editor (its row's own, or a
+// global one) closes it unsaved at the press, before any click can switch
+// the unit; any other click-away save waits while a pointer is down, until
+// it is released and its click has run; a save finds the unit changed and
+// writes nothing; and a unit switch closes the editor unsaved. Every gesture here is the browser's
+// own sequence: the press, the wait, the release, the click.
+describe('US-04 / US-05 AC2 — a unit switch while correcting LDL', () => {
+  const UNIT_CHANGED = 'The unit changed, so your edit was not saved. Type it again in the new unit.';
+  const UNIT_FIRST = 'Not saved: choose the unit first, then type the value.';
+  const other = (unit: 'si' | 'conventional') => (unit === 'si' ? 'conventional' : 'si');
+  function ldlPage(stored: number, unitSystem: 'si' | 'conventional' = 'si') {
+    const onCorrectValue: Mock = vi.fn().mockResolvedValue('ok');
+    const rows = history([['ldl', stored, '2026-08-15']]);
+    /** Another device's switch of LDL's unit, as HealthTool takes it in. */
+    const remote = { flip: noop };
+    // The page as HealthTool keeps it: each chip toggles its own field, and
+    // the global pill (outside the matrix) the whole unit system.
+    function Page() {
+      const [system, setSystem] = useState(unitSystem);
+      const [overrides, setOverrides] = useState<Record<string, 'si' | 'conventional'>>({});
+      const toggle = (field: string) => setOverrides((o) => ({ ...o, [field]: other(o[field] ?? system) }));
+      remote.flip = () => toggle('ldlC');
+      return (
+        <>
+          <BloodTestTimeline bloodTestHistory={rows} unitSystem={system} unitOverrides={overrides} onToggleFieldUnit={toggle}
+            onSaveBatch={vi.fn().mockResolvedValue(new Map())} onCorrectValue={onCorrectValue} onDraftValue={noop}
+            isSaving={false} hasApiResponse/>
+          <button type="button" data-unit-control="all" onClick={() => { setSystem(other(system)); setOverrides({}); }}>Units</button>
+        </>
+      );
+    }
+    const view = render(<Page/>);
+    const row = (label: string) => Array.from(view.container.querySelectorAll('.bt-row'))
+      .find((r) => r.querySelector('.bt-name-label')?.textContent === label) as HTMLElement;
+    const ldl = () => row('LDL Cholesterol');
+    fireEvent.click(ldl().querySelector('.bt-cell-clickable')!);
+    const input = ldl().querySelector('.bt-cell-correcting input') as HTMLInputElement;
+    expect(document.activeElement).toBe(input);
+    const chip = () => ldl().querySelector('.bt-unit-chip') as HTMLElement;
+    const hdlChip = () => row('HDL Cholesterol').querySelector('.bt-unit-chip') as HTMLElement;
+    const pill = () => view.getByRole('button', { name: 'Units' });
+    const title = () => view.container.querySelector('.bt-timeline-title') as HTMLElement;
+    /** A mouse press held `ms`, then released: the click. */
+    const click = async (el: () => HTMLElement, ms = 0) => {
+      pressMouse(el());
+      if (ms) await wait(ms);
+      releaseMouse(el());
+    };
+    /** The same, as Safari makes it on a button: the press blurs the editor and nothing takes the focus. */
+    const clickNoFocus = async (el: () => HTMLElement, ms = 0) => {
+      pressWithoutFocus(el());
+      if (ms) await wait(ms);
+      releaseMouse(el());
+    };
+    const editorOpen = () => ldl().querySelector('.bt-cell-correcting');
+    const region = () => view.container.querySelector('.bt-timeline [role="status"].bt-cell-messages') as HTMLElement;
+    return { view, ldl, input, chip, hdlChip, pill, title, click, clickNoFocus, remote, editorOpen, region, onCorrectValue };
+  }
+
+  it('a slow press on its own chip (held 200 ms) writes nothing and says to choose the unit first: the press takes the focus, as in Chrome', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    await p.click(p.chip, 200);
+    expect(p.chip().textContent).toBe('mg/dL');
+    expect(p.editorOpen()).toBeNull();
+    expect(within(p.ldl()).getByText(UNIT_FIRST)).toBeTruthy();
+    expect(document.activeElement).toBe(p.chip()); // the browser's own focus, kept
+    await wait(300);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  it('a slow press on its own chip that takes no focus (Safari) closes the editor at the press, writes nothing and says to choose the unit first', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    await p.clickNoFocus(p.chip, 200);
+    expect(p.chip().textContent).toBe('mg/dL');
+    expect(p.editorOpen()).toBeNull();
+    expect(within(p.ldl()).getByText(UNIT_FIRST)).toBeTruthy();
+    await wait(300);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+    expect(within(p.ldl()).queryByText(UNIT_CHANGED)).toBeNull();
+  });
+
+  // Adversary R1 (2026-10-13): the release wait was capped at a second, so a
+  // press held past 1150 ms ran the save in the old unit before the click
+  // switched it. The press decides now; nothing waits on the release.
+  it('a press on its own chip held 1200 ms (Safari) writes nothing and says to choose the unit first', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    pressWithoutFocus(p.chip());
+    expect(p.editorOpen()).toBeNull(); // closed at the press
+    await wait(1200);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+    releaseMouse(p.chip());
+    expect(p.chip().textContent).toBe('mg/dL');
+    expect(within(p.ldl()).getByText(UNIT_FIRST)).toBeTruthy();
+    await wait(300);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  it('a fast click on its own chip writes nothing and says so: 3.5 typed in mmol/L', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    await p.click(p.chip);
+    expect(p.chip().textContent).toBe('mg/dL');
+    expect(p.editorOpen()).toBeNull();
+    expect(within(p.ldl()).getByText(UNIT_FIRST)).toBeTruthy();
+    await wait(300);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  it('a fast click on its own chip that takes no focus (Safari) writes nothing and says to choose the unit first', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    await p.clickNoFocus(p.chip);
+    expect(p.editorOpen()).toBeNull();
+    expect(within(p.ldl()).getByText(UNIT_FIRST)).toBeTruthy();
+    await wait(300);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  it('the same in US units: 40 typed in mg/dL, then its chip, writes nothing', async () => {
+    const p = ldlPage(3.2, 'conventional');
+    fireEvent.change(p.input, { target: { value: '40' } });
+    await p.click(p.chip);
+    expect(p.chip().textContent).toBe('mmol/L');
+    expect(within(p.ldl()).getByText(UNIT_FIRST)).toBeTruthy();
+    await wait(300);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  it('a press on its own chip over an untouched editor (Safari) closes it silently at the press and writes nothing: "3.2" over a saved 3.24', async () => {
+    const p = ldlPage(3.24);
+    expect(p.input.value).toBe('3.2');
+    pressWithoutFocus(p.chip());
+    expect(p.editorOpen()).toBeNull();
+    releaseMouse(p.chip());
+    expect(p.chip().textContent).toBe('mg/dL');
+    expect(within(p.ldl()).queryByText(UNIT_FIRST)).toBeNull();
+    expect(within(p.ldl()).queryByText(UNIT_CHANGED)).toBeNull();
+    await wait(300);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+    expect(within(p.ldl()).queryByText(UNIT_CHANGED)).toBeNull();
+  });
+
+  // The rule the gesture guards leaked past: a press held on the global
+  // pill outside the matrix ran the click-away save in the old unit.
+  it('a slow press on the global unit pill (held 200 ms) writes nothing and says to choose the unit first', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    await p.click(p.pill, 200);
+    expect(p.chip().textContent).toBe('mg/dL');
+    expect(p.editorOpen()).toBeNull();
+    expect(within(p.ldl()).getByText(UNIT_FIRST)).toBeTruthy();
+    expect(document.activeElement).toBe(p.pill());
+    await wait(300);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  it('a fast click on the global unit pill writes nothing and says to choose the unit first', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    await p.click(p.pill);
+    expect(p.editorOpen()).toBeNull();
+    expect(within(p.ldl()).getByText(UNIT_FIRST)).toBeTruthy();
+    await wait(300);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  it('a press on the global unit pill held 1200 ms (Safari) writes nothing and says to choose the unit first', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    await p.clickNoFocus(p.pill, 1200);
+    expect(p.chip().textContent).toBe('mg/dL');
+    expect(p.editorOpen()).toBeNull();
+    expect(within(p.ldl()).getByText(UNIT_FIRST)).toBeTruthy();
+    await wait(300);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  // The gesture guard cancelled every chip's mousedown, so a click on another
+  // row's chip never blurred the editor, and the edit was never saved.
+  it('a mouse click on another row\'s chip is leaving: the edit saves after 150 ms, in its own unit', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    await p.click(p.hdlChip);
+    expect(p.hdlChip().textContent).toBe('mg/dL');
+    expect(p.chip().textContent).toBe('mmol/L');
+    await wait(100);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+    await wait(100);
+    expect(p.onCorrectValue).toHaveBeenCalledTimes(1);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+    expect(within(p.ldl()).queryByText(UNIT_CHANGED)).toBeNull();
+    expect(within(p.ldl()).queryByText(UNIT_FIRST)).toBeNull();
+  });
+
+  it('a press on another row\'s chip held 1200 ms (Safari) still saves the edit, in its own unit', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    await p.clickNoFocus(p.hdlChip, 1200);
+    await wait(0);
+    expect(p.onCorrectValue).toHaveBeenCalledTimes(1);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+    expect(p.chip().textContent).toBe('mmol/L');
+    expect(within(p.ldl()).queryByText(UNIT_FIRST)).toBeNull();
+  });
+
+  it('a press held on another row\'s chip saves once it is released, in its own unit', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    await p.click(p.hdlChip, 200);
+    expect(p.onCorrectValue).not.toHaveBeenCalled(); // the click had not run when the save was due
+    await wait(0);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+  });
+
+  it('Tab from the editor to its own chip writes nothing, says to choose the unit first, and leaves the focus on the chip', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    act(() => p.chip().focus());
+    expect(p.editorOpen()).toBeNull();
+    expect(within(p.ldl()).getByText(UNIT_FIRST)).toBeTruthy();
+    expect(document.activeElement).toBe(p.chip());
+    await wait(300);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  it('Tab on to another row\'s chip is leaving: the value saves', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    act(() => p.hdlChip().focus());
+    await wait(200);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+  });
+
+  it('a click anywhere else still saves after 150 ms', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    press(p.title());
+    await wait(100);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+    await wait(100);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+  });
+
+  // Adversary R5: a click-away save pending when another device's switch lands.
+  it('a click-away save pending when another device switches the unit writes nothing and says so', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    press(p.title());
+    await wait(50);
+    act(() => p.remote.flip());
+    expect(p.editorOpen()).toBeNull();
+    expect(within(p.ldl()).getByText(UNIT_CHANGED)).toBeTruthy();
+    await wait(300);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  it('a click-away save waiting on a held press when another device switches the unit writes nothing', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    pressMouse(p.title());
+    await wait(200); // the save is due, and waits for the release
+    act(() => p.remote.flip());
+    releaseMouse(p.title());
+    await wait(300);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+    expect(within(p.ldl()).getByText(UNIT_CHANGED)).toBeTruthy();
+  });
+
+  // The press decides (adversary R1, 2026-10-13): a press on the chip
+  // dragged off still closed the editor at the press. The unit is unchanged,
+  // and the message says why the edit went.
+  it('a press on its own chip dragged off (released elsewhere, no click) closes the editor unsaved and says so', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    fireEvent.pointerDown(p.chip()); // a touch on the chip takes no focus
+    fireEvent.pointerUp(document.body); // dragged off: no click
+    await wait(200);
+    expect(p.editorOpen()).toBeNull();
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+    expect(p.chip().textContent).toBe('mmol/L');
+    expect(within(p.ldl()).getByText(UNIT_FIRST)).toBeTruthy();
+  });
+
+  it('a switch with the focus still in the editor closes it, writes nothing, says so, and returns the focus to the cell', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    act(() => p.remote.flip());
+    expect(p.editorOpen()).toBeNull();
+    expect(within(p.ldl()).getByText(UNIT_CHANGED)).toBeTruthy();
+    expect(document.activeElement).toBe(p.ldl().querySelector('.bt-cell-clickable'));
+    await wait(300);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+    fireEvent.click(p.ldl().querySelector('.bt-cell-clickable')!); // until the next open
+    expect(within(p.ldl()).queryByText(UNIT_CHANGED)).toBeNull();
+  });
+
+  // Adversary R6: an editor nobody typed in loses nothing when it is left for
+  // its own unit control, so it closes with no "Not saved" message.
+  it('Tab from an untouched editor to its own chip closes it silently', async () => {
+    const p = ldlPage(3.2);
+    act(() => p.chip().focus());
+    expect(p.editorOpen()).toBeNull();
+    expect(within(p.ldl()).queryByText(UNIT_FIRST)).toBeNull();
+    await wait(300);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+    expect(p.region().textContent).toBe('\u00a0');
+  });
+
+  // Adversary R5: a click-away save waiting for a release that never comes
+  // (the pointerup lost to a drag out of the window, or a system gesture)
+  // waited for ever, and the page going away took the edit with it.
+  it('a press never released saves after 1000 ms more, in its own unit', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    pressMouse(p.title()); // no release
+    await wait(150 + 900);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+    await wait(100);
+    expect(p.onCorrectValue).toHaveBeenCalledTimes(1);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+    expect(within(p.ldl()).queryByText(UNIT_CHANGED)).toBeNull();
+  });
+
+  it('a press never released, then another device\'s unit switch, still writes nothing after the cap', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    pressMouse(p.title());
+    await wait(200);
+    act(() => p.remote.flip());
+    await wait(1500);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+    expect(within(p.ldl()).getByText(UNIT_CHANGED)).toBeTruthy();
+  });
+
+  it('the page hiding runs a save waiting on a held press at once', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    pressMouse(p.title());
+    await wait(200); // the save is due, and waits for the release
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+    hidePage();
+    await wait(0);
+    expect(p.onCorrectValue).toHaveBeenCalledTimes(1);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+    await wait(1500);
+    expect(p.onCorrectValue).toHaveBeenCalledTimes(1);
+  });
+
+  it('pagehide alone runs it too', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    pressMouse(p.title());
+    await wait(200);
+    act(() => { window.dispatchEvent(new Event('pagehide')); });
+    await wait(0);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+  });
+
+  // Codex R2 / adversary R3: a live region set to the text it already holds
+  // changes nothing in the page, so the second message went unheard.
+  it('the same message twice in a row is a fresh change each time: cleared, then said', async () => {
+    const p = ldlPage(3.2);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    await p.clickNoFocus(p.chip);
+    await wait(0);
+    expect(p.region().textContent).toBe(UNIT_FIRST);
+    fireEvent.click(p.ldl().querySelector('.bt-cell-clickable')!);
+    fireEvent.change(p.ldl().querySelector('.bt-cell-correcting input')!, { target: { value: '140' } });
+    await p.clickNoFocus(p.chip);
+    expect(p.region().textContent).toBe('\u00a0');
+    await wait(0);
+    expect(p.region().textContent).toBe(UNIT_FIRST);
+    expect(p.onCorrectValue).not.toHaveBeenCalled();
+  });
+
+  // Adversary R2 / Codex R2: one polite live region per matrix, on the page
+  // from the first render, a p (the theme hides an empty div); the message
+  // shows in the cell too.
+  it('the cell\'s message is said in the matrix\'s one live region, there from the first render', async () => {
+    const p = ldlPage(3.2);
+    const region = p.region();
+    expect(region).toBeTruthy();
+    expect(region.tagName).toBe('P');
+    expect(region.textContent).toBe('\u00a0'); // never empty: the theme may hide an empty p or div
+    expect(p.view.container.querySelectorAll('[role="status"]')).toHaveLength(1);
+    fireEvent.change(p.input, { target: { value: '3.5' } });
+    await p.clickNoFocus(p.chip);
+    await wait(0);
+    expect(p.region()).toBe(region);
+    expect(region.textContent).toBe(UNIT_FIRST);
+    expect(within(p.ldl()).getByText(UNIT_FIRST).getAttribute('role')).toBeNull(); // the cell shows it; the region says it
   });
 });
 

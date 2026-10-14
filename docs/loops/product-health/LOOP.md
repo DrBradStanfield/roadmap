@@ -70,7 +70,13 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   route, reason, and `backend` local|cloud, since a guest's second tab counts
   too; value-free by design — while n is tiny these are Brad's own
   verification, not adoption); `guide_opened` split by `placement`
-  (header|footer), read against `results_viewed`;
+  (header|footer), read against `results_viewed`; `lpa_unit_selected`
+  split by `unit` and `from` (the Lp(a) control's three units, labels only,
+  US-05 AC2), read against `results_viewed`; `lpa_check_answered` split
+  by `answer` (the Lp(a) check's mg/dL, nmol/L, mg/L or keep, the first
+  three a correction written; keep = Neither, or any answer that would
+  save the stored value; labels only, US-05 AC3). It is
+  sent once per tab, so the split counts each tab's first answer only;
   `reminder_optin_v2` total by `provider`. Read `mcp_authorize_shown` with a
   clock: more than two rows a second from one client, with no
   `mcp_consent_posted` following, is a probe scanning the door, not people

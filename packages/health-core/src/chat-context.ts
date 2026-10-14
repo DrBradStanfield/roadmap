@@ -26,7 +26,8 @@
  *     as UNLISTED; it reads any finite dose as the widget does. Neither an
  *     unlisted name nor an out-of-range dose appears in this JSON.
  *   - screenings: screeningsToInputs over rows whose key is a SCREENING_KEY;
- *     a number parses whole into its range, and screeningsToInputs keeps a
+ *     a number parses whole into its range as the widget reads it
+ *     (parseLocalisedNumber), and screeningsToInputs keeps a
  *     date only if it is a real calendar date (a "last done" date no later
  *     than this month) and an option only if it is listed, as it does for
  *     the widget's plan.
@@ -52,6 +53,7 @@ import {
   type MeasurementHistoryMap,
 } from './measurement-history';
 import { calculateHealthResults } from './calculations';
+import { parseLocalisedNumber } from './parseNumber';
 
 /** What a client sends as the chat's context. A row carries only the fields
  *  the builder reads: never its id, update time or lamport clock. */
@@ -228,7 +230,7 @@ function screeningRows(raw: unknown): Array<Pick<ApiScreening, 'screeningKey' | 
     if (typeof value !== 'string' || value.length > MAX_SCREENING_VALUE) return [];
     const range = own(SCREENING_RANGES, screeningKey) ? SCREENING_RANGES[screeningKey] : null;
     if (range) {
-      const n = value.trim() === '' ? NaN : Number(value);
+      const n = parseLocalisedNumber(value) ?? NaN;
       if (!Number.isFinite(n) || n < range.min || n > range.max) return [];
     }
     return [{ screeningKey, value }];

@@ -61,12 +61,10 @@ export async function sha256Blob(blob: Blob): Promise<string> {
   return `sha256-${hex}`;
 }
 
-/** Attach each result's original bytes and their hash (absent off-cloud). */
-export async function attachOriginals(results: FileResult[], blobs: Map<string, Blob>): Promise<FileResult[]> {
-  return Promise.all(results.map(async (r) => {
-    const file = blobs.get(r.fileName);
-    return file ? { ...r, file, contentHash: await sha256Blob(file) } : r;
-  }));
+/** Hash each result's original bytes, which travel with the result itself:
+ *  a name-keyed map handed two ZIPs' `results.pdf` one original. */
+export async function attachOriginals(results: FileResult[]): Promise<FileResult[]> {
+  return Promise.all(results.map(async (r) => (r.file ? { ...r, contentHash: await sha256Blob(r.file) } : r)));
 }
 
 /** A file the archive step can file: bytes in hand, and either a reviewed

@@ -33,6 +33,7 @@ import { IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
 import { ROADMAP_FILE_NAME, StorageError } from '../../packages/health-core/src/adapter';
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
+import { MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
 
 /** The user's own words, quoted in every commit (US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, file them';
@@ -382,6 +383,21 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
     expect(again.isError).toBe(true);
     expect(again.text).toContain('names no pending import');
   });
+
+  // US-35 / US-12 AC8: a row the parse refused ("250,000") vanished, and once
+  // the report was filed the next extract answered already_imported.
+  it('a partially refused report says how many values it left out before the document dedups', async () => {
+    const cloud = new MemoryCloud();
+    cloud.docs.set('labs.pdf', new Blob([PDF]));
+    const adapter = new MemoryAdapter(cloud);
+    await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'test', now: NOW }), null);
+    setImportSeams({ extract: async () => ({ ...report, droppedValueCount: 3 }) });
+    const extract = await runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', {}, NOW, {
+      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 }),
+    });
+    const data = OUTPUTS.import_documents.parse(extract.structured);
+    expect(data.files).toEqual([expect.objectContaining({ name: 'labs.pdf', status: 'extracted', droppedValues: 3, hint: expect.stringMatching(/^3 values on this report could not be read/) })]);
+  });
 });
 
 describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete that fails is only counted', () => {
@@ -618,7 +634,7 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
     const cut = await surface.extract({}, file, NOW, deadline());
     if (!('files' in cut)) throw new Error(cut.refusal);
     expect(cut.files.map((f) => [f.name, f.status, f.reason])).toEqual([
-      ['labs/a.pdf', 'failed', 'time'], ['labs/b.pdf', 'skipped', 'time'], ['labs/c.pdf', 'skipped', 'time'],
+      ['bundle.zip/labs/a.pdf', 'failed', 'time'], ['bundle.zip/labs/b.pdf', 'skipped', 'time'], ['bundle.zip/labs/c.pdf', 'skipped', 'time'],
     ]);
     // An entry's inner path is not a file in the folder root: naming it would make the next call refuse whole.
     expect(cut.remaining).toEqual(['bundle.zip']);
@@ -626,7 +642,7 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
     setImportSeams({ extract: async () => letter });
     const again = await surface.extract({ fileNames: cut.remaining }, file, NOW, deadline());
     if (!('files' in again)) throw new Error(again.refusal);
-    expect(again.files.map((f) => [f.name, f.status])).toEqual([['labs/a.pdf', 'extracted'], ['labs/b.pdf', 'extracted'], ['labs/c.pdf', 'extracted']]);
+    expect(again.files.map((f) => [f.name, f.status])).toEqual([['bundle.zip/labs/a.pdf', 'extracted'], ['bundle.zip/labs/b.pdf', 'extracted'], ['bundle.zip/labs/c.pdf', 'extracted']]);
   });
 });
 
@@ -697,11 +713,12 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
     if (!('files' in bundle)) throw new Error(bundle.refusal);
     // The listing's order: a.pdf, then the ZIP's entries flattened in the archive's order, then what it skipped.
+    // Each entry is named `zip/member`, as the website's upload names it (US-12 AC9).
     expect(bundle.files.map((f) => [f.name, f.status, f.reason])).toEqual([
       ['a.pdf', 'extracted', undefined],
-      ['labs/2026-a.pdf', 'extracted', undefined],
-      ['labs/scan.jpg', 'extracted', undefined],
-      ['labs/inner.zip', 'skipped', 'nested_zip'],
+      ['bundle.zip/labs/2026-a.pdf', 'extracted', undefined],
+      ['bundle.zip/labs/scan.jpg', 'extracted', undefined],
+      ['bundle.zip/labs/inner.zip', 'skipped', 'nested_zip'],
     ]);
     expect(bundle.files.slice(0, 3).map((f) => [f.mimeType, f.contentHash?.slice(0, 7)])).toEqual([
       ['application/pdf', 'sha256-'], ['application/pdf', 'sha256-'], ['image/jpeg', 'sha256-'],
@@ -709,5 +726,26 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     expect(kinds.sort()).toEqual(['image', 'pdf', 'pdf']);
     expect(importFiles.remaining(key)).toBe(IMPORT_FILES_PER_DAY - 3);
     expect(bundle.remaining).toEqual([]);
+  });
+
+  it('a member path past the name limit is named as the website names it, from the raw path, and two ZIPs holding it stay apart (US-35 AC5, US-12 AC9)', async () => {
+    // 300 characters: unzip used to cut it to 255 before zipMemberName saw it.
+    // The cut ate `.pdf`, so the entry was dropped without a word, and a shorter
+    // cut would have hashed a different string from the website's upload.
+    const longPath = `labs/${'x'.repeat(291)}.pdf`;
+    expect(longPath).toHaveLength(300);
+    const cloud = new MemoryCloud();
+    for (const [zipName, bytes] of [['a.zip', PDF], ['b.zip', new Uint8Array([...PDF, 1])]] as const) {
+      const zip = new JSZip();
+      zip.file(longPath, bytes);
+      cloud.docs.set(zipName, new Blob([new Uint8Array(await zip.generateAsync({ type: 'uint8array' }))]));
+    }
+    setImportSeams({ extract: async () => letter });
+    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    if (!('files' in bundle)) throw new Error(bundle.refusal);
+    const names = bundle.files.map((f) => f.name);
+    expect(names).toEqual([zipMemberName('a.zip', longPath), zipMemberName('b.zip', longPath)]);
+    expect(names[0]).not.toBe(names[1]);
+    expect(names.every((n) => n.length <= MAX_FILE_NAME_LENGTH)).toBe(true);
   });
 });

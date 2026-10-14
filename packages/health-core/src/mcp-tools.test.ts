@@ -55,7 +55,7 @@ import {
 import { computePlan, REPO_PUBLIC, REPO_SLUG, REPO_URL, SCHEMA_URL } from './plan';
 import { dayOf, mergeFiles, stampFields } from './merge';
 import { migrateFile } from './migrate';
-import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
+import { createEmptyFile, createLabValue, createMeasurement, type RoadmapFile } from './roadmap-file';
 import { METRIC_TYPES } from './validation';
 
 const CTX = { deviceId: 'us32_test', now: '2026-09-01T09:00:00Z' };
@@ -366,6 +366,67 @@ describe('US-32 — a read answers compactly', () => {
 });
 
 describe('US-32 — read_record filters', () => {
+  it.each([
+    ['ldl', 'LDL Cholesterol'],
+    ['ldl', 'LDL-C'],
+    ['lpa', 'Lp(a)'],
+    ['lpa', 'Lipoprotein(a)'],
+    ['hba1c', 'A1C'],
+    ['apob', 'Apo B'],
+    ['creatinine', 'Serum Creatinine'],
+  ] as const)('US-32 AC1/AC26: reads %s by its recognized name %s', (metricType, alias) => {
+    const file = base();
+    file.measurements = [];
+    file.measurements.push(createMeasurement({
+      id: 'wanted', metricType, value: 1, recordedAt: TODAY, createdAt: NOW,
+    }));
+    file.labValues.push(createLabValue({
+      id: 'unrelated', metricName: 'tsh', value: 2.3, unit: 'mIU/L', recordedAt: TODAY, createdAt: NOW,
+    }));
+    const before = JSON.stringify(file);
+    const canonical = JSON.parse(ok(readRecord(file, { metric: metricType })).text);
+    const byAlias = JSON.parse(ok(readRecord(file, { metric: alias })).text);
+
+    expect(byAlias).toEqual(canonical);
+    expect(byAlias.measurements.map((row: { id: string }) => row.id)).toEqual(['wanted']);
+    expect(byAlias.labValues).toEqual([]);
+    expect(JSON.stringify(file)).toBe(before);
+  });
+
+  it('US-32 AC1/AC26: keeps a legacy core-alias lab row readable without migrating it', () => {
+    const file = base();
+    file.labValues.push(createLabValue({
+      id: 'legacy', metricName: 'ldl-c', value: 2.1, unit: 'mmol/L', recordedAt: TODAY, createdAt: NOW,
+    }));
+    const before = JSON.stringify(file);
+    const canonical = JSON.parse(ok(readRecord(file, { metric: 'ldl' })).text);
+    const byAlias = JSON.parse(ok(readRecord(file, { metric: 'LDL-C' })).text);
+
+    expect(byAlias).toEqual(canonical);
+    expect(byAlias.labValues.map((row: { id: string }) => row.id)).toEqual(['legacy']);
+    expect(byAlias.measurements.map((row: { id: string }) => row.id)).toEqual(['m1']);
+    expect(JSON.stringify(file)).toBe(before);
+  });
+
+  it('US-32 AC1/AC26: keeps non-HDL cholesterol separate from the core HDL metric', () => {
+    const file = base();
+    file.measurements.push(createMeasurement({
+      id: 'hdl', metricType: 'hdl', value: 1.3, recordedAt: TODAY, createdAt: NOW,
+    }));
+    const written = ok(addLabValues(file, { values: [
+      { metricName: 'Non-HDL Cholesterol', value: 3.2, unit: 'mmol/L', recordedAt: TODAY },
+    ] }, { now: NOW }));
+    expect(written.file).toBeDefined();
+    const nonHdl = JSON.parse(ok(readRecord(written.file!, { metric: 'Non-HDL Cholesterol' })).text);
+    const hdl = JSON.parse(ok(readRecord(written.file!, { metric: 'HDL Cholesterol' })).text);
+
+    expect(nonHdl.measurements).toEqual([]);
+    expect(nonHdl.labValues).toHaveLength(1);
+    expect(nonHdl.labValues[0].metricName).toBe('non-hdl cholesterol');
+    expect(hdl.measurements.map((row: { id: string }) => row.id)).toEqual(['hdl']);
+    expect(hdl.labValues).toEqual([]);
+  });
+
   it('narrows to one metric, by catalogue key as well as name', () => {
     const parsed = JSON.parse(ok(readRecord(base(), { metric: 'Ferritin' })).text);
 
@@ -518,6 +579,44 @@ describe('US-32 — add_measurement', () => {
 });
 
 describe('US-32 — add_lab_values is a batch, and all or nothing', () => {
+  it('US-32 AC4: refuses a core alias after a valid lab without writing any row', () => {
+    const file = base();
+    const before = JSON.stringify(file);
+    const outcome = callTool('add_lab_values', {
+      values: [
+        { metricName: 'tsh', value: 2.3, unit: 'mIU/L', recordedAt: TODAY },
+        { metricName: 'LDL-C', value: 2.1, unit: 'mmol/L', recordedAt: TODAY },
+      ],
+    }, { file, now: NOW });
+
+    expect(outcome).toMatchObject({ status: 'rejected', reason: 'core-metric' });
+    expect(outcome).not.toHaveProperty('file');
+    expect(outcome.text).toContain('values[1] (LDL-C)');
+    expect(outcome.text).toContain('write it as a measurement, in SI units');
+    expect(outcome.text).toContain('No row from this call was written');
+    expect(JSON.stringify(file)).toBe(before);
+  });
+
+  it('US-32 AC4: refuses Height after a valid lab atomically with profile-edit guidance', () => {
+    const file = base();
+    const before = JSON.stringify(file);
+    const outcome = callTool('add_lab_values', {
+      values: [
+        { metricName: 'tsh', value: 2.3, unit: 'mIU/L', recordedAt: TODAY },
+        { metricName: 'Height', value: 180, unit: 'cm', recordedAt: TODAY },
+      ],
+    }, { file, now: NOW });
+
+    expect(outcome).toMatchObject({ status: 'rejected', reason: 'core-metric' });
+    expect(outcome).not.toHaveProperty('file');
+    expect(JSON.stringify(file)).toBe(before);
+    expect(outcome.text).toContain('values[1] (Height)');
+    expect(outcome.text).toContain('No row from this call was written');
+    expect(outcome.text).toContain('heightCm');
+    expect(outcome.text).toContain('update_profile');
+    expect(outcome.text).not.toContain('write it as a measurement');
+  });
+
   it('writes a whole panel in one call', () => {
     const outcome = ok(addLabValues(base(), {
       values: [
@@ -660,6 +759,7 @@ describe('US-34 — update_profile changes who the record is about', () => {
   it('AC1 — writes each field, one line per change, and leaves the rest of the profile alone', () => {
     const file = base();
     file.profile.unitOverrides = { ldl: 'conventional' };
+    file.profile.lpaUnit = 'mg/L';
     (file.profile as unknown as Record<string, unknown>).somethingNewerAppsKnow = 'keep me';
 
     const outcome = ok(updateProfile(file, { sex: 'female', birthYear: 1972, birthMonth: 4, heightCm: 165 }, NOW));
@@ -668,7 +768,7 @@ describe('US-34 — update_profile changes who the record is about', () => {
       sex: 'female', birthYear: 1972, birthMonth: 4, heightCm: 165,
       // Untouched: display preferences are out of reach, and a field this
       // version has never heard of survives a read-modify-write of the object.
-      unitSystem: 'si', unitOverrides: { ldl: 'conventional' }, somethingNewerAppsKnow: 'keep me',
+      unitSystem: 'si', unitOverrides: { ldl: 'conventional' }, lpaUnit: 'mg/L', somethingNewerAppsKnow: 'keep me',
     });
     expect(outcome.text.split('\n')).toEqual([
       'sex: male → female', 'birthYear: 1971 → 1972', 'birthMonth: not set → 4', 'heightCm: 178 → 165',
@@ -875,6 +975,7 @@ describe('US-32 — the dispatcher', () => {
       ['correct_value', { id: 'm1' }],
       ['update_profile', { sex: 'other' }],
       ['update_profile', { sex: 'female', wat: true }],
+      ['update_profile', { lpaUnit: 'mg/dL' }], // a display preference: out of reach (US-05 AC2)
       ['update_profile', { expected: { sex: 'male', wat: 1 } }],
       ['read_record', { since: '14/07/2026' }],
     ];
@@ -1384,14 +1485,14 @@ describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () 
   const description = (mod: typeof import('./mcp-tools')) => mod.MCP_TOOLS.find((t) => t.name === 'report_feedback')!.description;
   const filer: FeedbackFiler = async () => ({ ok: true, url: 'https://github.com/DrBradStanfield/roadmap/issues/7', number: 7 });
 
-  it('while public, the description, the proposal and the tokenless link read exactly as before', async () => {
+  it('while public, the description, the proposal and the tokenless link read as published (2026-10-12)', async () => {
     const mod = await withRepoPublic(true);
     expect(description(mod)).toBe(
       'This files a public GitHub issue. Do not include diagnoses, names, contact details, or values; describe the ' +
       'behaviour, not the person — dates of results and file paths too. Say it is public before you call it, and only ' +
       'when the user asked you to. Offer it when a tool refuses something they expected, the record cannot hold what ' +
-      'they want to track, or a result looks wrong. Without a GitHub token the server answers with a link they ' +
-      'submit themselves; the answer says which. On the hosted server this takes two calls: the first answers with ' +
+      'they want to track, or a result looks wrong. Without a GitHub token it returns a link for them ' +
+      'to submit; the answer says which. On the hosted server this takes two calls: the first answers with ' +
       'what it would do and a `confirm` receipt; show it to the user and call again with `confirm` and `approval` (the user’s own words, quoted verbatim) only after their ' +
       'own yes, in their own words.',
     );
@@ -1414,7 +1515,7 @@ describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () 
     expect(text).toContain('Do not include diagnoses, names, contact details, or values');
     expect(text).toContain('Say it will be public before you call it');
     expect(text).not.toContain('public GitHub issue');
-    expect(text).not.toContain('link they submit');
+    expect(text).not.toContain('Without a GitHub token');
   });
 
   it('while hidden, the proposal says the same and still shows the detail as it will be filed', async () => {
@@ -1427,13 +1528,16 @@ describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () 
     expect(text).not.toContain('github.com');
   });
 
-  it('hands the proposal’s structured url only while public, and says so in the published schema', async () => {
+  it('never hands a proposal a structured url, only the tokenless answer, and says so in the published schema', async () => {
     const urlDescription = (mod: typeof import('./mcp-tools')) =>
       (mod.MCP_TOOLS.find((t) => t.name === 'report_feedback')!.outputSchema.properties as Record<string, { description?: string }>).url.description;
     const shown = await withRepoPublic(true);
+    // A proposal's link, submitted beside the confirm, would file a second issue under the user's own account.
     const open = ok(shown.reportFeedback(GOOD, NOW, true)) as unknown as { data: { url: string } };
-    expect(open.data.url.startsWith('https://github.com/DrBradStanfield/roadmap/issues/new?')).toBe(true);
-    expect(urlDescription(shown)).toBe('The issue, or the prefilled link the user opens.');
+    expect(open.data.url).toBe('');
+    const tokenless = ok(shown.reportFeedback(GOOD, NOW)) as unknown as { data: { url: string } };
+    expect(tokenless.data.url.startsWith('https://github.com/DrBradStanfield/roadmap/issues/new?')).toBe(true);
+    expect(urlDescription(shown)).toBe('The filed issue, or the prefilled link the user submits; empty on a proposal.');
 
     const hidden = await withRepoPublic(false);
     const proposal = ok(hidden.reportFeedback(GOOD, NOW, true, true)) as unknown as { data: { url: string } };
@@ -1641,7 +1745,8 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     const { payload, files, unrecognized } = prepareImport(base(), bundleOf([
       extracted('bad.pdf', labReport({
         values: [{ metric: 'ldl', valueSI: 99, displayValue: 99, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' }],
-        additionalValues: [{ name: 'LDL', value: 2.1, unit: 'mmol/L' }, { name: 'tsh', value: 1.2, unit: 'mIU/L' }],
+        // An alias of a core metric is one too (US-31 AC5), and Height belongs to the profile.
+        additionalValues: [{ name: 'LDL', value: 2.1, unit: 'mmol/L' }, { name: 'LDL-C', value: 2.1, unit: 'mmol/L' }, { name: 'Height', value: 180, unit: 'cm' }, { name: 'tsh', value: 1.2, unit: 'mIU/L' }],
         unrecognized: [],
       })),
       extracted('future.pdf', labReport({ reportDate: '2099-01-01' })),
@@ -1649,9 +1754,11 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
       { name: 'broken.pdf', status: 'failed', reason: 'unreadable' },
     ]), IMPORT_CTX);
     expect(payload.candidates.map((c) => c.metric)).toEqual(['tsh']);
-    expect(unrecognized).toHaveLength(2);
+    expect(unrecognized).toHaveLength(4);
     expect(unrecognized[0]).toMatch(/^ldl: /);
-    expect(unrecognized[1]).toMatch(/core metric/);
+    expect(unrecognized[1]).toMatch(/^LDL: .*core metric/);
+    expect(unrecognized[2]).toMatch(/^LDL-C: .*core metric/);
+    expect(unrecognized[3]).toMatch(/^Height: .*heightCm/);
     expect(files.slice(1).map((f) => [f.status, f.reason])).toEqual([['failed', 'no_date'], ['failed', 'no_date'], ['failed', 'unreadable']]);
     // Every file that was not read carries the sentence the assistant relays (AC13).
     expect(files.slice(1).map((f) => f.hint)).toEqual([importHint('no_date'), importHint('no_date'), importHint('unreadable')]);
@@ -2054,6 +2161,23 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(data.candidates.map((c) => c.sameDayAs)).toEqual([undefined, 'c1']);
     const commit = await runToolOverSync(sync, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [] } }, NOW, { importer: mixed, latestDay: TODAY });
     expect(fits(commit.structured).written).toEqual({ measurements: 1, labValues: 0, corrections: 0, documents: 3 });
+  });
+
+  // US-35 / US-12 AC8: a value the parse refused ("250,000", a malformed row)
+  // left the report silently, and the commit's document row then made the next
+  // extract `already_imported`. The count rides on the file entry, with a hint.
+  it('AC13 — a partially refused report carries its dropped-value count and a hint, and validates against the published outputSchema', async () => {
+    const sync = syncOver(new MemoryCloud());
+    const partial: ImportSurface = { ...surface, async extract() {
+      return { route: 'dropbox', remaining: [], files: [extracted('partial.pdf', { ...ldlOnly(2.8, LAB_DAY), droppedValueCount: 2 }), extracted('clean.pdf', { ...ldlOnly(2.9, '2026-08-21'), droppedValueCount: 0 })] };
+    } };
+    const data = fits((await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: partial, latestDay: TODAY })).structured);
+    expect(data.files).toEqual([
+      { name: 'partial.pdf', status: 'extracted', classification: 'lab_report', documentDate: LAB_DAY, droppedValues: 2, hint: '2 values on this report could not be read and were left out. Check the report for them.' },
+      { name: 'clean.pdf', status: 'extracted', classification: 'lab_report', documentDate: '2026-08-21' },
+    ]);
+    expect(data.candidates.map((c) => c.sourceFileName)).toEqual(['partial.pdf', 'clean.pdf']);
+    expect(data.next).toContain("1 file(s) had values that could not be read: relay that file's hint.");
   });
 
   it('AC8 — a document-only extract names the documents to file and tells the assistant to offer an empty commit', async () => {
@@ -2474,16 +2598,16 @@ describe('US-36 AC4 — units: one table, converted to canonical, refused by nam
     expect(by.ldl.value).toBeCloseTo(2.586, 2);
     expect(by.ldl.unit).toBe('mmol/L');
     expect(by.hba1c.value).toBeCloseTo(42, 0);
-    expect(by.lpa.value).toBeCloseTo(24, 5); // 10 mg/dL = 100 mg/L × 0.24 (≈ 2.4 nmol/L per mg/dL)
+    expect(by.lpa.value).toBeCloseTo(25, 9); // 10 mg/dL × 2.5 nmol/L per mg/dL (US-05 AC1)
     expect(by.apob.value).toBeCloseTo(0.9, 6);
     expect(by.creatinine.value).toBe(80);
     expect(by.ferritin).toMatchObject({ kind: 'lab', value: 210, unit: 'µg/L', printedName: 'Ferritin' });
     // The same table serves add_measurement (review 1.3): micromol/L is one spelling, not two answers.
     expect(addMeasurement(base(), { metricType: 'creatinine', value: 80, unit: 'micromol/L', recordedAt: TODAY }, CTX).status).toBe('ok');
     expect(reportedToCanonical('lpa', 10, 'mg/dL')).toMatchObject({ system: 'conventional' });
-    expect(reportedToCanonical('lpa', 10, 'mg/dL')!.valueSI).toBeCloseTo(24, 5);
+    expect(reportedToCanonical('lpa', 10, 'mg/dL')!.valueSI).toBeCloseTo(25, 9);
     // A normal US print is accepted, not refused as out of range (live 2026-09-07: 45 mg/dL was read as 1080 nmol/L).
-    expect(prepared(labCall([row('lpa', 'Lp(a)', 45, 'mg/dL')])).payload.candidates[0]).toMatchObject({ value: 108, confidence: 'high' });
+    expect(prepared(labCall([row('lpa', 'Lp(a)', 45, 'mg/dL')])).payload.candidates[0]).toMatchObject({ value: 112.5, confidence: 'high' });
   });
 
   it('refuses a unit the metric is not measured in, naming both labels', () => {
@@ -2497,7 +2621,7 @@ describe('US-36 AC4 — units: one table, converted to canonical, refused by nam
       row('total_cholesterol', 'Cholesterol', 5.2, 'mg/dL'),
       row('hdl', 'HDL Cholesterol', 1.3, 'mg/dL'),
       row('apob', 'ApoB', 0.9, 'mg/dL'),
-      row('lpa', 'Lp(a)', 2, 'mg/L'),
+      row('lpa', 'Lp(a)', 1, 'mg/L'), // 0.25 nmol/L, under the 0.5 floor (2 mg/L is 0.5 at 2.5 per mg/dL)
     ]), { ...base(), measurements: [] });
     expect(out.unrecognized).toEqual([]);
     expect(out.payload.candidates.map((c) => c.confidence)).toEqual(['low', 'low', 'low', 'low', 'low']);
@@ -2511,6 +2635,28 @@ describe('US-36 AC4 — units: one table, converted to canonical, refused by nam
     const us = { ...base(), measurements: [], profile: { ...base().profile, unitSystem: 'conventional' as const } };
     const out = prepared(labCall([row('ldl', 'LDL Cholesterol', 2.6, 'mmol/L')]), us);
     expect(out.payload.candidates[0]).toMatchObject({ displayValue: '101', displayUnit: 'mg/dL', unit: 'mmol/L' });
+  });
+});
+
+// US-05: every connector write door reads Lp(a) as either lab prints it.
+describe('US-05 AC1 — file_results, add_measurement and correct_value read Lp(a) in mg/dL and in mg/L', () => {
+  const lpa = (f: RoadmapFile) => f.measurements.filter((m) => m.metricType === 'lpa' && m.status === 'active');
+
+  it('file_results: 156 mg/dL → 390 nmol/L, 93 mg/L → 23.25', () => {
+    const [us] = prepared(labCall([row('lpa', 'Lp(a)', 156, 'mg/dL')])).payload.candidates;
+    const [nz] = prepared(labCall([row('lpa', 'Lipoprotein(a)', 93, 'mg/L')])).payload.candidates;
+    expect(us).toMatchObject({ confidence: 'high' });
+    expect(us.value).toBeCloseTo(390, 9);
+    expect(nz).toMatchObject({ confidence: 'high' });
+    expect(nz.value).toBeCloseTo(23.25, 9);
+  });
+
+  it('add_measurement then correct_value: 93 mg/L → 23.25 nmol/L, corrected to 156 mg/dL → 390', () => {
+    const added = ok(addMeasurement(base(), { metricType: 'lpa', value: 93, unit: 'mg/L', recordedAt: TODAY }, CTX)).file!;
+    const [first] = lpa(added);
+    expect(first.value).toBeCloseTo(23.25, 9);
+    const corrected = ok(correctValueTool(added, { id: first.id, newValue: 156, unit: 'mg/dL' }, NOW)).file!;
+    expect(lpa(corrected).map((m) => m.value)).toEqual([expect.closeTo(390, 9)]);
   });
 });
 

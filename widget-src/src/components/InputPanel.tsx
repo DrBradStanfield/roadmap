@@ -753,9 +753,12 @@ export function InputPanel({
           </h3>
           <div className="basic-info-units">
             <span className="basic-info-units-label">Units</span>
+            {/* data-unit-control="all": a press here closes every open
+                saved-value editor unsaved (US-05 AC2, US-04 AC1). */}
             <button
               type="button"
               className="unit-toggle-pill"
+              data-unit-control="all"
               onClick={() => onUnitSystemChange(unitSystem === 'si' ? 'conventional' : 'si')}
               title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
               aria-label={`Switch units. Current: ${unitSystem === 'si' ? 'Metric' : 'US'}`}
@@ -816,6 +819,7 @@ export function InputPanel({
                 <button
                   type="button"
                   className="unit-toggle-pill"
+                  data-unit-control="all"
                   onClick={(e) => { e.preventDefault(); onUnitSystemChange(unitSystem === 'si' ? 'conventional' : 'si'); }}
                   title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
                 >

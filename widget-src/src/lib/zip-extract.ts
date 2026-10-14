@@ -3,7 +3,7 @@
  * Bundled in health-upload.js (separate IIFE).
  */
 import JSZip from 'jszip';
-import { isImportableEntryName } from '@roadmap/health-core';
+import { fileNameLine, isImportableEntryName } from '@roadmap/health-core';
 
 const MAX_FILES = 200;
 
@@ -15,8 +15,10 @@ export async function getZipEntries(file: File): Promise<Array<{ name: string; e
 
   const entries: Array<{ name: string; entry: JSZip.JSZipObject }> = [];
   zip.forEach((relativePath, entry) => {
-    if (entry.dir || !isImportableEntryName(relativePath)) return;
-    entries.push({ name: relativePath, entry });
+    // The cleaned name, as the connector's unzip uses: one member, one decision.
+    const name = fileNameLine(relativePath);
+    if (entry.dir || !isImportableEntryName(name)) return;
+    entries.push({ name, entry });
   });
 
   return entries.slice(0, MAX_FILES);

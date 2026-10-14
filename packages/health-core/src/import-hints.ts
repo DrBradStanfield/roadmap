@@ -16,6 +16,8 @@ export const IMPORT_LIMITS = {
   filesPerDay: 30,
   /** What the website's own upload takes (`UploadModal.tsx` derives its cap from this) — named so the user hears the difference. */
   websiteFileMb: 10,
+  /** Pages the website reads from one PDF; the upload names a longer file (US-12 AC9). */
+  websitePdfPages: 20,
 } as const;
 
 /** The Dropbox app folder a NEW connection gets (older ones keep `Health Roadmap by Dr Brad`; agent-access.md). */

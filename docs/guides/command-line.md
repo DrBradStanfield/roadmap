@@ -2,7 +2,7 @@
 title: "Run your health plan from the command line"
 description: "Two commands in this repo read your health-roadmap.json and write to it: one prints your plan offline, one files a new value."
 slug: "command-line"
-updated: "2026-09-07"
+updated: "2026-10-12"
 stories: ["US-30", "US-31", "US-33"]
 ---
 
@@ -165,4 +165,4 @@ those.
 
 ## If something goes wrong
 
-Run either command with `--help` for the full list of options. If a command fails in a way this guide does not explain, or the output is wrong, open the chat bubble on any page of drstanfield.com and say which command you ran and what it printed. (The project's GitHub, where issues usually go, is temporarily not public.) Leave your record out of it; the `schemaVersion` at the top of the file is all we need.
+Run either command with `--help` for the full list of options. If a command fails in a way this guide does not explain, or the output is wrong, open an issue at https://github.com/DrBradStanfield/roadmap/issues. Issues are public, so describe what went wrong in your own words and paste only the error message. Leave out your values, your plan's output, file paths and any command that carries a value. If you can, show the problem with `docs/examples/health-roadmap.sample.json`, an invented record, instead of your own. The `schemaVersion` at the top of your file is all we need from it.

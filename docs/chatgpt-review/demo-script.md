@@ -30,7 +30,37 @@ first-time path; run 2 repeats it word for word.
    writes `sample-lab-report-proof.pdf`. It is hosted nowhere, so nothing can attach the reviewer's
    CDN copy by mistake. Brad attaches it himself if the browser tool cannot.
 
-## Recording
+## As made (2026-10-12)
+
+Live: https://cdn.shopify.com/videos/c/o/v/e89f771ef8d84010bd6ea1ccf5c3336b.mp4 (2 min 8 s), now in
+`plugin.json`.
+
+- **Scene 1 is a screen recording** (`screencapture -v` of the page area): the app's settings page,
+  Connect another account, then our page with the reviewer box. It does not sign in again, because
+  the demo app was already connected through the box on 2026-10-07.
+- **Scenes 2 to 8 are frames captured by Chrome** (the Claude extension's screenshot) at each step of
+  the live session. The Mac's screen locked while Brad was away, which records the lock screen, but
+  Chrome keeps drawing and its own capture still works. The frames are laid against the voice-over
+  with short crossfades. No frame is edited.
+- **What each scene ran:**
+  - Scene 3 records a weight on 5 March 2026. 4 March was used by a take that recorded the lock
+    screen, and 2 and 3 March are the reviewer's and proof run 1's.
+  - Scene 5 drops `blood-test-2026-09-14.pdf`, the same invented results collected on 14 September
+    (made by a scratch copy of the generator). ChatGPT offered "Yes, save all", which sent a
+    sentence.
+  - Scene 6 confirms with "Yes, apply the correction.", per the review notes: ChatGPT's own safety
+    check blocks a write approved by a bare "yes".
+  - Scene 8 is chatgpt.com in a phone-sized window, and the narration says so.
+- **Test case 3:** "What should I do next about my health?" in a fresh chat was answered by ChatGPT
+  with a generic questionnaire and no app call. Test case 3's prompt is therefore now "What does my
+  health plan say I should do next?", which called `get_plan` and returned the full plan.
+- **Assembly:**
+  - `node docs/chatgpt-review/demo/tts.mjs` makes the voice-over.
+  - `node docs/chatgpt-review/demo/build-timeline.mjs` builds the timeline.
+  - `npx remotion render src/index.ts ReviewDemo` (in `demo-video/`) renders the video.
+  - `node docs/chatgpt-review/demo/upload-video.mjs` hosts it.
+
+## Recording (the plan before 2026-10-12)
 
 Claude brings Chrome to the front and records the page area only with `screencapture -v -R <tab
 bounds>`, so the Claude extension's side panel is not captured. Brad presses Connect, types the

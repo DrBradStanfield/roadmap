@@ -78,7 +78,7 @@ ready in case the MCP tab asks. They explain the server's annotations; they neve
 | `add_lab_values` | Appends up to 50 lab rows in one call and writes the file back to the user's own cloud. | Writes only to the calling user's own file, over that user's own credential. | Append-only and all rows or none: existing rows are never deleted, and a duplicate test on the same day is refused. |
 | `correct_value` | Appends the corrected row, flips the row it supersedes and writes the file back. | Touches only the calling user's own file in that user's own cloud. | It deletes nothing, but the superseded row is marked entered-in-error permanently, guarded by a required expected value and a 90-day age limit. |
 | `update_profile` | Writes sex, birth year, birth month or height into the record's profile and saves the file. | Writes only to the calling user's own file, over that user's own credential. | The profile is last-writer-wins, so a change overwrites what stood there; each changed field requires the value the caller expects to find, and a mismatch writes nothing. |
-| `report_feedback` | Files an issue on the project's GitHub repository for the user; the repository is temporarily not public, and the issue becomes public when it is. | It posts to GitHub's API on our own repository, carrying only what the assistant wrote about the problem; anything that reads as a health value, an email address, a phone number, a file name or a link carrying a token is refused before it is sent. | A filed issue cannot be unfiled, so the send is irreversible (US-32 AC39); it takes nothing away, and the health record is neither read nor changed. |
+| `report_feedback` | Files a public GitHub issue on the project's repository for the user. | It posts to GitHub's API on our own repository, carrying only what the assistant wrote about the problem; anything that reads as a health value, an email address, a phone number, a file name or a link carrying a token is refused before it is sent. | A filed issue cannot be unfiled, so the send is irreversible (US-32 AC39); it takes nothing away, and the health record is neither read nor changed. |
 | `import_documents` | Its extract phase parks candidate values in the user's own folder and its commit phase appends values and files documents. | It sends a file from the user's own connected Dropbox folder, never the record, to Anthropic's API for extraction, and keeps nothing after extraction. | A replace in commit marks the superseded row entered-in-error permanently, guarded by the expected value, a 90-day age limit and the user’s own confirmation. |
 | `file_results` | Appends the lab values the user confirmed and files the document as a metadata-only row in the user's own file. | ChatGPT read the attached file, so the call carries the values it read (and, at commit, the user's quoted approval, held in memory for that request and never stored) and reaches nothing outside the user’s own record. | A replace flips the superseded row to entered-in-error permanently, guarded by the expected value, a 90-day age limit and the user’s own confirmation. |
 
@@ -119,7 +119,7 @@ reviewer trips one.
 
 1. **A second weight on a day that already holds one.** `add_measurement` refuses and offers `correct_value`: one active value per metric per day, so a silent overwrite would destroy history.
 2. **A correction with a stale `expectedValue`.** `correct_value` refuses and the model re-reads: the row moved under it, and correcting the wrong row is a clinical error.
-3. **A bug report carrying a health value.** `report_feedback` refuses and sends nothing: the issue it would file becomes public.
+3. **A bug report carrying a health value.** `report_feedback` refuses and sends nothing: the issue it would file is public.
 4. **A correction to a metric the record has no row for.** `correct_value` refuses by id and says not to add it instead unless the user asks; the model does not reach for `add_measurement` or `add_lab_values` on its own (live 2026-09-07 it did).
 5. **Folder import on a Google Drive account.** `import_documents` refuses and says so: Google's `drive.file` scope cannot list a folder. Dropbox only, so the reviewer account in use will not hit this. Positive 4 is the import path that works everywhere.
 
@@ -204,10 +204,9 @@ In use. A fresh Dropbox Basic account on a plus-alias of the scratch mailbox, em
 
 ## What 1.0.2 adds over 1.0.1
 
-The release notes are in `plugin.json` (`publication.release_notes`): the reviewer sign-in on our own
-consent page, ChatGPT and Codex clients only; `report_feedback` destructive and worded for a hidden
-repository; `get_plan` without product links; `read_record` without sync bookkeeping; server
-instructions without the repository link; and the move to a plugin package.
+The changes since 1.0.1 (`plugin.json`'s release notes now just say "First release in ChatGPT"): the reviewer sign-in on our own
+consent page, ChatGPT and Codex clients only; `report_feedback` destructive; `get_plan` without
+product links; `read_record` without sync bookkeeping; and the move to a plugin package.
 
 ## What 1.0.1 adds over 1.0.0
 

@@ -10,8 +10,11 @@ import {
   type ProposedFieldEdit,
   type ProposedMedicationEdit,
 } from './chat-edits';
-import { FIELD_TO_METRIC, UNIT_DEFS, type MetricType } from './index';
-import { resolveUnitSystem } from './units';
+import { FIELD_TO_METRIC, UNIT_DEFS, toCanonicalValue, type MetricType } from './index';
+import { lookupUnit, type UnitSystem } from './units';
+
+/** The system a stated unit names, as the chatbot's parser reads it. */
+const systemOf = (metric: MetricType, unit: string): UnitSystem | null => lookupUnit(metric, unit)?.system ?? null;
 
 const FIELD = PROPOSE_FIELD_EDIT_TOOL.name;
 const MED = PROPOSE_MEDICATION_EDIT_TOOL.name;
@@ -22,25 +25,48 @@ function siUnitFor(field: string): string {
   return UNIT_DEFS[metric].label.si;
 }
 
-describe('resolveUnitSystem', () => {
+describe('lookupUnit — the stated unit\u2019s system', () => {
   it('maps SI lipid unit to si', () => {
-    expect(resolveUnitSystem('ldl', 'mmol/L')).toBe('si');
+    expect(systemOf('ldl', 'mmol/L')).toBe('si');
   });
   it('maps conventional lipid unit to conventional', () => {
-    expect(resolveUnitSystem('ldl', 'mg/dL')).toBe('conventional');
+    expect(systemOf('ldl', 'mg/dL')).toBe('conventional');
   });
   it('is case- and space-insensitive', () => {
-    expect(resolveUnitSystem('ldl', ' MMOL/L ')).toBe('si');
-    expect(resolveUnitSystem('weight', 'KG')).toBe('si');
+    expect(systemOf('ldl', ' MMOL/L ')).toBe('si');
+    expect(systemOf('weight', 'KG')).toBe('si');
   });
   it('normalises the micro sign for creatinine', () => {
-    expect(resolveUnitSystem('creatinine', 'umol/L')).toBe('si');
-    expect(resolveUnitSystem('creatinine', 'µmol/L')).toBe('si');
-    expect(resolveUnitSystem('creatinine', 'mg/dL')).toBe('conventional');
+    expect(systemOf('creatinine', 'umol/L')).toBe('si');
+    expect(systemOf('creatinine', 'µmol/L')).toBe('si');
+    expect(systemOf('creatinine', 'mg/dL')).toBe('conventional');
   });
   it('returns null for an unknown unit (ambiguous — should have asked)', () => {
-    expect(resolveUnitSystem('ldl', 'g/L')).toBeNull();
-    expect(resolveUnitSystem('weight', 'stone')).toBeNull();
+    expect(systemOf('ldl', 'g/L')).toBeNull();
+    expect(systemOf('weight', 'stone')).toBeNull();
+  });
+});
+
+// US-05: Lp(a) off a US report is mg/dL, off an NZ/AU/UK report mg/L. The
+// chatbot pre-fills either, converted to the same canonical a clinician expects.
+describe('US-05 AC1 — the chatbot reads Lp(a) in mg/dL and in mg/L', () => {
+  const canonical = (unit: string, value: number) => {
+    const edit = parseProposedEdit(FIELD, { field: 'lpa', value, unit }) as ProposedFieldEdit;
+    return toCanonicalValue('lpa', edit.displayValue, edit.unitSystem);
+  };
+  it('156 mg/dL (a US report) → 390 nmol/L', () => {
+    expect(canonical('mg/dL', 156)).toBeCloseTo(390, 9);
+  });
+  it('93 mg/L (an NZ report) → 23.25 nmol/L', () => {
+    expect(canonical('mg/L', 93)).toBeCloseTo(23.25, 9);
+  });
+  it('ApoB 900 mg/L, the other scaled print, → 0.9 g/L', () => {
+    const edit = parseProposedEdit(FIELD, { field: 'apoB', value: 900, unit: 'mg/L' }) as ProposedFieldEdit;
+    expect(toCanonicalValue('apob', edit.displayValue, edit.unitSystem)).toBeCloseTo(0.9, 6);
+  });
+  it('an inherited key is not a unit: "__proto__" and "constructor" are refused', () => {
+    expect(parseProposedEdit(FIELD, { field: 'lpa', value: 50, unit: '__proto__' })).toBeNull();
+    expect(parseProposedEdit(FIELD, { field: 'lpa', value: 50, unit: 'constructor' })).toBeNull();
   });
 });
 

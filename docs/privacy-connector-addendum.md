@@ -1,8 +1,8 @@
 # Privacy policy addendum: the AI connector
 
 Published at [drstanfield.com/pages/connector-privacy](https://drstanfield.com/pages/connector-privacy)
-by `node scripts/build-privacy-page.mjs --publish` (last 2 October 2026, from commit
-f32230a1: the OpenAI reviewer sign-in, US-32 AC38). Republish after every edit here; the page is generated, never hand-edited.
+by `node scripts/build-privacy-page.mjs --publish` (last 12 October 2026, from commit
+202bfb8a: the repository is public again, US-32 AC39). Republish after every edit here; the page is generated, never hand-edited.
 Written 2026-09-02, re-audited 2026-09-07 and 2026-09-10, from the code at
 `app/lib/mcp.server.ts`, `app/lib/mcp-*.server.ts`, `app/routes/mcp.$.tsx` and
 `packages/health-core/src/mcp-tools.ts`.
@@ -306,9 +306,8 @@ written.
 
 ## Bug reports
 
-If you ask your assistant to report a bug, it files one for you: our server opens an
-issue on the project's GitHub repository. The repository is temporarily not public; the
-issue becomes public when it is public again. What goes in it is the assistant's own
+If you ask your assistant to report a bug, it files one for you: our server opens a
+public issue on the project's GitHub repository. What goes in it is the assistant's own
 description of the problem, and nothing about you: no name, no email, no address, and
 no part of your health record. The tool refuses any report that reads as a health value:
 a number wearing a unit, a bare number written near a metric name it knows, an email
@@ -317,9 +316,9 @@ after you), or a link carrying a query string that could hold a token
 (`unsafeFeedback` in `packages/health-core/src/mcp-tools.ts`). It cannot
 recognise a diagnosis written in prose, and it does not pretend to. That is why the tool
 shows you the report before it files it: read the receipt before you say yes.
-The issue becomes public, so your assistant should tell you before it files one. (Software
-you run yourself holds no key, so it cannot file anything. While the project's GitHub is
-not public it says so; otherwise it hands you a link to submit yourself.)
+The issue is public, so your assistant should tell you before it files one. (Software
+you run yourself holds no key, so it cannot file anything: it hands you a link to submit
+yourself.)
 
 ---
 

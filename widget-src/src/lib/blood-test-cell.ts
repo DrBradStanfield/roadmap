@@ -5,8 +5,17 @@
 import {
   parseLocalisedNumber,
   toCanonicalValue,
+  fromCanonicalValue,
+  formatDisplayValue,
+  reportedToCanonical,
+  canonicalToReported,
+  lookupUnit,
+  unitDecimalPlaces,
+  UNIT_DEFS,
   getDisplayLabel,
   getDisplayRange,
+  refHintFor,
+  lpaRefHint,
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
   getLipidStatus,
@@ -16,6 +25,7 @@ import {
   APOB_THRESHOLDS,
   LPA_THRESHOLDS,
   PSA_THRESHOLDS,
+  type LpaUnit,
   type MetricType,
   type UnitSystem,
 } from '@roadmap/health-core';
@@ -23,6 +33,49 @@ import {
 import type React from 'react';
 
 export type Status = 'ok' | 'warn' | 'bad' | null;
+
+/** The unit a core cell is typed and shown in: one of its metric's two
+ *  systems, or, for Lp(a), one of the three units its field takes (US-05
+ *  AC2), read through the unit table (mg/L is a tenth of mg/dL). */
+export type CellUnit = UnitSystem | LpaUnit;
+
+const isSystem = (unit: CellUnit): unit is UnitSystem => unit === 'si' || unit === 'conventional';
+
+/** A number typed in `unit`, as the record stores it. */
+export function cellToSI(metric: MetricType, typed: number, unit: CellUnit): number {
+  return isSystem(unit) ? toCanonicalValue(metric, typed, unit) : reportedToCanonical(metric, typed, unit)!.valueSI;
+}
+
+/** A stored value in `unit`, unrounded. */
+export function cellFromSI(metric: MetricType, valueSI: number, unit: CellUnit): number {
+  return isSystem(unit) ? fromCanonicalValue(metric, valueSI, unit) : canonicalToReported(metric, valueSI, unit)!;
+}
+
+/** A stored value as the cell shows it, at its unit's step: Lp(a) at one
+ *  decimal place in mg/dL, whole numbers in nmol/L and mg/L. */
+export function cellText(metric: MetricType, valueSI: number, unit: CellUnit): string {
+  if (isSystem(unit)) return formatDisplayValue(metric, valueSI, unit);
+  const { system, scale } = lookupUnit(metric, unit)!; // every Lp(a) unit is in the unit table
+  return cellFromSI(metric, valueSI, unit).toFixed(unitDecimalPlaces(metric, system, scale));
+}
+
+/** The unit's label: the system's for the metric, or the Lp(a) unit itself. */
+export function cellLabel(metric: MetricType, unit: CellUnit): string {
+  return isSystem(unit) ? getDisplayLabel(metric, unit) : unit;
+}
+
+/** The reference hint under the unit: the metric's, or Lp(a)'s in its unit. */
+export function cellHint(metric: MetricType, unit: CellUnit, sex?: 'male' | 'female'): string | null {
+  return isSystem(unit) ? refHintFor(metric, unit, sex) : lpaRefHint(unit);
+}
+
+/** The range a value typed in `unit` must fall in: the system's, or the
+ *  canonical range in that Lp(a) unit (0–3000 mg/L). */
+function cellRange(metric: MetricType, unit: CellUnit): { min: number; max: number } {
+  if (isSystem(unit)) return getDisplayRange(metric, unit);
+  const { min, max } = UNIT_DEFS[metric].validationRange.si; // Lp(a)'s canonical unit is its SI one
+  return { min: cellFromSI(metric, min, unit), max: cellFromSI(metric, max, unit) };
+}
 
 // Keystroke filters (US-02 AC4). Most of our numeric cells are type="text"
 // (for inputMode/pattern control), and even type="number" doesn't reject
@@ -88,16 +141,16 @@ function closeTo(a: number, b: number): boolean {
 export function validateTypedValue(
   metric: MetricType,
   typed: string,
-  display: UnitSystem,
+  display: CellUnit,
 ): { error: string | null; range: { min: number; max: number } } {
-  const range = getDisplayRange(metric, display);
+  const range = cellRange(metric, display);
   if (typed === '') return { error: null, range };
   const n = parseLocalisedNumber(typed);
   if (n === undefined) return { error: 'Enter a number', range };
   // Include the display unit in min/max errors so a user who typed (e.g.)
   // a mg/dL number into an mmol/L field can see the unit mismatch instead
   // of a bare "Max 22.6".
-  const unit = getDisplayLabel(metric, display);
+  const unit = cellLabel(metric, display);
   if (n < range.min) return { error: `Min ${range.min} ${unit}`, range };
   if (n > range.max) return { error: `Max ${range.max} ${unit}`, range };
   return { error: null, range };
@@ -159,9 +212,9 @@ export function statusOf(metric: MetricType, siValue: number, sex?: 'male' | 'fe
 
 /** Live status from a typed display value (parsed + canonicalised). */
 export function previewStatus(
-  metric: MetricType, typed: string, display: UnitSystem, sex?: 'male' | 'female',
+  metric: MetricType, typed: string, display: CellUnit, sex?: 'male' | 'female',
 ): Status {
   const n = parseLocalisedNumber(typed);
   if (n === undefined) return null;
-  return statusOf(metric, toCanonicalValue(metric, n, display), sex);
+  return statusOf(metric, cellToSI(metric, n, display), sex);
 }

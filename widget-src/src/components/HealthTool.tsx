@@ -299,12 +299,14 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     return result;
   }, [refreshLabValues]);
 
-  // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel
+  // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel.
+  // Lp(a) has its own three-unit control (US-05 AC2): an old build's two-way
+  // toggle for it is read there alone, and drives no other display.
   const metricUnitOverrides = useMemo(() => {
     const m: Partial<Record<MetricType, UnitSystem>> = {};
     for (const [field, fieldUs] of Object.entries(unitOverrides)) {
       const metric = FIELD_METRIC_MAP[field];
-      if (metric) m[metric] = fieldUs;
+      if (metric && metric !== 'lpa') m[metric] = fieldUs;
     }
     return Object.keys(m).length > 0 ? m : undefined;
   }, [unitOverrides]);

@@ -85,6 +85,16 @@ describe('US-31 AC1/AC5 — add', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it('US-05 AC1: reads Lp(a) in mg/dL (a US report) and in mg/L (an NZ report)', async () => {
+    const { dir, path } = writeFixture();
+    expect((await captureRun(['add', path, '--metric', 'lpa', '--value', '156', '--unit', 'mg/dL', '--date', '2026-08-14'])).code).toBe(0);
+    expect((await captureRun(['add', path, '--metric', 'lpa', '--value', '93', '--unit', 'mg/L', '--date', '2026-08-15'])).code).toBe(0);
+    const lpa = (day: string) => read(path).measurements.find((m) => m.metricType === 'lpa' && m.recordedAt === day)!.value;
+    expect(lpa('2026-08-14')).toBeCloseTo(390, 9);
+    expect(lpa('2026-08-15')).toBeCloseTo(23.25, 9);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it('adds a lab test under its catalogue key, keeping the lab’s own unit', async () => {
     const { dir, path } = writeFixture();
     expect((await captureRun(['add', path, '--test', 'Ferritin', '--value', '210', '--unit', 'µg/L', '--date', '2026-08-14'])).code).toBe(0);

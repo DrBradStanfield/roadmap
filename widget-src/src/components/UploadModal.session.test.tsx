@@ -10,7 +10,7 @@ import { Sentry } from '../lib/sentry';
 import type { UploadHistory } from '../lib/api-types';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn() }));
+vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), attachOriginals: vi.fn(async results => results), synthesizeLabArchiveEntries: vi.fn(() => []) }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
@@ -53,7 +53,7 @@ beforeEach(() => {
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
   vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0 } as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
   vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0 });
-  extractFromPdf.mockResolvedValue([{ type: 'text', content: 'synthetic' }]);
+  extractFromPdf.mockResolvedValue({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false });
   Object.assign(window, { HealthUpload: { extractFromPdf, isPdf: () => true, isZip: () => false, isImage: () => false } });
 });
 afterEach(cleanup);
@@ -76,7 +76,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     await act(async () => reading.reject(new Error('synthetic unreadable file')));
     fireEvent.click(await screen.findByRole('button', { name: /Upload needs attention/ }));
     expect(screen.getByText(/No readable files found/)).toBeTruthy();
-    extractFromPdf.mockResolvedValue([{ type: 'text', content: 'retry' }]);
+    extractFromPdf.mockResolvedValue({ pages: [{ type: 'text', content: 'retry' }], truncated: false });
     await ready();
   });
   it('claims the session before quota resolves, so rapid selections launch once', async () => {
@@ -112,14 +112,14 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(labImport).not.toHaveBeenCalled();
   });
   it('does not let a cancelled extraction replace a newer review', async () => {
-    const oldRead = deferred<Array<{ type: string; content: string }>>();
+    const oldRead = deferred<{ pages: Array<{ type: string; content: string }>; truncated: boolean }>();
     extractFromPdf.mockReturnValueOnce(oldRead.promise);
     render(<Harness />); selectFile();
     await waitFor(() => expect(extractFromPdf).toHaveBeenCalledOnce());
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     const value = await ready();
     fireEvent.change(value, { target: { value: '4.2' } });
-    await act(async () => oldRead.resolve([{ type: 'text', content: 'cancelled result' }]));
+    await act(async () => oldRead.resolve({ pages: [{ type: 'text', content: 'cancelled result' }], truncated: false }));
     expect(screen.getByDisplayValue('4.2')).toBeTruthy();
     expect(labImport).toHaveBeenCalledOnce();
   });

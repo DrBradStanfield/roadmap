@@ -3,7 +3,7 @@
 // legacy form labels. SI ↔ conventional pairs, with optional male/female
 // variants for sex-specific reference ranges (creatinine, HDL).
 
-import { type MetricType, LIPID_TREATMENT_TARGETS, formatTargetLine, getDisplayLabel } from './units';
+import { type LpaUnit, type MetricType, LIPID_TREATMENT_TARGETS, LPA_THRESHOLDS, formatTargetLine, getDisplayLabel, lookupUnit } from './units';
 
 export type RefHint = { si: string; conv: string };
 export type SexedRefHint = RefHint & { male?: RefHint; female?: RefHint };
@@ -41,8 +41,16 @@ export const REFERENCE_HINTS: Partial<Record<MetricType, SexedRefHint>> = {
     female: { si: 'Optimal: >1.3 mmol/L', conv: 'Optimal: >50 mg/dL' },
   },
   triglycerides:     { si: 'Normal: <1.7 mmol/L',      conv: 'Normal: <150 mg/dL' },
-  lpa:               { si: 'Normal: <75 nmol/L',       conv: 'Normal: <75 nmol/L' },
 };
+
+/** Lp(a)'s hint in the unit its field shows (US-05 AC2): "Normal: <X", X the
+ *  first value at that unit's display step the plan grades at or above 75
+ *  nmol/L, by the rule of the lipid hints above. A cut-point that falls on a
+ *  whole number prints whole: "<30 mg/dL", not "<30.0". */
+export function lpaRefHint(unit: LpaUnit): string {
+  const { system, scale } = lookupUnit('lpa', unit)!; // every LpaUnit is in the unit table
+  return `Normal: <${Number(formatTargetLine('lpa', LPA_THRESHOLDS.normal, system, undefined, scale))} ${unit}`;
+}
 
 /**
  * Resolve a reference hint for a metric in the requested display unit, picking

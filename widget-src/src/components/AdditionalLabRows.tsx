@@ -8,7 +8,7 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { groupLabValues, countLabValuePoints, labGroupMatrix, type LabRowsIcon, type LabValueGroup } from '../lib/lab-rows';
 import { AddLabTest } from './AddLabTest';
 import { UnitChip } from './UnitChip';
-import { BatchDateCell, ValueCell } from './BloodTestTimeline';
+import { BatchDateCell, ValueCell, useLiveRegion } from './BloodTestTimeline';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { trackProductEvent } from '../lib/server-api';
 import type { CorrectFn } from '../lib/matrix-save';
@@ -93,6 +93,7 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
 const LabGroupMatrix = memo(function LabGroupMatrix({ group, onCorrect }: { group: LabValueGroup; onCorrect?: CorrectFn }) {
   const { dates, points } = useMemo(() => labGroupMatrix(group), [group]);
   const scrollRef = useScrollToRightOnMount<HTMLDivElement>([dates.length]);
+  const [say, cellMessages] = useLiveRegion('bt-cell-messages');
   return (
     <div className="bt-timeline alr-matrix">
       <div className="bt-timeline-body">
@@ -120,7 +121,7 @@ const LabGroupMatrix = memo(function LabGroupMatrix({ group, onCorrect }: { grou
                   }
                   return (
                     <ValueCell key={d} value={p.value} unit={s.mixedUnits ? p.unit : undefined}
-                               rowId={p.id} status={null} pinned={pinned} onCorrect={onCorrect}/>
+                               rowId={p.id} status={null} pinned={pinned} onCorrect={onCorrect} say={say}/>
                   );
                 })}
                 <div className="bt-row-filler"/>
@@ -129,6 +130,7 @@ const LabGroupMatrix = memo(function LabGroupMatrix({ group, onCorrect }: { grou
           </div>
         </div>
       </div>
+      {cellMessages}
     </div>
   );
 });

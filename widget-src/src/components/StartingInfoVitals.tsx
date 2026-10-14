@@ -48,7 +48,7 @@ import { useDraftMirror, useMatrixDraft, type CellRef } from '../lib/useMatrixDr
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { usePrefillRef } from '../lib/usePrefillRef';
-import { Sparkline, ValueCell, BatchDateCell, BackfillCell, SAVE_ERRORS, SAVE_FAILED, SAME_SLOT } from './BloodTestTimeline';
+import { Sparkline, ValueCell, BatchDateCell, BackfillCell, SAVE_ERRORS, SAVE_FAILED, SAME_SLOT, useLiveRegion } from './BloodTestTimeline';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
 import { UnitChip } from './UnitChip';
@@ -310,6 +310,9 @@ export function StartingInfoVitals({
     draft, backfills, type, setDate, unitOf, expected, clashes, taken, lends, settle, refusal,
   } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, latestDay, cellOf: key => (key === 'dia' ? 'sys' : key) });
   const [activeCell, setActiveCell] = useState<string | null>(null);
+  // A cell leaving clears only its own mark: another may have taken it since.
+  const unmark = (cellId: string) => () => setActiveCell(prev => (prev === cellId ? null : prev));
+  const [say, cellMessages] = useLiveRegion('bt-cell-messages');
 
   // A typed weight or waist keeps the unit it was typed in. A unit switch
   // shows it in the new unit, the same quantity, and the commit is the
@@ -407,11 +410,11 @@ export function StartingInfoVitals({
 
     if (metric !== 'weight' && metric !== 'waist') return null;
     if (date && column && column[metric] == null) {
-      type([date, metric], typed, fromUnit);
+      type([date, metric], typed, fromUnit, false);
       return flash(`${date}.${metric}`);
     }
     if (date) setDate(date);
-    type([null, metric], typed, fromUnit);
+    type([null, metric], typed, fromUnit, false);
     return flash(`draft.${metric}`);
   };
 
@@ -547,7 +550,7 @@ export function StartingInfoVitals({
                             active={activeCell === cellId}
                             onChange={v => setSimpleDraft(row.metric, v)}
                             onFocus={() => setActiveCell(cellId)}
-                            onBlur={() => setActiveCell(null)}
+                            onBlur={unmark(cellId)}
                             onKeyDown={e => { blockBadNumericKeys(e); if (e.key === 'Enter') { e.preventDefault(); saveNow(); } }}
                           />
                         );
@@ -555,11 +558,11 @@ export function StartingInfoVitals({
                       const v = row.metric === 'weight' ? c.col.weight : c.col.waist;
                       const id = row.metric === 'weight' ? c.col.weightId : c.col.waistId;
                       const isPinned = colIdx === columns.length - 2;
+                      const cellId = `${c.col.date}.${row.metric}`;
                       if (v == null) {
                         // Empty slot → click-to-input (mirrors the blood-test
                         // matrix's BackfillCell). Commits a NEW measurement at
                         // this past date via the validated save path.
-                        const cellId = `${c.col.date}.${row.metric}`;
                         return (
                           <BackfillCell
                             key={cellId}
@@ -571,14 +574,14 @@ export function StartingInfoVitals({
                             active={activeCell === cellId}
                             onChange={val => setBackfill(c.col.date, row.metric, val)}
                             onFocus={() => setActiveCell(cellId)}
-                            onBlur={() => setActiveCell(null)}
+                            onBlur={unmark(cellId)}
                             onEnter={saveNow}
                           />
                         );
                       }
                       return (
                         <ValueCell
-                          key={`${c.col.date}.${row.metric}`}
+                          key={cellId}
                           metric={row.metric}
                           display={display}
                           sex={sex}
@@ -586,9 +589,10 @@ export function StartingInfoVitals({
                           rowId={id}
                           status={simpleStatus(row.metric, v, ibwKg, planHeightCm)}
                           pinned={isPinned}
-                          onActivate={() => setActiveCell(`${c.col.date}.${row.metric}`)}
-                          onDeactivate={() => setActiveCell(null)}
+                          onActivate={() => setActiveCell(cellId)}
+                          onDeactivate={unmark(cellId)}
                           onCorrect={onCorrectValue}
+                          say={say}
                         />
                       );
                     })}
@@ -672,6 +676,7 @@ export function StartingInfoVitals({
         {refused && !saving && (
           <div className="bt-save-error" aria-live="polite">{SAVE_FAILED}</div>
         )}
+        {cellMessages}
       </div>
     </div>
   );
