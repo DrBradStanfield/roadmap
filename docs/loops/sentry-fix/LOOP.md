@@ -22,8 +22,12 @@ fixes get rejected in review, say so in the retro and propose narrowing scope.
 ## Cost control — the no-op fast path (FIRST, before any fan-out)
 
 One cheap probe: query Sentry for issues that are (new since the ledger's
-newest entry) OR (regressed after being marked fixed). If none → append a
-no-op line to metrics.csv, END THE RUN. No workers, no report, no commit
+newest entry) OR (regressed after being marked fixed) OR (ledgered, whose row
+names a resurface rule, and whose `lastSeen` is past the last metrics.csv run).
+For that third kind, read the new event and test the row's rule; a rule that
+names another source (e.g. a Supabase count) is tested against it every run,
+`lastSeen` or not. Rule met → triage it as new. If nothing qualifies → append
+a no-op line to metrics.csv, END THE RUN. No workers, no report, no commit
 beyond the metrics line. Most days should end here.
 
 ## Orient (read yourself, not via workers)
