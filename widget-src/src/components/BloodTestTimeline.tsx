@@ -137,6 +137,9 @@ export interface BloodTestTimelineProps {
   onDraftValue: (field: keyof HealthInputs, siValue: number | undefined) => void;
   isSaving: boolean;
   sex?: 'male' | 'female';
+  /** A known minor (US-07 AC6): the values with no adult reference hint or
+   *  status colour. */
+  knownMinor?: boolean;
   onUploadClick?: () => void;
   uploadDisabled?: boolean;
   loginUrl?: string;
@@ -174,9 +177,11 @@ const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
 
 export function BloodTestTimeline({
   bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit,
-  onSaveBatch, onCorrectValue, onDraftValue, isSaving, sex, onUploadClick, uploadDisabled, loginUrl,
+  onSaveBatch, onCorrectValue, onDraftValue, isSaving, sex, knownMinor, onUploadClick, uploadDisabled, loginUrl,
   hasApiResponse, flushRef, prefillRef,
 }: BloodTestTimelineProps) {
+  // A known minor's cells are graded by nothing: adult ranges could mislead (US-07 AC6).
+  const grade = (metric: MetricType, si: number) => (knownMinor ? null : statusOf(metric, si, sex));
   const batches = useMemo(() => groupByBatch(bloodTestHistory), [bloodTestHistory]);
   // Typed values, in the unit they were typed in: a draft, kept on the device.
   // A saved column's cell is on screen while its slot is empty.
@@ -433,7 +438,7 @@ export function BloodTestTimeline({
           {/* Body — metric rows */}
           {ROWS.map((row, rowIdx) => {
             const display = fieldUnit(row.field);
-            const ref = cellHint(row.metric, display, sex);
+            const ref = knownMinor ? null : cellHint(row.metric, display, sex);
 
             // Sparkline points in display units. Series is precomputed in SI;
             // converting to display unit here keeps the y-axis monotonic when
@@ -441,7 +446,7 @@ export function BloodTestTimeline({
             const sparkPoints = (series[row.metric] ?? [])
               .map(siVal => cellFromSI(row.metric, siVal, display));
             const last = lastSi[row.metric];
-            const lastStatus = last != null ? statusOf(row.metric, last, sex) : null;
+            const lastStatus = last != null ? grade(row.metric, last) : null;
 
             return (
               <div key={row.field} className={`bt-row${rowIdx === ROWS.length - 1 ? ' bt-row-last' : ''}`} data-metric={row.metric}>
@@ -462,6 +467,7 @@ export function BloodTestTimeline({
                         metric={row.metric}
                         display={display}
                         sex={sex}
+                        graded={!knownMinor}
                         value={shownText(null, row.metric, row.field, typed)}
                         valueSI={cells.find(cell => cell.column === null && cell.metric === row.metric)?.si ?? undefined}
                         error={unreadable(null, row.metric, row.field, typed) ?? (clashes(row.metric) || taken(row.metric) ? SAME_SLOT : refusal([null, row.metric]))}
@@ -492,7 +498,7 @@ export function BloodTestTimeline({
                       />
                     );
                   }
-                  const status = statusOf(row.metric, v, sex);
+                  const status = grade(row.metric, v);
                   const isPinned = colIdx === columns.length - 2;
                   const cellId = `${c.date}.${row.metric}`;
                   // c.kind === 'batch' here — the 'draft' branch returned above
@@ -506,6 +512,7 @@ export function BloodTestTimeline({
                       value={v}
                       rowId={rowId}
                       status={status}
+                      graded={!knownMinor}
                       pinned={isPinned}
                       onActivate={() => {
                         setActiveCell(cellId);
@@ -697,6 +704,8 @@ interface ValueCellProps {
   unit?: string;
   rowId?: string;
   status: Status;
+  /** False for a known minor: the editor previews no status (US-07 AC6). */
+  graded?: boolean;
   pinned: boolean;
   onActivate?: () => void;
   onDeactivate?: () => void;
@@ -745,7 +754,7 @@ export const SAVE_ERRORS: Record<Exclude<CorrectStatus, 'ok'>, string> = {
 // (StartingInfoVitals) and the additional lab rows. Click a value to correct
 // it in place: a FHIR correction, never an edit of the saved row.
 export function ValueCell({
-  metric, display, sex, value, unit, rowId, status, pinned, onActivate, onDeactivate, onCorrect, say,
+  metric, display, sex, value, unit, rowId, status, graded = true, pinned, onActivate, onDeactivate, onCorrect, say,
 }: ValueCellProps) {
   // `typed === null` ⇒ read-only; otherwise the in-place edit form is open.
   // One field replaces the old (editing, typed) pair — impossible state gone.
@@ -920,6 +929,7 @@ export function ValueCell({
         metric={core?.metric}
         display={core?.display}
         sex={sex}
+        showStatusPreview={graded}
         value={typed}
         onChange={v => { setSaveError(null); setTyped(v); }}
         externalError={saveError}
@@ -1003,6 +1013,8 @@ interface DraftCellProps {
   valueSI?: number;
   /** Why the typed value cannot be saved as it stands (`SAME_SLOT`). */
   error?: string | null;
+  /** False for a known minor: no status preview (US-07 AC6). */
+  graded: boolean;
   active: boolean;
   onFocus: () => void;
   onBlur: () => void;
@@ -1010,12 +1022,13 @@ interface DraftCellProps {
   onChange: (v: string) => void;
 }
 
-function DraftCell({ metric, display, sex, value, valueSI, error, active, onFocus, onBlur, onEnter, onChange }: DraftCellProps) {
+function DraftCell({ metric, display, sex, value, valueSI, error, graded, active, onFocus, onBlur, onEnter, onChange }: DraftCellProps) {
   return (
     <NumericInputCell
       metric={metric}
       display={display}
       sex={sex}
+      showStatusPreview={graded}
       value={value}
       valueSI={valueSI}
       externalError={error}

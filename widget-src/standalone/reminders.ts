@@ -30,6 +30,7 @@ import {
   computeCurrentReminderSchedule,
   flushRoadmapStore,
   getReminderOptIn,
+  isKnownMinorNow,
   setReminderOptIn,
 } from '../src/lib/roadmap-data';
 import { DropboxAdapter, GitHubAdapter, GoogleDriveAdapter } from '../src/storage';
@@ -139,6 +140,8 @@ export async function optInToReminders(
   { marketingEmail, email, silent }: { marketingEmail?: string; email?: string; silent?: boolean } = {},
 ): Promise<OptInResult> {
   if (!remindersSupported(backend)) throw new Error('Reminders need a connected cloud account.');
+  // US-07 AC6: the plan is built for adults, and so are its reminders.
+  if (isKnownMinorNow()) throw new Error('Check-up reminders are for adults aged 18 and over.');
   const schedule = computeCurrentReminderSchedule();
   const identity: Identity | null = email ? { provider: 'typed', email } : await identityFor(backend);
   if (!identity) {
@@ -194,6 +197,7 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
   if (!SHOPIFY_SURFACE) return;
   if (!remindersSupported(backend)) return; // AC6: no cloud → no account email → never enrolled
   if (safeGetItem(AUTO_ENROL_BLOCKED_KEY)) return;
+  if (isKnownMinorNow()) return; // US-07 AC6: never enrol a known minor
 
   const optIn = getReminderOptIn();
   if (optIn?.status === 'cancelled') return; // AC4 — their decision, on every device, forever
@@ -239,18 +243,22 @@ export async function cancelRemindersForErase(): Promise<void> {
 }
 
 /** Turn reminders off (server row tombstoned, or deleted when Drive can prove
- *  the inbox; the cancel propagates via the file). */
-export async function cancelReminders(): Promise<void> {
+ *  the inbox; the cancel propagates via the file).
+ *  `count: false`: not the user's opt-out (US-07 AC6's age gate), so not
+ *  counted, as the cloud switch's cancel is not. `keepalive`: the tab is going
+ *  away, so the cancel leaves at once, unproven (a tombstone), as an update does. */
+export async function cancelReminders({ count = true, keepalive = false } = {}): Promise<void> {
   const optIn = getReminderOptIn();
   if (!optIn) return;
-  const res = await post({ op: 'cancel', token: optIn.token, idToken: await cancelProofFor(optIn.provider) });
+  const idToken = keepalive ? null : await cancelProofFor(optIn.provider);
+  const res = await post({ op: 'cancel', token: optIn.token, idToken }, keepalive);
   if (!res.ok) throw new Error(`Could not turn reminders off (${res.status}). Please retry.`);
   setReminderOptIn({ ...optIn, status: 'cancelled' });
   await flushRoadmapStore();
   // The optout:optin ratio is US-17's kill criterion — it only works if BOTH
   // sides are counted (the opt-in side has fired since 2026-08-06), and per
   // LANE: the provider tag lets the typed and cloud ratios be judged apart.
-  trackProductEvent('reminder_optout', { provider: optIn.provider });
+  if (count) trackProductEvent('reminder_optout', { provider: optIn.provider });
 }
 
 /**
@@ -263,6 +271,14 @@ export async function pushReminderSchedule(keepalive = false): Promise<void> {
   const optIn = getReminderOptIn();
   if (optIn?.status !== 'active') return;
   try {
+    // US-07 AC6: a known minor is due nothing, and the server fills any pushed
+    // schedule with its annual check-in. So a row enrolled earlier is turned
+    // off instead, for good (AC4), and not counted as their opt-out.
+    if (isKnownMinorNow()) {
+      await cancelReminders({ count: false, keepalive });
+      window.dispatchEvent(new Event('hr:reminders-changed'));
+      return;
+    }
     const res = await post(
       { op: 'update', token: optIn.token, schedule: computeCurrentReminderSchedule() },
       keepalive,

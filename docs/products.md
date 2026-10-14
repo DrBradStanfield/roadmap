@@ -1,29 +1,39 @@
 # Products — Detailed Reference
 
-> **Current version: v8 (USA) / v8.5 (Australia) / v9 (UK, EU) / v7 (Canada).** Ingredient doses, forms, and claims throughout this file reflect **v8** — the version currently shipping to USA customers via microvitamin.com. **Australia has upgraded to v8.5** (2026-08 — the v8 ingredient set with most vitamin/mineral doses raised; see Regional Formula Differences). **The UK and EU moved to v9** (2026-10; one formula for both markets, made in the UK by G&G Food Supplies; 25 listed ingredients, with CDP-citicoline in place of choline bitartrate and no potassium; see Regional Formula Differences). **Canada is still shipping v7; we're aiming to switch Canada to v9 in about 4–6 months (Brad, 2026-10-14: roughly February–April 2027; an aim, not a promised date, so say "aiming to" and give no exact month).** When a regional difference matters for a customer answer, see the **Regional Formula Differences** section near the end of this file: UK and EU customers get the v9 doses, Canadian customers the v7 doses. The US v9 spec in the changelog differs from the UK/EU v9 label in places and has not shipped in the USA, so never quote it to US customers as their formula.
+> **Current version: v8 (USA) / v8.5 (Australia) / v9 (UK, EU) / v7 (Canada).** Doses, forms and claims in this file are **v8**, the version shipping to USA customers via microvitamin.com, unless a market is named. **Australia** moved to v8.5 in 2026-08 (the v8 ingredient set with most vitamin/mineral doses raised). **The UK and EU** moved to v9 in 2026-10 (one formula for both markets, made in the UK by G&G Food Supplies; 25 listed ingredients, with CDP-citicoline in place of choline bitartrate and no potassium). **Canada is still shipping v7; we're aiming to switch Canada to v9 in about 4–6 months (Brad, 2026-10-14: roughly February–April 2027; an aim, not a promised date, so say "aiming to" and give no exact month).** For a non-US dose answer use **Regional Formula Differences** near the end: UK and EU customers get the v9 doses, Canadian customers the v7 doses. The US v9 spec in the changelog differs from the UK/EU v9 label in places and has not shipped in the USA, so never quote it to US customers as their formula.
 
 ## MicroVitamin Capsules
 
-Flagship product. $65 one-time / $58.50/mo subscription (USA v8 pricing — see the price-history FAQ below; the UK and EU ship v9 at local prices from 2026-10-05: UK £45 one-time / £40.50 on subscription (Amazon.co.uk £50), EU €50 one-time / €45 on subscription (Amazon.de €55); Canada v7 still ships at $70 CAD one-time / $63 CAD on subscription (store prices, checked 2026-10-14); Australia ships v8.5 at $80 AUD one-time / $72 AUD subscription since 2026-09-22 (was $75 / $67.50) — see Regional Formula Differences). 150 capsules (5/day, 30 servings). 26 ingredients (USA v8 and Australia v8.5; UK/EU v9 and Canada v7 list 25). Manufactured in four regions for local supply: USA (Makers Nutrition, GMP & FDA registered), Australia, Canada, and the United Kingdom (the UK facility also makes the EU bottles since v9; EU v7 was made in Germany) — each at GMP-certified facilities. 384+ reviews, 4.88 average rating.
+Flagship product. 150 capsules (5/day, 30 servings). 384+ reviews, 4.88 average rating. Manufactured in four regions for local supply, each at GMP-certified facilities (facility detail: FAQ "Is MicroVitamin third-party tested?").
 
-Ingredient categories:
+| Market | Version | One-time | Subscription | Listed ingredients | Made in |
+|---|---|---|---|---|---|
+| USA | v8 | $65 | $58.50/mo | 26 | USA (Makers Nutrition, GMP & FDA registered) |
+| Australia | v8.5 (from 2026-08) | $80 AUD | $72 AUD (both prices since 2026-09-22, Brad; at the v8.5 launch they were $75 one-time / $67.50 subscription) | 26 | Australia (BJP Laboratories) |
+| UK | v9 (from 2026-10; prices from 2026-10-05) | £45 (Amazon.co.uk £50) | £40.50 | 25 | UK (G&G Food Supplies) |
+| EU | v9 (from 2026-10; prices from 2026-10-05) | €50 (Amazon.de €55) | €45 | 25 | UK (G&G also makes the EU bottles since v9; EU v7 was made in Germany) |
+| Canada | v7 | $70 CAD | $63 CAD (store prices, checked 2026-10-14) | 25 | Canada (Canadian Premier Supplements) |
+
+USA v7 was $55 one-time / $49.50 subscription (see the price-history FAQ). Separate-ingredient comparisons: FAQ "How much does MicroVitamin cost…" and the UK/EU pricing note in Regional Formula Differences.
+
+Ingredient categories (USA v8):
 - Cognition & Focus (COSMOS-aligned): Choline Bitartrate 181.5mg, Methylated B12 12mcg, Methylated Folate 200mcg DFE, full B-complex (B1 0.9mg, B2 0.975mg, Nicotinamide 16mg, B5 3.75mg, B6 1.275mg as P5P, Biotin 22.5mcg)
-- Methylation & Cognitive Support: TMG (Betaine Anhydrous) 500mg — a methyl donor that lowers plasma homocysteine. Elevated plasma total homocysteine (>11 μmol/L) is a modifiable risk factor for cognitive decline, dementia, and Alzheimer's disease in older adults (relative risk 1.15–2.5; population attributable risk 4.3–31%), and intervention trials lowering homocysteine via methyl donors and B vitamins markedly slow brain atrophy and cognitive decline (Smith et al., *J Alzheimers Dis*, 2018 — International Consensus Statement; doi:10.3233/JAD-171042). TMG combined with the methylated B12 and folate in MicroVitamin targets this same homocysteine-lowering pathway. At higher doses (2.5 g/day), betaine combined with exercise has also improved body composition and bench press training volume, though not strength, in 23 strength-trained men over 6 weeks (Cholewa et al., JISSN, 2013), and increased repetitions to fatigue in 10 adolescent athletes after 14 days (Arazi et al., JISSN, 2022), compared with placebo
-- Hydrated Skin: Hyaluronic Acid 200mg — a 2025 double-blind RCT of 150 adults found oral sodium hyaluronate improved skin hydration by 11.5%, reduced wrinkle depth, and improved skin barrier function vs placebo (*Scientific Reports*, 2025; doi:10.1038/s41598-025-32758-5). A 28-day double-blind RCT of 60 women taking 200mg/day oral hyaluronan (the exact dose in MicroVitamin) reported +10.6% skin hydration, −18.8% wrinkle depth, and +5.1% elasticity vs placebo (Michelotti et al., *Eur J Dermatol*, 2021; doi:10.1684/ejd.2021.4176). Earlier RCTs consistently showed improvements in skin moisture and wrinkles (Oe et al., 2017; 129-person RCT, 2023)
+- Methylation & Cognitive Support: TMG (Betaine Anhydrous) 500mg — a methyl donor that lowers plasma homocysteine. Elevated plasma total homocysteine (>11 μmol/L) is a modifiable risk factor for cognitive decline, dementia, and Alzheimer's disease in older adults (relative risk 1.15–2.5; population attributable risk 4.3–31%), and intervention trials lowering homocysteine via methyl donors and B vitamins markedly slow brain atrophy and cognitive decline (Smith et al., *J Alzheimers Dis*, 2018 — International Consensus Statement). TMG combined with the methylated B12 and folate targets this same homocysteine-lowering pathway. At higher doses (2.5 g/day), betaine combined with exercise has also improved body composition and bench press training volume, though not strength, in 23 strength-trained men over 6 weeks (Cholewa et al., JISSN, 2013), and increased repetitions to fatigue in 10 adolescent athletes after 14 days (Arazi et al., JISSN, 2022), compared with placebo
+- Hydrated Skin: Hyaluronic Acid 200mg — a 2025 double-blind RCT of 150 adults found oral sodium hyaluronate improved skin hydration by 11.5%, reduced wrinkle depth, and improved skin barrier function vs placebo (*Scientific Reports*, 2025). A 28-day double-blind RCT of 60 women taking 200mg/day oral hyaluronan (the exact dose in MicroVitamin) reported +10.6% skin hydration, −18.8% wrinkle depth, and +5.1% elasticity vs placebo (Michelotti et al., *Eur J Dermatol*, 2021). Earlier RCTs consistently showed improvements in skin moisture and wrinkles (Oe et al., 2017; 129-person RCT, 2023)
 - Heart Health: Magnesium Taurate 126mg elemental
-- Heart Health & Antioxidant: Lycopene 10mg (encapsulated, LycoBeads®) — a tomato-derived carotenoid. A meta-analysis of 21 RCTs found lycopene at ≥12mg/day reduced systolic blood pressure by 5.66 mmHg, and at ≥25mg/day reduced LDL-cholesterol by 7.55 mg/dL (Cheng et al., *Atherosclerosis*, 2017; doi:10.1016/j.atherosclerosis.2017.01.009). A larger meta-analysis of 42 studies (692,012 participants) found higher dietary lycopene intake was associated with lower prostate cancer risk (RR 0.88, 95% CI 0.78–0.98), with a linear dose-response (~1% risk reduction per +2mg/day) (Rowles et al., *Prostate Cancer Prostatic Dis*, 2017; doi:10.1038/pcan.2017.25)
-- Bone Density: Encapsulated Vitamin K2 MK-7 90mcg (K2VITAL® DELTA), Encapsulated Vitamin D3 1,000IU (AlgeD3™), Boron 1mg. D3 supports calcium absorption and K2 activates osteocalcin to direct calcium to bone (Myneni & Mezey, *Oral Dis*, 2017). A meta-analysis of 8 RCTs (971 participants) found combined K + D supplementation increased BMD versus control (pooled effect size 0.316, 95% CI 0.031–0.601) and reduced undercarboxylated osteocalcin, a marker of bone vitamin K deficiency (−0.945, 95% CI −1.113 to −0.778) (Kuang et al., *Food Funct*, 2020; doi:10.1039/c9fo03063h). A 2025 meta-analysis of 9 RCTs (2,570 postmenopausal women) found K2 shifts bone turnover markers toward formation: osteocalcin +1.86 (95% CI 1.17–2.56), ucOC −1.54 (95% CI −2.44 to −0.64) (Zhang et al., *Front Endocrinol*, 2025; doi:10.3389/fendo.2025.1703116) — the authors note this analysis measured **bone turnover markers only**, not bone density or fracture, and that longer studies are needed to confirm clinical benefits. Magnesium supports vitamin D activation; boron extends vitamin D half-life and reduces urinary calcium loss
-- Eye Health: Lutein 10mg + Zeaxanthin 2mg (encapsulated, Lutemax® 2020) — the macular pigments — they concentrate in the macula and filter short-wavelength light. RCTs of lutein and zeaxanthin supplementation significantly increase macular pigment optical density (Stringham et al., *Foods*, 2017; doi:10.3390/foods6070047 — note that trial used **24 mg/day total**, not 10+2; Bovier & Hammond, *Arch Biochem Biophys*, 2015; doi:10.1016/j.abb.2014.11.012 — also higher than 10+2). The **10 mg + 2 mg** amounts in MicroVitamin are those used in AREDS2. Higher dietary L/Z intake is linked to lower advanced AMD risk in large prospective cohorts (Wu et al., *JAMA Ophthalmol*, 2015 — advanced AMD RR 0.59, 95% CI 0.48–0.73; doi:10.1001/jamaophthalmol.2015.3590; Ma et al., *Br J Nutr*, 2012 meta-analysis of 6 cohorts — late AMD RR 0.74, 95% CI 0.57–0.97; doi:10.1017/S0007114511004260). The AREDS2 10-year follow-up (Report 28) found L/Z **vs no L/Z** was associated with reduced progression to late AMD (**HR 0.91, 95% CI 0.84–0.99, P=.02**), and that L/Z beat beta-carotene head to head (**HR 0.85, 95% CI 0.73–0.98**) with no lung-cancer signal (OR 1.15, P=.46), whereas beta-carotene nearly doubled lung-cancer risk (OR 1.82, 95% CI 1.06–3.12, P=.02) in a cohort of mostly former smokers (Chew et al., *JAMA Ophthalmol*, 2022; doi:10.1001/jamaophthalmol.2022.1640). **Note:** the 2013 five-year primary endpoint was null, but L/Z was added on top of a formula that already contained beta-carotene — an absorption competitor; do not quote that null as evidence against L/Z
+- Heart Health & Antioxidant: Lycopene 10mg (encapsulated, LycoBeads®) — a tomato-derived carotenoid. A meta-analysis of 21 RCTs found lycopene at ≥12mg/day reduced systolic blood pressure by 5.66 mmHg, and at ≥25mg/day reduced LDL-cholesterol by 7.55 mg/dL (Cheng et al., *Atherosclerosis*, 2017). A larger meta-analysis of 42 studies (692,012 participants) found higher dietary lycopene intake was associated with lower prostate cancer risk (RR 0.88, 95% CI 0.78–0.98), with a linear dose-response (~1% risk reduction per +2mg/day) (Rowles et al., *Prostate Cancer Prostatic Dis*, 2017)
+- Bone Density: Encapsulated Vitamin K2 MK-7 90mcg (K2VITAL® DELTA), Encapsulated Vitamin D3 1,000IU (AlgeD3™), Boron 1mg. D3 supports calcium absorption and K2 activates osteocalcin to direct calcium to bone (Myneni & Mezey, *Oral Dis*, 2017). A meta-analysis of 8 RCTs (971 participants) found combined K + D supplementation increased BMD versus control (pooled effect size 0.316, 95% CI 0.031–0.601) and reduced undercarboxylated osteocalcin, a marker of bone vitamin K deficiency (−0.945, 95% CI −1.113 to −0.778) (Kuang et al., *Food Funct*, 2020). A 2025 meta-analysis of 9 RCTs (2,570 postmenopausal women) found K2 shifts bone turnover markers toward formation: osteocalcin +1.86 (95% CI 1.17–2.56), ucOC −1.54 (95% CI −2.44 to −0.64) (Zhang et al., *Front Endocrinol*, 2025) — the authors note this analysis measured **bone turnover markers only**, not bone density or fracture, and that longer studies are needed to confirm clinical benefits. Magnesium supports vitamin D activation; boron extends vitamin D half-life and reduces urinary calcium loss. Per-market forms and the boron claim limit: Health concerns → Bone density
+- Eye Health: Lutein 10mg + Zeaxanthin 2mg (encapsulated, Lutemax® 2020) — the macular pigments; they concentrate in the macula and filter short-wavelength light. RCTs of lutein and zeaxanthin supplementation significantly increase macular pigment optical density (Stringham et al., *Foods*, 2017 — that trial used **24 mg/day total**, not 10+2; Bovier & Hammond, *Arch Biochem Biophys*, 2015 — also higher than 10+2). The **10 mg + 2 mg** amounts in MicroVitamin are those used in AREDS2. Higher dietary L/Z intake is linked to lower advanced AMD risk in large prospective cohorts (Wu et al., *JAMA Ophthalmol*, 2015 — advanced AMD RR 0.59, 95% CI 0.48–0.73; Ma et al., *Br J Nutr*, 2012 meta-analysis of 6 cohorts — late AMD RR 0.74, 95% CI 0.57–0.97). AREDS2's 10-year follow-up (Report 28; Chew et al., *JAMA Ophthalmol*, 2022) found L/Z **vs no L/Z** was associated with reduced progression to late AMD, and that L/Z beat beta-carotene head to head with no lung-cancer signal, whereas beta-carotene nearly doubled lung-cancer risk in a cohort of mostly former smokers (hazard and odds ratios: AREDS2 in Key References). **Note:** the 2013 five-year primary endpoint was null, but L/Z was added on top of a formula that already contained beta-carotene — an absorption competitor; do not quote that null as evidence against L/Z. AMD claims stay off-limits for a regulatory reason: Health concerns → Vision
 - Antioxidant: Vitamin C 45mg (Calcium Ascorbate)
 - Trace Minerals (glycinate / amino-acid chelates — Albion® for selenium, copper, chromium; iodine is potassium iodide, not a chelate; the +43% bioavailability figure is zinc bisglycinate vs zinc gluconate, Gandia 2007): Zinc 11mg, Selenium 27.5mcg, Copper 0.9mg, Manganese 1.15mg, Chromium 17.5mcg, Iodine 75mcg
 - Also: Potassium 99mg
 - Deliberately excludes Vitamin A and Vitamin E (potential risks from high-dose supplementation)
-- Value: $118.21/mo if buying the v8 ingredients individually (Lutemax® 2020, LycoBeads®, encapsulated D3 + K2, calcium-ascorbate Vit C, and the rest from quality brands like Double Wood, Bronson, Life Extension, NOW, Pure Encapsulations) vs $58.50/mo (USA v8 subscription) — saves $59.71/mo
+- Value: $118.21/mo separately vs $58.50/mo (USA v8 subscription), saving $59.71/mo — basket in the cost FAQ
 
 ### MicroVitamin FAQ
 
 **What makes MicroVitamin different from other multivitamins?**
-MicroVitamin is a low-dose, evidence-based multivitamin formulated by Dr Brad Stanfield, a medical doctor (GP). Unlike most multivitamins that megadose nutrients at 500-1000% daily value, MicroVitamin uses measured doses based on randomized controlled trials. It deliberately excludes Vitamin A and Vitamin E based on research showing potential risks from high-dose supplementation (Daley & Goyal, StatPearls, Vitamin A Toxicity; USPSTF, JAMA, 2022; Klein et al., JAMA, 2011). It uses bioavailable forms like glycinate minerals (in one single-dose study of 12 healthy women, zinc bisglycinate was absorbed about 43% better than zinc gluconate; Gandia et al., Int J Vitam Nutr Res, 2007) and folate as methylfolate (5-MTHF), the active form, which skips the step slowed by common MTHFR gene variations (Liew & Gupta, Eur J Med Genet, 2015), and B12 as methylcobalamin, an active form of B12. One product replaces 6-8 separate supplements.
+MicroVitamin is a low-dose, evidence-based multivitamin formulated by Dr Brad Stanfield, a medical doctor (GP). Unlike most multivitamins that megadose nutrients at 500-1000% daily value, MicroVitamin uses measured doses based on randomized controlled trials. It deliberately excludes Vitamin A and Vitamin E based on research showing potential risks from high-dose supplementation (Daley & Goyal, StatPearls, Vitamin A Toxicity; USPSTF, JAMA, 2022; Klein et al., JAMA, 2011). It uses bioavailable forms: glycinate minerals, folate as methylfolate (5-MTHF) and B12 as methylcobalamin, an active form of B12 (detail and studies: "What are bioavailable forms…" below). One product replaces 6-8 separate supplements.
 
 **Why does MicroVitamin require 5 capsules per day?**
 Effective doses of Magnesium Taurate (126mg elemental; USA; Australia: see Regional Formula Differences), Hyaluronic Acid (200mg), TMG (500mg; USA; in Australia betaine is an excipient), and Choline (181.5mg, as choline bitartrate) physically require more capsule volume than a single pill can hold. Competitors that fit everything into one pill typically underdose key ingredients to levels that have no clinical effect. The 5-capsule serving ensures each ingredient is at a dose supported by research.
@@ -32,28 +42,24 @@ Effective doses of Magnesium Taurate (126mg elemental; USA; Australia: see Regio
 Clinical research has shown potential risks from high-dose supplementation of these fat-soluble vitamins. Vitamin A toxicity is well-documented and can cause liver damage, bone loss, and birth defects (Daley & Goyal, StatPearls, Vitamin A Toxicity). A Cochrane systematic review of 78 RCTs (296,707 participants) found that beta-carotene and vitamin E supplementation significantly increased all-cause mortality (Bjelakovic et al., Cochrane Database Syst Rev, 2012). The US Preventive Services Task Force recommends against beta-carotene supplementation due to increased risk of lung cancer and cardiovascular mortality, and concluded with moderate certainty that vitamin E supplements give no net benefit for preventing cardiovascular disease or cancer (USPSTF, JAMA, 2022). The SELECT trial found that Vitamin E supplementation at 400 IU/day increased prostate cancer risk by 17% (Klein et al., JAMA, 2011). Unlike water-soluble vitamins that are excreted when excess is consumed, fat-soluble vitamins accumulate in the body. Most people get adequate Vitamin A and E from their diet, so supplementing on top of dietary intake can push levels too high.
 
 **What is the COSMOS trial and how does it relate to MicroVitamin?**
-The COSMOS (COcoa Supplement and Multivitamin Outcomes Study) trial randomized 21,442 US adults aged 60+ to a daily multivitamin vs placebo. A meta-analysis of three COSMOS cognitive substudies (5,203 non-overlapping participants across COSMOS-Clinic, COSMOS-Mind, and COSMOS-Web) found multivitamin supplementation significantly improved global cognition (mean difference 0.07 SD units, 95% CI 0.03–0.11, P=0.0009) and episodic memory (0.06 SD units, 95% CI 0.03–0.10, P=0.0007) — equivalent to reducing cognitive aging by approximately 2 years (Vyas et al., *Am J Clin Nutr*, 2024; doi:10.1016/j.ajcnut.2023.12.011). MicroVitamin includes COSMOS-aligned ingredients: Choline Bitartrate 181.5mg, Methylated B12 12mcg, Methylated Folate 200mcg, and a full B-complex — the nutrient categories associated with the cognitive benefits observed in the trial.
+The COSMOS (COcoa Supplement and Multivitamin Outcomes Study) trial randomized 21,442 US adults aged 60+ to a daily multivitamin vs placebo. A meta-analysis of three COSMOS cognitive substudies (5,203 non-overlapping participants across COSMOS-Clinic, COSMOS-Mind, and COSMOS-Web) found multivitamin supplementation significantly improved global cognition (mean difference 0.07 SD units, 95% CI 0.03–0.11, P=0.0009) and episodic memory (0.06 SD units, 95% CI 0.03–0.10, P=0.0007) — equivalent to reducing cognitive aging by approximately 2 years (Vyas et al., *Am J Clin Nutr*, 2024). MicroVitamin includes COSMOS-aligned ingredients: Choline Bitartrate 181.5mg, Methylated B12 12mcg, Methylated Folate 200mcg, and a full B-complex — the nutrient categories associated with the cognitive benefits observed in the trial.
 
 **Is MicroVitamin third-party tested?**
 Yes. MicroVitamin is manufactured at GMP-certified facilities in four regions for local supply, each third-party testing every batch for heavy metals (lead, mercury, arsenic, cadmium) and purity; certificates of analysis are available. **Third-party tested by Labdoor — Labdoor Score 99.7 out of 100 (lot 2512062, tested 24 Apr 2026; laboratory analysis by Eurofins; Labdoor's certification program, not an off-the-shelf purchase). The same public page lists per-ingredient results (e.g. vitamin C 32.8 of 45mg, vitamin D 60.3 of 25mcg on that lot). Quote the overall score; "what's on the label is what's in the bottle" is allowed (Brad, 2026-10-04, ban removed). Public review page: https://labdoor.com/review/dr-brad-stanfield-microvitamin** (use this link whenever referencing third-party testing in customer-facing copy). Per-region facilities:
 - **USA — Makers Nutrition:** FDA-registered, GMP-audited, Natural Products Association certified, Dun & Bradstreet Verified.
-- **Canada — Canadian Premier Supplements:** cGMP-certified, FDA-registered, NSF-licensed, Health Canada site-licensed, every batch third-party tested. Product licence **NPN 80144032** (the Canadian formula carries **0.7 mg boron per serving (5 capsules)**, the licensed amount; Brad 2026-09-28, confirmed 2026-09-29) (Health Canada LNHPD, licensed 2025-09-11, Dr Brad, Inc.) — Canadian claims must come from that licence's approved purposes. "FDA-registered" may be said to Canadian buyers as a fact about Canadian Premier's facility, credited to them (Brad, 2026-10-14; the Canadian product page shows the FDA registered-facility mark beside the GMP seal); Canadian ads still leave it out (`docs/ad-creative-rubric-notes.md` §intl-trust-lines).
+- **Canada — Canadian Premier Supplements:** cGMP-certified, FDA-registered, NSF-licensed, Health Canada site-licensed, every batch third-party tested. Product licence **NPN 80144032** (Health Canada LNHPD, licensed 2025-09-11, Dr Brad, Inc.; the Canadian formula carries **0.7 mg boron per serving (5 capsules)**, the licensed amount; Brad 2026-09-28, confirmed 2026-09-29) — Canadian claims must come from that licence's approved purposes. "FDA-registered" may be said to Canadian buyers as a fact about Canadian Premier's facility, credited to them (Brad, 2026-10-14; the Canadian product page shows the FDA registered-facility mark beside the GMP seal); Canadian ads still leave it out (`docs/ad-creative-rubric-notes.md` §intl-trust-lines).
 - **Australia, UK** (the UK facility, G&G Food Supplies, also makes the EU bottles since v9; EU v7 was made in Germany)**:** GMP-compliant facilities, every batch third-party tested. (Facility-specific certifications not yet itemised here — listing copy says "GMP-compliant". **"Third-party tested" is a US-only claim on every customer surface, Amazon listings included (Brad, 2026-09-14 for ads; 2026-09-28 for listings): international copy names the facility instead.** The batch testing itself happens in every market; this is a claim-substantiation rule, not a fact.)
 
 **How much does MicroVitamin cost compared to buying the ingredients separately?**
-MicroVitamin (USA v8) costs $58.50/month on subscription ($65 one-time). Buying the same 26 v8 ingredients individually from quality brands like Double Wood, Bronson, Life Extension, NOW, and Pure Encapsulations would cost approximately $118.21/month — saving you $59.71/month plus the convenience of a single product instead of 6-8 separate bottles. The clinical-dose carotenoids (Lutein 10 mg + Zeaxanthin 2 mg as Lutemax® 2020, Lycopene 10 mg as LycoBeads®) plus the encapsulated D3 (AlgeD3™) and K2 (K2VITAL® DELTA) are each meaningfully expensive on their own. The UK and EU ship v9 at local prices: in the UK, £40.50 on subscription (£45 one-time), against £72.74/month for the ingredients bought separately (the comparison table on the UK product page, microvitamin.com/en-uk/products/microvitamin); in the EU, €45 on subscription (€50 one-time; no EU separate-ingredient figure on file). Canada still ships v7 at $63 CAD on subscription ($70 CAD one-time); the Canadian product page compares $95.96 CAD a month for the nutrients bought separately (lower because v7 doesn't have the clinical-dose carotenoids).
+MicroVitamin (USA v8) costs $58.50/month on subscription ($65 one-time). Buying the same 26 v8 ingredients individually from quality brands like Double Wood, Bronson, Life Extension, NOW, and Pure Encapsulations would cost approximately $118.21/month — saving you $59.71/month plus the convenience of a single product instead of 6-8 separate bottles. The basket prices Lutemax® 2020, LycoBeads®, the encapsulated D3 and K2 and calcium-ascorbate vitamin C, with the rest from those brands; the clinical-dose carotenoids (Lutein 10 mg + Zeaxanthin 2 mg as Lutemax® 2020, Lycopene 10 mg as LycoBeads®) plus the encapsulated D3 (AlgeD3™) and K2 (K2VITAL® DELTA) are each meaningfully expensive on their own. In the UK, £40.50 on subscription against £81.84/month for the ingredients bought separately; in the EU, €45 on subscription against €90.93 (the UK and EU product pages, live 2026-10-13; the US v8 basket scaled to local prices, not a v9 basket; the UK page showed £72.74 before). In Canada (v7), $63 CAD on subscription; the Canadian product page compares $95.96 CAD a month for the nutrients bought separately (lower because v7 doesn't have the clinical-dose carotenoids). Market prices: the table at the top of this section.
 
 **Why did the MicroVitamin USA price change in 2026? Is the renewal rate I'm seeing now correct?**
-Yes — the USA price changed with the v8 transition:
+Yes — the USA price changed with the v8 transition: from v7's $55 one-time / $49.50/mo subscription to v8's **$65 one-time / $58.50/mo subscription**. This was driven by the major ingredient upgrades in v8 (Lutein 0.25 → 10 mg + Zeaxanthin 2 mg newly added as Lutemax® 2020, Lycopene 0.3 → 10 mg as LycoBeads®, Vitamin D3 encapsulated as AlgeD3™, K2 MK-7 encapsulated as K2VITAL® DELTA, Vitamin C as calcium ascorbate, Copper and Zinc raised to 100% RDA). v7 had kept its 2023 price even as ingredient costs rose; v8 effectively caught up to what these clinical-dose, encapsulated forms actually cost to source. If a renewal charge is higher than you remember and you're a USA customer who subscribed under v7, this is why. The value math still holds (saves $59.71/month vs buying the 26 v8 ingredients separately).
 
-**v8 launch:** USA went from v7's $55 one-time / $49.50/mo subscription to v8's **$65 one-time / $58.50/mo subscription**. This was driven by the major ingredient upgrades in v8 (Lutein 0.25 → 10 mg + Zeaxanthin 2 mg newly added as Lutemax® 2020, Lycopene 0.3 → 10 mg as LycoBeads®, Vitamin D3 encapsulated as AlgeD3™, K2 MK-7 encapsulated as K2VITAL® DELTA, Vitamin C as calcium ascorbate, Copper and Zinc raised to 100% RDA). v7 had kept its 2023 price even as ingredient costs rose; v8 effectively caught up to what these clinical-dose, encapsulated forms actually cost to source. If a renewal charge is higher than you remember and you're a USA customer who subscribed under v7, this is why.
-
-The value math still holds: MicroVitamin saves $59.71/month vs. buying the 26 v8 ingredients separately ($58.50/mo subscription vs $118.21/mo separately). Canada is still shipping v7 at $63 CAD on subscription ($70 CAD one-time). The UK and EU moved to v9 in 2026-10 at local-currency prices (UK £45 one-time / £40.50 on subscription; EU €50 one-time / €45 on subscription).
-
-If a customer is unsure whether their renewal rate is correct or believes it was applied without the notification window, the best path is to email brad@drstanfield.com with the order number — the team can check the specific subscription and the email log.
+If a customer is unsure whether their renewal rate is correct or believes it was applied without the notification window, the best path is to email brad@drstanfield.com with the order number — the team can check the specific subscription and the email log. (Same answer for MicroVitamin+ Powder renewals.)
 
 **Who formulates MicroVitamin?**
-Dr Brad Stanfield, a General Practitioner (family medicine doctor) based in New Zealand. He runs a health  YouTube channel with over 320,000 subscribers where he reviews clinical research on supplements and aging. The MicroVitamin formula is based on human randomized controlled trials and is updated as new evidence emerges — currently on version 8 in the USA, 8.5 in Australia, 9 in the UK and EU, and 7 in Canada.
+Dr Brad Stanfield, a General Practitioner (family medicine doctor) based in New Zealand. He runs a health YouTube channel with over 320,000 subscribers where he reviews clinical research on supplements and aging. The MicroVitamin formula is based on human randomized controlled trials and is updated as new evidence emerges — currently on version 8 in the USA, 8.5 in Australia, 9 in the UK and EU, and 7 in Canada.
 
 **What are bioavailable forms and why do they matter?**
 Bioavailability refers to how much of a nutrient your body actually absorbs. MicroVitamin supplies zinc, selenium, copper, manganese and chromium as glycinate or amino-acid chelates rather than the cheaper oxide and gluconate forms common in budget multivitamins; in a small head-to-head study (a single dose in 12 healthy women), zinc bisglycinate was absorbed about 43% better than zinc gluconate (Gandia et al., Int J Vitam Nutr Res, 2007). It also uses methylated B12 and methylated folate; methylfolate skips the step slowed by the common MTHFR C677T gene variation, which reduces the enzyme's activity (Liew & Gupta, Eur J Med Genet, 2015).
@@ -62,7 +68,7 @@ Bioavailability refers to how much of a nutrient your body actually absorbs. Mic
 No. MicroVitamin uses vegetarian capsules with no artificial colors, no fillers, and no titanium dioxide. The capsules are plant-based.
 
 **Is MicroVitamin vegan? Is it vegetarian?**
-Yes — MicroVitamin capsules are **vegan AND vegetarian friendly**. The capsule shell is plant-based (no gelatin), and none of the 26 ingredients are animal-derived. Note: MicroVitamin+ Powder is *neither* vegan nor vegetarian because it contains bovine-derived collagen peptides — there is no true vegan equivalent at present (products marketed as "vegan collagen" are amino acid blends rather than actual collagen peptides). If you're vegan or vegetarian, the MicroVitamin capsules are the right choice.
+Yes — MicroVitamin capsules are **vegan AND vegetarian friendly**. The capsule shell is plant-based (no gelatin), and none of the 26 ingredients are animal-derived. MicroVitamin+ Powder is *neither* (bovine collagen; see its FAQ), so for vegans and vegetarians the capsules are the right choice.
 
 **Are there any safety concerns or interactions with MicroVitamin?**
 MicroVitamin contains Vitamin K2 (90mcg), which can affect blood clotting — consult your doctor before use if you take blood thinners (warfarin/Coumadin). The product is gluten-free, soy-free, contains no artificial colors, no fillers, and no titanium dioxide. It is not intended for children under 18. If you are pregnant or nursing, do not use. These statements have not been evaluated by the FDA. This product is not intended to diagnose, treat, cure, or prevent any disease.
@@ -71,24 +77,24 @@ MicroVitamin contains Vitamin K2 (90mcg), which can affect blood clotting — co
 That's completely normal and a sign the formula contains the ingredients we list on the label. MicroVitamin includes three natural carotenoids: lycopene (which gives tomatoes their deep red colour), lutein, and zeaxanthin (the orange-yellow pigments concentrated in leafy greens and egg yolks).
 
 **Why does MicroVitamin have a distinctive smell?**
-The smell is a normal characteristic of the active ingredients themselves, not a sign that anything is wrong. Our manufacturers have confirmed it comes from the combination of choline bitartrate, the B-vitamin complex, and vitamin D — these nutrients have their own natural odour, and when they're together in capsules at clinical doses, that smell is what you notice when you open the bottle. It does not indicate degradation or affect potency.
+The smell is a normal characteristic of the active ingredients themselves, not a sign that anything is wrong. Our manufacturers have confirmed it comes from the combination of choline bitartrate, the B-vitamin complex, and vitamin D — these nutrients have their own natural odour, and together in capsules at clinical doses that is what you notice when you open the bottle. It does not indicate degradation or affect potency.
 
 **Why are some of my MicroVitamin capsules showing brown spots?**
-Brown spots on the capsules come from an earlier formula (v3 through v6, manufactured before the v7 transition). Those versions used cupric sulfate as the copper source, which over time interacted with other ingredients inside the capsule and produced visible brown spots. It's not dangerous and the capsules are still safe to take — it just doesn't look very nice. The current formulas (v8 USA, v8.5 Australia, v9 UK/EU, v7 Canada) use copper bisglycinate instead, which doesn't cause this.
+Brown spots come from an earlier formula (v3 through v6, manufactured before the v7 transition), which used cupric sulfate as the copper source; over time it interacted with other ingredients inside the capsule and produced visible brown spots. It's not dangerous and the capsules are still safe to take — it just doesn't look very nice. The current formulas (all four markets) use copper bisglycinate instead, which doesn't cause this.
 
 **Did MicroVitamin fail ConsumerLab testing? Why did your product get "Not Approved"?**
 In early 2026, ConsumerLab.com tested MicroVitamin and marked it "Not Approved," finding higher-than-labeled amounts of vitamin D (48.4 mcg vs. labeled 25 mcg — 193.6%) and folate (404.5 mcg DFE vs. labeled 200 mcg DFE — 202.3%). This is a fair question and Dr Stanfield addressed it publicly and transparently with customers.
 
-The root cause is intentional manufacturing overages — a standard industry practice. Nutrients degrade over a product's shelf life, so manufacturers formulate at above-label amounts so the product still meets its label claim by the expiration date. The v7 batch sheet specified a 50% overage for both vitamin D and folate, meaning the formula was intentionally made at ~150% of label so it degrades to 100% by expiry. ConsumerLab tested a batch partway through its shelf life, which is why amounts are above label.
+The root cause is intentional manufacturing overages — a standard industry practice. Nutrients degrade over a product's shelf life, so manufacturers formulate above label so the product still meets its label claim by the expiration date. The v7 batch sheet specified a 50% overage for both vitamin D and folate (made at ~150% of label so it degrades to 100% by expiry); ConsumerLab tested a batch partway through its shelf life.
 
 The amounts found are not a safety concern: vitamin D at 48.4 mcg is well below the NIH Tolerable Upper Intake Level of 100 mcg (4,000 IU), and folate at 404.5 mcg DFE is approximately the standard Daily Value (400 mcg DFE).
 
-Dr Stanfield also contacted ConsumerLab to discuss their testing methodology — specifically how they convert methylfolate (5-MTHF) to Dietary Folate Equivalents (DFE), which is a technically complex area. He also shared the Certificate of Analysis and Batch Sheet publicly so customers could review the manufacturing documents directly.
-
-Following this, the v9 formula revised overage specifications downward for vitamin D and folate to reduce the likelihood of future ConsumerLab flags, while still ensuring label claims are met through expiry. Dr Stanfield regularly recommends ConsumerLab as an independent testing resource and views their scrutiny as beneficial to the supplement industry.
+Dr Stanfield also contacted ConsumerLab to discuss their testing methodology — specifically how they convert methylfolate (5-MTHF) to Dietary Folate Equivalents (DFE), a technically complex area — and shared the Certificate of Analysis and Batch Sheet publicly so customers could review the manufacturing documents directly. The v9 formula then revised overage specifications downward for vitamin D and folate to reduce the likelihood of future ConsumerLab flags, while still ensuring label claims are met through expiry. Dr Stanfield regularly recommends ConsumerLab as an independent testing resource and views their scrutiny as beneficial to the supplement industry.
 
 **What results do customers report from taking MicroVitamin?**
 From 384+ customer reviews (4.88 average rating): 30 customers report improved mental clarity, focus, and reduced brain fog. 26 mention increased energy. 13 report visible skin improvements (attributed to hyaluronic acid). 14 report improved blood work markers. The most common feedback (238 mentions) is trust in Dr Stanfield's evidence-based approach, and 112 customers specifically value the consolidation of 6-8 supplements into one product.
+
+The next three answers apply to MicroVitamin+ Powder too (for it, say "where MicroVitamin+ is sold").
 
 **Why doesn't MicroVitamin contain lithium orotate?**
 Lithium isn't an established nutrient: there is no recommended daily intake for it anywhere, and no recognised deficiency. The interest in low-dose lithium comes mainly from animal studies and from population studies of lithium in drinking water, which can't show cause and effect. The human trials so far have been small, most used prescription lithium at doses far higher than a supplement contains, and all of them enrolled people who already had memory problems. Lithium orotate itself hasn't yet been tested in a completed human trial. Lithium is also not permitted in supplements in the UK or EU, and is restricted in Australia and Canada, where MicroVitamin is sold. We'll keep watching the research.
@@ -102,17 +108,17 @@ Cocoa flavanols were tested in COSMOS, a large trial of more than 21,000 older a
 ### How MicroVitamin compares to competitors
 
 - Unlike AG1/Athletic Greens ($79/mo), all 26 ingredient doses are individually disclosed on the label
-- Uses bioavailable mineral forms (glycinate / amino-acid chelates; zinc bisglycinate absorbed about 43% better than zinc gluconate in one single-dose study of 12 healthy women, Gandia et al., 2007) rather than cheaper oxide forms found in Centrum and most drugstore multivitamins
+- Uses bioavailable mineral forms (glycinate / amino-acid chelates; Gandia 2007, above) rather than cheaper oxide forms found in Centrum and most drugstore multivitamins
 - Deliberately low-dose — fills nutrient gaps without the megadosing common in brands like MegaFood or Garden of Life
 - Excludes Vitamin A and E based on clinical evidence of potential harm at supplemental doses (USPSTF, 2022; Klein et al., 2011)
-- Doctor-formulated and updated as new evidence emerges (currently version 8 in the USA; 8.5 in Australia, 9 in the UK and EU, 7 in Canada) — not a static formula
-- $58.50/mo on subscription (USA v8) — less than AG1 ($79), comparable to Thorne ($25-45 for partial coverage). UK v9 £40.50 and EU v9 €45 on subscription; Canada (v7) $63 CAD/mo
+- Doctor-formulated and updated as new evidence emerges (version per market: table above) — not a static formula
+- $58.50/mo on subscription (USA v8) — less than AG1 ($79), comparable to Thorne ($25-45 for partial coverage); other markets' prices in the table above
 
 ---
 
 ## MicroVitamin+ Powder
 
-Everything in MicroVitamin core + 4 premium additions. $100 one-time / $90/mo subscription (USA v8 pricing — see the price-history FAQ below). 30 servings (1 scoop). 30 ingredients. Mixed Berry flavor + unflavored option. Manufactured in the USA only (unlike MicroVitamin Capsules, which are made in four regions). 83+ reviews, 4.70 average rating.
+Everything in MicroVitamin core + 4 premium additions. $100 one-time / $90/mo subscription (USA v8 pricing — see the price-history FAQ below). 30 servings (1 scoop). 30 ingredients. Mixed Berry flavor + unflavored option. Manufactured in the USA only (unlike MicroVitamin Capsules, which are made in four regions). 83+ reviews, 4.70 average rating. The Powder is the US v8 core formula in every market (see Capsules vs Powder).
 
 "Plus" additions over MicroVitamin core:
 - Collagen Peptides 12.5g (skin elasticity)
@@ -130,16 +136,10 @@ Not yet (Brad, 2026-09-07). Do not write "third-party tested" on any surface or 
 MicroVitamin+ Powder contains all 26 core ingredients from MicroVitamin capsules plus four premium additions: Collagen Peptides 12.5g (for skin elasticity and joint support), Creatine Monohydrate 5g (the most studied performance supplement, also supports brain function), Psyllium Husk 2.5g (soluble fiber for gut health and cholesterol management), and extra Taurine 1g (metabolic health and cardiovascular support). Total: 30 ingredients in one daily scoop vs 26 ingredients in 5 daily capsules.
 
 **How much money does MicroVitamin+ Powder save compared to buying ingredients separately?**
-MicroVitamin+ Powder costs $90/month on subscription ($100 one-time). Buying the same 30 v8 ingredients individually from brands like Double Wood, Bronson, Life Extension, NOW, and Pure Encapsulations would cost approximately $179.01/month — saving you $89.01/month. This is the largest cost saving across all Dr Stanfield products because collagen and creatine are expensive when purchased separately.
+MicroVitamin+ Powder costs $90/month on subscription ($100 one-time). Buying the same 30 v8 ingredients individually from brands like Double Wood, Bronson, Life Extension, NOW, and Pure Encapsulations would cost approximately $179.01/month — saving you $89.01/month. This is the largest cost saving across all Dr Stanfield products because collagen and creatine at clinical doses are expensive when purchased separately.
 
 **Why did the MicroVitamin+ Powder USA price change in 2026? Is the renewal rate I'm seeing now correct?**
-Yes — the USA price changed with the v8 transition, as it did for MicroVitamin Capsules:
-
-USA went from v7's price up to v8's **$100 one-time / $90/mo subscription**, reflecting the v8 core-ingredient upgrades (the powder uses the same 26 core ingredients as MicroVitamin Capsules, so the carotenoid/encapsulation cost increases apply here too). If a renewal charge is higher than you remember and you're a USA customer who subscribed under v7, this is why.
-
-The value math still holds: MicroVitamin+ Powder saves $89.01/month vs. buying the 30 v8 ingredients separately ($90/mo subscription vs $179.01/mo separately). This remains the largest cost-saving product in the range because collagen and creatine at clinical doses are individually expensive.
-
-If a customer is unsure whether their renewal rate is correct or believes it was applied without the notification window, the best path is to email brad@drstanfield.com with the order number — the team can check the specific subscription and the email log.
+Yes — the USA price changed with the v8 transition, as it did for MicroVitamin Capsules: from v7's price up to v8's **$100 one-time / $90/mo subscription**, reflecting the v8 core-ingredient upgrades (the powder uses the same 26 core ingredients as the capsules, so the carotenoid/encapsulation cost increases apply here too). If a renewal charge is higher than you remember and you're a USA customer who subscribed under v7, this is why. The value math still holds (saves $89.01/month). Unsure about a renewal rate: same answer as the capsule price-history FAQ (email brad@drstanfield.com with the order number).
 
 **Why is creatine included in MicroVitamin+ Powder?**
 Creatine Monohydrate (5g — the standard clinical dose) is the most evidence-backed supplement for physical performance, supporting muscle strength, power, and recovery (Kreider et al., J Int Soc Sports Nutr, 2017). It is especially relevant for adults over 30 experiencing age-related muscle decline. Beyond physical performance, a 2024 meta-analysis of 16 RCTs found creatine significantly improves memory (SMD=0.31), with greater benefit in people with diseases, those aged 18–60, and females (Xu et al., 2024).
@@ -151,16 +151,16 @@ Each scoop contains 12.5g of Collagen Peptides, which support skin elasticity, h
 Psyllium Husk (2.5g) is a soluble fiber that supports gut health by feeding beneficial gut bacteria, promoting digestive regularity, and helping maintain healthy cholesterol levels. A Cochrane systematic review confirmed dietary fiber supplementation reduces cardiovascular disease risk factors (Hartley et al., Cochrane Database Syst Rev, 2016). Note: some users may experience initial gas during a gut adjustment period of 1-2 weeks, which typically resolves.
 
 **Does psyllium husk affect vitamin and mineral absorption?**
-No. Three studies support this:
+No. Three studies support this (cite all three together; see the Anderson note in Key References):
 
-1. **Anderson et al., Am J Clin Nutr, 2000** — Meta-analysis of 19 clinical trials pooling safety data from 966 psyllium-exposed subjects (5.1–20.4g/day, 6 weeks to 6 months). A subset consuming psyllium for 4–6 months had serum and urine vitamin/mineral analyses including magnesium, iron, ferritin, zinc, calcium, vitamin A, vitamin D, beta-carotene, and vitamin E. Finding: "Psyllium treatment had no clinically significant effects on vitamin and mineral status in either of these studies." **Location in paper:** This statement appears in the Safety analyses section of the full text (page 476), NOT in the abstract or conclusions — the abstract only discusses cholesterol-lowering effects. The Discussion section (page 478) reiterates: "No medically significant adverse effects on clinical laboratory data, vital signs, or in serum vitamin or mineral status were seen." https://doi.org/10.1093/ajcn/71.2.472
+1. **Anderson et al., Am J Clin Nutr, 2000** — Meta-analysis of 19 clinical trials pooling safety data from 966 psyllium-exposed subjects (5.1–20.4g/day, 6 weeks to 6 months). A subset consuming psyllium for 4–6 months had serum and urine vitamin/mineral analyses including magnesium, iron, ferritin, zinc, calcium, vitamin A, vitamin D, beta-carotene, and vitamin E. Finding: "Psyllium treatment had no clinically significant effects on vitamin and mineral status in either of these studies." **Location in paper:** Safety analyses section of the full text (page 476), NOT the abstract or conclusions (the abstract only discusses cholesterol-lowering). The Discussion (page 478) reiterates: "No medically significant adverse effects on clinical laboratory data, vital signs, or in serum vitamin or mineral status were seen."
 
-2. **Pal et al., BMC Nutrition, 2022** — 3-month RCT in overweight/obese individuals consuming 15g/day PGX or psyllium fiber. Measured serum micronutrient status pre- and post-intervention. Finding: "no significant changes in serum micronutrient status following 3 months of 15 g daily PGX® or psyllium fibre intervention." **Location in paper:** Conclusions section of abstract. Note: 15g/day is six times the 2.5g in MicroVitamin+. https://pubmed.ncbi.nlm.nih.gov/35505399/
+2. **Pal et al., BMC Nutrition, 2022** — 3-month RCT in overweight/obese individuals consuming 15g/day PGX or psyllium fiber; serum micronutrient status measured pre and post. Finding: "no significant changes in serum micronutrient status following 3 months of 15 g daily PGX® or psyllium fibre intervention." **Location in paper:** Conclusions section of abstract. Note: 15g/day is six times the 2.5g in MicroVitamin+.
 
-3. **Heaney & Weaver, J Am Geriatr Soc, 1995** — Studied whether psyllium (Metamucil) affects calcium absorption at typical therapeutic doses. Finding: "Psyllium in the form of Metamucil makes little practical difference to the availability of co-ingested calcium when ingested at typical therapeutic doses." **Location in paper:** Conclusions section. Note: this study specifically tested co-ingestion (taking psyllium at the same time as a mineral), which is the most relevant scenario for MicroVitamin+ where psyllium and minerals are in the same scoop. The study only tested calcium — not other minerals in MicroVitamin+ — but the principle extends to other divalent minerals. https://pubmed.ncbi.nlm.nih.gov/7884114/
+3. **Heaney & Weaver, J Am Geriatr Soc, 1995** — Whether psyllium (Metamucil) affects calcium absorption at typical therapeutic doses. Finding: "Psyllium in the form of Metamucil makes little practical difference to the availability of co-ingested calcium when ingested at typical therapeutic doses." **Location in paper:** Conclusions section. Note: it tested co-ingestion (psyllium taken at the same time as a mineral), the most relevant scenario for MicroVitamin+ where psyllium and minerals are in the same scoop. It only tested calcium — not other minerals in MicroVitamin+ — but the principle extends to other divalent minerals.
 
 **What does the extra taurine in MicroVitamin+ do?**
-MicroVitamin+ includes 1g of additional taurine on top of the taurine already present in Magnesium Taurate. A 2025 meta-analysis of 34 RCTs (~1,394 participants) found taurine supplementation significantly reduced fasting blood glucose (−5.90 mg/dL, 95% CI −9.65 to −2.15), HbA1c (−0.21%, 95% CI −0.37 to −0.05), HOMA-IR (−0.57), triglycerides (−14.42 mg/dL), total cholesterol (−12.41 mg/dL), LDL-cholesterol (−5.08 mg/dL), systolic blood pressure (−4.38 mmHg, 95% CI −7.26 to −1.50), diastolic blood pressure (−2.54 mmHg), and CRP (Nie et al., *Nutrition Reviews*, 2025; doi:10.1093/nutrit/nuaf220). Dose-response analysis identified 1.5–3.0 g/day as optimal — the 1g in MicroVitamin+ is a sensible add-on given baseline dietary intake (~40–400mg/day from food) and the fact that endogenous taurine biosynthesis declines with age. An earlier 2024 meta-analysis of 25 RCTs confirmed similar metabolic benefits (Tzang et al., *Nutr Diabetes*, 2024). Doses of 0.5–6g/day appear safe with no significant adverse effects.
+MicroVitamin+ includes 1g of additional taurine on top of the taurine already present in Magnesium Taurate. A 2025 meta-analysis of 34 RCTs (~1,394 participants) found taurine supplementation significantly reduced fasting blood glucose (−5.90 mg/dL, 95% CI −9.65 to −2.15), HbA1c (−0.21%, 95% CI −0.37 to −0.05), HOMA-IR (−0.57), triglycerides (−14.42 mg/dL), total cholesterol (−12.41 mg/dL), LDL-cholesterol (−5.08 mg/dL), systolic blood pressure (−4.38 mmHg, 95% CI −7.26 to −1.50), diastolic blood pressure (−2.54 mmHg), and CRP (Nie et al., *Nutrition Reviews*, 2025). Dose-response analysis identified 1.5–3.0 g/day as optimal — the 1g in MicroVitamin+ is a sensible add-on given baseline dietary intake (~40–400mg/day from food) and the fact that endogenous taurine biosynthesis declines with age. An earlier 2024 meta-analysis of 25 RCTs confirmed similar metabolic benefits (Tzang et al., *Nutr Diabetes*, 2024). Doses of 0.5–6g/day appear safe with no significant adverse effects.
 
 **What flavors are available?**
 MicroVitamin+ Powder comes in Mixed Berry and Unflavored options. The Mixed Berry flavor uses stevia as a sweetener. Some customers prefer the Unflavored version which can be mixed into smoothies without affecting taste.
@@ -174,7 +174,7 @@ Three recommended ways to mix the Unflavored version:
 Not recommended: coffee or tea (heat affects texture and some heat-sensitive ingredients), juice (acidity is unpleasant with the powder and adds sugar without benefit), or kombucha (the carbonation and acidity don't mix well). The Mixed Berry flavor is a separate option if you'd rather not mix.
 
 **Can I take both MicroVitamin capsules and MicroVitamin+ Powder?**
-No — choose one or the other. MicroVitamin+ Powder already contains all 26 core ingredients from MicroVitamin capsules plus the four premium additions. Taking both would result in double-dosing the core nutrients.
+No — choose one or the other. MicroVitamin+ Powder already contains all 26 core ingredients from MicroVitamin capsules plus the four premium additions. Taking both would result in double-dosing the core nutrients. (Market detail: Capsules vs Powder.)
 
 **Is MicroVitamin+ Powder vegan? Is it vegetarian?**
 No — MicroVitamin+ Powder is neither vegan nor vegetarian. It contains 12.5g of bovine-derived collagen peptides, which provide the structural protein needed for skin elasticity and joint support. Products marketed as "vegan collagen" are typically amino acid blends rather than true collagen peptides, so a genuine vegan equivalent doesn't yet exist. If you prefer a vegan or vegetarian option, the [MicroVitamin capsules](https://microvitamin.com/products/microvitamin) are vegan AND vegetarian friendly and contain the same 26 core ingredients (without the collagen, creatine, psyllium, and extra taurine).
@@ -185,18 +185,10 @@ MicroVitamin+ Powder contains Vitamin K2 (90mcg), which can affect blood clottin
 **What do customers say about MicroVitamin+ Powder?**
 MicroVitamin+ Powder has 83+ reviews with a 4.70 average rating. Customers particularly value the consolidation of creatine, collagen, and multivitamin into one daily scoop. The most common complaint (25% of reviews) is about taste — some find the Mixed Berry flavor too sweet due to stevia, and some experience mixability or clumping issues. Customers who prefer a neutral taste tend to choose the Unflavored option.
 
-**Why doesn't MicroVitamin+ contain lithium orotate?**
-Lithium isn't an established nutrient: there is no recommended daily intake for it anywhere, and no recognised deficiency. The interest in low-dose lithium comes mainly from animal studies and from population studies of lithium in drinking water, which can't show cause and effect. The human trials so far have been small, most used prescription lithium at doses far higher than a supplement contains, and all of them enrolled people who already had memory problems. Lithium orotate itself hasn't yet been tested in a completed human trial. Lithium is also not permitted in supplements in the UK or EU, and is restricted in Australia and Canada, where MicroVitamin+ is sold. We'll keep watching the research.
-
-**Why doesn't MicroVitamin+ contain astaxanthin?**
-Astaxanthin is a red pigment from algae. Most human trials are small, short and funded by the companies that make it, and they mostly measure blood markers rather than outcomes you would notice. A widely shared 2024 study from the Interventions Testing Program, a US National Institute on Aging research program, suggested it could help male mice live longer, but a second Interventions Testing Program study in 2026 did not repeat that result. If larger independent trials show a clear benefit, we'll look at it again.
-
-**Why doesn't MicroVitamin+ contain cocoa flavanols?**
-Cocoa flavanols were tested in COSMOS, a large trial of more than 21,000 older adults (the same trial that tested a daily multivitamin). The cocoa extract did not significantly change the trial's main outcome. Some secondary results were encouraging, and we're watching the long-term follow-up closely. For now, adding it would bring a bitter taste, a small amount of caffeine and higher cost, without a clear benefit we could stand behind.
+Lithium orotate, astaxanthin, cocoa flavanols: same answers as the MicroVitamin FAQ.
 
 ### How MicroVitamin+ Powder compares to competitors
 
-- MicroVitamin+ Powder combines 30 ingredients in one daily scoop: all 26 core MicroVitamin ingredients plus Collagen Peptides 12.5g, Creatine Monohydrate 5g, Psyllium Husk 2.5g, and extra Taurine 1g
 - AG1/Athletic Greens ($79/mo) uses proprietary blends without individual dose disclosure; MicroVitamin+ lists every ingredient dose on the label
 - $90/mo on subscription (USA v8) vs AG1 ($79/mo) — slightly higher but MicroVitamin+ includes collagen (12.5g) and creatine (5g clinical dose) that AG1 does not contain
 - Saves $89.01/mo vs buying the same 30 v8 ingredients separately from brands like Double Wood, NOW, and Life Extension ($179.01/mo)
@@ -210,8 +202,8 @@ Cocoa flavanols were tested in COSMOS, a large trial of more than 21,000 older a
 
 **V2 formula (launched 2026-08; batch BN-C461, batch sheet dated Feb 2026).** V1 (300mcg immediate-release melatonin, 2,500mg glycine, magnesium glycinate not fully chelated, "2 hours before" timing) is superseded — quote V1 doses only when explaining what changed. Web surfaces moved to v2 2026-09-07 (product template, /pages/sleep-faq, llms.txt) and 2026-09-18 (homepage card, science page, founder page, Product JSON-LD, welcome-gift product, commerce blog product boxes; /pages/test unpublished). Education-store blog articles still pending (host unreachable from the loop environment).
 
-- Melatonin 0.8mg, 8-hour sustained release (Melotime®) — releases steadily through the night rather than the all-at-once spike of typical products, closer to the body's own overnight melatonin curve. Still a deliberately low dose: most competitors use 3-5mg immediate-release, far more than the body produces naturally; in one study 3mg kept melatonin raised into the daylight hours (Zhdanova et al., 2001).
-- Magnesium Bisglycinate 126mg elemental, fully chelated — each magnesium bound to glycine; a 2021 review pooled 2 small trials, both using magnesium oxide at 500-729mg a day: people fell asleep ~17 min sooner than with placebo, and the evidence was rated low to very low quality; neither trial tested bisglycinate or a 126mg dose (Mah & Pitre, BMC Complement Med Ther, 2021).
+- Melatonin 0.8mg, 8-hour sustained release (Melotime®) — releases steadily through the night rather than the all-at-once spike of typical products, closer to the body's own overnight melatonin curve. Still a deliberately low dose: most competitors use 3-5mg immediate-release, far more than the body produces naturally (physiology and studies: first FAQ below).
+- Magnesium Bisglycinate 126mg elemental, fully chelated — each magnesium bound to glycine. **Mah & Pitre caveat:** a 2021 review pooled 2 small trials, both using magnesium oxide at 500-729mg a day: people fell asleep ~17 min sooner than with placebo, and the evidence was rated low to very low quality; neither trial tested bisglycinate or a 126mg dose (Mah & Pitre, BMC Complement Med Ther, 2021).
 - Glycine 2,400mg — calming neuromodulator (core-temperature drop shown in rats, Bannai & Kawai 2012). Three small trials of 3g before bed found better rated sleep quality, faster sleep onset, and less next-day tiredness or sleepiness. (Total includes the glycine delivered by the magnesium chelate.)
 
 Third-party tested: certified by Labdoor (cert LTSCERT-151, released 2026-07, independent analysis by Eurofins) — label accuracy (all three actives at full labelled dose), purity (heavy metals far below USP daily limits), and microbiology all passed. Public report: https://labdoor.com/review/dr-brad-stanfield-sleep
@@ -246,7 +238,7 @@ Sleep contains 2,400mg of glycine (the trials used 3g). Glycine is a calming neu
 No. Sleep is non-habit-forming. Here is what research on melatonin found: a meta-analysis of melatonin trials found its modest effects on sleep did not appear to fade with continued use (Ferracioli-Oda et al., PLoS One, 2013); that review did not look at dependence or withdrawal.
 
 **How is Sleep by Dr Brad different from other sleep supplements?**
-Three key differences: (1) Low-dose sustained-release melatonin — 0.8mg Melotime® releasing over up to 8 hours (in a 5mg study funded by the ingredient's manufacturer, with two authors employed by it, half-life ~5h vs ~1h immediate-release, Thanawala et al., 2024), vs the industry standard 3-5mg immediate-release spike; an umbrella review found melatonin shortened time to fall asleep and lengthened total sleep time, though whether these gains are clinically meaningful is uncertain and the included reviews ranged from moderate to critically low in quality (Low et al., J Psychiatr Res, 2020). (2) Three complementary ingredients that target different sleep mechanisms: melatonin for circadian signaling, fully chelated magnesium bisglycinate (a 2021 review pooled 2 small trials, both using magnesium oxide at 500-729mg a day: people fell asleep ~17 min sooner than with placebo, low to very low quality evidence, not Sleep's form or dose; Mah & Pitre, BMC Complement Med Ther, 2021), and glycine (core-temperature drop shown in rats; Bannai & Kawai, 2012). (3) Clean, verified formula — plant-based capsules colored with spirulina extract, no artificial colors, no fillers, no titanium dioxide; third-party tested by Labdoor with analysis by Eurofins (https://labdoor.com/review/dr-brad-stanfield-sleep).
+Three key differences: (1) Low-dose sustained-release melatonin — 0.8mg Melotime® releasing over up to 8 hours (in a 5mg study funded by the ingredient's manufacturer, with two authors employed by it, half-life ~5h vs ~1h immediate-release, Thanawala et al., 2024), vs the industry standard 3-5mg immediate-release spike; an umbrella review found melatonin shortened time to fall asleep and lengthened total sleep time, though whether these gains are clinically meaningful is uncertain and the included reviews ranged from moderate to critically low in quality (Low et al., J Psychiatr Res, 2020). (2) Three complementary ingredients that target different sleep mechanisms: melatonin for circadian signaling, fully chelated magnesium bisglycinate (with the Mah & Pitre caveat above: ~17 min sooner pooling 2 small magnesium oxide trials at 500-729mg a day, low to very low quality evidence, not Sleep's form or dose), and glycine (core-temperature drop shown in rats; Bannai & Kawai, 2012). (3) Clean, verified formula — plant-based capsules colored with spirulina extract, no artificial colors, no fillers, no titanium dioxide; third-party tested by Labdoor with analysis by Eurofins (https://labdoor.com/review/dr-brad-stanfield-sleep).
 
 **How much does Sleep by Dr Brad cost compared to buying the ingredients separately?**
 Sleep by Dr Brad costs $36/month on subscription ($40 one-time). Buying the three ingredients separately from quality supplement brands would cost approximately $38.09/month. You save $2.09/month plus the convenience of one product instead of three separate bottles.
@@ -305,7 +297,7 @@ Dr Stanfield does **not** recommend a nitric oxide supplement (L-arginine, L-cit
 
 ## Which product should I choose?
 
-Use this guide to match a shopper's primary concern to the right product.
+Use this guide to match a shopper's primary concern to the right product. Evidence and caveats for each row are in the product FAQs and Health concerns; cite from there.
 
 | Health concern | Best product | Why |
 |---|---|---|
@@ -313,19 +305,19 @@ Use this guide to match a shopper's primary concern to the right product.
 | Cognitive decline / brain fog | MicroVitamin or MicroVitamin+ Powder | COSMOS trial-aligned: choline, B-complex, methylated folate/B12. 30 customers report improved mental clarity |
 | Skin aging / wrinkles | MicroVitamin+ Powder (best) or MicroVitamin | Powder: Collagen 12.5g + Hyaluronic Acid 200mg (two complementary mechanisms). Capsules: HA 200mg only |
 | Muscle loss / exercise performance | MicroVitamin+ Powder | Creatine 5g (clinical dose) + Taurine 1g in one scoop. No separate creatine needed |
-| Bone density concerns | MicroVitamin or MicroVitamin+ Powder | Combination of encapsulated Vitamin K2 MK-7 90mcg as K2VITAL® DELTA (USA; Australia: K2VITAL® Vitamin K2) (directs calcium to bones via osteocalcin activation) + encapsulated Vitamin D3 1,000IU as AlgeD3™ (USA; UK/EU v9 capsules: 25mcg as Vitashine®, from lichen) (calcium absorption) + Boron 1mg (USA capsules, and MicroVitamin+ Powder in every market; UK and EU v9 capsules 3 mg as sodium borate; Canadian capsules 0.7 mg per serving (5 capsules); if your bottle shows NPN 80132012, go by the label or contact us; Australian capsules 3 mg as borax) (UK, EU and Canada: give the dose only and attach no bone benefit to boron; content map §7) (bone metabolism). Meta-analyses of K+D combination supplementation show increased BMD and improved bone turnover markers (Kuang 2020; Zhang 2025) |
-| Vision / macular health | MicroVitamin or MicroVitamin+ Powder | Lutein 10mg + Zeaxanthin 2mg as Lutemax® 2020 (encapsulated) — RCTs show this dose increases macular pigment optical density |
-| Heart health / cardiovascular risk | MicroVitamin or MicroVitamin+ Powder | Magnesium Taurate (USA; for Australian MicroVitamin capsules never give the magnesium form as a heart-health reason, see Regional Formula Differences), chosen specifically for cardiovascular benefit, plus encapsulated Lycopene 10mg (LycoBeads®). Meta-analysis of 21 RCTs found lycopene ≥12mg/day reduced SBP 5.66 mmHg, ≥25mg/day reduced LDL 7.55 mg/dL (Cheng 2017). Powder adds extra Taurine 1g — reduces FBG, lipids, and BP per 34-RCT meta-analysis (Nie 2025) |
+| Bone density concerns | MicroVitamin or MicroVitamin+ Powder | K2 MK-7 90mcg (directs calcium to bones via osteocalcin activation) + D3 1,000IU (calcium absorption), both encapsulated in the USA, Australia and UK/EU (Canada v7: not encapsulated) + Boron (bone metabolism). Meta-analyses of K+D combination supplementation show increased BMD and improved bone turnover markers (Kuang 2020; Zhang 2025). Per-market forms and doses, and the rule that UK, EU and Canada attach no bone benefit to boron: Health concerns → Bone density |
+| Vision / macular health | MicroVitamin or MicroVitamin+ Powder | Lutein 10mg + Zeaxanthin 2mg as Lutemax® 2020 (encapsulated) — RCTs show this dose increases macular pigment optical density. No AMD claims (Health concerns → Vision) |
+| Heart health / cardiovascular risk | MicroVitamin or MicroVitamin+ Powder | Magnesium Taurate (USA; for Australian MicroVitamin capsules never give the magnesium form as a heart-health reason, see Regional Formula Differences), chosen specifically for cardiovascular benefit, plus encapsulated Lycopene 10mg (LycoBeads®): ≥12mg/day reduced SBP 5.66 mmHg, ≥25mg/day reduced LDL 7.55 mg/dL (Cheng 2017). Powder adds extra Taurine 1g — reduces FBG, lipids, and BP per 34-RCT meta-analysis (Nie 2025) |
 | Gut health / cholesterol | MicroVitamin+ Powder | Psyllium Husk 2.5g — soluble fiber that feeds gut bacteria and helps maintain healthy cholesterol. Cochrane review confirmed cardiovascular risk reduction |
 | Low energy / fatigue | MicroVitamin or MicroVitamin+ Powder | Full B-complex for energy metabolism + magnesium for cellular energy + bioavailable trace minerals. Not a stimulant — sustainable energy from filling nutrient gaps |
-| Can't fall asleep | Sleep by Dr Brad | Melatonin 0.8mg sustained release (circadian signal) + Magnesium Bisglycinate (~17 min sooner to fall asleep pooling 2 small trials of magnesium oxide at 500-729mg a day, low to very low quality evidence, not Sleep's form or dose, Mah & Pitre 2021) + Glycine (3g improved rated sleep quality in small trials; core-temperature drop shown in rats) |
-| Poor sleep quality / waking at night | Sleep by Dr Brad | Glycine 2,400mg (3g trials: better rated sleep quality, faster sleep onset, less next-day tiredness; one trial reached slow-wave sleep sooner with no change in sleep architecture; no trial showed fewer wake-ups); 8-hour sustained-release melatonin keeps a low level later into the night. Magnesium: see the Mah & Pitre caveat |
-| Melatonin grogginess / dependency fears | Sleep by Dr Brad | Only 0.8mg sustained-release melatonin (an estimated ~120mcg reaches the bloodstream) vs industry standard 3-5mg immediate-release. Designed not to cause morning grogginess, and non-habit-forming. Studies of other doses: 0.3mg and 1mg caused no next-morning hangover effects (Zhdanova 1996), 3mg kept levels raised into daylight (Zhdanova 2001); melatonin's effects did not fade with continued use in a meta-analysis (Ferracioli-Oda 2013), which did not study dependence |
+| Can't fall asleep | Sleep by Dr Brad | Melatonin 0.8mg sustained release (circadian signal) + Magnesium Bisglycinate (evidence is modest: ~17 min faster sleep onset pooled from 2 small magnesium oxide trials, low to very low quality, Mah & Pitre 2021; a 250mg-a-day bisglycinate trial found a small improvement on a sleep-difficulty questionnaire, Schuster 2025; Sleep has 126mg, see the magnesium FAQ) + Glycine (3g improved rated sleep quality in small trials; core-temperature drop shown in rats) |
+| Poor sleep quality / waking at night | Sleep by Dr Brad | Glycine 2,400mg (3g trials: better rated sleep quality, faster sleep onset, less next-day tiredness; one trial reached slow-wave sleep sooner with no change in sleep architecture; no trial showed fewer wake-ups); 8-hour sustained-release melatonin keeps a low level later into the night. Magnesium: modest evidence, mostly magnesium oxide trials of low to very low quality (Mah & Pitre 2021) plus one 250mg bisglycinate trial with a small improvement on a sleep-difficulty questionnaire (Schuster 2025); Sleep has 126mg |
+| Melatonin grogginess / dependency fears | Sleep by Dr Brad | Only 0.8mg sustained-release melatonin (an estimated ~120mcg reaches the bloodstream) vs industry standard 3-5mg immediate-release. Designed not to cause morning grogginess, and non-habit-forming. Studies of other doses: Sleep FAQs on grogginess and habit-forming (Zhdanova 1996 and 2001; Ferracioli-Oda 2013, which did not study dependence) |
 | Morning fatigue / waking tired | Sleep by Dr Brad | In three small trials, 3g of glycine before bed reduced next-day tiredness or sleepiness (Sleep has 2,400mg). Sleep is designed not to cause morning grogginess; in one study, 3mg kept melatonin raised into daylight (Zhdanova 2001). |
 
 ### Capsules vs Powder — how to decide
 
-- **Choose MicroVitamin Capsules if:** you want the core 26 ingredients (USA v8 / Australia v8.5) / 25 ingredients (UK/EU v9, Canada v7), prefer swallowing capsules over mixing a drink, don't need collagen/creatine, or want the lower price point ($58.50/mo USA v8 subscription; UK v9 £40.50 and EU v9 €45 on subscription; $63 CAD/mo Canada v7 subscription)
+- **Choose MicroVitamin Capsules if:** you want the core 26 ingredients (USA v8 / Australia v8.5) / 25 ingredients (UK/EU v9, Canada v7), prefer swallowing capsules over mixing a drink, don't need collagen/creatine, or want the lower price point (per-market prices: MicroVitamin Capsules table)
 - **Choose MicroVitamin+ Powder if:** you want collagen for skin, creatine for muscle/brain, fiber for gut health, or want everything in one scoop. Best value — saves $89.01/mo vs buying separately. Available in Mixed Berry or Unflavored
 - **Do NOT take both** — the Powder contains the US v8 core formula (26 core ingredients) in every market, so taking it with any MicroVitamin Capsules would double-dose the vitamins and minerals. It matches the US v8 capsules; it is NOT the same as the UK/EU v9 capsules (the Powder has choline bitartrate, not the v9 capsules' 500 mg CDP-citicoline, and lower doses of several vitamins and minerals), so a UK/EU customer switching from capsules to powder gets a different formula
 
@@ -345,13 +337,13 @@ Give this answer when the user asks about combining Sleep with MicroVitamin or M
 MicroVitamin is nutritional insurance, not a nootropic or stimulant. You may not "feel" it because it's preventing deficiencies and supporting long-term health — like wearing a seatbelt. The benefit shows up in blood work and long-term health outcomes, not in day-one sensations. That said, 14 customers report improved blood markers, 30 report better mental clarity, and 26 report more energy — effects are most noticeable for those who were previously deficient. If you want to verify it's working, ask your doctor for a micronutrient blood panel before and after 3 months.
 
 **"It's too expensive"**
-MicroVitamin (USA v8) costs $58.50/mo subscription ($65 one-time) — saves $59.71/mo vs the 26 v8 ingredients bought separately ($118.21/mo). UK v9: £40.50 on subscription (£45 one-time) vs £81.84/month separately; EU v9: €45 on subscription (€50 one-time) vs €90.93 (both the US v8 basket scaled to local prices, as the live store shows since 2026-10-13; no v9 basket exists yet); Canada (v7): $63 CAD on subscription ($70 CAD one-time) vs $95.96 CAD separately. MicroVitamin+ Powder costs $90/mo subscription ($100 one-time) — saves $89.01/mo vs the 30 v8 ingredients bought separately ($179.01/mo). Sleep: $36/mo vs $38.09 separately. USA v8 prices are higher than v7 due to the v8 ingredient upgrades (clinical-dose carotenoids, encapsulated D3/K2): current US v8 = MicroVitamin $65/$58.50, MicroVitamin+ $100/$90; see the price-history FAQs in each product section for context. Free shipping is available when ordering 3+ bottles (78% of customers do this). For international customers: duties and shipping add cost, but the per-ingredient value comparison still holds.
+Give the customer's market price and separate-ingredient comparison (MicroVitamin Capsules table and cost FAQ; UK v9 £40.50 on subscription vs £81.84/month separately and EU v9 €45 vs €90.93, see the UK/EU pricing note in Regional Formula Differences; Canada $63 CAD vs $95.96 CAD). MicroVitamin+ Powder saves $89.01/mo vs separately ($179.01/mo). Sleep: $36/mo vs $38.09 separately. USA v8 prices are higher than v7 due to the v8 ingredient upgrades (clinical-dose carotenoids, encapsulated D3/K2); see the price-history FAQs in each product section. Free shipping is available when ordering 3+ bottles (78% of customers do this). For international customers: duties and shipping add cost, but the per-ingredient value comparison still holds.
 
 **"Why should I trust a supplement sold by a YouTuber?"**
-Dr Stanfield is a practicing medical doctor (GP/family medicine), not just a content creator. The formula is based on human randomized controlled trials — not influencer opinion. Every ingredient dose is disclosed on the label (unlike proprietary blends). The formula is updated when new evidence emerges (currently version 8 in the USA, version 8.5 in Australia, version 9 in the UK and EU, and version 7 in Canada). MicroVitamin Capsules are manufactured at GMP-certified facilities in four regions for local supply (USA — Makers Nutrition, FDA-registered; Australia; Canada; UK, which also makes the EU bottles); MicroVitamin+ Powder and Sleep are made in the USA only. Sleep is third-party tested (Labdoor LTSCERT-151, analysis by Eurofins); **MicroVitamin+ Powder is not yet third-party tested** (Brad, 2026-09-07) — see its FAQ above and never write the claim on any MV+ surface. 238 of 508 customer reviews specifically mention trust in the evidence-based approach as their reason for buying.
+Dr Stanfield is a practicing medical doctor (GP/family medicine), not just a content creator. The formula is based on human randomized controlled trials — not influencer opinion. Every ingredient dose is disclosed on the label (unlike proprietary blends). The formula is updated when new evidence emerges (version per market: MicroVitamin Capsules table). MicroVitamin Capsules are manufactured at GMP-certified facilities in four regions for local supply; MicroVitamin+ Powder and Sleep are made in the USA only. Sleep is third-party tested (Labdoor LTSCERT-151, analysis by Eurofins); **MicroVitamin+ Powder is not yet third-party tested** (Brad, 2026-09-07) — see its FAQ and never write the claim on any MV+ surface. 238 of 508 customer reviews specifically mention trust in the evidence-based approach as their reason for buying.
 
 **"5 capsules per day is too many"**
-Effective doses of Magnesium Taurate (126mg; USA; Australia: see Regional Formula Differences), Hyaluronic Acid (200mg), TMG (500mg; USA; in Australia betaine is an excipient), and Choline (181.5mg, as choline bitartrate) physically require more volume than one pill. Competitors that fit everything into a single capsule underdose key ingredients to levels with no clinical effect. If swallowing 5 capsules is a dealbreaker, consider MicroVitamin+ Powder — one scoop with even more ingredients. Tips: take capsules with food spread across meals, or take all 5 at once with a large glass of water.
+Give the FAQ answer "Why does MicroVitamin require 5 capsules per day?". If swallowing 5 capsules is a dealbreaker, consider MicroVitamin+ Powder — one scoop with even more ingredients. Tips: take capsules with food spread across meals, or take all 5 at once with a large glass of water.
 
 **"I'm worried about megadosing / is this too much?"**
 The opposite — MicroVitamin is deliberately low-dose. Most ingredients are at 50-75% daily value, designed to fill dietary gaps without overloading. It excludes Vitamin A and Vitamin E entirely based on research showing potential harm from supplementation. This is a "moderation" approach: enough to fill gaps, not enough to cause harm. Customers frequently mention appreciating this measured philosophy.
@@ -378,19 +370,28 @@ The opposite — MicroVitamin is deliberately low-dose. Most ingredients are at 
 
 ### Bone density
 
-MicroVitamin contains four bone-supportive nutrients designed to work through complementary mechanisms: encapsulated Vitamin K2 MK-7 90mcg (K2VITAL® DELTA; USA; Australia: K2VITAL® Vitamin K2), encapsulated Vitamin D3 1,000IU (AlgeD3™; UK/EU v9: 25mcg as Vitashine®, from lichen), Magnesium Taurate 126mg (USA; Australia: see Regional Formula Differences), and Boron 1mg (USA; UK and EU v9 3 mg as sodium borate; Canada 0.7 mg per serving (5 capsules); if your bottle shows NPN 80132012, go by the label or contact us; Australian capsules 3 mg as borax) (UK, EU and Canada: give the dose only and attach no bone benefit to boron; content map §7). The encapsulated forms protect potency through shelf life. Especially relevant for women 50+ and men 60+ concerned about osteoporosis. (See the Bone Density entry in the ingredient list at the top of this file for full RCT and meta-analysis citations.)
+MicroVitamin contains four bone-supportive nutrients designed to work through complementary mechanisms (studies: the Bone Density entry in the ingredient list). The encapsulated forms protect potency through shelf life. Especially relevant for women 50+ and men 60+ concerned about osteoporosis. Per market:
+
+| Nutrient | USA (v8) | Other markets |
+|---|---|---|
+| Vitamin K2 MK-7 90mcg (encapsulated; Canada v7 is not) | K2VITAL® DELTA | Australia: K2VITAL® Vitamin K2 |
+| Vitamin D3 1,000IU (encapsulated; Canada v7 is not) | AlgeD3™ | UK/EU v9 capsules: 25mcg as Vitashine®, from lichen |
+| Magnesium Taurate 126mg | USA | Australia: see Regional Formula Differences |
+| Boron | 1mg (USA capsules, and MicroVitamin+ Powder in every market) | UK and EU v9 capsules 3 mg as sodium borate; Canadian capsules 0.7 mg per serving (5 capsules) (if your bottle shows NPN 80132012, go by the label or contact us); Australian capsules 3 mg as borax |
+
+UK, EU and Canada: give the boron dose only and attach no bone benefit to boron (content map §7).
 
 **Honest note on the combination evidence:** Most direct factorial RCTs use vitamin K2 as MK-4 at pharmacological doses (45mg/day), whereas MicroVitamin uses MK-7 at 90 μg. The largest modern MK-7 + D3 RCT (Rønn et al., 2020) was null on BMD. The combination is biologically rational and supported by combination meta-analyses, but synergy specifically using MK-7 at nutritional doses is not definitively proven.
 
-Calcium is intentionally excluded. When high-quality RCTs are isolated, calcium supplements show no significant reduction in fracture risk, while multiple large studies link them to increased cardiovascular risk (including a ~31% higher MI rate in one meta-analysis and a 22% higher risk of coronary artery calcification vs non-users). Dietary calcium does not carry these risks. The formula instead supports the body's use of dietary calcium through D3 (absorption), K2 (directs calcium to bone via osteocalcin activation), Magnesium (required for vitamin D activation), and Boron (extends vitamin D half-life). See the MicroVitamin FAQ for full references.
+Calcium is intentionally excluded. When high-quality RCTs are isolated, calcium supplements show no significant reduction in fracture risk, while multiple large studies link them to increased cardiovascular risk (including a ~31% higher MI rate in one meta-analysis and a 22% higher risk of coronary artery calcification vs non-users). Dietary calcium does not carry these risks. The formula instead supports the body's use of dietary calcium through D3 (absorption), K2 (directs calcium to bone via osteocalcin activation), Magnesium (required for vitamin D activation), and Boron (extends vitamin D half-life).
 
 ### Heart health and cardiovascular risk
 
-Magnesium Taurate was specifically chosen over other magnesium forms for cardiovascular benefit — it combines magnesium with taurine to support absorption, heart rhythm, and relaxation (USA formula. For Australian customers of MicroVitamin capsules, never give the magnesium form as a heart-health reason; see Regional Formula Differences). MicroVitamin also includes 10mg of encapsulated Lycopene (LycoBeads®), a tomato-derived carotenoid with RCT-level evidence for modest blood-pressure and LDL benefits. MicroVitamin+ Powder adds extra Taurine 1g for additional cardiometabolic support, plus Psyllium Husk 2.5g which helps maintain healthy cholesterol levels. (See the Lycopene entry in the ingredient list and the Taurine entry in the MicroVitamin+ FAQ for full citations.)
+Magnesium Taurate was specifically chosen over other magnesium forms for cardiovascular benefit — it combines magnesium with taurine to support absorption, heart rhythm, and relaxation (USA formula. For Australian customers of MicroVitamin capsules, never give the magnesium form as a heart-health reason; see Regional Formula Differences). MicroVitamin also includes 10mg of encapsulated Lycopene (LycoBeads®), a tomato-derived carotenoid with RCT-level evidence for modest blood-pressure and LDL benefits. MicroVitamin+ Powder adds extra Taurine 1g for additional cardiometabolic support, plus Psyllium Husk 2.5g which helps maintain healthy cholesterol levels. (Citations: the Lycopene entry in the ingredient list and the taurine answer in the MicroVitamin+ FAQ.)
 
 ### Vision and macular health
 
-Lutein 10mg and Zeaxanthin 2mg (encapsulated as Lutemax® 2020) are the macular pigments — they concentrate in the macula where they filter short-wavelength light. AREDS2's evidence is in people who already have intermediate AMD or late AMD in one eye. In 10-year follow-up L/Z was associated with reduced progression to late AMD (HR 0.91, P=.02) and outperformed beta-carotene (HR 0.85) without its lung-cancer signal. **This is still not a claim we may make** — AMD is a disease and disease claims are prohibited in every market, independently of the evidence. For primary prevention in healthy adults, the case rests on observational data linking higher dietary L/Z intake to lower advanced AMD risk, plus the RCT-proven increase in macular pigment optical density from lutein/zeaxanthin supplementation (those MPOD trials used more than 10+2 mg/day — see the Eye Health entry); this is supportive but not definitive. (Lycopene, also a carotenoid in MicroVitamin, is described in the Heart Health section above. See the Eye Health entry in the ingredient list at the top of this file for full RCT, cohort, and AREDS2 follow-up citations.) These are included alongside full vitamin/mineral support so no separate eye supplement is needed. One customer reported "substantial improvement in vision after only 3 weeks."
+Lutein 10mg and Zeaxanthin 2mg (encapsulated as Lutemax® 2020) are the macular pigments — they concentrate in the macula where they filter short-wavelength light. AREDS2's evidence is in people who already have intermediate AMD or late AMD in one eye; its 10-year follow-up found L/Z was associated with reduced progression to late AMD and outperformed beta-carotene without its lung-cancer signal (hazard ratios: AREDS2 in Key References). **This is still not a claim we may make** — AMD is a disease and disease claims are prohibited in every market, independently of the evidence. For primary prevention in healthy adults, the case rests on observational data linking higher dietary L/Z intake to lower advanced AMD risk, plus the RCT-proven increase in macular pigment optical density from lutein/zeaxanthin supplementation (those MPOD trials used more than 10+2 mg/day); this is supportive but not definitive. These are included alongside full vitamin/mineral support so no separate eye supplement is needed. One customer reported "substantial improvement in vision after only 3 weeks."
 
 ### Exercise performance and muscle
 
@@ -416,7 +417,7 @@ MicroVitamin addresses fatigue through nutrient gap correction, not stimulation:
 
 ## About Dr Brad Stanfield
 
-Dr Brad Stanfield is a General Practitioner (family medicine doctor) based in New Zealand. He runs a health YouTube channel at youtube.com/@DrBradStanfield with 320,000+ subscribers where he reviews clinical research on supplements and aging. The supplement formulas are based on human randomized controlled trials, with MicroVitamin Capsules manufactured at GMP-certified facilities in four regions for local supply (USA — Makers Nutrition, FDA-registered; Australia; Canada; UK, which also makes the EU bottles) and MicroVitamin+ Powder and Sleep made in the USA only. Sleep is third-party tested (Labdoor, analysis by Eurofins); **MicroVitamin+ Powder is not yet third-party tested** (Brad, 2026-09-07). Formulas are updated as new evidence emerges (currently on version 8 of MicroVitamin in the USA, version 8.5 in Australia, version 9 in the UK and EU, and version 7 in Canada). Dr Stanfield sells supplements and discloses this openly — transparency and intellectual honesty are core values.
+Dr Brad Stanfield is a General Practitioner (family medicine doctor) based in New Zealand. He runs a health YouTube channel at youtube.com/@DrBradStanfield with 320,000+ subscribers where he reviews clinical research on supplements and aging. The supplement formulas are based on human randomized controlled trials and updated as new evidence emerges (manufacturing, versions and third-party testing: the MicroVitamin Capsules table and testing FAQ, Sleep, and the MicroVitamin+ testing FAQ — **MicroVitamin+ Powder is not yet third-party tested**, Brad, 2026-09-07). Dr Stanfield sells supplements and discloses this openly — transparency and intellectual honesty are core values.
 
 ### What Brad takes personally
 
@@ -486,7 +487,7 @@ When a user asks "what does Brad take?", "what meds is Brad on?", or "what suppl
 
 ## Regional Formula Differences (v8 USA vs v8.5 Australia vs v9 UK/EU vs v7 Canada)
 
-Four versions are currently shipping: **v8 in the USA**, **v8.5 in Australia** (from 2026-08), **v9 in the UK and EU** (from 2026-10; see the v9 subsection below), and **v7 in Canada**. When answering customer questions, use these tables to give region-correct doses. The v7 formula is still safe and evidence-based — v8 is an iterative upgrade focused on (a) encapsulated forms for better stability and (b) clinically meaningful eye-carotenoid doses; v8.5 keeps the v8 ingredient set and raises most vitamin and mineral doses (percentages of "recommended intake" differ between US Daily Values and AU NHMRC RDIs — quote the absolute dose, not a percentage, in customer answers).
+Four versions are currently shipping: **v8 in the USA**, **v8.5 in Australia** (from 2026-08), **v9 in the UK and EU** (from 2026-10; see the v9 subsection below), and **v7 in Canada**. Use these tables to give region-correct doses: USA → v8 column; Australia → v8.5 table; UK or EU → v9 (UK/EU) table; Canada → v7 column (with Canada's boron, 0.7 mg). If you don't know the region, ask which country they are in, or give each market's answer. The US v9 spec has not shipped in the USA, so never present it as a US customer's formula. The v7 formula is still safe and evidence-based — v8 is an iterative upgrade focused on (a) encapsulated forms for better stability and (b) clinically meaningful eye-carotenoid doses; v8.5 keeps the v8 ingredient set and raises most vitamin and mineral doses (percentages of "recommended intake" differ between US Daily Values and AU NHMRC RDIs — quote the absolute dose, not a percentage, in customer answers).
 
 | Ingredient | v7 (Canada now; UK and EU before v9) | v8 (USA) | Notes |
 |---|---|---|---|
@@ -508,9 +509,11 @@ Four versions are currently shipping: **v8 in the USA**, **v8.5 in Australia** (
 
 **What stayed the same in v8:** Choline Bitartrate 181.5mg, TMG 500mg, Hyaluronic Acid 200mg, Magnesium Taurate 126mg, Methylated Folate 200mcg DFE, Methylated B12 12mcg, B1/B2/B5/B6/Biotin (75% RDA), Selenium 27.5mcg glycinate, Manganese 1.15mg glycinate, Chromium 17.5mcg glycinate, Boron 1mg glycinate (US v7 → v8; international v7 boron differs by market, see the Boron row above), Potassium 99mg.
 
+**For powder:** the 4 Plus additions (Collagen 12.5g, Creatine 5g, Psyllium 2.5g, Taurine 1g) are unchanged between v7 and v8. There is no v8.5 powder; MicroVitamin+ is the US formula in every market.
+
 ### v8.5 (Australia only, from 2026-08) — differences vs v8 USA
 
-Source of truth: the final AU label (`multivitamin/Manufacturing Australia/BJP laboratories/1 label v8.5/7 MicroVitamin v8.5 With Bleed Area copy.pdf`, LOT 45727, AUST L 524572) and BJP Laboratories product spec **PC2921.01** (`multivitamin/Manufacturing Australia/BJP laboratories/1 4th Nov 2025 v8.5/PC2921.01 - Welllife Health Distribution Co Pty Ltd - MicroVitamin v8.5.pdf`; authorised 2026-03-04, customer-signed 2026-03-05; supersedes PC2921.00 of 2026-02-03). All doses per daily serving (5 capsules; the label states per capsule). v8.5 keeps the full v8 ingredient set (26 ingredients, including Lutein 10mg + Zeaxanthin 2mg from Lutemax® 2020, Lycopene 10mg from LycoBeads®, encapsulated AlgeD3™ D3 1,000IU and K2VITAL® MK-7 90mcg) and raises most vitamin and mineral doses:
+Source of truth: the final AU label (`multivitamin/Manufacturing Australia/BJP laboratories/1 label v8.5/7 MicroVitamin v8.5 With Bleed Area copy.pdf`, LOT 45727, AUST L 524572) and BJP Laboratories product spec **PC2921.01** (`multivitamin/Manufacturing Australia/BJP laboratories/1 4th Nov 2025 v8.5/PC2921.01 - Welllife Health Distribution Co Pty Ltd - MicroVitamin v8.5.pdf`; authorised 2026-03-04, customer-signed 2026-03-05; supersedes PC2921.00 of 2026-02-03). Formula workbook `multivitamin/formulas/15 formula v8.5 AUS.xlsx` still shows magnesium 126 mg and an L-leucine note; the label and spec win. Made in Australia by BJP Laboratories (Yatala, QLD; TGA-licensed); 24-month shelf life. v8.5 carries **AUST L 524572** on the label (the v7 number L 509250 does not carry over). AU pricing: MicroVitamin Capsules table. All doses per daily serving (5 capsules; the label states per capsule). v8.5 keeps the full v8 ingredient set (26 ingredients) and adopts most of the v9 dose increases early, while staying on v8-era choline and potassium (unlike v9):
 
 | Ingredient | v8 (USA) | v8.5 (Australia) | Notes |
 |---|---|---|---|
@@ -521,7 +524,7 @@ Source of truth: the final AU label (`multivitamin/Manufacturing Australia/BJP l
 | Biotin | 22.5 mcg | **30 mcg** | Raised |
 | Folate | 200 mcg DFE (≈118 mcg levomefolate mass) | **400 mcg levomefolic acid by mass** (≈680 mcg DFE) | ≈3.4× increase — don't call it a doubling; still methylated (Quatrefolic® levomefolate glucosamine) |
 | Vitamin C | 45 mg | **90 mg** | Doubled; still calcium ascorbate |
-| Magnesium | 126 mg elemental (magnesium taurinate on the US label) | **260 mg elemental** | Roughly double the US dose. **Declared name** (AU label + ARTG 524572): "Magnesium (as Magnesium Amino Acid Chelate)", 52 mg per capsule (RM4466, 260 mg input at 20% Mg). **The magnesium amino acid chelate we use in Australia IS magnesium taurate (Brad, 2026-09-29: "very important for the Australian market"), in v7 and v8.5 alike.** "Magnesium amino acid chelate" is the Australian Approved Name the TGA listing uses (taurine is an amino acid); the ingredient is magnesium taurate. Supplier records name it magnesium taurate: BJP quote Q#07114 and spec PC2921.00 called RM4466 "Magnesium Taurate (DC granular)", and PC2921.01 revision 01 (2026-03-04) changed only its Australian Approved Name (same code, mass, 20%); Lavida quote RD3216 (AU v7) records "Magnesium amino acid chelate (Magnesium taurinate)" 315 mg at ~8% Mg. Open, for the supplier CoA: pure magnesium taurate is ~9% Mg, so the v8.5 grade's 20% Mg figure is unexplained, and its taurine content per serving is not in our files. **AU copy (Australian MicroVitamin capsules; MicroVitamin+ is the US formula everywhere):** label-style fields (ingredient lists, listing attributes, supplement panels) print the declared name exactly, "Magnesium (as Magnesium Amino Acid Chelate)"; when explaining the form (chatbot, FAQ, customer answers) say it is magnesium taurate, declared on the label as magnesium amino acid chelate. Never quote a taurine amount for these capsules, and never attach the US heart-health rationale for taurate to them |
+| Magnesium | 126 mg elemental (magnesium taurinate on the US label) | **260 mg elemental** | Roughly double the US dose. See the Australian magnesium note below the table |
 | Boron | 1 mg glycinate | **3 mg** (as borax) | Dose and form change |
 | Chromium | 17.5 mcg glycinate | **35 mcg** (picolinate) | Dose and form change |
 | Selenium | 27.5 mcg glycinate | **55 mcg** (selenomethionine) | Dose and form change |
@@ -529,11 +532,13 @@ Source of truth: the final AU label (`multivitamin/Manufacturing Australia/BJP l
 | Manganese | 1.15 mg | **2.3 mg** | Still glycinate |
 | TMG | 500 mg betaine anhydrous (listed active) | **500 mg betaine hydrochloride** (100 mg per capsule, excipient) | Regulatory placement: the ARTG listing and spec PC2921.01 carry betaine HCl as an excipient with no label claim — never attach a therapeutic claim to TMG in AU-facing copy. The final AU label (file 7) shows no dose and no other-ingredients line; draft labels 1–3 had "Other ingredients: Betaine hydrochloride, Silicon Dioxide, NuMAG, Vegetable Capsule Shell" |
 | Flow agents | L-leucine | **NuMAG + colloidal anhydrous silica (silicon dioxide)**; no L-leucine | Spec PC2921.01 excipients: betaine hydrochloride 100 mg, NuMAG 62.98 mg (rice bran extract, rice hull, acacia, sunflower oil), colloidal anhydrous silica; the ARTG v8.5 public summary lists silicon dioxide and colloidal anhydrous silica. Manufacturing-only |
-| Capsule | White TiO2-free | **Dark green HPMC** (chlorophyllin-coloured) | Customers may notice the colour difference vs US bottles. Not a change for AU customers: AU v7 was already a green HPMC capsule coloured with sodium copper chlorophyllin (Lavida v7 spec + allergen declaration, CAP049) |
+| Capsule | White TiO2-free | **Dark green HPMC** (chlorophyllin-coloured), size 00 | Customers may notice the colour difference vs US bottles. Not a change for AU customers: AU v7 was already a green HPMC capsule coloured with sodium copper chlorophyllin (Lavida v7 spec + allergen declaration, CAP049) |
 
-Unchanged from v8: Choline 181.5mg, Hyaluronic Acid 200mg (sodium hyaluronate), Nicotinamide 16mg, B12 12mcg (mecobalamin), D3 1,000IU, K2 90mcg, Zinc 11mg glycinate, Copper 0.9mg glycinate, Potassium 99mg, Lutein 10mg + Zeaxanthin 2mg, Lycopene 10mg. Made in Australia by BJP Laboratories (TGA-licensed); 24-month shelf life. v8.5 carries **AUST L 524572** on the label (the v7 number L 509250 does not carry over). AU pricing: **$80 AUD one-time / $72 AUD on subscription** since 2026-09-22 (Brad; it was $75 / $67.50 at the v8.5 launch).
+Unchanged from v8: Choline 181.5mg, Hyaluronic Acid 200mg (sodium hyaluronate), Nicotinamide 16mg, B12 12mcg (mecobalamin), D3 1,000IU (encapsulated AlgeD3™), K2 90mcg (encapsulated K2VITAL® MK-7), Zinc 11mg glycinate, Copper 0.9mg glycinate, Potassium 99mg, Lutein 10mg + Zeaxanthin 2mg (Lutemax® 2020), Lycopene 10mg (LycoBeads®).
 
-**v8.5 vs the v7 sold in Australia (AUST L 509250, Lavida).** The public changelog compares v8.5 with AU v7, not with US v8, and AU v7 was not the international v7. Per the AU v7 label (`multivitamin/Manufacturing Australia/la-vida/2 label v7/2 MicroVitamin v7 With Bleed Area.pdf`), Lavida bulk spec VCH-RD3216-BLK v01 and ARTG record 509250, AU v7 already used borax (1 mg boron), chromium picolinate, selenomethionine, copper (II) glycinate, magnesium taurate declared as magnesium amino acid chelate (126 mg; a different supplier grade from v8.5, see the Magnesium row), potassium iodide, betaine hydrochloride as an excipient, and a green chlorophyllin capsule. What actually changed for AU customers: B1 0.9→1.2 mg, B2 0.975→1.3 mg, B3 35→16 mg, B5 3.75→5 mg, B6 (P5P) 1.275→1.7 mg, biotin 22.5→30 mcg, levomefolic acid 200→400 mcg (both as levomefolate glucosamine), vitamin C 45→90 mg with ascorbic acid → calcium ascorbate dihydrate, D3 lichen-sourced premix → AlgeD3™ (25 mcg both), K2 MaiggicTM powder → K2VITAL® (90 mcg both), boron 1→3 mg, chromium 17.5→35 mcg, copper 0.45→0.9 mg, iodine 112.5→150 mcg, magnesium 126→260 mg, manganese 1.15→2.3 mg with manganese amino acid chelate → manganese (II) glycinate, selenium 27.5→55 mcg, zinc 8.25→11 mg, lutein 0.25→10 mg, zeaxanthin added 2 mg, lycopene 0.3→10 mg, peppermint leaf extract (50 mg) removed, flow agents Nu-Flow + NuMAG + leucine → NuMAG + silicon dioxide. Unchanged: choline 181.5 mg, B12 12 mcg, potassium 99 mg, sodium hyaluronate 200 mg, betaine hydrochloride 100 mg per capsule.
+**Australian magnesium (v7 and v8.5).** **Declared name** (AU label + ARTG 524572): "Magnesium (as Magnesium Amino Acid Chelate)", 52 mg per capsule (RM4466, 260 mg input at 20% Mg). **The magnesium amino acid chelate we use in Australia IS magnesium taurate (Brad, 2026-09-29: "very important for the Australian market"), in v7 and v8.5 alike.** "Magnesium amino acid chelate" is the Australian Approved Name the TGA listing uses (taurine is an amino acid); the ingredient is magnesium taurate. Supplier records name it magnesium taurate: BJP quote Q#07114 and spec PC2921.00 called RM4466 "Magnesium Taurate (DC granular)", and PC2921.01 revision 01 (2026-03-04) changed only its Australian Approved Name (same code, mass, 20%); Lavida quote RD3216 (AU v7) records "Magnesium amino acid chelate (Magnesium taurinate)" 315 mg at ~8% Mg. Open, for the supplier CoA: pure magnesium taurate is ~9% Mg, so the v8.5 grade's 20% Mg figure is unexplained, and its taurine content per serving is not in our files. **AU copy (Australian MicroVitamin capsules; MicroVitamin+ is the US formula everywhere):** label-style fields (ingredient lists, listing attributes, supplement panels) print the declared name exactly, "Magnesium (as Magnesium Amino Acid Chelate)"; when explaining the form (chatbot, FAQ, customer answers) say it is magnesium taurate, declared on the label as magnesium amino acid chelate. Never quote a taurine amount for these capsules, and never attach the US heart-health rationale for taurate to them.
+
+**v8.5 vs the v7 sold in Australia (AUST L 509250, Lavida).** The public changelog compares v8.5 with AU v7, not with US v8, and AU v7 was not the international v7. Per the AU v7 label (`multivitamin/Manufacturing Australia/la-vida/2 label v7/2 MicroVitamin v7 With Bleed Area.pdf`), Lavida bulk spec VCH-RD3216-BLK v01 and ARTG record 509250, AU v7 already used borax (1 mg boron), chromium picolinate, selenomethionine, copper (II) glycinate, magnesium taurate declared as magnesium amino acid chelate (126 mg; a different supplier grade from v8.5), potassium iodide, betaine hydrochloride as an excipient, and a green chlorophyllin capsule. What actually changed for AU customers: B1 0.9→1.2 mg, B2 0.975→1.3 mg, B3 35→16 mg, B5 3.75→5 mg, B6 (P5P) 1.275→1.7 mg, biotin 22.5→30 mcg, levomefolic acid 200→400 mcg (both as levomefolate glucosamine), vitamin C 45→90 mg with ascorbic acid → calcium ascorbate dihydrate, D3 lichen-sourced premix → AlgeD3™ (25 mcg both), K2 MaiggicTM powder → K2VITAL® (90 mcg both), boron 1→3 mg, chromium 17.5→35 mcg, copper 0.45→0.9 mg, iodine 112.5→150 mcg, magnesium 126→260 mg, manganese 1.15→2.3 mg with manganese amino acid chelate → manganese (II) glycinate, selenium 27.5→55 mcg, zinc 8.25→11 mg, lutein 0.25→10 mg, zeaxanthin added 2 mg, lycopene 0.3→10 mg, peppermint leaf extract (50 mg) removed, flow agents Nu-Flow + NuMAG + leucine → NuMAG + silicon dioxide. Unchanged: choline 181.5 mg, B12 12 mcg, potassium 99 mg, sodium hyaluronate 200 mg, betaine hydrochloride 100 mg per capsule.
 
 ### v9 (UK and EU, from 2026-10) — doses and differences
 
@@ -577,15 +582,11 @@ Source of truth: the v9 label artwork, read with `pdftotext -layout`: UK `multiv
 
 **UK/EU pricing (from 2026-10-05):** UK store £45 one-time / £40.50 on subscription; Amazon.co.uk £50. EU store €50 one-time / €45 on subscription; Amazon.de €55. The UK product page, homepage and ad landing header compare £40.50 with £81.84/month for the ingredients bought separately, and the EU pages €45 with €90.93 (live 2026-10-13; this is the US v8 basket scaled to local prices, not a v9 basket).
 
-**For powder:** the 4 Plus additions (Collagen 12.5g, Creatine 5g, Psyllium 2.5g, Taurine 1g) are unchanged between v7 and v8. There is no v8.5 powder; MicroVitamin+ is the US formula in every market.
-
-If a USA customer asks about a dose, use the v8 column. If an Australian customer asks, use the v8.5 column. If a UK or EU customer asks, use the v9 (UK/EU) table. If a Canadian customer asks, use the v7 column (with Canada's boron, 0.7 mg). If you don't know their region, ask which country they are in, or give each market's answer. The US v9 spec has not shipped in the USA, so never present it as a US customer's formula.
-
 ---
 
 ## Regulated Label Marks by Market
 
-The physical/regulated marks that must appear correctly on MicroVitamin Capsules packaging and any creative that shows the bottle label (ads, listing photography, packshots). This is the single source of truth — other docs should point here rather than restating the list. For the underlying v8 (USA) vs v8.5 (Australia) vs v9 (UK/EU) vs v7 (Canada) distinction, see **Regional Formula Differences** above; do not duplicate that table here.
+The physical/regulated marks that must appear correctly on MicroVitamin Capsules packaging and any creative that shows the bottle label (ads, listing photography, packshots). This is the single source of truth — other docs should point here rather than restating the list. For the underlying formula differences by market, see **Regional Formula Differences** above; do not duplicate that table here.
 
 **Australia** (MicroVitamin Capsules, AU market, **v8.5 formula** from 2026-08):
 - **`AUST L 524572`** — the TGA (Therapeutic Goods Administration) listing number for v8.5. Must appear on the label and in any creative showing the label. The v7 stock carried `AUST L 509250`; an even earlier bottle carried `AUST L 477345`. Neither older number may appear on v8.5 creative.
@@ -594,7 +595,7 @@ The physical/regulated marks that must appear correctly on MicroVitamin Capsules
 **United Kingdom** (MicroVitamin Capsules, UK market, **v9 formula** from 2026-10; label `multivitamin/Manufacturing UK/G&G/6 label v9/8 UK MICRO FINAL With Bleed Area v9.ai`):
 - **No GMP badge.** The v9 label carries no GMP roundel (the v7 label had one), so creative showing the v9 bottle should not show one.
 - **The flag with "MADE IN UK with imported ingredients"** — UK flag graphic on the front panel, with that line beneath it.
-- **The v9 designation** — the formula version marking on-label (see Regional Formula Differences above for what v9 means).
+- **The v9 designation** — the formula version marking on-label.
 - **"Food Supplement" wording** — the UK's regulatory term for the product category (not "dietary supplement," the US term); must appear on-label and in any UK-market copy that names the category.
 - **Exception — UK AI-generated ads (Brad 2026-09-11, reaffirmed 2026-10-06: "just use the generic bottle"):** full-generation ad images show the generic ad-safe bottle (no flag line or version mark: the generator garbled the small UK label marks every time, 2026-09-11 and 2026-10-06). Its band should read "Food Supplement": a UK variant of the ad-safe cutout is pending Brad's approval; until it lands and the images are refreshed, the live UK full-gen images read "Dietary Supplement". Listing images, packshots and composites still need all four elements.
 - **Manufacturer line** — "Manufactured in the UK on behalf of: Freyr Life Sciences LTD, 9 Greyfriars Road, Reading, United Kingdom, RG1 1NU". The UK label carries no ℮ net-quantity mark.
@@ -619,236 +620,121 @@ Complete version history for MicroVitamin Capsules and MicroVitamin+ Powder, cro
 
 ### Complete Formula Table — Capsules (USA)
 
-All doses per daily serving. Dash (—) = not present in that version. (The Australia-only v8.5 is not a column here — see the Version 8.5 changelog entry below and Regional Formula Differences above. The v9 column is the US spec from formula file 16; the UK/EU v9 that shipped in 2026-10 differs from it in places — see the v9 (UK and EU) subsection of Regional Formula Differences.)
+All doses per daily serving; each row lists the versions that share a value (v1–v3 = versions 1 to 3); — = not present. (The Australia-only v8.5 is not a column here — see Regional Formula Differences. The v9 values are the US spec from formula file 16; the UK/EU v9 that shipped in 2026-10 differs from it in places — see the v9 (UK and EU) subsection of Regional Formula Differences.)
 
 #### Vitamins
 
-| Nutrient | v1 | v2 | v3 | v4 | v5 | v6 | v7 | v8 | v9 |
-|----------|----|----|----|----|----|----|----|----|-----|
-| B1 Thiamine | 0.6 mg (50%) | 0.6 mg (50%) | 0.6 mg (50%) | 0.9 mg (75%) | 0.9 mg (75%) | 0.9 mg (75%) | 0.9 mg (75%) | 0.9 mg (75%) | **1.2 mg mononitrate (100%)** |
-| B2 Riboflavin | 0.65 mg (50%) | 0.65 mg (50%) | 0.65 mg (50%) | 0.975 mg (75%) | 0.975 mg (75%) | 0.975 mg (75%) | 0.975 mg (75%) | 0.975 mg (75%) | **1.3 mg (100%)** |
-| B3 Niacin/Nicotinamide | 50 mg niacin | 35 mg niacin | 50 mg nicotinamide | 50 mg | **35 mg** | 35 mg | 35 mg | **16 mg (100%)** | 16 mg (100%) |
-| B5 Pantothenic Acid | 2.5 mg (50%) | 2.5 mg (50%) | 2.5 mg (50%) | 3.75 mg (75%) | 3.75 mg (75%) | 3.75 mg (75%) | 3.75 mg (75%) | 3.75 mg (75%) | **5 mg (100%)** |
-| B6 | 0.85 mg (50%) | 0.85 mg (50%) | 0.85 mg (50%) | 1.275 mg (75%) | 1.275 mg (75%) | 1.275 mg (75%) | **1.275 mg P5P** | 1.275 mg P5P | **1.7 mg P5P (100%)** |
-| Biotin (B7) | 15 mcg (50%) | 15 mcg (50%) | 15 mcg (50%) | 22.5 mcg (75%) | 22.5 mcg (75%) | 22.5 mcg (75%) | 22.5 mcg (75%) | 22.5 mcg (75%) | **30 mcg (100%)** |
-| Folate (B9) | 200 mcg DFE (50%) | 200 mcg DFE (50%) | 200 mcg DFE (50%) | 200 mcg DFE (50%) | 200 mcg DFE (50%) | 200 mcg DFE (50%) | 200 mcg DFE (50%) | 200 mcg DFE (50%) | **400 mcg DFE (100%)** |
-| B12 | **1200 mcg** | **1.2 mcg** | 1.2 mcg | **12 mcg (500%)** | 12 mcg | 12 mcg | 12 mcg | 12 mcg | 12 mcg |
-| Vitamin C | 29.7 mg (33%) | 29.7 mg (33%) | 29.7 mg (33%) | **45 mg (50%)** | 45 mg | 45 mg | 45 mg | 45 mg Ca ascorbate | **90 mg Ca ascorbate (100%)** |
-| Vitamin D3 | 25 mcg / 1000 IU | 25 mcg | 25 mcg | **50 mcg / 2000 IU** veg | **25 mcg / 1000 IU** | 25 mcg | 25 mcg | 25 mcg encap (AlgeD3) | 25 mcg encap |
-| Vitamin K2 MK-7 | 90 mcg (75%) | 90 mcg | 90 mcg | 90 mcg | 90 mcg | 90 mcg | 90 mcg | 90 mcg encap (K2VITAL DELTA) | 90 mcg encap |
+| Nutrient | By version |
+|---|---|
+| B1 Thiamine | v1–v3 0.6 mg (50%) · v4–v8 0.9 mg (75%) · v9 **1.2 mg mononitrate (100%)** |
+| B2 Riboflavin | v1–v3 0.65 mg (50%) · v4–v8 0.975 mg (75%) · v9 **1.3 mg (100%)** |
+| B3 Niacin/Nicotinamide | v1 50 mg niacin · v2 35 mg niacin · v3 50 mg nicotinamide · v4 50 mg · v5–v7 **35 mg** · v8–v9 **16 mg (100%)** |
+| B5 Pantothenic Acid | v1–v3 2.5 mg (50%) · v4–v8 3.75 mg (75%) · v9 **5 mg (100%)** |
+| B6 | v1–v3 0.85 mg (50%) · v4–v6 1.275 mg (75%) · v7–v8 **1.275 mg P5P** · v9 **1.7 mg P5P (100%)** |
+| Biotin (B7) | v1–v3 15 mcg (50%) · v4–v8 22.5 mcg (75%) · v9 **30 mcg (100%)** |
+| Folate (B9) | v1–v8 200 mcg DFE (50%) · v9 **400 mcg DFE (100%)** |
+| B12 | v1 **1200 mcg** · v2–v3 **1.2 mcg** · v4–v9 **12 mcg (500%)** |
+| Vitamin C | v1–v3 29.7 mg (33%) · v4–v7 **45 mg (50%)** · v8 45 mg Ca ascorbate · v9 **90 mg Ca ascorbate (100%)** |
+| Vitamin D3 | v1–v3 25 mcg / 1000 IU · v4 **50 mcg / 2000 IU** veg · v5–v7 **25 mcg / 1000 IU** · v8 25 mcg encap (AlgeD3) · v9 25 mcg encap |
+| Vitamin K2 MK-7 | v1–v7 90 mcg (75%) · v8 90 mcg encap (K2VITAL DELTA) · v9 90 mcg encap |
 
 #### Minerals
 
-| Nutrient | v1 | v2 | v3 | v4 | v5 | v6 | v7 | v8 | v9 |
-|----------|----|----|----|----|----|----|----|----|-----|
-| Chromium | — | — | 17.5 mcg picolinate | 17.5 mcg picolinate | 17.5 mcg picolinate | 17.5 mcg picolinate | 17.5 mcg **glycinate** | 17.5 mcg glycinate | **35 mcg glycinate (100%)** |
-| Copper | — | — | 0.45 mg sulfate | 0.45 mg sulfate | 0.45 mg sulfate | 0.45 mg sulfate | 0.45 mg **bisglycinate** | **0.9 mg bisglycinate (100%)** | 0.9 mg bisglycinate |
-| Iodine | 75 mcg (50%) | 75 mcg | 75 mcg | **112.5 mcg (75%)** | 112.5 mcg | 112.5 mcg | 112.5 mcg | **75 mcg (50%)** | **150 mcg (100%)** |
-| Manganese | — | — | 1.15 mg citrate | 1.15 mg **glycinate** | 1.15 mg glycinate | 1.15 mg glycinate | 1.15 mg glycinate | 1.15 mg glycinate | **2.3 mg glycinate (100%)** |
-| Magnesium (taurate) | 126 mg (30%) | 126 mg | 126 mg | 126 mg | 126 mg | 126 mg | 126 mg | 126 mg | **150 mg (36%)** |
-| Potassium (KCl) | 99 mg | **360 mg** | 360 mg | 360 mg | **200 mg** | **99 mg** | 99 mg | 99 mg | **Removed** |
-| Selenium | — | — | 41.25 mcg selenocysteine | 41.25 mcg selenocysteine | 41.25 mcg selenocysteine | **27.5 mcg** selenocysteine | 27.5 mcg **glycinate** | 27.5 mcg glycinate | **55 mcg glycinate (100%)** |
-| Zinc | 5.5 mg citrate | 5.5 mg citrate | 5.5 mg citrate | **8.25 mg (75%)** citrate | 8.25 mg **glycinate** | 8.25 mg glycinate | 8.25 mg glycinate | **11 mg glycinate (100%)** | 11 mg glycinate |
-| Boron | — | — | — | **1 mg citrate** | 1 mg **glycinate** | 1 mg glycinate | 1 mg glycinate (US; UK/EU/Canada v7 differ, see Regional Formula Differences) | 1 mg glycinate | **3 mg glycinate** |
+| Nutrient | By version |
+|---|---|
+| Chromium | v1–v2 — · v3–v6 17.5 mcg picolinate (50%) · v7–v8 17.5 mcg **glycinate** · v9 **35 mcg glycinate (100%)** |
+| Copper | v1–v2 — · v3–v6 0.45 mg sulfate (50%) · v7 0.45 mg **bisglycinate** · v8–v9 **0.9 mg bisglycinate (100%)** |
+| Iodine | v1–v3 75 mcg (50%) · v4–v7 **112.5 mcg (75%)** · v8 **75 mcg (50%)** · v9 **150 mcg (100%)** |
+| Manganese | v1–v2 — · v3 1.15 mg citrate (50%) · v4–v8 1.15 mg **glycinate** · v9 **2.3 mg glycinate (100%)** |
+| Magnesium (taurate) | v1–v8 126 mg (30%) · v9 **150 mg (36%)** |
+| Potassium (KCl) | v1 99 mg · v2–v4 **360 mg** · v5 **200 mg** · v6–v8 **99 mg** · v9 **Removed** |
+| Selenium | v1–v2 — · v3–v5 41.25 mcg selenocysteine (75%) · v6 **27.5 mcg** selenocysteine (50%) · v7–v8 27.5 mcg **glycinate** · v9 **55 mcg glycinate (100%)** |
+| Zinc | v1–v3 5.5 mg citrate (50%) · v4 **8.25 mg (75%)** citrate · v5–v7 8.25 mg **glycinate** · v8–v9 **11 mg glycinate (100%)** |
+| Boron | v1–v3 — · v4 **1 mg citrate** · v5–v8 1 mg **glycinate** (v7: US; UK/EU/Canada v7 differ, see Regional Formula Differences) · v9 **3 mg glycinate** |
 
 #### Other Ingredients
 
-| Nutrient | v1 | v2 | v3 | v4 | v5 | v6 | v7 | v8 | v9 |
-|----------|----|----|----|----|----|----|----|----|-----|
-| Choline (bitartrate) | 181.5 mg | 181.5 mg | 181.5 mg | 181.5 mg | 181.5 mg | 181.5 mg | 181.5 mg | 181.5 mg | **CDP-Choline 500 mg** |
-| HA (sodium hyaluronate) | 200 mg | 200 mg | 200 mg | 200 mg | 200 mg | 200 mg | 200 mg | 200 mg | 200 mg |
-| TMG | 1000 mg | **750 mg** | **500 mg** | 500 mg | 500 mg | 500 mg | 500 mg | 500 mg | 500 mg |
-| Lutein | — | — | — | — | — | **0.25 mg** | 0.25 mg | **10 mg encap** | 10 mg encap |
-| Lycopene | — | — | — | — | — | **0.3 mg** | 0.3 mg | **10 mg encap** | 10 mg encap |
-| Zeaxanthin | — | — | — | — | — | — | — | **2 mg encap** | 2 mg encap |
-| Peppermint | — | — | — | — | — | **powder 50 mg** | **extract 50 mg** | **Removed** | — |
+| Nutrient | By version |
+|---|---|
+| Choline (bitartrate) | v1–v8 181.5 mg · v9 **CDP-Choline 500 mg** |
+| HA (sodium hyaluronate) | v1–v9 200 mg |
+| TMG | v1 1000 mg · v2 **750 mg** · v3–v9 **500 mg** |
+| Lutein | v1–v5 — · v6–v7 **0.25 mg** · v8–v9 **10 mg encap** |
+| Lycopene | v1–v5 — · v6–v7 **0.3 mg** · v8–v9 **10 mg encap** |
+| Zeaxanthin | v1–v7 — · v8–v9 **2 mg encap** |
+| Peppermint | v1–v5 — · v6 **powder 50 mg** · v7 **extract 50 mg** · v8 **Removed** · v9 — |
 
 #### Format & Other
 
-| | v1 | v2 | v3 | v4 | v5 | v6 | v7 | v8 | v9 |
-|--|----|----|----|----|----|----|----|----|-----|
-| Format | Tablets | Tablets | Tablets (5/serving) | **Capsules**; US label: rice flour + L-leucine flow agents | Capsules (no v5 label on file) | **White TiO2-free**; L-leucine flow agent | Green (intl); US L-leucine flow agent | Same (L-leucine unchanged) | Same |
-| D3 source | Standard | Standard | Standard | **Vegetarian** | Vegetarian | Vegetarian | Vegetarian | **Encap AlgeD3** | Encap AlgeD3 |
+| | By version |
+|--|--|
+| Format | v1–v2 Tablets · v3 Tablets (5/serving) · v4 **Capsules**; US label: rice flour + L-leucine flow agents · v5 Capsules (no v5 label on file) · v6 **White TiO2-free**; L-leucine flow agent · v7 Green (intl); US L-leucine flow agent · v8 Same (L-leucine unchanged) · v9 Same |
+| D3 source | v1–v3 Standard · v4–v7 **Vegetarian** · v8–v9 **Encap AlgeD3** |
 
 ### Version-by-Version Changelog
 
+What changed at each version (doses and % RDA in the table above; website mismatches in Website Changelog Discrepancies below).
+
 #### Version 1 (original launch — tablets)
 
-Initial formula. Tablets, serving size TBD (moved to 5/serving at v3).
-- Formula file: `multivitamin/formulas/3 formula.xlsx` (file 3 matches v1 shipped formula)
-- B-vitamins at 50% RDA, B12 at 1200 mcg, TMG at 1000 mg
-- No selenium, copper, manganese, chromium, boron, lutein, or lycopene
+Initial formula. Tablets, serving size TBD (moved to 5/serving at v3). B-vitamins at 50% RDA, B12 at 1200 mcg, TMG at 1000 mg; no selenium, copper, manganese, chromium, boron, lutein, or lycopene. Formula file: `multivitamin/formulas/3 formula.xlsx` (file 3 matches v1 shipped formula).
 
 #### Version 2
 
-- **Decreased** Niacin from 50 mg to 35 mg
-- **Decreased** B12 from 1200 mcg to 1.2 mcg
-- **Increased** Potassium from 99 mg to 360 mg
-- **Decreased** TMG from 1000 mg to 750 mg
-- Formula file: `multivitamin/formulas/5 formula v2.xlsx`
-- Website changelog: Matches
+Decreased niacin 50→35 mg; decreased B12 1200→1.2 mcg; increased potassium 99→360 mg; decreased TMG 1000→750 mg. Formula file: `multivitamin/formulas/5 formula v2.xlsx`. Website changelog: matches.
 
 #### Version 3
 
-- **Increased** Niacin from 35 mg to 50 mg, switched from niacin to nicotinamide
-- **Added** Selenium (41.25 mcg, 75% RDA, as selenocysteine)
-- **Added** Copper (0.45 mg, 50% RDA, as cupric sulfate)
-- **Added** Manganese (1.15 mg, 50% RDA, as manganese citrate)
-- **Added** Chromium (17.5 mcg, 50% RDA, as chromium picolinate)
-- **Decreased** TMG from 750 mg to 500 mg
-- Moved to 5-tablet serving size
-- Formula file: `multivitamin/formulas/6 formula v3.xlsx`
-- Website discrepancy: TMG decrease (750→500) is NOT listed in the v3 changelog — it's incorrectly attributed to v4
+Increased niacin 35→50 mg and switched niacin → nicotinamide; added selenium (41.25 mcg, 75% RDA, selenocysteine), copper (0.45 mg, 50% RDA, cupric sulfate), manganese (1.15 mg, 50% RDA, manganese citrate), chromium (17.5 mcg, 50% RDA, chromium picolinate); decreased TMG 750→500 mg; moved to 5-tablet serving. Formula file: `multivitamin/formulas/6 formula v3.xlsx`.
 
 #### Version 4
 
-- **Moved from tablets to capsules**
-- **Increased** most B-vitamins from 50% RDA to 75% RDA (B1, B2, B5, B6, Biotin)
-- **Increased** B12 from 1.2 mcg to 12 mcg (500% RDA)
-- **Increased** Vitamin C from 29.7 mg (33%) to 45 mg (50% RDA)
-- **Increased** Vitamin D3 from 1000 IU to 2000 IU (25→50 mcg), changed to vegetarian source
-- **Increased** Iodine from 75 mcg to 112.5 mcg (50→75% RDA)
-- **Increased** Zinc from 5.5 mg to 8.25 mg (50→75% RDA)
-- **Changed** Manganese form from citrate to glycinate
-- **Added** Boron (1 mg, as boron citrate)
-- Formula file: `multivitamin/formulas/7 formula v4 US.xlsx`
-- Website discrepancy: Changelog says "Decreased TMG from 750 mg to 500 mg" — this actually happened at v3 (spreadsheets confirm TMG was already 500 mg in v3)
+Moved from tablets to capsules; B1, B2, B5, B6, biotin 50→75% RDA; B12 1.2→12 mcg (500% RDA); vitamin C 29.7 mg (33%) → 45 mg (50% RDA); vitamin D3 1000→2000 IU (25→50 mcg), vegetarian source; iodine 75→112.5 mcg (50→75% RDA); zinc 5.5→8.25 mg (50→75% RDA); manganese citrate → glycinate; added boron (1 mg, boron citrate). Formula file: `multivitamin/formulas/7 formula v4 US.xlsx`.
 
 #### Version 5
 
-- **Decreased** Vitamin D3 from 2000 IU to 1000 IU (50→25 mcg)
-- **Decreased** Potassium from 360 mg to 200 mg
-- **Decreased** Niacin from 50 mg to 35 mg
-- **Changed** Zinc form from citrate to glycinate
-- **Changed** Boron form from citrate to glycinate
-- Formula file: `multivitamin/formulas/8 formula v5 US.xlsx`
-- Website discrepancy: The v5 changelog only lists D3 and potassium changes. The B3 decrease (50→35) and zinc/boron form changes to glycinate are NOT mentioned — the website incorrectly attributes the zinc/boron form changes to v6
-- Potassium note: The v5 spreadsheet still shows 360 mg, not 200 mg. The 200 mg value appears only in the website changelog (v6 says "Decreased potassium from 200 mg to 99 mg"). Possible mid-production change not captured in the spreadsheet.
+Decreased vitamin D3 2000→1000 IU (50→25 mcg); decreased potassium 360→200 mg; decreased niacin 50→35 mg; zinc and boron citrate → glycinate. Formula file: `multivitamin/formulas/8 formula v5 US.xlsx`.
 
 #### Version 6
 
-- **Switched to white TiO2-free capsules** (USA); green chlorophyllin capsules (international)
-- **Decreased** Selenium from 41.25 mcg (75%) to 27.5 mcg (50% RDA)
-- **Decreased** Potassium from 200 mg to 99 mg (per website; spreadsheet shows drop from 360 to 99)
-- **Added** Lutein (0.25 mg)
-- **Added** Lycopene (0.3 mg)
-- **Added** Peppermint leaf powder (50 mg)
-- Formula file: `multivitamin/formulas/10 formula v6 US.xlsx`
-- Website discrepancy: Changelog says "Decreased B3 from 50 mg to 35 mg" but spreadsheets show this happened at v5. Changelog also claims zinc citrate→glycinate and boron citrate→glycinate happened here, but spreadsheet v5 already shows glycinate.
+White TiO2-free capsules (USA); green chlorophyllin capsules (international); selenium 41.25 mcg (75%) → 27.5 mcg (50% RDA); potassium 200→99 mg (per website; spreadsheet shows drop from 360 to 99); added lutein 0.25 mg, lycopene 0.3 mg, peppermint leaf powder 50 mg. Formula file: `multivitamin/formulas/10 formula v6 US.xlsx`.
 
 #### Version 7
 
-- **Changed** Vitamin B6 form to P5P (pyridoxal-5-phosphate)
-- **Changed** Selenium form from selenocysteine to selenium glycinate
-- **Changed** Copper form from cupric sulfate to copper bisglycinate
-- **Changed** Chromium form from picolinate to glycinate
-- **Changed** Peppermint leaf powder to peppermint leaf extract
-- Formula file: `multivitamin/formulas/13 formula v7.xlsx`
-- Website changelog: Matches (also mentions "Changed Stevia to Monk Fruit Extract for MicroVitamin+ Mixed Berry" — powder-only change)
-- Note: Website says "selenium nicotinate glycinate chelate" — spreadsheet just says "selenium glycinate"
+B6 → P5P (pyridoxal-5-phosphate); selenium selenocysteine → selenium glycinate; copper cupric sulfate → copper bisglycinate; chromium picolinate → glycinate; peppermint leaf powder → peppermint leaf extract. Formula file: `multivitamin/formulas/13 formula v7.xlsx`. Website changelog: matches (also mentions "Changed Stevia to Monk Fruit Extract for MicroVitamin+ Mixed Berry" — powder-only change). Website says "selenium nicotinate glycinate chelate" — spreadsheet just says "selenium glycinate".
 
 #### Version 8 (on the public changelog since 2026-09-29; AU v8.5 entry too)
 
-- **Decreased** Niacin from 35 mg to 16 mg (100% RDA)
-- **Changed** Vitamin C form from ascorbic acid to calcium ascorbate (dose unchanged at 45 mg)
-- **Changed** D3 to encapsulated form (AlgeD3) — dose unchanged
-- **Changed** K2 to encapsulated form (K2VITAL DELTA) — dose unchanged
-- **Increased** Copper from 0.45 mg to 0.9 mg (50→100% RDA)
-- **Decreased** Iodine from 112.5 mcg to 75 mcg (75→50% RDA)
-- **Increased** Zinc from 8.25 mg to 11 mg (75→100% RDA)
-- **Increased** Lutein from 0.25 mg to 10 mg (encapsulated, Lutemax 2020)
-- **Increased** Lycopene from 0.3 mg to 10 mg (encapsulated, LycoBeads)
-- **Added** Zeaxanthin (2 mg, encapsulated, Lutemax 2020)
-- **Removed** Peppermint extract
-- Formula file: `multivitamin/formulas/14 formula v8.xlsx`
+Decreased niacin 35→16 mg (100% RDA); vitamin C ascorbic acid → calcium ascorbate (45 mg unchanged); D3 → encapsulated AlgeD3 and K2 → encapsulated K2VITAL DELTA (doses unchanged); copper 0.45→0.9 mg (50→100% RDA); iodine 112.5→75 mcg (75→50% RDA); zinc 8.25→11 mg (75→100% RDA); lutein 0.25→10 mg (encapsulated, Lutemax 2020); lycopene 0.3→10 mg (encapsulated, LycoBeads); added zeaxanthin (2 mg, encapsulated, Lutemax 2020); removed peppermint extract. Formula file: `multivitamin/formulas/14 formula v8.xlsx`.
 
 #### Version 8.5 (Australia only — shipping from 2026-08)
 
-Australia-specific release manufactured by BJP Laboratories (Yatala, QLD; TGA-licensed). Keeps the full v8 ingredient set (26 ingredients) and adopts most of the v9 dose increases early, while staying on v8-era choline and potassium:
-
-- **Increased** B1 to 1.2 mg, B2 to 1.3 mg, B5 to 5 mg, B6 (P5P) to 1.7 mg, Biotin to 30 mcg
-- **Increased** Folate from 200 mcg DFE (≈118 mcg levomefolate mass) to 400 mcg levomefolic acid by mass (≈680 mcg DFE) — Quatrefolic® levomefolate glucosamine
-- **Increased** Vitamin C from 45 to 90 mg (calcium ascorbate)
-- **Increased** Magnesium from 126 to 260 mg elemental (magnesium taurate, declared as magnesium amino acid chelate; see the Regional Formula Differences table)
-- **Increased** Iodine from 75 to 150 mcg, Manganese from 1.15 to 2.3 mg
-- **Increased + form change** Boron 1 mg glycinate → 3 mg (borax); Chromium 17.5 mcg glycinate → 35 mcg (picolinate); Selenium 27.5 mcg glycinate → 55 mcg (selenomethionine)
-- **TMG** 500 mg as betaine **hydrochloride**, formally an excipient on the AU listing (no label claim) — the US v8 lists 500 mg betaine anhydrous as an active
-- **Kept** (unlike v9): Choline bitartrate 181.5 mg choline, Potassium 99 mg
-- **Flow agents** NuMAG + colloidal anhydrous silica (silicon dioxide); **no L-leucine** (unlike US v8)
-- Dark green HPMC capsules (chlorophyllin), size 00; 24-month shelf life
-- Spec file: `multivitamin/Manufacturing Australia/BJP laboratories/1 4th Nov 2025 v8.5/PC2921.01 - Welllife Health Distribution Co Pty Ltd - MicroVitamin v8.5.pdf` (PC2921.01, customer-signed 2026-03-05); final label: `multivitamin/Manufacturing Australia/BJP laboratories/1 label v8.5/7 MicroVitamin v8.5 With Bleed Area copy.pdf`; formula file: `multivitamin/formulas/15 formula v8.5 AUS.xlsx` (the workbook still shows magnesium 126 mg and an L-leucine note; the label and spec win)
+Australia-specific release; full detail, sources and files in Regional Formula Differences → v8.5. In short: keeps the full v8 ingredient set and v8-era choline bitartrate and potassium (unlike v9), raises B1, B2, B5, B6, biotin, folate, vitamin C, magnesium, iodine, manganese, boron, chromium and selenium, carries TMG as an excipient, and uses NuMAG + silica flow agents (no L-leucine, unlike US v8).
 
 #### Version 9 (not yet on public changelog)
 
-Shipped to the UK and EU from 2026-10 (made in the UK by G&G Food Supplies); not yet shipped in the USA. The UK/EU v9 label differs from the spec below in magnesium (126 mg, not 150 mg), B1 form (thiamine HCl, not mononitrate), the boron, chromium and selenium forms (sodium borate, picolinate, yeast), and the D3 source (Vitashine®, from lichen); see Regional Formula Differences for the label doses.
-
-
-- **Increased** B1, B2, B5, B6, Biotin from 75% to 100% RDA
-- **Increased** Folate from 200 to 400 mcg DFE (50→100% RDA)
-- **Increased** Vitamin C from 45 to 90 mg (50→100% RDA)
-- **Increased** Chromium from 17.5 to 35 mcg (50→100% RDA)
-- **Increased** Iodine from 75 to 150 mcg (50→100% RDA)
-- **Increased** Manganese from 1.15 to 2.3 mg (50→100% RDA)
-- **Increased** Selenium from 27.5 to 55 mcg (50→100% RDA)
-- **Increased** Boron from 1 mg to 3 mg
-- **Increased** Magnesium from 126 mg (30% RDA) to 150 mg (36% RDA) — maximized taurate fill
-- **Changed** B1 form to Thiamine Mononitrate (both capsules and powder)
-- **Replaced** Choline bitartrate (181.5 mg) with CDP-Choline / Citicoline (500 mg)
-- **Removed** Potassium chloride (99 mg)
-- Formula file: `multivitamin/formulas/16 capsules formula v9.xlsx` (PROD CODE 20735)
+Shipped to the UK and EU from 2026-10 (made in the UK by G&G Food Supplies); not yet shipped in the USA. The UK/EU label differs from this US spec (Regional Formula Differences → "UK/EU v9 vs the US v9 spec"). US spec: B1, B2, B5, B6, biotin 75→100% RDA; folate 200→400 mcg DFE (50→100% RDA); vitamin C 45→90 mg (50→100% RDA); chromium 17.5→35 mcg, iodine 75→150 mcg, manganese 1.15→2.3 mg, selenium 27.5→55 mcg (each 50→100% RDA); boron 1→3 mg; magnesium 126 mg (30% RDA) → 150 mg (36% RDA), maximized taurate fill; B1 form → thiamine mononitrate (both capsules and powder); choline bitartrate (181.5 mg) → CDP-Choline / Citicoline (500 mg); removed potassium chloride (99 mg). Formula file: `multivitamin/formulas/16 capsules formula v9.xlsx` (PROD CODE 20735).
 
 ### MicroVitamin+ Powder Version History
 
 Powder launched with its own version numbering. Powder versions share the core capsule formula but add collagen, creatine, fiber, and taurine.
 
-**Ingredients that were never in the powder, even though they appeared in capsule versions:**
-- **Peppermint** (added to capsules in v6 as leaf powder, changed to leaf extract in v7, removed in capsule v8) was **never in the powder formula**. The powder has always been the core capsule formula *minus peppermint*, *plus* the four powder additions (collagen, creatine, psyllium, taurine). If a user asks "was peppermint removed from the powder in v8?" — the answer is: "It was never in the powder."
+**Peppermint was never in the powder** (it was added to capsules in v6 as leaf powder, changed to leaf extract in v7, removed in capsule v8). The powder has always been the core capsule formula *minus peppermint*, *plus* the four powder additions (collagen, creatine, psyllium, taurine). If a user asks "was peppermint removed from the powder in v8?" — the answer is: "It was never in the powder."
 
-#### Powder v1 (aligns with capsule v6 era)
-
-Core formula matches capsule v6 (same forms: selenocysteine, cupric sulfate, B6 as pyridoxine). Plus:
-- Collagen Peptides: 12,500 mg (bovine, low-molecular weight)
-- Creatine Monohydrate: 5,000 mg
-- Psyllium Husk Powder: 2,500 mg
-- Taurine: 1,000 mg (standalone)
-- Formula file: `powder/formula/1 powder formula v1.xlsx`
-
-#### Powder v2 (aligns with capsule v7)
-
-Same form changes as capsule v7 applied to powder:
-- **Changed** B6 to P5P
-- **Changed** Chromium to glycinate
-- **Changed** Selenium to glycinate
-- **Changed** Copper to glycinate
-- Formula file: `powder/formula/2 powder formula v2.xlsx`
-
-#### Powder v8 (aligns with capsule v8)
-
-Same changes as capsule v8 applied to powder. Powder-specific ingredients unchanged from v1/v2.
-- Formula file: `powder/formula/3 powder formula v8.xlsx`
-
-#### Powder v9 (aligns with capsule v9)
-
-All capsule v9 dose/form changes applied, plus powder-specific changes:
-- **Increased** Magnesium from 126 mg (30% RDA) to 224 mg (53% RDA) — capsules at 150 mg
-- **Decreased** Collagen Peptides from 12,500 mg to 10,000 mg
-- **Replaced** Psyllium Husk (2,500 mg) with Sunfiber (PHGG) or Acacia (5,000 mg)
-- **Increased** Taurine from 1,000 mg (standalone) to 2,240 mg (from magnesium taurate)
-- **Replaced** Choline bitartrate with CDP-Choline 500 mg (same as capsules)
-- **Removed** Potassium (same as capsules)
-- Formula file: `powder/formula/4 powder formula v9.xlsx` (PROD CODE 20712)
-- Flow agent: Bamboo Extract (was NuFlow rice hull in v8)
-- Mixed Berry: malic acid, monk fruit extract, allulose, natural mixed berry flavors/colors
+- **Powder v1** (aligns with capsule v6 era): core formula matches capsule v6 (same forms: selenocysteine, cupric sulfate, B6 as pyridoxine), plus Collagen Peptides 12,500 mg (bovine, low-molecular weight), Creatine Monohydrate 5,000 mg, Psyllium Husk Powder 2,500 mg, Taurine 1,000 mg (standalone). File: `powder/formula/1 powder formula v1.xlsx`
+- **Powder v2** (aligns with capsule v7): same form changes as capsule v7 — B6 to P5P; chromium, selenium and copper to glycinate. File: `powder/formula/2 powder formula v2.xlsx`
+- **Powder v8** (aligns with capsule v8): same changes as capsule v8; powder-specific ingredients unchanged from v1/v2. File: `powder/formula/3 powder formula v8.xlsx`
+- **Powder v9** (aligns with capsule v9): all capsule v9 dose/form changes, plus: magnesium 126 mg (30% RDA) → 224 mg (53% RDA) (capsules at 150 mg); collagen peptides 12,500 → 10,000 mg; psyllium husk (2,500 mg) → Sunfiber (PHGG) or Acacia (5,000 mg); taurine 1,000 mg (standalone) → 2,240 mg (from magnesium taurate); choline bitartrate → CDP-Choline 500 mg (same as capsules); potassium removed (same as capsules); flow agent Bamboo Extract (was NuFlow rice hull in v8); Mixed Berry: malic acid, monk fruit extract, allulose, natural mixed berry flavors/colors. File: `powder/formula/4 powder formula v9.xlsx` (PROD CODE 20712)
 
 ### Website Changelog Discrepancies
 
 | Issue | Website Says | Spreadsheets Show |
 |-------|-------------|-------------------|
-| TMG 750→500 mg | Version 4 | **Version 3** (file 6 already has 500 mg) |
-| B3 50→35 mg | Version 6 | **Version 5** (file 8 already has 35 mg) |
+| TMG 750→500 mg | Version 4 ("Decreased TMG from 750 mg to 500 mg"); not listed under v3 | **Version 3** (file 6 already has 500 mg) |
+| B3 50→35 mg | Version 6 ("Decreased B3 from 50 mg to 35 mg"); the v5 entry lists only the D3 and potassium changes | **Version 5** (file 8 already has 35 mg) |
 | Zinc citrate→glycinate | Version 6 | **Version 5** (file 8 notes say "changed zinc form to glycinate") |
 | Boron citrate→glycinate | Version 6 | **Version 5** (file 8 notes say "changed boron form to glycinate") |
-| Potassium 360→200 mg (v5) | Version 5 | v5 spreadsheet still shows 360 mg — 200 mg not in any spreadsheet |
+| Potassium 360→200 mg (v5) | Version 5 (and v6 says "Decreased potassium from 200 mg to 99 mg") | v5 spreadsheet still shows 360 mg — 200 mg not in any spreadsheet. Possible mid-production change not captured in the spreadsheet |
 
 These may reflect differences between the formula files (design intent) and what was actually manufactured/labeled, or errors in the website changelog.
 
@@ -856,9 +742,12 @@ These may reflect differences between the formula files (design intent) and what
 
 ## Key References
 
+DOIs and links for the studies cited above (inline citations give author, journal and year).
+
 - **COSMOS (multivitamin + cognition) — CANONICAL REFERENCE, use this one whenever citing COSMOS** (Brad, 2026-07-27): Vyas CM et al., *Am J Clin Nutr* 2024;119(3):692–701 — clinic subcohort **plus the meta-analysis of all 3 COSMOS cognitive studies** (5,203 non-overlapping participants). https://doi.org/10.1016/j.ajcnut.2023.12.011 · PMID 38244989 · https://www.sciencedirect.com/science/article/pii/S0002916523663427
   - Do NOT cite Baker et al., 2023 (https://doi.org/10.1002/alz.12767) as "the COSMOS meta-analysis" — that is COSMOS-**Mind** alone, one of the three substudies. Fine as a substudy citation, wrong as the pooled result.
   - ⚠️ COSMOS tested an **ordinary** multivitamin, not MicroVitamin. Never let its cognition result read as a MicroVitamin benefit — cite it as the evidence that made the category worth taking seriously, not as this product's effect.
+- Homocysteine and cognition (International Consensus Statement): Smith et al., J Alzheimers Dis, 2018 — https://doi.org/10.3233/JAD-171042
 - Zinc bisglycinate vs zinc gluconate absorption (+43%, single 15mg dose, 12 healthy women): Gandia et al., 2007 — https://pubmed.ncbi.nlm.nih.gov/18271278/
 - MTHFR C677T variant (review; gives no single prevalence figure in its abstract): Liew & Gupta, 2015 — https://pubmed.ncbi.nlm.nih.gov/25449138/
 - Vitamin A toxicity: Daley SF, Goyal A, StatPearls, Vitamin A Toxicity (record updated Jan 2026) — https://pubmed.ncbi.nlm.nih.gov/30422511/
@@ -868,26 +757,31 @@ These may reflect differences between the formula files (design intent) and what
 - Melatonin efficacy (umbrella review): Low et al., 2020 — https://doi.org/10.1016/j.jpsychires.2019.10.022
 - Glycine sleep RCTs: Inagawa 2006, Yamadera 2007, Bannai 2012
 - Magnesium sleep: Arab et al., 2023 — https://doi.org/10.1007/s12011-022-03162-1; Schuster et al., 2025 — https://doi.org/10.2147/NSS.S524348; sleep onset ~17 min shorter (pooled from 2 of the review's 3 RCTs, Abbasi 2012 and Held 2002, both magnesium oxide at 500-729mg/day, 55 people per the review's evidence table; review total 151 older adults; low to very low quality evidence): Mah & Pitre, 2021 — https://doi.org/10.1186/s12906-021-03297-z
-- Melatonin physiology + pharmacokinetics (Sleep v2): Fourtillan 2001 — https://doi.org/10.1152/ajpendo.2001.280.1.E11; DeMuro 2000 (15% bioavailability) — https://doi.org/10.1177/00912700022009422; Zhdanova 2001 (0.1/0.3/3mg) — https://doi.org/10.1210/jcem.86.10.7901; Thanawala 2024 (sustained- vs immediate-release PK) — https://doi.org/10.3390/pharmaceutics16101248; Kor 2014 (10-80mcg range statement) — https://doi.org/10.4103/2230-8210.137521
+- Melatonin physiology + pharmacokinetics (Sleep v2): Fourtillan 2001 — https://doi.org/10.1152/ajpendo.2001.280.1.E11; DeMuro 2000 (15% bioavailability) — https://doi.org/10.1177/00912700022009422; Zhdanova 2001 (0.1/0.3/3mg) — https://doi.org/10.1210/jcem.86.10.7901; Thanawala 2024 (sustained- vs immediate-release PK) — https://doi.org/10.3390/pharmaceutics16101248; Kor 2014 (10-80mcg range statement) — https://doi.org/10.4103/2230-8210.137521; Leger, Laudon & Zisapel 2004 — https://doi.org/10.1016/j.amjmed.2003.07.017
 - Creatine (performance): Kreider et al., 2017 — https://doi.org/10.1186/s12970-017-0173-z
 - Creatine (cognition, 16 RCTs meta-analysis): Xu et al., 2024 — https://doi.org/10.3389/fnut.2024.1424972 — memory SMD=0.31, greater benefit in people with diseases, those aged 18–60, and females
 - Collagen peptides: Kim et al., 2022 — https://doi.org/10.1089/jmf.2022.k.0097; Pu et al., 2023 — https://doi.org/10.3390/nu15092080
+- Collagen (2025 systematic review, 23 studies): Myung et al., Am J Med — https://doi.org/10.1016/j.amjmed.2025.04.034
 - Psyllium husk / fiber: Hartley et al., 2016 — https://doi.org/10.1002/14651858.CD011472
 - Psyllium safety / no effect on vitamin & mineral status: Anderson et al., 2000 — https://doi.org/10.1093/ajcn/71.2.472 (see Safety analyses section, page 476). ⚠️ **Verified 2026-08-06:** this paper is an 8-trial cholesterol meta-analysis; its ABSTRACT contains no micronutrient data, so do NOT cite it alone for the absorption claim. The two papers that DO carry it are the next two entries — Pal 2022 (15 g/day, 3 months, micronutrient status) and Heaney & Weaver 1995 (calcium from the same meal). Cite all three together.
 - Psyllium / no effect on micronutrient status (3-month RCT): Pal et al., 2022 — https://pubmed.ncbi.nlm.nih.gov/35505399/
 - Psyllium / no effect on calcium absorption: Heaney & Weaver, 1995 — https://pubmed.ncbi.nlm.nih.gov/7884114/
-- Taurine (34 RCTs, 1,394 participants): Nutrition Reviews, 2025 — https://doi.org/10.1093/nutrit/nuaf220
+- Taurine (34 RCTs, 1,394 participants): Nie et al., Nutrition Reviews, 2025 — https://doi.org/10.1093/nutrit/nuaf220
 - Taurine (25 RCTs): Tzang et al., 2024 — https://doi.org/10.1038/s41387-024-00289-z
 - Hyaluronic acid (150-person RCT, 2025): Scientific Reports — https://doi.org/10.1038/s41598-025-32758-5
+- Hyaluronic acid (60 women, 200mg/day, 28 days): Michelotti et al., Eur J Dermatol, 2021 — https://doi.org/10.1684/ejd.2021.4176
 - Hyaluronic acid (earlier RCT): Oe et al., 2017 — https://doi.org/10.2147/CCID.S141845
 - Hyaluronic acid (129-person RCT, skin hydration): 2023 — https://doi.org/10.1111/srt.13531
-- Collagen (2025 systematic review, 23 studies): Myung et al., Am J Med — https://doi.org/10.1016/j.amjmed.2025.04.034
 - Glycine mechanism (temperature regulation): Bannai & Kawai, 2012 — https://doi.org/10.1254/jphs.11R04FM
 - TMG/Betaine + exercise (body composition): Cholewa et al., 2013 — https://doi.org/10.1186/1550-2783-10-39
 - TMG/Betaine + exercise (soccer performance): Nobari et al., 2021 — https://doi.org/10.1186/s12970-021-00464-y
 - TMG/Betaine + exercise (muscle endurance, 2.5 g/day, 14 days, 10 adolescent athletes): Arazi et al., 2022 — https://doi.org/10.1080/15502783.2022.2041988
 - Lycopene cardiovascular meta-analysis (BP and LDL oxidation): Cheng et al., Atherosclerosis, 2017 — https://doi.org/10.1016/j.atherosclerosis.2017.01.009
+- Lycopene and prostate cancer (42 studies): Rowles et al., Prostate Cancer Prostatic Dis, 2017 — https://doi.org/10.1038/pcan.2017.25
+- Vitamin K + D and BMD (8 RCTs): Kuang et al., Food Funct, 2020 — https://doi.org/10.1039/c9fo03063h
+- Vitamin K2 and bone turnover markers (9 RCTs): Zhang et al., Front Endocrinol, 2025 — https://doi.org/10.3389/fendo.2025.1703116
 - Lutein + Zeaxanthin (**24 mg/day total** as Lutemax 2020 — approx. 20 mg lutein + 2.4 mg zeaxanthin + 1.7 mg meso-zeaxanthin; MPOD + visual performance, **6-month** RCT): Stringham et al., Foods, 2017 — https://doi.org/10.3390/foods6070047. ⚠️ **Corrected 2026-08-05** — this trial is NOT the source of the "10 mg + 2 mg" dose (that is AREDS2, below) and it ran 6 months, not 12. Cite AREDS2 for the 10+2 dose.
 - Lutein + Zeaxanthin (10mg+2mg, MPOD + visual processing speed, RCT): Bovier & Hammond, Arch Biochem Biophys, 2015 — https://doi.org/10.1016/j.abb.2014.11.012
+- Lutein/zeaxanthin intake and advanced AMD (cohorts): Wu et al., JAMA Ophthalmol, 2015 — https://doi.org/10.1001/jamaophthalmol.2015.3590; Ma et al., Br J Nutr, 2012 — https://doi.org/10.1017/S0007114511004260
 - AREDS2 (2013) — **the 5-year primary endpoint was null (HR 0.90, 98.7% CI 0.76–1.07, P=.12)**, but note the design: lutein+zeaxanthin was added *on top of the original AREDS formula, which already contained beta-carotene* — a direct absorption competitor. **The 10-year follow-up (AREDS2 Report 28) supersedes that reading:** L/Z vs no L/Z for progression to late AMD **HR 0.91 (95% CI 0.84–0.99, P=.02)**; restricted to participants also assigned beta-carotene **HR 0.80 (0.68–0.92, P=.002)**; direct L/Z vs beta-carotene **HR 0.85 (0.73–0.98)**. Lung cancer at 10 years: beta-carotene **OR 1.82 (1.06–3.12, P=.02)**, L/Z **OR 1.15 (0.79–1.66, P=.46)**. Chew et al., *JAMA Ophthalmol*, 2022 — https://doi.org/10.1001/jamaophthalmol.2022.1640 · PMID 35653117. Original trial: AREDS2 Research Group, JAMA, 2013 — https://doi.org/10.1001/jama.2013.4997
   - ⚠️ **We still do not make AMD claims — but NOT because the evidence is weak.** AMD is a disease, and disease claims are prohibited for a supplement in every market we sell in, independently of how good the trial data is. Do not write "the AREDS2 primary endpoint was null, so it isn't defensible" — that is factually out of date and it is what caused three separate copy errors. The correct reason is regulatory, not scientific. See `memory/feedback_areds2_lutein_claim.md`.

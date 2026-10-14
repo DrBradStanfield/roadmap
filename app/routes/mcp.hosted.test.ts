@@ -1716,6 +1716,20 @@ function importEvents(): unknown[] {
   return serverEvents((name) => name === 'mcp_import').map(([, meta]) => meta);
 }
 
+describe('US-07 AC6 — the hosted get_plan is built for adults', () => {
+  it('answers a minor with the one adults-only card, in the text and the structured halves', async () => {
+    // Ten years old on any clock: age is computed against today.
+    seedRecord((file) => ({ ...file, profile: { ...file.profile, sex: 'female', birthYear: new Date().getFullYear() - 10, heightCm: 150 } }));
+    const { access } = await connect();
+
+    const plan = await callTool(access, 'get_plan', {});
+    expect(plan.isError).toBe(false);
+    const data = OUTPUTS.get_plan.parse(plan.structured) as { suggestions: Array<{ id: string }> };
+    expect(data.suggestions.map((s) => s.id)).toEqual(['adults-only']);
+    expect(JSON.parse(plan.text).suggestions).toEqual(data.suggestions);
+  });
+});
+
 describe('US-37 — a Dropbox read lists folder files that are not in the record (AC1, AC2, AC3, usage signal)', () => {
   afterEach(() => setImportSeams(null));
   /** A record `get_plan` can compute from; the nudge rides on a successful read. */

@@ -326,6 +326,33 @@ describe('computeReminderSchedule — annual floor', () => {
   });
 });
 
+// US-07 AC6 (2026-10-14): the plan is built for adults, and so is its
+// schedule. A known minor is due nothing, not even the annual floor.
+describe('computeReminderSchedule — US-07 AC6: a known minor is due nothing', () => {
+  const profile = (birthYear: number, birthMonth?: number): RoadmapFile['profile'] =>
+    ({ sex: 'female', birthYear, ...(birthMonth ? { birthMonth } : {}), updatedAt: '2026-01-01T00:00:00Z', lamport: 1 });
+  const withHba1c = (p: RoadmapFile['profile']) => file({
+    profile: p,
+    measurements: [createMeasurement({ id: 'm1', metricType: 'hba1c', value: 40, recordedAt: '2026-01-10T08:00:00Z', createdAt: '2026-01-10T08:00:00Z' })],
+  });
+
+  it('age 15: an empty schedule, though a blood test would be due and the floor would apply', () => {
+    expect(computeReminderSchedule(withHba1c(profile(2011, 1)), NOW)).toEqual([]);
+    expect(computePlan({ ...withHba1c(profile(2011, 1)), profile: { ...profile(2011, 1), heightCm: 165 } }, NOW).due).toEqual([]);
+  });
+
+  it('turning 18 next month is still a minor; this month, an adult', () => {
+    expect(computeReminderSchedule(withHba1c(profile(2008, 7)), NOW)).toEqual([]);
+    expect(computeReminderSchedule(withHba1c(profile(2008, 6)), NOW).map((i) => i.category)).toEqual(['blood_test_hba1c']);
+  });
+
+  it('no birth month: a minor all the year they turn 18, an adult from 1 January the year after', () => {
+    expect(computeReminderSchedule(withHba1c(profile(2008)), NOW)).toEqual([]);
+    expect(computeReminderSchedule(withHba1c(profile(2008)), new Date(2026, 11, 31, 12))).toEqual([]);
+    expect(computeReminderSchedule(withHba1c(profile(2008)), new Date(2027, 0, 5)).map((i) => i.category)).toEqual(['blood_test_hba1c']);
+  });
+});
+
 // US-23 AC4/AC8 — the label allow-list: every label a schedule builder can emit
 // must be declared in SCHEDULE_LABELS, or the server would reject a legitimate
 // push (and an undeclared label would mean free text can reach an inbox).

@@ -28,10 +28,13 @@ function createTestData(
     ...overrides,
   };
 
+  // An adult unless a test says otherwise: medicine cards need a known age
+  // of 18 or over (US-07 AC6). Pass `age: undefined` for an unknown age.
   const results: HealthResults = {
     heightCm: 175,
     idealBodyWeight: 73.8,
     proteinTarget: 89,
+    age: 40,
     suggestions: [],
     ...resultOverrides,
   };
@@ -1440,7 +1443,7 @@ describe('generateSuggestions', () => {
 
     // No screening suggestions without age
     it('no screening suggestions when age is undefined', () => {
-      const { inputs, results } = createTestData({});
+      const { inputs, results } = createTestData({}, { age: undefined });
       const scr: ScreeningInputs = {};
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
       const screeningSuggestions = suggestions.filter(s => s.category === 'screening');
@@ -2066,7 +2069,7 @@ describe('generateSuggestions', () => {
       { name: 'BMI 30.5, healthy waist, no marker', weightKg: 96.6, waistCm: 83.7, on: true, reasons: [] },
       { name: 'BMI 35.0 with every marker raised', weightKg: 111, waistCm: 106.8, hba1c: 48, triglycerides: 2, systolicBp: 140, diastolicBp: 90, apoB: 1.5, on: true, reasons: [HBA1C, TG, BP, APOB, WAIST] },
     ];
-    const inputsOf = ({ name: _n, on: _o, reasons: _r, ...values }: Row): HealthInputs => ({ heightCm: 178, sex: 'male', ...values });
+    const inputsOf = ({ name: _n, on: _o, reasons: _r, ...values }: Row): HealthInputs => ({ heightCm: 178, sex: 'male', birthYear: 1980, ...values });
 
     it.each(table)('the plan, medications tracked: $name', (row) => {
       const results = calculateHealthResults(inputsOf(row), 'si', {});
@@ -2585,7 +2588,7 @@ describe('generateSuggestions', () => {
     });
 
     it('does not include skin suggestions when age < 18', () => {
-      const { inputs, results } = createTestData({}, { age: 16 });
+      const { inputs, results } = createTestData({}, { age: 16, knownMinor: true });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.filter(s => s.category === 'skin')).toHaveLength(0);
     });
@@ -2597,13 +2600,13 @@ describe('generateSuggestions', () => {
     });
 
     it('excludes skin suggestions at exactly age 17', () => {
-      const { inputs, results } = createTestData({}, { age: 17 });
+      const { inputs, results } = createTestData({}, { age: 17, knownMinor: true });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.filter(s => s.category === 'skin')).toHaveLength(0);
     });
 
     it('includes skin suggestions when age is undefined', () => {
-      const { inputs, results } = createTestData({}, {});
+      const { inputs, results } = createTestData({}, { age: undefined });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.filter(s => s.category === 'skin')).toHaveLength(4);
     });
@@ -2961,7 +2964,7 @@ describe('Evidence attachment', () => {
 // total cholesterol and HDL go through calculateHealthResults, as in the widget.
 describe('non-HDL is compared unrounded and rounded only for display (US-07 AC5, US-06 AC6)', () => {
   const planOf = (totalCholesterol: number, hdlC: number, unitSystem: UnitSystem = 'si') =>
-    calculateHealthResults({ heightCm: 178, sex: 'male', totalCholesterol, hdlC }, unitSystem, {});
+    calculateHealthResults({ heightCm: 178, sex: 'male', birthYear: 1980, totalCholesterol, hdlC }, unitSystem, {});
   const ids = (results: HealthResults) => results.suggestions.map(s => s.id);
   const statinCard = (results: HealthResults) => results.suggestions.find(s => s.id === 'med-statin')?.description;
 
@@ -3021,7 +3024,7 @@ describe('non-HDL is compared unrounded and rounded only for display (US-07 AC5,
 // target is 55: 54 mg/dL is 1.396 mmol/L, which the plan calls optimal.
 describe('lipid targets print the first value graded above them (US-07 AC5)', () => {
   const conv = (inputs: Partial<HealthInputs>, meds?: MedicationInputs) =>
-    calculateHealthResults({ heightCm: 178, sex: 'male', ...inputs }, 'conventional', meds).suggestions;
+    calculateHealthResults({ heightCm: 178, sex: 'male', birthYear: 1980, ...inputs }, 'conventional', meds).suggestions;
   const card = (suggestions: ReturnType<typeof conv>, id: string) => suggestions.find(s => s.id === id)?.description;
 
   it('the statin card in mg/dL: LDL below 55', () => {
@@ -3048,17 +3051,17 @@ describe('lipid targets print the first value graded above them (US-07 AC5)', ()
   });
 
   it('LDL 54 mg/dL shown in mmol/L: the checklist says 1.39, below the target', () => {
-    const si = calculateHealthResults({ heightCm: 178, sex: 'male', ldlC: ldl(54), lpa: 200 }, 'si', {}).suggestions;
+    const si = calculateHealthResults({ heightCm: 178, sex: 'male', birthYear: 1980, ldlC: ldl(54), lpa: 200 }, 'si', {}).suggestions;
     expect(card(si, 'lpa-elevated')).toContain('\u2705 LDL-c: 1.39 mmol/L \u2014 target <1.4 mmol/L');
   });
 
   it('non-HDL 1.56 (total 3.76, HDL 2.20): the checklist says 1.56, below the 1.6 target', () => {
-    const si = calculateHealthResults({ heightCm: 178, sex: 'male', totalCholesterol: 3.76, hdlC: 2.2, lpa: 200 }, 'si', {}).suggestions;
+    const si = calculateHealthResults({ heightCm: 178, sex: 'male', birthYear: 1980, totalCholesterol: 3.76, hdlC: 2.2, lpa: 200 }, 'si', {}).suggestions;
     expect(card(si, 'lpa-elevated')).toContain('\u2705 non-HDL cholesterol: 1.56 mmol/L \u2014 target <1.6 mmol/L');
   });
 
   it('SI is unchanged: 1.4, 1.6 and 0.50', () => {
-    const si = (inputs: Partial<HealthInputs>) => calculateHealthResults({ heightCm: 178, sex: 'male', ...inputs }, 'si', {}).suggestions;
+    const si = (inputs: Partial<HealthInputs>) => calculateHealthResults({ heightCm: 178, sex: 'male', birthYear: 1980, ...inputs }, 'si', {}).suggestions;
     expect(card(si({ ldlC: 3 }), 'med-statin')).toMatch(/the treatment target is below 1\.4 mmol\/L\. /);
     expect(card(si({ totalCholesterol: 5, hdlC: 1.2 }), 'med-statin')).toMatch(/the treatment target is below 1\.6 mmol\/L\. /);
     expect(card(si({ apoB: 0.8 }), 'med-statin')).toMatch(/the treatment target is below 0\.50 g\/L\. /);
@@ -3069,7 +3072,7 @@ describe('lipid targets print the first value graded above them (US-07 AC5)', ()
 // asks for the dose, since the next step depends on it.
 describe('US-06 AC8: the dose cards', () => {
   const card = (inputs: HealthInputs, meds: MedicationInputs, id: string) =>
-    calculateHealthResults(inputs, 'si', meds).suggestions.find(s => s.id === id);
+    calculateHealthResults({ birthYear: 1980, ...inputs }, 'si', meds).suggestions.find(s => s.id === id);
 
   it('weight-med-glp1-dose: its title, text and evidence', () => {
     const glp1Dose = card({ heightCm: 178, sex: 'male', weightKg: 101.4 }, { glp1: { drug: 'dulaglutide', dose: null } }, 'weight-med-glp1-dose');
@@ -3224,9 +3227,129 @@ describe('US-06 AC10: gradedDose and the dose helpers', () => {
 // switch card says "at or near" (atorvastatin 70 mg grades as 80 mg).
 describe('US-06 AC10: the statin switch card', () => {
   it('atorvastatin 70 mg: "at or near the maximum dose of Atorvastatin"', () => {
-    const switchCard = calculateHealthResults({ heightCm: 178, sex: 'male', weightKg: 70, ldlC: 3.0 }, 'si',
+    const switchCard = calculateHealthResults({ heightCm: 178, sex: 'male', birthYear: 1980, weightKg: 70, ldlC: 3.0 }, 'si',
       { statin: { drug: 'atorvastatin', dose: 70 }, ezetimibe: 'yes', bempedoicAcid: 'not_tolerated' }).suggestions
       .find((s) => s.id === 'med-statin-switch');
     expect(switchCard?.description).toContain("You're at or near the maximum dose of Atorvastatin. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor.");
+  });
+});
+
+// US-07 AC6 (2026-10-14): the plan is built for adults. Brad attested to
+// OpenAI that the ChatGPT plugin is suitable for under-18s, and the plan can
+// suggest medicines, so a KNOWN age under 18 gets one card and nothing else.
+describe('US-07 AC6: who the plan is for', () => {
+  // Age comes from birth year and month against the plan's own clock.
+  const NOW = new Date(2026, 9, 14, 12);
+
+  const ADULTS_ONLY = {
+    id: 'adults-only',
+    category: 'general',
+    priority: 'info',
+    title: 'This plan is built for adults',
+    description: 'The suggestions here, including medicines, are designed for people aged 18 and over. For anyone younger, talk with their doctor.',
+  };
+  const ADD_BIRTH_YEAR = {
+    id: 'add-birth-year',
+    category: 'general',
+    priority: 'info',
+    title: 'Add your birth year',
+    description: 'Medicine suggestions need your age. Add your birth year to see them.',
+  };
+  /** Values that put an adult on the statin and GLP-1 steps. */
+  const MEDICINE_VALUES: HealthInputs = { heightCm: 175, sex: 'male', weightKg: 115, waistCm: 115, hba1c: hba1c(7.0), ldlC: ldl(190), systolicBp: 150, diastolicBp: 95 };
+  // Medications tracked (none yet), so the cascades' first steps are cards.
+  const plan = (inputs: HealthInputs, medications?: MedicationInputs) =>
+    calculateHealthResults(inputs, 'si', medications, undefined, undefined, NOW).suggestions;
+  const ids = (inputs: HealthInputs, medications: MedicationInputs | 'untracked' = {}) =>
+    plan(inputs, medications === 'untracked' ? undefined : medications).map((s) => s.id);
+
+  it('age 17: the plan is exactly one card, the adults-only card, with its reason', () => {
+    const results = calculateHealthResults({ heightCm: 175, sex: 'male', weightKg: 70, birthYear: 2009, birthMonth: 1 }, 'si', undefined, undefined, undefined, NOW);
+    expect(results.age).toBe(17);
+    expect(results.suggestions).toHaveLength(1);
+    expect(results.suggestions[0]).toMatchObject(ADULTS_ONLY);
+    expect(results.suggestions[0].reason).toMatch(/adults/);
+  });
+
+  it('a 17-year-old with values that call for a statin and a GLP-1 gets neither, nor any other card', () => {
+    const adult = ids({ ...MEDICINE_VALUES, birthYear: 1986, birthMonth: 1 });
+    expect(adult).toContain('med-statin');
+    expect(adult.some((id) => id.startsWith('weight-med-glp1'))).toBe(true);
+
+    expect(ids({ ...MEDICINE_VALUES, birthYear: 2009, birthMonth: 1 })).toEqual(['adults-only']);
+  });
+
+  it('turning 18 this month: the normal plan; turning 18 next month: the adults-only card', () => {
+    const october = ids({ heightCm: 175, sex: 'female', weightKg: 60, birthYear: 2008, birthMonth: 10 });
+    expect(october).not.toContain('adults-only');
+    expect(october).toEqual(expect.arrayContaining(['protein-target', 'skin-sunscreen', 'supplement-creatine']));
+
+    expect(ids({ heightCm: 175, sex: 'female', weightKg: 60, birthYear: 2008, birthMonth: 11 })).toEqual(['adults-only']);
+  });
+
+  it('no birth month, in the year they turn 18: still the adults-only card; the year after, the normal plan', () => {
+    const inputs: HealthInputs = { heightCm: 175, sex: 'female', weightKg: 60, birthYear: 2008 };
+    expect(ids(inputs)).toEqual(['adults-only']);
+    const nextYear = calculateHealthResults(inputs, 'si', {}, undefined, undefined, new Date(2027, 0, 1, 12)).suggestions.map((s) => s.id);
+    expect(nextYear).not.toContain('adults-only');
+    expect(nextYear).toContain('protein-target');
+  });
+
+  it('unknown age, with no medicine card due: the normal plan, and no birth-year card', () => {
+    const unknown = ids({ heightCm: 175, sex: 'male', weightKg: 70 });
+    expect(unknown).not.toContain('adults-only');
+    expect(unknown).not.toContain('add-birth-year');
+    expect(unknown).toEqual(expect.arrayContaining(['protein-target', 'skin-sunscreen', 'supplement-creatine']));
+  });
+
+  it('unknown age: the statin and GLP-1 steps give way to ONE add-birth-year card, and every other card stays', () => {
+    const adult = plan({ ...MEDICINE_VALUES, birthYear: 1986, birthMonth: 1 }, {});
+    const unknown = plan(MEDICINE_VALUES, {});
+
+    expect(unknown.filter((s) => s.category === 'medication')).toEqual([]);
+    expect(unknown.filter((s) => s.id === 'add-birth-year')).toHaveLength(1);
+    expect(unknown.find((s) => s.id === 'add-birth-year')).toMatchObject(ADD_BIRTH_YEAR);
+    expect(unknown.find((s) => s.id === 'add-birth-year')?.reason).toMatch(/18/);
+    // The cards an adult gets beside the medicines are all still there.
+    const kept = ['hba1c-diabetic', 'bp-stage2', 'protein-target', 'lipid-diet', 'exercise', 'skin-sunscreen', 'supplement-creatine'];
+    expect(adult.map((s) => s.id)).toEqual(expect.arrayContaining(kept));
+    expect(unknown.map((s) => s.id)).toEqual(expect.arrayContaining(kept));
+  });
+
+  it('unknown age, medications not tracked: the standalone GLP-1 card gives way too', () => {
+    expect(ids({ ...MEDICINE_VALUES, birthYear: 1986, birthMonth: 1 }, 'untracked')).toContain('weight-glp1');
+    const unknown = ids(MEDICINE_VALUES, 'untracked');
+    expect(unknown).not.toContain('weight-glp1');
+    expect(unknown.filter((id) => id === 'add-birth-year')).toHaveLength(1);
+  });
+
+  it('a known age of 18 or over keeps every medicine card, and no birth-year card', () => {
+    const adult = ids({ ...MEDICINE_VALUES, birthYear: 2008, birthMonth: 10 });
+    expect(adult).toContain('med-statin');
+    expect(adult).not.toContain('add-birth-year');
+  });
+
+  // Amended 2026-10-14: the lipid cascade's cards carry the lipid value, so an
+  // adult's standalone lipid cards give way to them. With no birth year the
+  // cascade is not shown, so nothing may give way to it.
+  describe('unknown age: the standalone lipid cards stay, since the cascade they give way to is withheld', () => {
+    const ON_STATIN: MedicationInputs = { statin: { drug: 'atorvastatin', dose: 20 } };
+    const cases: [name: string, values: Partial<HealthInputs>, meds: MedicationInputs, cards: string[]][] = [
+      ['high LDL, on a statin', { ldlC: ldl(170) }, ON_STATIN, ['ldl-high']],
+      ['very high LDL, on a statin', { ldlC: ldl(200) }, ON_STATIN, ['ldl-very-high']],
+      ['very high ApoB, no statin', { apoB: apoB(110) }, { statin: { drug: 'none', dose: null } }, ['apob-very-high']],
+      ['high non-HDL, on a statin', { totalCholesterol: totalChol(250), hdlC: hdl(40) }, ON_STATIN, ['non-hdl-high']],
+      ['borderline LDL and high total cholesterol, on a statin', { ldlC: ldl(140), totalCholesterol: totalChol(250) }, ON_STATIN, ['ldl-borderline', 'total-chol-high']],
+    ];
+    it.each(cases)('%s: the lipid card and the add-birth-year card', (_name, values, meds, cards) => {
+      const base: HealthInputs = { heightCm: 175, sex: 'male', weightKg: 70, ...values };
+      const adult = ids({ ...base, birthYear: 1980, birthMonth: 1 }, meds);
+      expect(adult.some((id) => id.startsWith('med-'))).toBe(true);
+      for (const card of cards) expect(adult).not.toContain(card);
+
+      const unknown = ids(base, meds);
+      expect(unknown).toEqual(expect.arrayContaining([...cards, 'add-birth-year']));
+      expect(unknown.some((id) => id.startsWith('med-'))).toBe(false);
+    });
   });
 });

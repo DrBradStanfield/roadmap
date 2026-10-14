@@ -16,6 +16,7 @@ import { CHAT_EDIT_TOOLS, parseProposedEdits, toolOnlyAck, type ProposedEdit } f
 import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicStreamEvent, type AnthropicUsage, type RefusalCategory } from './anthropic.server';
 import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, modelParams } from '../../packages/health-core/src/models';
 import { cutText } from '../../packages/health-core/src/chat-history';
+import { PRODUCTS_BLOCK_FILES, productsBlockText } from './chat-products-block';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -64,12 +65,38 @@ try {
 let PRODUCTS_DOC: string;
 try {
   PRODUCTS_DOC = fs.readFileSync(
-    path.join(process.cwd(), 'docs/products.md'), 'utf-8',
+    path.join(process.cwd(), PRODUCTS_BLOCK_FILES.products), 'utf-8',
   );
 } catch {
   console.warn('docs/products.md not found — chat will not have product knowledge');
   PRODUCTS_DOC = '';
 }
+
+// ---------------------------------------------------------------------------
+// Writing style + answer bank — read once at module load, synced or generated
+// from claude_business (never edited here). They ride in the products block.
+// Missing = every answer silently loses them, so this logs loudly.
+// ---------------------------------------------------------------------------
+
+function loadSharedDoc(file: string): string {
+  try {
+    return fs.readFileSync(path.join(process.cwd(), file), 'utf-8');
+  } catch {
+    console.error(`CHAT KNOWLEDGE MISSING: ${file} not found — the chatbot answers without it`);
+    Sentry.captureMessage(`Chat knowledge file missing: ${file}`, { level: 'error' });
+    return '';
+  }
+}
+
+const WRITING_STYLE_DOC = loadSharedDoc(PRODUCTS_BLOCK_FILES.writingStyle);
+// The answer bank is for the websites only (US-15 AC29): the YouTube and Discord
+// bots get the block without it, a second cached variant; the two websites share one.
+const PRODUCTS_BLOCK_WEBSITE = productsBlockText({
+  products: PRODUCTS_DOC,
+  writingStyle: WRITING_STYLE_DOC,
+  answerBank: loadSharedDoc(PRODUCTS_BLOCK_FILES.answerBank),
+});
+const PRODUCTS_BLOCK_BOTS = productsBlockText({ products: PRODUCTS_DOC, writingStyle: WRITING_STYLE_DOC });
 
 // ---------------------------------------------------------------------------
 // Blog article index — read once at module load
@@ -290,8 +317,10 @@ interface SystemBlock {
 
 export function buildSystemBlocks(
   userContextJson: string,
-  opts?: { surfaceContext?: string; documentContent?: string | null; orderSummary?: string; blogArticles?: string | null },
+  opts?: { surfaceContext?: string; documentContent?: string | null; orderSummary?: string; blogArticles?: string | null; answerBank?: boolean },
 ): SystemBlock[] {
+  // Off unless the caller is a website chat (api.chat.ts): a new caller never gets the bank by default.
+  const productsBlock = opts?.answerBank ? PRODUCTS_BLOCK_WEBSITE : PRODUCTS_BLOCK_BOTS;
   // Cached blocks first (shared across all users AND all surfaces — keep
   // byte-identical so the prompt cache is shared), then the per-surface posture
   // block (uncached), then per-user blocks. All four markers are 1-hour
@@ -308,9 +337,9 @@ export function buildSystemBlocks(
       text: EVIDENCE_DOC,
       cache_control: PROMPT_CACHE,
     },
-    ...(PRODUCTS_DOC ? [{
+    ...(productsBlock ? [{
       type: 'text' as const,
-      text: `## Dr Stanfield's Products\n\n${PRODUCTS_DOC}`,
+      text: productsBlock,
       cache_control: PROMPT_CACHE,
     }] : []),
     ...(KNOWLEDGE_OVERVIEW ? [{

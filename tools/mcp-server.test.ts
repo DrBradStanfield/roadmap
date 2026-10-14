@@ -155,6 +155,17 @@ describe('US-32 — tools/call against a real file', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it('US-07 AC6: a minor\'s plan over stdio is the one adults-only card', async () => {
+    const file = fixture();
+    file.profile.birthYear = new Date().getFullYear() - 10;
+    const { dir, path } = writeFixture(file);
+    const plan = JSON.parse(text((await call(path, 'get_plan'))));
+
+    expect(plan.suggestions.map((s: { id: string }) => s.id)).toEqual(['adults-only']);
+    expect(plan.currentValues).toHaveLength(1);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it('writes an added measurement to disk, and names the backup it made', async () => {
     const { dir, path } = writeFixture(fixture());
 

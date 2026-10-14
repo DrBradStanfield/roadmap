@@ -191,6 +191,9 @@ interface InputPanelProps {
   /** What the plan was computed from. Null until there is a plan (no valid
    *  sex or height). */
   planBasis: PlanBasis | null;
+  /** A known minor by the validated birth info, plan or no plan: the form
+   *  withholds its adult targets, hints and colours (US-07 AC6). */
+  knownMinor: boolean;
   healthDocuments?: ApiDocument[];
   onDocumentDeleted?: (docId: string) => void;
   onAutoFocusEmail?: () => void;
@@ -226,7 +229,7 @@ export function InputPanel({
   isSavingLongitudinal, fieldsSaved, hasApiResponse,
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   formStage,
-  setShowUploadModal, planBasis,
+  setShowUploadModal, planBasis, knownMinor,
   healthDocuments, onDocumentDeleted, onAutoFocusEmail,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
@@ -701,8 +704,9 @@ export function InputPanel({
     return { sysVal, diaVal, latestDate };
   };
 
-  /** BP target text based on the plan's age; none with no plan (US-06 AC5). */
-  const bpTargetText = planBasis ? `Target: <${bpTargetFor(planBasis.age)}/80 mmHg` : null;
+  /** BP target text based on the plan's age; none with no plan (US-06 AC5)
+   *  or for a known minor, whose plan holds no adult reading (US-07 AC6). */
+  const bpTargetText = planBasis && !knownMinor ? `Target: <${bpTargetFor(planBasis.age)}/80 mmHg` : null;
 
   /** Render collapsed BP display. */
   const renderCollapsedBp = (data: { sysVal: number; diaVal: number; latestDate: string }) => {
@@ -946,6 +950,7 @@ export function InputPanel({
         onDraftValue={onDraftValue}
         formStage={formStage}
         plan={planBasis}
+        knownMinor={knownMinor}
         onAutoFocusEmail={onAutoFocusEmail}
         unitOverrides={unitOverrides}
         onToggleFieldUnit={onToggleFieldUnit}
@@ -1106,6 +1111,7 @@ export function InputPanel({
       onDraftValue={onDraftValue}
       isSaving={isSavingLongitudinal}
       sex={inputs.sex}
+      knownMinor={knownMinor}
       onUploadClick={() => setShowUploadModal?.(true)}
       hasApiResponse={hasApiResponse}
       flushRef={bloodTestFlushRef}

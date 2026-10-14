@@ -94,6 +94,7 @@ describe('logOff teardown', () => {
   });
 
   afterEach(() => {
+    vi.resetAllMocks();
     vi.restoreAllMocks();
   });
 

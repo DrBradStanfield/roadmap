@@ -168,7 +168,7 @@ describe('US-09 AC19 — the storage button pulses once the guest has their PDF'
     openPicker = notice.openBackendPicker;
     show = (ui) => render(<notice.StorageNoticeContext.Provider value>{ui}</notice.StorageNoticeContext.Provider>);
   });
-  afterEach(() => { vi.restoreAllMocks(); });
+  afterEach(() => { vi.resetAllMocks(); vi.restoreAllMocks(); });
   const cta = (view: ReturnType<typeof render>) => view.getByRole('button', { name: PLAN_STORAGE_CTA });
   const pulsing = (view: ReturnType<typeof render>) => cta(view).classList.contains('hr-sync-btn-attention');
   const throwingStorage = () => {

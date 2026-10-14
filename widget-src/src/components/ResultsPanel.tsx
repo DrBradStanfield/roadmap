@@ -696,6 +696,13 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
 
   const weightUnit = getDisplayLabel('weight', usFor('weight'));
   const ibwDisplay = formatDisplayValue('weight', results.idealBodyWeight, usFor('weight'));
+  // US-07 AC6: a known minor's tiles keep the values and drop every adult
+  // reading of them, its status and its "why"; tiles that are only a reading go.
+  const adult = !results.knownMinor;
+  const reading = <T,>(value: T): T | undefined => (adult ? value : undefined);
+  // US-07 AC6: a known minor is never asked for an email (either box joins the
+  // mailing list). Their PDF is the gate-skipped page's Save as PDF (US-44 AC2).
+  const emailCapture = showEmailCapture && adult;
 
   const urgentSuggestions = results.suggestions.filter(s => s.priority === 'urgent');
   const attentionSuggestions = results.suggestions.filter(s => s.priority === 'attention');
@@ -717,8 +724,8 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
       </button>
       {headerNote}
     </>
-  ) : (SHOPIFY_SURFACE && (guestEmailHook.state === 'captured' || guestEmailHook.gateSkipped)) ? (
-    // Shopify v2, post-capture (or US-44's gate-skipped page): the ungated
+  ) : (SHOPIFY_SURFACE && (guestEmailHook.state === 'captured' || guestEmailHook.gateSkipped || !adult)) ? (
+    // Shopify v2, post-capture (or US-44's gate-skipped page, or a known minor): the ungated
     // Save-as-PDF lives inline in this header (Brad). handlePrint = getReportHtml + print.
     <>
       <button type="button" className="action-btn-small no-print" onClick={() => handlePrint('header')} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
@@ -733,7 +740,7 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
       <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={planHeaderMeta} actions={planHeaderMeta !== null} />
       {/* Cloud connection */}
       {syncControl?.({ hasData: true, attention })}
-      {showEmailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
+      {emailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
 
       {/* Quick Stats */}
       <section className="quick-stats">
@@ -746,22 +753,22 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
             <StatCard
               label="BMI"
               value={results.bmi}
-              status={getBmiStatus(results.bmiCategory!, results.waistToHeightRatio)}
-              evidence={sex ? getBmiEvidence(results.bmi, sex, results.waistToHeightRatio) : undefined}
+              status={reading(getBmiStatus(results.bmiCategory!, results.waistToHeightRatio))}
+              evidence={sex ? reading(getBmiEvidence(results.bmi, sex, results.waistToHeightRatio)) : undefined}
             />
           )}
-          <StatCard
+          {adult && <StatCard
             label="Ideal Body Weight"
             value={<>{ibwDisplay} {weightUnit}</>}
             status={{ label: `for ${formatHeightDisplay(results.heightCm, unitSystem)} height`, className: 'status-normal' }}
             evidence={sex ? getIbwEvidence(sex) : undefined}
-          />
-          <StatCard
+          />}
+          {adult && <StatCard
             label="Protein Target"
             value={<>{results.proteinTarget}g/day</>}
             status={{ label: `${getProteinRate(results.eGFR).toFixed(1)}g per kg IBW`, className: 'status-normal' }}
             evidence={getProteinEvidence(results.idealBodyWeight, getProteinRate(results.eGFR), results.eGFR)}
-          />
+          />}
 
           {/* Lipid tile: the plan's marker, ApoB → Non-HDL → LDL (results carry ApoB and LDL through from the inputs) */}
           {(() => {
@@ -771,22 +778,22 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
             const s = getLipidStatus(marker.value, tile.thresholds);
             const u = usFor(tile.metric);
             // The value reads on the side of the tile's optimal line, the marker's target, that its status grades it (US-07 AC5)
-            return <StatCard label={tile.label} value={<>{formatGradedValue(tile.metric, marker.value, u, marker.target)} {getDisplayLabel(tile.metric, u)}</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE[tile.evidence]} />;
+            return <StatCard label={tile.label} value={<>{formatGradedValue(tile.metric, marker.value, u, marker.target)} {getDisplayLabel(tile.metric, u)}</>} status={reading({ label: s, className: statusClassMap[s] || '' })} evidence={reading(STAT_CARD_EVIDENCE[tile.evidence])} />;
           })()}
 
-          {results.eGFR !== undefined && (() => {
+          {adult && results.eGFR !== undefined && (() => {
             const s = getEgfrStatus(results.eGFR);
             return <StatCard label="eGFR" value={<>{results.eGFR} mL/min</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['egfr']} />;
           })()}
 
           {results.lpa !== undefined && (() => {
             const s = getLpaStatus(results.lpa);
-            return <StatCard label="Lp(a)" value={<>{Math.round(results.lpa)} nmol/L</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['lpa']} />;
+            return <StatCard label="Lp(a)" value={<>{Math.round(results.lpa)} nmol/L</>} status={reading({ label: s, className: statusClassMap[s] || '' })} evidence={reading(STAT_CARD_EVIDENCE['lpa'])} />;
           })()}
 
           {results.hba1c !== undefined && (() => {
             const s = getHba1cStatus(results.hba1c);
-            return <StatCard label="HbA1c" value={<>{formatDisplayValue('hba1c', results.hba1c, usFor('hba1c'))} {getDisplayLabel('hba1c', usFor('hba1c'))}</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['hba1c']} />;
+            return <StatCard label="HbA1c" value={<>{formatDisplayValue('hba1c', results.hba1c, usFor('hba1c'))} {getDisplayLabel('hba1c', usFor('hba1c'))}</>} status={reading({ label: s, className: statusClassMap[s] || '' })} evidence={reading(STAT_CARD_EVIDENCE['hba1c'])} />;
           })()}
         </div>
       </section>
@@ -862,7 +869,7 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
       {remindersSection}
 
       {/* US-44: the gate-skipped reminders box renders once, at the top. */}
-      {showEmailCapture && !guestEmailHook.gateSkipped && <GuestEmailCapture hook={guestEmailHook} pdfBlocked={pdfBlocked === 'capture'} />}
+      {emailCapture && !guestEmailHook.gateSkipped && <GuestEmailCapture hook={guestEmailHook} pdfBlocked={pdfBlocked === 'capture'} />}
 
       {SHOPIFY_SURFACE && <FeedbackForm />}
 

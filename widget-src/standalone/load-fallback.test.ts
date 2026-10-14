@@ -41,6 +41,7 @@ describe('startOnBackend (US-09 AC13)', () => {
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.resetAllMocks();
     vi.restoreAllMocks();
   });
 
@@ -97,6 +98,7 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.resetAllMocks();
     vi.restoreAllMocks();
   });
 

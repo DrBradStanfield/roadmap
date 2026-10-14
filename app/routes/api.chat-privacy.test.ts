@@ -73,7 +73,7 @@ beforeEach(() => {
   });
 });
 
-afterEach(async () => { await Sentry.close(); vi.restoreAllMocks(); });
+afterEach(async () => { await Sentry.close(); vi.resetAllMocks(); vi.restoreAllMocks(); });
 
 async function request(method: string, body: unknown, query = '') {
   const request = new Request(`https://drstanfield.com/api/chat?logged_in_customer_id=123${query}`, {

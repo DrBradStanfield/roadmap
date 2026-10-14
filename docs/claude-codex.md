@@ -189,7 +189,7 @@ The plan is a sound generic two-reviewer process. It is not yet a plan for this 
 
 **B4. No control group, so the pilot cannot answer its own question.** The repo already has a fresh-context Claude reviewer (`claude-review.yml`), the fresh-Fable adversarial check the orchestrator memory prescribes, `/code-review`, and the post-deploy skeptic audit. The plan's only added value is model diversity. §10 measures "valid defects caught" against nothing. Run both a fresh-Claude review and a Codex review on every pilot PR and count valid blocking findings unique to Codex. If that number is zero across five PRs, the process is overhead and should be dropped.
 
-**B5. Codex has no repo instructions.** Codex reads `AGENTS.md`; the repo has none. It also cannot read the Claude memory directory, `.claude/` skills, or the `fable-advisor` and `worker` agents, and `docs/writing-style.md` is a symlink that may not resolve. §1's "both models use the same instructions" is aspirational. Minimum: an `AGENTS.md` that points at `CLAUDE.md`, and an explicit note that Codex reviews with less context than Claude.
+**B5. Codex has no repo instructions.** Codex reads `AGENTS.md`; the repo has none. It also cannot read the Claude memory directory, `.claude/` skills, or the `fable-advisor` and `worker` agents, and `docs/writing-style.md` was a symlink that may not resolve (fixed 2026-10-14: it is now a real file, synced with claude_business's copy). §1's "both models use the same instructions" is aspirational. Minimum: an `AGENTS.md` that points at `CLAUDE.md`, and an explicit note that Codex reviews with less context than Claude.
 
 ## Precision gaps in the rules
 

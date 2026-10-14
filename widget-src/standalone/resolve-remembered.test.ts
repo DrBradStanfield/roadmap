@@ -81,7 +81,7 @@ describe('resolveRemembered with working storage', () => {
       vi.spyOn(GoogleDriveAdapter.prototype, 'tryServerRefresh').mockResolvedValue(refreshes);
       return fakeStorage({ [BACKEND_KEY]: 'google-drive' });
     };
-    afterEach(() => { vi.restoreAllMocks(); });
+    afterEach(() => { vi.resetAllMocks(); vi.restoreAllMocks(); });
 
     it.each([[true, false], [false, true]])('valid token %s, refresh %s → runs on Drive', async (valid, refreshes) => {
       const backing = drive(valid, refreshes);

@@ -24,6 +24,7 @@ describe('explicit local-first data path', () => {
   });
   afterEach(async () => {
     await flushRoadmapStore();
+    vi.resetAllMocks();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });

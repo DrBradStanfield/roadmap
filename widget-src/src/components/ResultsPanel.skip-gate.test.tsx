@@ -59,7 +59,7 @@ beforeEach(() => {
   print = vi.fn();
   vi.spyOn(window, 'open').mockImplementation(() => ({ document: { write: vi.fn(), close: vi.fn() }, print }) as unknown as Window);
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.resetAllMocks(); vi.restoreAllMocks(); });
 
 describe('US-44 AC2 — gate skipped: Save as PDF straight away, nothing persisted', () => {
   it('shows Save as PDF on first render, with no gating email box and no write to the record', () => {
@@ -487,5 +487,38 @@ describe('US-09 AC19 — the storage button\'s attention flag', () => {
     fireEvent.click(view.getAllByRole('button', { name: 'Save as PDF' })[0]);
     await waitFor(() => expect(print).toHaveBeenCalledOnce());
     expect(attention(view)).toBe('false');
+  });
+});
+
+// US-07 AC6 (amended 2026-10-14): a known minor is never asked for an email.
+// Both boxes subscribe the address to the MicroVitamin list, so neither shows.
+// The plan's PDF stays theirs: the gate-skipped page's Save as PDF (US-44 AC2),
+// on every page.
+describe('US-07 AC6 — a known minor gets Save as PDF and no email box', () => {
+  // Ten years old on any clock.
+  const minor = calculateHealthResults({ heightCm: 150, sex: 'female', weightKg: 45, birthYear: new Date().getFullYear() - 10 });
+
+  it.each([['gated', false], ['gate-skipped', true]] as const)('on the %s page: no email box, no mailing-list line', (_, skip) => {
+    mocks.skip.value = skip;
+    const view = showPlan({ results: minor });
+    expect(view.container.querySelector('input[type="email"]')).toBeNull();
+    expect(view.container.querySelector('.email-capture')).toBeNull();
+    expect(view.container.textContent).not.toContain('MicroVitamin mailing list');
+    expect(view.queryByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })).toBeNull();
+  });
+
+  it('on the gated page, Save as PDF opens the print window and sends no email anywhere', async () => {
+    mocks.skip.value = false;
+    const view = showPlan({ results: minor });
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(print).toHaveBeenCalledOnce());
+    expect(mocks.sendGuestReport).not.toHaveBeenCalled();
+    expect(mocks.markReportEmailCaptured).not.toHaveBeenCalled();
+  });
+
+  it('an adult on the gated page still gets the email box', () => {
+    mocks.skip.value = false;
+    const view = showPlan();
+    expect(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL }).length).toBeGreaterThan(0);
   });
 });

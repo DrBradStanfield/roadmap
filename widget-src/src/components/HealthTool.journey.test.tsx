@@ -304,6 +304,7 @@ afterEach(async () => {
   cleanup();
   showPage();
   await flushRoadmapStore();
+  vi.resetAllMocks();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.useRealTimers();

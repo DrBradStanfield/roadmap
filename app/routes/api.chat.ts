@@ -506,7 +506,8 @@ export async function action({ request }: ActionFunctionArgs) {
       // everything else (drstanfield.com education) defaults to the strict doctor
       // posture — a config slip can never silently produce a selling bot.
       const surfaceContext = process.env.CHAT_SURFACE === 'brand' ? BRAND_POSTURE : DOCTOR_POSTURE;
-      const systemBlocks = buildSystemBlocks(context.userContextJson, { surfaceContext, documentContent, orderSummary, blogArticles: articles?.content ?? null });
+      // answerBank: the website chats get the answer bank; YouTube and Discord never do (US-15 AC29).
+      const systemBlocks = buildSystemBlocks(context.userContextJson, { surfaceContext, documentContent, orderSummary, blogArticles: articles?.content ?? null, answerBank: true });
       const conversationMessages = buildConversationMessages(history, message);
       const tBeforeLlm = Date.now();
 
