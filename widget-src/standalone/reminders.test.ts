@@ -544,16 +544,31 @@ describe('US-17 AC12 — a switch to a cloud with no address keeps the old row',
 // never chose. While the file's opt-in belongs to another cloud, the switch
 // owns the row and the push waits.
 describe('US-17 AC12 — no schedule push while a cloud switch is pending', () => {
-  it('an opt-in from another cloud is not pushed, on load or on tab hide', async () => {
+  it('after this page\'s switch cancelled the old row and its enrolment did not land, the push is held, on load or on tab hide', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE); // active on google-drive, user@
+    githubAccountEmail.mockResolvedValue('other@example.com');
+    const f = mockFetchOk({ email: 'other@example.com' }); // the opt-in answers refreshed: no token
+    const { autoEnrolReminders, pushReminderSchedule } = await loadReminders();
+
+    await autoEnrolReminders('github');
+    expect(postedBody(f, 0)).toMatchObject({ op: 'cancel', token: 'cap-token' });
+    const sent = f.mock.calls.length;
+
+    await pushReminderSchedule('github');
+    await pushReminderSchedule('github', true);
+
+    expect(f).toHaveBeenCalledTimes(sent);
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+  });
+
+  it('an opt-in from another cloud with no switch run on this page keeps its schedule current (adversary R2)', async () => {
     getReminderOptIn.mockReturnValue(ACTIVE); // active on google-drive
     const f = mockFetchOk({ ok: true });
     const { pushReminderSchedule } = await loadReminders();
 
-    await pushReminderSchedule('dropbox');
-    await pushReminderSchedule('github', true);
+    await pushReminderSchedule('github');
 
-    expect(f).not.toHaveBeenCalled();
-    expect(setReminderOptIn).not.toHaveBeenCalled();
+    expect(postedBody(f)).toMatchObject({ op: 'update', token: 'cap-token' });
   });
 
   it.each(['local', 'self-host'] as const)('no switch can run on %s, so the push goes ahead as before', async (backend) => {

@@ -106,6 +106,14 @@ async function identityFor(backend: ReminderBackend): Promise<Identity | null> {
   return email ? { provider: 'github', email } : null;
 }
 
+/**
+ * True from the moment this page's cloud switch cancels the old row until the
+ * new enrolment lands (US-17 AC12). While true, the old token's row is a
+ * tombstone the switch owns: a push would refill it, or 404 into a
+ * "cancelled" nobody chose. A switch that never cancels holds nothing.
+ */
+let switchHoldsOldToken = false;
+
 /** One address, however the provider cased or padded it. */
 function sameAddress(a: string, b: string): boolean {
   return a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -244,8 +252,10 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
       // A refused cancel stops here: enrolling now would write the new token
       // over the old one, the only key to that row. The file keeps the old
       // opt-in, so the next visit on the new cloud tries the cancel again.
+      switchHoldsOldToken = true;
       const res = await postCancel(optIn.token, await cancelProofFor(optIn.provider));
       if (!res.ok) {
+        switchHoldsOldToken = false; // the old row is still live: pushes may carry on
         // The status code only: no address, no schedule (CLAUDE.md telemetry rule).
         const refused = new Error(`Old reminder row cancel failed (${res.status}).`);
         Sentry.captureException(refused, { tags: { area: 'reminders', op: 'switch-cancel' } });
@@ -259,6 +269,7 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
     // After a switch the file keeps the old opt-in (no token to replace it),
     // so pushReminderSchedule holds off and no 404 can mark it cancelled.
     if ((await optInToReminders(backend, { silent: true })).refreshed) return;
+    switchHoldsOldToken = false; // the new token is in the file
     try { sessionStorage.setItem(ENROL_NOTICE_KEY, '1'); } catch { /* the live event still fires */ }
     window.dispatchEvent(new Event('hr:reminders-changed'));  // re-render the control
     window.dispatchEvent(new Event('hr:reminders-enrolled')); // show the one-time notice
@@ -329,10 +340,11 @@ export async function pushReminderSchedule(backend: Backend, keepalive = false):
     } catch { /* retried next visit */ }
     return;
   }
-  // A cloud switch is pending (US-17 AC12): autoEnrolReminders owns the old
-  // token until it lands. A push racing its cancel could refill the tombstone,
-  // or 404 into a "cancelled" the user never chose.
-  if (SHOPIFY_SURFACE && remindersSupported(backend) && optIn.provider !== backend) return;
+  // This page's cloud switch cancelled the old row and its enrolment has not
+  // landed (US-17 AC12): a push could refill the tombstone, or 404 into a
+  // "cancelled" the user never chose. A switch that never cancelled holds
+  // nothing, so the old row keeps its schedule current.
+  if (switchHoldsOldToken && optIn.provider !== backend) return;
   try {
     const res = await post(
       { op: 'update', token: optIn.token, schedule: computeCurrentReminderSchedule() },
