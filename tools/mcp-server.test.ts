@@ -93,7 +93,7 @@ describe('US-32 — the JSON-RPC handshake', () => {
       await handle({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }, path),
       await handle({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, path),
     ]);
-    expect(published).toContain(`The candidates are shown to the user, and the commit, after their reply, files what they chose, with approval (${APPROVAL_MEANS}).`);
+    expect(published).toContain(`send every value it prints, then show the user the candidates; the commit, after their reply, files what they chose, with approval (${APPROVAL_MEANS}).`);
     // R1 (2026-10-14): the import commit has no time window (US-36 AC5), so the words put the agreement after the preview.
     const instructions = (await handle({ jsonrpc: '2.0', id: 3, method: 'initialize', params: {} }, path) as { result: { instructions: string } }).result.instructions;
     expect(instructions).toMatch(AFTER_THE_REPLY);

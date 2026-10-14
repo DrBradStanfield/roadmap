@@ -20,7 +20,7 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
 import { APPROVAL_MEANS, MAX_LAB_ROWS_PER_CALL } from '../../packages/health-core/src/mcp-tools';
-import { APPROVAL_DIRECTIVE, isPartialRun } from '../../packages/health-core/src/mcp-approval-wording.testing';
+import { AFTER_THE_REPLY, APPROVAL_DIRECTIVE, isPartialRun } from '../../packages/health-core/src/mcp-approval-wording.testing';
 import { REPO_PUBLIC } from '../../packages/health-core/src/plan';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
@@ -315,7 +315,8 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     expect(proposed.text).toContain('An auto-approve setting in the client is not the user agreeing.'); // a client set to allow every action has not agreed
     // US-36 (2026-10-14): the proposal describes the protocol and never directs the model ("Suspicious Instruction",
     // live 2026-10-12); the afterAll blocklist checks it. It keeps one neutral note about the reply, with no safety-check
-    // mention: 8 of 8 sentence replies wrote and 0 of 3 bare "yes" replies did (live 2026-10-07 to 10-12).
+    // mention: 8 of 8 sentence replies wrote and 0 of 3 bare "yes" replies did on 2026-10-07 (docs/reviews/
+    // 2026-10-07-short-confirm-codes-plan.md), and 1 of 1 bare "yes" wrote on 2026-10-12 (the height trial).
     expect(proposed.text).toContain('A reply that names the change (for example “Yes, apply this change”) is clearer than “yes” alone.');
     const data = OUTPUTS.correct_value.parse(proposed.structured);
     expect(data).toMatchObject({ proposal: true, correctsId: LDL_ID, value: 2.8, confirmFrom: at(PROPOSAL_NBF_SECONDS) });
@@ -331,7 +332,9 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     const early = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(2));
     expect(early.isError).toBe(true);
     expect(early.text).toContain(`is valid from ${at(PROPOSAL_NBF_SECONDS)}`);
-    expect(early.text).toContain('the second call follows the user’s answer');
+    // R2 (2026-10-14): a tool result, so it may say what to show; it names what the second call carries, and when.
+    expect(early.text).toContain(`for a second call made after the user’s reply and carrying approval (${APPROVAL_MEANS}). Show the proposal to the user.`);
+    expect(early.text).toMatch(AFTER_THE_REPLY);
 
     // 3. After the pause, but with the number changed under the user's yes.
     const altered = await callToolAt(access, 'correct_value', { ...FIX, newValue: 0.8, confirm: receipt, approval: APPROVED }, at(11));
@@ -417,7 +420,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     // The window is checked before the words: an assistant chaining the second call is sent back to the user.
     const chained = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt }, at(2));
     expect(chained.isError).toBe(true);
-    expect(chained.text).toBe(`That confirm receipt is not valid yet: it is valid from ${at(PROPOSAL_NBF_SECONDS)}; the second call follows the user’s answer. Nothing was written.`);
+    expect(chained.text).toBe(`That confirm receipt is not valid yet: it is valid from ${at(PROPOSAL_NBF_SECONDS)}, for a second call made after the user’s reply and carrying approval (${APPROVAL_MEANS}). Show the proposal to the user. Nothing was written.`);
     expect(storedRecord().measurements).toHaveLength(1);
     const written = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(11));
     expect(written.isError).toBe(false);

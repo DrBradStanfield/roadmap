@@ -1583,7 +1583,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     const first = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', {})).structured);
     expect(first.files.map((f) => f.name)).toEqual(['f0.pdf', 'f1.pdf', 'f2.pdf', 'f3.pdf', 'f4.pdf']);
     expect(first.remaining).toEqual(['f5.pdf', 'f6.pdf']);
-    expect(first.next).toContain('2 file(s) were not reached. This receipt’s commit comes first; a call with fileNames set to remaining then reads the rest.');
+    expect(first.next).toContain('2 file(s) were not reached. After the user’s reply, this receipt’s commit comes first; a call with fileNames set to remaining then reads the rest.');
     // One counter for both callers: the website's upload route takes from the same key.
     expect(before - machineFiles.remaining('machine')).toBe(5);
     const rest = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fileNames: first.remaining })).structured);

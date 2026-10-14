@@ -397,7 +397,7 @@ function checkConfirm(token: AccessPayload, name: string, args: Record<string, u
     return `That confirm receipt has expired (${ttlSeconds / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.`;
   }
   if (opened.status === 'early') {
-    return `That confirm receipt is not valid yet: it is valid from ${opened.notBefore}; the second call follows the user’s answer. Nothing was written.`;
+    return `That confirm receipt is not valid yet: it is valid from ${opened.notBefore}, for a second call made after the user’s reply and carrying approval (${APPROVAL_MEANS}). Show the proposal to the user. Nothing was written.`;
   }
   // ChatGPT's safety layer judges the call, not the chat (2026-10-07), so the call carries what the user said.
   // After the window checks, so a chained call hears the window rather than the approval; before the claim, so a

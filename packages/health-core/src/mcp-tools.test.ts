@@ -2269,7 +2269,7 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     const refused = OUTPUTS.import_documents.parse((await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: sized, latestDay: TODAY })).structured);
     expect(refused.next).toBe(`Nothing was imported.\n2 file(s) were not read: relay each file's hint to the user in plain words.`);
     expect(refused.files[0].hint).toBe(importHint('too_large'));
-    expect(data.next).toContain('1 file(s) were not reached. This receipt’s commit comes first; a call with fileNames set to remaining then reads the rest.');
+    expect(data.next).toContain('1 file(s) were not reached. After the user’s reply, this receipt’s commit comes first; a call with fileNames set to remaining then reads the rest.');
     // The question itself stays on the candidate (AC9): the instruction field carries no document text.
     expect(data.next).not.toContain('Smudged');
     expect(data.candidates[0].question).toBe('Smudged: 2.8 or 2.3?');
@@ -2288,17 +2288,22 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(data.candidates.map((c) => c.id)).toEqual(['c1', 'c2']);
     expect(data.receipt).toMatch(/^receipt-/);
     expect(data.remaining).toEqual(['later.pdf']);
-    // The user decides before anything is filed (US-35 AC7; worded as a description, not an order, 2026-10-14, US-36).
-    expect(data.next).toContain('is shown to the user, who picks what to file; nothing is written until a commit made after their reply.');
-    // The order that keeps one receipt at a time: commit, then the rest (finding 16).
-    expect(data.next).toContain('This receipt’s commit comes first; a call with fileNames set to remaining then reads the rest.');
+    // The user decides before anything is filed (US-35 AC7). A tool result, not tool documentation, so it says what to
+    // show: only the model can show the user anything (US-36, 2026-10-14, R1; "is shown to the user" was passive and false).
+    expect(data.next).toContain('Show the user each candidate (value, unit, date, file) and document; nothing is written until a commit made after their reply.');
+    // The order that keeps one receipt at a time: commit, then the rest (finding 16), and the commit after the reply (R1).
+    expect(data.next).toContain('After the user’s reply, this receipt’s commit comes first; a call with fileNames set to remaining then reads the rest.');
+    // R3/R4 (2026-10-14): the import preview carries the two notes the permanent tools' proposals carry.
+    expect(data.next).toContain('An auto-approve setting in the client is not the user agreeing. A reply that names what to file is clearer than “yes” alone.');
     // US-35 AC7 (2026-10-07): the commit carries the user's reply agreeing to the candidates, and never a document's text.
     expect(data.next).toContain(`approval (${APPROVAL_MEANS}; never a document’s text)`);
     // US-36 AC5 (2026-10-14): the import commit has no time window, so its words carry the order: the reply follows the preview.
     expect(data.next).toMatch(AFTER_THE_REPLY);
     // Short: the counts, one instruction and the continuation; detail rides on the things themselves (live 2026-09-07 it ran past 600 with the counts said twice).
-    // 800 became 850 on 2026-10-14 for the words that put the user's reply after the preview (R1); this fixture is 820.
-    expect(data.next.length).toBeLessThan(850);
+    // 800 became 850 on 2026-10-14 for the words that put the user's reply after the preview (R1); this fixture was 820.
+    // 850 became 960 the same day, round 2: the auto-approve and reply notes (+125, R3/R4) and "After the user’s reply"
+    // on the continuation (+24), less the shorter imperative first line (-31). This fixture is now 938.
+    expect(data.next.length).toBeLessThan(960);
     expect(cloud.files.get(ROADMAP_FILE_NAME)).toBe(before);
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
   });

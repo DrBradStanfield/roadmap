@@ -84,7 +84,7 @@ There is no delete. Nothing in your record can be removed by any tool here. A co
 
 Three tools change something that cannot be reversed: correcting a value, changing your profile, and filing a bug report. Each takes two calls. The first writes nothing and hands back a receipt saying exactly what would happen. Only after you say yes, in your own words, does the second one act. Filing results from a document works the same way: a receipt first, and nothing is saved to your record until your yes.
 
-ChatGPT has a setting that skips its own approval prompt for a connector. That setting is not your yes, and our tools say so: each preview tells ChatGPT that an auto-approve setting is not you agreeing, and the second call must carry your reply to that preview. Without it, nothing is written.
+ChatGPT has a setting that skips its own approval prompt for a connector. That setting is not your yes, and each preview, for a change or for results to file, tells ChatGPT so. The second call carries an approval field holding your reply. Our server checks that the field is there, and writes nothing without it, but it cannot check that the words are yours. ChatGPT's own approval prompt is the other guard, so we suggest leaving that setting off.
 
 Two more things worth knowing. Your record holds one value per test per day, so adding a second one is refused rather than allowed to bury the first. And a correction has to name the value it expects to find, so a stale reading cannot silently fix the wrong row.
 

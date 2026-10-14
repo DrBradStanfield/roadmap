@@ -37,7 +37,7 @@ const INSTRUCTIONS =
     : '') +
   'import_documents is listed but refuses here: this server has no model and ' +
   'no network; folder files go through the website’s upload or the hosted connector. A file the user gives YOU is ' +
-  'file_results: read it and send every value it prints. The candidates are shown to the user, and the commit, after ' +
+  'file_results: read it and send every value it prints, then show the user the candidates; the commit, after ' +
   `their reply, files what they chose, with approval (${APPROVAL_MEANS}).` +
   SI_NOTE + OPEN_SOURCE_NOTE;
 
