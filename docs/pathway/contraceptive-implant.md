@@ -151,7 +151,7 @@ Effectiveness drops slightly in the fifth year:
 - 99.2% if you weigh 60 kg or less.
 - 98.9% if you weigh more than 60 kg.
 
-Early replacement is not routinely recommended, but your doctor may discuss it and offer an earlier replacement. Using the implant beyond 5 years is not recommended.
+Early replacement is not routinely recommended. The data sheet notes that effectiveness may fall after 4 years in people weighing more than 60 kg, so your doctor may discuss an earlier replacement. Using the implant beyond 5 years is not recommended.
 
 ---
 

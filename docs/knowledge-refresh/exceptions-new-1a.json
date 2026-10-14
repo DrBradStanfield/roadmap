@@ -214,5 +214,21 @@
   "reason": "Safety corrections and Brad's ruling: calprotectin per g (Brad 2026-10-14; the raw prints per L in error), 12 months after infliximab (Medsafe Remicade data sheet), first surveillance at 8 years (NZSG 2025 guidance the raw links). Not in the raw text.",
   "by": "orchestrator",
   "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "contraceptive-implant",
+  "match": "token \"4 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Early replacement is not routinely recommended. The data sheet notes that effectiveness may fall after 4 years in peo...\"",
+  "reason": "Currency check (ruling 13): 4 years and 60 kg come from the Medsafe Jadelle data sheet, not the raw.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "contraceptive-implant",
+  "match": "body line has no entry quoting \">60 kg\": Early replacement is not routinely recommended. The data sheet notes that effectiveness may fall after 4 years in peo...",
+  "reason": "Currency check (ruling 13): 4 years and 60 kg come from the Medsafe Jadelle data sheet, not the raw.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
  }
 ]

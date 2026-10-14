@@ -37,3 +37,10 @@ Applied 2026-10-12 by one Opus worker: every ACCEPT row. Ruling 12 decisions: ho
 - R6 (abortion L38: sex-selection "prohibited"): ACCEPT. The Act states Parliament's opposition to abortion sought solely because of the baby's sex; it is not a ban.
 - R7 (eczema L179, abortion L92: funding conditions): ACCEPT, remove (rule 4).
 - R8 (AC5): DISPUTED, Brad's deferral.
+
+## Currency check (ruling 13, 2026-10-14; Sonnet audit runs/currency-new-1a.md: 0 HIGH, 5 MEDIUM)
+- Abortion EMA regimen (mifepristone 200 mg, buccal misoprostol 800 micrograms, up to 70 days) vs the older Mifegyne sheet: KEEP, current WHO and NZ practice.
+- Dyspepsia H. pylori omeprazole 40 mg twice daily for 14 days vs the Teva sheet: KEEP, June 2026 guideline update in the raw.
+- Eczema herpeticum valaciclovir 1 g three times daily: KEEP, standard off-label practice.
+- Dyspepsia domperidone: ACCEPT, added that it can affect heart rhythm and is not used with some medicines, including clarithromycin (the entry's own H. pylori regimen).
+- Contraceptive implant: ACCEPT, added the Jadelle data sheet's note that effectiveness may fall after 4 years in people over 60 kg, beside the raw's "early replacement not routinely recommended".

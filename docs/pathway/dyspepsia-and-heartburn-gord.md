@@ -152,7 +152,7 @@ Proton pump inhibitors (PPIs) reduce stomach acid. Your doctor may use a step-do
 - Most people respond well to reassurance and an individually tailored mix of lifestyle changes and medicines.
 - **Your doctor may consider** a PPI using the step-down regimen. If symptoms persist, your doctor may test for *H. pylori*.
 - If *H. pylori* is negative and symptoms persist, it is treated as functional dyspepsia.
-- **Dysmotility-type symptoms** (discomfort, bloating, early fullness, nausea rather than pain): your doctor may try a prokinetic medicine such as domperidone 10 mg three times a day first. H2-receptor antagonists come next. They have a better response rate than PPIs in this group.
+- **Dysmotility-type symptoms** (discomfort, bloating, early fullness, nausea rather than pain): your doctor may try a prokinetic medicine such as domperidone 10 mg three times a day first. Domperidone can affect heart rhythm and is not used with some medicines, including clarithromycin. H2-receptor antagonists come next. They have a better response rate than PPIs in this group.
   - If you respond, treatment may continue as needed.
   - If not, your doctor may test for *H. pylori* or refer you for gastroscopy.
 - People with chronic dyspepsia should be reviewed at least once a year. Your doctor will ask about your symptoms, examine you, encourage lifestyle measures, and review your medicines, including over-the-counter ones.

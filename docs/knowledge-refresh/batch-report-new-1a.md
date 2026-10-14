@@ -29,9 +29,9 @@ Counts and hashes only. Raw text never enters this repo.
 | autism-in-adults | pathway | refresh-2026-09-29/health_pathways/autism-in-adults.md | db40b58eb09694d1981b0e1dd67c4fcfa3174e160efcd1c4c1cc18ab380959b1 | 71ec276b7c653cb7 | 10 | 10 | 0 | 0>65 | 0>0 |
 | bariatric-surgery | pathway | refresh-2026-09-29/health_pathways/bariatric-surgery.md | 8a5b621afcd9493877635e3c6d134bbbfc2338de3e8d08fb958f0238217b41ac | c98e62bdfb99e4a0 | 16 | 16 | 0 | 0>20 | 0>0 |
 | cognitive-impairment | pathway | refresh-2026-09-29/health_pathways/cognitive-impairment.md | 90eff58ab75d6427886237e123aca4595b1ce7b2fddcce4a651e03787a3dd896 | 3045142a0ed0333d | 20 | 19 | 0 | 0>80 | 0>0 |
-| contraceptive-implant | pathway | refresh-2026-09-29/health_pathways/contraceptive-implant.md | ba4e677a2ce11b12e24ca8b2a0253b66ae9ddea46b54383e3df0355d0431ecf0 | 1599447dfc7b5418 | 42 | 42 | 0 | 0>69 | 0>0 |
+| contraceptive-implant | pathway | refresh-2026-09-29/health_pathways/contraceptive-implant.md | ba4e677a2ce11b12e24ca8b2a0253b66ae9ddea46b54383e3df0355d0431ecf0 | c78c95a62918a335 | 43 | 42 | 0 | 0>70 | 0>0 |
 | dysmenorrhoea | pathway | refresh-2026-09-29/health_pathways/dysmenorrhoea.md | 1eea27c4efb8130fae36ff89f3c1b26945b3c0d0d1122ca95d20af155c22c908 | 01ae36c37cf986c9 | 11 | 11 | 0 | 0>18 | 0>0 |
-| dyspepsia-and-heartburn-gord | pathway | refresh-2026-09-29/health_pathways/dyspepsia-and-heartburn-gord.md | 05d29a9c8ba39638a3a1058562736ccea5e55cd29339311d1f77e0ff97abb951 | cba0b92f43768234 | 35 | 34 | 0 | 0>40 | 0>0 |
+| dyspepsia-and-heartburn-gord | pathway | refresh-2026-09-29/health_pathways/dyspepsia-and-heartburn-gord.md | 05d29a9c8ba39638a3a1058562736ccea5e55cd29339311d1f77e0ff97abb951 | d7a67786ae0cc017 | 35 | 34 | 0 | 0>41 | 0>0 |
 | dysphagia | pathway | refresh-2026-09-29/health_pathways/dysphagia.md | 15276e63ce41b8087743dd6147fa5be479d9524b18dfed066f1a23a613f9d841 | ef585f676fd16db4 | 7 | 6 | 0 | 0>35 | 0>0 |
 | eczema-dermatitis-in-adults | pathway | refresh-2026-09-29/health_pathways/eczema-dermatitis-in-adults.md | 241a8ec15a99428ce041bbbd7c57eef721386558e619fbcbe64cf2ca3ac0289d | 128c0795026647a6 | 41 | 40 | 0 | 0>53 | 0>0 |
 | epilepsy | pathway | refresh-2026-09-29/health_pathways/epilepsy.md | d1fd74b805803c869a89bcfe1a1b6a1d9df72a3911bc25f7bef9de202cc22c0a | 49a6ff8ee3deaf97 | 26 | 24 | 0 | 0>21 | 0>0 |
@@ -79,9 +79,11 @@ Counts and hashes only. Raw text never enters this repo.
 - cognitive-impairment: VOID 24: Failed AC2 check 1 (raw_quote shares no number with its body_line); replaced by a current entry. [body: - **Enduring Power of Attorney (EPA):** a legal authority yo]
 - cognitive-impairment: VOID 25: Body line changed 2026-10-12 (review row 7: EPA Property activation exception added); replaced by a current entry. [body: - **Enduring Power of Attorney (EPA):** a legal authority yo]
 - cognitive-impairment: VOID 37: Body line changed 2026-10-12 (review row 7: EPA Property activation exception added); replaced by a current entry. [body: - **Enduring Power of Attorney (EPA):** a legal authority yo]
-- contraceptive-implant: VOID 8: Body line changed 2026-10-12 (review row 9: contraindication narrowed back to active breast cancer); replaced by a current entry. [body: - You have active breast cancer, or have had it within the l]
-- contraceptive-implant: VOID 54: Failed AC2 check 1 (raw_quote shares no number with its body_line); replaced by a current entry. [body: - A COX-2 inhibitor or anti-inflammatory (NSAID) taken regul]
+- contraceptive-implant: VOID 9: Body line changed 2026-10-12 (review row 9: contraindication narrowed back to active breast cancer); replaced by a current entry. [body: - You have active breast cancer, or have had it within the l]
+- contraceptive-implant: VOID 30: Line reworded 2026-10-14 (currency check, ruling 13): Jadelle data sheet note on reduced effectiveness after 4 years over 60 kg added; re-entered at the start of changed_tokens. [body: Early replacement is not routinely recommended, but your doc]
+- contraceptive-implant: VOID 55: Failed AC2 check 1 (raw_quote shares no number with its body_line); replaced by a current entry. [body: - A COX-2 inhibitor or anti-inflammatory (NSAID) taken regul]
 - dyspepsia-and-heartburn-gord: VOID 0: Failed AC2 check 1 (raw_quote shares no number with its body_line); replaced by a current entry. [body: **Call 111 or go to the emergency department if you have any]
+- dyspepsia-and-heartburn-gord: VOID 13: Line extended 2026-10-14 (currency check, ruling 13): domperidone heart-rhythm and clarithromycin caution added; re-entered below. [body: - **Dysmotility-type symptoms** (discomfort, bloating, early]
 - dysphagia: VOID 2: Failed AC2 check 1 (raw_quote shares no number with its body_line); replaced by a current entry. [body: **Call 111 or go to the emergency department if:**]
 - eczema-dermatitis-in-adults: VOID 0: Failed AC2 check 1 (raw_quote too short (need 6 words or 30 characters)); replaced by a current entry. [body: *Source: Auckland Region HealthPathways. Last reviewed: May ]
 - eczema-dermatitis-in-adults: VOID 1: Failed AC2 check 1 (raw_quote shares no number with its body_line); replaced by a current entry. [body: **Call 111 or go to the emergency department if:**]
@@ -147,6 +149,8 @@ Counts and hashes only. Raw text never enters this repo.
 | AC2 | anxiety-in-adults | orchestrator | 2026-10-14 | Safety correction (Codex round 2 R2, currency): over-65 maxima from the Medsafe citalopram and escitalopram data sheets; not in the raw. | a47b1569d6f14b8e |
 | AC2 | anxiety-in-adults | orchestrator | 2026-10-14 | Safety correction (Codex round 2 R2, currency): over-65 maxima from the Medsafe citalopram and escitalopram data sheets; not in the raw. | ba50e2657dc93a08 |
 | AC2 | anxiety-in-adults | orchestrator | 2026-10-14 | Safety correction (Codex round 2 R2, currency): over-65 maxima from the Medsafe citalopram and escitalopram data sheets; not in the raw. | 4a5c4f86279468fe |
+| AC2 | contraceptive-implant | orchestrator | 2026-10-14 | Currency check (ruling 13): 4 years and 60 kg come from the Medsafe Jadelle data sheet, not the raw. | e904b73f03bf66e1 |
+| AC2 | contraceptive-implant | orchestrator | 2026-10-14 | Currency check (ruling 13): 4 years and 60 kg come from the Medsafe Jadelle data sheet, not the raw. | 2bb93c47eeafb285 |
 | AC2 | epilepsy | orchestrator | 2026-10-12 | House line (ruling 11): a seizure lasting more than 5 minutes calls for 111; not in the raw. | cf372f42d08eae25 |
 | AC2 | epilepsy | orchestrator | 2026-10-12 | House line (ruling 11): a seizure lasting more than 5 minutes calls for 111; not in the raw. | 47a129c77bd65213 |
 | AC2 | human-immunodeficiency-virus-hiv | orchestrator | 2026-10-12 | Checker limit: the raw's "cells x 106/L" lost its superscript in the scrape (10^6); the body writes 10⁶/L. Rule 10. | f1093bf8152d8400 |
