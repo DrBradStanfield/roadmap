@@ -16,3 +16,10 @@ Sonnet audit: ~/Documents/knowledge-refresh-recovery/runs/currency-batch-2.md (3
 | C10 | cardiac-drugs-and-monitoring | SGLT2 inhibitors listed as a caution in pregnancy and breastfeeding; data sheets say not used. | ACCEPT: "not used in pregnancy or while breastfeeding". |
 | C11 | hypothyroidism | Start 25 to 50 micrograms in older people or heart disease; data sheet 12.5 to 25 micrograms in heart disease, no more than 50 initially over 50 years. | ACCEPT. |
 | C12 | direct-oral-anticoagulants | Rivaroxaban stopped below CrCl 30 in one place, 15 elsewhere; data sheet: not used below 15; AF dose 15 mg once daily at CrCl 15 to 49. | ACCEPT: make consistent with the data sheet. |
+
+## Codex on the currency commit 6d4c3538 (gpt-6.1-sol, complete)
+- R1 (gout: the reworded colchicine warning dropped the data sheet's severe kidney or liver contraindication): ACCEPT, restored: "The data sheet says colchicine must not be used in severe kidney or liver disease, or with certain interacting medicines (for example clarithromycin). With milder kidney problems the dose is lowered." The NZ prophylaxis line for eGFR 10 to 30 stays (HealthPathways) and joins Brad's colchicine decision (sheet item 15).
+- R2 (data-sheet numbers rest on exceptions, not frozen evidence): ACCEPT. Data-sheet text frozen under knowledge-map-raw/refresh-2026-09-29/medsafe/ and registered in extra_raw with sha256; exceptions pruned where the checker now verifies.
+- R3 (reports and batch report stale): ACCEPT. AC4 records added; batch report regenerated.
+- R4 (no answer check for the changed cautions): ACCEPT. Two fixtures: colchicine in severe liver disease, amiodarone in pregnancy.
+- R5 (commit messages lack US-42 and a deletion statement): ACCEPT from now on.
