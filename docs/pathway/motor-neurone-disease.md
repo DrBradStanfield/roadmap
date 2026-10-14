@@ -201,7 +201,7 @@ Early referral to a speech language therapist can help with communication and sw
 
 **Your doctor may consider:**
 - Tonic water first, if cramps are mild.
-- Quinine sulphate 300 mg at night for cramps.
+- Quinine sulphate 300 mg at night for cramps. Quinine can cause rare but serious side effects, including blood problems, and is very dangerous in overdose; keep it away from children.
 - Baclofen 5 mg, two to three times daily, slowly increased to 30 mg to 80 mg daily, for twitching (fasciculations).
 - Carbamazepine 200 mg twice daily.
 - Verapamil 120 mg twice daily.

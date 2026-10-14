@@ -42,7 +42,7 @@ Confirming significant testosterone deficiency in men can be difficult, particul
   - Medications, e.g. glucocorticoids, anabolic steroids, opiates.
 - There are no agreed evidence-based clinical markers or blood tests to define androgen deficiency in men.
 - Diagnosis is based on symptoms and signs in combination with testing that shows unequivocally and consistently low serum total testosterone (less than 5 nmol/L).
-- The potential risks of long-term testosterone treatment are largely unknown, particularly relating to prostate cancer and vascular disease.
+- The potential risks of long-term testosterone treatment are largely unknown, particularly relating to prostate cancer. A large trial published in 2023, in men with low testosterone and raised heart risk, found no increase in heart attacks or strokes over about 2 years, but more atrial fibrillation, kidney injury and blood clots in the lungs.
 
 ---
 
@@ -145,8 +145,6 @@ Your doctor or specialist may consider:
 - **Testosterone implants** require a minor surgical procedure and can be used under specialist supervision.
 - **Testosterone gels.**
 
-Testosterone patches are being discontinued.
-
 ### Monitoring on testosterone therapy
 
 - An FBC every 6 to 12 months for all patients, as testosterone therapy may cause polycythaemia.
@@ -174,5 +172,5 @@ Your doctor may refer you to an endocrinologist (non-urgent) if:
 
 - Testosterone naturally falls with age, and a low result alone does not mean treatment is needed.
 - Diagnosis needs both symptoms and consistently low morning testosterone on repeat testing.
-- Testosterone treatment is started only on a specialist's recommendation, and long-term risks are largely unknown.
+- Testosterone treatment is started only on a specialist's recommendation. Long-term risks, particularly for prostate cancer, are largely unknown. A large trial published in 2023, in men with low testosterone and raised heart risk, found no increase in heart attacks or strokes over about 2 years, but more atrial fibrillation, kidney injury and blood clots in the lungs.
 - Always discuss any new symptoms or medication questions with your doctor before making changes.

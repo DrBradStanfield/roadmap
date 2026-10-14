@@ -24,7 +24,7 @@ Most people with a red eye have a relatively minor problem that rarely affects v
 - The pain is severe and constant (it stops you sleeping) and bright light is very uncomfortable.
 - You wear contact lenses and your eye is red.
 - Something has pierced or cut into the eye.
-- A chemical has got into the eye. Alkaline chemicals are worse than acids.
+- A chemical has got into the eye. Alkaline chemicals are worse than acids. Rinse the eye at once with plenty of water, then call 111.
 
 ---
 
@@ -114,6 +114,6 @@ Depending on the diagnosis, your doctor may:
 ## Key Concepts for Patients
 
 - Most red eyes are caused by minor problems, and many settle on their own.
-- A red eye with reduced vision, severe pain, sensitivity to light, contact lens wear, or an eye injury is a warning sign. Call 111 or go to the emergency department.
+- A red eye is a warning sign if your vision is reduced, there is a white or cloudy spot on the cornea, the pain is severe and constant with bright light very uncomfortable, you wear contact lenses, something has pierced or cut into the eye, or a chemical has got into it. Call 111 or go to the emergency department.
 - If the cause is unclear, your doctor may check the eye again in 24 hours.
 - Always discuss any new symptoms or medication questions with your doctor before making changes.

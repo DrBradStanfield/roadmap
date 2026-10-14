@@ -29,7 +29,7 @@ Pain can come and go and settle for several hours or days. Pain that comes and g
 If pregnancy happens with an IUD in place, the chance that it is ectopic is about 6% with a copper IUD and 50% with a levonorgestrel intrauterine system (LNG-IUS).
 
 **See your doctor if:**
-- You think you may be pregnant with an IUD in place, even without symptoms. Your doctor may arrange a same or next day ultrasound scan to rule out an ectopic pregnancy.
+- You think you may be pregnant with an IUD in place, even without symptoms. See your doctor the same day. Your doctor may arrange a same or next day ultrasound scan to rule out an ectopic pregnancy.
 - You have fever, pain, or a new vaginal discharge, which may be a pelvic infection.
 - You notice signs that your IUD may have moved or come out (see below).
 
@@ -304,7 +304,7 @@ Your doctor may seek advice or refer you if:
 - Young age and never having given birth are not reasons to avoid an IUD.
 - A copper IUD can also be used as emergency contraception.
 - IUDs do not protect against STIs.
-- If you might be pregnant with an IUD in place, see your doctor promptly. With pain, bleeding, or fainting, call 111 or go to the emergency department.
+- If you might be pregnant with an IUD in place, see your doctor the same day. With pain, bleeding, or fainting, call 111 or go to the emergency department.
 
 ---
 

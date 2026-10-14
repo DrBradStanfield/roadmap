@@ -99,7 +99,7 @@ The ENT team will arrange a hearing test before the appointment if needed.
 
 If glue ear affects both ears, there is no reported hearing loss or whānau concern, and your child does not need referral straight away, your doctor may consider:
 - Avoiding second-hand smoke. Stopping smoking in the household is encouraged and supported.
-- **Intranasal steroids**, for example fluticasone 50 micrograms into each nostril once daily for 6 weeks. These can be used safely at any age. Blow the child's nose first, and spray back, not upwards. A trial is more likely to be worthwhile if the child has large turbinates and a blocked nose, a history of allergic rhinitis, or obstructive sleep apnoea with smallish tonsils suggesting large adenoids.
+- **Intranasal steroids:** steroid nasal sprays are not recommended for glue ear on its own, and evidence of benefit for glue ear is limited. If your child also has an allergic, blocked nose, your doctor may use one (age limits apply), for example fluticasone 50 micrograms into each nostril once daily for 6 weeks. Blow the child's nose first, and spray back, not upwards.
 
 Antibiotics, nasal decongestants, oral steroids, and antihistamines are not recommended, as they have no proven benefit.
 

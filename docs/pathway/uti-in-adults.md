@@ -25,7 +25,7 @@ This pathway covers the assessment and treatment of urinary tract infections (UT
 
 **In a frail older person** with delirium (sudden confusion), a fever greater than 38º C, or rigors (shaking chills), your doctor may first rule out other causes, then treat on a positive urine dipstick and send the urine for culture.
 
-Symptoms of a kidney infection (pyelonephritis or upper UTI) are managed under a separate pathway.
+Symptoms of a kidney infection (pyelonephritis or upper UTI) are managed under a separate pathway. If you have a UTI with fever, shivering, pain in the side or back, or vomiting, see your doctor the same day. If you are very unwell, confused or faint, call 111 or go to the emergency department.
 
 ---
 
@@ -119,7 +119,7 @@ If symptoms are not routine, your doctor may follow the Recurrent UTIs in Women 
 
 ### Antibiotics for men
 
-The antibiotic options for men are the same as for women above. If a man has recurrent or persistent lower urinary tract infections, or a single episode of pyelonephritis, your doctor may request a kidney (renal tract) ultrasound.
+Your doctor may choose from the same antibiotics as for women above. Men usually need a longer course; your doctor will decide how long. If a man has recurrent or persistent lower urinary tract infections, or a single episode of pyelonephritis, your doctor may request a kidney (renal tract) ultrasound.
 
 ### UTI with blood in the urine (haematuria)
 
@@ -130,7 +130,7 @@ The antibiotic options for men are the same as for women above. If a man has rec
 ### UTI with a urinary catheter
 
 - A suspected catheter-acquired UTI is treated only if you have fever or pain, or are unwell in yourself (systemically unwell).
-- A change of catheter is not required.
+- If the catheter has been in for more than 7 days, your doctor may replace it. This must not delay antibiotics.
 - Treatment is adjusted according to susceptibility results.
 - With a catheter left in place, bacteria in the urine become almost inevitable (5% per day, 50% by 1 week, almost all by 1 month).
 - If there are no symptoms, there is no reason for concern or treatment.

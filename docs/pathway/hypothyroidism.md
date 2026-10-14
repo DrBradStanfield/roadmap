@@ -120,8 +120,10 @@ Smoking can worsen thyroid disease.
 Treatment is with **levothyroxine (thyroxine)**.
 
 **Starting dose:**
-- Healthy adult with no heart disease: 100 micrograms per day (or approximately 1.6 mcg × body weight in kg if BMI is raised)
-- Elderly or with ischaemic heart disease: start at 25–50 micrograms per day, increasing by 25 mcg every 4–8 weeks
+- Healthy adult aged 50 or under with no heart disease: 100 micrograms per day (or approximately 1.6 mcg × body weight in kg if BMI is raised)
+- Aged over 50: start at no more than 50 micrograms per day
+- Ischaemic heart disease: start at 12.5–25 micrograms per day
+- In older people or with heart disease, the dose is increased by 25 mcg every 4–8 weeks
 
 Thyroxine has a half-life of 7 days.
 

@@ -51,6 +51,8 @@ Amiodarone is mainly a Class III anti-arrhythmic drug. It prolongs the heart's r
 
 **Amiodarone is usually started by a hospital specialist (such as a cardiologist, general physician, or cardiac surgeon), or under their supervision.** If your GP starts it, they will seek specialist advice for an individual plan and discuss the possible side effects with you first. Your doctor will manage ongoing monitoring.
 
+Amiodarone is not used in people with current or past thyroid problems, or in pregnancy or while breastfeeding.
+
 ### Indications
 
 - Atrial fibrillation (AF)
@@ -164,8 +166,8 @@ Clopidogrel is also used after TIA and stroke. For heart conditions, your cardio
 
 **Cautions:**
 - Avoid premature discontinuation. Your doctor will consult your cardiologist before any stop (for a procedure, surgery, bleeding, or adverse effects).
-- There is a theoretical concern that omeprazole may reduce clopidogrel's effect, but this is not supported by the evidence to date. If long-term clopidogrel with a proton pump inhibitor (PPI) is planned, your doctor may use pantoprazole or lansoprazole instead.
-- Stopped 5 days before elective surgery, or if there is a risk of gastrointestinal bleeding, but only after consulting your cardiologist
+- Omeprazole and esomeprazole may reduce clopidogrel's effect. If you need a proton pump inhibitor (PPI) to protect your stomach, your doctor may choose a different stomach-protection medicine, such as pantoprazole.
+- Usually stopped 5 to 7 days before planned surgery, as your doctor advises, or if there is a risk of gastrointestinal bleeding, but only after consulting your cardiologist
 - Use with caution alongside NSAIDs or aspirin (increased bleeding risk)
 
 ### Adverse Effects
@@ -241,8 +243,7 @@ Perhexiline is an antianginal drug that can relieve refractory angina by improvi
 ### Contraindications, Cautions, and Adverse Effects
 
 **Contraindications:**
-- Severe kidney impairment (eGFR less than 30 mL/min)
-- Severe liver impairment
+- Kidney or liver impairment of any degree (not recommended)
 
 **Cautions:**
 - Approximately 5 to 10% of the population are slow metabolisers of perhexiline
@@ -271,8 +272,7 @@ Target level: 0.15–0.60 microgram/mL
 
 Liver function tests (LFTs) are checked:
 - At initiation
-- Monthly until a stable dose is reached
-- Then annually
+- At least monthly after that
 
 ---
 
@@ -290,8 +290,9 @@ Sotalol is a Class III anti-arrhythmic drug. It prolongs action potential durati
 ### How Your Doctor Will Use It
 
 - Before starting, your doctor will check an ECG for the QT interval, and your electrolytes and magnesium, correcting any problem first.
-- The usual starting dose is 80 mg once daily or 40 mg twice a day. If needed, it is increased gradually every 2 to 3 days to 80 to 160 mg twice a day.
-- Doses up to 640 mg a day may be used under specialist supervision for life-threatening ventricular arrhythmias.
+- The usual starting dose is 80 mg once daily or 40 mg twice a day. If needed, it is increased gradually every 2 to 3 days. For ventricular tachycardia, the usual dose is 80 to 160 mg twice a day.
+- Doses up to 480 mg a day may be used, under specialist supervision, for life-threatening ventricular arrhythmias.
+- For paroxysmal atrial fibrillation, the dose is 80 mg twice a day, and may rise to 80 mg three times a day. This dose is not exceeded. A specialist may use more for persistent atrial fibrillation.
 
 ### Contraindications and Cautions
 
@@ -343,13 +344,15 @@ Ticagrelor is an oral antiplatelet medication similar to clopidogrel but slightl
 **Contraindications:**
 - Elective surgery: stop 5 days before (consult your cardiologist first)
 - Active bleeding or high risk of bleeding
+- A previous bleed in the brain (intracranial haemorrhage)
+- Taking a strong CYP 3A4 inhibitor (e.g., ketoconazole, clarithromycin, ritonavir)
 - Moderate to severe liver impairment
 
 **Cautions:**
 - Avoid premature discontinuation, which is associated with increased risk of cardiac events. Your doctor will seek cardiology advice before any early stop.
 - Use with NSAIDs or aspirin
 - Cardiac conduction problems on ECG (second or third degree heart block)
-- Interacts with CYP 3A4 inhibitors (e.g., ketoconazole, verapamil) and can increase digoxin and ciclosporin levels
+- Interacts with other CYP 3A4 inhibitors (e.g., verapamil) and can increase digoxin and ciclosporin levels
 - Elderly patients or those weighing less than 60 kg
 
 **Adverse effects:**
@@ -534,9 +537,9 @@ Sodium glucose co-transporter 2 (SGLT2) inhibitors are one of the pillars of tre
 - Previous severe genitourinary infection
 - Ketogenic diets, because of the increased risk of ketoacidosis
 - Starting when eGFR is less than 20 mL/min (once started, it does not have to be stopped until renal replacement therapy begins)
+- Pregnancy and breastfeeding: not used in pregnancy or while breastfeeding
 
 **Cautions:**
-- Pregnancy and breastfeeding
 - Reduced kidney function: empagliflozin can be started safely when eGFR is greater than 20 mL/min. Where eGFR is less than 30 mL/min, the maximum dose of empagliflozin is 10 mg daily.
 - Type 1 diabetes, diabetes due to loss of pancreatic function, a history of ketoacidosis, or excessive alcohol use: not started without specialist approval
 - Other situations with a higher risk of ketoacidosis: insulin dose reduction (such as insulin pump failure), malnutrition or low food intake, low-carbohydrate diets or fasting, acute illness or infection, surgery or bowel preparation, and severe dehydration

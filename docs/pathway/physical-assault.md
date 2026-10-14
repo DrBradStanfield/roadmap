@@ -29,6 +29,7 @@ This pathway covers adults (aged 18 years or over) who have experienced physical
 - Someone tried to strangle you (sometimes called "choking"). Strangulation carries a high risk of serious injury and a significantly increased risk of future homicide. Your doctor will follow the non-fatal strangulation and/or suffocation pathway.
   - If someone has tried to strangle you, see a doctor the same day, even if you feel fine. If you have trouble breathing or swallowing, a changed voice, or new weakness or numbness, call 111 or go to the emergency department.
 - You are at risk of serious assault. With your consent, your doctor may notify the police and/or seek emergency refuge support.
+  - If you are in danger now, call 111 and ask for the police.
 
 **If you are thinking about suicide or self-harm,** see your doctor the same day, or call or text 1737 (free, any time). If you have a plan or feel you might act on it, call 111 or go to the emergency department. Your doctor may request an acute mental health assessment at hospital.
 

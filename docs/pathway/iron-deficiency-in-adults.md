@@ -19,11 +19,10 @@ Iron deficiency can be present with or without anaemia (haemoglobin below the lo
 ## When to Seek Urgent Medical Attention
 
 **Call 111 or go to the emergency department if:**
-- You feel unwell from blood loss, for example severe anaemia (Hb less than 60), an unstable pulse or blood pressure, or heart or breathing compromise. Hospital assessment is needed.
-- You have definite bleeding from the gut right now, including variceal bleeding.
+- You feel unwell from blood loss, for example severe anaemia (Hb less than 60 g/L), an unstable pulse or blood pressure, or heart or breathing compromise. Hospital assessment is needed.
+- You have visible, active bleeding from the gut right now, such as vomiting blood, black stools or heavy bleeding from the back passage. This includes variceal bleeding.
 
 **Tell your doctor if you have any of these red flags:**
-- Visible bleeding from the gut.
 - Symptoms of anaemia (see below).
 - Weight loss you cannot explain.
 - A lump in the abdomen or rectum. Your doctor may request an urgent specialist gut (gastroenterology) assessment.

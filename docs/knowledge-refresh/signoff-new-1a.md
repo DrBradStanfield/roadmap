@@ -34,4 +34,4 @@ Safety corrections from Codex round 2 (applied 2026-10-14, 4cbf36a7):
 
 ## Sign-off
 
-AC8 sign-off (Brad): PENDING. Codex round 2: done 2026-10-12. Its accepted fixes are applied (4cbf36a7). Currency check: running.
+AC8 sign-off (Brad): PENDING. Codex round 2: done 2026-10-12. Its accepted fixes are applied (4cbf36a7). Currency check done 2026-10-14 (2941414f): domperidone caution and the Jadelle 4-year note added; the abortion regimen, the H. pylori omeprazole dose and valaciclovir for eczema herpeticum kept as current NZ practice. READY FOR AC8.

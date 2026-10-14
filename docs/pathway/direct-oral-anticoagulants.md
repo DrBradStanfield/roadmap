@@ -111,7 +111,7 @@ Your doctor will check your kidney function (creatinine clearance using the Cock
 - Then 20 mg once a day
 - **Take with food.** On an empty stomach, only about 66% of the dose is absorbed, compared with over 99% with a meal.
 
-For other uses, rivaroxaban is taken once a day.
+For other uses, rivaroxaban is taken once a day. For atrial fibrillation, the dose is 15 mg once a day if creatinine clearance is 15 to 49 mL/min.
 
 No bridging with enoxaparin is needed. Rivaroxaban can be started on its own at the time of diagnosis.
 
@@ -126,7 +126,7 @@ No bridging with enoxaparin is needed. Rivaroxaban can be started on its own at 
 
 ### Kidney Function Monitoring on Rivaroxaban
 
-Your doctor will check creatinine clearance before starting, then every 6 to 12 months during long-term treatment. Some people need more frequent checks. Rivaroxaban is stopped if kidney function falls significantly or creatinine clearance is less than 30 mL/min. Your doctor may then consider another anticoagulant, such as warfarin or enoxaparin.
+Your doctor will check creatinine clearance before starting, then every 6 to 12 months during long-term treatment. Some people need more frequent checks. Rivaroxaban is stopped if kidney function falls significantly or creatinine clearance is less than 15 mL/min. Your doctor may then consider another anticoagulant, such as warfarin or enoxaparin.
 
 ---
 

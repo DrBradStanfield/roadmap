@@ -22,12 +22,13 @@ This pathway covers skin infections in children aged 3 months to 14 years. It in
 - Seems very unwell with a skin infection, or you are very concerned about them. This may be **sepsis**, which is life-threatening and often recognised late. Sepsis needs early recognition and treatment.
 - Is unwell in themselves, including a fever of more than 38ºC, shivering, or a fast heart rate.
 - Is under 3 months old and has a skin infection.
-- Has a weakened immune system (is immunocompromised).
-- Has swelling and redness around a joint or around the eyes. This may be a joint infection or periorbital cellulitis.
+- Has swelling and redness around a joint, or swelling of the eyelids or around the eye. This may be a joint infection or periorbital cellulitis.
 - Has marked pain that seems out of proportion to how the skin looks, or an infected area that is spreading fast. This may be **necrotising fasciitis**, a medical and surgical emergency.
 - May have **eczema herpeticum** (rapidly worsening, painful eczema with fever and clustered blisters; see below).
 
 Your doctor will arrange acute hospital assessment for any of these.
+
+If your child has a skin infection and a weakened immune system (is immunocompromised), see your doctor the same day.
 
 **See a doctor or nurse the same day if a sore or red area:**
 - Is the size of a 10 cent piece or bigger.

@@ -22,6 +22,8 @@ Your doctor may arrange an **urgent** vascular surgery assessment if:
 - You have varicose veins or venous disease together with poor circulation in the arteries of the leg (peripheral arterial disease) **and** a leg ulcer.
 - An ankle brachial pressure index (ABPI) test is less than 0.5, which indicates severe arterial disease.
 
+**If a varicose vein is bleeding, lie down, raise the leg and press firmly on the bleeding point.** If it does not stop, call 111.
+
 ---
 
 ## Background
@@ -176,5 +178,5 @@ Your doctor may refer you for a vascular surgery assessment:
 - Varicose veins without symptoms or complications are harmless.
 - Leg elevation, exercise, weight management and stopping smoking are part of managing venous disease.
 - Compression hosiery can help but does not suit everyone. Your doctor will check it is safe for your circulation first.
-- Skin changes, eczema, bleeding veins or ulcers are reasons to ask your doctor about specialist assessment.
+- Skin changes, eczema, bleeding veins or ulcers are reasons to ask your doctor about specialist assessment. If a varicose vein is bleeding, lie down, raise the leg and press firmly on the bleeding point. If it does not stop, call 111.
 - Always discuss any new symptoms or treatment questions with your doctor.
