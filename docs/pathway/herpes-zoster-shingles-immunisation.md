@@ -8,9 +8,11 @@ summary: "Clinical pathway for shingles (herpes zoster) immunisation: who qualif
 
 # Herpes Zoster (Shingles) Immunisation
 
-*Source: Auckland Region HealthPathways*
+*Source: Auckland Region HealthPathways. Last reviewed: September 2024.*
 
 This pathway covers who should receive the Shingrix vaccine to prevent shingles and its complications, including who qualifies for funded vaccination.
+
+> **Always discuss your symptoms and any medication changes with your doctor.** This information is a clinical reference, not a substitute for individual medical advice.
 
 ---
 
@@ -27,29 +29,26 @@ This pathway covers who should receive the Shingrix vaccine to prevent shingles 
 
 Your doctor will take these into account when timing vaccination:
 
-- **Previous shingles:** Immunisation is recommended at least one year after a shingles episode, as natural immunity is boosted by the illness. There are no safety concerns about vaccinating sooner if needed.
-- **Ophthalmic shingles (eye involvement):** Your doctor will usually wait at least 12 months after the inflammation has fully resolved before vaccinating, as there have been reports of flares following vaccination.
-- **Pregnancy and breastfeeding:** Your doctor will seek specialist advice from the Immunisation Advisory Centre (IMAC) before giving Shingrix, as data in these settings is limited.
-- **Severely immunocompromised patients:** Your doctor will discuss optimal timing with the relevant specialist before scheduling vaccine appointments. Ideally, vaccination is given before any planned immunosuppression begins.
-- **Adjuvanted vaccines:** Shingrix contains a novel adjuvant (AS01B) to boost immune response. When given alongside other adjuvanted vaccines (such as Arexvy for RSV, or Fluad Quad influenza vaccine), there may be a stronger post-vaccination response — your doctor will let you know to expect this.
+- **Previous shingles:** Immunisation is recommended at least one year after a shingles episode, as natural immunity is boosted by the illness. There are no safety concerns about vaccinating sooner.
+- **Ophthalmic shingles (eye involvement):** Your doctor will wait at least 12 months after the inflammation has resolved before vaccinating, as there have been reports of flares of ophthalmic shingles following vaccination.
+- **Pregnancy and breastfeeding:** If Shingrix is needed, your doctor will seek advice from the Immunisation Advisory Centre (IMAC), as there is limited data for vaccination in these settings.
+- **Adjuvanted vaccines:** Shingrix contains a novel adjuvant to boost the immune response. Having 2 or more adjuvanted vaccines at the same time may cause a stronger reaction after vaccination, and your doctor will let you know to expect this. Arexvy (an RSV vaccine) contains the same adjuvant as Shingrix. Studies found no difference in immune response when the two are given together, but mild to moderate reactions such as tiredness and a sore injection site can occur more often. Fluad Quad (a non-funded influenza vaccine for people aged 65 years or older) contains a different adjuvant.
 
 ---
 
 ## Who Qualifies — Funded Vaccination
 
-The Shingrix vaccine is **funded** for:
+The Shingrix vaccine is recommended and **funded** for:
 
-- **All people aged 65 years.** The course must be started at age 65. The second dose is given two to six months later (no upper age limit for the second dose).
-- **People aged 18 years or older** (including those aged 66 or over) with any of the following conditions:
+- **People aged 65 years.**
+- **People aged 18 years or older** with any of the following conditions:
   - Before or after haematopoietic stem cell transplant or cellular therapy
   - Before or after organ transplant
   - Haematological malignancies (blood cancers)
-  - Poorly controlled HIV infection (CD4 count less than 350 cells/microlitre, or higher CD4 count but not established on effective antiretroviral therapy)
-  - Planning, receiving, or recently finished disease-modifying antirheumatic drugs (DMARDs) for polymyalgia rheumatica, systemic lupus erythematosus (SLE), or rheumatoid arthritis
-  - End-stage kidney disease (CKD stage 4 or 5, eGFR 29 or less)
+  - Poorly controlled HIV infection, meaning advanced or untreated HIV
+  - Planning or receiving disease-modifying antirheumatic drugs (DMARDs) for polymyalgia rheumatica, systemic lupus erythematosus (SLE), or rheumatoid arthritis
+  - End-stage kidney disease (CKD stage 4 or 5)
   - Primary immunodeficiency
-
-Your doctor may consider funded vaccination if you fall into any of these groups, regardless of whether you have previously had Zostavax.
 
 ---
 
@@ -57,7 +56,7 @@ Your doctor may consider funded vaccination if you fall into any of these groups
 
 Your doctor may recommend Shingrix (at your own cost) for:
 
-- People aged 50 years or older (including those aged 66 or over)
+- People aged 50 years or older
 - People aged 18 years or older with conditions that increase shingles risk, including:
   - Diabetes
   - COPD
@@ -76,12 +75,12 @@ Your doctor may recommend Shingrix (at your own cost) for:
 
 Your doctor will give Shingrix as **two doses of 0.5 mL by intramuscular injection, two to six months apart.**
 
-For immunocompromised patients, your doctor will discuss the best timing with the relevant specialist before scheduling appointments.
+For people who are severely immunocompromised, your doctor will discuss the best timing with the relevant specialist before the vaccine appointments. Ideally, vaccination is given before any planned immunosuppression begins.
 
 ---
 
 ## Patient Resources
 
 - Healthify He Puna Waiora: [Shingrix Vaccine](https://healthify.nz/medicines-a-z/s/shingrix-vaccine)
-- Health New Zealand Te Whatu Ora: [Shingles Vaccine](https://info.health.nz/immunisations/vaccines-aotearoa/shingles-vaccine)
+- Health New Zealand: [Shingles Vaccine](https://info.health.nz/immunisations/vaccines-aotearoa/shingles-vaccine)
 - HealthInfo: [Vaccinations for Adults](https://www.healthinfo.org.nz/adult-immunisations.htm)
