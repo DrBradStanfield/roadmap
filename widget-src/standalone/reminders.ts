@@ -387,7 +387,12 @@ export async function pushReminderSchedule(backend: Backend, keepalive = false):
       { op: 'update', token: optIn.token, schedule: computeCurrentReminderSchedule() },
       keepalive,
     );
-    if (res.status === 404 && !cancelledBySwitch) {
+    // A 404 is about the opt-in this push carried. If the file has moved on
+    // meanwhile (a switch saved a new token, an erase, a toggle), or a switch
+    // cancelled this token while the request was in flight, it says nothing
+    // about the current one (Codex R1, 2026-10-14).
+    if (res.status === 404 && !cancelledBySwitch
+      && safeGetItem(SWITCH_CANCELLED_KEY) !== optIn.token && sameOptIn(getReminderOptIn(), optIn)) {
       setReminderOptIn({ ...optIn, status: 'cancelled' });
       window.dispatchEvent(new Event('hr:reminders-changed'));
     }

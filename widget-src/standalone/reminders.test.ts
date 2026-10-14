@@ -778,6 +778,41 @@ describe('US-17 AC4 / US-11 AC4 — a decision made during a silent enrolment st
   });
 });
 
+describe('US-17 AC12 — a late 404 never overwrites a newer opt-in (Codex R1)', () => {
+  it('a push whose 404 lands after the file moved to a new token writes nothing', async () => {
+    let file: FileReminderOptIn | undefined = { ...ACTIVE };
+    getReminderOptIn.mockImplementation(() => file);
+    let respond!: (r: Response) => void;
+    const f = vi.fn(() => new Promise<Response>((r) => { respond = r; }));
+    vi.stubGlobal('fetch', f);
+    const { pushReminderSchedule } = await loadReminders();
+
+    const push = pushReminderSchedule('google-drive', true);
+    await Promise.resolve();
+    // Meanwhile a switch saved a new opt-in.
+    file = { ...ACTIVE, token: 'new-cap-token', provider: 'dropbox', lamport: 7 };
+    respond(new Response('{}', { status: 404 }));
+    await push;
+
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+  });
+
+  it('a 404 on a token a switch cancelled while the push was in flight writes nothing', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    let respond!: (r: Response) => void;
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((r) => { respond = r; })));
+    const { pushReminderSchedule } = await loadReminders();
+
+    const push = pushReminderSchedule('google-drive', true);
+    await Promise.resolve();
+    localStorage.setItem('hr_reminders_switch_cancelled', ACTIVE.token);
+    respond(new Response('{}', { status: 404 }));
+    await push;
+
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+  });
+});
+
 describe('US-11 AC4 — an erase clears the switch marker', () => {
   it('cancelRemindersForErase removes hr_reminders_switch_cancelled, even with no active opt-in', async () => {
     getReminderOptIn.mockReturnValue(undefined);
