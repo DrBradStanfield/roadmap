@@ -35,8 +35,14 @@
  *     date only if it is a real calendar date (a "last done" date no later
  *     than this month) and an option only if it is listed, as it does for
  *     the widget's plan.
- *   - currentSuggestions: the plan computed from the above; uploadedDocuments
- *     is always empty.
+ *   - currentSuggestions: the plan computed from the above, each card with
+ *     the description the user sees (US-15 AC31). The cards are code text;
+ *     the only record text they can print is the statin's name and dose (the
+ *     Lp(a) checklist, the switch card), so the descriptions come from the
+ *     same plan run over the medications shown here, and a card that run
+ *     lacks has none. derivedValues: the plan's own numbers and BMI category,
+ *     withheld for a known minor as plan.ts withholds them; missingInputs:
+ *     the plan's gating field names it lacks. uploadedDocuments is always empty.
  * Every other key is dropped.
  */
 import type { HealthInputs } from './types';
@@ -56,7 +62,7 @@ import {
   buildMeasurementHistory, latestFromHistory, HISTORY_CAP_PER_METRIC, ISO_DATE,
   type MeasurementHistoryMap,
 } from './measurement-history';
-import { calculateHealthResults, knownMinorOf } from './calculations';
+import { calculateHealthResults, knownMinorOf, missingPlanInputs } from './calculations';
 import { parseLocalisedNumber } from './parseNumber';
 
 /** What a client sends as the chat's context. A row carries only the fields
@@ -141,6 +147,13 @@ export function buildChatContextJson(payload: unknown): string | null {
   for (const m of [medications.statin, medications.glp1, medications.sglt2i]) {
     if (m?.dose != null && !(m.dose > 0 && m.dose <= MAX_DOSE)) m.dose = null;
   }
+  // US-15 AC31: each card's description, from the plan over the medications
+  // above, so no unlisted name or out-of-range dose reaches the prompt.
+  const descriptions = new Map(results
+    ? calculateHealthResults(parsed.data as HealthInputs, unitSystem, medications, screenings).suggestions.map(s => [s.id, s.description])
+    : []);
+  // As plan.ts: a known minor's raw numbers stay; the adult readings go (US-07 AC6).
+  const adult = results?.knownMinor ? undefined : results;
 
   const latestValues: Record<string, string> = {};
   for (const field of LONGITUDINAL_FIELDS) {
@@ -162,6 +175,17 @@ export function buildChatContextJson(payload: unknown): string | null {
     // US-07 AC6: the plan's adults-only gate applies, so every surface's model knows.
     profile: { sex: inputs.sex, age: results?.age, heightCm: inputs.heightCm, unitSystem, ...(knownMinor ? { knownMinor: true } : {}) },
     latestValues,
+    // US-15 AC31: the plan's own numbers and verdicts, so the model reports them rather than computing them.
+    ...(results ? {
+      derivedValues: {
+        bmi: results.bmi,
+        bmiCategory: adult?.bmiCategory,
+        waistToHeightRatio: results.waistToHeightRatio,
+        nonHdlCholesterol: results.nonHdlCholesterol,
+        eGFR: adult?.eGFR,
+      },
+      missingInputs: missingPlanInputs(inputs),
+    } : {}),
     // Field names only: the user HAS a value here, but it was out of range.
     // Without it the model reads the gap as "never entered".
     ...(excludedFields.length > 0 ? { excludedFields } : {}),
@@ -175,6 +199,7 @@ export function buildChatContextJson(payload: unknown): string | null {
         category: s.category,
         priority: s.priority,
         title: s.title,
+        description: descriptions.get(s.id),
       })),
     } : {}),
     uploadedDocuments: [],
