@@ -62,5 +62,13 @@
   "reason": "Safety correction (Codex R6, FOR BRAD): catheter replacement after more than 7 days (NICE NG113); not in the raw.",
   "by": "orchestrator",
   "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "osteoporosis-in-adults",
+  "match": "token \"<35 mL/min\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Zoledronic acid infusion:** optimal initial treatment is 5 mg every 18 months for 4 doses. The interval can then ...\"",
+  "reason": "Currency check (ruling 13): zoledronic acid not used below creatinine clearance 35 mL/min, from the Medsafe data sheet; not in the raw.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
  }
 ]
