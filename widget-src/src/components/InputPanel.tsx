@@ -7,7 +7,7 @@ import { DOCUMENT_TYPE_LABELS, formatDocumentDate } from '../lib/document-format
 import { openHistoryLightbox } from '../lib/roadmap-data';
 import { isLabArchiveDocument } from '../lib/archive-payloads';
 import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
-import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance } from '../lib/blood-test-cell';
+import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, type Grading } from '../lib/blood-test-cell';
 import type { ApiDocument, ApiLabValue, ApiSupplement } from '../lib/api-types';
 import { loadFromLocalStorage } from '../lib/storage';
 
@@ -191,9 +191,10 @@ interface InputPanelProps {
   /** What the plan was computed from. Null until there is a plan (no valid
    *  sex or height). */
   planBasis: PlanBasis | null;
-  /** A known minor by the validated birth info, plan or no plan: the form
-   *  withholds its adult targets, hints and colours (US-07 AC6). */
-  knownMinor: boolean;
+  /** Whom the blood tests' hints and colours grade for. Null for a known minor
+   *  by the validated birth info, plan or no plan: the form withholds its
+   *  adult targets, hints and colours (US-07 AC6). */
+  grading: Grading;
   healthDocuments?: ApiDocument[];
   onDocumentDeleted?: (docId: string) => void;
   onAutoFocusEmail?: () => void;
@@ -229,7 +230,7 @@ export function InputPanel({
   isSavingLongitudinal, fieldsSaved, hasApiResponse,
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   formStage,
-  setShowUploadModal, planBasis, knownMinor,
+  setShowUploadModal, planBasis, grading,
   healthDocuments, onDocumentDeleted, onAutoFocusEmail,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
@@ -704,6 +705,7 @@ export function InputPanel({
     return { sysVal, diaVal, latestDate };
   };
 
+  const knownMinor = grading === null;
   /** BP target text based on the plan's age; none with no plan (US-06 AC5)
    *  or for a known minor, whose plan holds no adult reading (US-07 AC6). */
   const bpTargetText = planBasis && !knownMinor ? `Target: <${bpTargetFor(planBasis.age)}/80 mmHg` : null;
@@ -942,7 +944,6 @@ export function InputPanel({
   const renderVitalsMatrix = () => (
     <section className="health-section">
       <StartingInfoVitals
-        inputs={inputs}
         vitalsHistory={vitalsHistory}
         unitSystem={unitSystem}
         onSave={onSaveBloodTestBatch}
@@ -1110,8 +1111,7 @@ export function InputPanel({
       onCorrectValue={onCorrectValue}
       onDraftValue={onDraftValue}
       isSaving={isSavingLongitudinal}
-      sex={inputs.sex}
-      knownMinor={knownMinor}
+      grading={grading}
       onUploadClick={() => setShowUploadModal?.(true)}
       hasApiResponse={hasApiResponse}
       flushRef={bloodTestFlushRef}

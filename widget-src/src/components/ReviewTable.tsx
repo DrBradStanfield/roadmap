@@ -16,7 +16,7 @@ import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, Docu
 import { labValueLabel } from '../lib/lab-value-labels';
 import { unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
-import { type CellUnit, cellHint, cellLabel, cellText, cellToSI } from '../lib/blood-test-cell';
+import { type CellUnit, type Grading, cellHint, cellLabel, cellText, cellToSI } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
@@ -72,10 +72,11 @@ interface ReviewTableProps {
   onToggleFieldUnit?: (field: string) => void;
   /** The plan's age, which sets screening eligibility (US-06 AC5). Unset with no plan or no valid birth year. */
   age?: number;
+  /** With the age, sets screening eligibility. */
   sex?: 'male' | 'female';
-  /** A known minor (US-07 AC6): the values with no adult reference hint or
-   *  status colour, as in the blood-test matrix. */
-  knownMinor?: boolean;
+  /** Whom the hints and status colours grade for; null for a known minor,
+   *  as in the blood-test matrix (US-07 AC6). */
+  grading: Grading;
   onSave: (payload: {
     values: ReviewedValue[];
     documents: DocumentToSave[];
@@ -417,7 +418,7 @@ export function ReviewTable({
   onToggleFieldUnit,
   age: userAge,
   sex,
-  knownMinor,
+  grading,
   onSave,
   onCancel,
   isSaving,
@@ -768,8 +769,7 @@ export function ReviewTable({
           metricUnitOverrides={units}
           onToggleFieldUnit={onToggleFieldUnit}
           onChooseLpaUnit={chooseLpaUnit}
-          sex={sex}
-          knownMinor={knownMinor}
+          grading={grading}
           editedDisplayValues={editedDisplayValues}
           coreCellViews={coreCellViews}
           onCellChange={updateEditedDisplayValue}
@@ -904,8 +904,7 @@ interface ReviewMatrixProps {
   metricUnitOverrides?: Partial<Record<MetricType, CellUnit>>;
   onToggleFieldUnit?: (field: string) => void;
   onChooseLpaUnit: (unit: LpaUnit) => void;
-  sex?: 'male' | 'female';
-  knownMinor?: boolean;
+  grading: Grading;
   editedDisplayValues: Record<string, string>;
   coreCellViews: ReadonlyMap<string, CoreCellView>;
   onCellChange: (cellKey: string, value: string, display?: CellUnit) => void;
@@ -915,7 +914,7 @@ interface ReviewMatrixProps {
 }
 
 function ReviewMatrix({
-  matrix, unitSystem, metricUnitOverrides, onToggleFieldUnit, onChooseLpaUnit, sex, knownMinor,
+  matrix, unitSystem, metricUnitOverrides, onToggleFieldUnit, onChooseLpaUnit, grading,
   editedDisplayValues, coreCellViews, onCellChange, onColumnDateChange, replaceChecked, onReplaceToggle,
 }: ReviewMatrixProps) {
   const scrollSync = useMatrixScrollSync(matrix.columns.length);
@@ -946,8 +945,7 @@ function ReviewMatrix({
             metricUnitOverrides={metricUnitOverrides}
             onToggleFieldUnit={onToggleFieldUnit}
             onChooseLpaUnit={onChooseLpaUnit}
-            sex={sex}
-            knownMinor={knownMinor}
+            grading={grading}
             scrollSync={scrollSync}
             editedDisplayValues={editedDisplayValues}
             coreCellViews={coreCellViews}
@@ -971,8 +969,7 @@ function ReviewMatrix({
                 metricUnitOverrides={metricUnitOverrides}
                 onToggleFieldUnit={onToggleFieldUnit}
                 onChooseLpaUnit={onChooseLpaUnit}
-                sex={sex}
-                knownMinor={knownMinor}
+                grading={grading}
                 scrollSync={scrollSync}
                 editedDisplayValues={editedDisplayValues}
                 coreCellViews={coreCellViews}
@@ -1030,8 +1027,7 @@ interface MatrixRowViewProps {
   metricUnitOverrides?: Partial<Record<MetricType, CellUnit>>;
   onToggleFieldUnit?: (field: string) => void;
   onChooseLpaUnit: (unit: LpaUnit) => void;
-  sex?: 'male' | 'female';
-  knownMinor?: boolean;
+  grading: Grading;
   scrollSync: ReturnType<typeof useMatrixScrollSync>;
   editedDisplayValues: Record<string, string>;
   coreCellViews: ReadonlyMap<string, CoreCellView>;
@@ -1042,11 +1038,11 @@ interface MatrixRowViewProps {
 
 function MatrixRowView({
   row, rowIdx, columns, cells, unitSystem, metricUnitOverrides, onToggleFieldUnit, onChooseLpaUnit,
-  sex, knownMinor, scrollSync, editedDisplayValues, coreCellViews, onCellChange, replaceChecked, onReplaceToggle,
+  grading, scrollSync, editedDisplayValues, coreCellViews, onCellChange, replaceChecked, onReplaceToggle,
 }: MatrixRowViewProps) {
   const rowKey = matrixRowKey(row);
   const rowDisplay = row.kind === 'core' ? (metricUnitOverrides?.[row.metric] ?? unitSystem) : unitSystem;
-  const { label, unitLabel, refLabel } = describeRow(row, rowDisplay, sex, knownMinor);
+  const { label, unitLabel, refLabel } = describeRow(row, rowDisplay, grading);
   const toggleUnit = row.kind === 'core' && onToggleFieldUnit
     ? () => onToggleFieldUnit(METRIC_TO_FIELD[row.metric])
     : undefined;
@@ -1072,8 +1068,7 @@ function MatrixRowView({
                 cellKey={cellKey}
                 row={row}
                 unitSystem={rowDisplay}
-                sex={sex}
-                graded={!knownMinor}
+                grading={grading}
                 editedValue={coreCellViews.get(cellKey)?.text ?? editedDisplayValues[cellKey] ?? ''}
                 valueSI={coreCellViews.get(cellKey)?.valueSI}
                 onCellChange={onCellChange}
@@ -1093,14 +1088,14 @@ function MatrixRowView({
  *  METRIC_LABELS / getDisplayLabel; additional rows use the LLM-extracted
  *  unit and (if present) a reference range. Caller passes the resolved
  *  display unit (already honours per-metric overrides). */
-function describeRow(row: MatrixRow, display: CellUnit, sex?: 'male' | 'female', knownMinor?: boolean): { label: string; unitLabel: string | null; refLabel: string | null } {
+function describeRow(row: MatrixRow, display: CellUnit, grading: Grading): { label: string; unitLabel: string | null; refLabel: string | null } {
   if (row.kind === 'core') {
     const label = METRIC_LABELS[row.metric] || row.metric;
     const unitLabel = UNIT_DEFS[row.metric] ? cellLabel(row.metric, display) : null;
     // Same reference-range hint InputPanel + BloodTestTimeline show so
     // users have the same context when reviewing as when reading the
     // live timeline, and withheld from a known minor there too (US-07 AC6).
-    const refLabel = knownMinor ? null : cellHint(row.metric, display, sex);
+    const refLabel = cellHint(row.metric, display, grading);
     return { label, unitLabel, refLabel };
   }
   const refLabel = (row.referenceLow != null || row.referenceHigh != null)
@@ -1114,9 +1109,7 @@ interface MatrixCellViewProps {
   cellKey: string;
   row: MatrixRow;
   unitSystem: CellUnit;
-  sex?: 'male' | 'female';
-  /** False for a known minor: no status colour (US-07 AC6). */
-  graded: boolean;
+  grading: Grading;
   editedValue: string;
   /** The value a core cell saves, which its colour grades (US-13 AC4). */
   valueSI?: number;
@@ -1126,7 +1119,7 @@ interface MatrixCellViewProps {
 }
 
 const MatrixCellView = memo(function MatrixCellView({
-  cell, cellKey, row, unitSystem, sex, graded, editedValue, valueSI, onCellChange, replace, onReplaceToggle,
+  cell, cellKey, row, unitSystem, grading, editedValue, valueSI, onCellChange, replace, onReplaceToggle,
 }: MatrixCellViewProps) {
   if (cell.state === 'empty') {
     // NBSP keeps :empty from matching — the theme has a global
@@ -1150,11 +1143,10 @@ const MatrixCellView = memo(function MatrixCellView({
     <NumericInputCell
       metric={matrixRowKey(row) as MetricType}
       display={unitSystem}
-      sex={sex}
+      grading={grading}
       value={editedValue}
       valueSI={valueSI}
       onChange={handleChange}
-      showStatusPreview={graded}
       wrapperClass={`bt-cell-input bt-cell-review${lowConfClass}`}
     />
   ) : (
@@ -1162,7 +1154,6 @@ const MatrixCellView = memo(function MatrixCellView({
       value={editedValue}
       onChange={handleChange}
       wrapperClass="bt-cell-input bt-cell-review"
-      showStatusPreview={false}
       ariaLabel={`${matrixRowKey(row)} value`}
     />
   );

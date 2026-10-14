@@ -10,7 +10,8 @@
  * `buildChatContextJson` is the chat's anti-injection boundary. No client
  * text reaches the prompt unless it is allowlisted or bounded:
  *   - profile.sex, profile.heightCm: the input schema (enum; ranged number);
- *     profile.age is computed; profile.unitSystem is 'si' or 'conventional'.
+ *     profile.age is computed; profile.knownMinor is computed, true or absent
+ *     (US-07 AC6); profile.unitSystem is 'si' or 'conventional'.
  *   - latestValues: the longitudinal fields that pass the input schema, or
  *     the newest history point, printed from numbers.
  *   - excludedFields: input-schema field names only, never their values.

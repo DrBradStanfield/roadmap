@@ -7,6 +7,7 @@ import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocument
 import { trackProductEvent } from '../lib/server-api';
 import type { LabImportResult, PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
 import { labUnitRefusalLine } from '../lib/lab-value-labels';
+import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
@@ -58,8 +59,8 @@ interface UploadModalProps {
   /** The plan's age, for the review's screening eligibility (US-06 AC5). */
   age?: number;
   sex?: 'male' | 'female';
-  /** A known minor: the review withholds adult hints and colours (US-07 AC6). */
-  knownMinor?: boolean;
+  /** Whom the review's hints and colours grade for; null for a known minor (US-07 AC6). */
+  grading: Grading;
   /** Visibility does not end the session or discard review drafts. */
   open: boolean;
   onOpen: () => void;
@@ -229,7 +230,7 @@ function FileNotices({ notices }: { notices: FileNotice[] }) {
   );
 }
 
-export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, age, sex, knownMinor, open, onOpen }: UploadModalProps) {
+export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, age, sex, grading, open, onOpen }: UploadModalProps) {
   const [state, setState] = useState<ModalState>('select');
   const [files, setFiles] = useState<File[]>([]);
   // Connect-first gate (decision record: encourage, don't block). 'device-only'
@@ -837,7 +838,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               onToggleFieldUnit={onToggleFieldUnit}
               age={age}
               sex={sex}
-              knownMinor={knownMinor}
+              grading={grading}
               onSave={handleSave}
               onCancel={handleDiscard}
               isSaving={isSaving}

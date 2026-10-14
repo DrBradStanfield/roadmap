@@ -47,7 +47,7 @@ export interface HealthResults {
   lpa?: number;               // nmol/L (passthrough from inputs)
   hba1c?: number;             // mmol/mol IFCC (passthrough from inputs)
   age?: number;
-  /** US-07 AC6: a known age under 18 (`isKnownMinor`). The plan is the
+  /** US-07 AC6: a known age under 18 (`knownMinorOf`). The plan is the
    *  adults-only card, and every surface withholds its adult readings. */
   knownMinor?: true;
   suggestions: Suggestion[];

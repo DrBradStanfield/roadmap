@@ -54,7 +54,6 @@ import { DraftDateCell } from './DraftDateCell';
 import { UnitChip } from './UnitChip';
 
 interface StartingInfoVitalsProps {
-  inputs: Partial<HealthInputs>;
   /** Full per-metric history (filtered to vitals metrics). Latest-per-metric
    *  is insufficient — the matrix needs the timeline. */
   vitalsHistory: ApiMeasurement[];
@@ -264,11 +263,10 @@ export function vitalsCellsOf(
 // ── Component ───────────────────────────────────────────────────────────
 
 export function StartingInfoVitals({
-  inputs, vitalsHistory, unitSystem, onSave, onCorrectValue,
+  vitalsHistory, unitSystem, onSave, onCorrectValue,
   onDraftValue, formStage, plan, knownMinor, onAutoFocusEmail, unitOverrides, onToggleFieldUnit,
   prefillRef, flushRef,
 }: StartingInfoVitalsProps) {
-  const sex = inputs.sex;
   // The plan's systolic target; none, and no BP colours, with no plan. A known
   // minor gets no adult weight or BP target or colour (US-07 AC6); the waist
   // line, half the height, is also used in children, so it stays.
@@ -549,7 +547,6 @@ export function StartingInfoVitals({
                             key={cellId}
                             metric={row.metric}
                             display={display}
-                            sex={sex}
                             value={shownText(null, row.metric)}
                             externalError={clashes(row.metric) || taken(row.metric) ? SAME_SLOT : refusal([null, row.metric])}
                             placeholder="—"
@@ -591,7 +588,6 @@ export function StartingInfoVitals({
                           key={cellId}
                           metric={row.metric}
                           display={display}
-                          sex={sex}
                           value={v}
                           rowId={id}
                           status={simpleStatus(row.metric, v, ibwKg, planHeightCm)}

@@ -646,10 +646,11 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
 
   // US-09 AC19: the guest has their PDF (or, on the gate-skipped page, signed up
   // for reminders, which marks the record captured). Never before, so the storage
-  // button's pulse never competes with the email box.
+  // button's pulse never competes with the email box. A known minor has no email
+  // box: their header Save as PDF counts, as on the gate-skipped page (US-07 AC6).
   const { state: emailState, gateSkipped } = guestEmailHook;
   // Pages has no email gate or funnel, even for a record captured on Shopify.
-  const attention = SHOPIFY_SURFACE && (emailState === 'captured' || emailState === 'reminded' || (!!gateSkipped && pdfOpened));
+  const attention = SHOPIFY_SURFACE && (emailState === 'captured' || emailState === 'reminded' || ((!!gateSkipped || !!results?.knownMinor) && pdfOpened));
 
   if (!isValid || !results) {
     return (

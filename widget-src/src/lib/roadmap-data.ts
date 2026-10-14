@@ -7,7 +7,7 @@ import {
   isLabUnitWord,
   labUnitTaken,
   type ReminderScheduleItem,
-  isKnownMinor,
+  knownMinorOf,
   resolveLabCatalogEntry,
 } from '@roadmap/health-core';
 import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus } from '../storage/roadmap-store';
@@ -104,8 +104,7 @@ export function computeCurrentReminderSchedule(): ReminderScheduleItem[] {
 /** The record holds a known age under 18 (US-07 AC6): reminders are never
  *  enrolled or pushed, since the server holds no age to stop them. */
 export function isKnownMinorNow(): boolean {
-  const profile = store?.getPrefillInputs();
-  return isKnownMinor(profile?.birthYear, profile?.birthMonth);
+  return knownMinorOf(store?.getPrefillInputs() ?? {});
 }
 
 // --- reads ---

@@ -26,6 +26,7 @@ const colonoscopy: FileResult[] = [{
 function screeningBox(age: number | undefined) {
   const { container } = render(
     <ReviewTable
+      grading={{}}
       results={colonoscopy}
       history={{ bloodTests: [], labValues: [], documents: [] }}
       unitSystem="si"
@@ -65,7 +66,7 @@ describe('ReviewTable — a known minor sees values with no adult hint or colour
   function ldlRow(knownMinor: boolean) {
     const { container } = render(
       <ReviewTable results={ldlFile} history={{ bloodTests: [], labValues: [], documents: [] }} unitSystem="si"
-        sex="male" knownMinor={knownMinor} onSave={() => {}} onCancel={() => {}} isSaving={false} error={null} />,
+        sex="male" grading={knownMinor ? null : { sex: 'male' }} onSave={() => {}} onCancel={() => {}} isSaving={false} error={null} />,
     );
     const row = container.querySelector('.review-matrix .bt-row:not(.bt-header-row)')!;
     const colours = [...row.querySelectorAll('.bt-status-tick')].map(t => t.className.replace('bt-status-tick ', ''))

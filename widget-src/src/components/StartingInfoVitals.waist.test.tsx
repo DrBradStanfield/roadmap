@@ -20,7 +20,7 @@ function waistRow(cm: number, unit: UnitSystem) {
     id: 'w1', metricType: 'waist', value: cm, recordedAt: '2026-09-01T00:00:00.000Z', createdAt: '2026-09-01T00:00:00.000Z', status: 'active',
   }];
   const view = render(
-    <StartingInfoVitals inputs={{ sex: 'male', heightCm: 178 }} vitalsHistory={history} unitSystem={unit}
+    <StartingInfoVitals vitalsHistory={history} unitSystem={unit}
       onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={() => {}} formStage={3}
       plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}}/>,
   );

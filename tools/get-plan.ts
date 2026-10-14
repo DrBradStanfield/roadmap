@@ -33,6 +33,7 @@ import {
   currentValues,
   dueSplit,
   PlanError,
+  planPayload,
   printable,
   renderJson,
   SCHEMA_URL,
@@ -79,10 +80,10 @@ function profileLine(plan: Plan): string {
   bits.push(plan.inputs.sex === 'female' ? 'female' : 'male');
   const height = FIELD_METRIC_MAP.heightCm;
   bits.push(`${formatDisplayValue(height, plan.results.heightCm, plan.unitSystem)}${getDisplayLabel(height, plan.unitSystem)}`);
-  // US-07 AC6: a known minor's BMI prints as a number, with no adult reading.
-  const adult = !plan.results.knownMinor;
-  if (plan.results.bmi !== undefined) bits.push(`BMI ${plan.results.bmi}${adult && plan.results.bmiCategory ? ` (${plan.results.bmiCategory})` : ''}`);
-  if (adult && plan.results.eGFR !== undefined) bits.push(`eGFR ${plan.results.eGFR}`);
+  // The adult readings as the payload gives them: null for a known minor (US-07 AC6).
+  const { bmiCategory, eGFR } = planPayload(plan).profile;
+  if (plan.results.bmi !== undefined) bits.push(`BMI ${plan.results.bmi}${bmiCategory ? ` (${bmiCategory})` : ''}`);
+  if (eGFR !== null) bits.push(`eGFR ${eGFR}`);
   return bits.join(' · ');
 }
 

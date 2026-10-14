@@ -177,6 +177,14 @@ export function weightMedIntro(bmi: number, reasons: string[]): string {
 }
 
 /**
+ * Whether the plan shows medicine cards (US-07 AC6): only for a known age of
+ * 18 or over. The plan and the form's medication sections both read this.
+ */
+export function medicinesShown(results: Pick<HealthResults, 'age' | 'knownMinor'>): boolean {
+  return results.age !== undefined && !results.knownMinor;
+}
+
+/**
  * Generate personalized health suggestions based on inputs and calculated results.
  *
  * All input values and thresholds are in SI canonical units.
@@ -392,7 +400,7 @@ export function generateSuggestions(
   // When medications is {} (no statin decision), show both standalone cards and cascade.
   // With no birth year the cascade is withheld (US-07 AC6), so nothing is absorbed.
   const statinStatusRecorded = medications?.statin?.drug !== undefined;
-  const lipidMedCascadeActive = results.age !== undefined && statinStatusRecorded && (lipidMarker?.elevated ?? false);
+  const lipidMedCascadeActive = medicinesShown(results) && statinStatusRecorded && (lipidMarker?.elevated ?? false);
   let hasElevatedAtherogenicSuggestion = false;
 
   // ApoB (top of hierarchy — always shown when available)
@@ -1084,20 +1092,17 @@ export function generateSuggestions(
 
   // Medicine cards need a known age of 18 or over (US-07 AC6). With no birth
   // year they give way to one card, where the first of them stood.
-  const firstMedicine = suggestions.findIndex((s) => s.category === 'medication');
-  if (results.age === undefined && firstMedicine !== -1) {
-    const addBirthYear: Suggestion = {
-      id: 'add-birth-year',
-      category: 'general',
-      priority: 'info',
-      title: 'Add your birth year',
-      description: 'Medicine suggestions need your age. Add your birth year to see them.',
-    };
-    const after = suggestions.slice(firstMedicine).filter((s) => s.category !== 'medication');
-    return withEvidence([...suggestions.slice(0, firstMedicine), addBirthYear, ...after]);
-  }
-
-  return withEvidence(suggestions);
+  const firstMedicine = medicinesShown(results) ? -1 : suggestions.findIndex((s) => s.category === 'medication');
+  if (firstMedicine === -1) return withEvidence(suggestions);
+  const kept = suggestions.filter((s) => s.category !== 'medication');
+  kept.splice(firstMedicine, 0, {
+    id: 'add-birth-year',
+    category: 'general',
+    priority: 'info',
+    title: 'Add your birth year',
+    description: 'Medicine suggestions need your age. Add your birth year to see them.',
+  });
+  return withEvidence(kept);
 }
 
 /** Attach clinical evidence (reason, guidelines, references) from evidence.ts. */

@@ -65,7 +65,7 @@ function matrix(rows: ApiMeasurement[] = [typedRow()], unitSystem: UnitSystem = 
   const page = (recorded: ApiMeasurement[]) => (
     <BloodTestTimeline bloodTestHistory={recorded} unitSystem={unitSystem} unitOverrides={{}} onToggleFieldUnit={() => {}}
       onSaveBatch={onSaveBatch} onCorrectValue={onCorrectValue} onDraftValue={() => {}}
-      isSaving={false} hasApiResponse prefillRef={prefillRef}/>
+      isSaving={false} grading={{}} hasApiResponse prefillRef={prefillRef}/>
   );
   const view = render(page(rows));
   const notices = () => Array.from(view.container.querySelectorAll<HTMLElement>('.lpa-check'));

@@ -9,6 +9,7 @@ import type React from 'react';
 import type { MetricType } from '@roadmap/health-core';
 import {
   type CellUnit,
+  type Grading,
   blockBadNumericKeys,
   previewStatus,
   statusOf,
@@ -31,10 +32,9 @@ export interface NumericInputCellProps {
   wrapperClass: string;
   /** Inner input class. Defaults to "bt-input". */
   inputClass?: string;
-  /** Omit `sex` to suppress the live preview entirely. Pass sex to enable
-   *  computing status from the typed value. */
-  sex?: 'male' | 'female';
-  showStatusPreview?: boolean;
+  /** Whom the live status preview grades the value for. Omit it, or pass
+   *  null (a known minor, US-07 AC6), for no preview. */
+  grading?: Grading;
   active?: boolean;
   autoFocus?: boolean;
   disabled?: boolean;
@@ -52,15 +52,15 @@ export interface NumericInputCellProps {
 export function NumericInputCell({
   metric, display, value, valueSI, onChange,
   wrapperClass, inputClass = 'bt-input',
-  sex, showStatusPreview = true,
+  grading,
   active, autoFocus, disabled, placeholder, ariaLabel, externalError,
   onFocus, onBlur, onKeyDown = blockBadNumericKeys, inputRef,
 }: NumericInputCellProps) {
   const validationError = metric && display ? validateTypedValue(metric, value, display).error : null;
   const error = externalError ?? validationError;
-  const status = !showStatusPreview || error || !metric || !display
+  const status = !grading || error || !metric || !display
     ? null
-    : valueSI !== undefined ? statusOf(metric, valueSI, sex) : previewStatus(metric, value, display, sex);
+    : valueSI !== undefined ? statusOf(metric, valueSI, grading) : previewStatus(metric, value, display, grading);
   return (
     <div className={`bt-cell-value ${wrapperClass}`}>
       <input
