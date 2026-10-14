@@ -249,7 +249,7 @@ const NOT_OURS = 'does not match these arguments on this connection, or is not o
 /** The user's own words, quoted in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, go ahead';
 const QUOTE_APPROVAL = (name: string) =>
-  `If the user has not yet answered the proposal in their own words, show it to them and end your turn. Otherwise quote the user’s approval: call ${name} again with the same arguments, confirm set to the same receipt, and approval set to the user’s own words approving this change, quoted from their message. Nothing was written.`;
+  `This confirm carries no approval. The second ${name} call writes with the same arguments, the same receipt and approval: what the user said when they agreed to this change. Until the user agrees there is no second call. Nothing was written.`;
 import { WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 
 const at = (seconds: number) => new Date(Date.parse(NOW) + seconds * 1000).toISOString();
@@ -301,16 +301,17 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     const proposed = await callToolAt(access, 'correct_value', FIX, NOW);
     expect(proposed.isError).toBe(false);
     expect(proposed.text).toMatch(/^PROPOSAL — nothing written yet\./);
-    expect(proposed.text).toContain('WAIT for their own yes, in their own words');
-    // A bare "yes" quoted alone was blocked live by ChatGPT's safety layer (2026-10-07); an approval naming the change passed.
-    expect(proposed.text).toContain('not a bare “yes”');
+    expect(proposed.text).toContain('This proposal is for the user to review.');
+    // US-36 (2026-10-14): the proposal describes the protocol; it never names a client's safety check or coaches the user's reply
+    // ("Suspicious Instruction", live 2026-10-12). The bare-"yes" advice lives in the reviewer notes, not in agent-facing text.
+    expect(proposed.text).not.toMatch(/safety|bare|own yes|own words|WAIT/i);
     const data = OUTPUTS.correct_value.parse(proposed.structured);
     expect(data).toMatchObject({ proposal: true, correctsId: LDL_ID, value: 2.8, confirmFrom: at(PROPOSAL_NBF_SECONDS) });
     const receipt = data.confirm!;
     // UUID-shaped: ChatGPT read the old 400-character sealed blob as a disguised payload and blocked the confirm (2026-10-07).
     expect(receipt).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     expect(proposed.text).toContain(`confirm: ${receipt}`);
-    expect(proposed.text).toContain('approval set to the user’s own words approving it, quoted exactly');
+    expect(proposed.text).toContain('approval set to what the user said when they agreed to it');
     expect(storedRecord().measurements).toHaveLength(1);
     expect(storedRecord().measurements[0].status).toBe('active');
 
@@ -380,7 +381,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     const long = 'Yes '.repeat(51);
     const tooLong = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: long }, at(11));
     expect(tooLong.isError).toBe(true);
-    expect(tooLong.text).toBe('approval is at most 200 characters: quote only the user’s own words approving this change. Nothing was written.');
+    expect(tooLong.text).toBe('approval is at most 200 characters: what the user said when they agreed to this change. Nothing was written.');
     const notText = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: 5 }, at(11));
     expect(notText.text).toBe(QUOTE_APPROVAL('correct_value'));
     // "Not valid yet", not "not ours": the MAC matched with these words, so they are outside the identity.

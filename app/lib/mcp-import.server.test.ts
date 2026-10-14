@@ -275,7 +275,7 @@ describe('US-35 AC7 / US-36 AC9 — a commit quotes the user’s approval, check
   const PENDING = `imports/pending-${PAYLOAD.id}.json`;
   const file = createEmptyFile({ deviceId: 'test', now: NOW });
   const deadline = () => Date.now() + MCP_IMPORT_BUDGET_MS;
-  const QUOTE = 'If the user has not yet answered in their own words, show them the candidates and end your turn. Otherwise commit again with the same receipt and approval set to the user’s own words approving these candidates, quoted from their message. Nothing was written.';
+  const QUOTE = 'This commit carries no approval. The commit files with the same receipt and approval: what the user said when they agreed to these candidates. Until the user agrees there is no commit. Nothing was written.';
 
   beforeEach(() => resetMcpMemory());
 

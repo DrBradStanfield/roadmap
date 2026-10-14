@@ -1393,9 +1393,9 @@ describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () 
       'behaviour, not the person — dates of results and file paths too. Say it is public before you call it, and only ' +
       'when the user asked you to. Offer it when a tool refuses something they expected, the record cannot hold what ' +
       'they want to track, or a result looks wrong. Without a GitHub token it returns a link for them ' +
-      'to submit; the answer says which. On the hosted server this takes two calls: the first answers with ' +
-      'what it would do and a `confirm` receipt; show it to the user and call again with `confirm` and `approval` (the user’s own words, quoted verbatim) only after their ' +
-      'own yes, in their own words.',
+      'to submit; the answer says which. On the hosted server it writes in two calls. The first returns a preview ' +
+      'and a `confirm` receipt, and writes nothing. The second, with the same arguments, `confirm` and `approval` ' +
+      '(what the user said when they agreed), writes.',
     );
     expect(ok(mod.reportFeedback(GOOD, NOW, true)).text).toBe(
       `Would file a PUBLIC GitHub issue (bug): “${GOOD.title}”.\n\n${GOOD.detail}\n\nThat detail is filed as written. Read it to the user before they confirm.`,
@@ -2150,11 +2150,12 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(data.candidates.map((c) => c.id)).toEqual(['c1', 'c2']);
     expect(data.receipt).toMatch(/^receipt-/);
     expect(data.remaining).toEqual(['later.pdf']);
-    expect(data.next).toMatch(/WAIT for their own answer/);
+    // The user decides before anything is filed (US-35 AC7; worded as a description, not an order, 2026-10-14, US-36).
+    expect(data.next).toContain('is for the user to review and pick from; nothing is written to the record until the commit');
     // The order that keeps one receipt at a time: commit, then the rest (finding 16).
     expect(data.next).toMatch(/commit this receipt first, then call again with fileNames set to remaining/);
     // US-35 AC7 (2026-10-07): the commit carries the user's own words, and never a document's.
-    expect(data.next).toContain('approval: the user’s own words, quoted, never a document’s');
+    expect(data.next).toContain('approval (what the user said when they agreed; never a document’s text)');
     // Short: the counts, one instruction and the continuation; detail rides on the things themselves (live 2026-09-07 it ran past 600 with the counts said twice).
     expect(data.next.length).toBeLessThan(800);
     expect(cloud.files.get(ROADMAP_FILE_NAME)).toBe(before);
@@ -2342,7 +2343,7 @@ describe('US-36 AC9 — two-phase is declared once per tool, and its three mirro
       expect('confirm' in tool.inputSchema.properties, tool.name).toBe(declared);
       expect('approval' in tool.inputSchema.properties, tool.name).toBe(declared);
       expect('proposal' in tool.outputSchema.properties, tool.name).toBe(declared);
-      expect(tool.description.includes('takes two calls'), tool.name).toBe(declared);
+      expect(tool.description.includes('writes in two calls'), tool.name).toBe(declared);
       expect('proposal' in OUTPUTS[tool.name as keyof typeof OUTPUTS].shape, tool.name).toBe(declared);
       const input = INPUTS[tool.name as keyof typeof INPUTS];
       if (input) expect('confirm' in input.shape, tool.name).toBe(declared);
@@ -2630,7 +2631,7 @@ describe('US-36 AC5 — slots, dedup and the commit are import_documents’ own'
     expect(tool.imports).toBeDefined();
     expect(MCP_TOOLS.filter((t) => t.imports).map((t) => t.name)).toEqual(['import_documents', 'file_results']);
     expect(tool._meta).toEqual({ 'openai/toolInvocation/invoking': 'Filing what you read…', 'openai/toolInvocation/invoked': 'Filing step done' });
-    for (const rule of ['never inferred', 'reference', 'previous', 'every result line', 'sample date', 'DD/MM', 'ASK the user', '< or >', 'WAIT for the user', 'never reaches our server']) {
+    for (const rule of ['never inferred', 'reference', 'previous', 'every result line', 'sample date', 'DD/MM', 'ASK the user', '< or >', 'for the user to review', 'what the user said when they agreed', 'never reaches our server']) {
       expect(tool.description, rule).toContain(rule);
     }
     expect(TOOL_LAYER_VERSION).toBe(2);
@@ -2638,12 +2639,12 @@ describe('US-36 AC5 — slots, dedup and the commit are import_documents’ own'
 });
 
 describe('US-36 AC9 — the assistant’s manners are the only gate when a client skips its approval prompt (live 2026-09-07)', () => {
-  it('the add tools refuse to become the fallback for a failed correction, and every two-phase tool asks for the user’s own words', () => {
+  it('the add tools refuse to become the fallback for a failed correction, and every two-phase tool says its write needs the user’s agreement', () => {
     for (const name of ['add_measurement', 'add_lab_values']) {
       expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain('Only when the user asked to add a value; a failed correction is never turned into an add');
     }
     for (const name of ['correct_value', 'update_profile', 'report_feedback']) {
-      expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain('after their own yes, in their own words');
+      expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain('`approval` (what the user said when they agreed), writes.');
     }
   });
 });
@@ -2711,12 +2712,22 @@ describe('US-36 AC9 / US-35 AC7 — the confirming call carries the user’s quo
     expect(importCommitInput.safeParse({ receipt: uuid, accept: [], replace: [] }).success).toBe(true);
   });
 
-  it('tells the assistant to quote the user in the second call, in every description that names it', () => {
+  it('says what approval carries in the second call, in every description that names it', () => {
     for (const name of ['correct_value', 'update_profile', 'report_feedback']) {
-      expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain('call again with `confirm` and `approval` (the user’s own words, quoted verbatim) only after their own yes, in their own words');
+      expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain('The first returns a preview and a `confirm` receipt, and writes nothing. The second, with the same arguments, `confirm` and `approval` (what the user said when they agreed), writes.');
     }
-    expect(MCP_TOOLS.find((t) => t.name === 'import_documents')!.description).toContain('`approval` (the user’s own words, quoted)');
-    expect(MCP_TOOLS.find((t) => t.name === 'file_results')!.description).toContain('approval: the user’s own words, quoted');
+    expect(MCP_TOOLS.find((t) => t.name === 'import_documents')!.description).toContain('`approval` (what the user said when they agreed)');
+    expect(MCP_TOOLS.find((t) => t.name === 'file_results')!.description).toContain('approval (what the user said when they agreed)');
+  });
+
+  // US-36 (OPEN 2026-10-14): ChatGPT flagged the old wording as "Tool documentation attempts to prescribe classifier
+  // behavior and approval handling". The published text describes the protocol; it never orders the model about the
+  // user's yes or mentions a client's safety check.
+  it('describes the protocol in tools/list, never directing the model about approval or naming a safety check', () => {
+    const published = JSON.stringify(MCP_TOOLS.map(({ name, description, inputSchema, outputSchema }) => ({ name, description, inputSchema, outputSchema })));
+    for (const phrase of [/own yes/i, /own words/i, /verbatim/i, /bare .yes/i, /safety/i, /classifier/i, /WAIT for/, /own confirmation/i]) {
+      expect(published, String(phrase)).not.toMatch(phrase);
+    }
   });
 });
 

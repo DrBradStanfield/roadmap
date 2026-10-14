@@ -53,10 +53,10 @@ export const INSTRUCTIONS =
   'value is permanent and needs the value you expect to find, so read the record first and correct only what ' +
   'the user asked you to. The plan from get_plan is educational, not medical advice, and its hedged wording ' +
   'and citations are calibrated — pass them on as written. import_documents reads lab files from the Dropbox folder and ' +
-  'writes nothing to the record until its commit, which needs the user’s own confirmation of what it found, quoted as approval; a file dropped into the chat ' +
+  'writes nothing to the record until its commit, which carries approval: what the user said when they agreed; a file dropped into the chat ' +
   'is read by you and filed through file_results the same way. correct_value, update_profile and report_feedback are ' +
-  'permanent, so here they take two calls: the first answers with a confirm receipt, and only the second, after the user’s ' +
-  'own yes and carrying their words as approval, does it.' + SI_NOTE + OPEN_SOURCE_NOTE;
+  'permanent, so here they take two calls: the first returns a preview and a confirm receipt and writes nothing; the ' +
+  'second, with confirm and approval, writes.' + SI_NOTE + OPEN_SOURCE_NOTE;
 
 /**
  * A correction fixes a recent mistake. A result from three years ago is
@@ -361,9 +361,9 @@ function withProposal(token: AccessPayload, name: string, args: Record<string, u
   const { receipt: confirm, notBefore: confirmFrom } = issueProposal(callIdentity(name, args), hash(connectionKey(token)), audienceFor(token.clientId), Date.parse(now));
   const text =
     `PROPOSAL — nothing written yet. ${answer.text}\n\n` +
-    `Show this to the user and WAIT for their own yes, in their own words; ask them to answer with a short sentence, not a bare “yes”, for example: Reply “Yes, apply this change” to go ahead (a client’s safety check may block a write approved by a bare “yes”); a client setting that skips its approval prompt is not their yes. ` +
-    `Then call ${name} again with the same arguments, confirm set to the receipt below, and approval set to the user’s own words approving it, quoted exactly; ` +
-    `it is valid from ${confirmFrom} for ${STEP_WINDOWS.proposal.ttlSeconds / 60} minutes and works once.\nconfirm: ${confirm}`;
+    `This proposal is for the user to review. The write is a second ${name} call with the same arguments, confirm set to the receipt below, ` +
+    `and approval set to what the user said when they agreed to it. ` +
+    `The receipt is valid from ${confirmFrom} for ${STEP_WINDOWS.proposal.ttlSeconds / 60} minutes and works once.\nconfirm: ${confirm}`;
   return { text, isError: false, structured: { ...(answer.structured as Record<string, unknown>), proposal: true, confirm, confirmFrom } };
 }
 
@@ -401,10 +401,10 @@ function checkConfirm(token: AccessPayload, name: string, args: Record<string, u
   // After the window checks, so a chained call is told to wait rather than to quote; before the claim, so a
   // missing quote spends no receipt and, like every refusal here, costs nothing.
   if (!approval?.trim()) {
-    return `If the user has not yet answered the proposal in their own words, show it to them and end your turn. Otherwise quote the user’s approval: call ${name} again with the same arguments, confirm set to the same receipt, and approval set to the user’s own words approving this change, quoted from their message. Nothing was written.`;
+    return `This confirm carries no approval. The second ${name} call writes with the same arguments, the same receipt and approval: what the user said when they agreed to this change. Until the user agrees there is no second call. Nothing was written.`;
   }
   if (approval.length > MAX_APPROVAL_LENGTH) {
-    return `approval is at most ${MAX_APPROVAL_LENGTH} characters: quote only the user’s own words approving this change. Nothing was written.`;
+    return `approval is at most ${MAX_APPROVAL_LENGTH} characters: what the user said when they agreed to this change. Nothing was written.`;
   }
   if (!claimProposal(confirm, conn, ttlSeconds * 1000, nowMs)) {
     return `That confirm receipt has already been used. Nothing was written. If the user wants another change, call ${name} again without confirm.`;

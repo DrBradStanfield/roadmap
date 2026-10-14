@@ -1838,7 +1838,7 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     expect(data.route).toBe('assistant');
     expect(data.candidates.map((c) => [c.id, c.metric, c.printedName, c.slot.state])).toEqual([['c1', 'ldl', 'LDL Cholesterol', 'free'], ['c2', 'ferritin', 'Ferritin', 'free']]);
     expect(data.candidates[0].value).toBeCloseTo(2.586, 2);
-    expect(data.next).toContain('call file_results with commit');
+    expect(data.next).toContain('The file_results commit carries the receipt');
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
     expect(pendingFiles()).toHaveLength(1);
     expect(extracted).toEqual([]); // no model, so no file quota and no machine cap spent
@@ -2004,7 +2004,10 @@ describe('US-32 AC29 — the counter records why a call was refused', () => {
     ]);
     expect(JSON.stringify(vi.mocked(recordServerEvent).mock.calls)).not.toMatch(/Tuesday|Yes please/);
     // Told at connect too: the second call carries the user's words.
-    expect(INSTRUCTIONS).toContain('only the second, after the user’s own yes and carrying their words as approval, does it');
+    expect(INSTRUCTIONS).toContain('the first returns a preview and a confirm receipt and writes nothing; the second, with confirm and approval, writes.');
+    expect(INSTRUCTIONS).toContain('its commit, which carries approval: what the user said when they agreed');
+    // US-36 (2026-10-14): described, not directed, and no client safety check named.
+    expect(INSTRUCTIONS).not.toMatch(/own yes|own words|safety|classifier|bare/i);
   });
 
   it('a correction older than ninety days is filed as too-old', async () => {
