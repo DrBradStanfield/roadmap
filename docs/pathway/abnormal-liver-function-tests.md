@@ -22,7 +22,9 @@ This pathway covers abnormal liver function tests (LFTs): how the pattern of res
 - New-onset fluid in the abdomen (ascites)
 - Abdominal pain
 - Confusion
-- Jaundice (yellow skin or eyes) in someone with known or suspected cirrhosis
+- Jaundice (yellow skin or eyes) in someone with known or suspected cirrhosis, together with confusion, drowsiness, vomiting blood or black stools
+
+**See your doctor the same day** if you develop new jaundice (yellow skin or eyes) and have known or suspected cirrhosis.
 
 **See your doctor the same day** if a blood test shows reduced albumin, reduced platelets, and/or increased INR alongside abnormal LFTs.
 
@@ -231,7 +233,7 @@ The pattern sections above give other reasons for an ultrasound, such as suspect
 
 ## When Specialist Referral Is Arranged
 
-**Hospital (acute liver assessment):** severe decompensated liver disease, meaning new-onset ascites, abdominal pain, confusion, or jaundice in someone with known or suspected cirrhosis. Call 111 or go to the emergency department.
+**Hospital (acute liver assessment):** severe decompensated liver disease, meaning new-onset ascites, abdominal pain, confusion, or jaundice in someone with known or suspected cirrhosis. For ascites, abdominal pain or confusion, call 111 or go to the emergency department. For new jaundice, see your doctor the same day; call 111 if it comes with confusion, drowsiness, vomiting blood or black stools.
 
 **Non-acute gastroenterology assessment** if:
 - Decompensated liver disease not requiring acute assessment (marked urgent)

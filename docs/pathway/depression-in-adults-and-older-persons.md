@@ -232,7 +232,7 @@ Your doctor will monitor for potential complications of antidepressant treatment
 - This may occur when starting or increasing a serotonergic medicine, or when taking two such medicines together.
 - Besides antidepressants, St John's wort, tramadol, pethidine, triptans, lithium, and some recreational drugs can cause it. MAOI antidepressants carry the greatest risk.
 - Symptoms include confusion, anxiety, agitation, high blood pressure, high temperature, diarrhoea, sweating, fast heart rate, tremors, overactive reflexes, or muscle stiffness. They usually start within hours to days of starting or increasing the medicine.
-- Serotonin syndrome is potentially life-threatening. If you have these symptoms, call 111 or go to the emergency department. Treatment is stopping the medication and supportive care.
+- Serotonin syndrome is potentially life-threatening. If you have a high temperature, confusion, muscle stiffness or a fast heart rate, call 111 or go to the emergency department. For milder symptoms, see your doctor the same day. Treatment is stopping the medication and supportive care.
 
 **Sexual dysfunction:**
 

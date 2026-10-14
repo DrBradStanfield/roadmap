@@ -62,5 +62,29 @@
   "reason": "Neither raw carries a review date, so the source line cannot state one.",
   "by": "orchestrator",
   "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "covid-19-therapeutics",
+  "match": "token \"4 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Remdesivir:** May be considered if Paxlovid is not suitable, after specialist assessment. Its data sheet licenses...\"",
+  "reason": "Currency correction (Codex R8): remdesivir licensed from 4 weeks of age and 3 kg, from the Medsafe data sheet; not in the raw.",
+  "by": "orchestrator",
+  "date": "2026-10-15"
+ },
+ {
+  "check": "AC2",
+  "handle": "covid-19-therapeutics",
+  "match": "token \"3 kg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Remdesivir:** May be considered if Paxlovid is not suitable, after specialist assessment. Its data sheet licenses...\"",
+  "reason": "Currency correction (Codex R8): remdesivir licensed from 4 weeks of age and 3 kg, from the Medsafe data sheet; not in the raw.",
+  "by": "orchestrator",
+  "date": "2026-10-15"
+ },
+ {
+  "check": "AC2",
+  "handle": "cirrhosis",
+  "match": "token \"4600 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Reduce salt to 80 to 120 mmol a day (4.6 to 6.9 g per day) to reduce fluid build-up\" | \"- Reduce dietary salt to 80 to 120 mmol a day (4.6 to 6.9 g per day)\"",
+  "reason": "Safety correction (adversary row 6): 80 mmol sodium is about 4.6 g salt (EASL 4.6 to 6.9 g); the raw prints 4.0.",
+  "by": "orchestrator",
+  "date": "2026-10-15"
  }
 ]

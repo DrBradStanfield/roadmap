@@ -18,9 +18,9 @@ This pathway covers transient monocular vision loss: a temporary loss of vision 
 
 ## Red Flags — Seek Urgent Medical Attention
 
-**Call 111 or go to the emergency department** if the vision loss has not come back, or if you also have face drooping, arm or leg weakness or numbness, or trouble speaking. These can be signs of a stroke.
+**Call 111 or go to the emergency department** if your vision has not fully recovered, or if you also have face drooping, arm or leg weakness or numbness, or trouble speaking. These can be signs of a stroke.
 
-If the vision loss came back fully, **see your doctor the same day**. A brief loss of vision in one eye can be a warning sign of a stroke (a transient ischaemic attack, or TIA) and needs prompt assessment.
+If your vision recovered fully, **see a doctor straight away: your doctor today, or urgent care or the emergency department after hours**. A brief loss of vision in one eye can be a warning sign of a stroke (a transient ischaemic attack, or TIA) and needs prompt assessment.
 
 Transient monocular vision loss may be an early sign of **giant cell arteritis**. See your doctor the same day, especially if you also have any of these features of giant cell arteritis:
 

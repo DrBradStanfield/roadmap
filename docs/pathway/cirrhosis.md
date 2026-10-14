@@ -25,7 +25,7 @@ Call 111 or go to the emergency department if you have cirrhosis and experience:
 - Confusion or drowsiness (possible hepatic encephalopathy)
 - Vomiting blood or black tarry stools (gastrointestinal bleeding)
 
-See your doctor the same day if you develop new jaundice (yellow skin or eyes).
+See your doctor the same day if you develop new jaundice (yellow skin or eyes). If jaundice comes with confusion, drowsiness, vomiting blood or black stools, call 111.
 
 ---
 
@@ -116,11 +116,12 @@ Some commonly prescribed medicines may harm the liver, and your doctor may stop,
 
 - Certain antibiotics (especially flucloxacillin, erythromycin, amoxicillin-clavulanate)
 - Anti-inflammatory drugs (NSAIDs)
-- Statins
 - Anticonvulsants (seizure medications)
 - Paracetamol, in high doses
 
 Paracetamol at the lower dose your doctor advises is usually the preferred pain reliever in cirrhosis. Anti-inflammatory drugs (such as ibuprofen) are usually best avoided because they can harm the kidneys and cause bleeding.
+
+Do not stop a statin without talking to your doctor. In advanced cirrhosis, your doctor may lower the dose.
 
 Check with your doctor or pharmacist before taking any over-the-counter medicines.
 
@@ -129,7 +130,7 @@ Check with your doctor or pharmacist before taking any over-the-counter medicine
 Good nutrition is central to cirrhosis management:
 
 - Eat enough, with extra protein, to preserve muscle and reduce encephalopathy risk
-- Reduce salt to 80 to 120 mmol a day (4.0 to 6.9 g per day) to reduce fluid build-up
+- Reduce salt to 80 to 120 mmol a day (4.6 to 6.9 g per day) to reduce fluid build-up
 - In decompensated cirrhosis, your doctor may suggest a nutritional supplement, taken in the evening
 - A referral to a dietitian may be helpful
 
@@ -213,11 +214,11 @@ Varices are enlarged veins that can bleed, with a high risk of death.
 
 - **Vomiting blood or passing black tarry stools is a medical emergency: call 111 or go to the emergency department**
 - An endoscopy (camera test) screens for varices at diagnosis, then at intervals your specialist sets
-- Your doctor may prescribe a beta-blocker (usually carvedilol) to treat varices, after liver specialist advice. The usual starting dose is 3.125 mg a day, increased as tolerated to lower the resting heart rate by 25%. This is an off-label use.
+- Your doctor may prescribe a beta-blocker (usually carvedilol) to treat varices, after liver specialist advice. The usual starting dose is 3.125 mg a day. Your specialist adjusts the dose while keeping your blood pressure safe. This is an off-label use.
 
 ### Ascites (Fluid in the Abdomen)
 
-- Reduce dietary salt to 80 to 120 mmol a day (4.0 to 6.9 g per day)
+- Reduce dietary salt to 80 to 120 mmol a day (4.6 to 6.9 g per day)
 - Your doctor may prescribe diuretics (water tablets) after liver specialist advice, usually spironolactone 100 mg in the morning with or without furosemide 40 mg
 - If needed, doses may rise every 2 to 4 weeks, spironolactone first, to a maximum of 400 mg spironolactone and 160 mg furosemide; kidney function and electrolytes are checked weekly before each increase
 - Weight should not reduce by more than 1 kg per day (with leg swelling) or 0.5 kg per day (without)

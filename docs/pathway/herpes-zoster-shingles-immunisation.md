@@ -45,7 +45,7 @@ The Shingrix vaccine is recommended and **funded** for:
   - Before or after haematopoietic stem cell transplant or cellular therapy
   - Before or after organ transplant
   - Haematological malignancies (blood cancers)
-  - Poorly controlled HIV infection (CD4 count less than 350 cells/microlitre, or a higher CD4 count but not established on effective antiretroviral therapy, meaning a viral load greater than 500 copies/mL or 2.7 log copies/mL)
+  - Poorly controlled HIV infection, meaning advanced or untreated HIV
   - Planning or receiving disease-modifying antirheumatic drugs (DMARDs) for polymyalgia rheumatica, systemic lupus erythematosus (SLE), or rheumatoid arthritis
   - End-stage kidney disease (CKD stage 4 or 5, eGFR 29 or less)
   - Primary immunodeficiency

@@ -24,10 +24,11 @@ With a heart murmur, these red flags need assessment in hospital.
 
 - Syncope (fainting)
 - New or recent chest pain
+- Sudden fever, shivering, or feeling very unwell (possible infective endocarditis)
 
 **See your doctor the same day if you have a heart murmur and:**
 
-- Fever, sweats, and weight loss (possible infective endocarditis). Your doctor can arrange the hospital assessment.
+- Fever, sweats, and weight loss over weeks (possible infective endocarditis). Your doctor can arrange the hospital assessment.
 - Signs or symptoms of rheumatic fever, such as painful or swollen joints, fever or a new rash. Your doctor can arrange the hospital assessment.
 
 ---

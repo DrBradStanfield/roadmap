@@ -36,7 +36,7 @@ Excess weight is common. People in larger bodies may be at increased risk of:
 - Gallbladder disease
 - Osteoarthritis
 - Sleep apnoea and breathing problems
-- Most cancers, except oesophageal and prostate cancer
+- Most cancers
 - Mental illness, such as clinical depression and anxiety
 - Body pain and difficulty with physical functioning
 - Low quality of life
@@ -131,11 +131,11 @@ Your healthcare provider may recommend:
 - Referral to a dietitian, health psychologist, or a structured exercise programme (e.g., Green Prescription)
 - Review of any medications contributing to weight gain
 
-**Anti-obesity medication** produces only modest weight loss, is not effective in the long term, and must always be used with lifestyle changes. It may be considered if:
+**The four older anti-obesity medicines** in the table below produce only modest weight loss, are not effective in the long term, and must always be used with lifestyle changes. They may be considered if:
 - Lifestyle changes (supervised diet, exercise, and behaviour change) over at least 6 months have not produced significant benefit, and
 - Your BMI is ≥30
 
-Only one weight loss medication should be used at a time. Four drugs are registered for weight loss in New Zealand:
+Only one weight loss medication should be used at a time. These four older drugs are registered for weight loss in New Zealand:
 
 | Medication | Type | Mechanism |
 |---|---|---|
@@ -144,11 +144,11 @@ Only one weight loss medication should be used at a time. Four drugs are registe
 | Orlistat (Xenical) | Oral tablet | Reduces absorption of dietary fat |
 | Phentermine (Duromine) | Oral tablet | Suppresses appetite |
 
+Your provider will review response to these four medicines monthly for the first 3 months, and continue beyond 3 months only if the medicine is well tolerated and has produced at least 5% weight loss.
+
 **Semaglutide (Wegovy) and tirzepatide (Mounjaro)** are also available as unfunded add-on treatments for obesity. They are indicated for adults aged 18 years and older with:
 - BMI above 30 kg/m², or
 - BMI above 27 kg/m² with at least one weight-related comorbidity
-
-Your provider will review response to medication monthly for the first 3 months, and continue beyond 3 months only if it is well tolerated and has produced at least 5% weight loss.
 
 **Bariatric surgery** may be considered if weight loss has not been achieved. Access in the public system is very limited, and specific criteria and exclusions apply. Private referral is another option. Your doctor can discuss whether you meet criteria and whether a referral is appropriate.
 

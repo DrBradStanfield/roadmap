@@ -195,7 +195,7 @@ If you are considering self-funded treatments, your doctor may refer you private
 **Peyronie's disease (penile curvature):**
 - For mild curvature without symptoms or impact on sexual function, observation is safe
 - No medications effectively limit pain or deviation
-- Daily vacuum pump use for 6 months can be tried but is unlikely to be effective. Traction devices are not recommended: they do not work and can cause nerve damage.
+- Daily vacuum pump use for 6 months can be tried but is unlikely to be effective. Evidence for traction devices is limited, so discuss any device with a specialist.
 - Surgery may improve the bend. If after 6 months the curvature has stabilised, is beyond 45 degrees, and is preventing intercourse, your doctor may refer you privately to a urologist to discuss surgery.
 
 ---

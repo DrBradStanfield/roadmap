@@ -132,7 +132,7 @@ Your doctor will always check visual acuity and colour vision.
 - Can cause an abnormal heart rhythm or breathing failure
 - Common in young Asian males
 
-Both need hospital assessment: call 111 or go to the emergency department. Atrial fibrillation or new heart failure with hyperthyroidism needs the same.
+Both need hospital assessment: call 111 or go to the emergency department. Rapid atrial fibrillation or new heart failure with hyperthyroidism needs the same.
 
 ---
 
@@ -206,7 +206,7 @@ For all patients with newly diagnosed hyperthyroidism (including recurrent episo
 - Severe or with marked symptoms: 15 mg twice daily plus a beta blocker
 
 **Important safety warning about agranulocytosis:**
-Carbimazole can rarely (1 in 200 to 1 in 500 patients) cause a dangerous drop in white blood cells (agranulocytosis). If you develop **fever, flu-like symptoms, sore throat, or mouth ulcers** while taking carbimazole, **stop taking it and see your doctor the same day for a blood test.** Your doctor will arrange an urgent blood count with results the same day. If your neutrophil count is less than 1 × 10⁹/L, you need hospital assessment: call 111 or go to the emergency department.
+Carbimazole can rarely (1 in 200 to 1 in 500 patients) cause a dangerous drop in white blood cells (agranulocytosis). If you develop **fever, flu-like symptoms, sore throat, or mouth ulcers** while taking carbimazole, **stop taking it and get help straight away (your doctor, or urgent care or the emergency department after hours) for a blood test.** Your doctor will arrange an urgent blood count with results the same day. If your neutrophil count is less than 1 × 10⁹/L, you need hospital assessment: call 111 or go to the emergency department.
 
 **Other carbimazole side effects:**
 - Rashes, joint pain, or gastritis (less serious)

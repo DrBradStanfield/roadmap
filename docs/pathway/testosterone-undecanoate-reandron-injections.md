@@ -42,7 +42,7 @@ Your doctor gives Reandron as a deep intramuscular injection:
 - **Administration time:** Injected slowly over 2 minutes
 - **Technique:** The Z-track method can be used to reduce pain and stop the medicine spreading into the tissue under the skin.
 - **Tip:** Reandron is thick, so warming the vial in warm water before injecting helps with delivery.
-- **Afterwards:** You are watched during and straight after each injection. Rarely, the oily medicine can reach the lungs (pulmonary oil microembolism) or cause a severe allergic reaction.
+- **Afterwards:** You are watched during and straight after each injection. Rarely, the oily medicine can reach the lungs (pulmonary oil microembolism) or cause a severe allergic reaction. If you cough, become breathless, or your throat or chest tightens during or after the injection, tell staff at once. If this happens after you leave, call 111.
 
 ---
 

@@ -161,8 +161,7 @@ Valaciclovir has advantages over aciclovir: better absorption and three-times-da
 - If immunocompromised: continue 2 days after lesions have crusted
 
 *Aciclovir:*
-- Aged 1 month to 2 years: 100 mg orally five times a day for 5 days (double dose if immunocompromised or if absorption is impaired)
-- Aged 2–18 years: 200 mg orally five times a day for 5 days (double dose if immunocompromised or if absorption is impaired)
+- Your doctor works out a child's dose by weight.
 
 > **Important note on renal impairment:** Aciclovir (also the active form of valaciclovir) is 80% cleared by the kidneys. Doses of both should be reduced in renal impairment to stop the drug building up, which can cause neurotoxicity. Your doctor will make sure you are well hydrated and watch for lethargy, confusion, agitation, and hallucinations. They will seek specialist advice on the dose if you are immunocompromised and have renal impairment.
 

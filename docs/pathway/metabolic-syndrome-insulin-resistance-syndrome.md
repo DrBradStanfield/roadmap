@@ -112,10 +112,10 @@ Your doctor may arrange:
 
 Metabolic syndrome is diagnosed when there is **elevated ethnic-specific waist circumference** (see table above) **plus at least 2 of the following 4 criteria:**
 
-1. **Elevated triglycerides:** ≥ 1.7 mmol/L
+1. **Elevated triglycerides:** ≥ 1.7 mmol/L (or on drug treatment for raised triglycerides)
 2. **Reduced HDL cholesterol:** Men: < 1.0 mmol/L; Women: < 1.3 mmol/L (or on drug treatment for reduced HDL)
-3. **Elevated blood pressure:** ≥ 130 mmHg systolic or ≥ 85 mmHg diastolic
-4. **Elevated fasting glucose:** > 5.5 mmol/L
+3. **Elevated blood pressure:** ≥ 130 mmHg systolic or ≥ 85 mmHg diastolic (or on drug treatment for high blood pressure)
+4. **Elevated fasting glucose:** > 5.5 mmol/L (or on drug treatment for raised blood glucose)
 
 ---
 

@@ -98,7 +98,7 @@ Remdesivir is given in a hospital or clinic setting. Your doctor will only refer
 Antivirals for children are only prescribed when recommended by a paediatrician or relevant hospital specialist. Your child's GP will discuss it with the appropriate specialist before prescribing.
 
 - **Paxlovid:** For those aged 12 years or older who weigh 40 kg or more and can swallow tablets whole. The tablets cannot be cut or crushed, and there is no liquid form. Prescribing for those aged 17 years and younger is off-label, so specialist recommendation is required.
-- **Remdesivir:** May be considered if Paxlovid is not suitable. Licensed for those aged 12 years and older who weigh at least 40 kg. May be given off-label to children aged 11 years and younger, after specialist advice. It is not used with an allergy to remdesivir, elevated liver enzymes (ALT 5 or more times the upper limit of normal) or severe liver dysfunction, or an eGFR ≤ 30 mL/min/1.73 m2.
+- **Remdesivir:** May be considered if Paxlovid is not suitable, after specialist assessment. Its data sheet licenses it from 4 weeks of age and 3 kg for COVID-19 pneumonia that needs oxygen, and for those who weigh 40 kg or more and are at high risk but do not need oxygen. It is not used with an allergy to remdesivir, elevated liver enzymes (ALT 5 or more times the upper limit of normal) or severe liver dysfunction. The data sheet says no dose change is needed for kidney problems, including dialysis.
 
 ---
 
@@ -112,7 +112,6 @@ Inhaled corticosteroids are **no longer recommended** as treatment for COVID-19.
 
 If you are at high risk, your doctor may write a prescription in advance so you have medication ready if you get COVID-19. Key points:
 
-- You must meet Pharmac eligibility criteria (other than having a current COVID-19 infection)
 - Scripts are valid for 90 days
 - The medication **cannot be dispensed** until you have COVID-19 (or probably have it), are symptomatic, and are within 5 days of symptom onset
 - When you collect it, the pharmacist will review your medications, confirm your COVID-19 diagnosis, and check for any dose adjustments needed

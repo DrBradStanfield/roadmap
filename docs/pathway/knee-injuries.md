@@ -22,9 +22,11 @@ These need acute orthopaedic assessment in hospital. Call 111 or go to the emerg
 
 - A suspected knee dislocation, especially after a major knee injury with significant deformity, swelling, and instability
 - Concerns about the pulses, movement, or feeling below the injury (neurovascular status)
-- A suspected knee fracture: for example, you cannot take four steps (two on each leg) after the injury, or the knee swells quickly
+- A suspected knee fracture: for example, you cannot take four steps (two on each leg) after the injury
 - An injury to the extensor mechanism of the knee (checked with a straight leg raise)
 - A knee that has locked and stays locked (most locked knees unlock on their own)
+
+If the knee swells quickly after an injury but you can take four steps, see your doctor the same day. They may arrange an X-ray.
 
 ---
 
