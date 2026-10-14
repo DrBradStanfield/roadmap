@@ -8,38 +8,38 @@ summary: "Clinical pathway for administering Reandron (testosterone undecanoate 
 
 # Testosterone Undecanoate (Reandron) Injections
 
-*Source: Auckland Region HealthPathways*
+*Source: Auckland Region HealthPathways. Last reviewed: June 2023.*
 
-This pathway covers the administration and monitoring of Reandron (testosterone undecanoate) injections for cisgender men with testosterone deficiency requiring hormone replacement. Reandron is a specialist-initiated treatment — your GP may administer the injections once a specialist has recommended and established you on therapy.
+> *This information is based on clinical guidelines for healthcare professionals and is intended to help you understand what your doctor is doing and why. Always discuss your treatment with your doctor.*
+
+This pathway covers Reandron (testosterone undecanoate) injections for cisgender men who need hormone replacement because of testosterone deficiency. It does not cover gender-affirming treatment. Reandron is a specialist-recommended medicine. Your GP may be asked to give the injections.
 
 ---
 
 ## About Reandron
 
-Reandron (testosterone undecanoate 1000 mg per 4 mL) is a funded intramuscular injection for testosterone replacement therapy. It is an alternative to Sustanon injections. Once established on therapy, it is given every 10 to 14 weeks.
-
-This is a specialist-recommended medicine. The endorsing specialist's name must be recorded on the prescription.
+Reandron (testosterone undecanoate 1000 mg per 4 mL) is a funded intramuscular injection for testosterone replacement therapy. It is available on specialist recommendation. It is an alternative to Sustanon injections. Once you are established on therapy, it is given every 10 to 14 weeks.
 
 ---
 
 ## Contraindications
 
-Reandron should not be used in men with:
+Reandron should be avoided in men with:
 
 - Androgen-dependent carcinoma of the prostate or breast
-- Known hypersensitivity to testosterone undecanoate or any of its excipients
+- Hypersensitivity to testosterone undecanoate or any of its excipients
 
 ---
 
 ## Injection Procedure
 
-Your doctor will administer Reandron as a deep intramuscular injection:
+Your doctor gives Reandron as a deep intramuscular injection:
 
-- **Site:** Gluteal muscle (buttock) — the only manufacturer-recommended site
+- **Site:** Gluteal muscle (buttock). This is the only site the manufacturer recommends.
 - **Needle:** 19 gauge
 - **Administration time:** Injected slowly over 2 minutes
-- **Technique:** The Z-track method may be used to reduce pain and prevent medication dispersing into subcutaneous tissue
-- **Tip:** The vial is warmed in warm water before injection to reduce viscosity and assist delivery
+- **Technique:** The Z-track method can be used to reduce pain and stop the medicine spreading into the tissue under the skin.
+- **Tip:** Reandron is thick, so warming the vial in warm water before injecting helps with delivery.
 
 ---
 
@@ -47,7 +47,7 @@ Your doctor will administer Reandron as a deep intramuscular injection:
 
 - Usually every **10 to 14 weeks**
 - The aim is a trough plasma total testosterone (measured just before an injection) at the lower end of the normal range
-- If the trough testosterone is **less than 6 nmol/L**, the dose interval may need to be shortened — your doctor will discuss this with you
+- If the trough testosterone is **less than 6 nmol/L**, the dose interval may need to be reduced, so injections come closer together
 
 ---
 
@@ -55,11 +55,11 @@ Your doctor will administer Reandron as a deep intramuscular injection:
 
 Your doctor will check for adverse effects at follow-up appointments:
 
-- **Polycythaemia** (elevated haematocrit > 0.5) — can occur; if this happens the injection interval will be increased
-- **Acne** — uncommon
-- **Prostate effects:** Testosterone therapy does not cause prostate cancer, but may promote growth of pre-existing prostate cancer. Men on testosterone therapy require prostate surveillance appropriate to their age — your doctor will advise on this
+- **Polycythaemia** (haematocrit more than 0.5) can occur. If it does, the interval between injections should be increased.
+- **Acne** is uncommon.
+- **Prostate effects:** Testosterone therapy does not cause prostate cancer, but may promote the growth of a prostate cancer that is already there. Men on testosterone therapy need the same checks for prostate disease as other men of their age with normal testosterone levels.
 
-For a full list of less common side effects, see the [Reandron Medsafe Data Sheet](https://medsafe.govt.nz/profs/datasheet/r/Reandron1000inj.pdf).
+For less common side effects, see the [Reandron Medsafe Data Sheet](https://medsafe.govt.nz/profs/datasheet/r/Reandron1000inj.pdf).
 
 ---
 
@@ -68,17 +68,13 @@ For a full list of less common side effects, see the [Reandron Medsafe Data Shee
 Your doctor will monitor you regularly while you are on Reandron:
 
 - **Full blood count (FBC) and testosterone level:** Checked approximately every 6 months
-- If results are abnormal, your doctor will seek specialist (endocrinology) advice before continuing
+- If results are abnormal, your doctor will seek specialist (endocrinology) advice
 
 ---
 
 ## When to Seek Specialist Advice
 
-Your doctor will contact the endocrinology department if:
+Your doctor may contact the endocrinology department for advice if:
 
-- Polycythaemia develops (haematocrit > 0.5)
+- Polycythaemia develops (haematocrit more than 0.5)
 - FBC or testosterone results are abnormal
-
----
-
-*This information is based on clinical guidelines for healthcare professionals and is intended to help you understand what your doctor is doing and why. Always discuss your treatment with your doctor.*
