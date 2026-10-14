@@ -220,8 +220,15 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
       // old token still owns the one row there is. Cancelling it and opting in
       // again only gets a tokenless `refreshed`, and the file never moves on.
       const identity = await identityFor(backend);
-      if (identity && 'email' in identity && sameAddress(identity.email, optIn.email)) {
-        setReminderOptIn({ ...optIn, provider: backend });
+      // The lookup awaited: an erase, a toggle-off or another device may have
+      // changed the opt-in meanwhile. Act only on the one we read.
+      const current = getReminderOptIn();
+      if (current?.status !== 'active' || current.token !== optIn.token || current.provider !== optIn.provider) return;
+      // Drive's identity carries an ID token, not an address; its account email is local.
+      const address = identity && 'email' in identity ? identity.email
+        : backend === 'google-drive' ? new GoogleDriveAdapter(googleDriveConfig()).accountEmail() : null;
+      if (address && sameAddress(address, current.email)) {
+        setReminderOptIn({ ...current, provider: backend });
         await flushRoadmapStore();
         return;
       }

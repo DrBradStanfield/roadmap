@@ -481,6 +481,46 @@ describe('US-17 AC12 — a switch to a cloud with the same email keeps the row',
   });
 });
 
+// Codex R1/R2 on a9966d80 (2026-10-14). R2: Drive's identity carries an ID
+// token, not an email, so a same-address switch TO Drive must compare against
+// the account email the browser holds. R1: an erase (or any change) that lands
+// while the identity lookup is pending must never be overwritten by the opt-in
+// captured before it.
+describe('US-17 AC12 — the same-address shortcut, to Drive and across an erase', () => {
+  it('dropbox to google-drive with a fresh ID token and the same account email: no POST, the token is kept', async () => {
+    getReminderIdToken.mockResolvedValue('signed-id-token');
+    driveAccountEmail.mockReturnValue('DBX@example.com ');
+    getReminderOptIn.mockReturnValue({ ...ACTIVE, provider: 'dropbox', email: 'dbx@example.com' });
+    const f = mockFetchOk();
+    const { autoEnrolReminders } = await loadReminders();
+
+    await autoEnrolReminders('google-drive');
+
+    expect(f).not.toHaveBeenCalled();
+    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ token: 'cap-token', provider: 'google-drive' }));
+  });
+
+  it('an erase that lands while the identity lookup is pending is not overwritten', async () => {
+    let file: FileReminderOptIn | undefined = { ...ACTIVE, provider: 'dropbox', email: 'gh@example.com' };
+    getReminderOptIn.mockImplementation(() => file);
+    let release!: (v: string | null) => void;
+    githubAccountEmail.mockImplementation(() => new Promise((r) => { release = r; }));
+    const f = mockFetchOk();
+    const { autoEnrolReminders } = await loadReminders();
+
+    const run = autoEnrolReminders('github');
+    await Promise.resolve();
+    // Delete all my data: the file's opt-in is now cancelled and blank.
+    file = { status: 'cancelled', token: '', email: '', provider: 'dropbox', updatedAt: '2026-10-14T00:00:00.000Z', lamport: 9 };
+    release('gh@example.com');
+    await run;
+
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+    expect(flushRoadmapStore).not.toHaveBeenCalled();
+    expect(f).not.toHaveBeenCalled();
+  });
+});
+
 // Orchestrator decision (2026-10-14): a switch to a cloud that gives no address
 // yet keeps the old row. Cancelling it first left a tombstoned row while the
 // control still read "on".
