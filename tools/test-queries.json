@@ -5827,5 +5827,529 @@
     ],
     "must_not_mention": [],
     "notes": "New (currency check, Codex R1). Entry: \"Early replacement is not routinely recommended. The data sheet notes that effectiveness may fall after 4 years in people weighing more than 60 kg, so your doctor may discuss an earlier replacement. Using the implant beyond 5 years is not recommended.\""
+  },
+  {
+    "query": "I'm quite slim, BMI about 19, and I've lost some weight without trying. How much weight loss counts as significant for me?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "weight-related-concerns-in-adults"
+    ],
+    "must_mention": [
+      "5%"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"If your BMI is less than 20, a weight loss of more than 5% is considered significant.\""
+  },
+  {
+    "query": "I've lost weight without trying and had almost no appetite for over a month. What will my doctor probably do?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "weight-related-concerns-in-adults"
+    ],
+    "must_mention": [
+      "chest X-ray"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"A same-day chest X-ray if unexplained weight loss and loss of appetite have persisted for more than 3 weeks, or if other criteria are met\""
+  },
+  {
+    "query": "I went through menopause at 38 and have no other risk factors. Do I need a bone density scan now?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "bone-density-scan-dexa"
+    ],
+    "must_mention": [
+      "15"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"You had premature menopause but have no other risk factors. Fracture risk assessment or a scan can usually be deferred until 15 to 20 years after menopause\""
+  },
+  {
+    "query": "I'm obese. Should I have a DEXA scan to check my bones?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "bone-density-scan-dexa"
+    ],
+    "must_mention": [
+      "Cushing"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"You are obese, at any age. Obese people are very unlikely to have low bone density, except with Cushing's syndrome.\""
+  },
+  {
+    "query": "How does my doctor work out whether I'm ready to start exercising more?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "physical-activity-adults"
+    ],
+    "must_mention": [
+      "Readiness Ruler"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"Your doctor may use a tool called the Readiness Ruler.\""
+  },
+  {
+    "query": "What does the Ministry of Health say about how often I should be active?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "physical-activity-adults"
+    ],
+    "must_mention": [
+      "most days"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"The Ministry of Health recommends being active on most days, preferably every day.\""
+  },
+  {
+    "query": "Is there a medicine that treats metabolic syndrome itself?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "metabolic-syndrome-insulin-resistance-syndrome"
+    ],
+    "must_mention": [
+      "no specific"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"There is no specific medication for metabolic syndrome itself.\""
+  },
+  {
+    "query": "Is BMI part of how metabolic syndrome is diagnosed?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "metabolic-syndrome-insulin-resistance-syndrome"
+    ],
+    "must_mention": [
+      "not part"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"BMI is not part of the diagnosis of metabolic syndrome, but it is still useful to know.\""
+  },
+  {
+    "query": "I have a very sore eye with blurry vision, I see halos around lights and I feel sick with a headache. Can it wait until tomorrow?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "sudden-or-recent-vision-loss"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"Severe eye pain with blurred vision, halos around lights, headache, nausea or vomiting (possible acute angle-closure glaucoma)\""
+  },
+  {
+    "query": "I keep missing things on both sides of my vision, in both eyes. What happens next?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "sudden-or-recent-vision-loss"
+    ],
+    "must_mention": [
+      "1 week"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"Visual field defects affecting **both eyes** are also a red flag. See your doctor, who may arrange an eye assessment within 1 week or a neurology assessment.\""
+  },
+  {
+    "query": "I'm 67, had the old Zostavax shingles vaccine years ago, and I'm on the waiting list for a kidney transplant. Can I get Shingrix?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "herpes-zoster-shingles-immunisation"
+    ],
+    "must_mention": [
+      "Shingrix"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"If you are aged 66 years or older and in one of these groups, your doctor may offer Shingrix even if you have had Zostavax before, as Shingrix provides greater immune protection.\""
+  },
+  {
+    "query": "I had shingles in my eye last month. When can I get the Shingrix vaccine?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "herpes-zoster-shingles-immunisation"
+    ],
+    "must_mention": [
+      "12 months"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"Your doctor will wait at least 12 months after the inflammation has resolved before vaccinating\""
+  },
+  {
+    "query": "My BMI is 42 and I need a knee replacement. Will I be turned away?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "hip-and-knee-joint-replacement"
+    ],
+    "must_mention": [
+      "weight loss programme"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"People with a BMI of 40 or greater will be offered a first surgical assessment. They may be referred to a weight loss programme, with dietary and physical activity assessment and support, before being accepted for surgery.\""
+  },
+  {
+    "query": "How does my doctor judge whether I'm fit enough for a hip replacement?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "hip-and-knee-joint-replacement"
+    ],
+    "must_mention": [
+      "NZ Risk Calculator"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"They may use the NZ Risk Calculator as part of this discussion.\""
+  },
+  {
+    "query": "I have cirrhosis and my belly has swollen with fluid in the last few days and I feel confused. What should I do?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "abnormal-liver-function-tests"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"**Call 111 or go to the emergency department** if you have signs of severe decompensated liver disease (the liver is failing to cope):\""
+  },
+  {
+    "query": "My ALT has stayed about 1.5 times above normal for 4 months. What happens next?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "abnormal-liver-function-tests"
+    ],
+    "must_mention": [
+      "ultrasound"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"If ALT stays more than 1.5 times ULN for longer than 3 months, your doctor will arrange a liver ultrasound.\""
+  },
+  {
+    "query": "My shingles rash started yesterday. How soon do antivirals need to be started?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "herpes-zoster-shingles"
+    ],
+    "must_mention": [
+      "72 hours"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"Antivirals give the most benefit when started **within 72 hours of rash onset**.\""
+  },
+  {
+    "query": "Shingles has paralysed one side of my face. How likely am I to recover compared with Bell's palsy?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "herpes-zoster-shingles"
+    ],
+    "must_mention": [
+      "68%"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"Facial palsy is common and has a worse outlook than Bell's palsy. Untreated, 10% of people with complete palsy recover completely, compared with 68% of people with partial palsy.\""
+  },
+  {
+    "query": "What should I expect after a Reandron injection? Is there anything I'm watched for?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "testosterone-undecanoate-reandron-injections"
+    ],
+    "must_mention": [
+      "oil"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"Rarely, the oily medicine can reach the lungs (pulmonary oil microembolism) or cause a severe allergic reaction.\""
+  },
+  {
+    "query": "Can my GP start me on Reandron injections on their own?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "testosterone-undecanoate-reandron-injections"
+    ],
+    "must_mention": [
+      "specialist"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"It is available on specialist recommendation.\""
+  },
+  {
+    "query": "I take alendronate and a calcium tablet. Does the calcium affect the alendronate?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "calcium-supplementation-in-osteoporosis"
+    ],
+    "must_mention": [
+      "absorbed"
+    ],
+    "must_not_mention": [
+      "bisphosphonates reduce calcium absorption"
+    ],
+    "notes": "Changed. Entry: \"Calcium can reduce how well these medicines are absorbed.\""
+  },
+  {
+    "query": "Do calcium supplements raise the risk of a heart attack?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "calcium-supplementation-in-osteoporosis"
+    ],
+    "must_mention": [
+      "Auckland"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"A study in Auckland found an association between a daily 1000 mg calcium supplement in elderly women and a higher risk of heart attack (myocardial infarction).\""
+  },
+  {
+    "query": "I'm 67 and healthy and just tested positive for COVID. Will I be given Paxlovid?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "covid-19-therapeutics"
+    ],
+    "must_mention": [
+      "highest risk"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"In June 2026, routine use of antiviral treatment (Paxlovid) for COVID-19 stopped being recommended for most people.\""
+  },
+  {
+    "query": "I have COVID and I've become short of breath even sitting still, with chest pain. What do I do?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "covid-19-therapeutics"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"If you have COVID-19 and become short of breath at rest, have chest pain, or become confused or very drowsy, call 111 or go to the emergency department.\""
+  },
+  {
+    "query": "I twisted my knee playing football and I can't take four steps on it. Is this an emergency?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "knee-injuries"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"A suspected knee fracture: for example, you cannot take four steps (two on each leg) after the injury, or the knee swells quickly\""
+  },
+  {
+    "query": "I have a meniscus tear and still have knee pain after 8 weeks of physio. What are my options?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "knee-injuries"
+    ],
+    "must_mention": [
+      "orthopaedic"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"If the knee does not settle after at least 6 weeks with physiotherapy, a non-acute orthopaedic assessment may be requested\""
+  },
+  {
+    "query": "My PHQ-9 score came back as exactly 20. How severe is that?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "depression-in-adults-and-older-persons"
+    ],
+    "must_mention": [
+      "severe"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"| 20 to 27 | Severe depression |\""
+  },
+  {
+    "query": "I take sertraline and apixaban. Is there any risk from combining them?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "depression-in-adults-and-older-persons"
+    ],
+    "must_mention": [
+      "bleeding"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"The bleeding risk is also higher with blood thinners such as warfarin or apixaban.\""
+  },
+  {
+    "query": "My baby is 7 weeks old with an ear infection. Can he take co-trimoxazole?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "acute-otitis-media-aom-in-children"
+    ],
+    "must_mention": [
+      "8 weeks"
+    ],
+    "must_not_mention": [
+      "6 weeks"
+    ],
+    "notes": "Changed. Entry: \"Not for infants younger than 8 weeks\""
+  },
+  {
+    "query": "My child has an ear infection and says the room is spinning and her eyes are flicking. Can I wait to see the GP tomorrow?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "acute-otitis-media-aom-in-children"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"Vertigo (a spinning feeling), imbalance, or new abnormal eye movements (nystagmus)\""
+  },
+  {
+    "query": "I took an erection tablet and the erection has lasted over 4 hours. What should I do?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "erectile-dysfunction"
+    ],
+    "must_mention": [
+      "111"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"An erection caused by medicine lasts more than 4 hours (priapism). This needs urgent emergency treatment.\""
+  },
+  {
+    "query": "Can I take sildenafil if I'm on other medicines?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "erectile-dysfunction"
+    ],
+    "must_mention": [
+      "pharmacist"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"These medicines may raise PDE5 inhibitor levels, so your doctor or pharmacist will check your current medicines for interactions.\""
+  },
+  {
+    "query": "My vision went dark in one eye for a few minutes this morning and has fully come back. Is it okay to wait and see?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "transient-monocular-vision-loss"
+    ],
+    "must_mention": [
+      "same day"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"If the vision loss came back fully, **see your doctor the same day**.\""
+  },
+  {
+    "query": "I'm 60 and had a brief loss of vision in one eye last week. What tests might I have?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "transient-monocular-vision-loss"
+    ],
+    "must_mention": [
+      "CRP"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"In people older than 50 years, your doctor will check **CRP and ESR** and ask about symptoms of giant cell arteritis.\""
+  },
+  {
+    "query": "I have cirrhosis and a bad back. Can I take paracetamol or ibuprofen?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "cirrhosis"
+    ],
+    "must_mention": [
+      "lower dose"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"Paracetamol at the lower dose your doctor advises is usually the preferred pain reliever in cirrhosis.\""
+  },
+  {
+    "query": "My hepatic encephalopathy keeps coming back. Is there anything else that can reduce repeat episodes?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "cirrhosis"
+    ],
+    "must_mention": [
+      "rifaximin"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"If episodes recur, your specialist may add rifaximin, an antibiotic that cuts the risk of recurrence from 46% to 21%\""
+  },
+  {
+    "query": "I'm on carbimazole and my skin and eyes have turned yellow and my urine is dark. What should I do?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "hyperthyroidism"
+    ],
+    "must_mention": [
+      "same day"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"If you get jaundice (yellow skin or eyes), dark urine, pale stools or abdominal pain while taking carbimazole, stop taking it and see your doctor the same day.\""
+  },
+  {
+    "query": "I have Graves' disease but my eyes don't bulge. Can my eye disease still threaten my sight?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "hyperthyroidism"
+    ],
+    "must_mention": [
+      "rare"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"Sight-threatening eye disease is rare, but it can happen without eye bulging.\""
+  },
+  {
+    "query": "I have a heart murmur and have had fever, night sweats and weight loss for two weeks. Should I wait for my next check?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "heart-murmurs-in-adults"
+    ],
+    "must_mention": [
+      "same day"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"Fever, sweats, and weight loss (possible infective endocarditis).\""
+  },
+  {
+    "query": "My doctor heard a soft grade 2 systolic murmur. What might it be?",
+    "category": "pathway-refresh-batch-3",
+    "source": "knowledge-refresh-batch-3-2026-10-14",
+    "answer_handles": [
+      "heart-murmurs-in-adults"
+    ],
+    "must_mention": [
+      "flow murmur"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. Entry: \"A grade 1 to 2 mid-systolic murmur may be a flow murmur, or a murmur from a thickened or sclerotic aortic valve.\""
   }
 ]
