@@ -32,7 +32,8 @@ Kept, for your view:
 Review fixes (adversary + Codex, batch-3-review-fixes-2026-10-14.md):
 18. Sudden loss of the same side of vision in both eyes means call 111 (possible stroke). Endocarditis with rapid-onset fever or feeling very unwell means call 111. The carbimazole fever warning becomes "straight away". Serotonin syndrome means 111 for severe signs only.
 19. Safety corrections: cirrhosis salt 4.6 to 6.9 g (not 4.0), statins not to be stopped without the doctor, no heart-rate target for carvedilol. Shingles child aciclovir doses removed (they were herpes simplex doses). Remdesivir in children from the data sheet. The oesophageal cancer "exception" in obesity removed. Peyronie's traction hedged. Shingles vaccine funding thresholds removed.
+20. Codex round 2: weight medicines help while they are continued, and weight usually returns after stopping (the blanket "not effective long term" is gone). Fluoxetine at low doses can often be stopped without a slow taper; at higher doses the doctor plans a gradual reduction. Paxlovid: breastfeeding paused during treatment and for 48 hours after (data sheet); a combined pill, patch or ring needs a second method during treatment and until the next period (data sheet; added by me). Shingles vaccine: who should have it, without the funding rules (age-65 start, eGFR threshold).
 
 ## Sign-off
 
-AC8 sign-off (Brad): PENDING.
+AC8 sign-off (Brad): PENDING. READY 2026-10-15: adversary, two Codex rounds and the currency check applied; checker clean against main.
