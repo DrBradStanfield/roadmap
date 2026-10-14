@@ -474,6 +474,31 @@ describe('US-07 AC6 — a known minor is never enrolled and their schedule is ne
     expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }));
   });
 
+  // Amended 2026-10-14: the cancel is the age gate's, not the user's opt-out,
+  // so it never counts toward US-17's optout:optin kill criterion.
+  it('the age gate\'s cancel is not counted as an opt-out', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    mockFetchOk({ success: true });
+    const { pushReminderSchedule } = await loadReminders();
+    await pushReminderSchedule();
+    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }));
+    expect(trackProductEvent).not.toHaveBeenCalled();
+  });
+
+  // Codex R2 (2026-10-14): on tab hide the cancel must leave with keepalive,
+  // and before any wait on the Drive ID token, or the row can stay active.
+  it('the hidden-tab push sends the cancel with keepalive, not waiting on the identity proof', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    getReminderIdToken.mockReturnValue(new Promise(() => {})); // a proof that never arrives
+    const f = mockFetchOk({ success: true });
+    const { pushReminderSchedule } = await loadReminders();
+    void pushReminderSchedule(true);
+    await vi.waitFor(() => expect(f).toHaveBeenCalledTimes(1));
+    expect(postedBody(f).op).toBe('cancel');
+    expect(postedBody(f).token).toBe('cap-token');
+    expect((f.mock.calls[0][1] as RequestInit).keepalive).toBe(true);
+  });
+
   it('an adult is unchanged: the schedule is pushed', async () => {
     isKnownMinorNow.mockReturnValue(false);
     getReminderOptIn.mockReturnValue(ACTIVE);

@@ -78,7 +78,9 @@ interface StartingInfoVitalsProps {
   /** What the plan was computed from (US-06 AC5): its age sets the
    *  blood-pressure target, its weight target (kg) the weight line and its
    *  validated height (cm) the waist line. Null until there is a plan. */
-  plan: Pick<PlanBasis, 'age' | 'idealBodyWeight' | 'heightCm' | 'knownMinor'> | null;
+  plan: Pick<PlanBasis, 'age' | 'idealBodyWeight' | 'heightCm'> | null;
+  /** A known minor, plan or no plan: no adult weight or BP target or colour (US-07 AC6). */
+  knownMinor?: boolean;
   /** Called after the user types a valid weight — continues the
    *  height → weight → email focus chain from the legacy form. */
   onAutoFocusEmail?: () => void;
@@ -263,14 +265,14 @@ export function vitalsCellsOf(
 
 export function StartingInfoVitals({
   inputs, vitalsHistory, unitSystem, onSave, onCorrectValue,
-  onDraftValue, formStage, plan, onAutoFocusEmail, unitOverrides, onToggleFieldUnit,
+  onDraftValue, formStage, plan, knownMinor, onAutoFocusEmail, unitOverrides, onToggleFieldUnit,
   prefillRef, flushRef,
 }: StartingInfoVitalsProps) {
   const sex = inputs.sex;
   // The plan's systolic target; none, and no BP colours, with no plan. A known
   // minor gets no adult weight or BP target or colour (US-07 AC6); the waist
   // line, half the height, is also used in children, so it stays.
-  const adult = !plan?.knownMinor;
+  const adult = !knownMinor;
   const bpSysTarget = plan && adult ? bpTargetFor(plan.age) : undefined;
   const ibwKg = adult ? plan?.idealBodyWeight : undefined;
   const planHeightCm = plan?.heightCm;

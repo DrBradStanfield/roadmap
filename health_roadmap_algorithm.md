@@ -433,11 +433,15 @@ The gate's age (`isKnownMinor`) is the one in section 1, except that a missing b
 For a known minor, every surface also withholds:
 
 - **Adult readings.** The BMI category, ideal body weight, protein target and eGFR, and the status labels on the lipid, HbA1c and Lp(a) tiles, with the "why" behind each. The website tiles and the PDF show the raw numbers only (BMI, lipid marker, Lp(a), HbA1c); the ideal body weight, protein and eGFR tiles go. `get_plan` returns `bmiCategory`, `eGFR`, `idealBodyWeightKg` and `proteinTargetG` as `null`; the CLI prints the BMI with no category and no eGFR. Raw values (weight, height, waist, each lab value with its unit and date) are untouched.
-- **The schedule.** `computeReminderSchedule` returns nothing, not even the annual check-in floor, so `get_plan`'s `due` is empty. The browser never enrols a known minor in reminders, never pushes their schedule (the server would add its annual check-in to any schedule it is sent), and turns off a row enrolled earlier with the user's own cancel.
+- **The schedule.** `computeReminderSchedule` returns nothing, not even the annual check-in floor, so `get_plan`'s `due` is empty. The browser never enrols a known minor in reminders, never pushes their schedule (the server would add its annual check-in to any schedule it is sent), and turns off a row enrolled earlier with the user's own cancel. That cancel is permanent (at 18 they turn reminders on by hand) and is not counted as an opt-out.
 - **The form's medicine wording.** The medication sections are plain fields with their neutral sentence: no recommendation, target sentence or step hint. People can still record what they take. The form does the same for an unknown age, because it follows the plan (US-06 AC5).
-- **The form's adult targets.** The weight row's "Target: <ideal body weight>", the blood-pressure target and its status colours, and the blood-test matrix's reference hints and status colours (saved values, the draft column and the correction editor). The values stay and stay editable, and no empty box is left. The waist line, its colour and the waist-to-height tile stay: the 0.5 ratio is also used in children.
+- **The form's adult targets.** The weight row's "Target: <ideal body weight>", the blood-pressure target and its status colours, and the reference hints and status colours of the blood-test matrix (saved values, the draft column and the correction editor) and the upload review matrix. The form reads the validated birth year and month alone, so this holds with no plan too (no height or sex). The values stay and stay editable, and no empty box is left. The waist line, its colour and the waist-to-height tile stay: the 0.5 ratio is also used in children.
 
 Measurements, lab values and the record are untouched: they are still stored and shown. There is no usage signal: an event would record that a visitor is under 18.
+
+Three-file sync for this section's 2026-10-14 amendments (the strict missing-month rule, the lipid cards kept for an unknown age, the form's and review's withheld readings):
+- `evidence.ts`: no change. No card's reason, guideline tag or citation changed; the `adults-only` and `add-birth-year` reasons still hold.
+- `roadmap_text.html`: no change. Its two sentences still hold: the plan "is built for adults aged 18 and over", and the weight medicines are suggested "only when your birth year shows you are 18 or over" (the strict rule only makes that later; with no birth year none is suggested).
 
 ### Always-Show Lifestyle Suggestions
 

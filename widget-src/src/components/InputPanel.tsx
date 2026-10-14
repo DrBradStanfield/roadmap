@@ -125,7 +125,7 @@ const doseOptions = (doses: number[]) => doses.map(dose => ({ value: String(dose
  *  beside the plan, from the same validated inputs and results: the plan's
  *  age, BMI, weight target (kg) and validated height (cm), which sets the
  *  vitals matrix's waist line. */
-export type PlanBasis = Pick<HealthResults, 'age' | 'bmi' | 'idealBodyWeight' | 'heightCm' | 'knownMinor'> & {
+export type PlanBasis = Pick<HealthResults, 'age' | 'bmi' | 'idealBodyWeight' | 'heightCm'> & {
   weightMedTrigger: WeightMedicationTrigger;
   /** The plan's lipid marker: ApoB, then non-HDL, then LDL-c. */
   lipidMarker: LipidMarker | null;
@@ -191,6 +191,9 @@ interface InputPanelProps {
   /** What the plan was computed from. Null until there is a plan (no valid
    *  sex or height). */
   planBasis: PlanBasis | null;
+  /** A known minor by the validated birth info, plan or no plan: the form
+   *  withholds its adult targets, hints and colours (US-07 AC6). */
+  knownMinor: boolean;
   healthDocuments?: ApiDocument[];
   onDocumentDeleted?: (docId: string) => void;
   onAutoFocusEmail?: () => void;
@@ -226,7 +229,7 @@ export function InputPanel({
   isSavingLongitudinal, fieldsSaved, hasApiResponse,
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   formStage,
-  setShowUploadModal, planBasis,
+  setShowUploadModal, planBasis, knownMinor,
   healthDocuments, onDocumentDeleted, onAutoFocusEmail,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
@@ -703,7 +706,7 @@ export function InputPanel({
 
   /** BP target text based on the plan's age; none with no plan (US-06 AC5)
    *  or for a known minor, whose plan holds no adult reading (US-07 AC6). */
-  const bpTargetText = planBasis && !planBasis.knownMinor ? `Target: <${bpTargetFor(planBasis.age)}/80 mmHg` : null;
+  const bpTargetText = planBasis && !knownMinor ? `Target: <${bpTargetFor(planBasis.age)}/80 mmHg` : null;
 
   /** Render collapsed BP display. */
   const renderCollapsedBp = (data: { sysVal: number; diaVal: number; latestDate: string }) => {
@@ -947,6 +950,7 @@ export function InputPanel({
         onDraftValue={onDraftValue}
         formStage={formStage}
         plan={planBasis}
+        knownMinor={knownMinor}
         onAutoFocusEmail={onAutoFocusEmail}
         unitOverrides={unitOverrides}
         onToggleFieldUnit={onToggleFieldUnit}
@@ -1107,7 +1111,7 @@ export function InputPanel({
       onDraftValue={onDraftValue}
       isSaving={isSavingLongitudinal}
       sex={inputs.sex}
-      knownMinor={planBasis?.knownMinor}
+      knownMinor={knownMinor}
       onUploadClick={() => setShowUploadModal?.(true)}
       hasApiResponse={hasApiResponse}
       flushRef={bloodTestFlushRef}

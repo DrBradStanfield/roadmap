@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } fro
 import { createPortal } from 'react-dom';
 import {
   calculateHealthResults,
+  isKnownMinor,
+  validateInputValue,
   weightMedicationTrigger,
   lipidMarkerFor,
   validateHealthInputs,
@@ -663,6 +665,14 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     setErrors(validationErrors ?? {});
   }, [validationErrors]);
 
+  // US-07 AC6: the form withholds its adult readings from a known minor by the
+  // validated birth year and month alone, with or without a plan (Codex R1:
+  // with no height or sex the blood-test matrix still shows).
+  const knownMinor = isKnownMinor(
+    validateInputValue('birthYear', effectiveInputs.birthYear),
+    validateInputValue('birthMonth', effectiveInputs.birthMonth),
+  );
+
   // Mobile tab state
   const isMobile = useIsMobile();
   const isWideDesktop = useIsWideDesktop(1200);
@@ -964,6 +974,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     formStage,
     setShowUploadModal,
     planBasis,
+    knownMinor,
     healthDocuments: documentHistory,
     onDocumentDeleted: (docId: string) => {
       setDocumentHistory(prev => prev.filter(d => d.id !== docId));
@@ -1087,6 +1098,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         onScreeningUpdate={handleScreeningChange}
         age={planBasis?.age}
         sex={inputs.sex === 'male' || inputs.sex === 'female' ? inputs.sex : undefined}
+        knownMinor={knownMinor}
       />
 
       {/* Undo banner for a medication the chat just changed (meds auto-save, so

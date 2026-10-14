@@ -243,18 +243,22 @@ export async function cancelRemindersForErase(): Promise<void> {
 }
 
 /** Turn reminders off (server row tombstoned, or deleted when Drive can prove
- *  the inbox; the cancel propagates via the file). */
-export async function cancelReminders(): Promise<void> {
+ *  the inbox; the cancel propagates via the file).
+ *  `count: false`: not the user's opt-out (US-07 AC6's age gate), so not
+ *  counted, as the cloud switch's cancel is not. `keepalive`: the tab is going
+ *  away, so the cancel leaves at once, unproven (a tombstone), as an update does. */
+export async function cancelReminders({ count = true, keepalive = false } = {}): Promise<void> {
   const optIn = getReminderOptIn();
   if (!optIn) return;
-  const res = await post({ op: 'cancel', token: optIn.token, idToken: await cancelProofFor(optIn.provider) });
+  const idToken = keepalive ? null : await cancelProofFor(optIn.provider);
+  const res = await post({ op: 'cancel', token: optIn.token, idToken }, keepalive);
   if (!res.ok) throw new Error(`Could not turn reminders off (${res.status}). Please retry.`);
   setReminderOptIn({ ...optIn, status: 'cancelled' });
   await flushRoadmapStore();
   // The optout:optin ratio is US-17's kill criterion — it only works if BOTH
   // sides are counted (the opt-in side has fired since 2026-08-06), and per
   // LANE: the provider tag lets the typed and cloud ratios be judged apart.
-  trackProductEvent('reminder_optout', { provider: optIn.provider });
+  if (count) trackProductEvent('reminder_optout', { provider: optIn.provider });
 }
 
 /**
@@ -269,9 +273,9 @@ export async function pushReminderSchedule(keepalive = false): Promise<void> {
   try {
     // US-07 AC6: a known minor is due nothing, and the server fills any pushed
     // schedule with its annual check-in. So a row enrolled earlier is turned
-    // off instead, with the user's own cancel.
+    // off instead, for good (AC4), and not counted as their opt-out.
     if (isKnownMinorNow()) {
-      await cancelReminders();
+      await cancelReminders({ count: false, keepalive });
       window.dispatchEvent(new Event('hr:reminders-changed'));
       return;
     }

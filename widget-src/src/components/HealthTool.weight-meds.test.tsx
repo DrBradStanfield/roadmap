@@ -575,6 +575,25 @@ describe('US-07 AC6: the form withholds its medicine wording when the plan does'
       expect(view.container.textContent).not.toMatch(/Target: <\d+\/80/);
     });
 
+    // Codex R1 (2026-10-14): with no plan (no height, no sex, or a height the
+    // plan sets aside) the blood-test matrix still shows, and the gate must
+    // hold there too: it reads the birth year, not whether a plan exists.
+    it.each([
+      ['no height', { height: 0 }],
+      ['no sex', { sex: undefined }],
+      ['an invalid height', { height: 260 }],
+    ] as const)('with %s, a saved LDL shows with no hint and no colour', async (_, gap) => {
+      const view = await guestWith({ ...MINOR, ...gap });
+      const ldl = await waitFor(() => {
+        const r = view.container.querySelector('.bt-row[data-metric="ldl"]');
+        if (!r?.querySelector('.bt-value-num')) throw new Error('no LDL value on the page');
+        return r;
+      });
+      expect(view.container.querySelector('.plan-empty-preview')).not.toBeNull(); // no plan
+      expect(ldl.querySelector('.bt-ref-label')).toBeNull();
+      expect(colours(ldl)).toEqual([]);
+    });
+
     it('the first-visit form: the blood pressure is shown with no target', async () => {
       const view = await guestWith(MINOR);
       await waitFor(() => expect(planCard(view.container, 'This plan is built for adults')).toBeDefined());

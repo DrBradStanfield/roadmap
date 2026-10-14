@@ -58,6 +58,8 @@ interface UploadModalProps {
   /** The plan's age, for the review's screening eligibility (US-06 AC5). */
   age?: number;
   sex?: 'male' | 'female';
+  /** A known minor: the review withholds adult hints and colours (US-07 AC6). */
+  knownMinor?: boolean;
   /** Visibility does not end the session or discard review drafts. */
   open: boolean;
   onOpen: () => void;
@@ -227,7 +229,7 @@ function FileNotices({ notices }: { notices: FileNotice[] }) {
   );
 }
 
-export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, age, sex, open, onOpen }: UploadModalProps) {
+export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, age, sex, knownMinor, open, onOpen }: UploadModalProps) {
   const [state, setState] = useState<ModalState>('select');
   const [files, setFiles] = useState<File[]>([]);
   // Connect-first gate (decision record: encourage, don't block). 'device-only'
@@ -835,6 +837,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               onToggleFieldUnit={onToggleFieldUnit}
               age={age}
               sex={sex}
+              knownMinor={knownMinor}
               onSave={handleSave}
               onCancel={handleDiscard}
               isSaving={isSaving}

@@ -73,6 +73,9 @@ interface ReviewTableProps {
   /** The plan's age, which sets screening eligibility (US-06 AC5). Unset with no plan or no valid birth year. */
   age?: number;
   sex?: 'male' | 'female';
+  /** A known minor (US-07 AC6): the values with no adult reference hint or
+   *  status colour, as in the blood-test matrix. */
+  knownMinor?: boolean;
   onSave: (payload: {
     values: ReviewedValue[];
     documents: DocumentToSave[];
@@ -414,6 +417,7 @@ export function ReviewTable({
   onToggleFieldUnit,
   age: userAge,
   sex,
+  knownMinor,
   onSave,
   onCancel,
   isSaving,
@@ -765,6 +769,7 @@ export function ReviewTable({
           onToggleFieldUnit={onToggleFieldUnit}
           onChooseLpaUnit={chooseLpaUnit}
           sex={sex}
+          knownMinor={knownMinor}
           editedDisplayValues={editedDisplayValues}
           coreCellViews={coreCellViews}
           onCellChange={updateEditedDisplayValue}
@@ -900,6 +905,7 @@ interface ReviewMatrixProps {
   onToggleFieldUnit?: (field: string) => void;
   onChooseLpaUnit: (unit: LpaUnit) => void;
   sex?: 'male' | 'female';
+  knownMinor?: boolean;
   editedDisplayValues: Record<string, string>;
   coreCellViews: ReadonlyMap<string, CoreCellView>;
   onCellChange: (cellKey: string, value: string, display?: CellUnit) => void;
@@ -909,7 +915,7 @@ interface ReviewMatrixProps {
 }
 
 function ReviewMatrix({
-  matrix, unitSystem, metricUnitOverrides, onToggleFieldUnit, onChooseLpaUnit, sex,
+  matrix, unitSystem, metricUnitOverrides, onToggleFieldUnit, onChooseLpaUnit, sex, knownMinor,
   editedDisplayValues, coreCellViews, onCellChange, onColumnDateChange, replaceChecked, onReplaceToggle,
 }: ReviewMatrixProps) {
   const scrollSync = useMatrixScrollSync(matrix.columns.length);
@@ -941,6 +947,7 @@ function ReviewMatrix({
             onToggleFieldUnit={onToggleFieldUnit}
             onChooseLpaUnit={onChooseLpaUnit}
             sex={sex}
+            knownMinor={knownMinor}
             scrollSync={scrollSync}
             editedDisplayValues={editedDisplayValues}
             coreCellViews={coreCellViews}
@@ -965,6 +972,7 @@ function ReviewMatrix({
                 onToggleFieldUnit={onToggleFieldUnit}
                 onChooseLpaUnit={onChooseLpaUnit}
                 sex={sex}
+                knownMinor={knownMinor}
                 scrollSync={scrollSync}
                 editedDisplayValues={editedDisplayValues}
                 coreCellViews={coreCellViews}
@@ -1023,6 +1031,7 @@ interface MatrixRowViewProps {
   onToggleFieldUnit?: (field: string) => void;
   onChooseLpaUnit: (unit: LpaUnit) => void;
   sex?: 'male' | 'female';
+  knownMinor?: boolean;
   scrollSync: ReturnType<typeof useMatrixScrollSync>;
   editedDisplayValues: Record<string, string>;
   coreCellViews: ReadonlyMap<string, CoreCellView>;
@@ -1033,11 +1042,11 @@ interface MatrixRowViewProps {
 
 function MatrixRowView({
   row, rowIdx, columns, cells, unitSystem, metricUnitOverrides, onToggleFieldUnit, onChooseLpaUnit,
-  sex, scrollSync, editedDisplayValues, coreCellViews, onCellChange, replaceChecked, onReplaceToggle,
+  sex, knownMinor, scrollSync, editedDisplayValues, coreCellViews, onCellChange, replaceChecked, onReplaceToggle,
 }: MatrixRowViewProps) {
   const rowKey = matrixRowKey(row);
   const rowDisplay = row.kind === 'core' ? (metricUnitOverrides?.[row.metric] ?? unitSystem) : unitSystem;
-  const { label, unitLabel, refLabel } = describeRow(row, rowDisplay, sex);
+  const { label, unitLabel, refLabel } = describeRow(row, rowDisplay, sex, knownMinor);
   const toggleUnit = row.kind === 'core' && onToggleFieldUnit
     ? () => onToggleFieldUnit(METRIC_TO_FIELD[row.metric])
     : undefined;
@@ -1064,6 +1073,7 @@ function MatrixRowView({
                 row={row}
                 unitSystem={rowDisplay}
                 sex={sex}
+                graded={!knownMinor}
                 editedValue={coreCellViews.get(cellKey)?.text ?? editedDisplayValues[cellKey] ?? ''}
                 valueSI={coreCellViews.get(cellKey)?.valueSI}
                 onCellChange={onCellChange}
@@ -1083,14 +1093,14 @@ function MatrixRowView({
  *  METRIC_LABELS / getDisplayLabel; additional rows use the LLM-extracted
  *  unit and (if present) a reference range. Caller passes the resolved
  *  display unit (already honours per-metric overrides). */
-function describeRow(row: MatrixRow, display: CellUnit, sex?: 'male' | 'female'): { label: string; unitLabel: string | null; refLabel: string | null } {
+function describeRow(row: MatrixRow, display: CellUnit, sex?: 'male' | 'female', knownMinor?: boolean): { label: string; unitLabel: string | null; refLabel: string | null } {
   if (row.kind === 'core') {
     const label = METRIC_LABELS[row.metric] || row.metric;
     const unitLabel = UNIT_DEFS[row.metric] ? cellLabel(row.metric, display) : null;
     // Same reference-range hint InputPanel + BloodTestTimeline show so
     // users have the same context when reviewing as when reading the
-    // live timeline.
-    const refLabel = cellHint(row.metric, display, sex);
+    // live timeline, and withheld from a known minor there too (US-07 AC6).
+    const refLabel = knownMinor ? null : cellHint(row.metric, display, sex);
     return { label, unitLabel, refLabel };
   }
   const refLabel = (row.referenceLow != null || row.referenceHigh != null)
@@ -1105,6 +1115,8 @@ interface MatrixCellViewProps {
   row: MatrixRow;
   unitSystem: CellUnit;
   sex?: 'male' | 'female';
+  /** False for a known minor: no status colour (US-07 AC6). */
+  graded: boolean;
   editedValue: string;
   /** The value a core cell saves, which its colour grades (US-13 AC4). */
   valueSI?: number;
@@ -1114,7 +1126,7 @@ interface MatrixCellViewProps {
 }
 
 const MatrixCellView = memo(function MatrixCellView({
-  cell, cellKey, row, unitSystem, sex, editedValue, valueSI, onCellChange, replace, onReplaceToggle,
+  cell, cellKey, row, unitSystem, sex, graded, editedValue, valueSI, onCellChange, replace, onReplaceToggle,
 }: MatrixCellViewProps) {
   if (cell.state === 'empty') {
     // NBSP keeps :empty from matching — the theme has a global
@@ -1142,6 +1154,7 @@ const MatrixCellView = memo(function MatrixCellView({
       value={editedValue}
       valueSI={valueSI}
       onChange={handleChange}
+      showStatusPreview={graded}
       wrapperClass={`bt-cell-input bt-cell-review${lowConfClass}`}
     />
   ) : (

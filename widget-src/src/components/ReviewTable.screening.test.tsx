@@ -53,3 +53,33 @@ describe('ReviewTable — screening-date checkbox (US-06 AC5)', () => {
     expect(screeningBox(60).checked).toBe(true);
   });
 });
+
+// US-07 AC6 (amended 2026-10-14): a known minor's upload review withholds the
+// adult reference hints and status colours, as the blood-test matrix does.
+// The extracted values stay, editable.
+describe('ReviewTable — a known minor sees values with no adult hint or colour (US-07 AC6)', () => {
+  const ldlFile: FileResult[] = [{
+    fileName: 'labs.pdf', reportDate: '2026-09-01', additionalValues: [],
+    values: [{ metric: 'ldl', valueSI: 4, displayValue: 4, displayUnit: 'mmol/L', confidence: 'high' }],
+  } as unknown as FileResult];
+  function ldlRow(knownMinor: boolean) {
+    const { container } = render(
+      <ReviewTable results={ldlFile} history={{ bloodTests: [], labValues: [], documents: [] }} unitSystem="si"
+        sex="male" knownMinor={knownMinor} onSave={() => {}} onCancel={() => {}} isSaving={false} error={null} />,
+    );
+    const row = container.querySelector('.review-matrix .bt-row:not(.bt-header-row)')!;
+    const colours = [...row.querySelectorAll('.bt-status-tick')].map(t => t.className.replace('bt-status-tick ', ''))
+      .filter(c => c !== 'bt-status-none');
+    return { hint: row.querySelector('.bt-ref-label')?.textContent ?? null, colours, value: row.querySelector('input')!.value };
+  }
+
+  it('an adult: the hint and the colour', () => {
+    const r = ldlRow(false);
+    expect(r.hint).not.toBeNull();
+    expect(r.colours).not.toEqual([]);
+  });
+
+  it('a known minor: the value, with no hint and no colour', () => {
+    expect(ldlRow(true)).toEqual({ hint: null, colours: [], value: '4.0' });
+  });
+});

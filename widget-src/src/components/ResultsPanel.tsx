@@ -700,6 +700,9 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
   // reading of them, its status and its "why"; tiles that are only a reading go.
   const adult = !results.knownMinor;
   const reading = <T,>(value: T): T | undefined => (adult ? value : undefined);
+  // US-07 AC6: a known minor is never asked for an email (either box joins the
+  // mailing list). Their PDF is the gate-skipped page's Save as PDF (US-44 AC2).
+  const emailCapture = showEmailCapture && adult;
 
   const urgentSuggestions = results.suggestions.filter(s => s.priority === 'urgent');
   const attentionSuggestions = results.suggestions.filter(s => s.priority === 'attention');
@@ -721,8 +724,8 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
       </button>
       {headerNote}
     </>
-  ) : (SHOPIFY_SURFACE && (guestEmailHook.state === 'captured' || guestEmailHook.gateSkipped)) ? (
-    // Shopify v2, post-capture (or US-44's gate-skipped page): the ungated
+  ) : (SHOPIFY_SURFACE && (guestEmailHook.state === 'captured' || guestEmailHook.gateSkipped || !adult)) ? (
+    // Shopify v2, post-capture (or US-44's gate-skipped page, or a known minor): the ungated
     // Save-as-PDF lives inline in this header (Brad). handlePrint = getReportHtml + print.
     <>
       <button type="button" className="action-btn-small no-print" onClick={() => handlePrint('header')} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
@@ -737,7 +740,7 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
       <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={planHeaderMeta} actions={planHeaderMeta !== null} />
       {/* Cloud connection */}
       {syncControl?.({ hasData: true, attention })}
-      {showEmailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
+      {emailCapture && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />}
 
       {/* Quick Stats */}
       <section className="quick-stats">
@@ -866,7 +869,7 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
       {remindersSection}
 
       {/* US-44: the gate-skipped reminders box renders once, at the top. */}
-      {showEmailCapture && !guestEmailHook.gateSkipped && <GuestEmailCapture hook={guestEmailHook} pdfBlocked={pdfBlocked === 'capture'} />}
+      {emailCapture && !guestEmailHook.gateSkipped && <GuestEmailCapture hook={guestEmailHook} pdfBlocked={pdfBlocked === 'capture'} />}
 
       {SHOPIFY_SURFACE && <FeedbackForm />}
 
