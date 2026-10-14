@@ -1,0 +1,3 @@
+# Batch 3: writer notes and FOR BRAD items (2026-10-14)
+
+- bone-density-scan-dexa: the 2026-09 scrape looks older than the April one (reviewed November 2022, next review November 2025, April's June and July 2025 notices missing); thresholds identical, body unaffected. Management now names no osteoporosis medicine (bisphosphonate and lifestyle lines were in neither scrape; denosumab was a funding notice, raloxifene an expired supply notice), so drug questions should route to osteoporosis-in-adults. Proposed summary drops "medications for osteoporosis"; keywords still list bisphosphonate and denosumab (FOR BRAD: summary correction).
