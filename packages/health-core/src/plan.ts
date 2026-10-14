@@ -36,12 +36,14 @@ export const REPO_SLUG = 'DrBradStanfield/roadmap';
 export const REPO_URL = `https://github.com/${REPO_SLUG}`;
 
 /**
- * False while GitHub has the account flagged (since 2026-09-18) and the
- * repository answers 404 to everyone but its owner: agent-facing text then
- * names no repository URL, because a reviewer who follows one meets a 404
- * (US-32 AC39). Restoring the links is this one edit.
+ * Whether the repository is public, so agent-facing text may link to it.
+ * GitHub flagged the account on 2026-09-18 and the repository answered 404 to
+ * everyone but its owner; the flag lifted and the repository was public again
+ * on 2026-10-12. It stays a kill switch: if the repository goes dark again,
+ * set this false and every agent surface stops naming a URL a reviewer would
+ * meet as a 404 (US-32 AC39). Both settings are tested.
  */
-export const REPO_PUBLIC = false;
+export const REPO_PUBLIC = true;
 
 export const SCHEMA_URL =
   `https://raw.githubusercontent.com/${REPO_SLUG}/main/docs/health-roadmap-file.schema.json`;

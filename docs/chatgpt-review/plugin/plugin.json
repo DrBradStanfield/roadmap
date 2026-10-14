@@ -59,7 +59,7 @@
             },
             {
               "description": "Compute the plan from the record.",
-              "prompt": "What should I do next about my health?",
+              "prompt": "What does my health plan say I should do next?",
               "tools_triggered": "get_plan",
               "expected_behavior": "Returns current values, what screening is due, and evidence-based suggestions with reasons and citations, in hedged educational wording. Nothing is written."
             },
@@ -95,7 +95,8 @@
           ]
         },
         "commerce": false,
-        "commerce_description": "Health by Dr Brad sells nothing through ChatGPT: there is no checkout and nothing to buy."
+        "commerce_description": "Health by Dr Brad sells nothing through ChatGPT: there is no checkout and nothing to buy.",
+        "demo_recording_url": "https://cdn.shopify.com/videos/c/o/v/e89f771ef8d84010bd6ea1ccf5c3336b.mp4"
       },
       "publication": {
         "countries": [],

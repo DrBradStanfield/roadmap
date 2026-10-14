@@ -227,3 +227,29 @@ describe('routeTasksToSaves', () => {
     expect(refused).toEqual(new Map([[slotOf('2024-03-01', 'ldl'), 'error']]));
   });
 });
+
+// US-05 AC2: an Lp(a) cell is typed in a unit label (nmol/L, mg/dL or mg/L).
+// "Changes nothing" compares the typed number and the saved one in that label.
+describe('routeTasksToSaves — an Lp(a) cell typed in its own unit (US-05 AC2)', () => {
+  const lpaTask = (value: number, unit: SaveTask['unit']): SaveTask => ({ date: '2024-03-01', values: { lpa: value }, expected: { lpa: 'l1' }, unit });
+
+  it('310 mg/L over a saved 77 nmol/L (shown 308) is a correction', async () => {
+    const onCorrect = vi.fn().mockResolvedValue('ok');
+    await routeTasksToSaves([lpaTask(77.5, 'mg/L')], [m('lpa', 77, '2024-03-01', 'l1')], vi.fn(), onCorrect);
+    expect(onCorrect).toHaveBeenCalledWith('l1', 77.5);
+  });
+
+  // mg/dL shows one decimal place: a saved 77 nmol/L reads 30.8, not 31.
+  it('the shown number typed again writes nothing: 30.8 mg/dL over a saved 77 nmol/L', async () => {
+    const onCorrect = vi.fn();
+    const refused = await routeTasksToSaves([lpaTask(77, 'mg/dL')], [m('lpa', 77, '2024-03-01', 'l1')], vi.fn(), onCorrect);
+    expect(onCorrect).not.toHaveBeenCalled();
+    expect(refused.size).toBe(0);
+  });
+
+  it('31 mg/dL over a saved 77 nmol/L (shown 30.8) is a correction to 77.5', async () => {
+    const onCorrect = vi.fn().mockResolvedValue('ok');
+    await routeTasksToSaves([lpaTask(77.5, 'mg/dL')], [m('lpa', 77, '2024-03-01', 'l1')], vi.fn(), onCorrect);
+    expect(onCorrect).toHaveBeenCalledWith('l1', 77.5);
+  });
+});

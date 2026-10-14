@@ -385,3 +385,29 @@ describe('US-15 AC14: stop_reason is returned; a refusal is a distinct result', 
     await expect(extractOrClassify([{ type: 'text', content: 'doc' }], { attempts: 1 })).rejects.toThrow('Anthropic refusal');
   });
 });
+
+// US-12 AC8: a German or Brazilian "250.000" platelets copied as a JSON NUMBER
+// parsed to 250, the count guard (which reads strings) passed it, and 0.25
+// ×10⁹/L was stored. Both parses of extractOrClassifyOnce keep it a string.
+describe('US-12 AC8: extractOrClassify refuses a dot-thousands count written as a JSON number', () => {
+  const platelets = '"additionalValues":[{"name":"platelets","value":250.000,"unit":"cells/µL","referenceLow":150.000,"referenceHigh":450.000},'
+    + '{"name":"urine_specific_gravity","value":1.020,"unit":""}]';
+  const body = `"classification":"lab_report","reportDate":null,"values":[],${platelets},"document":null}`;
+  afterEach(() => { global.fetch = REAL_FETCH; });
+
+  it('on the first parse', async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce(anthropicMessage(`{${body}`)) as unknown as typeof fetch;
+    const result = await extractOrClassify([{ type: 'text', content: 'doc' }]);
+    expect(result.additionalValues.map(v => [v.name, v.value])).toEqual([['urine_specific_gravity', 1.02]]);
+    expect(result.droppedValueCount).toBe(1);
+  });
+
+  it('on the `{`-prefilled retry', async () => {
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce(anthropicMessage('not json'))
+      .mockResolvedValueOnce(anthropicMessage(body)) as unknown as typeof fetch;
+    const result = await extractOrClassify([{ type: 'text', content: 'doc' }]);
+    expect(result.additionalValues.map(v => [v.name, v.value])).toEqual([['urine_specific_gravity', 1.02]]);
+    expect(result.droppedValueCount).toBe(1);
+  });
+});

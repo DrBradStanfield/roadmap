@@ -49,7 +49,7 @@ export async function labImport(
     if (!data?.success || !data.data) return { result: null, error: data?.error || 'Extraction failed', errorCode: 'server_error' };
     return { result: data.data, remaining: data.remaining };
   } catch (error) {
-    console.warn('Lab import error:', error);
+    console.warn('Lab import error:', error instanceof Error ? error.name : typeof error);
     return { result: null, error: 'Network error', errorCode: 'network' };
   }
 }
@@ -63,12 +63,17 @@ export async function labImport(
 const pollTokens = new Map<string, string>();
 
 export async function labImportBatch(
-  files: Array<{ fileName: string; pages: PageContent[] }>,
+  files: Array<{ pages: PageContent[] }>,
 ): Promise<{ batchId: string | null; error?: string; errorCode?: UploadErrorCode }> {
   try {
     const response = await fetch(LAB_IMPORT_V2_URL, {
       method: 'POST',
-      body: JSON.stringify({ batch: true, files }),
+      // No real name: a file name can hold a patient's name. Results come back
+      // by request index, and the modal maps the index to its file. `fileName`
+      // is a compatibility label that names nothing: a server older than
+      // 2026-10-13 requires the field, and CI ships this widget before the
+      // server. Drop it once every live server strips it.
+      body: JSON.stringify({ batch: true, files: files.map(({ pages }, i) => ({ fileName: `file-${i + 1}`, pages })) }),
     });
     if (response.status === 429) {
       return { batchId: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
@@ -79,7 +84,8 @@ export async function labImportBatch(
     if (data.pollToken) pollTokens.set(data.batchId, data.pollToken);
     return { batchId: data.batchId };
   } catch (error) {
-    console.warn('Batch import error:', error);
+    // The error's kind only: a parse error can quote the body, lab text included.
+    console.warn('Batch import error:', error instanceof Error ? error.name : typeof error);
     return { batchId: null, error: 'Network error', errorCode: 'network' };
   }
 }

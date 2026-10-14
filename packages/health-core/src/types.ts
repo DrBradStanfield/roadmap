@@ -23,7 +23,7 @@ export interface HealthInputs {
   apoB?: number;          // g/L
   creatinine?: number;  // µmol/L
   psa?: number;         // ng/mL (no unit conversion)
-  lpa?: number;         // nmol/L (no unit conversion — same in both systems)
+  lpa?: number;         // nmol/L (canonical; US units display mg/dL)
   systolicBp?: number;  // mmHg
   diastolicBp?: number; // mmHg
   // User preference (stored as 1=si, 2=conventional in DB)

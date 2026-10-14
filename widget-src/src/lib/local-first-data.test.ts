@@ -110,4 +110,18 @@ describe('explicit local-first data path', () => {
     expect(trackProductEvent).toHaveBeenCalledTimes(1);
     expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'lymphocytes', unit: '%' });
   });
+
+  // US-21 phase 3, AC11 · a unit that holds a number a value could arrive as never
+  // leaves the browser: the server would drop it, but it must not be sent. The
+  // refusal is still counted, under its key alone.
+  it('does not send a refused unit that holds a value', async () => {
+    vi.mocked(trackProductEvent).mockClear();
+
+    await data.bulkSaveLabValues([
+      { metricName: 'ferritin', value: 80, unit: '80 mg/dL', recordedAt: '2024-06-01T09:00:00.000Z' },
+    ]);
+
+    expect(trackProductEvent).toHaveBeenCalledTimes(1);
+    expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin' });
+  });
 });

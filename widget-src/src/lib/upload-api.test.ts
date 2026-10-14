@@ -7,7 +7,9 @@
  * to stdout, and a logged token reads the extracted lab text back.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { labImportBatch, pollBatchStatus } from './upload-api';
+import { z } from 'zod';
+import { labImport, labImportBatch, pollBatchStatus } from './upload-api';
+import { batchImportRequestSchema, labImportPageSchema } from '../../../packages/health-core/src/validation';
 
 const FILES = [{ fileName: 'a.pdf', pages: [{ type: 'image' as const, content: 'AAAA', mimeType: 'image/png' }] }];
 
@@ -59,5 +61,74 @@ describe('the batch poll carries the token the upload was given', () => {
     const poll = await pollBatchStatus('batch_stranger');
     expect(calls[0].body).toEqual({ batchId: 'batch_stranger', pollToken: '' });
     expect(poll).toMatchObject({ status: 'ended', errorCode: 'server_restart' });
+  });
+});
+
+// Privacy: a file name can hold a patient's name ("Jane Citizen bloods.pdf").
+// The server never needs it: a batch result comes back by its request index,
+// and the browser maps the index to the file. So no name leaves the browser.
+describe('privacy: no file name in the request body', () => {
+  const NAMED = [
+    { fileName: 'Jane Citizen bloods.pdf', pages: [{ type: 'text' as const, content: 'one' }] },
+    { fileName: 'labs.zip/Jane Citizen 2024.pdf', pages: [{ type: 'text' as const, content: 'two' }] },
+  ];
+  let raw: string[];
+  beforeEach(() => {
+    raw = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      raw.push(String(init?.body ?? ''));
+      return jsonResponse({ success: true, batchId: 'batch_abc', pollToken: 't', data: { values: [] } });
+    }));
+  });
+
+  it('the batch sends each file\'s pages in order, and nothing that names it', async () => {
+    await labImportBatch(NAMED);
+    expect(raw).toHaveLength(1);
+    expect(raw[0]).not.toContain('Jane');
+    expect(raw[0]).not.toContain('.pdf');
+    expect(raw[0]).not.toContain('.zip');
+    expect(JSON.parse(raw[0])).toEqual({ batch: true, files: [
+      { fileName: 'file-1', pages: NAMED[0].pages },
+      { fileName: 'file-2', pages: NAMED[1].pages },
+    ] });
+  });
+
+  // US-12 AC9, deploy order: CI ships the widget BEFORE the Fly server, and a
+  // failed Fly step keeps the old server live. That server's schema (as of
+  // 32f7b9c5) requires a fileName string on every batch file, so the widget
+  // sends a placeholder label that names nothing. The new schema strips it.
+  it('the batch body still passes the old server\'s schema, and the new one drops the label', async () => {
+    const oldBatchSchema = z.object({
+      batch: z.literal(true),
+      files: z.array(z.object({
+        fileName: z.string(),
+        pages: z.array(labImportPageSchema).min(1).max(100),
+      })).min(1).max(200),
+    });
+    await labImportBatch(NAMED);
+    const body = JSON.parse(raw[0]);
+    expect(oldBatchSchema.safeParse(body).success).toBe(true);
+    const parsed = batchImportRequestSchema.parse(body);
+    expect(parsed.files).toEqual([{ pages: NAMED[0].pages }, { pages: NAMED[1].pages }]);
+  });
+
+  it('the single-file path sends pages and the unit system only', async () => {
+    await labImport(NAMED[0].pages, 'si');
+    expect(JSON.parse(raw[0])).toEqual({ pages: NAMED[0].pages, unitSystem: 'si' });
+  });
+});
+
+// Privacy: a JSON body that fails to parse can be quoted by the SyntaxError,
+// and the console must not carry it (the error's kind only, as BYOK logs).
+describe('privacy: a failed upload response logs no body text', () => {
+  it('logs neither the body nor the parse error message, on one file and on a batch', async () => {
+    stubFetch(() => new Response('{"data": SYNTHETIC sodium 141', { status: 200, headers: { 'content-type': 'application/json' } }));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await labImport(FILES[0].pages, 'si');
+    await labImportBatch(FILES);
+    const logged = JSON.stringify(warn.mock.calls.map(c => c.map(a => (a instanceof Error ? `${a.name}: ${a.message}` : String(a)))));
+    expect(logged).not.toContain('SYNTHETIC');
+    expect(logged).not.toContain('141');
+    warn.mockRestore();
   });
 });

@@ -23,6 +23,7 @@
  */
 import type { Suggestion, ScreeningInputs } from './types';
 import type { MeasurementSource, MeasurementStatus, DocumentType } from './validation';
+import type { LpaUnit } from './units';
 
 /** Bump only when the on-disk shape changes in a way `migrate.ts` must handle. */
 export const CURRENT_SCHEMA_VERSION = 1;
@@ -73,6 +74,8 @@ export interface RoadmapProfile extends FieldStamped {
   unitSystem?: 'si' | 'conventional';
   /** Per-metric display-unit overrides (was localStorage-only `health_roadmap_unit_overrides`). */
   unitOverrides?: Record<string, 'si' | 'conventional'>;
+  /** The unit the user last chose for Lp(a)'s field (US-05 AC2). Absent: US units give mg/dL, any other nmol/L. */
+  lpaUnit?: LpaUnit;
   /**
    * Shopify-surface lead step: true once the user has submitted their email at
    * "Get Your Personalized Plan" (→ Klaviyo). Monotonic (only ever set true).

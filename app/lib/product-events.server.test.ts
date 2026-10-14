@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from 'vitest';
-import { PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
+import { isLabUnitWord, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
+import { acceptedLabUnits, CATALOG_UNITS, LAB_CATALOG } from '../../packages/health-core/src/lab-catalog';
+import { UNIT_DEFS } from '../../packages/health-core/src/units';
 import { parseProductEvent, productEventSchema, SERVER_VISITOR_ID } from './product-events.server';
 
 // supabase.server.ts builds its admin client at module load; route the
@@ -242,6 +244,54 @@ describe('the remote-change counter', () => {
   });
 });
 
+// A value can hide inside a unit-shaped string: a decimal ("5.2 mmol"), a
+// leading count ("141 mmol/L") or a bracketed number ("(5.2)"). Each is
+// refused, on the browser route and the server's own path alike; the one
+// decimal a unit is spelled with, eGFR's "1.73" m², stays.
+const NUMBER_IN_UNIT = [
+  '5.2 mmol', '141 mmol/L', '(5.2)', '5,2 g/dl', '(141)', 'mmol/L 5.2', '11.73m²',
+  'mL/min/1.73m² 4.2', '1.73.5', '0 mmol/L', '-5 U/L', '( 5 )', 'g/L (3,5)',
+  '141mmol/L', 'mmol/L 141', 'H 141', 'mmol/L141', 'g/L 10', '7 H',
+  // A number a unit is spelled with is not a licence for that number anywhere:
+  // only the constructions themselves pass (10^n, /1.73 m², mm3, /100, /24h).
+  '9mg/dL', '100mmol/L', 'mmol/L9', '6%', '24mmol/L', '10mmol/L', '100mg/dL', 'mmol/L12',
+  '10 mmol/L', '3·6 mmol/L', '¹⁴¹ mmol/L', 'mmol/L²', '110^9/L', '10^912/L', '/1000 WBC',
+  '1.73 mmol/L', 'mmol/L 1.73',
+  // Only the exponents units use: a value never rides in as a power of ten.
+  'x10^47/L', '10^7/L', '10⁴⁷/L', '10e8/L',
+  // Digits from outside ASCII and the superscripts never pass.
+  '１４１ mmol/L', 'Ⅴ mmol', '½ g/L', '٣ mmol/L',
+  // A result flag or a qualitative result is a value too (US-21 AC11): "mmol/L H"
+  // on a potassium row says the potassium was high.
+  'mmol/L H', 'mmol/L (H)', 'mmol/L HIGH', 'pmol/L L', 'mmol/L *', 'mmol/L*', '*', '10*3*/µL',
+  'Positive', 'Reactive', 'Non-Reactive', 'nonreactive', 'not detected', 'Detected', 'NEG', 'pos',
+  'g/L LL', 'U/L HH', 'mmol/L lo', 'mmol/L Hi', 'mg/dL (A)', 'U/L ABN', 'abnormal', 'mmol/L crit',
+  'normal', 'Trace', 'negative', 'undetected', 'mmol/L N', 'g/L (low)',
+  'mmol/L wysoki', 'U/L niski', 'dodatni', 'ujemny', 'mmol/L hoch', 'U/L niedrig', 'positiv', 'negativ',
+  'mg/dL alto', 'mg/dL (bajo)', 'positivo', 'negativo', 'g/L baixo',
+  // US-21 AC11: a denylist never ends, so words pass only as unit atoms. Each
+  // of these passed the round-2 list.
+  'Elevated', 'Raised', 'Critical', 'borderline', 'equivocal', 'erhöht', 'erniedrigt', 'nachweisbar',
+  'podwyższony', 'obniżony', 'pozytywny', 'wykryto', 'nieprawidłowy', 'elevado', 'aumentado', 'reactivo',
+  'detectado', 'reagente', 'não reagente', 'pos.', 'neg.', 'H.', 'mmol/L-H', 'mmol/L·H', 'mmol/L HIGH.',
+  '-', '--', 'mmol/L -', 'mmol/L L', 'U/L (s)', 'g/L s',
+  // A German lab flags low with a dash; a unit never starts or ends with one.
+  'mmol/L-', '-mmol/L', 'mmol/L+', 'g/dL (-)',
+];
+const UNIT_SPELLINGS = [
+  'mmol/L', '10^9/L', 'x10^9/L', '×10⁹/L', 'mL/min/1.73m²', 'tys/µl', 'mln/µl',
+  'g/dL', '%', 'U/L', 'µmol/L', 'pg/mL', 'mL/min/1.73 m²', '10^12/L', 'Unit(s)',
+  '10^3/µL', '10^6/µL', '×10³/mm3', 'mL/min/1.73m2', 'mg/24h', '/100 WBC', '10E9/L',
+  'x10^4/µL', '10^5/µL', '×10³/µl', '×10¹²/L', '×10⁶/µl', 'ml/min/1.73 m²', 'ml/min/1.73',
+  '10*3/µL', 'x10^12/L', '10^4', 'cells/mm³', 'mg/24 h', 'g/24hr',
+  // Words that hold a flag word inside them are not flags: only whole tokens are.
+  'µg/L FEU', 'ng/mL (FEU)', 'Index', 'ratio', 'mIU/L', 'Lymphs/100 WBC', 'Unit(s)',
+  // US-21 AC11: count spellings from Polish, German and US reports, built of unit atoms.
+  'tys/µl', 'mln/µl', 'Tsd/µl', 'Mio/µl', 'K/uL', 'thou/mm3', 'cells/cmm', 'mL/min/1.73 m²', '10^9/L',
+  '×10³/µL', 'mg/24 h', 'mmol/mol', 'Gpt/l', 'mOsm/kg', 'µkat/L', 'células/µL', 'komórek/µl', 'Zellen/µl',
+  'UI/L', 'mUI/mL', 'mEq/L', 'kU/L', 'mm/h', 'sec', 'mmHg', 'kPa', '/hpf', 'X10^9/L', 'μmol/L',
+];
+
 /**
  * US-32 AC29 — the "closed allow-list" guarantee has to hold on the SERVER
  * path too: `recordServerEvent` used to insert whatever it was handed.
@@ -446,6 +496,11 @@ describe('recordServerEvent — the server path validates too', () => {
     expect(JSON.stringify(inserts)).not.toContain('4.2');
   });
 
+  it('prunes a unit with a value inside it, keeping the count (US-21 phase 3)', async () => {
+    for (const unit of NUMBER_IN_UNIT) await recordServerEvent('lab_unit_refused', { key: 'ldl_cholesterol', unit });
+    expect(inserts.map((row) => row.metadata)).toEqual(NUMBER_IN_UNIT.map(() => ({ key: 'ldl_cholesterol' })));
+  });
+
 });
 
 /**
@@ -477,6 +532,34 @@ describe('the refused-unit counter', () => {
     }
   });
 
+  it('refuses a unit with a value or a result flag inside it (US-21 phase 3, AC11)', () => {
+    for (const unit of NUMBER_IN_UNIT) {
+      expect(isLabUnitWord(unit), unit).toBe(false);
+      expect(
+        parseProductEvent({ eventName: 'lab_unit_refused', visitorId: VISITOR, metadata: { key: 'ldl_cholesterol', unit } }),
+        unit,
+      ).toBeNull();
+    }
+  });
+
+  it('keeps real unit spellings, eGFR\'s 1.73 m² included (US-21 phase 3)', () => {
+    for (const unit of UNIT_SPELLINGS) {
+      expect(isLabUnitWord(unit), unit).toBe(true);
+      expect(
+        parseProductEvent({ eventName: 'lab_unit_refused', visitorId: VISITOR, metadata: { key: 'egfr', unit } }),
+        unit,
+      ).toMatchObject({ metadata: { key: 'egfr', unit } });
+    }
+  });
+
+  it('keeps every unit spelling the lab catalogue and UNIT_DEFS accept (US-21 phase 3, AC11)', () => {
+    const spellings = new Set([...CATALOG_UNITS, ...Object.values(UNIT_DEFS).flatMap((def) => [def.canonical, def.label.si, def.label.conventional]), ...LAB_CATALOG.flatMap((entry) => [
+      ...acceptedLabUnits(entry), ...(entry.nameConversions ?? []).flatMap((named) => Object.keys(named.conversions)),
+    ])]);
+    expect(spellings.size).toBeGreaterThan(40);
+    expect([...spellings].filter((unit) => !isLabUnitWord(unit))).toEqual([]);
+  });
+
   it('refuses a key that is not a catalogue word', () => {
     expect(
       parseProductEvent({
@@ -492,6 +575,94 @@ describe('the refused-unit counter', () => {
       expect(
         parseProductEvent({ eventName: 'lab_row_added', visitorId: VISITOR, metadata }),
         JSON.stringify(metadata),
+      ).toBeNull();
+    }
+  });
+});
+
+/** US-05 AC2 — the Lp(a) unit counter: which unit was chosen, and from which. */
+describe('the Lp(a) unit counter', () => {
+  it('takes the two unit labels, from a browser', () => {
+    expect(parseProductEvent({ eventName: 'lpa_unit_selected', visitorId: VISITOR, metadata: { unit: 'mg/dL', from: 'nmol/L' } }))
+      .toEqual({ eventName: 'lpa_unit_selected', visitorId: VISITOR, metadata: { unit: 'mg/dL', from: 'nmol/L' } });
+  });
+
+  it('refuses a label that is not an Lp(a) unit, a number, or any other key', () => {
+    for (const metadata of [
+      { unit: 'mmol/L', from: 'nmol/L' }, { unit: 'mg/dL', from: '75' }, { unit: '30', from: 'mg/dL' },
+      { unit: 'mg/dL', from: 'nmol/L', count: 1 }, { unit: 'mg/dL', from: 'nmol/L', value: 30 }, { unit: 'mg/dL', from: 'nmol/L', key: 'lpa' },
+    ]) {
+      expect(parseProductEvent({ eventName: 'lpa_unit_selected', visitorId: VISITOR, metadata }), JSON.stringify(metadata)).toBeNull();
+    }
+  });
+
+  it('lets no other event carry a from', () => {
+    expect(parseProductEvent({ eventName: 'lab_unit_refused', visitorId: VISITOR, metadata: { key: 'ldl_cholesterol', unit: 'mg/dL', from: 'mg/dL' } })).toBeNull();
+    expect(parseProductEvent({ eventName: 'lab_row_added', visitorId: VISITOR, metadata: { from: 'mg/dL' } })).toBeNull();
+  });
+});
+
+/** US-05 AC3 — the Lp(a) check: which answer the user gave, a label only. */
+describe('the Lp(a) check counter', () => {
+  it('takes the answer, one of mg/dL, nmol/L, mg/L and keep, from a browser', () => {
+    for (const answer of ['mg/dL', 'nmol/L', 'mg/L', 'keep']) {
+      expect(parseProductEvent({ eventName: 'lpa_check_answered', visitorId: VISITOR, metadata: { answer } }))
+        .toEqual({ eventName: 'lpa_check_answered', visitorId: VISITOR, metadata: { answer } });
+    }
+  });
+
+  it('refuses another word, a number, or any other key', () => {
+    for (const metadata of [
+      { answer: 'mg/l' }, { answer: 'mmol/L' }, { answer: '156' }, { answer: 390 },
+      { answer: 'mg/dL', value: 390 }, { answer: 'mg/dL', count: 1 }, { answer: 'mg/dL', unit: 'mg/dL' },
+    ]) {
+      expect(parseProductEvent({ eventName: 'lpa_check_answered', visitorId: VISITOR, metadata }), JSON.stringify(metadata)).toBeNull();
+    }
+  });
+
+  it('lets no other event carry an answer', () => {
+    expect(parseProductEvent({ eventName: 'lpa_unit_selected', visitorId: VISITOR, metadata: { unit: 'mg/dL', from: 'nmol/L', answer: 'mg/dL' } })).toBeNull();
+    expect(parseProductEvent({ eventName: 'correction_made', visitorId: VISITOR, metadata: { answer: 'mg/dL' } })).toBeNull();
+  });
+});
+
+describe('the upload outcome counter (US-12 AC10)', () => {
+  const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, valuesDropped: 3 };
+
+  it('takes integer counts from a browser', () => {
+    expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata: counts }))
+      .toMatchObject({ metadata: counts });
+  });
+
+  it('refuses a string, a negative, a fraction, a count over 1000 and a value-shaped field', () => {
+    for (const metadata of [
+      { picked: '9' }, { openFailed: -1 }, { withValues: 1.5 }, { tooLarge: 1001 }, { valuesDropped: 1001 },
+      { picked: 1, fileName: 'report.pdf' }, { picked: 1, unit: 'mmol/L' }, { picked: 1, value: 4.2 },
+    ]) {
+      expect(
+        parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata }),
+        JSON.stringify(metadata),
+      ).toBeNull();
+    }
+  });
+
+  it('refuses every other metadata key, even one another event may carry', () => {
+    for (const metadata of [
+      { picked: 1, provider: 'google-drive' }, { picked: 1, count: 1 }, { picked: 1, outcome: 'ok' },
+      { picked: 1, tool: 'get_plan' }, { picked: 1, backend: 'local' }, { picked: 1, placement: 'header' },
+    ]) {
+      expect(
+        parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata }),
+        JSON.stringify(metadata),
+      ).toBeNull();
+    }
+  });
+
+  it('lets no other event carry an outcome count', () => {
+    for (const key of Object.keys(counts)) {
+      expect(
+        parseProductEvent({ eventName: 'upload_saved', visitorId: VISITOR, metadata: { [key]: 1 } }),
+        key,
       ).toBeNull();
     }
   });

@@ -4,11 +4,13 @@ import {ApobDemo} from './ApobDemo';
 import {ImportExplainer} from './ImportExplainer';
 import {ConnectExplainer} from './ConnectExplainer';
 import {timing, connectTiming, FPS} from './timing';
+import {ReviewDemo, REVIEW_DEMO_FRAMES} from './review/ReviewDemo';
 
 const base = {fps: FPS, width: 1920, height: 1080};
 
 export const RemotionRoot: React.FC = () => (
   <>
+    <Composition id="ReviewDemo" component={ReviewDemo} durationInFrames={REVIEW_DEMO_FRAMES} {...base} />
     <Composition id="ApobDemo" component={ApobDemo} durationInFrames={1200} {...base} />
     <Composition
       id="ImportExplainer"

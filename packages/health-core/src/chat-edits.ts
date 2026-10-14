@@ -20,7 +20,7 @@
  *                               + offers Undo.
  */
 import { z } from 'zod';
-import { resolveUnitSystem, type MetricType, type UnitSystem } from './units';
+import { lookupUnit, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC, LONGITUDINAL_FIELDS } from './mappings';
 import { MEDICATION_KEYS } from './validation';
 import type { HealthInputs } from './types';
@@ -161,7 +161,8 @@ export function toolOnlyAck(edits: ProposedEdit[]): string {
 export interface ProposedFieldEdit {
   kind: 'field';
   field: EditableField;
-  /** The user's stated value, in their stated unit (NOT SI). */
+  /** The user's stated value, in `unitSystem`'s own label (NOT SI): a scaled
+   *  print such as Lp(a) in mg/L arrives rescaled to mg/dL. */
   displayValue: number;
   /** Resolved unit system for `displayValue` (from the stated unit string). */
   unitSystem: UnitSystem;
@@ -206,7 +207,7 @@ const rawMedicationEditSchema = z.object({
  *  - the tool name is unknown,
  *  - the input fails the Zod shape,
  *  - the field isn't a known measurement metric, or
- *  - the stated unit doesn't match either of the metric's known unit labels
+ *  - the stated unit is not one the unit table (`lookupUnit`) knows for the metric
  *    (so we never silently store a wrong-unit value — the model should have
  *    asked instead).
  *
@@ -221,9 +222,9 @@ export function parseProposedEdit(toolName: string, rawInput: unknown): Proposed
     const { field, value, unit, date } = parsed.data;
     const metric = fieldToMetric(field);
     if (!metric) return null;
-    const unitSystem = resolveUnitSystem(metric, unit);
-    if (!unitSystem) return null; // ambiguous / wrong unit — drop rather than guess
-    return { kind: 'field', field, displayValue: value, unitSystem, date: date ?? null };
+    const alias = lookupUnit(metric, unit);
+    if (!alias) return null; // ambiguous / wrong unit — drop rather than guess
+    return { kind: 'field', field, displayValue: value * (alias.scale ?? 1), unitSystem: alias.system, date: date ?? null };
   }
 
   if (toolName === PROPOSE_MEDICATION_EDIT_TOOL.name) {

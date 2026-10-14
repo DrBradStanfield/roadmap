@@ -333,3 +333,51 @@ describe('test-chatbot-matching must_not_claim and referral scoring (US-45 AC2, 
     })).toContain(BP);
   }, 60_000);
 });
+
+// US-15 AC28: the harness parses a router reply as production does. A corrected
+// second object routes the case; a reply nothing parses is an error, never a
+// silent ∅ (chat-health W41: the 10-07 shape scored as an empty route).
+describe('test-chatbot-matching router reply parsing (US-15 AC28)', () => {
+  const q = pickCase();
+
+  /** Run the one-case category offline; the router answers `routerText` for the case's own query. */
+  function run(routerText: string) {
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-reply-'));
+    try {
+      const stub = join(dir, 'fetch-stub.mjs');
+      // The cache warmup asks about "health": it gets a clean empty route.
+      writeFileSync(stub, `
+        globalThis.fetch = async (_url, init) => {
+          const body = JSON.parse(init.body);
+          const mine = body.messages[0].content.includes(${JSON.stringify(q.query)});
+          return new Response(JSON.stringify({
+            content: [{ type: 'text', text: mine ? ${JSON.stringify(routerText)} : '{"handles":[]}' }],
+            stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+          }), { status: 200, headers: { 'content-type': 'application/json' } });
+        };
+      `);
+      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts', '--category', q.category, '--runs', '1']);
+      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
+      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
+      return { status: res.status, stderr: res.stderr, out: res.stdout.replace(/\x1b\[[0-9;]*m/g, '') };
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it('routes on the corrected second object', () => {
+    const text = `{"handles": ["guideline-${q.expected[0]}x"]}\n\nCorrection: copying handles exactly from the index (without the type label):\n\n{"handles": ["${q.expected[0]}"]}`;
+    const { status, stderr, out } = run(text);
+    expect(out, stderr).toContain('Passing:     1');
+    expect(out).toMatch(/SUMMARY .* apiErrors=0 /);
+    expect(status).toBe(0);
+  }, 60_000);
+
+  it('counts a reply nothing parses as an error and exits non-zero', () => {
+    const { status, stderr, out } = run('Sorry, nothing in the index fits.');
+    expect(out, stderr).toContain('[parse-error');
+    expect(out).toMatch(/SUMMARY .* apiErrors=1 /);
+    expect(status).toBe(1);
+  }, 60_000);
+});

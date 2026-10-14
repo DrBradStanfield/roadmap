@@ -117,3 +117,31 @@ describe('the batch poll needs the token the upload was given', () => {
     expect(createBatch).toHaveBeenCalledTimes(1);
   });
 });
+
+// Privacy: a file name can hold a patient's name. The server reads results by
+// request index, so it takes no name, and drops one an older widget still sends
+// (and the `file-N` label the current widget sends for older servers).
+describe('privacy: the batch takes no file name', () => {
+  const PAGES = FILES[0].pages;
+  const batch = (files: unknown[]) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST',
+    headers: { 'fly-client-ip': `10.1.0.${++ipCounter}` },
+    body: JSON.stringify({ batch: true, files }),
+  });
+
+  it('accepts a batch of pages alone', async () => {
+    const created = await (await action({ request: batch([{ pages: PAGES }]) } as never)).json();
+    expect(created.success).toBe(true);
+    expect(createBatch).toHaveBeenCalledWith([{ pages: PAGES }]);
+  });
+
+  it('drops the name an older widget sends before the batch is built', async () => {
+    await action({ request: batch([{ fileName: 'Jane Citizen bloods.pdf', pages: PAGES }]) } as never);
+    expect(createBatch).toHaveBeenCalledWith([{ pages: PAGES }]);
+  });
+
+  it('drops the compatibility label the current widget sends (US-12 AC9)', async () => {
+    await action({ request: batch([{ fileName: 'file-1', pages: PAGES }]) } as never);
+    expect(createBatch).toHaveBeenCalledWith([{ pages: PAGES }]);
+  });
+});

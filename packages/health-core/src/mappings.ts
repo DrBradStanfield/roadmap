@@ -10,6 +10,7 @@
 import type { HealthInputs } from './types';
 import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem } from './types';
 import { UNIT_DEFS, type MetricType } from './units';
+import { parseLocalisedNumber } from './parseNumber';
 
 /**
  * Maps HealthInputs field names to metric_type values for storage in the
@@ -343,7 +344,7 @@ export function screeningsToInputs(
         inputs.lungSmokingHistory = castEnum(s.value, SMOKING_HISTORIES);
         break;
       case 'lung_pack_years':
-        inputs.lungPackYears = parseFloat(s.value);
+        inputs.lungPackYears = parseLocalisedNumber(s.value);
         break;
       case 'lung_screening':
         inputs.lungScreening = castEnum(s.value, LUNG_SCREENINGS);
@@ -364,7 +365,7 @@ export function screeningsToInputs(
         inputs.prostateDiscussion = castEnum(s.value, PROSTATE_DISCUSSIONS);
         break;
       case 'prostate_psa_value':
-        inputs.prostatePsaValue = parseFloat(s.value);
+        inputs.prostatePsaValue = parseLocalisedNumber(s.value);
         break;
       case 'prostate_last_date':
         inputs.prostateLastDate = screeningDate(s.value, true);

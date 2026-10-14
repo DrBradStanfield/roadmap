@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { refHintFor } from './reference-hints';
+import { lpaRefHint, refHintFor } from './reference-hints';
 import {
-  resolveUnitSystem,
+  lookupUnit,
   reportedToCanonical,
+  canonicalToReported,
+  LPA_UNITS,
   toCanonicalValue,
   fromCanonicalValue,
   formatDisplayValue,
@@ -12,6 +14,7 @@ import {
   UNIT_DEFS,
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
+  LPA_THRESHOLDS,
   inchesToFeetInches,
   feetInchesToInches,
   cmToFeetInches,
@@ -21,6 +24,7 @@ import {
   LIPID_TREATMENT_TARGETS,
   formatTargetLine,
   formatGradedValue,
+  unitDecimalPlaces,
   waistToHeightRatio,
   isWaistToHeightElevated,
   elevatedWaistFromCm,
@@ -28,6 +32,7 @@ import {
   type UnitSystem,
 } from './units';
 import { METRIC_TYPES } from './validation';
+import { getLpaStatus } from './calculations';
 
 describe('Unit conversions — round-trip accuracy', () => {
   const metrics: MetricType[] = [
@@ -109,21 +114,44 @@ describe('Known clinical value conversions', () => {
   });
 });
 
-// Lp(a): the ~2.4 mass→molar factor is per mg/dL (EAS 2022 consensus pairs
-// 300 mg/dL with 750 nmol/L). NZ/AU labs print mg/L, a tenth of that, so the
-// conventional label converts at 0.24. Found live 2026-09-07: 93 mg/L had been
-// stored as 223 nmol/L (10× high), which fired `lpa-elevated` on a normal result.
-describe('Lp(a) mass → molar conversion (per mg/dL, not per mg/L)', () => {
-  it('93 mg/L (the NZ print) → ~22.3 nmol/L', () => {
-    expect(toCanonicalValue('lpa', 93, 'conventional')).toBeCloseTo(22.32, 2);
-    expect(reportedToCanonical('lpa', 93, 'mg/L')!.valueSI).toBeCloseTo(22.32, 2);
+// Lp(a): the mass→molar factor is per mg/dL, 2.5 nmol/L per mg/dL — the pairs
+// the guidelines grade against (EAS 2022 consensus: 30 mg/dL ≈ 75 nmol/L,
+// 50 mg/dL ≈ 125 nmol/L, 300 mg/dL ≈ 750 nmol/L). Found live 2026-09-07: 93 mg/L
+// (the NZ print) had been stored as 223 nmol/L (10× high). Found live
+// 2026-10-13: the US form labelled Lp(a) "mg/L", a unit US labs never print, so
+// "156" off a US report (mg/dL) was stored as 37 nmol/L (normal) instead of 390
+// (elevated); the factor was 2.4, so 50 mg/dL graded Borderline, not Elevated.
+describe('US-05 AC1 — Lp(a) in US units is mg/dL, graded at the guideline pairs', () => {
+  it('labels the US-units field mg/dL and the SI field nmol/L', () => {
+    expect(getDisplayLabel('lpa', 'conventional')).toBe('mg/dL');
+    expect(getDisplayLabel('lpa', 'si')).toBe('nmol/L');
   });
 
-  it('45 mg/dL (the US print, via the scaled alias) → 108 nmol/L, inside the 750 nmol/L range', () => {
-    const r = reportedToCanonical('lpa', 45, 'mg/dL')!;
+  it('30 mg/dL → 75 nmol/L, graded Borderline; 29 mg/dL is Normal', () => {
+    const si = toCanonicalValue('lpa', 30, 'conventional');
+    expect(si).toBeCloseTo(75, 9);
+    expect(getLpaStatus(si)).toBe('Borderline');
+    expect(getLpaStatus(toCanonicalValue('lpa', 29, 'conventional'))).toBe('Normal');
+  });
+
+  it('50 mg/dL (the ACC/AHA risk enhancer) → 125 nmol/L, graded Elevated', () => {
+    const r = reportedToCanonical('lpa', 50, 'mg/dL')!;
     expect(r.system).toBe('conventional');
-    expect(r.valueSI).toBeCloseTo(108, 5);
-    expect(r.valueSI).toBeLessThan(UNIT_DEFS.lpa.validationRange.si.max);
+    expect(r.valueSI).toBeCloseTo(125, 9);
+    expect(getLpaStatus(r.valueSI)).toBe('Elevated');
+  });
+
+  it('156 typed in US units (a US report, mg/dL) → 390 nmol/L, graded Elevated', () => {
+    const si = toCanonicalValue('lpa', 156, 'conventional');
+    expect(si).toBeCloseTo(390, 9);
+    expect(getLpaStatus(si)).toBe('Elevated');
+    expect(reportedToCanonical('lpa', 156, 'mg/dL')).toEqual({ valueSI: si, system: 'conventional' });
+  });
+
+  it('93 mg/L (the NZ/AU/UK print) is still read through the alias table → 23.25 nmol/L', () => {
+    const r = reportedToCanonical('lpa', 93, 'mg/L')!;
+    expect(r.system).toBe('conventional');
+    expect(r.valueSI).toBeCloseTo(23.25, 9);
   });
 
   it('nmol/L passes through untouched in both directions', () => {
@@ -132,15 +160,61 @@ describe('Lp(a) mass → molar conversion (per mg/dL, not per mg/L)', () => {
     expect(reportedToCanonical('lpa', 125, 'nmol/L')).toEqual({ valueSI: 125, system: 'si' });
   });
 
-  it('displays a stored 22.32 nmol/L as the 93 mg/L that was entered', () => {
-    expect(formatDisplayValue('lpa', 22.32, 'conventional')).toBe('93');
-    expect(formatDisplayValue('lpa', 22.32, 'si')).toBe('22');
+  it('displays a stored value as the mg/dL that was typed', () => {
+    expect(formatDisplayValue('lpa', toCanonicalValue('lpa', 156, 'conventional'), 'conventional')).toBe('156.0');
+    expect(formatDisplayValue('lpa', 390, 'si')).toBe('390');
   });
 
-  it('the conventional validation bound is the canonical 750 nmol/L bound, converted', () => {
+  it('the US-units validation bound is EAS\u2019s 300 mg/dL, the same as 750 nmol/L', () => {
     const { si, conventional } = UNIT_DEFS.lpa.validationRange;
-    expect(toCanonicalValue('lpa', conventional.max, 'conventional')).toBeCloseTo(si.max, 5);
-    expect(getDisplayRange('lpa', 'conventional')).toEqual({ min: 0, max: conventional.max });
+    expect(getDisplayRange('lpa', 'conventional')).toEqual({ min: 0, max: 300 });
+    expect(toCanonicalValue('lpa', conventional.max, 'conventional')).toBeCloseTo(si.max, 9);
+  });
+
+});
+
+// US-05 AC2: the field takes nmol/L, mg/dL and mg/L, each a label the unit table reads.
+describe('US-05 AC2 — Lp(a) takes three units', () => {
+  it('lists the three units the field offers', () => {
+    expect(LPA_UNITS).toEqual(['nmol/L', 'mg/dL', 'mg/L']);
+  });
+
+  it('the reference hint is in each unit, at the 75 nmol/L line, by the formatTargetLine rule', () => {
+    expect(lpaRefHint('nmol/L')).toBe('Normal: <75 nmol/L');
+    expect(lpaRefHint('mg/dL')).toBe('Normal: <30 mg/dL');
+    expect(lpaRefHint('mg/L')).toBe('Normal: <300 mg/L');
+    // The line printed is the first whole number the plan grades at or above it.
+    expect(reportedToCanonical('lpa', 299, 'mg/L')!.valueSI).toBeLessThan(LPA_THRESHOLDS.normal);
+    expect(reportedToCanonical('lpa', 300, 'mg/L')!.valueSI).toBeGreaterThanOrEqual(LPA_THRESHOLDS.normal);
+  });
+
+  it('canonicalToReported is the inverse of reportedToCanonical in every unit', () => {
+    expect(canonicalToReported('lpa', 390, 'nmol/L')).toBe(390);
+    expect(canonicalToReported('lpa', 390, 'mg/dL')).toBeCloseTo(156, 9);
+    expect(canonicalToReported('lpa', 390, 'mg/L')).toBeCloseTo(1560, 9);
+    expect(canonicalToReported('lpa', 750, 'mg/L')).toBe(3000); // no float noise on the bound
+    for (const unit of LPA_UNITS) {
+      for (const n of [0, 9, 30, 93, 156, 300]) {
+        expect(canonicalToReported('lpa', reportedToCanonical('lpa', n, unit)!.valueSI, unit)).toBeCloseTo(n, 9);
+      }
+    }
+    expect(canonicalToReported('lpa', 75, 'mmol/L')).toBeNull();
+  });
+
+  // Display only (R2): at 2.5 nmol/L per mg/dL, whole mg/dL hid the cut-points.
+  it('mg/dL shows one decimal place, so a value beside a cut-point reads on its side: 74 is 29.6, 124 is 49.6', () => {
+    expect(formatDisplayValue('lpa', 74, 'conventional')).toBe('29.6');
+    expect(formatDisplayValue('lpa', 124, 'conventional')).toBe('49.6');
+    expect(formatDisplayValue('lpa', 75, 'conventional')).toBe('30.0');
+    expect(formatDisplayValue('lpa', 74, 'si')).toBe('74');
+  });
+
+  it('mg/L keeps a whole-number step, the same step as mg/dL at one decimal place', () => {
+    expect(unitDecimalPlaces('lpa', 'conventional')).toBe(1);
+    expect(unitDecimalPlaces('lpa', 'conventional', 0.1)).toBe(0);
+    expect(unitDecimalPlaces('lpa', 'si')).toBe(0);
+    expect(formatTargetLine('lpa', LPA_THRESHOLDS.normal, 'conventional', undefined, 0.1)).toBe('300');
+    expect(formatTargetLine('lpa', LPA_THRESHOLDS.normal, 'conventional')).toBe('30.0');
   });
 });
 
@@ -349,22 +423,29 @@ describe('Feet/inches conversions', () => {
   });
 });
 
-describe('resolveUnitSystem — no-regression sweep over every metric', () => {
+describe('lookupUnit — no-regression sweep over every metric', () => {
   it('resolves both of a metric\u2019s own labels to the system that converts them', () => {
     for (const metric of METRIC_TYPES) {
       const def = UNIT_DEFS[metric as MetricType];
-      expect([metric, resolveUnitSystem(metric as MetricType, def.label.si)]).toEqual([metric, 'si']);
+      expect([metric, lookupUnit(metric as MetricType, def.label.si)]).toEqual([metric, { system: 'si' }]);
       // Three metrics (mmHg, ng/mL) label both systems the same; SI wins, and the
       // two conversions are identical, so nothing is scaled differently.
       const expected = def.label.si === def.label.conventional ? 'si' : 'conventional';
-      expect([metric, resolveUnitSystem(metric as MetricType, def.label.conventional)]).toEqual([metric, expected]);
+      expect([metric, lookupUnit(metric as MetricType, def.label.conventional)]).toEqual([metric, { system: expected }]);
     }
   });
 
   it('refuses a unit that belongs to no system, rather than guessing', () => {
-    expect(resolveUnitSystem('weight', 'stone')).toBeNull();
-    expect(resolveUnitSystem('ldl', 'g/L')).toBeNull();
-    expect(resolveUnitSystem('ldl', '')).toBeNull();
+    expect(lookupUnit('weight', 'stone')).toBeNull();
+    expect(lookupUnit('ldl', 'g/L')).toBeNull();
+    expect(lookupUnit('ldl', '')).toBeNull();
+  });
+
+  it('refuses a unit named after an inherited object property (US-05 AC1: the chatbot reads aliases now)', () => {
+    for (const unit of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) {
+      expect([unit, lookupUnit('lpa', unit)]).toEqual([unit, null]);
+      expect([unit, reportedToCanonical('lpa', 100, unit)]).toEqual([unit, null]);
+    }
   });
 });
 

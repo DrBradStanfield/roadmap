@@ -177,6 +177,15 @@ describe('US-15 AC11: nothing reaches the prompt unless it is allowlisted or bou
     expect(context.screenings).toEqual({ lungPackYears: 20, prostatePsaValue: 1.2 });
   });
 
+  // The widget reads a screening number with parseLocalisedNumber (mappings.ts);
+  // the chat read it with Number(), so a European "4,5" PSA was on the plan
+  // but dropped from the chat's, and "0x10" passed the range as 16.
+  it('US-15 AC11: reads a screening number as the widget does ("4,5" is 4.5; "0x10" and "1e1" are not numbers)', () => {
+    const { context } = contextFor([], [scr('lung_pack_years', '0x10'), scr('prostate_psa_value', '4,5')]);
+    expect(context.screenings).toEqual({ prostatePsaValue: 4.5 });
+    expect(contextFor([], [scr('lung_pack_years', '1e1')]).context.screenings).toEqual({});
+  });
+
   it('US-15 AC11: drops history under a metric not on the list, and points out of range', () => {
     const { json, context } = contextFor([], [], {
       measurementHistory: {

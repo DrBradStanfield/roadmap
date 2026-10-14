@@ -104,7 +104,7 @@ The system prompt (metric aliases, disambiguation rules, output schema) is `unif
 
 After the LLM returns `{ metric: "ldl", value: 130, unit: "mg/dL" }`, `resolveLabValues()` resolves this to SI canonical (`valueSI: 3.36 mmol/L`) before the client sees it. Unit logic stays in `units.ts` + `lab-extraction.ts`; the client receives values ready to save.
 
-**Resolution approach**: a deterministic `UNIT_LOOKUP` keyed by `(metric, normalized_unit_string)`, auto-populated from `UNIT_DEFS` labels plus aliases (`addAlias('lpa', 'mg/l', 'conventional')`). Unrecognised unit? Check which validation range the value fits; if it fits one and not the other, use that, else mark `confidence: 'low'`.
+**Resolution approach**: a deterministic lookup (`lookupUnit` in `units.ts`) keyed by `(metric, normalized_unit_string)`: the two `UNIT_DEFS` labels plus the `UNIT_ALIASES` spellings (Lp(a) `mg/l` is a scaled alias, a tenth of the `mg/dL` label). Unrecognised unit? Check which validation range the value fits; if it fits one and not the other, use that, else mark `confidence: 'low'`.
 
 ### Why pdf.js Worker as Blob URL?
 
@@ -157,7 +157,7 @@ Health data must never be auto-saved without explicit user confirmation. The rev
 ### Retry shape (`extractOrClassify`, `anthropic.server.ts`)
 
 - **Outer**: `attempts` (default 2) with a 1 s sleep. Catches schema drift and anything the inner layers rethrow.
-- **Per attempt**: one call; if the JSON does not parse, a second call with the assistant turn prefilled `{`. The pair shares ONE deadline (`timeoutMs`): the retry gets what is left, never a fresh window.
+- **Per attempt**: one call; if the JSON does not parse, a second call with the assistant turn prefilled `{`. Every parse (both of these, the batch poll's and BYOK's) goes through `parseExtractionJson` (US-12 AC8): a `value`, `referenceLow` or `referenceHigh` written as a bare number with three decimals (`250.000`) is quoted before `JSON.parse`, so a count row refuses it as it refuses the string. The pair shares ONE deadline (`timeoutMs`): the retry gets what is left, never a fresh window.
 - **HTTP layer** (`callAnthropic`): `RETRY_MAX_ATTEMPTS = 2`, flat 1 s, on 502/503/504/529 and network/timeout errors. 503/529 on the final attempt are silenced from Sentry.
 - Worst case on the website: 2 × 2 × 2 = 8 HTTP attempts, so the client never retries. The connector passes `attempts: 1, httpAttempts: 1, timeoutMs: min(20 s, remaining)` because its whole call must fit in 40 s.
 - The `{` prefill is rejected by 4.6+ models (400). If the model is ever bumped past Haiku 4.5, replace prefill + `extractJsonObject` with structured outputs.
@@ -169,7 +169,7 @@ Health data must never be auto-saved without explicit user confirmation. The rev
 ### PDF Handling (`pdf-extract.ts`)
 
 1. Load PDF via `pdfjsLib.getDocument()`
-2. For each page (`MAX_PAGES = 20`):
+2. For each page, up to `IMPORT_LIMITS.websitePdfPages` (20). A longer PDF returns `truncated: true`, and the upload names it (US-12 AC9):
    - Extract text via `page.getTextContent()` → join text items
    - If meaningful text found (`TEXT_THRESHOLD` = 50 chars): send as `{ type: "text" }` — cheaper LLM call
    - If text layer is empty/sparse (scanned PDF): render to canvas at 1.5x scale → JPEG base64 (quality 0.8) → send as `{ type: "image" }` — vision LLM call
@@ -181,7 +181,7 @@ JPG/PNG uploaded directly → resize to max 1500px dimension (canvas, preserving
 
 ### ZIP Handling (`zip-extract.ts`)
 
-`JSZip.loadAsync(file)` enumerates entries recursively, filtered to `.pdf`, `.jpg`, `.jpeg`, `.png` and skipping junk (`__MACOSX/`, `.DS_Store`, `Thumbs.db`, dotfiles). Files process sequentially to manage memory, with a progress callback and AbortController cancellation.
+`JSZip.loadAsync(file)` enumerates entries recursively, filtered to `.pdf`, `.jpg`, `.jpeg`, `.png` and skipping junk (`__MACOSX/`, `.DS_Store`, `Thumbs.db`, dotfiles). Files process sequentially to manage memory, with a progress callback and AbortController cancellation. Since 2026-10-13 a member is named `zip/member` (`labs.zip/results.pdf`), its document's dedup key `sourceFileName`, so two ZIPs' same-path members stay apart; a ZIP imported before then, or renamed, offers its document-only members again (pre-ticked; off-cloud, saving one adds a second metadata row; lab values and hash-deduped originals unaffected). A member over 10 MB once inflated is named too large and never read (US-12 AC9).
 
 ---
 
@@ -192,7 +192,7 @@ The upload modal (`UploadModal.tsx`) is a 4-state machine: `'select' | 'processi
 ### State 1: Select
 - Drag-and-drop zone + file browser
 - Accepts `.pdf`, `.jpg`, `.jpeg`, `.png`, `.zip`
-- `MAX_FILES = 200` per session; `MAX_FILE_SIZE` = `IMPORT_LIMITS.websiteFileMb` (10 MB), client-side; over-size files are listed with an error, not silently dropped
+- `MAX_FILES = 200` per session; `MAX_FILE_SIZE` = `IMPORT_LIMITS.websiteFileMb` (10 MB), client-side; over-size files are listed by name with the limit, beside the files that were read, and never processed
 - Device-only users first see "Keep your original documents" (connect a cloud) with a "Continue without keeping my files" skip
 - "Extract Values" starts processing
 
@@ -211,6 +211,7 @@ The upload modal (`UploadModal.tsx`) is a 4-state machine: `'select' | 'processi
 
 ### State 4: Done
 - "Saved N blood test values, M additional lab values, K documents"; skipped-duplicate and "could not be saved" notices
+- **Files to check (US-12 AC9–10, 2026-10-13):** a guest's nine lab PDFs once saved with no word about the files that vanished. Review, done and error screens now list every file not fully read, by name, inside the Clarity-masked modal: could not open (pdf.js threw, the 30 s read timed out, or no pages; `readPages` notes it; a ZIP that will not open, or holds nothing readable, is named itself), too large, only the first 20 pages read, filed as a document with no values (`toUnifiedResult` discards a non-lab file's values), no values found, N values could not be read (`droppedValueCount`, rows the parse refused), server error (a failed or missing batch entry too), daily limit. The Pages build has no server of ours and no daily limit, so there the last two read "Anthropic could not be reached or could not read it" and "Your Anthropic key hit its rate limit. Wait a minute and try again" (`SHOPIFY_SURFACE`; the error screen too); a key Anthropic refuses (401, 403) or an account with no credit (a 400 naming credit or billing) says what to check instead, since trying again never helps; the `upload_outcome` keys are the same. A run that fails whole (batch refused, poll failed) gives every file without a verdict the server-error or daily-limit reason. Each run past the quota check, and each pick of only oversize files, fires one `upload_outcome` with integer counts only (`picked`, `withValues`, `documentOnly`, `noValues`, `openFailed`, `tooLarge`, `truncated`, `serverError`, `limitError`, `valuesDropped`, clamped to 1000), and the server refuses any other key on it; `truncated` overlaps the rest and `valuesDropped` counts values, not files. It is the one event `trackProductEvent` does not throttle per tab.
 - "Done" closes the modal and triggers a store refresh
 
 ### Entry Point
@@ -247,11 +248,13 @@ picker and lost the day; `FullDate` with an explicit `day` field fixed it.)
 
 ## Lp(a) Unit Conversion
 
-The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: "lpa", value: 93, unit: "mg/L" }`. But `UNIT_DEFS.lpa` was an identity unit (both SI and conventional nmol/L). The resolver couldn't match "mg/L", fell back to the range heuristic (93 fits 0-750 nmol/L), and stored 93 as nmol/L. The correct value is ~22 nmol/L.
+The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: "lpa", value: 93, unit: "mg/L" }`. But `UNIT_DEFS.lpa` was an identity unit (both SI and conventional nmol/L). The resolver couldn't match "mg/L", fell back to the range heuristic (93 fits 0-750 nmol/L), and stored 93 as nmol/L. The correct value is ~23 nmol/L (22.3 at the 2.4 factor used until 2026-10-13).
 
-**Fix**: `lpa` in `units.ts` is a dual-unit definition — SI nmol/L, conventional mg/L, nmol/L = mg/L × 0.24 — plus the `mg/l` alias and a scaled `mg/dl` alias (×10) in `units.ts`. The population factor is ~2.4 nmol/L per **mg/dL** (EAS 2022 consensus; Marcovina & Albers 2016), so 0.24 per mg/L. Lp(a) molecular weight varies (300-800 kDa) with kringle IV repeats, which is why WHO and IFCC recommend nmol/L; the factor is an average (~2.0–2.5), a documented limitation.
+**Fix**: `lpa` in `units.ts` is a dual-unit definition — SI nmol/L, conventional mg/dL (the US print), nmol/L = mg/dL × 2.5 — plus a scaled `mg/l` alias (×0.1, the NZ/AU/UK print) in `units.ts`. The factor is per **mg/dL**, so 0.25 per mg/L: 93 mg/L ≈ 23 nmol/L. 2.5 is the pairing of the guideline cut-points the plan grades against (EAS 2022 consensus: 30 mg/dL with 75 nmol/L, 50 mg/dL with 125 nmol/L); it was 2.4 until 2026-10-13, which graded a US 50 mg/dL Borderline instead of Elevated. Until 2026-10-13 the conventional label was mg/L and mg/dL the scaled alias; see the second data-impact note. Lp(a) molecular weight varies (300-800 kDa) with kringle IV repeats, which is why WHO and IFCC recommend nmol/L; the factor is an average (~2.0–2.5), a documented limitation.
 
-**Data impact (2026-09-07)**: from the first fix until this one the code applied 2.4 per mg/L, so every Lp(a) entered in mg/L (the usual NZ/AU print, by upload, chatbot or connector) was stored 10× high, and the plan fired `lpa-elevated` on normal results. There is no migration (house rule): each affected row needs a correction row — the website's fix-this-value on the Lp(a) cell, or the connector's `correct_value` with `expectedValue` set to the stored number. Brad's own record holds one: lpa 223 nmol/L on 2023-01-24 from a report printing "Lipoprotein(a) 93 mg/L"; the right value is 22.3 nmol/L. Values entered in nmol/L were never affected.
+**Data impact (2026-09-07)**: from the first fix until this one the code applied 2.4 per mg/L, so every Lp(a) entered in mg/L (the usual NZ/AU print, by upload, chatbot or connector) was stored 10× high, and the plan fired `lpa-elevated` on normal results. There is no migration (house rule): each affected row needs a correction row — the website's fix-this-value on the Lp(a) cell, or the connector's `correct_value` with `expectedValue` set to the stored number. Brad's own record holds one: lpa 223 nmol/L on 2023-01-24 from a report printing "Lipoprotein(a) 93 mg/L"; the right value is 23.25 nmol/L (≈23) at today's 2.5 per mg/dL (22.3 at the 2.4 used until 2026-10-13). Values entered in nmol/L were never affected.
+
+**Data impact (2026-10-13)**: the 09-07 fix kept the US-units form field labelled mg/L, a unit US labs never print. A US user typing the mg/dL number off her report got it read as mg/L, stored 10× low: 156 mg/dL landed as 37 nmol/L (Normal) instead of 390 (Elevated). Every value typed into the US-units Lp(a) field from 2026-09-07 to this fix is affected; uploads, the connector and the CLI read the printed unit and were not. Again no migration: each affected row needs a correction row, and the page now asks for it (US-05 AC3): each active Lp(a) row from a typed source (`manual`, `manual_correction`, `lab_import_edited`) created from the 2026-09-07 release (GitHub Pages, 03:53:45 UTC) to the fix's release (2026-10-13 02:30 UTC), on a device in US units (where the field showed the US default, mg/L), gets a question under the blood-test matrix. An old Lp(a) toggle set to mg/L ('conventional') excludes the device: that user chose the old mg/L and typed real mg/L. One set to SI does not, since that user may have typed into the default mg/L field before toggling. The connector and the CLI write `manual` too, so a row they stored right can be asked about. The answers name a number and its unit, read back from the stored value, and each but Neither writes a correction at today's factor: "My report says <n> mg/dL" saves n × 2.5 nmol/L (above 300 mg/dL, the ceiling, 750), "... nmol/L" saves n, and "... mg/L" saves n × 0.25, since the old field stored a real mg/L at 0.24. A Quest 120 nmol/L filed through the connector is offered "My report says 500 mg/dL (saves 750 nmol/L, the highest value this tool records)", "My report says 500 nmol/L" and "My report says 500 mg/L (saves 125 nmol/L)". The report says 120 nmol/L, so only "Neither of these" is honest, and it writes nothing. A US user who has since switched to SI units is not asked. Separately, an Lp(a) imported in mg/dL before 2026-10-13 was stored at 2.4 nmol/L per mg/dL (50 mg/dL → 120 nmol/L) and now displays as "48.0 mg/dL": that is the factor change, not an error, and those rows stay as stored. Separately, mg/L imports made between 2026-09-07 and 2026-10-13 were stored at 0.24 nmol/L per mg/L, not today's 0.25: 93 mg/L was stored as 22.32 nmol/L and now shows "89 mg/L"; re-uploading the same report raises a conflict (22.32 held against 23.25), Replace unticked; and an NZ print of 500–520 mg/L was stored as 120–124.8 nmol/L, Borderline, where today it would be 125–130, Elevated. These rows stay as stored (no migration).
 
 ---
 
@@ -276,7 +279,7 @@ The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: 
 ### `app/routes/api.lab-import-v2.ts` — the only endpoint an upload calls
 
 - `GET ?quota` preflight (remaining per-IP files) · `GET ?batchId=` poll · `POST` single file or batch.
-- App-proxy HMAC on both methods; Zod validation (`labImportRequestSchema` `{ pages[1..100], unitSystem? }`, `batchImportRequestSchema` `{ batch: true, files: [{ fileName, pages }] }`); quota consumed before the model call.
+- App-proxy HMAC on both methods; Zod validation (`labImportRequestSchema` `{ pages[1..100], unitSystem? }`, `batchImportRequestSchema` `{ batch: true, files: [{ pages }] }`); quota consumed before the model call. No file name reaches the server (it can hold a patient's name): a batch result comes back by request index (`custom_id` `file-N`) and the browser maps it to its file; a name an older widget sends is stripped by the schema. The widget sends `fileName: "file-N"` on each batch file, a compatibility label that names nothing, because CI ships the widget before the server and a server older than 2026-10-13 requires the field; drop it once every live server strips it.
 - Calls `extractOrClassify(pages)` and returns `{ success, data, remaining }`. `unitSystem` is accepted and ignored; display units are resolved from the record's profile client-side.
 - Batch state (`activeBatches`, max 200) is per machine: a poll landing on the other Fly machine 404s and the client falls back. Accepted.
 - The v1 `api.lab-import.ts` and the `bulkMeasurements` branch of `api.measurements.ts` were deleted in the 2026-06-12 teardown; there is no server save path.
@@ -329,7 +332,7 @@ Found with Brad's real lab reports and fixed before shipping:
 |---|---|---|
 | 1 | Unsaved weight wiped after upload | `onStart` persists longitudinal form values before extraction |
 | 2 | Blood-test section hidden after upload | `formStage` forced to 4 when saved blood-test metrics exist |
-| 3 | Lp(a) 93 mg/L stored as 93 nmol/L, then as 223 (×2.4 per mg/L) | dual-unit `lpa` definition at 0.24 nmol/L per mg/L (see above) |
+| 3 | Lp(a) 93 mg/L stored as 93 nmol/L, then as 223 (×2.4 per mg/L) | dual-unit `lpa` definition at 2.5 nmol/L per mg/dL (2.4 until 2026-10-13), mg/L a scaled alias (see above) |
 | 4 | Day precision lost (always saved as 01) | `FullDate` with a day field + `buildRecordedAt()` |
 | 5 | ZIP progress stuck at 100% | two-phase progress (extract, then process) |
 | 6 | Letter with an em dash in its title filed twice, no blob (2026-09-06) | `dropboxApiArg()` + no metadata-only fallback behind a connector row (§1) |
@@ -419,7 +422,7 @@ The `health-upload.js` extraction bundle (pdf.js/JSZip — transport-independent
 ### 3. Anthropic integration notes
 
 - Pipeline mode (< `BATCH_THRESHOLD` = 20 files): client extracts (EXTRACT_CONCURRENCY=3) feeding LLM_CONCURRENCY=5 concurrent single-file calls — extraction runs ahead so the queue stays full
-- Batch mode (≥ 20 files): Anthropic **Message Batches API** (50% cheaper; poll-based; per-machine poll state, see the route)
+- Batch mode (≥ 20 files): Anthropic **Message Batches API** (50% cheaper; poll-based; per-machine poll state, see the route). Each result carries its request index (`custom_id` `file-N`) and the client maps it to the file it sent; an errored, expired or unparseable entry carries `errorCode`, and a missing one is a server error too (US-12 AC9)
 - **Prompt caching is NOT applicable**: the system prompts are ~600–1,000 tokens, below Haiku 4.5's 4,096-token minimum cacheable prefix; the per-call cost is dominated by the unique document content anyway
 
 ### 4. Save-path performance (shipped June 2026)
@@ -483,7 +486,7 @@ Our server validates and writes only: it resolves the printed name (`CORE_METRIC
 in `lab-extraction.ts`, the same table the extraction prompt is rendered from; the lab
 catalogue) and refuses a row whose name disagrees with its metric ("Lipoprotein(a)" is
 not ApoB); converts the unit through the one table (`lookupUnit` in `units.ts`, which
-`add_measurement` and the website's extractor consult too); dry-runs the real append
+`add_measurement`, the website's extractor and the chatbot's edits consult too); dry-runs the real append
 (range, day, slot); and marks a value under the metric's display floor (`UNIT_SWAP_FLOORS`)
 as a low-confidence question, because a unit swap on a floor-0 lipid passes every range.
 The candidates, the receipt, the commit and the 90-day guard are `import_documents`' own

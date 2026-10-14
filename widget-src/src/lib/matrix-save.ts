@@ -17,8 +17,8 @@
 //   - one write per (day, metric), the later cell's. A safety net only: a
 //     matrix never sends two values for one slot, it shows them as an error.
 
-import { formatDisplayValue, fromCanonicalValue, type ApiMeasurement, type MetricType, type UnitSystem } from '@roadmap/health-core';
-import { sameAsSaved } from './blood-test-cell';
+import type { ApiMeasurement, MetricType } from '@roadmap/health-core';
+import { cellFromSI, cellText, sameAsSaved, type CellUnit } from './blood-test-cell';
 import type { CorrectStatus } from '../storage/roadmap-store';
 
 /** One cell's values on its day: one test, or a blood pressure's halves. */
@@ -28,8 +28,8 @@ export interface SaveTask {
   /** By metric, the row the cell expects to replace: its id, or null for an
    *  empty slot. A metric left out expects an empty slot. */
   expected: Record<string, string | null>;
-  /** The unit the values were typed in. */
-  unit: UnitSystem;
+  /** The unit the values were typed in (an Lp(a) cell's own unit, US-05 AC2). */
+  unit: CellUnit;
 }
 
 /** Correct one saved value, core or lab; `newValue` is in the unit it is stored in. */
@@ -78,7 +78,7 @@ export async function routeTasksToSaves(
     const value = values[metric];
     const held = index.get(key);
     const status = !held ? await onInsert(date, metric, value)
-      : sameAsSaved(fromCanonicalValue(metric, value, unit), formatDisplayValue(metric, held.value, unit), value, held.value) ? 'ok'
+      : sameAsSaved(cellFromSI(metric, value, unit), cellText(metric, held.value, unit), value, held.value) ? 'ok'
       : await onCorrect(held.id, value);
     if (status !== 'ok') refused.set(key, status);
   }));

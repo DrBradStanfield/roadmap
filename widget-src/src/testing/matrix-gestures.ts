@@ -11,6 +11,28 @@ export function press(el: HTMLElement): void {
   fireEvent.pointerUp(el);
 }
 
+/** A mouse button going down on `el`: the press, and the focus the browser
+ *  gives it unless the page cancels the mousedown. The release is
+ *  `releaseMouse`; between them, the button is held. */
+export function pressMouse(el: HTMLElement): void {
+  fireEvent.pointerDown(el);
+  if (fireEvent.mouseDown(el)) act(() => el.focus());
+}
+
+/** The mouse button coming up on `el`: the release and the click. */
+export function releaseMouse(el: HTMLElement): void {
+  fireEvent.pointerUp(el);
+  fireEvent.mouseUp(el);
+  fireEvent.click(el);
+}
+
+/** A press as Safari can make one on a button: the press lands, the editor
+ *  loses the focus, and nothing takes it (the button never does). */
+export function pressWithoutFocus(el: HTMLElement): void {
+  fireEvent.pointerDown(el);
+  act(() => (document.activeElement as HTMLElement | null)?.blur());
+}
+
 /** A tap into a cell, then a value typed in it. */
 export function typeInto(input: HTMLInputElement, value: string): void {
   press(input);

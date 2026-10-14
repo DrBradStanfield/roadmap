@@ -56,6 +56,15 @@ describe('trackProductEvent on the Shopify surface', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it('sends every upload outcome, so a second upload in the tab still counts (US-12 AC10)', async () => {
+    const { trackProductEvent } = await import('./server-api');
+    trackProductEvent('upload_outcome', { picked: 2, withValues: 2 });
+    trackProductEvent('upload_outcome', { picked: 1, openFailed: 1 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const body = JSON.parse((fetchMock.mock.calls[1][1] as RequestInit).body as string);
+    expect(body.metadata).toEqual({ picked: 1, openFailed: 1 });
+  });
+
   it('sends allow-listed metadata when given', async () => {
     const { trackProductEvent } = await import('./server-api');
     trackProductEvent('cloud_connect_success', { provider: 'dropbox' });

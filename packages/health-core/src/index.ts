@@ -200,13 +200,18 @@ export {
   bpTargetFor,
   formatTargetLine,
   formatGradedValue,
+  unitDecimalPlaces,
   // Feet/inches height conversion helpers
   inchesToFeetInches,
   feetInchesToInches,
   cmToFeetInches,
   feetInchesToCm,
   formatHeightDisplay,
-  resolveUnitSystem,
+  reportedToCanonical,
+  canonicalToReported,
+  lookupUnit,
+  LPA_UNITS,
+  type LpaUnit,
   type MetricType,
   type UnitSystem,
   type UnitDef,
@@ -234,7 +239,7 @@ export { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence 
 
 // Reference-range hints (blood-test matrix + legacy form labels)
 export type { RefHint, SexedRefHint } from './reference-hints';
-export { REFERENCE_HINTS, refHintFor, refLineFor } from './reference-hints';
+export { REFERENCE_HINTS, refHintFor, refLineFor, lpaRefHint } from './reference-hints';
 
 // Sentry PII/PHI scrubbing
 export {
@@ -308,7 +313,7 @@ export {
 export { chatContextOf, buildChatContextJson, type ChatContextPayload } from './chat-context';
 
 // Product funnel events — anonymous behavioral counters (client tracker + server enum)
-export { PRODUCT_EVENT_NAMES, GUIDE_PLACEMENTS, REMOTE_CHANGE_BACKENDS, type ProductEventName } from './product-events';
+export { PRODUCT_EVENT_NAMES, GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, REMOTE_CHANGE_BACKENDS, isLabUnitWord, type ProductEventName } from './product-events';
 
 // US-21 additional blood-test catalogue (phase-1 scaffold — units/groups/aliases)
 export {
@@ -390,5 +395,5 @@ export {
 
 // US-35: the slot rule and the bulk save the website and the connector share.
 export { bulkAppendValues, correctValue, slotKey, slotState, type BulkRow, type LabUnitRefusal, type SlotState } from './record-edits';
-export { isImportableEntryName } from './lab-extraction';
+export { fileNameLine, isImportableEntryName, zipMemberName } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';
