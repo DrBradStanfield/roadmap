@@ -19,3 +19,15 @@ Fresh Opus adversary on knowledge-refresh/review-batch-3 (c5d660cc). Line number
 | 13 | knee-injuries L24 | "Knee swells quickly" -> 111 contradicts L35 (ACL tears swell quickly). | ACCEPT (amends sheet item 11): swelling alone -> same day for an X-ray; cannot take four steps -> 111. |
 | 14 | hyperthyroidism L135 | Raw red flag is "rapid" atrial fibrillation. | ACCEPT. |
 | 15 | covid-19-therapeutics L115 | Pharmac eligibility clause. | ACCEPT, remove (ruling 4). |
+
+## Codex (gpt-6.1-sol, snapshot 5e54767a+73763e9f+5ddd6e08, status incomplete: AC5 not run)
+- R1 (transient-monocular L21: "came back fully" misfires if sight recovers then goes again): ACCEPT. "Your vision has not fully recovered" -> 111; "your vision recovered fully" -> straight away (row 9).
+- R2: same as row 1.
+- R3 (cirrhosis L216: carvedilol titrated to a 25% heart-rate fall): ACCEPT, SAFETY CORRECTION. Remove the heart-rate target; the specialist adjusts the dose while keeping blood pressure safe.
+- R4 (metabolic syndrome L115): ACCEPT. Restore the IDF rule that treatment for raised triglycerides, blood pressure or glucose counts as meeting that criterion (orchestrator correction; resolves sheet item 16).
+- R5: same as row 10.
+- R6 (weight L39: oesophageal cancer named as an exception): ACCEPT, remove the exception (obesity raises oesophageal adenocarcinoma risk).
+- R7 (erectile dysfunction L198: traction "cannot help" Peyronie's disease): ACCEPT, hedge: evidence is limited; discuss devices with a specialist.
+- R8 (covid-19 L101: remdesivir in children): ACCEPT, from the data sheet (licensed from 4 weeks and 3 kg); renal cautions as the data sheet gives them; specialist assessment kept.
+- R9 (shingles immunisation L41: CD4 and viral-load funding thresholds): ACCEPT. Keep the clinical recommendation (who should be vaccinated); remove funding thresholds (ruling 4).
+- R10 (AC5): DISPUTED. 40 fixtures pre-registered in 6b143234; runs deferred by Brad to after 2026-11-01.
