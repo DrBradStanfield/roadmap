@@ -24,6 +24,7 @@ describe('explicit local-first data path', () => {
   });
   afterEach(async () => {
     await flushRoadmapStore();
+    vi.resetAllMocks();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
@@ -77,6 +78,19 @@ describe('explicit local-first data path', () => {
 
     expect(await data.deleteUserData()).toEqual({ success: true, chatErased: false });
     expect(JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json).meta.eraseEpoch).toBe(1);
+  });
+
+  // US-17 AC1b: the reminder row's cancel runs before the erase, because its
+  // token dies with the file. When the server refuses it, the erase still goes
+  // ahead; the failure goes to Sentry only (Brad, 2026-10-15).
+  it('erases the record even when the reminder cancel fails', async () => {
+    data.setPreEraseHook(async () => { throw new Error('Reminder row delete failed (500).'); });
+    try {
+      expect(await data.deleteUserData()).toEqual({ success: true, chatErased: true });
+      expect(JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json).meta.eraseEpoch).toBe(1);
+    } finally {
+      data.setPreEraseHook(async () => {});
+    }
   });
 
   // US-21 phase 3 · the usage signal. A refused unit is the only way to learn

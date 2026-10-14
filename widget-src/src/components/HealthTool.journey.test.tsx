@@ -41,6 +41,7 @@ import {
   initRoadmapStore,
   loadAllHistory,
   saveChangedMeasurements,
+  setPreEraseHook,
 } from '../lib/roadmap-data';
 import { BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY } from '../lib/storage';
 import { trackProductEvent } from '../lib/server-api';
@@ -84,7 +85,7 @@ vi.mock('./UploadModal', () => ({
   },
 }));
 
-import { HealthTool } from './HealthTool';
+import { ERASE_DONE, HealthTool } from './HealthTool';
 
 const TODAY = localDay(new Date());
 const RIGHT_DAY = '2026-08-15';
@@ -304,6 +305,7 @@ afterEach(async () => {
   cleanup();
   showPage();
   await flushRoadmapStore();
+  vi.resetAllMocks();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.useRealTimers();
@@ -1497,6 +1499,21 @@ describe('US-11: an erase made here', () => {
     expect([chat.context?.weightKg, chat.context?.ldlC]).toEqual([undefined, undefined]);
     expect(ldlTile(view.container)).toBeUndefined();
     expect([localStorage.getItem(VITALS_DRAFT_KEY), localStorage.getItem(BT_TIMELINE_DRAFT_KEY)]).toEqual([null, null]);
+  });
+
+  // US-17 AC1b: the reminder cancel succeeds, the erase goes ahead, and the
+  // alert is the normal one.
+  it('the reminder cancel succeeds: the alert says the record is deleted', async () => {
+    const view = await returningGuest();
+    setPreEraseHook(async () => {});
+    try {
+      vi.spyOn(window, 'alert').mockImplementation(() => {});
+      fireEvent.click(view.getByRole('button', { name: 'Delete All My Data' }));
+      await waitFor(() => expect(window.alert).toHaveBeenCalledWith(ERASE_DONE));
+      expect(await loadAllHistory()).toEqual([]);
+    } finally {
+      setPreEraseHook(async () => {});
+    }
   });
 });
 

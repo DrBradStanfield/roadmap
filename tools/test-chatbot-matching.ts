@@ -47,6 +47,10 @@
  *   surface?: 'doctor' | 'brand'  answer check only: adds app/lib/chat-posture-<surface>.md after the
  *                             products block, where production's buildSystemBlocks puts it. Omitted =
  *                             no posture block (the harness's behaviour before 2026-10-07).
+ *   user_context?: object     answer check only: a chat-context JSON object (the shape health-core
+ *                             buildChatContextJson emits), sent as "## Current User Health Data" after
+ *                             the posture and before any articles, where buildSystemBlocks puts it.
+ *                             Omitted = no user data (US-07 AC6, 2026-10-14).
  *
  * A fetch that throws (timeout, DNS, reset) counts as an API error, like a non-2xx:
  * visible, scored as ∅, and the run continues but never exits green. So does a
@@ -96,6 +100,7 @@ import {
 import { CHAT_EDIT_TOOLS } from '../packages/health-core/src/chat-edits';
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
 import { parseRouterReply } from '../app/lib/router-reply';
+import { PRODUCTS_BLOCK_FILES, productsBlockText } from '../app/lib/chat-products-block';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -142,7 +147,9 @@ console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 
 
 // ---------------------------------------------------------------------------
 // Answer-check context — loaded only when --answer-check is set
-// Static portion: prompt cache blocks 1-3 (system prompt + algorithm + products).
+// Static portion: prompt cache blocks 1 and 3 (system prompt + algorithm, then
+// products with writing-style.md and the answer bank, the block every surface gets,
+// US-15 AC29). Blocks 2 (evidence) and 4 (knowledge overview) are not sent, as before.
 // Dynamic portion (per-query, in checkAnswer): block 4 matched pathway/blog
 // content, loaded via loadMatchedContent() from the routing intersection
 // (or a fixture's answer_handles).
@@ -156,14 +163,19 @@ let apiErrorCount = 0;
 
 if (answerCheckMode) {
   try {
+    const read = (file: string) => fs.readFileSync(path.join(REPO_ROOT, file), 'utf-8');
     ANSWER_SYSTEM_CONTEXT =
-      fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-system-prompt.md'), 'utf-8') +
+      read('app/lib/chat-system-prompt.md') +
       '\n\n---\n\n' +
-      fs.readFileSync(path.join(REPO_ROOT, 'health_roadmap_algorithm.md'), 'utf-8') +
-      '\n\n---\n\n## Dr Stanfield\'s Products\n\n' +
-      fs.readFileSync(path.join(REPO_ROOT, 'docs/products.md'), 'utf-8');
+      read('health_roadmap_algorithm.md') +
+      '\n\n---\n\n' +
+      productsBlockText({
+        products: read(PRODUCTS_BLOCK_FILES.products),
+        writingStyle: read(PRODUCTS_BLOCK_FILES.writingStyle),
+        answerBank: read(PRODUCTS_BLOCK_FILES.answerBank),
+      });
   } catch {
-    console.error('Error: --answer-check requires app/lib/chat-system-prompt.md, health_roadmap_algorithm.md, and docs/products.md');
+    console.error('Error: --answer-check requires app/lib/chat-system-prompt.md, health_roadmap_algorithm.md, docs/products.md, docs/writing-style.md and docs/chatbot/answer-bank.md');
     process.exit(1);
   }
 }
@@ -359,6 +371,7 @@ interface TestQuery {
   max_length_chars?: number;   // answer must be at most this many characters
   answer_handles?: string[];   // fixed-handle answer check, no `expected` (see the header)
   surface?: 'doctor' | 'brand'; // answer check adds that surface's posture block (see the header)
+  user_context?: Record<string, unknown>; // answer check adds it as the user health data (see the header)
 }
 
 const ALL_QUERIES: TestQuery[] = JSON.parse(
@@ -396,6 +409,12 @@ for (const q of ALL_QUERIES) {
     process.exit(1);
   }
   POSTURES.set(q.surface, fs.readFileSync(file, 'utf-8'));
+}
+// A user_context that isn't a JSON object would send something production never builds.
+const badContext = ALL_QUERIES.filter(q => q.user_context !== undefined && (typeof q.user_context !== 'object' || q.user_context === null || Array.isArray(q.user_context)));
+if (badContext.length > 0) {
+  console.error(`user_context must be a JSON object on: ${badContext.map(q => q.query).join(' | ')}`);
+  process.exit(1);
 }
 // --category takes a comma list, so several categories share one run and one cache warmup.
 const categories = categoryFilter?.split(',');
@@ -459,8 +478,11 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = [], retryOnR
   const mustMention = q.must_mention ?? [];
   const mustNotMention = q.must_not_mention ?? [];
   const matchedContent = loadMatchedContent(matchedHandles).content;
-  // Production order (buildSystemBlocks): products, then the surface posture, then articles.
-  const base = surface ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n${POSTURES.get(surface)}` : ANSWER_SYSTEM_CONTEXT;
+  // Production order (buildSystemBlocks): products, then the surface posture, the user data, then articles.
+  const postured = surface ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n${POSTURES.get(surface)}` : ANSWER_SYSTEM_CONTEXT;
+  const base = q.user_context
+    ? `${postured}\n\n---\n\n## Current User Health Data\n\n${JSON.stringify(q.user_context, null, 2)}`
+    : postured;
   const system = matchedContent
     ? `${base}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
     : base;

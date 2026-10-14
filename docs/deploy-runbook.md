@@ -51,13 +51,22 @@ npx shopify app deploy --force
 #    file in this repo; the Docker build ships it as-is. Just make sure product-content
 #    edits are COMMITTED first: fly deploy ships the working tree.)
 
+# 5a. Shared chatbot docs must be current (2026-10-14). docs/writing-style.md and the
+#     generated docs/chatbot/answer-bank.md come from the private claude_business repo.
+#     Run in claude_business; a non-zero exit means stale or diverged copies: do NOT deploy.
+#     Fix with `node tools/sync-shared-docs.mjs` there, commit both repos, then deploy.
+#     (CI cannot see claude_business: its guard, scripts/check-symlinks.mjs, only checks
+#     each copy against the hash its last sync recorded.)
+(cd ~/Library/CloudStorage/Dropbox/YouTube/multivitamin\ \&\ others/claude_business && node tools/sync-shared-docs.mjs --check)
+
 # 6. Deploy backend to Fly.io (MUST run from project root where Dockerfile lives).
 #    THERE ARE TWO FLY APPS sharing the same Dockerfile + the same chatbot knowledge files:
 #      • health-tool-app  → commerce / microvitamin.com / BRAND chat surface   (fly.toml)
 #      • health-tool-edu  → education / drstanfield.com / DOCTOR chat surface  (fly.edu.toml)
 #    The chatbot knowledge base is Brad-global / store-agnostic, so a change to SHARED content
 #    — chatbot prompts (chat-system-prompt.md, chat-posture-*.md, chat-router-prompt.md),
-#    docs/blog/*.md + index.json, docs/products.md, evidence.ts — MUST be deployed to BOTH apps
+#    docs/blog/*.md + index.json, docs/products.md, docs/writing-style.md,
+#    docs/chatbot/answer-bank.md, evidence.ts — MUST be deployed to BOTH apps
 #    to go live on both surfaces. A change touching only one app's env/proxy → deploy just that one.
 #    Flags (identical for both, only the config + SENTRY_RELEASE app-name differ):
 #    --build-arg SENTRY_RELEASE: per-commit release for the SERVER source-map upload (the
@@ -88,7 +97,7 @@ fly status -c fly.edu.toml  # health-tool-edu
 #     ask the live chatbot a question on microvitamin.com and on drstanfield.com.)
 ```
 
-**Single-app shortcut for a chatbot-knowledge-only change** (most common — e.g. a prompt or blog edit, no Dockerfile/dep change): commit the content change, then run steps 6a → 6b. You do NOT need the Shopify-extension steps (1-4) unless the widget itself changed.
+**Single-app shortcut for a chatbot-knowledge-only change** (most common — e.g. a prompt or blog edit, no Dockerfile/dep change): commit the content change, run step 5a, then steps 6a → 6b. You do NOT need the Shopify-extension steps (1-4) unless the widget itself changed.
 
 ### Local-first (v2) builds & build flags
 

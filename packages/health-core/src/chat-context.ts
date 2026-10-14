@@ -10,7 +10,11 @@
  * `buildChatContextJson` is the chat's anti-injection boundary. No client
  * text reaches the prompt unless it is allowlisted or bounded:
  *   - profile.sex, profile.heightCm: the input schema (enum; ranged number);
- *     profile.age is computed; profile.unitSystem is 'si' or 'conventional'.
+ *     profile.age is computed; profile.knownMinor is computed, true or absent
+ *     (US-07 AC6); profile.unitSystem is 'si' or 'conventional'.
+ *     A known minor with no usable sex or height still gets a context, with
+ *     no plan: profile.knownMinor and whatever passed the schema below, and
+ *     no profile.age or currentSuggestions (US-07 AC6).
  *   - latestValues: the longitudinal fields that pass the input schema, or
  *     the newest history point, printed from numbers.
  *   - excludedFields: input-schema field names only, never their values.
@@ -52,7 +56,7 @@ import {
   buildMeasurementHistory, latestFromHistory, HISTORY_CAP_PER_METRIC, ISO_DATE,
   type MeasurementHistoryMap,
 } from './measurement-history';
-import { calculateHealthResults } from './calculations';
+import { calculateHealthResults, knownMinorOf } from './calculations';
 import { parseLocalisedNumber } from './parseNumber';
 
 /** What a client sends as the chat's context. A row carries only the fields
@@ -91,8 +95,19 @@ export function chatContextOf(
 }
 
 /**
+ * The rule every chat's prompt carries for `profile.knownMinor` (US-07 AC6).
+ * One text, so the website chat and the Pages chat say the same thing.
+ */
+export const MINOR_CHAT_RULE =
+  "When the user's health data has `profile.knownMinor: true`, the user is under 18. Don't grade their values " +
+  '(LDL, BMI, blood pressure, or any other lab or measurement) against adult targets or ranges, and ' +
+  "don't suggest or discuss starting a medicine for them. Say plainly that the plan is built for adults, and " +
+  "point them to their doctor (when a parent is asking, the child's doctor).";
+
+/**
  * The JSON the model reads for a payload, or null when the payload cannot
- * make a plan (no usable sex and height). See the header for what reaches it.
+ * make a plan (no usable sex and height) and is not a known minor's. See the
+ * header for what reaches it.
  */
 export function buildChatContextJson(payload: unknown): string | null {
   const raw = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>;
@@ -100,15 +115,21 @@ export function buildChatContextJson(payload: unknown): string | null {
   // not collapse the whole context to "no data entered". The snapshot is read
   // from parsed.data, so Zod's key stripping stands between an unknown field
   // and the model.
-  const parsed = healthInputSchema.safeParse(sanitizeInputs(raw as Partial<HealthInputs>));
-  if (!parsed.success) return null;
+  const sanitized = sanitizeInputs(raw as Partial<HealthInputs>);
+  const parsed = healthInputSchema.safeParse(sanitized);
+  // US-07 AC6: a known minor's context always says so, plan or not, so no chat
+  // grades their values against adult targets.
+  const knownMinor = knownMinorOf(sanitized);
+  if (!parsed.success && !knownMinor) return null;
 
-  const inputs = parsed.data as HealthInputs;
+  const inputs: Partial<HealthInputs> = parsed.success ? parsed.data : healthInputSchema.partial().parse(sanitized);
   const excludedFields = excludedInputFields(raw as Partial<HealthInputs>);
   const unitSystem: UnitSystem = raw.unitSystem === 'conventional' ? 'conventional' : 'si';
   const medicationRowsOnRecord = medicationRows(raw.medications);
   const screenings = screeningsToInputs(screeningRows(raw.screenings));
-  const results = calculateHealthResults(inputs, unitSystem, medicationsToInputs(medicationRowsOnRecord), screenings);
+  const results = parsed.success
+    ? calculateHealthResults(parsed.data as HealthInputs, unitSystem, medicationsToInputs(medicationRowsOnRecord), screenings)
+    : null;
   // An unlisted drug name must never reach the prompt, so it reads UNLISTED
   // here, and a dose shows only within (0, MAX_DOSE]. The plan above used the
   // name and dose themselves, which is safe only while no suggestion title
@@ -138,7 +159,8 @@ export function buildChatContextJson(payload: unknown): string | null {
   }
 
   return JSON.stringify({
-    profile: { sex: inputs.sex, age: results.age, heightCm: inputs.heightCm, unitSystem },
+    // US-07 AC6: the plan's adults-only gate applies, so every surface's model knows.
+    profile: { sex: inputs.sex, age: results?.age, heightCm: inputs.heightCm, unitSystem, ...(knownMinor ? { knownMinor: true } : {}) },
     latestValues,
     // Field names only: the user HAS a value here, but it was out of range.
     // Without it the model reads the gap as "never entered".
@@ -147,12 +169,14 @@ export function buildChatContextJson(payload: unknown): string | null {
     ...(hasHistory ? { measurementHistory } : {}),
     medications,
     screenings,
-    currentSuggestions: results.suggestions.map(s => ({
-      id: s.id,
-      category: s.category,
-      priority: s.priority,
-      title: s.title,
-    })),
+    ...(results ? {
+      currentSuggestions: results.suggestions.map(s => ({
+        id: s.id,
+        category: s.category,
+        priority: s.priority,
+        title: s.title,
+      })),
+    } : {}),
     uploadedDocuments: [],
   }, null, 2);
 }

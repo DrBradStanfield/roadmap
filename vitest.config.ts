@@ -33,6 +33,11 @@ export default defineConfig({
     // checkout ran them in threads and quietly failed. Forks for everything removes the
     // trap, is faster here, and `poolMatchGlobs` is gone in vitest 3.
     pool: 'forks',
+    // Vitest 4 fails a synchronous test that overruns testTimeout; 1.6 let it
+    // finish. Several exhaustive sweeps (units, medication-cascades) and the
+    // spawnSync-driven codex-review suites take 5-45 s when the full suite loads
+    // every core, so the default 5 s would fail them by machine load alone.
+    testTimeout: 60_000,
     exclude: [
       "**/node_modules/**",
       "**/dist/**",

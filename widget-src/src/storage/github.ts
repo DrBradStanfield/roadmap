@@ -61,11 +61,13 @@ export class GitHubAdapter implements StorageAdapter {
    * never the PAT (which holds write access to the repo the health data lives
    * in). Null when the fine-grained token lacks the account permission "Email
    * addresses: read-only" — the control then asks for the address once.
-   * Throws on a transient failure (the caller retries next visit).
+   * Throws on a transient failure (the caller retries next visit), including
+   * a read that takes over 10 s: app load holds the schedule push until the
+   * enrolment that waits on it settles (US-17 AC12).
    */
   async accountEmail(): Promise<string | null> {
     if (!this.config?.token) throw new StorageError('GitHub is not connected.');
-    const res = await fetch(`${API}/user/emails`, { headers: this.headers() });
+    const res = await fetch(`${API}/user/emails`, { headers: this.headers(), signal: AbortSignal.timeout(10_000) });
     if (res.status === 403 || res.status === 404) return null;
     if (!res.ok) throw new StorageError(`GitHub email read failed (${res.status}).`);
     const emails = (await res.json()) as Array<{ email: string; primary: boolean; verified: boolean }>;

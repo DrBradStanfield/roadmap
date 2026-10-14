@@ -23,7 +23,7 @@ describe('US-04 AC1: a vitals editor that closes late leaves the next cell marke
     }];
     const onCorrectValue = vi.fn().mockResolvedValue('ok');
     const view = render(
-      <StartingInfoVitals inputs={{ sex: 'male', heightCm: 178 }} vitalsHistory={history} unitSystem="si"
+      <StartingInfoVitals vitalsHistory={history} unitSystem="si"
         onSave={vi.fn()} onCorrectValue={onCorrectValue} onDraftValue={() => {}} formStage={3}
         plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}}/>,
     );
@@ -47,7 +47,7 @@ describe('US-04 AC1: a typed cell losing the focus clears only its own mark', ()
   it('the chat\'s waist, flashed while the draft weight cell has the focus, keeps its highlight when the weight cell is left', () => {
     const prefillRef: MutableRefObject<VitalsPrefillFn | null> = { current: null };
     const view = render(
-      <StartingInfoVitals inputs={{ sex: 'male', heightCm: 178 }} vitalsHistory={[]} unitSystem="si"
+      <StartingInfoVitals vitalsHistory={[]} unitSystem="si"
         onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={() => {}} formStage={3} prefillRef={prefillRef}
         plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}}/>,
     );
@@ -74,7 +74,7 @@ describe('US-04 AC1 / US-05 AC2: a unit switch while correcting a weight', () =>
     function Page() {
       const [overrides, setOverrides] = useState<Record<string, UnitSystem>>({});
       return (
-        <StartingInfoVitals inputs={{ sex: 'male', heightCm: 178 }} vitalsHistory={history} unitSystem="si"
+        <StartingInfoVitals vitalsHistory={history} unitSystem="si"
           onSave={vi.fn()} onCorrectValue={onCorrectValue} onDraftValue={() => {}} formStage={3}
           plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={overrides}
           onToggleFieldUnit={(field) => setOverrides((o) => ({ ...o, [field]: o[field] === 'conventional' ? 'si' : 'conventional' }))}/>

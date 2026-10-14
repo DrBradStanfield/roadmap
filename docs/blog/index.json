@@ -10628,6 +10628,41 @@
     "summary": "Clinical pathway for managing abortion following fetal anomalies or genetic disorders: pre-abortion assessment triggers, post-abortion follow-up, GP management including grief support, postnatal depression screening, and post-abortion care. Always discuss with your doctor."
   },
   {
+    "title": "Pathway: Abortion",
+    "handle": "abortion",
+    "url": "https://drstanfield.com/blogs/articles/abortion",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "abortion",
+      "termination of pregnancy",
+      "early medical abortion",
+      "ema",
+      "medical abortion",
+      "abortion pill",
+      "surgical abortion",
+      "later medical abortion",
+      "pregnancy options",
+      "mifepristone",
+      "misoprostol",
+      "ectopic pregnancy",
+      "bleeding after abortion",
+      "retained products of conception",
+      "incomplete abortion",
+      "failed abortion",
+      "post-abortion infection",
+      "pelvic inflammatory disease",
+      "beta-hcg",
+      "low-sensitivity urine pregnancy test",
+      "contraception after abortion",
+      "abortion counselling"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for abortion, for people considering ending a pregnancy: early medical abortion (EMA) at home up to 10 weeks, and referral for other types. Covers ectopic red flags, assessment, mifepristone and misoprostol, aftercare, complications, and referral. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: ACC Musculoskeletal Integrated Care (ICP-MSK)",
     "handle": "acc-musculoskeletal-integrated-care-icp-msk",
     "url": "https://drstanfield.com/blogs/articles/acc-musculoskeletal-integrated-care-icp-msk",
@@ -11608,6 +11643,43 @@
     "summary": "Clinical pathway for ongoing management of ADHD in children and youth who already have a formal diagnosis. Covers medication options (methylphenidate, lisdexamfetamine, dexamfetamine, atomoxetine), dose monitoring, side-effect management, behavioural supports, and when to seek specialist advice. Always discuss with your doctor."
   },
   {
+    "title": "Pathway: ADHD in Children and Youth",
+    "handle": "adhd-in-children-and-youth",
+    "url": "https://drstanfield.com/blogs/articles/adhd-in-children-and-youth",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "adhd",
+      "attention deficit hyperactivity disorder",
+      "adhd in children",
+      "child adhd",
+      "teenager adhd",
+      "adhd assessment",
+      "adhd diagnosis",
+      "inattention",
+      "hyperactivity",
+      "impulsivity",
+      "hyperactive child",
+      "daydreaming",
+      "trouble concentrating",
+      "behaviour problems",
+      "adhd in girls",
+      "vanderbilt assessment scale",
+      "snap-iv",
+      "sleep problems",
+      "melatonin",
+      "parenting programme",
+      "autism",
+      "oppositional defiant disorder",
+      "learning difficulties",
+      "school report"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for assessing possible ADHD in children and young people aged 18 or younger: signs, diagnosis criteria, conditions that can look like ADHD (sleep problems, trauma, autism), non-drug management, and when to refer. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Adrenal Nodules",
     "handle": "adrenal-nodules",
     "url": "https://drstanfield.com/blogs/articles/adrenal-nodules",
@@ -12253,6 +12325,43 @@
     "summary": "Clinical pathway for acute pain in adults: step-up WHO-style pain ladder (paracetamol/NSAIDs → weak opioids → strong opioids), dosing for each drug class, naloxone use, neuropathic adjuvants (tricyclics, gabapentinoids), exit strategy, and when to escalate to hospital. Always discuss with your doctor."
   },
   {
+    "title": "Pathway: Analgesia in Children with Acute Pain",
+    "handle": "analgesia-in-children-with-acute-pain",
+    "url": "https://drstanfield.com/blogs/articles/analgesia-in-children-with-acute-pain",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "analgesia in children",
+      "pain relief for children",
+      "child pain relief",
+      "acute pain",
+      "injury pain",
+      "fracture",
+      "burns",
+      "paracetamol",
+      "paracetamol dose for children",
+      "ibuprofen",
+      "ibuprofen dose for children",
+      "codeine",
+      "tramadol",
+      "morphine",
+      "fentanyl",
+      "intranasal fentanyl",
+      "naloxone",
+      "numbing cream",
+      "topical anaesthetic",
+      "lidocaine",
+      "prilocaine",
+      "tetracaine",
+      "venepuncture",
+      "pain ladder"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for pain relief (analgesia) in children with acute pain, such as injuries, burns, and painful procedures: when to seek emergency care, pain assessment, a step-up plan by severity (paracetamol, ibuprofen, tramadol, opioids), and numbing creams. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Anaphylaxis",
     "handle": "anaphylaxis",
     "url": "https://drstanfield.com/blogs/articles/anaphylaxis",
@@ -12510,6 +12619,43 @@
     "summary": "Clinical pathway for anorectal abscess: background, assessment (history, examination, investigations), and management including analgesia, antibiotic use, and surgical drainage. Requires urgent surgical referral. Always discuss with your doctor."
   },
   {
+    "title": "Pathway: Antenatal Consult - Initial Assessment",
+    "handle": "antenatal-consult-initial-assessment",
+    "url": "https://drstanfield.com/blogs/articles/antenatal-consult-initial-assessment",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "antenatal care",
+      "first antenatal visit",
+      "pregnancy booking visit",
+      "early pregnancy",
+      "pregnancy",
+      "midwife",
+      "lead maternity carer",
+      "due date",
+      "antenatal blood tests",
+      "dating scan",
+      "folic acid",
+      "iodine",
+      "potassium iodate",
+      "aspirin",
+      "calcium carbonate",
+      "pre-eclampsia",
+      "vitamin d",
+      "colecalciferol",
+      "thiamine",
+      "ferritin",
+      "chlamydia test",
+      "whooping cough vaccine",
+      "flu vaccine in pregnancy",
+      "down syndrome screening"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for a pregnant woman's first antenatal visit: working out the due date, history and pre-eclampsia risk, routine blood tests, and finding a midwife. Covers folic acid, iodine, aspirin, vitamin D, vaccines, and when to refer. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Antenatal Genetic Screening",
     "handle": "antenatal-genetic-screening",
     "url": "https://drstanfield.com/blogs/articles/antenatal-genetic-screening",
@@ -12630,6 +12776,43 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for managing anxiety, distress, and agitation in adult palliative care patients. Covers assessment of causes including psychological distress, physical symptoms, opioid toxicity, and terminal agitation, plus management with benzodiazepines and supportive care. Always discuss with your doctor or palliative care team."
+  },
+  {
+    "title": "Pathway: Anxiety in Adults",
+    "handle": "anxiety-in-adults",
+    "url": "https://drstanfield.com/blogs/articles/anxiety-in-adults",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "anxiety",
+      "anxiety disorder",
+      "generalised anxiety disorder",
+      "generalized anxiety disorder",
+      "gad",
+      "worry",
+      "nervous",
+      "panic attacks",
+      "panic disorder",
+      "social phobia",
+      "phobia",
+      "gad-2",
+      "gad-7",
+      "ssri",
+      "sertraline",
+      "escitalopram",
+      "citalopram",
+      "buspirone",
+      "benzodiazepines",
+      "diazepam",
+      "lorazepam",
+      "clonazepam",
+      "cbt",
+      "anxiety in older people"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for anxiety in adults, including generalised anxiety disorder (GAD), panic and phobias: red flags (suicidal thoughts), GAD-2 and GAD-7 screening, other causes to rule out, severity-based care (self-help, therapy, SSRIs), and specialist referral. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Anxiety in Children and Youth",
@@ -12826,6 +13009,43 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for confirmed atrial fibrillation: when to seek urgent help, how doctors assess and classify AF (including stroke risk via CHA₂DS₂-VASc), and the ABC management approach covering anticoagulation, rate vs rhythm control, and cardiovascular risk factor management."
+  },
+  {
+    "title": "Pathway: Autism in Adults",
+    "handle": "autism-in-adults",
+    "url": "https://drstanfield.com/blogs/articles/autism-in-adults",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "autism",
+      "autistic",
+      "autism in adults",
+      "adult autism",
+      "autism spectrum",
+      "asperger",
+      "neurodiversity",
+      "neurodivergent",
+      "autism diagnosis",
+      "autism assessment",
+      "autism screening",
+      "masking",
+      "camouflaging",
+      "stimming",
+      "sensory sensitivity",
+      "meltdown",
+      "raads-14",
+      "autism quotient",
+      "diagnostic overshadowing",
+      "autistic women",
+      "adhd",
+      "anxiety",
+      "melatonin",
+      "life skills training"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for autistic adults after diagnosis, and adults who may be autistic but were never diagnosed: traits, screening, co-occurring mental and physical health conditions, adapted appointments, support services, medication review and melatonin for sleep. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Autonomic Dysreflexia (Hypertensive Crisis)",
@@ -13050,6 +13270,43 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Overview of bariatric (weight loss) surgery: who may be eligible, associated conditions that improve with weight loss, absolute and relative exclusions, and what to discuss with your doctor."
+  },
+  {
+    "title": "Pathway: Bariatric Surgery: Before and After Care",
+    "handle": "bariatric-surgery",
+    "url": "https://drstanfield.com/blogs/articles/bariatric-surgery",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "bariatric surgery",
+      "weight loss surgery",
+      "obesity surgery",
+      "severe obesity",
+      "gastric bypass",
+      "roux-en-y gastric bypass",
+      "mini bypass",
+      "sleeve gastrectomy",
+      "gastric banding",
+      "bmi",
+      "body mass index",
+      "very low calorie diet",
+      "vitamins after bariatric surgery",
+      "iron supplements",
+      "calcium supplements",
+      "vitamin b12",
+      "vitamin d",
+      "malabsorption",
+      "dumping syndrome",
+      "hypoglycaemia",
+      "pregnancy after bariatric surgery",
+      "bone density scan",
+      "hba1c",
+      "type 2 diabetes relapse"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for bariatric (weight loss) surgery in adults with severe obesity: preparing for surgery and lifelong aftercare. Covers pre-surgery tests and diet, pregnancy timing, vitamin and mineral supplements, blood tests, bone density, and dietitian referral. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Bartholin's Cyst or Abscess",
@@ -15275,6 +15532,42 @@
     "summary": "Clinical pathway for coeliac disease in children under 15: who to test, which blood tests to arrange, how to interpret serology results, and management of confirmed diagnosis including gluten-free diet and follow-up. Always discuss with your doctor."
   },
   {
+    "title": "Pathway: Cognitive Impairment",
+    "handle": "cognitive-impairment",
+    "url": "https://drstanfield.com/blogs/articles/cognitive-impairment",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "cognitive impairment",
+      "dementia",
+      "mild cognitive impairment",
+      "mci",
+      "memory loss",
+      "memory problems",
+      "forgetfulness",
+      "confusion",
+      "alzheimer's disease",
+      "vascular dementia",
+      "lewy body dementia",
+      "frontotemporal dementia",
+      "mate wareware",
+      "delirium",
+      "subdural haematoma",
+      "cholinesterase inhibitors",
+      "donepezil",
+      "rivastigmine",
+      "mini-ace",
+      "ct head",
+      "enduring power of attorney",
+      "brain health",
+      "bpsd"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for cognitive impairment, mild cognitive impairment (MCI) and dementia, mainly in adults 65 and over with memory or thinking concerns: red flags, tests, cognitive screening, brain health, medicine review, planning ahead, support, and when to refer. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Colonoscopy and CT Colonography (CTC)",
     "handle": "colonoscopy-and-ct-colonography-ctc",
     "url": "https://drstanfield.com/blogs/articles/colonoscopy-and-ct-colonography-ctc",
@@ -15848,6 +16141,40 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for contraceptive implant removal: types of implant (Jadelle, Implanon NXT), reasons for removal, timing considerations including fertility intentions and menopause, the removal procedure, and what to expect before and after. Always discuss with your doctor."
+  },
+  {
+    "title": "Pathway: Contraceptive Implant",
+    "handle": "contraceptive-implant",
+    "url": "https://drstanfield.com/blogs/articles/contraceptive-implant",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "contraceptive implant",
+      "the implant",
+      "arm implant",
+      "implant rods",
+      "birth control implant",
+      "long-acting reversible contraception",
+      "larc",
+      "levonorgestrel",
+      "etonogestrel",
+      "progestogen implant",
+      "contraception",
+      "irregular bleeding on implant",
+      "implant insertion",
+      "implant removal",
+      "quick start",
+      "emergency contraception",
+      "enzyme-inducing drugs",
+      "breastfeeding contraception",
+      "postpartum contraception",
+      "impalpable implant",
+      "fertility after implant removal"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for the contraceptive implant (hormone rods placed under the skin of the arm) for anyone choosing or using one: who can use it, benefits and side effects, bleeding changes, insertion timing, drug interactions, and problems after insertion. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Contraceptive Injection (Depo-Provera)",
@@ -17427,6 +17754,41 @@
     "summary": "Clinical pathway for Dupuytren disease: background on disease progression, risk factors, assessment of functional impairment and joint contractures, and management including surgery criteria and postoperative care. Always discuss with your doctor."
   },
   {
+    "title": "Pathway: Dysmenorrhoea",
+    "handle": "dysmenorrhoea",
+    "url": "https://drstanfield.com/blogs/articles/dysmenorrhoea",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "dysmenorrhoea",
+      "dysmenorrhea",
+      "period pain",
+      "painful periods",
+      "period cramps",
+      "menstrual cramps",
+      "primary dysmenorrhoea",
+      "secondary dysmenorrhoea",
+      "endometriosis",
+      "adenomyosis",
+      "uterine fibroids",
+      "pelvic inflammatory disease",
+      "nsaids",
+      "tranexamic acid",
+      "combined oral contraceptive",
+      "continuous pill",
+      "desogestrel",
+      "medroxyprogesterone",
+      "levonorgestrel iud",
+      "pelvic ultrasound",
+      "heavy periods",
+      "prostaglandins"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for dysmenorrhoea (painful periods, period cramps) in women and teenagers: primary vs secondary causes, signs of an underlying cause, assessment, treatment options (NSAIDs, hormonal contraception, tranexamic acid), and when to refer. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Dysmorphic Child — Genetics",
     "handle": "dysmorphic-child-genetics",
     "url": "https://drstanfield.com/blogs/articles/dysmorphic-child-genetics",
@@ -17481,6 +17843,80 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for dyspareunia (painful sex) in women: red flags, causes (superficial and deep), assessment including history and examination, and management options including vulval care, psychosexual advice, topical treatments, and referral. Always discuss with your doctor."
+  },
+  {
+    "title": "Pathway: Dyspepsia and Heartburn / GORD",
+    "handle": "dyspepsia-and-heartburn-gord",
+    "url": "https://drstanfield.com/blogs/articles/dyspepsia-and-heartburn-gord",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "dyspepsia",
+      "indigestion",
+      "heartburn",
+      "gord",
+      "gerd",
+      "acid reflux",
+      "gastro-oesophageal reflux disease",
+      "functional dyspepsia",
+      "epigastric pain",
+      "helicobacter pylori",
+      "h. pylori",
+      "proton pump inhibitor",
+      "ppi",
+      "omeprazole",
+      "lansoprazole",
+      "pantoprazole",
+      "h2-receptor antagonist",
+      "antacids",
+      "alginates",
+      "domperidone",
+      "faecal antigen test",
+      "gastroscopy",
+      "fundoplication",
+      "heartburn in pregnancy"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for dyspepsia (indigestion), heartburn and GORD (acid reflux), including H. pylori and pregnancy: red flags, assessment and risk factors, H. pylori testing and treatment, step-down PPI use, lifestyle advice, and when gastroscopy is needed. Always discuss with your doctor."
+  },
+  {
+    "title": "Pathway: Dysphagia",
+    "handle": "dysphagia",
+    "url": "https://drstanfield.com/blogs/articles/dysphagia",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "dysphagia",
+      "difficulty swallowing",
+      "trouble swallowing",
+      "swallowing problems",
+      "food stuck in throat",
+      "food bolus obstruction",
+      "globus",
+      "lump in throat",
+      "odynophagia",
+      "painful swallowing",
+      "aspiration",
+      "aspiration pneumonia",
+      "choking",
+      "pharyngeal pouch",
+      "zenker's diverticulum",
+      "achalasia",
+      "eosinophilic oesophagitis",
+      "oesophageal stricture",
+      "gastroscopy",
+      "barium swallow",
+      "speech language therapy",
+      "motor neuron disease",
+      "myasthenia gravis",
+      "reflux"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for dysphagia (difficulty swallowing) in adults, including food stuck in the throat, globus, and painful swallowing: red flags, emergency obstruction, assessment by swallowing stage, causes, medications, cancer risk, diet advice, and when to refer. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Dyspnoea in MND",
@@ -17807,6 +18243,44 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for ectropion (outward eyelid rotation) and entropion (inward eyelid rotation): red flags, background, assessment including fluorescein staining and visual acuity, and management with artificial tears, antibiotics, and lid taping. Always discuss with your doctor."
+  },
+  {
+    "title": "Pathway: Eczema (Dermatitis) in Adults",
+    "handle": "eczema-dermatitis-in-adults",
+    "url": "https://drstanfield.com/blogs/articles/eczema-dermatitis-in-adults",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "eczema",
+      "dermatitis",
+      "atopic dermatitis",
+      "atopic eczema",
+      "adult eczema",
+      "eczema herpeticum",
+      "infected eczema",
+      "contact dermatitis",
+      "seborrhoeic dermatitis",
+      "discoid eczema",
+      "venous eczema",
+      "itchy skin",
+      "dry skin",
+      "emollients",
+      "moisturiser",
+      "soap substitute",
+      "topical corticosteroid",
+      "steroid cream",
+      "tacrolimus",
+      "pimecrolimus",
+      "bleach bath",
+      "flucloxacillin",
+      "valaciclovir",
+      "erythroderma",
+      "patch testing"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for eczema (dermatitis) in adults, including atopic, contact, seborrhoeic, discoid and venous types: red flags such as eczema herpeticum, assessment, emollients and bathing, topical steroids, infection treatment, and when to refer. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Eczema in Children",
@@ -18190,6 +18664,43 @@
     "summary": "Clinical pathway for managing epilepsy in women of childbearing age: contraception, pre-conception planning, pregnancy monitoring, delivery precautions, and postpartum care. Covers drug-specific risks (valproate, topiramate, lamotrigine), folic acid dosing, seizure management in pregnancy, and SUDEP risk reduction. Always discuss with your doctor."
   },
   {
+    "title": "Pathway: Epilepsy",
+    "handle": "epilepsy",
+    "url": "https://drstanfield.com/blogs/articles/epilepsy",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "epilepsy",
+      "seizure",
+      "seizures",
+      "fits",
+      "convulsions",
+      "tonic clonic seizure",
+      "absence seizure",
+      "focal seizure",
+      "juvenile myoclonic epilepsy",
+      "anti-epileptic drugs",
+      "anticonvulsants",
+      "sodium valproate",
+      "lamotrigine",
+      "levetiracetam",
+      "carbamazepine",
+      "topiramate",
+      "phenytoin",
+      "status epilepticus",
+      "epilepsy and driving",
+      "epilepsy and pregnancy",
+      "folic acid",
+      "seizure diary",
+      "stopping epilepsy medication",
+      "drug levels"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for people with diagnosed epilepsy: seizure types, seizure control, mood and contraception checks, adjusting medicines, topiramate and valproate risks in pregnancy, driving rules, alcohol, bone health, stopping treatment, and neurology referral. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Epistaxis (Nosebleed)",
     "handle": "epistaxis",
     "url": "https://drstanfield.com/blogs/articles/epistaxis",
@@ -18563,6 +19074,43 @@
     "summary": "Clinical pathway for familial breast or ovarian cancer syndromes: background on BRCA mutations and risk, personal and family history assessment, eligibility criteria for genetic referral via eviQ guidelines, and preventive strategies. Assessment and referral decisions should always be made by your doctor."
   },
   {
+    "title": "Pathway: Familial Cancer Syndromes",
+    "handle": "familial-cancer-syndromes",
+    "url": "https://drstanfield.com/blogs/articles/familial-cancer-syndromes",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "familial cancer syndrome",
+      "hereditary cancer",
+      "inherited cancer",
+      "family history of cancer",
+      "cancer in the family",
+      "cancer gene",
+      "gene mutation",
+      "brca",
+      "genetic testing",
+      "genetic assessment",
+      "predictive testing",
+      "family tree",
+      "dna banking",
+      "ashkenazi jewish",
+      "lobular breast cancer",
+      "gastric cancer",
+      "stomach cancer",
+      "medullary thyroid cancer",
+      "sarcoma",
+      "rare tumour",
+      "multiple primary cancers",
+      "cancer at a young age",
+      "breast screening",
+      "bowel screening"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for familial (inherited) cancer syndromes in people with a family history of cancer: who may be at high risk, specific risk factors, family tree assessment, referral for genetic assessment, and when usual population screening applies. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Familial Colorectal or Endometrial Cancer Syndromes",
     "handle": "familial-colorectal-or-endometrial-cancer-syndromes",
     "url": "https://drstanfield.com/blogs/articles/familial-colorectal-or-endometrial-cancer-syndromes",
@@ -18838,6 +19386,41 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "2016 ACR diagnostic criteria for fibromyalgia: Widespread Pain Index (WPI) body map, Symptom Severity Score (SSS) for fatigue, unrefreshed sleep, and cognitive symptoms, and the three conditions required for diagnosis. Always discuss with your doctor."
+  },
+  {
+    "title": "Pathway: Fibromyalgia",
+    "handle": "fibromyalgia",
+    "url": "https://drstanfield.com/blogs/articles/fibromyalgia",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "fibromyalgia",
+      "fibro",
+      "fibrofog",
+      "fibro fog",
+      "widespread pain",
+      "chronic widespread pain",
+      "chronic pain",
+      "pain all over",
+      "fatigue",
+      "poor sleep",
+      "tender points",
+      "central sensitisation",
+      "pregabalin",
+      "amitriptyline",
+      "venlafaxine",
+      "cognitive behavioural therapy",
+      "cbt",
+      "exercise",
+      "sleep habits",
+      "fibromyalgia impact questionnaire",
+      "fiqr",
+      "muscle pain"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for fibromyalgia: chronic widespread pain with fatigue, poor sleep and fibrofog. Covers concerning features, assessment and blood tests, self-management (exercise, sleep, CBT), medicines (pregabalin, amitriptyline, venlafaxine) and when to refer. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Fine Needle Aspiration (FNA)",
@@ -19477,6 +20060,43 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for mental health concerns in children and young people: background, indicators of concern, assessment tools (HEEADSSS, GAD-7, PHQ-A, K10), and management approach covering mild-to-moderate symptoms through to complex presentations. Always discuss with your doctor."
+  },
+  {
+    "title": "Pathway: General Wound Care",
+    "handle": "general-wound-care",
+    "url": "https://drstanfield.com/blogs/articles/general-wound-care",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "wound care",
+      "wound healing",
+      "chronic wound",
+      "non-healing wound",
+      "wound dressing",
+      "wound infection",
+      "wound cleaning",
+      "debridement",
+      "slough",
+      "necrotic tissue",
+      "exudate",
+      "maceration",
+      "critical limb ischaemia",
+      "leg ulcer",
+      "venous insufficiency",
+      "times model",
+      "saline irrigation",
+      "hydrocolloid",
+      "hydrogel",
+      "alginate",
+      "cadexomer iodine",
+      "silver dressing",
+      "necrotising fasciitis",
+      "negative pressure wound therapy"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for general care of acute and chronic (slow-healing) wounds: red flags (critical limb ischaemia, risk of leg ulceration), assessment with the TIMES model, factors that slow healing, cleansing, debridement, dressing choice, and when to refer. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Genital Dermatology",
@@ -20708,6 +21328,43 @@
     "summary": "Clinical pathway for hip imaging in children: red flags requiring immediate hospital assessment, conditions warranting X-ray or ultrasound (DDH, SUFE, Perthes, transient synovitis), and age-based imaging guidance. Your doctor will determine which imaging is appropriate and arrange referral."
   },
   {
+    "title": "Pathway: Hoarse Voice (Dysphonia)",
+    "handle": "hoarse-voice-dysphonia",
+    "url": "https://drstanfield.com/blogs/articles/hoarse-voice-dysphonia",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "hoarse voice",
+      "hoarseness",
+      "dysphonia",
+      "loss of voice",
+      "lost voice",
+      "croaky voice",
+      "raspy voice",
+      "voice problems",
+      "voice overuse",
+      "throat clearing",
+      "postnasal drip",
+      "reflux",
+      "omeprazole",
+      "ppi",
+      "proton pump inhibitor",
+      "smoking",
+      "stridor",
+      "neck lump",
+      "difficulty swallowing",
+      "coughing up blood",
+      "laryngoscopy",
+      "videostroboscopy",
+      "chest x-ray",
+      "speech and language therapy"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for a hoarse voice (dysphonia) in adults, including constant, intermittent or total loss of voice: red flags, assessment (history, neck and chest exam, tests), management with smoking cessation, a PPI trial and stress, and when to refer. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Home Oxygen",
     "handle": "home-oxygen",
     "url": "https://drstanfield.com/blogs/articles/home-oxygen",
@@ -20755,6 +21412,43 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for HPV vaccination: who is eligible, recommended schedules (2-dose vs 3-dose), funded vs unfunded groups, and special considerations including pregnancy and immunocompromised patients. Always discuss with your doctor."
+  },
+  {
+    "title": "Pathway: Human Immunodeficiency Virus (HIV)",
+    "handle": "human-immunodeficiency-virus-hiv",
+    "url": "https://drstanfield.com/blogs/articles/human-immunodeficiency-virus-hiv",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "hiv",
+      "human immunodeficiency virus",
+      "aids",
+      "hiv test",
+      "hiv testing",
+      "seroconversion illness",
+      "cd4 count",
+      "viral load",
+      "undetectable viral load",
+      "antiretroviral therapy",
+      "art",
+      "pre-exposure prophylaxis",
+      "prep",
+      "post-exposure prophylaxis",
+      "pep",
+      "doxy-pep",
+      "doxycycline",
+      "men who have sex with men",
+      "msm",
+      "sexual health check",
+      "sti testing",
+      "needlestick injury",
+      "hiv in pregnancy",
+      "live vaccines"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for HIV (human immunodeficiency virus) for people with or at risk of infection: who should be offered a test, early symptoms, results, PEP and PrEP, and ongoing care with antiretroviral therapy, viral load, vaccines and heart and cancer risk. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Humerus Fractures",
@@ -21602,6 +22296,44 @@
     "summary": "Clinical pathway for inflammatory arthritis in adults (aged 15+): how it is assessed, initial and long-term management, when specialist referral is needed, and the role of DMARDs. All diagnosis and treatment decisions require a doctor. Seek urgent care for a single hot swollen joint."
   },
   {
+    "title": "Pathway: Inflammatory Bowel Disease (IBD)",
+    "handle": "inflammatory-bowel-disease-ibd",
+    "url": "https://drstanfield.com/blogs/articles/inflammatory-bowel-disease-ibd",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "inflammatory bowel disease",
+      "ibd",
+      "crohn's disease",
+      "crohns",
+      "ulcerative colitis",
+      "colitis",
+      "indeterminate colitis",
+      "bloody diarrhoea",
+      "rectal bleeding",
+      "abdominal pain",
+      "faecal calprotectin",
+      "calprotectin",
+      "colonoscopy",
+      "mesalazine",
+      "5-asa",
+      "sulfasalazine",
+      "prednisone",
+      "azathioprine",
+      "mercaptopurine",
+      "methotrexate",
+      "biologics",
+      "ibd flare",
+      "ibd pregnancy",
+      "extra-intestinal manifestations",
+      "colon cancer surveillance"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for inflammatory bowel disease (IBD), including Crohn's disease and ulcerative colitis, in suspected or known IBD: red flags, first tests (bloods, calprotectin, colonoscopy), flare-up treatment, pregnancy, bone and cancer checks, and referral. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Infliximab Shared Care Guidance",
     "handle": "infliximab-shared-care-guidance",
     "url": "https://drstanfield.com/blogs/articles/infliximab-shared-care-guidance",
@@ -21985,6 +22717,43 @@
     "summary": "Clinical pathway for intoeing (pigeon-toed gait) in children: common causes by age group, red flags requiring urgent assessment, examination approach, and management. Most physiological intoeing resolves on its own without treatment. Always discuss concerns with your doctor."
   },
   {
+    "title": "Pathway: Intrauterine Contraception",
+    "handle": "intrauterine-contraception",
+    "url": "https://drstanfield.com/blogs/articles/intrauterine-contraception",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "iud",
+      "intrauterine device",
+      "intrauterine contraception",
+      "iuc",
+      "copper iud",
+      "hormonal iud",
+      "levonorgestrel",
+      "lng-ius",
+      "intrauterine system",
+      "larc",
+      "long-acting reversible contraception",
+      "contraception",
+      "birth control",
+      "coil",
+      "emergency contraception",
+      "iud insertion",
+      "iud removal",
+      "lost threads",
+      "iud expulsion",
+      "heavy periods",
+      "ectopic pregnancy",
+      "pelvic inflammatory disease",
+      "tranexamic acid",
+      "medroxyprogesterone"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for intrauterine contraception (IUDs) for people choosing or using a copper IUD or hormonal levonorgestrel IUS: types, red flags for pregnancy with an IUD, side effects, insertion timing, bleeding, lost threads or expulsion, and when to refer. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Intrauterine Device (IUD) Insertion",
     "handle": "intrauterine-device-insertion",
     "url": "https://drstanfield.com/blogs/articles/intrauterine-device-insertion",
@@ -22098,6 +22867,43 @@
     "summary": "Clinical pathway for iritis (anterior uveitis): red flags requiring urgent ophthalmology assessment, background on associated conditions, examination findings, and management. Always discuss with your doctor."
   },
   {
+    "title": "Pathway: Iron Deficiency in Adults",
+    "handle": "iron-deficiency-in-adults",
+    "url": "https://drstanfield.com/blogs/articles/iron-deficiency-in-adults",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "iron deficiency",
+      "iron deficiency anaemia",
+      "ida",
+      "low iron",
+      "anaemia",
+      "anemia",
+      "low ferritin",
+      "ferritin",
+      "haemoglobin",
+      "iron studies",
+      "oral iron",
+      "iron tablets",
+      "iron supplements",
+      "iron infusion",
+      "iv iron",
+      "ferric carboxymaltose",
+      "blood transfusion",
+      "fatigue",
+      "tiredness",
+      "heavy periods",
+      "blood loss",
+      "coeliac disease",
+      "gastroscopy",
+      "colonoscopy"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for iron deficiency and iron deficiency anaemia in adults: red flags, finding the cause (blood loss, diet, absorption, medicines), ferritin and Hb thresholds, when gastroscopy or colonoscopy is needed, oral and IV iron, transfusion, and referral. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Irritable Bowel Syndrome (IBS)",
     "handle": "irritable-bowel-syndrome-ibs",
     "url": "https://drstanfield.com/blogs/articles/irritable-bowel-syndrome-ibs",
@@ -22137,6 +22943,43 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for irritable bowel syndrome (IBS) in adults and adolescents: Rome IV diagnostic criteria, red flags requiring investigation, dietary management including low-FODMAP, lifestyle measures, complementary treatments, and symptom-targeted medications. Always discuss your symptoms with your doctor."
+  },
+  {
+    "title": "Pathway: Irritated and Dry Eyes",
+    "handle": "irritated-and-dry-eyes",
+    "url": "https://drstanfield.com/blogs/articles/irritated-and-dry-eyes",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "dry eye",
+      "dry eyes",
+      "irritated eyes",
+      "dry eye syndrome",
+      "keratoconjunctivitis sicca",
+      "gritty eyes",
+      "burning eyes",
+      "watery eyes",
+      "blurred vision",
+      "tear film",
+      "lubricant eye drops",
+      "artificial tears",
+      "eye ointment",
+      "preservative-free eye drops",
+      "hypromellose",
+      "polyvinyl alcohol",
+      "carbomer",
+      "hyaluronate sodium",
+      "fluorescein",
+      "blepharitis",
+      "sjogren's syndrome",
+      "contact lens",
+      "screen eye strain",
+      "punctal occlusion"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for irritated and dry eyes (dry eye syndrome) with gritty, burning or painful eyes: causes and contributing medicines, assessment, stepwise lubricant drops and ointment, intensified treatment, and when to see an eye specialist. Always discuss with your doctor."
   },
   {
     "title": "Pathway: IV Iron Infusion",
@@ -22414,6 +23257,42 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Guidance on assessing and managing health concerns related to land contamination, including heavy metals (arsenic, lead), organochlorine pesticides (DDT), and petroleum hydrocarbons. Covers exposure risk identification, investigations, and practical advice on minimising risk. Always discuss with your doctor."
+  },
+  {
+    "title": "Pathway: Last Days of Life Care (Adults)",
+    "handle": "last-days-of-life-care-adults",
+    "url": "https://drstanfield.com/blogs/articles/last-days-of-life-care-adults",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "last days of life",
+      "end of life care",
+      "dying",
+      "signs of dying",
+      "imminent death",
+      "palliative care",
+      "terminal care",
+      "terminal restlessness",
+      "terminal agitation",
+      "delirium",
+      "noisy breathing",
+      "respiratory secretions",
+      "breathlessness",
+      "anticipatory medicines",
+      "syringe driver",
+      "subcutaneous medication",
+      "advance care plan",
+      "hospice",
+      "mouth care",
+      "pressure care",
+      "caring for a dying relative",
+      "what to expect when someone is dying",
+      "bereavement"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for care of adults in the last days of life, and their families: signs that death is near, checking for reversible causes, symptom control, anticipatory medicines, mouth, continence and pressure care, hospice support, and after death. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Latent Tuberculosis",
@@ -23417,6 +24296,44 @@
     "summary": "Clinical pathway for menopause hormone therapy (MHT): who is a candidate, contraindications, choice of regimen by menopausal status and uterine anatomy, estrogen and progestogen options, risk-benefit discussion (breast cancer, VTE, cardiovascular), monitoring, and when to consider stopping. Always discuss with your doctor."
   },
   {
+    "title": "Pathway: Menopause",
+    "handle": "menopause",
+    "url": "https://drstanfield.com/blogs/articles/menopause",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "menopause",
+      "perimenopause",
+      "hot flushes",
+      "hot flashes",
+      "night sweats",
+      "vasomotor symptoms",
+      "menopause hormone therapy",
+      "mht",
+      "hrt",
+      "hormone replacement therapy",
+      "vaginal dryness",
+      "genitourinary syndrome of menopause",
+      "vaginal estrogen",
+      "estriol",
+      "fsh",
+      "premature ovarian insufficiency",
+      "early menopause",
+      "gabapentin",
+      "oxybutynin",
+      "venlafaxine",
+      "testosterone",
+      "tibolone",
+      "low libido",
+      "brain fog",
+      "contraception"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for menopause and perimenopause in women aged 40 and over, including hot flushes, night sweats and vaginal dryness: red flags, assessment and when blood tests help, MHT and non-hormonal treatments, contraception, and when to see a specialist. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Metabolic Syndrome (Insulin Resistance Syndrome)",
     "handle": "metabolic-syndrome-insulin-resistance-syndrome",
     "url": "https://drstanfield.com/blogs/articles/metabolic-syndrome-insulin-resistance-syndrome",
@@ -23704,6 +24621,42 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Community support services for mothers, babies, and parents in New Zealand: helplines, parenting education, mental health support, sleep advice, pregnancy loss support, food assistance, and how to find a midwife. Always discuss your situation with your doctor or midwife."
+  },
+  {
+    "title": "Pathway: Motor Neurone Disease",
+    "handle": "motor-neurone-disease",
+    "url": "https://drstanfield.com/blogs/articles/motor-neurone-disease",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "motor neurone disease",
+      "motor neuron disease",
+      "mnd",
+      "amyotrophic lateral sclerosis",
+      "als",
+      "lou gehrig's disease",
+      "progressive bulbar palsy",
+      "progressive muscular atrophy",
+      "primary lateral sclerosis",
+      "riluzole",
+      "muscle wasting",
+      "fasciculations",
+      "muscle cramps",
+      "spasticity",
+      "baclofen",
+      "dysphagia",
+      "slurred speech",
+      "drooling",
+      "peg tube",
+      "voice banking",
+      "frontotemporal dementia",
+      "palliative care",
+      "advance care plan"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for motor neurone disease (MND), including ALS, in people with suspected or confirmed MND: presentations, assessment, riluzole monitoring, symptom control (cramps, spasticity, drooling, swallowing), palliative care, and referral. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Mpox",
@@ -24781,6 +25734,41 @@
     "summary": "Obstructive Sleep Apnoea (OSA) is a common form of sleep-disordered breathing where the upper airway repeatedly collapses during sleep, causing symptoms such as loud snoring, witnessed breathing pauses, excessive daytime sleepiness, and morning headaches. Assessment uses the STOP-BANG questionnaire and Epworth Sleepiness Scale, with treatment options including CPAP therapy and mandibular advancement devices. Always discuss with your doctor."
   },
   {
+    "title": "Pathway: Older Adults Weight and Nutrition",
+    "handle": "older-adults-weight-and-nutrition",
+    "url": "https://drstanfield.com/blogs/articles/older-adults-weight-and-nutrition",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "older adults nutrition",
+      "elderly nutrition",
+      "unintentional weight loss",
+      "unexplained weight loss",
+      "weight loss in older people",
+      "malnutrition",
+      "nutrition risk",
+      "underweight",
+      "bmi",
+      "screen-14",
+      "nutrition screening",
+      "weight gain",
+      "how to gain weight",
+      "food first",
+      "oral nutrition supplements",
+      "high-energy foods",
+      "dietitian",
+      "dental problems",
+      "eating alone",
+      "strength and balance training",
+      "falls prevention",
+      "healthy eating for older people"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for weight and nutrition in older adults: unintentional weight loss, underweight and nutrition risk in people over 65. Covers SCREEN-14, BMI, causes, blood tests, Food First weight gain, oral nutrition supplements, exercise, and dietitian referral. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Open-angle Glaucoma",
     "handle": "open-angle-glaucoma",
     "url": "https://drstanfield.com/blogs/articles/open-angle-glaucoma",
@@ -25005,6 +25993,44 @@
     "summary": "Clinical pathway for osteoarthritis in adults: red flags, assessment, differential diagnoses (CPPD, femoro-acetabular impingement, trochanteric pain), non-pharmacological management, analgesic options (paracetamol, topical NSAIDs, capsaicin, oral NSAIDs, intra-articular steroids), and criteria for joint replacement referral. All treatment decisions should be discussed with your doctor."
   },
   {
+    "title": "Pathway: Osteoporosis in Adults",
+    "handle": "osteoporosis-in-adults",
+    "url": "https://drstanfield.com/blogs/articles/osteoporosis-in-adults",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "osteoporosis",
+      "osteopenia",
+      "bone density",
+      "bone mineral density",
+      "bmd",
+      "dxa scan",
+      "dexa scan",
+      "t-score",
+      "fragility fracture",
+      "hip fracture",
+      "fracture risk",
+      "frax",
+      "garvan",
+      "bisphosphonates",
+      "zoledronic acid",
+      "risedronate",
+      "denosumab",
+      "teriparatide",
+      "drug holiday",
+      "atypical femoral fracture",
+      "p1np",
+      "falls prevention",
+      "weak bones",
+      "calcium",
+      "vitamin d"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for osteoporosis and osteopenia in adults at risk of fragility fractures: who to assess, fracture risk calculators, DXA scans and T-scores, blood tests for secondary causes, treatment by risk level, exercise, falls prevention, and drug holidays. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Otitis Externa",
     "handle": "otitis-externa",
     "url": "https://drstanfield.com/blogs/articles/otitis-externa",
@@ -25031,6 +26057,43 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for otitis externa (outer ear infection): red flags requiring urgent care, background on bacterial and fungal causes, assessment approach, and management with ear drops and oral antibiotics where needed. Always discuss with your doctor."
+  },
+  {
+    "title": "Pathway: Otitis Media with Effusion (Glue Ear)",
+    "handle": "otitis-media-with-effusion-glue-ear",
+    "url": "https://drstanfield.com/blogs/articles/otitis-media-with-effusion-glue-ear",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "glue ear",
+      "otitis media with effusion",
+      "ome",
+      "middle ear fluid",
+      "fluid behind the eardrum",
+      "child hearing loss",
+      "hearing loss",
+      "speech delay",
+      "language delay",
+      "grommets",
+      "ventilation tubes",
+      "tympanometry",
+      "tympanogram",
+      "eustachian tube dysfunction",
+      "cholesteatoma",
+      "chronic suppurative otitis media",
+      "csom",
+      "ear discharge",
+      "intranasal steroids",
+      "fluticasone nasal spray",
+      "ciprofloxacin ear drops",
+      "ear drops",
+      "ent referral",
+      "ear infection"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for glue ear (otitis media with effusion) in children: middle ear fluid without acute infection, which can affect hearing. Covers speech delay signs, tympanometry, watchful waiting, nasal steroids, grommets, ear complications, and ENT referral. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Ovarian Cancer Symptoms",
@@ -25255,6 +26318,43 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for palpitations in pregnancy: red flags requiring urgent assessment, background on normal pregnancy-related cardiac changes, assessment approach including ECG and blood tests, and management. Always discuss with your doctor."
+  },
+  {
+    "title": "Pathway: Palpitations",
+    "handle": "palpitations",
+    "url": "https://drstanfield.com/blogs/articles/palpitations",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "palpitations",
+      "heart palpitations",
+      "racing heart",
+      "skipped beats",
+      "missed beats",
+      "extra heartbeats",
+      "ectopic beats",
+      "sinus tachycardia",
+      "supraventricular tachycardia",
+      "svt",
+      "atrial fibrillation",
+      "ecg",
+      "holter monitor",
+      "event monitor",
+      "long qt",
+      "wolff-parkinson-white",
+      "vagal manoeuvres",
+      "valsalva manoeuvre",
+      "adenosine",
+      "beta blocker",
+      "metoprolol",
+      "atenolol",
+      "caffeine",
+      "smart watch"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for palpitations, for people aware of a racing, strong, or skipped heartbeat: ectopic beats, sinus tachycardia, SVT, and atrial fibrillation. Covers red flags, ECG assessment, Holter monitoring, SVT treatment, beta blockers, and when to refer. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Parkinson Disease",
@@ -25729,6 +26829,43 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for physical activity counselling in adults: assessment of current activity levels, readiness to change, contraindications, exercise targets (2.5 hrs/week moderate or 1.25 hrs/week vigorous), and special considerations for adults 65+. Your doctor can help identify the right starting point for you."
+  },
+  {
+    "title": "Pathway: Physical Assault",
+    "handle": "physical-assault",
+    "url": "https://drstanfield.com/blogs/articles/physical-assault",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "physical assault",
+      "assault",
+      "assaulted",
+      "attacked",
+      "violence",
+      "domestic violence",
+      "family violence",
+      "intimate partner violence",
+      "ipv",
+      "elder abuse",
+      "injury documentation",
+      "bruising",
+      "bruises",
+      "strangulation",
+      "choking",
+      "head injury",
+      "eye injury",
+      "stab wound",
+      "gunshot wound",
+      "glass injury",
+      "wound care",
+      "safety risk assessment",
+      "police report",
+      "self-harm"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for adults aged 18 and over who have been physically assaulted: taking the history, checking for strangulation, safety and risk questions, recording injuries, significant injuries that need emergency care, wound care, and support services. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Physical Health and Mental Illness",
@@ -27338,6 +28475,43 @@
     "summary": "Clinical pathway for recurrent UTIs in women: defined as 3 or more episodes per year or 2 in 6 months. Covers risk factors by age group, assessment including MSU and imaging indications, and management with preventive strategies, prophylactic antibiotics, vaginal estrogens, and antibiotic alternatives. Always discuss with your doctor."
   },
   {
+    "title": "Pathway: Red Eye",
+    "handle": "red-eye",
+    "url": "https://drstanfield.com/blogs/articles/red-eye",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "red eye",
+      "bloodshot eye",
+      "pink eye",
+      "sore eye",
+      "painful eye",
+      "reduced vision",
+      "photophobia",
+      "light sensitivity",
+      "contact lens",
+      "eye injury",
+      "chemical eye injury",
+      "conjunctivitis",
+      "allergic conjunctivitis",
+      "infective conjunctivitis",
+      "keratitis",
+      "corneal ulcer",
+      "acute angle-closure glaucoma",
+      "herpes zoster ophthalmicus",
+      "iritis",
+      "uveitis",
+      "scleritis",
+      "thyroid eye disease",
+      "lubricant eye drops",
+      "hypromellose"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for a red eye in one or both eyes: red flags needing same-day hospital eye care (reduced vision, severe pain, light sensitivity, contact lens use, eye injury), assessment, likely causes, lubricant drops, and when to refer. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Reflux and GORD in Children",
     "handle": "reflux-and-gord-in-children",
     "url": "https://drstanfield.com/blogs/articles/reflux-and-gord-in-children",
@@ -28424,6 +29598,44 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Accelerated silicosis is an occupational lung disease affecting workers exposed to crystalline silica from engineered stone cutting and polishing, occurring after as little as 6 months of exposure. Assessment includes work history and symptoms—shortness of breath, cough, weight loss—with investigations including HRCT chest CT, spirometry, and autoimmune screening, alongside exposure avoidance and mandatory reporting of all cases. Always discuss with your doctor."
+  },
+  {
+    "title": "Pathway: Skin Infections in Children",
+    "handle": "skin-infections-in-children",
+    "url": "https://drstanfield.com/blogs/articles/skin-infections-in-children",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "skin infection",
+      "skin infections in children",
+      "child skin infection",
+      "school sores",
+      "impetigo",
+      "cellulitis",
+      "periorbital cellulitis",
+      "boils",
+      "furuncle",
+      "carbuncle",
+      "abscess",
+      "infected eczema",
+      "eczema herpeticum",
+      "scabies",
+      "wound infection",
+      "wound swab",
+      "mrsa",
+      "staphylococcus aureus",
+      "streptococcus",
+      "necrotising fasciitis",
+      "sepsis",
+      "fungal skin infection",
+      "insect bites",
+      "rheumatic fever",
+      "antibiotics"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for skin infections in children aged 3 months to 14 years, such as impetigo, cellulitis, boils and infected eczema: red flags, sepsis signs, assessment, infection types, care advice for parents, and when to seek same-day or hospital care. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Skin Lesion Excision",
@@ -29557,6 +30769,43 @@
     "summary": "Clinical pathway for anticipating and managing terminal haemorrhage in adult palliative care: recognising internal bleeding, anticipatory planning (emergency letter, dark towels, midazolam), what to do during a massive haemorrhage, and aftercare including debriefing. Always discuss with your doctor."
   },
   {
+    "title": "Pathway: Testosterone Deficiency in Men",
+    "handle": "testosterone-deficiency-in-men",
+    "url": "https://drstanfield.com/blogs/articles/testosterone-deficiency-in-men",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "testosterone deficiency",
+      "low testosterone",
+      "low t",
+      "hypogonadism",
+      "male hypogonadism",
+      "androgen deficiency",
+      "testosterone replacement therapy",
+      "trt",
+      "testosterone undecanoate",
+      "testosterone cipionate",
+      "testosterone injections",
+      "testosterone gel",
+      "morning testosterone",
+      "lh",
+      "fsh",
+      "prolactin",
+      "low libido",
+      "erectile dysfunction",
+      "gynaecomastia",
+      "pituitary disease",
+      "klinefelter syndrome",
+      "polycythaemia",
+      "male fertility",
+      "testicular size"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for testosterone deficiency (low testosterone, hypogonadism) in men: symptoms, causes, morning testosterone and LH/FSH tests, pituitary red flags, when testosterone replacement is appropriate, treatment options, monitoring, and referral. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Testosterone Undecanoate (Reandron) Injections",
     "handle": "testosterone-undecanoate-reandron-injections",
     "url": "https://drstanfield.com/blogs/articles/testosterone-undecanoate-reandron-injections",
@@ -29669,6 +30918,43 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for thrombocytosis (persistently elevated platelet count) in adults: red flags requiring urgent haematology advice, background on primary vs secondary causes, assessment approach, and a stepwise management algorithm including when to refer. Always discuss with your doctor."
+  },
+  {
+    "title": "Pathway: Thrombotic Disorders",
+    "handle": "thrombotic-disorders",
+    "url": "https://drstanfield.com/blogs/articles/thrombotic-disorders",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "thrombotic disorders",
+      "thrombophilia",
+      "blood clotting disorder",
+      "blood clots",
+      "venous thromboembolism",
+      "vte",
+      "deep vein thrombosis",
+      "dvt",
+      "pulmonary embolism",
+      "factor v leiden",
+      "prothrombin gene mutation",
+      "antithrombin deficiency",
+      "protein c deficiency",
+      "protein s deficiency",
+      "antiphospholipid syndrome",
+      "thrombophilia testing",
+      "family history of blood clots",
+      "low-molecular-weight heparin",
+      "rivaroxaban",
+      "enoxaparin",
+      "compression stockings",
+      "air travel",
+      "oral contraceptive pill",
+      "menopause hormone therapy"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for thrombotic disorders (thrombophilia) in people with a past blood clot or a family history of clots: who should and should not be tested. Covers causes, clot risk, prevention during surgery, hormone therapy and air travel, and when to refer. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Thyroid Disease in Pregnancy",
@@ -30037,6 +31323,42 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Three-phase framework for transitioning young people with life-limiting illnesses from paediatric to adult palliative care services. Covers roles of paediatric team, adult palliative care, and general practice across phases of preparation, step-up, and settling into adult services. Transition planning begins from age 12, with full transition by age 18."
+  },
+  {
+    "title": "Pathway: Trauma in Eyes",
+    "handle": "trauma-in-eyes",
+    "url": "https://drstanfield.com/blogs/articles/trauma-in-eyes",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "eye injury",
+      "eye trauma",
+      "trauma in eyes",
+      "chemical eye burn",
+      "alkali burn",
+      "acid burn",
+      "eye irrigation",
+      "penetrating eye injury",
+      "open globe injury",
+      "globe rupture",
+      "closed globe injury",
+      "hyphaema",
+      "blood in the eye",
+      "tear-drop pupil",
+      "corneal abrasion",
+      "foreign body in eye",
+      "eyelid laceration",
+      "retrobulbar haemorrhage",
+      "blow-out fracture",
+      "orbital fracture",
+      "double vision",
+      "chloramphenicol",
+      "eye shield"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for eye injuries in adults and children: chemical burns, penetrating and open globe injuries, blunt trauma, hyphaema and eyelid cuts. Covers red flags needing emergency care, first aid rinsing for burns, assessment, and management by injury type. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Trauma-informed Care",
@@ -30651,6 +31973,42 @@
     "summary": "Clinical pathway for unilateral red eye: causes ranging from self-limiting conjunctivitis to sight-threatening conditions (acute angle closure glaucoma, keratitis, iritis, scleritis), key diagnostic features, and when urgent assessment is needed. Always discuss with your doctor."
   },
   {
+    "title": "Pathway: Unintentional Weight Loss in Adults",
+    "handle": "unintentional-weight-loss-in-adults",
+    "url": "https://drstanfield.com/blogs/articles/unintentional-weight-loss-in-adults",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "unintentional weight loss",
+      "unexplained weight loss",
+      "losing weight without trying",
+      "weight loss",
+      "malnutrition",
+      "nutrition risk",
+      "underweight",
+      "low bmi",
+      "bmi",
+      "loss of appetite",
+      "poor appetite",
+      "food first",
+      "oral nutrition supplements",
+      "dietitian",
+      "scoff questionnaire",
+      "eating disorder",
+      "depression",
+      "hyperthyroidism",
+      "diabetes",
+      "coeliac serology",
+      "ct chest abdomen pelvis",
+      "cancer",
+      "food insecurity"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for unintentional (unexplained) weight loss in adults, meaning losing more than 5% of body weight without trying: red flags, common causes, assessment and blood tests, watch and wait, Food First nutrition advice, and when to refer. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: Unsettled Infant",
     "handle": "unsettled-infant",
     "url": "https://drstanfield.com/blogs/articles/unsettled-infant",
@@ -30704,6 +32062,44 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Shared care guidance for GPs managing patients on upadacitinib (a JAK inhibitor DMARD). Covers red flags requiring urgent action, monitoring requirements, adverse effects, drug interactions, and special situations (surgery, pregnancy, COVID-19, vaccinations). Always discuss changes with your prescribing specialist."
+  },
+  {
+    "title": "Pathway: Urethral Catheterisation",
+    "handle": "urethral-catheterisation",
+    "url": "https://drstanfield.com/blogs/articles/urethral-catheterisation",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "urethral catheterisation",
+      "urinary catheter",
+      "bladder catheter",
+      "catheter",
+      "foley catheter",
+      "indwelling catheter",
+      "suprapubic catheter",
+      "intermittent catheterisation",
+      "condom drainage",
+      "urinary retention",
+      "acute urinary retention",
+      "trial of void",
+      "catheter removal",
+      "catheter blockage",
+      "catheter leakage",
+      "bladder spasm",
+      "catheter uti",
+      "bacteriuria",
+      "urethral trauma",
+      "benign prostatic hyperplasia",
+      "trimethoprim",
+      "ciprofloxacin",
+      "doxazosin",
+      "tamsulosin",
+      "oxybutynin"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for urethral catheterisation in people who may need a bladder catheter: red flags such as urethral trauma, reasons, and alternatives. Covers antibiotic prophylaxis, removal timing, blockage, leakage, catheter UTI, and referral. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Urethritis",
@@ -30886,6 +32282,41 @@
     "summary": "Clinical pathway for urticaria (hives) in adults and children: assessment approach, distinguishing acute from chronic urticaria, triggers, red flags for urticarial vasculitis, and stepwise management with antihistamines and second-line treatments. Always discuss with your doctor."
   },
   {
+    "title": "Pathway: UTI in Adults",
+    "handle": "uti-in-adults",
+    "url": "https://drstanfield.com/blogs/articles/uti-in-adults",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "uti",
+      "urinary tract infection",
+      "bladder infection",
+      "cystitis",
+      "dysuria",
+      "painful urination",
+      "urinary frequency",
+      "urgency",
+      "nitrofurantoin",
+      "cefalexin",
+      "trimethoprim",
+      "fosfomycin",
+      "urine culture",
+      "msu",
+      "urine dipstick",
+      "asymptomatic bacteriuria",
+      "sterile pyuria",
+      "catheter uti",
+      "haematuria",
+      "blood in urine",
+      "interstitial cystitis",
+      "bladder pain syndrome"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for urinary tract infection (UTI) in adults, including women, men, frail older adults and people with a catheter: history, when urine tests help, antibiotic options (nitrofurantoin, cefalexin), UTI with blood in the urine, and when to refer. Always discuss with your doctor."
+  },
+  {
     "title": "Pathway: UTIs and Asymptomatic Bacteriuria in Pregnancy",
     "handle": "utis-and-asymptomatic-bacteriuria-in-pregnancy",
     "url": "https://drstanfield.com/blogs/articles/utis-and-asymptomatic-bacteriuria-in-pregnancy",
@@ -30988,6 +32419,44 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for vaginal (pelvic organ) prolapse in women: background, assessment including prolapse grading and pelvic floor strength, and management covering lifestyle modification, pelvic floor physiotherapy, vaginal estrogen, ring pessary, and indications for specialist referral. Always discuss with your doctor."
+  },
+  {
+    "title": "Pathway: Varicose Veins and Chronic Venous Insufficiency",
+    "handle": "varicose-veins-and-chronic-venous-insufficiency",
+    "url": "https://drstanfield.com/blogs/articles/varicose-veins-and-chronic-venous-insufficiency",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "varicose veins",
+      "chronic venous insufficiency",
+      "venous insufficiency",
+      "varicosities",
+      "varices",
+      "venous disease",
+      "venous eczema",
+      "varicose eczema",
+      "gravitational eczema",
+      "venous leg ulcer",
+      "leg ulcer",
+      "leg swelling",
+      "venous oedema",
+      "compression stockings",
+      "compression hosiery",
+      "abpi",
+      "ankle brachial pressure index",
+      "ceap classification",
+      "vein ablation",
+      "sclerotherapy",
+      "radiofrequency ablation",
+      "laser ablation",
+      "duplex ultrasound",
+      "lipodermatosclerosis",
+      "thrombophlebitis"
+    ],
+    "publishedAt": "",
+    "type": "pathway",
+    "summary": "Clinical pathway for varicose veins and chronic venous insufficiency, including leg swelling, skin changes, venous eczema and ulcers: causes, assessment with CEAP grading and ABPI, compression, elevation, lifestyle, vein ablation options, and when to refer. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Venous Thromboembolism (VTE) Risk in Pregnancy",

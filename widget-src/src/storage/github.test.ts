@@ -78,7 +78,7 @@ describe('GitHubAdapter.connect — refuses a public repo', () => {
  * record. Every write funnels through write()/writeDocument(), so both check
  * visibility once per adapter instance before the first PUT.
  */
-type FetchMock = Mock<[string, RequestInit?], Promise<Response>>;
+type FetchMock = Mock<(url: string, init?: RequestInit) => Promise<Response>>;
 
 /** Routes by URL: the repo endpoint answers visibility, contents answers PUTs. */
 function stubFetch(isPrivate: unknown, repoStatus = 200): FetchMock {
@@ -174,5 +174,29 @@ describe('GitHubAdapter writes — the guard on a resumed connection', () => {
 
     await adapter.read('health-roadmap.json');
     expect(calls(fetchMock, 'repo')).toHaveLength(0);
+  });
+});
+
+// US-17 AC12 (deploy-gate adversary R4 on 028a627a, 2026-10-14): app load runs
+// the schedule push after the auto-enrolment, so an email read that never
+// answered held the push back for the whole visit. Dropbox's read gives up at
+// 10 s; so does this one, and the failure is transient (retried next visit).
+describe('GitHubAdapter.accountEmail — a hung read gives up', () => {
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('aborts after 10 s and throws', async () => {
+    const clock = new AbortController();
+    const timeout = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(clock.signal);
+    try {
+      vi.stubGlobal('fetch', vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(init.signal!.reason));
+      })));
+      const read = new GitHubAdapter(CONFIG).accountEmail();
+      expect(timeout).toHaveBeenCalledWith(10_000);
+      clock.abort(new DOMException('The operation timed out.', 'TimeoutError'));
+      await expect(read).rejects.toThrow(/timed out/);
+    } finally {
+      timeout.mockRestore();
+    }
   });
 });

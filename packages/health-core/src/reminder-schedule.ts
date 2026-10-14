@@ -38,6 +38,7 @@ import {
   getCategoryGroup,
   isActiveMedication,
 } from './reminders';
+import { knownMinorOf } from './calculations';
 import { dayOf, localDay } from './merge';
 import { ISO_DATE } from './measurement-history';
 import type { RoadmapFile } from './roadmap-file';
@@ -250,8 +251,12 @@ export function computeNextDueDates(
  * user must not get a decade of silence; every enrolled person gets at least
  * one touch a year. The schedule is recomputed on every visit/capture, so the
  * floor date slides forward from whenever we last saw them.
+ *
+ * The one exception is a known minor (US-07 AC6): the plan is built for
+ * adults, so nothing is due, not even the floor.
  */
 export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
+  if (knownMinorOf(file.profile, now)) return [];
   const disabled = disabledCategories(file);
   const items = computeItemsFromFile(file, now).filter((item) => !disabled.has(item.category));
   // Last gate before the server: an unparseable date anywhere upstream (a

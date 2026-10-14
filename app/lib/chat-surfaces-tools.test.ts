@@ -36,6 +36,15 @@ describe('US-15 AC19: Discord and YouTube never send the form tools', () => {
     expect(bodies()[0]).not.toHaveProperty('tools');
   });
 
+  // US-15 AC29 (Brad, 2026-10-14): Discord and YouTube get the answer bank too.
+  it('Discord gets the writing style and the answer bank (US-15 AC29)', async () => {
+    const bodies = stubAnthropic();
+    await platformChatCompletion({ message: 'Can the biotin interfere with blood tests?', history: [] });
+    const system = bodies()[0].system.map((b: { text: string }) => b.text).join('\n');
+    expect(system).toContain('## WRITING STYLE');
+    expect(system).toContain('## ANSWER BANK');
+  });
+
   it('YouTube', async () => {
     const bodies = stubAnthropic();
     const thread = { topLevelCommentId: 't1', videoId: 'v1', authorDisplayName: 'A', authorChannelId: null, text: 'my LDL was 3.8', publishedAt: '2026-09-29T00:00:00Z' };
@@ -44,5 +53,9 @@ describe('US-15 AC19: Discord and YouTube never send the form tools', () => {
     expect(outcome.llmOutput).toBe('An answer.');
     expect(bodies()).toHaveLength(1);
     expect(bodies()[0]).not.toHaveProperty('tools');
+    // US-15 AC29: YouTube gets the writing style and the answer bank.
+    const system = bodies()[0].system.map((b: { text: string }) => b.text).join('\n');
+    expect(system).toContain('## WRITING STYLE');
+    expect(system).toContain('## ANSWER BANK');
   });
 });

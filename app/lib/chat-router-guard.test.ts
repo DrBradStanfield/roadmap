@@ -175,7 +175,16 @@ describe('population markers against docs/blog/index.json (US-15 AC25)', () => {
     // with a population word moves a count, and this names it for review.
     // Crisis: suicide-prevention-in-adults, suicide-prevention-in-youth,
     // non-suicidal-deliberate-self-harm.
-    expect(counts).toEqual({ paediatric: 89, pregnancy: 32, palliative: 27, crisis: 3 });
+    // 2026-10-15 (US-42 refresh, 40 new pathways): paediatric +4 (adhd-in-children-and-youth,
+    // analgesia-in-children-with-acute-pain, skin-infections-in-children, otitis-media-with-effusion-glue-ear by title), pregnancy +1
+    // (antenatal-consult-initial-assessment), palliative +1 (last-days-of-life-care-adults, by title). Abortion stays unmarked on purpose
+    // (US-15 AC25: the pregnancy signal lacks "abortion", so marking would hide its title).
+    expect(counts).toEqual({ paediatric: 93, pregnancy: 33, palliative: 28, crisis: 3 });
+    expect(populationsOf('last-days-of-life-care-adults')).toEqual(['palliative']);
+    expect(populationsOf('otitis-media-with-effusion-glue-ear')).toEqual(['paediatric']);
+    // An adult palliative title shows only with a palliative signal (display only; content still loads).
+    expect(titledHandles(['last-days-of-life-care-adults'], 'my mum is in a hospice')).toEqual(['last-days-of-life-care-adults']);
+    expect(titledHandles(['last-days-of-life-care-adults'], 'I feel anxious all the time')).toEqual([]);
     expect(populationsOf('suicide-prevention-in-adults')).toEqual(['crisis']);
   });
 

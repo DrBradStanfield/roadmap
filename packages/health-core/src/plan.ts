@@ -50,14 +50,16 @@ export const SCHEMA_URL =
 
 /**
  * What a model presenting this plan must not do: sand the hedging off a
- * suggestion, or show it without the citation it rests on. It is stated in the
+ * suggestion, or show it without the citation it rests on; for a known minor,
+ * grade their values or suggest medicines (US-07 AC6). It is stated in the
  * payload because the payload is all a remote model gets (US-32).
  */
 export const PLAN_INSTRUCTION =
   'Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording ' +
   '("may support", "evidence suggests") is calibrated — never upgrade it into a recommendation — and every ' +
   'reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and ' +
-  'tell the user to take it to their doctor.';
+  'tell the user to take it to their doctor. When the plan holds only the `adults-only` card, do not grade the ' +
+  'person’s values against adult targets and do not suggest medicines; point them to their doctor.';
 
 /** A failure the user can act on: one plain line plus a hint, never a stack. */
 export class PlanError extends Error {
@@ -194,7 +196,7 @@ export function computePlan(file: RoadmapFile, now = new Date()): Plan {
     excluded,
     generatedAt: now.toISOString(),
     today: localDay(now),
-    results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications, derived.screenings),
+    results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications, derived.screenings, undefined, now),
     due: computeReminderSchedule(file, now),
     labs: derivePlanLabs(file),
   };
@@ -267,6 +269,8 @@ const INPUT_UNITS: Record<string, string> = Object.fromEntries(
 /** The agent-facing shape. Field names are stable; add, never rename. */
 export function planPayload(plan: Plan) {
   const { overdue, upcoming } = dueSplit(plan);
+  // US-07 AC6: a known minor's raw values stay; the adult readings are null.
+  const adult = plan.results.knownMinor ? null : plan.results;
   return {
     instruction: PLAN_INSTRUCTION,
     schemaVersion: CURRENT_SCHEMA_VERSION,
@@ -279,11 +283,11 @@ export function planPayload(plan: Plan) {
       age: plan.results.age ?? null,
       heightCm: plan.results.heightCm,
       bmi: plan.results.bmi ?? null,
-      bmiCategory: plan.results.bmiCategory ?? null,
+      bmiCategory: adult?.bmiCategory ?? null,
       waistToHeightRatio: plan.results.waistToHeightRatio ?? null,
-      eGFR: plan.results.eGFR ?? null,
-      idealBodyWeightKg: plan.results.idealBodyWeight,
-      proteinTargetG: plan.results.proteinTarget,
+      eGFR: adult?.eGFR ?? null,
+      idealBodyWeightKg: adult?.idealBodyWeight ?? null,
+      proteinTargetG: adult?.proteinTarget ?? null,
     },
     inputs: plan.inputs,
     missingInputs: missingPlanInputs(plan),

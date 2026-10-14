@@ -33,6 +33,7 @@ import {
   currentValues,
   dueSplit,
   PlanError,
+  planPayload,
   printable,
   renderJson,
   SCHEMA_URL,
@@ -79,8 +80,10 @@ function profileLine(plan: Plan): string {
   bits.push(plan.inputs.sex === 'female' ? 'female' : 'male');
   const height = FIELD_METRIC_MAP.heightCm;
   bits.push(`${formatDisplayValue(height, plan.results.heightCm, plan.unitSystem)}${getDisplayLabel(height, plan.unitSystem)}`);
-  if (plan.results.bmi !== undefined) bits.push(`BMI ${plan.results.bmi}${plan.results.bmiCategory ? ` (${plan.results.bmiCategory})` : ''}`);
-  if (plan.results.eGFR !== undefined) bits.push(`eGFR ${plan.results.eGFR}`);
+  // The adult readings as the payload gives them: null for a known minor (US-07 AC6).
+  const { bmiCategory, eGFR } = planPayload(plan).profile;
+  if (plan.results.bmi !== undefined) bits.push(`BMI ${plan.results.bmi}${bmiCategory ? ` (${bmiCategory})` : ''}`);
+  if (eGFR !== null) bits.push(`eGFR ${eGFR}`);
   return bits.join(' · ');
 }
 
@@ -115,7 +118,7 @@ export function renderText(plan: Plan): string {
 
   const { overdue, upcoming } = dueSplit(plan);
   out.push('', 'WHAT’S DUE');
-  if (overdue.length === 0 && upcoming.length === 0) out.push('  (nothing scheduled — the app needs your age and sex to work this out)');
+  if (overdue.length === 0 && upcoming.length === 0) out.push('  (nothing scheduled)');
   for (const i of overdue) out.push(`  DUE NOW   ${i.label} (was due ${i.dueAt})`);
   for (const i of upcoming) out.push(`  ${i.dueAt}  ${i.label}`);
 

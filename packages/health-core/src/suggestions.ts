@@ -177,6 +177,14 @@ export function weightMedIntro(bmi: number, reasons: string[]): string {
 }
 
 /**
+ * Whether the plan shows medicine cards (US-07 AC6): only for a known age of
+ * 18 or over. The plan and the form's medication sections both read this.
+ */
+export function medicinesShown(results: Pick<HealthResults, 'age' | 'knownMinor'>): boolean {
+  return results.age !== undefined && !results.knownMinor;
+}
+
+/**
  * Generate personalized health suggestions based on inputs and calculated results.
  *
  * All input values and thresholds are in SI canonical units.
@@ -190,6 +198,18 @@ export function generateSuggestions(
   screenings?: ScreeningInputs,
   unitOverrides?: Partial<Record<MetricType, UnitSystem>>,
 ): Suggestion[] {
+  // Who the plan is for (US-07 AC6): its suggestions, medicines among them,
+  // are built for adults. A known age under 18 gets this one card instead.
+  if (results.knownMinor) {
+    return withEvidence([{
+      id: 'adults-only',
+      category: 'general',
+      priority: 'info',
+      title: 'This plan is built for adults',
+      description: 'The suggestions here, including medicines, are designed for people aged 18 and over. For anyone younger, talk with their doctor.',
+    }]);
+  }
+
   const suggestions: Suggestion[] = [];
   /** Resolve effective unit system for a given metric (per-field override or global default) */
   const us = (metric: MetricType): UnitSystem => unitOverrides?.[metric] ?? unitSystem;
@@ -378,12 +398,15 @@ export function generateSuggestions(
   // so we can suppress standalone atherogenic marker cards and total cholesterol.
   // Only suppress when user has engaged with medication questions (statin status recorded).
   // When medications is {} (no statin decision), show both standalone cards and cascade.
+  // With no birth year the cascade is withheld (US-07 AC6), so nothing is absorbed.
   const statinStatusRecorded = medications?.statin?.drug !== undefined;
-  const lipidMedCascadeActive = statinStatusRecorded && (lipidMarker?.elevated ?? false);
+  const lipidMedCascadeActive = medicinesShown(results) && statinStatusRecorded && (lipidMarker?.elevated ?? false);
   let hasElevatedAtherogenicSuggestion = false;
 
   // ApoB (top of hierarchy — always shown when available)
   // Suppressed when medication cascade is active (cascade descriptions include specific values)
+  // With no birth year (US-07 AC6) the very-high cards suggest no medicine in
+  // their own text; their "why" reasons explain the guideline and stay.
   if (hasApoBData && !lipidMedCascadeActive) {
     if (inputs.apoB! >= APOB_THRESHOLDS.veryHigh) {
       hasElevatedAtherogenicSuggestion = true;
@@ -392,7 +415,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high ApoB',
-        description: `Your ApoB of ${fmtApoB(inputs.apoB!, us('apob'))} is very high, indicating significantly elevated cardiovascular risk. Statin therapy and lifestyle intervention are typically recommended.`,
+        description: `Your ApoB of ${fmtApoB(inputs.apoB!, us('apob'))} is very high, indicating significantly elevated cardiovascular risk. ${medicinesShown(results) ? 'Statin therapy and lifestyle intervention are typically recommended.' : 'Discuss treatment, including lifestyle changes, with your doctor.'}`,
       });
     } else if (inputs.apoB! >= APOB_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
@@ -423,7 +446,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high LDL cholesterol',
-        description: `Your LDL-c of ${fmtLdl(inputs.ldlC, us('ldl'))} is significantly elevated. This may indicate familial hypercholesterolemia. Statin therapy is typically recommended.`,
+        description: `Your LDL-c of ${fmtLdl(inputs.ldlC, us('ldl'))} is significantly elevated. This may indicate familial hypercholesterolemia. ${medicinesShown(results) ? 'Statin therapy is typically recommended.' : 'Discuss treatment with your doctor.'}`,
       });
     } else if (inputs.ldlC >= LDL_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
@@ -518,7 +541,10 @@ export function generateSuggestions(
         checklist.push('\u2753 HbA1c \u2014 not tested');
       }
 
-      // Medication status (only when medications are tracked)
+      // Medication status (only when medications are tracked). With no birth
+      // year (US-07 AC6) the "not started" lines go: they suggest a medicine.
+      // What the user takes or did not tolerate stays.
+      const notStarted = (line: string) => { if (medicinesShown(results)) checklist.push(line); };
       if (medications) {
         const statinDrug = medications.statin?.drug;
         if (statinDrug && statinDrug !== 'none' && statinDrug !== 'not_tolerated') {
@@ -528,7 +554,7 @@ export function generateSuggestions(
         } else if (statinDrug === 'not_tolerated') {
           checklist.push('\u26A0\uFE0F Statin: not tolerated');
         } else {
-          checklist.push('\u26A0\uFE0F Statin: not started \u2014 discuss with your doctor');
+          notStarted('\u26A0\uFE0F Statin: not started \u2014 discuss with your doctor');
         }
 
         if (medications.ezetimibe === 'yes') {
@@ -536,7 +562,7 @@ export function generateSuggestions(
         } else if (medications.ezetimibe === 'not_tolerated') {
           checklist.push('\u26A0\uFE0F Ezetimibe: not tolerated');
         } else {
-          checklist.push('\u26A0\uFE0F Ezetimibe: not started \u2014 discuss with your doctor');
+          notStarted('\u26A0\uFE0F Ezetimibe: not started \u2014 discuss with your doctor');
         }
 
         if (medications.pcsk9i === 'yes') {
@@ -544,7 +570,7 @@ export function generateSuggestions(
         } else if (medications.pcsk9i === 'not_tolerated') {
           checklist.push('\u26A0\uFE0F PCSK9 inhibitor: not tolerated');
         } else {
-          checklist.push('\u26A0\uFE0F PCSK9 inhibitor: not started \u2014 can lower Lp(a) ~25\u201330%');
+          notStarted('\u26A0\uFE0F PCSK9 inhibitor: not started \u2014 can lower Lp(a) ~25\u201330%');
         }
       }
 
@@ -633,7 +659,8 @@ export function generateSuggestions(
       bpExtraParagraphs.push('Increase potassium-rich foods (3,500–5,000mg/day).');
     }
     if (weightMeds.on) {
-      bpExtraParagraphs.push('Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.');
+      // The GLP-1 sentence names medicines, so it needs a known adult age (US-07 AC6).
+      bpExtraParagraphs.push(`Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference.${medicinesShown(results) ? ' GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.' : ''}`);
     }
     const bpExtra = bpExtraParagraphs.length > 0 ? '\n\n' + bpExtraParagraphs.join('\n\n') : '';
 
@@ -651,7 +678,7 @@ export function generateSuggestions(
         category: 'blood_pressure',
         priority: 'urgent',
         title: 'Stage 2 hypertension',
-        description: `Your BP of ${sys}/${dia} mmHg indicates stage 2 hypertension. Medication is typically recommended at this level.\n\nLifestyle measures that also help: reduce sodium intake (<1,500mg/day), exercise regularly, and prioritize quality sleep.${bpExtra}`,
+        description: `Your BP of ${sys}/${dia} mmHg indicates stage 2 hypertension. ${medicinesShown(results) ? 'Medication is typically recommended at this level.' : 'Discuss treatment with your doctor.'}\n\nLifestyle measures that also help: reduce sodium intake (<1,500mg/day), exercise regularly, and prioritize quality sleep.${bpExtra}`,
       });
     } else if (isBpRaised(sys, dia)) {
       suggestions.push({
@@ -1031,47 +1058,61 @@ export function generateSuggestions(
     },
   );
 
-  // === Skin health suggestions (age 18+) ===
-  if (results.age === undefined || results.age >= 18) {
-    suggestions.push(
-      {
-        id: 'skin-moisturizer',
-        category: 'skin',
-        priority: 'info',
-        title: 'Daily moisturizer with ceramides',
-        description: 'Use a moisturizer containing ceramides and nicotinamide (vitamin B3) daily. Ceramides restore the skin barrier and reduce wrinkles, while nicotinamide improves hydration and reduces pigmentation.',
-        link: 'https://amzn.to/47pGGmj',
-      },
-      {
-        id: 'skin-sunscreen',
-        category: 'skin',
-        priority: 'info',
-        title: 'Daily broad-spectrum sunscreen',
-        description: unitSystem === 'conventional'
-          ? 'Apply broad-spectrum SPF 50+ sunscreen daily to exposed skin. In the US, CeraVe 100% Mineral Sunscreen SPF 50 is a good option — mineral filters (zinc oxide, titanium dioxide) are FDA-recognized as safe and effective with no systemic absorption.'
-          : 'Apply broad-spectrum SPF 50+ sunscreen daily to exposed skin. Beauty of Joseon Relief Sun SPF50+ PA++++ uses newer-generation chemical filters (Tinosorb S, Uvinul A Plus) that are photostable and do not absorb into the bloodstream.',
-        link: unitSystem === 'conventional'
-          ? 'https://www.amazon.com/Mineral-Sunscreen-Titanium-Dioxide-Sensitive/dp/B07KLY4RYG'
-          : 'https://beautyofjoseon.com/products/relief-sun-rice-probiotics',
-      },
-      {
-        id: 'skin-retinoid',
-        category: 'skin',
-        priority: 'info',
-        title: 'Topical retinoid',
-        description: 'A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy.',
-      },
-      {
-        id: 'skin-advanced',
-        category: 'skin',
-        priority: 'info',
-        title: 'Advanced skin treatments',
-        description: 'For further skin rejuvenation, consider discussing these options with a dermatologist: red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction.',
-      },
-    );
-  }
+  // === Skin health suggestions (adults, like the whole plan) ===
+  suggestions.push(
+    {
+      id: 'skin-moisturizer',
+      category: 'skin',
+      priority: 'info',
+      title: 'Daily moisturizer with ceramides',
+      description: 'Use a moisturizer containing ceramides and nicotinamide (vitamin B3) daily. Ceramides restore the skin barrier and reduce wrinkles, while nicotinamide improves hydration and reduces pigmentation.',
+      link: 'https://amzn.to/47pGGmj',
+    },
+    {
+      id: 'skin-sunscreen',
+      category: 'skin',
+      priority: 'info',
+      title: 'Daily broad-spectrum sunscreen',
+      description: unitSystem === 'conventional'
+        ? 'Apply broad-spectrum SPF 50+ sunscreen daily to exposed skin. In the US, CeraVe 100% Mineral Sunscreen SPF 50 is a good option — mineral filters (zinc oxide, titanium dioxide) are FDA-recognized as safe and effective with no systemic absorption.'
+        : 'Apply broad-spectrum SPF 50+ sunscreen daily to exposed skin. Beauty of Joseon Relief Sun SPF50+ PA++++ uses newer-generation chemical filters (Tinosorb S, Uvinul A Plus) that are photostable and do not absorb into the bloodstream.',
+      link: unitSystem === 'conventional'
+        ? 'https://www.amazon.com/Mineral-Sunscreen-Titanium-Dioxide-Sensitive/dp/B07KLY4RYG'
+        : 'https://beautyofjoseon.com/products/relief-sun-rice-probiotics',
+    },
+    {
+      id: 'skin-retinoid',
+      category: 'skin',
+      priority: 'info',
+      title: 'Topical retinoid',
+      description: 'A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy.',
+    },
+    {
+      id: 'skin-advanced',
+      category: 'skin',
+      priority: 'info',
+      title: 'Advanced skin treatments',
+      description: 'For further skin rejuvenation, consider discussing these options with a dermatologist: red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction.',
+    },
+  );
 
-  // Attach clinical evidence (reason, guidelines, references) from evidence.ts
+  // Medicine cards need a known age of 18 or over (US-07 AC6). With no birth
+  // year they give way to one card, where the first of them stood.
+  const firstMedicine = medicinesShown(results) ? -1 : suggestions.findIndex((s) => s.category === 'medication');
+  if (firstMedicine === -1) return withEvidence(suggestions);
+  const kept = suggestions.filter((s) => s.category !== 'medication');
+  kept.splice(firstMedicine, 0, {
+    id: 'add-birth-year',
+    category: 'general',
+    priority: 'info',
+    title: 'Add your birth year',
+    description: 'Medicine suggestions need your age. Add your birth year to see them.',
+  });
+  return withEvidence(kept);
+}
+
+/** Attach clinical evidence (reason, guidelines, references) from evidence.ts. */
+function withEvidence(suggestions: Suggestion[]): Suggestion[] {
   for (const s of suggestions) {
     // Direct match first, then prefix match for screening variants (-overdue, -upcoming, -followup)
     const evidence = SUGGESTION_EVIDENCE[s.id]

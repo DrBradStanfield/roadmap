@@ -11,7 +11,7 @@ import {
   MAX_MESSAGE_LENGTH,
   loadMatchedArticlesFromHandles,
 } from './chat.server';
-import { chatContextOf } from '../../packages/health-core/src/chat-context';
+import { chatContextOf, MINOR_CHAT_RULE } from '../../packages/health-core/src/chat-context';
 import { MAX_HISTORY_TURN_CHARS } from '../../packages/health-core/src/chat-history';
 import { loadBlogIndex } from './blog-index.server';
 
@@ -89,9 +89,46 @@ describe('buildSystemBlocks', () => {
     expect(blocks[0].text).toContain('Scope boundaries');
   });
 
+  // US-07 AC6: the shared base tells every surface what to do for a known minor.
+  it('US-07 AC6: the base prompt carries the under-18 rule on every surface', () => {
+    for (const surfaceContext of [undefined, 'DOCTOR', 'BRAND']) {
+      const text = buildSystemBlocks('{}', { surfaceContext })[0].text;
+      expect(text).toContain('`profile.knownMinor: true`');
+      // US-07 AC6: the prompt's rule and health-core's MINOR_CHAT_RULE stay byte-identical.
+      expect(text).toContain(MINOR_CHAT_RULE);
+      expect(text).toContain("Don't grade their values");
+      expect(text).toContain("don't suggest or discuss starting a medicine for them");
+      expect(text).toContain('the plan is built for adults');
+      expect(text).toContain("the child's doctor");
+    }
+  });
+
   it('includes evidence in second block', () => {
     const blocks = buildSystemBlocks('{}');
     expect(blocks[1].text).toContain('Clinical Evidence Reference');
+  });
+
+  // US-15 AC29 (Brad, 2026-10-14): every surface gets the same cached products
+  // block, with the writing style and the answer bank.
+  it('US-15 AC29: the cached products block carries the writing style and the answer bank (no fifth breakpoint)', () => {
+    const blocks = buildSystemBlocks('{}');
+    const products = blocks[2];
+    expect(products.text).toContain("## Dr Stanfield's Products");
+    expect(products.text).toContain('## WRITING STYLE');
+    expect(products.text).toContain('## ANSWER BANK (approved answers to customer questions)');
+    expect(products.cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
+    // The API allows four cache breakpoints, and the base already uses all four.
+    expect(blocks.filter(b => b.cache_control).length).toBe(4);
+    // The generated copy, not the private master: no gateway rules, sources, tags or section names.
+    for (const privateText of ['Rules for using an entry', '**Source:**', '**Status:**', 'Website chatbot', 'Hi [name]', "Brad's own supplements"]) {
+      expect(products.text).not.toContain(privateText);
+    }
+  });
+
+  it('US-15 AC29: every surface shares one byte-identical cached base', () => {
+    const cached = (surfaceContext?: string) => buildSystemBlocks('{}', { surfaceContext }).filter(b => b.cache_control).map(b => b.text);
+    expect(cached('DOCTOR')).toEqual(cached('BRAND'));
+    expect(cached()).toEqual(cached('BRAND'));
   });
 
   it('includes user context in last base block', () => {
@@ -366,7 +403,7 @@ describe('loadMatchedArticlesFromHandles', () => {
 describe('loadMatchedArticlesFromHandles cap (US-15 AC23)', () => {
   const sizes: Record<string, number> = { 'cap-test-a': 83_000, 'cap-test-b': 30_000, 'cap-test-c': 30_000, 'cap-test-x': 40_000 };
   const realRead = fs.readFileSync;
-  afterEach(() => { vi.restoreAllMocks(); });
+  afterEach(() => { vi.resetAllMocks(); vi.restoreAllMocks(); });
 
   function fakeArticles() {
     vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {

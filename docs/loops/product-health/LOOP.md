@@ -94,25 +94,36 @@ unacted for a quarter, say so in the retro and propose the fleet review.
 - **GitHub** (MCP, repo-scoped): issues labelled `from-connector` — the
   connector files a user's bug report as a public issue (US-32 AC9, live
   2026-09-03); organic ones are feedback, Brad's own path tests are not.
+- **External inbound** (US-39; Brad 2026-10-14, in place of a scheduled
+  repo-health loop): once per run, do repo-health's triage pass exactly as
+  `docs/loops/repo-health/LOOP.md` defines it: origins, classes, its Public
+  speech rules (at most two disclosed comments, each reviewed before it is
+  posted), escalations and security handling. Its schedule and report file do
+  not apply. Log in its `ledger.csv`, `metrics.csv` and `feature-backlog.csv`;
+  the report gets one line, and drafted replies for Brad go in it verbatim.
 - **OpenAI app review status** (Gmail MCP; the portal needs a login):
   search for a verdict on submission `C-udsciSnH0UNo` ("Health by Dr Brad"
   v1.0.1, receipt 2026-09-17T20:30Z; v1.0.0 `C-Ggl3RkPf6el6` was rejected
   2026-09-15). If it has moved (approved or rejected), surface issue #60 as
   the next action in the report.
 - **Newer-Sonnet check** (audit `docs/chat-audit-2026-09-29.md` §4.3, US-15
-  AC18). Needs `ANTHROPIC_TEST_API_KEY` in this loop's environment, which Brad
-  must grant before the step can run; until then, name it as a gap. Run
-  `npx tsx tools/check-newer-model.ts`. Exit 0 = nothing newer; 1 = a named
-  gap. On exit 10, run the answer-hop commands it prints (`--answer-model …
-  --answer-check`, `test-tool-edits.ts --model …`) against the candidate; the
-  router and classifier lines only if the PR also changes those pins. Then open
-  a `claude/` PR that bumps `CHAT_MODEL` in `packages/health-core/src/models.ts`,
-  labelled `hold` so auto-ship never merges it: it is for Brad's merge. Why: the
-  bump changes clinical answer behaviour, and the harness cannot catch a
-  fabricated citation. The numbers go in the PR body; a harness that cannot run
-  is named there, never skipped silently. Never edit the pin on main directly.
-  Signal: a newer Sonnet is qualified or rejected within one week of release,
-  evidenced by the PR.
+  AC18). Run `npx tsx tools/check-newer-model.ts` (needs
+  `ANTHROPIC_TEST_API_KEY`). Exit 0 = nothing newer; 1 = a named gap. On exit
+  10, run the answer-hop commands it prints (`--answer-model … --answer-check`,
+  `test-tool-edits.ts --model …`) against the candidate AND the pinned model,
+  same day; the router and classifier lines only if the PR also changes those
+  pins. Then open a `claude/` PR that bumps `CHAT_MODEL` in
+  `packages/health-core/src/models.ts` (this run's one Tier 3 PR). **It ships
+  automatically** through the Tier 3 pipeline (Brad, 2026-10-14: "B: fully
+  automatic") when every harness ran and the candidate scored at least the
+  pinned model on each. Anything less (a lower score, a failure, a harness that
+  could not run, the test workspace's spend limit included) opens the PR
+  labelled `hold` for Brad. The PR body gives both models' numbers and says the
+  harness cannot catch a fabricated citation, so the veto issue tells Brad what
+  he accepts by waiting. The next run compares live chat (misses, fallbacks)
+  with the prior week; a regression is a revert PR through the same pipeline.
+  Never edit the pin on main directly. Signal: a newer Sonnet is qualified or
+  rejected within one week of release, evidenced by the PR.
 
 Conventions: the report/metrics week label is the COMPLETED ISO data week (the
 7d window ending at run time). Any funnel event reporting 0 must be classified
@@ -131,6 +142,8 @@ append rows to metrics.csv) · New errors · New feedback · Proposed backlog
 - Usage-evidence lines ONLY in `docs/user-stories.md` (never ACs or test
   status — those belong to build sessions), then regenerate:
   `npx tsx scripts/build-user-stories-html.ts`.
+- `docs/loops/repo-health/{ledger,metrics,feature-backlog}.csv`, and comments
+  or spam closes on external issues and PRs, for the inbound pass only.
 
 ## Code grant — Tier 3 "ship" (recorded by Brad, 2026-08-10)
 Named area: `widget-src/**` and `packages/health-core/src/**` — MINUS the

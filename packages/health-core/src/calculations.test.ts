@@ -4,6 +4,8 @@ import {
   calculateProteinTarget,
   calculateBMI,
   calculateAge,
+  isKnownMinor,
+  knownMinorOf,
   getBMICategory,
   calculateHealthResults,
   calculateEGFR,
@@ -133,6 +135,91 @@ describe('calculateAge', () => {
   it('returns 0 for future birth years', () => {
     const futureYear = new Date().getFullYear() + 1;
     expect(calculateAge(futureYear, 1)).toBe(0);
+  });
+
+  it('reads the clock it is given (US-07 AC6: the plan computes age at its own `now`)', () => {
+    expect(calculateAge(1990, 6, new Date(2026, 4, 1))).toBe(35);
+    expect(calculateAge(1990, 6, new Date(2026, 5, 1))).toBe(36);
+  });
+});
+
+// US-07 AC6 (2026-10-14): the adults-only gate. Amended 2026-10-14: a missing
+// birth month is a minor until 1 January of the year after they turn 18
+// (birthYear + 19), so no one counts as 18 early.
+describe('isKnownMinor', () => {
+  const OCT_2026 = new Date(2026, 9, 14, 12);
+
+  it('known month: 18 in the month of the birthday, a minor the month before', () => {
+    expect(isKnownMinor(2008, 10, OCT_2026)).toBe(false);
+    expect(isKnownMinor(2008, 11, OCT_2026)).toBe(true);
+  });
+
+  it('missing month: a minor through 31 December of the year they turn 18', () => {
+    expect(isKnownMinor(2008, undefined, OCT_2026)).toBe(true);
+    expect(isKnownMinor(2008, undefined, new Date(2026, 11, 1, 12))).toBe(true);
+    expect(isKnownMinor(2008, undefined, new Date(2026, 11, 31, 23, 59))).toBe(true);
+  });
+
+  it('missing month: an adult from 1 January of the year after', () => {
+    expect(isKnownMinor(2008, undefined, new Date(Date.UTC(2027, 0, 1, 12)))).toBe(false);
+  });
+
+  // Adversary R6 (2026-10-14): the gate judges the date at UTC-12, the zone
+  // furthest behind, so no one anywhere counts as 18 early. Fly runs in UTC,
+  // and hosted get_plan read a US 17-year-old as 18 up to ~10 h early. The
+  // instants below are absolute, so these pass in every machine zone.
+  it('judges the date at UTC-12: 18 only once the birthday month has begun everywhere', () => {
+    // Born November 2008. 1 November 05:00 UTC is still 31 October in the US.
+    expect(isKnownMinor(2008, 11, new Date(Date.UTC(2026, 10, 1, 5)))).toBe(true);
+    expect(isKnownMinor(2008, 11, new Date(Date.UTC(2026, 10, 1, 11, 59, 59)))).toBe(true);
+    expect(isKnownMinor(2008, 11, new Date(Date.UTC(2026, 10, 1, 12)))).toBe(false);
+  });
+
+  it('judges the date at UTC-12 with no month: a minor until 1 January has begun everywhere', () => {
+    expect(isKnownMinor(2008, undefined, new Date(Date.UTC(2027, 0, 1, 11, 59, 59)))).toBe(true);
+    expect(isKnownMinor(2008, undefined, new Date(Date.UTC(2027, 0, 1, 12)))).toBe(false);
+  });
+
+  it('knownMinorOf judges the same instant the same way', () => {
+    expect(knownMinorOf({ birthYear: 2008, birthMonth: 11 }, new Date(Date.UTC(2026, 10, 1, 5)))).toBe(true);
+    expect(knownMinorOf({ birthYear: 2008 }, new Date(Date.UTC(2027, 0, 1, 11)))).toBe(true);
+  });
+
+  it('no birth year: not a known minor', () => {
+    expect(isKnownMinor(undefined, undefined, OCT_2026)).toBe(false);
+    expect(isKnownMinor(undefined, 3, OCT_2026)).toBe(false);
+  });
+
+  it('calculateHealthResults marks the gate at its own `now`; every other age keeps the January default', () => {
+    const inputs = { heightCm: 170, sex: 'female' as const, weightKg: 60, birthYear: 2008 };
+    const october = calculateHealthResults(inputs, 'si', undefined, undefined, undefined, OCT_2026);
+    expect(october.age).toBe(18);
+    expect(october.knownMinor).toBe(true);
+    const nextYear = calculateHealthResults(inputs, 'si', undefined, undefined, undefined, new Date(Date.UTC(2027, 0, 1, 12)));
+    expect(nextYear.age).toBe(19);
+    expect(nextYear.knownMinor).toBeUndefined();
+  });
+});
+
+// US-07 AC6: every surface asks the gate one way, over the birth info the plan
+// keeps: a birth year or month out of the plan's bounds is dropped first.
+describe('knownMinorOf', () => {
+  const OCT_2026 = new Date(2026, 9, 14, 12);
+
+  it('valid birth info: the gate itself', () => {
+    expect(knownMinorOf({ birthYear: 2008, birthMonth: 11 }, OCT_2026)).toBe(true);
+    expect(knownMinorOf({ birthYear: 2008, birthMonth: 10 }, OCT_2026)).toBe(false);
+    expect(knownMinorOf({}, OCT_2026)).toBe(false);
+  });
+
+  it('a birth year out of bounds is no age, as in the plan: not a minor', () => {
+    expect(knownMinorOf({ birthYear: new Date().getFullYear() + 1, birthMonth: 1 })).toBe(false);
+    expect(knownMinorOf({ birthYear: 1899 }, OCT_2026)).toBe(false);
+  });
+
+  it('a birth month out of bounds is no month: the strict missing-month rule', () => {
+    expect(knownMinorOf({ birthYear: 2008, birthMonth: 13 }, OCT_2026)).toBe(true);
+    expect(knownMinorOf({ birthYear: 2008, birthMonth: 13 }, new Date(Date.UTC(2027, 0, 1, 12)))).toBe(false);
   });
 });
 

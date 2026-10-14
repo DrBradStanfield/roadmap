@@ -23,8 +23,8 @@ A fresh-context reviewer on a different model, the cross-model analogue of
 the fresh Opus 5.5 adversarial check. It reviews an immutable, symlink-free
 snapshot in a read-only sandbox with the ChatGPT connector layer, images,
 plugins, memories and sub-agents disabled, web search limited to OpenAI's hosted,
-index-only mode so it can check a cited study (no live page fetches, and the
-shell has no network; US-40 AC14), and a minimal environment. Credential
+index-only mode so it can check a cited study (no live page fetches unless
+`--live`, and the shell has no network; US-40 AC14), and a minimal environment. Credential
 files and their values are withheld from the snapshot and patch (US-40 AC11).
 Credential-named paths (`.env*`, `*.env`, `*.env.*`, `env.local` and the
 like; code named `config/prod.env.js` or `secrets.env.py` counts too, so a
@@ -93,6 +93,7 @@ node tools/codex-review.mjs --out "$SCRATCH/codex-review.json"          # uncomm
 node tools/codex-review.mjs --commit <sha> --out "$SCRATCH/codex-review.json"
 node tools/codex-review.mjs --range main..HEAD --out "$SCRATCH/codex-review.json"
 node tools/codex-review.mjs --record --out "$SCRATCH/codex-review.json"     # + live scratch record, read-only
+node tools/codex-review.mjs --live --out "$SCRATCH/codex-review.json"       # + live web pages (US-40 AC14, 2026-10-14): our own changes only; never outside PRs; refused with --record, --record-file and --loop; a page opened outside the expected sites is noted (advisory, exit code unchanged) and kept as unexpected_hosts, an untraceable one as unresolved_opens; redirects and bundled opens may go unseen; look at a noted run before relying on its verdict
 node tools/codex-review.mjs --loop --range <first>^..HEAD --out "$SCRATCH/codex-review.json"  # loop-authored: Tier 3 applies
 node tools/codex-review.mjs --include <dir> --out "$SCRATCH/codex-review.json"  # + a read-only source folder under a root pinned in tools/codex-review-includes.json (repeatable; 64 MB cap, --include-limit-mb; never with --loop; US-40 AC13)
 node tools/codex-review.mjs --subject <file> [--baseline <earlier file>|none] [--context <dir>] --out "$SCRATCH/codex-review.json"  # ONLY these files vs their baselines; nothing else from the tree (a --baseline pairs with the --subject before it; never with --commit/--range/--loop; US-40 AC15)

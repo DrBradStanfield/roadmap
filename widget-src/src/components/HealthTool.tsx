@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } fro
 import { createPortal } from 'react-dom';
 import {
   calculateHealthResults,
+  knownMinorOf,
+  medicinesShown,
   weightMedicationTrigger,
   lipidMarkerFor,
   validateHealthInputs,
@@ -80,6 +82,7 @@ import {
 } from '../lib/roadmap-data';
 import { trackABImpression, trackABConversion, trackProductEvent } from '../lib/server-api';
 import { activeRowIndex, routeTasksToSaves, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
+import type { Grading } from '../lib/blood-test-cell';
 import type { ApiDocument } from '../lib/api-types';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
@@ -648,10 +651,13 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     // The form follows the plan: its recommendations, targets and cascade
     // steps read what the plan was computed from (US-06 AC5): its age, BMI,
     // weight target and validated height, its trigger and its lipid marker.
+    // The plan's medicine cards need a known age of 18 or over (US-07 AC6),
+    // so without one the form's medication sections are plain fields.
+    const medicines = medicinesShown(healthResults);
     const planBasis: PlanBasis = {
       ...healthResults,
-      weightMedTrigger: weightMedicationTrigger(calcInputs, healthResults),
-      lipidMarker: lipidMarkerFor(calcInputs, healthResults),
+      weightMedTrigger: medicines ? weightMedicationTrigger(calcInputs, healthResults) : { on: false, reasons: [] },
+      lipidMarker: medicines ? lipidMarkerFor(calcInputs, healthResults) : null,
     };
     return { results: healthResults, isValid: true, validationErrors: errors, planBasis };
   }, [effectiveInputs, unitSystem, medications, screenings, metricUnitOverrides]);
@@ -659,6 +665,13 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   useEffect(() => {
     setErrors(validationErrors ?? {});
   }, [validationErrors]);
+
+  // US-07 AC6: the form withholds its adult readings from a known minor by the
+  // validated birth year and month alone, with or without a plan (Codex R1:
+  // with no height or sex the blood-test matrix still shows). Memoised: the
+  // review's cells are memo components.
+  const knownMinor = knownMinorOf(effectiveInputs);
+  const grading = useMemo<Grading>(() => (knownMinor ? null : { sex: inputs.sex }), [knownMinor, inputs.sex]);
 
   // Mobile tab state
   const isMobile = useIsMobile();
@@ -961,6 +974,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     formStage,
     setShowUploadModal,
     planBasis,
+    grading,
     healthDocuments: documentHistory,
     onDocumentDeleted: (docId: string) => {
       setDocumentHistory(prev => prev.filter(d => d.id !== docId));
@@ -1084,6 +1098,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         onScreeningUpdate={handleScreeningChange}
         age={planBasis?.age}
         sex={inputs.sex === 'male' || inputs.sex === 'female' ? inputs.sex : undefined}
+        grading={grading}
       />
 
       {/* Undo banner for a medication the chat just changed (meds auto-save, so

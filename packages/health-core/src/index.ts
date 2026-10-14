@@ -73,6 +73,7 @@ export {
   calculateProteinTarget,
   calculateBMI,
   calculateAge,
+  knownMinorOf,
   getBMICategory,
   getEgfrStatus,
   getLpaStatus,
@@ -84,7 +85,7 @@ export {
 } from './calculations';
 
 // Suggestions
-export { generateSuggestions, LIPID_DIET_ADVICE, lipidMarkerFor, lipidTargetSentence, weightMedicationTrigger, weightMedIntro } from './suggestions';
+export { generateSuggestions, LIPID_DIET_ADVICE, lipidMarkerFor, lipidTargetSentence, medicinesShown, weightMedicationTrigger, weightMedIntro } from './suggestions';
 export type { LipidMarker, WeightMedicationTrigger } from './suggestions';
 export { weightCascade, lipidCascade } from './medication-cascades';
 
@@ -310,7 +311,7 @@ export {
 
 // The chat's plan context: what a client sends, and the sanitizing builder
 // both chats read it through (US-15 AC11)
-export { chatContextOf, buildChatContextJson, type ChatContextPayload } from './chat-context';
+export { chatContextOf, buildChatContextJson, MINOR_CHAT_RULE, type ChatContextPayload } from './chat-context';
 
 // Product funnel events — anonymous behavioral counters (client tracker + server enum)
 export { PRODUCT_EVENT_NAMES, GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, REMOTE_CHANGE_BACKENDS, isLabUnitWord, type ProductEventName } from './product-events';
