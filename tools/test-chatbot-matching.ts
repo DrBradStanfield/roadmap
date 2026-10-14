@@ -63,6 +63,10 @@
  *   expect_empty_context?: true  with user_context: production collapses this payload to '{}' (no sex
  *                             or height, so no plan), and the answer gets '{}' as production sends it.
  *                             A payload that does make a plan then exits the harness before any API call.
+ *   expect_roadmap_run?: boolean  answer check only: the answer must (true) or must not (false) call
+ *                             run_roadmap. Every answer runs production's one-round loop (health-core
+ *                             withRoadmapRound, US-15 AC33) on the fixture's raw user_context, and is
+ *                             scored on the second call's text when the tool ran.
  *
  * A fetch that throws (timeout, DNS, reset) counts as an API error, like a non-2xx:
  * visible, scored as ∅, and the run continues but never exits green. So does a
@@ -109,7 +113,7 @@ import {
   CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, ROUTER_MODEL as PRODUCTION_ROUTER_MODEL,
   PROMPT_CACHE, getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat,
 } from '../packages/health-core/src/models';
-import { CHAT_EDIT_TOOLS } from '../packages/health-core/src/chat-edits';
+import { CHAT_TOOLS, withRoadmapRound, type ChatContentBlock } from '../packages/health-core/src/run-roadmap';
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
 import { parseRouterReply } from '../app/lib/router-reply';
 import { buildSystemBlocks, EMPTY_CHAT_CONTEXT, resolveChatContext } from '../app/lib/chat.server';
@@ -389,6 +393,7 @@ interface TestQuery {
   surface?: 'doctor' | 'brand'; // answer check adds that surface's posture block (see the header)
   user_context?: unknown;      // answer check sends this widget payload as the user's data (see the header)
   expect_empty_context?: true; // production collapses user_context to '{}' (see the header)
+  expect_roadmap_run?: boolean; // the answer must (true) or must not (false) call run_roadmap (see the header)
 }
 
 const ALL_QUERIES: TestQuery[] = JSON.parse(
@@ -514,7 +519,12 @@ function claimed(response: string, phrases: string[]): string[] {
   }));
 }
 
-async function checkAnswer(q: TestQuery, matchedHandles: string[] = [], retryOnRateLimit = true): Promise<AnswerCheckResult> {
+/** A failed answer call: its label (a status or a fetch error) and any detail. */
+class AnswerApiError extends Error {
+  constructor(readonly label: string, detail?: string) { super(detail ? `${label}: ${detail}` : label); }
+}
+
+async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise<AnswerCheckResult> {
   const { query, surface, max_length_chars: maxLengthChars } = q;
   const mustMention = q.must_mention ?? [];
   const mustNotMention = q.must_not_mention ?? [];
@@ -530,40 +540,44 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = [], retryOnR
   const body = {
     ...modelParams(ANSWER_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system,
-    tools: CHAT_EDIT_TOOLS, // as production: the tools change what the model writes
-    messages: [{ role: 'user', content: query }],
+    tools: CHAT_TOOLS, // as production: the tools change what the model writes
   };
 
-  // As production (callAnthropicWithUsage): thinking makes an answer take 10-20 s.
-  const res = await postMessages(body, 60_000);
-  if (typeof res === 'string') {
+  // One Messages call; a 429 waits and retries once. As production (callAnthropicWithUsage): thinking makes an answer take 10-20 s.
+  const send = async (fields: object) => {
+    for (let retry = true; ; retry = false) {
+      const res = await postMessages({ ...body, ...fields }, 60_000);
+      if (typeof res === 'string') throw new AnswerApiError(res);
+      if (res.status === 429 && retry) {
+        const retryAfter = parseInt(res.headers.get('retry-after') ?? '30', 10);
+        process.stdout.write(` [429, waiting ${retryAfter}s]`);
+        await new Promise(r => setTimeout(r, retryAfter * 1000));
+        continue;
+      }
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new AnswerApiError(String(res.status), text.slice(0, 200).replace(/\s+/g, ' '));
+      }
+      const data = await res.json() as { content?: ChatContentBlock[]; stop_reason?: string; stop_details?: { category?: string } | null };
+      return { contentBlocks: data.content ?? [], stopReason: data.stop_reason, category: data.stop_details?.category };
+    }
+  };
+
+  // As production (getChatCompletion): the same one-round run_roadmap loop, on the payload the widget sends.
+  const turn = await withRoadmapRound([{ role: 'user', content: query }], send, q.user_context ?? null)
+    .catch((err: unknown) => { if (err instanceof AnswerApiError) return err; throw err; });
+  if (turn instanceof AnswerApiError) {
     // Count it: a majority vote could otherwise hide one timeout and exit green.
     apiErrorCount++;
-    process.stdout.write(` [api-error ${res}]`);
-    return { passed: false, failures: [`API error ${res}`], response: '' };
+    process.stdout.write(` [api-error ${turn.label}]`);
+    return { passed: false, failures: [`API error ${turn.message}`], response: '' };
   }
-
-  if (res.status === 429 && retryOnRateLimit) {
-    const retryAfter = parseInt(res.headers.get('retry-after') ?? '30', 10);
-    process.stdout.write(` [429, waiting ${retryAfter}s]`);
-    await new Promise(r => setTimeout(r, retryAfter * 1000));
-    return checkAnswer(q, matchedHandles, false);
-  }
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    const detail = body.slice(0, 200).replace(/\s+/g, ' ');
-    apiErrorCount++;
-    process.stdout.write(` [api-error ${res.status}]`);
-    return { passed: false, failures: [`API error ${res.status}: ${detail}`], response: '' };
-  }
-
-  const data = await res.json() as { content?: Array<{ type: string; text?: string }>; stop_reason?: string; stop_details?: { category?: string } | null };
-  if (data.stop_reason === 'refusal') {
-    return { passed: false, failures: [`refusal (${data.stop_details?.category ?? 'no category'})`], response: '' };
+  const data = turn.final;
+  if (data.stopReason === 'refusal') {
+    return { passed: false, failures: [`refusal (${data.category ?? 'no category'})`], response: '' };
   }
   // Thinking blocks come first on Sonnet; join every text block, as production does.
-  const response = (data.content ?? []).filter(c => c.type === 'text').map(c => c.text ?? '').join('');
+  const response = data.contentBlocks.filter(c => c.type === 'text').map(c => (c as { text?: string }).text ?? '').join('');
   const lower = response.toLowerCase();
 
   const failures: string[] = [];
@@ -578,6 +592,9 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = [], retryOnR
   }
   if (typeof maxLengthChars === 'number' && response.length > maxLengthChars) {
     failures.push(`length ${response.length} chars > cap ${maxLengthChars}`);
+  }
+  if (q.expect_roadmap_run !== undefined && q.expect_roadmap_run !== (turn.counts !== null)) {
+    failures.push(q.expect_roadmap_run ? 'did not call run_roadmap' : 'called run_roadmap');
   }
 
   return { passed: failures.length === 0, failures, response };

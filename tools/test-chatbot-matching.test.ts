@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import { REPO_ROOT, tsxSpawn } from './test-helpers';
 import { loadBlogArticle } from '../app/lib/matched-content';
 import { resolveChatContext } from '../app/lib/chat.server';
+import { runRoadmap } from '../packages/health-core/src/run-roadmap';
 
 interface Case { category: string; expected: string[]; must_mention?: string[] }
 
@@ -594,4 +595,66 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
       expect(status).toBe(1);
     }
   }, 60_000);
+});
+
+// US-15 AC33: answer checks run production's one-round run_roadmap loop (the
+// shared health-core withRoadmapRound) on the fixture's raw user_context, and
+// are scored on the second call's text.
+describe('test-chatbot-matching run_roadmap round (US-15 AC33)', () => {
+  const PROFILE = { unitSystem: 'si', medications: [], screenings: [], sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 3, ldlC: 2.4 };
+  const INPUT = { values: [{ field: 'ldlC', value: 4.1, unit: 'mmol/L' }] };
+  const fixture = (extra: Record<string, unknown>) => ({
+    query: 'analyse my data: LDL 4.1 mmol/L', category: 'own-data-analysis', surface: 'doctor', answer_handles: [],
+    user_context: PROFILE, must_mention: ['from the roadmap'], ...extra,
+  });
+
+  /** Run one fixture offline: the first answer call asks for run_roadmap when `callTool`, the next answers. */
+  function run(fx: object, callTool: boolean) {
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-run-roadmap-'));
+    try {
+      const stub = join(dir, 'fetch-stub.mjs');
+      const log = join(dir, 'calls.jsonl');
+      writeFileSync(stub, `
+        import fs from 'node:fs';
+        const read = fs.readFileSync;
+        fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? ${JSON.stringify(JSON.stringify([fx]))} : read(p, ...rest);
+        globalThis.fetch = async (_url, init) => {
+          const body = JSON.parse(init.body);
+          fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify(body) + '\\n');
+          const round = body.messages.length > 1;
+          const content = ${JSON.stringify(callTool)} && !round
+            ? [{ type: 'thinking', thinking: 'run it', signature: 'sig' }, { type: 'tool_use', id: 'toolu_1', name: 'run_roadmap', input: ${JSON.stringify(INPUT)} }]
+            : [{ type: 'text', text: round ? 'From the roadmap: LDL 4.1.' : 'A plain answer.' }];
+          return new Response(JSON.stringify({ content, stop_reason: round || !${JSON.stringify(callTool)} ? 'end_turn' : 'tool_use', usage: { input_tokens: 1, output_tokens: 1 } }),
+            { status: 200, headers: { 'content-type': 'application/json' } });
+        };
+      `);
+      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
+        '--category', 'own-data-analysis', '--fixed-handles-only', '--answer-check-runs', '1']);
+      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env: { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' }, encoding: 'utf-8', timeout: 60_000 });
+      let calls: Array<Record<string, any>> = [];
+      try { calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l)); } catch { /* no call made */ }
+      return { status: res.status, stderr: res.stderr, out: res.stdout.replace(/\x1b\[[0-9;]*m/g, ''), calls };
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it('the tool runs on the fixture\'s payload, the second call replays the first, and the answer is scored on it', () => {
+    const { status, stderr, out, calls } = run(fixture({ expect_roadmap_run: true }), true);
+    expect(calls.length, stderr).toBe(2);
+    expect(calls[0].tools.map((t: { name: string }) => t.name)).toContain('run_roadmap');
+    expect(calls[1].tool_choice).toEqual({ type: 'none' });
+    expect(calls[1].messages[1].content[0]).toEqual({ type: 'thinking', thinking: 'run it', signature: 'sig' });
+    const result = JSON.parse(calls[1].messages[2].content[0].content);
+    expect(result.roadmap).toEqual(JSON.parse(runRoadmap(PROFILE, INPUT).contextJson!));
+    expect(out).toContain('Fixed-handle answer checks: 1/1 ✓');
+    expect(status).toBe(0);
+  }, 60_000);
+
+  it('expect_roadmap_run fails an answer that did not call the tool, and one that did when it must not', () => {
+    expect(run(fixture({ expect_roadmap_run: true, must_mention: ['plain'] }), false).out).toContain('did not call run_roadmap');
+    expect(run(fixture({ expect_roadmap_run: false }), true).out).toContain('called run_roadmap');
+  }, 120_000);
 });

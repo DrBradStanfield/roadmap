@@ -4686,7 +4686,7 @@
       "41",
       "132"
     ],
-    "notes": "Adversary round 2, 2026-10-12 (R3): values the user states in the message count. Empty form ('{}'), three values pasted in the message. Pass: the answer uses all three numbers. KNOWN LIMIT: does not check which threshold each number is held against. Read the answers. MEASURED 2026-10-12, 3 runs each: prompt 4df581d (before #135) 2/3 (run 3 answered with only a form pre-fill tool call and no text), round-2 prompt 3/3. KNOWN GAP: with no profile there is no plan, and two round-2 answers built one themselves from the algorithm, giving the borderline-LDL card attention priority (the computed plan makes it info); one added Lp(a) as 'the 2026 ACC/AHA guideline recommends measuring it'. Read the answers. Criterion revised 2026-10-14 (Brad): with no profile the roadmap has made no plan, so the answer must not present one. Pass: uses the three stated numbers; points to entering the values so the roadmap can run, or says the roadmap needs a profile (sex and height, or enter, add or save beside form, profile or roadmap, or 'no profile'). Fail: a card label ('attention:' or 'urgent:' leading a line, 'attention-level', 'urgent items', '(attention)', a quoted 'attention', 'flags it as attention'), or 'your plan' in a sentence with no condition or modal ('once you add them, the roadmap will make your plan' passes). Replayed offline on the logged answers: prompt 4df581d 0/3 (two quoted the 'attention' label, one was a tool call with no text), round-2 prompt 0/3 ('urgent items', 'attention-level', 'Attention:' list labels).",
+    "notes": "Adversary round 2, 2026-10-12 (R3): values the user states in the message count. Empty form ('{}'), three values pasted in the message. Pass: the answer uses all three numbers. KNOWN LIMIT: does not check which threshold each number is held against. Read the answers. MEASURED 2026-10-12, 3 runs each: prompt 4df581d (before #135) 2/3 (run 3 answered with only a form pre-fill tool call and no text), round-2 prompt 3/3. KNOWN GAP: with no profile there is no plan, and two round-2 answers built one themselves from the algorithm, giving the borderline-LDL card attention priority (the computed plan makes it info); one added Lp(a) as 'the 2026 ACC/AHA guideline recommends measuring it'. Read the answers. Criterion revised 2026-10-14 (Brad): with no profile the roadmap has made no plan, so the answer must not present one. Pass: uses the three stated numbers; points to entering the values so the roadmap can run, or says the roadmap needs a profile (sex and height, or enter, add or save beside form, profile or roadmap, or 'no profile'). Fail: a card label ('attention:' or 'urgent:' leading a line, 'attention-level', 'urgent items', '(attention)', a quoted 'attention', 'flags it as attention'), or 'your plan' in a sentence with no condition or modal ('once you add them, the roadmap will make your plan' passes). Replayed offline on the logged answers: prompt 4df581d 0/3 (two quoted the 'attention' label, one was a tool call with no text), round-2 prompt 0/3 ('urgent items', 'attention-level', 'Attention:' list labels). US-15 AC33 (2026-10-14): the widget now has run_roadmap, which runs the plan code on stated values; with no profile and no stated sex and height it returns no plan and says so, so this check is unchanged: the answer uses the numbers and asks for the profile, whether or not the tool ran. The computed-plan path for a user with no profile is the next fixture (values plus sex, height and age).",
     "must_match": [
       "\\b(sex|gender)\\b(?:[^.!?\\n]|\\.(?=\\d)){0,60}\\bheight\\b|\\bheight\\b(?:[^.!?\\n]|\\.(?=\\d)){0,60}\\b(sex|gender)\\b|\\b(enter|add|sav|fill|put|pre-?fill|record|log)\\w*\\b(?:[^.!?\\n]|\\.(?=\\d)){0,60}\\b(form|profile|roadmap|health tool|the tool)\\b|\\b(no|without an?|empty|incomplete|blank) (saved )?profile\\b|\\bprofile\\b(?:[^.!?\\n]|\\.(?=\\d)){0,40}\\b(empty|missing|blank|incomplete)\\b"
     ],
@@ -4694,6 +4694,92 @@
       "(?:^|\\n)\\s*(?:[-•]|\\d+\\.)?\\s*(urgent|attention)\\b\\s*[:(—–-]|\\b(urgent|attention)[- ](level|priority|items?|cards?|tier|flags?)\\b|\\((urgent|attention)\\)|[\\\"'“‘](urgent|attention)[\\\"'”’]|\\b(priority|flag(s|ged)?|rated|marked|labell?ed|counts?) (it |this |them |these )?(as )?(an? )?(urgent|attention)\\b",
       "(?:^|[!?\\n]|\\.(?!\\d))(?!(?:[^.!?\\n]|\\.(?=\\d))*(\\bif\\b|\\bonce\\b|\\bwhen\\b|\\buntil\\b|\\bnot\\b|n't\\b|\\bno\\b|\\bwould\\b|\\bwill\\b|\\bcan\\b|\\bcould\\b|\\bwithout\\b))(?:[^.!?\\n]|\\.(?=\\d))*\\byour plan\\b"
     ]
+  },
+  {
+    "query": "My new blood test came back with LDL 4.6 mmol/L. Can you analyse my data with that?",
+    "category": "own-data-analysis",
+    "source": "us-15-2026-10-14",
+    "surface": "doctor",
+    "answer_handles": [],
+    "user_context": {
+      "unitSystem": "si",
+      "medications": [],
+      "screenings": [],
+      "sex": "male",
+      "heightCm": 178,
+      "weightKg": 76,
+      "waistCm": 85,
+      "birthYear": 1974,
+      "birthMonth": 6,
+      "hba1c": 35,
+      "ldlC": 2.4,
+      "systolicBp": 118,
+      "diastolicBp": 76
+    },
+    "expect_roadmap_run": true,
+    "must_mention": [
+      "4.6"
+    ],
+    "must_match": [
+      "\\bldl\\b(?:[^.!?\\n]|\\.(?=\\d)){0,80}\\bhigh\\b|\\bhigh\\b(?:[^.!?\\n]|\\.(?=\\d)){0,40}\\bldl\\b",
+      "\\b(not|n't|haven't|hasn't|won't|isn't|aren't|nothing|none)\\b(?:[^.!?\\n]|\\.(?=\\d)){0,40}\\bsaved\\b|\\bunsaved\\b"
+    ],
+    "must_not_match": [
+      "\\bldl\\b(?:[^.!?\\n]|\\.(?=\\d)){0,30}\\b2\\.4\\b(?:[^.!?\\n]|\\.(?=\\d)){0,40}\\b(on target|in range|fine|good|healthy)\\b"
+    ],
+    "notes": "US-15 AC33 (Brad 2026-10-14): values typed into the chat run through the roadmap's own code. Made-up profile, male, 52, saved LDL 2.4 mmol/L (the plan holds med-statin but no ldl-high card). The message states LDL 4.6 mmol/L. run_roadmap overlays it, and the computed plan adds ldl-high ('Your LDL-c of 4.6 mmol/L is high'). Pass: the answer called run_roadmap, uses 4.6, calls the LDL high (the computed card's word), and says the value is not saved. Fail: grading the saved 2.4 as on target."
+  },
+  {
+    "query": "My Lp(a) came back at 75. Can you run that through my roadmap?",
+    "category": "own-data-analysis",
+    "source": "us-15-2026-10-14",
+    "surface": "doctor",
+    "answer_handles": [],
+    "user_context": {
+      "unitSystem": "si",
+      "medications": [],
+      "screenings": [],
+      "sex": "male",
+      "heightCm": 178,
+      "weightKg": 76,
+      "waistCm": 85,
+      "birthYear": 1974,
+      "birthMonth": 6,
+      "hba1c": 35,
+      "ldlC": 2.4,
+      "systolicBp": 118,
+      "diastolicBp": 76
+    },
+    "expect_roadmap_run": false,
+    "must_match": [
+      "nmol",
+      "mg/dl",
+      "\\?"
+    ],
+    "notes": "US-15 AC33: an ambiguous unit is asked, never guessed. Lp(a) 75 is plausible in nmol/L and in mg/dL, and the two read very differently. Same made-up profile, no Lp(a) saved. Pass: no run_roadmap call, and the answer asks which unit, naming nmol/L and mg/dL. Fail: grading 75 in any unit while asking (MEASURED 2026-10-14 on the first run_roadmap prompt, 3 runs: all asked, and all three then graded 75 per unit themselves, e.g. 'in nmol/L, 75 sits at the start of the borderline band'; the prompt now says not to grade the value in any unit).",
+    "must_not_match": [
+      "\\b(borderline|elevated|normal|raised|well above|well below|above the|below the)\\b"
+    ]
+  },
+  {
+    "query": "I'm a 52 year old woman, 165 cm tall. Please analyse these: LDL 4.1 mmol/L, HbA1c 41 mmol/mol, BP 132/84.",
+    "category": "own-data-analysis",
+    "source": "us-15-2026-10-14",
+    "surface": "doctor",
+    "answer_handles": [],
+    "user_context": {},
+    "expect_roadmap_run": true,
+    "must_mention": [
+      "4.1",
+      "41",
+      "132"
+    ],
+    "must_match": [
+      "prediabet",
+      "stage (1|one)",
+      "\\b(not|n't|haven't|hasn't|won't|isn't|aren't|nothing|none)\\b(?:[^.!?\\n]|\\.(?=\\d)){0,40}\\bsaved\\b|\\bunsaved\\b"
+    ],
+    "notes": "US-15 AC33: no saved profile, but the message states sex, height and age, so run_roadmap can build a plan (sex female, heightCm 165, birthYear this year minus 52). The computed plan: hba1c-prediabetic and bp-stage1 (attention), ldl-borderline (info), med-statin. Pass: the answer called run_roadmap, uses the three numbers, names prediabetes and stage 1 hypertension from the cards, and says the values are not saved."
   },
   {
     "query": "How much leucine is in the MicroVitamin capsules, and is it enough for muscle?",
