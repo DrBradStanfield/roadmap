@@ -5775,5 +5775,31 @@
     ],
     "must_not_mention": [],
     "notes": "New. Entry: \"An ankle brachial pressure index (ABPI) test is less than 0.5, which indicates severe arterial disease.\""
+  },
+  {
+    "query": "I have severe liver disease. Can I take colchicine for a gout flare?",
+    "category": "pathway-refresh-batch-2",
+    "source": "knowledge-refresh-batch-2-currency-2026-10-14",
+    "answer_handles": [
+      "gout"
+    ],
+    "must_mention": [
+      "severe"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. New entry: \"The data sheet says colchicine must not be used in severe kidney or liver disease, or with certain interacting medicines (for example clarithromycin). With milder kidney problems the dose is lowered.\" Old: the entry said colchicine is not used in severe kidney or liver disease, with no data-sheet attribution and no mention of a lower dose for milder kidney problems."
+  },
+  {
+    "query": "I'm pregnant and my cardiologist mentioned amiodarone. Is it suitable for me?",
+    "category": "pathway-refresh-batch-2",
+    "source": "knowledge-refresh-batch-2-currency-2026-10-14",
+    "answer_handles": [
+      "cardiac-drugs-and-monitoring"
+    ],
+    "must_mention": [
+      "pregnan"
+    ],
+    "must_not_mention": [],
+    "notes": "Changed. New entry: \"The data sheet advises against amiodarone in people with current or past thyroid problems, and in pregnancy or while breastfeeding.\" Old: the entry said amiodarone is not used in people with current or past thyroid problems, or in pregnancy or while breastfeeding."
   }
 ]

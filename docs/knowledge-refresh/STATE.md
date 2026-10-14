@@ -33,7 +33,7 @@ AC6 "unexpected change" lines list other batches on the same branch: expected. E
 
 ## Merge checklist (every batch, after AC8)
 1. Build a merge branch FRESH from main: the batch's docs/pathway files, its answer fixtures (data-merged into tools/test-queries.json), its docs/knowledge-refresh files. Never merge knowledge-refresh/batches itself (870c44c9 holds raw quotes).
-2. New pathways only (new-1a, new-1b): rebuild docs/blog/index.json with `npx tsx scripts/build-blog-content.ts`, register categories (new-entry-addendum.md), and check the chatbot can retrieve each new handle (Codex R8, 2026-10-12). CI fails on index drift.
+2. New pathways only (new-1a, new-1b): rebuild docs/blog/index.json with `npx tsx scripts/rebuild-blog-index.ts` (dry run 2026-10-14: adds exactly the 40 new pathways, removes none), register categories (new-entry-addendum.md), and check the chatbot can retrieve each new handle (Codex R8, 2026-10-12). CI fails on index drift.
 3. `npm run test:all` in a worker, merge, push. Brad deploys from Actions.
 
 ## Open items for Brad

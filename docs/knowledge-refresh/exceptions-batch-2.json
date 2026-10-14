@@ -98,40 +98,32 @@
  {
   "check": "AC2",
   "handle": "cardiac-drugs-and-monitoring",
-  "match": "changed_tokens[141] raw_quote is not in the raw file: - The usual starting dose is 80 mg once daily or 40 mg twice a day. If needed, it is increased gr...",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
+  "match": "changed_tokens[149] raw_quote shares no number with its body_line: - The usual starting dose is 80 mg once daily or 40 mg twice a day. If needed, it is increased gr...",
+  "reason": "Currency check (ruling 13, 2026-10-14): the number follows the current Medsafe data sheet (frozen under knowledge-map-raw/refresh-2026-09-29/medsafe/, in extra_raw), but the data sheet words it differently (dose totals, \"at least\", CYP3A4 spelling, age bands), so the checker cannot pair them. See batch-2-currency-2026-10-14.md.",
   "by": "orchestrator",
   "date": "2026-10-14"
  },
  {
   "check": "AC2",
   "handle": "cardiac-drugs-and-monitoring",
-  "match": "changed_tokens[142] raw_quote is not in the raw file: - Doses up to 480 mg a day may be used, under specialist supervision, for life-threatening ventri...",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
+  "match": "changed_tokens[150] raw_quote shares no number with its body_line: - Doses up to 480 mg a day may be used, under specialist supervision, for life-threatening ventri...",
+  "reason": "Currency check (ruling 13, 2026-10-14): the number follows the current Medsafe data sheet (frozen under knowledge-map-raw/refresh-2026-09-29/medsafe/, in extra_raw), but the data sheet words it differently (dose totals, \"at least\", CYP3A4 spelling, age bands), so the checker cannot pair them. See batch-2-currency-2026-10-14.md.",
   "by": "orchestrator",
   "date": "2026-10-14"
  },
  {
   "check": "AC2",
   "handle": "cardiac-drugs-and-monitoring",
-  "match": "changed_tokens[143] raw_quote is not in the raw file: - For paroxysmal atrial fibrillation, the dose is 80 mg twice a day, and may rise to 80 mg three ...",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
+  "match": "changed_tokens[152] raw_quote shares no number with its body_line: - Usually stopped 5 to 7 days before planned surgery, as your doctor advises, or if there is a ri...",
+  "reason": "Currency check (ruling 13, 2026-10-14): the number follows the current Medsafe data sheet (frozen under knowledge-map-raw/refresh-2026-09-29/medsafe/, in extra_raw), but the data sheet words it differently (dose totals, \"at least\", CYP3A4 spelling, age bands), so the checker cannot pair them. See batch-2-currency-2026-10-14.md.",
   "by": "orchestrator",
   "date": "2026-10-14"
  },
  {
   "check": "AC2",
   "handle": "cardiac-drugs-and-monitoring",
-  "match": "changed_tokens[145] raw_quote is not in the raw file: - Usually stopped 5 to 7 days before planned surgery, as your doctor advises, or if there is a ri...",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
-  "by": "orchestrator",
-  "date": "2026-10-14"
- },
- {
-  "check": "AC2",
-  "handle": "cardiac-drugs-and-monitoring",
-  "match": "changed_tokens[147] raw_quote is not in the raw file: - Taking a strong CYP 3A4 inhibitor (e.g., ketoconazole, clarithromycin, ritonavir)",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
+  "match": "changed_tokens[153] raw_quote shares no number with its body_line: - Taking a strong CYP 3A4 inhibitor (e.g., ketoconazole, clarithromycin, ritonavir)",
+  "reason": "Currency check (ruling 13, 2026-10-14): the number follows the current Medsafe data sheet (frozen under knowledge-map-raw/refresh-2026-09-29/medsafe/, in extra_raw), but the data sheet words it differently (dose totals, \"at least\", CYP3A4 spelling, age bands), so the checker cannot pair them. See batch-2-currency-2026-10-14.md.",
   "by": "orchestrator",
   "date": "2026-10-14"
  },
@@ -139,7 +131,7 @@
   "check": "AC2",
   "handle": "cardiac-drugs-and-monitoring",
   "match": "token \"7 day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Usually stopped 5 to 7 days before planned surgery, as your doctor advises, or if there is a risk of gastrointestin...\"",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
+  "reason": "Currency check (ruling 13, 2026-10-14): the number follows the current Medsafe data sheet (frozen under knowledge-map-raw/refresh-2026-09-29/medsafe/, in extra_raw), but the data sheet words it differently (dose totals, \"at least\", CYP3A4 spelling, age bands), so the checker cannot pair them. See batch-2-currency-2026-10-14.md.",
   "by": "orchestrator",
   "date": "2026-10-14"
  },
@@ -147,71 +139,39 @@
   "check": "AC2",
   "handle": "cardiac-drugs-and-monitoring",
   "match": "token \"\u2264480 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Doses up to 480 mg a day may be used, under specialist supervision, for life-threatening ventricular arrhythmias.\"",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
-  "by": "orchestrator",
-  "date": "2026-10-14"
- },
- {
-  "check": "AC2",
-  "handle": "cardiac-drugs-and-monitoring",
-  "match": "body line has no entry quoting \"80 mg\": For paroxysmal atrial fibrillation, the dose is 80 mg twice a day, and may rise to 80 mg three times a day. This dose...",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
-  "by": "orchestrator",
-  "date": "2026-10-14"
- },
- {
-  "check": "AC2",
-  "handle": "direct-oral-anticoagulants",
-  "match": "changed_tokens[26] raw_quote is not in the raw file: Your doctor will check creatinine clearance before starting, then every 6 to 12 months during lon...",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
-  "by": "orchestrator",
-  "date": "2026-10-14"
- },
- {
-  "check": "AC2",
-  "handle": "direct-oral-anticoagulants",
-  "match": "changed_tokens[27] raw_quote is not in the raw file: For other uses, rivaroxaban is taken once a day. For atrial fibrillation, the dose is 15 mg once ...",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
-  "by": "orchestrator",
-  "date": "2026-10-14"
- },
- {
-  "check": "AC2",
-  "handle": "direct-oral-anticoagulants",
-  "match": "body line has no entry quoting \"15 mL/min\": For other uses, rivaroxaban is taken once a day. For atrial fibrillation, the dose is 15 mg once a day if creatinine ...",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
+  "reason": "Currency check (ruling 13, 2026-10-14): the number follows the current Medsafe data sheet (frozen under knowledge-map-raw/refresh-2026-09-29/medsafe/, in extra_raw), but the data sheet words it differently (dose totals, \"at least\", CYP3A4 spelling, age bands), so the checker cannot pair them. See batch-2-currency-2026-10-14.md.",
   "by": "orchestrator",
   "date": "2026-10-14"
  },
  {
   "check": "AC2",
   "handle": "gout",
-  "match": "changed_tokens[10] raw_quote is not in the raw file: - Take 1.0 mg (two tablets) at first sign of a flare, then 0.5 mg one hour later. Do not repeat t...",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
+  "match": "changed_tokens[12] raw_quote shares no number with its body_line: - Take 1.0 mg (two tablets) at first sign of a flare, then 0.5 mg one hour later. Do not repeat t...",
+  "reason": "Currency check (ruling 13, 2026-10-14): the number follows the current Medsafe data sheet (frozen under knowledge-map-raw/refresh-2026-09-29/medsafe/, in extra_raw), but the data sheet words it differently (dose totals, \"at least\", CYP3A4 spelling, age bands), so the checker cannot pair them. See batch-2-currency-2026-10-14.md.",
   "by": "orchestrator",
   "date": "2026-10-14"
  },
  {
   "check": "AC2",
   "handle": "hypothyroidism",
-  "match": "changed_tokens[9] raw_quote is not in the raw file: - Healthy adult aged 50 or under with no heart disease: 100 micrograms per day (or approximately ...",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
+  "match": "changed_tokens[9] raw_quote shares no number with its body_line: - Healthy adult aged 50 or under with no heart disease: 100 micrograms per day (or approximately ...",
+  "reason": "Currency check (ruling 13, 2026-10-14): the number follows the current Medsafe data sheet (frozen under knowledge-map-raw/refresh-2026-09-29/medsafe/, in extra_raw), but the data sheet words it differently (dose totals, \"at least\", CYP3A4 spelling, age bands), so the checker cannot pair them. See batch-2-currency-2026-10-14.md.",
   "by": "orchestrator",
   "date": "2026-10-14"
  },
  {
   "check": "AC2",
   "handle": "hypothyroidism",
-  "match": "changed_tokens[10] raw_quote is not in the raw file: - Aged over 50: start at no more than 50 micrograms per day",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
+  "match": "changed_tokens[10] raw_quote shares no number with its body_line: - Aged over 50: start at no more than 50 micrograms per day",
+  "reason": "Currency check (ruling 13, 2026-10-14): the number follows the current Medsafe data sheet (frozen under knowledge-map-raw/refresh-2026-09-29/medsafe/, in extra_raw), but the data sheet words it differently (dose totals, \"at least\", CYP3A4 spelling, age bands), so the checker cannot pair them. See batch-2-currency-2026-10-14.md.",
   "by": "orchestrator",
   "date": "2026-10-14"
  },
  {
   "check": "AC2",
   "handle": "hypothyroidism",
-  "match": "changed_tokens[11] raw_quote is not in the raw file: - Ischaemic heart disease: start at 12.5\u201325 micrograms per day",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
+  "match": "changed_tokens[11] raw_quote shares no number with its body_line: - Ischaemic heart disease: start at 12.5\u201325 micrograms per day",
+  "reason": "Currency check (ruling 13, 2026-10-14): the number follows the current Medsafe data sheet (frozen under knowledge-map-raw/refresh-2026-09-29/medsafe/, in extra_raw), but the data sheet words it differently (dose totals, \"at least\", CYP3A4 spelling, age bands), so the checker cannot pair them. See batch-2-currency-2026-10-14.md.",
   "by": "orchestrator",
   "date": "2026-10-14"
  },
@@ -219,7 +179,7 @@
   "check": "AC2",
   "handle": "hypothyroidism",
   "match": "token \"50 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Healthy adult aged 50 or under with no heart disease: 100 micrograms per day (or approximately 1.6 mcg \u00d7 body weigh...\"",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
+  "reason": "Currency check (ruling 13, 2026-10-14): the number follows the current Medsafe data sheet (frozen under knowledge-map-raw/refresh-2026-09-29/medsafe/, in extra_raw), but the data sheet words it differently (dose totals, \"at least\", CYP3A4 spelling, age bands), so the checker cannot pair them. See batch-2-currency-2026-10-14.md.",
   "by": "orchestrator",
   "date": "2026-10-14"
  },
@@ -227,7 +187,7 @@
   "check": "AC2",
   "handle": "hypothyroidism",
   "match": "token \">50\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Aged over 50: start at no more than 50 micrograms per day\"",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
+  "reason": "Currency check (ruling 13, 2026-10-14): the number follows the current Medsafe data sheet (frozen under knowledge-map-raw/refresh-2026-09-29/medsafe/, in extra_raw), but the data sheet words it differently (dose totals, \"at least\", CYP3A4 spelling, age bands), so the checker cannot pair them. See batch-2-currency-2026-10-14.md.",
   "by": "orchestrator",
   "date": "2026-10-14"
  },
@@ -235,7 +195,7 @@
   "check": "AC2",
   "handle": "hypothyroidism",
   "match": "token \"\u226450 mcg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Aged over 50: start at no more than 50 micrograms per day\"",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
+  "reason": "Currency check (ruling 13, 2026-10-14): the number follows the current Medsafe data sheet (frozen under knowledge-map-raw/refresh-2026-09-29/medsafe/, in extra_raw), but the data sheet words it differently (dose totals, \"at least\", CYP3A4 spelling, age bands), so the checker cannot pair them. See batch-2-currency-2026-10-14.md.",
   "by": "orchestrator",
   "date": "2026-10-14"
  },
@@ -243,7 +203,7 @@
   "check": "AC2",
   "handle": "hypothyroidism",
   "match": "token \"12.5 mcg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Ischaemic heart disease: start at 12.5\u201325 micrograms per day\"",
-  "reason": "Currency check (ruling 13, 2026-10-14): dose or threshold from the current Medsafe data sheet, quoted in the report as EXTRA; the checker reads EXTRA quotes only from extra_raw files. See batch-2-currency-2026-10-14.md.",
+  "reason": "Currency check (ruling 13, 2026-10-14): the number follows the current Medsafe data sheet (frozen under knowledge-map-raw/refresh-2026-09-29/medsafe/, in extra_raw), but the data sheet words it differently (dose totals, \"at least\", CYP3A4 spelling, age bands), so the checker cannot pair them. See batch-2-currency-2026-10-14.md.",
   "by": "orchestrator",
   "date": "2026-10-14"
  }
