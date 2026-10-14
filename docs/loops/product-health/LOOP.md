@@ -77,7 +77,9 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   three a correction written; keep = Neither, or any answer that would
   save the stored value; labels only, US-05 AC3). It is
   sent once per tab, so the split counts each tab's first answer only;
-  `reminder_optin_v2` total by `provider`. Read `mcp_authorize_shown` with a
+  `chat_run_roadmap` (server: the chat ran the plan on values typed into
+  it; `count` used and `rejected` stated values, counts only, read against
+  `chat_opened`, US-15 AC33); `reminder_optin_v2` total by `provider`. Read `mcp_authorize_shown` with a
   clock: more than two rows a second from one client, with no
   `mcp_consent_posted` following, is a probe scanning the door, not people
   trying to connect — count it as traffic and say so, never as demand.
