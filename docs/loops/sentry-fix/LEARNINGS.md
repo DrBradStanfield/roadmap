@@ -31,12 +31,9 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   retry (US-15 AC3, PR #11); same class likely reachable on the other
   `PROXY_PATH` endpoints — extend only on Sentry evidence. Residuals, not
   defects: a retry can duplicate the user row or cost one extra LLM spend.
-- `[expected][sentry]` 2026-08-12 — The info-level issue titled
-  "Chat transient upstream 5xx, retrying once" IS the retry instrumentation
-  from PR #11 — ledger it `wontfix` (expected) on first appearance; its rate
-  is the transient-failure trend, worth reading, never "fixing". Same on
-  sight for self-generated probes (`level=info` + a non-production
-  `environment` tag; ids: docs/sentry-filter-verification-2026-09-07.md).
+- `[expected][sentry]` 2026-08-12 — "Chat transient upstream 5xx, retrying once"
+  (info) is PR #11's retry trend: `wontfix` on sight, read, never fix. Same for
+  self-probes (`level=info`, non-production `environment`; ids: docs/sentry-filter-verification-2026-09-07.md).
 - `[process][review]` 2026-08-12 — Verify a safety claim at the CALL SITE
   that enforces it, not the helper that implements it (round-1 REJECT: dedup
   helper was sound, but the route gates it behind `if (conversationId)`).
@@ -71,17 +68,19 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   36→0 and gated in ci.yml, which surfaced a second latent crash (Object.hasOwn
   on iOS WebKit <15.4 → hasOwnProperty.call, floors kept at ES2020). app/ is
   still ungated — a standing task.
-- `[noise][server]` 2026-08-23, sharpened 10-05 — Handled probe errors: OAuth
+- `[noise][server]` 2026-08-23, sharpened 10-14 — Handled probe errors: OAuth
   `exitIframe=javascript:…`/`data:…` → "Invalid URL. Refusing to redirect"
   (`sanitizeRedirectUrl` firing); internal route misses → "No route matches URL".
-  A miss is wontfix ONLY if unsigned, on *.fly.dev, tool UA (6X: curl/8.6.0 just
-  after a release, like 7723659158); proxy path + browser UA = a stale caller,
-  ours. Grant-excluded: hygiene is propose-only, not worth it at probe volume.
-- `[gap][sentry]` 2026-09-07, closed 09-08 — Before PR #73 (live 09-08 20:59Z)
-  `allowUrls` dropped every main-bundle exception: earlier widget no-op days
-  are lower bounds. A `release` tag means a side bundle (only they define
-  `__SENTRY_RELEASE__`); its absence means health-plan-v2. Storage adapters put
-  document titles into thrown messages: READ them before quoting.
+  Wontfix ONLY if unsigned and a tool UA on *.fly.dev (6X: curl/8.6.0 after a
+  release; 7723659158) or a secret-file path (`/.env`, any UA/host: 6X 10-13).
+  Proxy path + browser UA = a stale caller, ours. Hygiene: propose-only, not worth it.
+- `[gap][sentry]` 2026-09-07 — Widget no-op days before 09-08 are lower bounds
+  (PR #73). A `release` tag means a side bundle; none means health-plan-v2.
+  Storage adapters put document titles into thrown messages: READ before quoting.
+- `[base-rate][server]` 2026-10-14 — Router (Sonnet 5.5): 5 s a try, one retry on
+  timeout, so a double timeout reads `latencyMs` ~11 000 (6Z); its text is in
+  `chat_match_events.router_error`. 69 good turns to 10-14: p95 3.5 s, max 4.0 s.
+  One timeout = upstream; 2+ in 7 days = budget too tight (options: 2026-10-14.md).
 - `[class][widget]` 2026-09-17, root-fixed 2026-09-20 — Anything `main()`
   awaits before `createRoot` is a blank-widget path: an unhandled rejection
   there leaves the mount empty and the user reloads (1-4 loads per session in
