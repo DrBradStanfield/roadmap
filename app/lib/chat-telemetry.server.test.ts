@@ -10,12 +10,17 @@ import { createBatch, pollBatch } from './anthropic.server';
 const marker = 'PHI_SENTINEL';
 const secret = `${marker} synthetic patient Jane Example LDL 4.2 mmol/L`;
 let envelopes: unknown[];
+/** Envelopes carrying an error event; every envelope is still checked for the marker. */
+const eventEnvelopes = () => envelopes.filter((e) => JSON.stringify((e as unknown[])[1]).includes('"type":"event"'));
 
 beforeEach(() => {
   envelopes = [];
   Sentry.init({
     dsn: 'https://public@example.invalid/1',
     defaultIntegrations: false,
+    // No periodic client-report envelope: on a slower runner one landed inside a test
+    // and doubled the count (CI only, 2026-10-14, after the vitest 4 upgrade).
+    sendClientReports: false,
     transport: () => ({
       send: async (envelope) => { envelopes.push(envelope); return { statusCode: 200 }; },
       flush: async () => true,
@@ -52,7 +57,7 @@ describe('chat failure telemetry', () => {
     };
     reportChatFallback(params);
     await Sentry.flush();
-    expect(envelopes).toHaveLength(1);
+    expect(eventEnvelopes()).toHaveLength(1);
     const payload = JSON.stringify(envelopes);
     expect(payload).not.toContain(marker);
     expect(payload).toContain(failureMode);
@@ -80,7 +85,7 @@ describe('chat failure telemetry', () => {
     expect(result.error).toBeTruthy();
     reportRouterFailure(result);
     await Sentry.flush();
-    expect(envelopes).toHaveLength(1);
+    expect(eventEnvelopes()).toHaveLength(1);
     expect(JSON.stringify(envelopes)).not.toContain(marker);
   });
 
@@ -91,7 +96,7 @@ describe('chat failure telemetry', () => {
     const result = await classifyMessage(secret);
     expect(result.raw).toBe(secret); // conversation/audit storage policy is unchanged
     await Sentry.flush();
-    expect(envelopes).toHaveLength(1);
+    expect(eventEnvelopes()).toHaveLength(1);
     expect(JSON.stringify(envelopes)).not.toContain(marker);
   });
 
@@ -105,7 +110,7 @@ describe('chat failure telemetry', () => {
       platform: 'shopify', latencyMs: 5, conversationId,
     });
     await Sentry.flush();
-    expect(envelopes).toHaveLength(1);
+    expect(eventEnvelopes()).toHaveLength(1);
     const payload = JSON.stringify(envelopes);
     expect(payload).not.toContain(marker);
     expect(payload).toContain('"errorKind":"http_5xx"');
@@ -135,7 +140,7 @@ describe('chat failure telemetry', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     await expect(call()).rejects.toThrow(/status|error/);
     await Sentry.flush();
-    expect(envelopes).toHaveLength(1);
+    expect(eventEnvelopes()).toHaveLength(1);
     expect(JSON.stringify(envelopes)).not.toContain(marker);
     expect(JSON.stringify(consoleError.mock.calls)).not.toContain(marker);
   });
