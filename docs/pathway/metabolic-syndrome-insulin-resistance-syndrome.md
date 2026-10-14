@@ -10,7 +10,7 @@ summary: "Clinical pathway for metabolic syndrome (insulin resistance syndrome):
 
 *Source: Auckland Region HealthPathways. Last reviewed: September 2018.*
 
-This pathway covers the assessment and management of metabolic syndrome. Metabolic syndrome is an important risk factor for type 2 diabetes and cardiovascular disease.
+This pathway covers the assessment and management of metabolic syndrome. Metabolic syndrome is a risk factor for type 2 diabetes and cardiovascular disease.
 
 ---
 

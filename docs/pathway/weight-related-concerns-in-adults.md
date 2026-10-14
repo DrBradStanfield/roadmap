@@ -18,7 +18,7 @@ This pathway covers assessment and management of weight-related concerns in adul
 
 ## Red Flags — Discuss with Your Doctor Promptly
 
-Seek prompt medical review if you experience:
+See your doctor if you notice:
 
 - Unintentional weight change (losing or gaining more than 10% of body weight in the last 6 months without changing food intake or physical activity)
 - If your BMI is less than 20, a weight loss of more than 5% is considered significant.

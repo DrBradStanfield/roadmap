@@ -151,7 +151,7 @@ Causes to consider include MASLD, viral hepatitis, alcohol, drugs and herbal rem
 - Antinuclear antibodies (ANA), liver autoantibodies (anti-smooth muscle antibody and anti-mitochondrial antibody), serum immunoglobulins, serum caeruloplasmin
 - HFE gene (haemochromatosis) if ferritin is raised and iron saturation is more than 50%
 
-**For acute hepatitis** (ALT and/or AST more than 10 times ULN with bilirubin above ULN):
+**For acute hepatitis** (ALT and/or AST more than 10 times ULN with bilirubin higher than ULN):
 - HCV RNA, anti-HBc IgM, HAV IgM, EBV IgM/IgG, CMV IgM/IgG, HEV RNA
 
 If ALT stays more than 1.5 times ULN for longer than 3 months, your doctor will arrange a liver ultrasound.

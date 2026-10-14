@@ -152,7 +152,7 @@ Your doctor will arrange assessment in hospital.
 - Grade 3 to 6 murmur, or a pansystolic, late systolic, diastolic, or continuous murmur
 - Murmur with related symptoms
 - Associated examination findings: radiation to neck or back, clicks, or extra heart sounds
-- Clinical evidence of heart failure (diuretic treatment and blood pressure optimisation may be started while awaiting assessment)
+- Clinical evidence of heart failure (diuretic treatment and better blood pressure control may be started while awaiting assessment)
 - Abnormal ECG, particularly left ventricular hypertrophy or bundle branch block
 - Significant change in an existing murmur (including in patients with a prosthetic valve)
 - Murmur with a history of rheumatic fever
@@ -167,7 +167,7 @@ When considering referral for elderly patients, doctors take into account life e
 
 **Your doctor may refer to a cardiologist if:**
 - Asymptomatic but with concerning features on history or examination
-- Cardiac symptoms not requiring emergency assessment (diuretic treatment and blood pressure optimisation may be started while awaiting assessment)
+- Cardiac symptoms not requiring emergency assessment (diuretic treatment and better blood pressure control may be started while awaiting assessment)
 - Echocardiogram shows concerning features:
   - Moderate or severe valve stenosis or regurgitation
   - Left ventricular ejection fraction (LVEF) less than 55% in any patient with a valve lesion

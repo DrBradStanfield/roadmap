@@ -28,6 +28,8 @@ Reandron should be avoided in men with:
 
 - Androgen-dependent carcinoma of the prostate or breast
 - Hypersensitivity to testosterone undecanoate or any of its excipients
+- High blood calcium caused by a cancer
+- A liver tumour, now or in the past
 
 ---
 
@@ -40,6 +42,7 @@ Your doctor gives Reandron as a deep intramuscular injection:
 - **Administration time:** Injected slowly over 2 minutes
 - **Technique:** The Z-track method can be used to reduce pain and stop the medicine spreading into the tissue under the skin.
 - **Tip:** Reandron is thick, so warming the vial in warm water before injecting helps with delivery.
+- **Afterwards:** You are watched during and straight after each injection. Rarely, the oily medicine can reach the lungs (pulmonary oil microembolism) or cause a severe allergic reaction.
 
 ---
 

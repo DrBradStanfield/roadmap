@@ -41,7 +41,7 @@ Giant cell arteritis needs prompt treatment to protect your sight.
 
 - Vision loss lasts from a few seconds to minutes
 - Can black out the upper or lower half of one eye's vision, or the whole field of one eye
-- Important causes include:
+- Causes include:
   - **Giant cell arteritis**
   - **Amaurosis fugax** (retinal transient ischaemic attack)
   - **Optic neuropathy**

@@ -101,7 +101,7 @@ If severe kidney impairment (renal impairment) is suspected, your doctor may che
 
 ## Management
 
-Your doctor will tailor treatment based on your age, severity, and any risk factors.
+Your doctor will choose treatment based on your age, severity, and any risk factors.
 
 ### Red Flag Management
 

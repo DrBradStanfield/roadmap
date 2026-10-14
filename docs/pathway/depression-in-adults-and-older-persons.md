@@ -121,7 +121,7 @@ If you are thinking about suicide, follow the steps in the red flag section abov
 
 ### Stepped Care — Starting with the Least Intrusive Approach
 
-Your doctor will tailor treatment to your needs, preferences, and any other health conditions. The general approach is to start with the most effective, least intrusive options first.
+Your doctor will choose treatment to suit your needs, preferences, and any other health conditions. The general approach is to start with the most effective, least intrusive options first.
 
 ### For Everyone — Regardless of Severity
 
@@ -164,7 +164,7 @@ Your doctor may consider:
 1. **Brief intervention therapy first**: counselling, psychological therapy, or work-based EAP programmes.
 2. **Antidepressants** as a second option, or in addition to therapy. Your doctor may prefer to defer this decision to a follow-up appointment rather than prescribing at the first visit.
 
-Regular follow-up, by phone and in person, is key to good outcomes whatever the treatment.
+Regular follow-up, by phone and in person, supports good outcomes whatever the treatment.
 
 **If antidepressants are started:**
 
@@ -248,6 +248,7 @@ Your doctor will monitor for potential complications of antidepressant treatment
 **Bleeding risk:**
 
 - SSRIs are associated with an increased risk of bleeding. If you take NSAIDs (e.g., ibuprofen, naproxen) or aspirin, your doctor may add a medicine to protect the stomach.
+- The bleeding risk is also higher with blood thinners such as warfarin or apixaban.
 
 **Overdose risk:**
 

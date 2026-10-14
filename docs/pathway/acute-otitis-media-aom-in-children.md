@@ -35,7 +35,7 @@ Key points:
 - Ear pain usually lasts between 12 and 48 hours
 - Fluid in the middle ear (effusion) may persist for several weeks after an episode of AOM
 - For most children, antibiotics at the first visit are not necessary
-- However, antibiotics should be prescribed for any child under 6 months, or any child under 2 years with a severe or bilateral infection
+- However, antibiotics should be prescribed for any child younger than 6 months, or any child younger than 2 years with a severe or bilateral infection
 
 AOM is more common and more severe in Māori and Pacific children. Factors include socioeconomic deprivation, overcrowded and substandard housing, and exposure to secondhand smoke.
 
@@ -91,8 +91,8 @@ Bulging and redness without ear pain may mean AOM that has recently settled.
 1. **Pain relief:** Your doctor will recommend regular pain relief for the first 48 hours, such as paracetamol and an anti-inflammatory.
 
 2. **Antibiotics:** Antibiotics are given at the first visit if:
-   - Your child is under 6 months old
-   - Your child is under 2 years with a severe or bilateral (both ears) infection
+   - Your child is younger than 6 months old
+   - Your child is younger than 2 years with a severe or bilateral (both ears) infection
    - An older child has a high fever, severe pain, or a discharging ear
    - There is a perforated eardrum or discharge
    - There are systemic symptoms (e.g., fever)
@@ -114,7 +114,7 @@ Bulging and redness without ear pain may mean AOM that has recently settled.
    - **Amoxicillin + clavulanic acid** 30 mg/kg (max 625 mg) three times daily for 5 to 7 days
 
    *If allergic to penicillin:*
-   - **Trimethoprim + sulfamethoxazole** (co-trimoxazole), for children over 6 weeks: 0.5 mL/kg/dose of oral liquid (40 + 200 mg/5 mL) twice daily for 5 to 7 days (max 20 mL/dose). A child who can swallow tablets may take 80 + 400 mg tablets instead (one tablet equals 10 mL of the liquid). Not for infants under 6 weeks, because of the risk of jaundice (hyperbilirubinaemia).
+   - **Trimethoprim + sulfamethoxazole** (co-trimoxazole), for children aged 8 weeks and older: 0.5 mL/kg/dose of oral liquid (40 + 200 mg/5 mL) twice daily for 5 to 7 days (max 20 mL/dose). A child who can swallow tablets may take 80 + 400 mg tablets instead (one tablet equals 10 mL of the liquid). Not for infants younger than 8 weeks, because of the risk of jaundice (hyperbilirubinaemia).
    - **Erythromycin:** Total daily dose split into 3–4 doses:
 
      | Weight | Daily dose |

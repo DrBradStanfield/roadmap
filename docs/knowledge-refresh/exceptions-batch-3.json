@@ -1,1 +1,66 @@
-[]
+[
+ {
+  "check": "AC2",
+  "handle": "depression-in-adults-and-older-persons",
+  "match": "changed_tokens[9] raw_quote shares no number with its body_line: | 20 to 27 | Severe depression |",
+  "reason": "Orchestrator correction (FOR BRAD): PHQ-9 severe band 20 to 27 (standard scoring); the raw's \"> 20\" leaves 20 unclassified.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "depression-in-adults-and-older-persons",
+  "match": "token \"27\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"| 20 to 27 | Severe depression |\"",
+  "reason": "Orchestrator correction (FOR BRAD): PHQ-9 severe band 20 to 27 (standard scoring); the raw's \"> 20\" leaves 20 unclassified.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "acute-otitis-media-aom-in-children",
+  "match": "body line has no entry quoting \"8 week\": Trimethoprim + sulfamethoxazole (co-trimoxazole), for children aged 8 weeks and older: 0.5 mL/kg/dose of oral liquid ...",
+  "reason": "Currency check (ruling 13): co-trimoxazole minimum age 8 weeks from the Deprim data sheet (July 2025); not in the raw.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "cirrhosis",
+  "match": "token \"10\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"Your doctor may seek liver specialist advice if results suggest decompensation: albumin less than 32 g/L, INR greater...\"",
+  "reason": "Scrape defect: the raw lost the superscript (\"150 \u00d7 109/L\") or hyphenates \"2-to 4-weekly\"; the body reads as the source means. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "cirrhosis",
+  "match": "token \"2 week\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- If needed, doses may rise every 2 to 4 weeks, spironolactone first, to a maximum of 400 mg spironolactone and 160 m...\"",
+  "reason": "Scrape defect: the raw lost the superscript (\"150 \u00d7 109/L\") or hyphenates \"2-to 4-weekly\"; the body reads as the source means. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "cirrhosis",
+  "match": "body line has no entry quoting \"9\": Your doctor may seek liver specialist advice if results suggest decompensation: albumin less than 32 g/L, INR greater...",
+  "reason": "Scrape defect: the raw lost the superscript (\"150 \u00d7 109/L\") or hyphenates \"2-to 4-weekly\"; the body reads as the source means. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "hyperthyroidism",
+  "match": "body line has no entry quoting \"10\": Carbimazole can rarely (1 in 200 to 1 in 500 patients) cause a dangerous drop in white blood cells (agranulocytosis)....",
+  "reason": "Scrape defect: the raw lost the superscript (\"1 \u00d7 109/L\"); the body writes 10\u2079/L. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "PATHWAY",
+  "handle": "hip-and-knee-joint-replacement",
+  "match": "source line lacks \"Last reviewed: <month> <year>\"",
+  "reason": "Neither raw carries a review date, so the source line cannot state one.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ }
+]

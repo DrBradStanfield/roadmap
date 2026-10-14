@@ -24,7 +24,8 @@ Call 111 or go to the emergency department if you have cirrhosis and experience:
 - Signs of sepsis (an infection with feeling very unwell)
 - Confusion or drowsiness (possible hepatic encephalopathy)
 - Vomiting blood or black tarry stools (gastrointestinal bleeding)
-- New onset jaundice (yellow skin or eyes)
+
+See your doctor the same day if you develop new jaundice (yellow skin or eyes).
 
 ---
 
@@ -79,7 +80,7 @@ Cirrhosis is called "decompensated" when the liver can no longer maintain its es
 - Rapid worsening of kidney function
 - Severe malnutrition
 
-**See your doctor the same day if any of these develop.** Confusion, drowsiness and new jaundice are red flags: call 111 or go to the emergency department.
+**See your doctor the same day if any of these develop.** Confusion and drowsiness are red flags: call 111 or go to the emergency department.
 
 Common triggers for decompensation include infection, dehydration, constipation, alcohol, opioids or benzodiazepines, gastrointestinal bleeding, new or growing liver cancer, and a clot in the portal vein.
 
@@ -125,7 +126,7 @@ Check with your doctor or pharmacist before taking any over-the-counter medicine
 
 ### Nutrition
 
-Good nutrition is a cornerstone of cirrhosis management:
+Good nutrition is central to cirrhosis management:
 
 - Eat enough, with extra protein, to preserve muscle and reduce encephalopathy risk
 - Reduce salt to 80 to 120 mmol a day (4.0 to 6.9 g per day) to reduce fluid build-up
@@ -153,7 +154,7 @@ Treating the cause of cirrhosis can stop it progressing and help prevent other c
 - **Haemochromatosis:** Regular therapeutic blood removal (venesection)
 - **Autoimmune hepatitis:** Immunosuppressant medications under specialist guidance
 - **Wilson's disease:** Copper-chelating medications or zinc under specialist guidance
-- **Heart failure:** Optimising heart failure treatment
+- **Heart failure:** Treating heart failure as well as possible
 
 ### Pregnancy and Contraception
 
@@ -253,7 +254,7 @@ After surviving an episode of SBP, your specialist will likely recommend ongoing
 
 ### Infections
 
-The risk of infections such as UTIs, pneumonia, and skin infections rises as liver function worsens. Report any signs of infection to your doctor promptly so they can be treated quickly.
+The risk of infections such as UTIs, pneumonia, and skin infections rises as liver function worsens. Tell your doctor about any signs of infection.
 
 ---
 
@@ -265,9 +266,9 @@ The risk of infections such as UTIs, pneumonia, and skin infections rises as liv
 - Vomiting blood or black tarry stools (bleeding varices)
 - Severe confusion or drowsiness (hepatic encephalopathy)
 - Fever or abdominal pain with ascites (possible SBP), or sepsis
-- New jaundice
 
 **See your doctor the same day (hospital admission or an urgent clinic visit may be needed) for:**
+- New jaundice
 - Severe abdominal swelling (ascites), rapid swelling, or breathlessness
 - Acute kidney worsening
 - Severe malnutrition

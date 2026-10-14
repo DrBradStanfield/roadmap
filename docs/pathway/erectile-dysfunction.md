@@ -118,7 +118,7 @@ Your doctor may consider the following approaches, depending on the cause and se
 
 ### 1. Treat Contributing Medical Conditions
 
-- Optimise management of cardiovascular disease risk factors, diabetes, thyroid disorders, and high prolactin
+- Manage cardiovascular disease risk factors, diabetes, thyroid disorders, and high prolactin
 - Review contributing medications, and reduce or stop them if possible
 
 ### 2. Lifestyle Changes

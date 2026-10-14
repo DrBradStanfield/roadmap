@@ -12,7 +12,7 @@ summary: "Clinical pathway for COVID-19 antiviral treatment in adults and childr
 
 > This is general information. Your doctor or pharmacist can tell you whether antiviral treatment is right for you and safe with your other medicines.
 
-This pathway covers antiviral treatment options for COVID-19, including who may be offered them, which medications may be considered, and important safety information.
+This pathway covers antiviral treatment options for COVID-19, including who may be offered them, which medications may be considered, and safety information.
 
 ---
 
@@ -63,7 +63,7 @@ Your doctor may consider antivirals in this order: **Paxlovid first, then remdes
 
 **Less common side effects:** muscle aches, high blood pressure
 
-**Drug interactions:** Paxlovid has significant drug interaction potential. Your doctor will review all your current medications before prescribing. If a specialist service manages any of your medicines (e.g., oncology, rheumatology, psychiatry), your doctor will seek advice from that specialist before prescribing.
+**Drug interactions:** Paxlovid interacts with many medicines. Your doctor or pharmacist will check all your current medicines before you take it. If a specialist service manages any of your medicines (e.g., oncology, rheumatology, psychiatry), your doctor will seek advice from that specialist before prescribing.
 
 ---
 
@@ -80,7 +80,7 @@ Your doctor may consider antivirals in this order: **Paxlovid first, then remdes
 **Precautions:**
 
 - Elevated liver enzymes (ALT 5 or more times the upper limit of normal) or severe liver dysfunction
-- Pregnancy (first trimester): avoided unless the potential benefit outweighs the risk, as no information is available
+- Pregnancy: not usually used in the first trimester
 - Kidney disease: no dose change is needed, but with an eGFR less than 30, a 2-dose regimen (leaving out the day 3 dose) may be appropriate, after specialist advice
 - Compatible with breastfeeding
 - Theoretical drug interactions have been found. Your doctor will review your medications

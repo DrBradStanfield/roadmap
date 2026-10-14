@@ -206,11 +206,11 @@ For all patients with newly diagnosed hyperthyroidism (including recurrent episo
 - Severe or with marked symptoms: 15 mg twice daily plus a beta blocker
 
 **Important safety warning about agranulocytosis:**
-Carbimazole can rarely (1 in 200 to 1 in 500 patients) cause a dangerous drop in white blood cells (agranulocytosis). If you develop **fever, flu-like symptoms, sore throat, or mouth ulcers** while taking carbimazole, **stop taking it and see a doctor straight away.** Your doctor will arrange an urgent blood count with results the same day. If your neutrophil count is less than 1 × 10⁹/L, you need hospital assessment: call 111 or go to the emergency department.
+Carbimazole can rarely (1 in 200 to 1 in 500 patients) cause a dangerous drop in white blood cells (agranulocytosis). If you develop **fever, flu-like symptoms, sore throat, or mouth ulcers** while taking carbimazole, **stop taking it and see your doctor the same day for a blood test.** Your doctor will arrange an urgent blood count with results the same day. If your neutrophil count is less than 1 × 10⁹/L, you need hospital assessment: call 111 or go to the emergency department.
 
 **Other carbimazole side effects:**
 - Rashes, joint pain, or gastritis (less serious)
-- Hepatitis, which is rare
+- Hepatitis, which is rare. If you get jaundice (yellow skin or eyes), dark urine, pale stools or abdominal pain while taking carbimazole, stop taking it and see your doctor the same day.
 - Routine blood count and liver test monitoring is not needed, but your doctor will take baseline tests before starting
 
 **Beta blockers** (e.g. propranolol) are often added initially to control symptoms such as rapid heart rate, palpitations, and tremor. If you have severe asthma or COPD, discuss this with your doctor before starting.
