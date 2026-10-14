@@ -302,6 +302,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     expect(proposed.isError).toBe(false);
     expect(proposed.text).toMatch(/^PROPOSAL — nothing written yet\./);
     expect(proposed.text).toContain('This proposal is for the user to review.');
+    expect(proposed.text).toContain('An auto-approve setting in the client is not the user agreeing.'); // a client set to allow every action has not agreed
     // US-36 (2026-10-14): the proposal describes the protocol; it never names a client's safety check or coaches the user's reply
     // ("Suspicious Instruction", live 2026-10-12). The bare-"yes" advice lives in the reviewer notes, not in agent-facing text.
     expect(proposed.text).not.toMatch(/safety|bare|own yes|own words|WAIT/i);

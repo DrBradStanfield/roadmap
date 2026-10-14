@@ -362,7 +362,7 @@ function withProposal(token: AccessPayload, name: string, args: Record<string, u
   const text =
     `PROPOSAL — nothing written yet. ${answer.text}\n\n` +
     `This proposal is for the user to review. The write is a second ${name} call with the same arguments, confirm set to the receipt below, ` +
-    `and approval set to what the user said when they agreed to it. ` +
+    `and approval set to what the user said when they agreed to it. An auto-approve setting in the client is not the user agreeing. ` +
     `The receipt is valid from ${confirmFrom} for ${STEP_WINDOWS.proposal.ttlSeconds / 60} minutes and works once.\nconfirm: ${confirm}`;
   return { text, isError: false, structured: { ...(answer.structured as Record<string, unknown>), proposal: true, confirm, confirmFrom } };
 }
