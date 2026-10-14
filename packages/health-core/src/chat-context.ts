@@ -138,7 +138,8 @@ export function buildChatContextJson(payload: unknown): string | null {
   }
 
   return JSON.stringify({
-    profile: { sex: inputs.sex, age: results.age, heightCm: inputs.heightCm, unitSystem },
+    // US-07 AC6: the plan's adults-only gate applies, so every surface's model knows.
+    profile: { sex: inputs.sex, age: results.age, heightCm: inputs.heightCm, unitSystem, ...(results.knownMinor ? { knownMinor: true } : {}) },
     latestValues,
     // Field names only: the user HAS a value here, but it was out of range.
     // Without it the model reads the gap as "never entered".

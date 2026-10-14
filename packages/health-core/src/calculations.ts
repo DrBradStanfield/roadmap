@@ -2,6 +2,7 @@ import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } f
 import type { UnitSystem, MetricType } from './units';
 import { EGFR_THRESHOLDS, LPA_THRESHOLDS, HBA1C_THRESHOLDS, waistToHeightRatio, isWaistToHeightElevated } from './units';
 import { generateSuggestions } from './suggestions';
+import { validateInputValue } from './validation';
 
 /**
  * Calculate Ideal Body Weight using the Peterson Formula (2016)
@@ -61,6 +62,15 @@ export function calculateAge(birthYear: number, birthMonth: number, now = new Da
 export function isKnownMinor(birthYear: number | undefined, birthMonth: number | undefined, now = new Date()): boolean {
   if (!birthYear) return false;
   return birthMonth ? calculateAge(birthYear, birthMonth, now) < 18 : now.getFullYear() - birthYear < 19;
+}
+
+/**
+ * The gate over the birth info the plan keeps: a birth year or month outside
+ * the plan's bounds is dropped first, as `computePlan` drops it. Every surface
+ * asks this one, so none calls someone a minor while the plan says unknown age.
+ */
+export function knownMinorOf(birth: { birthYear?: number; birthMonth?: number }, now = new Date()): boolean {
+  return isKnownMinor(validateInputValue('birthYear', birth.birthYear), validateInputValue('birthMonth', birth.birthMonth), now);
 }
 
 /**
@@ -216,7 +226,7 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
   if (inputs.birthYear) {
     results.age = calculateAge(inputs.birthYear, inputs.birthMonth ?? 1, now);
   }
-  if (isKnownMinor(inputs.birthYear, inputs.birthMonth, now)) results.knownMinor = true;
+  if (knownMinorOf(inputs, now)) results.knownMinor = true;
 
   // Calculate eGFR if creatinine + age + sex are available
   if (inputs.creatinine !== undefined && results.age !== undefined) {

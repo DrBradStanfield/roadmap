@@ -214,6 +214,24 @@ describe('US-15 AC11: nothing reaches the prompt unless it is allowlisted or bou
   });
 });
 
+// US-07 AC6 (2026-10-14): every chat surface's model learns that the plan's
+// adults-only gate applies, from the profile it reads.
+describe('US-07 AC6: the chat context marks a known minor', () => {
+  const profileFor = (birthYear?: number) => {
+    const json = buildChatContextJson(chatContextOf({ sex: 'female', heightCm: 160, ...(birthYear ? { birthYear } : {}) }, 'si', [], [], []));
+    return JSON.parse(json!).profile;
+  };
+
+  it('a known minor: knownMinor true beside the age', () => {
+    expect(profileFor(new Date().getFullYear() - 15)).toMatchObject({ age: 15, knownMinor: true });
+  });
+
+  it('an adult or an unknown age: no knownMinor key', () => {
+    expect(profileFor(1970)).not.toHaveProperty('knownMinor');
+    expect(profileFor()).not.toHaveProperty('knownMinor');
+  });
+});
+
 // US-15 AC11: an unlisted drug name for a known medication key (a name the
 // chat's medication tool wrote, such as liraglutide) is used for the plan
 // only, as the widget uses it, and reaches the prompt as "unlisted": "other"

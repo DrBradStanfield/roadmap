@@ -38,7 +38,7 @@ import {
   getCategoryGroup,
   isActiveMedication,
 } from './reminders';
-import { isKnownMinor } from './calculations';
+import { knownMinorOf } from './calculations';
 import { dayOf, localDay } from './merge';
 import { ISO_DATE } from './measurement-history';
 import type { RoadmapFile } from './roadmap-file';
@@ -256,7 +256,7 @@ export function computeNextDueDates(
  * adults, so nothing is due, not even the floor.
  */
 export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
-  if (isKnownMinor(file.profile.birthYear, file.profile.birthMonth, now)) return [];
+  if (knownMinorOf(file.profile, now)) return [];
   const disabled = disabledCategories(file);
   const items = computeItemsFromFile(file, now).filter((item) => !disabled.has(item.category));
   // Last gate before the server: an unparseable date anywhere upstream (a

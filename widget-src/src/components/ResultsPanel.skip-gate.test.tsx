@@ -516,6 +516,18 @@ describe('US-07 AC6 — a known minor gets Save as PDF and no email box', () => 
     expect(mocks.markReportEmailCaptured).not.toHaveBeenCalled();
   });
 
+  // US-09 AC19: their PDF from the header turns on the storage button's pulse,
+  // as a Save as PDF does on the gate-skipped page.
+  it('on the gated page, a Save as PDF whose window opened turns on the storage pulse', async () => {
+    mocks.skip.value = false;
+    const syncControl = ({ hasData, attention }: { hasData: boolean; attention: boolean }) =>
+      hasData ? <span data-testid="sync">{String(attention)}</span> : null;
+    const view = showPlan({ results: minor, syncControl });
+    expect(view.getByTestId('sync').textContent).toBe('false');
+    fireEvent.click(view.getByRole('button', { name: 'Save as PDF' }));
+    await waitFor(() => expect(view.getByTestId('sync').textContent).toBe('true'));
+  });
+
   it('an adult on the gated page still gets the email box', () => {
     mocks.skip.value = false;
     const view = showPlan();

@@ -351,6 +351,18 @@ describe('computeReminderSchedule — US-07 AC6: a known minor is due nothing', 
     expect(computeReminderSchedule(withHba1c(profile(2008)), new Date(2026, 11, 31, 12))).toEqual([]);
     expect(computeReminderSchedule(withHba1c(profile(2008)), new Date(2027, 0, 5)).map((i) => i.category)).toEqual(['blood_test_hba1c']);
   });
+
+  // The schedule reads the birth info as the plan does (`knownMinorOf`), so a
+  // stored birth year out of range, which the plan drops as no age, cannot make
+  // the schedule call someone a minor while the plan calls them unknown-age.
+  it('a stored birth year past this year: unknown age in the plan, and the schedule is not withheld', () => {
+    const now = new Date();
+    const p = profile(now.getFullYear() + 1, 1);
+    const f = { ...withHba1c(p), profile: { ...p, heightCm: 165 } };
+    const plan = computePlan(f, now);
+    expect([plan.excluded, plan.results.age, plan.results.knownMinor]).toEqual([['birthYear'], undefined, undefined]);
+    expect(computeReminderSchedule(f, now)).not.toEqual([]);
+  });
 });
 
 // US-23 AC4/AC8 — the label allow-list: every label a schedule builder can emit

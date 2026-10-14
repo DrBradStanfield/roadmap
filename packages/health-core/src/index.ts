@@ -73,7 +73,7 @@ export {
   calculateProteinTarget,
   calculateBMI,
   calculateAge,
-  isKnownMinor,
+  knownMinorOf,
   getBMICategory,
   getEgfrStatus,
   getLpaStatus,

@@ -89,6 +89,18 @@ describe('buildSystemBlocks', () => {
     expect(blocks[0].text).toContain('Scope boundaries');
   });
 
+  // US-07 AC6: the shared base tells every surface what to do for a known minor.
+  it('US-07 AC6: the base prompt carries the under-18 rule on every surface', () => {
+    for (const surfaceContext of [undefined, 'DOCTOR', 'BRAND']) {
+      const text = buildSystemBlocks('{}', { surfaceContext })[0].text;
+      expect(text).toContain('`profile.knownMinor: true`');
+      expect(text).toContain("Don't grade their values");
+      expect(text).toContain("don't suggest or discuss starting a medicine for them");
+      expect(text).toContain('the plan is built for adults');
+      expect(text).toContain("the child's doctor");
+    }
+  });
+
   it('includes evidence in second block', () => {
     const blocks = buildSystemBlocks('{}');
     expect(blocks[1].text).toContain('Clinical Evidence Reference');

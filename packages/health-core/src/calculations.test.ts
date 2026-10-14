@@ -5,6 +5,7 @@ import {
   calculateBMI,
   calculateAge,
   isKnownMinor,
+  knownMinorOf,
   getBMICategory,
   calculateHealthResults,
   calculateEGFR,
@@ -176,6 +177,28 @@ describe('isKnownMinor', () => {
     const nextYear = calculateHealthResults(inputs, 'si', undefined, undefined, undefined, new Date(2027, 0, 1, 12));
     expect(nextYear.age).toBe(19);
     expect(nextYear.knownMinor).toBeUndefined();
+  });
+});
+
+// US-07 AC6: every surface asks the gate one way, over the birth info the plan
+// keeps: a birth year or month out of the plan's bounds is dropped first.
+describe('knownMinorOf', () => {
+  const OCT_2026 = new Date(2026, 9, 14, 12);
+
+  it('valid birth info: the gate itself', () => {
+    expect(knownMinorOf({ birthYear: 2008, birthMonth: 11 }, OCT_2026)).toBe(true);
+    expect(knownMinorOf({ birthYear: 2008, birthMonth: 10 }, OCT_2026)).toBe(false);
+    expect(knownMinorOf({}, OCT_2026)).toBe(false);
+  });
+
+  it('a birth year out of bounds is no age, as in the plan: not a minor', () => {
+    expect(knownMinorOf({ birthYear: new Date().getFullYear() + 1, birthMonth: 1 })).toBe(false);
+    expect(knownMinorOf({ birthYear: 1899 }, OCT_2026)).toBe(false);
+  });
+
+  it('a birth month out of bounds is no month: the strict missing-month rule', () => {
+    expect(knownMinorOf({ birthYear: 2008, birthMonth: 13 }, OCT_2026)).toBe(true);
+    expect(knownMinorOf({ birthYear: 2008, birthMonth: 13 }, new Date(2027, 0, 1, 12))).toBe(false);
   });
 });
 

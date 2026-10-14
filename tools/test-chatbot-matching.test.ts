@@ -381,3 +381,43 @@ describe('test-chatbot-matching router reply parsing (US-15 AC28)', () => {
     expect(status).toBe(1);
   }, 60_000);
 });
+
+// US-07 AC6: a fixture's user_context reaches the answer call as the user's
+// health data, after the surface posture and before any articles, as
+// buildSystemBlocks orders them.
+describe('test-chatbot-matching user_context (US-07 AC6)', () => {
+  it('the minor-gate fixture sends its knownMinor context after the posture', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-minor-'));
+    try {
+      const stub = join(dir, 'fetch-stub.mjs');
+      const log = join(dir, 'calls.jsonl');
+      writeFileSync(stub, `
+        import { appendFileSync } from 'node:fs';
+        globalThis.fetch = async (_url, init) => {
+          const body = JSON.parse(init.body);
+          const s = body.system;
+          appendFileSync(${JSON.stringify(log)}, JSON.stringify({
+            posture: s.indexOf('## SURFACE CONTEXT'), data: s.indexOf('## Current User Health Data'),
+            minor: s.includes('"knownMinor": true'),
+          }) + '\\n');
+          return new Response(JSON.stringify({
+            content: [{ type: 'text', text: 'The plan is built for adults. Please talk with your doctor.' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+          }), { status: 200, headers: { 'content-type': 'application/json' } });
+        };
+      `);
+      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
+        '--category', 'minor-gate', '--fixed-handles-only', '--answer-check-runs', '1']);
+      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env: { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' }, encoding: 'utf-8', timeout: 60_000 });
+      const calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l) as { posture: number; data: number; minor: boolean });
+      expect(calls.length, res.stderr).toBe(1);
+      expect(calls[0].minor).toBe(true);
+      expect(calls[0].data).toBeGreaterThan(calls[0].posture);
+      expect(calls[0].posture).toBeGreaterThan(-1);
+      expect(res.stdout.replace(/\x1b\[[0-9;]*m/g, '')).toContain('Fixed-handle answer checks: 1/1');
+      expect(res.status).toBe(0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
+});
