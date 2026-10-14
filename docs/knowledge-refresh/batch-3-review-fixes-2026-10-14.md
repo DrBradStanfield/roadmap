@@ -31,3 +31,10 @@ Fresh Opus adversary on knowledge-refresh/review-batch-3 (c5d660cc). Line number
 - R8 (covid-19 L101: remdesivir in children): ACCEPT, from the data sheet (licensed from 4 weeks and 3 kg); renal cautions as the data sheet gives them; specialist assessment kept.
 - R9 (shingles immunisation L41: CD4 and viral-load funding thresholds): ACCEPT. Keep the clinical recommendation (who should be vaccinated); remove funding thresholds (ruling 4).
 - R10 (AC5): DISPUTED. 40 fixtures pre-registered in 6b143234; runs deferred by Brad to after 2026-11-01.
+
+## Codex round 2 (gpt-6.1-sol, status incomplete: AC5 not run; rounds now capped)
+- R1 (weight L134: blanket "not effective in the long term"): ACCEPT, remove the blanket claim; benefit lasts while a medicine is continued and weight usually returns after stopping (currency, ruling 13).
+- R2 (depression L222: "tapering is unnecessary" for fluoxetine): ACCEPT, qualify: at low doses fluoxetine can often be stopped without a slow taper because it leaves the body slowly; at higher doses, or after other antidepressants, the doctor plans a gradual reduction.
+- R3 (covid L59: breastfeeding interval after Paxlovid): ACCEPT, correct against the Paxlovid data sheet.
+- R4 (shingles immunisation L41: age-65 start rule and funded-condition thresholds remain): ACCEPT, give who is recommended the vaccine clinically, without funding eligibility rules.
+- R5 (AC5): DISPUTED, Brad's deferral.
