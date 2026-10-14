@@ -78,7 +78,7 @@ describe('GitHubAdapter.connect — refuses a public repo', () => {
  * record. Every write funnels through write()/writeDocument(), so both check
  * visibility once per adapter instance before the first PUT.
  */
-type FetchMock = Mock<[string, RequestInit?], Promise<Response>>;
+type FetchMock = Mock<(url: string, init?: RequestInit) => Promise<Response>>;
 
 /** Routes by URL: the repo endpoint answers visibility, contents answers PUTs. */
 function stubFetch(isPrivate: unknown, repoStatus = 200): FetchMock {

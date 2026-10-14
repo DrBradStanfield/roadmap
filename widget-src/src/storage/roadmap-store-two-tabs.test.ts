@@ -469,7 +469,7 @@ async function otherTabSaves(b: RoadmapStore, metric: string, value: number): Pr
 }
 
 describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () => {
-  let heard: ReturnType<typeof vi.fn>;
+  let heard: ReturnType<typeof vi.fn<(e: Event) => void>>;
   beforeEach(() => {
     heard = vi.fn();
     window.addEventListener(REMOTE_CHANGED_EVENT, heard);
