@@ -15,5 +15,7 @@ Before you finish, run the checker on your entry alone and fix what it flags (ru
 echo HANDLE > /private/tmp/claude-501/-Users-bradstanfield-Documents-roadmap/35b840f4-3549-49bd-9197-d0b14277788c/scratchpad/h-HANDLE.txt && npx tsx /Users/bradstanfield/Documents/roadmap/tools/knowledge-batch-check.ts --batch pathways-batch-3 --handles /private/tmp/claude-501/-Users-bradstanfield-Documents-roadmap/35b840f4-3549-49bd-9197-d0b14277788c/scratchpad/h-HANDLE.txt --reports ~/.codex-review/diff-reports/pathways-batch-3 --exceptions docs/knowledge-refresh/exceptions-batch-3.json --base main
 (Ignore "unexpected change" lines: other batches share the branch.)
 
+Scratch files: only under /private/tmp/claude-501/-Users-bradstanfield-Documents-roadmap/35b840f4-3549-49bd-9197-d0b14277788c/scratchpad/HANDLE/ (your own folder; other writers run at the same time). Before you finish, check your entry still holds your own text.
+
 Work in one pass. No questions; put doubts in notes, with "FOR BRAD:" before any clinical call the source cannot settle. Never commit, never edit any other file. Use the Edit/Write tools for the report (an allow rule covers ~/.codex-review/diff-reports/**). If an edit is denied by the permission system, stop and report it.
 Reply in at most 6 lines: entry written yes/no, changed_tokens count, deleted sentences count, remaining FAILs for your handle, FOR BRAD items (one line each).
