@@ -311,7 +311,7 @@ export {
 
 // The chat's plan context: what a client sends, and the sanitizing builder
 // both chats read it through (US-15 AC11)
-export { chatContextOf, buildChatContextJson, type ChatContextPayload } from './chat-context';
+export { chatContextOf, buildChatContextJson, MINOR_CHAT_RULE, type ChatContextPayload } from './chat-context';
 
 // Product funnel events — anonymous behavioral counters (client tracker + server enum)
 export { PRODUCT_EVENT_NAMES, GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, REMOTE_CHANGE_BACKENDS, isLabUnitWord, type ProductEventName } from './product-events';

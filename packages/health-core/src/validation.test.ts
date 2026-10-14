@@ -463,6 +463,10 @@ describe('excludedInputFields', () => {
     expect(excludedInputFields({ heightCm: 178, sex: 'male', ldlC: 9999 } as never)).toEqual(['ldlC']);
   });
 
+  it('US-07 AC6: never names a field with no value (a known minor\'s chat context can lack sex or height)', () => {
+    expect(excludedInputFields({ heightCm: undefined, sex: undefined, ldlC: 9999 } as never)).toEqual(['ldlC']);
+  });
+
   it('never names an unknown key (they are not schema fields)', () => {
     expect(excludedInputFields({ heightCm: 178, unitSystem: 'si', junk: {} } as never)).toEqual([]);
   });
