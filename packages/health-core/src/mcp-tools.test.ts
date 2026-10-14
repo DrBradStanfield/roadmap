@@ -2660,6 +2660,139 @@ describe('US-05 AC1 — file_results, add_measurement and correct_value read Lp(
   });
 });
 
+describe('US-35 AC6 / US-36 AC5 — additional-lab equality compares quantities across units', () => {
+  async function openLabImport(file: RoadmapFile, values: ReturnType<typeof row>[], tool: 'file_results' | 'import_documents') {
+    const cloud = new MemoryCloud();
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(file), version: 1 });
+    const sync = recordSync(new MemoryAdapter(cloud), 'synthetic-lab-equality', NOW);
+    const pending = new Map<string, ImportPayload>();
+    const surface: ImportSurface = {
+      budgetMs: 10_000,
+      maxCorrectionAgeDays: 90,
+      async extract() {
+        return bundleOf([extracted('synthetic-labs.pdf', labReport({
+          values: [], unrecognized: [],
+          additionalValues: values.map((v) => ({ name: v.printedName, value: v.value, unit: v.unit })),
+        }))]);
+      },
+      async stash(payload) {
+        pending.set(payload.id, payload);
+        return { receipt: payload.id, expiresAt: '2026-09-01T10:00:00Z' };
+      },
+      async open(commit) { return pending.get(commit.receipt) ?? { refusal: 'Unknown synthetic receipt.' }; },
+      async discard(payload) { pending.delete(payload.id); },
+    };
+    const request = tool === 'file_results' ? labCall(values, { sourceFileName: 'synthetic-labs.pdf' }) : {};
+    const result = await runToolOverSync(sync, tool, request, NOW, { importer: surface, latestDay: TODAY });
+    expect(result.isError).toBe(false);
+    const preview = OUTPUTS[tool].parse(result.structured);
+    expect(preview.phase).toBe('extracted');
+    return { sync, surface, preview };
+  }
+
+  function heldVitaminD(value: number, unit = 'nmol/L'): RoadmapFile {
+    const file = createEmptyFile(CTX);
+    file.labValues.push(createLabValue({
+      id: 'synthetic-vitamin-d', metricName: 'Vitamin D', value, unit,
+      recordedAt: LAB_DAY, createdAt: NOW, source: 'manual',
+    }));
+    return file;
+  }
+
+  it.each(['file_results', 'import_documents'] as const)('%s replaces equal numbers in different units instead of silently skipping them', async (tool) => {
+    const file = heldVitaminD(50);
+    const { sync, surface, preview } = await openLabImport(file, [row('vitamin_d', 'Vitamin D', 50, 'ng/mL')], tool);
+    expect(preview.candidates).toHaveLength(1);
+    expect(preview.candidates[0].slot.state).toBe('held_different');
+    expect(preview.candidates[0]).toMatchObject({
+      value: 50, unit: 'ng/mL', displayValue: '50', displayUnit: 'ng/mL',
+      slot: { state: 'held_different', existingRowId: 'synthetic-vitamin-d', existingValue: 50, replaceable: true },
+    });
+    expect((await sync.load()).labValues).toEqual(file.labValues); // Preview does not write.
+    const committed = await runToolOverSync(sync, tool, {
+      commit: { receipt: preview.receipt, accept: [], replace: [preview.candidates[0].id] },
+    }, NOW, { importer: surface, latestDay: TODAY });
+    expect(committed.isError).toBe(false);
+    expect(OUTPUTS[tool].parse(committed.structured).written).toEqual({ measurements: 0, labValues: 0, corrections: 1, documents: 1 });
+    const reread = await sync.load();
+    expect(reread.labValues.find((v) => v.id === 'synthetic-vitamin-d')?.status).toBe('entered-in-error');
+    expect(reread.labValues.filter((v) => v.status === 'active')).toMatchObject([
+      { value: 124.8, unit: 'nmol/L', correctsId: 'synthetic-vitamin-d', source: 'lab_import' },
+    ]);
+  });
+
+  it.each(['file_results', 'import_documents'] as const)('%s accepts equivalent quantities without appending a correction', async (tool) => {
+    const file = heldVitaminD(49.92);
+    const { sync, surface, preview } = await openLabImport(file, [row('vitamin_d', 'Vitamin D', 20, 'ng/mL')], tool);
+    expect(preview.candidates[0].slot).toEqual({ state: 'held_equal', existingRowId: 'synthetic-vitamin-d', existingValue: 49.92 });
+    const committed = await runToolOverSync(sync, tool, {
+      commit: { receipt: preview.receipt, accept: [preview.candidates[0].id], replace: [] },
+    }, NOW, { importer: surface, latestDay: TODAY });
+    expect(committed.isError).toBe(false);
+    expect(OUTPUTS[tool].parse(committed.structured).written).toEqual({ measurements: 0, labValues: 0, corrections: 0, documents: 1 });
+    expect((await sync.load()).labValues).toEqual(file.labValues);
+  });
+
+  it('compares a legacy noncanonical held row using its own unit and printed-name conversion', () => {
+    const file = heldVitaminD(20, 'ng/mL');
+    expect(prepared(labCall([row('vitamin_d', 'Vitamin D', 49.92, 'nmol/L')]), file).payload.candidates[0].slot.state).toBe('held_equal');
+    expect(prepared(labCall([row('vitamin_d', 'Vitamin D', 20, 'nmol/L')]), file).payload.candidates[0].slot.state).toBe('held_different');
+  });
+
+  it('uses conversion-helper rounding without rounding already-canonical quantities', () => {
+    // US-35 AC6: storage removes factor noise to six decimals, but factor 1 keeps the number exact.
+    const converted = heldVitaminD(0.2496);
+    expect(prepared(labCall([row('vitamin_d', 'Vitamin D', 0.1, 'ng/mL')]), converted).payload.candidates[0].slot.state).toBe('held_equal');
+    const canonical = heldVitaminD(50.0000001);
+    expect(prepared(labCall([row('vitamin_d', 'Vitamin D', 50.0000001, 'nmol/L')]), canonical).payload.candidates[0].slot.state).toBe('held_equal');
+    expect(prepared(labCall([row('vitamin_d', 'Vitamin D', 50, 'nmol/L')]), canonical).payload.candidates[0].slot.state).toBe('held_different');
+  });
+
+  it('uses BUN’s printed-name factor rather than its urea slot key', async () => {
+    const file = createEmptyFile(CTX);
+    file.labValues.push(createLabValue({
+      id: 'synthetic-urea', metricName: 'Urea', value: 7.14, unit: 'mmol/L',
+      recordedAt: LAB_DAY, createdAt: NOW, source: 'manual',
+    }));
+    const { sync, surface, preview } = await openLabImport(file, [row('urea', 'BUN', 20, 'mg/dL')], 'file_results');
+    expect(preview.candidates[0]).toMatchObject({ metric: 'urea', printedName: 'BUN', value: 20, unit: 'mg/dL', slot: { state: 'held_equal' } });
+    const committed = await runToolOverSync(sync, 'file_results', {
+      commit: { receipt: preview.receipt, accept: ['c1'], replace: [] },
+    }, NOW, { importer: surface, latestDay: TODAY });
+    expect(committed.isError).toBe(false);
+    expect((await sync.load()).labValues).toEqual(file.labValues);
+  });
+
+  it.each([
+    ['same reported unit', 'widgets/L', 'held_equal'],
+    ['different reported unit', 'widgets/mL', 'held_different'],
+  ] as const)('keeps uncatalogued tests in their %s without inventing a conversion', (_label, unit, state) => {
+    const file = createEmptyFile(CTX);
+    file.labValues.push(createLabValue({
+      id: 'synthetic-unknown', metricName: 'Synthetic marker', value: 50, unit: 'widgets/L',
+      recordedAt: LAB_DAY, createdAt: NOW, source: 'manual',
+    }));
+    const candidate = prepared(labCall([row('synthetic marker', 'Synthetic marker', 50, unit)]), file).payload.candidates[0];
+    expect(candidate).toMatchObject({ value: 50, unit, displayUnit: unit, slot: { state, existingValue: 50 } });
+  });
+
+  it('keeps unit aliases equal and offers same-call quantities separately', () => {
+    const file = heldVitaminD(49.92);
+    const { payload } = prepared(labCall([
+      row('vitamin_d', 'Vitamin D', 20, 'ng/mL'),
+      row('vitamin_d', 'Vitamin D', 20, 'mcg/L'),
+      row('vitamin_d', 'Vitamin D', 50, 'ng/mL'),
+    ]), file);
+    expect(payload.candidates.map((c) => [c.slot.state, c.sameDayAs])).toEqual([
+      ['held_equal', undefined], ['held_equal', 'c1'], ['held_different', 'c1'],
+    ]);
+    const both = importDocumentsCommit(file, payload, { receipt: 'synthetic', accept: ['c1', 'c2'], replace: [] }, NOW);
+    expect(both.status).toBe('rejected');
+    if (both.status !== 'rejected') throw new Error('Expected the same-slot selection to be refused.');
+    expect(both.text).toContain('Pick one. Nothing was written.');
+  });
+});
+
 describe('US-36 AC5 — slots, dedup and the commit are import_documents’ own', () => {
   const HELD_DAY = '2026-07-14'; // base() holds ldl 3.4 and ferritin 210 that day
 

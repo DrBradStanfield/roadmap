@@ -13,7 +13,7 @@
  */
 import { deadlineSignal } from './adapter';
 import { dayOf, daysBetween, stampFields } from './merge';
-import { displayLabUnit, foldLpa, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
+import { canonicalLabValue, displayLabUnit, foldLpa, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
 import { ISO_DATE, latestActivePerMetric } from './measurement-history';
 import {
   type AdditionalLabValue,
@@ -1297,19 +1297,25 @@ function validDay(day: string | null | undefined, ctx: EditContext): string | nu
   return typeof resolved === 'string' ? resolved : null;
 }
 
-/** What a candidate finds in its slot, on this record, right now (AC6). Equality is on the displayed string, in the record's own units. */
+/** What a candidate finds in its slot (AC6): core display strings; lab quantities in canonical units, or reported units for unknown tests. */
 function slotFor(
   existing: FileMeasurement | FileLabValue | undefined,
-  display: string,
+  candidate: Omit<ImportCandidate, 'id' | 'sameDayAs' | 'slot'>,
   now: string,
   maxAgeDays: number | undefined,
   system: UnitSystem,
 ): ImportCandidate['slot'] {
   if (!existing) return { state: 'free' };
-  const existingDisplay = 'metricType' in existing
-    ? formatDisplayValue(existing.metricType as MetricType, existing.value, system)
-    : String(existing.value);
-  const state: SlotState = slotState(existingDisplay, display);
+  let state: SlotState;
+  if ('metricType' in existing) {
+    state = slotState(formatDisplayValue(existing.metricType as MetricType, existing.value, system), candidate.displayValue);
+  } else {
+    const heldEntry = resolveLabCatalogEntry(existing.metricName);
+    const offeredEntry = resolveLabCatalogEntry(candidate.printedName ?? candidate.metric);
+    const held = heldEntry ? canonicalLabValue(heldEntry, existing.value, existing.unit) : existing;
+    const offered = offeredEntry ? canonicalLabValue(offeredEntry, candidate.value, candidate.unit) : candidate;
+    state = held && offered && held.value === offered.value && held.unit === offered.unit ? 'held_equal' : 'held_different';
+  }
   if (state === 'held_equal') return { state, existingRowId: existing.id, existingValue: existing.value };
   const age = daysBetween(dayOf(existing.recordedAt ?? ''), dayOf(now));
   return {
@@ -1428,11 +1434,11 @@ export function prepareImport(
         continue;
       }
       report.documentDate = day;
-      const offer = (slot: string, candidate: Omit<ImportCandidate, 'id' | 'sameDayAs' | 'slot'>, display: string) => {
+      const offer = (slot: string, candidate: Omit<ImportCandidate, 'id' | 'sameDayAs' | 'slot'>) => {
         const first = seenSlots.get(slot);
         const id = `c${candidates.length + 1}`;
         if (!first) seenSlots.set(slot, id);
-        candidates.push({ id, ...candidate, ...(first ? { sameDayAs: first } : null), slot: slotFor(held.get(slot), display, ctx.now, ctx.maxCorrectionAgeDays, system) });
+        candidates.push({ id, ...candidate, ...(first ? { sameDayAs: first } : null), slot: slotFor(held.get(slot), candidate, ctx.now, ctx.maxCorrectionAgeDays, system) });
       };
       // The name as printed rides along on the assistant route (US-36 AC3), bounded like every string from a document.
       const printed = (value: { printedName?: string }) => (value.printedName ? { printedName: oneLine(value.printedName).slice(0, MAX_NAME_LENGTH) } : null);
@@ -1455,7 +1461,7 @@ export function prepareImport(
           recordedAt: own, confidence: value.confidence,
           ...(value.question ? { question: fromDocument(value.question) } : null),
           sourceFileName: name, ...printed(value),
-        }, display);
+        });
       }
       for (const value of result.additionalValues) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
@@ -1481,7 +1487,7 @@ export function prepareImport(
           recordedAt: own, confidence: 'high',
           referenceLow: value.referenceLow ?? null, referenceHigh: value.referenceHigh ?? null,
           sourceFileName: name, ...printed({ printedName: value.printedName ?? value.name }),
-        }, display);
+        });
       }
       for (const line of result.unrecognized) unrecognized.push(oneLine(line).slice(0, MAX_UNRECOGNIZED_LINE_LENGTH));
       // Once filed, the report dedups as already_imported: a refused value is said now or never. A count, no value.
