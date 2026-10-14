@@ -692,23 +692,24 @@ ${offers.some(({ provider }) => provider === 'google') ? '<p class="lede">Import
 <ul>
 <li>Read your record and produce your plan.</li>
 <li>Add measurements and lab results.</li>
-<li>Correct a recent value, after showing you what it would change. The old value is kept.</li>
-<li>Update your sex, birth year, birth month and height, after showing you the change.</li>
-<li>File a bug report as ${REPO_PUBLIC ? 'a public issue on GitHub' : 'an issue on the project’s GitHub, which becomes public when that GitHub is public again'}, in your words, without your health values, after
-showing you what it would say. The check refuses numbers written near a metric name, email addresses,
+<li>Correct a recent value. Your assistant is told to show you the change first and wait for your reply. The old value is kept.</li>
+<li>Update your sex, birth year, birth month and height. Your assistant is told to show you the change first and wait for your reply.</li>
+<li>File a bug report as ${REPO_PUBLIC ? 'a public issue on GitHub' : 'an issue on the project’s GitHub, which becomes public when that GitHub is public again'}, in your words, without your health values. Your assistant is told to
+show you what it would say first and wait for your reply. The check refuses numbers written near a metric name, email addresses,
 phone numbers, file names and links with a query string, but it cannot recognise a diagnosis written in prose,
 so read what it shows you before you say yes.</li>
 <li>File the results from a lab report, a photo of one or a clinic letter you drop into the chat. Your assistant
 reads the file itself; the file never reaches our server. Only the values it read do, in memory for one request,
-and they are written to your own folder, never kept by us. Nothing is written to your record until you confirm
-what it read; the candidates wait in a pending file in your own folder for an hour.</li>
+and they are written to your own folder, never kept by us.
+Nothing is written to your record until a second call files what it read; your assistant is told to show you the values first and wait for your reply.
+The candidates wait in a pending file in your own folder for an hour.</li>
 <li>Import lab PDFs, images or a ZIP you put in the Dropbox folder root. At the extract step, before you confirm
 anything, those files pass through our server and go to Anthropic’s API for extraction. We keep none of them;
 Anthropic’s API terms say they do not train on them, and their privacy centre says inputs and outputs are
 deleted within 30 days, kept longer only to enforce their usage policy or comply with the law
 (<a href="https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data">their policy</a>).
-Nothing is written to your record until you confirm what it found; the candidates wait in a pending file in your
-own folder for an hour. What it cannot read, it says why in plain words. The next time you ask, it offers files
+Nothing is written to your record until a second call files what it found; your assistant is told to show you the values first and wait for your reply.
+The candidates wait in a pending file in your own folder for an hour. What it cannot read, it says why in plain words. The next time you ask, it offers files
 in the folder that are not yet in your record. The website’s upload instead reads the PDF in your browser.</li>
 </ul>
 <div class="fine">

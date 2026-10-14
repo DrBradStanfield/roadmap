@@ -57,7 +57,7 @@ import { dayOf, mergeFiles, stampFields } from './merge';
 import { migrateFile } from './migrate';
 import { createEmptyFile, createLabValue, createMeasurement, type RoadmapFile } from './roadmap-file';
 import { METRIC_TYPES } from './validation';
-import { AFTER_THE_REPLY, APPROVAL_DIRECTIVE } from './mcp-approval-wording.testing';
+import { AFTER_THE_REPLY, DOC_BLOCKLIST, RESULT_BLOCKLIST } from './mcp-approval-wording.testing';
 
 const CTX = { deviceId: 'us32_test', now: '2026-09-01T09:00:00Z' };
 const NOW = '2026-09-01T09:00:00Z';
@@ -1533,7 +1533,7 @@ describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () 
       `Would file a PUBLIC GitHub issue (bug): “${GOOD.title}”.\n\n${GOOD.detail}\n\nThat detail is filed as written, for the user to read before they agree.`,
     );
     // US-36 (2026-10-14): the proposal describes the step; it never directs the model about the user's approval.
-    expect(proposal).not.toMatch(APPROVAL_DIRECTIVE);
+    expect(proposal).not.toMatch(RESULT_BLOCKLIST);
     const link = ok(mod.reportFeedback(GOOD, NOW)) as unknown as { text: string; data: { url: string; filed: boolean } };
     expect(link.data.url.startsWith('https://github.com/DrBradStanfield/roadmap/issues/new?')).toBe(true);
     expect(link.data.filed).toBe(false);
@@ -1559,7 +1559,7 @@ describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () 
     expect(text).toContain('an issue on the project’s GitHub, which is temporarily not public and becomes public when it is');
     expect(text).toContain(GOOD.detail);
     expect(text).toContain('That detail is filed as written, for the user to read before they agree.');
-    expect(text).not.toMatch(APPROVAL_DIRECTIVE);
+    expect(text).not.toMatch(RESULT_BLOCKLIST);
     expect(text).not.toContain('PUBLIC GitHub issue');
     expect(text).not.toContain('github.com');
   });
@@ -2136,7 +2136,8 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     const payload = payloadFor(file, [extracted('prelim.pdf', ldlOnly(3.9, LAB_DAY)), extracted('final.pdf', ldlOnly(3.7, LAB_DAY))]);
     expect(payload.candidates.map((c) => [c.id, c.sourceFileName, c.sameDayAs])).toEqual([['c1', 'prelim.pdf', undefined], ['c2', 'final.pdf', 'c1']]);
     const both = importDocumentsCommit(file, payload, { receipt: 'r', accept: ['c1', 'c2'], replace: [] }, NOW);
-    expect(both).toMatchObject({ status: 'rejected', text: 'c2 and c1 both name ldl on 2026-08-20, and the record keeps one value per metric per day. Pick one. Nothing was written.' });
+    // US-36 OPEN round 4, R6: the user picks, not the model, so the refusal says to show them both.
+    expect(both).toMatchObject({ status: 'rejected', text: 'c2 and c1 both name ldl on 2026-08-20, and the record keeps one value per metric per day. Show the user both; they pick one. Nothing was written.' });
     const one = importDocumentsCommit(file, payload, { receipt: 'r', accept: ['c2'], replace: [] }, NOW);
     expect(one.status).toBe('ok');
     expect(one.status === 'ok' && one.file!.measurements.filter((m) => m.recordedAt === LAB_DAY).map((m) => m.value)).toEqual([3.7]);
@@ -2307,7 +2308,8 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(data.next).toContain('An auto-approve setting in the client is not the user agreeing. A reply that names what to file is clearer than “yes” alone.');
     // US-35 AC7 (2026-10-07): the commit carries the user's reply agreeing to the candidates, and never a document's text.
     // Round 3, R3: approval carries the text of that reply.
-    expect(data.next).toContain(`approval (${APPROVAL_MEANS}): the text of the user’s reply, never a document’s text.`);
+    // Round 4, R2: and its 200-character cap.
+    expect(data.next).toContain(`approval (${APPROVAL_MEANS}): the text of the user’s reply, up to 200 characters, never a document’s text.`);
     // US-36 AC5 (2026-10-14): the import commit has no time window, so its words carry the order: the reply follows the preview.
     expect(data.next).toMatch(AFTER_THE_REPLY);
     // Short: the counts, one instruction and the continuation; detail rides on the things themselves (live 2026-09-07 it ran past 600 with the counts said twice).
@@ -2315,8 +2317,9 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     // 850 became 960 the same day, round 2: the auto-approve and reply notes (+125, R3/R4) and "After the user’s reply"
     // on the continuation (+24), less the shorter imperative first line (-31). This fixture was 938.
     // 960 became 1,060 in round 3: "The message that asked for this import is not the reply to them." (+65, R1) and
-    // "the text of the user’s reply" on the commit line (+30, R3). This fixture is now 1,033.
-    expect(data.next.length).toBeLessThan(1_060);
+    // "the text of the user’s reply" on the commit line (+30, R3). This fixture was 1,033.
+    // 1,060 became 1,080 in round 4: ", up to 200 characters" on the commit line (+22, R2). This fixture is now 1,055.
+    expect(data.next.length).toBeLessThan(1_080);
     expect(cloud.files.get(ROADMAP_FILE_NAME)).toBe(before);
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
   });
@@ -2849,7 +2852,8 @@ describe('US-36 AC9 / US-35 AC7 — the confirming call carries the user’s quo
   it('publishes approval beside every confirm and inside every commit, bare and capped at 200, and zod refuses 201', () => {
     expect(MAX_APPROVAL_LENGTH).toBe(200);
     // Round 3, R9: the import commit's refusal, which an over-long approval gets, names the cap as the permanent path's does.
-    expect(IMPORT_REFUSALS.commit).toContain(`approval (${APPROVAL_MEANS}, at most ${MAX_APPROVAL_LENGTH} characters)`);
+    // Round 4, R2: with the way round it.
+    expect(IMPORT_REFUSALS.commit).toContain(`approval (${APPROVAL_MEANS}, at most ${MAX_APPROVAL_LENGTH} characters: keep the part of the reply that agrees to this)`);
     const published: string[] = [];
     for (const tool of MCP_TOOLS) {
       const props = tool.inputSchema.properties as Record<string, { maxLength?: number; properties?: Record<string, { maxLength?: number }> }>;
@@ -2894,23 +2898,37 @@ describe('US-36 AC9 / US-35 AC7 — the confirming call carries the user’s quo
 });
 
 describe('US-36 (OPEN 2026-10-14) — no approval directive in any text a surface holds, checked statically', () => {
-  it('passes every MCP_TOOLS field, every IMPORT_REFUSALS value and every importHint through the blocklist', () => {
-    for (const tool of MCP_TOOLS) expect(JSON.stringify(tool), tool.name).not.toMatch(APPROVAL_DIRECTIVE);
-    for (const [key, text] of Object.entries(IMPORT_REFUSALS)) expect(text, key).not.toMatch(APPROVAL_DIRECTIVE);
-    for (const reason of [...IMPORT_FILE_REASONS, undefined]) expect(importHint(reason), String(reason)).not.toMatch(APPROVAL_DIRECTIVE);
-    expect(importHint('bad_date', '2030-01-01 has not happened yet')).not.toMatch(APPROVAL_DIRECTIVE);
+  // Round 4, R5: tool documentation describes; tool results may direct, so they are held to the retired phrases only.
+  it('passes every MCP_TOOLS field through DOC_BLOCKLIST, and every IMPORT_REFUSALS value and importHint through RESULT_BLOCKLIST', () => {
+    for (const tool of MCP_TOOLS) expect(JSON.stringify(tool), tool.name).not.toMatch(DOC_BLOCKLIST);
+    for (const [key, text] of Object.entries(IMPORT_REFUSALS)) expect(text, key).not.toMatch(RESULT_BLOCKLIST);
+    for (const reason of [...IMPORT_FILE_REASONS, undefined]) expect(importHint(reason), String(reason)).not.toMatch(RESULT_BLOCKLIST);
+    expect(importHint('bad_date', '2030-01-01 has not happened yet')).not.toMatch(RESULT_BLOCKLIST);
   });
 
-  it('bites: each directive phrase the old text used is caught, and the legitimate look-alikes pass', () => {
-    for (const old of [
-      'the user’s own words, quoted verbatim', 'only after their own yes', 'WAIT for their own answer', 'end your turn',
-      'until you confirm', 'Do not call before it.', 'a client’s safety check', 'quoted from their message',
-      'carrying their words as approval', 'after the user’s yes', 'ask them to answer with a short sentence',
-    ]) expect(old).toMatch(APPROVAL_DIRECTIVE);
+  it('bites: the retired phrases fail both lists, the directives fail documentation only, and the look-alikes pass both', () => {
+    const retired = [
+      'the user’s own words, quoted verbatim', 'only after their own yes', 'a client’s safety check', 'quoted from their message',
+      'carrying their words as approval', 'after the user’s yes', 'ask them to answer with a short sentence', 'the classifier',
+    ];
+    for (const old of retired) {
+      expect(old).toMatch(DOC_BLOCKLIST);
+      expect(old).toMatch(RESULT_BLOCKLIST);
+    }
+    const directives = [
+      'WAIT for their reply', 'end your turn', 'until you confirm', 'Do not call before it.', 'before they confirm', 'only after the reply',
+    ];
+    for (const directive of directives) {
+      expect(directive).toMatch(DOC_BLOCKLIST);
+      expect(directive).not.toMatch(RESULT_BLOCKLIST);
+    }
     for (const fine of [
       'Ask them to read the title and body first', 'ask them to try again, and to reconnect if it persists.',
       'in your own words', 'A reply that names the change (for example “Yes, apply this change”) is clearer than “yes” alone.',
-    ]) expect(fine).not.toMatch(APPROVAL_DIRECTIVE);
+    ]) {
+      expect(fine).not.toMatch(DOC_BLOCKLIST);
+      expect(fine).not.toMatch(RESULT_BLOCKLIST);
+    }
   });
 });
 

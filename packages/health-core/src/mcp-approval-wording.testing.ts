@@ -1,28 +1,42 @@
 /**
- * Test-only: the one blocklist for agent-facing approval wording (US-36, OPEN
+ * Test-only: the two blocklists for agent-facing approval wording (US-36, OPEN
  * 2026-10-14). ChatGPT flagged our tool text as "Tool documentation attempts to
  * prescribe classifier behavior and approval handling" (live 2026-10-12), so
- * what the model reads DESCRIBES the two-call protocol and never directs it
- * about the user's yes. It targets approval and confirmation directives only:
- * an ordinary imperative ("Do not include diagnoses") is fine. So are the
- * plan's "in your own words" ("own words" counts only as the user's or theirs),
- * the "Follow it." on the plan's `instruction` and the folder `hint`, and the
- * proposal's neutral note that a reply naming the change is clearer than "yes"
- * alone. "ask them to" counts only before answer, reply, confirm, approve or
- * say: the feedback link ("Ask them to read the title and body first") and the
- * storage hint ("ask them to try again") are not about approval.
+ * tool DOCUMENTATION (every `tools/list` field, both INSTRUCTIONS) DESCRIBES the
+ * two-call protocol and never directs the model about the user's yes. Tool
+ * RESULTS (answers, refusals, hints, `next`) may direct ("show … and wait for
+ * their reply"; round 2), so they are held only to the retired phrases (round
+ * 4, R5). Both lists target approval wording only: an ordinary imperative ("Do
+ * not include diagnoses") is fine. So are the plan's "in your own words" ("own
+ * words" counts only as the user's or theirs), the "Follow it." on the plan's
+ * `instruction` and the folder `hint`, and the proposal's neutral note that a
+ * reply naming the change is clearer than "yes" alone. "ask them to" counts
+ * only before answer, reply, confirm, approve or say: the feedback link ("Ask
+ * them to read the title and body first") and the storage hint ("ask them to
+ * try again") are not about approval.
  *
- * It catches the retired phrases on every published surface and produced
- * answer: `initialize` and `tools/list` on the hosted and stdio servers, every
- * answer the hosted-guards, hosted and import suites produce, the
- * report_feedback proposal, and, statically, every `MCP_TOOLS` field, every
- * `IMPORT_REFUSALS` value, every `importHint` and the hosted INSTRUCTIONS. An
- * answer no suite produces is not seen. Tool results may still say what to
- * show the user (round 2, 2026-10-14): the warning fires on tool
- * documentation, read before any call.
+ * They catch the phrases on every published surface and produced answer:
+ * `initialize` and `tools/list` on the hosted and stdio servers, every answer
+ * the hosted-guards, hosted and import suites produce, the report_feedback
+ * proposal, and, statically, every `MCP_TOOLS` field and the hosted
+ * INSTRUCTIONS (documentation), every `IMPORT_REFUSALS` value and every
+ * `importHint` (results). An answer no suite produces is not seen.
  */
-export const APPROVAL_DIRECTIVE =
-  /(user.s|their) own (yes|words|confirmation)|verbatim|safety check|classifier|WAIT for|end your turn|before they confirm|until you confirm|Do not call before|quoted|their words|the user.s yes|only after|ask them to (answer|reply|confirm|approve|say)/i;
+/** The retired phrases: the user's own words or yes, verbatim, quoted, a client's safety check or classifier, and bare-yes coaching. */
+const RETIRED =
+  String.raw`(user.s|their) own (yes|words|confirmation)|verbatim|quoted|their words|the user.s yes|safety check|classifier|ask them to (answer|reply|confirm|approve|say)`;
+
+/** Tool results: answers, refusals, hints and `next`. They may say what to show the user and to wait for the reply. */
+export const RESULT_BLOCKLIST = new RegExp(RETIRED, 'i');
+
+/** Tool documentation: every `tools/list` field and both INSTRUCTIONS. The retired phrases, and no directive about when to call. */
+export const DOC_BLOCKLIST = new RegExp(
+  `${RETIRED}|WAIT for|end your turn|before they confirm|until you confirm|Do not call before|only after`,
+  'i',
+);
+
+/** A JSON-RPC answer's list: a `tools/call` answer is a tool result; every other method publishes documentation. */
+export const blocklistFor = (method: string): RegExp => (method === 'tools/call' ? RESULT_BLOCKLIST : DOC_BLOCKLIST);
 
 /**
  * The order the text states (US-36, 2026-10-14): the write follows the user's

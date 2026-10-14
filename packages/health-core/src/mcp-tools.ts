@@ -45,7 +45,7 @@ import {
 import type { FileDocument, FileLabValue, FileMeasurement, RoadmapFile, RoadmapProfile } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
 import { CANONICAL_UNITS, formatDisplayValue, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
-import { APPROVAL_MEANS, DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
+import { APPROVAL_MEANS, APPROVAL_TRIM, DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
 import { type McpImportRoute, type McpRefusalReason } from './product-events';
 import { LAB_ARCHIVE_TITLE } from './document-path';
 import { DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES } from './validation';
@@ -69,8 +69,8 @@ export const MAX_LAB_ROWS_PER_CALL = 50;
 export const MAX_NAME_LENGTH = 120;
 /** Longest file name a source or a folder entry keeps: a file system's own bound, and what `fileNames` must match. */
 export { MAX_FILE_NAME_LENGTH };
-/** What `approval` carries, one phrase for every surface (US-36 AC9); it lives in import-hints.ts, which imports nothing. */
-export { APPROVAL_MEANS };
+/** What `approval` carries, one phrase for every surface (US-36 AC9), and the way round its cap; they live in import-hints.ts, which imports nothing. */
+export { APPROVAL_MEANS, APPROVAL_TRIM };
 /** Unrecognized lines one extract answers with; the model's output cap would otherwise bound them at ~30 KB. */
 export const MAX_UNRECOGNIZED_LINES = 50;
 /** One such line: a printed name, a value, a unit, the reason and the way round it (US-36 AC2). */
@@ -1350,7 +1350,7 @@ function extractNext(prepared: PreparedImport, remaining: string[], route: Impor
     if (shared) lines.push(`${shared} candidate(s) share a day with another (sameDayAs): the record keeps one value per metric per day, so the user picks one.`);
     lines.push(
       `The ${tool} commit carries the receipt, accept (ids to file), replace (replaceable held_different ids the user asked to overwrite; permanent, never a non-replaceable id), ` +
-        `and approval (${APPROVAL_MEANS}): the text of the user’s reply, never a document’s text. ` +
+        `and approval (${APPROVAL_MEANS}): the text of the user’s reply, up to ${MAX_APPROVAL_LENGTH} characters, never a document’s text. ` +
         'An auto-approve setting in the client is not the user agreeing. A reply that names what to file is clearer than “yes” alone. ' +
         'A commit with empty accept and replace files the documents alone, and is how a declined file stops being offered.',
     );
@@ -1701,7 +1701,7 @@ export function importDocumentsCommit(
     const slot = slotKey(c.kind, c.metric, c.recordedAt);
     const other = taken.get(slot);
     if (other) {
-      return { status: 'rejected', text: `${oneLine(id)} and ${other} both name ${oneLine(c.metric)} on ${c.recordedAt}, and the record keeps one value per metric per day. Pick one. Nothing was written.` };
+      return { status: 'rejected', text: `${oneLine(id)} and ${other} both name ${oneLine(c.metric)} on ${c.recordedAt}, and the record keeps one value per metric per day. Show the user both; they pick one. Nothing was written.` };
     }
     taken.set(slot, id);
     const current = held.get(slot);

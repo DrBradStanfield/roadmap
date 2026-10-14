@@ -28,7 +28,7 @@ import { chargeWrites, connectionKey, IMPORT_FILES_PER_DAY, importFiles, resetMc
 import { seal } from './mcp-seal.server';
 import { machineFiles } from './rate-limiter';
 import { APPROVAL_MEANS, type ImportPayload, type ImportSurface, MAX_IMPORT_FILES_PER_CALL, MAX_RECEIPT_LENGTH, OUTPUTS, runToolOverSync as runTool } from '../../packages/health-core/src/mcp-tools';
-import { APPROVAL_DIRECTIVE, isPartialRun } from '../../packages/health-core/src/mcp-approval-wording.testing';
+import { RESULT_BLOCKLIST, isPartialRun } from '../../packages/health-core/src/mcp-approval-wording.testing';
 import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 import { IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
 import { ROADMAP_FILE_NAME, StorageError } from '../../packages/health-core/src/adapter';
@@ -39,11 +39,11 @@ import { MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/
 /** What the user said when they agreed, carried in every commit (US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, file them';
 
-/** Every answer the surface and the tool layer give in this suite, whole: none may direct the model about approval (US-36, 2026-10-14). */
+/** Every answer the surface and the tool layer give in this suite, whole: tool results, held to the retired approval phrases (US-36, 2026-10-14; round 4, R5). */
 const ANSWERS: string[] = [];
 const heard = <T>(answer: T): T => (ANSWERS.push(JSON.stringify(answer) ?? ''), answer);
 afterAll(() => {
-  for (const answer of ANSWERS) expect(answer).not.toMatch(APPROVAL_DIRECTIVE);
+  for (const answer of ANSWERS) expect(answer).not.toMatch(RESULT_BLOCKLIST);
 });
 /** The real surface, with every answer it gives collected. */
 function hostedImporter(options: Parameters<typeof surfaceOf>[0]): ImportSurface {
@@ -297,7 +297,8 @@ describe('US-35 AC7 / US-36 AC9 — a commit quotes the user’s approval, check
   const file = createEmptyFile({ deviceId: 'test', now: NOW });
   const deadline = () => Date.now() + MCP_IMPORT_BUDGET_MS;
   // Round 3, R1: it says what to show and that the request is not the reply, as the confirm refusal does.
-  const QUOTE = `This call carries no approval. Show the user the candidates and await their reply; the message that asked for this import is not that reply. The commit has the same receipt, and approval (${APPROVAL_MEANS}). There is no commit until the user agrees. Nothing was written.`;
+  // Round 4, R5: a tool result may direct, so it says "wait for their reply", not "await".
+  const QUOTE = `This call carries no approval. Show the user the candidates and wait for their reply; the message that asked for this import is not that reply. The commit has the same receipt, and approval (${APPROVAL_MEANS}). There is no commit until the user agrees. Nothing was written.`;
 
   beforeEach(() => resetMcpMemory());
 

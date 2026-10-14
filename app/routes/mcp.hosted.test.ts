@@ -22,7 +22,7 @@ import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../pack
 import { AUTHORIZE_PER_WINDOW, resetMcpMemory, STATE_LIFETIME_SECONDS, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 import { ISSUES_PER_HOUR, REPORTS_PER_DAY } from '../lib/github-issues.server';
 import { APPROVAL_MEANS, MAX_RECEIPT_LENGTH, MCP_PROMPTS, MCP_TOOLS, OUTPUTS, SERVER_VERSION } from '../../packages/health-core/src/mcp-tools';
-import { AFTER_THE_REPLY, APPROVAL_DIRECTIVE, isPartialRun } from '../../packages/health-core/src/mcp-approval-wording.testing';
+import { AFTER_THE_REPLY, DOC_BLOCKLIST, blocklistFor, isPartialRun } from '../../packages/health-core/src/mcp-approval-wording.testing';
 import { MAX_CORRECTION_AGE_DAYS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { MAX_STATE_LENGTH } from '../lib/mcp-authorize.server';
 import { action, loader } from './mcp.$';
@@ -64,10 +64,13 @@ afterEach(() => {
   delete process.env.MCP_SEAL_KEYS;
 });
 
-/** Every /mcp answer this suite gets back, whole: none may direct the model about approval (US-36, 2026-10-14). */
-const ANSWERS: string[] = [];
+/**
+ * Every /mcp answer this suite gets back, whole, with its method (US-36, 2026-10-14). A tools/call answer is a tool result, held to
+ * RESULT_BLOCKLIST; any other method publishes documentation, held to DOC_BLOCKLIST (round 4, R5).
+ */
+const ANSWERS: Array<[method: string, answer: string]> = [];
 afterAll(() => {
-  for (const answer of ANSWERS) expect(answer).not.toMatch(APPROVAL_DIRECTIVE);
+  for (const [method, answer] of ANSWERS) expect(answer, method).not.toMatch(blocklistFor(method));
 });
 
 // ---------------------------------------------------------------------------
@@ -177,7 +180,7 @@ async function rpc(access: string, method: string, params: unknown = {}, now = N
   );
   expect(res.status).toBe(200);
   const answer = await res.json();
-  ANSWERS.push(JSON.stringify(answer));
+  ANSWERS.push([method, JSON.stringify(answer)]);
   return answer as {
     result?: { content?: Array<{ text: string }>; structuredContent?: unknown; isError?: boolean; tools?: unknown[] };
   };
@@ -533,7 +536,7 @@ describe('the doors that must stay shut (US-32, design §6)', () => {
     const { access } = await connect();
     const published = JSON.stringify([await rpc(access, 'initialize', { protocolVersion: '2025-11-25' }), await rpc(access, 'tools/list')]);
     expect(published).toContain(APPROVAL_MEANS);
-    expect(published).not.toMatch(APPROVAL_DIRECTIVE);
+    expect(published).not.toMatch(DOC_BLOCKLIST);
   });
 });
 
@@ -2042,7 +2045,7 @@ describe('US-32 AC29 — the counter records why a call was refused', () => {
     // R1 (2026-10-14): the import commit has no time window (US-36 AC5), so the words put the agreement after the preview.
     expect(INSTRUCTIONS).toMatch(AFTER_THE_REPLY);
     // Checked statically too, beside the initialize answer the blocklist sees.
-    expect(INSTRUCTIONS).not.toMatch(APPROVAL_DIRECTIVE);
+    expect(INSTRUCTIONS).not.toMatch(DOC_BLOCKLIST);
   });
 
   it('a correction older than ninety days is filed as too-old', async () => {

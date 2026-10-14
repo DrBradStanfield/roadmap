@@ -58,15 +58,16 @@ it itself, the way it reads any file you give it, and sends our server only the 
 read: the test name as printed, the number, the unit, the date. The file never reaches our
 server. Our server checks every value against the record's own catalogue, unit table and
 ranges (a "Lipoprotein(a)" line cannot be filed as ApoB; a number that looks like the wrong
-unit comes back as a question), and files only what you confirm. Or put the files in your
+unit comes back as a question), and files them in a second call. Or put the files in your
 Dropbox folder (`Apps/Health Plan by Dr Brad`) and ask it to import them: it reads five
 folder files at a time, or one ZIP of up to twenty, and tells you what is left. Drop files
 in that folder and the next time you ask ChatGPT anything about your record it offers them;
 nothing runs while you are away. An iPhone HEIC photo is not read by the folder route; share
 it as a JPEG, or take a screenshot. Whatever it cannot read, it tells you why and what to
-do. Either way it shows you candidate values, in the units your record uses, and writes nothing
-to your record until you confirm: the candidates wait in a pending file in your own folder for
-an hour. Accept the ones that look right and it writes them, filing the document itself as
+do. Either way the first call finds candidate values, in the units your record uses, and writes
+nothing to your record: the candidates wait in a pending file in your own folder for an hour.
+ChatGPT is told to show them to you and wait for your reply. Accept the ones that look right
+and a second call writes them, filing the document itself as
 a record with no text or image kept, just its name and date. If you connected before
 7 September 2026, refresh the connector once in ChatGPT's settings (open the connector and
 choose Refresh) so ChatGPT reads dropped files itself instead of handing them to our server. A report with no printed date is not
@@ -105,7 +106,7 @@ Your record still lives only in your Dropbox or Google Drive. To answer one call
 
 Check what it files. An AI can misread a lab report the same way a person can, and the record is yours, so the last look at a new value should be yours too.
 
-Keep ChatGPT asking before it acts. By default ChatGPT asks you before a connector writes anything, and that prompt is your last look. ChatGPT has a setting for the connector, "Allow all actions" (the wording varies by account), that turns the prompt off. Leave it off. ChatGPT is told to show you every permanent change and wait for your reply, and the call that makes the change carries that reply. Our server checks that the reply is there, but it cannot check that it is yours or that it came after the preview. ChatGPT's own prompt is the other guard, and the only one that sees you.
+Keep ChatGPT asking before it acts. By default ChatGPT asks you before a connector writes anything, and that prompt is your last look. ChatGPT has a setting for the connector, "Allow all actions" (the wording varies by account), that turns the prompt off. Leave it off. ChatGPT is told to show you every permanent change and wait for your reply, and the call that makes the change carries that reply. Our server checks only that the second call carries an approval text, not blank and at most 200 characters. It cannot check that the text is yours or that it came after the preview, and a call that files results has no time window. ChatGPT's own prompt is the other guard, and the only one that sees you.
 
 Take care with the web tool open in another tab while ChatGPT is writing. The page now notices a change and re-reads your record within seconds, and sooner when you switch back to that tab, so what you are looking at catches up on its own. But there is still no lock: a value you are typing at that moment and a value ChatGPT is writing at that moment can still collide, and one of the two loses.
 

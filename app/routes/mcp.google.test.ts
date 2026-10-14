@@ -206,6 +206,13 @@ describe('the consent screen offers only configured providers (US-32 phase 2)', 
     // The Drive import limit is said up front, in words that hold for every client (Claude has no drag route).
     // US-36 AC10: with file_results the chat route works on Drive, on a phone and on Claude.
     expect(html).toContain('with Google Drive the folder cannot be read, so the chat or the website’s upload are the ways in.');
+    // US-36 OPEN (round 4, R1): the page promises only what is true. The server cannot see the user's yes, so
+    // it says what the assistant is told and that a second call files the values; never "until you confirm".
+    expect(html).toContain('Nothing is written to your record until a second call files what it read; your assistant is told to show you the values first and wait for your reply.');
+    expect(html).toContain('Nothing is written to your record until a second call files what it found; your assistant is told to show you the values first and wait for your reply.');
+    expect(html).not.toMatch(/until you (confirm|say yes)/);
+    expect(html).toContain('Correct a recent value. Your assistant is told to show you the change first and wait for your reply.');
+    expect(html).not.toMatch(/after\s+showing you/);
   });
 
   it('shows Dropbox alone until the Google secrets exist — merging is inert', async () => {

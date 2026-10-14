@@ -21,7 +21,7 @@ import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 
 import { StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
-import { APPROVAL_MEANS, folderNudge, type GuardRefusal, isToolName, MAX_APPROVAL_LENGTH, MCP_TOOLS, OPEN_SOURCE_NOTE, SI_NOTE, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import { APPROVAL_MEANS, APPROVAL_TRIM, folderNudge, type GuardRefusal, isToolName, MAX_APPROVAL_LENGTH, MCP_TOOLS, OPEN_SOURCE_NOTE, SI_NOTE, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../../packages/health-core/src/mcp-rpc';
 import { importFilesBucket, isRefusalReason, MCP_TOOL_NAMES, type McpRefusalReason, type McpToolName } from '../../packages/health-core/src/product-events';
 import { KNOWN_CLIENTS, readCapped, type McpClientLabel } from './mcp-clients.server';
@@ -362,9 +362,9 @@ function withProposal(token: AccessPayload, name: string, args: Record<string, u
   const { receipt: confirm, notBefore: confirmFrom } = issueProposal(callIdentity(name, args), hash(connectionKey(token)), audienceFor(token.clientId), Date.parse(now));
   const text =
     `PROPOSAL — nothing written yet. ${answer.text}\n\n` +
-    'Show this proposal to the user and await their reply; the message that asked for the change is not that reply. ' +
+    'Show this proposal to the user and wait for their reply; the message that asked for the change is not that reply. ' +
     `The write is a second ${name} call with the same arguments, confirm set to the receipt below, ` +
-    `and approval (${APPROVAL_MEANS}): the text of the user’s reply. An auto-approve setting in the client is not the user agreeing. ` +
+    `and approval (${APPROVAL_MEANS}): the text of the user’s reply, up to ${MAX_APPROVAL_LENGTH} characters. An auto-approve setting in the client is not the user agreeing. ` +
     'A reply that names the change (for example “Yes, apply this change”) is clearer than “yes” alone. ' +
     `The receipt is valid from ${confirmFrom} for ${STEP_WINDOWS.proposal.ttlSeconds / 60} minutes and works once.\nconfirm: ${confirm}`;
   return { text, isError: false, structured: { ...(answer.structured as Record<string, unknown>), proposal: true, confirm, confirmFrom } };
@@ -404,10 +404,10 @@ function checkConfirm(token: AccessPayload, name: string, args: Record<string, u
   // After the window checks, so a chained call hears the window rather than the approval; before the claim, so a
   // missing approval spends no receipt and, like every refusal here, costs nothing.
   if (!approval?.trim()) {
-    return `This call carries no approval. Show the user the proposal and await their reply; the message that asked for the change is not that reply. The second ${name} call has the same arguments, the same receipt, and approval (${APPROVAL_MEANS}). There is no second call until the user agrees. Nothing was written.`;
+    return `This call carries no approval. Show the user the proposal and wait for their reply; the message that asked for the change is not that reply. The second ${name} call has the same arguments, the same receipt, and approval (${APPROVAL_MEANS}). There is no second call until the user agrees. Nothing was written.`;
   }
   if (approval.length > MAX_APPROVAL_LENGTH) {
-    return `approval (${APPROVAL_MEANS}) is at most ${MAX_APPROVAL_LENGTH} characters. Nothing was written.`;
+    return `approval (${APPROVAL_MEANS}) is at most ${MAX_APPROVAL_LENGTH} characters: ${APPROVAL_TRIM}. Nothing was written.`;
   }
   if (!claimProposal(confirm, conn, ttlSeconds * 1000, nowMs)) {
     return `That confirm receipt has already been used. Nothing was written. If the user wants another change, call ${name} again without confirm.`;

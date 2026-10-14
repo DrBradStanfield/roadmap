@@ -20,7 +20,7 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
 import { APPROVAL_MEANS, MAX_LAB_ROWS_PER_CALL } from '../../packages/health-core/src/mcp-tools';
-import { AFTER_THE_REPLY, APPROVAL_DIRECTIVE, isPartialRun } from '../../packages/health-core/src/mcp-approval-wording.testing';
+import { AFTER_THE_REPLY, blocklistFor, isPartialRun } from '../../packages/health-core/src/mcp-approval-wording.testing';
 import { REPO_PUBLIC } from '../../packages/health-core/src/plan';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
@@ -66,10 +66,13 @@ afterEach(() => {
   delete process.env.MCP_SEAL_KEYS;
 });
 
-/** Every answer this suite gets back, whole: none may direct the model about approval (US-36, 2026-10-14). */
-const ANSWERS: string[] = [];
+/**
+ * Every answer this suite gets back, whole, with its method (US-36, 2026-10-14). A tools/call answer is a tool result, held to
+ * RESULT_BLOCKLIST; any other method publishes documentation, held to DOC_BLOCKLIST (round 4, R5).
+ */
+const ANSWERS: Array<[method: string, answer: string]> = [];
 afterAll(() => {
-  for (const answer of ANSWERS) expect(answer).not.toMatch(APPROVAL_DIRECTIVE);
+  for (const [method, answer] of ANSWERS) expect(answer, method).not.toMatch(blocklistFor(method));
 });
 
 function unescapeHtml(text: string): string {
@@ -133,7 +136,7 @@ async function rpc(access: string, method: string, params: unknown = {}) {
   }), NOW);
   expect(res.status).toBe(200);
   const answer = await res.json();
-  ANSWERS.push(JSON.stringify(answer));
+  ANSWERS.push([method, JSON.stringify(answer)]);
   return answer as { result?: { content?: Array<{ text: string }>; isError?: boolean; tools?: Array<{ name: string }> } };
 }
 
@@ -258,7 +261,7 @@ const NOT_OURS = 'does not match these arguments on this connection, or is not o
 /** What the user said when they agreed, carried in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, go ahead';
 const QUOTE_APPROVAL = (name: string) =>
-  `This call carries no approval. Show the user the proposal and await their reply; the message that asked for the change is not that reply. The second ${name} call has the same arguments, the same receipt, and approval (${APPROVAL_MEANS}). There is no second call until the user agrees. Nothing was written.`;
+  `This call carries no approval. Show the user the proposal and wait for their reply; the message that asked for the change is not that reply. The second ${name} call has the same arguments, the same receipt, and approval (${APPROVAL_MEANS}). There is no second call until the user agrees. Nothing was written.`;
 import { WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 
 const at = (seconds: number) => new Date(Date.parse(NOW) + seconds * 1000).toISOString();
@@ -271,7 +274,7 @@ async function callToolAt(access: string, name: string, args: unknown, now: stri
   }), now);
   expect(res.status).toBe(200);
   const answer = (await res.json()) as { result: { content: Array<{ text: string }>; structuredContent?: Record<string, unknown>; isError?: boolean } };
-  ANSWERS.push(JSON.stringify(answer));
+  ANSWERS.push(['tools/call', JSON.stringify(answer)]);
   return { text: answer.result.content[0].text, structured: answer.result.structuredContent, isError: answer.result.isError === true };
 }
 
@@ -312,7 +315,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     expect(proposed.isError).toBe(false);
     expect(proposed.text).toMatch(/^PROPOSAL — nothing written yet\./);
     // Round 3, R7: as firm as the import's next. A tool result, so it says what to show, and that the request is not the reply.
-    expect(proposed.text).toContain('Show this proposal to the user and await their reply; the message that asked for the change is not that reply.');
+    expect(proposed.text).toContain('Show this proposal to the user and wait for their reply; the message that asked for the change is not that reply.');
     expect(proposed.text).toContain('An auto-approve setting in the client is not the user agreeing.'); // a client set to allow every action has not agreed
     // US-36 (2026-10-14): the proposal describes the protocol and never directs the model ("Suspicious Instruction",
     // live 2026-10-12); the afterAll blocklist checks it. It keeps one neutral note about the reply, with no safety-check
@@ -326,7 +329,8 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     expect(receipt).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     expect(proposed.text).toContain(`confirm: ${receipt}`);
     // Round 3, R3: approval carries the text of the user's reply.
-    expect(proposed.text).toContain(`approval (${APPROVAL_MEANS}): the text of the user’s reply.`);
+    // Round 4, R2: the cap is said where the field is defined, so a long reply is cut before the call, not after a refusal.
+    expect(proposed.text).toContain(`approval (${APPROVAL_MEANS}): the text of the user’s reply, up to 200 characters.`);
     expect(storedRecord().measurements).toHaveLength(1);
     expect(storedRecord().measurements[0].status).toBe('active');
 
@@ -398,7 +402,8 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     const long = 'Yes '.repeat(51);
     const tooLong = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: long }, at(11));
     expect(tooLong.isError).toBe(true);
-    expect(tooLong.text).toBe(`approval (${APPROVAL_MEANS}) is at most 200 characters. Nothing was written.`);
+    // Round 4, R2: the refusal names the way round it.
+    expect(tooLong.text).toBe(`approval (${APPROVAL_MEANS}) is at most 200 characters: keep the part of the reply that agrees to this. Nothing was written.`);
     const notText = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: 5 }, at(11));
     expect(notText.text).toBe(QUOTE_APPROVAL('correct_value'));
     // "Not valid yet", not "not ours": the MAC matched with these words, so they are outside the identity.

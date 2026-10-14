@@ -19,7 +19,7 @@ Tools that enforce this contract for you: `tools/get-plan.ts`, `tools/edit-recor
 - TypeScript source of truth: `packages/health-core/src/roadmap-file.ts`
 - Compute the plan from the file: `npx tsx tools/get-plan.ts <file>` (in this repo), see `--help`
 - Something wrong or missing? The MCP server's `report_feedback` tool reports it. On the
-  hosted server it proposes the issue first and, once the user confirms, files it itself;
+  hosted server it proposes the issue first and files it itself on a second call, after the user's reply;
   the issue is public; a server with no GitHub token prepares a link the user submits instead. Tell the
   user before you call it, and put no health value in it, one is refused.
 
@@ -241,7 +241,7 @@ per ZIP, 30 files a day; no HEIC) from the root of the Dropbox app folder and pr
 values for you to accept, in the record's own unit system. A file inside a ZIP is named
 `<zip>/<path inside it>` (`labs.zip/2026/results.pdf`), as the website's upload names it, in
 `files`, in a `fileDates` answer and on the filed document; `fileNames` names the ZIP itself.
-It writes nothing to the record until the user confirms; the candidates wait in a pending file in the user's own
+It writes nothing to the record until its `commit`, which carries `approval` (below); the candidates wait in a pending file in the user's own
 folder (`imports/pending-<id>.json`), and the receipt naming it expires after an hour. Those files are sent to
 Anthropic's API for extraction, under our key, at the extract step and before the user
 confirms anything. We keep none of them. Anthropic's [commercial

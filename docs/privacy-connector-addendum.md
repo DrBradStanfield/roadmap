@@ -66,19 +66,20 @@ for a dropped file. It asks you to refresh instead.) On a Google Drive record th
 so only the chat route applies. On a Dropbox record, when your assistant reads your
 record it also lists the file names in that folder, in memory, to tell you which are not
 yet in your record; the names are not kept. The candidate values either route finds are written to YOUR folder, as
-`imports/pending-<id>.json`, until you confirm them. Nothing is written to your record
-until you do: the candidates wait in that pending file, in your own folder, and the
-receipt that names it expires after an hour. When you confirm, the server deletes that
-file. A delete that fails is counted as a number for us, not reported to you, and the
+`imports/pending-<id>.json`. Nothing is written to your record by that first call: the
+candidates wait in that pending file, in your own folder, and the receipt that names it
+expires after an hour. Your assistant is told to show them to you and wait for your
+reply; a second call files them. When it does, the server deletes that file. A delete that fails is counted as a number for us, not reported to you, and the
 file stays. A file nobody acts on is removed at your next import, by whichever route you
 take, once it is two hours old. If you never import again it stays in your own folder,
 where you can delete it yourself.
 
-A call that confirms a change, or files what your assistant found, also carries your
-short approval quoted in your own words (at most 200 characters). The server reads it
-only to check it is there and within that length, holds it in memory for that one
-request, and never stores,
-logs or counts it. It exists because ChatGPT's safety layer judges the call itself for
+A call that confirms a change, or files what your assistant found, also carries an
+approval text: your reply to the preview (at most 200 characters). The server checks
+only that it is there, not blank and within that length. It cannot check that the text
+is yours or that it came after the preview, and a call that files what your assistant
+found has no time window. The server holds the text in memory for that one request,
+and never stores, logs or counts it. It exists because ChatGPT's safety layer judges the call itself for
 evidence of your approval.
 
 ## What we store
@@ -314,8 +315,8 @@ a number wearing a unit, a bare number written near a metric name it knows, an e
 address, a phone-shaped run of digits, a file name (lab portals name your download
 after you), or a link carrying a query string that could hold a token
 (`unsafeFeedback` in `packages/health-core/src/mcp-tools.ts`). It cannot
-recognise a diagnosis written in prose, and it does not pretend to. That is why the tool
-shows you the report before it files it: read the receipt before you say yes.
+recognise a diagnosis written in prose, and it does not pretend to. That is why your assistant
+is told to show you the report before a second call files it: read it before you reply.
 The issue is public, so your assistant should tell you before it files one. (Software
 you run yourself holds no key, so it cannot file anything: it hands you a link to submit
 yourself.)

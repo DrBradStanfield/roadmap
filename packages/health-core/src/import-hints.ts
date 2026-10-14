@@ -36,6 +36,9 @@ const FILE_DATES_SHAPE = 'fileDates: [{ "file": "<name as listed>", "date": "YYY
  */
 export const APPROVAL_MEANS = 'the user’s reply to the preview, agreeing to it';
 
+/** The way round an `approval` over its 200-character cap, said by both refusals that meet one (US-36 OPEN, round 4, R2). */
+export const APPROVAL_TRIM = 'keep the part of the reply that agrees to this';
+
 export const IMPORT_FILE_REASONS = ['unsupported', 'nested_zip', 'too_large', 'no_date', 'bad_date', 'quota', 'allowance', 'time', 'unreadable', 'too_many'] as const;
 export type ImportFileReason = (typeof IMPORT_FILE_REASONS)[number];
 
@@ -94,7 +97,7 @@ export const IMPORT_REFUSALS = {
   /** A `commit` block that does not parse, an approval over 200 characters among them (the cap is `MAX_APPROVAL_LENGTH`). */
   commit:
     'The commit was malformed. Pass the receipt exactly as the extract returned it, with accept and replace as lists of candidate ids, ' +
-    `and approval (${APPROVAL_MEANS}, at most 200 characters). Nothing was written.`,
+    `and approval (${APPROVAL_MEANS}, at most 200 characters: ${APPROVAL_TRIM}). Nothing was written.`,
   /** Anything else that does not parse: a fileNames or fileDates shape. */
   arguments:
     `The call was malformed: fileNames is a list of file names as listed, fileDates is a list of {file, date} pairs (${FILE_DATES_SHAPE}). Nothing was read.`,

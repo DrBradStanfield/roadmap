@@ -64,13 +64,13 @@ Changes the four things your plan is worked out from: your sex, your birth year,
 
 Reports a problem for you, as a public issue on the project, when something refuses or looks wrong.
 
-**What it will not do.** It opens no health record. It refuses anything that reads as a health value, an email address, a phone number, a file name or a link carrying a token, and it shows you the report before you say yes; the report carries only what the assistant wrote about the problem.
+**What it will not do.** It opens no health record. It refuses anything that reads as a health value, an email address, a phone number, a file name or a link carrying a token, and ChatGPT is told to show you the report and wait for your reply before a second call files it; the report carries only what the assistant wrote about the problem.
 
 ### `import_documents`: Import lab files from the Dropbox folder
 
 Reads the lab files sitting in your own connected Dropbox folder and shows you every value it found against what your record already holds.
 
-**What it will not do.** It changes nothing in your record until you say yes; the values it found wait in a small file in your own folder until then. It works on Dropbox only: on Google Drive the permission we ask for cannot list a folder, and it says so.
+**What it will not do.** Reading changes nothing in your record. The values it found wait in a small file in your own folder until a second call files them, and ChatGPT is told to show you what it found and wait for your reply before that call. It works on Dropbox only: on Google Drive the permission we ask for cannot list a folder, and it says so.
 
 ### `file_results`: File the results you read from a document
 
@@ -84,7 +84,7 @@ There is no delete. Nothing in your record can be removed by any tool here. A co
 
 Three tools change something that cannot be reversed: correcting a value, changing your profile, and filing a bug report. Each takes two calls. The first writes nothing and hands back a receipt saying exactly what would happen. ChatGPT is told to show you that change and wait for your reply, and the second call, the one that acts, carries your reply. Filing results from a document works the same way: a receipt first, and the call that saves to your record carries your reply.
 
-ChatGPT has a setting that skips its own approval prompt for a connector. That setting is not your yes, and each preview, for a change or for results to file, tells ChatGPT so. Our server checks that the second call carries a reply, and writes nothing without one, but it cannot check that the words are yours or that they came after the preview. ChatGPT's own approval prompt is the other guard, so we suggest leaving that setting off.
+ChatGPT has a setting that skips its own approval prompt for a connector. That setting is not your yes, and each preview, for a change or for results to file, tells ChatGPT so. Our server checks that the second call carries an approval text, not blank and at most 200 characters, and writes nothing without one. It cannot check that the text is yours or that it came after the preview, and the call that files results has no time window. ChatGPT's own approval prompt is the other guard, so we suggest leaving that setting off.
 
 Two more things worth knowing. Your record holds one value per test per day, so adding a second one is refused rather than allowed to bury the first. And a correction has to name the value it expects to find, so a stale reading cannot silently fix the wrong row.
 
