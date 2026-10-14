@@ -83,7 +83,7 @@ beforeEach(() => {
   consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
 });
 
-afterEach(() => { vi.restoreAllMocks(); });
+afterEach(() => { vi.resetAllMocks(); vi.restoreAllMocks(); });
 
 async function post(body: Record<string, unknown>) {
   const request = new Request('https://drstanfield.com/api/chat?logged_in_customer_id=123', {

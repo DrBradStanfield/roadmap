@@ -25,9 +25,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { FileReminderOptIn } from '@roadmap/health-core';
 
-type FetchMock = ReturnType<typeof vi.fn<[input: RequestInfo | URL, init?: RequestInit], Promise<Response>>>;
+type FetchMock = ReturnType<typeof vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>>;
 
-const getReminderOptIn = vi.fn<[], FileReminderOptIn | undefined>(() => undefined);
+const getReminderOptIn = vi.fn<() => FileReminderOptIn | undefined>(() => undefined);
 const setReminderOptIn = vi.fn();
 const flushRoadmapStore = vi.fn(async () => {});
 const computeCurrentReminderSchedule = vi.fn(() => [
@@ -35,9 +35,9 @@ const computeCurrentReminderSchedule = vi.fn(() => [
 ]);
 const trackProductEvent = vi.fn();
 const isKnownMinorNow = vi.fn(() => false);
-const getReminderIdToken = vi.fn<[], Promise<string | null>>(async () => 'signed-id-token');
-const driveAccountEmail = vi.fn<[], string | null>(() => null);
-const githubAccountEmail = vi.fn<[], Promise<string | null>>(async () => 'gh@example.com');
+const getReminderIdToken = vi.fn<() => Promise<string | null>>(async () => 'signed-id-token');
+const driveAccountEmail = vi.fn<() => string | null>(() => null);
+const githubAccountEmail = vi.fn<() => Promise<string | null>>(async () => 'gh@example.com');
 
 vi.mock('../src/lib/roadmap-data', () => ({
   getReminderOptIn: () => getReminderOptIn(),
@@ -90,7 +90,7 @@ function stubBrowser(): void {
 }
 
 function mockFetchOk(body: unknown = { token: 'new-cap-token', email: 'user@example.com' }): FetchMock {
-  const f = vi.fn<[input: RequestInfo | URL, init?: RequestInit], Promise<Response>>(async () => new Response(JSON.stringify(body), { status: 200 }));
+  const f = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(async () => new Response(JSON.stringify(body), { status: 200 }));
   vi.stubGlobal('fetch', f);
   return f;
 }

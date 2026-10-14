@@ -32,6 +32,9 @@ export function useHealthToolLifecycle(): void {
   afterEach(async () => {
     cleanup();
     await flushRoadmapStore();
+    // Vitest 4's restoreAllMocks only undoes vi.spyOn; resetAllMocks also drops
+    // each vi.fn's calls and unused mock*Once values, as restoreAllMocks did in 1.x.
+    vi.resetAllMocks();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });

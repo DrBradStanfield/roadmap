@@ -400,7 +400,7 @@ describe('loadMatchedArticlesFromHandles', () => {
 describe('loadMatchedArticlesFromHandles cap (US-15 AC23)', () => {
   const sizes: Record<string, number> = { 'cap-test-a': 83_000, 'cap-test-b': 30_000, 'cap-test-c': 30_000, 'cap-test-x': 40_000 };
   const realRead = fs.readFileSync;
-  afterEach(() => { vi.restoreAllMocks(); });
+  afterEach(() => { vi.resetAllMocks(); vi.restoreAllMocks(); });
 
   function fakeArticles() {
     vi.spyOn(fs, 'readFileSync').mockImplementation(((p: fs.PathOrFileDescriptor, ...rest: unknown[]) => {

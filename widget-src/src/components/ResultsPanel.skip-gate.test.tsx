@@ -59,7 +59,7 @@ beforeEach(() => {
   print = vi.fn();
   vi.spyOn(window, 'open').mockImplementation(() => ({ document: { write: vi.fn(), close: vi.fn() }, print }) as unknown as Window);
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.resetAllMocks(); vi.restoreAllMocks(); });
 
 describe('US-44 AC2 — gate skipped: Save as PDF straight away, nothing persisted', () => {
   it('shows Save as PDF on first render, with no gating email box and no write to the record', () => {

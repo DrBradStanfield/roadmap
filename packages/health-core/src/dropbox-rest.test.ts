@@ -116,7 +116,7 @@ describe('a runtime without `AbortSignal.timeout` still saves (US-32 AC17)', () 
  */
 describe('a rev-conditional write refuses to re-create a deleted record (US-32 AC16)', () => {
   /** The `Dropbox-API-Arg` header of the last upload, parsed. */
-  function uploadArg(fetchSpy: Mock<any[], Promise<Response>>): Record<string, unknown> {
+  function uploadArg(fetchSpy: Mock<(...args: any[]) => Promise<Response>>): Record<string, unknown> {
     const init = fetchSpy.mock.calls.at(-1)![1] as RequestInit;
     return JSON.parse((init.headers as Record<string, string>)['Dropbox-API-Arg']);
   }

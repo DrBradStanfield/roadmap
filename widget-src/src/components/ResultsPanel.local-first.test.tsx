@@ -29,7 +29,7 @@ beforeEach(() => {
   mocks.getReportHtml.mockResolvedValue({ success: true, html: '<p>Local report</p>' });
   mocks.sendGuestReport.mockResolvedValue({ success: true });
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.resetAllMocks(); vi.restoreAllMocks(); });
 
 describe('US-09 AC5 / US-23 AC4 — local-first capture after account removal', () => {
   it('prints locally before subscribing only the email, then shows the returning-user PDF action', async () => {

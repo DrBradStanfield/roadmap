@@ -18,7 +18,7 @@ function stubAnthropic(reply: () => Response) {
 }
 const message = (text: string) => () => Response.json({ content: [{ type: 'text', text }] });
 
-afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+afterEach(() => { vi.unstubAllGlobals(); vi.resetAllMocks(); vi.restoreAllMocks(); });
 
 // US-12 AC8: "250.000" platelets per µL (Brazil, Germany) copied as a JSON
 // NUMBER parsed to 250, past the count guard, and stored 0.25 ×10⁹/L.

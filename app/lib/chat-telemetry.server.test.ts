@@ -28,6 +28,7 @@ afterEach(async () => {
   await Sentry.close();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
+  vi.resetAllMocks();
   vi.restoreAllMocks();
 });
 

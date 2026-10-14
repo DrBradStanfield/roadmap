@@ -33,6 +33,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   await Sentry.close();
+  vi.resetAllMocks();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
