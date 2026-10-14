@@ -32,4 +32,4 @@ Urgency choices:
 
 ## Sign-off
 
-AC8 sign-off (Brad): PENDING. Codex round 2 on the fixed batch: PENDING.
+AC8 sign-off (Brad): PENDING. Codex round 2 done 2026-10-14: two glue ear fixes applied (Ciproxin HC label caution; a sensitivity statement corrected); five findings void (stale review base). READY FOR AC8.

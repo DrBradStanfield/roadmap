@@ -39,3 +39,8 @@ Fresh Opus adversary on knowledge-refresh/review-new-1b (bda4c44d). Line numbers
 - Zoledronic acid every 18 months for osteopenia (sheet yearly): KEEP the interval (NZ evidence); ACCEPT adding the sheet's contraindication when creatinine clearance is less than 35 mL/min.
 - AndroFeme application site and dose: KEEP, off-label, menopause society dosing.
 - Sustanon every 3 to 4 weeks (sheet 3): KEEP.
+
+## Codex round 2 (gpt-6.1-sol, status incomplete)
+- R1-R4, R7: VOID. The review branch was built on a stale origin/main, so the range showed newer main commits (US-07 age safeguards, reminders, chat wiring, products.md) as reversions. Not in this batch. Lesson: fetch main immediately before building a review branch.
+- R5 (glue ear: Ciproxin HC for long-term use in perforations without its label caution): ACCEPT, added that its product information advises against use with a perforated eardrum, so this is a specialist decision.
+- R6 (glue ear: "one in four children with a Type B result do not have fluid" does not follow from 100% sensitivity and 75% specificity): ACCEPT, now "some children".

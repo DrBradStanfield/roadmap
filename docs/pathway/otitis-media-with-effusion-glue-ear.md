@@ -75,7 +75,7 @@ Your doctor may look at the eardrum for:
 
 Tympanometry is a simple test of how well the eardrum moves. Your doctor may arrange it to check for fluid:
 - **Type A:** normal, no fluid.
-- **Type B:** a flat line, suggesting fluid or a hole in the eardrum. It is 100% sensitive but only 75% specific, so about one in four children with a Type B result do not have fluid.
+- **Type B:** a flat line, suggesting fluid or a hole in the eardrum. It is 100% sensitive but only 75% specific, so some children with a Type B result do not have fluid.
 - **Type C:** suggests some fluid, or Eustachian tube dysfunction. It must be read alongside other findings.
 
 Some doctors also use pneumatic otoscopy, which shows reduced or absent eardrum movement in OME. It needs experience to interpret.
@@ -113,7 +113,7 @@ Your doctor may discuss the possible need for grommets and review your child aga
 - After cleaning, antibiotic and steroid ear drops, 3 to 4 times daily for 2 to 3 days after the discharge has settled.
   - Evidence suggests that quinolone antibiotic drops, such as ciprofloxacin, are most effective.
   - Some ear drops (for example Sofradex, Otodex, Soframycin, Kenacomb) carry a very small risk (1:1000 to 1:10,000) of inner ear damage if there is a direct path to the middle ear, such as a perforation or an open grommet. In an acute perforation, when drops are used for less than 1 week, the risk is very low. Ear drops concentrate medicine in the ear and clear discharge better than oral antibiotics.
-  - For long-term use in chronic perforations, local specialists recommend non-ototoxic drops such as Ciproxin HC (not funded). Leaving these ears untreated can also increase the risk of hearing loss.
+  - For long-term use in chronic perforations, local specialists recommend non-ototoxic drops such as Ciproxin HC (not funded). Its product information advises against use with a perforated eardrum, so this is a specialist decision. Leaving these ears untreated can also increase the risk of hearing loss.
   - Local specialists have concerns about flumetasone pivalate with clioquinol drops when there is a perforation. These drops can stain hair, clothes, and bed linen. They may be used if there is fungal overgrowth.
 - Using an ear swab result, if available, to guide treatment.
 - Seeking ENT advice if the ear does not respond to treatment, or if swelling of the canal prevents cleaning or drops.

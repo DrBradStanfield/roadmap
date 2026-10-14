@@ -28,3 +28,4 @@ The first run hit Claude's session limits twice; most of the spend was rework. T
 17. Source currency is its own check. Every review round of the new pathways found HealthPathways text out of date against Medsafe data sheets (tramadol, escitalopram QT, factor V Leiden, infliximab live vaccines, doxazosin start dose, SSRI maxima over 65). A Sonnet currency audit before review is cheaper than review rounds finding them one at a time.
 18. Auto mode can block report edits that record departures from the source ("Audit Tampering", "Instruction Poisoning"). Brad added Edit/Write allow rules for ~/.codex-review/diff-reports/**; a blocked worker stops and reports; retry only with Brad's word.
 19. Pre-registered answer checks quote our entries, never the licensed raw (Codex R4, batch 2).
+20. Fetch main immediately before building a review branch. A stale origin/main made Codex review newer main commits as reversions (new-1b round 2: five void findings).

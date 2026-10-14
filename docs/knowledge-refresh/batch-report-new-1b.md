@@ -1,6 +1,6 @@
 # Knowledge batch report: pathways-new-1b
 
-Base: main (1ce0000749c51fe905319453133e84da559dd39c)
+Base: main (3a51d3eadec5f8735bd407a79021ec7e9ebf451f)
 Handles: 20
 
 Counts and hashes only. Raw text never enters this repo.
@@ -13,7 +13,7 @@ Counts and hashes only. Raw text never enters this repo.
 | AC2 raw fidelity of every new number token | WARN | 0 | 49 |
 | AC3 hedging held; hardening words listed | WARN | 0 | 236 |
 | AC4 deleted sentences justified; headings kept | PASS | 0 | 0 |
-| AC6 diff touches only batch files | FAIL | 268 | 0 |
+| AC6 diff touches only batch files | FAIL | 271 | 0 |
 | AC7 grokipedia, products, references, banned phrases, exclusions | PASS | 0 | 0 |
 | PATHWAY source line, deferral blockquote, no NZ logistics | PASS | 0 | 0 |
 
@@ -29,7 +29,7 @@ Counts and hashes only. Raw text never enters this repo.
 | motor-neurone-disease | pathway | refresh-2026-09-29/health_pathways/motor-neurone-disease.md | 7eaa8625134abdad1984fec8ed486c55161787b1a429286119ed7c3cc577c61b | aed792e7bc5e4e74 | 42 | 41 | 0 | 0>61 | 0>0 |
 | older-adults-weight-and-nutrition | pathway | refresh-2026-09-29/health_pathways/older-adults-weight-and-nutrition.md | 033a9be3baa402318c6f05b2879cfe4fa75b81cc47e057d67b4820aec64c7d34 | 3f9e16938628c924 | 21 | 21 | 0 | 0>21 | 0>0 |
 | osteoporosis-in-adults | pathway | refresh-2026-09-29/health_pathways/osteoporosis-in-adults.md | 909967890e3c76ef28ba8cc203053aae383228974ef7d5f4ac94bb8bf44f67ee | 40aff444ad846c39 | 53 | 51 | 0 | 0>42 | 0>0 |
-| otitis-media-with-effusion-glue-ear | pathway | refresh-2026-09-29/health_pathways/otitis-media-with-effusion-glue-ear.md | e2bc9a6b7af0ae6d5cf4bd73423427a56f0ff17ab9bee1695e74f34c47e118a8 | 450fe0d700acb142 | 27 | 27 | 0 | 0>27 | 0>0 |
+| otitis-media-with-effusion-glue-ear | pathway | refresh-2026-09-29/health_pathways/otitis-media-with-effusion-glue-ear.md | e2bc9a6b7af0ae6d5cf4bd73423427a56f0ff17ab9bee1695e74f34c47e118a8 | 8366c1dd18ae9944 | 27 | 27 | 0 | 0>27 | 0>0 |
 | palpitations | pathway | refresh-2026-09-29/health_pathways/palpitations.md | 36875278b77d20ce04a5c3e38ff73c79f07ab8c38ace9d1bcaca71e0e782c934 | a978fac679767373 | 20 | 19 | 0 | 0>41 | 0>0 |
 | physical-assault | pathway | refresh-2026-09-29/health_pathways/physical-assault.md | e43bbb4ad31f11a5cd081c525d6dfd749631988464cb731403695895e9344221 | 8216cc24ccf5991c | 6 | 4 | 0 | 0>15 | 0>0 |
 | red-eye | pathway | refresh-2026-09-29/health_pathways/red-eye.md | 114bc1099a857d7c49e5141dc8a1a2f1bbb6c715aa17336bd2ea65173b0a685d | 048d6ce77f4558b4 | 9 | 8 | 0 | 0>18 | 0>0 |
@@ -81,8 +81,10 @@ Counts and hashes only. Raw text never enters this repo.
 - osteoporosis-in-adults: VOID 119: body line edited 2026-10-14 (zoledronic holiday wording, kidney limit); re-entered [body: - **Oral bisphosphonates** (e.g. risedronate): usually given]
 - osteoporosis-in-adults: VOID 120: body line edited 2026-10-14 (zoledronic holiday wording, kidney limit); re-entered [body: - **Oral bisphosphonates** (e.g. risedronate): usually given]
 - otitis-media-with-effusion-glue-ear: VOID 0: raw_quote shorter than 30 characters; replaced with the Category and Last reviewed lines [body: *Source: Auckland Region HealthPathways. Last reviewed: Augu]
-- otitis-media-with-effusion-glue-ear: VOID 14: body line changed 2026-10-12 (new-1b review row 15, Codex R4); re-appended with the new body_line [body: - **Intranasal steroids**, for example fluticasone 50 microg]
+- otitis-media-with-effusion-glue-ear: VOID 11: Codex round 2 R6 (2026-10-14): the one-in-four inference does not follow from sensitivity and specificity; line now says some children. Re-entered below. [body: - **Type B:** a flat line, suggesting fluid or a hole in the]
+- otitis-media-with-effusion-glue-ear: VOID 12: Codex round 2 R6 (2026-10-14): line reworded; re-entered below. [body: - **Type B:** a flat line, suggesting fluid or a hole in the]
 - otitis-media-with-effusion-glue-ear: VOID 15: body line changed 2026-10-12 (new-1b review row 15, Codex R4); re-appended with the new body_line [body: - **Intranasal steroids**, for example fluticasone 50 microg]
+- otitis-media-with-effusion-glue-ear: VOID 16: body line changed 2026-10-12 (new-1b review row 15, Codex R4); re-appended with the new body_line [body: - **Intranasal steroids**, for example fluticasone 50 microg]
 - palpitations: VOID 0: raw_quote shorter than 30 characters; replaced with the Category and Last reviewed lines [body: *Source: Auckland Region HealthPathways. Last reviewed: Augu]
 - palpitations: VOID 1: "call 111" needs no report entry (ruling 2); the quote carries no number shared with the line [body: **Call 111 or go to the emergency department if you feel unw]
 - palpitations: VOID 5: quote began with "greater than:", a comparator the body line cannot carry on its own; replaced with the verbatim two-line quote that entry 6 uses [body:  - 0.48 seconds in females]
