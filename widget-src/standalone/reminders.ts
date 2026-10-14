@@ -313,6 +313,11 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
     window.dispatchEvent(new Event('hr:reminders-enrolled')); // show the one-time notice
   } catch (error) {
     console.warn('Reminder auto-enrolment deferred to the next visit', error);
+  } finally {
+    // The marker only guards an ACTIVE opt-in. Once the file holds none (an
+    // erase or a toggle-off landed during this run, whatever the enrolment
+    // answered), no reminder token stays on the device (US-11 AC4).
+    if (getReminderOptIn()?.status !== 'active') safeRemoveItem(SWITCH_CANCELLED_KEY);
   }
 }
 

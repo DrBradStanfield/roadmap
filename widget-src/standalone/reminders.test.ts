@@ -846,6 +846,29 @@ describe('US-17 AC12 — the switch marker survives a refused retry and an erase
   });
 });
 
+describe('US-11 AC4 — an erase during a switch leaves no marker, whatever the enrolment answers (Codex, 2026-10-14)', () => {
+  it.each([
+    ['a refused optin (503)', () => json({}, 503)],
+    ['a tokenless refreshed optin', () => json({ email: 'other@example.com' })],
+  ] as const)('%s', async (_label, optinAnswer) => {
+    let file: FileReminderOptIn | undefined = { ...ACTIVE };
+    getReminderOptIn.mockImplementation(() => file);
+    githubAccountEmail.mockResolvedValue('other@example.com');
+    fetchByOp((op) => {
+      if (op === 'optin') {
+        file = { status: 'cancelled', token: '', email: '', provider: 'google-drive', updatedAt: '2026-10-14T00:00:00.000Z', lamport: 9 };
+        return optinAnswer();
+      }
+      return json({ ok: true });
+    });
+    const { autoEnrolReminders } = await loadReminders();
+
+    await autoEnrolReminders('github');
+
+    expect(localStorage.getItem(SWITCH_MARKER)).toBeNull();
+  });
+});
+
 describe('US-11 AC4 — an erase clears the switch marker', () => {
   it('cancelRemindersForErase removes hr_reminders_switch_cancelled, even with no active opt-in', async () => {
     getReminderOptIn.mockReturnValue(undefined);
