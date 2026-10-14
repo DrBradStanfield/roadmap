@@ -217,6 +217,8 @@ Your doctor may discuss starting an SSRI if lifestyle measures, community suppor
 | Escitalopram | 5 mg | 10 mg per day | 20 mg |
 | Citalopram | 10 mg | 20 mg per day | 40 mg |
 
+- Over 65, the maximum is lower: citalopram up to 20 mg a day and escitalopram up to 10 mg a day.
+
 - Start at the lowest dose possible and increase slowly. The aim is the lowest dose that treats symptoms.
 - Some people have a mild, short-lived rise in anxiety in the first week before anxiety slowly eases. People with anxiety often have nocebo effects (side effects driven by expectation).
 

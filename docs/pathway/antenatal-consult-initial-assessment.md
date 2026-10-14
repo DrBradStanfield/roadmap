@@ -218,7 +218,7 @@ If you are not already taking it, your doctor may advise:
 
 - Iodine supplements are recommended if you are pregnant, considering pregnancy, or breastfeeding. Both mother and child need iodine.
 - Iodine deficiency in pregnancy is associated with goitre and thyroid problems in the mother, and with reduced head circumference at birth, ADHD, and impaired cognitive outcomes in the child. Supplements have shown significant benefits in severe deficiency, with fewer benefits seen in mild to moderate deficiency.
-- The recommended dose, if your thyroid works normally, is **potassium iodate 150 micrograms daily**. This is funded.
+- The recommended dose, if your thyroid works normally, is **150 micrograms of iodine a day (as potassium iodate)**. This is funded.
 - Start at conception and continue until you finish breastfeeding. If you are vegetarian or vegan and do not use iodised salt or eat seaweed, start when you begin planning a pregnancy.
 - Seaweed and kelp tablets are not recommended. Their iodine levels vary a lot and can be toxic.
 - Not all over-the-counter antenatal vitamins contain the recommended dose of iodine (it is often too low).

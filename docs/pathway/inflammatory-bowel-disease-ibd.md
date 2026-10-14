@@ -99,7 +99,7 @@ Your doctor may ask about:
 **Your doctor may consider:**
 - Reviewing you once blood results return:
   - Anaemia, raised white cells or platelets, or a raised CRP or ESR suggest IBD. In that case a faecal calprotectin test is not needed.
-  - Otherwise, a faecal calprotectin test. A negative result (less than 50 micrograms per L) makes IBD extremely unlikely.
+  - Otherwise, a faecal calprotectin test. A negative result (less than 50 micrograms per g) makes IBD extremely unlikely.
 - Arranging a colonoscopy, ideally done by a gastroenterologist when IBD is likely. Colorectal cancer is also considered as a cause of the symptoms.
 - If IBD is diagnosed, referral to a gastroenterologist for treatment.
 
@@ -153,14 +153,14 @@ Young women may want to discuss contraception, fertility, and pregnancy with the
 - Methotrexate must not be used in pregnancy. Both women and men should delay a pregnancy for at least 3 to 6 months after stopping it.
 - Steroids may be associated with cleft palate in the first trimester, but are used if needed to control the disease. Your doctor may seek specialist advice if unsure.
 - Thiopurines, such as azathioprine and 6-mercaptopurine (6-MP): the New Zealand Formulary classes mercaptopurine as pregnancy category D and advises avoiding it when breastfeeding. Specialists often continue thiopurines in pregnancy. Local specialist advice is that they are safe to use for conception and pregnancy, and that mercaptopurine is widely used in pregnancy. Decide with your specialist.
-- Biologics have shown no significant abnormalities to date. They may need to stop at 32 weeks, as they cross the placenta. Specialist input is required. Babies should have no live vaccines for the first 6 months.
+- Biologics have shown no significant abnormalities to date. They may need to stop at 32 weeks, as they cross the placenta. Specialist input is required. A baby exposed to a biologic in the womb should have no live vaccines for the first 6 months, or the first 12 months after infliximab. The baby's doctor decides the timing.
 - Apart from methotrexate, and the formulary advice on mercaptopurine above, these medicines are considered safe in breastfeeding.
 
 ### Colon cancer surveillance
 
 - Both ulcerative colitis and Crohn's colitis increase the risk of colon cancer.
 - The main risk relates to how long you have had the disease, how much of the bowel it affects, and how active it is, rather than which type of IBD you have.
-- A baseline colonoscopy is offered at about 10 years after the disease starts.
+- A baseline colonoscopy is offered about 8 years after diagnosis. If the diagnosis was delayed, your doctor may count from when symptoms started.
 - Further surveillance colonoscopies are usually 3 yearly, but this will change if other risk factors are present.
 
 ### Flare-ups

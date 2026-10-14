@@ -110,5 +110,109 @@
   "reason": "Units added (adversary row 5, FOR BRAD): the raw prints \"Hb < 105\" and \"CRP > 30\" with no units; NZ labs report g/L and mg/L.",
   "by": "orchestrator",
   "date": "2026-10-12"
+ },
+ {
+  "check": "AC2",
+  "handle": "abortion",
+  "match": "changed_tokens[80] raw_quote shares no number with its body_line: - **Iodine:** 150 micrograms of iodine a day (as potassium iodate). Seaweed and kelp tablets are ...",
+  "reason": "Checker limit: \"150 micrograms of iodine a day\" reads as 150 mcg, the raw \"potassium iodate 150 micrograms daily\" as 150 mcg/day. Same number. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "abortion",
+  "match": "token \"150 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- **Iodine:** 150 micrograms of iodine a day (as potassium iodate). Seaweed and kelp tablets are not recommended beca...\"",
+  "reason": "Checker limit: \"150 micrograms of iodine a day\" reads as 150 mcg, the raw \"potassium iodate 150 micrograms daily\" as 150 mcg/day. Same number. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "antenatal-consult-initial-assessment",
+  "match": "changed_tokens[98] raw_quote shares no number with its body_line: - The recommended dose, if your thyroid works normally, is **150 micrograms of iodine a day (as p...",
+  "reason": "Checker limit: \"150 micrograms of iodine a day\" reads as 150 mcg, the raw \"potassium iodate 150 micrograms daily\" as 150 mcg/day. Same number. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "antenatal-consult-initial-assessment",
+  "match": "token \"150 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- The recommended dose, if your thyroid works normally, is **150 micrograms of iodine a day (as potassium iodate)**. ...\"",
+  "reason": "Checker limit: \"150 micrograms of iodine a day\" reads as 150 mcg, the raw \"potassium iodate 150 micrograms daily\" as 150 mcg/day. Same number. Rule 10.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "anxiety-in-adults",
+  "match": "changed_tokens[63] raw_quote shares no number with its body_line: - Over 65, the maximum is lower: citalopram up to 20 mg a day and escitalopram up to 10 mg a day.",
+  "reason": "Safety correction (Codex round 2 R2, currency): over-65 maxima from the Medsafe citalopram and escitalopram data sheets; not in the raw.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "anxiety-in-adults",
+  "match": "token \">65\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Over 65, the maximum is lower: citalopram up to 20 mg a day and escitalopram up to 10 mg a day.\"",
+  "reason": "Safety correction (Codex round 2 R2, currency): over-65 maxima from the Medsafe citalopram and escitalopram data sheets; not in the raw.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "anxiety-in-adults",
+  "match": "token \"\u226420 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Over 65, the maximum is lower: citalopram up to 20 mg a day and escitalopram up to 10 mg a day.\"",
+  "reason": "Safety correction (Codex round 2 R2, currency): over-65 maxima from the Medsafe citalopram and escitalopram data sheets; not in the raw.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "anxiety-in-adults",
+  "match": "token \"\u226410 mg/day\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Over 65, the maximum is lower: citalopram up to 20 mg a day and escitalopram up to 10 mg a day.\"",
+  "reason": "Safety correction (Codex round 2 R2, currency): over-65 maxima from the Medsafe citalopram and escitalopram data sheets; not in the raw.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "inflammatory-bowel-disease-ibd",
+  "match": "changed_tokens[35] raw_quote shares no number with its body_line: - Otherwise, a faecal calprotectin test. A negative result (less than 50 micrograms per g) makes ...",
+  "reason": "Safety corrections and Brad's ruling: calprotectin per g (Brad 2026-10-14; the raw prints per L in error), 12 months after infliximab (Medsafe Remicade data sheet), first surveillance at 8 years (NZSG 2025 guidance the raw links). Not in the raw text.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "inflammatory-bowel-disease-ibd",
+  "match": "changed_tokens[38] raw_quote shares no number with its body_line: - A baseline colonoscopy is offered about 8 years after diagnosis. If the diagnosis was delayed, ...",
+  "reason": "Safety corrections and Brad's ruling: calprotectin per g (Brad 2026-10-14; the raw prints per L in error), 12 months after infliximab (Medsafe Remicade data sheet), first surveillance at 8 years (NZSG 2025 guidance the raw links). Not in the raw text.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "inflammatory-bowel-disease-ibd",
+  "match": "token \"<50 mcg\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Otherwise, a faecal calprotectin test. A negative result (less than 50 micrograms per g) makes IBD extremely unlikely.\"",
+  "reason": "Safety corrections and Brad's ruling: calprotectin per g (Brad 2026-10-14; the raw prints per L in error), 12 months after infliximab (Medsafe Remicade data sheet), first surveillance at 8 years (NZSG 2025 guidance the raw links). Not in the raw text.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "inflammatory-bowel-disease-ibd",
+  "match": "token \"12 month\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- Biologics have shown no significant abnormalities to date. They may need to stop at 32 weeks, as they cross the pla...\"",
+  "reason": "Safety corrections and Brad's ruling: calprotectin per g (Brad 2026-10-14; the raw prints per L in error), 12 months after infliximab (Medsafe Remicade data sheet), first surveillance at 8 years (NZSG 2025 guidance the raw links). Not in the raw text.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
+ },
+ {
+  "check": "AC2",
+  "handle": "inflammatory-bowel-disease-ibd",
+  "match": "token \"8 year\" is new in the body and no entry has a body line and a source quote that both carry it; found in: \"- A baseline colonoscopy is offered about 8 years after diagnosis. If the diagnosis was delayed, your doctor may coun...\"",
+  "reason": "Safety corrections and Brad's ruling: calprotectin per g (Brad 2026-10-14; the raw prints per L in error), 12 months after infliximab (Medsafe Remicade data sheet), first surveillance at 8 years (NZSG 2025 guidance the raw links). Not in the raw text.",
+  "by": "orchestrator",
+  "date": "2026-10-14"
  }
 ]

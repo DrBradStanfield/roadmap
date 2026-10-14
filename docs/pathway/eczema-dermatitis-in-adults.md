@@ -176,7 +176,7 @@ Your doctor may consider:
 
 ### Topical calcineurin inhibitors (facial eczema)
 
-For eczema on the face, your doctor may consider pimecrolimus or tacrolimus. These may be funded in limited situations when steroids are not suitable, or may be self-funded.
+For eczema on the face, your doctor may consider pimecrolimus or tacrolimus.
 
 - They are second-line for moderate to severe atopic dermatitis flares if steroids cause side effects. They are not more effective than steroids but have different side effects.
 - They can be used to prevent flares in people who flare often, i.e. 4 or more times per year.

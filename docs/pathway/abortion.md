@@ -35,7 +35,7 @@ This pathway covers early medical abortion (EMA), referral for other types of ab
   - Self-referral to abortion providers up to 20 weeks.
   - Abortion at 20 weeks or later if clinically appropriate.
   - Pre-abortion counselling must be offered, but you do not have to accept it.
-  - Abortion is not allowed for the purpose of sex selection.
+  - The law records Parliament's opposition to abortion sought solely because of the baby's sex. It is a statement of opposition, not a ban.
 - There is no lower legal age limit for having an abortion.
 - A doctor who conscientiously objects to abortion must, at the earliest opportunity, make sure you know how to contact the closest abortion provider yourself.
 - In 2022, 50.6% of abortions were early medical abortions (EMA) and 47.8% were surgical abortions.
@@ -82,14 +82,13 @@ Tests should not delay abortion care or referral.
 
 Until a decision is made about the pregnancy, your doctor may recommend:
 - **Folic acid:** 0.8 mg once daily if at low risk, or 5 mg once daily if you have a higher risk, for example a personal or family history of neural tube defect, a BMI greater than 30, diabetes, coeliac disease or other malabsorption, sickle cell anaemia, epilepsy or anti-seizure medicine, or a folate antagonist medicine such as sulfasalazine.
-- **Iodine:** potassium iodate 150 micrograms daily. Seaweed and kelp tablets are not recommended because their iodine levels vary and can be toxic. People who are hyperthyroid or already taking thyroxine may not need iodine, so check with your doctor.
+- **Iodine:** 150 micrograms of iodine a day (as potassium iodate). Seaweed and kelp tablets are not recommended because their iodine levels vary and can be toxic. People who are hyperthyroid or already taking thyroxine may not need iodine, so check with your doctor.
 - **Vitamin D:** colecalciferol drops (400 units/drop), 1 to 2 drops (400 to 800 units) once a day.
 
 ### Counselling and choosing an option
 
 - Counselling must be offered, but it is not mandatory to accept it.
 - Your doctor can talk through all pregnancy options with you, including the [types of abortion](https://www.decide.org.nz/en/abortion-services/abortion-types/compare-abortion-procedures/).
-- Most abortion services are free for people eligible for publicly funded health care. There may be prescription or imaging costs. Others can still have an abortion but may need to pay.
 - Your doctor will check that the abortion is your own wish and that you are not being pressured.
 
 ---

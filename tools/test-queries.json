@@ -5250,10 +5250,10 @@
       "inflammatory-bowel-disease-ibd"
     ],
     "must_mention": [
-      "10 years"
+      "8 years"
     ],
     "must_not_mention": [],
-    "notes": "New. Entry: \"A baseline colonoscopy is offered at about 10 years after the disease starts.\""
+    "notes": "New. Entry: \"- A baseline colonoscopy is offered about 8 years after diagnosis. If the diagnosis was delayed, your doctor may count from when symptoms started.\""
   },
   {
     "query": "I have the 52 mg hormone coil (Mirena). How many years can it stay in for contraception?",
