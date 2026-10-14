@@ -18,6 +18,7 @@ import { parseJsonResponse } from './server-api';
 // test the guard directly.)
 describe('parseJsonResponse — HTML response from Shopify proxy', () => {
   afterEach(() => {
+    vi.resetAllMocks();
     vi.restoreAllMocks();
   });
 

@@ -137,6 +137,7 @@ beforeEach(() => {
 afterEach(async () => {
   cleanup();
   await flushRoadmapStore();
+  vi.resetAllMocks();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });

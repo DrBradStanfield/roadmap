@@ -112,6 +112,7 @@ afterEach(() => {
   setImportSeams(null);
   vi.unstubAllGlobals();
   vi.useRealTimers();
+  vi.resetAllMocks();
   vi.restoreAllMocks();
   clearReviewerSecrets();
   delete process.env.MCP_SEAL_KEYS;

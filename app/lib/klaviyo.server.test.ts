@@ -82,6 +82,7 @@ describe('getKlaviyoCaptureStats', () => {
   });
   afterEach(() => {
     global.fetch = REAL_FETCH;
+    vi.resetAllMocks();
     vi.restoreAllMocks();
   });
 
@@ -168,6 +169,7 @@ describe('Klaviyo failure logging keeps the address off the console', () => {
 
   afterEach(() => {
     global.fetch = REAL_FETCH;
+    vi.resetAllMocks();
     vi.restoreAllMocks();
   });
 

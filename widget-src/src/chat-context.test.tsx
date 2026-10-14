@@ -93,6 +93,7 @@ describe('US-15 AC10: the chat reads the inputs the plan reads', () => {
       saveUnitPreference('si');
       expect(loadGuestInputs()?.unitSystem).toBe('si');
     } finally {
+      vi.resetAllMocks();
       vi.restoreAllMocks();
     }
   });
