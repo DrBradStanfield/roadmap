@@ -36,4 +36,4 @@ Review fixes (adversary + Codex, batch-3-review-fixes-2026-10-14.md):
 
 ## Sign-off
 
-AC8 sign-off (Brad): PENDING. READY 2026-10-15: adversary, two Codex rounds and the currency check applied; checker clean against main.
+AC8 sign-off (Brad): APPROVED 2026-10-15, in chat: "approved. do it." Every decision is accepted as the entry currently reads (item 14: the semaglutide and tirzepatide rows stay out for now). Was READY 2026-10-15: adversary, two Codex rounds and the currency check applied; checker clean against main.
