@@ -14,7 +14,7 @@ const NOW = new Date('2026-09-01T12:00:00.000Z');
 
 function planWith(rows: Array<{ metricType: string; value: number }>, unitSystem: 'si' | 'conventional') {
   const file = createEmptyFile({ deviceId: 'plan_current_values', now: NOW.toISOString() });
-  Object.assign(file.profile, { sex: 'male', heightCm: 180, dateOfBirth: '1970-01-01', unitSystem });
+  Object.assign(file.profile, { sex: 'male', heightCm: 180, birthYear: 1970, birthMonth: 1, unitSystem });
   file.measurements = rows.map((r, i) => createMeasurement({
     id: `m${i}`, ...r, recordedAt: '2026-08-01T00:00:00.000Z', createdAt: '2026-08-01T00:00:00.000Z',
   }));
