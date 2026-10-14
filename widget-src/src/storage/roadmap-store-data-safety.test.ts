@@ -562,6 +562,7 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
     Object.defineProperty(globalThis, 'localStorage', { value: store, writable: true, configurable: true });
   });
   afterEach(() => {
+    vi.useRealTimers();
     Reflect.deleteProperty(globalThis, 'localStorage');
   });
 
@@ -600,6 +601,156 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
     const file = readCloudFile(cloud);
     const rows = file.measurements.map((m) => [m.metricType, m.value]).sort();
     expect(rows).toEqual([['ldl', 3.2], ['weight', 80]]);
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBeNull();
+  });
+
+  // US-09 AC4: a tab opened before the failure has never lifted its mirror.
+  it('another already-open cloud tab cannot strand a failed-save mirror', async () => {
+    const cloud = new MemoryCloud();
+    const failing = await RoadmapStore.create(new TokenExpiredAdapter(cloud));
+    const alreadyOpen = await RoadmapStore.create(new MemoryAdapter(cloud));
+    failing.addMeasurement('weight', 80, '2024-02-01T00:00:00.000Z');
+    await expect(failing.flush()).rejects.toThrow(/still on this device/);
+    expect(readMirror()!.measurements.map(m => m.metricType)).toEqual(['weight']);
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
+
+    alreadyOpen.addMeasurement('ldl', 3.2, '2024-03-01T00:00:00.000Z');
+    await expect(alreadyOpen.flush()).resolves.toBeUndefined();
+    const recovered = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect(recovered.loadAllHistory().map(m => m.metricType).sort()).toEqual(['ldl', 'weight']);
+    await recovered.flush();
+    expect(readCloudFile(cloud).measurements.map(m => m.metricType).sort()).toEqual(['ldl', 'weight']);
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBeNull();
+  });
+
+  // US-09 AC4 / US-11: an empty mirror still carries a deletion barrier.
+  it('keeps an epoch-only failed erase pending through another open tab saving', async () => {
+    // Hold clocks equal so content-only comparison cannot mask the lost epoch.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-13T12:00:00.000Z'));
+    const cloud = new MemoryCloud();
+    const empty = createEmptyFile({ deviceId: 'seed', now: new Date().toISOString() });
+    empty.meta.eraseEpoch = 0;
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(empty), version: 1 });
+    const failing = await RoadmapStore.create(new TokenExpiredAdapter(cloud));
+    const alreadyOpen = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const stale = await RoadmapStore.create(new MemoryAdapter(cloud));
+    stale.addMeasurement('weight', 80, '2024-02-01T00:00:00.000Z');
+
+    expect((await failing.deleteUserData()).success).toBe(false);
+    expect(readMirror()!.meta.eraseEpoch).toBe(1);
+    expect(readMirror()!.measurements).toEqual([]);
+    const pending = localStorage.getItem(PENDING_MIRROR_KEY);
+    expect(pending).not.toBeNull();
+
+    await expect(alreadyOpen.flush()).resolves.toBeUndefined();
+    expect(readCloudFile(cloud).meta.eraseEpoch).toBe(0);
+    expect(readCloudFile(cloud).measurements).toEqual([]);
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBe(pending);
+
+    const recovered = await RoadmapStore.create(new MemoryAdapter(cloud));
+    await recovered.flush();
+    expect(readCloudFile(cloud).meta.eraseEpoch).toBe(1);
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBeNull();
+    await stale.flush();
+    expect(readCloudFile(cloud).meta.eraseEpoch).toBe(1);
+    expect(readCloudFile(cloud).measurements).toEqual([]);
+    expect(stale.loadAllHistory()).toEqual([]);
+  });
+
+  // US-09 AC4 / US-11: the cloud's newer erase intentionally supersedes this mirror.
+  it('clears an older erase mirror when the saved cloud erase supersedes it', async () => {
+    const cloud = new MemoryCloud();
+    const failing = await RoadmapStore.create(new TokenExpiredAdapter(cloud));
+    const alreadyOpen = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect((await failing.deleteUserData()).success).toBe(false);
+    expect(readMirror()!.meta.eraseEpoch).toBe(1);
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
+
+    const newerErase = createEmptyFile({ deviceId: 'other-device', now: '2026-01-01T00:00:00.000Z' });
+    newerErase.meta.eraseEpoch = 2;
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(newerErase), version: 1 });
+    await expect(alreadyOpen.flush()).resolves.toBeUndefined();
+    expect(readCloudFile(cloud).meta.eraseEpoch).toBe(2);
+    expect(readCloudFile(cloud).measurements).toEqual([]);
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBeNull();
+  });
+
+  // US-09 AC4: a newer bundle can write the mirror after create() checked it.
+  it('keeps a newer-schema mirror appearing during an awaited save pending', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const saving = await RoadmapStore.create(adapter);
+    const write = adapter.write.bind(adapter);
+    let reached!: () => void;
+    let release!: () => void;
+    const writing = new Promise<void>(resolve => { reached = resolve; });
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    vi.spyOn(adapter, 'write').mockImplementationOnce(async (...args) => {
+      reached();
+      await gate;
+      return write(...args);
+    });
+    saving.addMeasurement('ldl', 3.2, '2024-03-01T00:00:00.000Z');
+    const flush = saving.flush();
+    await writing;
+    const body = JSON.stringify({ schemaVersion: 9999 });
+    const pending = '2026-01-01T00:00:00.000Z';
+    localStorage.setItem('health_roadmap_file_v2', body);
+    localStorage.setItem(PENDING_MIRROR_KEY, pending);
+    release();
+    await expect(flush).resolves.toBeUndefined();
+    expect(readCloudFile(cloud).measurements.map(m => m.metricType)).toEqual(['ldl']);
+    expect(localStorage.getItem('health_roadmap_file_v2')).toBe(body);
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBe(pending);
+
+    const reopened = await RoadmapStore.create(new MemoryAdapter(cloud));
+    await expect(reopened.flush()).resolves.toBeUndefined();
+    expect(localStorage.getItem('health_roadmap_file_v2')).toBe(body);
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBe(pending);
+  });
+
+  // US-09 AC4: marker timestamps do not change when a later failure adds rows.
+  it.each([false, true])('keeps a mirror changed during an awaited save (already pending: %s)', async (alreadyPending) => {
+    const cloud = new MemoryCloud();
+    const failing = await RoadmapStore.create(new TokenExpiredAdapter(cloud));
+    if (alreadyPending) {
+      failing.addMeasurement('weight', 80, '2024-02-01T00:00:00.000Z');
+      await expect(failing.flush()).rejects.toThrow();
+    }
+    const beforeMarker = localStorage.getItem(PENDING_MIRROR_KEY);
+    const adapter = new MemoryAdapter(cloud);
+    const saving = await RoadmapStore.create(adapter);
+    const write = adapter.write.bind(adapter);
+    let reached!: () => void;
+    let release!: () => void;
+    const writing = new Promise<void>(resolve => { reached = resolve; });
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    vi.spyOn(adapter, 'write').mockImplementationOnce(async (...args) => {
+      reached();
+      await gate;
+      return write(...args);
+    });
+    saving.addMeasurement('ldl', 3.2, '2024-03-01T00:00:00.000Z');
+    const flush = saving.flush();
+    await writing;
+    failing.addMeasurement('waist', 90, '2024-04-01T00:00:00.000Z');
+    await expect(failing.flush()).rejects.toThrow();
+    const pending = localStorage.getItem(PENDING_MIRROR_KEY);
+    expect(pending).not.toBeNull();
+    if (alreadyPending) expect(pending).toBe(beforeMarker);
+    expect(readMirror()!.measurements.map(m => m.metricType)).toContain('waist');
+    release();
+    await expect(flush).resolves.toBeUndefined();
+    expect(readCloudFile(cloud).measurements.map(m => m.metricType)).not.toContain('waist');
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBe(pending);
+
+    const recovered = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect(recovered.loadAllHistory().map(m => m.metricType)).toContain('waist');
+    await recovered.flush();
+    expect(readCloudFile(cloud).measurements.map(m => m.metricType).sort()).toEqual(
+      alreadyPending ? ['ldl', 'waist', 'weight'] : ['ldl', 'waist'],
+    );
     expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBeNull();
   });
 
