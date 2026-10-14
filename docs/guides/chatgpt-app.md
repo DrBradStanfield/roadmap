@@ -82,7 +82,7 @@ There is no delete. Nothing in your record can be removed by any tool here. A co
 
 ## Before anything permanent
 
-Three tools change something that cannot be reversed: correcting a value, changing your profile, and filing a bug report. Each takes two calls. The first writes nothing and hands back a receipt saying exactly what would happen. ChatGPT is told to show you that change and wait for your reply, and the second call, the one that acts, carries your reply. Filing results from a document works the same way: a receipt first, and the call that saves to your record carries your reply.
+Three tools change something that cannot be reversed: correcting a value, changing your profile, and filing a bug report. Each takes two calls. The first writes nothing and hands back a receipt saying exactly what would happen. ChatGPT is told to show you that change and wait for your reply, and the second call, the one that acts, carries an approval text meant to be your reply. Filing results from a document works the same way: a receipt first, and the call that saves to your record carries an approval text meant to be your reply.
 
 ChatGPT has a setting that skips its own approval prompt for a connector. That setting is not your yes, and each preview, for a change or for results to file, tells ChatGPT so. Our server checks that the second call carries an approval text, not blank and at most 200 characters, and writes nothing without one. It cannot check that the text is yours or that it came after the preview, and the call that files results has no time window. ChatGPT's own approval prompt is the other guard, so we suggest leaving that setting off.
 
