@@ -31,3 +31,11 @@ Fresh Opus adversary on knowledge-refresh/review-new-1b (bda4c44d). Line numbers
 - R7 (osteoporosis moderate-risk criterion): ACCEPT, same as row 16.
 - R8 (the 20 new handles are not in docs/blog/index.json): ACCEPT as a MERGE STEP for all 40 new pathways: rebuild the index and register categories on the merge branch, then check retrieval. Writers never touch index.json (ruling 9).
 - R9 (AC5): DISPUTED. 40 fixtures pre-registered in 7b251d9d (outside the review branch); runs deferred by Brad to after 2026-11-01.
+
+## Currency check (ruling 13, 2026-10-14; Sonnet audit runs/currency-new-1b.md: 1 HIGH, 5 MEDIUM)
+- uti-in-adults nitrofurantoin not used below CrCl 30 vs the Macrobid sheet's 60: KEEP, FOR BRAD. MHRA revised the threshold in 2014 (eGFR less than 45 contraindicated, short courses at 30 to 44 with caution); NZ guidance uses the newer threshold. The old sheet lags.
+- Nitrofurantoin 5 days (sheet 7): KEEP, NZ practice for women.
+- Adenosine 6 mg first dose (sheet 3 mg): KEEP, clinician-given, current resuscitation guidance.
+- Zoledronic acid every 18 months for osteopenia (sheet yearly): KEEP the interval (NZ evidence); ACCEPT adding the sheet's contraindication when creatinine clearance is less than 35 mL/min.
+- AndroFeme application site and dose: KEEP, off-label, menopause society dosing.
+- Sustanon every 3 to 4 weeks (sheet 3): KEEP.
