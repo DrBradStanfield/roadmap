@@ -22,10 +22,11 @@ Call 111 or go to the emergency department if:
 
 - Recent profound vision loss (e.g. can only detect hand movements, light perception, or worse) **with** an afferent pupillary defect. This points to serious damage to the retina or optic nerve.
 - Sudden and profound vision loss within the **last 2 hours**
-- Sudden or recent vision loss in a patient **older than 50 years**
+- Sudden vision loss in a patient **older than 50 years**
 - Severe eye pain with blurred vision, halos around lights, headache, nausea or vomiting (possible acute angle-closure glaucoma)
+- Sudden loss of the same side of vision in both eyes (possible stroke)
 
-Visual field defects affecting **both eyes** are also a red flag. See your doctor, who may arrange an eye assessment within 1 week or a neurology assessment.
+Visual field defects affecting **both eyes** that are found only on testing are also a red flag. See your doctor, who may arrange an eye assessment within 1 week or a neurology assessment.
 
 ---
 
