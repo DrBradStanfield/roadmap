@@ -344,7 +344,7 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
   if (coreMetric) {
     return reject('core-metric', coreMetric === 'height'
       ? `"${request.metricName}" belongs in profile.heightCm — use update_profile to update heightCm in cm`
-      : `"${request.metricName}" is a core metric — write it as a measurement, in SI units`);
+      : `"${request.metricName}" is the core metric ${coreMetric} — write it as a measurement, in SI units`);
   }
   if (!Number.isFinite(value)) return reject('invalid-value', 'A value must be a finite number');
   if (!request.unit.trim()) return reject('invalid-value', 'A lab value needs the unit the lab reported it in');
