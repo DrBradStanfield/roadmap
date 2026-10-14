@@ -51,7 +51,7 @@ Amiodarone is mainly a Class III anti-arrhythmic drug. It prolongs the heart's r
 
 **Amiodarone is usually started by a hospital specialist (such as a cardiologist, general physician, or cardiac surgeon), or under their supervision.** If your GP starts it, they will seek specialist advice for an individual plan and discuss the possible side effects with you first. Your doctor will manage ongoing monitoring.
 
-Amiodarone is not used in people with current or past thyroid problems, or in pregnancy or while breastfeeding.
+The data sheet advises against amiodarone in people with current or past thyroid problems, and in pregnancy or while breastfeeding.
 
 ### Indications
 

@@ -96,7 +96,7 @@ NSAIDs, colchicine, and corticosteroids are all effective. Your doctor will choo
 
 #### Colchicine (low-dose regimen)
 
-Colchicine has a **narrow therapeutic margin**. Overdoses from 7 mg can be fatal and there is no reversal agent. It has a number of serious contraindications and drug interactions, so your doctor will consider whether it is safe in your situation. Colchicine is not used in severe kidney or liver disease, or with certain interacting medicines (for example clarithromycin). Your doctor checks this.
+Colchicine has a **narrow therapeutic margin**. Overdoses from 7 mg can be fatal and there is no reversal agent. It has a number of serious contraindications and drug interactions, so your doctor will consider whether it is safe in your situation. With kidney or liver disease, colchicine needs a lower dose or may not be suitable, and it is not used with certain interacting medicines (for example clarithromycin). Your doctor checks this.
 
 - **Low-dose regimen:**
   - Take 1.0 mg (two tablets) at first sign of a flare, then 0.5 mg one hour later. Do not repeat this starting course within 3 days.
