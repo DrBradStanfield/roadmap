@@ -26,6 +26,8 @@ the three reviewer secrets are set ([runbook](../deploy-runbook-mcp.md#the-opena
 >
 > This account is ours, made for your review. It holds invented data, not a real person's record, and already has a profile and results, so every test case works immediately. Earlier reviewers may have added rows; the test cases allow for that. Bug reports (`report_feedback`) are limited to 3 a day across all reviewer sessions together, so that tool may refuse even if you have filed none.
 >
+(Note, 2026-10-14: the dashboard's Review information still holds the 2026-10-12 wording of this paragraph, as submitted for 1.0.2; this repo text is for the next upload.)
+
 > Confirming a change: when ChatGPT asks you to confirm a correction, a profile change or the lab results to file, note that ChatGPT's safety layer has blocked confirms approved by a bare "yes" (0 of 3 wrote on 2026-10-07; 1 of 1 wrote on 2026-10-12), so please confirm with a short sentence such as "Yes, apply the correction" or "Yes, add them".
 >
 > Health data: the record is the user's own file in their own Dropbox or Google Drive. Our server processes it in memory for one request, after the user's consent screen, and stores none of it. The folder-import route sends the user's lab files, never the record, to Anthropic's API for extraction; we keep those files nowhere.
