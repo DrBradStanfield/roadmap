@@ -134,7 +134,7 @@ SGLT2 inhibitors carry a small (~1 in 1000) risk of DKA, which can occur even wi
 
 If you have any of these symptoms, see your doctor or go to hospital the same day to have your blood ketones checked, even if you have stopped the SGLT2 inhibitor:
 - Nausea, vomiting, or abdominal pain
-- Excessive thirst, loss of appetite, dizziness, or confusion
+- Excessive thirst, loss of appetite, or dizziness
 - Fast heart rate or shortness of breath
 
 If you are confused, very drowsy, or struggling to breathe, call 111 or go to the emergency department.
