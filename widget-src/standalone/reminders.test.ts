@@ -48,7 +48,8 @@ vi.mock('../src/lib/roadmap-data', () => ({
 }));
 
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: (...a: unknown[]) => trackProductEvent(...a) }));
-vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
+const captureException = vi.fn();
+vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: (...a: unknown[]) => captureException(...a) } }));
 vi.mock('./google-config', () => ({ googleDriveConfig: () => ({}) }));
 vi.mock('./dropbox-config', () => ({ dropboxConfig: () => ({}) }));
 
@@ -408,14 +409,16 @@ describe('US-17 AC1b — erasing your data reaches the server row too', () => {
 });
 
 describe('US-17 — turning reminders off is counted', () => {
-  it('a Dropbox cancel carries no proof (idToken null → the server tombstones)', async () => {
+  // US-17 AC1b (2026-10-14): `idToken: null` was a 400 at the route's zod
+  // `.optional()`, so this cancel never reached the row. The key is left out.
+  it('a Dropbox cancel carries no proof (no idToken key → the server tombstones)', async () => {
     getReminderOptIn.mockReturnValue({ ...ACTIVE, provider: 'dropbox' });
     const f = mockFetchOk({ ok: true });
     const { cancelReminders } = await loadReminders();
 
     await cancelReminders();
 
-    expect(postedBody(f)).toEqual({ op: 'cancel', token: 'cap-token', idToken: null });
+    expect(postedBody(f)).toEqual({ op: 'cancel', token: 'cap-token' });
   });
 
   it('fires reminder_optout after the server row is cancelled and the file flipped', async () => {
@@ -497,6 +500,30 @@ describe('US-07 AC6 — a known minor is never enrolled and their schedule is ne
     expect(postedBody(f).op).toBe('cancel');
     expect(postedBody(f).token).toBe('cap-token');
     expect((f.mock.calls[0][1] as RequestInit).keepalive).toBe(true);
+  });
+
+  // Adversary R2 (2026-10-14): only a minor reaches this cancel, so a failure
+  // reported to Sentry would put age data in telemetry. It retries next visit.
+  it('a failed age-gate cancel sends nothing to Sentry, writes nothing, and does not throw', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    isKnownMinorNow.mockReturnValue(true);
+    const f = mockFetchOk({ error: 'boom' });
+    f.mockResolvedValue(new Response('{}', { status: 500 }));
+    const { pushReminderSchedule } = await loadReminders();
+    await expect(pushReminderSchedule()).resolves.toBeUndefined();
+    expect(f).toHaveBeenCalledTimes(1);
+    expect(postedBody(f).op).toBe('cancel');
+    expect(captureException).not.toHaveBeenCalled();
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+  });
+
+  it('an adult\'s failed push is still reported to Sentry', async () => {
+    isKnownMinorNow.mockReturnValue(false);
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline'); }));
+    const { pushReminderSchedule } = await loadReminders();
+    await pushReminderSchedule();
+    expect(captureException).toHaveBeenCalledTimes(1);
   });
 
   it('an adult is unchanged: the schedule is pushed', async () => {

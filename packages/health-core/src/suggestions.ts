@@ -405,6 +405,8 @@ export function generateSuggestions(
 
   // ApoB (top of hierarchy — always shown when available)
   // Suppressed when medication cascade is active (cascade descriptions include specific values)
+  // With no birth year (US-07 AC6) the very-high cards suggest no medicine in
+  // their own text; their "why" reasons explain the guideline and stay.
   if (hasApoBData && !lipidMedCascadeActive) {
     if (inputs.apoB! >= APOB_THRESHOLDS.veryHigh) {
       hasElevatedAtherogenicSuggestion = true;
@@ -413,7 +415,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high ApoB',
-        description: `Your ApoB of ${fmtApoB(inputs.apoB!, us('apob'))} is very high, indicating significantly elevated cardiovascular risk. Statin therapy and lifestyle intervention are typically recommended.`,
+        description: `Your ApoB of ${fmtApoB(inputs.apoB!, us('apob'))} is very high, indicating significantly elevated cardiovascular risk. ${medicinesShown(results) ? 'Statin therapy and lifestyle intervention are typically recommended.' : 'Discuss treatment, including lifestyle changes, with your doctor.'}`,
       });
     } else if (inputs.apoB! >= APOB_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
@@ -444,7 +446,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high LDL cholesterol',
-        description: `Your LDL-c of ${fmtLdl(inputs.ldlC, us('ldl'))} is significantly elevated. This may indicate familial hypercholesterolemia. Statin therapy is typically recommended.`,
+        description: `Your LDL-c of ${fmtLdl(inputs.ldlC, us('ldl'))} is significantly elevated. This may indicate familial hypercholesterolemia. ${medicinesShown(results) ? 'Statin therapy is typically recommended.' : 'Discuss treatment with your doctor.'}`,
       });
     } else if (inputs.ldlC >= LDL_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
@@ -539,7 +541,10 @@ export function generateSuggestions(
         checklist.push('\u2753 HbA1c \u2014 not tested');
       }
 
-      // Medication status (only when medications are tracked)
+      // Medication status (only when medications are tracked). With no birth
+      // year (US-07 AC6) the "not started" lines go: they suggest a medicine.
+      // What the user takes or did not tolerate stays.
+      const notStarted = (line: string) => { if (medicinesShown(results)) checklist.push(line); };
       if (medications) {
         const statinDrug = medications.statin?.drug;
         if (statinDrug && statinDrug !== 'none' && statinDrug !== 'not_tolerated') {
@@ -549,7 +554,7 @@ export function generateSuggestions(
         } else if (statinDrug === 'not_tolerated') {
           checklist.push('\u26A0\uFE0F Statin: not tolerated');
         } else {
-          checklist.push('\u26A0\uFE0F Statin: not started \u2014 discuss with your doctor');
+          notStarted('\u26A0\uFE0F Statin: not started \u2014 discuss with your doctor');
         }
 
         if (medications.ezetimibe === 'yes') {
@@ -557,7 +562,7 @@ export function generateSuggestions(
         } else if (medications.ezetimibe === 'not_tolerated') {
           checklist.push('\u26A0\uFE0F Ezetimibe: not tolerated');
         } else {
-          checklist.push('\u26A0\uFE0F Ezetimibe: not started \u2014 discuss with your doctor');
+          notStarted('\u26A0\uFE0F Ezetimibe: not started \u2014 discuss with your doctor');
         }
 
         if (medications.pcsk9i === 'yes') {
@@ -565,7 +570,7 @@ export function generateSuggestions(
         } else if (medications.pcsk9i === 'not_tolerated') {
           checklist.push('\u26A0\uFE0F PCSK9 inhibitor: not tolerated');
         } else {
-          checklist.push('\u26A0\uFE0F PCSK9 inhibitor: not started \u2014 can lower Lp(a) ~25\u201330%');
+          notStarted('\u26A0\uFE0F PCSK9 inhibitor: not started \u2014 can lower Lp(a) ~25\u201330%');
         }
       }
 
@@ -672,7 +677,7 @@ export function generateSuggestions(
         category: 'blood_pressure',
         priority: 'urgent',
         title: 'Stage 2 hypertension',
-        description: `Your BP of ${sys}/${dia} mmHg indicates stage 2 hypertension. Medication is typically recommended at this level.\n\nLifestyle measures that also help: reduce sodium intake (<1,500mg/day), exercise regularly, and prioritize quality sleep.${bpExtra}`,
+        description: `Your BP of ${sys}/${dia} mmHg indicates stage 2 hypertension. ${medicinesShown(results) ? 'Medication is typically recommended at this level.' : 'Discuss treatment with your doctor.'}\n\nLifestyle measures that also help: reduce sodium intake (<1,500mg/day), exercise regularly, and prioritize quality sleep.${bpExtra}`,
       });
     } else if (isBpRaised(sys, dia)) {
       suggestions.push({

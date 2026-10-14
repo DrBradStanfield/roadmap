@@ -424,11 +424,11 @@ The plan is built for adults aged 18 and over (US-07 AC6, 2026-10-14; amended th
 |-----|------|
 | Known and under 18 | No suggestions of any kind. One card in their place: `adults-only` (general, info), "This plan is built for adults": "The suggestions here, including medicines, are designed for people aged 18 and over. For anyone younger, talk with their doctor." |
 | 18 or over | The plan below, unchanged. |
-| Unknown (no birth year) | The plan below, except the medicine cards. Medicine cards need a known age of 18 or over. When the plan would show any, they give way to one card where the first stood: `add-birth-year` (general, info), "Add your birth year": "Medicine suggestions need your age. Add your birth year to see them." Every other card is unchanged. The standalone lipid cards (`apob-*`, `non-hdl-*`, `ldl-*`, `total-chol-*`) never give way to the lipid cascade here, because the cascade is not shown. No weight card gives way to the weight cascade, at any age. |
+| Unknown (no birth year) | The plan below, except the medicine cards. Medicine cards need a known age of 18 or over. When the plan would show any, they give way to one card where the first stood: `add-birth-year` (general, info), "Add your birth year": "Medicine suggestions need your age. Add your birth year to see them." Every other card is unchanged. The standalone lipid cards (`apob-*`, `non-hdl-*`, `ldl-*`, `total-chol-*`) never give way to the lipid cascade here, because the cascade is not shown. No weight card gives way to the weight cascade, at any age. The kept cards suggest no medicine in their own text: `apob-very-high` ends "Discuss treatment, including lifestyle changes, with your doctor." and `ldl-very-high` "Discuss treatment with your doctor." in place of their statin sentence, `bp-stage2` says "Discuss treatment with your doctor." in place of "Medication is typically recommended at this level.", and the `lpa-elevated` checklist leaves out its "not started" medicine lines. |
 
 The medicine cards are the `medication` category: `weight-glp1`; `weight-med-glp1`, `-glp1-dose`, `-glp1-increase`, `-glp1-switch`, `-sglt2i`, `-metformin`; `med-statin`, `-ezetimibe`, `-bempedoic-acid`, `-statin-dose`, `-statin-increase`, `-statin-switch`, `-pcsk9i`.
 
-The gate's age (`isKnownMinor`) is the one in section 1, except that a missing birth month is strict: the person is a minor until 1 January of the year after the year they turn 18 (birth year + 19), so no one counts as 18 early. Someone born in 2008 with no month is a minor through 31 December 2026 and an adult from 1 January 2027. A known month keeps the birthday-month rule. Every other age keeps the January default, so that person's profile reads 18 beside the adults-only card through 2026 (accepted). Every surface (the plan, the reminder schedule, the form, the chat context) asks the gate over the birth year and month the plan keeps (`knownMinorOf`): one outside the plan's bounds (birth year 1900 to this year, month 1 to 12) counts as missing, so no surface calls someone a minor while the plan has no age for them.
+The gate's age (`isKnownMinor`) is the one in section 1, except that a missing birth month is strict: the person is a minor until 1 January of the year after the year they turn 18 (birth year + 19), so no one counts as 18 early. Someone born in 2008 with no month is a minor through 31 December 2026 and an adult from 1 January 2027. A known month keeps the birthday-month rule. The gate reads the date at UTC−12, the zone furthest behind, whatever zone it runs in (the hosted server runs in UTC), so no one anywhere counts as 18 early: the new month or year starts for the gate at 12:00 UTC on its first day (born November 2008: an adult from 1 November 2026 12:00 UTC; born 2008 with no month: from 1 January 2027 12:00 UTC). Every other age keeps the January default and the local date, so that person's profile reads 18 beside the adults-only card through 2026 (accepted). Every surface (the plan, the reminder schedule, the form, the chat context) asks the gate over the birth year and month the plan keeps (`knownMinorOf`): one outside the plan's bounds (birth year 1900 to this year, month 1 to 12) counts as missing, so no surface calls someone a minor while the plan has no age for them.
 
 For a known minor, every surface also withholds:
 
@@ -439,9 +439,11 @@ For a known minor, every surface also withholds:
 
 Measurements, lab values and the record are untouched: they are still stored and shown. There is no usage signal: an event would record that a visitor is under 18.
 
-Three-file sync for this section's 2026-10-14 amendments (the strict missing-month rule, the lipid cards kept for an unknown age, the form's and review's withheld readings):
+**Reasons stay for every age.** A card's "Why this suggestion?" reason is keyed by its id and explains the guideline, so it does not change with age: `apob-very-high` still says statin therapy "is typically recommended" and `ldl-very-high` that guidelines "recommend statin therapy at this level". A reason does not suggest a medicine to this person; the card text does, and that is what changes for an unknown age.
+
+Three-file sync for this section's 2026-10-14 amendments (the strict missing-month rule, the UTC−12 date, the lipid cards kept for an unknown age and their medicine-free text, the form's and review's withheld readings):
 - `evidence.ts`: no change. No card's reason, guideline tag or citation changed; the `adults-only` and `add-birth-year` reasons still hold.
-- `roadmap_text.html`: no change. Its two sentences still hold: the plan "is built for adults aged 18 and over", and the weight medicines are suggested "only when your birth year shows you are 18 or over" (the strict rule only makes that later; with no birth year none is suggested).
+- `roadmap_text.html`: no change. Its two sentences still hold: the plan "is built for adults aged 18 and over", and the medicines are suggested "only when your birth year shows you are 18 or over" (the strict rule and the UTC−12 date only make that later; with no birth year no card's text suggests one, and the reasons explain the guideline, as above).
 
 ### Always-Show Lifestyle Suggestions
 
@@ -498,7 +500,7 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 - Blood pressure (the age-dependent target: < 120/80 under 65, < 130/80 at 65 or older)
 - BMI (target < 25; shows ✅ when BMI 25–29.9 with WHtR < 0.5)
 - HbA1c (target < 38.8 mmol/mol)
-- Medication status (statin, ezetimibe, PCSK9i — when tracked)
+- Medication status (statin, ezetimibe, PCSK9i — when tracked; with no birth year the "not started" lines are left out, and what the user takes or did not tolerate stays)
 - PCSK9i note: also lowers Lp(a) ~25-30%
 
 ### HDL and Triglycerides

@@ -112,6 +112,12 @@ async function cancelProofFor(backend: Backend): Promise<string | null> {
   return new GoogleDriveAdapter(googleDriveConfig()).getReminderIdToken().catch(() => null);
 }
 
+/** A cancel, with the ID token only when there is one: the route's zod
+ *  `.optional()` takes a missing key but answers null with a 400 (US-17 AC1b). */
+function postCancel(token: string, idToken: string | null, keepalive = false): Promise<Response> {
+  return post({ op: 'cancel', token, ...(idToken ? { idToken } : {}) }, keepalive);
+}
+
 export interface OptInResult {
   email: string;
   /** True when an address-lane optin met an ALREADY enrolled address: the
@@ -209,7 +215,7 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
     // — and the fresh enrolment below can't replace it, because rows are keyed
     // by email. Drop it first. Deliberately NOT cancelReminders(): a storage
     // switch is not a user opting out, and must not be counted as one.
-    if (optIn?.status === 'active') await post({ op: 'cancel', token: optIn.token, idToken: await cancelProofFor(optIn.provider) });
+    if (optIn?.status === 'active') await postCancel(optIn.token, await cancelProofFor(optIn.provider));
 
     // An already-enrolled address (token lost with the file, or enrolled from
     // another lane) is refreshed server-side and nothing is written here —
@@ -238,7 +244,7 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
 export async function cancelRemindersForErase(): Promise<void> {
   const optIn = getReminderOptIn();
   if (optIn?.status !== 'active') return;
-  const res = await post({ op: 'cancel', token: optIn.token, idToken: await cancelProofFor(optIn.provider) });
+  const res = await postCancel(optIn.token, await cancelProofFor(optIn.provider));
   if (!res.ok) throw new Error(`Reminder row delete failed (${res.status}).`);
 }
 
@@ -251,7 +257,7 @@ export async function cancelReminders({ count = true, keepalive = false } = {}):
   const optIn = getReminderOptIn();
   if (!optIn) return;
   const idToken = keepalive ? null : await cancelProofFor(optIn.provider);
-  const res = await post({ op: 'cancel', token: optIn.token, idToken }, keepalive);
+  const res = await postCancel(optIn.token, idToken, keepalive);
   if (!res.ok) throw new Error(`Could not turn reminders off (${res.status}). Please retry.`);
   setReminderOptIn({ ...optIn, status: 'cancelled' });
   await flushRoadmapStore();
@@ -270,15 +276,19 @@ export async function cancelReminders({ count = true, keepalive = false } = {}):
 export async function pushReminderSchedule(keepalive = false): Promise<void> {
   const optIn = getReminderOptIn();
   if (optIn?.status !== 'active') return;
-  try {
-    // US-07 AC6: a known minor is due nothing, and the server fills any pushed
-    // schedule with its annual check-in. So a row enrolled earlier is turned
-    // off instead, for good (AC4), and not counted as their opt-out.
-    if (isKnownMinorNow()) {
+  // US-07 AC6: a known minor is due nothing, and the server fills any pushed
+  // schedule with its annual check-in. So a row enrolled earlier is turned
+  // off instead, for good (AC4), and not counted as their opt-out. A failure
+  // is never reported: only a minor reaches it, so a Sentry event would be
+  // age data. The next visit retries.
+  if (isKnownMinorNow()) {
+    try {
       await cancelReminders({ count: false, keepalive });
       window.dispatchEvent(new Event('hr:reminders-changed'));
-      return;
-    }
+    } catch { /* retried next visit */ }
+    return;
+  }
+  try {
     const res = await post(
       { op: 'update', token: optIn.token, schedule: computeCurrentReminderSchedule() },
       keepalive,

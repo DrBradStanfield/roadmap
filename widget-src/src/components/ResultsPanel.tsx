@@ -866,8 +866,9 @@ export function ResultsPanel({ results, isValid, unitSystem, unitOverrides, hasU
       {/* Email reminders (US-17 cloud opt-in). The server-backed per-category
           ReminderSettings that used to share this slot died with the v1 CRUD
           layer — both v2 builds always pass remindersSection, so it was
-          unreachable (deleted 2026-08-13). */}
-      {remindersSection}
+          unreachable (deleted 2026-08-13). US-07 AC6: none for a known minor,
+          who is never enrolled and must see no mailing-list box. */}
+      {adult && remindersSection}
 
       {/* US-44: the gate-skipped reminders box renders once, at the top. */}
       {emailCapture && !guestEmailHook.gateSkipped && <GuestEmailCapture hook={guestEmailHook} pdfBlocked={pdfBlocked === 'capture'} />}

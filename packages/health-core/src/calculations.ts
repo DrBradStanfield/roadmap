@@ -56,12 +56,17 @@ export function calculateAge(birthYear: number, birthMonth: number, now = new Da
 /**
  * The plan's adults-only gate (US-07 AC6): a known age under 18. For this gate
  * alone a missing birth month is a minor until 1 January of the year after
- * they turn 18 (birthYear + 19), so no one counts as 18 early. Every other age
- * keeps the January default.
+ * they turn 18 (birthYear + 19), and the date is judged at UTC-12, the zone
+ * furthest behind, whatever zone this runs in (Fly runs in UTC). So no one
+ * anywhere counts as 18 early. Every other age keeps the January default and
+ * the local date.
  */
 export function isKnownMinor(birthYear: number | undefined, birthMonth: number | undefined, now = new Date()): boolean {
   if (!birthYear) return false;
-  return birthMonth ? calculateAge(birthYear, birthMonth, now) < 18 : now.getFullYear() - birthYear < 19;
+  const behind = new Date(now.getTime() - 12 * 3_600_000);
+  const year = behind.getUTCFullYear();
+  if (!birthMonth) return year - birthYear < 19;
+  return year - birthYear - (behind.getUTCMonth() + 1 < birthMonth ? 1 : 0) < 18;
 }
 
 /**

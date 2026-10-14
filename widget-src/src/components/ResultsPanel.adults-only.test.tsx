@@ -89,3 +89,24 @@ describe('US-07 AC6: with no birth year, one card in place of the medicines', ()
   });
 });
 
+
+// Adversary R4 (2026-10-14): the reminders section offered a known minor
+// "Turn on email health reminders" and the MicroVitamin mailing-list box.
+describe('US-07 AC6: no reminders section for a known minor', () => {
+  const section = <section data-testid="reminders">Turn on email health reminders</section>;
+
+  it('a known minor sees no reminders section', () => {
+    const results = calculateHealthResults({ heightCm: 150, sex: 'female', weightKg: 45, birthYear: new Date().getFullYear() - 10 });
+    const { queryByTestId } = render(<ResultsPanel results={results} isValid unitSystem="si" remindersSection={section} />);
+    expect(queryByTestId('reminders')).toBeNull();
+  });
+
+  it('an adult and an unknown age still see it', () => {
+    for (const birthYear of [new Date().getFullYear() - 40, undefined]) {
+      const results = calculateHealthResults({ heightCm: 150, sex: 'female', weightKg: 60, ...(birthYear ? { birthYear } : {}) });
+      const { queryByTestId, unmount } = render(<ResultsPanel results={results} isValid unitSystem="si" remindersSection={section} />);
+      expect(queryByTestId('reminders')).not.toBeNull();
+      unmount();
+    }
+  });
+});

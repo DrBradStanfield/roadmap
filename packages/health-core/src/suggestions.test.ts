@@ -3290,7 +3290,7 @@ describe('US-07 AC6: who the plan is for', () => {
   it('no birth month, in the year they turn 18: still the adults-only card; the year after, the normal plan', () => {
     const inputs: HealthInputs = { heightCm: 175, sex: 'female', weightKg: 60, birthYear: 2008 };
     expect(ids(inputs)).toEqual(['adults-only']);
-    const nextYear = calculateHealthResults(inputs, 'si', {}, undefined, undefined, new Date(2027, 0, 1, 12)).suggestions.map((s) => s.id);
+    const nextYear = calculateHealthResults(inputs, 'si', {}, undefined, undefined, new Date(Date.UTC(2027, 0, 1, 12))).suggestions.map((s) => s.id);
     expect(nextYear).not.toContain('adults-only');
     expect(nextYear).toContain('protein-target');
   });
@@ -3350,6 +3350,62 @@ describe('US-07 AC6: who the plan is for', () => {
       const unknown = ids(base, meds);
       expect(unknown).toEqual(expect.arrayContaining([...cards, 'add-birth-year']));
       expect(unknown.some((id) => id.startsWith('med-'))).toBe(false);
+    });
+  });
+  // Adversary R7 (2026-10-14, orchestrator's decision): with no birth year the
+  // cards the plan keeps suggest no medicine in their own text. The "Why this
+  // suggestion?" reasons explain the guideline and stay for every age, so these
+  // tests read the card description only.
+  describe('unknown age: the kept cards suggest no medicine', () => {
+    const MEDICINE_WORDS = /statin|ezetimibe|pcsk9/i;
+    const desc = (inputs: HealthInputs, meds: MedicationInputs | undefined, id: string) =>
+      plan(inputs, meds).find((s) => s.id === id)!.description;
+    const base: HealthInputs = { heightCm: 175, sex: 'male', weightKg: 70 };
+    const adultBase: HealthInputs = { ...base, birthYear: 1980, birthMonth: 1 };
+
+    it('very high ApoB: "Discuss treatment, including lifestyle changes, with your doctor."; an adult keeps the statin sentence', () => {
+      const unknown = desc({ ...base, apoB: apoB(110) }, undefined, 'apob-very-high');
+      expect(unknown).not.toMatch(MEDICINE_WORDS);
+      expect(unknown).toMatch(/is very high, indicating significantly elevated cardiovascular risk\. Discuss treatment, including lifestyle changes, with your doctor\.$/);
+      expect(desc({ ...adultBase, apoB: apoB(110) }, undefined, 'apob-very-high'))
+        .toMatch(/elevated cardiovascular risk\. Statin therapy and lifestyle intervention are typically recommended\.$/);
+    });
+
+    it('BP stage 2: "Discuss treatment with your doctor." for an unknown age; an adult keeps "Medication is typically recommended"', () => {
+      const bp = { systolicBp: 165, diastolicBp: 102 };
+      const unknown = desc({ ...base, ...bp }, undefined, 'bp-stage2');
+      expect(unknown).toContain('indicates stage 2 hypertension. Discuss treatment with your doctor.');
+      expect(unknown).not.toContain('Medication is typically recommended');
+      expect(desc({ ...adultBase, ...bp }, undefined, 'bp-stage2')).toContain('indicates stage 2 hypertension. Medication is typically recommended at this level.');
+    });
+
+    it('very high LDL: "Discuss treatment with your doctor."; an adult keeps the statin sentence', () => {
+      const unknown = desc({ ...base, ldlC: ldl(200) }, undefined, 'ldl-very-high');
+      expect(unknown).not.toMatch(MEDICINE_WORDS);
+      expect(unknown).toMatch(/This may indicate familial hypercholesterolemia\. Discuss treatment with your doctor\.$/);
+      expect(desc({ ...adultBase, ldlC: ldl(200) }, undefined, 'ldl-very-high'))
+        .toMatch(/This may indicate familial hypercholesterolemia\. Statin therapy is typically recommended\.$/);
+    });
+
+    it('high Lp(a): the "not started" medicine lines go; an adult keeps them', () => {
+      const unknown = desc({ ...base, lpa: 200 }, {}, 'lpa-elevated');
+      expect(unknown).not.toMatch(MEDICINE_WORDS);
+      expect(unknown).not.toContain('not started');
+      const adult = desc({ ...adultBase, lpa: 200 }, {}, 'lpa-elevated');
+      expect(adult).toContain('\u26A0\uFE0F Statin: not started \u2014 discuss with your doctor');
+      expect(adult).toContain('\u26A0\uFE0F Ezetimibe: not started \u2014 discuss with your doctor');
+      expect(adult).toContain('\u26A0\uFE0F PCSK9 inhibitor: not started \u2014 can lower Lp(a) ~25\u201330%');
+      // Everything else in the checklist is the adult's, line for line.
+      expect(unknown).toBe(adult.split('\n').filter((line) => !line.includes('not started')).join('\n'));
+    });
+
+    it('high Lp(a): what the user takes or did not tolerate stays (facts, not suggestions)', () => {
+      const meds: MedicationInputs = { statin: { drug: 'atorvastatin', dose: 20 }, ezetimibe: 'not_tolerated', pcsk9i: 'yes' };
+      const unknown = desc({ ...base, lpa: 200 }, meds, 'lpa-elevated');
+      expect(unknown).toContain('\u2705 Statin: Atorvastatin 20mg');
+      expect(unknown).toContain('\u26A0\uFE0F Ezetimibe: not tolerated');
+      expect(unknown).toContain('\u2705 PCSK9 inhibitor: taking (also lowers Lp(a) ~25\u201330%)');
+      expect(unknown).toBe(desc({ ...adultBase, lpa: 200 }, meds, 'lpa-elevated'));
     });
   });
 });

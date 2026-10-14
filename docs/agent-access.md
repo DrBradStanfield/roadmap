@@ -219,6 +219,16 @@ Validate your result against the schema before you write it back.
   lipids included: read it as "no lipid card", never as "lipids fine". Every other
   suggestion is conditional on a measurement the record holds, and `missingInputs`
   names the ones whose absence removed content.
+- **The plan is built for adults** (US-07 AC6, 2026-10-14). When the birth year (and
+  month, if given) shows a known age under 18, `get_plan` returns one card,
+  `adults-only` ("This plan is built for adults"), and no other suggestion; its
+  `profile.bmiCategory`, `profile.eGFR`, `profile.idealBodyWeightKg` and
+  `profile.proteinTargetG` are `null`, and `due` is empty. The measured values stay. Do
+  not grade such a person's values against adult targets or suggest medicines; point
+  them to their doctor (the result's `instruction` says so). With no birth year, any
+  medicine card gives way to one `add-birth-year` card ("Add your birth year") where the
+  first stood, and the rest of the plan is unchanged. Treat a `null` in those four
+  profile fields as "withheld", never as "not computable from the data".
 
 ## The hosted path (US-32 Phase 1)
 
