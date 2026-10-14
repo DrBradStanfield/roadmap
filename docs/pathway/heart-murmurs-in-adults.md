@@ -8,20 +8,27 @@ summary: "Clinical pathway for heart murmurs in adults: red flags requiring urge
 
 # Heart Murmurs in Adults
 
-*Source: Auckland Region HealthPathways*
+*Source: Auckland Region HealthPathways. Last reviewed: November 2023.*
 
-This pathway covers the assessment of heart murmurs detected in adults — distinguishing benign from potentially significant murmurs and determining when further investigation or specialist review is needed.
+This pathway covers the assessment of heart murmurs found in adults. It helps tell benign murmurs from ones that may matter, and shows when more tests or a specialist review may be needed.
+
+> **Always discuss a heart murmur and any symptoms with your doctor.** This information is a clinical reference, not a substitute for individual medical advice.
 
 ---
 
 ## Red Flags — Seek Urgent Medical Attention
 
-The following symptoms alongside a heart murmur require prompt medical assessment:
+With a heart murmur, these red flags need assessment in hospital.
 
-- Signs or symptoms of rheumatic fever
-- Fever, sweats, and weight loss (possible infective endocarditis)
+**Call 111 or go to the emergency department if you have a heart murmur and:**
+
 - Syncope (fainting)
 - New or recent chest pain
+
+**See your doctor the same day if you have a heart murmur and:**
+
+- Fever, sweats, and weight loss (possible infective endocarditis). Your doctor can arrange the hospital assessment.
+- Signs or symptoms of rheumatic fever, such as painful or swollen joints, fever or a new rash. Your doctor can arrange the hospital assessment.
 
 ---
 
@@ -30,7 +37,7 @@ The following symptoms alongside a heart murmur require prompt medical assessmen
 - Heart murmurs are a frequent finding in primary care.
 - They can be caused by physiological processes (e.g., increased blood flow) or structural abnormalities of the heart (stenotic, regurgitant, or congenital lesions).
 - Most murmurs detected in primary care are benign: soft, mid-systolic murmurs in asymptomatic patients.
-- Some murmurs represent structural abnormality with minimal haemodynamic impact — these may be managed with active surveillance in primary care.
+- Some murmurs represent structural abnormality with minimal or no effect on how the heart works. Active surveillance in primary care may be enough for these patients.
 - A smaller proportion represent more significant lesions, including endocarditis or rheumatic fever, requiring prompt specialist management.
 
 ---
@@ -50,9 +57,9 @@ Your doctor will take a history asking about:
 - Fatigue
 
 **Risk factors for rheumatic fever:**
-- Episode of sore throat or skin infection in the previous 2–3 weeks
+- Episode of sore throat or skin infection in the previous 2 to 3 weeks
 - Personal, familial, or household history of rheumatic fever or rheumatic heart disease
-- Two or more of the following: Māori or Pacific ethnicity; aged 3–35 years (especially 4–19 years); living in crowded or deprived conditions
+- Two or more of the following: Māori or Pacific ethnicity; aged 3 to 35 years (especially children and adolescents aged 4 to 19 years); living in crowded or deprived conditions
 
 **Symptoms of rheumatic fever:**
 - Fever
@@ -69,12 +76,12 @@ Your doctor will take a history asking about:
 - Acute: rapid-onset infective symptoms
 
 **Risk factors for structural heart disease:**
-- Personal history: rheumatic fever, autoimmune disorders, congenital heart disease or prior heart surgery, coronary artery disease, chest trauma, connective tissue disorders, other cardiovascular risk factors
+- Personal history: rheumatic fever, autoimmune disorders, congenital heart disease or heart surgery, coronary artery disease, chest trauma, connective tissue disorders, other cardiovascular risk factors
 - Family history: congenital heart disease, sudden cardiac death (especially a first-degree relative), premature coronary artery disease or valvular heart disease, cardiomyopathy
 
 Your doctor will perform a physical examination including:
 
-- Vital signs: temperature, heart rate, blood pressure (both arms and a leg to look for an abnormal gradient >10 mmHg, and wide pulse pressure), respiratory rate
+- Vital signs: temperature, heart rate, blood pressure (in an arm and a leg, looking for an abnormal gradient of > 10 mmHg, and wide pulse pressure), respiratory rate and breathing effort
 - Height, weight, and BMI
 - In febrile patients: signs of infective endocarditis (fever, splinter haemorrhages, petechiae, neurological deficit, haematuria) and signs of rheumatic fever (fever, swollen joints, skin rash or nodules, Sydenham's chorea)
 
@@ -82,15 +89,15 @@ Your doctor will perform a physical examination including:
 - Jugular venous pressure (JVP) and bruits
 - Peripheral pulses
 - Location of apex beat and any palpable thrill
-- Heart sounds — splitting of the second heart sound, added sounds
-- Breath sounds — crackles, wheeze, chest deformity
+- Heart sounds: splitting of the second heart sound, added sounds
+- Breath sounds: crackles, wheeze, chest deformity
 - For hepatomegaly, ascites, and oedema
 - Murmur timing (systolic, diastolic, or continuous), grade, loudest location, and radiation
 
-**Murmur grading (systolic murmurs graded 1–6):**
-- Grade 1–2: very faint or soft
+**Murmur grading (systolic murmurs graded 1 to 6):**
+- Grade 1 to 2: very faint or soft
 - Grade 3: easily heard
-- Grade 4–6: may have an associated palpable thrill
+- Grade 4 to 6: may have an associated thrill
 
 **Murmur location:**
 - Mitral area: apex
@@ -100,7 +107,7 @@ Your doctor will perform a physical examination including:
 
 **Features suggesting a pathological murmur:**
 - Pansystolic, diastolic, or continuous timing
-- High grade (>3/6)
+- High grade (> 3/6)
 - Harsh or high-amplitude quality
 - Widespread and/or radiating
 - Abnormal pulses
@@ -108,7 +115,7 @@ Your doctor will perform a physical examination including:
 - Patient has signs or symptoms of heart disease
 
 **Features of a benign murmur:**
-- Grade 1–2 at the left sternal border
+- Grade 1 to 2 at the left sternal border
 - Systolic ejection pattern
 - Normal heart sounds
 - No increase in intensity with Valsalva manoeuvre
@@ -116,15 +123,15 @@ Your doctor will perform a physical examination including:
 
 **Murmurs in pregnancy:**
 
-Benign murmurs are common in pregnancy due to increased cardiac output. They are typically a soft ejection systolic murmur in the pulmonary or aortic area, do not radiate outside the precordium, and become substantially quieter when the patient sits forward. Diastolic murmurs are abnormal in pregnancy and warrant assessment. Symptoms of heart failure (fatigue, shortness of breath, oedema) should not be mistakenly attributed to pregnancy.
+Benign murmurs are common in pregnancy due to increased cardiac output. They are typically a soft ejection systolic murmur in the pulmonary or aortic area, do not radiate outside the precordium, and become substantially quieter when the patient sits forward. Your doctor will look for valve disease not found before, particularly in people at risk of rheumatic heart disease. Diastolic murmurs are abnormal in pregnancy and warrant assessment. Symptoms of heart failure (fatigue, shortness of breath, oedema) should not be mistakenly attributed to pregnancy. Your doctor may also consider other causes, such as anaemia, iron deficiency, or thyroid problems.
 
 **Investigations your doctor may arrange:**
-- 12-lead ECG — to look for left ventricular hypertrophy (LVH), bundle branch block, atrial enlargement, right ventricular hypertrophy (RVH), arrhythmia, and axis deviation
-- Full blood count (FBC) and thyroid function tests (TFT) if indicated
+- 12-lead ECG: to look for left ventricular hypertrophy (LVH), bundle branch block, atrial enlargement, right ventricular hypertrophy (RVH), arrhythmia, and axis deviation
+- Full blood count (FBC), and possibly thyroid function tests (TFT)
 - Brain natriuretic peptide (BNP) if heart failure is suspected
 - Chest X-ray is not routinely recommended; it may be arranged if cardiology referral is being made
 
-Note: If the murmur was detected during a hyperdynamic state (e.g., fever, anaemia, pregnancy) with no other concerning features, your doctor may defer investigations until after the acute condition resolves.
+Note: If the murmur was detected during a hyperdynamic state (e.g., fever, anaemia, pregnancy) with no other concerning features, your doctor may postpone investigations until a later review.
 
 ---
 
@@ -133,42 +140,46 @@ Note: If the murmur was detected during a hyperdynamic state (e.g., fever, anaem
 Your doctor may consider the following based on the assessment:
 
 **If red flags are present, the patient is haemodynamically unstable, or significantly symptomatic:**
-Your doctor will arrange urgent medical assessment.
+Your doctor will arrange assessment in hospital.
 
 **If the murmur was detected during a hyperdynamic state with no other concerning features:**
 - Manage the acute condition
 - Advise seeking immediate medical attention if cardiorespiratory symptoms develop
 - Review once acute symptoms have resolved; arrange investigations if the murmur persists or symptoms develop
 
-**Echocardiography — your doctor may refer for echocardiography if:**
-- Grade 1–2 mid-systolic murmur with no related symptoms but suspicion of valvular or structural heart disease
-- Grade 3–6 murmur, or a pansystolic, late systolic, diastolic, or continuous murmur
+**Your doctor may refer for echocardiography if:**
+- Grade 1 to 2 mid-systolic murmur with no related symptoms but suspicion of valvular or structural heart disease
+- Grade 3 to 6 murmur, or a pansystolic, late systolic, diastolic, or continuous murmur
 - Murmur with related symptoms
 - Associated examination findings: radiation to neck or back, clicks, or extra heart sounds
-- Clinical evidence of heart failure (diuretic treatment and blood pressure optimisation may be initiated while awaiting assessment)
+- Clinical evidence of heart failure (diuretic treatment and blood pressure optimisation may be started while awaiting assessment)
 - Abnormal ECG, particularly left ventricular hypertrophy or bundle branch block
 - Significant change in an existing murmur (including in patients with a prosthetic valve)
 - Murmur with a history of rheumatic fever
+
+A grade 1 to 2 mid-systolic murmur may be a flow murmur, or a murmur from a thickened or sclerotic aortic valve.
 
 Note: Fatigue alone, without other cardiac symptoms, is not a symptom of valvular disease.
 
 Echocardiography clarifies the nature and severity of valve lesions and their effect on cardiac function.
 
-**Cardiology referral — your doctor may refer to a cardiologist if:**
+When considering referral for elderly patients, doctors take into account life expectancy, anticipated quality of life, co-morbidities, frailty, and the balance of risks versus benefits.
+
+**Your doctor may refer to a cardiologist if:**
 - Asymptomatic but with concerning features on history or examination
-- Cardiac symptoms not requiring emergency assessment
+- Cardiac symptoms not requiring emergency assessment (diuretic treatment and blood pressure optimisation may be started while awaiting assessment)
 - Echocardiogram shows concerning features:
   - Moderate or severe valve stenosis or regurgitation
   - Left ventricular ejection fraction (LVEF) less than 55% in any patient with a valve lesion
   - Any right heart dilatation or dysfunction
   - Elevated pulmonary artery pressure
-- Uncertain about echocardiogram results or the need for referral
-- Echocardiogram does not suggest abnormality requiring referral, but significant cardiac symptoms persist
-- When considering referral for elderly patients, doctors take into account life expectancy, anticipated quality of life, co-morbidities, and the balance of risks versus benefits
+
+Your doctor may seek cardiology advice if they are unsure about the echocardiogram results or the need for referral, or if the echocardiogram shows no abnormality needing referral but significant cardiac symptoms persist.
 
 **If asymptomatic with no features requiring referral:**
-- Regular follow-up (every 6–12 months) to monitor for new symptoms
+- Regular follow-up (every 6 to 12 months) to monitor for new symptoms
 - Advice to seek immediate medical attention if symptoms of an underlying cardiac abnormality develop
+- Cardiology referral if there are any concerns
 
 **Antibiotic prophylaxis:**
 - If rheumatic valve disease is confirmed, antibiotic prophylaxis is indicated
