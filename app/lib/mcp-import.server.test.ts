@@ -6,7 +6,7 @@
  * plain UUID whose pending file carries a MAC bound to one connection, failing
  * closed on any tamper (AC7). The whole flow over a folder is `mcp.hosted.test.ts`.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import JSZip from 'jszip';
 vi.mock('./product-events.server', async (importOriginal) => {
   const original = await importOriginal<typeof import('./product-events.server')>();
@@ -15,7 +15,7 @@ vi.mock('./product-events.server', async (importOriginal) => {
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 import * as Sentry from '@sentry/react-router';
 import {
-  hostedImporter,
+  hostedImporter as surfaceOf,
   MAX_IMPORT_FILE_BYTES,
   MAX_IMPORT_ZIP_BYTES,
   MCP_IMPORT_BUDGET_MS,
@@ -27,7 +27,8 @@ import { resourceUrl } from './mcp-config.server';
 import { chargeWrites, connectionKey, IMPORT_FILES_PER_DAY, importFiles, resetMcpMemory, WRITES_PER_HOUR } from './mcp-grants.server';
 import { seal } from './mcp-seal.server';
 import { machineFiles } from './rate-limiter';
-import { type ImportPayload, MAX_IMPORT_FILES_PER_CALL, MAX_RECEIPT_LENGTH, OUTPUTS, runToolOverSync } from '../../packages/health-core/src/mcp-tools';
+import { APPROVAL_MEANS, type ImportPayload, type ImportSurface, MAX_IMPORT_FILES_PER_CALL, MAX_RECEIPT_LENGTH, OUTPUTS, runToolOverSync as runTool } from '../../packages/health-core/src/mcp-tools';
+import { APPROVAL_DIRECTIVE } from '../../packages/health-core/src/mcp-approval-wording.testing';
 import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 import { IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
 import { ROADMAP_FILE_NAME, StorageError } from '../../packages/health-core/src/adapter';
@@ -35,8 +36,29 @@ import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memor
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 import { MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
 
-/** The user's own words, quoted in every commit (US-35 AC7, 2026-10-07). */
+/** What the user said when they agreed, carried in every commit (US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, file them';
+
+/** Every answer the surface and the tool layer give in this suite, whole: none may direct the model about approval (US-36, 2026-10-14). */
+const ANSWERS: string[] = [];
+const heard = <T>(answer: T): T => (ANSWERS.push(JSON.stringify(answer) ?? ''), answer);
+afterAll(() => {
+  expect(ANSWERS.length).toBeGreaterThan(20);
+  for (const answer of ANSWERS) expect(answer).not.toMatch(APPROVAL_DIRECTIVE);
+});
+/** The real surface, with every answer it gives collected. */
+function hostedImporter(options: Parameters<typeof surfaceOf>[0]): ImportSurface {
+  const surface = surfaceOf(options);
+  const { extract } = surface;
+  return {
+    ...surface,
+    stash: async (payload, deadline) => heard(await surface.stash(payload, deadline)),
+    open: async (commit, file, now, deadline) => heard(await surface.open(commit, file, now, deadline)),
+    ...(extract && { extract: async (request, file, now, deadline) => heard(await extract.call(surface, request, file, now, deadline)) }),
+  };
+}
+/** The real tool layer, with every answer it gives collected. */
+const runToolOverSync = async (...args: Parameters<typeof runTool>) => heard(await runTool(...args));
 const PDF = new TextEncoder().encode('%PDF-1.4\n1 0 obj\nendobj\n');
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0]);
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]);
@@ -275,7 +297,7 @@ describe('US-35 AC7 / US-36 AC9 — a commit quotes the user’s approval, check
   const PENDING = `imports/pending-${PAYLOAD.id}.json`;
   const file = createEmptyFile({ deviceId: 'test', now: NOW });
   const deadline = () => Date.now() + MCP_IMPORT_BUDGET_MS;
-  const QUOTE = 'This commit carries no approval. The commit files with the same receipt and approval: what the user said when they agreed to these candidates. Until the user agrees there is no commit. Nothing was written.';
+  const QUOTE = `This call carries no approval. The commit has the same receipt, and approval (${APPROVAL_MEANS} to these candidates). There is no commit until the user agrees. Nothing was written.`;
 
   beforeEach(() => resetMcpMemory());
 

@@ -32,7 +32,7 @@ import { openStep, signStep, UUID } from './mcp-step.server';
 import { recordServerEvent } from './product-events.server';
 import { machineFiles } from './rate-limiter';
 import { deadlineSignal, StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
-import { IMPORT_LIMITS, IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
+import { APPROVAL_MEANS, IMPORT_LIMITS, IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
 import {
   type DocumentPromptMode,
   isImportableEntryName,
@@ -485,10 +485,10 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
 
     async open(commit: ImportCommit, _file: RoadmapFile, now: string, deadline: number): Promise<ImportPayload | ImportRefusal> {
       // Verified BEFORE anything is charged, in this order: a forged receipt costs nothing and deletes nothing.
-      // The user's quoted approval first (ChatGPT's safety layer judges the call, 2026-10-07): read for
+      // The approval first, what the user said when they agreed (ChatGPT's safety layer judges the call, 2026-10-07): read for
       // presence only, never stored or logged, and its absence reads nothing and keeps the pending file.
       if (!commit.approval?.trim()) {
-        return { refusal: 'This commit carries no approval. The commit files with the same receipt and approval: what the user said when they agreed to these candidates. Until the user agrees there is no commit. Nothing was written.' };
+        return { refusal: `This call carries no approval. The commit has the same receipt, and approval (${APPROVAL_MEANS} to these candidates). There is no commit until the user agrees. Nothing was written.` };
       }
       // Only a lowercase UUID may form a path.
       const id = commit.receipt;

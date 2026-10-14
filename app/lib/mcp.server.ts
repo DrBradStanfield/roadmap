@@ -21,7 +21,7 @@ import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 
 import { StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
-import { folderNudge, type GuardRefusal, isToolName, MAX_APPROVAL_LENGTH, MCP_TOOLS, OPEN_SOURCE_NOTE, SI_NOTE, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import { APPROVAL_MEANS, folderNudge, type GuardRefusal, isToolName, MAX_APPROVAL_LENGTH, MCP_TOOLS, OPEN_SOURCE_NOTE, SI_NOTE, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../../packages/health-core/src/mcp-rpc';
 import { importFilesBucket, isRefusalReason, MCP_TOOL_NAMES, type McpRefusalReason, type McpToolName } from '../../packages/health-core/src/product-events';
 import { KNOWN_CLIENTS, readCapped, type McpClientLabel } from './mcp-clients.server';
@@ -53,7 +53,7 @@ export const INSTRUCTIONS =
   'value is permanent and needs the value you expect to find, so read the record first and correct only what ' +
   'the user asked you to. The plan from get_plan is educational, not medical advice, and its hedged wording ' +
   'and citations are calibrated — pass them on as written. import_documents reads lab files from the Dropbox folder and ' +
-  'writes nothing to the record until its commit, which carries approval: what the user said when they agreed; a file dropped into the chat ' +
+  `writes nothing to the record until its commit, which carries approval (${APPROVAL_MEANS}). A file dropped into the chat ` +
   'is read by you and filed through file_results the same way. correct_value, update_profile and report_feedback are ' +
   'permanent, so here they take two calls: the first returns a preview and a confirm receipt and writes nothing; the ' +
   'second, with confirm and approval, writes.' + SI_NOTE + OPEN_SOURCE_NOTE;
@@ -362,16 +362,16 @@ function withProposal(token: AccessPayload, name: string, args: Record<string, u
   const text =
     `PROPOSAL — nothing written yet. ${answer.text}\n\n` +
     `This proposal is for the user to review. The write is a second ${name} call with the same arguments, confirm set to the receipt below, ` +
-    `and approval set to what the user said when they agreed to it. An auto-approve setting in the client is not the user agreeing. ` +
+    `and approval (${APPROVAL_MEANS} to this change). An auto-approve setting in the client is not the user agreeing. ` +
     `The receipt is valid from ${confirmFrom} for ${STEP_WINDOWS.proposal.ttlSeconds / 60} minutes and works once.\nconfirm: ${confirm}`;
   return { text, isError: false, structured: { ...(answer.structured as Record<string, unknown>), proposal: true, confirm, confirmFrom } };
 }
 
 /**
  * The second call's gate: the receipt — ours, for this tool, these arguments
- * and this connection, inside its window — then the user's quoted approval,
- * then the receipt unused. Every failure is worded; an early call is told when
- * to come back and not to spin.
+ * and this connection, inside its window — then the approval (what the user
+ * said when they agreed), then the receipt unused. Every failure is worded; an
+ * early call is told when its receipt becomes valid.
  */
 function checkConfirm(token: AccessPayload, name: string, args: Record<string, unknown>, confirm: string, approval: string | undefined, now: string): string | null {
   const nowMs = Date.parse(now);
@@ -395,16 +395,16 @@ function checkConfirm(token: AccessPayload, name: string, args: Record<string, u
     return `That confirm receipt has expired (${ttlSeconds / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.`;
   }
   if (opened.status === 'early') {
-    return `That confirm receipt is not valid yet: it can be used from ${opened.notBefore}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`;
+    return `That confirm receipt is not valid yet: it is valid from ${opened.notBefore}; the second call follows the user’s answer. Nothing was written.`;
   }
-  // ChatGPT's safety layer judges the call, not the chat (2026-10-07), so the call carries the user's words.
-  // After the window checks, so a chained call is told to wait rather than to quote; before the claim, so a
-  // missing quote spends no receipt and, like every refusal here, costs nothing.
+  // ChatGPT's safety layer judges the call, not the chat (2026-10-07), so the call carries what the user said.
+  // After the window checks, so a chained call hears the window rather than the approval; before the claim, so a
+  // missing approval spends no receipt and, like every refusal here, costs nothing.
   if (!approval?.trim()) {
-    return `This confirm carries no approval. The second ${name} call writes with the same arguments, the same receipt and approval: what the user said when they agreed to this change. Until the user agrees there is no second call. Nothing was written.`;
+    return `This call carries no approval. The second ${name} call has the same arguments, the same receipt, and approval (${APPROVAL_MEANS} to this change). There is no second call until the user agrees. Nothing was written.`;
   }
   if (approval.length > MAX_APPROVAL_LENGTH) {
-    return `approval is at most ${MAX_APPROVAL_LENGTH} characters: what the user said when they agreed to this change. Nothing was written.`;
+    return `approval (${APPROVAL_MEANS} to this change) is at most ${MAX_APPROVAL_LENGTH} characters. Nothing was written.`;
   }
   if (!claimProposal(confirm, conn, ttlSeconds * 1000, nowMs)) {
     return `That confirm receipt has already been used. Nothing was written. If the user wants another change, call ${name} again without confirm.`;

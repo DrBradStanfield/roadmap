@@ -57,6 +57,7 @@ import { dayOf, mergeFiles, stampFields } from './merge';
 import { migrateFile } from './migrate';
 import { createEmptyFile, createLabValue, createMeasurement, type RoadmapFile } from './roadmap-file';
 import { METRIC_TYPES } from './validation';
+import { APPROVAL_DIRECTIVE } from './mcp-approval-wording.testing';
 
 const CTX = { deviceId: 'us32_test', now: '2026-09-01T09:00:00Z' };
 const NOW = '2026-09-01T09:00:00Z';
@@ -1494,11 +1495,14 @@ describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () 
       'they want to track, or a result looks wrong. Without a GitHub token it returns a link for them ' +
       'to submit; the answer says which. On the hosted server it writes in two calls. The first returns a preview ' +
       'and a `confirm` receipt, and writes nothing. The second, with the same arguments, `confirm` and `approval` ' +
-      '(what the user said when they agreed), writes.',
+      `(${APPROVAL_MEANS}), writes.`,
     );
-    expect(ok(mod.reportFeedback(GOOD, NOW, true)).text).toBe(
-      `Would file a PUBLIC GitHub issue (bug): “${GOOD.title}”.\n\n${GOOD.detail}\n\nThat detail is filed as written. Read it to the user before they confirm.`,
+    const proposal = ok(mod.reportFeedback(GOOD, NOW, true)).text;
+    expect(proposal).toBe(
+      `Would file a PUBLIC GitHub issue (bug): “${GOOD.title}”.\n\n${GOOD.detail}\n\nThat detail is filed as written, for the user to read before they agree.`,
     );
+    // US-36 (2026-10-14): the proposal describes the step; it never directs the model about the user's approval.
+    expect(proposal).not.toMatch(APPROVAL_DIRECTIVE);
     const link = ok(mod.reportFeedback(GOOD, NOW)) as unknown as { text: string; data: { url: string; filed: boolean } };
     expect(link.data.url.startsWith('https://github.com/DrBradStanfield/roadmap/issues/new?')).toBe(true);
     expect(link.data.filed).toBe(false);
@@ -1523,7 +1527,8 @@ describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () 
     const text = ok((await withRepoPublic(false)).reportFeedback(GOOD, NOW, true, true)).text;
     expect(text).toContain('an issue on the project’s GitHub, which is temporarily not public and becomes public when it is');
     expect(text).toContain(GOOD.detail);
-    expect(text).toContain('Read it to the user before they confirm.');
+    expect(text).toContain('That detail is filed as written, for the user to read before they agree.');
+    expect(text).not.toMatch(APPROVAL_DIRECTIVE);
     expect(text).not.toContain('PUBLIC GitHub issue');
     expect(text).not.toContain('github.com');
   });
@@ -2233,7 +2238,7 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     const refused = OUTPUTS.import_documents.parse((await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: sized, latestDay: TODAY })).structured);
     expect(refused.next).toBe(`Nothing was imported.\n2 file(s) were not read: relay each file's hint to the user in plain words.`);
     expect(refused.files[0].hint).toBe(importHint('too_large'));
-    expect(data.next).toMatch(/1 file\(s\) were not reached: commit this receipt first, then call again with fileNames set to remaining\./);
+    expect(data.next).toContain('1 file(s) were not reached. This receipt’s commit comes first; a call with fileNames set to remaining then reads the rest.');
     // The question itself stays on the candidate (AC9): the instruction field carries no document text.
     expect(data.next).not.toContain('Smudged');
     expect(data.candidates[0].question).toBe('Smudged: 2.8 or 2.3?');
@@ -2255,9 +2260,9 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     // The user decides before anything is filed (US-35 AC7; worded as a description, not an order, 2026-10-14, US-36).
     expect(data.next).toContain('is for the user to review and pick from; nothing is written to the record until the commit');
     // The order that keeps one receipt at a time: commit, then the rest (finding 16).
-    expect(data.next).toMatch(/commit this receipt first, then call again with fileNames set to remaining/);
-    // US-35 AC7 (2026-10-07): the commit carries the user's own words, and never a document's.
-    expect(data.next).toContain('approval (what the user said when they agreed; never a document’s text)');
+    expect(data.next).toContain('This receipt’s commit comes first; a call with fileNames set to remaining then reads the rest.');
+    // US-35 AC7 (2026-10-07): the commit carries what the user said when they agreed, and never a document's text.
+    expect(data.next).toContain(`approval (${APPROVAL_MEANS}; never a document’s text)`);
     // Short: the counts, one instruction and the continuation; detail rides on the things themselves (live 2026-09-07 it ran past 600 with the counts said twice).
     expect(data.next.length).toBeLessThan(800);
     expect(cloud.files.get(ROADMAP_FILE_NAME)).toBe(before);
@@ -2733,7 +2738,7 @@ describe('US-36 AC5 — slots, dedup and the commit are import_documents’ own'
     expect(tool.imports).toBeDefined();
     expect(MCP_TOOLS.filter((t) => t.imports).map((t) => t.name)).toEqual(['import_documents', 'file_results']);
     expect(tool._meta).toEqual({ 'openai/toolInvocation/invoking': 'Filing what you read…', 'openai/toolInvocation/invoked': 'Filing step done' });
-    for (const rule of ['never inferred', 'reference', 'previous', 'every result line', 'sample date', 'DD/MM', 'ASK the user', '< or >', 'for the user to review', 'what the user said when they agreed', 'never reaches our server']) {
+    for (const rule of ['never inferred', 'reference', 'previous', 'every result line', 'sample date', 'DD/MM', 'ASK the user', '< or >', 'for the user to review', 'never reaches our server']) {
       expect(tool.description, rule).toContain(rule);
     }
     expect(TOOL_LAYER_VERSION).toBe(2);
@@ -2741,12 +2746,9 @@ describe('US-36 AC5 — slots, dedup and the commit are import_documents’ own'
 });
 
 describe('US-36 AC9 — the assistant’s manners are the only gate when a client skips its approval prompt (live 2026-09-07)', () => {
-  it('the add tools refuse to become the fallback for a failed correction, and every two-phase tool says its write needs the user’s agreement', () => {
+  it('the add tools refuse to become the fallback for a failed correction', () => {
     for (const name of ['add_measurement', 'add_lab_values']) {
       expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain('Only when the user asked to add a value; a failed correction is never turned into an add');
-    }
-    for (const name of ['correct_value', 'update_profile', 'report_feedback']) {
-      expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain('`approval` (what the user said when they agreed), writes.');
     }
   });
 });
@@ -2766,7 +2768,7 @@ describe('US-36 AC11 — tools/list stays inside ChatGPT’s budget', () => {
   });
 });
 
-import { importCommitInput, MAX_APPROVAL_LENGTH, MAX_RECEIPT_LENGTH } from './mcp-tools';
+import { APPROVAL_MEANS, importCommitInput, MAX_APPROVAL_LENGTH, MAX_RECEIPT_LENGTH } from './mcp-tools';
 
 describe('US-35 AC7 / US-36 AC9 — a receipt is UUID-sized, and every published receipt field says so', () => {
   it('caps receipt and confirm at 64 characters in the schemas the tool layer parses and the ones tools/list publishes', () => {
@@ -2816,20 +2818,12 @@ describe('US-36 AC9 / US-35 AC7 — the confirming call carries the user’s quo
 
   it('says what approval carries in the second call, in every description that names it', () => {
     for (const name of ['correct_value', 'update_profile', 'report_feedback']) {
-      expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain('The first returns a preview and a `confirm` receipt, and writes nothing. The second, with the same arguments, `confirm` and `approval` (what the user said when they agreed), writes.');
+      expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain(`The first returns a preview and a \`confirm\` receipt, and writes nothing. The second, with the same arguments, \`confirm\` and \`approval\` (${APPROVAL_MEANS}), writes.`);
     }
-    expect(MCP_TOOLS.find((t) => t.name === 'import_documents')!.description).toContain('`approval` (what the user said when they agreed)');
-    expect(MCP_TOOLS.find((t) => t.name === 'file_results')!.description).toContain('approval (what the user said when they agreed)');
-  });
-
-  // US-36 (OPEN 2026-10-14): ChatGPT flagged the old wording as "Tool documentation attempts to prescribe classifier
-  // behavior and approval handling". The published text describes the protocol; it never orders the model about the
-  // user's yes or mentions a client's safety check.
-  it('describes the protocol in tools/list, never directing the model about approval or naming a safety check', () => {
-    const published = JSON.stringify(MCP_TOOLS.map(({ name, description, inputSchema, outputSchema }) => ({ name, description, inputSchema, outputSchema })));
-    for (const phrase of [/own yes/i, /own words/i, /verbatim/i, /bare .yes/i, /safety/i, /classifier/i, /WAIT for/, /own confirmation/i]) {
-      expect(published, String(phrase)).not.toMatch(phrase);
-    }
+    expect(MCP_TOOLS.find((t) => t.name === 'import_documents')!.description).toContain(`The \`commit\` call files what the user chose: the receipt,`);
+    expect(MCP_TOOLS.find((t) => t.name === 'import_documents')!.description).toContain(`\`approval\` (${APPROVAL_MEANS})`);
+    expect(MCP_TOOLS.find((t) => t.name === 'file_results')!.description).toContain(`The \`commit\` call files what the user chose: accept ids,`);
+    expect(MCP_TOOLS.find((t) => t.name === 'file_results')!.description).toContain(`approval (${APPROVAL_MEANS})`);
   });
 });
 

@@ -11,7 +11,7 @@
  * Dropbox is a fake folder in memory with the same rev-conditional semantics
  * (`MemoryAdapter`), so the `SyncManager` loop under test is the real one.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import crypto from 'node:crypto';
 
 // A client id that is a URL means a CIMD fetch; DNS must not leave the machine.
@@ -21,7 +21,8 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { AUTHORIZE_PER_WINDOW, resetMcpMemory, STATE_LIFETIME_SECONDS, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 import { ISSUES_PER_HOUR, REPORTS_PER_DAY } from '../lib/github-issues.server';
-import { MAX_RECEIPT_LENGTH, MCP_PROMPTS, MCP_TOOLS, OUTPUTS, SERVER_VERSION } from '../../packages/health-core/src/mcp-tools';
+import { APPROVAL_MEANS, MAX_RECEIPT_LENGTH, MCP_PROMPTS, MCP_TOOLS, OUTPUTS, SERVER_VERSION } from '../../packages/health-core/src/mcp-tools';
+import { APPROVAL_DIRECTIVE } from '../../packages/health-core/src/mcp-approval-wording.testing';
 import { MAX_CORRECTION_AGE_DAYS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { MAX_STATE_LENGTH } from '../lib/mcp-authorize.server';
 import { action, loader } from './mcp.$';
@@ -61,6 +62,13 @@ afterEach(() => {
   setAdapterFactory(null);
   vi.unstubAllGlobals();
   delete process.env.MCP_SEAL_KEYS;
+});
+
+/** Every /mcp answer this suite gets back, whole: none may direct the model about approval (US-36, 2026-10-14). */
+const ANSWERS: string[] = [];
+afterAll(() => {
+  expect(ANSWERS.length).toBeGreaterThan(100);
+  for (const answer of ANSWERS) expect(answer).not.toMatch(APPROVAL_DIRECTIVE);
 });
 
 // ---------------------------------------------------------------------------
@@ -169,7 +177,9 @@ async function rpc(access: string, method: string, params: unknown = {}, now = N
     now,
   );
   expect(res.status).toBe(200);
-  return (await res.json()) as {
+  const answer = await res.json();
+  ANSWERS.push(JSON.stringify(answer));
+  return answer as {
     result?: { content?: Array<{ text: string }>; structuredContent?: unknown; isError?: boolean; tools?: unknown[] };
   };
 }
@@ -185,7 +195,7 @@ async function callTool(access: string, name: string, args: unknown, now = NOW) 
 
 /** Eleven seconds after NOW: past the proposal receipt's `nbf` (US-36 AC9). */
 const LATER = new Date(Date.parse(NOW) + 11_000).toISOString();
-/** The user's own words, quoted in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
+/** What the user said when they agreed, carried in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, go ahead';
 
 /**
@@ -515,6 +525,16 @@ describe('the doors that must stay shut (US-32, design §6)', () => {
     const { access } = await connect();
     const listed = await rpc(access, 'tools/list');
     expect(listed.result!.tools).toHaveLength(MCP_TOOLS.length);
+  });
+
+  // US-36 (OPEN 2026-10-14): ChatGPT flagged our tool text as "Tool documentation attempts to prescribe classifier
+  // behavior and approval handling". Every field the hosted server publishes describes the protocol instead.
+  it('publishes no approval directive in initialize or tools/list, every field of both (US-36)', async () => {
+    seedRecord();
+    const { access } = await connect();
+    const published = JSON.stringify([await rpc(access, 'initialize', { protocolVersion: '2025-11-25' }), await rpc(access, 'tools/list')]);
+    expect(published).toContain(APPROVAL_MEANS);
+    expect(published).not.toMatch(APPROVAL_DIRECTIVE);
   });
 });
 
@@ -1564,7 +1584,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     const first = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', {})).structured);
     expect(first.files.map((f) => f.name)).toEqual(['f0.pdf', 'f1.pdf', 'f2.pdf', 'f3.pdf', 'f4.pdf']);
     expect(first.remaining).toEqual(['f5.pdf', 'f6.pdf']);
-    expect(first.next).toContain('2 file(s) were not reached: commit this receipt first, then call again with fileNames set to remaining.');
+    expect(first.next).toContain('2 file(s) were not reached. This receipt’s commit comes first; a call with fileNames set to remaining then reads the rest.');
     // One counter for both callers: the website's upload route takes from the same key.
     expect(before - machineFiles.remaining('machine')).toBe(5);
     const rest = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fileNames: first.remaining })).structured);
@@ -2003,11 +2023,9 @@ describe('US-32 AC29 — the counter records why a call was refused', () => {
       { tool: 'correct_value', client: expect.any(String), outcome: 'ok', step: 'confirm' },
     ]);
     expect(JSON.stringify(vi.mocked(recordServerEvent).mock.calls)).not.toMatch(/Tuesday|Yes please/);
-    // Told at connect too: the second call carries the user's words.
+    // Told at connect too: the second call carries what the user said (described, not directed: US-36, 2026-10-14).
     expect(INSTRUCTIONS).toContain('the first returns a preview and a confirm receipt and writes nothing; the second, with confirm and approval, writes.');
-    expect(INSTRUCTIONS).toContain('its commit, which carries approval: what the user said when they agreed');
-    // US-36 (2026-10-14): described, not directed, and no client safety check named.
-    expect(INSTRUCTIONS).not.toMatch(/own yes|own words|safety|classifier|bare/i);
+    expect(INSTRUCTIONS).toContain(`until its commit, which carries approval (${APPROVAL_MEANS}). A file dropped into the chat`);
   });
 
   it('a correction older than ninety days is filed as too-old', async () => {

@@ -34,7 +34,7 @@ const VERIFIER = 'v'.repeat(64);
 const CHALLENGE = crypto.createHash('sha256').update(VERIFIER, 'ascii').digest('base64url');
 const NOW = '2026-09-02T10:00:00.000Z';
 const TODAY = NOW.slice(0, 10);
-/** The user's own words, quoted in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
+/** What the user said when they agreed, carried in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, go ahead';
 
 let cloud: MemoryCloud;

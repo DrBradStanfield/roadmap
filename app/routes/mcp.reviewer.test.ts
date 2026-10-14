@@ -252,7 +252,7 @@ async function callTool(access: string, name: string, args: unknown, now = NOW) 
 }
 
 const SEED_DAY = '2026-08-30';
-/** The user's own words, quoted in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
+/** What the user said when they agreed, carried in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, go ahead';
 
 /** The synthetic reviewer record: a profile and one recent measurement. */

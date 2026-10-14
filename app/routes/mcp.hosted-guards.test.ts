@@ -11,7 +11,7 @@
  * The harness is the same shape as `mcp.hosted.test.ts`'s: real Requests
  * through the route's own loader/action, with Dropbox as an in-memory folder.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import crypto from 'node:crypto';
 
 vi.mock('node:dns/promises', () => ({ default: { lookup: async () => [{ address: '1.1.1.1', family: 4 }] } }));
@@ -19,7 +19,8 @@ import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memor
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
-import { MAX_LAB_ROWS_PER_CALL } from '../../packages/health-core/src/mcp-tools';
+import { APPROVAL_MEANS, MAX_LAB_ROWS_PER_CALL } from '../../packages/health-core/src/mcp-tools';
+import { APPROVAL_DIRECTIVE } from '../../packages/health-core/src/mcp-approval-wording.testing';
 import { REPO_PUBLIC } from '../../packages/health-core/src/plan';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
@@ -63,6 +64,13 @@ afterEach(() => {
   setAdapterFactory(null);
   vi.unstubAllGlobals();
   delete process.env.MCP_SEAL_KEYS;
+});
+
+/** Every answer this suite gets back, whole: none may direct the model about approval (US-36, 2026-10-14). */
+const ANSWERS: string[] = [];
+afterAll(() => {
+  expect(ANSWERS.length).toBeGreaterThan(50);
+  for (const answer of ANSWERS) expect(answer).not.toMatch(APPROVAL_DIRECTIVE);
 });
 
 function unescapeHtml(text: string): string {
@@ -125,7 +133,9 @@ async function rpc(access: string, method: string, params: unknown = {}) {
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
   }), NOW);
   expect(res.status).toBe(200);
-  return (await res.json()) as { result?: { content?: Array<{ text: string }>; isError?: boolean; tools?: Array<{ name: string }> } };
+  const answer = await res.json();
+  ANSWERS.push(JSON.stringify(answer));
+  return answer as { result?: { content?: Array<{ text: string }>; isError?: boolean; tools?: Array<{ name: string }> } };
 }
 
 async function callTool(access: string, name: string, args: unknown) {
@@ -246,10 +256,10 @@ import { STEP_WINDOWS } from '../lib/mcp-step.server';
 const { nbfSeconds: PROPOSAL_NBF_SECONDS, ttlSeconds: PROPOSAL_LIFETIME_SECONDS } = STEP_WINDOWS.proposal;
 /** One answer for a receipt that is not ours, or names other arguments, another tool or another connection (US-36 AC9, 2026-10-07). */
 const NOT_OURS = 'does not match these arguments on this connection, or is not ours';
-/** The user's own words, quoted in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
+/** What the user said when they agreed, carried in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, go ahead';
 const QUOTE_APPROVAL = (name: string) =>
-  `This confirm carries no approval. The second ${name} call writes with the same arguments, the same receipt and approval: what the user said when they agreed to this change. Until the user agrees there is no second call. Nothing was written.`;
+  `This call carries no approval. The second ${name} call has the same arguments, the same receipt, and approval (${APPROVAL_MEANS} to this change). There is no second call until the user agrees. Nothing was written.`;
 import { WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 
 const at = (seconds: number) => new Date(Date.parse(NOW) + seconds * 1000).toISOString();
@@ -262,6 +272,7 @@ async function callToolAt(access: string, name: string, args: unknown, now: stri
   }), now);
   expect(res.status).toBe(200);
   const answer = (await res.json()) as { result: { content: Array<{ text: string }>; structuredContent?: Record<string, unknown>; isError?: boolean } };
+  ANSWERS.push(JSON.stringify(answer));
   return { text: answer.result.content[0].text, structured: answer.result.structuredContent, isError: answer.result.isError === true };
 }
 
@@ -303,24 +314,23 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     expect(proposed.text).toMatch(/^PROPOSAL — nothing written yet\./);
     expect(proposed.text).toContain('This proposal is for the user to review.');
     expect(proposed.text).toContain('An auto-approve setting in the client is not the user agreeing.'); // a client set to allow every action has not agreed
-    // US-36 (2026-10-14): the proposal describes the protocol; it never names a client's safety check or coaches the user's reply
-    // ("Suspicious Instruction", live 2026-10-12). The bare-"yes" advice lives in the reviewer notes, not in agent-facing text.
-    expect(proposed.text).not.toMatch(/safety|bare|own yes|own words|WAIT/i);
+    // US-36 (2026-10-14): the proposal describes the protocol and never coaches the user's reply ("Suspicious Instruction",
+    // live 2026-10-12); the afterAll blocklist checks it. The bare-"yes" advice lives in the reviewer notes, not in agent-facing text.
     const data = OUTPUTS.correct_value.parse(proposed.structured);
     expect(data).toMatchObject({ proposal: true, correctsId: LDL_ID, value: 2.8, confirmFrom: at(PROPOSAL_NBF_SECONDS) });
     const receipt = data.confirm!;
     // UUID-shaped: ChatGPT read the old 400-character sealed blob as a disguised payload and blocked the confirm (2026-10-07).
     expect(receipt).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     expect(proposed.text).toContain(`confirm: ${receipt}`);
-    expect(proposed.text).toContain('approval set to what the user said when they agreed to it');
+    expect(proposed.text).toContain(`approval (${APPROVAL_MEANS} to this change)`);
     expect(storedRecord().measurements).toHaveLength(1);
     expect(storedRecord().measurements[0].status).toBe('active');
 
-    // 2. Chained straight after: not yet, and told not to spin.
+    // 2. Chained straight after: not yet, and told when the receipt becomes valid.
     const early = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(2));
     expect(early.isError).toBe(true);
-    expect(early.text).toContain(`can be used from ${at(PROPOSAL_NBF_SECONDS)}`);
-    expect(early.text).toContain('end your turn');
+    expect(early.text).toContain(`is valid from ${at(PROPOSAL_NBF_SECONDS)}`);
+    expect(early.text).toContain('the second call follows the user’s answer');
 
     // 3. After the pause, but with the number changed under the user's yes.
     const altered = await callToolAt(access, 'correct_value', { ...FIX, newValue: 0.8, confirm: receipt, approval: APPROVED }, at(11));
@@ -382,12 +392,12 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     const long = 'Yes '.repeat(51);
     const tooLong = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: long }, at(11));
     expect(tooLong.isError).toBe(true);
-    expect(tooLong.text).toBe('approval is at most 200 characters: what the user said when they agreed to this change. Nothing was written.');
+    expect(tooLong.text).toBe(`approval (${APPROVAL_MEANS} to this change) is at most 200 characters. Nothing was written.`);
     const notText = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: 5 }, at(11));
     expect(notText.text).toBe(QUOTE_APPROVAL('correct_value'));
     // "Not valid yet", not "not ours": the MAC matched with these words, so they are outside the identity.
     const early = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: 'OK do it' }, at(2));
-    expect(early.text).toContain(`can be used from ${at(PROPOSAL_NBF_SECONDS)}`);
+    expect(early.text).toContain(`is valid from ${at(PROPOSAL_NBF_SECONDS)}`);
     expect(storedRecord().measurements).toHaveLength(1);
     // Different words again, and the same receipt writes: none of the refusals above spent it.
     const words = 'Yes, correct it zq7-approval-marker';
@@ -406,7 +416,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     // The window is checked before the words: an assistant chaining the second call is sent back to the user.
     const chained = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt }, at(2));
     expect(chained.isError).toBe(true);
-    expect(chained.text).toBe(`That confirm receipt is not valid yet: it can be used from ${at(PROPOSAL_NBF_SECONDS)}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
+    expect(chained.text).toBe(`That confirm receipt is not valid yet: it is valid from ${at(PROPOSAL_NBF_SECONDS)}; the second call follows the user’s answer. Nothing was written.`);
     expect(storedRecord().measurements).toHaveLength(1);
     const written = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(11));
     expect(written.isError).toBe(false);

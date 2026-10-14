@@ -13,7 +13,8 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PassThrough } from 'node:stream';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core';
-import { FEEDBACK_HIDDEN, MCP_TOOLS, OUTPUTS } from '../packages/health-core/src/mcp-tools';
+import { APPROVAL_MEANS, FEEDBACK_HIDDEN, MCP_TOOLS, OUTPUTS } from '../packages/health-core/src/mcp-tools';
+import { APPROVAL_DIRECTIVE } from '../packages/health-core/src/mcp-approval-wording.testing';
 import { REPO_PUBLIC } from '../packages/health-core/src/plan';
 import { run as runCli } from './edit-record';
 import { handle, MAX_LINE_BYTES, serve } from './mcp-server';
@@ -81,6 +82,19 @@ describe('US-32 — the JSON-RPC handshake', () => {
     expect(listed.result.tools[0].inputSchema).toMatchObject({ type: 'object' });
     expect((await handle({ jsonrpc: '2.0', method: 'notifications/initialized' }, path))).toBeNull();
     expect((await handle({ jsonrpc: '2.0', id: 3, method: 'ping' }, path))).toMatchObject({ result: {} });
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  // US-36 (OPEN 2026-10-14): ChatGPT flagged tool text that directs the model about approval. Every field this server
+  // publishes describes the protocol instead, here as on the hosted server.
+  it('publishes no approval directive in initialize or tools/list, every field of both (US-36)', async () => {
+    const { dir, path } = writeFixture(fixture());
+    const published = JSON.stringify([
+      await handle({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }, path),
+      await handle({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, path),
+    ]);
+    expect(published).toContain(`the commit files what they chose, with approval (${APPROVAL_MEANS}).`);
+    expect(published).not.toMatch(APPROVAL_DIRECTIVE);
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -559,7 +573,7 @@ describe('US-36 AC1 — file_results runs here: the receipt lives in this proces
     expect(stranger.result!.isError).toBe(true);
     expect(text(stranger)).toMatch(/not one this server is holding.*loses it on restart.*Nothing was written/);
 
-    // No `approval`: the stdio server does not require the user's quoted words (US-35 AC7, 2026-10-07).
+    // No `approval`: the stdio server does not require what the user said when they agreed (US-35 AC7, 2026-10-07).
     const commit = await call(path, 'file_results', { commit: { receipt: data.receipt, accept: ['c1', 'c2'], replace: [] } });
     expect(commit.result!.isError).toBeUndefined();
     expect(text(commit)).toContain('Saved (backup:');

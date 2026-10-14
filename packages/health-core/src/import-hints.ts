@@ -28,6 +28,13 @@ export const IMPORT_ACCEPTED_TYPES = 'PDF, JPEG, PNG or ZIP';
 /** The `fileDates` argument, shown verbatim: a list of pairs, because ChatGPT drops a map-shaped param (live 2026-09-07). */
 const FILE_DATES_SHAPE = 'fileDates: [{ "file": "<name as listed>", "date": "YYYY-MM-DD" }]';
 
+/**
+ * What `approval` carries, said one way on every surface (US-36 AC9, US-35 AC7). It describes the field and
+ * never directs the model: ChatGPT flagged the old "own words, quoted verbatim" orders as a suspicious instruction (2026-10-12).
+ * Here because this module imports nothing; mcp-tools.ts re-exports it.
+ */
+export const APPROVAL_MEANS = 'what the user said when they agreed';
+
 export const IMPORT_FILE_REASONS = ['unsupported', 'nested_zip', 'too_large', 'no_date', 'bad_date', 'quota', 'allowance', 'time', 'unreadable', 'too_many'] as const;
 export type ImportFileReason = (typeof IMPORT_FILE_REASONS)[number];
 
@@ -86,7 +93,7 @@ export const IMPORT_REFUSALS = {
   /** A `commit` block that does not parse. */
   commit:
     'The commit was malformed. Pass the receipt exactly as the extract returned it, with accept and replace as lists of candidate ids, ' +
-    'and approval as what the user said when they agreed. Nothing was written.',
+    `and approval (${APPROVAL_MEANS}). Nothing was written.`,
   /** Anything else that does not parse: a fileNames or fileDates shape. */
   arguments:
     `The call was malformed: fileNames is a list of file names as listed, fileDates is a list of {file, date} pairs (${FILE_DATES_SHAPE}). Nothing was read.`,
