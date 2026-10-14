@@ -26,6 +26,11 @@ Clinical content:
 Stale sources:
 12. ACE/ARB (last reviewed 2019, next review due 2022), DOAC and AF are past their own next-review dates. The entries follow the pages as published.
 
+Currency check against Medsafe data sheets (2026-10-14, batch-2-currency-2026-10-14.md; 12 items applied):
+14. Sotalol: the maximum drops from the source's 640 mg a day to the data sheet's 480 mg, and paroxysmal AF follows the data sheet (80 mg twice a day, at most 80 mg three times a day).
+15. Colchicine for gout keeps the NZ low-dose regimen from the source (0.5 mg again after 12 hours, then once or twice a day). The data sheet says to wait 3 days after the starting course. bpacnz and HealthPathways use the low-dose regimen, so I kept it, and the page now makes clear that the 3-day gap applies to repeating the starting course. Keep the NZ regimen, or follow the data sheet?
+16. The other ten changes bring the pages into line with the data sheets: colchicine in kidney and liver disease, clopidogrel before surgery and with omeprazole, ticagrelor, perhexiline, amiodarone contraindications, SGLT2 inhibitors in pregnancy, the levothyroxine starting dose, and rivaroxaban kidney thresholds. Read the table in that file if you want the detail.
+
 Pilot follow-up:
 13. Non-insulin diabetes medications (on main since 1af613b7) lists confusion under "see your doctor the same day" and under "call 111". Codex found the same overlap in cardiac drugs, where confusion now appears only under 111. Make the same one-word fix on main? It is a clinical edit, so it gets a quick adversary and Codex check first.
 
