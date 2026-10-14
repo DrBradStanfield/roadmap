@@ -538,11 +538,12 @@ describe('US-17 AC12 — a switch to a cloud with no address keeps the old row',
   });
 });
 
-// Adversary R4 (2026-10-14): app load fires the push and the auto-enrolment
+// Adversary R4 (2026-10-14): app load fired the push and the auto-enrolment
 // together. A push carrying the old token could land after the switch's cancel
 // had tombstoned the row and fill it again, or 404 into a "cancelled" the user
-// never chose. While the file's opt-in belongs to another cloud, the switch
-// owns the row and the push waits.
+// never chose. The load push now runs after the enrolment, and it is held only
+// from the switch's cancel until the new token lands (across visits too: "a
+// switch's cancel is remembered across visits"). Any other push goes ahead.
 describe('US-17 AC12 — no schedule push while a cloud switch is pending', () => {
   it('after this page\'s switch cancelled the old row and its enrolment did not land, the push is held, on load or on tab hide', async () => {
     getReminderOptIn.mockReturnValue(ACTIVE); // active on google-drive, user@
@@ -600,6 +601,193 @@ describe('US-17 AC12 — no schedule push while a cloud switch is pending', () =
     await pushReminderSchedule('dropbox');
 
     expect(postedBody(f)).toMatchObject({ op: 'cancel', token: 'cap-token' });
+  });
+});
+
+/** A fetch that answers each op its own way; a throw is a network failure. */
+function fetchByOp(answer: (op: string) => Response): FetchMock {
+  const f = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
+    async (_input, init) => answer(JSON.parse(init!.body as string).op as string),
+  );
+  vi.stubGlobal('fetch', f);
+  return f;
+}
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
+const SWITCH_MARKER = 'hr_reminders_switch_cancelled';
+
+// Deploy-gate adversary R1 on 028a627a (2026-10-14): the push hold lived for
+// one page, but the tombstone it protects lives on the server. A switch that
+// cancelled the old row and then failed to enrol left the old opt-in in the
+// file. On the next visit nothing held the push, and its 404 wrote a
+// "cancelled" the user never chose.
+describe('US-17 AC12 — a switch\'s cancel is remembered across visits', () => {
+  it.each([
+    ['a 500', () => json({}, 500)],
+    ['a 429', () => json({ error: 'Too many requests' }, 429)],
+    ['a network failure', (): Response => { throw new TypeError('Failed to fetch'); }],
+  ])('visit 1 cancels and the enrolment fails (%s); visit 2 sends no push and writes no "cancelled"', async (_label, optinAnswer) => {
+    getReminderOptIn.mockReturnValue(ACTIVE); // active on google-drive
+    githubAccountEmail.mockResolvedValue('other@example.com');
+    const visit1 = fetchByOp((op) => (op === 'cancel' ? json({ ok: true }) : optinAnswer()));
+    await (await loadReminders()).autoEnrolReminders('github');
+    expect(postedBody(visit1, 0)).toMatchObject({ op: 'cancel', token: 'cap-token' });
+    expect(postedBody(visit1, 1).op).toBe('optin');
+
+    // Visit 2: the lookup fails before the switch can retry; the old row is a tombstone.
+    githubAccountEmail.mockRejectedValue(new Error('network'));
+    const visit2 = fetchByOp(() => json({ error: 'Unknown token' }, 404));
+    const second = await loadReminders();
+    await second.autoEnrolReminders('github');
+    await second.pushReminderSchedule('github');
+    await second.pushReminderSchedule('github', true);
+
+    expect(visit2).not.toHaveBeenCalled();
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+  });
+
+  it('visit 1 cancels and the new cloud then gives no address (the block key); visit 2 sends no push', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    githubAccountEmail.mockResolvedValueOnce('other@example.com').mockResolvedValueOnce(null);
+    fetchByOp(() => json({ ok: true }));
+    await (await loadReminders()).autoEnrolReminders('github');
+    expect(localStorage.getItem('hr_reminders_autoenrol_blocked')).toBe('1');
+
+    const visit2 = fetchByOp(() => json({ error: 'Unknown token' }, 404));
+    const second = await loadReminders();
+    await second.autoEnrolReminders('github');
+    await second.pushReminderSchedule('github');
+
+    expect(visit2).not.toHaveBeenCalled();
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+  });
+
+  it('a 404 on the token this browser\'s switch cancelled is not an unsubscribe (back on the old cloud)', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    githubAccountEmail.mockResolvedValue('other@example.com');
+    fetchByOp((op) => (op === 'cancel' ? json({ ok: true }) : json({}, 500)));
+    await (await loadReminders()).autoEnrolReminders('github');
+
+    const visit2 = fetchByOp(() => json({ error: 'Unknown token' }, 404));
+    await (await loadReminders()).pushReminderSchedule('google-drive');
+
+    expect(postedBody(visit2)).toMatchObject({ op: 'update', token: 'cap-token' });
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+  });
+
+  it('the marker is written before the cancel and cleared when the enrolment lands', async () => {
+    let file: FileReminderOptIn | undefined = ACTIVE;
+    getReminderOptIn.mockImplementation(() => file);
+    setReminderOptIn.mockImplementationOnce((fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>) => {
+      file = { ...fields, updatedAt: '2026-10-14T00:00:00.000Z', lamport: 4 };
+    });
+    githubAccountEmail.mockResolvedValue('other@example.com');
+    const seen: Array<string | null> = [];
+    fetchByOp((op) => {
+      seen.push(localStorage.getItem(SWITCH_MARKER));
+      return op === 'cancel' ? json({ ok: true }) : json({ token: 'new-cap-token', email: 'other@example.com' });
+    });
+
+    await (await loadReminders()).autoEnrolReminders('github');
+
+    expect(seen).toEqual(['cap-token', 'cap-token']);
+    expect(file).toMatchObject({ status: 'active', token: 'new-cap-token', provider: 'github' });
+    expect(localStorage.getItem(SWITCH_MARKER)).toBeNull();
+  });
+
+  it('a refused cancel leaves no marker: the old row is live, so pushes carry on', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    githubAccountEmail.mockResolvedValue('other@example.com');
+    const seen: Array<string | null> = [];
+    fetchByOp(() => { seen.push(localStorage.getItem(SWITCH_MARKER)); return json({}, 503); });
+
+    await (await loadReminders()).autoEnrolReminders('github');
+
+    expect(seen).toEqual(['cap-token']);
+    expect(localStorage.getItem(SWITCH_MARKER)).toBeNull();
+  });
+});
+
+// Deploy-gate adversary R2 on 028a627a (2026-10-14): after the switch's
+// identity recheck the enrolment still awaits the cancel, a second lookup and
+// the optin POST. An erase or a Turn off in that window was overwritten by
+// the new token (US-11 AC4, US-17 AC4).
+describe('US-17 AC4 / US-11 AC4 — a decision made during a silent enrolment stands', () => {
+  const ERASED: FileReminderOptIn = { status: 'cancelled', token: '', email: '', provider: 'google-drive', updatedAt: '2026-10-14T00:00:00.000Z', lamport: 9 };
+
+  it.each(['cancel', 'optin'])('an erase during the switch\'s %s fetch: no active opt-in written, the new token\'s row cancelled', async (during) => {
+    let file: FileReminderOptIn | undefined = ACTIVE; // active on google-drive
+    getReminderOptIn.mockImplementation(() => file);
+    githubAccountEmail.mockResolvedValue('other@example.com');
+    const f = fetchByOp((op) => {
+      if (op === during) file = ERASED;
+      return op === 'optin' ? json({ token: 'new-cap-token', email: 'other@example.com' }) : json({ ok: true });
+    });
+
+    await (await loadReminders()).autoEnrolReminders('github');
+
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+    expect(f.mock.calls.map((_c, i) => postedBody(f, i).op)).toEqual(['cancel', 'optin', 'cancel']);
+    expect(postedBody(f, 2)).toEqual({ op: 'cancel', token: 'new-cap-token' });
+    expect(trackProductEvent).not.toHaveBeenCalled(); // not the user's opt-out
+    expect(window.dispatchEvent).not.toHaveBeenCalled(); // no enrolment notice
+  });
+
+  it('a first enrolment whose file records a decision by the time the optin answers: nothing written, the row cancelled', async () => {
+    let file: FileReminderOptIn | undefined;
+    getReminderOptIn.mockImplementation(() => file);
+    const f = fetchByOp((op) => {
+      if (op === 'optin') file = { ...ACTIVE, status: 'cancelled', provider: 'dropbox' }; // another device turned it off
+      return op === 'optin' ? json({ token: 'new-cap-token', email: 'dbx@example.com' }) : json({ ok: true });
+    });
+
+    await (await loadReminders()).autoEnrolReminders('dropbox');
+
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+    expect(postedBody(f, 1)).toEqual({ op: 'cancel', token: 'new-cap-token' });
+  });
+
+  it('a refused cancel of the superseded row goes to Sentry with the status code only', async () => {
+    let file: FileReminderOptIn | undefined;
+    getReminderOptIn.mockImplementation(() => file);
+    fetchByOp((op) => {
+      if (op === 'optin') { file = ERASED; return json({ token: 'new-cap-token', email: 'dbx@example.com' }); }
+      return json({}, 500);
+    });
+
+    await (await loadReminders()).autoEnrolReminders('dropbox');
+
+    expect(captureException).toHaveBeenCalledTimes(1);
+    const [err, context] = captureException.mock.calls[0];
+    expect((err as Error).message).toBe('Superseded reminder row cancel failed (500).');
+    expect(context).toEqual({ tags: { area: 'reminders', op: 'superseded-cancel' } });
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+  });
+
+  it('the file meanwhile holds the SAME token active (the verified lane keeps its token): left alone, never cancelled', async () => {
+    let file: FileReminderOptIn | undefined;
+    getReminderOptIn.mockImplementation(() => file);
+    const f = fetchByOp(() => {
+      file = { ...ACTIVE, token: 'new-cap-token' }; // the manual toggle landed first
+      return json({ token: 'new-cap-token', email: 'user@example.com' });
+    });
+
+    await (await loadReminders()).autoEnrolReminders('google-drive');
+
+    expect(f).toHaveBeenCalledTimes(1);
+    expect(setReminderOptIn).not.toHaveBeenCalled();
+  });
+});
+
+describe('US-11 AC4 — an erase clears the switch marker', () => {
+  it('cancelRemindersForErase removes hr_reminders_switch_cancelled, even with no active opt-in', async () => {
+    getReminderOptIn.mockReturnValue(undefined);
+    mockFetchOk({ ok: true });
+    const { cancelRemindersForErase } = await loadReminders();
+    localStorage.setItem('hr_reminders_switch_cancelled', 'old-cap-token');
+
+    await cancelRemindersForErase();
+
+    expect(localStorage.getItem('hr_reminders_switch_cancelled')).toBeNull();
   });
 });
 

@@ -41,6 +41,7 @@ import { Sentry } from '../src/lib/sentry';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import type { Backend } from './connect';
+import type { FileReminderOptIn } from '@roadmap/health-core';
 
 const REMINDERS_API_URL = 'https://health-tool-app.fly.dev/api/reminders-v2';
 
@@ -111,8 +112,17 @@ async function identityFor(backend: ReminderBackend): Promise<Identity | null> {
  * new enrolment lands (US-17 AC12). While true, the old token's row is a
  * tombstone the switch owns: a push would refill it, or 404 into a
  * "cancelled" nobody chose. A switch that never cancels holds nothing.
+ * SWITCH_CANCELLED_KEY carries the same fact (as the old token) to the next
+ * visit, because the tombstone outlives the page; the flag covers a browser
+ * whose storage is blocked.
  */
 let switchHoldsOldToken = false;
+const SWITCH_CANCELLED_KEY = 'hr_reminders_switch_cancelled';
+
+/** The same decision in the file: both absent, or the same status, token and provider. */
+function sameOptIn(a: FileReminderOptIn | undefined, b: FileReminderOptIn | undefined): boolean {
+  return a?.status === b?.status && a?.token === b?.token && a?.provider === b?.provider;
+}
 
 /** One address, however the provider cased or padded it. */
 function sameAddress(a: string, b: string): boolean {
@@ -153,10 +163,11 @@ export interface OptInResult {
  * to give (ReminderEmailNeeded on the previous attempt). Manual path only.
  *
  * silent: the US-17 auto-enrolment path (no typed input, no error surfaced).
+ * `from` is the file's opt-in when that enrolment began (undefined: no decision).
  */
 export async function optInToReminders(
   backend: Backend,
-  { marketingEmail, email, silent }: { marketingEmail?: string; email?: string; silent?: boolean } = {},
+  { marketingEmail, email, silent }: { marketingEmail?: string; email?: string; silent?: { from: FileReminderOptIn | undefined } } = {},
 ): Promise<OptInResult> {
   if (!remindersSupported(backend)) throw new Error('Reminders need a connected cloud account.');
   // US-07 AC6: the plan is built for adults, and so are its reminders.
@@ -179,6 +190,23 @@ export async function optInToReminders(
   }
   const reply = (await res.json()) as { token?: string; email: string };
   if (!reply.token) return { email: reply.email, refreshed: true };
+  // The silent path awaited lookups and posts since it read the file, and an
+  // erase, a Turn off or another device may have decided meanwhile (US-11 AC4,
+  // US-17 AC4). That decision stands: the token is not written, and its row is
+  // cancelled so it cannot outlive the decision (not their opt-out, so not
+  // counted). A token the file already holds active is theirs: left alone.
+  const now = getReminderOptIn();
+  if (silent && !sameOptIn(now, silent.from)) {
+    if (now?.status !== 'active' || now.token !== reply.token) {
+      const cancel = await postCancel(reply.token, await cancelProofFor(backend));
+      // The status code only (CLAUDE.md telemetry rule): this row has no token anywhere now.
+      if (!cancel.ok) {
+        const refused = new Error(`Superseded reminder row cancel failed (${cancel.status}).`);
+        Sentry.captureException(refused, { tags: { area: 'reminders', op: 'superseded-cancel' } });
+      }
+    }
+    throw new Error('Reminder enrolment superseded by a decision made meanwhile.');
+  }
   setReminderOptIn({ status: 'active', token: reply.token, email: reply.email, provider: backend });
   await flushRoadmapStore(); // the token must reach the cloud file
   // reminder_optin is counted by the SERVER when the row lands (every lane) —
@@ -231,7 +259,7 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
       // The lookup awaited: an erase, a toggle-off or another device may have
       // changed the opt-in meanwhile. Act only on the one we read.
       const current = getReminderOptIn();
-      if (current?.status !== 'active' || current.token !== optIn.token || current.provider !== optIn.provider) return;
+      if (!current || !sameOptIn(current, optIn)) return;
       // Drive's identity carries an ID token, not an address; its account email is local.
       const address = identity && 'email' in identity ? identity.email
         : backend === 'google-drive' ? new GoogleDriveAdapter(googleDriveConfig()).accountEmail() : null;
@@ -253,9 +281,11 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
       // over the old one, the only key to that row. The file keeps the old
       // opt-in, so the next visit on the new cloud tries the cancel again.
       switchHoldsOldToken = true;
+      safeSetItem(SWITCH_CANCELLED_KEY, optIn.token);
       const res = await postCancel(optIn.token, await cancelProofFor(optIn.provider));
       if (!res.ok) {
         switchHoldsOldToken = false; // the old row is still live: pushes may carry on
+        safeRemoveItem(SWITCH_CANCELLED_KEY);
         // The status code only: no address, no schedule (CLAUDE.md telemetry rule).
         const refused = new Error(`Old reminder row cancel failed (${res.status}).`);
         Sentry.captureException(refused, { tags: { area: 'reminders', op: 'switch-cancel' } });
@@ -266,10 +296,12 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
     // An already-enrolled address (token lost with the file, or enrolled from
     // another lane) is refreshed server-side and nothing is written here —
     // there is no enrolment to announce, and the next visit refreshes again.
-    // After a switch the file keeps the old opt-in (no token to replace it),
-    // so pushReminderSchedule holds off and no 404 can mark it cancelled.
-    if ((await optInToReminders(backend, { silent: true })).refreshed) return;
+    // After a switch's cancel the file keeps the old opt-in until a new token
+    // lands, so pushReminderSchedule holds off, on this visit and the next
+    // (SWITCH_CANCELLED_KEY), and no 404 can mark it cancelled.
+    if ((await optInToReminders(backend, { silent: { from: optIn } })).refreshed) return;
     switchHoldsOldToken = false; // the new token is in the file
+    safeRemoveItem(SWITCH_CANCELLED_KEY);
     try { sessionStorage.setItem(ENROL_NOTICE_KEY, '1'); } catch { /* the live event still fires */ }
     window.dispatchEvent(new Event('hr:reminders-changed'));  // re-render the control
     window.dispatchEvent(new Event('hr:reminders-enrolled')); // show the one-time notice
@@ -294,6 +326,8 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
  * (where the store lives) must never import `standalone/`.
  */
 export async function cancelRemindersForErase(): Promise<void> {
+  // An erase leaves no reminder token on the device, not even a cancelled one.
+  safeRemoveItem(SWITCH_CANCELLED_KEY);
   const optIn = getReminderOptIn();
   if (optIn?.status !== 'active') return;
   const res = await postCancel(optIn.token, await cancelProofFor(optIn.provider));
@@ -340,17 +374,20 @@ export async function pushReminderSchedule(backend: Backend, keepalive = false):
     } catch { /* retried next visit */ }
     return;
   }
-  // This page's cloud switch cancelled the old row and its enrolment has not
-  // landed (US-17 AC12): a push could refill the tombstone, or 404 into a
-  // "cancelled" the user never chose. A switch that never cancelled holds
-  // nothing, so the old row keeps its schedule current.
-  if (switchHoldsOldToken && optIn.provider !== backend) return;
+  // A cloud switch in this browser cancelled the old row, on this visit or an
+  // earlier one, and its enrolment has not landed (US-17 AC12): a push could
+  // refill the tombstone, or 404 into a "cancelled" the user never chose. A
+  // switch that never cancelled holds nothing, so the old row keeps its
+  // schedule current. A 404 on a token the switch cancelled is that
+  // tombstone, not an email-link unsubscribe.
+  const cancelledBySwitch = safeGetItem(SWITCH_CANCELLED_KEY) === optIn.token;
+  if ((switchHoldsOldToken || cancelledBySwitch) && optIn.provider !== backend) return;
   try {
     const res = await post(
       { op: 'update', token: optIn.token, schedule: computeCurrentReminderSchedule() },
       keepalive,
     );
-    if (res.status === 404) {
+    if (res.status === 404 && !cancelledBySwitch) {
       setReminderOptIn({ ...optIn, status: 'cancelled' });
       window.dispatchEvent(new Event('hr:reminders-changed'));
     }
