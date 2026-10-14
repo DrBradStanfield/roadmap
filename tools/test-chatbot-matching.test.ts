@@ -394,7 +394,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     must_mention?: string[]; must_match?: string[]; must_not_match?: string[]; expect_empty_context?: true;
   }
   const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
-  const CATEGORIES = 'own-data-analysis,algorithm-precedence';
+  const CATEGORIES = 'own-data-analysis,algorithm-precedence,algorithm-precedence-parked';
   const cases = all.filter(q => CATEGORIES.split(',').includes(q.category));
 
   /** Run the harness offline; `fixtures` (if given) replaces tools/test-queries.json. Returns the answer calls' systems. */
