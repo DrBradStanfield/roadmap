@@ -377,6 +377,27 @@ describe('US-21 phase 3 — legacy lab rows are corrected into SI at load', () =
     expect(stableStringify(migrateFile(fileWith(decimal), OPTS).labValues)).toBe(stableStringify(decimal));
   });
 
+  it('US-21 AC16 — a legacy cells/mm³ row converts at ×0.001 on load, once; 10^n/mm³ rows and a decimal count are left alone', () => {
+    const plt = labRow({ id: 'p1', metricName: 'Platelets', value: 250000, unit: 'cells/mm³', referenceLow: 150000, referenceHigh: 400000 });
+    const out = migrateFile(fileWith([plt]), OPTS);
+    expect(out.labValues).toHaveLength(2);
+    expect(out.labValues[0]).toMatchObject({ id: 'p1', value: 250000, unit: 'cells/mm³', status: 'entered-in-error' });
+    expect(out.labValues[1]).toMatchObject({
+      id: 'p1#si', metricName: 'Platelets', value: 250, unit: '×10⁹/L', referenceLow: 150, referenceHigh: 400,
+      status: 'active', correctsId: 'p1', recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z',
+    });
+    // The second load is a no-op: the #si row is already canonical.
+    const twice = migrateFile(JSON.parse(JSON.stringify(out)), OPTS);
+    expect(stableStringify(twice.labValues)).toBe(stableStringify(out.labValues));
+    // Factor 1 holds the right number already, and a decimal per mm³ is refused: no correction row.
+    const leftAlone = [
+      labRow({ id: 'r1', metricName: 'RBC', value: 4.8, unit: '10^6/mm³', referenceLow: 4.5, referenceHigh: 5.9 }),
+      labRow({ id: 'w1', metricName: 'WBC', value: 6.2, unit: '10^3/mm3', referenceLow: 4, referenceHigh: 11 }),
+      labRow({ id: 'w2', metricName: 'WBC', value: 6.2, unit: 'cells/mm3', referenceLow: 4, referenceHigh: 11 }),
+    ];
+    expect(stableStringify(migrateFile(fileWith(leftAlone), OPTS).labValues)).toBe(stableStringify(leftAlone));
+  });
+
   it('US-21 phase 3 — a v1 copy merged with a migrated copy converges: no #dup ids, one active row per slot', () => {
     const v1 = migrateFile(fileWith([labRow({ id: 'l1' })]), OPTS);
     const other = migrateFile(fileWith([labRow({ id: 'l1' })]), { ...OPTS, deviceId: 'dev_b' });
