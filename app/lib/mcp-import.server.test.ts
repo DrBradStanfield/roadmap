@@ -28,7 +28,7 @@ import { chargeWrites, connectionKey, IMPORT_FILES_PER_DAY, importFiles, resetMc
 import { seal } from './mcp-seal.server';
 import { machineFiles } from './rate-limiter';
 import { APPROVAL_MEANS, type ImportPayload, type ImportSurface, MAX_IMPORT_FILES_PER_CALL, MAX_RECEIPT_LENGTH, OUTPUTS, runToolOverSync as runTool } from '../../packages/health-core/src/mcp-tools';
-import { APPROVAL_DIRECTIVE } from '../../packages/health-core/src/mcp-approval-wording.testing';
+import { APPROVAL_DIRECTIVE, isPartialRun } from '../../packages/health-core/src/mcp-approval-wording.testing';
 import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 import { IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
 import { ROADMAP_FILE_NAME, StorageError } from '../../packages/health-core/src/adapter';
@@ -43,7 +43,6 @@ const APPROVED = 'Yes, file them';
 const ANSWERS: string[] = [];
 const heard = <T>(answer: T): T => (ANSWERS.push(JSON.stringify(answer) ?? ''), answer);
 afterAll(() => {
-  expect(ANSWERS.length).toBeGreaterThan(20);
   for (const answer of ANSWERS) expect(answer).not.toMatch(APPROVAL_DIRECTIVE);
 });
 /** The real surface, with every answer it gives collected. */
@@ -297,7 +296,7 @@ describe('US-35 AC7 / US-36 AC9 — a commit quotes the user’s approval, check
   const PENDING = `imports/pending-${PAYLOAD.id}.json`;
   const file = createEmptyFile({ deviceId: 'test', now: NOW });
   const deadline = () => Date.now() + MCP_IMPORT_BUDGET_MS;
-  const QUOTE = `This call carries no approval. The commit has the same receipt, and approval (${APPROVAL_MEANS} to these candidates). There is no commit until the user agrees. Nothing was written.`;
+  const QUOTE = `This call carries no approval. The commit has the same receipt, and approval (${APPROVAL_MEANS}). There is no commit until the user agrees. Nothing was written.`;
 
   beforeEach(() => resetMcpMemory());
 
@@ -770,4 +769,10 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     expect(names[0]).not.toBe(names[1]);
     expect(names.every((n) => n.length <= MAX_FILE_NAME_LENGTH)).toBe(true);
   });
+});
+
+// Last in the file, so every answer is in. A filtered run (`-t`) hears fewer and skips this (R5, 2026-10-14).
+it('heard enough answers for the approval blocklist to mean something (US-36)', ({ task, skip }) => {
+  if (isPartialRun(task.file as never)) skip();
+  expect(ANSWERS.length).toBeGreaterThan(20);
 });

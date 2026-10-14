@@ -22,7 +22,7 @@ import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../pack
 import { AUTHORIZE_PER_WINDOW, resetMcpMemory, STATE_LIFETIME_SECONDS, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 import { ISSUES_PER_HOUR, REPORTS_PER_DAY } from '../lib/github-issues.server';
 import { APPROVAL_MEANS, MAX_RECEIPT_LENGTH, MCP_PROMPTS, MCP_TOOLS, OUTPUTS, SERVER_VERSION } from '../../packages/health-core/src/mcp-tools';
-import { APPROVAL_DIRECTIVE } from '../../packages/health-core/src/mcp-approval-wording.testing';
+import { AFTER_THE_REPLY, APPROVAL_DIRECTIVE, isPartialRun } from '../../packages/health-core/src/mcp-approval-wording.testing';
 import { MAX_CORRECTION_AGE_DAYS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { MAX_STATE_LENGTH } from '../lib/mcp-authorize.server';
 import { action, loader } from './mcp.$';
@@ -67,7 +67,6 @@ afterEach(() => {
 /** Every /mcp answer this suite gets back, whole: none may direct the model about approval (US-36, 2026-10-14). */
 const ANSWERS: string[] = [];
 afterAll(() => {
-  expect(ANSWERS.length).toBeGreaterThan(100);
   for (const answer of ANSWERS) expect(answer).not.toMatch(APPROVAL_DIRECTIVE);
 });
 
@@ -2024,8 +2023,12 @@ describe('US-32 AC29 — the counter records why a call was refused', () => {
     ]);
     expect(JSON.stringify(vi.mocked(recordServerEvent).mock.calls)).not.toMatch(/Tuesday|Yes please/);
     // Told at connect too: the second call carries what the user said (described, not directed: US-36, 2026-10-14).
-    expect(INSTRUCTIONS).toContain('the first returns a preview and a confirm receipt and writes nothing; the second, with confirm and approval, writes.');
-    expect(INSTRUCTIONS).toContain(`until its commit, which carries approval (${APPROVAL_MEANS}). A file dropped into the chat`);
+    expect(INSTRUCTIONS).toContain('the first returns a preview for the user and a confirm receipt, and writes nothing; the second, after the user’s reply, with confirm and approval, writes.');
+    expect(INSTRUCTIONS).toContain(`until its commit, made after the user’s reply, which carries approval (${APPROVAL_MEANS}). A file dropped into the chat`);
+    // R1 (2026-10-14): the import commit has no time window (US-36 AC5), so the words put the agreement after the preview.
+    expect(INSTRUCTIONS).toMatch(AFTER_THE_REPLY);
+    // Checked statically too, beside the initialize answer the blocklist sees.
+    expect(INSTRUCTIONS).not.toMatch(APPROVAL_DIRECTIVE);
   });
 
   it('a correction older than ninety days is filed as too-old', async () => {
@@ -2320,4 +2323,10 @@ describe('the OAuth funnel counts refusals, not only successes (US-32 AC34)', ()
     expect(written).not.toContain('SSS');
     expect(written).not.toContain(CLAUDE_CIMD);
   });
+});
+
+// Last in the file, so every answer is in. A filtered run (`-t`) hears fewer and skips this (R5, 2026-10-14).
+it('heard enough answers for the approval blocklist to mean something (US-36)', ({ task, skip }) => {
+  if (isPartialRun(task.file as never)) skip();
+  expect(ANSWERS.length).toBeGreaterThan(100);
 });

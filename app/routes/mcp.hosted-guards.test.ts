@@ -20,7 +20,7 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
 import { APPROVAL_MEANS, MAX_LAB_ROWS_PER_CALL } from '../../packages/health-core/src/mcp-tools';
-import { APPROVAL_DIRECTIVE } from '../../packages/health-core/src/mcp-approval-wording.testing';
+import { APPROVAL_DIRECTIVE, isPartialRun } from '../../packages/health-core/src/mcp-approval-wording.testing';
 import { REPO_PUBLIC } from '../../packages/health-core/src/plan';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
@@ -69,7 +69,6 @@ afterEach(() => {
 /** Every answer this suite gets back, whole: none may direct the model about approval (US-36, 2026-10-14). */
 const ANSWERS: string[] = [];
 afterAll(() => {
-  expect(ANSWERS.length).toBeGreaterThan(50);
   for (const answer of ANSWERS) expect(answer).not.toMatch(APPROVAL_DIRECTIVE);
 });
 
@@ -259,7 +258,7 @@ const NOT_OURS = 'does not match these arguments on this connection, or is not o
 /** What the user said when they agreed, carried in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, go ahead';
 const QUOTE_APPROVAL = (name: string) =>
-  `This call carries no approval. The second ${name} call has the same arguments, the same receipt, and approval (${APPROVAL_MEANS} to this change). There is no second call until the user agrees. Nothing was written.`;
+  `This call carries no approval. The second ${name} call has the same arguments, the same receipt, and approval (${APPROVAL_MEANS}). There is no second call until the user agrees. Nothing was written.`;
 import { WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 
 const at = (seconds: number) => new Date(Date.parse(NOW) + seconds * 1000).toISOString();
@@ -314,15 +313,17 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     expect(proposed.text).toMatch(/^PROPOSAL — nothing written yet\./);
     expect(proposed.text).toContain('This proposal is for the user to review.');
     expect(proposed.text).toContain('An auto-approve setting in the client is not the user agreeing.'); // a client set to allow every action has not agreed
-    // US-36 (2026-10-14): the proposal describes the protocol and never coaches the user's reply ("Suspicious Instruction",
-    // live 2026-10-12); the afterAll blocklist checks it. The bare-"yes" advice lives in the reviewer notes, not in agent-facing text.
+    // US-36 (2026-10-14): the proposal describes the protocol and never directs the model ("Suspicious Instruction",
+    // live 2026-10-12); the afterAll blocklist checks it. It keeps one neutral note about the reply, with no safety-check
+    // mention: 8 of 8 sentence replies wrote and 0 of 3 bare "yes" replies did (live 2026-10-07 to 10-12).
+    expect(proposed.text).toContain('A reply that names the change (for example “Yes, apply this change”) is clearer than “yes” alone.');
     const data = OUTPUTS.correct_value.parse(proposed.structured);
     expect(data).toMatchObject({ proposal: true, correctsId: LDL_ID, value: 2.8, confirmFrom: at(PROPOSAL_NBF_SECONDS) });
     const receipt = data.confirm!;
     // UUID-shaped: ChatGPT read the old 400-character sealed blob as a disguised payload and blocked the confirm (2026-10-07).
     expect(receipt).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     expect(proposed.text).toContain(`confirm: ${receipt}`);
-    expect(proposed.text).toContain(`approval (${APPROVAL_MEANS} to this change)`);
+    expect(proposed.text).toContain(`approval (${APPROVAL_MEANS})`);
     expect(storedRecord().measurements).toHaveLength(1);
     expect(storedRecord().measurements[0].status).toBe('active');
 
@@ -392,7 +393,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     const long = 'Yes '.repeat(51);
     const tooLong = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: long }, at(11));
     expect(tooLong.isError).toBe(true);
-    expect(tooLong.text).toBe(`approval (${APPROVAL_MEANS} to this change) is at most 200 characters. Nothing was written.`);
+    expect(tooLong.text).toBe(`approval (${APPROVAL_MEANS}) is at most 200 characters. Nothing was written.`);
     const notText = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: 5 }, at(11));
     expect(notText.text).toBe(QUOTE_APPROVAL('correct_value'));
     // "Not valid yet", not "not ours": the MAC matched with these words, so they are outside the identity.
@@ -609,4 +610,10 @@ describe('the consent screen cannot be framed and names its own trust (US-32)', 
     expect(screen).not.toContain('<script>alert(1)</script>');
     expect(screen).toContain('&#60;script&#62;');
   });
+});
+
+// Last in the file, so every answer is in. A filtered run (`-t`) hears fewer and skips this (R5, 2026-10-14).
+it('heard enough answers for the approval blocklist to mean something (US-36)', ({ task, skip }) => {
+  if (isPartialRun(task.file as never)) skip();
+  expect(ANSWERS.length).toBeGreaterThan(50);
 });

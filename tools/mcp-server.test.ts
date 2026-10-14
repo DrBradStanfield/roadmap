@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { PassThrough } from 'node:stream';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core';
 import { APPROVAL_MEANS, FEEDBACK_HIDDEN, MCP_TOOLS, OUTPUTS } from '../packages/health-core/src/mcp-tools';
-import { APPROVAL_DIRECTIVE } from '../packages/health-core/src/mcp-approval-wording.testing';
+import { AFTER_THE_REPLY, APPROVAL_DIRECTIVE } from '../packages/health-core/src/mcp-approval-wording.testing';
 import { REPO_PUBLIC } from '../packages/health-core/src/plan';
 import { run as runCli } from './edit-record';
 import { handle, MAX_LINE_BYTES, serve } from './mcp-server';
@@ -93,7 +93,10 @@ describe('US-32 — the JSON-RPC handshake', () => {
       await handle({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }, path),
       await handle({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, path),
     ]);
-    expect(published).toContain(`the commit files what they chose, with approval (${APPROVAL_MEANS}).`);
+    expect(published).toContain(`The candidates are shown to the user, and the commit, after their reply, files what they chose, with approval (${APPROVAL_MEANS}).`);
+    // R1 (2026-10-14): the import commit has no time window (US-36 AC5), so the words put the agreement after the preview.
+    const instructions = (await handle({ jsonrpc: '2.0', id: 3, method: 'initialize', params: {} }, path) as { result: { instructions: string } }).result.instructions;
+    expect(instructions).toMatch(AFTER_THE_REPLY);
     expect(published).not.toMatch(APPROVAL_DIRECTIVE);
     rmSync(dir, { recursive: true, force: true });
   });

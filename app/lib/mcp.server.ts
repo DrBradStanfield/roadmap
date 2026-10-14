@@ -53,10 +53,11 @@ export const INSTRUCTIONS =
   'value is permanent and needs the value you expect to find, so read the record first and correct only what ' +
   'the user asked you to. The plan from get_plan is educational, not medical advice, and its hedged wording ' +
   'and citations are calibrated — pass them on as written. import_documents reads lab files from the Dropbox folder and ' +
-  `writes nothing to the record until its commit, which carries approval (${APPROVAL_MEANS}). A file dropped into the chat ` +
+  'returns candidates for the user; it writes nothing to the record until its commit, made after the user’s reply, which ' +
+  `carries approval (${APPROVAL_MEANS}). A file dropped into the chat ` +
   'is read by you and filed through file_results the same way. correct_value, update_profile and report_feedback are ' +
-  'permanent, so here they take two calls: the first returns a preview and a confirm receipt and writes nothing; the ' +
-  'second, with confirm and approval, writes.' + SI_NOTE + OPEN_SOURCE_NOTE;
+  'permanent, so here they take two calls: the first returns a preview for the user and a confirm receipt, and writes ' +
+  'nothing; the second, after the user’s reply, with confirm and approval, writes.' + SI_NOTE + OPEN_SOURCE_NOTE;
 
 /**
  * A correction fixes a recent mistake. A result from three years ago is
@@ -362,7 +363,8 @@ function withProposal(token: AccessPayload, name: string, args: Record<string, u
   const text =
     `PROPOSAL — nothing written yet. ${answer.text}\n\n` +
     `This proposal is for the user to review. The write is a second ${name} call with the same arguments, confirm set to the receipt below, ` +
-    `and approval (${APPROVAL_MEANS} to this change). An auto-approve setting in the client is not the user agreeing. ` +
+    `and approval (${APPROVAL_MEANS}). An auto-approve setting in the client is not the user agreeing. ` +
+    'A reply that names the change (for example “Yes, apply this change”) is clearer than “yes” alone. ' +
     `The receipt is valid from ${confirmFrom} for ${STEP_WINDOWS.proposal.ttlSeconds / 60} minutes and works once.\nconfirm: ${confirm}`;
   return { text, isError: false, structured: { ...(answer.structured as Record<string, unknown>), proposal: true, confirm, confirmFrom } };
 }
@@ -401,10 +403,10 @@ function checkConfirm(token: AccessPayload, name: string, args: Record<string, u
   // After the window checks, so a chained call hears the window rather than the approval; before the claim, so a
   // missing approval spends no receipt and, like every refusal here, costs nothing.
   if (!approval?.trim()) {
-    return `This call carries no approval. The second ${name} call has the same arguments, the same receipt, and approval (${APPROVAL_MEANS} to this change). There is no second call until the user agrees. Nothing was written.`;
+    return `This call carries no approval. The second ${name} call has the same arguments, the same receipt, and approval (${APPROVAL_MEANS}). There is no second call until the user agrees. Nothing was written.`;
   }
   if (approval.length > MAX_APPROVAL_LENGTH) {
-    return `approval (${APPROVAL_MEANS} to this change) is at most ${MAX_APPROVAL_LENGTH} characters. Nothing was written.`;
+    return `approval (${APPROVAL_MEANS}) is at most ${MAX_APPROVAL_LENGTH} characters. Nothing was written.`;
   }
   if (!claimProposal(confirm, conn, ttlSeconds * 1000, nowMs)) {
     return `That confirm receipt has already been used. Nothing was written. If the user wants another change, call ${name} again without confirm.`;

@@ -57,7 +57,7 @@ import { dayOf, mergeFiles, stampFields } from './merge';
 import { migrateFile } from './migrate';
 import { createEmptyFile, createLabValue, createMeasurement, type RoadmapFile } from './roadmap-file';
 import { METRIC_TYPES } from './validation';
-import { APPROVAL_DIRECTIVE } from './mcp-approval-wording.testing';
+import { AFTER_THE_REPLY, APPROVAL_DIRECTIVE } from './mcp-approval-wording.testing';
 
 const CTX = { deviceId: 'us32_test', now: '2026-09-01T09:00:00Z' };
 const NOW = '2026-09-01T09:00:00Z';
@@ -1493,8 +1493,8 @@ describe('US-32 AC39 — REPO_PUBLIC governs every report_feedback surface', () 
       'behaviour, not the person — dates of results and file paths too. Say it is public before you call it, and only ' +
       'when the user asked you to. Offer it when a tool refuses something they expected, the record cannot hold what ' +
       'they want to track, or a result looks wrong. Without a GitHub token it returns a link for them ' +
-      'to submit; the answer says which. On the hosted server it writes in two calls. The first returns a preview ' +
-      'and a `confirm` receipt, and writes nothing. The second, with the same arguments, `confirm` and `approval` ' +
+      'to submit; the answer says which. On the hosted server it takes two calls. The first returns a preview for the user ' +
+      'and a `confirm` receipt, and writes nothing. The second, after the user’s reply, with the same arguments, `confirm` and `approval` ' +
       `(${APPROVAL_MEANS}), writes.`,
     );
     const proposal = ok(mod.reportFeedback(GOOD, NOW, true)).text;
@@ -2258,13 +2258,16 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(data.receipt).toMatch(/^receipt-/);
     expect(data.remaining).toEqual(['later.pdf']);
     // The user decides before anything is filed (US-35 AC7; worded as a description, not an order, 2026-10-14, US-36).
-    expect(data.next).toContain('is for the user to review and pick from; nothing is written to the record until the commit');
+    expect(data.next).toContain('is shown to the user, who picks what to file; nothing is written until a commit made after their reply.');
     // The order that keeps one receipt at a time: commit, then the rest (finding 16).
     expect(data.next).toContain('This receipt’s commit comes first; a call with fileNames set to remaining then reads the rest.');
-    // US-35 AC7 (2026-10-07): the commit carries what the user said when they agreed, and never a document's text.
+    // US-35 AC7 (2026-10-07): the commit carries the user's reply agreeing to the candidates, and never a document's text.
     expect(data.next).toContain(`approval (${APPROVAL_MEANS}; never a document’s text)`);
+    // US-36 AC5 (2026-10-14): the import commit has no time window, so its words carry the order: the reply follows the preview.
+    expect(data.next).toMatch(AFTER_THE_REPLY);
     // Short: the counts, one instruction and the continuation; detail rides on the things themselves (live 2026-09-07 it ran past 600 with the counts said twice).
-    expect(data.next.length).toBeLessThan(800);
+    // 800 became 850 on 2026-10-14 for the words that put the user's reply after the preview (R1); this fixture is 820.
+    expect(data.next.length).toBeLessThan(850);
     expect(cloud.files.get(ROADMAP_FILE_NAME)).toBe(before);
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
   });
@@ -2450,7 +2453,7 @@ describe('US-36 AC9 — two-phase is declared once per tool, and its three mirro
       expect('confirm' in tool.inputSchema.properties, tool.name).toBe(declared);
       expect('approval' in tool.inputSchema.properties, tool.name).toBe(declared);
       expect('proposal' in tool.outputSchema.properties, tool.name).toBe(declared);
-      expect(tool.description.includes('writes in two calls'), tool.name).toBe(declared);
+      expect(tool.description.includes('takes two calls'), tool.name).toBe(declared);
       expect('proposal' in OUTPUTS[tool.name as keyof typeof OUTPUTS].shape, tool.name).toBe(declared);
       const input = INPUTS[tool.name as keyof typeof INPUTS];
       if (input) expect('confirm' in input.shape, tool.name).toBe(declared);
@@ -2818,12 +2821,45 @@ describe('US-36 AC9 / US-35 AC7 — the confirming call carries the user’s quo
 
   it('says what approval carries in the second call, in every description that names it', () => {
     for (const name of ['correct_value', 'update_profile', 'report_feedback']) {
-      expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain(`The first returns a preview and a \`confirm\` receipt, and writes nothing. The second, with the same arguments, \`confirm\` and \`approval\` (${APPROVAL_MEANS}), writes.`);
+      expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain(`The first returns a preview for the user and a \`confirm\` receipt, and writes nothing. The second, after the user’s reply, with the same arguments, \`confirm\` and \`approval\` (${APPROVAL_MEANS}), writes.`);
     }
-    expect(MCP_TOOLS.find((t) => t.name === 'import_documents')!.description).toContain(`The \`commit\` call files what the user chose: the receipt,`);
+    expect(MCP_TOOLS.find((t) => t.name === 'import_documents')!.description).toContain(`The \`commit\` call files what the user chose in their reply to the candidates: the receipt,`);
     expect(MCP_TOOLS.find((t) => t.name === 'import_documents')!.description).toContain(`\`approval\` (${APPROVAL_MEANS})`);
-    expect(MCP_TOOLS.find((t) => t.name === 'file_results')!.description).toContain(`The \`commit\` call files what the user chose: accept ids,`);
+    expect(MCP_TOOLS.find((t) => t.name === 'file_results')!.description).toContain(`The \`commit\` call files what the user chose in their reply to the candidates: accept ids,`);
     expect(MCP_TOOLS.find((t) => t.name === 'file_results')!.description).toContain(`approval (${APPROVAL_MEANS})`);
+  });
+
+  // The adversary's R1 (2026-10-14): the import commits have no time window (US-36 AC5), so the words are the only
+  // thing that puts the user's agreement AFTER the preview; without them the user's first request could pass as approval.
+  // The extract's `next` is pinned beside the extract it comes from; both INSTRUCTIONS in their servers' suites.
+  it('says the agreement is a reply that follows the preview, in both import descriptions and the two-phase note (US-36 AC5)', () => {
+    expect(APPROVAL_MEANS).toMatch(/reply to the preview/);
+    for (const name of ['import_documents', 'file_results', 'correct_value', 'update_profile', 'report_feedback']) {
+      const { description } = MCP_TOOLS.find((t) => t.name === name)!;
+      expect(description, name).toContain(APPROVAL_MEANS);
+      expect(description, name).toMatch(AFTER_THE_REPLY);
+    }
+  });
+});
+
+describe('US-36 (OPEN 2026-10-14) — no approval directive in any text a surface holds, checked statically', () => {
+  it('passes every MCP_TOOLS field, every IMPORT_REFUSALS value and every importHint through the blocklist', () => {
+    for (const tool of MCP_TOOLS) expect(JSON.stringify(tool), tool.name).not.toMatch(APPROVAL_DIRECTIVE);
+    for (const [key, text] of Object.entries(IMPORT_REFUSALS)) expect(text, key).not.toMatch(APPROVAL_DIRECTIVE);
+    for (const reason of [...IMPORT_FILE_REASONS, undefined]) expect(importHint(reason), String(reason)).not.toMatch(APPROVAL_DIRECTIVE);
+    expect(importHint('bad_date', '2030-01-01 has not happened yet')).not.toMatch(APPROVAL_DIRECTIVE);
+  });
+
+  it('bites: each directive phrase the old text used is caught, and the legitimate look-alikes pass', () => {
+    for (const old of [
+      'the user’s own words, quoted verbatim', 'only after their own yes', 'WAIT for their own answer', 'end your turn',
+      'until you confirm', 'Do not call before it.', 'a client’s safety check', 'quoted from their message',
+      'carrying their words as approval', 'after the user’s yes', 'ask them to answer with a short sentence',
+    ]) expect(old).toMatch(APPROVAL_DIRECTIVE);
+    for (const fine of [
+      'Ask them to read the title and body first', 'ask them to try again, and to reconnect if it persists.',
+      'in your own words', 'A reply that names the change (for example “Yes, apply this change”) is clearer than “yes” alone.',
+    ]) expect(fine).not.toMatch(APPROVAL_DIRECTIVE);
   });
 });
 

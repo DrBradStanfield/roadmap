@@ -488,7 +488,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       // The approval first, what the user said when they agreed (ChatGPT's safety layer judges the call, 2026-10-07): read for
       // presence only, never stored or logged, and its absence reads nothing and keeps the pending file.
       if (!commit.approval?.trim()) {
-        return { refusal: `This call carries no approval. The commit has the same receipt, and approval (${APPROVAL_MEANS} to these candidates). There is no commit until the user agrees. Nothing was written.` };
+        return { refusal: `This call carries no approval. The commit has the same receipt, and approval (${APPROVAL_MEANS}). There is no commit until the user agrees. Nothing was written.` };
       }
       // Only a lowercase UUID may form a path.
       const id = commit.receipt;

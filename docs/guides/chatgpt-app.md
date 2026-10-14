@@ -2,7 +2,7 @@
 title: "Health by Dr Brad in ChatGPT"
 description: "What the Health by Dr Brad app does inside ChatGPT, what each of its nine tools can do to your health record, and what it never does."
 slug: "chatgpt-app"
-updated: "2026-10-12"
+updated: "2026-10-14"
 stories: ["US-32", "US-36"]
 ---
 
@@ -84,7 +84,7 @@ There is no delete. Nothing in your record can be removed by any tool here. A co
 
 Three tools change something that cannot be reversed: correcting a value, changing your profile, and filing a bug report. Each takes two calls. The first writes nothing and hands back a receipt saying exactly what would happen. Only after you say yes, in your own words, does the second one act. Filing results from a document works the same way: a receipt first, and nothing is saved to your record until your yes.
 
-ChatGPT has a setting that skips its own approval prompt for a connector. That setting is not your yes, and our tools say so: they still ask, and they still wait.
+ChatGPT has a setting that skips its own approval prompt for a connector. That setting is not your yes, and our tools say so: each preview tells ChatGPT that an auto-approve setting is not you agreeing, and the second call must carry your reply to that preview. Without it, nothing is written.
 
 Two more things worth knowing. Your record holds one value per test per day, so adding a second one is refused rather than allowed to bury the first. And a correction has to name the value it expects to find, so a stale reading cannot silently fix the wrong row.
 

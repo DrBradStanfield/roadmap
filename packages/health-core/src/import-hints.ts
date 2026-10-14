@@ -31,9 +31,10 @@ const FILE_DATES_SHAPE = 'fileDates: [{ "file": "<name as listed>", "date": "YYY
 /**
  * What `approval` carries, said one way on every surface (US-36 AC9, US-35 AC7). It describes the field and
  * never directs the model: ChatGPT flagged the old "own words, quoted verbatim" orders as a suspicious instruction (2026-10-12).
- * Here because this module imports nothing; mcp-tools.ts re-exports it.
+ * It names the order too: the reply comes after the preview. The import commits have no time window, so on
+ * them these words are the ordering guard (US-36 AC5). Here because this module imports nothing; mcp-tools.ts re-exports it.
  */
-export const APPROVAL_MEANS = 'what the user said when they agreed';
+export const APPROVAL_MEANS = 'the user’s reply to the preview, agreeing to it';
 
 export const IMPORT_FILE_REASONS = ['unsupported', 'nested_zip', 'too_large', 'no_date', 'bad_date', 'quota', 'allowance', 'time', 'unreadable', 'too_many'] as const;
 export type ImportFileReason = (typeof IMPORT_FILE_REASONS)[number];
