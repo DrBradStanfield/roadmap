@@ -46,6 +46,7 @@ const REFS_BP_LIFESTYLE: SuggestionReference[] = [
 ];
 
 const REFS_EXERCISE: SuggestionReference[] = [
+  { label: 'Bull 2020 – WHO guidelines on physical activity and sedentary behaviour (Br J Sports Med)', url: 'https://doi.org/10.1136/bjsports-2020-102955' },
   { label: 'Piercy 2018 – Physical Activity Guidelines for Americans (JAMA)', url: 'https://doi.org/10.1001/jama.2018.14854' },
   { label: 'Lear 2017 – Physical activity & mortality in 130,000 people (Lancet PURE)', url: 'https://doi.org/10.1016/S0140-6736(17)31634-3' },
   { label: 'Kodama 2009 – Cardiorespiratory fitness & mortality (JAMA)', url: 'https://doi.org/10.1001/jama.2009.681' },
@@ -194,8 +195,8 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Exercise ───────────────────────────────────────────────
 
   'exercise': {
-    reason: 'The Physical Activity Guidelines for Americans recommend at least 150 minutes of moderate-intensity aerobic activity plus 2–3 resistance training sessions per week. Large studies (PURE, 130,000 people across 17 countries) show that higher physical activity reduces all-cause mortality regardless of income level or country. Cardiorespiratory fitness is one of the strongest predictors of how long people live.',
-    guidelines: ['Physical Activity Guidelines 2018'],
+    reason: 'The World Health Organization (2020) and the Physical Activity Guidelines for Americans recommend at least 150 minutes of moderate-intensity aerobic activity, or at least 75 minutes of vigorous activity, or a mix of the two (each vigorous minute counts as about two moderate minutes), plus muscle-strengthening activity on 2 or more days a week. Large studies (PURE, 130,000 people across 17 countries) show that higher physical activity reduces all-cause mortality regardless of income level or country. Cardiorespiratory fitness is one of the strongest predictors of how long people live.',
+    guidelines: ['WHO 2020', 'Physical Activity Guidelines 2018'],
     references: REFS_EXERCISE,
   },
 

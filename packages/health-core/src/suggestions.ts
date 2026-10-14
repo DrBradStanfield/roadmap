@@ -311,7 +311,7 @@ export function generateSuggestions(
     category: 'exercise',
     priority: 'info',
     title: 'Regular cardio and resistance training',
-    description: 'Aim for at least 150 minutes of moderate-intensity cardio plus 2-3 resistance training sessions per week. This combination supports cardiovascular health, muscle mass, and metabolic function.',
+    description: 'Aim for at least 150 minutes of moderate cardio, or 75 vigorous, or a mix (vigorous minutes count double), plus 2-3 resistance training sessions per week. This combination supports cardiovascular health, muscle mass, and metabolic function.',
   });
 
   // Sleep — always show

@@ -444,7 +444,7 @@ Three-file sync for this section's 2026-10-14 amendments (the strict missing-mon
 |----|----------|------|----------|
 | `protein-target` | nutrition | Daily protein target (CKD-adjusted if eGFR < 45) | ISSN 2017 |
 | `fiber` | nutrition | 25-35g fiber daily | Reynolds 2019 |
-| `exercise` | exercise | 150+ min cardio + 2-3 resistance sessions/week | Physical Activity Guidelines 2018 |
+| `exercise` | exercise | At least 150 min moderate cardio, or 75 min vigorous, or a mix (1 vigorous min = 2 moderate) + 2-3 resistance sessions/week | WHO 2020; Physical Activity Guidelines 2018 |
 | `sleep` | sleep | 7-9 hours nightly | Cappuccio 2010 |
 
 ### Conditional Lifestyle Suggestions

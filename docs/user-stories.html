@@ -300,6 +300,9 @@
 <p>As a user, once I've entered data I see prioritized suggestions (urgent/attention/info), each expandable to its clinical reason with guideline tags and references I can verify.</p>
 <ul>
 <li>AC1: Suggestions follow <code>health_roadmap_algorithm.md</code>; evidence text from <code>evidence.ts</code>; <code>roadmap_text.html</code> stays consistent (three-file sync rule).</li>
+</ul>
+<p>  - Amended 2026-10-15 (Brad): the <code>exercise</code> card matches the published exercise section [107]: "at least 150 minutes of moderate cardio, or 75 vigorous, or a mix (vigorous minutes count double)", strength training unchanged. Its reason states the same rule and cites WHO 2020 (Bull 2020, the article's [107]) beside the 2018 US guidelines. The algorithm's row says the same. When the card shows does not change: it is always shown. <code>roadmap_text.html</code> needs no change; its citations stay 1-109. Test: <code>suggestions.test.ts</code> "US-07 AC1: the exercise card…".</p>
+<ul>
 <li>AC2: LDL-only entry (no total cholesterol) still produces lipid advice (regression: feedback 2026-03-06, fixed).</li>
 <li>AC3: New/changed suggestions highlight briefly so I notice what my new data changed.</li>
 <li>AC4: Results and suggestions are computed from the most recent active value per metric by clinical date (<code>recordedAt</code>); backfilled older readings never drive the plan.</li>

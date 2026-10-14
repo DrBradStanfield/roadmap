@@ -199,6 +199,7 @@ As a user, I record what I actually take (real drug + dose, or none/not-tolerate
 ### US-07 · Personalized suggestions with evidence
 As a user, once I've entered data I see prioritized suggestions (urgent/attention/info), each expandable to its clinical reason with guideline tags and references I can verify.
 - AC1: Suggestions follow `health_roadmap_algorithm.md`; evidence text from `evidence.ts`; `roadmap_text.html` stays consistent (three-file sync rule).
+  - Amended 2026-10-15 (Brad): the `exercise` card matches the published exercise section [107]: "at least 150 minutes of moderate cardio, or 75 vigorous, or a mix (vigorous minutes count double)", strength training unchanged. Its reason states the same rule and cites WHO 2020 (Bull 2020, the article's [107]) beside the 2018 US guidelines. The algorithm's row says the same. When the card shows does not change: it is always shown. `roadmap_text.html` needs no change; its citations stay 1-109. Test: `suggestions.test.ts` "US-07 AC1: the exercise card…".
 - AC2: LDL-only entry (no total cholesterol) still produces lipid advice (regression: feedback 2026-03-06, fixed).
 - AC3: New/changed suggestions highlight briefly so I notice what my new data changed.
 - AC4: Results and suggestions are computed from the most recent active value per metric by clinical date (`recordedAt`); backfilled older readings never drive the plan.

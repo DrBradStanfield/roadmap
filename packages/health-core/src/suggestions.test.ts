@@ -2919,6 +2919,26 @@ describe('Evidence attachment', () => {
     expect(sleep?.references?.length).toBeGreaterThan(0);
   });
 
+  // US-07 AC1 (amended 2026-10-15, Brad): the exercise card states the guideline
+  // as roadmap_text.html does [107]: 150 moderate, or 75 vigorous, or a mix.
+  it('US-07 AC1: the exercise card and its reason give the 150 moderate / 75 vigorous / mix rule, citing WHO 2020', () => {
+    const { inputs, results } = createTestData({}, { bmi: 22 });
+    const exercise = generateSuggestions(inputs, results, 'si').find(s => s.id === 'exercise')!;
+
+    expect(exercise.description).toBe(
+      'Aim for at least 150 minutes of moderate cardio, or 75 vigorous, or a mix (vigorous minutes count double), plus 2-3 resistance training sessions per week. This combination supports cardiovascular health, muscle mass, and metabolic function.',
+    );
+    expect(exercise.description).not.toContain('—');
+    expect(exercise.reason).toContain('World Health Organization (2020)');
+    expect(exercise.reason).toContain('at least 75 minutes of vigorous');
+    expect(exercise.reason).toContain('plus muscle-strengthening activity on 2 or more days a week');
+    expect(exercise.guidelines).toEqual(['WHO 2020', 'Physical Activity Guidelines 2018']);
+    expect(exercise.references![0]).toEqual({
+      label: 'Bull 2020 – WHO guidelines on physical activity and sedentary behaviour (Br J Sports Med)',
+      url: 'https://doi.org/10.1136/bjsports-2020-102955',
+    });
+  });
+
   it('attaches evidence to screening suggestions via prefix matching', () => {
     const { inputs, results } = createTestData(
       { sex: 'male', birthYear: 1970, birthMonth: 1 },
