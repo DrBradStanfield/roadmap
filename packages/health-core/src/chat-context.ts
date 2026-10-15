@@ -16,7 +16,8 @@
  *     no plan: profile.knownMinor and whatever passed the schema below, and
  *     no profile.age or currentSuggestions (US-07 AC6).
  *   - latestValues: the longitudinal fields that pass the input schema, or
- *     the newest history point, printed from numbers.
+ *     the newest history point, printed from numbers; units: each of those
+ *     fields' SI unit, from FIELD_UNITS.
  *   - excludedFields: input-schema field names only, never their values.
  *   - measurementHistory: metric keys on METRIC_TO_FIELD, YYYY-MM-DD dates,
  *     values that pass their field's schema, HISTORY_CAP_PER_METRIC points a
@@ -55,7 +56,7 @@ import {
   healthInputSchema, sanitizeInputs, excludedInputFields, MEDICATION_KEYS, SCREENING_KEYS,
 } from './validation';
 import {
-  LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningsToInputs,
+  FIELD_UNITS, LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningsToInputs,
   type ApiMedication, type ApiScreening,
 } from './mappings';
 import {
@@ -175,6 +176,8 @@ export function buildChatContextJson(payload: unknown): string | null {
     // US-07 AC6: the plan's adults-only gate applies, so every surface's model knows.
     profile: { sex: inputs.sex, age: results?.age, heightCm: inputs.heightCm, unitSystem, ...(knownMinor ? { knownMinor: true } : {}) },
     latestValues,
+    // US-15 AC33: what a bare latestValues number is in, whatever profile.unitSystem says (US-32 AC35's table).
+    units: Object.fromEntries(Object.keys(latestValues).map(field => [field, FIELD_UNITS[field]])),
     // US-15 AC31: the plan's own numbers and verdicts, so the model reports them rather than computing them.
     ...(results ? {
       derivedValues: {

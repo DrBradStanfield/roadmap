@@ -208,7 +208,7 @@ describe('US-15 AC11: nothing reaches the prompt unless it is allowlisted or bou
   it('US-15 AC11: only allowlisted keys reach the prompt, at the top level too', () => {
     const { context } = contextFor([], [], { notes: INJECTION, unitSystem: INJECTION });
     expect(Object.keys(context).sort()).toEqual(
-      ['currentSuggestions', 'derivedValues', 'latestValues', 'medications', 'missingInputs', 'profile', 'screenings', 'uploadedDocuments'],
+      ['currentSuggestions', 'derivedValues', 'latestValues', 'medications', 'missingInputs', 'profile', 'screenings', 'units', 'uploadedDocuments'],
     );
     expect(context.profile.unitSystem).toBe('si');
   });
@@ -462,6 +462,13 @@ describe('US-15 AC10/AC11: latestValues are the values the plan was computed fro
     expect(context.latestValues.ldlC).toBe('3.4');
     expect(context.measurementHistory).toEqual({ ldl: [{ date: '2026-08-01', value: 1.0 }] });
     expect(ids(context)).toContain('med-statin');
+  });
+
+  it('US-15 AC33 (C9): units names the SI unit of each latestValues field, from the plan read\'s table (US-32 AC35)', () => {
+    const { context } = contextFor([], [], { unitSystem: 'conventional', ldlC: 3, hba1c: 40, weightKg: 80, apoB: 1.1, measurementHistory: { lpa: [{ date: '2026-08-01', value: 80 }] } });
+    expect(Object.keys(context.units).sort()).toEqual(Object.keys(context.latestValues).sort());
+    expect(context.units).toMatchObject({ ldlC: 'mmol/L', hba1c: 'mmol/mol', apoB: 'g/L', lpa: 'nmol/L', weightKg: 'kg' });
+    expect(context.profile.unitSystem).toBe('conventional');
   });
 
   it('a field the snapshot lacks is filled from the saved series', () => {

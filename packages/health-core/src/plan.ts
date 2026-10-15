@@ -10,7 +10,7 @@ import { calculateHealthResults, missingPlanInputs } from './calculations';
 import { fileProfileToApi, fileScreeningRows } from './file-inputs';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 import {
-  FIELD_METRIC_MAP,
+  FIELD_UNITS,
   METRIC_LABELS,
   METRIC_TO_FIELD,
   measurementsToInputs,
@@ -25,7 +25,7 @@ import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-s
 import { CURRENT_SCHEMA_VERSION, type FileLabValue, type RoadmapFile } from './roadmap-file';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import {
-  CANONICAL_UNITS, UNIT_DEFS, formatDisplayValue, formatGradedValue, getDisplayLabel, type MetricType, type UnitSystem,
+  UNIT_DEFS, formatDisplayValue, formatGradedValue, getDisplayLabel, type MetricType, type UnitSystem,
 } from './units';
 import { getValidationErrors, validateHealthInputs } from './validation';
 
@@ -247,11 +247,6 @@ export function dueSplit(plan: Plan): { overdue: ReminderScheduleItem[]; upcomin
   };
 }
 
-/** The SI unit each `inputs` field holds, keyed the way `inputs` is keyed. */
-const INPUT_UNITS: Record<string, string> = Object.fromEntries(
-  Object.entries(FIELD_METRIC_MAP).map(([field, metric]) => [field, CANONICAL_UNITS[metric]]),
-);
-
 /** The agent-facing shape. Field names are stable; add, never rename. */
 export function planPayload(plan: Plan) {
   const { overdue, upcoming } = dueSplit(plan);
@@ -263,7 +258,7 @@ export function planPayload(plan: Plan) {
     generatedAt: plan.generatedAt,
     today: plan.today,
     unitSystem: plan.unitSystem,
-    units: INPUT_UNITS,
+    units: FIELD_UNITS,
     profile: {
       sex: plan.inputs.sex,
       age: plan.results.age ?? null,
