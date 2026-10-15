@@ -103,8 +103,11 @@ const REASONS = {
   field: 'not a field the roadmap reads',
   shape: 'value or unit missing or not a number',
   unit: 'unit not recognised for this field: ask the user which unit',
-  above: 'above the highest value the roadmap records: treat as very high and follow the safety rules',
-  below: 'below the lowest value the roadmap records',
+  bpAbove: 'above the highest blood pressure the roadmap records: treat it as a possible emergency and advise urgent medical care',
+  bpBelow: 'below the lowest blood pressure the roadmap records: treat it as possibly dangerous and advise urgent medical care if they feel faint, dizzy or unwell',
+  labAbove: 'above the highest value the roadmap records in this unit: ask the user to confirm the unit; if it is right, the value is very high and needs their doctor promptly',
+  labBelow: 'below the lowest value the roadmap records: ask the user to confirm the value and unit',
+  body: 'outside what the roadmap records: ask the user to check the value and unit',
   range: 'out of range for this field',
   date: 'not a real date, or a date in the future',
   older: 'older than the saved value',
@@ -114,19 +117,25 @@ const REASONS = {
   minor: 'the saved profile is under 18: a stated birth year is not used',
 } as const;
 
-const BP_FIELDS: readonly EditableField[] = ['systolicBp', 'diastolicBp'];
+const BP_FIELDS: readonly string[] = ['systolicBp', 'diastolicBp'];
+const BODY_FIELDS: readonly string[] = ['weightKg', 'waistCm', 'heightCm'];
+/** US-36 AC4's unit-swap floors, plus HbA1c and creatinine under 20 (mmol/mol, µmol/L): a unit to ask about, not a result. */
+const ASK_UNIT_BELOW: Partial<Record<MetricType, number>> = { ...UNIT_SWAP_FLOORS, hba1c: 20, creatinine: 20 };
 const measured = z.object({ value: z.number().finite(), unit: z.string().min(1).max(32) });
 const obj = (v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {}) as Record<string, unknown>;
 /** A field the schema knows: the result never names the model's own string. */
 const isEditable = (f: unknown): f is EditableField => typeof f === 'string' && (EDITABLE_FIELDS as readonly string[]).includes(f);
 /** A value the input schema accepts for `field`: sanitizeInputs drops anything out of range. */
 const inRange = (field: string, value: unknown) => field in sanitizeInputs({ [field]: value } as Partial<HealthInputs>);
-/** Why an SI value is out of its field's range, with the direction; null when it is in range. */
-function outOfRange(field: EditableField, si: number): string | null {
+/** Why an SI value is out of its field's range, by kind of field and direction; null when it is in range. */
+function outOfRange(field: string, si: number): string | null {
   if (inRange(field, si)) return null;
+  if (BODY_FIELDS.includes(field)) return REASONS.body;
   const schema = (healthInputSchema.shape as Record<string, z.ZodTypeAny>)[field];
   const max = (schema instanceof z.ZodOptional ? schema.unwrap() : schema) as z.ZodNumber;
-  return si > (max.maxValue ?? Infinity) ? REASONS.above : REASONS.below;
+  const above = si > (max.maxValue ?? Infinity);
+  if (BP_FIELDS.includes(field)) return above ? REASONS.bpAbove : REASONS.bpBelow;
+  return above ? REASONS.labAbove : REASONS.labBelow;
 }
 /** A stated date as a real calendar day no later than today anywhere on Earth (record-edits' rule), or null. */
 function statedDay(date: unknown, now: Date): string | null {
@@ -149,8 +158,9 @@ function savedLatestDay(history: Record<string, unknown>, metric: string, today:
  * caller's payload is not changed and nothing is stored. A stated value is the
  * latest for this computation unless a saved point is newer; two for one field
  * keep the later-dated (an undated value is today's). A value out of its
- * field's range, and a blood pressure that is not a usable pair, takes the
- * saved value out of the run too, so the saved one never answers for it.
+ * field's range, and a blood pressure that is not a usable pair (two numbers
+ * from one day), takes the saved value out of the run too, so the saved one
+ * never answers for it.
  */
 export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Date()): RoadmapRun {
   const base = obj(guestInputs);
@@ -161,7 +171,7 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   const reject = (field: string, reason: string) => { rejected.push({ field, reason }); };
   const stated = new Map<EditableField, { si: number; date: string; system: UnitSystem }>();
   /** Fields whose saved value must not answer for this run (C1). */
-  const unusable = new Set<EditableField>();
+  const unusable = new Set<string>();
 
   const items = Array.isArray(input.values) ? input.values : [];
   if (items.length > RUN_ROADMAP_MAX_VALUES) reject('values', REASONS.cap);
@@ -176,23 +186,26 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
     const metric = FIELD_TO_METRIC[field] as MetricType;
     const reported = reportedToCanonical(metric, parsed.data.value, parsed.data.unit);
     if (!reported) { reject(field, REASONS.unit); continue; }
+    // First, so a dated old value, in range or not, never touches a newer saved one.
+    if (date < savedLatestDay(history, metric, today)) { reject(field, REASONS.older); continue; }
+    // Below the band, the number is a unit swap (LDL "3.4 mg/dL", HbA1c "6.1 mmol/mol"), not a result.
+    if (reported.valueSI < (ASK_UNIT_BELOW[metric] ?? -Infinity)) { reject(field, REASONS.unit); continue; }
     const outside = outOfRange(field, reported.valueSI);
     if (outside) { reject(field, outside); unusable.add(field); continue; }
-    // US-36 AC4's floors: below one, the number is a unit swap (LDL "3.4 mg/dL"), not a result.
-    if (reported.valueSI < (UNIT_SWAP_FLOORS[metric] ?? -Infinity)) { reject(field, REASONS.unit); continue; }
-    if (date < savedLatestDay(history, metric, today)) { reject(field, REASONS.older); continue; }
     const prior = stated.get(field);
     if (prior && prior.date > date) { reject(field, REASONS.later); continue; }
     if (prior) reject(field, REASONS.later);
     stated.set(field, { si: reported.valueSI, date, system: reported.system });
   }
 
-  // Blood pressure is one reading: used as a pair or not at all. A pair the
-  // saved one outdates keeps the saved one.
-  const bpRejected = rejected.filter(r => BP_FIELDS.includes(r.field as EditableField));
-  const bpOutdated = bpRejected.length > 0 && bpRejected.every(r => r.reason === REASONS.older);
-  if ((bpRejected.length > 0 || BP_FIELDS.some(f => stated.has(f))) && !BP_FIELDS.every(f => stated.has(f)) && !bpOutdated) {
-    for (const f of BP_FIELDS) {
+  // Blood pressure is one reading: used as a pair from one day or not at all.
+  // A pair whose two numbers the saved one both outdates keeps the saved one.
+  const bpRejected = rejected.filter(r => BP_FIELDS.includes(r.field));
+  const [sys, dia] = [stated.get('systolicBp'), stated.get('diastolicBp')];
+  const bpOutdated = !sys && !dia && BP_FIELDS.every(f => bpRejected.some(r => r.field === f))
+    && bpRejected.every(r => r.reason === REASONS.older);
+  if ((bpRejected.length > 0 || sys || dia) && !(sys && dia && sys.date === dia.date) && !bpOutdated) {
+    for (const f of BP_FIELDS as EditableField[]) {
       if (stated.delete(f) || !bpRejected.some(r => r.field === f)) reject(f, REASONS.pair);
       unusable.add(f);
     }
@@ -208,11 +221,12 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   if (input.height != null) {
     const height = measured.safeParse(input.height);
     const cm = height.success ? reportedToCanonical('height', height.data.value, height.data.unit)?.valueSI : undefined;
+    const outside = cm === undefined ? null : outOfRange('heightCm', cm);
     if (!height.success) reject('heightCm', REASONS.shape);
     else if (cm === undefined) reject('heightCm', REASONS.unit);
-    else if (inRange('heightCm', cm)) overlay.heightCm = cm;
-    else reject('heightCm', REASONS.range);
-  }
+    else if (outside) { reject('heightCm', outside); unusable.add('heightCm'); }
+    else overlay.heightCm = cm;
+  } else if (input.heightCm != null) reject('heightCm', REASONS.shape);
   if (input.birthYear != null) {
     // US-07 AC6: a saved known minor stays one, whatever the message says.
     if (knownMinorOf(base)) reject('birthYear', REASONS.minor);
@@ -274,7 +288,7 @@ function mergedRunInput(inputs: unknown[]): Record<string, unknown> {
   for (const raw of inputs) {
     const input = obj(raw);
     if (Array.isArray(input.values)) merged.values = (merged.values as unknown[]).concat(input.values);
-    for (const f of ['sex', 'height', 'birthYear']) if (merged[f] === undefined && input[f] != null) merged[f] = input[f];
+    for (const f of ['sex', 'height', 'heightCm', 'birthYear']) if (merged[f] === undefined && input[f] != null) merged[f] = input[f];
   }
   return merged;
 }

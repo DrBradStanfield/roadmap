@@ -64,7 +64,7 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
   it('rejects a value outside its field\'s range, and a bad date', () => {
     const run = runRoadmap(PROFILE, { values: [val('ldlC', 41, 'mmol/L'), val('hba1c', 41, 'mmol/mol', '14/10/2026')] });
     expect(run.rejected).toEqual([
-      { field: 'ldlC', reason: 'above the highest value the roadmap records: treat as very high and follow the safety rules' },
+      { field: 'ldlC', reason: 'above the highest value the roadmap records in this unit: ask the user to confirm the unit; if it is right, the value is very high and needs their doctor promptly' },
       { field: 'hba1c', reason: 'not a real date, or a date in the future' },
     ]);
     // US-15 AC33 (C1): the saved LDL does not answer for a stated one the roadmap cannot hold.
@@ -216,8 +216,9 @@ describe('US-15 AC33: the one-round loop every chat shares', () => {
 
 // US-15 AC33, second adversarial review (2026-10-15). Seeds: the reviewers' probes.
 describe('US-15 AC33: a stated value the roadmap cannot hold never lets a saved one answer (C1)', () => {
-  const ABOVE = 'above the highest value the roadmap records: treat as very high and follow the safety rules';
-  const BELOW = 'below the lowest value the roadmap records';
+  const ABOVE = 'above the highest blood pressure the roadmap records: treat it as a possible emergency and advise urgent medical care';
+  const LAB_ABOVE = 'above the highest value the roadmap records in this unit: ask the user to confirm the unit; if it is right, the value is very high and needs their doctor promptly';
+  const BODY = 'outside what the roadmap records: ask the user to check the value and unit';
   const PAIR = 'blood pressure is read as a pair: both numbers are needed, each one usable, so neither was used';
   const latest = (run: ReturnType<typeof runRoadmap>) => ctx(run.contextJson).latestValues;
   const cards = (run: ReturnType<typeof runRoadmap>) => ctx(run.contextJson).currentSuggestions.map((s: { id: string }) => s.id);
@@ -258,15 +259,15 @@ describe('US-15 AC33: a stated value the roadmap cannot hold never lets a saved 
   it('TG 25 mmol/L and Lp(a) 320 mg/dL: rejected as above, the saved value removed', () => {
     const saved = { ...PROFILE, triglycerides: 1.2, lpa: 40 };
     const run = runRoadmap(saved, { values: [val('triglycerides', 25, 'mmol/L'), val('lpa', 320, 'mg/dL')] });
-    expect(run.rejected).toEqual([{ field: 'triglycerides', reason: ABOVE }, { field: 'lpa', reason: ABOVE }]);
+    expect(run.rejected).toEqual([{ field: 'triglycerides', reason: LAB_ABOVE }, { field: 'lpa', reason: LAB_ABOVE }]);
     expect(latest(run)).not.toHaveProperty('triglycerides');
     expect(latest(run)).not.toHaveProperty('lpa');
     expect(latest(run).ldlC).toBe('2.4'); // the other saved values stay
   });
 
-  it('below the range says so: weight 10 kg', () => {
+  it('a body measure out of range asks for a check: weight 10 kg', () => {
     const run = runRoadmap(PROFILE, { values: [val('weightKg', 10, 'kg')] });
-    expect(run.rejected).toEqual([{ field: 'weightKg', reason: BELOW }]);
+    expect(run.rejected).toEqual([{ field: 'weightKg', reason: BODY }]);
     expect(latest(run)).not.toHaveProperty('weightKg');
     expect(cards(run)).toBeInstanceOf(Array);
   });
@@ -399,5 +400,114 @@ describe('US-15 AC33: one run_roadmap per turn (S1) and honest stubs (S5)', () =
       expect(byId[id]).toBe('Not applied: the edit did not pass the form\'s checks, so nothing was pre-filled or saved.');
     }
     expect(JSON.stringify(round.results)).not.toContain('IGNORE');
+  });
+});
+
+// US-15 AC33, third adversarial review (2026-10-15, R1-R4, R8). Seeds: adv5/probes p1.mts.
+describe('US-15 AC33: the third review (R1-R4, R8)', () => {
+  const UNIT = 'unit not recognised for this field: ask the user which unit';
+  const OLDER = 'older than the saved value';
+  const PAIR = 'blood pressure is read as a pair: both numbers are needed, each one usable, so neither was used';
+  const BP_ABOVE = 'above the highest blood pressure the roadmap records: treat it as a possible emergency and advise urgent medical care';
+  const BP_BELOW = 'below the lowest blood pressure the roadmap records: treat it as possibly dangerous and advise urgent medical care if they feel faint, dizzy or unwell';
+  const LAB_ABOVE = 'above the highest value the roadmap records in this unit: ask the user to confirm the unit; if it is right, the value is very high and needs their doctor promptly';
+  const BODY = 'outside what the roadmap records: ask the user to check the value and unit';
+  const SAVED = {
+    ...PROFILE, creatinine: 80,
+    measurementHistory: {
+      hba1c: [{ date: '2026-09-01', value: 34 }], creatinine: [{ date: '2026-09-01', value: 80 }],
+      systolic_bp: [{ date: '2026-10-01', value: 118 }], diastolic_bp: [{ date: '2026-10-01', value: 76 }],
+    },
+  };
+  const NOW = new Date('2026-10-15T03:00:00Z');
+  const run = (input: unknown, base: unknown = SAVED) => runRoadmap(base, input, NOW);
+  const latest = (r: ReturnType<typeof runRoadmap>) => ctx(r.contextJson).latestValues;
+
+  it.each([
+    ['hba1c', 6.1, 'mmol/mol', 'hba1c', '34'], ['hba1c', 12, 'mmol/mol', 'hba1c', '34'],
+    ['creatinine', 15, 'µmol/L', 'creatinine', '80'], ['creatinine', 1.1, 'µmol/L', 'creatinine', '80'],
+  ])('R1: %s %s %s is in the ask-unit band: the unit reason, and the saved value stays', (field, value, unit, key, saved) => {
+    const r = run({ values: [val(field, value, unit)] });
+    expect(r.applied).toEqual([]);
+    expect(r.rejected).toEqual([{ field, reason: UNIT }]);
+    expect(latest(r)[key]).toBe(saved);
+  });
+
+  it('R1: HbA1c and creatinine at 20 (SI) are read', () => {
+    expect(run({ values: [val('hba1c', 20, 'mmol/mol'), val('creatinine', 20, 'µmol/L')] }).applied).toEqual(['hba1c', 'creatinine']);
+  });
+
+  it('R2: blood pressure above or below the range gets its own reason, and the saved pair is removed', () => {
+    const high = run({ values: [val('systolicBp', 260, 'mmHg'), val('diastolicBp', 155, 'mmHg')] });
+    expect(high.rejected).toEqual([{ field: 'systolicBp', reason: BP_ABOVE }, { field: 'diastolicBp', reason: BP_ABOVE }]);
+    const low = run({ values: [val('systolicBp', 55, 'mmHg'), val('diastolicBp', 35, 'mmHg')] });
+    expect(low.rejected).toEqual([{ field: 'systolicBp', reason: BP_BELOW }, { field: 'diastolicBp', reason: BP_BELOW }]);
+    for (const r of [high, low]) {
+      expect(latest(r)).not.toHaveProperty('systolicBp');
+      expect(latest(r)).not.toHaveProperty('diastolicBp');
+      expect(ctx(r.contextJson).measurementHistory ?? {}).not.toHaveProperty('systolic_bp');
+    }
+  });
+
+  it('R2: a lab above its range in the stated unit: confirm the unit; the saved value is removed', () => {
+    const r = run({ values: [val('hba1c', 48, '%'), val('creatinine', 90, 'mg/dL')] });
+    expect(r.rejected).toEqual([{ field: 'hba1c', reason: LAB_ABOVE }, { field: 'creatinine', reason: LAB_ABOVE }]);
+    expect(latest(r)).not.toHaveProperty('hba1c');
+    expect(latest(r)).not.toHaveProperty('creatinine');
+    expect(ctx(r.contextJson).measurementHistory ?? {}).not.toHaveProperty('hba1c');
+    expect(latest(r).ldlC).toBe('2.4');
+  });
+
+  it('R2: weight and waist out of range: check the value and unit; the saved value is removed', () => {
+    const r = run({ values: [val('weightKg', 10, 'kg'), val('waistCm', 400, 'cm')] });
+    expect(r.rejected).toEqual([{ field: 'weightKg', reason: BODY }, { field: 'waistCm', reason: BODY }]);
+    expect(latest(r)).not.toHaveProperty('weightKg');
+    expect(latest(r)).not.toHaveProperty('waistCm');
+  });
+
+  it('R2: a stated height out of range: check the value and unit; the saved height is removed, so no plan', () => {
+    const r = run({ values: [], height: { value: 900, unit: 'cm' } });
+    expect(r.rejected).toEqual([{ field: 'heightCm', reason: BODY }]);
+    expect(r.contextJson).toBeNull();
+  });
+
+  it('R3: systolic and diastolic stated on different days are not a pair: both refused, the saved pair removed', () => {
+    const r = run({ values: [val('systolicBp', 150, 'mmHg', '2026-10-10'), val('diastolicBp', 100, 'mmHg', '2026-10-10'), val('systolicBp', 125, 'mmHg', '2026-10-12')] });
+    expect(r.applied).toEqual([]);
+    expect(r.rejected).toEqual([
+      { field: 'systolicBp', reason: 'a later value for the same field was used' },
+      { field: 'systolicBp', reason: PAIR }, { field: 'diastolicBp', reason: PAIR },
+    ]);
+    expect(latest(r)).not.toHaveProperty('systolicBp');
+    expect(latest(r)).not.toHaveProperty('diastolicBp');
+  });
+
+  it('R3: an older systolic beside an undated diastolic is not outdated: both refused, the saved pair removed', () => {
+    const r = run({ values: [val('systolicBp', 150, 'mmHg', '2026-09-01'), val('diastolicBp', 95, 'mmHg')] });
+    expect(r.applied).toEqual([]);
+    expect(r.rejected).toEqual([{ field: 'systolicBp', reason: OLDER }, { field: 'diastolicBp', reason: PAIR }]);
+    expect(latest(r)).not.toHaveProperty('systolicBp');
+    expect(latest(r)).not.toHaveProperty('diastolicBp');
+  });
+
+  it('R3/R4: a pair both older than the saved one keeps the saved pair, even out of range (260/155 in 2020)', () => {
+    const r = run({ values: [val('systolicBp', 260, 'mmHg', '2020-01-01'), val('diastolicBp', 155, 'mmHg', '2020-01-01')] });
+    expect(r.applied).toEqual([]);
+    expect(r.rejected).toEqual([{ field: 'systolicBp', reason: OLDER }, { field: 'diastolicBp', reason: OLDER }]);
+    expect(latest(r)).toMatchObject({ systolicBp: '118', diastolicBp: '76' });
+  });
+
+  it('R4: a dated old lab out of range never strips the newer saved value', () => {
+    const r = run({ values: [val('hba1c', 300, 'mmol/mol', '2020-01-01')] });
+    expect(r.rejected).toEqual([{ field: 'hba1c', reason: OLDER }]);
+    expect(latest(r).hba1c).toBe('34');
+  });
+
+  it('R8: a bare heightCm is refused with the shape reason, through the tool path too', () => {
+    const bare = run({ values: [], sex: 'male', heightCm: 70 }, {});
+    expect(bare.rejected).toEqual([{ field: 'heightCm', reason: 'value or unit missing or not a number' }]);
+    expect(bare.contextJson).toBeNull();
+    const round = roadmapToolResults([{ type: 'tool_use', id: 'a', name: 'run_roadmap', input: { values: [], sex: 'male', heightCm: 70 } }], {})!;
+    expect(JSON.parse(round.results[0].content).rejected).toEqual([{ field: 'heightCm', reason: 'value or unit missing or not a number' }]);
   });
 });

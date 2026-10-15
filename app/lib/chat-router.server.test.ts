@@ -87,11 +87,31 @@ describe('redactForWidget', () => {
 
   it('US-15 AC33 (S2): every digit run is masked, decimals and comma decimals whole; a question with no digit is verbatim', () => {
     const masked = redactForWidget({ ...row, message: 'BP 182/112, LDL 4,6 mmol/L, HbA1c 41.5 and Lp(a) 75 nmol/L' }).message;
-    expect(masked).toBe('BP #/#, LDL # mmol/L, HbA#c # and Lp(a) # nmol/L');
-    expect(String(masked)).not.toMatch(/\d/);
+    expect(masked).toBe('BP #/#, LDL # mmol/L, HbA1c # and Lp(a) # nmol/L');
+    expect(String(masked).replace('HbA1c', '')).not.toMatch(/\d/);
     // Any script's digits, not only ASCII: a fullwidth or Arabic-Indic value is masked too.
-    expect(redactForWidget({ ...row, message: 'LDL ４.１ and HbA1c ٤١' }).message).toBe('LDL # and HbA#c #');
+    expect(redactForWidget({ ...row, message: 'LDL ４.１ and HbA1c ٤١' }).message).toBe('LDL # and HbA1c #');
     expect(redactForWidget({ ...row, message: 'how am I doing overall?' }).message).toBe('how am I doing overall?');
+  });
+
+  it('US-15 AC33 (R5): topic names that hold a digit are kept; every other digit run is masked, glued values too', () => {
+    const mask = (message: string) => redactForWidget({ ...row, message }).message;
+    for (const topic of ['HbA1c', 'hba1c', 'B1', 'B6', 'B9', 'B12', 'D2', 'D3', 'K1', 'K2', 'GLP-1', 'SGLT2', 'omega-3',
+      'CoQ10', 'PCSK9', 'T1DM', 'T2DM', 'type 1', 'Type 2', 'Zone 2']) {
+      expect(mask(`what about ${topic}?`)).toBe(`what about ${topic}?`);
+    }
+    expect(mask('my LDL is 4.1 and HbA1c 41')).toBe('my LDL is # and HbA1c #');
+    expect(mask('BP132/84')).toBe('BP#/#');
+    expect(mask('LDL4.1, HbA1c41, B12 300, D3 2000 IU, B1.2')).toBe('LDL#, HbA#c#, B12 #, D3 # IU, B#');
+    expect(mask('my Lp(a) is 75')).toBe('my Lp(a) is #');
+    expect(String(mask('BP132/84 LDL4.1'))).not.toMatch(/\d/);
+  });
+
+  it('US-15 AC33 (R6): router_raw and router_error are masked the same way when they are strings', () => {
+    const out = redactForWidget({ ...row, router_raw: '{"handles":["type-2-diabetes"],"note":"LDL 4.1"}', router_error: 'parse failed at "HbA1c 41"' });
+    expect(out.router_raw).toBe('{"handles":["type-2-diabetes"],"note":"LDL #"}');
+    expect(out.router_error).toBe('parse failed at "HbA1c #"');
+    expect(redactForWidget(row).router_error).toBeNull();
   });
 
   it('drops a column it does not know, so a reply or error text cannot ride along', () => {

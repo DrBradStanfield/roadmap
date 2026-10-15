@@ -174,20 +174,26 @@ export interface MatchEventRow extends Record<string, unknown> {
 
 /** A number in a question: a run of digits in any script, with one decimal part ('4.1', '4,1', '４.１'). */
 const NUMBER = /\p{Nd}+(?:[.,]\p{Nd}+)?/gu;
+/** A closed list of topic names that hold a digit, kept whole when they stand alone ("HbA1c", "B12", "type 2"; never "HbA1c41"). */
+const TOPIC = String.raw`(?<![\p{L}\p{Nd}])(?:HbA1c|B(?:1[0-2]|[1-9])|D[23]|K[12]|GLP-?1|SGLT-?2|omega[- ]?3|CoQ-?10|PCSK-?9|T[12]DM|type[- ]?[12]|zone[- ]?2)(?![\p{L}\p{Nd}]|[.,]\p{Nd})`;
+const TOPIC_OR_NUMBER = new RegExp(`(${TOPIC})|${NUMBER.source}`, 'giu');
+const maskNumbers = (s: string) => s.replace(TOPIC_OR_NUMBER, (m, topic) => (topic ? m : '#'));
 
 /**
  * The widget's telemetry row (US-15 AC7): the assembled row with the surface
  * named and only the whitelisted columns kept. The current question stays so
  * article matching can be audited against it (Brad, 2026-09-10), with every
- * number masked to '#' (US-15 AC33, 2026-10-15), so a health value typed into
- * the chat never reaches the row. The earlier turns the router saw (`first`,
- * `recent`) are dropped — the router still gets them at call time; only the
- * stored row loses them, so one widget row can never hold a second question
- * (2026-09-10).
+ * number masked to '#' and the topic names above kept (US-15 AC33, 2026-10-15),
+ * so a health value typed into the chat never reaches the row; `router_raw` and
+ * `router_error` get the same mask, since either can quote the question. The
+ * earlier turns the router saw (`first`, `recent`) are dropped — the router
+ * still gets them at call time; only the stored row loses them, so one widget
+ * row can never hold a second question (2026-09-10).
  */
 export function redactForWidget(row: MatchEventRow): Record<string, unknown> {
   const kept = Object.fromEntries(WIDGET_ROW_COLUMNS.filter((c) => c in row).map((c) => [c, row[c]]));
-  return { ...kept, message: row.message.replace(NUMBER, '#'), router_context: { platform: 'widget' } };
+  for (const c of ['router_raw', 'router_error']) if (typeof kept[c] === 'string') kept[c] = maskNumbers(kept[c]);
+  return { ...kept, message: maskNumbers(row.message), router_context: { platform: 'widget' } };
 }
 
 // ---------------------------------------------------------------------------

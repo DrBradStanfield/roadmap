@@ -509,8 +509,8 @@ const addUsage = (a: AnthropicUsage, b: AnthropicUsage): AnthropicUsage => ({
  * request shapes share no prompt-cache prefix and cache separately: no tools,
  * the form tools, and the form tools plus run_roadmap.
  *
- * With the tools comes run_roadmap when the latest message has a digit
- * (US-15 AC33, `chatToolsFor`): when the model calls it, the
+ * With the tools comes run_roadmap when the latest or the previous user
+ * message has a digit (US-15 AC33, `chatToolsFor`): when the model calls it, the
  * plan code runs on `guestInputs` plus the stated values and a second call
  * answers from its output (health-core `withRoadmapRound`, at most one round).
  * The answer is the second call's text; usage is the two calls' sum. A failed
