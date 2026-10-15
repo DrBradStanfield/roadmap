@@ -1186,11 +1186,11 @@ const MatrixCellView = memo(function MatrixCellView({
       onChange={handleChange}
       wrapperClass="bt-cell-input bt-cell-review"
       ariaLabel={`${matrixRowKey(row)} value`}
+      note={unitNote(cell.displayUnit)}
     />
   );
 
-  const withUnit = <>{input}{unitNote(cell.displayUnit)}</>;
-  if (!cell.existing) return withUnit;
+  if (!cell.existing) return input;
   const oldText = withUnitText(cell.existing.display, cell.existing.displayUnit);
   const newText = withUnitText(editedValue || 'the uploaded value', cell.displayUnit);
 
@@ -1199,7 +1199,7 @@ const MatrixCellView = memo(function MatrixCellView({
   return (
     <div className="bt-cell-conflict">
       <span className="bt-value-num num bt-cell-conflict-old">{oldText}</span>
-      {withUnit}
+      {input}
       <label className="bt-cell-conflict-replace">
         <input
           type="checkbox"

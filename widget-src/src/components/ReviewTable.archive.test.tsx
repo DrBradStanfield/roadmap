@@ -426,6 +426,21 @@ describe('ReviewTable — a lab printed in another unit conflicts, shows its uni
     fileName: 'd.pdf', reportDate: day, values: [], additionalValues: [{ name: 'Vitamin D', value: 50, unit: 'ng/mL' }],
   }];
 
+  it('a reading in another unit on a new date stays in its own column, its unit inside the cell (Codex R1)', () => {
+    const later: FileResult[] = [{ ...upload[0], reportDate: '2025-03-01' }];
+    const { container } = render(
+      <ReviewTable grading={{}} results={later} history={{ bloodTests: [], labValues: [heldLab], documents: [] }}
+        unitSystem="si" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />,
+    );
+    const strips = [...container.querySelectorAll('.bt-strip-inner')];
+    // Every row's strip holds one element per date column, plus the spacer.
+    const widths = strips.map((strip) => strip.children.length);
+    expect(new Set(widths).size).toBe(1);
+    const unit = container.querySelector('.bt-cell-unit');
+    expect(unit?.textContent).toBe('ng/mL');
+    expect(unit?.parentElement?.parentElement?.classList.contains('bt-strip-inner')).toBe(true);
+  });
+
   it('50 ng/mL against a saved 50 nmol/L: one row, a conflict naming both units, and Replace saves 50 ng/mL', () => {
     const onSave = vi.fn();
     const { container } = render(
