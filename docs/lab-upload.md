@@ -446,8 +446,12 @@ The review table is a date × metric matrix (`buildMatrixModel` in
 | Held, same value | Greyed context cell | Nothing — the record already says this |
 | Held, different value | **Conflict cell**: the saved value struck through, the document's value in an editable input, and an **unchecked `Replace` box** | Nothing unless Replace is ticked |
 
-Equality is compared on the DISPLAYED string (`slotState` in `record-edits.ts`),
-so float noise never manufactures a conflict.
+A core metric is equal when its stored SI value matches within float noise
+(US-13 AC3). A lab is equal when its quantity matches: `sameLabQuantity` in
+`record-edits.ts` converts the saved SI value and the printed value-and-unit to
+one unit, so 50 ng/mL of vitamin D over a saved 50 nmol/L is a conflict, and
+20 ng/mL of folate over a saved 45.32 nmol/L is already saved (US-35 AC6). A
+cell printed in another unit than its row's shows that unit.
 
 Ticking Replace asserts that the saved value was wrong, so it is written as a
 correction, not an append. `RoadmapStore.bulkSaveMeasurements` and

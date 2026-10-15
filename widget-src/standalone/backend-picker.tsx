@@ -244,7 +244,7 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
           <>
             <button className="hr-modal-back" onClick={() => setStep('list')}>← Back</button>
             <h2>Connect your own server</h2>
-            <p className="hr-modal-sub">Point at any WebDAV folder you control. Needs CORS enabled for this site.</p>
+            <p className="hr-modal-sub">Point at any WebDAV folder you control. Needs CORS enabled for this site, allowing the Authorization, Content-Type, Depth, If-Match and If-None-Match headers and exposing ETag.</p>
             <div className="hr-sync-form">
               <input placeholder="WebDAV folder URL (https://…)" value={wd.url} onChange={(e) => setWd({ ...wd, url: e.target.value })} />
               <input placeholder="Username" value={wd.username} onChange={(e) => setWd({ ...wd, username: e.target.value })} />

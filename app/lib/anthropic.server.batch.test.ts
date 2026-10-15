@@ -18,7 +18,11 @@ const succeeded = (i: number) => JSON.stringify({
 function stubBatch(lines: string[]) {
   vi.stubGlobal('fetch', vi.fn(async (url: string) => (url.endsWith('/results')
     ? new Response(lines.join('\n'), { status: 200 })
-    : Response.json({ ended_at: '2026-10-13T00:00:00Z', processing_status: { succeeded: 3, errored: 1 } }))));
+    : Response.json({
+      ended_at: '2026-10-13T00:00:00Z',
+      processing_status: 'ended',
+      request_counts: { processing: 0, succeeded: 3, errored: 1, expired: 0, canceled: 0 },
+    }))));
 }
 
 beforeEach(() => { vi.stubEnv('ANTHROPIC_API_KEY', 'synthetic-test-key'); });
@@ -47,6 +51,69 @@ describe('US-12 AC9: batch results keep their file identity', () => {
     ]);
     const { results } = await pollBatch('batch_synthetic');
     expect(results!.map(r => [r.index, errorOf(r)])).toEqual([[0, undefined], [1, 'server_error'], [2, 'server_error'], [3, 'server_error']]);
+  });
+});
+
+// US-12 AC1: provider status is a string; progress counts are a separate object.
+// Wire contract: https://platform.claude.com/docs/en/api/messages/batches/retrieve
+// No live provider requests or real lab reports are used.
+describe('US-12 AC1: batch progress uses the provider request counts', () => {
+  it.each(['in_progress', 'canceling'])('reports the size of a %s batch without fetching results early', async (processing_status) => {
+    const fetchMock = vi.fn(async () => Response.json({
+      processing_status,
+      ended_at: null,
+      request_counts: { processing: 20, succeeded: 0, errored: 0, expired: 0, canceled: 0 },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    expect(await pollBatch('batch_synthetic')).toEqual({ status: 'processing', completed: 0, total: 20 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('counts every terminal outcome and still returns the extracted results', async () => {
+    const request_counts = { processing: 0, succeeded: 14, errored: 2, expired: 1, canceled: 3 };
+    const types = [
+      ...Array<string>(request_counts.succeeded).fill('succeeded'),
+      ...Array<string>(request_counts.errored).fill('errored'),
+      ...Array<string>(request_counts.expired).fill('expired'),
+      ...Array<string>(request_counts.canceled).fill('canceled'),
+    ];
+    const lines = types.map((type, index) => type === 'succeeded'
+      ? succeeded(index)
+      : JSON.stringify({ custom_id: `file-${index}`, result: { type } }));
+    const fetchMock = vi.fn(async (url: string) => url.endsWith('/results')
+      ? new Response(lines.join('\n'), { status: 200 })
+      : Response.json({
+        processing_status: 'ended',
+        ended_at: '2026-10-13T00:00:00Z',
+        request_counts,
+      }));
+    vi.stubGlobal('fetch', fetchMock);
+    const result = await pollBatch('batch_synthetic');
+    expect(result).toMatchObject({ status: 'ended', completed: 20, total: 20 });
+    expect(result.results?.map(r => r.index)).toEqual(types.map((_, index) => index));
+    expect(result.results?.filter(r => 'errorCode' in r)).toHaveLength(6);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps a zero-request ended batch at zero', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => url.endsWith('/results')
+      ? new Response('', { status: 200 })
+      : Response.json({
+        processing_status: 'ended',
+        ended_at: '2026-10-13T00:00:00Z',
+        request_counts: { processing: 0, succeeded: 0, errored: 0, expired: 0, canceled: 0 },
+      })));
+    expect(await pollBatch('batch_synthetic')).toEqual({ status: 'ended', completed: 0, total: 0, results: [] });
+  });
+
+  it('still returns an ended batch whose status omits request_counts', async () => {
+    // Counts are display-only; a missing block must not hold finished results back until the client times out.
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => url.endsWith('/results')
+      ? new Response(succeeded(0), { status: 200 })
+      : Response.json({ processing_status: 'ended', ended_at: '2026-10-13T00:00:00Z' })));
+    const result = await pollBatch('batch_synthetic');
+    expect(result).toMatchObject({ status: 'ended', completed: 0, total: 0 });
+    expect(result.results?.map(r => r.index)).toEqual([0]);
   });
 });
 

@@ -45,6 +45,34 @@ describe('buildMatrixModel slot collision (US-32)', () => {
     expect(cell && 'existing' in cell ? cell.existing : undefined).toBeUndefined();
   });
 
+  // Brad 2026-10-16 (PR #145): the record holds a lab in SI, a report prints its own unit. The website and the
+  // connector compare quantities with one rule, health-core's sameLabQuantity (US-35 AC6).
+  const lab = (name: string, value: number, unit: string): ApiLabValue => ({
+    id: 'held', metricName: name, value, unit, referenceLow: null, referenceHigh: null,
+    recordedAt: '2024-06-01T00:00:00.000Z', source: 'manual', createdAt: '2024-06-01T00:00:00.000Z',
+  });
+  const offered = (name: string, value: number, unit: string): FileResult[] => [{
+    fileName: 'labs.pdf', reportDate: '2024-06-01', values: [], additionalValues: [{ name, value, unit }],
+  }];
+  const labCell = (cells: Map<string, unknown>) => cells.get([...cells.keys()].find(k => k.endsWith('|2024-06-01'))!);
+
+  it('a report spelling and the stored catalogue key share one row, as in the connector (US-35 AC6)', () => {
+    // The record files vitamin D as `vitamin_d`; a report prints "Vitamin D". One row, one slot, not two.
+    const { additionalRows, cells } = build(offered('Vitamin D', 50, 'nmol/L'), [], [lab('vitamin_d', 50, 'nmol/L')]);
+    expect(additionalRows).toHaveLength(1);
+    expect(labCell(cells)).toMatchObject({ state: 'context' });
+  });
+
+  it('the same number in a different unit is a different result, offered as a conflict (US-35 AC6)', () => {
+    const { cells } = build(offered('Vitamin D', 50, 'ng/mL'), [], [lab('vitamin_d', 50, 'nmol/L')]);
+    expect(labCell(cells)).toMatchObject({ state: 'editable', existing: { id: 'held' } });
+  });
+
+  it('the same quantity printed in another unit is already recorded (US-35 AC6)', () => {
+    const { cells } = build(offered('Folate', 20, 'ng/mL'), [], [lab('folate', 45.32, 'nmol/L')]);
+    expect(labCell(cells)).toMatchObject({ state: 'context' });
+  });
+
   it('a differing additional lab value on an occupied slot conflicts (US-32)', () => {
     const results: FileResult[] = [{
       fileName: 'labs.pdf', reportDate: '2024-06-01', values: [],
