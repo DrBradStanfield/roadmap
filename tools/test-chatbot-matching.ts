@@ -586,8 +586,9 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise
     if (!lower.includes(term.toLowerCase())) failures.push(`missing: "${term}"`);
   }
   for (const term of claimed(response, q.must_not_claim ?? [])) failures.push(`claimed: "${term}"`);
-  for (const re of q.must_match ?? []) if (!new RegExp(re).test(plain(response))) failures.push(`no match: /${re}/`);
-  for (const re of q.must_not_match ?? []) if (new RegExp(re).test(plain(response))) failures.push(`matched forbidden: /${re}/`);
+  const plainText = plain(response);
+  for (const re of q.must_match ?? []) if (!new RegExp(re).test(plainText)) failures.push(`no match: /${re}/`);
+  for (const re of q.must_not_match ?? []) if (new RegExp(re).test(plainText)) failures.push(`matched forbidden: /${re}/`);
   for (const term of mustNotMention) {
     if (lower.includes(term.toLowerCase())) failures.push(`found forbidden: "${term}"`);
   }

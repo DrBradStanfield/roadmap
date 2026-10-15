@@ -100,9 +100,8 @@ const REASONS = {
 
 const itemSchema = z.object({ value: z.number().finite(), unit: z.string().min(1).max(32) });
 const PROFILE_FIELDS = ['sex', 'heightCm', 'birthYear'] as const;
-/** What the result names a field as: a field the schema knows, never the model's own string. */
-const fieldName = (f: unknown) =>
-  typeof f === 'string' && ((EDITABLE_FIELDS as readonly string[]).includes(f) || (PROFILE_FIELDS as readonly string[]).includes(f)) ? f : 'unknown';
+/** A field the schema knows: the result never names the model's own string. */
+const isEditable = (f: unknown): f is EditableField => typeof f === 'string' && (EDITABLE_FIELDS as readonly string[]).includes(f);
 /** A value the input schema accepts for `field`: sanitizeInputs drops anything out of range. */
 const inRange = (field: string, value: unknown) => field in sanitizeInputs({ [field]: value } as Partial<HealthInputs>);
 
@@ -123,8 +122,8 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown): RoadmapRun 
   if (items.length > RUN_ROADMAP_MAX_VALUES) rejected.push({ field: 'values', reason: REASONS.cap });
   for (const raw of items.slice(0, RUN_ROADMAP_MAX_VALUES)) {
     const item = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
-    const field = fieldName(item.field);
-    if (!(EDITABLE_FIELDS as readonly string[]).includes(field)) { rejected.push({ field: 'unknown', reason: REASONS.field }); continue; }
+    const field = item.field;
+    if (!isEditable(field)) { rejected.push({ field: 'unknown', reason: REASONS.field }); continue; }
     const parsed = itemSchema.safeParse(item);
     if (!parsed.success) { rejected.push({ field, reason: REASONS.shape }); continue; }
     if (item.date != null && !(typeof item.date === 'string' && ISO_DATE.test(item.date))) { rejected.push({ field, reason: REASONS.date }); continue; }
@@ -132,10 +131,10 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown): RoadmapRun 
     if (!reported) { rejected.push({ field, reason: REASONS.unit }); continue; }
     if (!inRange(field, reported.valueSI)) { rejected.push({ field, reason: REASONS.range }); continue; }
     const date = typeof item.date === 'string' ? item.date : '9999-12-31';
-    const prior = stated.get(field as EditableField);
+    const prior = stated.get(field);
     if (prior && prior.date > date) { rejected.push({ field, reason: REASONS.older }); continue; }
     if (prior) rejected.push({ field, reason: REASONS.older });
-    stated.set(field as EditableField, { si: reported.valueSI, date, system: reported.system });
+    stated.set(field, { si: reported.valueSI, date, system: reported.system });
   }
 
   const overlay: Record<string, unknown> = {};

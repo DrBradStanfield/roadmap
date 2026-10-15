@@ -132,11 +132,12 @@ interface ChatRunResult {
 }
 
 async function runChat(query: string, retryOnRateLimit = true): Promise<ChatRunResult> {
+  const messages = [{ role: 'user' as const, content: query }];
   const body = {
     ...modelParams(MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: PROMPT_CACHE }],
-    tools: chatToolsFor([{ role: 'user', content: query }]), // production's set: run_roadmap when the query has a digit (US-15 AC33)
-    messages: [{ role: 'user', content: query }],
+    tools: chatToolsFor(messages), // production's set: run_roadmap when the query has a digit (US-15 AC33)
+    messages,
   };
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
