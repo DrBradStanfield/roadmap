@@ -1153,6 +1153,7 @@ const MatrixCellView = memo(function MatrixCellView({
   }
   // Rows merge by slot key (US-35 AC6), so one lab row can hold readings in
   // different units: a cell whose unit is not its row's says its own.
+  const rowName = row.kind === 'additional' ? row.displayName : matrixRowKey(row);
   const showUnit = (unit?: string): unit is string => row.kind === 'additional' && !!unit && unit !== row.unit;
   const unitNote = (unit?: string) => showUnit(unit) && <span className="bt-cell-unit">{unit}</span>;
   const withUnitText = (text: string, unit?: string) => (showUnit(unit) ? `${text} ${unit}` : text);
@@ -1185,7 +1186,7 @@ const MatrixCellView = memo(function MatrixCellView({
       value={editedValue}
       onChange={handleChange}
       wrapperClass="bt-cell-input bt-cell-review"
-      ariaLabel={`${matrixRowKey(row)} value`}
+      ariaLabel={`${rowName} value`}
       note={unitNote(cell.displayUnit)}
     />
   );
@@ -1193,6 +1194,10 @@ const MatrixCellView = memo(function MatrixCellView({
   if (!cell.existing) return input;
   const oldText = withUnitText(cell.existing.display, cell.existing.displayUnit);
   const newText = withUnitText(editedValue || 'the uploaded value', cell.displayUnit);
+  // A screen reader hears both units whenever they differ, even when the saved one is the row's.
+  const unitsDiffer = !isCore && !!cell.existing.displayUnit && cell.existing.displayUnit !== cell.displayUnit;
+  const heardOld = unitsDiffer ? `${cell.existing.display} ${cell.existing.displayUnit}` : oldText;
+  const heardNew = unitsDiffer ? `${editedValue || 'the uploaded value'} ${cell.displayUnit}` : newText;
 
   // Slot already holds a different saved value. Show it, show the file's, and
   // let the user assert the replacement. Layout lives in styles.css.
@@ -1205,7 +1210,7 @@ const MatrixCellView = memo(function MatrixCellView({
           type="checkbox"
           checked={replace}
           onChange={(e) => onReplaceToggle(cellKey, e.target.checked)}
-          aria-label={`Replace the saved ${matrixRowKey(row)} value ${oldText} with ${newText}`}
+          aria-label={`Replace the saved ${rowName} value ${heardOld} with ${heardNew}`}
         />
         <span aria-hidden="true">Replace</span>
       </label>

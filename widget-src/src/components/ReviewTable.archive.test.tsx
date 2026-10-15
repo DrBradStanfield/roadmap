@@ -450,7 +450,7 @@ describe('ReviewTable — a lab printed in another unit conflicts, shows its uni
     expect(container.querySelectorAll('.bt-cell-conflict')).toHaveLength(1);
     expect(container.querySelector('.bt-cell-conflict .bt-cell-unit')?.textContent).toBe('ng/mL');
     const replace = container.querySelector<HTMLInputElement>('.bt-cell-conflict-replace input')!;
-    expect(replace.getAttribute('aria-label')).toBe('Replace the saved vitamin_d value 50 with 50 ng/mL');
+    expect(replace.getAttribute('aria-label')).toBe('Replace the saved Vitamin D value 50 nmol/L with 50 ng/mL');
     fireEvent.click(replace);
     fireEvent.click(container.querySelector<HTMLButtonElement>('.review-save-btn')!);
     expect(onSave.mock.calls.at(-1)![0].labValues).toEqual([

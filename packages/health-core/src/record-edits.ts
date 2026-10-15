@@ -321,7 +321,8 @@ export function sameLabQuantity(held: LabQuantity, offered: LabQuantity): boolea
   };
   const a = canonical(held);
   const b = canonical(offered);
-  return a !== null && b !== null && a.unit.toLowerCase() === b.unit.toLowerCase() && sameValue(a.value, b.value);
+  // Case matters: "G/L" is a cell count, "g/L" a mass.
+  return a !== null && b !== null && a.unit === b.unit && sameValue(a.value, b.value);
 }
 
 /**

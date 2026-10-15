@@ -489,6 +489,8 @@ describe('US-35 AC6 — one slot rule for the website and the connector', () => 
     // An uncatalogued test compares number and unit as written, spelling folded.
     expect(sameLabQuantity(q('zonulin', 12, 'umol/L'), q('Zonulin', 12, 'µmol/L'))).toBe(true);
     expect(sameLabQuantity(q('zonulin', 12, 'umol/L'), q('Zonulin', 12, 'mmol/L'))).toBe(false);
+    // Unit case is meaning, not spelling: a cell count in G/L is not a mass in g/L.
+    expect(sameLabQuantity(q('zonulin', 12, 'G/L'), q('Zonulin', 12, 'g/L'))).toBe(false);
   });
 
   it('spells the slot once: a metric on a day, a lab by catalogue key, and the index of every active row agrees', () => {
