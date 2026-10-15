@@ -312,7 +312,7 @@ export {
 export { chatContextOf, buildChatContextJson, MINOR_CHAT_RULE, type ChatContextPayload } from './chat-context';
 
 // US-15 AC33: run the plan code on values stated in the chat; the one-round tool loop every chat shares
-export { CHAT_TOOLS, withRoadmapRound, type ChatTurnMessage } from './run-roadmap';
+export { chatToolsFor, withRoadmapRound, type ChatTurnMessage } from './run-roadmap';
 
 // Product funnel events — anonymous behavioral counters (client tracker + server enum)
 export { PRODUCT_EVENT_NAMES, GUIDE_PLACEMENTS, LPA_CHECK_ANSWERS, REMOTE_CHANGE_BACKENDS, isLabUnitWord, type ProductEventName } from './product-events';

@@ -113,7 +113,7 @@ import {
   CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, ROUTER_MODEL as PRODUCTION_ROUTER_MODEL,
   PROMPT_CACHE, getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat,
 } from '../packages/health-core/src/models';
-import { CHAT_TOOLS, withRoadmapRound, type ChatContentBlock } from '../packages/health-core/src/run-roadmap';
+import { chatToolsFor, withRoadmapRound, type ChatContentBlock } from '../packages/health-core/src/run-roadmap';
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
 import { parseRouterReply } from '../app/lib/router-reply';
 import { buildSystemBlocks, EMPTY_CHAT_CONTEXT, resolveChatContext } from '../app/lib/chat.server';
@@ -537,10 +537,11 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise
     : matchedContent
       ? `${base}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
       : base;
+  const messages = [{ role: 'user' as const, content: query }];
   const body = {
     ...modelParams(ANSWER_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system,
-    tools: CHAT_TOOLS, // as production: the tools change what the model writes
+    tools: chatToolsFor(messages), // as production: the tools change what the model writes
   };
 
   // One Messages call; a 429 waits and retries once. As production (callAnthropicWithUsage): thinking makes an answer take 10-20 s.
@@ -564,7 +565,7 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise
   };
 
   // As production (getChatCompletion): the same one-round run_roadmap loop, on the payload the widget sends.
-  const turn = await withRoadmapRound([{ role: 'user', content: query }], send, q.user_context ?? null)
+  const turn = await withRoadmapRound(messages, send, q.user_context ?? null)
     .catch((err: unknown) => { if (err instanceof AnswerApiError) return err; throw err; });
   if (turn instanceof AnswerApiError) {
     // Count it: a majority vote could otherwise hide one timeout and exit green.

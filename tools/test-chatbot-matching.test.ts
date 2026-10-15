@@ -653,6 +653,12 @@ describe('test-chatbot-matching run_roadmap round (US-15 AC33)', () => {
     expect(status).toBe(0);
   }, 60_000);
 
+  it('as production, a query with no digit is not offered run_roadmap', () => {
+    const { calls, stderr } = run(fixture({ query: 'can you analyse my data', must_mention: ['plain'] }), false);
+    expect(calls.length, stderr).toBe(1);
+    expect(calls[0].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit']);
+  }, 60_000);
+
   it('expect_roadmap_run fails an answer that did not call the tool, and one that did when it must not', () => {
     expect(run(fixture({ expect_roadmap_run: true, must_mention: ['plain'] }), false).out).toContain('did not call run_roadmap');
     expect(run(fixture({ expect_roadmap_run: false }), true).out).toContain('called run_roadmap');

@@ -33,11 +33,13 @@ export const RUN_ROADMAP_TOOL = {
   name: 'run_roadmap',
   description:
     "Run the Health Roadmap's own plan code on the user's saved data plus values they state in this " +
-    'conversation, and get back the plan it computes (the same JSON as the user data block). Use it when ' +
-    'the user states measurements that are not in their saved data and wants them assessed (e.g. "analyse ' +
-    'my data: LDL 4.1 mmol/L, BP 132/84"). Emit each value and unit exactly as the user stated them: do NOT ' +
-    'convert units. Nothing is saved. If a unit is ambiguous and the user did not state it, ASK instead of ' +
-    'calling this tool. Give sex, heightCm or birthYear only when the user stated them.',
+    'conversation, and get back the plan it computes (the same JSON as the user data block). Call it when ' +
+    'the user states values that are not in their saved data and wants them assessed or analysed (e.g. ' +
+    '"analyse my data: LDL 4.1 mmol/L, BP 132/84"). Pass exactly the stated values and units: do NOT convert ' +
+    'units. Give sex, heightCm or birthYear only when the user stated them in this conversation. If a unit is ' +
+    'ambiguous and the user did not state it, ASK which unit instead of calling this tool, and do not grade the ' +
+    'value in any unit. Answer only from the result, as you would from the user data block: never grade a value ' +
+    'yourself. Tell the user the values are not saved, and offer to pre-fill them with propose_field_edit.',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -65,6 +67,17 @@ export const RUN_ROADMAP_TOOL = {
 
 /** The website widget's and the Pages chat's tools: the form tools plus run_roadmap. */
 export const CHAT_TOOLS = [...CHAT_EDIT_TOOLS, RUN_ROADMAP_TOOL];
+
+/**
+ * The website widget's and the Pages chat's tools for one turn: run_roadmap
+ * only when the latest user message has a digit, since it runs only on stated
+ * values; the form tools always. Tools render before the system prompt, so
+ * the two shapes cache separately.
+ */
+export function chatToolsFor(messages: readonly ChatTurnMessage[]) {
+  const latest = messages[messages.length - 1]?.content;
+  return typeof latest === 'string' && /\d/.test(latest) ? CHAT_TOOLS : CHAT_EDIT_TOOLS;
+}
 
 export interface RoadmapRun {
   /** buildChatContextJson's output for the overlaid payload; null when it makes no plan. */

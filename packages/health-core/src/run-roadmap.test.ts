@@ -9,7 +9,7 @@ import { reportedToCanonical } from './units';
 import { PROPOSE_FIELD_EDIT_TOOL } from './chat-edits';
 import {
   runRoadmap, roadmapResultText, roadmapToolResults, withRoadmapRound,
-  RUN_ROADMAP_MAX_VALUES, RUN_ROADMAP_TOOL, CHAT_TOOLS,
+  RUN_ROADMAP_MAX_VALUES, RUN_ROADMAP_TOOL, CHAT_TOOLS, chatToolsFor,
 } from './run-roadmap';
 
 const PROFILE = {
@@ -138,6 +138,25 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
     expect(CHAT_TOOLS.map(t => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
     expect(RUN_ROADMAP_TOOL.input_schema.properties.values.items.properties.field.enum)
       .toEqual(PROPOSE_FIELD_EDIT_TOOL.input_schema.properties.field.enum);
+  });
+
+  it('chatToolsFor offers run_roadmap only when the latest user message has a digit', () => {
+    const names = (content: string, earlier: string[] = []) => chatToolsFor([
+      ...earlier.flatMap(c => [{ role: 'user' as const, content: c }, { role: 'assistant' as const, content: 'ok' }]),
+      { role: 'user', content },
+    ]).map(t => t.name);
+    expect(names('analyse my data: LDL 4.1 mmol/L')).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
+    expect(names('My Lp(a) came back at 75')).toContain('run_roadmap');
+    expect(names('I have chest pain and I took Viagra yesterday. Can I use my GTN spray?')).toEqual(['propose_field_edit', 'propose_medication_edit']);
+    // Only the latest message counts: values from an earlier turn do not offer it.
+    expect(names('can you analyse that?', ['LDL 4.1 mmol/L'])).not.toContain('run_roadmap');
+    expect(chatToolsFor([]).map(t => t.name)).not.toContain('run_roadmap');
+  });
+
+  it('the usage guidance lives in the tool description, not the system prompt', () => {
+    const d = RUN_ROADMAP_TOOL.description;
+    for (const rule of ['not in their saved data', 'do NOT convert', 'stated them in this conversation', 'ASK which unit',
+      'do not grade the value in any unit', 'Answer only from the result', 'not saved', 'pre-fill']) expect(d).toContain(rule);
   });
 });
 

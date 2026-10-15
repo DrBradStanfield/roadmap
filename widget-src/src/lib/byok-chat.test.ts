@@ -166,10 +166,13 @@ describe('US-15 AC33: run_roadmap in the Pages chat', () => {
     });
   });
 
-  it('offers run_roadmap with the form tools, and the prompt says how to use it', async () => {
+  it('offers run_roadmap with the form tools only when the message has a digit; its guidance is in the tool, not the prompt', async () => {
     await sendMessage('hi', null, SNAPSHOT);
-    expect(state.bodies[0].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
-    expect(state.bodies[0].system).toContain('run_roadmap');
+    await sendMessage('my LDL is 4.1 mmol/L', null, SNAPSHOT);
+    expect(state.bodies[0].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit']);
+    expect(state.bodies[1].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
+    expect(state.bodies[1].tools[2].description).toContain('Answer only from the result');
+    expect(state.bodies[1].system).not.toContain('run_roadmap');
   });
 
   it('computes the plan in the browser on the stated values, then answers from a second call with no tools', async () => {

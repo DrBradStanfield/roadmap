@@ -13,7 +13,7 @@ import { loadBlogArticle, loadMatchedContent } from './matched-content';
 import { SUGGESTION_EVIDENCE } from '../../packages/health-core/src/evidence';
 import { buildChatContextJson } from '../../packages/health-core/src/chat-context';
 import { toolOnlyAck, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
-import { CHAT_TOOLS, withRoadmapRound, type ChatTurnMessage, type RoadmapRoundCounts } from '../../packages/health-core/src/run-roadmap';
+import { chatToolsFor, withRoadmapRound, type ChatTurnMessage, type RoadmapRoundCounts } from '../../packages/health-core/src/run-roadmap';
 import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicStreamEvent, type AnthropicUsage, type RefusalCategory } from './anthropic.server';
 import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, modelParams } from '../../packages/health-core/src/models';
 import { cutText } from '../../packages/health-core/src/chat-history';
@@ -505,10 +505,12 @@ const addUsage = (a: AnthropicUsage, b: AnthropicUsage): AnthropicUsage => ({
  * client replaces them with its content.
  *
  * `canApplyEdits`: the tools go only to a client that applies them (the
- * widget's own chat, US-15 AC19). `tools` render before `system`, so the two
- * request shapes share no prompt-cache prefix and cache separately.
+ * widget's own chat, US-15 AC19). `tools` render before `system`, so the
+ * request shapes share no prompt-cache prefix and cache separately: no tools,
+ * the form tools, and the form tools plus run_roadmap.
  *
- * With the tools comes run_roadmap (US-15 AC33): when the model calls it, the
+ * With the tools comes run_roadmap when the latest message has a digit
+ * (US-15 AC33, `chatToolsFor`): when the model calls it, the
  * plan code runs on `guestInputs` plus the stated values and a second call
  * answers from its output (health-core `withRoadmapRound`, at most one round).
  * The answer is the second call's text; usage is the two calls' sum. A failed
@@ -524,7 +526,7 @@ export async function getChatCompletion(
   const body = {
     ...modelParams(CHAT_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: systemBlocks,
-    ...(canApplyEdits ? { tools: CHAT_TOOLS } : {}),
+    ...(canApplyEdits ? { tools: chatToolsFor(messages) } : {}),
   };
   const send = (fields: { messages: ChatTurnMessage[]; tool_choice?: { type: 'none' } }) =>
     onEvent ? streamAnthropicWithUsage({ ...body, ...fields }, onEvent) : callAnthropicWithUsage({ ...body, ...fields });

@@ -31,7 +31,7 @@ vi.mock('../lib/supabase.server', () => ({
 vi.mock('../lib/chat.server', async (original) => ({
   resolveChatContext: () => ({ healthDocuments: [], userContextJson: '{}' }),
   buildSystemBlocks: (_u: string, opts?: { blogArticles?: string | null }) => { mocks.blogArticles = opts?.blogArticles; return []; },
-  buildConversationMessages: () => [],
+  buildConversationMessages: (_history: unknown, message: string) => [{ role: 'user', content: message }],
   matchDocumentTitle: () => null,
   loadMatchedArticlesFromHandles: (handles: string[], titled?: string[]) => mocks.loadArticles ? mocks.loadArticles(handles, titled) : mocks.articles,
   DOCTOR_POSTURE: '', BRAND_POSTURE: '',
@@ -337,9 +337,11 @@ describe('US-15 AC19 — tools only for a client that applies edits', () => {
     expect(await anthropicBody({ message: 'hello', localFirst: true, canApplyEdits: 'yes' })).not.toHaveProperty('tools');
   });
 
-  it('canApplyEdits: true sends the form tools and run_roadmap (US-15 AC33)', async () => {
+  it('canApplyEdits: true sends the form tools, and run_roadmap when the message has a digit (US-15 AC33)', async () => {
     const sent = await anthropicBody({ message: 'hello', localFirst: true, canApplyEdits: true });
-    expect(sent.tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
+    expect(sent.tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit']);
+    const withValue = await anthropicBody({ message: 'my LDL is 4.1 mmol/L', localFirst: true, canApplyEdits: true });
+    expect(withValue.tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
   });
 
   it('the streamed path passes the same flag', async () => {
