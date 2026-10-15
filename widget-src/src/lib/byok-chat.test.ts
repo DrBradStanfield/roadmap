@@ -200,7 +200,7 @@ describe('US-15 AC33: run_roadmap in the Pages chat', () => {
     await sendMessage('I am 17, LDL 4.1 mmol/L', null, null);
     const tool = state.bodies[0].tools.find((t: { name: string }) => t.name === 'run_roadmap');
     expect(tool.input_schema.properties.age.type).toBe('integer');
-    expect(tool.input_schema.properties).not.toHaveProperty('birthYear');
+    expect(tool.input_schema.properties.birthYear.description).toMatch(/do not compute/i);
     const result = JSON.parse(state.bodies[1].messages.at(-1).content[0].content);
     expect(result.applied).toEqual(['sex', 'heightCm', 'age']);
     expect(result.roadmap.profile.knownMinor).toBe(true);

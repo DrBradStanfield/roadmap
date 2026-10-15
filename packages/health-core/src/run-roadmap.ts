@@ -40,7 +40,8 @@ export const RUN_ROADMAP_TOOL = {
     'the user states values that are not in their saved data and wants them assessed or analysed (e.g. ' +
     '"analyse my data: LDL 4.1 mmol/L, BP 132/84"). Use only the user\'s own values, not a family member\'s. ' +
     'Pass exactly the stated values and units: do NOT convert ' +
-    'units. Give sex, height or age (whole years) only when the user stated them in this conversation; height in cm or in ' +
+    'units. Give sex, height or age (whole years; a birth year only if that is what they said) only when the user stated ' +
+    'them in this conversation; height in cm or in ' +
     '(feet and inches as total inches: 5 ft 5 in is 65 in). If a unit is ' +
     'ambiguous and the user did not state it, ASK which unit instead of calling this tool, and do not grade the ' +
     'value in any unit. Answer only from the result, as you would from the user data block: never grade a value ' +
@@ -70,6 +71,7 @@ export const RUN_ROADMAP_TOOL = {
         required: ['value', 'unit'],
       },
       age: { type: 'integer' as const, description: 'Only if the user stated it: their age in whole years.' },
+      birthYear: { type: 'integer' as const, description: 'Only if the user stated their birth year and not their age. Do not compute it from an age.' },
     },
     required: ['values'],
   },
@@ -115,7 +117,7 @@ const REASONS = {
   later: 'a later value for the same field was used',
   superseded: 'a later or same-day value for this field could not be used, so this one was not used either',
   pair: 'blood pressure is read as a pair: both numbers are needed, each one usable, so neither was used',
-  minor: 'the saved profile is under 18: a stated age is not used',
+  minor: 'the saved profile is under 18: a stated age or birth year is not used',
 } as const;
 
 const BP_FIELDS: readonly string[] = ['systolicBp', 'diastolicBp'];
@@ -169,7 +171,8 @@ function savedLatestDay(history: Record<string, unknown>, metric: string, today:
  * value, and any stated one from that day or earlier, never answers for it.
  * So does a blood pressure that is not a usable pair (two numbers from one day).
  * A stated age sets the birth year from `now`, in January, so the plan's age
- * is the stated one and the minor gate is exactly under 18.
+ * is the stated one and the minor gate is exactly under 18. A stated birth
+ * year (only when no age is given) is used as stated, without a month.
  */
 export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Date()): RoadmapRun {
   const base = obj(guestInputs);
@@ -190,6 +193,12 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
 
   const items = Array.isArray(input.values) ? input.values : [];
   if (items.length > RUN_ROADMAP_MAX_VALUES) reject('values', REASONS.cap);
+  // A field stated only past the cap was not read, so its saved value must not answer for it either.
+  const read = new Set(items.slice(0, RUN_ROADMAP_MAX_VALUES).map(raw => obj(raw).field));
+  for (const raw of items.slice(RUN_ROADMAP_MAX_VALUES)) {
+    const field = obj(raw).field;
+    if (isEditable(field) && !read.has(field)) block(field, UNKNOWN_DAY, REASONS.cap);
+  }
   for (const raw of items.slice(0, RUN_ROADMAP_MAX_VALUES)) {
     const item = obj(raw);
     const field = item.field;
@@ -253,16 +262,23 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   } else if (input.heightCm != null) reject('heightCm', REASONS.shape);
   const applied = Object.keys(overlay);
   const birth: Record<string, unknown> = {};
-  if (input.age != null) {
-    const birthYear = Number.isInteger(input.age) ? now.getFullYear() - (input.age as number) : NaN;
+  const byAge = input.age != null;
+  if (byAge || input.birthYear != null) {
+    const field = byAge ? 'age' : 'birthYear';
+    const birthYear = byAge ? (Number.isInteger(input.age) ? now.getFullYear() - (input.age as number) : NaN) : input.birthYear;
     // US-07 AC6: a saved known minor stays one, whatever the message says.
-    if (knownMinorOf(base)) reject('age', REASONS.minor);
-    // January: the plan's age (calculateAge) is the stated one all year, and the minor gate is age < 18.
-    else if (inRange('birthYear', birthYear)) { Object.assign(birth, { birthYear, birthMonth: 1 }); applied.push('age'); }
-    else reject('age', REASONS.range);
+    if (knownMinorOf(base)) reject(field, REASONS.minor);
+    else if (Number.isInteger(birthYear) && inRange('birthYear', birthYear)) {
+      // An age sets January: the plan's age (calculateAge) is the stated one all year, and the minor gate is age < 18.
+      // A different stated birth year makes the saved month meaningless; with no month the gate stays conservative.
+      if (byAge) Object.assign(birth, { birthYear, birthMonth: 1 });
+      else Object.assign(birth, { birthYear, birthMonth: birthYear === base.birthYear ? base.birthMonth : undefined });
+      applied.push(field);
+    } else reject(field, REASONS.range);
   }
 
   const payload: Record<string, unknown> = { ...base, ...overlay, ...birth };
+  if (payload.birthMonth === undefined) delete payload.birthMonth;
   for (const f of unusable) delete payload[f];
   if (unusable.size > 0 && base.measurementHistory !== undefined) {
     const gone = new Set([...unusable].map(f => FIELD_TO_METRIC[f]));
@@ -316,7 +332,7 @@ function mergedRunInput(inputs: unknown[]): Record<string, unknown> {
   for (const raw of inputs) {
     const input = obj(raw);
     if (Array.isArray(input.values)) merged.values = (merged.values as unknown[]).concat(input.values);
-    for (const f of ['sex', 'height', 'heightCm', 'age']) if (merged[f] === undefined && input[f] != null) merged[f] = input[f];
+    for (const f of ['sex', 'height', 'heightCm', 'age', 'birthYear']) if (merged[f] === undefined && input[f] != null) merged[f] = input[f];
   }
   return merged;
 }

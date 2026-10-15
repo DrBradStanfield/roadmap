@@ -349,7 +349,7 @@ describe('US-15 AC33: a stated age never lifts a saved known minor (C6)', () => 
     const minor = { ...PROFILE, birthYear: new Date().getFullYear() - 14 };
     const run = runRoadmap(minor, { values: [], age: 36 });
     expect(run.applied).toEqual([]);
-    expect(run.rejected).toEqual([{ field: 'age', reason: 'the saved profile is under 18: a stated age is not used' }]);
+    expect(run.rejected).toEqual([{ field: 'age', reason: 'the saved profile is under 18: a stated age or birth year is not used' }]);
     expect(ctx(run.contextJson).profile.knownMinor).toBe(true);
   });
   it('an adult\'s stated age is still used', () => {
@@ -621,12 +621,12 @@ describe('US-15 AC33: the fourth review (Codex R1; adversary R2, R3, R7)', () =>
   });
 
   // Adversary R3: the tool takes an age; runRoadmap derives the birth year from today.
-  it('R3: the tool takes age in whole years, not a birth year', () => {
-    const props = RUN_ROADMAP_TOOL.input_schema.properties as Record<string, { type?: string }>;
+  it('R3: the tool takes age in whole years, or a birth year only as stated', () => {
+    const props = RUN_ROADMAP_TOOL.input_schema.properties as Record<string, { type?: string; description?: string }>;
     expect(props.age.type).toBe('integer');
-    expect(props).not.toHaveProperty('birthYear');
+    expect(props.birthYear.type).toBe('integer');
+    expect(props.birthYear.description).toMatch(/do not compute/i);
     expect(RUN_ROADMAP_TOOL.description).toContain('age');
-    expect(RUN_ROADMAP_TOOL.description).not.toContain('birthYear');
   });
 
   it('R3: a stated age gives the plan that age, from today\'s date', () => {
@@ -646,7 +646,7 @@ describe('US-15 AC33: the fourth review (Codex R1; adversary R2, R3, R7)', () =>
   it('R3: a saved known minor stays one whatever age is stated; a bad age is refused', () => {
     const minor = { ...PROFILE, birthYear: new Date().getFullYear() - 14 };
     const r = runRoadmap(minor, { values: [], age: 40 });
-    expect(r.rejected).toEqual([{ field: 'age', reason: 'the saved profile is under 18: a stated age is not used' }]);
+    expect(r.rejected).toEqual([{ field: 'age', reason: 'the saved profile is under 18: a stated age or birth year is not used' }]);
     expect(ctx(r.contextJson).profile.knownMinor).toBe(true);
     for (const age of [40.5, -3, 200, '40']) {
       expect(runRoadmap(PROFILE, { values: [], age }).rejected).toEqual([{ field: 'age', reason: 'out of range for this field' }]);
@@ -669,5 +669,42 @@ describe('US-15 AC33: the fourth review (Codex R1; adversary R2, R3, R7)', () =>
   it('R7: HbA1c 6.1 mmol/mol and creatinine 15 µmol/L stay in the ask-unit band', () => {
     const r = run({ values: [val('hba1c', 6.1, 'mmol/mol'), val('creatinine', 15, 'µmol/L')] });
     expect(r.rejected.map(x => x.reason)).toEqual(['unit not recognised for this field: ask the user which unit', 'unit not recognised for this field: ask the user which unit']);
+  });
+});
+
+// US-15 AC33, fifth pass (2026-10-16): the reverse of R3 ("born 1974" needs no
+// arithmetic by a model that may not know today's date) and the 20-value cap.
+describe('US-15 AC33: a stated birth year, and values past the cap', () => {
+  const MINOR = 'the saved profile is under 18: a stated age or birth year is not used';
+
+  it('a stated birth year is used as stated, with no month', () => {
+    const r = runRoadmap({}, { values: [], sex: 'female', height: { value: 165, unit: 'cm' }, birthYear: 1974 });
+    expect(r.applied).toEqual(['sex', 'heightCm', 'birthYear']);
+    expect(r.contextJson).toBe(buildChatContextJson({ sex: 'female', heightCm: 165, birthYear: 1974 }));
+  });
+
+  it('a different stated birth year drops the saved month; the same year keeps it', () => {
+    expect(runRoadmap(PROFILE, { values: [], birthYear: 1974 }).contextJson)
+      .toBe(buildChatContextJson({ ...PROFILE, birthYear: 1974, birthMonth: undefined }));
+    expect(runRoadmap(PROFILE, { values: [], birthYear: 1972 }).contextJson).toBe(buildChatContextJson(PROFILE));
+  });
+
+  it('age wins when both are given; a saved minor refuses a birth year; a bad one is refused', () => {
+    const both = runRoadmap({}, { values: [], sex: 'male', height: { value: 180, unit: 'cm' }, age: 55, birthYear: 1950 });
+    expect(both.applied).toEqual(['sex', 'heightCm', 'age']);
+    expect(ctx(both.contextJson).profile.age).toBe(55);
+    const minor = { ...PROFILE, birthYear: new Date().getFullYear() - 14 };
+    expect(runRoadmap(minor, { values: [], birthYear: 1970 }).rejected).toEqual([{ field: 'birthYear', reason: MINOR }]);
+    for (const birthYear of [1974.5, 1700, '1974']) {
+      expect(runRoadmap(PROFILE, { values: [], birthYear }).rejected).toEqual([{ field: 'birthYear', reason: 'out of range for this field' }]);
+    }
+  });
+
+  it('a field stated only past the cap is taken out of the run, so the saved value never answers for it', () => {
+    const values = [...Array.from({ length: RUN_ROADMAP_MAX_VALUES }, (_, i) => val('weightKg', 60 + i, 'kg')), val('ldlC', 4.9, 'mmol/L')];
+    const r = runRoadmap(PROFILE, { values });
+    expect(r.rejected).toContainEqual({ field: 'values', reason: `only the first ${RUN_ROADMAP_MAX_VALUES} values were used` });
+    expect(r.rejected).toContainEqual({ field: 'ldlC', reason: `only the first ${RUN_ROADMAP_MAX_VALUES} values were used` });
+    expect(ctx(r.contextJson).latestValues).not.toHaveProperty('ldlC');
   });
 });
