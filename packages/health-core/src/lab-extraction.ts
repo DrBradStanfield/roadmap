@@ -300,7 +300,7 @@ export function unifiedSystemPrompt(mode: DocumentPromptMode): string {
 /** The website's prompt: classification plus the whole document as markdown. */
 export const UNIFIED_SYSTEM_PROMPT = unifiedSystemPrompt('full');
 
-export const EXTRACTION_MAX_TOKENS = 8192; // Higher limit for markdown conversion
+export const EXTRACTION_MAX_TOKENS = 12288; // Markdown conversion; Haiku 5.5 spends ~30% more tokens on the same text
 
 // ---------------------------------------------------------------------------
 // Response parsing

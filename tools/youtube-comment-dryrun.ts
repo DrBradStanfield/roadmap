@@ -218,7 +218,7 @@ async function callAnthropic(body: object): Promise<{ ok: boolean; text: string;
 
 async function classify(comment: string): Promise<{ classification: string; raw: string }> {
   const body = {
-    ...modelParams(CLASSIFIER_MODEL, 8), // 8, as production: 5 truncates MEASUREMENT
+    ...modelParams(CLASSIFIER_MODEL, 16), // 16, as production: a smaller cap truncates MEASUREMENT
     system: [{ type: 'text', text: CLASSIFIER_PROMPT, cache_control: PROMPT_CACHE }],
     messages: [{ role: 'user', content: `(new conversation, no prior turns)\n\nCurrent message: ${comment}\n\nClassification:` }],
   };

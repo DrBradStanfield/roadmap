@@ -73,14 +73,15 @@ export async function extractOrClassify(
     try {
       return await extractOrClassifyOnce(apiKey, content, opts.timeoutMs, opts.httpAttempts, opts.documentMode ?? 'full');
     } catch (error) {
-      if (attempt >= attempts) throw error;
+      // A refusal usually repeats on the same request (US-15 AC31): fail now.
+      if (attempt >= attempts || (error instanceof Error && error.message === 'Anthropic refusal')) throw error;
       await sleep(1000);
     }
   }
 }
 
 /** Plenty for a lab panel or a document's metadata; the 8192 default exists for markdown transcription. */
-const METADATA_MAX_TOKENS = 2048;
+const METADATA_MAX_TOKENS = 3072;
 
 /**
  * One attempt: the call, and the SAME request sent once more when the first
@@ -610,7 +611,9 @@ export async function pollBatch(
       const index = parseInt(entry.custom_id?.replace('file-', ''), 10);
       if (isNaN(index)) continue;
 
-      if (entry.result?.type === 'succeeded') {
+      // A refused request still comes back 'succeeded', maybe with partial
+      // text: never parsed as values (US-15 AC31).
+      if (entry.result?.type === 'succeeded' && entry.result.message?.stop_reason !== 'refusal') {
         const textBlock = entry.result.message?.content?.find((b: any) => b.type === 'text');
         if (textBlock?.text) {
           try {

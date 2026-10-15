@@ -70,8 +70,10 @@ const VALID_CLASSIFICATIONS: ReadonlyArray<Classification> = [
   Classification.MEASUREMENT,
 ];
 
+// The label is the answer's first word: with room in the cap, text the model
+// adds after it must not turn a good label into ERROR (US-15 AC31).
 function parseClassification(raw: string): Classification {
-  const cleaned = raw.trim().toUpperCase().replace(/[^A-Z]/g, '');
+  const cleaned = raw.toUpperCase().match(/[A-Z]+/)?.[0] ?? '';
   for (const valid of VALID_CLASSIFICATIONS) {
     if (cleaned === valid) return valid;
   }

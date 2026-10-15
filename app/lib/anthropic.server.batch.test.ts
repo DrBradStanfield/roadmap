@@ -159,3 +159,15 @@ describe('US-15 AC31: the batch path on Haiku 5.5', () => {
     expect(results!.map(errorOf)).toEqual([undefined]);
   });
 });
+
+describe('US-15 AC31: a refused batch request is an error, not a parse of its partial text', () => {
+  it('marks a succeeded result whose message stop_reason is refusal as a server error', async () => {
+    const refused = JSON.stringify({
+      custom_id: 'file-1',
+      result: { type: 'succeeded', message: { stop_reason: 'refusal', content: [{ type: 'text', text: letter }] } },
+    });
+    stubBatch([succeeded(0), refused]);
+    const { results } = await pollBatch('batch_synthetic');
+    expect(results!.map(errorOf)).toEqual([undefined, 'server_error']);
+  });
+});

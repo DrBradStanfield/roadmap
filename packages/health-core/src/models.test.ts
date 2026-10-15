@@ -21,8 +21,8 @@ describe('modelParams', () => {
   it('the production classifier and extraction bodies: Haiku 5.5 with thinking off (US-15 AC31)', () => {
     expect(CLASSIFIER_MODEL).toBe('claude-haiku-5-5');
     expect(EXTRACTION_MODEL).toBe('claude-haiku-5-5');
-    expect(modelParams(CLASSIFIER_MODEL, 8))
-      .toEqual({ model: 'claude-haiku-5-5', max_tokens: 8, thinking: { type: 'disabled' } });
+    expect(modelParams(CLASSIFIER_MODEL, 16))
+      .toEqual({ model: 'claude-haiku-5-5', max_tokens: 16, thinking: { type: 'disabled' } });
   });
   it('Sonnet 5.5 thinking-off: between_tools, no temperature, no other thinking field', () => {
     const p = modelParams('claude-sonnet-5-5', 200, 'off');

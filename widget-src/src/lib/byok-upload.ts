@@ -48,6 +48,7 @@ const UPLOAD_ERROR_CODE: Record<ByokErrorCode, UploadErrorCode> = {
   bad_request: 'server_error',
   empty: 'server_error',
   server_error: 'server_error',
+  refused: 'server_error',
 };
 
 /** A 400 that names credit or billing is the key's account, not the file:
