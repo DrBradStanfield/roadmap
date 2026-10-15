@@ -842,6 +842,7 @@ node ~/Documents/roadmap/tools/codex-review.mjs \
 So any subject, baseline or context file that is not tracked at HEAD must sit
 under a root pinned in `tools/codex-review-includes.json` under
 `"subjectRoots"`, committed at HEAD like the `--include` roots. The pins are
+this repo's gitignored `codex-drafts/` (de-identified drafts, 2026-10-15) and
 the numbered video FOLDERS, `claude_business/output/[0-9] *`, `[0-9][0-9] *`
 and `[0-9][0-9][0-9] *` (digits, then a space, and a real folder: never
 `output/0-private` or a loose file). A tracked file is always allowed. A new

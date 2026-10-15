@@ -26,6 +26,9 @@ docs/knowledge-map/
 # Local test artifacts / scratch — never commit (purged from history 2026-06-12)
 tmp/
 
+# De-identified drafts for a Codex --subject review (US-40 AC15): ignored so no sweep commits them
+codex-drafts/
+
 # One-off / scratch scripts — never commit (e.g. _purge-run.mjs, _purge-backup.mjs)
 _*.mjs
 _*.ts

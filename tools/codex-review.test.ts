@@ -2029,8 +2029,12 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
     refused(dir, ['--subject', V4], 'is not tracked at HEAD', policyFor(dir, { subjectRoots: [`${dir}/output/[a-z]*`] })); // the glob class is honoured
     expect(run(dir, ['--subject', 'output/notes/tracked-out.md']).r.status).toBe(0); // tracked at HEAD, outside the pins
     expect(run(dir, ['--subject', V4, '--context', RESEARCH]).r.status).toBe(0); // a numbered video folder
+    mkdirSync(join(dir, 'codex-drafts')); writeFileSync(join(dir, 'codex-drafts', 'plan.md'), 'draft\n');
+    expect(run(dir, ['--subject', 'codex-drafts/plan.md'], { policy: policyFor(dir, { subjectRoots: [`${dir}/codex-drafts`] }) }).r.status).toBe(0); // a plain folder root pins everything under it
+    mkdirSync(join(dir, 'codex-draftsX')); writeFileSync(join(dir, 'codex-draftsX', 'plan.md'), 'draft\n');
+    refused(dir, ['--subject', 'codex-draftsX/plan.md'], 'is not tracked at HEAD', policyFor(dir, { subjectRoots: [`${dir}/codex-drafts`] })); // a sibling sharing the prefix is not under it
     const CB = '/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business';
-    expect(SHIPPED_POLICY.subjectRoots).toEqual([`${CB}/output/[0-9] *`, `${CB}/output/[0-9][0-9] *`, `${CB}/output/[0-9][0-9][0-9] *`]);
+    expect(SHIPPED_POLICY.subjectRoots).toEqual(['/Users/bradstanfield/Documents/roadmap/codex-drafts', `${CB}/output/[0-9] *`, `${CB}/output/[0-9][0-9] *`, `${CB}/output/[0-9][0-9][0-9] *`]);
   });
   it('Codex R1, adversary R4: a subject, baseline or context inside a nested git repo is refused (that repo\'s HEAD credentials are never collected)', () => {
     const dir = scriptRepo();

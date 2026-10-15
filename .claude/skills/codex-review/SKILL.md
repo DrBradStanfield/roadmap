@@ -113,7 +113,11 @@ the snapshot. A subject identical to its baseline is `E_SUBJECT_UNCHANGED`;
 point `--subject` or `--context` at a file holding customer or health data;
 an untracked file must sit under a root pinned in
 `tools/codex-review-includes.json` (`subjectRoots`), and widening that list is
-Brad's call.
+Brad's call. **Drafts:** a draft that belongs in no repo (a plan, a proposal)
+goes in `codex-drafts/` (gitignored and pinned; de-identified only: no names,
+emails, quotes or a customer's own numbers), then `--subject codex-drafts/<file>`,
+run from the main checkout (a worktree's copy is not pinned). Never put one
+anywhere git would track it: another session's sweep commits it (2026-10-15).
 
 Run it in a Bash subagent or in the background; a review takes minutes. Exit
 codes: 0 clean, 2 blocking findings, 3 incomplete, 1 a usage error or a
