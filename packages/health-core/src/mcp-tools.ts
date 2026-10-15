@@ -13,7 +13,7 @@
  */
 import { deadlineSignal } from './adapter';
 import { dayOf, daysBetween, stampFields } from './merge';
-import { canonicalLabValue, displayLabUnit, foldLpa, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
+import { displayLabUnit, foldLpa, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
 import { ISO_DATE, latestActivePerMetric } from './measurement-history';
 import {
   type AdditionalLabValue,
@@ -35,6 +35,7 @@ import {
   type EditContext,
   correctValue,
   resolveRecordedAt,
+  sameLabQuantity,
   slotIndex,
   slotKey,
   type SlotState,
@@ -1297,7 +1298,7 @@ function validDay(day: string | null | undefined, ctx: EditContext): string | nu
   return typeof resolved === 'string' ? resolved : null;
 }
 
-/** What a candidate finds in its slot (AC6): core display strings; lab quantities in canonical units, or reported units for unknown tests. */
+/** What a candidate finds in its slot (AC6): a core metric by its displayed string, a lab by quantity (`sameLabQuantity`, the website's rule too). */
 function slotFor(
   existing: FileMeasurement | FileLabValue | undefined,
   candidate: Omit<ImportCandidate, 'id' | 'sameDayAs' | 'slot'>,
@@ -1306,16 +1307,12 @@ function slotFor(
   system: UnitSystem,
 ): ImportCandidate['slot'] {
   if (!existing) return { state: 'free' };
-  let state: SlotState;
-  if ('metricType' in existing) {
-    state = slotState(formatDisplayValue(existing.metricType as MetricType, existing.value, system), candidate.displayValue);
-  } else {
-    const heldEntry = resolveLabCatalogEntry(existing.metricName);
-    const offeredEntry = resolveLabCatalogEntry(candidate.printedName ?? candidate.metric);
-    const held = heldEntry ? canonicalLabValue(heldEntry, existing.value, existing.unit) : existing;
-    const offered = offeredEntry ? canonicalLabValue(offeredEntry, candidate.value, candidate.unit) : candidate;
-    state = held && offered && held.value === offered.value && held.unit === offered.unit ? 'held_equal' : 'held_different';
-  }
+  const state: SlotState = 'metricType' in existing
+    ? slotState(formatDisplayValue(existing.metricType as MetricType, existing.value, system), candidate.displayValue)
+    : sameLabQuantity(
+      { name: existing.metricName, value: existing.value, unit: existing.unit },
+      { name: candidate.printedName ?? candidate.metric, value: candidate.value, unit: candidate.unit },
+    ) ? 'held_equal' : 'held_different';
   if (state === 'held_equal') return { state, existingRowId: existing.id, existingValue: existing.value };
   const age = daysBetween(dayOf(existing.recordedAt ?? ''), dayOf(now));
   return {

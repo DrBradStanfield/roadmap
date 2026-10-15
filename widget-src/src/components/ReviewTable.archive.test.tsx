@@ -414,3 +414,32 @@ describe('ReviewTable — same-day conflicts compare stored values, not rounded 
     expect(replace()).toBeNull();
   });
 });
+
+// Brad 2026-10-16 (PR #145): the record holds a lab in SI, the report prints its own unit. "Vitamin D" on a
+// report and the stored `vitamin_d` share one row (US-35 AC6), so a reading in another unit says its unit,
+// and Replace saves the number with the unit it was printed in (converted once, at the write).
+describe('ReviewTable — a lab printed in another unit conflicts, shows its unit, and saves it (US-35 AC6)', () => {
+  const day = '2025-02-01';
+  const heldLab = { id: 'held-d', metricName: 'vitamin_d', value: 50, unit: 'nmol/L', referenceLow: null, referenceHigh: null,
+    recordedAt: `${day}T00:00:00.000Z`, source: 'manual' as const, createdAt: `${day}T00:00:00.000Z` };
+  const upload: FileResult[] = [{
+    fileName: 'd.pdf', reportDate: day, values: [], additionalValues: [{ name: 'Vitamin D', value: 50, unit: 'ng/mL' }],
+  }];
+
+  it('50 ng/mL against a saved 50 nmol/L: one row, a conflict naming both units, and Replace saves 50 ng/mL', () => {
+    const onSave = vi.fn();
+    const { container } = render(
+      <ReviewTable grading={{}} results={upload} history={{ bloodTests: [], labValues: [heldLab], documents: [] }}
+        unitSystem="si" onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />,
+    );
+    expect(container.querySelectorAll('.bt-cell-conflict')).toHaveLength(1);
+    expect(container.querySelector('.bt-cell-conflict .bt-cell-unit')?.textContent).toBe('ng/mL');
+    const replace = container.querySelector<HTMLInputElement>('.bt-cell-conflict-replace input')!;
+    expect(replace.getAttribute('aria-label')).toBe('Replace the saved vitamin_d value 50 with 50 ng/mL');
+    fireEvent.click(replace);
+    fireEvent.click(container.querySelector<HTMLButtonElement>('.review-save-btn')!);
+    expect(onSave.mock.calls.at(-1)![0].labValues).toEqual([
+      expect.objectContaining({ name: 'Vitamin D', value: 50, unit: 'ng/mL', correctsId: 'held-d' }),
+    ]);
+  });
+});
