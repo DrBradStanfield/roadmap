@@ -270,6 +270,8 @@ export interface ToolResultBlock { type: 'tool_result'; tool_use_id: string | un
 export interface ChatTurnMessage { role: 'user' | 'assistant'; content: string | ReadonlyArray<ChatContentBlock | ToolResultBlock> }
 /** What a round cost in values: counts only, for the usage signal. Never a value. */
 export interface RoadmapRoundCounts { applied: number; rejected: number }
+/** A transport's own tool_result for a tool health-core does not know (US-49's subscription tool); undefined for the rest. */
+export type ToolResultFor = (b: ChatContentBlock, blocks: readonly ChatContentBlock[]) => string | undefined;
 
 /** Stub results for a form tool called beside run_roadmap: the client applies a valid one after the answer. */
 const FORM_TOOL_STUB = 'Pre-filled for the user to review and Save.';
@@ -298,9 +300,14 @@ function mergedRunInput(inputs: unknown[]): Record<string, unknown> {
  * The tool_result blocks for a reply that called run_roadmap, one per tool_use
  * in order, or null when it did not call it. However many run_roadmap calls
  * the reply holds, the plan runs once, on all their values under one cap, and
- * answers the first; the others get a fixed stub.
+ * answers the first; the others get a fixed stub. Any other tool gets
+ * `otherResult`'s text when it gives one, else the form tools' stub.
  */
-export function roadmapToolResults(blocks: ChatContentBlock[], guestInputs: unknown): { results: ToolResultBlock[]; counts: RoadmapRoundCounts } | null {
+export function roadmapToolResults(
+  blocks: ChatContentBlock[],
+  guestInputs: unknown,
+  otherResult?: ToolResultFor,
+): { results: ToolResultBlock[]; counts: RoadmapRoundCounts } | null {
   const uses = blocks.filter(b => b.type === 'tool_use');
   const runs = uses.filter(b => b.name === RUN_ROADMAP_TOOL.name);
   if (runs.length === 0) return null;
@@ -308,7 +315,7 @@ export function roadmapToolResults(blocks: ChatContentBlock[], guestInputs: unkn
   const results = uses.map((b): ToolResultBlock => ({
     type: 'tool_result',
     tool_use_id: b.id,
-    content: b === runs[0] ? roadmapResultText(run) : b.name === RUN_ROADMAP_TOOL.name ? NOT_RUN : formToolStub(b),
+    content: b === runs[0] ? roadmapResultText(run) : b.name === RUN_ROADMAP_TOOL.name ? NOT_RUN : otherResult?.(b, blocks) ?? formToolStub(b),
   }));
   return { results, counts: { applied: run.applied.length, rejected: run.rejected.length } };
 }
@@ -320,15 +327,17 @@ export function roadmapToolResults(blocks: ChatContentBlock[], guestInputs: unkn
  * tool results and `tool_choice: none`, so no second round can start; its
  * reply is the answer. A failed second call throws, as a failed first one does;
  * `onRound` has the round's counts before that call, so a caller keeps them.
+ * `otherResult` answers a tool only the transport knows (roadmapToolResults).
  */
 export async function withRoadmapRound<R extends { contentBlocks: ChatContentBlock[] }>(
   messages: ChatTurnMessage[],
   send: (fields: { messages: ChatTurnMessage[]; tool_choice?: { type: 'none' } }) => Promise<R>,
   guestInputs: unknown,
   onRound?: (counts: RoadmapRoundCounts) => void,
+  otherResult?: ToolResultFor,
 ): Promise<{ first: R; final: R; counts: RoadmapRoundCounts | null; proposedEdits: ProposedEdit[] }> {
   const first = await send({ messages });
-  const round = roadmapToolResults(first.contentBlocks, guestInputs);
+  const round = roadmapToolResults(first.contentBlocks, guestInputs, otherResult);
   if (!round) return { first, final: first, counts: null, proposedEdits: parseProposedEdits(first.contentBlocks) };
   onRound?.(round.counts);
   const final = await send({

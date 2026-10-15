@@ -28,7 +28,7 @@ function screeningBox(age: number | undefined) {
     <ReviewTable
       grading={{}}
       results={colonoscopy}
-      history={{ bloodTests: [], labValues: [], documents: [] }}
+      history={{ measurements: [], labValues: [], documents: [] }}
       unitSystem="si"
       age={age}
       sex="male"
@@ -65,7 +65,7 @@ describe('ReviewTable — a known minor sees values with no adult hint or colour
   } as unknown as FileResult];
   function ldlRow(knownMinor: boolean) {
     const { container } = render(
-      <ReviewTable results={ldlFile} history={{ bloodTests: [], labValues: [], documents: [] }} unitSystem="si"
+      <ReviewTable results={ldlFile} history={{ measurements: [], labValues: [], documents: [] }} unitSystem="si"
         sex="male" grading={knownMinor ? null : { sex: 'male' }} onSave={() => {}} onCancel={() => {}} isSaving={false} error={null} />,
     );
     const row = container.querySelector('.review-matrix .bt-row:not(.bt-header-row)')!;
@@ -82,5 +82,39 @@ describe('ReviewTable — a known minor sees values with no adult hint or colour
 
   it('a known minor: the value, with no hint and no colour', () => {
     expect(ldlRow(true)).toEqual({ hint: null, colours: [], value: '4.0' });
+  });
+});
+
+// US-12 AC11 — the review shows BP from a lab report with a fixed mmHg chip
+// (no toggle that does nothing), and names lab rows by their own name, never
+// by the internal `lab:` row key.
+const vitalsSheet: FileResult[] = [{
+  fileName: 'baseline.jpg',
+  reportDate: '2026-10-01',
+  values: [{ metric: 'systolic_bp', valueSI: 118, displayValue: 118, displayUnit: 'mmHg', confidence: 'high' }],
+  additionalValues: [{ name: 'Ferritin', value: 134, unit: 'ug/L' }],
+}];
+
+describe('ReviewTable — vitals and lab-row names (US-12 AC11)', () => {
+  it('draws the BP row with a static mmHg chip and labels the lab cell by its name', () => {
+    const { container } = render(
+      <ReviewTable
+        grading={{}}
+        results={vitalsSheet}
+        history={{ measurements: [], labValues: [], documents: [] }}
+        unitSystem="si"
+        onToggleFieldUnit={() => {}}
+        onSave={() => {}}
+        onCancel={() => {}}
+        isSaving={false}
+        error={null}
+      />,
+    );
+    const chips = [...container.querySelectorAll('.bt-unit-chip')].filter(c => c.textContent === 'mmHg');
+    expect(chips).toHaveLength(1);
+    expect(chips[0].tagName).toBe('SPAN');
+    const labels = [...container.querySelectorAll('[aria-label]')].map(e => e.getAttribute('aria-label'));
+    expect(labels).toContain('Ferritin value');
+    expect(labels.some(l => l?.includes('lab:'))).toBe(false);
   });
 });

@@ -27,6 +27,7 @@ import {
   type ChatTurnMessage,
   type ProposedEdit,
 } from '@roadmap/health-core';
+import { modelParams } from '@roadmap/health-core/models';
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import { getChatHistory } from './chat-history-access';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
@@ -151,8 +152,9 @@ export async function deleteConversation(conversationId: string): Promise<boolea
 
 // Deliberately NOT the website chat's model (health-core models.ts CHAT_MODEL,
 // a Sonnet): here the user pays with their own key, and Haiku keeps a typical
-// chat under a cent.
-const CHAT_MODEL = 'claude-haiku-4-5-20251001';
+// chat under a cent. Haiku 5.5 since 2026-10-16, thinking off as on Haiku 4.5;
+// modelParams gives its body shape (US-15 AC31).
+const CHAT_MODEL = 'claude-haiku-5-5';
 
 const SYSTEM_PROMPT = `You are the chat assistant inside "Health Plan by Dr Brad", a preventative-health planning app by Dr Brad Stanfield (GP, drstanfield.com). The user runs this app on their own infrastructure with their own AI key.
 
@@ -216,7 +218,7 @@ export async function sendMessage(
       { role: 'user', content: message },
     ];
     const turn = await withRoadmapRound(messages, async (fields) => {
-      const { text, blocks } = await callAnthropicDirectRaw(apiKey, { model: CHAT_MODEL, max_tokens: 1024, system, tools: chatToolsFor(messages), ...fields });
+      const { text, blocks } = await callAnthropicDirectRaw(apiKey, { ...modelParams(CHAT_MODEL, 1024), system, tools: chatToolsFor(messages), ...fields });
       return { text, contentBlocks: blocks };
     }, guestInputs);
     content = turn.final.text;

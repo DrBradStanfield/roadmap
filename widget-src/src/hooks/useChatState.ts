@@ -18,6 +18,16 @@ import {
 } from '../lib/chat-api';
 import { postSync, postInputSync, subscribeSync, generateInstanceId } from '../lib/chat-sync';
 import { cutText, type ChatContextPayload, type ProposedEdit } from '@roadmap/health-core';
+import { confirmSubscriptionChange, type SubscriptionCard, type SubscriptionResult } from '../lib/subscription-card';
+
+/** A subscription change card under an answer (US-49): idle, sending, or closed with its outcome. */
+export interface SubscriptionCardState {
+  card: SubscriptionCard;
+  phase: 'idle' | 'sending' | 'closed';
+  /** The last outcome; a 'busy' one leaves the card open to try again. */
+  result?: SubscriptionResult;
+  dismissed?: boolean;
+}
 
 export interface ChatPrefetchData {
   conversations: ChatConversation[];
@@ -60,6 +70,9 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   // this session only (AC17/AC22). Never persisted: not in `messages` (so not synced
   // to other tabs or written to the user's cloud chat history) and never sent to the server.
   const [approachById, setApproachById] = useState<Record<string, ChatApproach>>({});
+  // US-49: subscription change cards, by assistant message id, this tab only
+  // (like approachById: never persisted, synced or sent anywhere but the confirm).
+  const [cardsById, setCardsById] = useState<Record<string, SubscriptionCardState>>({});
   const streamRef = useRef({ ...NO_PENDING, frame: 0 });
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
@@ -299,6 +312,10 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       if (result.proposedEdits && result.proposedEdits.length > 0) {
         onProposeEditRef.current?.(result.proposedEdits);
       }
+      if (result.subscriptionCard) {
+        const card = result.subscriptionCard;
+        setCardsById(prev => ({ ...prev, [assistantMsg.id]: { card, phase: 'idle' } }));
+      }
 
       let finalConversations = currentConvs;
       let finalConvId = currentConvId;
@@ -344,6 +361,26 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     }
   }, [instanceId]);
 
+  /** The customer pressed Confirm (US-49): the one request that makes the change. */
+  const cardsRef = useRef(cardsById);
+  const setCards = useCallback((next: Record<string, SubscriptionCardState>) => { cardsRef.current = next; setCardsById(next); }, []);
+  useEffect(() => { cardsRef.current = cardsById; }, [cardsById]);
+  const confirmSubscription = useCallback(async (messageId: string) => {
+    const entry = cardsRef.current[messageId];
+    // The ref flips to 'sending' synchronously, so a double click sends once.
+    if (!entry || entry.phase !== 'idle') return;
+    setCards({ ...cardsRef.current, [messageId]: { ...entry, phase: 'sending' } });
+    const result = await confirmSubscriptionChange(entry.card);
+    // The usage signal is counted by the server's confirm route (US-49), on every bundle.
+    // 'busy' leaves the card open to try again; every other outcome closes it.
+    setCards({ ...cardsRef.current, [messageId]: { ...entry, result, phase: result.code === 'busy' ? 'idle' : 'closed' } });
+  }, [setCards]);
+
+  const dismissSubscription = useCallback((messageId: string) => {
+    const entry = cardsRef.current[messageId];
+    if (entry?.phase === 'idle') setCards({ ...cardsRef.current, [messageId]: { ...entry, phase: 'closed', dismissed: true } });
+  }, [setCards]);
+
   const handleInputChange = useCallback((text: string) => {
     const sliced = cutText(text, MAX_CHARS);
     // Say so when a paste is cut (US-15 AC26); the next edit within the cap clears it.
@@ -363,9 +400,12 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       error,
       pending,
       approachById,
+      cardsById,
       isOffline,
     },
     actions: {
+      confirmSubscription,
+      dismissSubscription,
       handleInputChange,
       selectConversation,
       startNewChat,

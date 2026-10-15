@@ -11,6 +11,7 @@ import { stopDiscordBot } from './lib/discord-bot.server';
 import { stopYouTubeBot } from './lib/youtube-bot.server';
 import { stopYouTubeBotSummaryCron } from './lib/youtube-bot-summary-cron.server';
 import { stopChatPurgeCron } from './lib/chat-purge-cron.server';
+import { isUnservedProbe } from './lib/route-miss.server';
 
 // NOTE: Sentry.init (with the HIPAA PII/PHI scrubbing) now lives in instrument.server.mjs,
 // loaded via `node --import` before this bundle. See that file. Here we only consume the
@@ -39,6 +40,8 @@ export const streamTimeout = 5000;
 // @sentry/remix integration auto-wired this; RR7 needs this explicit export. Errors are
 // scrubbed in instrument.server.mjs before send.
 export function handleError(error: unknown, { request }: { request: Request }) {
+  // Don't report scanner probes for paths we never serve (US-49).
+  if (isUnservedProbe(error, request)) return;
   // Don't report aborted requests (client navigated away).
   if (!request.signal.aborted) {
     Sentry.captureException(error);

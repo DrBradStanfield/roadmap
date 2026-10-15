@@ -256,6 +256,13 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
 - **Chat switches** (optional, both default on): `CHAT_ENABLED=false` answers
   every chat POST 503; `CHAT_STREAMING=false` makes `/api/chat` ignore
   `stream: true` and answer JSON, which the widget reads unchanged (US-15 AC16).
+- **Subscription changes in the chat (US-49), commerce app ONLY**:
+  `CHAT_SUBSCRIPTION_ACTIONS=on` (default off), `CS_GATEWAY_CHAT_URL` (the
+  gateway's private address: see the private customer-service spec) and
+  `CHAT_GATEWAY_SECRET` (the same value as the gateway's). Never set them on
+  `health-tool-edu`: the gateway's chat routes trust whoever holds the secret
+  (both apps share the Fly organisation's private network). The code also
+  requires `CHAT_SURFACE=brand`.
 - **GitHub Actions**: deploy secrets live ONLY in the gated `production`
   environment; ANTHROPIC_API_KEY (spend-capped) is the only repo secret.
 

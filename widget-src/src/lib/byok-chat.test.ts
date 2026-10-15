@@ -203,3 +203,26 @@ describe('US-15 AC33: run_roadmap in the Pages chat', () => {
     warn.mockRestore();
   });
 });
+
+// US-15 AC31: the Pages chat runs on Haiku 5.5, which 400s on sampling params
+// and on an assistant prefill, and thinks unless told not to.
+describe('US-15 AC31: the Pages chat request on Haiku 5.5', () => {
+  beforeEach(() => {
+    const store = new Map([['hr_anthropic_key', 'sk-ant-test']]);
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    });
+  });
+
+  it('sends Haiku 5.5 with thinking disabled, no temperature, ending on the user turn', async () => {
+    await sendMessage('hi', null, SNAPSHOT);
+    const body = state.sent as unknown as Record<string, any>;
+    expect(body.model).toBe('claude-haiku-5-5');
+    expect(body.max_tokens).toBe(1024);
+    expect(body.thinking).toEqual({ type: 'disabled' });
+    expect(body).not.toHaveProperty('temperature');
+    expect(body.messages.at(-1)).toEqual({ role: 'user', content: 'hi' });
+  });
+});

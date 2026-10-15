@@ -15,6 +15,7 @@ import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ChatKeyGate } from './ChatKeyGate';
 import { useChatState, MAX_CHARS, type ChatContextSource } from '../hooks/useChatState';
 import { ChatMessageBubble } from './ChatMessageBubble';
+import { SubscriptionChangeCard } from './SubscriptionChangeCard';
 import { ChatPendingReply } from './ChatPendingReply';
 import { ChatThreadList } from './ChatThreadList';
 import { ChatHeaderTitle } from './ChatHeaderTitle';
@@ -180,7 +181,16 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
               </div>
             )}
             {state.messages.map(msg => (
-              <ChatMessageBubble key={msg.id} msg={msg} approach={state.approachById[msg.id]} />
+              <React.Fragment key={msg.id}>
+                <ChatMessageBubble msg={msg} approach={state.approachById[msg.id]} />
+                {state.cardsById?.[msg.id] && (
+                  <SubscriptionChangeCard
+                    entry={state.cardsById[msg.id]}
+                    onConfirm={() => actions.confirmSubscription(msg.id)}
+                    onDismiss={() => actions.dismissSubscription(msg.id)}
+                  />
+                )}
+              </React.Fragment>
             ))}
             {state.isLoading && (
               <ChatPendingReply isLocalSender={state.isLocalSender} pending={state.pending} />

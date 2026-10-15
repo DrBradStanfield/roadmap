@@ -6,10 +6,14 @@ import {
   METRIC_TO_FIELD,
   parseLocalisedNumber,
   BLOOD_TEST_METRICS,
+  VITAL_METRICS,
   isScreeningEligible,
   displayLabUnit,
+  labSlotKey,
   resolveLabCatalogEntry,
+  sameLabQuantity,
   slotState,
+  type LabQuantity,
 } from '@roadmap/health-core';
 import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
@@ -163,11 +167,19 @@ function sameValue(a: number, b: number): boolean {
   return Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(a), Math.abs(b));
 }
 
-/** Lab-value name → cell key. Lower + trim for dedup, and strip `|`
- *  because the cellKey format is `${rowKey}|${dateKey}` — an LLM-emitted
- *  name like "ALT | AST ratio" would otherwise collide. */
+/** A lab reading's unit as the matrix shows it (display spelling only). */
+function labUnitText(lab: { name: string; unit: string }): string {
+  return displayLabUnit(lab.unit, resolveLabCatalogEntry(lab.name));
+}
+
+/** Lab-value name → row key: health-core's slot key, so a report's "Vitamin D"
+ *  and the stored `vitamin_d` share one row, as in the connector (US-35 AC6).
+ *  `|` is swapped out because the cellKey format is `${rowKey}|${dateKey}`, and
+ *  an LLM-emitted name like "ALT | AST ratio" would otherwise collide. Prefixed
+ *  so a lab row named like a core metric ("ldl", "systolic_bp", saved before
+ *  US-12 AC11) never shares a cell with that metric. */
 function normaliseLabName(name: string): string {
-  return name.trim().toLowerCase().replace(/\|/g, '/');
+  return `lab:${labSlotKey(name).replace(/\|/g, '/')}`;
 }
 
 // ============================================================================
@@ -193,7 +205,7 @@ interface CoreRow {
 
 interface AdditionalRow {
   kind: 'additional';
-  /** Normalised key (lower + trim) used for dedup. Display uses any case from the data. */
+  /** The lab's slot key (`normaliseLabName`), shared with the connector. Display uses any case from the data. */
   nameKey: string;
   /** Display name — preserves casing from the first source we see. */
   displayName: string;
@@ -213,19 +225,20 @@ type MatrixRow = CoreRow | AdditionalRow;
  *  (typically written by a connector). The cell edits like any other; it only
  *  saves when the user ticks "Replace". `id` is what the save sends as
  *  `correctsId`. */
-interface ExistingCell { id: string; display: string; valueSI?: number }
+interface ExistingCell { id: string; display: string; valueSI?: number; lab?: LabQuantity; displayUnit?: string }
 
 type EditableMatrixCell =
   | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; valueSI: number; displayUnit: string; existing?: ExistingCell }
-  | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; existing?: ExistingCell };
+  | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; lab: LabQuantity; existing?: ExistingCell };
 
 /** A core cell as rendered: its text in the row's unit and the value it saves. */
 interface CoreCellView { text: string; valueSI?: number }
 
 type MatrixCell =
   | { state: 'empty' }
-  /** `valueSI` (core metrics): the stored value, which a collision compares. */
-  | { state: 'context'; id: string; displayValue: string; valueSI?: number }
+  /** What a collision compares: `valueSI` for a core metric (the stored value), `lab` for an additional lab,
+   *  shown in `displayUnit`. */
+  | { state: 'context'; id: string; displayValue: string; valueSI?: number; lab?: LabQuantity; displayUnit?: string }
   | EditableMatrixCell;
 
 /** Build the matrix view. A saved row owns its cell: an upload value that
@@ -234,7 +247,7 @@ type MatrixCell =
 export function buildMatrixModel(
   results: FileResult[],
   fileDates: Record<number, FullDate>,
-  bloodTestHistory: ApiMeasurement[],
+  measurementHistory: ApiMeasurement[],
   labValueHistory: ApiLabValue[],
   unitSystem: UnitSystem,
   metricUnitOverrides?: Partial<Record<MetricType, CellUnit>>,
@@ -252,16 +265,20 @@ export function buildMatrixModel(
    *  file in this batch already claimed it); an ExistingCell = conflict;
    *  undefined = free slot. A core metric compares stored values: its rounded
    *  display can hide a real difference (Lp(a) 124.9 and 125 nmol/L both read
-   *  "50.0" mg/dL, either side of the Elevated line, US-13 AC3). Other rows
-   *  compare text with health-core's `slotState`, as the connector does (US-35 AC6). */
-  const collide = (cellKey: string, display: string, valueSI?: number): ExistingCell | 'skip' | undefined => {
+   *  "50.0" mg/dL, either side of the Elevated line, US-13 AC3). An additional
+   *  lab compares quantities: the record holds it in SI, the report prints its
+   *  own unit, so health-core's `sameLabQuantity` converts both, as the
+   *  connector does (US-35 AC6). */
+  const collide = (cellKey: string, display: string, valueSI?: number, lab?: LabQuantity): ExistingCell | 'skip' | undefined => {
     const prev = cells.get(cellKey);
     if (!prev) return undefined;
     if (prev.state !== 'context') return 'skip';
     const equal = valueSI !== undefined && prev.valueSI !== undefined
       ? sameValue(prev.valueSI, valueSI)
-      : slotState(prev.displayValue, display) === 'held_equal';
-    return equal ? 'skip' : { id: prev.id, display: prev.displayValue, valueSI: prev.valueSI };
+      : lab && prev.lab
+        ? sameLabQuantity(prev.lab, lab)
+        : slotState(prev.displayValue, display) === 'held_equal';
+    return equal ? 'skip' : { id: prev.id, display: prev.displayValue, valueSI: prev.valueSI, lab: prev.lab, displayUnit: prev.displayUnit };
   };
 
   const addColumn = (dateKey: DateKey, date: FullDate, fileIndex: number | null) => {
@@ -277,14 +294,21 @@ export function buildMatrixModel(
     return col;
   };
 
-  // 1) Seed columns + cells from existing history (greyed context).
+  // 1) Seed columns + cells from existing history (greyed context). A blood
+  //    test seeds its own column. A saved BP seeds only a date this upload
+  //    brings, so it conflicts like any held slot (US-13 AC3) without every
+  //    vitals date becoming a column.
   const bloodTestSet = new Set<string>(BLOOD_TEST_METRICS);
-  for (const m of bloodTestHistory) {
-    if (!bloodTestSet.has(m.metricType)) continue;
+  const vitalSet = new Set<string>(VITAL_METRICS);
+  const uploadDates = new Set(results.flatMap((r, fi) =>
+    fileDates[fi] && r.values.length + r.additionalValues.length > 0 ? [buildDatePrefix(fileDates[fi])] : []));
+  for (const m of measurementHistory) {
     const dateKey = m.recordedAt.slice(0, 10);
-    addColumn(dateKey, parseReportDate(dateKey), null);
     const metric = m.metricType as MetricType;
-    coreMetricsSeen.add(metric);
+    if (bloodTestSet.has(metric)) {
+      addColumn(dateKey, parseReportDate(dateKey), null);
+      coreMetricsSeen.add(metric);
+    } else if (!vitalSet.has(metric) || !uploadDates.has(dateKey)) continue;
     const display = UNIT_DEFS[metric]
       ? cellText(metric, m.value, displayFor(metric))
       : String(m.value);
@@ -302,12 +326,16 @@ export function buildMatrixModel(
         // Same display-only unit-spelling normalization as the lab-rows
         // matrix ("umol/L" → "µmol/L", ratio ≡ L/L) — these are stored rows,
         // already in the catalogue's SI unit when the test is catalogued.
-        unit: displayLabUnit(lv.unit, resolveLabCatalogEntry(lv.metricName)),
+        unit: labUnitText({ name: lv.metricName, unit: lv.unit }),
         referenceLow: lv.referenceLow,
         referenceHigh: lv.referenceHigh,
       });
     }
-    cells.set(`${nameKey}|${dateKey}`, { state: 'context', id: lv.id, displayValue: String(lv.value) });
+    cells.set(`${nameKey}|${dateKey}`, {
+      state: 'context', id: lv.id, displayValue: String(lv.value),
+      lab: { name: lv.metricName, value: lv.value, unit: lv.unit },
+      displayUnit: labUnitText({ name: lv.metricName, unit: lv.unit }),
+    });
   }
 
   // 2) Overlay upload values. On an occupied slot: an equal value is already
@@ -352,13 +380,14 @@ export function buildMatrixModel(
           // Display-only spelling normalization. The review shows the report
           // as PRINTED, and the save path passes av.unit on unchanged — the
           // conversion to SI happens once, at the write (US-21 phase 3).
-          unit: displayLabUnit(av.unit, resolveLabCatalogEntry(av.name)),
+          unit: labUnitText(av),
           referenceLow: av.referenceLow ?? null,
           referenceHigh: av.referenceHigh ?? null,
         });
       }
       const cellKey = `${nameKey}|${dateKey}`;
-      const existing = collide(cellKey, String(av.value));
+      const lab = { name: av.name, value: av.value, unit: av.unit };
+      const existing = collide(cellKey, String(av.value), undefined, lab);
       if (existing === 'skip') return;
       cells.set(cellKey, {
         state: 'editable',
@@ -366,7 +395,8 @@ export function buildMatrixModel(
         fi, ai,
         initialDisplay: String(av.value),
         valueSI: av.value,
-        displayUnit: av.unit,
+        displayUnit: labUnitText(av),
+        lab,
         existing,
       });
     });
@@ -374,9 +404,11 @@ export function buildMatrixModel(
 
   // 3) Sort. Columns chronological asc (oldest left, newest right).
   //    Core rows in the canonical BLOOD_TEST_METRICS order so the matrix
-  //    reads the same as the live timeline. Additional rows alphabetic.
+  //    reads the same as the live timeline, then any vitals the report
+  //    printed (BP): save takes every cell, so every cell needs a row
+  //    (US-12 AC11). Additional rows alphabetic.
   const columns = Array.from(columnsByKey.values()).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
-  const coreRows: CoreRow[] = BLOOD_TEST_METRICS
+  const coreRows: CoreRow[] = [...BLOOD_TEST_METRICS, ...VITAL_METRICS]
     .filter(m => coreMetricsSeen.has(m as MetricType))
     .map(m => ({ kind: 'core' as const, metric: m as MetricType }));
   const additionalRows = Array.from(additionalByKey.values()).sort((a, b) =>
@@ -384,6 +416,11 @@ export function buildMatrixModel(
   );
 
   return { columns, coreRows, additionalRows, cells };
+}
+
+/** What a screen reader names the row: the metric key, or the lab row's own name (never its `lab:` key). */
+function rowName(row: MatrixRow): string {
+  return row.kind === 'core' ? row.metric : row.displayName;
 }
 
 /** Cell key for the matrix model (used by both the cells Map and the
@@ -500,8 +537,8 @@ export function ReviewTable({
   // `editable` cells come from this upload. Save selection = an editable
   // cell whose `editedDisplayValues` entry is non-empty (clear-to-skip).
   const matrix = useMemo(
-    () => buildMatrixModel(results, fileDates, history.bloodTests, history.labValues, unitSystem, units),
-    [results, fileDates, history.bloodTests, history.labValues, unitSystem, units],
+    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units),
+    [results, fileDates, history.measurements, history.labValues, unitSystem, units],
   );
 
   // Initial display values are derived from the matrix (not from raw results)
@@ -578,9 +615,16 @@ export function ReviewTable({
     return cellToSI(metric, parsed, touchedRef.current.get(cellKey)?.display ?? units[metric] ?? unitSystem);
   };
 
+  /** Is a ticked replacement the value already saved? A lab compares quantity, in its printed unit (US-35 AC6). */
+  const replacesNothing = (cell: EditableMatrixCell, existing: ExistingCell, value: number, editedStr: string): boolean =>
+    existing.valueSI !== undefined ? sameValue(value, existing.valueSI)
+      : existing.lab && cell.kind === 'additional' ? sameLabQuantity(existing.lab, { ...cell.lab, value })
+        : editedStr === existing.display;
+
   /** Walks the matrix cells, returns the editable ones with a non-empty
    *  edited display value — the cells that will save. Shared by both the
    *  summary counts and handleSave so they stay in sync. */
+
   const collectSaveableCells = () => {
     interface CellPayload {
       cellKey: string;
@@ -600,9 +644,7 @@ export function ReviewTable({
       if (value === undefined) continue;
       // A "replacement" that matches what is already saved would append a
       // correction row that corrects nothing. The slot is already right.
-      if (cell.existing && (cell.existing.valueSI !== undefined
-        ? sameValue(value, cell.existing.valueSI)
-        : editedStr === cell.existing.display)) continue;
+      if (cell.existing && replacesNothing(cell, cell.existing, value, editedStr)) continue;
       // dateKey is the suffix after the LAST `|` — robust against the
       // (rare) chance the rowKey itself contains a separator.
       const dateKey = cellKey.slice(cellKey.lastIndexOf('|') + 1);
@@ -1043,7 +1085,8 @@ function MatrixRowView({
   const rowKey = matrixRowKey(row);
   const rowDisplay = row.kind === 'core' ? (metricUnitOverrides?.[row.metric] ?? unitSystem) : unitSystem;
   const { label, unitLabel, refLabel } = describeRow(row, rowDisplay, grading);
-  const toggleUnit = row.kind === 'core' && onToggleFieldUnit
+  // A fixed unit (mmHg, PSA's ng/mL) gets a static chip, not a toggle that does nothing.
+  const toggleUnit = row.kind === 'core' && onToggleFieldUnit && UNIT_DEFS[row.metric].label.si !== UNIT_DEFS[row.metric].label.conventional
     ? () => onToggleFieldUnit(METRIC_TO_FIELD[row.metric])
     : undefined;
 
@@ -1126,10 +1169,16 @@ const MatrixCellView = memo(function MatrixCellView({
     // `div:empty { display: none }` (specificity beats .bt-cell-empty).
     return <div className="bt-cell-value bt-cell-empty">{' '}</div>;
   }
+  // Rows merge by slot key (US-35 AC6), so one lab row can hold readings in
+  // different units: a cell whose unit is not its row's says its own.
+  const showUnit = (unit?: string): unit is string => row.kind === 'additional' && !!unit && unit !== row.unit;
+  const unitNote = (unit?: string) => showUnit(unit) && <span className="bt-cell-unit">{unit}</span>;
+  const withUnitText = (text: string, unit?: string) => (showUnit(unit) ? `${text} ${unit}` : text);
   if (cell.state === 'context') {
     return (
       <div className="bt-cell-value bt-cell-context" title="Already saved at this date">
         <span className="bt-value-num num">{cell.displayValue}</span>
+        {unitNote(cell.displayUnit)}
       </div>
     );
   }
@@ -1154,24 +1203,31 @@ const MatrixCellView = memo(function MatrixCellView({
       value={editedValue}
       onChange={handleChange}
       wrapperClass="bt-cell-input bt-cell-review"
-      ariaLabel={`${matrixRowKey(row)} value`}
+      ariaLabel={withUnitText(`${rowName(row)} value`, cell.displayUnit)}
+      note={unitNote(cell.displayUnit)}
     />
   );
 
   if (!cell.existing) return input;
+  const oldText = withUnitText(cell.existing.display, cell.existing.displayUnit);
+  const newText = withUnitText(editedValue || 'the uploaded value', cell.displayUnit);
+  // A screen reader hears both units whenever they differ, even when the saved one is the row's.
+  const unitsDiffer = !isCore && !!cell.existing.displayUnit && cell.existing.displayUnit !== cell.displayUnit;
+  const heardOld = unitsDiffer ? `${cell.existing.display} ${cell.existing.displayUnit}` : oldText;
+  const heardNew = unitsDiffer ? `${editedValue || 'the uploaded value'} ${cell.displayUnit}` : newText;
 
   // Slot already holds a different saved value. Show it, show the file's, and
   // let the user assert the replacement. Layout lives in styles.css.
   return (
     <div className="bt-cell-conflict">
-      <span className="bt-value-num num bt-cell-conflict-old">{cell.existing.display}</span>
+      <span className="bt-value-num num bt-cell-conflict-old">{oldText}</span>
       {input}
       <label className="bt-cell-conflict-replace">
         <input
           type="checkbox"
           checked={replace}
           onChange={(e) => onReplaceToggle(cellKey, e.target.checked)}
-          aria-label={`Replace the saved ${matrixRowKey(row)} value ${cell.existing.display} with ${editedValue || 'the uploaded value'}`}
+          aria-label={`Replace the saved ${rowName(row)} value ${heardOld} with ${heardNew}`}
         />
         <span aria-hidden="true">Replace</span>
       </label>

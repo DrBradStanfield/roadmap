@@ -68,8 +68,9 @@ connector holds cannot see files dropped into the folder.
 ## Extract, then commit
 
 1. **Extract** reads the files, slots each value against the record with the
-   same functions the website uses (`slotKey`, `findActiveInSlot`,
-   `slotState` in `record-edits.ts`): `free`, `held_equal` (nothing to do),
+   same functions the website uses (`slotKey`, `findActiveInSlot`, and
+   `sameLabQuantity` for labs, `slotState` for core metrics, in
+   `record-edits.ts`): `free`, `held_equal` (nothing to do),
    `held_different` (`replaceable` by the 90-day rule). Candidates are shown
    in the record's own unit system. The payload (values + document metadata,
    never document text) is parked in the user's folder as

@@ -288,7 +288,7 @@ The review table is a date × metric matrix (`buildMatrixModel()` in `ReviewTabl
 | Held, same value | Greyed context cell — "Already saved at this date" | **Nothing** the record already says this |
 | Held, different value | **Conflict cell**: the saved value ~~struck through~~, the document's value in an editable input, and an **unchecked `Replace`** box | **Only if Replace is ticked** — the old row flips to `entered-in-error`, the new row appends with `correctsId` on the old row's date, `source: 'lab_import'` |
 
-Equality is compared on the **displayed string** — what the user would actually see — so float noise never manufactures a conflict.
+Equality is on the **quantity**, not the printed number: a core metric compares its stored SI value, a lab converts the saved and printed values to one unit (`sameLabQuantity`). So 50 ng/mL of vitamin D over a saved 50 nmol/L is a conflict, and float noise never makes one.
 
 ### Rules worth not overturning
 

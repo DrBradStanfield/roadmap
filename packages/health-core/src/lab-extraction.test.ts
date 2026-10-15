@@ -176,6 +176,79 @@ describe('US-12: toUnifiedResult', () => {
   });
 });
 
+describe('US-12 AC11: a core test filed under additionalValues becomes the core value', () => {
+  // A customer's baseline sheet, 2026-10-16: the model put BP, ApoB and PSA in
+  // additionalValues, so they saved as lab rows and the plan said "not entered".
+  const extract = (values: unknown[], additionalValues: unknown[]) => toUnifiedResult(parseUnifiedResult({
+    classification: 'lab_report', reportDate: null, values, additionalValues, document: null,
+  }));
+
+  it('moves systolic_bp, diastolic_bp, apolipoprotein_b and psa to values, converted like any core row', () => {
+    const result = extract([], [
+      { name: 'systolic_bp', value: 118, unit: 'mmHg' },
+      { name: 'diastolic_bp', value: 65, unit: 'mmHg' },
+      { name: 'apolipoprotein_b', value: 0.69, unit: 'g/L', referenceLow: null, referenceHigh: 0.8 },
+      { name: 'PSA', value: 0.82, unit: 'ug/L' },
+      { name: 'tsh', value: 4.56, unit: 'mIU/L' },
+    ]);
+    expect(result.values.map(v => [v.metric, v.valueSI])).toEqual([
+      ['systolic_bp', 118], ['diastolic_bp', 65], ['apob', 0.69], ['psa', 0.82],
+    ]);
+    expect(result.additionalValues.map(v => v.name)).toEqual(['tsh']);
+  });
+
+  it('fills a taken slot with nothing: the core row the model returned wins and the other stays a lab row, never dropped', () => {
+    const result = extract(
+      [{ metric: 'ldl', value: 1.51, unit: 'mmol/L', confidence: 'high' }],
+      [
+        { name: 'LDL Cholesterol', value: 1.9, unit: 'mmol/L' },
+        { name: 'Systolic BP', value: 118, unit: 'mmHg' },
+        { name: 'systolic_bp', value: 120, unit: 'mmHg' },
+      ],
+    );
+    expect(result.values.map(v => [v.metric, v.valueSI])).toEqual([['ldl', 1.51], ['systolic_bp', 118]]);
+    expect(result.additionalValues.map(v => [v.name, v.value])).toEqual([['LDL Cholesterol', 1.9], ['systolic_bp', 120]]);
+    expect(result.droppedValueCount).toBe(0);
+  });
+
+  it('promotes only in a unit the test is measured in: chromium as "Cr" or a unitless row stays a lab row', () => {
+    const result = extract([], [
+      { name: 'Cr', value: 0.4, unit: 'ug/L' },
+      { name: 'apob', value: 0.69, unit: '' },
+    ]);
+    expect(result.values).toEqual([]);
+    expect(result.additionalValues.map(v => v.name)).toEqual(['Cr', 'apob']);
+  });
+
+  it('never promotes creatinine, in any unit: a urine creatinine prints in mg/dL and µmol/L too, and serum creatinine drives eGFR', () => {
+    const result = extract([], [
+      { name: 'creatinine', value: 25, unit: 'mg/dL' },
+      { name: 'Serum Creatinine', value: 100, unit: 'µmol/L' },
+    ]);
+    expect(result.values).toEqual([]);
+    expect(result.additionalValues.map(v => v.name)).toEqual(['creatinine', 'Serum Creatinine']);
+  });
+
+  it('leaves weight, waist, height and near-miss names as lab rows', () => {
+    const result = extract([], [
+      { name: 'body_weight', value: 78.5, unit: 'kg' },
+      { name: 'Non-HDL Cholesterol', value: 1.8, unit: 'mmol/L' },
+      { name: 'total_chol_hdl_ratio', value: 2.62, unit: 'ratio' },
+    ]);
+    expect(result.values).toEqual([]);
+    expect(result.additionalValues.map(v => v.name)).toEqual(['body_weight', 'Non-HDL Cholesterol', 'total_chol_hdl_ratio']);
+  });
+
+  it('promotes nothing from a non-lab document', () => {
+    const result = toUnifiedResult(parseUnifiedResult({
+      classification: 'clinic_letter', reportDate: null, values: [],
+      additionalValues: [{ name: 'systolic_bp', value: 118, unit: 'mmHg' }],
+      document: { title: 'Letter', documentDate: null, contentMarkdown: '', metadata: {} },
+    }));
+    expect(result.values).toEqual([]);
+  });
+});
+
 describe('US-12: sanity — exported constant lists', () => {
   it('VALID_METRICS lists the 11 core metrics', () => {
     expect(VALID_METRICS).toHaveLength(11);

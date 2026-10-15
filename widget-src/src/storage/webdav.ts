@@ -6,12 +6,13 @@
  * directory URL the user supplies.
  *
  * Optimistic concurrency uses the WebDAV ETag (mirrors Dropbox `rev` / GitHub
- * `sha`): read returns the ETag, write is conditional (`If-Match` on update),
- * 412 → ConflictError → the SyncManager re-reads, re-merges, retries.
+ * `sha`): read returns the ETag, write uses `If-None-Match: *` on create and
+ * `If-Match` on update; 412 → ConflictError → SyncManager re-reads, merges, retries.
  *
  * SELF-HOST REQUIREMENTS (the user configures these on their server):
- *   - CORS: allow the app origin for GET/PUT/PROPFIND/MKCOL, and expose the
- *     `ETag` response header (Access-Control-Expose-Headers: ETag).
+ *   - CORS: allow the app origin for GET/PUT/PROPFIND/MKCOL and the HEAD ETag
+ *     fallback; allow Authorization, Content-Type, Depth, If-Match and
+ *     If-None-Match request headers; expose ETag (Access-Control-Expose-Headers).
  *   - A server that returns ETags (Nextcloud/ownCloud/mod_dav do). Without them
  *     writes degrade to last-write-wins — see the implementation build log.
  * iOS note: WebDAV is the only self-host path on iOS (no File System Access API).
@@ -94,14 +95,15 @@ export class WebDavAdapter implements StorageAdapter {
     } catch (error) {
       throw new StorageError('Self-host read failed: file is not valid JSON (possible corruption).', undefined, error);
     }
-    return { body, version: etag };
+    // Reserve null for a missing resource; '' keeps existing no-ETag files LWW.
+    return { body, version: etag ?? '' };
   }
 
   async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
     const headers: Record<string, string> = { ...this.authHeaders(), 'Content-Type': 'application/json' };
-    // Conditional update when we have an ETag; otherwise an unconditional PUT
-    // (genuine first create, or a server that doesn't return ETags → LWW).
-    if (expectedVersion) headers['If-Match'] = expectedVersion;
+    // Create only if absent; an existing no-ETag resource ('') stays LWW.
+    if (expectedVersion === null) headers['If-None-Match'] = '*';
+    else if (expectedVersion) headers['If-Match'] = expectedVersion;
     const res = await fetch(this.urlFor(fileName), { method: 'PUT', headers, body: JSON.stringify(body) });
     if (res.status === 412) {
       throw new ConflictError('Self-host write conflict: the file changed since last read.');

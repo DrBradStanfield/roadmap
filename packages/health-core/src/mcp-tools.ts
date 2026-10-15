@@ -35,6 +35,7 @@ import {
   type EditContext,
   correctValue,
   resolveRecordedAt,
+  sameLabQuantity,
   slotIndex,
   slotKey,
   type SlotState,
@@ -1297,19 +1298,21 @@ function validDay(day: string | null | undefined, ctx: EditContext): string | nu
   return typeof resolved === 'string' ? resolved : null;
 }
 
-/** What a candidate finds in its slot, on this record, right now (AC6). Equality is on the displayed string, in the record's own units. */
+/** What a candidate finds in its slot (AC6): a core metric by its displayed string, a lab by quantity (`sameLabQuantity`, the website's rule too). */
 function slotFor(
   existing: FileMeasurement | FileLabValue | undefined,
-  display: string,
+  candidate: Omit<ImportCandidate, 'id' | 'sameDayAs' | 'slot'>,
   now: string,
   maxAgeDays: number | undefined,
   system: UnitSystem,
 ): ImportCandidate['slot'] {
   if (!existing) return { state: 'free' };
-  const existingDisplay = 'metricType' in existing
-    ? formatDisplayValue(existing.metricType as MetricType, existing.value, system)
-    : String(existing.value);
-  const state: SlotState = slotState(existingDisplay, display);
+  const state: SlotState = 'metricType' in existing
+    ? slotState(formatDisplayValue(existing.metricType as MetricType, existing.value, system), candidate.displayValue)
+    : sameLabQuantity(
+      { name: existing.metricName, value: existing.value, unit: existing.unit },
+      { name: candidate.printedName ?? candidate.metric, value: candidate.value, unit: candidate.unit },
+    ) ? 'held_equal' : 'held_different';
   if (state === 'held_equal') return { state, existingRowId: existing.id, existingValue: existing.value };
   const age = daysBetween(dayOf(existing.recordedAt ?? ''), dayOf(now));
   return {
@@ -1428,11 +1431,11 @@ export function prepareImport(
         continue;
       }
       report.documentDate = day;
-      const offer = (slot: string, candidate: Omit<ImportCandidate, 'id' | 'sameDayAs' | 'slot'>, display: string) => {
+      const offer = (slot: string, candidate: Omit<ImportCandidate, 'id' | 'sameDayAs' | 'slot'>) => {
         const first = seenSlots.get(slot);
         const id = `c${candidates.length + 1}`;
         if (!first) seenSlots.set(slot, id);
-        candidates.push({ id, ...candidate, ...(first ? { sameDayAs: first } : null), slot: slotFor(held.get(slot), display, ctx.now, ctx.maxCorrectionAgeDays, system) });
+        candidates.push({ id, ...candidate, ...(first ? { sameDayAs: first } : null), slot: slotFor(held.get(slot), candidate, ctx.now, ctx.maxCorrectionAgeDays, system) });
       };
       // The name as printed rides along on the assistant route (US-36 AC3), bounded like every string from a document.
       const printed = (value: { printedName?: string }) => (value.printedName ? { printedName: oneLine(value.printedName).slice(0, MAX_NAME_LENGTH) } : null);
@@ -1455,7 +1458,7 @@ export function prepareImport(
           recordedAt: own, confidence: value.confidence,
           ...(value.question ? { question: fromDocument(value.question) } : null),
           sourceFileName: name, ...printed(value),
-        }, display);
+        });
       }
       for (const value of result.additionalValues) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
@@ -1481,7 +1484,7 @@ export function prepareImport(
           recordedAt: own, confidence: 'high',
           referenceLow: value.referenceLow ?? null, referenceHigh: value.referenceHigh ?? null,
           sourceFileName: name, ...printed({ printedName: value.printedName ?? value.name }),
-        }, display);
+        });
       }
       for (const line of result.unrecognized) unrecognized.push(oneLine(line).slice(0, MAX_UNRECOGNIZED_LINE_LENGTH));
       // Once filed, the report dedups as already_imported: a refused value is said now or never. A count, no value.

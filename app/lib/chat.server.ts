@@ -13,11 +13,12 @@ import { loadBlogArticle, loadMatchedContent } from './matched-content';
 import { SUGGESTION_EVIDENCE } from '../../packages/health-core/src/evidence';
 import { buildChatContextJson } from '../../packages/health-core/src/chat-context';
 import { toolOnlyAck, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
-import { chatToolsFor, withRoadmapRound, type ChatTurnMessage, type RoadmapRoundCounts } from '../../packages/health-core/src/run-roadmap';
+import { chatToolsFor, withRoadmapRound, type ChatTurnMessage, type RoadmapRoundCounts, type ToolResultFor } from '../../packages/health-core/src/run-roadmap';
 import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicStreamEvent, type AnthropicUsage, type RefusalCategory } from './anthropic.server';
 import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, modelParams } from '../../packages/health-core/src/models';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { PRODUCTS_BLOCK_FILES, productsBlockText } from './chat-products-block';
+import { PROPOSE_SUBSCRIPTION_CHANGE_TOOL, parseSubscriptionProposal, type SubscriptionProposal } from './subscription-gateway.server';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -25,7 +26,7 @@ import { PRODUCTS_BLOCK_FILES, productsBlockText } from './chat-products-block';
 
 // The main answer runs on Sonnet 5.5 (CHAT_MODEL, pinned in health-core
 // models.ts with every other hop); the router is Sonnet 5.5 with thinking off,
-// the classifier Haiku 4.5.
+// the classifier Haiku 5.5 with thinking off.
 // The 2026-08-06 audit's failures were self-check failures in the ANSWER
 // (fabricated citation ids), so the answer is the hop worth the better model;
 // 5.5 reasons better than Sonnet 5 at the same price and tokenizer.
@@ -315,7 +316,7 @@ interface SystemBlock {
 
 export function buildSystemBlocks(
   userContextJson: string,
-  opts?: { surfaceContext?: string; documentContent?: string | null; orderSummary?: string; blogArticles?: string | null },
+  opts?: { surfaceContext?: string; documentContent?: string | null; orderSummary?: string; subscriptionBlock?: string | null; blogArticles?: string | null },
 ): SystemBlock[] {
   // Cached blocks first (shared across all users AND all surfaces — keep
   // byte-identical so the prompt cache is shared), then the per-surface posture
@@ -358,6 +359,12 @@ export function buildSystemBlocks(
       type: 'text',
       text: `## Your Recent Orders\n\n${opts.orderSummary}`,
     });
+  }
+
+  // US-49: the logged-in customer's subscriptions and the rules for proposing a
+  // change (brand surface, while enabled). Per request and uncached, like orders.
+  if (opts?.subscriptionBlock) {
+    blocks.push({ type: 'text', text: opts.subscriptionBlock });
   }
 
   if (opts?.documentContent) {
@@ -483,7 +490,12 @@ export interface ChatCompletionResult {
   proposedEdits?: ProposedEdit[];
   /** Set when the turn ran run_roadmap (US-15 AC33): how many stated values it used and rejected. Counts only, never a value. */
   roadmapRun?: RoadmapRoundCounts;
+  /** A subscription change the model proposed (US-49); the route turns it into a confirm card or drops it. */
+  subscriptionProposal?: SubscriptionProposal;
 }
+
+/** Shown when the model proposed a subscription change with no prose; the card carries the detail (US-49). */
+export const SUBSCRIPTION_TOOL_ONLY_ACK = 'Here is the change for you to confirm.';
 
 /** What the web chat streams: the model's deltas, and a status line between a tool round's two calls. */
 export type ChatStreamEvent = AnthropicStreamEvent | { type: 'status'; text: string };
@@ -498,36 +510,54 @@ const addUsage = (a: AnthropicUsage, b: AnthropicUsage): AnthropicUsage => ({
   cacheReadTokens: a.cacheReadTokens + b.cacheReadTokens,
 });
 
+const SUBSCRIPTION_PROPOSED = 'Proposed: a card under your reply asks the customer to confirm this change. Nothing has changed yet; it changes only if they press Confirm.';
+const SUBSCRIPTION_NOT_PROPOSED = 'Not proposed: no card shows for this call. One change per reply, for a subscription and action marked "yes" in the list.';
+
+/**
+ * The tool_result for propose_subscription_change called beside run_roadmap
+ * (US-49 with US-15 AC33): the call that becomes the card (the reply's first
+ * valid one, as parseSubscriptionProposal picks it) is proposed; any other is not.
+ */
+const subscriptionToolResult: ToolResultFor = (b, blocks) => {
+  if (b.name !== PROPOSE_SUBSCRIPTION_CHANGE_TOOL.name) return undefined;
+  return blocks.find((x) => parseSubscriptionProposal([x])) === b ? SUBSCRIPTION_PROPOSED : SUBSCRIPTION_NOT_PROPOSED;
+};
+
 /**
  * With `onEvent` the answer streams (the web chat, US-15 AC16/AC17); the
  * result is the same either way. Deltas already sent are not the answer on a
  * refusal or a fallback: the reply goes out with `isFallback: true`, and the
  * client replaces them with its content.
  *
- * `canApplyEdits`: the tools go only to a client that applies them (the
- * widget's own chat, US-15 AC19). `tools` render before `system`, so the
- * request shapes share no prompt-cache prefix and cache separately: no tools,
- * the form tools, and the form tools plus run_roadmap.
+ * `canApplyEdits`: the form tools and run_roadmap go only to a client that
+ * applies them (the widget's own chat, US-15 AC19). `tools` render before
+ * `system`, so each tool list caches separately.
  *
- * With the tools comes run_roadmap when the latest or the previous user
+ * With the form tools comes run_roadmap when the latest or the previous user
  * message has a digit (US-15 AC33, `chatToolsFor`): when the model calls it, the
- * plan code runs on `guestInputs` plus the stated values and a second call
+ * plan code runs on `opts.guestInputs` plus the stated values and a second call
  * answers from its output (health-core `withRoadmapRound`, at most one round).
  * The answer is the second call's text; usage is the two calls' sum. A failed
  * second call is the api-error fallback, with no tool output in it, that keeps
  * the first call's usage and the round's counts.
+ *
+ * `opts.subscriptionTool` (US-49): the propose-only subscription tool, sent on
+ * every brand-surface turn while subscription actions are enabled, logged in or
+ * not, so that surface keeps one cached prefix shape. In a run_roadmap round its
+ * call gets its own tool_result, and the proposal is read from both calls' blocks.
  */
 export async function getChatCompletion(
   systemBlocks: SystemBlock[],
   messages: ChatTurnMessage[],
   canApplyEdits: boolean,
   onEvent?: (event: ChatStreamEvent) => void,
-  guestInputs?: unknown,
+  opts?: { subscriptionTool?: boolean; guestInputs?: unknown },
 ): Promise<ChatCompletionResult> {
+  const tools = [...(canApplyEdits ? chatToolsFor(messages) : []), ...(opts?.subscriptionTool ? [PROPOSE_SUBSCRIPTION_CHANGE_TOOL] : [])];
   const body = {
     ...modelParams(CHAT_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: systemBlocks,
-    ...(canApplyEdits ? { tools: chatToolsFor(messages) } : {}),
+    ...(tools.length ? { tools } : {}),
   };
   // Every call's usage, and the round's counts, survive a failed second call (S4).
   let usage: AnthropicUsage = { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 };
@@ -540,10 +570,10 @@ export async function getChatCompletion(
 
   try {
     const turn = canApplyEdits
-      ? await withRoadmapRound(messages, send, guestInputs, (counts) => {
+      ? await withRoadmapRound(messages, send, opts?.guestInputs, (counts) => {
         roadmapRun = { roadmapRun: counts };
         onEvent?.({ type: 'status', text: ROADMAP_STATUS });
-      })
+      }, subscriptionToolResult)
       : null;
     const result = turn ? turn.final : await send({ messages });
     const { stopReason } = result;
@@ -563,6 +593,9 @@ export async function getChatCompletion(
     // Truncated: keep the answer, add nothing the user sees, log the stop only.
     if (stopReason === 'max_tokens') console.warn(JSON.stringify({ evt: 'chat_truncated', stopReason }));
     const proposedEdits = turn?.proposedEdits ?? [];
+    // A round's proposal may be in its first call (beside run_roadmap), so read both.
+    const blocks = turn && turn.final !== turn.first ? [...turn.first.contentBlocks, ...result.contentBlocks] : result.contentBlocks;
+    const subscriptionProposal = opts?.subscriptionTool ? parseSubscriptionProposal(blocks) : null;
     // Empty-response check: API returned 200 but no usable text. A tool-only
     // response (model proposed an edit with no prose) is NOT empty — give the
     // thread a short line; the confirmation card carries the detail.
@@ -574,8 +607,12 @@ export async function getChatCompletion(
           isFallback: false,
           stopReason,
           proposedEdits,
+          ...(subscriptionProposal ? { subscriptionProposal } : {}),
           ...roadmapRun,
         };
+      }
+      if (subscriptionProposal) {
+        return { content: SUBSCRIPTION_TOOL_ONLY_ACK, usage, isFallback: false, stopReason, subscriptionProposal, ...roadmapRun };
       }
       return {
         content: FALLBACK_RESPONSE,
@@ -592,6 +629,7 @@ export async function getChatCompletion(
       isFallback: false,
       stopReason,
       ...(proposedEdits.length > 0 ? { proposedEdits } : {}),
+      ...(subscriptionProposal ? { subscriptionProposal } : {}),
       ...roadmapRun,
     };
   } catch (err) {

@@ -73,7 +73,7 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   Wontfix ONLY if unsigned and a tool UA on *.fly.dev (6X: curl/8.6.0 after a
   release; 7723659158) or a secret-file path (`/.env`; never `/.well-known/*`,
   mcp's OAuth discovery). Proxy path + browser UA = stale caller, ours. 6X pools
-  every miss: read each new event.
+  every miss: read each new event. 10-15: one scan = 132 GET probes, browser UAs.
 - `[gap][sentry]` 2026-09-07 — Widget no-op days before 09-08 are lower bounds
   (PR #73). A `release` tag means a side bundle; none means health-plan-v2.
   Storage adapters put document titles into thrown messages: READ before quoting.
@@ -140,7 +140,7 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   `product_health_ro`, valid to 2027-08-07; the product-health charter has
   the recipe). The JWT in `apikey` answers 401 "Invalid API key": every
   "key rejected" gap this loop reported (08-28, 09-17, 09-20) was that
-  misuse, not a dead key. Funnel column: `event_name`. The role reads
+  misuse, not a dead key (bit again 10-15). Funnel column: `event_name`. Reads
   product_events, ab_events, feedback, chat_* and reminder_optin_v2 (emails):
   counts and event names only into a public report, never rows.
 - `[gotcha][process]` 2026-08-14 — Clones are SHALLOW: `git log -S`/`--stat`

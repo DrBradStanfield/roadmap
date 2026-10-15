@@ -441,7 +441,7 @@ describe('US-31 AC5 \u2014 unit labels resolve through the shared resolver (unit
 // ---------------------------------------------------------------------------
 // US-35 — provenance, the shared slot rule, and the shared bulk save
 // ---------------------------------------------------------------------------
-import { bulkAppendValues, findActiveInSlot, slotIndex, slotKey, slotState } from './record-edits';
+import { bulkAppendValues, findActiveInSlot, sameLabQuantity, slotIndex, slotKey, slotState } from './record-edits';
 import { isLabKeyWord, isLabUnitWord, PRODUCT_EVENT_NAMES } from './product-events';
 
 describe('US-35 AC8 — a writer states its source; the defaults stay what they were', () => {
@@ -474,6 +474,23 @@ describe('US-35 AC6 — one slot rule for the website and the connector', () => 
     expect(slotState(undefined, '3.4')).toBe('free');
     expect(slotState('3.4', '3.4')).toBe('held_equal');
     expect(slotState('3.4', '3.5')).toBe('held_different');
+  });
+
+  it('compares a lab by quantity: held in SI, offered in the unit the report printed (Brad 2026-10-16, PR #145)', () => {
+    const q = (name: string, value: number, unit: string) => ({ name, value, unit });
+    // 50 ng/mL of vitamin D is 124.8 nmol/L, not the 50 nmol/L the record holds.
+    expect(sameLabQuantity(q('vitamin_d', 50, 'nmol/L'), q('Vitamin D', 50, 'ng/mL'))).toBe(false);
+    // The same folate quantity in two units, and only float noise between them.
+    expect(sameLabQuantity(q('folate', 45.32, 'nmol/L'), q('Folate', 20, 'ng/mL'))).toBe(true);
+    // Each side converts by its own name: BUN keeps its factor into the urea slot.
+    expect(sameLabQuantity(q('urea', 4.998, 'mmol/L'), q('BUN', 14, 'mg/dL'))).toBe(true);
+    // A unit the catalogue refuses is never the same quantity.
+    expect(sameLabQuantity(q('vitamin_d', 50, 'nmol/L'), q('Vitamin D', 50, 'banana'))).toBe(false);
+    // An uncatalogued test compares number and unit as written, spelling folded.
+    expect(sameLabQuantity(q('zonulin', 12, 'umol/L'), q('Zonulin', 12, 'µmol/L'))).toBe(true);
+    expect(sameLabQuantity(q('zonulin', 12, 'umol/L'), q('Zonulin', 12, 'mmol/L'))).toBe(false);
+    // Unit case is meaning, not spelling: a cell count in G/L is not a mass in g/L.
+    expect(sameLabQuantity(q('zonulin', 12, 'G/L'), q('Zonulin', 12, 'g/L'))).toBe(false);
   });
 
   it('spells the slot once: a metric on a day, a lab by catalogue key, and the index of every active row agrees', () => {

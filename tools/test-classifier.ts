@@ -49,9 +49,9 @@ console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 
 // ---------------------------------------------------------------------------
 
 // --model A/Bs a candidate against the production pin. Thinking is off by
-// default, as production; --effort-low is the candidate arm (Sonnet 5 family
-// only, modelParams in health-core models.ts; --thinking-off is the default,
-// kept as an explicit flag).
+// default, as production; --effort-low is the candidate arm (Haiku 5.5 or the
+// Sonnet 5 family, modelParams in health-core models.ts; --thinking-off is the
+// default, kept as an explicit flag).
 const CLASSIFIER_MODEL = getArg('--model', PRODUCTION_CLASSIFIER_MODEL);
 const thinkingOff = !args.includes('--effort-low');
 const callStats: CallStat[] = [];
@@ -166,7 +166,8 @@ async function runOne(t: TestEntry): Promise<RunResult> {
       results.push({ classification: 'ERROR', raw: label.slice(0, 100), latencyMs: 0 });
     }
   }
-  // Pass criterion: ALL runs match expected (temperature 0, should be deterministic).
+  // Pass criterion: ALL runs match expected (a one-word label; no sampling param
+  // is accepted, so runs can differ, and every run must agree).
   const passed = results.every(r => r.classification === t.expected_classification);
   return { test: t, runs: results, passed };
 }

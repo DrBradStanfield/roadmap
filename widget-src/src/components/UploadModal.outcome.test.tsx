@@ -30,7 +30,7 @@ type Import = Awaited<ReturnType<typeof labImport>>;
 const withValues: Import = { result: { classification: 'lab_report', document: null, reportDate: '2024-06-01', values: [{ metric: 'ldl', valueSI: 3.9, displayValue: 3.9, displayUnit: 'mmol/L', confidence: 'high' }], additionalValues: [] } } as unknown as Import;
 const letterOnly: Import = { result: { classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [], document: { classification: 'clinic_letter', title: 'Synthetic letter', documentDate: '2024-06-01', contentMarkdown: 'letter', metadata: {} } } } as unknown as Import;
 const nothing: Import = { result: { classification: 'lab_report', document: null, reportDate: null, values: [], additionalValues: [] } } as unknown as Import;
-const history: UploadHistory = { bloodTests: [], labValues: [], documents: [] };
+const history: UploadHistory = { measurements: [], labValues: [], documents: [] };
 const extractFromPdf = vi.fn();
 const pages = (content: string) => ({ pages: [{ type: 'text', content }], truncated: false });
 

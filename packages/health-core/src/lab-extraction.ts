@@ -443,12 +443,26 @@ export function parseExtractionJson(text: string): unknown {
 /** Build a UnifiedExtractionResult from a parsed-and-filtered unified response. */
 export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>): UnifiedExtractionResult {
   const isLab = parsed.classification === 'lab_report';
-  const values = isLab ? resolveLabValues(parsed.values) : [];
+  // A core test the model filed as an additional value ("systolic_bp",
+  // "apolipoprotein_b") is that core value (US-12 AC11): saved as a lab row,
+  // the plan never sees it. Only into a free slot, and only in a unit the
+  // test is measured in: a name alone can be another test, or carry no
+  // unit to convert. Never creatinine: a urine creatinine prints in mg/dL too, and
+  // serum creatinine drives eGFR. Anything else stays a lab row, never dropped.
+  const coreRows = [...parsed.values];
+  const taken = new Set(coreRows.map(v => v.metric));
+  const additionalValues = parsed.additionalValues.filter(v => {
+    const metric = resolveCoreMetricName(v.name);
+    if (!metric || metric === 'creatinine' || !VALID_METRICS.includes(metric) || taken.has(metric) || !reportedToCanonical(metric, v.value, v.unit)) return true;
+    taken.add(metric);
+    coreRows.push({ metric, value: v.value, unit: v.unit, confidence: 'high' });
+    return false;
+  });
   return {
     classification: parsed.classification,
     reportDate: parsed.reportDate,
-    values,
-    additionalValues: isLab ? parsed.additionalValues : [],
+    values: isLab ? resolveLabValues(coreRows) : [],
+    additionalValues: isLab ? additionalValues : [],
     unrecognized: parsed.unrecognized || [],
     document: parsed.document ? {
       classification: parsed.classification,

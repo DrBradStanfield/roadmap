@@ -32,6 +32,7 @@ import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server
 import { findDuplicateReply, type DedupHistoryItem } from '../lib/chat-dedup.server';
 import { PURGED_TEXT } from '../lib/chat-purge-cron.server';
 import { recordServerEvent } from '../lib/product-events.server';
+import { subscriptionActionsEnabled, getCachedSubscriptions, formatSubscriptionBlock, subscriptionCard, SUBSCRIPTION_HELP_LINE } from '../lib/subscription-gateway.server';
 
 
 // Only fixed operation descriptions enter diagnostics. Database errors can echo
@@ -373,7 +374,10 @@ export async function action({ request }: ActionFunctionArgs) {
     // message. See app/lib/chat-dedup.server.ts and chat-architecture.md §
     // Consecutive-duplicate dedup. Shared with the Discord handler. The widget
     // dedups from its own file (chat-api.ts) — its rows here carry no timestamp.
-    if (conversationId && !widget) {
+    // Never while subscription changes are on for a signed-in customer (US-49): a replayed reply would
+    // say "press Confirm below" with no card (cards are never stored), so the turn runs again instead.
+    const subscriptionTurn = subscriptionActionsEnabled() && !auth.isGuest;
+    if (conversationId && !widget && !subscriptionTurn) {
       const dup = findDuplicateReply(storedHistory, message);
       if (dup) {
         Sentry.captureMessage('chat: duplicate user message detected, re-serving previous reply', {
@@ -423,9 +427,16 @@ export async function action({ request }: ActionFunctionArgs) {
       const ordersPromise = !auth.isGuest && auth.admin
         ? getCachedOrders(auth.admin, auth.customerId!)
         : Promise.resolve('');
+      // US-49: subscription changes, commerce surface only and only while
+      // enabled. The summary comes from the gateway, which checks Shopify's
+      // signature on this very request; it never throws.
+      const subscriptionsOn = subscriptionActionsEnabled();
+      const subscriptionsPromise = subscriptionsOn && !auth.isGuest && auth.customerId
+        ? getCachedSubscriptions(request, auth.customerId)
+        : Promise.resolve(null);
       const classifierPromise = classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent);
       const context = resolveChatContext(body.guestInputs);
-      const [orderSummary, classifierResult] = await Promise.all([ordersPromise, classifierPromise]);
+      const [orderSummary, classifierResult, subscriptions] = await Promise.all([ordersPromise, classifierPromise, subscriptionsPromise]);
 
       // Stage 2: router fires ONLY when the classifier didn't bypass it.
       // Trade-off: +150-300ms on ROUTE turns vs the previous parallel design,
@@ -508,23 +519,40 @@ export async function action({ request }: ActionFunctionArgs) {
       // everything else (drstanfield.com education) defaults to the strict doctor
       // posture — a config slip can never silently produce a selling bot.
       const surfaceContext = process.env.CHAT_SURFACE === 'brand' ? BRAND_POSTURE : DOCTOR_POSTURE;
-      const systemBlocks = buildSystemBlocks(context.userContextJson, { surfaceContext, documentContent, orderSummary, blogArticles: articles?.content ?? null });
+      const systemBlocks = buildSystemBlocks(context.userContextJson, {
+        surfaceContext, documentContent, orderSummary, blogArticles: articles?.content ?? null,
+        subscriptionBlock: subscriptions ? formatSubscriptionBlock(subscriptions) : null,
+      });
       const conversationMessages = buildConversationMessages(history, message);
       const tBeforeLlm = Date.now();
 
       write({ type: 'status', text: 'Writing the answer' });
       let firstTokenMs: number | null = null;
-      const completion = streaming
-        ? await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, (event) => {
+      const onEvent = streaming
+        ? (event: Parameters<NonNullable<Parameters<typeof getChatCompletion>[3]>>[0]) => {
           if (event.type === 'text' && firstTokenMs === null) firstTokenMs = Date.now() - tBeforeLlm;
           write(event);
-        }, body.guestInputs)
-        : await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, undefined, body.guestInputs);
+        }
+        : undefined;
+      // The subscription tool rides only while enabled (US-49); run_roadmap reads the
+      // widget's own record (US-15 AC33). Neither: no options.
+      const completion = await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, onEvent,
+        subscriptionsOn || canApplyEdits ? { subscriptionTool: subscriptionsOn, guestInputs: body.guestInputs } : undefined);
       const tAfterLlm = Date.now();
       // US-15 AC33 usage signal: one counter per run_roadmap round, the numbers of
       // stated values used and rejected and nothing else. Fire-and-forget.
       if (completion.roadmapRun) {
         void recordServerEvent('chat_run_roadmap', { count: completion.roadmapRun.applied, rejected: completion.roadmapRun.rejected });
+      }
+
+      // US-49: a proposal becomes a confirm card only when the gateway's summary
+      // lists that subscription and action with a token. Otherwise the reply
+      // must not leave the customer waiting for a card that never comes.
+      const card = subscriptionCard(subscriptions, completion.subscriptionProposal ?? null);
+      if (completion.subscriptionProposal && !card) {
+        // Replaced, not appended: the model's text (already streamed) may say "press Confirm below", and
+        // the client shows this final content in place of what streamed.
+        completion.content = `I can't make that change here. ${SUBSCRIPTION_HELP_LINE}`;
       }
 
       // The assistant message id doubles as the telemetry row's message_id on
@@ -680,6 +708,8 @@ export async function action({ request }: ActionFunctionArgs) {
           ...(completion.proposedEdits && completion.proposedEdits.length > 0
             ? { proposedEdits: completion.proposedEdits }
             : {}),
+          // US-49: the confirm card (the gateway's one-time token and plain facts). Omitted otherwise.
+          ...(card ? { subscriptionCard: card } : {}),
           ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
         },
       };

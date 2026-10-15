@@ -20,6 +20,32 @@ const message = (text: string) => () => Response.json({ content: [{ type: 'text'
 
 afterEach(() => { vi.unstubAllGlobals(); vi.resetAllMocks(); vi.restoreAllMocks(); });
 
+// US-15 AC31: Haiku 5.5 400s on an assistant prefill and on sampling params,
+// and thinks unless told not to. A malformed first answer is re-sent as the
+// SAME request.
+describe('US-15 AC31: the BYOK extraction request on Haiku 5.5', () => {
+  const VALID = '{"classification":"other","reportDate":null,"values":[],"additionalValues":[],"document":null}';
+
+  it('re-sends the same body after a malformed answer: no assistant turn, thinking disabled, no temperature', async () => {
+    let call = 0;
+    const fetchMock = stubAnthropic(() => message(call++ === 0 ? 'not json' : VALID)());
+    const { result } = await labImport(PAGES, 'si');
+    expect(result).not.toBeNull();
+    const bodies = fetchMock.mock.calls.map((c) => JSON.parse((c as unknown as [string, RequestInit])[1].body as string));
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1]).toEqual(bodies[0]);
+    expect(bodies[0].model).toBe('claude-haiku-5-5');
+    expect(bodies[0].thinking).toEqual({ type: 'disabled' });
+    expect(bodies[0]).not.toHaveProperty('temperature');
+    expect(bodies[0].messages.map((m: { role: string }) => m.role)).toEqual(['user']);
+  });
+
+  it('reads the answer by block type: a leading thinking block is skipped', async () => {
+    stubAnthropic(() => Response.json({ content: [{ type: 'thinking', thinking: '', signature: 's' }, { type: 'text', text: VALID }] }));
+    expect((await labImport(PAGES, 'si')).result).not.toBeNull();
+  });
+});
+
 // US-12 AC8: "250.000" platelets per µL (Brazil, Germany) copied as a JSON
 // NUMBER parsed to 250, past the count guard, and stored 0.25 ×10⁹/L.
 describe('US-12 AC8: the BYOK parse refuses a dot-thousands count written as a JSON number', () => {
@@ -81,11 +107,11 @@ describe('privacy: a failed BYOK batch file is logged without its name', () => {
 // failed on (a SyntaxError on the model's text, a ZodError on a field), and the
 // console must never carry report content: the index and the error's kind only.
 describe('privacy: a BYOK parse failure logs no report text', () => {
-  // The first answer fails to parse; the `{`-prefilled retry's answer is what
-  // the thrown error quotes.
+  // The first answer fails to parse; the re-sent request's answer is what the
+  // thrown error quotes.
   it.each([
     ['broken JSON', 'SYNTHETIC 141 mmol/L}'],
-    ['a refused field', '"classification":"SYNTHETIC 141","reportDate":null,"values":[],"additionalValues":[],"document":null}'],
+    ['a refused field', '{"classification":"SYNTHETIC 141","reportDate":null,"values":[],"additionalValues":[],"document":null}'],
   ])('logs no report text for %s, on one file and in a batch', async (_label, retry) => {
     let call = 0;
     stubAnthropic(() => message(call++ % 2 === 0 ? 'not json' : retry)());

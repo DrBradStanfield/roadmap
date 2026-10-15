@@ -48,7 +48,7 @@ describe('US-15 AC33: the run_roadmap round (JSON path)', () => {
       json('tool_use', [THINKING, { type: 'text', text: 'Let me run that.' }, RUN, FIELD]),
       json('end_turn', [{ type: 'text', text: ANSWER }]),
     );
-    const result = await getChatCompletion([], user, true, undefined, PROFILE);
+    const result = await getChatCompletion([], user, true, undefined, { guestInputs: PROFILE });
     const [first, second] = bodies();
     expect(bodies()).toHaveLength(2);
     expect(first).not.toHaveProperty('tool_choice');
@@ -70,14 +70,14 @@ describe('US-15 AC33: the run_roadmap round (JSON path)', () => {
 
   it('one round at most: a second reply that asks again gets no third call', async () => {
     const { bodies } = replies(json('tool_use', [RUN]), json('tool_use', [{ type: 'text', text: ANSWER }, RUN]));
-    const result = await getChatCompletion([], user, true, undefined, PROFILE);
+    const result = await getChatCompletion([], user, true, undefined, { guestInputs: PROFILE });
     expect(bodies()).toHaveLength(2);
     expect(result.content).toBe(ANSWER);
   });
 
   it('a failed second call is the api-error fallback, with no tool output and no edits', async () => {
     replies(json('tool_use', [RUN, FIELD]), new TypeError('fetch failed'), new TypeError('fetch failed'));
-    const result = await getChatCompletion([], user, true, undefined, PROFILE);
+    const result = await getChatCompletion([], user, true, undefined, { guestInputs: PROFILE });
     expect(result).toMatchObject({ content: FALLBACK_RESPONSE, isFallback: true, failureMode: 'api-error', errorKind: 'timeout' });
     expect(result).not.toHaveProperty('proposedEdits');
     expect(JSON.stringify(result)).not.toContain('4.1');
@@ -85,28 +85,28 @@ describe('US-15 AC33: the run_roadmap round (JSON path)', () => {
 
   it('US-15 AC33 (S4): a failed second call keeps the first call\'s usage and still records the round', async () => {
     replies(json('tool_use', [RUN, FIELD]), new TypeError('fetch failed'), new TypeError('fetch failed'));
-    const result = await getChatCompletion([], user, true, undefined, PROFILE);
+    const result = await getChatCompletion([], user, true, undefined, { guestInputs: PROFILE });
     expect(result.usage).toEqual({ inputTokens: 10, outputTokens: 5, cacheCreationTokens: 0, cacheReadTokens: 100 });
     expect(result.roadmapRun).toEqual({ applied: 2, rejected: 0 });
   });
 
   it('a failed first call reports zero usage and no round, as before', async () => {
     replies(new TypeError('fetch failed'), new TypeError('fetch failed'));
-    const result = await getChatCompletion([], user, true, undefined, PROFILE);
+    const result = await getChatCompletion([], user, true, undefined, { guestInputs: PROFILE });
     expect(result.usage).toEqual({ inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 });
     expect(result).not.toHaveProperty('roadmapRun');
   });
 
   it('no run_roadmap: one call, as before', async () => {
     const { bodies } = replies(json('end_turn', [{ type: 'text', text: 'An answer.' }]));
-    const result = await getChatCompletion([], user, true, undefined, PROFILE);
+    const result = await getChatCompletion([], user, true, undefined, { guestInputs: PROFILE });
     expect(bodies()).toHaveLength(1);
     expect(result).not.toHaveProperty('roadmapRun');
   });
 
   it('no tools (Discord, YouTube, the bubble, the embed): a run_roadmap block is never run', async () => {
     const { bodies } = replies(json('tool_use', [{ type: 'text', text: 'An answer.' }, RUN]));
-    const result = await getChatCompletion([], user, false, undefined, PROFILE);
+    const result = await getChatCompletion([], user, false, undefined, { guestInputs: PROFILE });
     expect(bodies()).toHaveLength(1);
     expect(bodies()[0]).not.toHaveProperty('tools');
     expect(result).not.toHaveProperty('roadmapRun');
@@ -138,7 +138,7 @@ describe('US-15 AC33: the run_roadmap round (streamed)', () => {
         ...end('end_turn')]));
     global.fetch = fetchMock as unknown as typeof fetch;
     const onEvent = vi.fn();
-    const result = await getChatCompletion([], user, true, onEvent, PROFILE);
+    const result = await getChatCompletion([], user, true, onEvent, { guestInputs: PROFILE });
 
     expect(onEvent.mock.calls.map((c) => c[0])).toEqual([
       { type: 'thinking', text: 'Run it.' },
@@ -152,5 +152,51 @@ describe('US-15 AC33: the run_roadmap round (streamed)', () => {
       { type: 'tool_use', id: 'toolu_run', name: 'run_roadmap', input: STATED },
     ]);
     expect(result).toMatchObject({ content: ANSWER, isFallback: false, roadmapRun: { applied: 2, rejected: 0 } });
+  });
+});
+
+// US-49 with US-15 AC33: on a surface with both the form tools and the
+// subscription tool, a reply can call run_roadmap and propose_subscription_change
+// together. The subscription call gets its own tool_result (not the form stub),
+// and the proposal in the first call survives the second.
+describe('US-49 + US-15 AC33: a run_roadmap round with the subscription tool', () => {
+  const SUB = { type: 'tool_use', id: 'toolu_sub', name: 'propose_subscription_change', input: { subscription: 'S1', action: 'pause' } };
+  const digits = [{ role: 'user' as const, content: 'LDL 4.1 mmol/L, and pause my subscription' }];
+  const opts = { subscriptionTool: true, guestInputs: PROFILE };
+
+  it('offers run_roadmap, the form tools and the subscription tool; the proposal from the first call becomes the result', async () => {
+    const { bodies } = replies(
+      json('tool_use', [RUN, SUB]),
+      json('end_turn', [{ type: 'text', text: 'Press Confirm below to pause it.' }]),
+    );
+    const result = await getChatCompletion([], digits, true, undefined, opts);
+    const [first, second] = bodies();
+    expect(first.tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap', 'propose_subscription_change']);
+    const [runResult, subResult] = second.messages[2].content;
+    expect(runResult.tool_use_id).toBe('toolu_run');
+    expect(subResult.tool_use_id).toBe('toolu_sub');
+    expect(subResult.content).not.toMatch(/form's checks|Pre-filled/);
+    expect(subResult.content).toMatch(/^Proposed: a card under your reply asks the customer to confirm/);
+    expect(result).toMatchObject({ content: 'Press Confirm below to pause it.', roadmapRun: { applied: 2, rejected: 0 } });
+    expect(result.subscriptionProposal).toEqual({ ref: 'S1', action: 'pause', reason: null });
+  });
+
+  it('only the call that becomes the card is "proposed": a second one, or an invalid one, is not', async () => {
+    const BAD = { ...SUB, id: 'toolu_bad', input: { subscription: 'jane@example.com', action: 'cancel' } };
+    const AGAIN = { ...SUB, id: 'toolu_again', input: { subscription: 'S2', action: 'skip' } };
+    const { bodies } = replies(json('tool_use', [BAD, RUN, SUB, AGAIN]), json('end_turn', [{ type: 'text', text: ANSWER }]));
+    const result = await getChatCompletion([], digits, true, undefined, opts);
+    const byId = Object.fromEntries(bodies()[1].messages[2].content.map((r: { tool_use_id: string; content: string }) => [r.tool_use_id, r.content]));
+    expect(byId.toolu_bad).toMatch(/^Not proposed/);
+    expect(byId.toolu_sub).toMatch(/^Proposed/);
+    expect(byId.toolu_again).toMatch(/^Not proposed/);
+    expect(result.subscriptionProposal).toEqual({ ref: 'S1', action: 'pause', reason: null });
+  });
+
+  it('a failed second call is the fallback with no card, as it carries no form edits', async () => {
+    replies(json('tool_use', [RUN, SUB]), new TypeError('fetch failed'), new TypeError('fetch failed'));
+    const result = await getChatCompletion([], digits, true, undefined, opts);
+    expect(result).toMatchObject({ content: FALLBACK_RESPONSE, isFallback: true, roadmapRun: { applied: 2, rejected: 0 } });
+    expect(result).not.toHaveProperty('subscriptionProposal');
   });
 });

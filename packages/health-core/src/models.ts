@@ -4,7 +4,10 @@
  * file; the harnesses import it so they test the model production runs.
  *
  * BYOK chat (widget-src/src/lib/byok-chat.ts) is NOT pinned here on purpose: the
- * user pays for it, so it stays on Haiku.
+ * user pays for it, so it stays on Haiku (its body still comes from modelParams).
+ *
+ * Haiku 5.5 since 2026-10-16 (Brad, no benchmark): the classifier, extraction and
+ * BYOK chat, all with thinking off (US-15 AC31).
  */
 
 /** Main chat answer (web, Discord, YouTube). */
@@ -17,9 +20,9 @@ export const CHAT_MODEL = 'claude-sonnet-5-5';
  */
 export const ROUTER_MODEL = 'claude-sonnet-5-5';
 /** Pre-router classifier: a one-word label. */
-export const CLASSIFIER_MODEL = 'claude-haiku-4-5-20251001';
+export const CLASSIFIER_MODEL = 'claude-haiku-5-5';
 /** Lab/document extraction, server and BYOK upload paths alike. */
-export const EXTRACTION_MODEL = 'claude-haiku-4-5-20251001';
+export const EXTRACTION_MODEL = 'claude-haiku-5-5';
 
 /** The main answer's request shape: `max_tokens` caps thinking plus answer together. */
 export const CHAT_MAX_TOKENS = 4096;
@@ -37,24 +40,23 @@ export type Effort = 'low' | 'medium' | 'high';
 export const PROMPT_CACHE = { type: 'ephemeral', ttl: '1h' } as const;
 
 const isSonnet55 = (model: string) => model.startsWith('claude-sonnet-5-5');
-// Sonnet 5 and later 400 on non-default sampling params; only Haiku 4.5 and
-// older take temperature. Priced at Sonnet rates below.
+const isHaiku55 = (model: string) => model.startsWith('claude-haiku-5-5');
+// Sonnet 5 and later 400 on non-default sampling params, as Haiku 5.5 does.
 const isSonnet5Family = (model: string) => /^claude-sonnet-5(-|$)/.test(model);
 
 /**
- * Model, max_tokens, sampling and thinking fields of a request body.
+ * Model, max_tokens and thinking fields of a request body.
  *
- * Haiku 4.5: `temperature: 0`; `thinking` is ignored.
- * Any other family throws: a guessed shape would 400 or change behaviour.
- * Sonnet 5 family: never a sampling param. `'off'` sends
- * `{type: 'between_tools'}` on 5.5 (it 400s on `disabled`) and
- * `{type: 'disabled'}` on Sonnet 5; neither takes another thinking field.
+ * Haiku 5.5 and the Sonnet 5 family only; any other id throws: a guessed shape
+ * would 400 or change behaviour. Never a sampling param: each family 400s on one.
+ * `'off'` sends `{type: 'between_tools'}` on Sonnet 5.5 (it 400s on `disabled`)
+ * and `{type: 'disabled'}` on Sonnet 5 and Haiku 5.5 (Haiku 5.5 thinks unless
+ * told not to); none takes another thinking field.
  * An effort level sends adaptive thinking with `output_config.effort`, and
  * raises `max_tokens` to at least 1024 because it caps thinking plus answer.
  */
 export function modelParams(model: string, maxTokens: number, thinking: 'off' | Effort = 'off'): Record<string, unknown> {
-  if (model.startsWith('claude-haiku-4-5')) return { model, max_tokens: maxTokens, temperature: 0 };
-  if (!isSonnet5Family(model)) throw new Error(`modelParams: no request shape for ${model}`);
+  if (!isSonnet5Family(model) && !isHaiku55(model)) throw new Error(`modelParams: no request shape for ${model}`);
   if (thinking === 'off') return { model, max_tokens: maxTokens, thinking: { type: isSonnet55(model) ? 'between_tools' : 'disabled' } };
   return {
     model,
@@ -94,10 +96,12 @@ interface Usage {
   output_tokens?: number;
 }
 
-// $ per million tokens. Figures supplied with the 2026-09-29 comparison task.
+// $ per million tokens. Sonnet figures supplied with the 2026-09-29 comparison
+// task; Haiku 5.5's are its card for prompts of 100K tokens or fewer ($0.50 /
+// $2.50 above), which every harness prompt is.
 // cacheWrite is the 1-hour rate, 2x input (PROMPT_CACHE); 5-minute writes are 1.25x.
 export const PRICES = {
-  haiku: { input: 1, output: 5, cacheRead: 0.10, cacheWrite: 2 },
+  haiku55: { input: 0.10, output: 0.50, cacheRead: 0.01, cacheWrite: 0.20 },
   sonnet55: { input: 2, output: 10, cacheRead: 0.20, cacheWrite: 4 },
 };
 
@@ -120,9 +124,9 @@ export function summaryLine(label: string, model: string, thinkingOff: boolean, 
   const ms = stats.map(s => s.ms).sort((a, b) => a - b);
   const sum = (k: keyof CallStat) => stats.reduce((t, s) => t + s[k], 0);
   const tok = { input: sum('input'), cacheRead: sum('cacheRead'), cacheWrite: sum('cacheWrite'), output: sum('output') };
-  const p = isSonnet5Family(model) ? PRICES.sonnet55 : PRICES.haiku;
+  const p = isHaiku55(model) ? PRICES.haiku55 : PRICES.sonnet55;
   const cost = (tok.input * p.input + tok.output * p.output + tok.cacheRead * p.cacheRead + tok.cacheWrite * p.cacheWrite) / 1e6;
-  const arm = isSonnet5Family(model) ? (thinkingOff ? 'thinking-off' : 'effort-low') : 'temp0';
+  const arm = thinkingOff ? 'thinking-off' : 'effort-low';
   return `SUMMARY ${label} model=${model} arm=${arm} pass=${pass}/${n} (${(100 * pass / n).toFixed(1)}%) ` +
     `calls=${stats.length} apiErrors=${apiErrors} p50=${pct(ms, 0.5)}ms p90=${pct(ms, 0.9)}ms ` +
     `tokens in=${tok.input} cacheRead=${tok.cacheRead} cacheWrite=${tok.cacheWrite} out=${tok.output} ` +
