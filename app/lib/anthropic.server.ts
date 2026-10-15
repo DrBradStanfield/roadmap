@@ -576,7 +576,7 @@ export async function pollBatch(
   }
 
   const statusData = await parseJsonBody(statusResponse);
-  const counts = statusData.request_counts;
+  const counts = statusData.request_counts ?? {};
   const completed = (counts.succeeded || 0) + (counts.errored || 0) + (counts.expired || 0) + (counts.canceled || 0);
   const total = completed + (counts.processing || 0);
 

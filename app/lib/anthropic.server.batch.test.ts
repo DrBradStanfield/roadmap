@@ -105,6 +105,16 @@ describe('US-12 AC1: batch progress uses the provider request counts', () => {
       })));
     expect(await pollBatch('batch_synthetic')).toEqual({ status: 'ended', completed: 0, total: 0, results: [] });
   });
+
+  it('still returns an ended batch whose status omits request_counts', async () => {
+    // Counts are display-only; a missing block must not hold finished results back until the client times out.
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => url.endsWith('/results')
+      ? new Response(succeeded(0), { status: 200 })
+      : Response.json({ processing_status: 'ended', ended_at: '2026-10-13T00:00:00Z' })));
+    const result = await pollBatch('batch_synthetic');
+    expect(result).toMatchObject({ status: 'ended', completed: 0, total: 0 });
+    expect(result.results?.map(r => r.index)).toEqual([0]);
+  });
 });
 
 // US-12 AC8: a dot-thousands count the model wrote as a JSON number ("250.000"
