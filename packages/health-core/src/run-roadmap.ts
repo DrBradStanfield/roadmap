@@ -40,7 +40,7 @@ export const RUN_ROADMAP_TOOL = {
     'the user states values that are not in their saved data and wants them assessed or analysed (e.g. ' +
     '"analyse my data: LDL 4.1 mmol/L, BP 132/84"). Use only the user\'s own values, not a family member\'s. ' +
     'Pass exactly the stated values and units: do NOT convert ' +
-    'units. Give sex, height or birthYear only when the user stated them in this conversation; height in cm or in ' +
+    'units. Give sex, height or age (whole years) only when the user stated them in this conversation; height in cm or in ' +
     '(feet and inches as total inches: 5 ft 5 in is 65 in). If a unit is ' +
     'ambiguous and the user did not state it, ASK which unit instead of calling this tool, and do not grade the ' +
     'value in any unit. Answer only from the result, as you would from the user data block: never grade a value ' +
@@ -69,7 +69,7 @@ export const RUN_ROADMAP_TOOL = {
         properties: { value: { type: 'number' as const }, unit: { type: 'string' as const, enum: ['cm', 'in'] } },
         required: ['value', 'unit'],
       },
-      birthYear: { type: 'integer' as const, description: 'Only if the user stated it, or their age (this year minus age).' },
+      age: { type: 'integer' as const, description: 'Only if the user stated it: their age in whole years.' },
     },
     required: ['values'],
   },
@@ -105,7 +105,7 @@ const REASONS = {
   unit: 'unit not recognised for this field: ask the user which unit',
   bpAbove: 'above the highest blood pressure the roadmap records: treat it as a possible emergency and advise urgent medical care',
   bpBelow: 'below the lowest blood pressure the roadmap records: treat it as possibly dangerous and advise urgent medical care if they feel faint, dizzy or unwell',
-  labAbove: 'above the highest value the roadmap records in this unit: ask the user to confirm the unit; if it is right, the value is very high and needs their doctor promptly',
+  labAbove: 'above the highest value the roadmap records in this unit: ask the user to confirm the value and unit; if it is right, suggest they discuss it with their doctor',
   labBelow: 'below the lowest value the roadmap records: ask the user to confirm the value and unit',
   body: 'outside what the roadmap records: ask the user to check the value and unit',
   range: 'out of range for this field',
@@ -113,14 +113,20 @@ const REASONS = {
   older: 'older than the saved value',
   cap: `only the first ${RUN_ROADMAP_MAX_VALUES} values were used`,
   later: 'a later value for the same field was used',
+  superseded: 'a later or same-day value for this field could not be used, so this one was not used either',
   pair: 'blood pressure is read as a pair: both numbers are needed, each one usable, so neither was used',
-  minor: 'the saved profile is under 18: a stated birth year is not used',
+  minor: 'the saved profile is under 18: a stated age is not used',
 } as const;
 
 const BP_FIELDS: readonly string[] = ['systolicBp', 'diastolicBp'];
 const BODY_FIELDS: readonly string[] = ['weightKg', 'waistCm', 'heightCm'];
-/** US-36 AC4's unit-swap floors, plus HbA1c and creatinine under 20 (mmol/mol, µmol/L): a unit to ask about, not a result. */
-const ASK_UNIT_BELOW: Partial<Record<MetricType, number>> = { ...UNIT_SWAP_FLOORS, hba1c: 20, creatinine: 20 };
+/** HbA1c and creatinine under 20 in their SI unit (mmol/mol, µmol/L): likely a % or mg/dL number under the SI label. */
+const SI_ASK_UNIT_BELOW: Partial<Record<MetricType, number>> = { hba1c: 20, creatinine: 20 };
+/** A converted value that is a unit to ask about, not a result: under US-36 AC4's floors, or in the SI band above. */
+const askUnit = (metric: MetricType, r: { valueSI: number; system: UnitSystem }) =>
+  r.valueSI < (UNIT_SWAP_FLOORS[metric] ?? -Infinity) || (r.system === 'si' && r.valueSI < (SI_ASK_UNIT_BELOW[metric] ?? -Infinity));
+/** The day of a value whose date could not be read: later than any real day, so it outdates every stated value. */
+const UNKNOWN_DAY = '9999-12-31';
 const measured = z.object({ value: z.number().finite(), unit: z.string().min(1).max(32) });
 const obj = (v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {}) as Record<string, unknown>;
 /** A field the schema knows: the result never names the model's own string. */
@@ -157,10 +163,13 @@ function savedLatestDay(history: Record<string, unknown>, metric: string, today:
  * The plan for `guestInputs` with the stated values laid over it. Pure: the
  * caller's payload is not changed and nothing is stored. A stated value is the
  * latest for this computation unless a saved point is newer; two for one field
- * keep the later-dated (an undated value is today's). A value out of its
- * field's range, and a blood pressure that is not a usable pair (two numbers
- * from one day), takes the saved value out of the run too, so the saved one
- * never answers for it.
+ * keep the later-dated (an undated value is today's). A value the run cannot
+ * use (out of range, a bad date, shape or unit, or in an ask-unit band) that is
+ * not older than the saved point takes the field out of the run: the saved
+ * value, and any stated one from that day or earlier, never answers for it.
+ * So does a blood pressure that is not a usable pair (two numbers from one day).
+ * A stated age sets the birth year from `now`, in January, so the plan's age
+ * is the stated one and the minor gate is exactly under 18.
  */
 export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Date()): RoadmapRun {
   const base = obj(guestInputs);
@@ -172,6 +181,12 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   const stated = new Map<EditableField, { si: number; date: string; system: UnitSystem }>();
   /** Fields whose saved value must not answer for this run (C1). */
   const unusable = new Set<string>();
+  /** Per field, the latest day of a stated value the run could not use (Codex R1, adversary R2). */
+  const blocked = new Map<EditableField, string>();
+  const block = (field: EditableField, day: string, reason: string) => {
+    reject(field, reason);
+    if (day > (blocked.get(field) ?? '')) blocked.set(field, day);
+  };
 
   const items = Array.isArray(input.values) ? input.values : [];
   if (items.length > RUN_ROADMAP_MAX_VALUES) reject('values', REASONS.cap);
@@ -179,23 +194,32 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
     const item = obj(raw);
     const field = item.field;
     if (!isEditable(field)) { reject('unknown', REASONS.field); continue; }
-    const parsed = measured.safeParse(item);
-    if (!parsed.success) { reject(field, REASONS.shape); continue; }
     const date = item.date == null ? today : statedDay(item.date, now);
-    if (!date) { reject(field, REASONS.date); continue; }
+    if (!date) { block(field, UNKNOWN_DAY, REASONS.date); continue; }
     const metric = FIELD_TO_METRIC[field] as MetricType;
-    const reported = reportedToCanonical(metric, parsed.data.value, parsed.data.unit);
-    if (!reported) { reject(field, REASONS.unit); continue; }
-    // First, so a dated old value, in range or not, never touches a newer saved one.
+    // First after the date, so a dated old value, usable or not, never touches a newer saved one.
     if (date < savedLatestDay(history, metric, today)) { reject(field, REASONS.older); continue; }
-    // Below the band, the number is a unit swap (LDL "3.4 mg/dL", HbA1c "6.1 mmol/mol"), not a result.
-    if (reported.valueSI < (ASK_UNIT_BELOW[metric] ?? -Infinity)) { reject(field, REASONS.unit); continue; }
+    const parsed = measured.safeParse(item);
+    if (!parsed.success) { block(field, date, REASONS.shape); continue; }
+    const reported = reportedToCanonical(metric, parsed.data.value, parsed.data.unit);
+    if (!reported) { block(field, date, REASONS.unit); continue; }
+    // In the band, the number is a unit swap (LDL "3.4 mg/dL", HbA1c "6.1 mmol/mol"), not a result.
+    if (askUnit(metric, reported)) { block(field, date, REASONS.unit); continue; }
     const outside = outOfRange(field, reported.valueSI);
-    if (outside) { reject(field, outside); unusable.add(field); continue; }
+    if (outside) { block(field, date, outside); continue; }
     const prior = stated.get(field);
     if (prior && prior.date > date) { reject(field, REASONS.later); continue; }
     if (prior) reject(field, REASONS.later);
     stated.set(field, { si: reported.valueSI, date, system: reported.system });
+  }
+
+  // A value the run could not use outdates every stated one from its day or
+  // earlier (same day included: the conservative reading).
+  for (const [field, day] of blocked) {
+    const kept = stated.get(field);
+    if (kept && kept.date > day) continue;
+    if (stated.delete(field)) reject(field, REASONS.superseded);
+    unusable.add(field);
   }
 
   // Blood pressure is one reading: used as a pair from one day or not at all.
@@ -210,7 +234,6 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
       unusable.add(f);
     }
   }
-  for (const f of stated.keys()) unusable.delete(f);
 
   const overlay: Record<string, unknown> = {};
   for (const [field, { si }] of stated) overlay[field] = si;
@@ -228,26 +251,28 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
     else if (outside) reject('heightCm', outside);
     else overlay.heightCm = cm;
   } else if (input.heightCm != null) reject('heightCm', REASONS.shape);
-  if (input.birthYear != null) {
+  const applied = Object.keys(overlay);
+  const birth: Record<string, unknown> = {};
+  if (input.age != null) {
+    const birthYear = Number.isInteger(input.age) ? now.getFullYear() - (input.age as number) : NaN;
     // US-07 AC6: a saved known minor stays one, whatever the message says.
-    if (knownMinorOf(base)) reject('birthYear', REASONS.minor);
-    else if (Number.isInteger(input.birthYear) && inRange('birthYear', input.birthYear)) overlay.birthYear = input.birthYear;
-    else reject('birthYear', REASONS.range);
+    if (knownMinorOf(base)) reject('age', REASONS.minor);
+    // January: the plan's age (calculateAge) is the stated one all year, and the minor gate is age < 18.
+    else if (inRange('birthYear', birthYear)) { Object.assign(birth, { birthYear, birthMonth: 1 }); applied.push('age'); }
+    else reject('age', REASONS.range);
   }
 
-  const payload: Record<string, unknown> = { ...base, ...overlay };
+  const payload: Record<string, unknown> = { ...base, ...overlay, ...birth };
   for (const f of unusable) delete payload[f];
   if (unusable.size > 0 && base.measurementHistory !== undefined) {
     const gone = new Set([...unusable].map(f => FIELD_TO_METRIC[f]));
     payload.measurementHistory = Object.fromEntries(Object.entries(history).filter(([metric]) => !gone.has(metric)));
   }
-  // A stated birth year that differs from the saved one makes the saved month meaningless.
-  if (overlay.birthYear !== undefined && overlay.birthYear !== base.birthYear) delete payload.birthMonth;
   // Without a saved unit preference, the plan prints in the system the user wrote in.
   if (base.unitSystem !== 'si' && base.unitSystem !== 'conventional') {
     payload.unitSystem = stated.values().next().value?.system ?? 'si';
   }
-  return { contextJson: buildChatContextJson(payload), applied: Object.keys(overlay), rejected };
+  return { contextJson: buildChatContextJson(payload), applied, rejected };
 }
 
 const NOT_SAVED = 'The stated values are used for this answer only; nothing was saved.';
@@ -291,7 +316,7 @@ function mergedRunInput(inputs: unknown[]): Record<string, unknown> {
   for (const raw of inputs) {
     const input = obj(raw);
     if (Array.isArray(input.values)) merged.values = (merged.values as unknown[]).concat(input.values);
-    for (const f of ['sex', 'height', 'heightCm', 'birthYear']) if (merged[f] === undefined && input[f] != null) merged[f] = input[f];
+    for (const f of ['sex', 'height', 'heightCm', 'age']) if (merged[f] === undefined && input[f] != null) merged[f] = input[f];
   }
   return merged;
 }

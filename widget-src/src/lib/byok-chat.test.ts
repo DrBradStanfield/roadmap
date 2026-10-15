@@ -194,6 +194,18 @@ describe('US-15 AC33: run_roadmap in the Pages chat', () => {
     expect(fieldResult.tool_use_id).toBe('toolu_field');
   });
 
+  it('adversary R3: the tool takes a stated age, and the plan computed in the browser applies the minor gate to it', async () => {
+    const run = { ...RUN, input: { values: [], sex: 'male', height: { value: 170, unit: 'cm' }, age: 17 } };
+    state.replies = [{ text: '', blocks: [run] }, { text: 'Under 18.', blocks: [{ type: 'text', text: 'Under 18.' }] }];
+    await sendMessage('I am 17, LDL 4.1 mmol/L', null, null);
+    const tool = state.bodies[0].tools.find((t: { name: string }) => t.name === 'run_roadmap');
+    expect(tool.input_schema.properties.age.type).toBe('integer');
+    expect(tool.input_schema.properties).not.toHaveProperty('birthYear');
+    const result = JSON.parse(state.bodies[1].messages.at(-1).content[0].content);
+    expect(result.applied).toEqual(['sex', 'heightCm', 'age']);
+    expect(result.roadmap.profile.knownMinor).toBe(true);
+  });
+
   it('a failed second call is the chat\'s error, not a partial answer', async () => {
     state.replies = [{ text: '', blocks: [RUN] }, new TypeError('network down')];
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
