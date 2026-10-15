@@ -161,8 +161,9 @@
 //     `--baseline <file>` pairs with the `--subject` just before it (`--baseline none`: review it in full as a new
 //     file); with none, a tracked subject's baseline is its HEAD version and an untracked one is a new file.
 //     PRIVACY: a subject, baseline or context file NOT tracked at HEAD must lie under a root pinned in the committed
-//     tools/codex-review-includes.json "subjectRoots" (claude_business's numbered video FOLDERS, `output/[0-9] *`,
-//     `output/[0-9][0-9] *`, `output/[0-9][0-9][0-9] *`: digits, a space, and a real folder, never a loose file):
+//     tools/codex-review-includes.json "subjectRoots" (this repo's gitignored `codex-drafts/` for de-identified drafts, and claude_business's
+//     numbered video FOLDERS, `output/[0-9] *`, `output/[0-9][0-9] *`, `output/[0-9][0-9][0-9] *`: digits, a space,
+//     and a real folder, never a loose file):
 //     gitignored folders hold customer data (chatbot exports, comment backups, review exports). Tracked files are
 //     always allowed. And the same file's "privateDeny" globs (comment dumps `comments-*`, `competitor-*-comments.*`,
 //     `objection-intel*`, the channel-research index, Judge.me CSV exports, chatbot exports) never reach the reviewer
