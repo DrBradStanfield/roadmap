@@ -204,7 +204,7 @@ The single most clarifying idea in v2: **where the app is served** and **where t
 
 - React Router 7 on `node:22-alpine`, two Fly.io apps from one image — `health-tool-app` (commerce/microvitamin) + `health-tool-edu` (education/drstanfield), iad, 1 machine min each
 - `@shopify/shopify-app-react-router` — app proxy + HMAC for the AI endpoints; Shopify Admin API `2026-04`
-- Anthropic: Claude Sonnet 5.5 answers chat (streamed to the web as NDJSON) and routes; Haiku 4.5 classifies and extracts labs; 1-hour prompt cache (pins in `packages/health-core/src/models.ts`)
+- Anthropic: Claude Sonnet 5.5 answers chat (streamed to the web as NDJSON) and routes; Haiku 5.5 (thinking off) classifies and extracts labs; 1-hour prompt cache (pins in `packages/health-core/src/models.ts`)
 - Supabase (chat history + A/B only), Resend (reminders + ops digests), Klaviyo (email list)
 - discord.js gateway; admin app on **Polaris web components** (not Polaris React)
 

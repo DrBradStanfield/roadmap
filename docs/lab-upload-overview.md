@@ -69,7 +69,7 @@ flowchart LR
   subgraph BE["REMIX BACKEND (Fly.io)"]
     direction TB
     S1["api.lab-import-v2<br/>app-proxy HMAC · 60 files/day per IP · machine cap"]
-    S2["Claude Haiku 4.5<br/>prompt from lab-extraction.ts, never client-supplied"]
+    S2["Claude Haiku 5.5, thinking off<br/>prompt from lab-extraction.ts, never client-supplied"]
     S3["resolveLabValues()<br/>lab-extraction.ts · unit lookup + range fallback"]
     S1 --> S2 --> S3
   end
@@ -118,7 +118,7 @@ Bracket under the bars, from 0s to the end of File 4's LLM call: **total ≈ 25s
 
 - **Anthropic Build Tier 2 cap.** 80K output tokens/min. Lab-report extraction emits \~500–1,500 output tokens per call (scan/letter markdown conversion is the worst case at \~4K). 5 concurrent calls × 1.5K avg ≈ 7.5K/min — comfortable.
 - **Extraction parallelism unblocks the pipeline.** pdf.js extraction is CPU-bound on the main thread (\~2–3s per file). With 1 extractor, LLM workers starve — they finish in \~5s but the next item isn't ready. 3 extractors keep the queue feeding 5 workers without UI jank.
-- **Server-side retry.** `callAnthropic()` in `anthropic.server.ts` makes at most 2 HTTP attempts (flat 1 s) on 502/503/504/529 and network errors; `extractOrClassify()` wraps that in 2 outer attempts, each a call plus a `{`-prefill retry sharing one deadline. The client never retries.
+- **Server-side retry.** `callAnthropic()` in `anthropic.server.ts` makes at most 2 HTTP attempts (flat 1 s) on 502/503/504/529 and network errors; `extractOrClassify()` wraps that in 2 outer attempts, each a call plus one re-send of the same request, sharing one deadline (no `{` prefill since 2026-10-16: Haiku 5.5 rejects it). The client never retries.
 - **Verified in production:** 13-call upload on 12-file ZIP showed `maxConcurrent = 5` in DevTools timing (commit `052ada1`).
 
 ### A separate path: Anthropic Batch API for 20+ files
@@ -322,13 +322,13 @@ His lab report's ApoB row reads **0.5 g/L**. pdf.js sees a thin text layer (or n
 
 File: `widget-src/src/lib/pdf-extract.ts`
 
-### 2 · Claude Haiku 4.5 misreads the digit
+### 2 · Claude Haiku 5.5 misreads the digit
 
 **Highlighted as the step where the bug bites.**
 
 Vision pass returns `{ metric: "apob", value: 0.79, unit: "g/L", confidence: "high" }`. The character "5" was misread as "79", or — more likely — Haiku picked up an adjacent value (a reference-range edge, a different row, a previous result). Both rules 1 and 2 in the system prompt warn against this, but the model is the only thing enforcing them.
 
-File: `app/lib/anthropic.server.ts:180–212 (SYSTEM_PROMPT) · model: claude-haiku-4-5-20251001`
+File: `packages/health-core/src/lab-extraction.ts` (`UNIFIED_SYSTEM_PROMPT`) · model: `claude-haiku-5-5`
 
 ### 3 · Unit resolution: lookup hit
 
@@ -399,7 +399,7 @@ Load-bearing choices that future work should preserve unless deliberately overtu
 | **HMAC auth on every endpoint** | App-proxy convention. Any new endpoint (re-extract, correction) must follow the same pattern. | Security regression. Don't overturn. |
 | **Server-side unit resolution** | Centralises all unit logic in `units.ts` + `lab-extraction.ts`. Client receives values ready to save. | Duplicated logic, more places to drift. Preserve. |
 | **One LLM call per page-list** (no cross-file batching in the prompt) | Prevents cross-contamination between files from different dates/labs/patients. Simpler error handling — one file fails, others unaffected. | Save a few cents per upload, gain a tangled prompt and harder failure-mode reasoning. Preserve. |
-| **Claude Haiku 4.5** (not Sonnet) | Structured parsing, not complex reasoning. \~$0.003–0.005 per report. Vision support for scanned pages. | Swap model ID to Sonnet for \~10× cost if accuracy issues persist after other fixes. No code changes beyond the constant. |
+| **Claude Haiku 5.5** (not Sonnet; Haiku 4.5 until 2026-10-16) | Structured parsing, not complex reasoning. \~$0.0004–0.0007 per report, thinking off. Vision support for scanned pages. | Swap model ID to Sonnet for \~20× cost if accuracy issues persist after other fixes. No code changes beyond the constant. |
 | **No raw PDF storage** | Privacy-first. On the website route files never leave the browser; only extracted text/images reach the backend. The connector route sends the whole file through the server for one request; nothing is persisted on either route. | Storing PDFs opens HIPAA scope, S3 costs, encryption-at-rest requirements. Don't overturn lightly. |
 | **Confidence is advisory, not gating** | Low-confidence cells are highlighted but still editable and still save — the user can clear them. The system never silently drops a value. | Switching to "gating" (refuse to display low-confidence values) would prevent some bad saves but force users to re-upload more often. Status quo treats the user as the final arbiter. |
 

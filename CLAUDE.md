@@ -60,8 +60,8 @@ before deploying.
   holds the symlink). Edit it here; claude_business edits arrive uncommitted — sweep-commit them.
 - **`docs/chatbot/` is GENERATED (claude_business `tools/sync-shared-docs.mjs`), never edit.** `scripts/check-symlinks.mjs` keeps it, products.md and writing-style.md REAL files (mode 100644) and checks the synced hashes.
 - `docs/blog/*.md` — chatbot blog cache from claude_business `/blog-post`; rebuild `npx tsx scripts/build-blog-content.ts`.
-- **Customer-service gateway (planned, Brad 2026-10-12):** email + chatbot order/subscription actions; its OWN Fly app,
-  code in the private claude_business repo (`customer-service-gateway/`), never in this public repo; the chatbot calls it for account actions. Spec: claude_business `docs/customer-service.md`.
+- **Customer-service gateway (live):** its OWN Fly app; code only in private claude_business `customer-service-gateway/`. Spec: its `docs/customer-service.md`.
+  **Replying to mail sent to brad@microvitamin.com** (the Gmail connector reaches only drstanfield.com): find it with claude_business `node tools/gmail.js search --account microvitamin`, send Brad's approved text in that thread via the gateway's `POST /send-reply` — never a new email from drstanfield.com (Brad 2026-10-16).
 - Chatbot work starts at `claude_business/docs/chat-start-here.md`.
 
 ## Anti-Entropy & Writing Style
