@@ -53,8 +53,9 @@ describe('sanitizeRawHandles', () => {
   });
 });
 
-// US-15 AC7: the widget's telemetry row keeps the current question verbatim and
-// only the columns it is allowed to carry — never the earlier turns.
+// US-15 AC7: the widget's telemetry row keeps the current question, with its
+// numbers masked (AC33, S2), and only the columns it is allowed to carry —
+// never the earlier turns.
 import { redactForWidget } from './chat-router.server';
 
 describe('redactForWidget', () => {
@@ -74,14 +75,23 @@ describe('redactForWidget', () => {
     failure_mode: null,
   };
 
-  it('keeps the question verbatim, names the surface, and drops the earlier turns', () => {
+  it('keeps the question with its numbers masked, names the surface, and drops the earlier turns', () => {
     const out = redactForWidget(row);
-    expect(out.message).toBe('my LDL is 4.2');
+    expect(out.message).toBe('my LDL is #');
     expect(out.router_context).toEqual({ platform: 'widget' });
     expect(JSON.stringify(out)).not.toContain('BP 140/90');
     expect(JSON.stringify(out)).not.toContain('HbA1c 41');
     expect(out.router_raw).toBe(row.router_raw);
     expect(out.matched_handles).toEqual(['ldl-cholesterol']);
+  });
+
+  it('US-15 AC33 (S2): every digit run is masked, decimals and comma decimals whole; a question with no digit is verbatim', () => {
+    const masked = redactForWidget({ ...row, message: 'BP 182/112, LDL 4,6 mmol/L, HbA1c 41.5 and Lp(a) 75 nmol/L' }).message;
+    expect(masked).toBe('BP #/#, LDL # mmol/L, HbA#c # and Lp(a) # nmol/L');
+    expect(String(masked)).not.toMatch(/\d/);
+    // Any script's digits, not only ASCII: a fullwidth or Arabic-Indic value is masked too.
+    expect(redactForWidget({ ...row, message: 'LDL ４.１ and HbA1c ٤١' }).message).toBe('LDL # and HbA#c #');
+    expect(redactForWidget({ ...row, message: 'how am I doing overall?' }).message).toBe('how am I doing overall?');
   });
 
   it('drops a column it does not know, so a reply or error text cannot ride along', () => {

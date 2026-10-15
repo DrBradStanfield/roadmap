@@ -333,6 +333,11 @@ describe('US-15 AC19 — tools only for a client that applies edits', () => {
     expect(await anthropicBody({ message: 'hello' })).not.toHaveProperty('tools');
   });
 
+  it('US-15 AC19: canApplyEdits from a client that is not the widget (no localFirst) sends no tools', async () => {
+    expect(await anthropicBody({ message: 'my LDL is 4.1 mmol/L', canApplyEdits: true })).not.toHaveProperty('tools');
+    expect(await anthropicBody({ message: 'my LDL is 4.1 mmol/L', localFirst: 'true', canApplyEdits: true })).not.toHaveProperty('tools');
+  });
+
   it('a non-boolean canApplyEdits sends no tools', async () => {
     expect(await anthropicBody({ message: 'hello', localFirst: true, canApplyEdits: 'yes' })).not.toHaveProperty('tools');
   });

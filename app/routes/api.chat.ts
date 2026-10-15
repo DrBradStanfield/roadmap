@@ -395,8 +395,9 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     }
 
-    // Only the widget's own chat applies form edits, so only it gets the tools (US-15 AC19).
-    const canApplyEdits = body.canApplyEdits === true;
+    // Only the widget's own chat applies form edits, so only it gets the tools (US-15 AC19):
+    // the server holds the other surfaces to that, whatever their body says.
+    const canApplyEdits = widget && body.canApplyEdits === true;
     // The streamed turn opens its stream here, before stage 1, so the user
     // sees progress while the classifier, router and content load (US-15
     // AC20). From here on a failure is a `done` line there and an HTTP 500

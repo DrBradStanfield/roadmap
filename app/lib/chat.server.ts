@@ -514,7 +514,8 @@ const addUsage = (a: AnthropicUsage, b: AnthropicUsage): AnthropicUsage => ({
  * plan code runs on `guestInputs` plus the stated values and a second call
  * answers from its output (health-core `withRoadmapRound`, at most one round).
  * The answer is the second call's text; usage is the two calls' sum. A failed
- * second call is the api-error fallback, with no tool output in it.
+ * second call is the api-error fallback, with no tool output in it, that keeps
+ * the first call's usage and the round's counts.
  */
 export async function getChatCompletion(
   systemBlocks: SystemBlock[],
@@ -528,16 +529,23 @@ export async function getChatCompletion(
     system: systemBlocks,
     ...(canApplyEdits ? { tools: chatToolsFor(messages) } : {}),
   };
-  const send = (fields: { messages: ChatTurnMessage[]; tool_choice?: { type: 'none' } }) =>
-    onEvent ? streamAnthropicWithUsage({ ...body, ...fields }, onEvent) : callAnthropicWithUsage({ ...body, ...fields });
+  // Every call's usage, and the round's counts, survive a failed second call (S4).
+  let usage: AnthropicUsage = { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 };
+  let roadmapRun: { roadmapRun?: RoadmapRoundCounts } = {};
+  const send = async (fields: { messages: ChatTurnMessage[]; tool_choice?: { type: 'none' } }) => {
+    const reply = onEvent ? await streamAnthropicWithUsage({ ...body, ...fields }, onEvent) : await callAnthropicWithUsage({ ...body, ...fields });
+    usage = addUsage(usage, reply.usage);
+    return reply;
+  };
 
   try {
     const turn = canApplyEdits
-      ? await withRoadmapRound(messages, send, guestInputs, () => onEvent?.({ type: 'status', text: ROADMAP_STATUS }))
+      ? await withRoadmapRound(messages, send, guestInputs, (counts) => {
+        roadmapRun = { roadmapRun: counts };
+        onEvent?.({ type: 'status', text: ROADMAP_STATUS });
+      })
       : null;
     const result = turn ? turn.final : await send({ messages });
-    const usage = turn && turn.final !== turn.first ? addUsage(turn.first.usage, turn.final.usage) : result.usage;
-    const roadmapRun = turn?.counts ? { roadmapRun: turn.counts } : {};
     const { stopReason } = result;
     if (stopReason === 'refusal') {
       const refusalCategory = result.refusalCategory ?? 'other';
@@ -593,13 +601,14 @@ export async function getChatCompletion(
     const errorDetail = err instanceof Error ? err.message : String(err);
     return {
       content: FALLBACK_RESPONSE,
-      // Usage is unknown when the call failed before returning — zero it out so
-      // downstream logging doesn't mis-charge.
-      usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 },
+      // The failed call's usage is unknown, so it counts zero; a first call that
+      // returned before a failed second one keeps its usage and its round.
+      usage,
       isFallback: true,
       failureMode: 'api-error',
       errorDetail,
       errorKind: classifyChatError(err),
+      ...roadmapRun,
     };
   }
 }

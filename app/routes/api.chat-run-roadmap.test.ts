@@ -119,10 +119,10 @@ describe('US-15 AC33: a run_roadmap turn keeps the tool\'s data out of every log
       expect(consoleCalls()).not.toContain(leak);
       expect(JSON.stringify(envelopes)).not.toContain(leak);
     }
-    // The widget row keeps the question as before (AC7) and nothing the tool computed.
+    // The widget row keeps the question with its numbers masked (AC33, S2), and nothing the tool read or computed.
     const row = inserts.find((i) => i.table === 'chat_match_events')!.row;
-    expect(row.message).toBe(question);
-    for (const leak of TOOL_OUTPUT) expect(JSON.stringify(row)).not.toContain(leak);
+    expect(row.message).toBe('analyse my data: LDL # mg/dL, weight # kg, HDL # mmol');
+    for (const leak of [...TOOL_INPUT.filter((s) => /\d/.test(s)), ...TOOL_OUTPUT]) expect(JSON.stringify(row)).not.toContain(leak);
     expect(Object.keys(row).some((k) => /roadmap|tool/i.test(k))).toBe(false);
   });
 

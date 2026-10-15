@@ -172,17 +172,22 @@ export interface MatchEventRow extends Record<string, unknown> {
   router_context: { platform: string; first: string | null; recent: string[] };
 }
 
+/** A number in a question: a run of digits in any script, with one decimal part ('4.1', '4,1', '４.１'). */
+const NUMBER = /\p{Nd}+(?:[.,]\p{Nd}+)?/gu;
+
 /**
  * The widget's telemetry row (US-15 AC7): the assembled row with the surface
- * named and only the whitelisted columns kept. The current question stays
- * verbatim (Brad, 2026-09-10) so article matching can be audited against it,
- * but the earlier turns the router saw (`first`, `recent`) are dropped — the
- * router still gets them at call time; only the stored row loses them, so one
- * widget row can never hold a second question (2026-09-10).
+ * named and only the whitelisted columns kept. The current question stays so
+ * article matching can be audited against it (Brad, 2026-09-10), with every
+ * number masked to '#' (US-15 AC33, 2026-10-15), so a health value typed into
+ * the chat never reaches the row. The earlier turns the router saw (`first`,
+ * `recent`) are dropped — the router still gets them at call time; only the
+ * stored row loses them, so one widget row can never hold a second question
+ * (2026-09-10).
  */
 export function redactForWidget(row: MatchEventRow): Record<string, unknown> {
   const kept = Object.fromEntries(WIDGET_ROW_COLUMNS.filter((c) => c in row).map((c) => [c, row[c]]));
-  return { ...kept, router_context: { platform: 'widget' } };
+  return { ...kept, message: row.message.replace(NUMBER, '#'), router_context: { platform: 'widget' } };
 }
 
 // ---------------------------------------------------------------------------

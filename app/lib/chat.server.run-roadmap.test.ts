@@ -80,8 +80,21 @@ describe('US-15 AC33: the run_roadmap round (JSON path)', () => {
     const result = await getChatCompletion([], user, true, undefined, PROFILE);
     expect(result).toMatchObject({ content: FALLBACK_RESPONSE, isFallback: true, failureMode: 'api-error', errorKind: 'timeout' });
     expect(result).not.toHaveProperty('proposedEdits');
-    expect(result).not.toHaveProperty('roadmapRun');
     expect(JSON.stringify(result)).not.toContain('4.1');
+  });
+
+  it('US-15 AC33 (S4): a failed second call keeps the first call\'s usage and still records the round', async () => {
+    replies(json('tool_use', [RUN, FIELD]), new TypeError('fetch failed'), new TypeError('fetch failed'));
+    const result = await getChatCompletion([], user, true, undefined, PROFILE);
+    expect(result.usage).toEqual({ inputTokens: 10, outputTokens: 5, cacheCreationTokens: 0, cacheReadTokens: 100 });
+    expect(result.roadmapRun).toEqual({ applied: 2, rejected: 0 });
+  });
+
+  it('a failed first call reports zero usage and no round, as before', async () => {
+    replies(new TypeError('fetch failed'), new TypeError('fetch failed'));
+    const result = await getChatCompletion([], user, true, undefined, PROFILE);
+    expect(result.usage).toEqual({ inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 });
+    expect(result).not.toHaveProperty('roadmapRun');
   });
 
   it('no run_roadmap: one call, as before', async () => {
