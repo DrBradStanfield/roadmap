@@ -412,8 +412,9 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
         const answers = ${JSON.stringify(answer)};
         globalThis.fetch = async (_url, init) => {
           const body = JSON.parse(init.body);
-          fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ query: body.messages[0].content, system: body.system, tools: !!body.tools }) + '\\n');
-          const text = typeof answers === 'string' ? answers : answers[body.messages[0].content];
+          const query = body.messages.filter(m => m.role === 'user' && typeof m.content === 'string').at(-1).content;
+          fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ query, system: body.system, tools: !!body.tools }) + '\\n');
+          const text = typeof answers === 'string' ? answers : answers[query];
           return new Response(JSON.stringify({
             content: [{ type: 'text', text }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
           }), { status: 200, headers: { 'content-type': 'application/json' } });
@@ -621,7 +622,7 @@ describe('test-chatbot-matching run_roadmap round (US-15 AC33)', () => {
         globalThis.fetch = async (_url, init) => {
           const body = JSON.parse(init.body);
           fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify(body) + '\\n');
-          const round = body.messages.length > 1;
+          const round = Array.isArray(body.messages.at(-1).content);
           const content = ${JSON.stringify(callTool)} && !round
             ? [{ type: 'thinking', thinking: 'run it', signature: 'sig' }, { type: 'tool_use', id: 'toolu_1', name: 'run_roadmap', input: ${JSON.stringify(INPUT)} }]
             : [{ type: 'text', text: round ? 'From the roadmap: LDL 4.1.' : 'A plain answer.' }];
@@ -658,6 +659,26 @@ describe('test-chatbot-matching run_roadmap round (US-15 AC33)', () => {
     expect(calls.length, stderr).toBe(1);
     expect(calls[0].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit']);
   }, 60_000);
+
+  it('a two-turn fixture sends its history before the query, and a digit in the previous user message offers run_roadmap (C2)', () => {
+    const history = [{ role: 'user', content: 'My Lp(a) came back at 75' }, { role: 'assistant', content: 'Is that nmol/L or mg/dL?' }];
+    const { status, stderr, out, calls } = run(fixture({ query: 'nmol/L', history, expect_roadmap_run: true }), true);
+    expect(calls.length, stderr).toBe(2);
+    expect(calls[0].messages).toEqual([...history, { role: 'user', content: 'nmol/L' }]);
+    expect(calls[0].tools.map((t: { name: string }) => t.name)).toContain('run_roadmap');
+    expect(calls[1].messages.slice(0, 3)).toEqual(calls[0].messages);
+    expect(out).toContain('Fixed-handle answer checks: 1/1 ✓');
+    expect(status).toBe(0);
+  }, 60_000);
+
+  it('a history that does not alternate user, assistant, ending on the assistant, exits before any API call', () => {
+    for (const history of [[{ role: 'assistant', content: 'hi' }], [{ role: 'user', content: 'a' }], 'LDL 4', [{ role: 'user', content: 3 }, { role: 'assistant', content: 'x' }]]) {
+      const { status, stderr, calls } = run(fixture({ history }), true);
+      expect(stderr).toMatch(/history/);
+      expect(calls).toEqual([]);
+      expect(status).toBe(1);
+    }
+  }, 120_000);
 
   it('expect_roadmap_run fails an answer that did not call the tool, and one that did when it must not', () => {
     expect(run(fixture({ expect_roadmap_run: true, must_mention: ['plain'] }), false).out).toContain('did not call run_roadmap');

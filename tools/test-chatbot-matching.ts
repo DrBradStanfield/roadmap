@@ -63,6 +63,10 @@
  *   expect_empty_context?: true  with user_context: production collapses this payload to '{}' (no sex
  *                             or height, so no plan), and the answer gets '{}' as production sends it.
  *                             A payload that does make a plan then exits the harness before any API call.
+ *   history?: {role, content}[]  answer check only: earlier turns of the conversation, sent before the
+ *                             query as the widget sends its history: alternating user and assistant
+ *                             text, from a user turn to an assistant one. Any other shape exits the
+ *                             harness before any API call.
  *   expect_roadmap_run?: boolean  answer check only: the answer must (true) or must not (false) call
  *                             run_roadmap. Every answer runs production's one-round loop (health-core
  *                             withRoadmapRound, US-15 AC33) on the fixture's raw user_context, and is
@@ -394,6 +398,7 @@ interface TestQuery {
   user_context?: unknown;      // answer check sends this widget payload as the user's data (see the header)
   expect_empty_context?: true; // production collapses user_context to '{}' (see the header)
   expect_roadmap_run?: boolean; // the answer must (true) or must not (false) call run_roadmap (see the header)
+  history?: Array<{ role: 'user' | 'assistant'; content: string }>; // earlier turns, before the query (see the header)
 }
 
 const ALL_QUERIES: TestQuery[] = JSON.parse(
@@ -450,6 +455,13 @@ for (const q of ALL_QUERIES.filter(q => q.user_context !== undefined)) {
     process.exit(1);
   }
   USER_CONTEXTS.set(q, ctx.userContextJson);
+}
+// A history the widget could never send would score a conversation production never has.
+const badHistory = ALL_QUERIES.filter(q => q.history !== undefined && !(Array.isArray(q.history) && q.history.length % 2 === 0
+  && q.history.every((m, i) => m && m.role === (i % 2 === 0 ? 'user' : 'assistant') && typeof m.content === 'string' && m.content.length > 0)));
+if (badHistory.length > 0) {
+  console.error(`history must alternate user and assistant text, ending on the assistant, on: ${badHistory.map(q => q.query).join(', ')}`);
+  process.exit(1);
 }
 // A regex that cannot compile would throw mid-run, after money is spent.
 const badRegex = ALL_QUERIES.flatMap(q => [...q.must_match ?? [], ...q.must_not_match ?? []].filter(r => {
@@ -537,7 +549,7 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise
     : matchedContent
       ? `${base}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
       : base;
-  const messages = [{ role: 'user' as const, content: query }];
+  const messages = [...q.history ?? [], { role: 'user' as const, content: query }];
   const body = {
     ...modelParams(ANSWER_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system,
