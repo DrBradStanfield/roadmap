@@ -173,6 +173,9 @@ describe('US-15 AC33: run_roadmap in the Pages chat', () => {
     expect(state.bodies[1].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
     expect(state.bodies[1].tools[2].description).toContain('Answer only from the result');
     expect(state.bodies[1].system).not.toContain('run_roadmap');
+    // C10: the form-tools rule names the form tools, so it does not forbid run_roadmap.
+    expect(state.bodies[1].system).not.toMatch(/Use tools only|without any tool/);
+    expect(state.bodies[1].system).toContain('without these tools when no edit is requested. Use them only when');
   });
 
   it('computes the plan in the browser on the stated values, then answers from a second call with no tools', async () => {

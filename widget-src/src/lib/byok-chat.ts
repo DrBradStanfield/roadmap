@@ -172,7 +172,7 @@ Updating the user's form (tools):
 - If a unit is ambiguous (e.g. cholesterol can be mmol/L or mg/dL) and the user did not state it, ASK which unit — do NOT guess and do NOT call the tool.
 - For multiple results from one blood draw, call \`propose_field_edit\` once per metric with the SAME date so they batch into one save.
 - For \`propose_medication_edit\`: medications save immediately. After the tool call, state plainly what changed (e.g. "Done — set your statin to atorvastatin 20mg") and tell them they can undo it.
-- You can answer normally without any tool when no edit is requested. Use tools only when the user is clearly giving you a value/medication to record.`;
+- You can answer normally without these tools when no edit is requested. Use them only when the user is clearly giving you a value/medication to record.`;
 
 export async function sendMessage(
   message: string,
