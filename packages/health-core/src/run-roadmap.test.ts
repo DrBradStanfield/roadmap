@@ -465,10 +465,10 @@ describe('US-15 AC33: the third review (R1-R4, R8)', () => {
     expect(latest(r)).not.toHaveProperty('waistCm');
   });
 
-  it('R2: a stated height out of range: check the value and unit; the saved height is removed, so no plan', () => {
+  it('R2: a stated height out of range: check the value and unit; the saved height stays, so the plan still runs', () => {
     const r = run({ values: [], height: { value: 900, unit: 'cm' } });
     expect(r.rejected).toEqual([{ field: 'heightCm', reason: BODY }]);
-    expect(r.contextJson).toBeNull();
+    expect(r.contextJson).not.toBeNull();
   });
 
   it('R3: systolic and diastolic stated on different days are not a pair: both refused, the saved pair removed', () => {

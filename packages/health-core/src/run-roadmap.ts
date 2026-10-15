@@ -224,7 +224,8 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
     const outside = cm === undefined ? null : outOfRange('heightCm', cm);
     if (!height.success) reject('heightCm', REASONS.shape);
     else if (cm === undefined) reject('heightCm', REASONS.unit);
-    else if (outside) { reject('heightCm', outside); unusable.add('heightCm'); }
+    // Height barely changes: a mistyped one keeps the saved height, so the plan still runs.
+    else if (outside) reject('heightCm', outside);
     else overlay.heightCm = cm;
   } else if (input.heightCm != null) reject('heightCm', REASONS.shape);
   if (input.birthYear != null) {
