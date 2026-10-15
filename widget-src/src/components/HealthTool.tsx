@@ -933,8 +933,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // Memoised so the UploadModal's matrix doesn't rebuild on unrelated
   // HealthTool re-renders (typing, mobile-tab switches, etc.).
   const uploadHistory = useMemo(
-    () => ({ bloodTests: bloodTestHistory, labValues: labValueHistory, documents: documentHistory }),
-    [bloodTestHistory, labValueHistory, documentHistory],
+    () => ({ measurements: history, labValues: labValueHistory, documents: documentHistory }),
+    [history, labValueHistory, documentHistory],
   );
 
   const inputPanelProps = {

@@ -17,6 +17,7 @@ import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutErr
 import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, modelParams } from '../../packages/health-core/src/models';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { PRODUCTS_BLOCK_FILES, productsBlockText } from './chat-products-block';
+import { PROPOSE_SUBSCRIPTION_CHANGE_TOOL, parseSubscriptionProposal, type SubscriptionProposal } from './subscription-gateway.server';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -314,7 +315,7 @@ interface SystemBlock {
 
 export function buildSystemBlocks(
   userContextJson: string,
-  opts?: { surfaceContext?: string; documentContent?: string | null; orderSummary?: string; blogArticles?: string | null },
+  opts?: { surfaceContext?: string; documentContent?: string | null; orderSummary?: string; subscriptionBlock?: string | null; blogArticles?: string | null },
 ): SystemBlock[] {
   // Cached blocks first (shared across all users AND all surfaces — keep
   // byte-identical so the prompt cache is shared), then the per-surface posture
@@ -357,6 +358,12 @@ export function buildSystemBlocks(
       type: 'text',
       text: `## Your Recent Orders\n\n${opts.orderSummary}`,
     });
+  }
+
+  // US-49: the logged-in customer's subscriptions and the rules for proposing a
+  // change (brand surface, while enabled). Per request and uncached, like orders.
+  if (opts?.subscriptionBlock) {
+    blocks.push({ type: 'text', text: opts.subscriptionBlock });
   }
 
   if (opts?.documentContent) {
@@ -480,7 +487,12 @@ export interface ChatCompletionResult {
   errorKind?: ChatErrorKind;
   /** Form edits the model proposed via tool_use (additive — empty on normal turns). */
   proposedEdits?: ProposedEdit[];
+  /** A subscription change the model proposed (US-49); the route turns it into a confirm card or drops it. */
+  subscriptionProposal?: SubscriptionProposal;
 }
+
+/** Shown when the model proposed a subscription change with no prose; the card carries the detail (US-49). */
+export const SUBSCRIPTION_TOOL_ONLY_ACK = 'Here is the change for you to confirm.';
 
 /**
  * With `onEvent` the answer streams (the web chat, US-15 AC16/AC17); the
@@ -491,17 +503,23 @@ export interface ChatCompletionResult {
  * `canApplyEdits`: the form tools go only to a client that applies them (the
  * widget's own chat, US-15 AC19). `tools` render before `system`, so the two
  * request shapes share no prompt-cache prefix and cache separately.
+ *
+ * `subscriptionTool` (US-49): the propose-only subscription tool, sent on every
+ * brand-surface turn while subscription actions are enabled, logged in or not,
+ * so that surface keeps one cached prefix shape.
  */
 export async function getChatCompletion(
   systemBlocks: SystemBlock[],
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
   canApplyEdits: boolean,
   onEvent?: (event: AnthropicStreamEvent) => void,
+  opts?: { subscriptionTool?: boolean },
 ): Promise<ChatCompletionResult> {
+  const tools = [...(canApplyEdits ? CHAT_EDIT_TOOLS : []), ...(opts?.subscriptionTool ? [PROPOSE_SUBSCRIPTION_CHANGE_TOOL] : [])];
   const body = {
     ...modelParams(CHAT_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: systemBlocks,
-    ...(canApplyEdits ? { tools: CHAT_EDIT_TOOLS } : {}),
+    ...(tools.length ? { tools } : {}),
     messages,
   };
 
@@ -523,6 +541,7 @@ export async function getChatCompletion(
     // Truncated: keep the answer, add nothing the user sees, log the stop only.
     if (stopReason === 'max_tokens') console.warn(JSON.stringify({ evt: 'chat_truncated', stopReason }));
     const proposedEdits = parseProposedEdits(result.contentBlocks);
+    const subscriptionProposal = opts?.subscriptionTool ? parseSubscriptionProposal(result.contentBlocks) : null;
     // Empty-response check: API returned 200 but no usable text. A tool-only
     // response (model proposed an edit with no prose) is NOT empty — give the
     // thread a short line; the confirmation card carries the detail.
@@ -534,7 +553,11 @@ export async function getChatCompletion(
           isFallback: false,
           stopReason,
           proposedEdits,
+          ...(subscriptionProposal ? { subscriptionProposal } : {}),
         };
+      }
+      if (subscriptionProposal) {
+        return { content: SUBSCRIPTION_TOOL_ONLY_ACK, usage: result.usage, isFallback: false, stopReason, subscriptionProposal };
       }
       return {
         content: FALLBACK_RESPONSE,
@@ -550,6 +573,7 @@ export async function getChatCompletion(
       isFallback: false,
       stopReason,
       ...(proposedEdits.length > 0 ? { proposedEdits } : {}),
+      ...(subscriptionProposal ? { subscriptionProposal } : {}),
     };
   } catch (err) {
     // API errors (timeout, 5xx, network, malformed response). fetchAnthropicRaw

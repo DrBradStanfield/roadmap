@@ -3681,6 +3681,72 @@ a.action-btn-small.action-btn-small:hover {
   text-align: center;
 }
 
+/* Subscription change card (US-49): one change, confirmed by the customer. */
+.chat-sub-card {
+  align-self: stretch;
+  margin: 4px 0 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 13.5px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.chat-sub-card p {
+  margin: 0 0 6px;
+}
+
+.chat-sub-card-title {
+  font-weight: 600;
+  color: var(--color-text-heading);
+}
+
+.chat-sub-card-line {
+  color: var(--color-text-secondary);
+}
+
+.chat-sub-card-result {
+  color: var(--color-text);
+}
+
+.chat-sub-card-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.chat-sub-card-buttons button {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.chat-sub-card-confirm {
+  border: 0;
+  background: var(--color-brand);
+  color: #fff;
+}
+
+.chat-sub-card-confirm:hover:not(:disabled) {
+  background: var(--color-brand-hover);
+}
+
+.chat-sub-card-dismiss {
+  border: 1px solid var(--color-gray-border);
+  background: #fff;
+  color: var(--color-text);
+}
+
+.chat-sub-card-buttons button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* Upgrade CTA (shown when daily limit reached) */
 
 .chat-upgrade {

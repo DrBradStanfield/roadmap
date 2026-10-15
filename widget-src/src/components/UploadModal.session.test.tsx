@@ -23,7 +23,7 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 const extraction = { result: { classification: 'lab_report', document: null, reportDate: '2024-06-01', values: [{ metric: 'ldl', valueSI: 3.9, displayValue: 3.9, displayUnit: 'mmol/L', confidence: 'high' }], additionalValues: [] } };
-const emptyHistory: UploadHistory = { bloodTests: [], labValues: [], documents: [] };
+const emptyHistory: UploadHistory = { measurements: [], labValues: [], documents: [] };
 const letter = { classification: 'clinic_letter', title: 'Synthetic letter', documentDate: '2024-06-01', contentMarkdown: 'letter', metadata: {} };
 const archivedLetter = { id: 'd1', documentType: 'clinic_letter', title: letter.title, documentDate: letter.documentDate, contentMd: 'letter', metadata: {}, sourceFileName: 'test.pdf', createdAt: '2024-06-02T00:00:00Z' };
 const onComplete = vi.fn();
@@ -170,7 +170,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([payload]).mockReturnValueOnce([payload]);
     vi.mocked(bulkSaveDocuments).mockRejectedValueOnce(new Error('synthetic archive failure'))
       .mockResolvedValueOnce({ saved: [{ ...archivedLetter, fileRef: 'archive/test.pdf' }], errorCount: 0 });
-    render(<Harness completedHistory={{ ...emptyHistory, bloodTests: [{ id: 'saved', metricType: 'ldl', value: 3.9, recordedAt: '2024-06-01T00:00:00.000Z', createdAt: '2024-06-01T00:00:00.000Z' }] }} />);
+    render(<Harness completedHistory={{ ...emptyHistory, measurements: [{ id: 'saved', metricType: 'ldl', value: 3.9, recordedAt: '2024-06-01T00:00:00.000Z', createdAt: '2024-06-01T00:00:00.000Z' }] }} />);
     await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByText('Some items could not be saved. Please try again.');

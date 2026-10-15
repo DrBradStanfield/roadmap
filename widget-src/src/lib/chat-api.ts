@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/react';
 import { MAX_HISTORY_MESSAGES, type ProposedEdit } from '@roadmap/health-core';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { getChatHistory } from './chat-history-access';
+import { readSubscriptionCard, type SubscriptionCard } from './subscription-card';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
 
 // On local-first builds sendMessage tells the server to trust the
@@ -42,6 +43,8 @@ export interface SendMessageResult {
   isFallback?: boolean;
   /** Form edits the model proposed via tool_use (pre-fill the form / update meds). */
   proposedEdits?: ProposedEdit[];
+  /** A subscription change for the customer to confirm (US-49; commerce, logged in). */
+  subscriptionCard?: SubscriptionCard;
 }
 
 /**
@@ -426,6 +429,7 @@ export async function sendMessage(
         ...(Array.isArray(data.proposedEdits) && data.proposedEdits.length > 0
           ? { proposedEdits: data.proposedEdits as ProposedEdit[] }
           : {}),
+        ...(readSubscriptionCard(data.subscriptionCard) ? { subscriptionCard: readSubscriptionCard(data.subscriptionCard)! } : {}),
       },
       error: null,
     };

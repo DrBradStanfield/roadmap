@@ -20,7 +20,8 @@ export interface ApiReminderPreference {
  *  separate props, so call sites don't grow with each new history
  *  dimension. */
 export interface UploadHistory {
-  bloodTests: ApiMeasurement[];
+  /** Every active measurement: the review seeds blood tests and BP (US-12 AC11). */
+  measurements: ApiMeasurement[];
   labValues: ApiLabValue[];
   documents: ApiDocument[];
 }

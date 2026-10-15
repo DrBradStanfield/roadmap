@@ -6,6 +6,7 @@ import {
   METRIC_TO_FIELD,
   parseLocalisedNumber,
   BLOOD_TEST_METRICS,
+  VITAL_METRICS,
   isScreeningEligible,
   displayLabUnit,
   resolveLabCatalogEntry,
@@ -163,11 +164,13 @@ function sameValue(a: number, b: number): boolean {
   return Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(a), Math.abs(b));
 }
 
-/** Lab-value name → cell key. Lower + trim for dedup, and strip `|`
+/** Lab-value name → row key. Lower + trim for dedup, and strip `|`
  *  because the cellKey format is `${rowKey}|${dateKey}` — an LLM-emitted
- *  name like "ALT | AST ratio" would otherwise collide. */
+ *  name like "ALT | AST ratio" would otherwise collide. Prefixed so a lab row
+ *  named like a core metric ("systolic_bp", saved before US-12 AC11) never
+ *  shares a cell with that metric. */
 function normaliseLabName(name: string): string {
-  return name.trim().toLowerCase().replace(/\|/g, '/');
+  return `lab:${name.trim().toLowerCase().replace(/\|/g, '/')}`;
 }
 
 // ============================================================================
@@ -234,7 +237,7 @@ type MatrixCell =
 export function buildMatrixModel(
   results: FileResult[],
   fileDates: Record<number, FullDate>,
-  bloodTestHistory: ApiMeasurement[],
+  measurementHistory: ApiMeasurement[],
   labValueHistory: ApiLabValue[],
   unitSystem: UnitSystem,
   metricUnitOverrides?: Partial<Record<MetricType, CellUnit>>,
@@ -277,14 +280,21 @@ export function buildMatrixModel(
     return col;
   };
 
-  // 1) Seed columns + cells from existing history (greyed context).
+  // 1) Seed columns + cells from existing history (greyed context). A blood
+  //    test seeds its own column. A saved BP seeds only a date this upload
+  //    brings, so it conflicts like any held slot (US-13 AC3) without every
+  //    vitals date becoming a column.
   const bloodTestSet = new Set<string>(BLOOD_TEST_METRICS);
-  for (const m of bloodTestHistory) {
-    if (!bloodTestSet.has(m.metricType)) continue;
+  const vitalSet = new Set<string>(VITAL_METRICS);
+  const uploadDates = new Set(results.flatMap((r, fi) =>
+    fileDates[fi] && r.values.length + r.additionalValues.length > 0 ? [buildDatePrefix(fileDates[fi])] : []));
+  for (const m of measurementHistory) {
     const dateKey = m.recordedAt.slice(0, 10);
-    addColumn(dateKey, parseReportDate(dateKey), null);
     const metric = m.metricType as MetricType;
-    coreMetricsSeen.add(metric);
+    if (bloodTestSet.has(metric)) {
+      addColumn(dateKey, parseReportDate(dateKey), null);
+      coreMetricsSeen.add(metric);
+    } else if (!vitalSet.has(metric) || !uploadDates.has(dateKey)) continue;
     const display = UNIT_DEFS[metric]
       ? cellText(metric, m.value, displayFor(metric))
       : String(m.value);
@@ -374,9 +384,11 @@ export function buildMatrixModel(
 
   // 3) Sort. Columns chronological asc (oldest left, newest right).
   //    Core rows in the canonical BLOOD_TEST_METRICS order so the matrix
-  //    reads the same as the live timeline. Additional rows alphabetic.
+  //    reads the same as the live timeline, then any vitals the report
+  //    printed (BP): save takes every cell, so every cell needs a row
+  //    (US-12 AC11). Additional rows alphabetic.
   const columns = Array.from(columnsByKey.values()).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
-  const coreRows: CoreRow[] = BLOOD_TEST_METRICS
+  const coreRows: CoreRow[] = [...BLOOD_TEST_METRICS, ...VITAL_METRICS]
     .filter(m => coreMetricsSeen.has(m as MetricType))
     .map(m => ({ kind: 'core' as const, metric: m as MetricType }));
   const additionalRows = Array.from(additionalByKey.values()).sort((a, b) =>
@@ -384,6 +396,11 @@ export function buildMatrixModel(
   );
 
   return { columns, coreRows, additionalRows, cells };
+}
+
+/** What a screen reader names the row: the metric key, or the lab row's own name (never its `lab:` key). */
+function rowName(row: MatrixRow): string {
+  return row.kind === 'core' ? row.metric : row.displayName;
 }
 
 /** Cell key for the matrix model (used by both the cells Map and the
@@ -500,8 +517,8 @@ export function ReviewTable({
   // `editable` cells come from this upload. Save selection = an editable
   // cell whose `editedDisplayValues` entry is non-empty (clear-to-skip).
   const matrix = useMemo(
-    () => buildMatrixModel(results, fileDates, history.bloodTests, history.labValues, unitSystem, units),
-    [results, fileDates, history.bloodTests, history.labValues, unitSystem, units],
+    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units),
+    [results, fileDates, history.measurements, history.labValues, unitSystem, units],
   );
 
   // Initial display values are derived from the matrix (not from raw results)
@@ -1043,7 +1060,8 @@ function MatrixRowView({
   const rowKey = matrixRowKey(row);
   const rowDisplay = row.kind === 'core' ? (metricUnitOverrides?.[row.metric] ?? unitSystem) : unitSystem;
   const { label, unitLabel, refLabel } = describeRow(row, rowDisplay, grading);
-  const toggleUnit = row.kind === 'core' && onToggleFieldUnit
+  // A fixed unit (mmHg, PSA's ng/mL) gets a static chip, not a toggle that does nothing.
+  const toggleUnit = row.kind === 'core' && onToggleFieldUnit && UNIT_DEFS[row.metric].label.si !== UNIT_DEFS[row.metric].label.conventional
     ? () => onToggleFieldUnit(METRIC_TO_FIELD[row.metric])
     : undefined;
 
@@ -1154,7 +1172,7 @@ const MatrixCellView = memo(function MatrixCellView({
       value={editedValue}
       onChange={handleChange}
       wrapperClass="bt-cell-input bt-cell-review"
-      ariaLabel={`${matrixRowKey(row)} value`}
+      ariaLabel={`${rowName(row)} value`}
     />
   );
 
@@ -1171,7 +1189,7 @@ const MatrixCellView = memo(function MatrixCellView({
           type="checkbox"
           checked={replace}
           onChange={(e) => onReplaceToggle(cellKey, e.target.checked)}
-          aria-label={`Replace the saved ${matrixRowKey(row)} value ${cell.existing.display} with ${editedValue || 'the uploaded value'}`}
+          aria-label={`Replace the saved ${rowName(row)} value ${cell.existing.display} with ${editedValue || 'the uploaded value'}`}
         />
         <span aria-hidden="true">Replace</span>
       </label>

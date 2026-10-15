@@ -34,6 +34,11 @@ export const PRODUCT_EVENT_NAMES = [
   // US-15 AC17: the "Show how I approached this" toggle was opened. Name only,
   // fired once per answer (the client throttle then keeps one per tab session).
   'chat_thinking_opened',
+  // US-49: a logged-in customer confirmed a subscription change card in the
+  // chat and the store accepted it. Recorded by the server's confirm route
+  // (SERVER_ONLY), so it counts on every bundle that shows the card. Name
+  // only: never the action, the subscription or the customer.
+  'subscription_action_confirmed',
   // US-34: the open page re-read the record and something had changed under it
   // (another tab, another device, or an AI connector). Metadata: `backend`
   // only, `local` (another tab of this browser) or `cloud` — never what changed.
@@ -123,6 +128,7 @@ export const SERVER_ONLY_EVENT_NAMES = [
   'mcp_consent_posted',
   'mcp_connect_failed',
   'mcp_import',
+  'subscription_action_confirmed',
 ] as const satisfies readonly ProductEventName[];
 
 /**

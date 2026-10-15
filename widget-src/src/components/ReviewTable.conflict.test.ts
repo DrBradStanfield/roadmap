@@ -19,8 +19,8 @@ function upload(valueSI: number): FileResult[] {
   }];
 }
 
-const build = (results: FileResult[], bloodTests: ApiMeasurement[], labValues: ApiLabValue[] = []) =>
-  buildMatrixModel(results, { 0: DATE }, bloodTests, labValues, 'si');
+const build = (results: FileResult[], measurements: ApiMeasurement[], labValues: ApiLabValue[] = []) =>
+  buildMatrixModel(results, { 0: DATE }, measurements, labValues, 'si');
 
 // US-32 · A website upload never silently loses a value to a connector row.
 describe('buildMatrixModel slot collision (US-32)', () => {
@@ -58,5 +58,57 @@ describe('buildMatrixModel slot collision (US-32)', () => {
     const { cells } = build(results, [], labs);
     const key = [...cells.keys()].find(k => k.endsWith('|2024-06-01'))!;
     expect(cells.get(key)).toMatchObject({ state: 'editable', existing: { id: 'old-fer', display: '120' } });
+  });
+});
+
+// US-12 AC11 · every core value the review would save has a row the user sees.
+describe('buildMatrixModel shows blood pressure from a lab report (US-12 AC11)', () => {
+  it('gives systolic and diastolic BP rows after the blood tests, so save never stores a value nobody saw', () => {
+    const results: FileResult[] = [{
+      fileName: 'baseline.jpg',
+      reportDate: null,
+      values: [
+        { metric: 'systolic_bp', valueSI: 118, displayValue: 118, displayUnit: 'mmHg', confidence: 'high' },
+        { metric: 'diastolic_bp', valueSI: 65, displayValue: 65, displayUnit: 'mmHg', confidence: 'high' },
+        { metric: 'ldl', valueSI: 1.51, displayValue: 1.51, displayUnit: 'mmol/L', confidence: 'high' },
+      ],
+      additionalValues: [],
+    }];
+    const { coreRows, cells } = build(results, []);
+    expect(coreRows.map(r => r.kind === 'core' && r.metric)).toEqual(['ldl', 'systolic_bp', 'diastolic_bp']);
+    expect(cells.get('systolic_bp|2024-06-01')).toMatchObject({ state: 'editable', initialDisplay: '118' });
+  });
+});
+
+describe('buildMatrixModel keeps BP honest against what is saved (US-12 AC11, US-13 AC3)', () => {
+  const bp = (valueSI: number): FileResult[] => [{
+    fileName: 'baseline.jpg', reportDate: null,
+    values: [{ metric: 'systolic_bp', valueSI, displayValue: valueSI, displayUnit: 'mmHg', confidence: 'high' }],
+    additionalValues: [],
+  }];
+  const saved = (metricType: string, value: number, day: string): ApiMeasurement =>
+    ({ id: `old-${metricType}-${day}`, metricType, value, recordedAt: `${day}T00:00:00.000Z`, createdAt: `${day}T00:00:00.000Z` });
+
+  it('a saved BP that differs on the upload date is a conflict, not a silent skip', () => {
+    const { cells } = build(bp(118), [saved('systolic_bp', 135, '2024-06-01')]);
+    expect(cells.get('systolic_bp|2024-06-01')).toMatchObject({ state: 'editable', existing: { id: 'old-systolic_bp-2024-06-01', valueSI: 135 } });
+  });
+
+  it('a saved BP on another date adds no column and no row', () => {
+    const { columns, coreRows, cells } = build([], [saved('systolic_bp', 135, '2024-01-01'), saved('weight', 80, '2024-01-01')]);
+    expect(columns).toEqual([]);
+    expect(coreRows).toEqual([]);
+    expect(cells.size).toBe(0);
+  });
+
+  it('an old lab row named systolic_bp never hides the core value as already saved', () => {
+    const labs: ApiLabValue[] = [{
+      id: 'lab-sbp', metricName: 'systolic_bp', value: 118, unit: 'mmHg', referenceLow: null, referenceHigh: null,
+      recordedAt: '2024-06-01T00:00:00.000Z', source: 'lab_import', createdAt: '2024-06-01T00:00:00.000Z',
+    }];
+    const { cells } = build(bp(118), [], labs);
+    const core = cells.get('systolic_bp|2024-06-01');
+    expect(core).toMatchObject({ state: 'editable', kind: 'core' });
+    expect(core && 'existing' in core ? core.existing : undefined).toBeUndefined();
   });
 });

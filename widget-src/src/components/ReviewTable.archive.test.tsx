@@ -24,7 +24,7 @@ beforeEach(() => { record.lpaUnit = undefined; localStorage.clear(); });
 afterEach(cleanup);
 
 const HASH = 'sha256-abc';
-const bloodTests: ApiMeasurement[] = [
+const measurements: ApiMeasurement[] = [
   { id: 'old-ldl', metricType: 'ldl', value: 3.9, recordedAt: '2024-06-01T00:00:00.000Z', createdAt: '2024-06-01T00:00:00.000Z' },
 ];
 const results: FileResult[] = [{
@@ -57,13 +57,13 @@ const connectorLetter: ApiDocument = {
   createdAt: '2024-06-11T00:00:00.000Z', fileRef: null, contentHash: LETTER_HASH,
 };
 
-function renderReview(documents: ApiDocument[], files: FileResult[] = results, savedBloodTests: ApiMeasurement[] = bloodTests) {
+function renderReview(documents: ApiDocument[], files: FileResult[] = results, savedBloodTests: ApiMeasurement[] = measurements) {
   const onSave = vi.fn();
   const utils = render(
     <ReviewTable
       grading={{}}
       results={files}
-      history={{ bloodTests: savedBloodTests, labValues: [], documents }}
+      history={{ measurements: savedBloodTests, labValues: [], documents }}
       unitSystem="si"
       onSave={onSave}
       onCancel={() => {}}
@@ -150,7 +150,7 @@ describe('ReviewTable — screening eligibility reads the plan\'s age (US-06 AC5
     <ReviewTable
       grading={{}}
       results={psaLetter}
-      history={{ bloodTests: [], labValues: [], documents: [] }}
+      history={{ measurements: [], labValues: [], documents: [] }}
       unitSystem="si"
       age={age}
       sex="male"
@@ -184,7 +184,7 @@ describe('ReviewTable — untouched core cells keep the extracted SI value (US-0
     additionalValues: [],
   });
   const files = [lpaFile('2025-01-10', 124.9), lpaFile('2025-02-10', 74.9)];
-  const history = { bloodTests: [], labValues: [], documents: [] };
+  const history = { measurements: [], labValues: [], documents: [] };
   const renderAt = (unitSystem: 'si' | 'conventional', onSave = vi.fn()) => {
     const utils = render(
       <ReviewTable grading={{}} results={files} history={history} unitSystem={unitSystem}
@@ -267,7 +267,7 @@ describe('ReviewTable — an edited cell after a unit toggle shows what Save wri
     fileName: 'lpa.pdf', reportDate: '2025-01-10', additionalValues: [],
     values: [{ metric: 'lpa', valueSI: 124, displayValue: 124, displayUnit: 'nmol/L', confidence: 'high' }],
   }];
-  const history = { bloodTests: [], labValues: [], documents: [] };
+  const history = { measurements: [], labValues: [], documents: [] };
   type Props = { unitSystem: 'si' | 'conventional'; overrides?: { lpa: 'si' | 'conventional' } };
   /** The Lp(a) row's unit control (US-05 AC2). */
   const lpaRow = (container: HTMLElement) => container.querySelector('.bt-unit-segments')!.closest('.bt-row') as HTMLElement;
@@ -384,7 +384,7 @@ describe('ReviewTable — same-day conflicts compare stored values, not rounded 
   const renderConflict = (record: number, uploaded: number) => {
     const onSave = vi.fn();
     const utils = render(
-      <ReviewTable grading={{}} results={upload(uploaded)} history={{ bloodTests: held(record), labValues: [], documents: [] }}
+      <ReviewTable grading={{}} results={upload(uploaded)} history={{ measurements: held(record), labValues: [], documents: [] }}
         unitSystem="conventional" onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />,
     );
     return { ...utils, onSave, replace: () => utils.container.querySelector<HTMLInputElement>('.bt-cell-conflict-replace input') };
