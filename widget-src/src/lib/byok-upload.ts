@@ -26,7 +26,7 @@ import {
   parseUnifiedResult,
   toUnifiedResult,
 } from '@roadmap/health-core/lab-extraction';
-import { EXTRACTION_MODEL } from '@roadmap/health-core/models';
+import { EXTRACTION_MODEL, modelParams } from '@roadmap/health-core/models';
 import { getAnthropicKey } from './byok-chat';
 import { ByokAnthropicError, callAnthropicDirect, type ByokErrorCode } from './byok-anthropic';
 import type { BatchPollResponse, LabImportResult, PageContent, UploadErrorCode } from './api-types';
@@ -56,35 +56,27 @@ function uploadErrorCode(error: ByokAnthropicError): UploadErrorCode {
   return error.code === 'bad_request' && /credit|billing/i.test(error.message) ? 'no_credit' : UPLOAD_ERROR_CODE[error.code];
 }
 
-/** One direct extraction call; retries once with a `{` prefill on bad JSON
- *  (same recovery as the server's extractOrClassifyOnce). */
 /** What a failure was, never what it said: a SyntaxError or ZodError message
  *  can quote report text, and the console must not carry it. */
 function errorKind(error: unknown): string {
   return error instanceof Error ? error.name : typeof error;
 }
 
+/** One direct extraction call; on bad JSON the SAME request is sent once more
+ *  (same recovery as the server's extractOrClassifyOnce; Haiku 5.5 400s on the
+ *  `{` prefill this used to send, US-15 AC31). */
 async function extractDirect(apiKey: string, pages: PageContent[]): Promise<LabImportResult> {
-  const content = pagesToContentBlocks(pages);
   const body = {
-    model: EXTRACTION_MODEL,
-    max_tokens: EXTRACTION_MAX_TOKENS,
+    ...modelParams(EXTRACTION_MODEL, EXTRACTION_MAX_TOKENS),
     system: UNIFIED_SYSTEM_PROMPT,
-    messages: [{ role: 'user', content }],
+    messages: [{ role: 'user', content: pagesToContentBlocks(pages) }],
   };
 
-  let responseText = await callAnthropicDirect(apiKey, body);
+  const responseText = await callAnthropicDirect(apiKey, body);
   try {
     return toResult(responseText);
   } catch {
-    responseText = await callAnthropicDirect(apiKey, {
-      ...body,
-      messages: [
-        { role: 'user', content },
-        { role: 'assistant', content: [{ type: 'text', text: '{' }] },
-      ],
-    });
-    return toResult('{' + responseText);
+    return toResult(await callAnthropicDirect(apiKey, body));
   }
 }
 

@@ -1,4 +1,4 @@
-<!-- generated — never edit; source hash sha256:b7ea765f670906aff0ddf9219b0513a67236c0b035266b27700deb473a3feabb -->
+<!-- generated — never edit; source hash sha256:12e26989f6eff60f13d251a70794b0f063e59cd5a02af9d6eb7a08d83cd1c26e -->
 <!-- Built by claude_business tools/sync-shared-docs.mjs from docs/customer-service/answer-bank.md. Edit the master there and rerun the sync. -->
 
 Approved answers to questions customers have asked by email (81 entries), written in the first person. Each entry gives the question, then the answer.
@@ -192,8 +192,6 @@ higher than the 2.5 g of psyllium in one serving of MicroVitamin+
 Please let me know if you have any other questions
 
 ### Does 2.5g of psyllium do anything, given studies use 7 to 10g?
-
-Product facts here vary by market: confirm them in PRODUCTS for the user's country.
 
 This is a tricky one. In a perfect world, I'd have more psyllium husk in
 MicroVitamin+, but that might cause side effects for some people.

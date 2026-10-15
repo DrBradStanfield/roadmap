@@ -25,7 +25,7 @@ import { PROPOSE_SUBSCRIPTION_CHANGE_TOOL, parseSubscriptionProposal, type Subsc
 
 // The main answer runs on Sonnet 5.5 (CHAT_MODEL, pinned in health-core
 // models.ts with every other hop); the router is Sonnet 5.5 with thinking off,
-// the classifier Haiku 4.5.
+// the classifier Haiku 5.5 with thinking off.
 // The 2026-08-06 audit's failures were self-check failures in the ANSWER
 // (fabricated citation ids), so the answer is the hop worth the better model;
 // 5.5 reasons better than Sonnet 5 at the same price and tokenizer.

@@ -6,7 +6,7 @@
  * values. Synthetic fixtures only: no health values, no network.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { pollBatch } from './anthropic.server';
+import { createBatch, pollBatch } from './anthropic.server';
 
 const letter = JSON.stringify({ classification: 'other', reportDate: null, values: [], additionalValues: [], document: null });
 const errorOf = (r: object) => ('errorCode' in r ? r.errorCode : undefined);
@@ -130,5 +130,32 @@ describe('US-12 AC8: a batch result keeps a dot-thousands JSON number a string',
     const read = result as Extract<typeof result, { additionalValues: unknown }>;
     expect(read.additionalValues.map(v => [v.name, v.value])).toEqual([['tsh', 2.345]]);
     expect(read.droppedValueCount).toBe(1);
+  });
+});
+
+// US-15 AC31: each batch request has Haiku 5.5's shape (thinking disabled, no
+// sampling param, ending on the user turn), and a result is read by block type.
+describe('US-15 AC31: the batch path on Haiku 5.5', () => {
+  it('sends each file with thinking disabled, no temperature and no assistant turn', async () => {
+    let sent: { requests: Array<{ params: Record<string, any> }> } | undefined;
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init: RequestInit) => {
+      sent = JSON.parse(init.body as string);
+      return Response.json({ id: 'batch_synthetic' });
+    }));
+    await createBatch([{ pages: [{ type: 'text', content: 'doc' }] }]);
+    const params = sent!.requests[0].params;
+    expect(params.model).toBe('claude-haiku-5-5');
+    expect(params.thinking).toEqual({ type: 'disabled' });
+    expect(params).not.toHaveProperty('temperature');
+    expect(params.messages.map((m: { role: string }) => m.role)).toEqual(['user']);
+  });
+
+  it('reads a result that starts with a thinking block', async () => {
+    stubBatch([JSON.stringify({
+      custom_id: 'file-0',
+      result: { type: 'succeeded', message: { content: [{ type: 'thinking', thinking: '', signature: 's' }, { type: 'text', text: letter }] } },
+    })]);
+    const { results } = await pollBatch('batch_synthetic');
+    expect(results!.map(errorOf)).toEqual([undefined]);
   });
 });

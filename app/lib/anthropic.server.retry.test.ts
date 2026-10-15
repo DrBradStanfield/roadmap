@@ -171,11 +171,11 @@ describe('US-12: extractOrClassify outer retry (extractOrClassifyOnce failure �
 
   it('recovers when the first outer attempt fails schema parsing (both inner sub-attempts) but the second outer attempt succeeds', async () => {
     // extractOrClassifyOnce makes up to 2 fetch calls internally (initial +
-    // prefill retry) before throwing; extractOrClassify's outer catch then
+    // one re-send) before throwing; extractOrClassify's outer catch then
     // retries the whole extractOrClassifyOnce call once more.
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(anthropicMessage('not json at all'))      // outer attempt 1, inner try
-      .mockResolvedValueOnce(anthropicMessage('still not json'))       // outer attempt 1, inner prefill retry
+      .mockResolvedValueOnce(anthropicMessage('still not json'))       // outer attempt 1, inner re-send
       .mockResolvedValueOnce(anthropicMessage(validUnifiedJson));      // outer attempt 2 — succeeds
     global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -194,6 +194,40 @@ describe('US-12: extractOrClassify outer retry (extractOrClassifyOnce failure �
   });
 });
 
+// US-15 AC31: Haiku 5.5 400s on an assistant prefill and on sampling params,
+// and thinks unless told not to. A malformed first answer is re-sent as the
+// SAME request, never with a `{` assistant turn.
+describe('US-15 AC31: the extraction request on Haiku 5.5', () => {
+  afterEach(() => { global.fetch = REAL_FETCH; });
+
+  it('the re-send after a malformed answer is the same body: no assistant turn, thinking disabled, no temperature', async () => {
+    const bodies: Array<Record<string, any>> = [];
+    global.fetch = vi.fn(async (_url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(init.body as string));
+      return anthropicMessage(bodies.length === 1 ? 'not json at all' : validUnifiedJson);
+    }) as unknown as typeof fetch;
+    const result = await extractOrClassify([{ type: 'text', content: 'doc' }], { attempts: 1 });
+    expect(result.classification).toBe('lab_report');
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1]).toEqual(bodies[0]);
+    for (const body of bodies) {
+      expect(body.model).toBe('claude-haiku-5-5');
+      expect(body.thinking).toEqual({ type: 'disabled' });
+      expect(body).not.toHaveProperty('temperature');
+      expect(body.messages.map((m: { role: string }) => m.role)).toEqual(['user']);
+    }
+  });
+
+  it('reads the answer by block type: a leading thinking block is skipped', async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce(okResponse({
+      content: [{ type: 'thinking', thinking: '', signature: 'sig' }, { type: 'text', text: validUnifiedJson }],
+      usage: { input_tokens: 10, output_tokens: 5 },
+    })) as unknown as typeof fetch;
+    const result = await extractOrClassify([{ type: 'text', content: 'doc' }], { attempts: 1 });
+    expect(result.classification).toBe('lab_report');
+  });
+});
+
 describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request on a timeout', () => {
   beforeEach(() => { vi.clearAllMocks(); });
   afterEach(() => { global.fetch = REAL_FETCH; });
@@ -206,13 +240,13 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('the `{`-prefill retry shares ONE deadline with the first call: it gets what is left, never a fresh window (AC5)', async () => {
+  it('the re-send shares ONE deadline with the first call: it gets what is left, never a fresh window (AC5)', async () => {
     vi.useFakeTimers();
     try {
       const timeouts = vi.spyOn(AbortSignal, 'timeout');
       const fetchMock = vi.fn()
         .mockImplementationOnce(async () => { vi.advanceTimersByTime(15_000); return anthropicMessage('not json at all'); })
-        .mockResolvedValueOnce(anthropicMessage(validUnifiedJson.slice(1)));
+        .mockResolvedValueOnce(anthropicMessage(validUnifiedJson));
       global.fetch = fetchMock as unknown as typeof fetch;
       await extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 20_000, attempts: 1, httpAttempts: 1 });
       expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -277,7 +311,7 @@ describe('extraction failures carry no document text', () => {
   const SENTINEL = 'SENTINEL_LDL_4_2';
 
   it('throws a fixed message when both sub-attempts return malformed JSON', async () => {
-    // Both the plain and the `{`-prefilled call answer with prose quoting the
+    // Both the first call and its re-send answer with prose quoting the
     // document — exactly what the SyntaxError excerpt would echo.
     const fetchMock = vi.fn().mockResolvedValue(anthropicMessage(`Sure. Your ${SENTINEL} reads high.`));
     global.fetch = fetchMock as unknown as typeof fetch;
@@ -402,10 +436,10 @@ describe('US-12 AC8: extractOrClassify refuses a dot-thousands count written as 
     expect(result.droppedValueCount).toBe(1);
   });
 
-  it('on the `{`-prefilled retry', async () => {
+  it('on the re-send', async () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce(anthropicMessage('not json'))
-      .mockResolvedValueOnce(anthropicMessage(body)) as unknown as typeof fetch;
+      .mockResolvedValueOnce(anthropicMessage(`{${body}`)) as unknown as typeof fetch;
     const result = await extractOrClassify([{ type: 'text', content: 'doc' }]);
     expect(result.additionalValues.map(v => [v.name, v.value])).toEqual([['urine_specific_gravity', 1.02]]);
     expect(result.droppedValueCount).toBe(1);

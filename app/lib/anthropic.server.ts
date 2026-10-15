@@ -19,7 +19,7 @@ import {
   type PageContent,
   type UnifiedExtractionResult,
 } from '../../packages/health-core/src/lab-extraction';
-import { EXTRACTION_MODEL } from '../../packages/health-core/src/models';
+import { EXTRACTION_MODEL, modelParams } from '../../packages/health-core/src/models';
 import { sleep } from './cron-helpers.server';
 
 // The pure extraction pieces (prompt, schema parsing, unit resolution) live in
@@ -83,8 +83,9 @@ export async function extractOrClassify(
 const METADATA_MAX_TOKENS = 2048;
 
 /**
- * One attempt: the call, and a `{`-prefilled second call when the first did
- * not parse. `timeoutMs` is ONE deadline for the pair — the retry gets what
+ * One attempt: the call, and the SAME request sent once more when the first
+ * answer did not parse (Haiku 5.5 400s on the `{` prefill this used to send,
+ * US-15 AC31). `timeoutMs` is ONE deadline for the pair — the retry gets what
  * is left, never a fresh window — so a caller inside a budget (US-35 AC5)
  * cannot be run past it by a malformed first answer.
  */
@@ -96,8 +97,7 @@ async function extractOrClassifyOnce(
   documentMode: DocumentPromptMode,
 ): Promise<UnifiedExtractionResult> {
   const body = {
-    model: EXTRACTION_MODEL,
-    max_tokens: documentMode === 'metadata' ? METADATA_MAX_TOKENS : EXTRACTION_MAX_TOKENS,
+    ...modelParams(EXTRACTION_MODEL, documentMode === 'metadata' ? METADATA_MAX_TOKENS : EXTRACTION_MAX_TOKENS),
     system: unifiedSystemPrompt(documentMode),
     messages: [{ role: 'user', content }],
   };
@@ -115,17 +115,9 @@ async function extractOrClassifyOnce(
   try {
     parsed = parseUnifiedResult(parseExtractionJson(responseText));
   } catch {
-    // Prefill `{` to coerce malformed responses into valid JSON shape.
-    const retryBody = {
-      ...body,
-      messages: [
-        { role: 'user', content },
-        { role: 'assistant', content: [{ type: 'text', text: '{' }] },
-      ],
-    };
-    responseText = await callAnthropic(apiKey, retryBody, left(), httpAttempts);
+    responseText = await callAnthropic(apiKey, body, left(), httpAttempts);
     try {
-      parsed = parseUnifiedResult(parseExtractionJson('{' + responseText));
+      parsed = parseUnifiedResult(parseExtractionJson(responseText));
     } catch {
       // The error CLASS only: a SyntaxError quotes ~10 chars of the model's
       // answer and Zod names the values it received — both are document text,
@@ -509,8 +501,7 @@ export async function createBatch(
   const requests = files.map((file, index) => ({
     custom_id: `file-${index}`,
     params: {
-      model: EXTRACTION_MODEL,
-      max_tokens: EXTRACTION_MAX_TOKENS,
+      ...modelParams(EXTRACTION_MODEL, EXTRACTION_MAX_TOKENS),
       system: UNIFIED_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: pagesToContentBlocks(file.pages) }],
     },
