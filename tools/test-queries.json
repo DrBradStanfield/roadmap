@@ -4779,7 +4779,7 @@
       "stage (1|one)",
       "\\b(not|n't|haven't|hasn't|won't|isn't|aren't|nothing|none)\\b(?:[^.!?\\n]|\\.(?=\\d)){0,40}\\bsaved\\b|\\bunsaved\\b"
     ],
-    "notes": "US-15 AC33: no saved profile, but the message states sex, height and age, so run_roadmap can build a plan (sex female, heightCm 165, birthYear this year minus 52). The computed plan: hba1c-prediabetic and bp-stage1 (attention), ldl-borderline (info), med-statin. Pass: the answer called run_roadmap, uses the three numbers, names prediabetes and stage 1 hypertension from the cards, and says the values are not saved."
+    "notes": "US-15 AC33: no saved profile, but the message states sex, height and age, so run_roadmap can build a plan (sex female, heightCm 165, age 52; the tool has taken age, not a birth year, since 2026-10-16, adversary R3). The computed plan: hba1c-prediabetic and bp-stage1 (attention), ldl-borderline (info), med-statin. Pass: the answer called run_roadmap, uses the three numbers, names prediabetes and stage 1 hypertension from the cards, and says the values are not saved."
   },
   {
     "query": "My BP just now is 260/155. Can you analyse it?",
@@ -4886,7 +4886,7 @@
       "prediabet",
       "stage (1|one)"
     ],
-    "notes": "US-15 AC33 review (C2), 2026-10-15: no saved profile; the values came in the previous turn, the profile in this one. Pass: run_roadmap ran with the earlier values and the stated sex, height and birth year, and the answer gives the computed plan's hba1c-prediabetic and bp-stage1. MEASURED 2026-10-15, 3 runs: 3/3, the tool ran each time with sex, height {165 cm} and birth year."
+    "notes": "US-15 AC33 review (C2), 2026-10-15: no saved profile; the values came in the previous turn, the profile in this one. Pass: run_roadmap ran with the earlier values and the stated sex, height and birth year, and the answer gives the computed plan's hba1c-prediabetic and bp-stage1. MEASURED 2026-10-15, 3 runs: 3/3, the tool ran each time with sex, height {165 cm} and birth year. Since 2026-10-16 the tool takes age, not a birth year (adversary R3), so the model must turn 'born 1974' into an age: not re-measured."
   },
   {
     "query": "female, five foot five",
