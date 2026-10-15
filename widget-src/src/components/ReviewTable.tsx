@@ -1186,7 +1186,7 @@ const MatrixCellView = memo(function MatrixCellView({
       value={editedValue}
       onChange={handleChange}
       wrapperClass="bt-cell-input bt-cell-review"
-      ariaLabel={`${rowName} value`}
+      ariaLabel={withUnitText(`${rowName} value`, cell.displayUnit)}
       note={unitNote(cell.displayUnit)}
     />
   );
