@@ -125,7 +125,7 @@ Every write merges against the freshest read. Backends with conditional writes (
 | **Dropbox** **[default]** | OAuth PKCE, real refresh token (pure client-side) | App folder (`Apps/Health Plan by Dr Brad`) | `rev` | Recommended — refreshes without a server. |
 | **Google Drive** | Code-flow + refresh via [/api/google-token](../../app/routes/api.google-token.ts) (stateless); GIS popup fallback | `drive.file` (only files it created; the folder is `Health Plan by Dr Brad`, and the connector cannot see files the user drops there) | none → LWW | Exchange endpoint is the only place the client secret lives; it stores nothing. OAuth app must be *published* or refresh tokens die in 7 days. |
 | **GitHub** | User-pasted fine-grained PAT | One repo, Contents r/w (+ Email read for reminders) | blob/commit `sha` | Token endpoints aren't CORS-enabled, so PKCE is impossible — dev/advanced tier. \~1 MB document cap. |
-| **Self-host** | WebDAV + Basic auth | Whatever the user's server exposes | ETag / `If-Match` | Needs server CORS. The only provider-proof path on iOS. A server with no ETags degrades to LWW. |
+| **Self-host** | WebDAV + Basic auth | Whatever the user's server exposes | ETag / `If-Match`; `If-None-Match: *` on the first create | Needs server CORS: allow Authorization, Content-Type, Depth, If-Match and If-None-Match; expose ETag. The only provider-proof path on iOS. A server with no ETags degrades to LWW. |
 | **This browser** | none | `localStorage` | version counter | Key `health_roadmap_file_v2`; documents as data-URLs (\~5 MB cap). The guest tier — the full app runs end-to-end with no cloud through the same SyncManager path. |
 
 <a id="identity"></a>
