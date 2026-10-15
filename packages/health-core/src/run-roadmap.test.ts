@@ -64,10 +64,12 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
   it('rejects a value outside its field\'s range, and a bad date', () => {
     const run = runRoadmap(PROFILE, { values: [val('ldlC', 41, 'mmol/L'), val('hba1c', 41, 'mmol/mol', '14/10/2026')] });
     expect(run.rejected).toEqual([
-      { field: 'ldlC', reason: 'out of range for this field' },
-      { field: 'hba1c', reason: 'date is not YYYY-MM-DD' },
+      { field: 'ldlC', reason: 'above the highest value the roadmap records: treat as very high and follow the safety rules' },
+      { field: 'hba1c', reason: 'not a real date, or a date in the future' },
     ]);
-    expect(ctx(run.contextJson).latestValues.ldlC).toBe('2.4');
+    // US-15 AC33 (C1): the saved LDL does not answer for a stated one the roadmap cannot hold.
+    expect(ctx(run.contextJson).latestValues).not.toHaveProperty('ldlC');
+    expect(ctx(run.contextJson).latestValues.hba1c).toBe('34');
   });
 
   it('names an unknown field "unknown", never the model\'s own string', () => {
@@ -101,7 +103,7 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
     expect(text.roadmap).toBeNull();
     expect(text.note).toMatch(/sex and height/);
 
-    const run = runRoadmap(null, { values, sex: 'female', heightCm: 165, birthYear: 1970 });
+    const run = runRoadmap(null, { values, sex: 'female', height: { value: 165, unit: 'cm' }, birthYear: 1970 });
     expect(run.applied).toEqual(['ldlC', 'hba1c', 'systolicBp', 'diastolicBp', 'sex', 'heightCm', 'birthYear']);
     expect(run.contextJson).toBe(buildChatContextJson({ ldlC: 4.1, hba1c: 41, systolicBp: 132, diastolicBp: 84, sex: 'female', heightCm: 165, birthYear: 1970, unitSystem: 'si' }));
     expect(ctx(run.contextJson).profile).toMatchObject({ sex: 'female', heightCm: 165, unitSystem: 'si' });
@@ -110,20 +112,20 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
   });
 
   it('with no saved unit preference the plan prints in the system the user wrote in', () => {
-    const run = runRoadmap({}, { values: [val('ldlC', 158, 'mg/dL')], sex: 'male', heightCm: 180 });
+    const run = runRoadmap({}, { values: [val('ldlC', 158, 'mg/dL')], sex: 'male', height: { value: 180, unit: 'cm' } });
     expect(ctx(run.contextJson).profile.unitSystem).toBe('conventional');
     expect(ctx(runRoadmap(PROFILE, { values: [val('ldlC', 158, 'mg/dL')] }).contextJson).profile.unitSystem).toBe('si');
   });
 
   it('rejects an out-of-range profile value; a new birth year drops the saved month', () => {
-    const run = runRoadmap(PROFILE, { values: [], sex: 'other', heightCm: 900, birthYear: 1980.5 });
+    const run = runRoadmap(PROFILE, { values: [], sex: 'other', height: { value: 900, unit: 'cm' }, birthYear: 1980.5 });
     expect(run.rejected.map(r => r.field)).toEqual(['sex', 'heightCm', 'birthYear']);
     const moved = runRoadmap(PROFILE, { values: [], birthYear: 1980 });
     expect(moved.contextJson).toBe(buildChatContextJson({ ...PROFILE, birthYear: 1980, birthMonth: undefined }));
   });
 
   it('a known minor gets the minor context and no plan, as the prompt\'s user data block does (US-07 AC6)', () => {
-    const run = runRoadmap({}, { values: [val('ldlC', 4.1, 'mmol/L')], sex: 'male', heightCm: 170, birthYear: new Date().getFullYear() - 15 });
+    const run = runRoadmap({}, { values: [val('ldlC', 4.1, 'mmol/L')], sex: 'male', height: { value: 170, unit: 'cm' }, birthYear: new Date().getFullYear() - 15 });
     expect(ctx(run.contextJson).profile.knownMinor).toBe(true);
   });
 
@@ -140,7 +142,7 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
       .toEqual(PROPOSE_FIELD_EDIT_TOOL.input_schema.properties.field.enum);
   });
 
-  it('chatToolsFor offers run_roadmap only when the latest user message has a digit', () => {
+  it('chatToolsFor offers run_roadmap only when the latest or the previous user message has a digit (C2)', () => {
     const names = (content: string, earlier: string[] = []) => chatToolsFor([
       ...earlier.flatMap(c => [{ role: 'user' as const, content: c }, { role: 'assistant' as const, content: 'ok' }]),
       { role: 'user', content },
@@ -148,15 +150,19 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
     expect(names('analyse my data: LDL 4.1 mmol/L')).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
     expect(names('My Lp(a) came back at 75')).toContain('run_roadmap');
     expect(names('I have chest pain and I took Viagra yesterday. Can I use my GTN spray?')).toEqual(['propose_field_edit', 'propose_medication_edit']);
-    // Only the latest message counts: values from an earlier turn do not offer it.
-    expect(names('can you analyse that?', ['LDL 4.1 mmol/L'])).not.toContain('run_roadmap');
+    // The previous user message counts too: "Lp(a) 75", the unit asked, then "nmol/L".
+    expect(names('nmol/L', ['My Lp(a) came back at 75'])).toContain('run_roadmap');
+    expect(names('female, five foot five', ['analyse: LDL 4.1 mmol/L'])).toContain('run_roadmap');
+    // Two user messages back does not.
+    expect(names('can you analyse that?', ['LDL 4.1 mmol/L', 'thanks'])).not.toContain('run_roadmap');
     expect(chatToolsFor([]).map(t => t.name)).not.toContain('run_roadmap');
   });
 
   it('the usage guidance lives in the tool description, not the system prompt', () => {
     const d = RUN_ROADMAP_TOOL.description;
     for (const rule of ['not in their saved data', 'do NOT convert', 'stated them in this conversation', 'ASK which unit',
-      'do not grade the value in any unit', 'Answer only from the result', 'not saved', 'pre-fill']) expect(d).toContain(rule);
+      'do not grade the value in any unit', 'Answer only from the result', 'not saved', 'pre-fill',
+      "the user's own values", "not a family member's"]) expect(d).toContain(rule);
   });
 });
 
@@ -185,6 +191,7 @@ describe('US-15 AC33: the one-round loop every chat shares', () => {
     const turn = await withRoadmapRound(messages, send, PROFILE, onRound);
     expect(send).toHaveBeenCalledTimes(2);
     expect(onRound).toHaveBeenCalledTimes(1);
+    expect(onRound).toHaveBeenCalledWith({ applied: 1, rejected: 0 });
     const second = send.mock.calls[1][0];
     expect(second.tool_choice).toEqual({ type: 'none' });
     expect(second.messages[0]).toEqual(messages[0]);
@@ -204,5 +211,193 @@ describe('US-15 AC33: the one-round loop every chat shares', () => {
   it('a failed second call rejects, so the caller takes its failure path', async () => {
     const send = vi.fn().mockResolvedValueOnce(reply(runUse)).mockRejectedValueOnce(new Error('Anthropic API error (status 500)'));
     await expect(withRoadmapRound(messages, send, PROFILE)).rejects.toThrow('status 500');
+  });
+});
+
+// US-15 AC33, second adversarial review (2026-10-15). Seeds: the reviewers' probes.
+describe('US-15 AC33: a stated value the roadmap cannot hold never lets a saved one answer (C1)', () => {
+  const ABOVE = 'above the highest value the roadmap records: treat as very high and follow the safety rules';
+  const BELOW = 'below the lowest value the roadmap records';
+  const PAIR = 'blood pressure is read as a pair: both numbers are needed, each one usable, so neither was used';
+  const latest = (run: ReturnType<typeof runRoadmap>) => ctx(run.contextJson).latestValues;
+  const cards = (run: ReturnType<typeof runRoadmap>) => ctx(run.contextJson).currentSuggestions.map((s: { id: string }) => s.id);
+  const SAVED_BP = { ...PROFILE, measurementHistory: { systolic_bp: [{ date: '2026-09-01', value: 118 }], diastolic_bp: [{ date: '2026-09-01', value: 76 }] } };
+
+  it('BP 260/155 over a saved 118/76: both rejected as above the range, and the saved reading is gone from latest and history', () => {
+    const run = runRoadmap(SAVED_BP, { values: [val('systolicBp', 260, 'mmHg'), val('diastolicBp', 155, 'mmHg')] });
+    expect(run.applied).toEqual([]);
+    expect(run.rejected).toEqual([{ field: 'systolicBp', reason: ABOVE }, { field: 'diastolicBp', reason: ABOVE }]);
+    expect(latest(run)).not.toHaveProperty('systolicBp');
+    expect(latest(run)).not.toHaveProperty('diastolicBp');
+    expect(run.contextJson).not.toContain('118');
+    expect(ctx(run.contextJson).measurementHistory ?? {}).not.toHaveProperty('systolic_bp');
+  });
+
+  it('BP 230/155: the in-range systolic is not used alone; both rejected, saved pair removed', () => {
+    const run = runRoadmap(PROFILE, { values: [val('systolicBp', 230, 'mmHg'), val('diastolicBp', 155, 'mmHg')] });
+    expect(run.applied).toEqual([]);
+    expect(run.rejected).toEqual([{ field: 'diastolicBp', reason: ABOVE }, { field: 'systolicBp', reason: PAIR }]);
+    expect(latest(run)).not.toHaveProperty('systolicBp');
+    expect(latest(run)).not.toHaveProperty('diastolicBp');
+  });
+
+  it('one BP number stated: neither is used, and the saved pair is removed', () => {
+    const run = runRoadmap(PROFILE, { values: [val('systolicBp', 150, 'mmHg')] });
+    expect(run.applied).toEqual([]);
+    expect(run.rejected).toEqual([{ field: 'systolicBp', reason: PAIR }, { field: 'diastolicBp', reason: PAIR }]);
+    expect(latest(run)).not.toHaveProperty('systolicBp');
+    expect(latest(run)).not.toHaveProperty('diastolicBp');
+  });
+
+  it('a BP pair in range is used as before', () => {
+    const run = runRoadmap(PROFILE, { values: [val('systolicBp', 142, 'mmHg'), val('diastolicBp', 92, 'mmHg')] });
+    expect(run.applied).toEqual(['systolicBp', 'diastolicBp']);
+    expect(latest(run)).toMatchObject({ systolicBp: '142', diastolicBp: '92' });
+  });
+
+  it('TG 25 mmol/L and Lp(a) 320 mg/dL: rejected as above, the saved value removed', () => {
+    const saved = { ...PROFILE, triglycerides: 1.2, lpa: 40 };
+    const run = runRoadmap(saved, { values: [val('triglycerides', 25, 'mmol/L'), val('lpa', 320, 'mg/dL')] });
+    expect(run.rejected).toEqual([{ field: 'triglycerides', reason: ABOVE }, { field: 'lpa', reason: ABOVE }]);
+    expect(latest(run)).not.toHaveProperty('triglycerides');
+    expect(latest(run)).not.toHaveProperty('lpa');
+    expect(latest(run).ldlC).toBe('2.4'); // the other saved values stay
+  });
+
+  it('below the range says so: weight 10 kg', () => {
+    const run = runRoadmap(PROFILE, { values: [val('weightKg', 10, 'kg')] });
+    expect(run.rejected).toEqual([{ field: 'weightKg', reason: BELOW }]);
+    expect(latest(run)).not.toHaveProperty('weightKg');
+    expect(cards(run)).toBeInstanceOf(Array);
+  });
+});
+
+describe('US-15 AC33: a unit swap is asked, never read (C3, US-36 AC4 floors)', () => {
+  const UNIT = 'unit not recognised for this field: ask the user which unit';
+  it.each([
+    ['ldlC', 3.4, 'mg/dL'], ['triglycerides', 1.5, 'mg/dL'], ['apoB', 0.9, 'mg/dL'],
+  ])('%s %s %s is below the unit-swap floor: rejected with the unit reason, the saved value kept', (field, value, unit) => {
+    const run = runRoadmap(PROFILE, { values: [val(field, value, unit)] });
+    expect(run.applied).toEqual([]);
+    expect(run.rejected).toEqual([{ field, reason: UNIT }]);
+  });
+  it('a real value above the floor is used', () => {
+    expect(runRoadmap(PROFILE, { values: [val('ldlC', 134, 'mg/dL')] }).applied).toEqual(['ldlC']);
+  });
+});
+
+describe('US-15 AC33: dates (C4)', () => {
+  const DATE = 'not a real date, or a date in the future';
+  const OLDER = 'older than the saved value';
+  const SAVED_LDL = { ...PROFILE, measurementHistory: { ldl: [{ date: '2025-01-10', value: 3.0 }, { date: '2026-09-01', value: 2.4 }] } };
+
+  it('rejects an impossible date and a future one', () => {
+    const run = runRoadmap(PROFILE, { values: [val('ldlC', 4.6, 'mmol/L', '2026-13-45'), val('hba1c', 41, 'mmol/mol', '2099-01-01'), val('weightKg', 81, 'kg', '2026-02-30')] });
+    expect(run.applied).toEqual([]);
+    expect(run.rejected).toEqual([{ field: 'ldlC', reason: DATE }, { field: 'hba1c', reason: DATE }, { field: 'weightKg', reason: DATE }]);
+    expect(ctx(run.contextJson).latestValues.ldlC).toBe('2.4');
+  });
+
+  it('a value dated before the latest saved point does not override it', () => {
+    const run = runRoadmap(SAVED_LDL, { values: [val('ldlC', 5.2, 'mmol/L', '2015-03-01')] });
+    expect(run.applied).toEqual([]);
+    expect(run.rejected).toEqual([{ field: 'ldlC', reason: OLDER }]);
+    expect(ctx(run.contextJson).latestValues.ldlC).toBe('2.4');
+  });
+
+  it('a value dated on or after the latest saved point, or undated (today), overrides it', () => {
+    expect(runRoadmap(SAVED_LDL, { values: [val('ldlC', 4.6, 'mmol/L', '2026-09-01')] }).applied).toEqual(['ldlC']);
+    expect(runRoadmap(SAVED_LDL, { values: [val('ldlC', 4.6, 'mmol/L', '2026-10-01')] }).applied).toEqual(['ldlC']);
+    const undated = runRoadmap(SAVED_LDL, { values: [val('ldlC', 4.6, 'mmol/L')] });
+    expect(ctx(undated.contextJson).latestValues.ldlC).toBe('4.6');
+  });
+
+  it('today in the earliest time zone is not the future', () => {
+    const tomorrowUtc = new Date(Date.now() + 13 * 3600_000).toISOString().slice(0, 10);
+    expect(runRoadmap(PROFILE, { values: [val('ldlC', 4.6, 'mmol/L', tomorrowUtc)] }).applied).toEqual(['ldlC']);
+  });
+});
+
+describe('US-15 AC33: height goes through the unit table (C5)', () => {
+  it('70 in is 177.8 cm, not 70 cm', () => {
+    const run = runRoadmap({}, { values: [val('ldlC', 4.1, 'mmol/L')], sex: 'male', height: { value: 70, unit: 'in' } });
+    expect(run.applied).toContain('heightCm');
+    expect(ctx(run.contextJson).profile.heightCm).toBeCloseTo(177.8, 1);
+    expect(ctx(run.contextJson).derivedValues.bmi ?? null).toBeNull();
+  });
+  it('a bare heightCm is not read; a height with no or an unknown unit is rejected', () => {
+    const bare = runRoadmap({}, { values: [], sex: 'male', heightCm: 70 });
+    expect(bare.applied).toEqual(['sex']);
+    expect(bare.contextJson).toBeNull();
+    const noUnit = runRoadmap(PROFILE, { values: [], height: { value: 70 } });
+    expect(noUnit.rejected).toEqual([{ field: 'heightCm', reason: 'value or unit missing or not a number' }]);
+    const badUnit = runRoadmap(PROFILE, { values: [], height: { value: 5.8, unit: 'ft' } });
+    expect(badUnit.rejected).toEqual([{ field: 'heightCm', reason: 'unit not recognised for this field: ask the user which unit' }]);
+    expect(ctx(badUnit.contextJson).profile.heightCm).toBe(178);
+  });
+  it('the tool schema takes height as a value and a unit', () => {
+    const height = RUN_ROADMAP_TOOL.input_schema.properties.height;
+    expect(height.properties.unit.enum).toEqual(['cm', 'in']);
+    expect(RUN_ROADMAP_TOOL.input_schema.properties).not.toHaveProperty('heightCm');
+  });
+});
+
+describe('US-15 AC33: a stated birth year never lifts a saved known minor (C6)', () => {
+  it('the saved minor stays a minor', () => {
+    const minor = { ...PROFILE, birthYear: new Date().getFullYear() - 14 };
+    const run = runRoadmap(minor, { values: [], birthYear: 1990 });
+    expect(run.applied).toEqual([]);
+    expect(run.rejected).toEqual([{ field: 'birthYear', reason: 'the saved profile is under 18: a stated birth year is not used' }]);
+    expect(ctx(run.contextJson).profile.knownMinor).toBe(true);
+  });
+  it('an adult\'s stated birth year is still used', () => {
+    expect(runRoadmap(PROFILE, { values: [], birthYear: 1980 }).applied).toEqual(['birthYear']);
+  });
+});
+
+describe('US-15 AC33: one run_roadmap per turn (S1) and honest stubs (S5)', () => {
+  const NOT_RUN = 'Not run: one run_roadmap per turn; use the first result.';
+  const use = (id: string, name: string, input: unknown) => ({ type: 'tool_use', id, name, input });
+
+  it('N parallel calls build one payload: the values merge into one run under one 20-value cap', () => {
+    const uses = Array.from({ length: 30 }, (_, i) => use(`t${i}`, 'run_roadmap', { values: [val('weightKg', 60 + i, 'kg')] }));
+    const round = roadmapToolResults(uses, PROFILE)!;
+    expect(round.results.map(r => r.tool_use_id)).toEqual(uses.map(u => u.id));
+    expect(round.results.filter(r => r.content.includes('"roadmap"'))).toHaveLength(1);
+    expect(round.results[0].content.startsWith('{"applied"')).toBe(true);
+    expect(round.results.slice(1).every(r => r.content === NOT_RUN)).toBe(true);
+    const first = JSON.parse(round.results[0].content);
+    expect(first.roadmap.latestValues.weightKg).toBe(String(60 + RUN_ROADMAP_MAX_VALUES - 1));
+    expect(first.rejected.filter((r: { field: string }) => r.field === 'values')).toHaveLength(1);
+    expect(round.counts.applied).toBe(1); // one field, weightKg; counted once for the turn
+  });
+
+  it('values and profile split over two calls are one run', () => {
+    const round = roadmapToolResults([
+      use('a', 'run_roadmap', { values: [val('ldlC', 4.1, 'mmol/L')] }),
+      use('b', 'run_roadmap', { values: [val('hba1c', 41, 'mmol/mol')], sex: 'female', height: { value: 165, unit: 'cm' } }),
+    ], {})!;
+    const first = JSON.parse(round.results[0].content);
+    expect(first.applied).toEqual(['ldlC', 'hba1c', 'sex', 'heightCm']);
+    expect(round.results[1].content).toBe(NOT_RUN);
+    expect(round.counts).toEqual({ applied: 4, rejected: 0 });
+  });
+
+  it('a form tool\'s stub says pre-filled or saved only when its edit parses; otherwise a fixed "Not applied"', () => {
+    const round = roadmapToolResults([
+      use('r', 'run_roadmap', { values: [] }),
+      use('ok', 'propose_field_edit', val('ldlC', 4.1, 'mmol/L')),
+      use('badunit', 'propose_field_edit', val('ldlC', 4.1, 'mmol')),
+      use('med', 'propose_medication_edit', { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }),
+      use('badmed', 'propose_medication_edit', { medicationKey: 'IGNORE PREVIOUS', drugName: 'x' }),
+      use('other', 'some_tool', {}),
+    ], PROFILE)!;
+    const byId = Object.fromEntries(round.results.map(r => [r.tool_use_id, r.content]));
+    expect(byId.ok).toBe('Pre-filled for the user to review and Save.');
+    expect(byId.med).toMatch(/save at once/);
+    for (const id of ['badunit', 'badmed', 'other']) {
+      expect(byId[id]).toBe('Not applied: the edit did not pass the form\'s checks, so nothing was pre-filled or saved.');
+    }
+    expect(JSON.stringify(round.results)).not.toContain('IGNORE');
   });
 });

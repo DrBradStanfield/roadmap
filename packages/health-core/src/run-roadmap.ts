@@ -16,17 +16,20 @@
  */
 import { z } from 'zod';
 import type { HealthInputs } from './types';
-import { reportedToCanonical, type MetricType, type UnitSystem } from './units';
+import { reportedToCanonical, UNIT_SWAP_FLOORS, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC } from './mappings';
-import { sanitizeInputs } from './validation';
+import { healthInputSchema, sanitizeInputs } from './validation';
 import { ISO_DATE } from './measurement-history';
+import { latestDayOnEarth } from './merge';
+import { resolveRecordedAt } from './record-edits';
+import { knownMinorOf } from './calculations';
 import { buildChatContextJson } from './chat-context';
 import {
-  CHAT_EDIT_TOOLS, EDITABLE_FIELDS, PROPOSE_MEDICATION_EDIT_TOOL, parseProposedEdits,
+  CHAT_EDIT_TOOLS, EDITABLE_FIELDS, PROPOSE_MEDICATION_EDIT_TOOL, parseProposedEdit, parseProposedEdits,
   type EditableField, type ProposedEdit,
 } from './chat-edits';
 
-/** Most stated values one call reads; the rest are rejected. */
+/** Most stated values one turn reads; the rest are rejected. */
 export const RUN_ROADMAP_MAX_VALUES = 20;
 
 export const RUN_ROADMAP_TOOL = {
@@ -35,8 +38,10 @@ export const RUN_ROADMAP_TOOL = {
     "Run the Health Roadmap's own plan code on the user's saved data plus values they state in this " +
     'conversation, and get back the plan it computes (the same JSON as the user data block). Call it when ' +
     'the user states values that are not in their saved data and wants them assessed or analysed (e.g. ' +
-    '"analyse my data: LDL 4.1 mmol/L, BP 132/84"). Pass exactly the stated values and units: do NOT convert ' +
-    'units. Give sex, heightCm or birthYear only when the user stated them in this conversation. If a unit is ' +
+    '"analyse my data: LDL 4.1 mmol/L, BP 132/84"). Use only the user\'s own values, not a family member\'s. ' +
+    'Pass exactly the stated values and units: do NOT convert ' +
+    'units. Give sex, height or birthYear only when the user stated them in this conversation; height in cm or in ' +
+    '(feet and inches as total inches: 5 ft 5 in is 65 in). If a unit is ' +
     'ambiguous and the user did not state it, ASK which unit instead of calling this tool, and do not grade the ' +
     'value in any unit. Answer only from the result, as you would from the user data block: never grade a value ' +
     'yourself. Tell the user the values are not saved, and offer to pre-fill them with propose_field_edit.',
@@ -58,7 +63,12 @@ export const RUN_ROADMAP_TOOL = {
         },
       },
       sex: { type: 'string' as const, enum: ['male', 'female'], description: 'Only if the user stated it.' },
-      heightCm: { type: 'number' as const, description: 'Height in cm, only if the user stated it.' },
+      height: {
+        type: 'object' as const,
+        description: 'Only if the user stated it.',
+        properties: { value: { type: 'number' as const }, unit: { type: 'string' as const, enum: ['cm', 'in'] } },
+        required: ['value', 'unit'],
+      },
       birthYear: { type: 'integer' as const, description: 'Only if the user stated it, or their age (this year minus age).' },
     },
     required: ['values'],
@@ -70,13 +80,14 @@ export const CHAT_TOOLS = [...CHAT_EDIT_TOOLS, RUN_ROADMAP_TOOL];
 
 /**
  * The website widget's and the Pages chat's tools for one turn: run_roadmap
- * only when the latest user message has a digit, since it runs only on stated
- * values; the form tools always. Tools render before the system prompt, so
- * the two shapes cache separately.
+ * only when the latest or the previous user message has a digit, since it
+ * runs only on stated values ("Lp(a) 75", the unit asked, then "nmol/L"); the
+ * form tools always. Tools render before the system prompt, so the two shapes
+ * cache separately.
  */
 export function chatToolsFor(messages: readonly ChatTurnMessage[]) {
-  const latest = messages[messages.length - 1]?.content;
-  return typeof latest === 'string' && /\d/.test(latest) ? CHAT_TOOLS : CHAT_EDIT_TOOLS;
+  const said = messages.filter(m => m.role === 'user' && typeof m.content === 'string').slice(-2);
+  return said.some(m => /\d/.test(m.content as string)) ? CHAT_TOOLS : CHAT_EDIT_TOOLS;
 }
 
 export interface RoadmapRun {
@@ -92,61 +103,129 @@ const REASONS = {
   field: 'not a field the roadmap reads',
   shape: 'value or unit missing or not a number',
   unit: 'unit not recognised for this field: ask the user which unit',
+  above: 'above the highest value the roadmap records: treat as very high and follow the safety rules',
+  below: 'below the lowest value the roadmap records',
   range: 'out of range for this field',
-  date: 'date is not YYYY-MM-DD',
+  date: 'not a real date, or a date in the future',
+  older: 'older than the saved value',
   cap: `only the first ${RUN_ROADMAP_MAX_VALUES} values were used`,
-  older: 'a later value for the same field was used',
+  later: 'a later value for the same field was used',
+  pair: 'blood pressure is read as a pair: both numbers are needed, each one usable, so neither was used',
+  minor: 'the saved profile is under 18: a stated birth year is not used',
 } as const;
 
-const itemSchema = z.object({ value: z.number().finite(), unit: z.string().min(1).max(32) });
-const PROFILE_FIELDS = ['sex', 'heightCm', 'birthYear'] as const;
+const BP_FIELDS: readonly EditableField[] = ['systolicBp', 'diastolicBp'];
+const measured = z.object({ value: z.number().finite(), unit: z.string().min(1).max(32) });
+const obj = (v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {}) as Record<string, unknown>;
 /** A field the schema knows: the result never names the model's own string. */
 const isEditable = (f: unknown): f is EditableField => typeof f === 'string' && (EDITABLE_FIELDS as readonly string[]).includes(f);
 /** A value the input schema accepts for `field`: sanitizeInputs drops anything out of range. */
 const inRange = (field: string, value: unknown) => field in sanitizeInputs({ [field]: value } as Partial<HealthInputs>);
+/** Why an SI value is out of its field's range, with the direction; null when it is in range. */
+function outOfRange(field: EditableField, si: number): string | null {
+  if (inRange(field, si)) return null;
+  const schema = (healthInputSchema.shape as Record<string, z.ZodTypeAny>)[field];
+  const max = (schema instanceof z.ZodOptional ? schema.unwrap() : schema) as z.ZodNumber;
+  return si > (max.maxValue ?? Infinity) ? REASONS.above : REASONS.below;
+}
+/** A stated date as a real calendar day no later than today anywhere on Earth (record-edits' rule), or null. */
+function statedDay(date: unknown, now: Date): string | null {
+  if (typeof date !== 'string' || !ISO_DATE.test(date)) return null;
+  const day = resolveRecordedAt(date, { now: now.toISOString(), latestDay: latestDayOnEarth(now) });
+  return typeof day === 'string' ? day : null;
+}
+/** The newest saved day for a metric's dated series ('' when none), ignoring days not yet reached. */
+function savedLatestDay(history: Record<string, unknown>, metric: string, today: string): string {
+  const series = Object.prototype.hasOwnProperty.call(history, metric) ? history[metric] : null;
+  if (!Array.isArray(series)) return '';
+  return series.reduce<string>((max, p) => {
+    const d = obj(p).date;
+    return typeof d === 'string' && ISO_DATE.test(d) && d <= today && d > max ? d : max;
+  }, '');
+}
 
 /**
  * The plan for `guestInputs` with the stated values laid over it. Pure: the
  * caller's payload is not changed and nothing is stored. A stated value is the
- * latest for this computation; two for one field keep the later-dated (an
- * undated value is today's).
+ * latest for this computation unless a saved point is newer; two for one field
+ * keep the later-dated (an undated value is today's). A value out of its
+ * field's range, and a blood pressure that is not a usable pair, takes the
+ * saved value out of the run too, so the saved one never answers for it.
  */
-export function runRoadmap(guestInputs: unknown, rawInput: unknown): RoadmapRun {
-  const base = guestInputs && typeof guestInputs === 'object' && !Array.isArray(guestInputs)
-    ? guestInputs as Record<string, unknown> : {};
-  const input = (rawInput && typeof rawInput === 'object' ? rawInput : {}) as Record<string, unknown>;
+export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Date()): RoadmapRun {
+  const base = obj(guestInputs);
+  const input = obj(rawInput);
+  const history = obj(base.measurementHistory);
+  const today = latestDayOnEarth(now);
   const rejected: RoadmapRun['rejected'] = [];
+  const reject = (field: string, reason: string) => { rejected.push({ field, reason }); };
   const stated = new Map<EditableField, { si: number; date: string; system: UnitSystem }>();
+  /** Fields whose saved value must not answer for this run (C1). */
+  const unusable = new Set<EditableField>();
 
   const items = Array.isArray(input.values) ? input.values : [];
-  if (items.length > RUN_ROADMAP_MAX_VALUES) rejected.push({ field: 'values', reason: REASONS.cap });
+  if (items.length > RUN_ROADMAP_MAX_VALUES) reject('values', REASONS.cap);
   for (const raw of items.slice(0, RUN_ROADMAP_MAX_VALUES)) {
-    const item = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+    const item = obj(raw);
     const field = item.field;
-    if (!isEditable(field)) { rejected.push({ field: 'unknown', reason: REASONS.field }); continue; }
-    const parsed = itemSchema.safeParse(item);
-    if (!parsed.success) { rejected.push({ field, reason: REASONS.shape }); continue; }
-    if (item.date != null && !(typeof item.date === 'string' && ISO_DATE.test(item.date))) { rejected.push({ field, reason: REASONS.date }); continue; }
-    const reported = reportedToCanonical(FIELD_TO_METRIC[field] as MetricType, parsed.data.value, parsed.data.unit);
-    if (!reported) { rejected.push({ field, reason: REASONS.unit }); continue; }
-    if (!inRange(field, reported.valueSI)) { rejected.push({ field, reason: REASONS.range }); continue; }
-    const date = typeof item.date === 'string' ? item.date : '9999-12-31';
+    if (!isEditable(field)) { reject('unknown', REASONS.field); continue; }
+    const parsed = measured.safeParse(item);
+    if (!parsed.success) { reject(field, REASONS.shape); continue; }
+    const date = item.date == null ? today : statedDay(item.date, now);
+    if (!date) { reject(field, REASONS.date); continue; }
+    const metric = FIELD_TO_METRIC[field] as MetricType;
+    const reported = reportedToCanonical(metric, parsed.data.value, parsed.data.unit);
+    if (!reported) { reject(field, REASONS.unit); continue; }
+    const outside = outOfRange(field, reported.valueSI);
+    if (outside) { reject(field, outside); unusable.add(field); continue; }
+    // US-36 AC4's floors: below one, the number is a unit swap (LDL "3.4 mg/dL"), not a result.
+    if (reported.valueSI < (UNIT_SWAP_FLOORS[metric] ?? -Infinity)) { reject(field, REASONS.unit); continue; }
+    if (date < savedLatestDay(history, metric, today)) { reject(field, REASONS.older); continue; }
     const prior = stated.get(field);
-    if (prior && prior.date > date) { rejected.push({ field, reason: REASONS.older }); continue; }
-    if (prior) rejected.push({ field, reason: REASONS.older });
+    if (prior && prior.date > date) { reject(field, REASONS.later); continue; }
+    if (prior) reject(field, REASONS.later);
     stated.set(field, { si: reported.valueSI, date, system: reported.system });
   }
 
+  // Blood pressure is one reading: used as a pair or not at all. A pair the
+  // saved one outdates keeps the saved one.
+  const bpRejected = rejected.filter(r => BP_FIELDS.includes(r.field as EditableField));
+  const bpOutdated = bpRejected.length > 0 && bpRejected.every(r => r.reason === REASONS.older);
+  if ((bpRejected.length > 0 || BP_FIELDS.some(f => stated.has(f))) && !BP_FIELDS.every(f => stated.has(f)) && !bpOutdated) {
+    for (const f of BP_FIELDS) {
+      if (stated.delete(f) || !bpRejected.some(r => r.field === f)) reject(f, REASONS.pair);
+      unusable.add(f);
+    }
+  }
+  for (const f of stated.keys()) unusable.delete(f);
+
   const overlay: Record<string, unknown> = {};
   for (const [field, { si }] of stated) overlay[field] = si;
-  for (const field of PROFILE_FIELDS) {
-    const value = input[field];
-    if (value === undefined || value === null) continue;
-    const ok = (field !== 'birthYear' || Number.isInteger(value)) && inRange(field, value);
-    if (ok) overlay[field] = value;
-    else rejected.push({ field, reason: REASONS.range });
+  if (input.sex != null) {
+    if (inRange('sex', input.sex)) overlay.sex = input.sex;
+    else reject('sex', REASONS.range);
   }
+  if (input.height != null) {
+    const height = measured.safeParse(input.height);
+    const cm = height.success ? reportedToCanonical('height', height.data.value, height.data.unit)?.valueSI : undefined;
+    if (!height.success) reject('heightCm', REASONS.shape);
+    else if (cm === undefined) reject('heightCm', REASONS.unit);
+    else if (inRange('heightCm', cm)) overlay.heightCm = cm;
+    else reject('heightCm', REASONS.range);
+  }
+  if (input.birthYear != null) {
+    // US-07 AC6: a saved known minor stays one, whatever the message says.
+    if (knownMinorOf(base)) reject('birthYear', REASONS.minor);
+    else if (Number.isInteger(input.birthYear) && inRange('birthYear', input.birthYear)) overlay.birthYear = input.birthYear;
+    else reject('birthYear', REASONS.range);
+  }
+
   const payload: Record<string, unknown> = { ...base, ...overlay };
+  for (const f of unusable) delete payload[f];
+  if (unusable.size > 0 && base.measurementHistory !== undefined) {
+    const gone = new Set([...unusable].map(f => FIELD_TO_METRIC[f]));
+    payload.measurementHistory = Object.fromEntries(Object.entries(history).filter(([metric]) => !gone.has(metric)));
+  }
   // A stated birth year that differs from the saved one makes the saved month meaningless.
   if (overlay.birthYear !== undefined && overlay.birthYear !== base.birthYear) delete payload.birthMonth;
   // Without a saved unit preference, the plan prints in the system the user wrote in.
@@ -177,28 +256,46 @@ export interface ChatTurnMessage { role: 'user' | 'assistant'; content: string |
 /** What a round cost in values: counts only, for the usage signal. Never a value. */
 export interface RoadmapRoundCounts { applied: number; rejected: number }
 
-/** Stub results for a form tool called beside run_roadmap: the client applies it after the answer. */
+/** Stub results for a form tool called beside run_roadmap: the client applies a valid one after the answer. */
 const FORM_TOOL_STUB = 'Pre-filled for the user to review and Save.';
 const MEDICATION_STUB = 'Sent to the user\'s form; medications save at once and the user can undo.';
+const NOT_APPLIED = 'Not applied: the edit did not pass the form\'s checks, so nothing was pre-filled or saved.';
+const NOT_RUN = 'Not run: one run_roadmap per turn; use the first result.';
+
+/** The tool_result for a form tool: pre-filled or saved only when the client will apply it (parseProposedEdit accepts it). */
+function formToolStub(b: ChatContentBlock): string {
+  const edit = b.name ? parseProposedEdit(b.name, b.input) : null;
+  return !edit ? NOT_APPLIED : b.name === PROPOSE_MEDICATION_EDIT_TOOL.name ? MEDICATION_STUB : FORM_TOOL_STUB;
+}
+
+/** Every run_roadmap call of one reply as one input: the values in order, each profile field from the first call that gives it. */
+function mergedRunInput(inputs: unknown[]): Record<string, unknown> {
+  const merged: Record<string, unknown> = { values: [] };
+  for (const raw of inputs) {
+    const input = obj(raw);
+    if (Array.isArray(input.values)) merged.values = (merged.values as unknown[]).concat(input.values);
+    for (const f of ['sex', 'height', 'birthYear']) if (merged[f] === undefined && input[f] != null) merged[f] = input[f];
+  }
+  return merged;
+}
 
 /**
  * The tool_result blocks for a reply that called run_roadmap, one per tool_use
- * in order, or null when it did not call it.
+ * in order, or null when it did not call it. However many run_roadmap calls
+ * the reply holds, the plan runs once, on all their values under one cap, and
+ * answers the first; the others get a fixed stub.
  */
 export function roadmapToolResults(blocks: ChatContentBlock[], guestInputs: unknown): { results: ToolResultBlock[]; counts: RoadmapRoundCounts } | null {
   const uses = blocks.filter(b => b.type === 'tool_use');
-  if (!uses.some(b => b.name === RUN_ROADMAP_TOOL.name)) return null;
-  const counts = { applied: 0, rejected: 0 };
-  const results = uses.map((b): ToolResultBlock => {
-    if (b.name !== RUN_ROADMAP_TOOL.name) {
-      return { type: 'tool_result', tool_use_id: b.id, content: b.name === PROPOSE_MEDICATION_EDIT_TOOL.name ? MEDICATION_STUB : FORM_TOOL_STUB };
-    }
-    const run = runRoadmap(guestInputs, b.input);
-    counts.applied += run.applied.length;
-    counts.rejected += run.rejected.length;
-    return { type: 'tool_result', tool_use_id: b.id, content: roadmapResultText(run) };
-  });
-  return { results, counts };
+  const runs = uses.filter(b => b.name === RUN_ROADMAP_TOOL.name);
+  if (runs.length === 0) return null;
+  const run = runRoadmap(guestInputs, mergedRunInput(runs.map(b => b.input)));
+  const results = uses.map((b): ToolResultBlock => ({
+    type: 'tool_result',
+    tool_use_id: b.id,
+    content: b === runs[0] ? roadmapResultText(run) : b.name === RUN_ROADMAP_TOOL.name ? NOT_RUN : formToolStub(b),
+  }));
+  return { results, counts: { applied: run.applied.length, rejected: run.rejected.length } };
 }
 
 /**
@@ -206,18 +303,19 @@ export function roadmapToolResults(blocks: ChatContentBlock[], guestInputs: unkn
  * call with these fields laid over the transport's own body. When the first
  * reply calls run_roadmap, the second call carries it back unmodified with the
  * tool results and `tool_choice: none`, so no second round can start; its
- * reply is the answer. A failed second call throws, as a failed first one does.
+ * reply is the answer. A failed second call throws, as a failed first one does;
+ * `onRound` has the round's counts before that call, so a caller keeps them.
  */
 export async function withRoadmapRound<R extends { contentBlocks: ChatContentBlock[] }>(
   messages: ChatTurnMessage[],
   send: (fields: { messages: ChatTurnMessage[]; tool_choice?: { type: 'none' } }) => Promise<R>,
   guestInputs: unknown,
-  onRound?: () => void,
+  onRound?: (counts: RoadmapRoundCounts) => void,
 ): Promise<{ first: R; final: R; counts: RoadmapRoundCounts | null; proposedEdits: ProposedEdit[] }> {
   const first = await send({ messages });
   const round = roadmapToolResults(first.contentBlocks, guestInputs);
   if (!round) return { first, final: first, counts: null, proposedEdits: parseProposedEdits(first.contentBlocks) };
-  onRound?.();
+  onRound?.(round.counts);
   const final = await send({
     messages: [...messages, { role: 'assistant', content: first.contentBlocks }, { role: 'user', content: round.results }],
     tool_choice: { type: 'none' },
