@@ -47,6 +47,8 @@ export interface NumericInputCellProps {
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   inputRef?: React.Ref<HTMLInputElement>;
+  /** Shown under the input, inside the cell (a review cell's own unit, US-35 AC6). */
+  note?: React.ReactNode;
 }
 
 export function NumericInputCell({
@@ -54,7 +56,7 @@ export function NumericInputCell({
   wrapperClass, inputClass = 'bt-input',
   grading,
   active, autoFocus, disabled, placeholder, ariaLabel, externalError,
-  onFocus, onBlur, onKeyDown = blockBadNumericKeys, inputRef,
+  onFocus, onBlur, onKeyDown = blockBadNumericKeys, inputRef, note,
 }: NumericInputCellProps) {
   const validationError = metric && display ? validateTypedValue(metric, value, display).error : null;
   const error = externalError ?? validationError;
@@ -90,6 +92,7 @@ export function NumericInputCell({
         disabled={disabled}
         className={`${inputClass}${active ? ' bt-input-active' : ''}${error ? ' bt-input-error' : ''}`}
       />
+      {note}
       <div className="bt-cell-foot">
         {error
           ? <span className="bt-input-error-text">{error}</span>

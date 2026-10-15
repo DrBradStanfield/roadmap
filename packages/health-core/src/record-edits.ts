@@ -29,8 +29,8 @@
  * writer can only edit safely with the lamport discipline this does not take on.
  */
 import {
-  canonicalLabRow, correctionOffScale, type CountFault, foldName, labCountFault, type LabCatalogEntry, labSlotKey, labUnitRefusal,
-  resolveLabCatalogEntry, type StoredLabRow,
+  canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, foldName, labCountFault, type LabCatalogEntry, labSlotKey,
+  labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
 } from './lab-catalog';
 import { METRIC_TO_FIELD } from './mappings';
 import { resolveCoreMetricName } from './lab-extraction';
@@ -289,17 +289,40 @@ export function findActiveInSlot(file: RoadmapFile, kind: SlotKind, metric: stri
 }
 
 /**
- * What a new value finds in its slot. Equality is on the DISPLAYED string —
- * what a person would see — so float noise from a unit conversion never
- * manufactures a conflict. The website's review table and the connector's
- * `import_documents` both answer the question here, so they cannot disagree
- * about what "already recorded" means (US-35 AC6).
+ * What a new value finds in its slot, by the DISPLAYED string — what a person
+ * would see — so float noise from a unit conversion never manufactures a
+ * conflict. The connector judges a core metric here; a lab, on both surfaces,
+ * by `sameLabQuantity` below, and the website's core cells by stored value
+ * (US-13 AC3) — US-35 AC6.
  */
 export type SlotState = 'free' | 'held_equal' | 'held_different';
 
 export function slotState(existingDisplay: string | undefined, candidateDisplay: string): SlotState {
   if (existingDisplay === undefined) return 'free';
   return existingDisplay === candidateDisplay ? 'held_equal' : 'held_different';
+}
+
+/** One lab reading: the name it was filed or printed under, the number, and its unit. */
+export type LabQuantity = { name: string; value: number; unit: string };
+
+/**
+ * Is a held lab row the same result as an offered one (US-35 AC6)? The record
+ * holds a catalogued test in its SI unit (rule 8); a report prints its own. So
+ * 50 nmol/L held and 50 ng/mL offered are different results. Each side converts
+ * by its own name (BUN keeps its factor into the urea slot), and a unit the
+ * catalogue refuses is never the same. An uncatalogued test compares its number
+ * and unit as written, spelling folded. The website review table and the
+ * connector both ask this, so they cannot disagree about "already recorded".
+ */
+export function sameLabQuantity(held: LabQuantity, offered: LabQuantity): boolean {
+  const canonical = (q: LabQuantity) => {
+    const entry = resolveLabCatalogEntry(q.name);
+    return entry ? canonicalLabValue(entry, q.value, q.unit) : { value: q.value, unit: normalizeLabUnit(q.unit) };
+  };
+  const a = canonical(held);
+  const b = canonical(offered);
+  // Case matters: "G/L" is a cell count, "g/L" a mass.
+  return a !== null && b !== null && a.unit === b.unit && sameValue(a.value, b.value);
 }
 
 /**
