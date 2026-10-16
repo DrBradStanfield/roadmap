@@ -213,7 +213,7 @@ These effects tend to be mild and typically resolve with continued use or dose a
 
 ### Other Reported Side Effects
 
-Additional side effects reported with collagen or gelatin supplementation have been generally mild and include [51][52]:
+Additional side effects reported with collagen or gelatin supplementation have been generally mild and include [51]:
 
 - Headache
 - Dizziness
@@ -222,7 +222,7 @@ Additional side effects reported with collagen or gelatin supplementation have b
 - Itchy or pustular skin rash
 - Canker sores
 
-Rarely, liver function abnormalities such as elevated levels of liver enzymes have been reported in studies using undenatured type II collagen (Zhang et al., *Arthritis Rheum*, 2008; Barnett et al., *Arthritis Rheum*, 1998) [51][52].
+Rarely, liver function abnormalities such as elevated levels of liver enzymes have been reported in studies using undenatured type II collagen (Zhang et al., *Arthritis Rheum*, 2008) [51].
 
 ### Sodium Content
 

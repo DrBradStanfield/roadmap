@@ -16,7 +16,7 @@ All values are stored and compared in **SI canonical units**. Conversion to disp
 6. [Weight & Diabetes Medication Cascade](#6-weight--diabetes-medication-cascade)
 7. [Drug Configurations](#7-drug-configurations)
 8. [Cancer Screening](#8-cancer-screening)
-9. [Skin Health & Supplements](#9-skin-health--supplements)
+9. [Skin Health; Supplements (separate groups)](#9-skin-health-supplements-separate-groups)
 10. [Progressive Disclosure](#10-progressive-disclosure)
 11. [Reminder System](#11-reminder-system)
 12. [Validation Ranges](#12-validation-ranges)
@@ -826,7 +826,7 @@ Result-based intervals:
 
 ---
 
-## 9. Skin Health & Supplements
+## 9. Skin Health; Supplements (separate groups)
 
 Source: `suggestions.ts`
 

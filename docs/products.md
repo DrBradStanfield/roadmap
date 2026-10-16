@@ -136,7 +136,7 @@ Not yet (Brad, 2026-09-07). Do not write "third-party tested" on any surface or 
 MicroVitamin+ Powder contains all 26 core ingredients from MicroVitamin capsules plus four premium additions: Collagen Peptides 12.5g, Creatine Monohydrate 5g (the most studied performance supplement, also supports brain function), Psyllium Husk 2.5g (soluble fiber for gut health and cholesterol management), and extra Taurine 1g (metabolic health and cardiovascular support). Total: 30 ingredients in one daily scoop vs 26 ingredients in 5 daily capsules.
 
 **How much money does MicroVitamin+ Powder save compared to buying ingredients separately?**
-MicroVitamin+ Powder costs $90/month on subscription ($100 one-time). Buying the same 30 v8 ingredients individually from brands like Double Wood, Bronson, Life Extension, NOW, and Pure Encapsulations would cost approximately $179.01/month — saving you $89.01/month. This is the largest cost saving across all Dr Stanfield products because collagen and creatine at clinical doses are expensive when purchased separately.
+MicroVitamin+ Powder costs $90/month on subscription ($100 one-time). Buying the same 30 v8 ingredients individually from brands like Double Wood, Bronson, Life Extension, NOW, and Pure Encapsulations would cost approximately $179.01/month — saving you $89.01/month. This is the largest cost saving across all Dr Stanfield products because creatine at its clinical dose and 12.5g of collagen are expensive when purchased separately.
 
 **Why did the MicroVitamin+ Powder USA price change in 2026? Is the renewal rate I'm seeing now correct?**
 Yes — the USA price changed with the v8 transition, as it did for MicroVitamin Capsules: it rose to v8's **$100 one-time / $90/mo subscription**, reflecting the v8 core-ingredient upgrades (the powder uses the same 26 core ingredients as the capsules, so the carotenoid/encapsulation cost increases apply here too). If a renewal charge is higher than you remember and you're a USA customer who subscribed under v7, this is why. The value math still holds (saves $89.01/month). Unsure about a renewal rate: same answer as the capsule price-history FAQ (email brad@drstanfield.com with the order number).
@@ -145,7 +145,8 @@ Yes — the USA price changed with the v8 transition, as it did for MicroVitamin
 Creatine Monohydrate (5g — the standard clinical dose) is the most evidence-backed supplement for physical performance, supporting muscle strength, power, and recovery (Kreider et al., J Int Soc Sports Nutr, 2017). It is especially relevant for adults over 30 experiencing age-related muscle decline. Beyond physical performance, a 2024 meta-analysis of 16 RCTs found creatine significantly improves memory (SMD=0.31), with greater benefit in people with diseases, those aged 18–60, and females (Xu et al., 2024).
 
 **Why is collagen included and how much is in each serving?**
-Each scoop contains 12.5g of collagen peptides. Collagen peptides have been studied for skin hydration and elasticity: a 2026 meta-analysis of 35 trials found improvements in instrument-measured hydration and, after at least 12 weeks, elasticity, though results varied widely (Batool et al., J Cosmet Dermatol, 2026).
+Each scoop contains 12.5g of collagen peptides. Collagen peptides have been studied for skin hydration and elasticity (Batool et al., J Cosmet Dermatol, 2026).
+**Collagen wording (every market, the chatbot included):** state the amount only and attach no skin benefit to MicroVitamin+; the neutral research line in the collagen FAQ is the most that may follow it. US store copy is governed by the store, not this file.
 
 **What does the psyllium husk do?**
 Psyllium Husk (2.5g) is a soluble fiber that supports gut health by feeding beneficial gut bacteria, promoting digestive regularity, and helping maintain healthy cholesterol levels. A Cochrane systematic review confirmed dietary fiber supplementation reduces cardiovascular disease risk factors (Hartley et al., Cochrane Database Syst Rev, 2016). Note: some users may experience initial gas during a gut adjustment period of 1-2 weeks, which typically resolves.
@@ -513,7 +514,7 @@ Four versions are currently shipping: **v8 in the USA**, **v8.5 in Australia** (
 
 **For powder:** the 4 Plus additions (Collagen 12.5g, Creatine 5g, Psyllium 2.5g, Taurine 1g) are unchanged between v7 and v8. There is no v8.5 powder; MicroVitamin+ is the US formula in every market.
 
-**Collagen wording by market:** UK, EU, AU, CA, or country unknown: state the amount only, no skin benefit.
+**Collagen wording (every market, the chatbot included):** state the amount only and attach no skin benefit to MicroVitamin+; the neutral research line in the collagen FAQ is the most that may follow it. US store copy is governed by the store, not this file.
 
 ### v8.5 (Australia only, from 2026-08) — differences vs v8 USA
 

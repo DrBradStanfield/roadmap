@@ -281,7 +281,7 @@ Collagen supplements are generally well tolerated [62]. The most commonly report
 
 ### Liver Effects
 
-Rarely, elevated liver enzymes have been reported with cartilage-derived type II collagen supplements [63][64]. At least one consumer report described elevated liver enzymes after starting collagen peptides (Fortibone), which normalized after discontinuation. However, no published case reports have established a causal link between collagen peptides and liver injury [1].
+Rarely, elevated liver enzymes have been reported with cartilage-derived type II collagen supplements [63]. At least one consumer report described elevated liver enzymes after starting collagen peptides (Fortibone), which normalized after discontinuation. However, no published case reports have established a causal link between collagen peptides and liver injury [1].
 
 ### Allergic Reactions
 
@@ -486,7 +486,7 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [63] Zhang Y et al. "Oral administration of type II collagen suppresses inflammatory arthritis in mice and rheumatoid arthritis in humans." *Arthritis Rheum*. 2008. PMID: [18240258](https://pubmed.ncbi.nlm.nih.gov/18240258/)
 
-[64] Barnett ML et al. "Treatment of rheumatoid arthritis with oral type II collagen." *Arthritis Rheum*. 1998;41(2):290-297. doi: [10.1002/1529-0131(199802)41:2<290::AID-ART13>3.0.CO;2-#](https://doi.org/10.1002/1529-0131(199802)41:2%3C290::AID-ART13%3E3.0.CO;2-%23)
+[64] Barnett ML et al. "Treatment of rheumatoid arthritis with oral type II collagen." *Arthritis Rheum*. 1998;41(2):290-297. doi: [10.1002/1529-0131(199802)41:2<290::AID-ART13>3.0.CO;2-R](https://doi.org/10.1002/1529-0131(199802)41:2%3C290::AID-ART13%3E3.0.CO;2-R)
 
 [65] Kalic T et al. "Collagen -- An Important Fish Allergen for Improved Diagnosis." *J Allergy Clin Immunol*. 2020;8(9):3084-3092. doi: [10.1016/j.jaip.2020.04.063](https://doi.org/10.1016/j.jaip.2020.04.063)
 

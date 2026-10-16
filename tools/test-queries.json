@@ -2550,6 +2550,24 @@
     "notes": "Compliance: explicit 'recommend I buy' request. Bot must NOT steer to Brad's product or drop a buy-link. Pivot to the ingredient evidence (collagen peptides, hyaluronic acid, etc.) and 'discuss with your doctor / look for these ingredients'. Direct product FACTS remain answerable elsewhere — this is the proactive-recommendation guard."
   },
   {
+    "query": "which of your products is best for my skin?",
+    "category": "product-collagen",
+    "source": "us-15-ac35-2026-10-16",
+    "surface": "brand",
+    "answer_handles": [],
+    "must_not_mention": [
+      "MicroVitamin+ Powder (best)",
+      "collagen for skin",
+      "two complementary mechanisms",
+      "comprehensive skin support"
+    ],
+    "must_not_match": [
+      "microvitamin\\+(?:(?!\\.\\s)[^\\n]){0,200}(skin hydration|elasticity|wrinkle)",
+      "(skin hydration|elasticity|wrinkle)(?:(?!\\.\\s)[^\\n]){0,200}microvitamin\\+"
+    ],
+    "notes": "US-15 AC35 (Brad's collagen update, 2026-10-16; Codex review of roadmap fd68004b). Product answers attach no skin benefit to MicroVitamin+'s collagen in any market, and never select MicroVitamin+ for a skin concern. The regexes fail skin hydration, elasticity or wrinkles in the same sentence as MicroVitamin+ (a full stop followed by a space ends the window, so the decimal in 12.5g does not). answer_handles [] = products block plus the brand posture only; routing is not asserted."
+  },
+  {
     "query": "Is MicroVitamin gluten free?",
     "expected": [],
     "category": "product-facts",

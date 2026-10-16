@@ -2380,11 +2380,14 @@ describe('generateSuggestions', () => {
 
       // Each card's user-facing description should surface the actual trial /
       // meta-analysis evidence from evidence.ts (trial + finding + dose), not
-      // generic marketing language.
+      // generic marketing language. Exception: the collagen card is deliberately
+      // NOT a trial-finding card (Brad's collagen update, 2026-10-16). It says only
+      // that collagen peptides have been studied and the doses trials used; its
+      // meta-analysis (Batool 2026) is carried by the evidence reference, checked after the loop.
       const expectMentions: Record<string, RegExp> = {
         'supplement-micronutrient-base': /COSMOS/i,
         'supplement-creatine': /meta-analysis/i,
-        'supplement-collagen': /studied for skin hydration/i,
+        'supplement-collagen': /0\.5 to 10 g/i,
         'supplement-omega3': /cardiovascular events/i,
         'supplement-sleep': /melatonin/i,
       };
@@ -2393,6 +2396,8 @@ describe('generateSuggestions', () => {
         expect(s, `missing ${id}`).toBeTruthy();
         expect(s!.description, `${id} description should mention trial evidence`).toMatch(re);
       }
+      const collagen = suggestions.find(x => x.id === 'supplement-collagen');
+      expect((collagen?.references ?? []).some(r => r.label.includes('Batool')), 'collagen evidence label should name Batool').toBe(true);
     });
 
     it('supplement suggestions expose DOI references only — no duplicated reason prose', () => {
