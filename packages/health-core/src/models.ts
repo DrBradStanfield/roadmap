@@ -3,6 +3,9 @@
  * request fields that depend on the model family. Server code deep-imports this
  * file; the harnesses import it so they test the model production runs.
  *
+ * It also holds what those hops share about the answer: the refusal categories
+ * and lines, the extraction stop codes, and the classifier's labels and parse.
+ *
  * BYOK chat (widget-src/src/lib/byok-chat.ts) is NOT pinned here on purpose: the
  * user pays for it, so it stays on Haiku (its body still comes from modelParams).
  *
@@ -78,6 +81,15 @@ export const REFUSAL_CATEGORIES = ['cyber', 'bio', 'frontier_llm', 'reasoning_ex
 export type RefusalCategory = typeof REFUSAL_CATEGORIES[number];
 export const toRefusalCategory = (category: unknown): RefusalCategory =>
   (REFUSAL_CATEGORIES as readonly string[]).includes(category as string) ? category as RefusalCategory : 'other';
+
+/**
+ * How an extraction stopped short, as the upload's error code: declined, or
+ * cut off at max_tokens. The same request stops the same way again (US-15 AC31).
+ */
+export const EXTRACTION_STOP_CODES = ['refused', 'too_long'] as const;
+export type ExtractionStopCode = typeof EXTRACTION_STOP_CODES[number];
+export const extractionStopCode = (stopReason: string | undefined): ExtractionStopCode | undefined =>
+  stopReason === 'refusal' ? 'refused' : stopReason === 'max_tokens' ? 'too_long' : undefined;
 
 /**
  * User-facing line when the model declines (US-15 AC14). Health-adjacent

@@ -24,7 +24,7 @@
 import crypto from 'node:crypto';
 import JSZip from 'jszip';
 import * as Sentry from '@sentry/react-router';
-import { extractOrClassify, isNetworkOrTimeoutError } from './anthropic.server';
+import { extractOrClassify, ExtractionStopError, isNetworkOrTimeoutError, reportExtractionStop } from './anthropic.server';
 import { type McpClientLabel } from './mcp-clients.server';
 import { type AccessPayload, chargeWrites, connectionKey, importFiles, WRITE_COST } from './mcp-grants.server';
 import { audienceFor, hash } from './mcp-seal.server';
@@ -376,6 +376,9 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
           if (reason === 'time') {
             // The model never answered, so the file was not read: its day's charge comes back.
             refundFile();
+          } else if (error instanceof ExtractionStopError) {
+            // Declined or cut off: the code and category, as on the website (US-15 AC31).
+            reportExtractionStop(error.code, error.refusalCategory, 'connector');
           } else if (reason === 'unreadable') {
             // The error CLASS and the file kind, nothing else (AC9): a parse
             // error's message quotes the model's output, which is document text.

@@ -39,6 +39,8 @@ describe('US-15 AC31: the BYOK extraction request on Haiku 5.5', () => {
     expect(bodies[0].thinking).toEqual({ type: 'disabled' });
     expect(bodies[0]).not.toHaveProperty('temperature');
     expect(bodies[0].messages.map((m: { role: string }) => m.role)).toEqual(['user']);
+    // No 60 s server call to fit, unlike the website's single file (10000).
+    expect(bodies[0].max_tokens).toBe(12288);
   });
 
   it('reads the answer by block type: a leading thinking block is skipped', async () => {

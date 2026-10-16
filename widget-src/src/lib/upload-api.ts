@@ -15,6 +15,7 @@
  *  - Pages/self-host build: vite.config.standalone.ts redirects this module
  *    → byok-upload.ts (the user's own Anthropic key, browser-direct).
  */
+import { EXTRACTION_STOP_CODES } from '@roadmap/health-core/models';
 import { parseJsonResponse, PROXY_PATH } from './server-api';
 import type { BatchPollResponse, LabImportResult, PageContent, UploadErrorCode } from './api-types';
 
@@ -47,7 +48,8 @@ export async function labImport(
     if (response.status === 422) {
       // A file Claude declined or stopped short on: the code says which (US-15 AC31).
       const code = (await parseJsonResponse<{ errorCode?: string }>(response))?.errorCode;
-      return { result: null, error: 'Not read', errorCode: code === 'refused' || code === 'too_long' ? code : 'server_error' };
+      const stop = EXTRACTION_STOP_CODES.find(c => c === code);
+      return { result: null, error: 'Not read', errorCode: stop ?? 'server_error' };
     }
     if (!response.ok) return { result: null, error: 'Extraction failed', errorCode: 'server_error' };
     const data = await parseJsonResponse<{ success: boolean; data?: LabImportResult; remaining?: number; error?: string }>(response);

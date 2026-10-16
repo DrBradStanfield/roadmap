@@ -28,7 +28,8 @@ const KEY_ERROR_MESSAGES = {
   key_refused: 'Anthropic refused your API key. Check the key in the "Ask about your plan" panel.',
   no_credit: 'Your Anthropic account has no credit. Check its billing, then try again.',
 };
-const UPLOAD_ERROR_MESSAGES: Record<UploadErrorCode, string> = {
+/** Upload-level failures only: `refused` and `too_long` are one file's notice (FILE_NOTICE_TEXT). */
+const UPLOAD_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
   ...KEY_ERROR_MESSAGES,
   rate_limit: 'Daily upload limit reached. You can upload more tomorrow.',
   timeout: 'Processing took too long. Try uploading fewer files at once.',
@@ -36,8 +37,6 @@ const UPLOAD_ERROR_MESSAGES: Record<UploadErrorCode, string> = {
   no_files: 'No readable files found. Please check your files and try again.',
   server_error: 'Something went wrong on the server. Please try again.',
   network: 'Network error. Please check your connection and try again.',
-  refused: 'Claude declined to read these files, so trying again will not help.',
-  too_long: 'These files are too long to read in one go.',
 };
 /** The Pages build reads each file with the user's own Anthropic key, browser
  *  direct: no server of ours, no daily limit, only that key's rate limit (US-12 AC9). */
@@ -100,8 +99,8 @@ const FAKE_TICK_INTERVAL = 500;
 const EXTRACT_TIMEOUT = 30_000;
 // Max LLM calls in flight at once. Tier 2 ceiling (80K output tokens/min)
 // comfortably absorbs 5 concurrent lab-report extractions (~500-1500 output
-// tokens each). Scan/letter markdown conversion (~4K tokens) can overflow,
-// but server-side 429 retry in callAnthropic() absorbs occasional bursts.
+// tokens each). Scan/letter markdown conversion (~4K tokens) can overflow:
+// fetchAnthropicRaw() does not retry a 429, so that file fails as a server error.
 const LLM_CONCURRENCY = 5;
 // Parallel pdf.js extractors. Extraction is CPU-bound on the main thread,
 // so 3 workers keep the queue feeding 5 LLM workers without UI jank.
@@ -464,9 +463,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         trackProductEvent('upload_extract_failed');
         failUnread(code === 'rate_limit' ? 'limitError' : 'serverError');
         finish([]);
-        setError(err instanceof UploadError
-          ? (!SHOPIFY_SURFACE && BYOK_ERROR_MESSAGES[err.code]) || UPLOAD_ERROR_MESSAGES[err.code]
-          : 'An error occurred while processing files. Please try again.');
+        setError((err instanceof UploadError && ((!SHOPIFY_SURFACE && BYOK_ERROR_MESSAGES[err.code]) || UPLOAD_ERROR_MESSAGES[err.code]))
+          || 'An error occurred while processing files. Please try again.');
         setState('error');
         abortRef.current = null;
       }

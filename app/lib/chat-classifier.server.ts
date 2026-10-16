@@ -146,7 +146,7 @@ export async function classifyMessage(
     if (refused) {
       Sentry.captureMessage('Chat classifier: refusal', {
         level: 'warning',
-        tags: { feature: 'chat', subsystem: 'classifier', stopReason: 'refusal', refusalCategory: result.refusalCategory ?? 'other' },
+        tags: { feature: 'chat', subsystem: 'classifier', stopReason: 'refusal', refusalCategory: result.refusalCategory },
         extra: { latencyMs },
       });
     } else if (classification === Classification.ERROR) {

@@ -115,6 +115,25 @@ describe('the batch poll needs the token the upload was given', () => {
     expect(await answer.json()).toEqual({ allowed: true, remaining: expect.any(Number) });
   });
 
+  // US-15 AC31: one Sentry message per stopped file, sent when the batch ends,
+  // never again when the same ended batch is polled once more.
+  it('reports each stopped file once, with its category, however often the ended batch is polled', async () => {
+    const ended = {
+      status: 'ended', completed: 2, total: 2,
+      results: [{ index: 0, errorCode: 'refused' }, { index: 1, errorCode: 'too_long' }],
+      stops: [new ExtractionStopError('refused', 'bio'), new ExtractionStopError('too_long')],
+    } as never;
+    pollBatch.mockResolvedValueOnce(ended).mockResolvedValueOnce(ended);
+    const { batchId, pollToken } = await newBatch();
+    const answer = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
+    await action({ request: poll({ batchId, pollToken }) } as never);
+    expect(answer).not.toHaveProperty('stops');
+    expect(vi.mocked(Sentry.captureMessage).mock.calls).toEqual([
+      ['Lab import: extraction refused', expect.objectContaining({ tags: expect.objectContaining({ path: 'batch', refusalCategory: 'bio' }) })],
+      ['Lab import: extraction too_long', expect.objectContaining({ tags: expect.objectContaining({ path: 'batch', stopCode: 'too_long' }) })],
+    ]);
+  });
+
   it('a poll costs no quota — only the upload does', async () => {
     const { batchId, pollToken } = await newBatch();
     for (let i = 0; i < 5; i++) await action({ request: poll({ batchId, pollToken }) } as never);
@@ -170,6 +189,14 @@ describe('a single file that stopped short', () => {
     expect(Sentry.captureMessage).toHaveBeenCalledWith('Lab import: extraction refused', expect.objectContaining({
       tags: expect.objectContaining({ feature: 'lab_import_v2', path: 'single', refusalCategory: 'general_harms' }),
     }));
+  });
+
+  // One deadline for the file: a malformed answer's re-send gets what is left,
+  // never a fresh 60 s.
+  it('gives the file one 60 s deadline', async () => {
+    extractOrClassify.mockResolvedValueOnce({ classification: 'other' });
+    await action({ request: single() } as never);
+    expect(extractOrClassify).toHaveBeenCalledWith(FILES[0].pages, { timeoutMs: 60_000 });
   });
 
   it('answers a max_tokens stop 422 "too_long"', async () => {

@@ -301,10 +301,10 @@ export function unifiedSystemPrompt(mode: DocumentPromptMode): string {
 /** The website's prompt: classification plus the whole document as markdown. */
 export const UNIFIED_SYSTEM_PROMPT = unifiedSystemPrompt('full');
 
-// Markdown conversion. Haiku 5.5 spends ~30% more tokens on the same text, and
-// writes ~219 tokens/s (2026-10-16), so 10000 finishes in ~46 s, inside the
-// website's 60 s non-streaming call (US-15 AC31).
-export const EXTRACTION_MAX_TOKENS = 10000;
+// Markdown conversion, batch and BYOK upload; Haiku 5.5 spends ~30% more tokens
+// on the same text. The website's single-file call has its own lower cap
+// (anthropic.server.ts), since it must finish inside 60 s (US-15 AC31).
+export const EXTRACTION_MAX_TOKENS = 12288;
 
 // ---------------------------------------------------------------------------
 // Response parsing

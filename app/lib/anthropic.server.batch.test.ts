@@ -29,7 +29,7 @@ function stubBatch(lines: string[]) {
     }))));
 }
 
-beforeEach(() => { vi.stubEnv('ANTHROPIC_API_KEY', 'synthetic-test-key'); });
+beforeEach(() => { vi.clearAllMocks(); vi.stubEnv('ANTHROPIC_API_KEY', 'synthetic-test-key'); });
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('US-12 AC9: batch results keep their file identity', () => {
@@ -107,7 +107,7 @@ describe('US-12 AC1: batch progress uses the provider request counts', () => {
         ended_at: '2026-10-13T00:00:00Z',
         request_counts: { processing: 0, succeeded: 0, errored: 0, expired: 0, canceled: 0 },
       })));
-    expect(await pollBatch('batch_synthetic')).toEqual({ status: 'ended', completed: 0, total: 0, results: [] });
+    expect(await pollBatch('batch_synthetic')).toEqual({ status: 'ended', completed: 0, total: 0, results: [], stops: [] });
   });
 
   it('still returns an ended batch whose status omits request_counts', async () => {
@@ -152,6 +152,8 @@ describe('US-15 AC31: the batch path on Haiku 5.5', () => {
     expect(params.thinking).toEqual({ type: 'disabled' });
     expect(params).not.toHaveProperty('temperature');
     expect(params.messages.map((m: { role: string }) => m.role)).toEqual(['user']);
+    // No 60 s HTTP call to fit, unlike the website's single file (10000).
+    expect(params.max_tokens).toBe(12288);
   });
 
   it('reads a result that starts with a thinking block', async () => {
@@ -161,6 +163,22 @@ describe('US-15 AC31: the batch path on Haiku 5.5', () => {
     })]);
     const { results } = await pollBatch('batch_synthetic');
     expect(results!.map(errorOf)).toEqual([undefined]);
+  });
+
+  it('joins every text block, as the single call does', async () => {
+    const half = Math.floor(letter.length / 2);
+    stubBatch([JSON.stringify({
+      custom_id: 'file-0',
+      result: { type: 'succeeded', message: { content: [{ type: 'text', text: letter.slice(0, half) }, { type: 'text', text: letter.slice(half) }] } },
+    })]);
+    const { results } = await pollBatch('batch_synthetic');
+    expect(results!.map(errorOf)).toEqual([undefined]);
+  });
+
+  it('marks a succeeded message with no text as a server error', async () => {
+    stubBatch([JSON.stringify({ custom_id: 'file-0', result: { type: 'succeeded', message: { stop_reason: 'end_turn', content: [] } } })]);
+    const { results } = await pollBatch('batch_synthetic');
+    expect(results!.map(errorOf)).toEqual(['server_error']);
   });
 });
 
@@ -176,12 +194,13 @@ describe('US-15 AC31: a batch request that stopped short is its own error, not a
     expect(results!.map(errorOf)).toEqual([undefined, 'refused', 'too_long']);
   });
 
-  it('reports each refusal to Sentry with its bounded category and no text', async () => {
-    stubBatch([stoppedAt(0, 'refusal', { type: 'refusal', category: 'bio', explanation: 'free text that must not leave' })]);
-    await pollBatch('batch_synthetic');
-    expect(Sentry.captureMessage).toHaveBeenCalledWith('Lab import: extraction refused', expect.objectContaining({
-      tags: expect.objectContaining({ feature: 'lab_import_v2', path: 'batch', refusalCategory: 'bio' }),
-    }));
-    expect(JSON.stringify(vi.mocked(Sentry.captureMessage).mock.calls)).not.toContain('free text');
+  // The poll handler reports them, once per batch (api.lab-import-v2.test.ts):
+  // pollBatch is called on every poll, so it sends nothing itself.
+  it('hands each stop back with its bounded category and no text, and reports nothing itself', async () => {
+    stubBatch([succeeded(0), stoppedAt(1, 'refusal', { type: 'refusal', category: 'bio', explanation: 'free text that must not leave' }), stoppedAt(2, 'max_tokens')]);
+    const { stops } = await pollBatch('batch_synthetic');
+    expect(stops!.map(s => [s.code, s.refusalCategory])).toEqual([['refused', 'bio'], ['too_long', undefined]]);
+    expect(JSON.stringify(stops)).not.toContain('free text');
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
   });
 });

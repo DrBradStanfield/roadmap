@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MODEL, EXTRACTION_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg, modelParams, summaryLine, toStat } from './models';
+import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MODEL, EXTRACTION_MODEL, EXTRACTION_STOP_CODES, PROMPT_CACHE, ROUTER_MODEL, extractionStopCode, getArg, modelParams, summaryLine, toStat } from './models';
 
 // Request shapes per model family (docs/chat-audit-2026-09-29.md F1, US-15 AC13).
 // Sonnet 5 and 5.5 400 on sampling params; 5.5 also 400s on `disabled` thinking.
@@ -99,5 +99,16 @@ describe('getArg', () => {
     // The old parser returned args[0] ('--runs') here, so concurrency became NaN and no worker ran.
     expect(getArg(['--runs', '1'], '--concurrency', '2')).toBe('2');
     expect(getArg([], '--runs', '3')).toBe('3');
+  });
+});
+
+// US-15 AC31: one vocabulary for an extraction that stopped short, on the
+// server, the Pages build and the upload modal alike.
+describe('extractionStopCode', () => {
+  it('names a refusal and a max_tokens stop, and nothing else', () => {
+    expect(EXTRACTION_STOP_CODES).toEqual(['refused', 'too_long']);
+    expect(extractionStopCode('refusal')).toBe('refused');
+    expect(extractionStopCode('max_tokens')).toBe('too_long');
+    for (const other of ['end_turn', 'tool_use', 'stop_sequence', '', undefined]) expect(extractionStopCode(other)).toBeUndefined();
   });
 });

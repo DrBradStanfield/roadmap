@@ -19,7 +19,9 @@ import {
   type PageContent,
   type UnifiedExtractionResult,
 } from '../../packages/health-core/src/lab-extraction';
-import { EXTRACTION_MODEL, modelParams, toRefusalCategory, type RefusalCategory } from '../../packages/health-core/src/models';
+import {
+  EXTRACTION_MODEL, extractionStopCode, modelParams, toRefusalCategory, type ExtractionStopCode, type RefusalCategory,
+} from '../../packages/health-core/src/models';
 import { sleep } from './cron-helpers.server';
 
 // The pure extraction pieces (prompt, schema parsing, unit resolution) live in
@@ -45,12 +47,15 @@ export type {
 // Unified document processing (classify + extract/convert in one call)
 // ---------------------------------------------------------------------------
 
-/** Plenty for a lab panel or a document's metadata; the larger EXTRACTION_MAX_TOKENS exists for markdown transcription. */
+/** Plenty for a lab panel or a document's metadata; the larger caps exist for markdown transcription. */
 const METADATA_MAX_TOKENS = 3072;
 
-/** How an extraction stopped short, as the upload's error code (US-15 AC31). */
-export type ExtractionStopCode = 'refused' | 'too_long';
-const STOP_CODES: Partial<Record<string, ExtractionStopCode>> = { refusal: 'refused', max_tokens: 'too_long' };
+/**
+ * The website's single file, below the batch's EXTRACTION_MAX_TOKENS: the call
+ * is not streamed and times out at 60 s. Haiku 5.5 wrote 219 tokens/s in one
+ * measurement (2026-10-16), so 10000 takes ~46 s and 12288 ~56 s (US-15 AC31).
+ */
+const SINGLE_FILE_MAX_TOKENS = 10000;
 
 /**
  * Thrown by `extractOrClassify` on a refusal or a max_tokens stop. The same
@@ -59,15 +64,36 @@ const STOP_CODES: Partial<Record<string, ExtractionStopCode>> = { refusal: 'refu
 export class ExtractionStopError extends Error {
   constructor(readonly code: ExtractionStopCode, readonly refusalCategory?: RefusalCategory) {
     super(code === 'refused' ? 'Anthropic refusal' : 'Anthropic answer hit max_tokens');
+    this.name = 'ExtractionStopError';
   }
 }
 
 /** One bounded Sentry signal per stopped file: the code and refusal category, never text. */
-export function reportExtractionStop(code: ExtractionStopCode, refusalCategory: RefusalCategory | undefined, path: 'single' | 'batch'): void {
+export function reportExtractionStop(
+  code: ExtractionStopCode, refusalCategory: RefusalCategory | undefined, path: 'single' | 'batch' | 'connector',
+): void {
   Sentry.captureMessage(`Lab import: extraction ${code}`, {
     level: 'warning',
     tags: { feature: 'lab_import_v2', path, stopCode: code, ...(refusalCategory ? { refusalCategory } : {}) },
   });
+}
+
+/**
+ * The stop check, then the parse: one step for the single call and the batch.
+ * Throws ExtractionStopError on a refusal or a max_tokens stop; `undefined`
+ * means the answer will not parse.
+ */
+function readExtraction(result: AnthropicResult): UnifiedExtractionResult | undefined {
+  const stop = extractionStopCode(result.stopReason);
+  if (stop) throw new ExtractionStopError(stop, result.refusalCategory);
+  try {
+    return toUnifiedResult(parseUnifiedResult(parseExtractionJson(result.content)));
+  } catch {
+    // The error CLASS only, never its message: a SyntaxError quotes ~10 chars
+    // of the model's answer and Zod names the values it received — both are
+    // document text, and the callers' errors reach console.error and Sentry.
+    return undefined;
+  }
 }
 
 /**
@@ -91,7 +117,7 @@ export async function extractOrClassify(
 
   const documentMode = opts.documentMode ?? 'full';
   const body = {
-    ...modelParams(EXTRACTION_MODEL, documentMode === 'metadata' ? METADATA_MAX_TOKENS : EXTRACTION_MAX_TOKENS),
+    ...modelParams(EXTRACTION_MODEL, documentMode === 'metadata' ? METADATA_MAX_TOKENS : SINGLE_FILE_MAX_TOKENS),
     system: unifiedSystemPrompt(documentMode),
     messages: [{ role: 'user', content: pagesToContentBlocks(pages) }],
   };
@@ -104,18 +130,10 @@ export async function extractOrClassify(
   };
 
   for (let call = 1; ; call++) {
-    const result = await fetchAnthropicRaw(apiKey, body, left(), opts.httpAttempts);
-    const stop = STOP_CODES[result.stopReason ?? ''];
-    if (stop) throw new ExtractionStopError(stop, result.refusalCategory);
-    try {
-      return toUnifiedResult(parseUnifiedResult(parseExtractionJson(result.content)));
-    } catch {
-      // The error CLASS only: a SyntaxError quotes ~10 chars of the model's
-      // answer and Zod names the values it received — both are document text,
-      // and this error reaches console.error and Sentry (api.lab-import-v2).
-      // No `cause` either: Sentry serialises it.
-      if (call >= 2) throw new Error('extraction returned malformed JSON');
-    }
+    const parsed = readExtraction(await fetchAnthropicRaw(apiKey, body, left(), opts.httpAttempts));
+    if (parsed) return parsed;
+    // A fixed message and no `cause`: Sentry serialises it (api.lab-import-v2).
+    if (call >= 2) throw new Error('extraction returned malformed JSON');
   }
 }
 
@@ -510,7 +528,11 @@ export async function createBatch(
  *  provider did not read. */
 type BatchFileResult = { index: number } & (UnifiedExtractionResult | { errorCode: 'server_error' | ExtractionStopCode });
 
-/** Poll batch status. Returns completed count or full results when done. */
+/**
+ * Poll batch status. Returns completed count or full results when done.
+ * `stops` names each refused or cut-off file for the caller to report: this
+ * runs on every poll, so it reports nothing itself (US-15 AC31).
+ */
 export async function pollBatch(
   batchId: string,
 ): Promise<{
@@ -518,6 +540,7 @@ export async function pollBatch(
   completed: number;
   total: number;
   results?: BatchFileResult[];
+  stops?: ExtractionStopError[];
 }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
@@ -577,6 +600,7 @@ export async function pollBatch(
 
   // Parse each JSONL line and extract results, sorted by custom_id
   const resultMap = new Map<number, BatchFileResult>();
+  const stops: ExtractionStopError[] = [];
 
   for (const line of lines) {
     try {
@@ -584,25 +608,24 @@ export async function pollBatch(
       const index = parseInt(entry.custom_id?.replace('file-', ''), 10);
       if (isNaN(index)) continue;
 
-      // A refused or cut-off request still comes back 'succeeded', maybe with
-      // partial text: never parsed as values, and marked as such (US-15 AC31).
-      const message = entry.result?.type === 'succeeded' ? entry.result.message : undefined;
-      const stop = STOP_CODES[message?.stop_reason ?? ''];
-      if (stop) {
-        reportExtractionStop(stop, stop === 'refused' ? toRefusalCategory(message.stop_details?.category) : undefined, 'batch');
-        resultMap.set(index, { index, errorCode: stop });
-        continue;
-      }
-      if (message) {
-        const textBlock = message.content?.find((b: any) => b.type === 'text');
-        if (textBlock?.text) {
-          try {
-            const parsed = parseUnifiedResult(parseExtractionJson(textBlock.text));
-            resultMap.set(index, { ...toUnifiedResult(parsed), index });
+      // Read as the single call reads: a refused or cut-off request still
+      // comes back 'succeeded', maybe with partial text, and is never parsed
+      // as values but marked as such (US-15 AC31).
+      if (entry.result?.type === 'succeeded') {
+        const m = entry.result.message ?? {};
+        try {
+          const parsed = readExtraction(toResult(m.content ?? [], toUsage(m.usage), m.stop_reason ?? undefined, m.stop_details?.category));
+          if (parsed) {
+            resultMap.set(index, { ...parsed, index });
             continue;
-          } catch {
-            // JSON parse or Zod validation failed
           }
+        } catch (err) {
+          if (err instanceof ExtractionStopError) {
+            stops.push(err);
+            resultMap.set(index, { index, errorCode: err.code });
+            continue;
+          }
+          // toResult's "No text": a server error, below.
         }
       }
 
@@ -617,5 +640,5 @@ export async function pollBatch(
 
   const results = Array.from(resultMap.values()).sort((a, b) => a.index - b.index);
 
-  return { status: 'ended', completed, total, results };
+  return { status: 'ended', completed, total, results, stops };
 }

@@ -23,6 +23,7 @@ import {
   sniff,
   unzip,
 } from './mcp-import.server';
+import { ExtractionStopError } from './anthropic.server';
 import { resourceUrl } from './mcp-config.server';
 import { chargeWrites, connectionKey, IMPORT_FILES_PER_DAY, importFiles, resetMcpMemory, WRITES_PER_HOUR } from './mcp-grants.server';
 import { seal } from './mcp-seal.server';
@@ -695,6 +696,20 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     expect(captured.name).toBe('ZodError');
     expect(context).toEqual({ tags: { feature: 'mcp_import', errorName: 'ZodError' }, extra: { kind: 'application/pdf' } });
     expect(JSON.stringify([captured.message, captured.name, captured.stack, context])).not.toMatch(/SECRET|Received|3\.4/);
+  });
+
+  // US-15 AC31: a declined or cut-off file is its own bounded signal, as on the
+  // website; the assistant still sees "unreadable" with its hint.
+  it('a refused file sends the stop signal with its category, not an exception, and stays unreadable', async () => {
+    const cloud = new MemoryCloud();
+    cloud.docs.set('labs.pdf', new Blob([PDF]));
+    setImportSeams({ extract: async () => { throw new ExtractionStopError('refused', 'bio'); } });
+    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    expect('files' in bundle && bundle.files[0]).toMatchObject({ status: 'failed', reason: 'unreadable' });
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('Lab import: extraction refused', expect.objectContaining({
+      tags: expect.objectContaining({ path: 'connector', stopCode: 'refused', refusalCategory: 'bio' }),
+    }));
   });
 
   it('a ZIP flows through extract(): entries in order under the same file, each typed, charged and hashed; junk and a nested zip named (AC5)', async () => {

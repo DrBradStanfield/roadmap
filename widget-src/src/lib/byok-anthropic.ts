@@ -6,15 +6,15 @@
  * the two callers can't drift (they previously carried five byte-identical
  * error strings each).
  *
- * Throw-based: `callAnthropicDirect` returns the assistant text or throws a
+ * Throw-based: `callAnthropicDirectRaw` returns the assistant content or throws a
  * `ByokAnthropicError` carrying a stable `code` + a user-facing `message`.
  * Each caller maps that into its own return shape (chat's `{error}` object /
  * upload's `ByokUploadError`).
  */
 
-import { refusalLine, toRefusalCategory } from '@roadmap/health-core/models';
+import { extractionStopCode, refusalLine, toRefusalCategory, type ExtractionStopCode } from '@roadmap/health-core/models';
 
-export type ByokErrorCode = 'unauthorized' | 'rate_limit' | 'bad_request' | 'network' | 'empty' | 'server_error' | 'refused' | 'too_long';
+export type ByokErrorCode = 'unauthorized' | 'rate_limit' | 'bad_request' | 'network' | 'empty' | 'server_error' | ExtractionStopCode;
 
 export class ByokAnthropicError extends Error {
   constructor(readonly code: ByokErrorCode, message: string) {
@@ -49,9 +49,9 @@ export function extractResponseText(data: unknown): string {
 
 /**
  * POST a Messages request with the user's key and return the raw assistant
- * content blocks (text + tool_use). Throws ByokAnthropicError on
- * transport/auth/empty failures. `callAnthropicDirect` is the text-only wrapper
- * kept for byok-upload.ts; chat uses this to also see tool_use blocks.
+ * content blocks (text + tool_use), and the stop reason: chat keeps an answer
+ * cut off at max_tokens, extraction does not. Throws ByokAnthropicError on
+ * transport/auth/empty failures and on a refusal.
  *
  * "Empty" means no usable content at all — a response carrying ONLY tool_use
  * blocks (the model proposed a form edit without prose) is NOT empty.
@@ -102,22 +102,10 @@ export async function callAnthropicDirectRaw(
   // A refusal is HTTP 200 and can carry partial text: it is never an answer
   // or a set of lab values (US-15 AC14, AC31; Haiku 5.5 runs safety classifiers).
   const { stop_reason: stopReason, stop_details: stopDetails } = data as { stop_reason?: string; stop_details?: { category?: string | null } };
-  if (stopReason === 'refusal') throw new ByokAnthropicError('refused', refusalLine(toRefusalCategory(stopDetails?.category)));
+  if (extractionStopCode(stopReason) === 'refused') throw new ByokAnthropicError('refused', refusalLine(toRefusalCategory(stopDetails?.category)));
   const blocks = extractContentBlocks(data);
   const text = extractResponseText(data);
   const hasToolUse = blocks.some((b) => b.type === 'tool_use');
   if (!text && !hasToolUse) throw new ByokAnthropicError('empty', 'Empty response from Anthropic. Try again.');
   return { text, blocks, stopReason };
-}
-
-/**
- * POST a Messages request with the user's key and return the assistant text.
- * Throws ByokAnthropicError on transport/auth/empty failures, and on an answer
- * cut off at max_tokens: for extraction that is never a set of values, and the
- * same request is cut off again (US-15 AC31). Chat keeps a cut-off answer.
- */
-export async function callAnthropicDirect(apiKey: string, body: Record<string, unknown>): Promise<string> {
-  const { text, stopReason } = await callAnthropicDirectRaw(apiKey, body);
-  if (stopReason === 'max_tokens') throw new ByokAnthropicError('too_long', 'The file is too long to read in one go.');
-  return text;
 }

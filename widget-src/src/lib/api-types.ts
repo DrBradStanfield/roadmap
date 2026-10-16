@@ -9,6 +9,7 @@
  * import paths; new code may import directly from `./api-types`.
  */
 import type { HealthInputs, DocumentType, ApiMeasurement, ApiMedication, ApiScreening, LabUnitRefusal } from '@roadmap/health-core';
+import type { ExtractionStopCode } from '@roadmap/health-core/models';
 
 export interface ApiReminderPreference {
   reminderCategory: string;
@@ -152,7 +153,7 @@ export interface ApiDocument {
 
 /** `key_refused` and `no_credit` come only from the Pages build's own key (byok-upload).
  *  `refused` and `too_long` mark one file Claude declined or stopped short on (US-15 AC31). */
-export type UploadErrorCode = 'rate_limit' | 'timeout' | 'server_restart' | 'no_files' | 'server_error' | 'network' | 'key_refused' | 'no_credit' | 'refused' | 'too_long';
+export type UploadErrorCode = 'rate_limit' | 'timeout' | 'server_restart' | 'no_files' | 'server_error' | 'network' | 'key_refused' | 'no_credit' | ExtractionStopCode;
 
 export interface BatchPollResponse {
   status: 'processing' | 'ended';

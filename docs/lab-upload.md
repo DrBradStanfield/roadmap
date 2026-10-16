@@ -139,7 +139,7 @@ Health data must never be auto-saved without explicit user confirmation. The rev
    - Multi-page correlation: date on page 1, results on later pages
 3. **Confidence flags**: The LLM marks each value as `high`, `medium`, or `low` confidence. Low-confidence values include a `question` string explaining the ambiguity.
 4. **Unrecognized values**: Tests not in our target list are returned in an `unrecognized` array for display; catalogued extras (sodium, ferritin…) are returned as additional lab values.
-5. **Non-lab documents**: in `'full'` mode (the website) the whole document comes back as markdown with title, date and metadata (`EXTRACTION_MAX_TOKENS = 10000`). In `'metadata'` mode (the connector) only title, date and a one-line summary (`METADATA_MAX_TOKENS = 3072`).
+5. **Non-lab documents**: in `'full'` mode (the website) the whole document comes back as markdown with title, date and metadata (`SINGLE_FILE_MAX_TOKENS = 10000` for one file, which must finish inside a 60 s call; `EXTRACTION_MAX_TOKENS = 12288` for the batch and BYOK upload, which have no such call). In `'metadata'` mode (the connector) only title, date and a one-line summary (`METADATA_MAX_TOKENS = 3072`).
 
 **Output schema** (lab report):
 ```json
@@ -156,7 +156,7 @@ Health data must never be auto-saved without explicit user confirmation. The rev
 
 ### Retry shape (`extractOrClassify`, `anthropic.server.ts`)
 
-- **At most two calls** (US-15 AC31): a refusal or a `max_tokens` stop fails the file at once (`ExtractionStopError`, code `refused` or `too_long`); an answer that ended normally but does not parse gets the SAME request once more (BYOK does the same). There is no outer retry since 2026-10-16: it made four identical calls. Every parse (both of these, the batch poll's and BYOK's) goes through `parseExtractionJson` (US-12 AC8): a `value`, `referenceLow` or `referenceHigh` written as a bare number with three decimals (`250.000`) is quoted before `JSON.parse`, so a count row refuses it as it refuses the string. Both calls share ONE deadline (`timeoutMs`): the re-send gets what is left, never a fresh window.
+- **At most two calls** (US-15 AC31): a refusal or a `max_tokens` stop fails the file at once (`ExtractionStopError`, code `refused` or `too_long`); an answer that ended normally but does not parse gets the SAME request once more (BYOK does the same). There is no outer retry since 2026-10-16: it made four identical calls. Every parse (both of these, the batch poll's and BYOK's) goes through `parseExtractionJson` (US-12 AC8): a `value`, `referenceLow` or `referenceHigh` written as a bare number with three decimals (`250.000`) is quoted before `JSON.parse`, so a count row refuses it as it refuses the string. Both calls share ONE deadline (`timeoutMs`; 60 s on the website): the re-send gets what is left, never a fresh window.
 - **HTTP layer** (`fetchAnthropicRaw`): `RETRY_MAX_ATTEMPTS = 2`, flat 1 s, on 502/503/504/529 and network/timeout errors. 503/529 on the final attempt are silenced from Sentry.
 - Worst case on the website: 2 × 2 = 4 HTTP attempts, so the client never retries. The connector passes `httpAttempts: 1, timeoutMs: min(20 s, remaining)` because its whole call must fit in 40 s.
 - No `{` prefill and no sampling param: Haiku 5.5 answers both with a 400 (the prefill went 2026-10-16). Structured outputs could replace `extractJsonObject` and the re-send.
@@ -267,7 +267,7 @@ The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: 
 | Max files | 200 per upload session (client) | `UploadModal.tsx` |
 | Max pages | 20 per PDF (client); 100 page blocks per request (`labImportRequestSchema`) | `pdf-extract.ts`, `validation.ts` |
 | Max file size | 10 MB per file (client only); server rejects bodies over 200 MB | `UploadModal.tsx`, `api.lab-import-v2.ts` |
-| Max tokens | 10000 (`'full'`), 3072 (`'metadata'`) | `lab-extraction.ts`, `anthropic.server.ts` |
+| Max tokens | 10000 (`'full'`, one file), 12288 (batch, BYOK), 3072 (`'metadata'`) | `anthropic.server.ts`, `lab-extraction.ts` |
 | Worst-case cost | bounded by the quotas, not the file cap: 60 files × ~$0.005 ≈ $0.30 per IP per day | |
 | Sentry | `feature: 'lab_import_v2'`, page count and types only, never values | `api.lab-import-v2.ts` |
 

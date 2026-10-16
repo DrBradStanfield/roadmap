@@ -26,9 +26,9 @@ import {
   parseUnifiedResult,
   toUnifiedResult,
 } from '@roadmap/health-core/lab-extraction';
-import { EXTRACTION_MODEL, modelParams } from '@roadmap/health-core/models';
+import { EXTRACTION_MODEL, extractionStopCode, modelParams } from '@roadmap/health-core/models';
 import { getAnthropicKey } from './byok-chat';
-import { ByokAnthropicError, callAnthropicDirect, type ByokErrorCode } from './byok-anthropic';
+import { ByokAnthropicError, callAnthropicDirectRaw, type ByokErrorCode } from './byok-anthropic';
 import type { BatchPollResponse, LabImportResult, PageContent, UploadErrorCode } from './api-types';
 
 const NO_KEY_MESSAGE =
@@ -66,19 +66,26 @@ function errorKind(error: unknown): string {
 
 /** One direct extraction call; on bad JSON the SAME request is sent once more
  *  (same recovery as the server's extractOrClassify; Haiku 5.5 400s on the
- *  `{` prefill this used to send, US-15 AC31). */
+ *  `{` prefill this used to send, US-15 AC31). An answer cut off at
+ *  max_tokens is never a set of values and is cut off again, so it is not
+ *  re-sent; the transport already throws on a refusal. */
 async function extractDirect(apiKey: string, pages: PageContent[]): Promise<LabImportResult> {
   const body = {
     ...modelParams(EXTRACTION_MODEL, EXTRACTION_MAX_TOKENS),
     system: UNIFIED_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: pagesToContentBlocks(pages) }],
   };
+  const send = async () => {
+    const { text, stopReason } = await callAnthropicDirectRaw(apiKey, body);
+    if (extractionStopCode(stopReason) === 'too_long') throw new ByokAnthropicError('too_long', 'The file is too long to read in one go.');
+    return text;
+  };
 
-  const responseText = await callAnthropicDirect(apiKey, body);
+  const responseText = await send();
   try {
     return toResult(responseText);
   } catch {
-    return toResult(await callAnthropicDirect(apiKey, body));
+    return toResult(await send());
   }
 }
 

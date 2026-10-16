@@ -48,7 +48,7 @@ function consumeQuota(ip: string, count: number): boolean {
 // required on every poll; without it, or with the wrong one, the batch does not
 // exist (404, the same answer as an id nobody created).
 const MAX_ACTIVE_BATCHES = 200;
-const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string }>();
+const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; reported?: boolean }>();
 setInterval(() => {
   const cutoff = Date.now() - 60 * 60_000;
   for (const [id, b] of activeBatches) if (b.createdAt < cutoff) activeBatches.delete(id);
@@ -81,6 +81,11 @@ async function answerPoll(batchId: string, pollToken: string | null): Promise<Re
   }
   try {
     const result = await pollBatch(batchId);
+    // Each stopped file once, when the batch ends: an ended batch can be polled again (US-15 AC31).
+    if (result.status === 'ended' && !batch.reported) {
+      batch.reported = true;
+      for (const stop of result.stops ?? []) reportExtractionStop(stop.code, stop.refusalCategory, 'batch');
+    }
     return Response.json(
       { status: result.status, results: result.results, completed: result.completed, total: result.total },
     );
@@ -154,7 +159,8 @@ export async function action({ request }: ActionFunctionArgs) {
 
     const { pages } = validation.data;
     try {
-      const result = await extractOrClassify(pages);
+      // One deadline for the file: a malformed answer's re-send gets what is left (US-15 AC31).
+      const result = await extractOrClassify(pages, { timeoutMs: 60_000 });
       return Response.json({ success: true, data: result, remaining: ipQuota.remaining(ip) });
     } catch (error) {
       // Declined or cut off: its own answer, so the widget does not say "try

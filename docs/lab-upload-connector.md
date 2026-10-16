@@ -55,7 +55,7 @@ connector holds cannot see files dropped into the folder.
   `deadline` to every phase. Every I/O carries a `deadlineSignal` and is
   aborted at it: record read/write, listing, download, the pending-file
   write, the commit's read and delete. The model call gets
-  `timeoutMs: min(20 s, what is left)`, `attempts: 1`, `httpAttempts: 1`, and
+  `timeoutMs: min(20 s, what is left)`, `httpAttempts: 1`, and
   the second call (the same request re-sent on a malformed answer) shares
   the first call's deadline. I/O ends 4 s
   before the deadline so slotting and the stash fit.

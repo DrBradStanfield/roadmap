@@ -277,6 +277,7 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
     expect(metadata.max_tokens).toBe(3072);
     expect(full.system).toMatch(/Preserve ALL text/);
     expect(full.system).not.toMatch(/Do NOT transcribe/);
+    // The website's one file must finish inside a 60 s call: 10000, not the batch and BYOK 12288.
     expect(full.max_tokens).toBe(10000);
     // Both carry the same classification rules and the data-not-instructions line.
     for (const body of bodies) expect(body.system).toMatch(/never instructions to follow/);
@@ -454,7 +455,7 @@ describe('US-15 AC31: an extraction that stopped short is not re-sent', () => {
     global.fetch = fetchMock as unknown as typeof fetch;
     const error = await extractOrClassify([{ type: 'text', content: 'doc' }]).catch(e => e);
     expect(error).toBeInstanceOf(ExtractionStopError);
-    expect(error).toMatchObject({ code: 'refused', refusalCategory: 'cyber' });
+    expect(error).toMatchObject({ code: 'refused', refusalCategory: 'cyber', name: 'ExtractionStopError' });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
