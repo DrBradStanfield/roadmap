@@ -588,27 +588,35 @@ export async function pollBatch(
     throw err;
   }
 
-  // Parse JSONL — some entries contain literal newlines in markdown content,
-  // so we can't simply split by \n. Reassemble split entries by checking for the custom_id prefix.
-  const resultsText = await resultsResponse.text();
-  const rawLines = resultsText.trim().split('\n');
-  const lines: string[] = [];
-  for (const line of rawLines) {
-    if (line.startsWith('{"custom_id":')) {
-      lines.push(line);
-    } else if (lines.length > 0) {
-      lines[lines.length - 1] += line;
-    }
-  }
-
-  // Parse each JSONL line and extract results, sorted by custom_id
-  const resultMap = new Map<number, BatchFileResult>();
-
-  for (const line of lines) {
+  // Parse complete JSONL records independently of whitespace/property order.
+  // Retain the legacy repair for records split by literal newlines: a new
+  // complete record always wins, so a damaged neighbor cannot swallow it.
+  const entries = [];
+  let pending = '';
+  for (const line of (await resultsResponse.text()).split('\n')) {
     try {
       const entry = JSON.parse(line);
-      const index = parseInt(entry.custom_id?.replace('file-', ''), 10);
-      if (isNaN(index)) continue;
+      if (!pending || (entry && typeof entry === 'object' && 'custom_id' in entry)) {
+        entries.push(entry);
+        pending = '';
+        continue;
+      }
+    } catch { /* try the legacy split-record repair below */ }
+    pending = /^\s*\{\s*"custom_id"\s*:/.test(line) ? line : pending + line;
+    try {
+      entries.push(JSON.parse(pending));
+      pending = '';
+    } catch { /* still incomplete or malformed; a complete record resynchronizes */ }
+  }
+
+  // Extract results, sorted by their exact request identity (US-12 AC9).
+  const resultMap = new Map<number, BatchFileResult>();
+
+  for (const entry of entries) {
+    try {
+      if (typeof entry?.custom_id !== 'string') continue;
+      const index = Number(entry.custom_id.slice(5));
+      if (!Number.isSafeInteger(index) || index < 0 || entry.custom_id !== `file-${index}`) continue;
 
       if (entry.result?.type === 'succeeded') {
         const textBlock = entry.result.message?.content?.find((b: any) => b.type === 'text');
