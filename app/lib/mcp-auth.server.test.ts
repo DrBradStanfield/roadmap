@@ -308,6 +308,40 @@ describe('CIMD fetch policy (US-32, design §4 — this is an SSRF surface)', ()
     expect(isPublicAddress('2606:4700::1111', 6)).toBe(true);
   });
 
+  it('rejects a non-public address written in another spelling (US-32 AC45)', () => {
+    for (const ip of [
+      '0:0:0:0:0:ffff:127.0.0.1',
+      '0:0:0:0:0:FFFF:169.254.169.254',
+      '0000:0000:0000:0000:0000:ffff:7f00:0001',
+      '::ffff:7f00:1',
+      '64:ff9b::127.0.0.1',
+      '64:ff9b::7f00:1',
+      '64:ff9b::1.1.1.1',
+      '2002:7f00:1::',
+      '2002:0101:0101::',
+      'ff02::1',
+      '::127.0.0.1',
+      '::7f00:1',
+      '::ffff:0:10.0.0.1',
+      '127.0.0.1',
+      '64:ff9b:1::7f00:1',
+      '64:ff9b:1::127.0.0.1',
+      'fc0::1',
+      'fd::1',
+      '::ffff:0:0:0:1',
+      '0:0:0:0:ffff:0:7f00:1',
+      '::ffff:0:7f00:1',
+      '0:0:0:0:ffff:0:101:101',
+    ]) {
+      expect(isPublicAddress(ip, 6), ip).toBe(false);
+    }
+    expect(isPublicAddress('0:0:0:0:0:ffff:1.1.1.1', 6)).toBe(true);
+    expect(isPublicAddress('::FFFF:1.1.1.1', 6)).toBe(true);
+    expect(isPublicAddress('::ffff:0101:0101', 6)).toBe(true);
+    expect(isPublicAddress('::1.1.1.1', 6)).toBe(true);
+    expect(isPublicAddress('2606:4700::1.1.1.1', 6)).toBe(true);
+  });
+
   it('refuses plain http', async () => {
     vi.stubGlobal('fetch', vi.fn());
     expect(await resolveClient('http://claude.ai/.well-known/oauth-client')).toBeNull();
