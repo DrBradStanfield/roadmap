@@ -596,7 +596,9 @@ export class RoadmapStore {
       }
       const doc: FileDocument = {
         id: newId(), title: d.title, type: d.documentType as DocumentType, date: d.documentDate,
-        fileRef: '', contentHash: '', mimeType: '', extractedText: d.contentMd,
+        // Identity belongs to the input bytes, even if archiving fails. A later
+        // successful retry can then supersede this metadata-only row.
+        fileRef: '', contentHash: hash ?? '', mimeType: '', extractedText: d.contentMd,
         addedAt: new Date().toISOString(), metadata: d.metadata, sourceFileName: d.sourceFileName,
       };
       if (d.file) {
