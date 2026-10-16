@@ -70,7 +70,7 @@ export function modelParams(model: string, maxTokens: number, thinking: 'off' | 
 }
 
 // ---------------------------------------------------------------------------
-// Refusals (US-15 AC14, AC31): website chat, BYOK chat and extraction alike.
+// Refusals (US-15 AC14, AC34): website chat, BYOK chat and extraction alike.
 // ---------------------------------------------------------------------------
 
 /**
