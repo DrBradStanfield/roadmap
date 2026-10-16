@@ -12,6 +12,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { GoogleDriveAdapter, isSyncPending, SYNC_PENDING_EVENT } from '../src/storage';
+import { PENDING_MIRROR_KEY } from '../src/storage/roadmap-store';
 import { googleDriveConfig } from './google-config';
 import { adapterFor, connectRefusal, forgetBackend, liftLocalInto, PROVIDER_LABELS, rememberBackend, storageState, useBusyRun, type Backend } from './connect';
 import { BackendPickerModal } from './backend-picker';
@@ -62,9 +63,17 @@ export function SyncControl({ backend, reconnect, hasData = true, attention = fa
   useEffect(() => {
     if (backend === 'local') return;
     const check = () => setPendingSync(isSyncPending());
+    // A sibling tab's writes use the native event; clear() has a null key.
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === PENDING_MIRROR_KEY || event.key === null) check();
+    };
     check();
     window.addEventListener(SYNC_PENDING_EVENT, check);
-    return () => window.removeEventListener(SYNC_PENDING_EVENT, check);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(SYNC_PENDING_EVENT, check);
+      window.removeEventListener('storage', onStorage);
+    };
   }, [backend]);
 
   // Reconnect via the GIS popup FALLBACK (~1 h token) — works even with the
