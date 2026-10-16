@@ -118,7 +118,7 @@ Bracket under the bars, from 0s to the end of File 4's LLM call: **total ≈ 25s
 
 - **Anthropic Build Tier 2 cap.** 80K output tokens/min. Lab-report extraction emits \~500–1,500 output tokens per call (scan/letter markdown conversion is the worst case at \~4K). 5 concurrent calls × 1.5K avg ≈ 7.5K/min — comfortable.
 - **Extraction parallelism unblocks the pipeline.** pdf.js extraction is CPU-bound on the main thread (\~2–3s per file). With 1 extractor, LLM workers starve — they finish in \~5s but the next item isn't ready. 3 extractors keep the queue feeding 5 workers without UI jank.
-- **Server-side retry.** `fetchAnthropicRaw()` in `anthropic.server.ts` makes at most 2 HTTP attempts (flat 1 s) on 502/503/504/529 and network errors; `extractOrClassify()` makes at most two calls on one deadline: a call, then one re-send of the same request only when an answer that ended normally does not parse. A refusal or a `max_tokens` stop is never re-sent (US-15 AC31; no `{` prefill since 2026-10-16: Haiku 5.5 rejects it). The client never retries.
+- **Server-side retry.** `fetchAnthropicRaw()` in `anthropic.server.ts` makes at most 2 HTTP attempts (flat 1 s) on 502/503/504/529 and network errors; `extractOrClassify()` makes at most two calls on one deadline: a call, then one re-send of the same request only when an answer that ended normally does not parse. A refusal or a `max_tokens` stop is never re-sent (US-15 AC34; no `{` prefill since 2026-10-16: Haiku 5.5 rejects it). The client never retries.
 - **Verified in production:** 13-call upload on 12-file ZIP showed `maxConcurrent = 5` in DevTools timing (commit `052ada1`).
 
 ### A separate path: Anthropic Batch API for 20+ files

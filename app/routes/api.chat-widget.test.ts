@@ -97,7 +97,7 @@ const tables = () => inserts.map((i) => i.table);
 const matchEvent = () => inserts.find((i) => i.table === 'chat_match_events')!.row as any;
 
 describe('US-15 AC7 — widget turns store no message content', () => {
-  it('writes only a chat_match_events row, the question verbatim', async () => {
+  it('writes only a chat_match_events row, the question with its numbers masked, topic names kept (US-15 AC33)', async () => {
     const res = await post({ message: question, localFirst: true, history: [{ role: 'user', content: 'HbA1c 41 last year' }, { role: 'assistant', content: 'noted' }] });
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -107,7 +107,7 @@ describe('US-15 AC7 — widget turns store no message content', () => {
     expect(mocks.from).not.toHaveBeenCalledWith('chat_messages');
     expect(mocks.from).not.toHaveBeenCalledWith('chat_conversations');
     const row = matchEvent();
-    expect(row.message).toBe(question);
+    expect(row.message).toBe('my LDL is # and BP #/#, I take metformin #mg and B12'); // R5: the topic name B12 is kept
     expect(row.message_id).toBeNull();
     expect(row.conversation_id).toBe(body.conversationId);
     expect(row.router_context).toEqual({ platform: 'widget' });

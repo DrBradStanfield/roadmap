@@ -133,7 +133,7 @@ describe('privacy: a failed upload response logs no body text', () => {
   });
 });
 
-// US-15 AC31: the server answers 422 for a file Claude declined or stopped
+// US-15 AC34: the server answers 422 for a file Claude declined or stopped
 // short on, with the code in the body; anything else not ok stays a server error.
 describe('a file the server says stopped short', () => {
   it.each(['refused', 'too_long'] as const)('maps a 422 "%s" to its own code', async (code) => {

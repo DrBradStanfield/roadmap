@@ -13,6 +13,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { REPO_ROOT, tsxSpawn } from './test-helpers';
 import { loadBlogArticle } from '../app/lib/matched-content';
+import { resolveChatContext } from '../app/lib/chat.server';
+import { runRoadmap } from '../packages/health-core/src/run-roadmap';
 
 interface Case { category: string; expected: string[]; must_mention?: string[] }
 
@@ -382,42 +384,309 @@ describe('test-chatbot-matching router reply parsing (US-15 AC28)', () => {
   }, 60_000);
 });
 
-// US-07 AC6: a fixture's user_context reaches the answer call as the user's
-// health data, after the surface posture and before any articles, as
-// buildSystemBlocks orders them.
-describe('test-chatbot-matching user_context (US-07 AC6)', () => {
-  it('the minor-gate fixture sends its knownMinor context after the posture', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'chatbot-minor-'));
+// US-15 (issue #135, 2026-10-12): a fixture's `user_context` reaches the answer as
+// production builds it: the widget payload through resolveChatContext, the system
+// through buildSystemBlocks with the fixture's posture. A payload that would not
+// make the intended plan, or a fixture with no posture, exits the harness before
+// any API call; an explicit {} is production's empty context.
+describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
+  interface Entry {
+    query: string; category: string; surface?: string; answer_handles?: string[]; user_context?: unknown;
+    must_mention?: string[]; must_match?: string[]; must_not_match?: string[]; expect_empty_context?: true;
+  }
+  const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
+  const CATEGORIES = 'own-data-analysis,algorithm-precedence,algorithm-precedence-parked,minor-gate';
+  const cases = all.filter(q => CATEGORIES.split(',').includes(q.category));
+
+  /** Run the harness offline; `fixtures` (if given) replaces tools/test-queries.json. Returns the answer calls' systems. */
+  function run(fixtures?: Entry[], answer: string | Record<string, string> = 'stub answer') {
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-user-context-'));
     try {
       const stub = join(dir, 'fetch-stub.mjs');
       const log = join(dir, 'calls.jsonl');
       writeFileSync(stub, `
-        import { appendFileSync } from 'node:fs';
+        import fs from 'node:fs';
+        const fixtures = ${JSON.stringify(fixtures ?? null)};
+        const read = fs.readFileSync;
+        if (fixtures) fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? JSON.stringify(fixtures) : read(p, ...rest);
+        const answers = ${JSON.stringify(answer)};
         globalThis.fetch = async (_url, init) => {
           const body = JSON.parse(init.body);
-          const s = body.system;
-          appendFileSync(${JSON.stringify(log)}, JSON.stringify({
-            posture: s.indexOf('## SURFACE CONTEXT'), data: s.indexOf('## Current User Health Data'),
-            minor: s.includes('"knownMinor": true'),
-          }) + '\\n');
+          const query = body.messages.filter(m => m.role === 'user' && typeof m.content === 'string').at(-1).content;
+          fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ query, system: body.system, tools: !!body.tools }) + '\\n');
+          const text = typeof answers === 'string' ? answers : answers[query];
           return new Response(JSON.stringify({
-            content: [{ type: 'text', text: 'The plan is built for adults. Please talk with your doctor.' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+            content: [{ type: 'text', text }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
           }), { status: 200, headers: { 'content-type': 'application/json' } });
         };
       `);
       const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
-        '--category', 'minor-gate', '--fixed-handles-only', '--answer-check-runs', '1']);
+        '--category', CATEGORIES, '--fixed-handles-only', '--answer-check-runs', '1']);
       const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
-      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env: { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' }, encoding: 'utf-8', timeout: 60_000 });
-      const calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l) as { posture: number; data: number; minor: boolean });
-      expect(calls.length, res.stderr).toBe(1);
-      expect(calls[0].minor).toBe(true);
-      expect(calls[0].data).toBeGreaterThan(calls[0].posture);
-      expect(calls[0].posture).toBeGreaterThan(-1);
-      expect(res.stdout.replace(/\x1b\[[0-9;]*m/g, '')).toContain('Fixed-handle answer checks: 1/1');
-      expect(res.status).toBe(0);
+      const env = { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' };
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env, encoding: 'utf-8', timeout: 60_000 });
+      let calls: Array<{ query: string; system: Array<{ text: string }>; tools: boolean }> = [];
+      try { calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l)); } catch { /* no call made */ }
+      return { status: res.status, stderr: res.stderr, out: res.stdout.replace(/\x1b\[[0-9;]*m/g, ''), calls };
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  }
+
+  it('each answer call carries its own user data block, after the doctor posture and before the articles', () => {
+    expect(cases.length).toBeGreaterThan(0);
+    const { stderr, calls } = run();
+    expect(calls.length, stderr).toBe(cases.length);
+    for (const q of cases) {
+      // Two fixtures may share a query; the user data block tells them apart.
+      const block = `## Current User Health Data\n\n${resolveChatContext(q.user_context).userContextJson}`;
+      const call = calls.find(c => c.query === q.query && c.system.some(b => b.text === block))!;
+      expect(call, q.query).toBeDefined();
+      expect(call.tools).toBe(true); // an answer call, never the router
+      const texts = call.system.map(b => b.text);
+      const user = texts.indexOf(block);
+      const posture = texts.findIndex(t => t.startsWith('## SURFACE CONTEXT — Dr Brad education assistant'));
+      const articles = texts.findIndex(t => t.startsWith('## Referenced Blog Articles'));
+      expect(texts[0].startsWith(readFileSync(join(REPO_ROOT, 'app/lib/chat-system-prompt.md'), 'utf-8'))).toBe(true);
+      expect(posture).toBeGreaterThan(0);
+      expect(user).toBe(posture + 1);
+      if (q.answer_handles!.length > 0) expect(articles).toBe(user + 1);
+      else expect(articles).toBe(-1);
+    }
   }, 60_000);
+
+  it('a payload that makes no plan, carries an unknown key or loses a value exits before any API call', () => {
+    const good = { sex: 'male', heightCm: 178, unitSystem: 'si', medications: [], screenings: [] };
+    const fixture = (user_context: unknown): Entry => ({ query: 'how am I doing?', category: 'own-data-analysis', surface: 'doctor', answer_handles: [], user_context, must_mention: ['x'] });
+    expect(run([fixture(good)]).calls.length).toBe(1); // liveness: the good payload is answered
+    for (const bad of [{ ...good, sex: undefined }, { ...good, ldl: 3.6 }, { ...good, hba1c: 400 }, 'male, 178 cm']) {
+      const { status, stderr, calls } = run([fixture(bad)]);
+      expect(stderr).toMatch(/user_context does not parse.* on: how am I doing\?/);
+      expect(calls).toEqual([]);
+      expect(status).toBe(1);
+    }
+  }, 120_000);
+
+  it('an explicit {} sends production\'s empty context; a fixture with no surface exits before any API call', () => {
+    const fixture = (extra: Partial<Entry>): Entry => ({ query: 'can you analyze my data', category: 'own-data-analysis', surface: 'doctor', answer_handles: [], user_context: {}, must_mention: ['x'], ...extra });
+    const empty = run([fixture({})]);
+    expect(empty.calls.length, empty.stderr).toBe(1);
+    expect(empty.calls[0].system.map(b => b.text)).toContain('## Current User Health Data\n\n{}');
+    const noSurface = run([fixture({ surface: undefined })]);
+    expect(noSurface.stderr).toMatch(/user_context needs a surface on: can you analyze my data/);
+    expect(noSurface.calls).toEqual([]);
+    expect(noSurface.status).toBe(1);
+  }, 60_000);
+
+  // Adversary round 2 (2026-10-12, R2): production sends '{}' whenever sex or height is missing, so a
+  // fixture may declare that its payload collapses; the harness then sends '{}' as production does.
+  it('a payload declared expect_empty_context sends production\'s \'{}\'; undeclared, or making a plan, it exits', () => {
+    const noSex = { heightCm: 168, systolicBp: 138, diastolicBp: 88, ldlC: 3.9, unitSystem: 'si', medications: [], screenings: [] };
+    const fixture = (extra: Partial<Entry>): Entry => ({ query: 'can you analyze my data', category: 'own-data-analysis', surface: 'doctor', answer_handles: [], user_context: noSex, must_mention: ['x'], ...extra });
+    const declared = run([fixture({ expect_empty_context: true })]);
+    expect(declared.calls.length, declared.stderr).toBe(1);
+    expect(declared.calls[0].system.map(b => b.text)).toContain('## Current User Health Data\n\n{}');
+    for (const bad of [fixture({}), fixture({ expect_empty_context: true, user_context: { ...noSex, sex: 'female' } })]) {
+      const { status, stderr, calls } = run([bad]);
+      expect(stderr).toMatch(/user_context does not parse.* on: can you analyze my data/);
+      expect(calls).toEqual([]);
+      expect(status).toBe(1);
+    }
+  }, 120_000);
+
+  /** One offline run scoring each answer against the fixture's own checks: each answer gets a copy with its own query. */
+  function verdicts(q: Entry, answers: string[]): Array<'pass' | 'fail'> {
+    const copies = answers.map((_, i) => ({ ...q, query: `${q.query} [case ${i}]` }));
+    const { out, stderr, calls } = run(copies, Object.fromEntries(copies.map((c, i) => [c.query, answers[i]])));
+    expect(calls.length, stderr).toBe(answers.length); // every answer was scored
+    // The harness lists only failures (✗ "query") without --verbose.
+    return copies.map(c => out.split('\n').some(l => l.trim().startsWith('✗') && l.includes(`"${c.query}"`)) ? 'fail' : 'pass');
+  }
+  const fixtureOf = (query: string, weightKg?: number) =>
+    cases.find(q => q.query.startsWith(query) && (weightKg === undefined || (q.user_context as { weightKg?: number }).weightKg === weightKg))!;
+
+  // Adversary round 2 (2026-10-12, R5): these synthetic bad answers passed the old regexes. Negation now
+  // counts only before the claim in its sentence; the good answers include excerpts of logged real ones.
+  it('the pregnancy case fails a GLP-1 given as her or the roadmap\'s first step (US-15 AC32)', () => {
+    const bad = [
+      "Your roadmap's cascade starts with a GLP-1 such as tirzepatide, not metformin. Insulin is another option.",
+      "For you, the roadmap would start with a GLP-1, since you don't take one yet. Metformin and insulin are also options.",
+      'Your roadmap starts with tirzepatide (a GLP-1). Metformin or insulin can follow. It is not a diagnosis.',
+      "The roadmap's cascade puts a GLP-1 first for you. GLP-1s are not for everyone. Metformin and insulin are options.",
+    ];
+    const good = [
+      "Pregnancy changes which medicines are used, so your roadmap's weight and diabetes medication cascade (GLP-1, then SGLT2 inhibitor, then metformin) doesn't apply to you. Metformin and insulin are the options. GLP-1 medicines, SGLT2 inhibitors and sulfonylureas should not be used in pregnancy.",
+      'Metformin and insulin are the only medicines the pathway recommends in pregnancy. GLP-1 medicines should not be used. Your roadmap would normally start with a GLP-1, but that does not apply in pregnancy.',
+      "Insulin or metformin. Your roadmap's cascade starts with a GLP-1, but GLP-1s are not used in pregnancy, so set that card aside.",
+    ];
+    expect(verdicts(fixtureOf("I'm 28 weeks pregnant"), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
+  }, 120_000);
+
+  it('the insulin case fails the roadmap\'s screening cut-offs given as her target (US-15 AC32)', () => {
+    const bad = [
+      'Your target, per the roadmap, is to get under 47.5 mmol/mol. Watch for hypoglycaemia.',
+      'Your target is below 38.8 mmol/mol, not 53. Hypoglycaemia is a risk on insulin.',
+      'Your roadmap target is below 5.7%. Hypoglycaemia risk matters.',
+    ];
+    const good = [
+      "Your roadmap doesn't set a target for diagnosed diabetes. It only flags HbA1c at or above 47.5 mmol/mol as the diabetic range, and your latest value is 58 mmol/mol. - **Lower target (below 48 mmol/mol):** used when hypoglycaemia risk is low (not on insulin or sulfonylureas).",
+      "HbA1c targets are individualised. The roadmap's 38.8 is a screening cut-off, not a target for you. On insulin the pathway lists 53 to 70 to limit hypoglycaemia.",
+    ];
+    expect(verdicts(fixtureOf("I have type 2 diabetes and I'm on insulin"), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
+  }, 120_000);
+
+  it('the BMI 23 case fails a GLP-1-first order the roadmap does not give her, in either word order or as a list (US-15 AC32)', () => {
+    const bad = [
+      "The roadmap's cascade puts a GLP-1 first for you, then an SGLT2 inhibitor, then metformin.",
+      "The roadmap's medication cascade runs in this order:\n1. GLP-1\n2. SGLT2i\n3. Metformin",
+      'Your roadmap starts with a GLP-1 for you.',
+    ];
+    const good = [
+      "The roadmap's weight-and-diabetes medication cascade (GLP-1, then SGLT2 inhibitor, then metformin) is not triggered for you. The roadmap therefore does not name a first drug for you. The loaded Auckland HealthPathways page says healthy lifestyle measures plus metformin are first-line for type 2 diabetes.",
+      "Your roadmap's cascade (GLP-1 first) is not triggered at a BMI of 23. The pathway starts with metformin.",
+      "The roadmap's cascade starts with a GLP-1, but it only applies when the weight card shows, which it does not for you.",
+    ];
+    expect(verdicts(fixtureOf('Which diabetes medicine would come first', 73), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
+  }, 120_000);
+
+  // Adversary 2026-10-12: the BMI 32 case passed its must_mention on the baseline, and failed an
+  // answer that gave metformin first-line as the NZ pathway's. Its regexes score whose order it is.
+  it('must_match and must_not_match score whose first step it is (the BMI 32 diabetes case)', () => {
+    const p3 = cases.find(q => q.query === 'Which diabetes medicine would come first for me?' && q.must_match)!;
+    const verdict = (answer: string) => run([p3], answer).status;
+    // Baseline shape: the pathway's order only, GLP-1 only as the separate weight card.
+    expect(verdict('Metformin is the usual first-line medicine in the loaded pathway. Your roadmap separately suggests discussing a GLP-1 medication for weight.')).toBe(1);
+    // The roadmap's order first, the pathway's attributed: passes.
+    expect(verdict('The **Health Roadmap’s** first medication step for you is a GLP-1 medication. In the NZ pathway, metformin is first-line, while the roadmap starts with GLP-1.')).toBe(0);
+    // The roadmap's order as a numbered list, or "lists GLP-1 first", passes too.
+    expect(verdict('The roadmap’s weight and diabetes medication cascade runs in this order:\n1. GLP-1 (tirzepatide preferred)\n2. SGLT2 inhibitor\n3. Metformin')).toBe(0);
+    expect(verdict('Your roadmap’s own cascade lists GLP-1 first, then an SGLT2 inhibitor, then metformin.')).toBe(0);
+    // Metformin as the roadmap's first step fails, even beside a GLP-1 first step.
+    expect(verdict('Your roadmap starts with a GLP-1. Metformin is first in your roadmap for diabetes.')).toBe(1);
+    expect(verdict('The roadmap’s first step is a GLP-1 medication, and your plan’s first step would be metformin.')).toBe(1);
+    // Round 2 (R5): the pathway's order with GLP-1 second, a GLP-1 'later', or metformin first for her, all fail.
+    expect(verdicts(p3, [
+      'Your roadmap shows a weight card, but the pathway puts metformin first, and GLP-1 second.',
+      "The roadmap's GLP-1 card is separate. For diabetes, metformin comes first under the pathway, and your plan's first step is to see your doctor about a GLP-1 later.",
+      'Your roadmap starts with a GLP-1. Metformin would come first for you.',
+      "Your roadmap puts a GLP-1 first. The pathway's first-line medicine is metformin, so metformin would come first for you under the pathway.",
+      // A logged answer on the round-2 prompt that the first regex missed ("a GLP-1 medication first").
+      "The Health Roadmap's order for you is a GLP-1 medication first, then an SGLT2 inhibitor, then metformin. This is the roadmap's suggestion to discuss with your doctor, not a prescription.",
+    ])).toEqual(['fail', 'fail', 'fail', 'pass', 'pass']);
+  }, 120_000);
+
+  // US-07 AC6 (2026-10-14): the minor-gate fixture's payload resolves to a knownMinor context, sent after the posture.
+  it('the minor-gate fixture sends its knownMinor context after the posture (US-07 AC6)', () => {
+    const minor = all.find(q => q.category === 'minor-gate')!;
+    expect(JSON.parse(resolveChatContext(minor.user_context).userContextJson).profile.knownMinor).toBe(true);
+    const { status, stderr, out, calls } = run([minor], 'The plan is built for adults. Please talk with your doctor.');
+    expect(calls.length, stderr).toBe(1);
+    const texts = calls[0].system.map(b => b.text);
+    const data = texts.findIndex(t => t.startsWith('## Current User Health Data') && t.includes('"knownMinor": true'));
+    expect(data).toBe(texts.findIndex(t => t.startsWith('## SURFACE CONTEXT')) + 1);
+    expect(out).toContain('Fixed-handle answer checks: 1/1');
+    expect(status).toBe(0);
+  }, 60_000);
+
+  it('a must_match or must_not_match regex that does not compile exits before any API call', () => {
+    for (const extra of [{ must_match: ['(unclosed'] }, { must_not_match: ['[a-'] }]) {
+      const { status, stderr, calls } = run([{ query: 'how am I doing?', category: 'own-data-analysis', surface: 'doctor', answer_handles: [], user_context: {}, ...extra }]);
+      expect(stderr).toMatch(/regexes that do not compile/);
+      expect(calls).toEqual([]);
+      expect(status).toBe(1);
+    }
+  }, 60_000);
+});
+
+// US-15 AC33: answer checks run production's one-round run_roadmap loop (the
+// shared health-core withRoadmapRound) on the fixture's raw user_context, and
+// are scored on the second call's text.
+describe('test-chatbot-matching run_roadmap round (US-15 AC33)', () => {
+  const PROFILE = { unitSystem: 'si', medications: [], screenings: [], sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 3, ldlC: 2.4 };
+  const INPUT = { values: [{ field: 'ldlC', value: 4.1, unit: 'mmol/L' }] };
+  const fixture = (extra: Record<string, unknown>) => ({
+    query: 'analyse my data: LDL 4.1 mmol/L', category: 'own-data-analysis', surface: 'doctor', answer_handles: [],
+    user_context: PROFILE, must_mention: ['from the roadmap'], ...extra,
+  });
+
+  /** Run one fixture offline: the first answer call asks for run_roadmap when `callTool`, the next answers. */
+  function run(fx: object, callTool: boolean) {
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-run-roadmap-'));
+    try {
+      const stub = join(dir, 'fetch-stub.mjs');
+      const log = join(dir, 'calls.jsonl');
+      writeFileSync(stub, `
+        import fs from 'node:fs';
+        const read = fs.readFileSync;
+        fs.readFileSync = (p, ...rest) => String(p).endsWith('tools/test-queries.json') ? ${JSON.stringify(JSON.stringify([fx]))} : read(p, ...rest);
+        globalThis.fetch = async (_url, init) => {
+          const body = JSON.parse(init.body);
+          fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify(body) + '\\n');
+          const round = Array.isArray(body.messages.at(-1).content);
+          const content = ${JSON.stringify(callTool)} && !round
+            ? [{ type: 'thinking', thinking: 'run it', signature: 'sig' }, { type: 'tool_use', id: 'toolu_1', name: 'run_roadmap', input: ${JSON.stringify(INPUT)} }]
+            : [{ type: 'text', text: round ? 'From the roadmap: LDL 4.1.' : 'A plain answer.' }];
+          return new Response(JSON.stringify({ content, stop_reason: round || !${JSON.stringify(callTool)} ? 'end_turn' : 'tool_use', usage: { input_tokens: 1, output_tokens: 1 } }),
+            { status: 200, headers: { 'content-type': 'application/json' } });
+        };
+      `);
+      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
+        '--category', 'own-data-analysis', '--fixed-handles-only', '--answer-check-runs', '1']);
+      const { ANTHROPIC_API_KEY: _live, ...rest } = process.env; // never a real key: no call leaves the machine
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env: { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' }, encoding: 'utf-8', timeout: 60_000 });
+      let calls: Array<Record<string, any>> = [];
+      try { calls = readFileSync(log, 'utf-8').trim().split('\n').map(l => JSON.parse(l)); } catch { /* no call made */ }
+      return { status: res.status, stderr: res.stderr, out: res.stdout.replace(/\x1b\[[0-9;]*m/g, ''), calls };
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it('the tool runs on the fixture\'s payload, the second call replays the first, and the answer is scored on it', () => {
+    const { status, stderr, out, calls } = run(fixture({ expect_roadmap_run: true }), true);
+    expect(calls.length, stderr).toBe(2);
+    expect(calls[0].tools.map((t: { name: string }) => t.name)).toContain('run_roadmap');
+    expect(calls[1].tool_choice).toEqual({ type: 'none' });
+    expect(calls[1].messages[1].content[0]).toEqual({ type: 'thinking', thinking: 'run it', signature: 'sig' });
+    const result = JSON.parse(calls[1].messages[2].content[0].content);
+    expect(result.roadmap).toEqual(JSON.parse(runRoadmap(PROFILE, INPUT).contextJson!));
+    expect(out).toContain('Fixed-handle answer checks: 1/1 ✓');
+    expect(status).toBe(0);
+  }, 60_000);
+
+  it('as production, a query with no digit is not offered run_roadmap', () => {
+    const { calls, stderr } = run(fixture({ query: 'can you analyse my data', must_mention: ['plain'] }), false);
+    expect(calls.length, stderr).toBe(1);
+    expect(calls[0].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit']);
+  }, 60_000);
+
+  it('a two-turn fixture sends its history before the query, and a digit in the previous user message offers run_roadmap (C2)', () => {
+    const history = [{ role: 'user', content: 'My Lp(a) came back at 75' }, { role: 'assistant', content: 'Is that nmol/L or mg/dL?' }];
+    const { status, stderr, out, calls } = run(fixture({ query: 'nmol/L', history, expect_roadmap_run: true }), true);
+    expect(calls.length, stderr).toBe(2);
+    expect(calls[0].messages).toEqual([...history, { role: 'user', content: 'nmol/L' }]);
+    expect(calls[0].tools.map((t: { name: string }) => t.name)).toContain('run_roadmap');
+    expect(calls[1].messages.slice(0, 3)).toEqual(calls[0].messages);
+    expect(out).toContain('Fixed-handle answer checks: 1/1 ✓');
+    expect(status).toBe(0);
+  }, 60_000);
+
+  it('a history that does not alternate user, assistant, ending on the assistant, exits before any API call', () => {
+    for (const history of [[{ role: 'assistant', content: 'hi' }], [{ role: 'user', content: 'a' }], 'LDL 4', [{ role: 'user', content: 3 }, { role: 'assistant', content: 'x' }]]) {
+      const { status, stderr, calls } = run(fixture({ history }), true);
+      expect(stderr).toMatch(/history/);
+      expect(calls).toEqual([]);
+      expect(status).toBe(1);
+    }
+  }, 120_000);
+
+  it('expect_roadmap_run fails an answer that did not call the tool, and one that did when it must not', () => {
+    expect(run(fixture({ expect_roadmap_run: true, must_mention: ['plain'] }), false).out).toContain('did not call run_roadmap');
+    expect(run(fixture({ expect_roadmap_run: false }), true).out).toContain('called run_roadmap');
+  }, 120_000);
+
+  it('expect_roadmap_run alone still triggers the answer check (Codex PR 150 round 4)', () => {
+    expect(run(fixture({ must_mention: undefined, expect_roadmap_run: true }), false).out).toContain('did not call run_roadmap');
+    expect(run(fixture({ must_mention: undefined, expect_roadmap_run: false }), true).out).toContain('called run_roadmap');
+  }, 120_000);
 });

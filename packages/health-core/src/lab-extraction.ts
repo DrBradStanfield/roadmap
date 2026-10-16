@@ -303,7 +303,7 @@ export const UNIFIED_SYSTEM_PROMPT = unifiedSystemPrompt('full');
 
 // Markdown conversion, batch and BYOK upload; Haiku 5.5 spends ~30% more tokens
 // on the same text. The website's single-file call has its own lower cap
-// (anthropic.server.ts), since it must finish inside 60 s (US-15 AC31).
+// (anthropic.server.ts), since it must finish inside 60 s (US-15 AC34).
 export const EXTRACTION_MAX_TOKENS = 12288;
 
 // ---------------------------------------------------------------------------

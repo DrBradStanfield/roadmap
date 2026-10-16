@@ -137,9 +137,9 @@ describe('US-12 AC8: a batch result keeps a dot-thousands JSON number a string',
   });
 });
 
-// US-15 AC31: each batch request has Haiku 5.5's shape (thinking disabled, no
+// US-15 AC34: each batch request has Haiku 5.5's shape (thinking disabled, no
 // sampling param, ending on the user turn), and a result is read by block type.
-describe('US-15 AC31: the batch path on Haiku 5.5', () => {
+describe('US-15 AC34: the batch path on Haiku 5.5', () => {
   it('sends each file with thinking disabled, no temperature and no assistant turn', async () => {
     let sent: { requests: Array<{ params: Record<string, any> }> } | undefined;
     vi.stubGlobal('fetch', vi.fn(async (_url: string, init: RequestInit) => {
@@ -182,7 +182,7 @@ describe('US-15 AC31: the batch path on Haiku 5.5', () => {
   });
 });
 
-describe('US-15 AC31: a batch request that stopped short is its own error, not a parse of its partial text', () => {
+describe('US-15 AC34: a batch request that stopped short is its own error, not a parse of its partial text', () => {
   const stoppedAt = (i: number, stop_reason: string, stop_details: unknown = null) => JSON.stringify({
     custom_id: `file-${i}`,
     result: { type: 'succeeded', message: { stop_reason, stop_details, content: [{ type: 'text', text: letter }] } },

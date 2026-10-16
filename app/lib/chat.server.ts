@@ -12,7 +12,8 @@ import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { loadBlogArticle, loadMatchedContent } from './matched-content';
 import { SUGGESTION_EVIDENCE } from '../../packages/health-core/src/evidence';
 import { buildChatContextJson } from '../../packages/health-core/src/chat-context';
-import { CHAT_EDIT_TOOLS, parseProposedEdits, toolOnlyAck, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
+import { toolOnlyAck, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
+import { chatToolsFor, withRoadmapRound, type ChatTurnMessage, type RoadmapRoundCounts, type ToolResultFor } from '../../packages/health-core/src/run-roadmap';
 import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicStreamEvent, type AnthropicUsage } from './anthropic.server';
 import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, modelParams, refusalLine, type RefusalCategory } from '../../packages/health-core/src/models';
 import { cutText } from '../../packages/health-core/src/chat-history';
@@ -474,6 +475,8 @@ export interface ChatCompletionResult {
   errorKind?: ChatErrorKind;
   /** Form edits the model proposed via tool_use (additive — empty on normal turns). */
   proposedEdits?: ProposedEdit[];
+  /** Set when the turn ran run_roadmap (US-15 AC33): how many stated values it used and rejected. Counts only, never a value. */
+  roadmapRun?: RoadmapRoundCounts;
   /** A subscription change the model proposed (US-49); the route turns it into a confirm card or drops it. */
   subscriptionProposal?: SubscriptionProposal;
 }
@@ -481,54 +484,105 @@ export interface ChatCompletionResult {
 /** Shown when the model proposed a subscription change with no prose; the card carries the detail (US-49). */
 export const SUBSCRIPTION_TOOL_ONLY_ACK = 'Here is the change for you to confirm.';
 
+/** What the web chat streams: the model's deltas, and a status line between a tool round's two calls. */
+export type ChatStreamEvent = AnthropicStreamEvent | { type: 'status'; text: string };
+
+/** Shown while the second call of a run_roadmap round runs (US-15 AC33). */
+export const ROADMAP_STATUS = 'Running your numbers through the roadmap';
+
+const addUsage = (a: AnthropicUsage, b: AnthropicUsage): AnthropicUsage => ({
+  inputTokens: a.inputTokens + b.inputTokens,
+  outputTokens: a.outputTokens + b.outputTokens,
+  cacheCreationTokens: a.cacheCreationTokens + b.cacheCreationTokens,
+  cacheReadTokens: a.cacheReadTokens + b.cacheReadTokens,
+});
+
+const SUBSCRIPTION_PROPOSED = 'Proposed: a card under your reply asks the customer to confirm this change. Nothing has changed yet; it changes only if they press Confirm.';
+const SUBSCRIPTION_NOT_PROPOSED = 'Not proposed: no card shows for this call. One change per reply, for a subscription and action marked "yes" in the list.';
+
+/**
+ * The tool_result for propose_subscription_change called beside run_roadmap
+ * (US-49 with US-15 AC33): the call that becomes the card (the reply's first
+ * valid one, as parseSubscriptionProposal picks it) is proposed; any other is not.
+ */
+const subscriptionToolResult: ToolResultFor = (b, blocks) => {
+  if (b.name !== PROPOSE_SUBSCRIPTION_CHANGE_TOOL.name) return undefined;
+  return blocks.find((x) => parseSubscriptionProposal([x])) === b ? SUBSCRIPTION_PROPOSED : SUBSCRIPTION_NOT_PROPOSED;
+};
+
 /**
  * With `onEvent` the answer streams (the web chat, US-15 AC16/AC17); the
  * result is the same either way. Deltas already sent are not the answer on a
  * refusal or a fallback: the reply goes out with `isFallback: true`, and the
  * client replaces them with its content.
  *
- * `canApplyEdits`: the form tools go only to a client that applies them (the
- * widget's own chat, US-15 AC19). `tools` render before `system`, so the two
- * request shapes share no prompt-cache prefix and cache separately.
+ * `canApplyEdits`: the form tools and run_roadmap go only to a client that
+ * applies them (the widget's own chat, US-15 AC19). `tools` render before
+ * `system`, so each tool list caches separately.
  *
- * `subscriptionTool` (US-49): the propose-only subscription tool, sent on every
- * brand-surface turn while subscription actions are enabled, logged in or not,
- * so that surface keeps one cached prefix shape.
+ * With the form tools comes run_roadmap when the latest or the previous user
+ * message has a digit (US-15 AC33, `chatToolsFor`): when the model calls it, the
+ * plan code runs on `opts.guestInputs` plus the stated values and a second call
+ * answers from its output (health-core `withRoadmapRound`, at most one round).
+ * The answer is the second call's text; usage is the two calls' sum. A failed
+ * second call is the api-error fallback, with no tool output in it, that keeps
+ * the first call's usage and the round's counts.
+ *
+ * `opts.subscriptionTool` (US-49): the propose-only subscription tool, sent on
+ * every brand-surface turn while subscription actions are enabled, logged in or
+ * not, so that surface keeps one cached prefix shape. In a run_roadmap round its
+ * call gets its own tool_result, and the proposal is read from both calls' blocks.
  */
 export async function getChatCompletion(
   systemBlocks: SystemBlock[],
-  messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+  messages: ChatTurnMessage[],
   canApplyEdits: boolean,
-  onEvent?: (event: AnthropicStreamEvent) => void,
-  opts?: { subscriptionTool?: boolean },
+  onEvent?: (event: ChatStreamEvent) => void,
+  opts?: { subscriptionTool?: boolean; guestInputs?: unknown },
 ): Promise<ChatCompletionResult> {
-  const tools = [...(canApplyEdits ? CHAT_EDIT_TOOLS : []), ...(opts?.subscriptionTool ? [PROPOSE_SUBSCRIPTION_CHANGE_TOOL] : [])];
+  const tools = [...(canApplyEdits ? chatToolsFor(messages) : []), ...(opts?.subscriptionTool ? [PROPOSE_SUBSCRIPTION_CHANGE_TOOL] : [])];
   const body = {
     ...modelParams(CHAT_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: systemBlocks,
     ...(tools.length ? { tools } : {}),
-    messages,
+  };
+  // Every call's usage, and the round's counts, survive a failed second call (S4).
+  let usage: AnthropicUsage = { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 };
+  let roadmapRun: { roadmapRun?: RoadmapRoundCounts } = {};
+  const send = async (fields: { messages: ChatTurnMessage[]; tool_choice?: { type: 'none' } }) => {
+    const reply = onEvent ? await streamAnthropicWithUsage({ ...body, ...fields }, onEvent) : await callAnthropicWithUsage({ ...body, ...fields });
+    usage = addUsage(usage, reply.usage);
+    return reply;
   };
 
   try {
-    const result = onEvent ? await streamAnthropicWithUsage(body, onEvent) : await callAnthropicWithUsage(body);
+    const turn = canApplyEdits
+      ? await withRoadmapRound(messages, send, opts?.guestInputs, (counts) => {
+        roadmapRun = { roadmapRun: counts };
+        onEvent?.({ type: 'status', text: ROADMAP_STATUS });
+      }, subscriptionToolResult)
+      : null;
+    const result = turn ? turn.final : await send({ messages });
     const { stopReason } = result;
     if (stopReason === 'refusal') {
       const refusalCategory = result.refusalCategory ?? 'other';
       return {
         content: refusalLine(refusalCategory),
-        usage: result.usage,
+        usage,
         isFallback: false,
         isRefusal: true,
         refusalCategory,
         stopReason,
         failureMode: 'refusal',
+        ...roadmapRun,
       };
     }
     // Truncated: keep the answer, add nothing the user sees, log the stop only.
     if (stopReason === 'max_tokens') console.warn(JSON.stringify({ evt: 'chat_truncated', stopReason }));
-    const proposedEdits = parseProposedEdits(result.contentBlocks);
-    const subscriptionProposal = opts?.subscriptionTool ? parseSubscriptionProposal(result.contentBlocks) : null;
+    const proposedEdits = turn?.proposedEdits ?? [];
+    // A round's proposal may be in its first call (beside run_roadmap), so read both.
+    const blocks = turn && turn.final !== turn.first ? [...turn.first.contentBlocks, ...result.contentBlocks] : result.contentBlocks;
+    const subscriptionProposal = opts?.subscriptionTool ? parseSubscriptionProposal(blocks) : null;
     // Empty-response check: API returned 200 but no usable text. A tool-only
     // response (model proposed an edit with no prose) is NOT empty — give the
     // thread a short line; the confirmation card carries the detail.
@@ -536,31 +590,34 @@ export async function getChatCompletion(
       if (proposedEdits.length > 0) {
         return {
           content: toolOnlyAck(proposedEdits),
-          usage: result.usage,
+          usage,
           isFallback: false,
           stopReason,
           proposedEdits,
           ...(subscriptionProposal ? { subscriptionProposal } : {}),
+          ...roadmapRun,
         };
       }
       if (subscriptionProposal) {
-        return { content: SUBSCRIPTION_TOOL_ONLY_ACK, usage: result.usage, isFallback: false, stopReason, subscriptionProposal };
+        return { content: SUBSCRIPTION_TOOL_ONLY_ACK, usage, isFallback: false, stopReason, subscriptionProposal, ...roadmapRun };
       }
       return {
         content: FALLBACK_RESPONSE,
-        usage: result.usage,
+        usage,
         isFallback: true,
         stopReason,
         failureMode: 'empty-response',
+        ...roadmapRun,
       };
     }
     return {
       content: result.content,
-      usage: result.usage,
+      usage,
       isFallback: false,
       stopReason,
       ...(proposedEdits.length > 0 ? { proposedEdits } : {}),
       ...(subscriptionProposal ? { subscriptionProposal } : {}),
+      ...roadmapRun,
     };
   } catch (err) {
     // API errors (timeout, 5xx, network, malformed response). fetchAnthropicRaw
@@ -569,13 +626,14 @@ export async function getChatCompletion(
     const errorDetail = err instanceof Error ? err.message : String(err);
     return {
       content: FALLBACK_RESPONSE,
-      // Usage is unknown when the call failed before returning — zero it out so
-      // downstream logging doesn't mis-charge.
-      usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 },
+      // The failed call's usage is unknown, so it counts zero; a first call that
+      // returned before a failed second one keeps its usage and its round.
+      usage,
       isFallback: true,
       failureMode: 'api-error',
       errorDetail,
       errorKind: classifyChatError(err),
+      ...roadmapRun,
     };
   }
 }

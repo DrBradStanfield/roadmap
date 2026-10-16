@@ -66,7 +66,7 @@ function errorKind(error: unknown): string {
 
 /** One direct extraction call; on bad JSON the SAME request is sent once more
  *  (same recovery as the server's extractOrClassify; Haiku 5.5 400s on the
- *  `{` prefill this used to send, US-15 AC31). An answer cut off at
+ *  `{` prefill this used to send, US-15 AC34). An answer cut off at
  *  max_tokens is never a set of values and is cut off again, so it is not
  *  re-sent; the transport already throws on a refusal. */
 async function extractDirect(apiKey: string, pages: PageContent[]): Promise<LabImportResult> {

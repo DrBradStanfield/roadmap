@@ -46,7 +46,7 @@ export async function labImport(
       return { result: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
     }
     if (response.status === 422) {
-      // A file Claude declined or stopped short on: the code says which (US-15 AC31).
+      // A file Claude declined or stopped short on: the code says which (US-15 AC34).
       const code = (await parseJsonResponse<{ errorCode?: string }>(response))?.errorCode;
       const stop = EXTRACTION_STOP_CODES.find(c => c === code);
       return { result: null, error: 'Not read', errorCode: stop ?? 'server_error' };

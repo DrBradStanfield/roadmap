@@ -143,7 +143,7 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     expect(reasonFor('late.pdf')).toBe('Not read. The daily upload limit was reached.');
   });
 
-  // US-15 AC31: Haiku 5.5 can decline a file or stop at its token cap, and the
+  // US-15 AC34: Haiku 5.5 can decline a file or stop at its token cap, and the
   // same request stops the same way again: neither says "try again".
   it.each([true, false])('says a declined file and a too-long one will not read on a retry (Shopify build: %s)', async shopify => {
     build.shopify = shopify;

@@ -698,7 +698,7 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     expect(JSON.stringify([captured.message, captured.name, captured.stack, context])).not.toMatch(/SECRET|Received|3\.4/);
   });
 
-  // US-15 AC31: a declined or cut-off file is its own bounded signal, as on the
+  // US-15 AC34: a declined or cut-off file is its own bounded signal, as on the
   // website; the assistant still sees "unreadable" with its hint.
   it('a refused file sends the stop signal with its category, not an exception, and stays unreadable', async () => {
     const cloud = new MemoryCloud();

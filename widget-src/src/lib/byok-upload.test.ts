@@ -21,10 +21,10 @@ const message = (text: string) => () => Response.json({ content: [{ type: 'text'
 
 afterEach(() => { vi.unstubAllGlobals(); vi.resetAllMocks(); vi.restoreAllMocks(); });
 
-// US-15 AC31: Haiku 5.5 400s on an assistant prefill and on sampling params,
+// US-15 AC34: Haiku 5.5 400s on an assistant prefill and on sampling params,
 // and thinks unless told not to. A malformed first answer is re-sent as the
 // SAME request.
-describe('US-15 AC31: the BYOK extraction request on Haiku 5.5', () => {
+describe('US-15 AC34: the BYOK extraction request on Haiku 5.5', () => {
   const VALID = '{"classification":"other","reportDate":null,"values":[],"additionalValues":[],"document":null}';
 
   it('re-sends the same body after a malformed answer: no assistant turn, thinking disabled, no temperature', async () => {
@@ -49,10 +49,10 @@ describe('US-15 AC31: the BYOK extraction request on Haiku 5.5', () => {
   });
 });
 
-// US-15 AC31: Haiku 5.5 runs safety classifiers that Haiku 4.5 did not. A
+// US-15 AC34: Haiku 5.5 runs safety classifiers that Haiku 4.5 did not. A
 // refusal is HTTP 200 with stop_reason 'refusal' and may carry partial text:
 // that text is never a chat answer or a set of lab values (US-15 AC14).
-describe('US-15 AC31: a BYOK refusal is a failure, never content', () => {
+describe('US-15 AC34: a BYOK refusal is a failure, never content', () => {
   const refusal = () => Response.json({ stop_reason: 'refusal', content: [{ type: 'text', text: '{"classification":"lab_report"' }] });
 
   it('the shared transport throws a refused error with a fixed line, not the partial text', async () => {

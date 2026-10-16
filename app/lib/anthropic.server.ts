@@ -53,13 +53,13 @@ const METADATA_MAX_TOKENS = 3072;
 /**
  * The website's single file, below the batch's EXTRACTION_MAX_TOKENS: the call
  * is not streamed and times out at 60 s. Haiku 5.5 wrote 219 tokens/s in one
- * measurement (2026-10-16), so 10000 takes ~46 s and 12288 ~56 s (US-15 AC31).
+ * measurement (2026-10-16), so 10000 takes ~46 s and 12288 ~56 s (US-15 AC34).
  */
 const SINGLE_FILE_MAX_TOKENS = 10000;
 
 /**
  * Thrown by `extractOrClassify` on a refusal or a max_tokens stop. The same
- * request stops the same way again, so nothing re-sends it (US-15 AC31).
+ * request stops the same way again, so nothing re-sends it (US-15 AC34).
  */
 export class ExtractionStopError extends Error {
   constructor(readonly code: ExtractionStopCode, readonly refusalCategory?: RefusalCategory) {
@@ -100,7 +100,7 @@ function readExtraction(result: AnthropicResult): UnifiedExtractionResult | unde
  * Unified extraction: classifies the document and either extracts lab values
  * or converts to markdown + metadata, in a single LLM call.
  *
- * At most two calls (US-15 AC31). A refusal or a max_tokens stop fails the
+ * At most two calls (US-15 AC34). A refusal or a max_tokens stop fails the
  * file at once: the same request stops the same way again. Only an answer
  * that ended normally but did not parse is re-sent, once, as the SAME request
  * (Haiku 5.5 400s on the `{` prefill this used to send). `timeoutMs` is ONE
@@ -148,12 +148,17 @@ export interface AnthropicUsage {
   cacheReadTokens: number;
 }
 
-/** One block of an Anthropic Messages `content` array (text or tool_use). */
+/** One block of an Anthropic Messages `content` array (text, thinking or tool_use), kept whole so a tool round can replay it unmodified. */
 export interface AnthropicContentBlock {
   type: string;
   text?: string;
+  /** tool_use: the id its tool_result answers. */
+  id?: string;
   name?: string;
   input?: unknown;
+  /** thinking: the summary and the signature the API checks on replay. */
+  thinking?: string;
+  signature?: string;
 }
 
 export interface AnthropicResult {
@@ -531,7 +536,7 @@ type BatchFileResult = { index: number } & (UnifiedExtractionResult | { errorCod
 /**
  * Poll batch status. Returns completed count or full results when done.
  * `stops` names each refused or cut-off file for the caller to report: this
- * runs on every poll, so it reports nothing itself (US-15 AC31).
+ * runs on every poll, so it reports nothing itself (US-15 AC34).
  */
 export async function pollBatch(
   batchId: string,
@@ -610,7 +615,7 @@ export async function pollBatch(
 
       // Read as the single call reads: a refused or cut-off request still
       // comes back 'succeeded', maybe with partial text, and is never parsed
-      // as values but marked as such (US-15 AC31).
+      // as values but marked as such (US-15 AC34).
       if (entry.result?.type === 'succeeded') {
         const m = entry.result.message ?? {};
         try {

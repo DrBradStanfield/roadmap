@@ -1,5 +1,5 @@
 /**
- * US-15 AC31 — the pre-router classifier on Haiku 5.5. Its newer tokenizer
+ * US-15 AC34 — the pre-router classifier on Haiku 5.5. Its newer tokenizer
  * spent all 8 output tokens on "MEASUREMENT" (the longest label) in the
  * 2026-10-16 smoke, one token from a cut-off label that parses as ERROR and
  * silently fires the router. The cap leaves room; unused tokens are not billed.
@@ -15,7 +15,7 @@ import { classifyMessage } from './chat-classifier.server';
 
 const usage = { inputTokens: 37, outputTokens: 8, cacheReadTokens: 923, cacheWriteTokens: 0 };
 
-describe('chat classifier request (US-15 AC31)', () => {
+describe('chat classifier request (US-15 AC34)', () => {
   beforeEach(() => { call.mockReset(); vi.mocked(Sentry.captureMessage).mockClear(); });
 
   it('asks Haiku 5.5 with thinking off, no sampling params, and room past the longest label', async () => {

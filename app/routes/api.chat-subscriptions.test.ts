@@ -147,4 +147,18 @@ describe('US-49 AC6 — the chat turn', () => {
     expect(reply).not.toHaveProperty('subscriptionCard');
     expect(reply.content).toContain(SUBSCRIPTION_HELP_LINE);
   });
+
+  // PR 150 round 2 (adversary R5): a widget turn is always a guest (localFirst), so the
+  // tool could only ever end in "I can't make that change here", replacing a health answer.
+  it('a widget turn gets no subscription tool, so it never replaces the health answer', async () => {
+    mocks.completion.subscriptionProposal = undefined;
+    mocks.completion.content = 'Your LDL is above the roadmap target.';
+    const request = new Request('https://health-tool-app.fly.dev/api/chat?shop=microvitamin.myshopify.com&logged_in_customer_id=7001&timestamp=1&signature=abc', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ message: 'LDL 4.1, and pause my subscription', localFirst: true, canApplyEdits: true, guestInputs: {} }),
+    });
+    const reply = await (await action({ request, params: {} } as Parameters<typeof action>[0])).json();
+    expect((mocks.completionArgs[0][4] as { subscriptionTool?: boolean } | undefined)?.subscriptionTool).toBeFalsy();
+    expect(reply.content).toBe('Your LDL is above the roadmap target.');
+  });
 });

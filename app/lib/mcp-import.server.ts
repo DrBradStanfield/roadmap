@@ -377,7 +377,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
             // The model never answered, so the file was not read: its day's charge comes back.
             refundFile();
           } else if (error instanceof ExtractionStopError) {
-            // Declined or cut off: the code and category, as on the website (US-15 AC31).
+            // Declined or cut off: the code and category, as on the website (US-15 AC34).
             reportExtractionStop(error.code, error.refusalCategory, 'connector');
           } else if (reason === 'unreadable') {
             // The error CLASS and the file kind, nothing else (AC9): a parse

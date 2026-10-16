@@ -138,3 +138,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   rows drop `first`/`recent`, but a conversation_id join recovers the turns
   and `router_input_tokens` shows the router had them; replay through the
   real `routeQuery` with the test key passed as ANTHROPIC_API_KEY (scratch).
+- **2026-10-15 [loop]** The own-data-analysis X3 fixture ("can you analyze my
+  data", values entered, no sex) is a KNOWN-FAIL caused upstream: production
+  sends '{}' when sex or height is missing, so the model says the data is
+  empty. It fails 0/6 on 925d3d1 too. Do not read a miss as a regression or
+  tune the prompt for it; it clears only when production sends partial data.

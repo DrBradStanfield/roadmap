@@ -115,7 +115,7 @@ describe('the batch poll needs the token the upload was given', () => {
     expect(await answer.json()).toEqual({ allowed: true, remaining: expect.any(Number) });
   });
 
-  // US-15 AC31: one Sentry message per stopped file, sent when the batch ends,
+  // US-15 AC34: one Sentry message per stopped file, sent when the batch ends,
   // never again when the same ended batch is polled once more.
   it('reports each stopped file once, with its category, however often the ended batch is polled', async () => {
     const ended = {
@@ -170,7 +170,7 @@ describe('privacy: the batch takes no file name', () => {
   });
 });
 
-// US-15 AC31: Haiku 5.5 can decline a file, or stop at its token cap, and the
+// US-15 AC34: Haiku 5.5 can decline a file, or stop at its token cap, and the
 // same request stops the same way again. The answer says which, so the widget
 // does not say "try again", and carries no document text.
 describe('a single file that stopped short', () => {

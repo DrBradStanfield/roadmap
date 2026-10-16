@@ -10,7 +10,7 @@
  * user pays for it, so it stays on Haiku (its body still comes from modelParams).
  *
  * Haiku 5.5 since 2026-10-16 (Brad, no benchmark): the classifier, extraction and
- * BYOK chat, all with thinking off (US-15 AC31).
+ * BYOK chat, all with thinking off (US-15 AC34).
  */
 
 /** Main chat answer (web, Discord, YouTube). */
@@ -84,7 +84,7 @@ export const toRefusalCategory = (category: unknown): RefusalCategory =>
 
 /**
  * How an extraction stopped short, as the upload's error code: declined, or
- * cut off at max_tokens. The same request stops the same way again (US-15 AC31).
+ * cut off at max_tokens. The same request stops the same way again (US-15 AC34).
  */
 export const EXTRACTION_STOP_CODES = ['refused', 'too_long'] as const;
 export type ExtractionStopCode = typeof EXTRACTION_STOP_CODES[number];
@@ -148,7 +148,7 @@ const VALID_CLASSIFICATIONS: ReadonlyArray<Classification> = [
 export const CLASSIFIER_MAX_TOKENS = 16;
 
 // The label is the answer's first word: with room in the cap, text the model
-// adds after it must not turn a good label into ERROR (US-15 AC31).
+// adds after it must not turn a good label into ERROR (US-15 AC34).
 export function parseClassification(raw: string): Classification {
   const cleaned = raw.toUpperCase().match(/[A-Z]+/)?.[0] ?? '';
   return VALID_CLASSIFICATIONS.find(valid => valid === cleaned) ?? Classification.ERROR;

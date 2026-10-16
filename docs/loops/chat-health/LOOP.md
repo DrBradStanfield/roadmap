@@ -79,7 +79,9 @@ this loop on reasoning alone: if you cannot measure it, you propose it.
     (`widget`/`shopify`/`discord`/`youtube`; `shopify` = the blog chat
     bubble; REST filter `router_context->>platform=eq.widget`, no quotes). NOT a join on `chat_conversations` — the widget writes no
     conversation row and the FK is gone (US-15 AC7, 2026-09-10; older rows
-    backfilled). The widget's question text there is verbatim; no reply.
+    backfilled). The widget's question text there is verbatim until US-15
+    AC33 deploys; from then every number is masked to `#` (topic names with a
+    digit kept: HbA1c, B12, type 2), in `router_raw`/`router_error` too; no reply.
     YouTube only began persisting 2026-08-07 — if its count is 0 after that
     date, something is broken; say so.
   - **YouTube reply length** (since 2026-08-10): for `platform = youtube`

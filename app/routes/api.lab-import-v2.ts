@@ -81,7 +81,7 @@ async function answerPoll(batchId: string, pollToken: string | null): Promise<Re
   }
   try {
     const result = await pollBatch(batchId);
-    // Each stopped file once, when the batch ends: an ended batch can be polled again (US-15 AC31).
+    // Each stopped file once, when the batch ends: an ended batch can be polled again (US-15 AC34).
     if (result.status === 'ended' && !batch.reported) {
       batch.reported = true;
       for (const stop of result.stops ?? []) reportExtractionStop(stop.code, stop.refusalCategory, 'batch');
@@ -159,12 +159,12 @@ export async function action({ request }: ActionFunctionArgs) {
 
     const { pages } = validation.data;
     try {
-      // One deadline for the file: a malformed answer's re-send gets what is left (US-15 AC31).
+      // One deadline for the file: a malformed answer's re-send gets what is left (US-15 AC34).
       const result = await extractOrClassify(pages, { timeoutMs: 60_000 });
       return Response.json({ success: true, data: result, remaining: ipQuota.remaining(ip) });
     } catch (error) {
       // Declined or cut off: its own answer, so the widget does not say "try
-      // again" (US-15 AC31). The code and category only, never document text.
+      // again" (US-15 AC34). The code and category only, never document text.
       if (error instanceof ExtractionStopError) {
         reportExtractionStop(error.code, error.refusalCategory, 'single');
         return Response.json({ success: false, error: 'Not read', errorCode: error.code }, { status: 422 });

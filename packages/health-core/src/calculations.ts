@@ -171,6 +171,21 @@ export function getProteinRate(eGFR?: number): number {
 }
 
 /**
+ * The inputs whose absence silently removes plan content: the four the whole
+ * plan is computed from (sex, birth year, height, weight) and the five markers
+ * that each gate a group of suggestions. Creatinine is one of them: without it
+ * there is no eGFR, and no CKD adjustment to the protein target. Naming them is
+ * the difference between a thin plan and a plan the assistant knows is thin
+ * (US-32; the chat reads the same list, US-15 AC31).
+ */
+const GATING_INPUTS = ['sex', 'birthYear', 'heightCm', 'weightKg', 'waistCm', 'systolicBp', 'hba1c', 'apoB', 'creatinine'] as const;
+
+/** Those of them the inputs do not hold. Empty when nothing is missing. */
+export function missingPlanInputs(inputs: Partial<HealthInputs>): Array<(typeof GATING_INPUTS)[number]> {
+  return GATING_INPUTS.filter((field) => inputs[field] === undefined || inputs[field] === null);
+}
+
+/**
  * Main calculation function - takes all inputs and returns all results
  */
 export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSystem, medications?: MedicationInputs, screenings?: ScreeningInputs, unitOverrides?: Partial<Record<MetricType, UnitSystem>>, now = new Date()): HealthResults {

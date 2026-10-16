@@ -161,10 +161,10 @@ describe('US-12: fetchAnthropicRaw retry policy (via callAnthropicWithUsage)', (
   });
 });
 
-// US-15 AC31: one loop, one deadline. Only an answer that ended normally but
+// US-15 AC34: one loop, one deadline. Only an answer that ended normally but
 // will not parse is re-sent, once: the old outer retry around the inner re-send
 // made four identical full-length calls before a file failed.
-describe('US-15 AC31: extractOrClassify makes at most two calls', () => {
+describe('US-15 AC34: extractOrClassify makes at most two calls', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -192,10 +192,10 @@ describe('US-15 AC31: extractOrClassify makes at most two calls', () => {
   });
 });
 
-// US-15 AC31: Haiku 5.5 400s on an assistant prefill and on sampling params,
+// US-15 AC34: Haiku 5.5 400s on an assistant prefill and on sampling params,
 // and thinks unless told not to. A malformed first answer is re-sent as the
 // SAME request, never with a `{` assistant turn.
-describe('US-15 AC31: the extraction request on Haiku 5.5', () => {
+describe('US-15 AC34: the extraction request on Haiku 5.5', () => {
   afterEach(() => { global.fetch = REAL_FETCH; });
 
   it('the re-send after a malformed answer is the same body: no assistant turn, thinking disabled, no temperature', async () => {
@@ -445,11 +445,11 @@ describe('US-12 AC8: extractOrClassify refuses a dot-thousands count written as 
   });
 });
 
-// US-15 AC31: Haiku 5.5's safety classifiers can refuse, with no fallback, and
+// US-15 AC34: Haiku 5.5's safety classifiers can refuse, with no fallback, and
 // the same request usually refuses again: a refusal fails the file at once. So
 // does an answer cut off at max_tokens: re-sent, it is cut off again, and a long
 // document cost up to four full-length generations before failing.
-describe('US-15 AC31: an extraction that stopped short is not re-sent', () => {
+describe('US-15 AC34: an extraction that stopped short is not re-sent', () => {
   it('makes one call on a refusal, then throws with its bounded category', async () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json({ stop_reason: 'refusal', stop_details: { category: 'cyber' }, content: [] }));
     global.fetch = fetchMock as unknown as typeof fetch;

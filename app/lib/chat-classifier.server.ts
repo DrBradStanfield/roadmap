@@ -141,7 +141,7 @@ export async function classifyMessage(
     const latencyMs = Date.now() - t0;
     const cacheHit = result.usage.cacheReadTokens > 0;
 
-    // A refusal is its own signal, its category the only detail (US-15 AC31).
+    // A refusal is its own signal, its category the only detail (US-15 AC34).
     const refused = result.stopReason === 'refusal';
     if (refused) {
       Sentry.captureMessage('Chat classifier: refusal', {
