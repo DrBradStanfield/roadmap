@@ -560,11 +560,11 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
     abortedOnce(seen);
   });
 
-  it('hands the model call what is left of the budget and no retry, inner or outer', async () => {
+  it('hands the model call what is left of the budget and no transport retry', async () => {
     const cloud = new MemoryCloud();
     cloud.docs.set('labs.pdf', new Blob([PDF]));
     const surface = surfaceOver(new MemoryAdapter(cloud));
-    const seen: Array<{ timeoutMs: number; attempts: number; httpAttempts: number }> = [];
+    const seen: Array<{ timeoutMs: number; httpAttempts: number }> = [];
     setImportSeams({ extract: async (_pages, opts) => {
       seen.push(opts);
       return { classification: 'other', reportDate: null, values: [], additionalValues: [], unrecognized: [], document: null };
@@ -572,7 +572,8 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
     await surface.extract({}, file, NOW, deadline());
     expect(seen).toHaveLength(1);
     // Metadata only for a letter: the connector files no text, so it asks for none (AC5).
-    expect(seen[0]).toMatchObject({ attempts: 1, httpAttempts: 1, documentMode: 'metadata' });
+    expect(seen[0]).toEqual(expect.objectContaining({ httpAttempts: 1, documentMode: 'metadata' }));
+    expect(seen[0]).not.toHaveProperty('attempts');
     expect(seen[0].timeoutMs).toBeLessThanOrEqual(MCP_IMPORT_BUDGET_MS);
   });
 

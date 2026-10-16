@@ -75,12 +75,25 @@ describe('US-15 AC31: a BYOK refusal is a failure, never content', () => {
     }
   });
 
-  it('an upload refusal fails the file once, with no re-send of the same request', async () => {
+  it('an upload refusal fails the file once, as "refused", with no re-send of the same request', async () => {
     const fetchMock = stubAnthropic(refusal);
     const out = await labImport(PAGES, 'si');
     expect(out.result).toBeNull();
-    expect(out.errorCode).toBe('server_error');
+    expect(out.errorCode).toBe('refused');
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  // A cut-off answer is cut off again on the same request, on the user's own money.
+  it('an answer stopped at max_tokens fails the file once, as "too_long", on one file and in a batch', async () => {
+    const fetchMock = stubAnthropic(() => Response.json({ stop_reason: 'max_tokens', content: [{ type: 'text', text: '{"classification":"lab_rep' }] }));
+    expect((await labImport(PAGES, 'si')).errorCode).toBe('too_long');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { batchId } = await labImportBatch([{ pages: PAGES }]);
+    await vi.waitFor(async () => {
+      expect((await pollBatchStatus(batchId!)).results).toEqual([{ index: 0, errorCode: 'too_long' }]);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 

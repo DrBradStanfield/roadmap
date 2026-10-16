@@ -164,8 +164,9 @@ export const MCP_IMPORT_ROUTES = ['dropbox', 'drive_refused', 'assistant'] as co
 export const GUIDE_PLACEMENTS = ['header', 'footer'] as const;
 /** The `upload_outcome` counter's integer counts (US-12 AC10): files seen, then
  *  how each ended. `truncated` overlaps the rest and `valuesDropped` counts value
- *  rows the parse refused, not files; the others sum to `picked`. */
-export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'valuesDropped'] as const;
+ *  rows the parse refused, not files; the others sum to `picked`. `refused` and
+ *  `tooLong` are files Claude declined or stopped short on (US-15 AC31). */
+export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped'] as const;
 export type UploadOutcomeKey = (typeof UPLOAD_OUTCOME_KEYS)[number];
 /** The most one count may say; the server refuses more, so the client clamps. */
 export const UPLOAD_OUTCOME_MAX = 1000;

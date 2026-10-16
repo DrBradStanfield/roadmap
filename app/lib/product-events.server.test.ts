@@ -627,7 +627,7 @@ describe('the Lp(a) check counter', () => {
 });
 
 describe('the upload outcome counter (US-12 AC10)', () => {
-  const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, valuesDropped: 3 };
+  const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, refused: 1, tooLong: 1, valuesDropped: 3 };
 
   it('takes integer counts from a browser', () => {
     expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata: counts }))

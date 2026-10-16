@@ -30,55 +30,11 @@ import path from 'path';
 import * as Sentry from '@sentry/react-router';
 import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
 import { sanitizeForRouter } from './chat-router.server';
-import { CLASSIFIER_MODEL, PROMPT_CACHE, modelParams } from '../../packages/health-core/src/models';
+import { CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, Classification, PROMPT_CACHE, modelParams, parseClassification } from '../../packages/health-core/src/models';
 
 // Bump when the classifier prompt or rules change so chat_match_events can
 // segment pre/post-change analytics.
 export const CLASSIFIER_VERSION = 1;
-
-// ---------------------------------------------------------------------------
-// Classification taxonomy
-// ---------------------------------------------------------------------------
-
-// Const-object so consumers compare against `Classification.ROUTE` instead of
-// the literal `'ROUTE'`. Typos become compile errors; rename-refactors work.
-export const Classification = {
-  ROUTE: 'ROUTE',
-  GREETING: 'GREETING',
-  PRODUCT: 'PRODUCT',
-  ACCOUNT: 'ACCOUNT',
-  /**
-   * Reading back / correcting the user's OWN recorded numbers. Added 2026-08-07:
-   * the router prompt's empty-list rule (rule 7 since 2026-08-30, then Rule 6)
-   * already said these should return empty handles, but the
-   * classifier had no label for them, so every "What is my BMI?" fired a ~1.6s
-   * router call that came back empty. Measured on 143 empty-handle turns, this
-   * was the single largest bucket (50, 35%) — of which 33 are pure lookup.
-   * Interpretation ("is my Lp(a) a concern?") stays ROUTE by design.
-   */
-  MEASUREMENT: 'MEASUREMENT',
-  ERROR: 'ERROR',
-} as const;
-
-export type Classification = typeof Classification[keyof typeof Classification];
-
-const VALID_CLASSIFICATIONS: ReadonlyArray<Classification> = [
-  Classification.ROUTE,
-  Classification.GREETING,
-  Classification.PRODUCT,
-  Classification.ACCOUNT,
-  Classification.MEASUREMENT,
-];
-
-// The label is the answer's first word: with room in the cap, text the model
-// adds after it must not turn a good label into ERROR (US-15 AC31).
-function parseClassification(raw: string): Classification {
-  const cleaned = raw.toUpperCase().match(/[A-Z]+/)?.[0] ?? '';
-  for (const valid of VALID_CLASSIFICATIONS) {
-    if (cleaned === valid) return valid;
-  }
-  return Classification.ERROR;
-}
 
 // ---------------------------------------------------------------------------
 // Output types
@@ -160,12 +116,7 @@ export async function classifyMessage(
   if (contextLines.length === 0) contextLines.push('(new conversation, no prior turns)');
 
   const body = {
-    // 16: 'MEASUREMENT' is the longest label, and on Haiku 5.5's tokenizer it
-    // took all of the old cap of 8 (2026-10-16 smoke). A truncated word fails
-    // the exact-match parse, degrading to ERROR — which fail-safes to firing
-    // the router, silently undoing the saving this label exists to create.
-    // Unused output tokens are not billed.
-    ...modelParams(CLASSIFIER_MODEL, 16),
+    ...modelParams(CLASSIFIER_MODEL, CLASSIFIER_MAX_TOKENS),
     system: [
       {
         type: 'text',
@@ -190,7 +141,15 @@ export async function classifyMessage(
     const latencyMs = Date.now() - t0;
     const cacheHit = result.usage.cacheReadTokens > 0;
 
-    if (classification === Classification.ERROR) {
+    // A refusal is its own signal, its category the only detail (US-15 AC31).
+    const refused = result.stopReason === 'refusal';
+    if (refused) {
+      Sentry.captureMessage('Chat classifier: refusal', {
+        level: 'warning',
+        tags: { feature: 'chat', subsystem: 'classifier', stopReason: 'refusal', refusalCategory: result.refusalCategory ?? 'other' },
+        extra: { latencyMs },
+      });
+    } else if (classification === Classification.ERROR) {
       Sentry.captureMessage('Chat classifier: unparseable output', {
         level: 'warning',
         tags: { feature: 'chat', subsystem: 'classifier' },
@@ -205,7 +164,7 @@ export async function classifyMessage(
       cacheHit,
       raw,
       usage: result.usage,
-      error: classification === Classification.ERROR ? `unparseable: ${raw.slice(0, 60)}` : null,
+      error: refused ? 'refusal' : classification === Classification.ERROR ? `unparseable: ${raw.slice(0, 60)}` : null,
     };
   } catch (err) {
     const latencyMs = Date.now() - t0;

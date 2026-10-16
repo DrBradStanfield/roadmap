@@ -36,6 +36,8 @@ const UPLOAD_ERROR_MESSAGES: Record<UploadErrorCode, string> = {
   no_files: 'No readable files found. Please check your files and try again.',
   server_error: 'Something went wrong on the server. Please try again.',
   network: 'Network error. Please check your connection and try again.',
+  refused: 'Claude declined to read these files, so trying again will not help.',
+  too_long: 'These files are too long to read in one go.',
 };
 /** The Pages build reads each file with the user's own Anthropic key, browser
  *  direct: no server of ours, no daily limit, only that key's rate limit (US-12 AC9). */
@@ -141,6 +143,8 @@ const FILE_NOTICE_TEXT: Record<Exclude<FileNoticeReason, 'valuesDropped'>, strin
   noValues: 'No blood test values found.',
   serverError: 'Our server could not read it. Please try again.',
   limitError: 'Not read. The daily upload limit was reached.',
+  refused: 'Not read. Claude declined to read this file, so trying again will not help.',
+  tooLong: 'Not read. The file is too long to read in one go.',
 };
 const BYOK_NOTICE_TEXT: Partial<Record<FileNoticeReason, string>> = {
   serverError: 'Not read. Anthropic could not be reached or could not read it. Please try again.',
@@ -199,10 +203,13 @@ function readResult(fileName: string, result: LabImportResult, notices: FileNoti
   return { fileName, reportDate: result.reportDate, values: result.values, additionalValues: result.additionalValues || [], document: result.document ?? undefined };
 }
 
-/** A file the server did not read, named with why: the daily limit, or anything else. */
+/** The notice for a file's own error code; anything else is a server error. */
+const UNREAD_REASONS: Partial<Record<UploadErrorCode, FileNoticeReason>> = { rate_limit: 'limitError', refused: 'refused', too_long: 'tooLong' };
+
+/** A file the server did not read, named with why: the daily limit, a refusal, a cut-off answer, or anything else. */
 function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, error: string, notices: FileNotice[]): FileResult {
   const keyError = errorCode === 'key_refused' || errorCode === 'no_credit' ? `Not read. ${KEY_ERROR_MESSAGES[errorCode]}` : undefined;
-  notices.push({ name: fileName, reason: errorCode === 'rate_limit' ? 'limitError' : 'serverError', text: keyError });
+  notices.push({ name: fileName, reason: (errorCode && UNREAD_REASONS[errorCode]) || 'serverError', text: keyError });
   return { fileName, reportDate: null, values: [], additionalValues: [], error };
 }
 

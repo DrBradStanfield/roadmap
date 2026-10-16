@@ -6,6 +6,10 @@
  * values. Synthetic fixtures only: no health values, no network.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
+
+import * as Sentry from '@sentry/react-router';
 import { createBatch, pollBatch } from './anthropic.server';
 
 const letter = JSON.stringify({ classification: 'other', reportDate: null, values: [], additionalValues: [], document: null });
@@ -160,14 +164,24 @@ describe('US-15 AC31: the batch path on Haiku 5.5', () => {
   });
 });
 
-describe('US-15 AC31: a refused batch request is an error, not a parse of its partial text', () => {
-  it('marks a succeeded result whose message stop_reason is refusal as a server error', async () => {
-    const refused = JSON.stringify({
-      custom_id: 'file-1',
-      result: { type: 'succeeded', message: { stop_reason: 'refusal', content: [{ type: 'text', text: letter }] } },
-    });
-    stubBatch([succeeded(0), refused]);
+describe('US-15 AC31: a batch request that stopped short is its own error, not a parse of its partial text', () => {
+  const stoppedAt = (i: number, stop_reason: string, stop_details: unknown = null) => JSON.stringify({
+    custom_id: `file-${i}`,
+    result: { type: 'succeeded', message: { stop_reason, stop_details, content: [{ type: 'text', text: letter }] } },
+  });
+
+  it('marks a refusal "refused" and a max_tokens stop "too_long"', async () => {
+    stubBatch([succeeded(0), stoppedAt(1, 'refusal'), stoppedAt(2, 'max_tokens')]);
     const { results } = await pollBatch('batch_synthetic');
-    expect(results!.map(errorOf)).toEqual([undefined, 'server_error']);
+    expect(results!.map(errorOf)).toEqual([undefined, 'refused', 'too_long']);
+  });
+
+  it('reports each refusal to Sentry with its bounded category and no text', async () => {
+    stubBatch([stoppedAt(0, 'refusal', { type: 'refusal', category: 'bio', explanation: 'free text that must not leave' })]);
+    await pollBatch('batch_synthetic');
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('Lab import: extraction refused', expect.objectContaining({
+      tags: expect.objectContaining({ feature: 'lab_import_v2', path: 'batch', refusalCategory: 'bio' }),
+    }));
+    expect(JSON.stringify(vi.mocked(Sentry.captureMessage).mock.calls)).not.toContain('free text');
   });
 });

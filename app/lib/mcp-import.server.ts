@@ -96,7 +96,7 @@ const EXTRACT_TIMEOUT_MS = 20_000;
 // Test seam — the model call
 // ---------------------------------------------------------------------------
 
-type Extractor = (pages: PageContent[], opts: { timeoutMs: number; attempts: number; httpAttempts: number; documentMode: DocumentPromptMode }) => Promise<UnifiedExtractionResult>;
+type Extractor = (pages: PageContent[], opts: { timeoutMs: number; httpAttempts: number; documentMode: DocumentPromptMode }) => Promise<UnifiedExtractionResult>;
 
 let extract: Extractor = extractOrClassify;
 
@@ -368,9 +368,9 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
         const content = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString('base64');
         const pages: PageContent[] = mimeType === 'application/pdf' ? [{ type: 'pdf', content }] : [{ type: 'image', content, mimeType }];
         try {
-          // One HTTP attempt, inside what is left: no retry, inner or outer, can run past the deadline.
+          // One HTTP attempt per call, inside what is left: a malformed answer's one re-send shares the deadline.
           // Metadata only for a letter: the connector files no text, so none is asked for.
-          return { ...base, status: 'extracted', result: await extract(pages, { timeoutMs: Math.min(EXTRACT_TIMEOUT_MS, left), attempts: 1, httpAttempts: 1, documentMode: 'metadata' }) };
+          return { ...base, status: 'extracted', result: await extract(pages, { timeoutMs: Math.min(EXTRACT_TIMEOUT_MS, left), httpAttempts: 1, documentMode: 'metadata' }) };
         } catch (error) {
           const reason = failureReason(error);
           if (reason === 'time') {

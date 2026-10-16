@@ -143,6 +143,22 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     expect(reasonFor('late.pdf')).toBe('Not read. The daily upload limit was reached.');
   });
 
+  // US-15 AC31: Haiku 5.5 can decline a file or stop at its token cap, and the
+  // same request stops the same way again: neither says "try again".
+  it.each([true, false])('says a declined file and a too-long one will not read on a retry (Shopify build: %s)', async shopify => {
+    build.shopify = shopify;
+    vi.mocked(labImport).mockImplementation(async pages => (
+      pages[0].content === 'declined.pdf' ? { result: null, error: 'Not read', errorCode: 'refused' }
+        : pages[0].content === 'long.pdf' ? { result: null, error: 'Not read', errorCode: 'too_long' }
+          : withValues));
+    render_(); pick(pdf('good.pdf'), pdf('declined.pdf'), pdf('long.pdf'));
+    await screen.findByDisplayValue('3.9');
+    expect(reasonFor('declined.pdf')).toBe('Not read. Claude declined to read this file, so trying again will not help.');
+    expect(reasonFor('long.pdf')).toBe('Not read. The file is too long to read in one go.');
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 3, withValues: 1, refused: 1, tooLong: 1, serverError: 0 }));
+  });
+
   it('names the files on the error screen when none could be read', async () => {
     extractFromPdf.mockRejectedValue(new Error('PasswordException'));
     render_(); pick(pdf('a.pdf'), pdf('b.pdf'));
@@ -174,7 +190,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual({
       picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1,
-      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, valuesDropped: 0,
+      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0,
     });
     expect(Object.values(outcomes()[0]!).every(Number.isInteger)).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));

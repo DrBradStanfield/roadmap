@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
 import { labImportRequestSchema, batchImportRequestSchema } from '../../packages/health-core/src/validation';
-import { extractOrClassify, createBatch, pollBatch } from '../lib/anthropic.server';
+import { extractOrClassify, createBatch, pollBatch, ExtractionStopError, reportExtractionStop } from '../lib/anthropic.server';
 import { createQuotaCounter, DAY_MS, machineFiles } from '../lib/rate-limiter';
 import { getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
 
@@ -157,6 +157,12 @@ export async function action({ request }: ActionFunctionArgs) {
       const result = await extractOrClassify(pages);
       return Response.json({ success: true, data: result, remaining: ipQuota.remaining(ip) });
     } catch (error) {
+      // Declined or cut off: its own answer, so the widget does not say "try
+      // again" (US-15 AC31). The code and category only, never document text.
+      if (error instanceof ExtractionStopError) {
+        reportExtractionStop(error.code, error.refusalCategory, 'single');
+        return Response.json({ success: false, error: 'Not read', errorCode: error.code }, { status: 422 });
+      }
       console.error('Lab import error (v2):', error);
       Sentry.captureException(error, {
         tags: { feature: 'lab_import_v2', errorName: (error as Error)?.name ?? 'unknown' },

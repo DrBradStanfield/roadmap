@@ -150,8 +150,9 @@ export interface ApiDocument {
   contentHash?: string | null;
 }
 
-/** `key_refused` and `no_credit` come only from the Pages build's own key (byok-upload). */
-export type UploadErrorCode = 'rate_limit' | 'timeout' | 'server_restart' | 'no_files' | 'server_error' | 'network' | 'key_refused' | 'no_credit';
+/** `key_refused` and `no_credit` come only from the Pages build's own key (byok-upload).
+ *  `refused` and `too_long` mark one file Claude declined or stopped short on (US-15 AC31). */
+export type UploadErrorCode = 'rate_limit' | 'timeout' | 'server_restart' | 'no_files' | 'server_error' | 'network' | 'key_refused' | 'no_credit' | 'refused' | 'too_long';
 
 export interface BatchPollResponse {
   status: 'processing' | 'ended';

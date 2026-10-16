@@ -152,7 +152,9 @@ export async function deleteConversation(conversationId: string): Promise<boolea
 // Deliberately NOT the website chat's model (health-core models.ts CHAT_MODEL,
 // a Sonnet): here the user pays with their own key, and Haiku keeps a typical
 // chat under a cent. Haiku 5.5 since 2026-10-16, thinking off as on Haiku 4.5;
-// modelParams gives its body shape (US-15 AC31).
+// modelParams gives its body shape (US-15 AC31). 2048: Haiku 5.5 counts about
+// 30% more tokens, and a reply with several edits and prose must fit; unused
+// tokens are not billed. A cut-off reply is kept, as on the website chat.
 const CHAT_MODEL = 'claude-haiku-5-5';
 
 const SYSTEM_PROMPT = `You are the chat assistant inside "Health Plan by Dr Brad", a preventative-health planning app by Dr Brad Stanfield (GP, drstanfield.com). The user runs this app on their own infrastructure with their own AI key.
@@ -212,7 +214,7 @@ export async function sendMessage(
   let proposedEdits: ProposedEdit[] = [];
   try {
     const { text, blocks } = await callAnthropicDirectRaw(apiKey, {
-      ...modelParams(CHAT_MODEL, 1024),
+      ...modelParams(CHAT_MODEL, 2048),
       system,
       tools: CHAT_EDIT_TOOLS,
       messages: [

@@ -19,7 +19,7 @@ import {
   type PageContent,
   type UnifiedExtractionResult,
 } from '../../packages/health-core/src/lab-extraction';
-import { EXTRACTION_MODEL, modelParams } from '../../packages/health-core/src/models';
+import { EXTRACTION_MODEL, modelParams, toRefusalCategory, type RefusalCategory } from '../../packages/health-core/src/models';
 import { sleep } from './cron-helpers.server';
 
 // The pure extraction pieces (prompt, schema parsing, unit resolution) live in
@@ -45,67 +45,57 @@ export type {
 // Unified document processing (classify + extract/convert in one call)
 // ---------------------------------------------------------------------------
 
+/** Plenty for a lab panel or a document's metadata; the 12288 default (EXTRACTION_MAX_TOKENS) exists for markdown transcription. */
+const METADATA_MAX_TOKENS = 3072;
+
+/** How an extraction stopped short, as the upload's error code (US-15 AC31). */
+export type ExtractionStopCode = 'refused' | 'too_long';
+const STOP_CODES: Partial<Record<string, ExtractionStopCode>> = { refusal: 'refused', max_tokens: 'too_long' };
+
+/**
+ * Thrown by `extractOrClassify` on a refusal or a max_tokens stop. The same
+ * request stops the same way again, so nothing re-sends it (US-15 AC31).
+ */
+export class ExtractionStopError extends Error {
+  constructor(readonly code: ExtractionStopCode, readonly refusalCategory?: RefusalCategory) {
+    super(code === 'refused' ? 'Anthropic refusal' : 'Anthropic answer hit max_tokens');
+  }
+}
+
+/** One bounded Sentry signal per stopped file: the code and refusal category, never text. */
+export function reportExtractionStop(code: ExtractionStopCode, refusalCategory: RefusalCategory | undefined, path: 'single' | 'batch'): void {
+  Sentry.captureMessage(`Lab import: extraction ${code}`, {
+    level: 'warning',
+    tags: { feature: 'lab_import_v2', path, stopCode: code, ...(refusalCategory ? { refusalCategory } : {}) },
+  });
+}
+
 /**
  * Unified extraction: classifies the document and either extracts lab values
  * or converts to markdown + metadata, in a single LLM call.
  *
- * `timeoutMs` bounds each HTTP call; `attempts` is the outer retry. The
- * connector's import (US-35 AC10) passes both — it runs inside a 40 s
- * tool-call budget, where a second full attempt cannot fit and a hung call
- * must fail fast.
+ * At most two calls (US-15 AC31). A refusal or a max_tokens stop fails the
+ * file at once: the same request stops the same way again. Only an answer
+ * that ended normally but did not parse is re-sent, once, as the SAME request
+ * (Haiku 5.5 400s on the `{` prefill this used to send). `timeoutMs` is ONE
+ * deadline for both calls, the re-send getting what is left, so the
+ * connector's import (US-35 AC5, AC10) cannot be run past its tool-call
+ * budget; it also passes `httpAttempts: 1` so a hung call fails fast.
  */
 export async function extractOrClassify(
   pages: PageContent[],
-  opts: { timeoutMs?: number; attempts?: number; httpAttempts?: number; documentMode?: DocumentPromptMode } = {},
+  opts: { timeoutMs?: number; httpAttempts?: number; documentMode?: DocumentPromptMode } = {},
 ): Promise<UnifiedExtractionResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
 
-  const content = pagesToContentBlocks(pages);
-  // One retry (2 attempts total) with 1s backoff. Catches schema-drift
-  // failures (the LLM returned 200 but the JSON didn't match our shape) and
-  // anything that bubbles up from fetchAnthropicRaw despite its own retry.
-  // Transient API failures (5xx, network) are mostly absorbed by the inner
-  // retry in fetchAnthropicRaw; worst-case compound here is ~3s of backoff
-  // on a persistent capacity event, acceptable for an async upload path.
-  const attempts = opts.attempts ?? 2;
-  for (let attempt = 1; ; attempt++) {
-    try {
-      return await extractOrClassifyOnce(apiKey, content, opts.timeoutMs, opts.httpAttempts, opts.documentMode ?? 'full');
-    } catch (error) {
-      // A refusal usually repeats on the same request (US-15 AC31): fail now.
-      if (attempt >= attempts || (error instanceof Error && error.message === REFUSAL_ERROR)) throw error;
-      await sleep(1000);
-    }
-  }
-}
-
-/** Plenty for a lab panel or a document's metadata; the 12288 default (EXTRACTION_MAX_TOKENS) exists for markdown transcription. */
-const METADATA_MAX_TOKENS = 3072;
-
-/** Thrown by `callAnthropic` on a refusal; `extractOrClassify` does not retry it (US-15 AC31). */
-const REFUSAL_ERROR = 'Anthropic refusal';
-
-/**
- * One attempt: the call, and the SAME request sent once more when the first
- * answer did not parse (Haiku 5.5 400s on the `{` prefill this used to send,
- * US-15 AC31). `timeoutMs` is ONE deadline for the pair — the retry gets what
- * is left, never a fresh window — so a caller inside a budget (US-35 AC5)
- * cannot be run past it by a malformed first answer.
- */
-async function extractOrClassifyOnce(
-  apiKey: string,
-  content: Array<Record<string, unknown>>,
-  timeoutMs: number | undefined,
-  httpAttempts: number | undefined,
-  documentMode: DocumentPromptMode,
-): Promise<UnifiedExtractionResult> {
+  const documentMode = opts.documentMode ?? 'full';
   const body = {
     ...modelParams(EXTRACTION_MODEL, documentMode === 'metadata' ? METADATA_MAX_TOKENS : EXTRACTION_MAX_TOKENS),
     system: unifiedSystemPrompt(documentMode),
-    messages: [{ role: 'user', content }],
+    messages: [{ role: 'user', content: pagesToContentBlocks(pages) }],
   };
-  const until = timeoutMs === undefined ? undefined : Date.now() + timeoutMs;
+  const until = opts.timeoutMs === undefined ? undefined : Date.now() + opts.timeoutMs;
   const left = () => {
     if (until === undefined) return undefined;
     const ms = until - Date.now();
@@ -113,25 +103,20 @@ async function extractOrClassifyOnce(
     return ms;
   };
 
-  let responseText = await callAnthropic(apiKey, body, left(), httpAttempts);
-
-  let parsed: ReturnType<typeof parseUnifiedResult>;
-  try {
-    parsed = parseUnifiedResult(parseExtractionJson(responseText));
-  } catch {
-    responseText = await callAnthropic(apiKey, body, left(), httpAttempts);
+  for (let call = 1; ; call++) {
+    const result = await fetchAnthropicRaw(apiKey, body, left(), opts.httpAttempts);
+    const stop = STOP_CODES[result.stopReason ?? ''];
+    if (stop) throw new ExtractionStopError(stop, result.refusalCategory);
     try {
-      parsed = parseUnifiedResult(parseExtractionJson(responseText));
+      return toUnifiedResult(parseUnifiedResult(parseExtractionJson(result.content)));
     } catch {
       // The error CLASS only: a SyntaxError quotes ~10 chars of the model's
       // answer and Zod names the values it received — both are document text,
       // and this error reaches console.error and Sentry (api.lab-import-v2).
       // No `cause` either: Sentry serialises it.
-      throw new Error('extraction returned malformed JSON');
+      if (call >= 2) throw new Error('extraction returned malformed JSON');
     }
   }
-
-  return toUnifiedResult(parsed);
 }
 
 // ---------------------------------------------------------------------------
@@ -152,13 +137,6 @@ export interface AnthropicContentBlock {
   name?: string;
   input?: unknown;
 }
-
-/**
- * `stop_details.category` on a refusal, bounded so it can go to telemetry.
- * Anthropic's set is open; anything new or missing is 'other'.
- */
-const REFUSAL_CATEGORIES = ['cyber', 'bio', 'frontier_llm', 'reasoning_extraction', 'general_harms', 'other'] as const;
-export type RefusalCategory = typeof REFUSAL_CATEGORIES[number];
 
 export interface AnthropicResult {
   content: string;
@@ -243,8 +221,7 @@ function toResult(
   blocks: AnthropicContentBlock[], usage: AnthropicUsage, stopReason: string | undefined, category: unknown,
 ): AnthropicResult {
   if (stopReason === 'refusal') {
-    const refusalCategory = (REFUSAL_CATEGORIES as readonly string[]).includes(category as string) ? category as RefusalCategory : 'other';
-    return { content: '', contentBlocks: [], usage, stopReason, refusalCategory };
+    return { content: '', contentBlocks: [], usage, stopReason, refusalCategory: toRefusalCategory(category) };
   }
   const text = blocks
     .filter(b => b.type === 'text')
@@ -460,13 +437,6 @@ async function readEventStream(
   return toResult(blocks.filter(Boolean), toUsage(rawUsage), stopReason, category);
 }
 
-/** Text-only wrapper for extraction, where a refusal is a failed call. */
-async function callAnthropic(apiKey: string, body: Record<string, unknown>, timeoutMs?: number, maxAttempts?: number): Promise<string> {
-  const result = await fetchAnthropicRaw(apiKey, body, timeoutMs, maxAttempts);
-  if (result.stopReason === 'refusal') throw new Error(REFUSAL_ERROR);
-  return result.content;
-}
-
 /** Text + usage + raw content blocks wrapper — for chat (prompt caching
  *  metrics + tool_use parsing). */
 export async function callAnthropicWithUsage(
@@ -538,7 +508,7 @@ export async function createBatch(
 /** One batch result, named by its request index (`file-N`): the client maps
  *  it back to the file it sent at that position. `errorCode` marks a file the
  *  provider did not read. */
-type BatchFileResult = { index: number } & (UnifiedExtractionResult | { errorCode: 'server_error' });
+type BatchFileResult = { index: number } & (UnifiedExtractionResult | { errorCode: 'server_error' | ExtractionStopCode });
 
 /** Poll batch status. Returns completed count or full results when done. */
 export async function pollBatch(
@@ -614,10 +584,17 @@ export async function pollBatch(
       const index = parseInt(entry.custom_id?.replace('file-', ''), 10);
       if (isNaN(index)) continue;
 
-      // A refused request still comes back 'succeeded', maybe with partial
-      // text: never parsed as values (US-15 AC31).
-      if (entry.result?.type === 'succeeded' && entry.result.message?.stop_reason !== 'refusal') {
-        const textBlock = entry.result.message?.content?.find((b: any) => b.type === 'text');
+      // A refused or cut-off request still comes back 'succeeded', maybe with
+      // partial text: never parsed as values, and marked as such (US-15 AC31).
+      const message = entry.result?.type === 'succeeded' ? entry.result.message : undefined;
+      const stop = STOP_CODES[message?.stop_reason ?? ''];
+      if (stop) {
+        reportExtractionStop(stop, stop === 'refused' ? toRefusalCategory(message.stop_details?.category) : undefined, 'batch');
+        resultMap.set(index, { index, errorCode: stop });
+        continue;
+      }
+      if (message) {
+        const textBlock = message.content?.find((b: any) => b.type === 'text');
         if (textBlock?.text) {
           try {
             const parsed = parseUnifiedResult(parseExtractionJson(textBlock.text));

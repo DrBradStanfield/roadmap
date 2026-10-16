@@ -35,7 +35,7 @@ import { spawnSync } from 'child_process';
 import { loadBlogIndex, findBlogByVideoId, type BlogIndexEntry } from '../app/lib/blog-index.server';
 import { loadMatchedContent } from '../app/lib/matched-content';
 import {
-  CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg as getArgOf, modelParams,
+  CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg as getArgOf, modelParams, parseClassification,
 } from '../packages/health-core/src/models';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -218,16 +218,13 @@ async function callAnthropic(body: object): Promise<{ ok: boolean; text: string;
 
 async function classify(comment: string): Promise<{ classification: string; raw: string }> {
   const body = {
-    ...modelParams(CLASSIFIER_MODEL, 16), // 16, as production: a smaller cap truncates MEASUREMENT
+    ...modelParams(CLASSIFIER_MODEL, CLASSIFIER_MAX_TOKENS),
     system: [{ type: 'text', text: CLASSIFIER_PROMPT, cache_control: PROMPT_CACHE }],
     messages: [{ role: 'user', content: `(new conversation, no prior turns)\n\nCurrent message: ${comment}\n\nClassification:` }],
   };
   const result = await callAnthropic(body);
   if (!result.ok) return { classification: 'ERROR', raw: JSON.stringify(result.raw) };
-  // The first word, against every label, as production parses it (app/lib/chat-classifier.server.ts).
-  const cleaned = result.text.toUpperCase().match(/[A-Z]+/)?.[0] ?? '';
-  const valid = ['ROUTE', 'GREETING', 'PRODUCT', 'ACCOUNT', 'MEASUREMENT'];
-  return { classification: valid.includes(cleaned) ? cleaned : 'ERROR', raw: result.text };
+  return { classification: parseClassification(result.text), raw: result.text };
 }
 
 async function routeQuery(comment: string): Promise<{ handles: string[]; raw: string; error: string | null }> {

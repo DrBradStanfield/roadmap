@@ -47,9 +47,10 @@ of truth for acceptance criteria and the schemas live in
    read and delete — and the REST adapters hand it to `fetch`. 5 folder
    files per call by default with `remaining` naming the rest, per-file
    partial results, extraction HTTP timeout min(20 s, what is left) with no
-   retry, inner or outer, on this path, and the second call (the same
-   request re-sent on a malformed answer) shares the first call's deadline (`extractOrClassifyOnce` computes one
-   `until` for the pair); an extract's I/O ends 4 s before the deadline so
+   HTTP retry on this path, and the second call (the same request
+   re-sent on a malformed answer; never on a refusal or a `max_tokens`
+   stop) shares the first call's deadline (`extractOrClassify` computes one
+   `until` for both); an extract's I/O ends 4 s before the deadline so
    slotting and the stash fit inside it. What time cut off is `remaining` on
    BOTH routes and its day's charge is refunded (`createQuotaCounter.refund`);
    `next` says commit first, then ask again. Non-lab documents are asked for

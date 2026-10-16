@@ -48,7 +48,8 @@ const UPLOAD_ERROR_CODE: Record<ByokErrorCode, UploadErrorCode> = {
   bad_request: 'server_error',
   empty: 'server_error',
   server_error: 'server_error',
-  refused: 'server_error',
+  refused: 'refused',
+  too_long: 'too_long',
 };
 
 /** A 400 that names credit or billing is the key's account, not the file:
@@ -64,7 +65,7 @@ function errorKind(error: unknown): string {
 }
 
 /** One direct extraction call; on bad JSON the SAME request is sent once more
- *  (same recovery as the server's extractOrClassifyOnce; Haiku 5.5 400s on the
+ *  (same recovery as the server's extractOrClassify; Haiku 5.5 400s on the
  *  `{` prefill this used to send, US-15 AC31). */
 async function extractDirect(apiKey: string, pages: PageContent[]): Promise<LabImportResult> {
   const body = {

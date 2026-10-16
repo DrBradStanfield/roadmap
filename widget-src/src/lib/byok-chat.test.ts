@@ -159,7 +159,7 @@ describe('US-15 AC31: the Pages chat request on Haiku 5.5', () => {
     await sendMessage('hi', null, SNAPSHOT);
     const body = state.sent as unknown as Record<string, any>;
     expect(body.model).toBe('claude-haiku-5-5');
-    expect(body.max_tokens).toBe(1024);
+    expect(body.max_tokens).toBe(2048);
     expect(body.thinking).toEqual({ type: 'disabled' });
     expect(body).not.toHaveProperty('temperature');
     expect(body.messages.at(-1)).toEqual({ role: 'user', content: 'hi' });

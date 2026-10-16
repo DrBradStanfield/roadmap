@@ -44,6 +44,11 @@ export async function labImport(
     if (response.status === 429) {
       return { result: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
     }
+    if (response.status === 422) {
+      // A file Claude declined or stopped short on: the code says which (US-15 AC31).
+      const code = (await parseJsonResponse<{ errorCode?: string }>(response))?.errorCode;
+      return { result: null, error: 'Not read', errorCode: code === 'refused' || code === 'too_long' ? code : 'server_error' };
+    }
     if (!response.ok) return { result: null, error: 'Extraction failed', errorCode: 'server_error' };
     const data = await parseJsonResponse<{ success: boolean; data?: LabImportResult; remaining?: number; error?: string }>(response);
     if (!data?.success || !data.data) return { result: null, error: data?.error || 'Extraction failed', errorCode: 'server_error' };

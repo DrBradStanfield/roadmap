@@ -11,7 +11,8 @@ vi.mock('./cron-helpers.server', () => ({ sleep: vi.fn().mockResolvedValue(undef
 process.env.ANTHROPIC_API_KEY = 'sk-test-dummy';
 
 import * as Sentry from '@sentry/react-router';
-import { getChatCompletion, reportChatFallback, FALLBACK_RESPONSE, REFUSAL_RESPONSES } from './chat.server';
+import { getChatCompletion, reportChatFallback, FALLBACK_RESPONSE } from './chat.server';
+import { REFUSAL_RESPONSES } from '../../packages/health-core/src/models';
 
 const REAL_FETCH = global.fetch;
 const PARTIAL = 'Partial answer the model began before declining';

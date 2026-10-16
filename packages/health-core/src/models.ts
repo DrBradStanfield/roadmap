@@ -67,6 +67,82 @@ export function modelParams(model: string, maxTokens: number, thinking: 'off' | 
 }
 
 // ---------------------------------------------------------------------------
+// Refusals (US-15 AC14, AC31): website chat, BYOK chat and extraction alike.
+// ---------------------------------------------------------------------------
+
+/**
+ * `stop_details.category` on a refusal, bounded so it can go to telemetry.
+ * Anthropic's set is open; anything new or missing is 'other'.
+ */
+export const REFUSAL_CATEGORIES = ['cyber', 'bio', 'frontier_llm', 'reasoning_extraction', 'general_harms', 'other'] as const;
+export type RefusalCategory = typeof REFUSAL_CATEGORIES[number];
+export const toRefusalCategory = (category: unknown): RefusalCategory =>
+  (REFUSAL_CATEGORIES as readonly string[]).includes(category as string) ? category as RefusalCategory : 'other';
+
+/**
+ * User-facing line when the model declines (US-15 AC14). Health-adjacent
+ * categories point to a clinician; the rest just decline. Fixed text: the
+ * model's partial answer is never shown.
+ */
+export const REFUSAL_RESPONSES = {
+  clinical: "I can't help with that here. Please raise it with your doctor or pharmacist.",
+  request: "I can't help with that request.",
+} as const;
+
+export const refusalLine = (category: RefusalCategory) =>
+  category === 'bio' || category === 'general_harms' || category === 'other' ? REFUSAL_RESPONSES.clinical : REFUSAL_RESPONSES.request;
+
+// ---------------------------------------------------------------------------
+// Pre-router classifier labels: production and its harnesses parse one way.
+// ---------------------------------------------------------------------------
+
+// Const-object so consumers compare against `Classification.ROUTE` instead of
+// the literal `'ROUTE'`. Typos become compile errors; rename-refactors work.
+export const Classification = {
+  ROUTE: 'ROUTE',
+  GREETING: 'GREETING',
+  PRODUCT: 'PRODUCT',
+  ACCOUNT: 'ACCOUNT',
+  /**
+   * Reading back / correcting the user's OWN recorded numbers. Added 2026-08-07:
+   * the router prompt's empty-list rule (rule 7 since 2026-08-30, then Rule 6)
+   * already said these should return empty handles, but the
+   * classifier had no label for them, so every "What is my BMI?" fired a ~1.6s
+   * router call that came back empty. Measured on 143 empty-handle turns, this
+   * was the single largest bucket (50, 35%) — of which 33 are pure lookup.
+   * Interpretation ("is my Lp(a) a concern?") stays ROUTE by design.
+   */
+  MEASUREMENT: 'MEASUREMENT',
+  ERROR: 'ERROR',
+} as const;
+
+export type Classification = typeof Classification[keyof typeof Classification];
+
+const VALID_CLASSIFICATIONS: ReadonlyArray<Classification> = [
+  Classification.ROUTE,
+  Classification.GREETING,
+  Classification.PRODUCT,
+  Classification.ACCOUNT,
+  Classification.MEASUREMENT,
+];
+
+/**
+ * 16: 'MEASUREMENT' is the longest label, and on Haiku 5.5's tokenizer it took
+ * all of the old cap of 8 (2026-10-16 smoke). A truncated word fails the
+ * exact-match parse, degrading to ERROR — which fail-safes to firing the
+ * router, silently undoing the saving this label exists to create. Unused
+ * output tokens are not billed.
+ */
+export const CLASSIFIER_MAX_TOKENS = 16;
+
+// The label is the answer's first word: with room in the cap, text the model
+// adds after it must not turn a good label into ERROR (US-15 AC31).
+export function parseClassification(raw: string): Classification {
+  const cleaned = raw.toUpperCase().match(/[A-Z]+/)?.[0] ?? '';
+  return VALID_CLASSIFICATIONS.find(valid => valid === cleaned) ?? Classification.ERROR;
+}
+
+// ---------------------------------------------------------------------------
 // Harness plumbing (tools/test-*.ts): flags, per-call stats, one summary line.
 // ---------------------------------------------------------------------------
 

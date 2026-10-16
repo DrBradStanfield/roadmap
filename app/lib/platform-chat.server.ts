@@ -16,12 +16,9 @@ import {
 } from './chat.server';
 import type { ChatFailureMode } from './chat.server';
 import { routeQuery, sanitizeForRouter, type RouterResult } from './chat-router.server';
-import {
-  classifyMessage,
-  shouldFireRouter,
-  type Classification,
-} from './chat-classifier.server';
-import type { AnthropicUsage, RefusalCategory } from './anthropic.server';
+import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
+import type { AnthropicUsage } from './anthropic.server';
+import type { Classification, RefusalCategory } from '../../packages/health-core/src/models';
 
 export interface PlatformCompletionResult {
   content: string;

@@ -13,8 +13,8 @@ import { loadBlogArticle, loadMatchedContent } from './matched-content';
 import { SUGGESTION_EVIDENCE } from '../../packages/health-core/src/evidence';
 import { buildChatContextJson } from '../../packages/health-core/src/chat-context';
 import { CHAT_EDIT_TOOLS, parseProposedEdits, toolOnlyAck, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
-import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicStreamEvent, type AnthropicUsage, type RefusalCategory } from './anthropic.server';
-import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, modelParams } from '../../packages/health-core/src/models';
+import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicStreamEvent, type AnthropicUsage } from './anthropic.server';
+import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, modelParams, refusalLine, type RefusalCategory } from '../../packages/health-core/src/models';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { PRODUCTS_BLOCK_FILES, productsBlockText } from './chat-products-block';
 import { PROPOSE_SUBSCRIPTION_CHANGE_TOOL, parseSubscriptionProposal, type SubscriptionProposal } from './subscription-gateway.server';
@@ -440,19 +440,6 @@ export function buildConversationMessages(
  */
 export const FALLBACK_RESPONSE =
   "Sorry — I'm having trouble responding right now. Please try again, or email brad@drstanfield.com if it keeps happening.";
-
-/**
- * User-facing line when the model declines (US-15 AC14). Health-adjacent
- * categories point to a clinician; the rest just decline. Fixed text: the
- * model's partial answer is never shown.
- */
-export const REFUSAL_RESPONSES = {
-  clinical: "I can't help with that here. Please raise it with your doctor or pharmacist.",
-  request: "I can't help with that request.",
-} as const;
-
-const refusalLine = (category: RefusalCategory) =>
-  category === 'bio' || category === 'general_harms' || category === 'other' ? REFUSAL_RESPONSES.clinical : REFUSAL_RESPONSES.request;
 
 export type ChatFailureMode = 'api-error' | 'empty-response' | 'refusal';
 

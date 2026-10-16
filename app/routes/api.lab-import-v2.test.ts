@@ -11,17 +11,22 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const createBatch = vi.fn(async () => ({ batchId: 'batch_abc' }));
 const pollBatch = vi.fn(async () => ({ status: 'ended' as const, completed: 1, total: 1, results: [{ fileName: 'a.pdf' }] }));
+const extractOrClassify = vi.fn();
 
-vi.mock('../lib/anthropic.server', () => ({
+vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
+vi.mock('../lib/anthropic.server', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   createBatch: (...a: unknown[]) => createBatch(...(a as [])),
   pollBatch: (...a: unknown[]) => pollBatch(...(a as [])),
-  extractOrClassify: vi.fn(),
+  extractOrClassify: (...a: unknown[]) => extractOrClassify(...(a as [])),
 }));
 vi.mock('../lib/local-first-route.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   verifyAppProxySignature: () => true,
 }));
 
+import * as Sentry from '@sentry/react-router';
+import { ExtractionStopError } from '../lib/anthropic.server';
 import { action, loader } from './api.lab-import-v2';
 
 const FILES = [{ fileName: 'a.pdf', pages: [{ type: 'image', content: 'AAAA', mimeType: 'image/png' }] }];
@@ -143,5 +148,39 @@ describe('privacy: the batch takes no file name', () => {
   it('drops the compatibility label the current widget sends (US-12 AC9)', async () => {
     await action({ request: batch([{ fileName: 'file-1', pages: PAGES }]) } as never);
     expect(createBatch).toHaveBeenCalledWith([{ pages: PAGES }]);
+  });
+});
+
+// US-15 AC31: Haiku 5.5 can decline a file, or stop at its token cap, and the
+// same request stops the same way again. The answer says which, so the widget
+// does not say "try again", and carries no document text.
+describe('a single file that stopped short', () => {
+  const single = () => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST',
+    headers: { 'fly-client-ip': `10.1.0.${++ipCounter}` },
+    body: JSON.stringify({ pages: FILES[0].pages }),
+  });
+
+  it('answers a refusal 422 "refused" and reports its category, not an exception', async () => {
+    extractOrClassify.mockRejectedValueOnce(new ExtractionStopError('refused', 'general_harms'));
+    const answer = await action({ request: single() } as never);
+    expect(answer.status).toBe(422);
+    expect(await answer.json()).toEqual({ success: false, error: 'Not read', errorCode: 'refused' });
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('Lab import: extraction refused', expect.objectContaining({
+      tags: expect.objectContaining({ feature: 'lab_import_v2', path: 'single', refusalCategory: 'general_harms' }),
+    }));
+  });
+
+  it('answers a max_tokens stop 422 "too_long"', async () => {
+    extractOrClassify.mockRejectedValueOnce(new ExtractionStopError('too_long'));
+    const answer = await action({ request: single() } as never);
+    expect(answer.status).toBe(422);
+    expect((await answer.json()).errorCode).toBe('too_long');
+  });
+
+  it('still answers any other failure 500', async () => {
+    extractOrClassify.mockRejectedValueOnce(new Error('extraction returned malformed JSON'));
+    expect((await action({ request: single() } as never)).status).toBe(500);
   });
 });

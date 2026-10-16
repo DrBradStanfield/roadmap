@@ -19,7 +19,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { CLASSIFIER_MODEL as PRODUCTION_CLASSIFIER_MODEL, PROMPT_CACHE, getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat } from '../packages/health-core/src/models';
+import { CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL as PRODUCTION_CLASSIFIER_MODEL, PROMPT_CACHE, getArg as getArgOf, modelParams, parseClassification, summaryLine, toStat, type CallStat, type Classification } from '../packages/health-core/src/models';
 const getArg = (flag: string, defaultValue: string) => getArgOf(args, flag, defaultValue);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -60,23 +60,6 @@ const apiErrors: string[] = [];
 const PROMPT_PATH = path.join(__dirname, '..', 'app', 'lib', 'chat-classifier-prompt.md');
 const CLASSIFIER_PROMPT = fs.readFileSync(PROMPT_PATH, 'utf-8');
 
-// Kept as a literal list rather than importing chat-classifier.server.ts: tsx
-// can't resolve the health-core workspace package through that import chain
-// (same constraint as test-chatbot-matching.ts). It therefore has to be kept in
-// sync BY HAND with Classification in app/lib/chat-classifier.server.ts.
-// Adding MEASUREMENT there on 2026-08-07 without updating here made the harness
-// parse a correct 'MEASUREMENT' reply as ERROR — a false failure. If you add a
-// label, add it in BOTH places.
-type Classification = 'ROUTE' | 'GREETING' | 'PRODUCT' | 'ACCOUNT' | 'MEASUREMENT' | 'ERROR';
-
-const VALID: ReadonlyArray<Classification> = ['ROUTE', 'GREETING', 'PRODUCT', 'ACCOUNT', 'MEASUREMENT'];
-
-function parseClassification(raw: string): Classification {
-  // The first word, as production parses it (app/lib/chat-classifier.server.ts).
-  const cleaned = (raw.toUpperCase().match(/[A-Z]+/)?.[0] ?? '') as Classification;
-  return VALID.includes(cleaned) ? cleaned : 'ERROR';
-}
-
 // ---------------------------------------------------------------------------
 // Single classifier call
 // ---------------------------------------------------------------------------
@@ -84,9 +67,7 @@ function parseClassification(raw: string): Classification {
 async function callClassifier(query: string): Promise<{ classification: Classification; raw: string; latencyMs: number }> {
   const t0 = Date.now();
   const body = {
-    // 16, as production sends (app/lib/chat-classifier.server.ts): a smaller
-    // cap truncates 'MEASUREMENT' and measures the cap, not the classifier.
-    ...modelParams(CLASSIFIER_MODEL, 16, thinkingOff ? 'off' : 'low'),
+    ...modelParams(CLASSIFIER_MODEL, CLASSIFIER_MAX_TOKENS, thinkingOff ? 'off' : 'low'),
     system: [
       { type: 'text', text: CLASSIFIER_PROMPT, cache_control: PROMPT_CACHE },
     ],
