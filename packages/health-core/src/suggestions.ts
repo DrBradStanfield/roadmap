@@ -1035,7 +1035,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Collagen peptides',
-      description: 'A 2023 meta-analysis of 26 randomised controlled trials found collagen peptides (10–15 g/day) improve skin hydration and elasticity compared with placebo.',
+      description: 'Collagen peptides have been studied for skin hydration and elasticity; trials used 0.5 to 10 g a day.',
     },
     {
       id: 'supplement-omega3',

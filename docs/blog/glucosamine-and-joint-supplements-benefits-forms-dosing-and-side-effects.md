@@ -236,7 +236,7 @@ NAG is naturally produced in the body and helps maintain and repair the mucus li
 
 **Practical note:** If trying oral hyaluronic acid, use amounts from clinical studies (80-200 mg/day). Many joint supplements add only a few milligrams per serving — well below clinically studied amounts. Some contain proprietary blends with hyaluronic acid where the actual amount cannot be determined [1].
 
-Dr Brad Stanfield's [MicroVitamin Capsules](https://drstanfield.com/products/microvitamin) include 200 mg of hyaluronic acid — a dose within the clinically studied range for joint and skin support. The [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 200 mg of hyaluronic acid plus 12.5 g of collagen peptides, combining two joint-supportive ingredients in a single daily scoop.
+Dr Brad Stanfield's [MicroVitamin Capsules](https://drstanfield.com/products/microvitamin) include 200 mg of hyaluronic acid — a dose within the clinically studied range for joint and skin support. The [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) includes 200 mg of hyaluronic acid plus 12.5 g of collagen peptides in a single daily scoop.
 
 ### Cardiovascular Associations
 

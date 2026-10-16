@@ -83,7 +83,7 @@ A clinical study comparing a single 10-gram dose of collagen hydrolysate from fi
 
 The evidence for collagen supplementation and skin health is the most extensively studied application. Multiple placebo-controlled trials suggest modest improvements in skin wrinkles, elasticity, and hydration, though a rigorous systematic review has raised important questions about the quality of this evidence.
 
-**Systematic review (2025):** A review of 23 clinical studies found that collagen supplementation (approximately 3 g/day for approximately 12 weeks) modestly improved skin hydration and elasticity compared to placebo, but did NOT reduce wrinkles. Critically, when only high-quality or independent (non-manufacturer-funded) studies were considered, there were no significant improvements in any outcome measure [4]. However, this review has been criticized by some in the skincare industry for inaccurate classification of independent versus manufacturer-funded studies, and for incorrectly citing the duration and collagen source in certain included studies [12][13][14].
+**Systematic review (2025):** A review of 23 clinical studies found that collagen supplementation (approximately 3 g/day for approximately 12 weeks) modestly improved skin hydration and elasticity compared to placebo, but did NOT reduce wrinkles. Critically, when only high-quality or independent (non-manufacturer-funded) studies were considered, there were no significant improvements in any outcome measure [4]. However, this review has been criticized by some in the skincare industry for inaccurate classification of independent versus manufacturer-funded studies, and for incorrectly citing the duration and collagen source in certain included studies [13][14].
 
 **Verisol (porcine type I collagen peptides):** The most studied branded ingredient for skin. Key trials:
 
@@ -237,7 +237,7 @@ Supplements for skin frequently combine collagen with hyaluronic acid, another c
 
 **Liquid vs. powder:** Liquid collagen products typically provide less collagen per serving and cost 3-6 times more per gram than collagen powders. They may also contain added sweeteners [1]. Collagen powders are generally the most cost-effective delivery method.
 
-**Product mention:** Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) contains 12.5 g of collagen peptides per daily scoop -- within the clinical dose range for both skin and joint benefits -- combined with 200 mg of hyaluronic acid for complementary skin hydration support.
+**Product mention:** Dr Brad Stanfield's [MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder) contains 12.5 g of collagen peptides per daily scoop, combined with 200 mg of hyaluronic acid.
 
 ## 5. Dietary Sources
 
@@ -371,7 +371,7 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [5] Alcock RD et al. "Bone Broth Unlikely to Provide Reliable Concentrations of Collagen Precursors Compared with Supplemental Sources of Collagen Used in Collagen Research." *Front Nutr*. 2019;6:67. doi: [10.3389/fnut.2019.00067](https://doi.org/10.3389/fnut.2019.00067)
 
-[6] Lin P et al. "Plant-based collagen biomimetic for skin health: A randomized placebo-controlled trial." *J Funct Food*. 2024. doi: [10.1016/j.jff.2024.106067](https://doi.org/10.1016/j.jff.2024.106067)
+[6] Lin Y et al. "Oral supplementation of vegan collagen biomimetic has beneficial effects on human skin physiology: A double-blind, placebo-controlled study." *J Funct Foods*. 2024;112:105955. doi: [10.1016/j.jff.2023.105955](https://doi.org/10.1016/j.jff.2023.105955)
 
 [7] Virgilio N et al. "Comparison of Fish, Porcine, and Bovine Collagen Hydrolysate Absorption: A Randomized Crossover Study." *Front Nutr*. 2024. doi: [10.3389/fnut.2024.1307596](https://doi.org/10.3389/fnut.2024.1307596)
 
@@ -383,7 +383,6 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [11] Aussieker T et al. "Collagen Protein Ingestion Does Not Stimulate Myofibrillar or Connective Tissue Protein Synthesis Rates Following Exercise." *Med Sci Sports Exerc*. 2025. doi: [10.1249/MSS.0000000000003492](https://doi.org/10.1249/MSS.0000000000003492)
 
-[12] Rajan S. "Response to Myung et al. regarding oral collagen supplementation." *Am J Med*. 2025. doi: [10.1016/j.amjmed.2025.01.018](https://doi.org/10.1016/j.amjmed.2025.01.018)
 
 [13] Collagen Stewardship Alliance (CSA). "Response to Myung et al. systematic review." 2025.
 
@@ -397,7 +396,7 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [18] Schunck M et al. "Dietary supplementation with specific collagen peptides has a body mass index-dependent beneficial effect on cellulite morphology." *J Med Food*. 2015;18(12):1340-1348. doi: [10.1089/jmf.2015.0022](https://doi.org/10.1089/jmf.2015.0022)
 
-[19] Sangsuwan W et al. "Effect of oral supplementation with collagen hydrolysate on skin elasticity in postmenopausal women." *J Dermatolog Treat*. 2020. doi: [10.1080/09546634.2020.1764906](https://doi.org/10.1080/09546634.2020.1764906)
+[19] Sangsuwan W et al. "Four-weeks daily intake of oral collagen hydrolysate results in improved skin elasticity, especially in sun-exposed areas: a randomized, double-blind, placebo-controlled trial." *J Dermatolog Treat*. 2020. doi: [10.1080/09546634.2020.1725412](https://doi.org/10.1080/09546634.2020.1725412)
 
 [20] Kim J et al. "Oral Supplementation of Low-Molecular-Weight Collagen Peptides Reduces Skin Wrinkles and Improves Biophysical Properties of Skin: A Randomized, Double-Blinded, Placebo-Controlled Study." *J Med Food*. 2022;25(12):1146-1154. doi: [10.1089/jmf.2022.k.0097](https://doi.org/10.1089/jmf.2022.k.0097)
 
@@ -411,7 +410,7 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [25] Choi SY et al. "Effects of collagen tripeptide supplement on skin properties: a prospective, randomized, controlled study." *J Cosmet Laser Ther*. 2014;16(3):132-137. doi: [10.3109/14764172.2013.854119](https://doi.org/10.3109/14764172.2013.854119)
 
-[26] Pogacnik T et al. "Skin anti-aging potential of fish collagen supplementation with methylsulfonylmethane and vitamin C: Results from a randomized double-blind placebo-controlled study." *J Funct Foods*. 2023;108:105756. doi: [10.1016/j.jff.2023.105756](https://doi.org/10.1016/j.jff.2023.105756)
+[26] Pogačnik T et al. "The effect of a 12-week dietary intake of food supplements containing collagen and MSM on dermis density and other skin parameters: A double-blind, placebo-controlled, randomised four-way study comparing the efficacy of three test products." *J Funct Foods*. 2023;110:105838. doi: [10.1016/j.jff.2023.105838](https://doi.org/10.1016/j.jff.2023.105838)
 
 [27] Vleminckx H et al. "Effects of Oral Collagen Supplementation on Skin Properties: A Randomized, Double-Blind, Placebo-Controlled Study." *J Cosmet Dermatol*. 2024. doi: [10.1111/jocd.16313](https://doi.org/10.1111/jocd.16313)
 
@@ -473,7 +472,7 @@ There are no clinical studies evaluating collagen supplementation specifically d
 
 [56] Miyab MF et al. "Effect of a Nutritional Supplement Containing Collagen Peptides on Burn Wound Healing." *Burns*. 2020. doi: [10.1016/j.burns.2020.04.026](https://doi.org/10.1016/j.burns.2020.04.026)
 
-[57] Choi SY et al. "Collagen tripeptide supplement for skin recovery after laser resurfacing." *Clin Exp Dermatol*. 2014. doi: [10.1111/ced.12404](https://doi.org/10.1111/ced.12404)
+[57] Choi SY et al. "Effect of high advanced-collagen tripeptide on wound healing and skin recovery after fractional photothermolysis treatment." *Clin Exp Dermatol*. 2014;39(8):874-880. doi: [10.1111/ced.12405](https://doi.org/10.1111/ced.12405)
 
 [58] Dressler P et al. "Improvement of Functional Ankle Properties Following Supplementation with Specific Collagen Peptides in Athletes with Chronic Ankle Instability." *J Sports Sci Med*. 2018;17(2):298-304. PMID: [29769831](https://pubmed.ncbi.nlm.nih.gov/29769831/)
 

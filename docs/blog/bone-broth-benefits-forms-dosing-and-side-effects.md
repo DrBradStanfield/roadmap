@@ -186,7 +186,7 @@ When purchasing bone broth, look for products that list protein content of at le
 
 ### Product Context
 
-Dr Brad Stanfield's MicroVitamin+ Powder includes 12.5 g of collagen peptides — a form chosen for its superior bioavailability compared to the gelatin found in bone broth — alongside 5 g of creatine monohydrate and 25 core vitamin and mineral ingredients ([shop MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder)). For those seeking collagen specifically for skin or joint support, collagen peptides (hydrolysate) as found in MicroVitamin+ Powder may offer more predictable dosing and absorption than bone broth, where collagen content varies with preparation.
+Dr Brad Stanfield's MicroVitamin+ Powder includes 12.5 g of collagen peptides alongside 5 g of creatine monohydrate and 25 core vitamin and mineral ingredients ([shop MicroVitamin+ Powder](https://drstanfield.com/products/microvitamin-powder)).
 
 ### Timing and Administration
 
@@ -471,7 +471,7 @@ Most bone broths need only be refrigerated after opening. Some products should b
 
 [51] Zhang Y, et al. "Treatment of early rheumatoid arthritis with minocycline versus placebo." *Arthritis Rheum*. 2008. Referenced in ConsumerLab Concerns and Cautions section.
 
-[52] Barnett ML, et al. "Treatment of rheumatoid arthritis with oral type II collagen." *Arthritis Rheum*. 1998;41(2):290-297. doi: [10.1002/1529-0131(199802)41:2<290::AID-ART13>3.0.CO;2-#](https://doi.org/10.1002/1529-0131(199802)41:2%3C290::AID-ART13%3E3.0.CO;2-%23)
+[52] Barnett ML, et al. "Treatment of rheumatoid arthritis with oral type II collagen." *Arthritis Rheum*. 1998;41(2):290-297. doi: [10.1002/1529-0131(199802)41:2<290::AID-ART13>3.0.CO;2-R](https://doi.org/10.1002/1529-0131(199802)41:2%3C290::AID-ART13%3E3.0.CO;2-R)
 
 [53] Monro JA, Leon R, Puri BK. "The risk of lead contamination in bone broth diets." *Med Hypotheses*. 2013;80(4):389-390. doi: [10.1016/j.mehy.2012.12.026](https://doi.org/10.1016/j.mehy.2012.12.026)
 

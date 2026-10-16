@@ -2384,7 +2384,7 @@ describe('generateSuggestions', () => {
       const expectMentions: Record<string, RegExp> = {
         'supplement-micronutrient-base': /COSMOS/i,
         'supplement-creatine': /meta-analysis/i,
-        'supplement-collagen': /26 randomised controlled trials/i,
+        'supplement-collagen': /studied for skin hydration/i,
         'supplement-omega3': /cardiovascular events/i,
         'supplement-sleep': /melatonin/i,
       };

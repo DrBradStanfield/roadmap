@@ -550,10 +550,10 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'supplement-collagen': {
-    reason: 'A 2023 meta-analysis combining 26 randomised controlled trials confirmed that oral collagen peptide supplementation significantly improves skin hydration and elasticity compared with placebo, with effects observed at doses of 10–15 g daily.',
+    reason: 'Collagen peptides have been studied for skin hydration and elasticity; trials used 0.5 to 10 g a day.',
     guidelines: [],
     references: [
-      { label: 'Pu 2023 – Collagen peptides & skin: meta-analysis of 26 RCTs (Nutrients)', url: 'https://doi.org/10.3390/nu15092080' },
+      { label: 'Batool 2026 – Oral collagen peptides & skin: meta-analysis of 35 RCTs (J Cosmet Dermatol)', url: 'https://doi.org/10.1111/jocd.71041' },
     ],
   },
 

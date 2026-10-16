@@ -446,7 +446,7 @@ Chocolate bars contain cocoa butter, which is approximately 65% saturated fat (m
 
 [48] Groene T, Zollner R, Grunwald D, et al. "Short-term effects of cocoa flavanols on exercise capacity and vascular function in healthy older adults." *Food Funct*. 2023;14(12):5698-5707. doi: [10.1039/d3fo00541k](https://doi.org/10.1039/d3fo00541k)
 
-[49] Lee JH, Kim YS, Song HM, et al. "Cocoa powder supplementation attenuates oxidative stress and photoaging." *Curr Issues Mol Biol*. 2024;46(3):2392-2411. doi: [10.3390/cimb46030152](https://doi.org/10.3390/cimb46030152)
+[49] Lee SG, et al. "The Role of Cacao Powder in Enhancing Skin Moisture and Reducing Wrinkles: A 12-Week Clinical Trial and In Vitro Study." *Curr Issues Mol Biol*. 2024;46(11):12574-12587. doi: [10.3390/cimb46110746](https://doi.org/10.3390/cimb46110746)
 
 [50] Yoon HS, Kim JR, Park GY, et al. "Cocoa flavanol supplementation influences skin conditions of photo-aged women." *J Nutr*. 2015;146(1):46-50. doi: [10.3945/jn.115.217711](https://doi.org/10.3945/jn.115.217711)
 
