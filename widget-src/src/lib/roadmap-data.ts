@@ -29,13 +29,27 @@ import type {
 
 
 let store: RoadmapStore | null = null;
+let stopLiveRefresh: (() => void) | null = null;
 
 /** Initialise the data layer with a backend. Call once before rendering the app. */
 export async function initRoadmapStore(adapter: StorageAdapter): Promise<void> {
-  store = await RoadmapStore.create(adapter);
-  // Both surfaces init here, so this is the one place the live re-read starts
-  // (US-34). It runs for the life of the page; nothing unmounts the data layer.
-  store.startLiveRefresh();
+  // Do not retire a working copy whose debounce/save has not landed. The
+  // caller can explicitly save and retry; init must not hide a failed save.
+  if (store?.hasPendingWrites) throw new Error('Cannot replace a roadmap store with unsaved or pending writes.');
+  const next = await RoadmapStore.create(adapter);
+  let stopNext: () => void;
+  try {
+    if (store?.hasPendingWrites) throw new Error('Cannot replace a roadmap store with unsaved or pending writes.');
+    // Both surfaces init here, so this is the one owner of the live re-read
+    // (US-34). A successful replacement retires the previous reader.
+    stopNext = next.startLiveRefresh();
+  } catch (error) {
+    next.cancelBootstrapPersistence();
+    throw error;
+  }
+  stopLiveRefresh?.();
+  store = next;
+  stopLiveRefresh = stopNext;
   // Chat history (chat-history.json) syncs over the SAME adapter, created
   // lazily on first chat use (see chat-history-access.ts for the policy).
   setChatHistoryFactory(() => ChatHistoryStore.create(adapter));

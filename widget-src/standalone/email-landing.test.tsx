@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
 import { RoadmapStore } from '../src/storage/roadmap-store';
-import { addMeasurement, initRoadmapStore } from '../src/lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore } from '../src/lib/roadmap-data';
 import { trackProductEvent } from '../src/lib/server-api';
 import { OPEN_PICKER_EVENT } from '../src/lib/storage-notice';
 import { EmailLandingNotice, emailLandingApplies, takeEmailFlag } from './email-landing';
@@ -31,6 +31,8 @@ const here = () => `${location.pathname}${location.search}${location.hash}`;
 beforeEach(async () => {
   vi.mocked(trackProductEvent).mockClear();
   vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockReturnValue(() => {});
+  // US-34 AC1b: save the preceding test's edit before replacing its store.
+  await flushRoadmapStore();
   await initRoadmapStore(new MemoryAdapter(new MemoryCloud())); // an empty record
 });
 afterEach(() => {
