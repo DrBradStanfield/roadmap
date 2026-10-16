@@ -77,11 +77,11 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
 - `[gap][sentry]` 2026-09-07 — Widget no-op days before 09-08 are lower bounds
   (PR #73). A `release` tag means a side bundle; none means health-plan-v2.
   Storage adapters put document titles into thrown messages: READ before quoting.
-- `[base-rate][server]` 2026-10-14 — Router (Sonnet 5.5): 5 s a try, one retry on
-  timeout, so a double timeout reads `latencyMs` ~11 000 (6Z); its text is in
-  `chat_match_events.router_error`. 69 good turns 09-29..10-14: p95 3.5 s, max 4.0 s.
-  Output tokens unlogged, so one timeout is PROBABLY upstream; 2+ in 7 days on
-  any surface (Supabase count; Sentry sees only /api/chat) = act (2026-10-14.md).
+- `[base-rate][server]` 2026-10-14, met 10-16 — Router (Sonnet 5.5): 5 s a try, one
+  retry on timeout; a double timeout reads `latencyMs` ~11 000, text in `router_error`
+  (Supabase only; Sentry sees /api/chat alone). 104 turns 09-29..10-16: good p95 3.5 s;
+  3 first-try timeouts, all 10-14..10-16. Output ≤200 tokens, thinking off: upstream.
+  2+ in 7 days met 10-16 → Brad's timeout decision (2026-10-16.md).
 - `[class][widget]` 2026-09-17, root-fixed 2026-09-20 — Anything `main()`
   awaits before `createRoot` is a blank-widget path: an unhandled rejection
   there leaves the mount empty and the user reloads (1-4 loads per session in
