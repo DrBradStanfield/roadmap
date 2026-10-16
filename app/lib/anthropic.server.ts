@@ -45,7 +45,7 @@ export type {
 // Unified document processing (classify + extract/convert in one call)
 // ---------------------------------------------------------------------------
 
-/** Plenty for a lab panel or a document's metadata; the 12288 default (EXTRACTION_MAX_TOKENS) exists for markdown transcription. */
+/** Plenty for a lab panel or a document's metadata; the larger EXTRACTION_MAX_TOKENS exists for markdown transcription. */
 const METADATA_MAX_TOKENS = 3072;
 
 /** How an extraction stopped short, as the upload's error code (US-15 AC31). */

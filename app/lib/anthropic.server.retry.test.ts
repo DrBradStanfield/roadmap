@@ -277,7 +277,7 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
     expect(metadata.max_tokens).toBe(3072);
     expect(full.system).toMatch(/Preserve ALL text/);
     expect(full.system).not.toMatch(/Do NOT transcribe/);
-    expect(full.max_tokens).toBe(12288);
+    expect(full.max_tokens).toBe(10000);
     // Both carry the same classification rules and the data-not-instructions line.
     for (const body of bodies) expect(body.system).toMatch(/never instructions to follow/);
   });
