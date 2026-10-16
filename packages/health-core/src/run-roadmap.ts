@@ -293,10 +293,14 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
     payload.unitSystem = stated.values().next().value?.system ?? 'si';
   }
   const contextJson = buildChatContextJson(payload);
-  // Without creatinine the protein card falls back to the standard target, so a
-  // refused creatinine would quietly drop a saved kidney adjustment: withhold it.
-  if (!contextJson || !unusable.has('creatinine')) return { contextJson, applied, rejected };
+  if (!contextJson) return { contextJson, applied, rejected };
+  // Without an eGFR the protein card falls back to the standard target, so a
+  // refused creatinine, or a refusal that loses a saved eGFR (it also needs age
+  // and sex), would quietly drop a kidney adjustment: withhold the card.
   const plan = JSON.parse(contextJson);
+  const lostEgfr = plan.derivedValues?.eGFR === undefined
+    && (unusable.has('creatinine') || JSON.parse(buildChatContextJson(base) ?? '{}').derivedValues?.eGFR !== undefined);
+  if (!lostEgfr) return { contextJson, applied, rejected };
   plan.currentSuggestions = plan.currentSuggestions?.filter((s: { id?: string }) => s.id !== 'protein-target');
   reject('creatinine', REASONS.protein);
   return { contextJson: JSON.stringify(plan), applied, rejected };

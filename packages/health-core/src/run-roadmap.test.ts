@@ -771,3 +771,25 @@ describe('US-15 AC33: older BP numbers, the cap, and a refused age or sex', () =
     expect(r.contextJson === null || ctx(r.contextJson).profile.sex === undefined).toBe(true);
   });
 });
+
+// US-15 AC33, Codex round 3 (2026-10-16): eGFR also needs age and sex, so a
+// refused age, birth year or sex drops a saved kidney adjustment the same way.
+describe('US-15 AC33: any refusal that loses a saved eGFR withholds the protein target', () => {
+  const KIDNEY = { ...PROFILE, creatinine: 200 };
+  const cards = (json: string | null) => (json ? ctx(json).currentSuggestions : []).map((s: { id: string }) => s.id);
+  const PROTEIN = 'the protein target depends on kidney function, so it is left out until the user confirms their creatinine';
+
+  it('a refused age, birth year or sex: no protein card, and the reason says why', () => {
+    for (const input of [{ age: 54.5 }, { birthYear: 1972.5 }, { sex: 'Male' }]) {
+      const r = runRoadmap(KIDNEY, { values: [val('ldlC', 3.1, 'mmol/L')], ...input });
+      expect(cards(r.contextJson)).not.toContain('protein-target');
+      // A refused sex leaves no plan at all, so there is no card to explain.
+      if (r.contextJson) expect(r.rejected.map(x => x.reason)).toContain(PROTEIN);
+    }
+  });
+
+  it('a saved profile with no kidney reading keeps the protein card when the age is refused', () => {
+    const r = runRoadmap(PROFILE, { values: [], age: 54.5 });
+    expect(cards(r.contextJson)).toContain('protein-target');
+  });
+});
