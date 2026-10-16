@@ -139,7 +139,7 @@ Health data must never be auto-saved without explicit user confirmation. The rev
    - Multi-page correlation: date on page 1, results on later pages
 3. **Confidence flags**: The LLM marks each value as `high`, `medium`, or `low` confidence. Low-confidence values include a `question` string explaining the ambiguity.
 4. **Unrecognized values**: Tests not in our target list are returned in an `unrecognized` array for display; catalogued extras (sodium, ferritin…) are returned as additional lab values.
-5. **Non-lab documents**: in `'full'` mode (the website) the whole document comes back as markdown with title, date and metadata (`EXTRACTION_MAX_TOKENS = 12288`). In `'metadata'` mode (the connector) only title, date and a one-line summary (`METADATA_MAX_TOKENS = 2048`).
+5. **Non-lab documents**: in `'full'` mode (the website) the whole document comes back as markdown with title, date and metadata (`EXTRACTION_MAX_TOKENS = 12288`). In `'metadata'` mode (the connector) only title, date and a one-line summary (`METADATA_MAX_TOKENS = 3072`).
 
 **Output schema** (lab report):
 ```json
