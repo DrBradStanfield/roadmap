@@ -147,12 +147,12 @@ export async function liftLocalInto(adapter: StorageAdapter, backend: Backend): 
   try {
     await migrateLocalInto(adapter);
   } catch (error) {
-    console.warn('Guest-data lift on connect failed', error);
+    console.warn('Guest-data lift on connect failed');
     // Nothing on this device has reached the cloud, so it is unsynced from its
     // OLDEST row: marking from "now" would let the next merge drop everything
     // the user typed before this connect (US-09 AC13).
     markSyncPending(await localUnsyncedSince());
-    Sentry.captureException(error, { tags: { area: 'cloud-connect', op: 'migrate-up', backend } });
+    Sentry.captureException(recordFailure(error, 'Cloud sync failed'), { tags: { area: 'cloud-sync', op: 'migrate-up', backend } });
   }
 }
 
