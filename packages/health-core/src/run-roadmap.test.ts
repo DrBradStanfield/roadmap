@@ -430,7 +430,9 @@ describe('US-15 AC33: the third review (R1-R4, R8)', () => {
   ])('R1: %s %s %s is in the ask-unit band: the unit reason, and the saved value no longer answers (fourth review, adversary R2)', (field, value, unit, key) => {
     const r = run({ values: [val(field, value, unit)] });
     expect(r.applied).toEqual([]);
-    expect(r.rejected).toEqual([{ field, reason: UNIT }]);
+    expect(r.rejected[0]).toEqual({ field, reason: UNIT });
+    // A refused creatinine also withholds the protein card (Codex round 2).
+    expect(r.rejected.slice(1)).toEqual(field === 'creatinine' ? [{ field, reason: 'the protein target depends on kidney function, so it is left out until the user confirms their creatinine' }] : []);
     expect(latest(r)).not.toHaveProperty(key);
   });
 
@@ -452,7 +454,7 @@ describe('US-15 AC33: the third review (R1-R4, R8)', () => {
 
   it('R2: a lab above its range in the stated unit: confirm the unit; the saved value is removed', () => {
     const r = run({ values: [val('hba1c', 48, '%'), val('creatinine', 90, 'mg/dL')] });
-    expect(r.rejected).toEqual([{ field: 'hba1c', reason: LAB_ABOVE }, { field: 'creatinine', reason: LAB_ABOVE }]);
+    expect(r.rejected).toEqual([{ field: 'hba1c', reason: LAB_ABOVE }, { field: 'creatinine', reason: LAB_ABOVE }, { field: 'creatinine', reason: 'the protein target depends on kidney function, so it is left out until the user confirms their creatinine' }]);
     expect(latest(r)).not.toHaveProperty('hba1c');
     expect(latest(r)).not.toHaveProperty('creatinine');
     expect(ctx(r.contextJson).measurementHistory ?? {}).not.toHaveProperty('hba1c');
@@ -668,7 +670,7 @@ describe('US-15 AC33: the fourth review (Codex R1; adversary R2, R3, R7)', () =>
 
   it('R7: HbA1c 6.1 mmol/mol and creatinine 15 µmol/L stay in the ask-unit band', () => {
     const r = run({ values: [val('hba1c', 6.1, 'mmol/mol'), val('creatinine', 15, 'µmol/L')] });
-    expect(r.rejected.map(x => x.reason)).toEqual(['unit not recognised for this field: ask the user which unit', 'unit not recognised for this field: ask the user which unit']);
+    expect(r.rejected.map(x => x.reason)).toEqual(['unit not recognised for this field: ask the user which unit', 'unit not recognised for this field: ask the user which unit', 'the protein target depends on kidney function, so it is left out until the user confirms their creatinine']);
   });
 });
 
@@ -706,5 +708,28 @@ describe('US-15 AC33: a stated birth year, and values past the cap', () => {
     expect(r.rejected).toContainEqual({ field: 'values', reason: `only the first ${RUN_ROADMAP_MAX_VALUES} values were used` });
     expect(r.rejected).toContainEqual({ field: 'ldlC', reason: `only the first ${RUN_ROADMAP_MAX_VALUES} values were used` });
     expect(ctx(r.contextJson).latestValues).not.toHaveProperty('ldlC');
+  });
+});
+
+// US-15 AC33, Codex round 2 (2026-10-16): without creatinine the protein card
+// falls back to the standard target, so a refused creatinine must not quietly
+// drop a saved kidney adjustment. The card is withheld until the value is clear.
+describe('US-15 AC33: a refused creatinine withholds the kidney-adjusted protein target', () => {
+  const KIDNEY = { ...PROFILE, creatinine: 200 }; // eGFR under 45: protein at 1.0 g/kg
+  const cards = (json: string | null) => ctx(json).currentSuggestions.map((s: { id: string }) => s.id);
+
+  it('saved impaired kidney function plus a refused creatinine: no protein card, and the reason says why', () => {
+    expect(cards(buildChatContextJson(KIDNEY))).toContain('protein-target');
+    for (const values of [[val('creatinine', 3000, 'µmol/L')], [val('creatinine', 150, 'mmol')], [val('creatinine', 150, 'µmol/L', '2026-13-01')]]) {
+      const r = runRoadmap(KIDNEY, { values });
+      expect(cards(r.contextJson)).not.toContain('protein-target');
+      expect(ctx(r.contextJson).latestValues).not.toHaveProperty('creatinine');
+      expect(r.rejected).toContainEqual({ field: 'creatinine', reason: expect.stringMatching(/protein target .* left out/) });
+    }
+  });
+
+  it('a usable stated creatinine, or none at all, keeps the protein card', () => {
+    expect(cards(runRoadmap(KIDNEY, { values: [val('creatinine', 90, 'µmol/L')] }).contextJson)).toContain('protein-target');
+    expect(cards(runRoadmap(KIDNEY, { values: [val('ldlC', 3.1, 'mmol/L')] }).contextJson)).toContain('protein-target');
   });
 });

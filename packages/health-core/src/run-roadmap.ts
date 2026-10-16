@@ -118,6 +118,7 @@ const REASONS = {
   superseded: 'a later or same-day value for this field could not be used, so this one was not used either',
   pair: 'blood pressure is read as a pair: both numbers are needed, each one usable, so neither was used',
   minor: 'the saved profile is under 18: a stated age or birth year is not used',
+  protein: 'the protein target depends on kidney function, so it is left out until the user confirms their creatinine',
 } as const;
 
 const BP_FIELDS: readonly string[] = ['systolicBp', 'diastolicBp'];
@@ -288,7 +289,14 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   if (base.unitSystem !== 'si' && base.unitSystem !== 'conventional') {
     payload.unitSystem = stated.values().next().value?.system ?? 'si';
   }
-  return { contextJson: buildChatContextJson(payload), applied, rejected };
+  const contextJson = buildChatContextJson(payload);
+  // Without creatinine the protein card falls back to the standard target, so a
+  // refused creatinine would quietly drop a saved kidney adjustment: withhold it.
+  if (!contextJson || !unusable.has('creatinine')) return { contextJson, applied, rejected };
+  const plan = JSON.parse(contextJson);
+  plan.currentSuggestions = plan.currentSuggestions?.filter((s: { id?: string }) => s.id !== 'protein-target');
+  reject('creatinine', REASONS.protein);
+  return { contextJson: JSON.stringify(plan), applied, rejected };
 }
 
 const NOT_SAVED = 'The stated values are used for this answer only; nothing was saved.';
