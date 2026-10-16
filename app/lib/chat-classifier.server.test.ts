@@ -19,7 +19,7 @@ describe('chat classifier request (US-15 AC34)', () => {
 
   it('asks Haiku 5.5 with thinking off, no sampling params, and room past the longest label', async () => {
     call.mockResolvedValue({ content: 'MEASUREMENT', contentBlocks: [], usage, stopReason: 'end_turn' });
-    const result = await classifyMessage('My blood pressure was 118/65 this morning');
+    const result = await classifyMessage('My blood pressure was 120/80 this morning');
     const body = call.mock.calls[0][0];
     expect(body).toMatchObject({ model: 'claude-haiku-5-5', max_tokens: 16, thinking: { type: 'disabled' } });
     expect(body).not.toHaveProperty('temperature');
@@ -28,8 +28,8 @@ describe('chat classifier request (US-15 AC34)', () => {
 
   it('reads the label from the first word, so text the model adds after it never turns a label into ERROR', async () => {
     call.mockResolvedValue({ content: 'MEASUREMENT\nThe user is logging a reading.', contentBlocks: [], usage, stopReason: 'end_turn' });
-    expect((await classifyMessage('118/65 today')).classification).toBe('MEASUREMENT');
+    expect((await classifyMessage('120/80 today')).classification).toBe('MEASUREMENT');
     call.mockResolvedValue({ content: 'Not sure', contentBlocks: [], usage, stopReason: 'end_turn' });
-    expect((await classifyMessage('118/65 today')).classification).toBe('ERROR');
+    expect((await classifyMessage('120/80 today')).classification).toBe('ERROR');
   });
 });
