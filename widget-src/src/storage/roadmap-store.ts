@@ -552,7 +552,7 @@ export class RoadmapStore {
     this.file = result.file;
     if (result.saved.length) this.touch();
     // Always empty for measurements; for labs, the rows the caller must SHOW.
-    return { saved: result.saved as Array<ApiMeasurement | ApiLabValue>, skippedDuplicates: result.skippedDuplicates, errorCount: 0, refused: result.refused };
+    return { saved: result.saved as Array<ApiMeasurement | ApiLabValue>, skippedDuplicates: result.skippedDuplicates, errorCount: result.measurementRefusals.length, refused: result.refused };
   }
 
   /**
