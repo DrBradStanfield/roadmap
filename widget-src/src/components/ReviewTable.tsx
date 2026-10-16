@@ -704,21 +704,51 @@ export function ReviewTable({
     return !!(col.date.year && col.date.month && col.date.day);
   }), [matrix.columns]);
 
+  const [dateChangeError, setDateChangeError] = useState<string | null>(null);
+
   /** Column-level date editing: propagate to every contributing file so the
    *  matrix stays consistent. New-column dates only — existing-history
    *  columns are read-only (correction goes through the live timeline). */
   const handleColumnDateChange = (col: MatrixColumn, update: Partial<FullDate>) => {
     if (!col.isNew) return;
+    const nextDate = { ...col.date, ...update };
+    if (nextDate.day) {
+      const maxDay = getDaysInMonth(nextDate.month, nextDate.year);
+      if (parseInt(nextDate.day) > maxDay) nextDate.day = String(maxDay);
+    }
+    const nextKey = buildDatePrefix(nextDate);
+    if (nextKey !== col.dateKey && (
+      matrix.columns.some(other => other.dateKey === nextKey)
+      || history.measurements.some(value => value.recordedAt.slice(0, 10) === nextKey)
+    )) {
+      // A merged column can hide an upload or carry consent to a different
+      // saved row. Keep both columns intact instead of choosing a winner.
+      setDateChangeError('That date already has a column in this review or your record. Choose a different date; no dates or values were changed.');
+      return;
+    }
+    setDateChangeError(null);
+    if (nextKey !== col.dateKey) {
+      // Move the review, not the extraction: an empty string is an exclusion,
+      // and touched metadata remembers the unit in which a correction was typed.
+      const moved = { ...editedDisplayValues };
+      const replacements = { ...replaceChecked };
+      for (const [key, cell] of matrix.cells) {
+        if (cell.state !== 'editable' || !col.fileIndices.includes(cell.fi)) continue;
+        const target = `${key.slice(0, key.lastIndexOf('|'))}|${nextKey}`;
+        moved[target] = moved[key];
+        delete moved[key];
+        const touched = touchedRef.current.get(key);
+        if (touched) touchedRef.current.set(target, touched);
+        touchedRef.current.delete(key);
+        delete replacements[key];
+        delete replacements[target];
+      }
+      setEditedDisplayValues(moved);
+      setReplaceChecked(replacements); // Permission belongs to the old slot only.
+    }
     setFileDates(prev => {
       const next = { ...prev };
-      for (const fi of col.fileIndices) {
-        const merged = { ...prev[fi], ...update };
-        if (merged.day) {
-          const maxDay = getDaysInMonth(merged.month, merged.year);
-          if (parseInt(merged.day) > maxDay) merged.day = String(maxDay);
-        }
-        next[fi] = merged;
-      }
+      for (const fi of col.fileIndices) next[fi] = nextDate;
       return next;
     });
   };
@@ -790,6 +820,7 @@ export function ReviewTable({
 
   return (
     <div className="review-table">
+      {dateChangeError && <p role="alert">{dateChangeError}</p>}
       <div className="review-summary">
         {nothingSelected && archiveCount > 0 ? (
           `Save will archive the original PDF${archiveCount !== 1 ? 's' : ''}. No extracted values or documents are selected.`
