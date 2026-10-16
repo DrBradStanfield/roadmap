@@ -534,10 +534,12 @@ export async function action({ request }: ActionFunctionArgs) {
           write(event);
         }
         : undefined;
-      // The subscription tool rides only while enabled (US-49); run_roadmap reads the
-      // widget's own record (US-15 AC33). Neither: no options.
+      // The subscription tool rides only while enabled (US-49), and never on a widget turn:
+      // that is always a guest, so it could only end in "I can't make that change here",
+      // replacing a health answer. run_roadmap reads the widget's own record (US-15 AC33).
+      const subscriptionTool = subscriptionsOn && !widget;
       const completion = await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, onEvent,
-        subscriptionsOn || canApplyEdits ? { subscriptionTool: subscriptionsOn, guestInputs: body.guestInputs } : undefined);
+        subscriptionTool || canApplyEdits ? { subscriptionTool, guestInputs: body.guestInputs } : undefined);
       const tAfterLlm = Date.now();
       // US-15 AC33 usage signal: one counter per run_roadmap round, the numbers of
       // stated values used and rejected and nothing else. Fire-and-forget.

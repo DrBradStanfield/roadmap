@@ -92,7 +92,8 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
     const values = Array.from({ length: RUN_ROADMAP_MAX_VALUES + 5 }, (_, i) => val('weightKg', 60 + i, 'kg'));
     const run = runRoadmap(PROFILE, { values });
     expect(run.rejected.filter(r => r.field === 'values')).toEqual([{ field: 'values', reason: `only the first ${RUN_ROADMAP_MAX_VALUES} values were used` }]);
-    expect(ctx(run.contextJson).latestValues.weightKg).toBe(String(60 + RUN_ROADMAP_MAX_VALUES - 1));
+    // A value past the cap may be the newest, so the field leaves the run (adversary round 2, R2).
+    expect(ctx(run.contextJson).latestValues).not.toHaveProperty('weightKg');
     expect(RUN_ROADMAP_TOOL.input_schema.properties.values.maxItems).toBe(RUN_ROADMAP_MAX_VALUES);
   });
 
@@ -369,9 +370,9 @@ describe('US-15 AC33: one run_roadmap per turn (S1) and honest stubs (S5)', () =
     expect(round.results[0].content.startsWith('{"applied"')).toBe(true);
     expect(round.results.slice(1).every(r => r.content === NOT_RUN)).toBe(true);
     const first = JSON.parse(round.results[0].content);
-    expect(first.roadmap.latestValues.weightKg).toBe(String(60 + RUN_ROADMAP_MAX_VALUES - 1));
+    expect(first.roadmap.latestValues).not.toHaveProperty('weightKg'); // past the cap: out of the run (R2)
     expect(first.rejected.filter((r: { field: string }) => r.field === 'values')).toHaveLength(1);
-    expect(round.counts.applied).toBe(1); // one field, weightKg; counted once for the turn
+    expect(round.counts.applied).toBe(0);
   });
 
   it('values and profile split over two calls are one run', () => {
@@ -731,5 +732,42 @@ describe('US-15 AC33: a refused creatinine withholds the kidney-adjusted protein
   it('a usable stated creatinine, or none at all, keeps the protein card', () => {
     expect(cards(runRoadmap(KIDNEY, { values: [val('creatinine', 90, 'µmol/L')] }).contextJson)).toContain('protein-target');
     expect(cards(runRoadmap(KIDNEY, { values: [val('ldlC', 3.1, 'mmol/L')] }).contextJson)).toContain('protein-target');
+  });
+});
+
+// US-15 AC33, adversary round 2 (2026-10-16): R1, R2, R4, R8.
+describe('US-15 AC33: older BP numbers, the cap, and a refused age or sex', () => {
+  const SAVED_BP = { ...PROFILE, systolicBp: 150, diastolicBp: 95, measurementHistory: { systolic_bp: [{ date: '2026-10-01', value: 150 }], diastolic_bp: [{ date: '2026-10-01', value: 95 }] } };
+  const cards = (json: string | null) => ctx(json).currentSuggestions.map((s: { id: string }) => s.id);
+
+  it('R1: one stated BP number older than the saved reading leaves the saved pair standing', () => {
+    for (const field of ['systolicBp', 'diastolicBp']) {
+      const r = runRoadmap(SAVED_BP, { values: [val(field, field === 'systolicBp' ? 120 : 70, 'mmHg', '2026-01-05')] });
+      expect(r.rejected).toEqual([{ field, reason: 'older than the saved value' }]);
+      expect(ctx(r.contextJson).latestValues).toMatchObject({ systolicBp: '150', diastolicBp: '95' });
+      expect(cards(r.contextJson)).toContain('bp-stage2');
+    }
+  });
+
+  it('R2: a field with any value past the cap is out of the run, even if an earlier one was read', () => {
+    const fill = Array.from({ length: RUN_ROADMAP_MAX_VALUES - 1 }, (_, i) => val('weightKg', 60 + i, 'kg', '2026-10-01'));
+    const r = runRoadmap(PROFILE, { values: [val('hba1c', 49, 'mmol/mol', '2025-06-01'), ...fill, val('hba1c', 36, 'mmol/mol', '2026-06-01')] });
+    expect(ctx(r.contextJson).latestValues).not.toHaveProperty('hba1c');
+    expect(cards(r.contextJson)).not.toContain('hba1c-diabetic');
+  });
+
+  it('R4: a refused age or birth year takes the saved birth year out, so no adult-only card runs on it', () => {
+    for (const input of [{ age: 16.5 }, { age: '16' }, { birthYear: 2009.5 }]) {
+      const r = runRoadmap(PROFILE, { values: [val('ldlC', 4.5, 'mmol/L')], ...input });
+      expect(r.rejected.map(x => x.reason)).toContain('out of range for this field');
+      expect(ctx(r.contextJson).profile.age).toBeUndefined();
+      expect(cards(r.contextJson)).not.toContain('med-statin');
+    }
+  });
+
+  it('R8: a refused sex takes the saved sex out of the run', () => {
+    const r = runRoadmap(PROFILE, { values: [], sex: 'Female' });
+    expect(r.rejected).toEqual([{ field: 'sex', reason: 'out of range for this field' }]);
+    expect(r.contextJson === null || ctx(r.contextJson).profile.sex === undefined).toBe(true);
   });
 });

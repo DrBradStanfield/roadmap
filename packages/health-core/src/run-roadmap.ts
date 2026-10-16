@@ -194,11 +194,11 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
 
   const items = Array.isArray(input.values) ? input.values : [];
   if (items.length > RUN_ROADMAP_MAX_VALUES) reject('values', REASONS.cap);
-  // A field stated only past the cap was not read, so its saved value must not answer for it either.
-  const read = new Set(items.slice(0, RUN_ROADMAP_MAX_VALUES).map(raw => obj(raw).field));
+  // A value past the cap was not read and may be the newest (a history pasted in date
+  // order), so neither an earlier stated value nor the saved one answers for its field.
   for (const raw of items.slice(RUN_ROADMAP_MAX_VALUES)) {
     const field = obj(raw).field;
-    if (isEditable(field) && !read.has(field)) block(field, UNKNOWN_DAY, REASONS.cap);
+    if (isEditable(field)) block(field, UNKNOWN_DAY, REASONS.cap);
   }
   for (const raw of items.slice(0, RUN_ROADMAP_MAX_VALUES)) {
     const item = obj(raw);
@@ -233,11 +233,10 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   }
 
   // Blood pressure is one reading: used as a pair from one day or not at all.
-  // A pair whose two numbers the saved one both outdates keeps the saved one.
+  // Stated numbers the saved reading all outdates (one or both) keep the saved one.
   const bpRejected = rejected.filter(r => BP_FIELDS.includes(r.field));
   const [sys, dia] = [stated.get('systolicBp'), stated.get('diastolicBp')];
-  const bpOutdated = !sys && !dia && BP_FIELDS.every(f => bpRejected.some(r => r.field === f))
-    && bpRejected.every(r => r.reason === REASONS.older);
+  const bpOutdated = !sys && !dia && bpRejected.length > 0 && bpRejected.every(r => r.reason === REASONS.older);
   if ((bpRejected.length > 0 || sys || dia) && !(sys && dia && sys.date === dia.date) && !bpOutdated) {
     for (const f of BP_FIELDS as EditableField[]) {
       if (stated.delete(f) || !bpRejected.some(r => r.field === f)) reject(f, REASONS.pair);
@@ -249,7 +248,7 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   for (const [field, { si }] of stated) overlay[field] = si;
   if (input.sex != null) {
     if (inRange('sex', input.sex)) overlay.sex = input.sex;
-    else reject('sex', REASONS.range);
+    else { reject('sex', REASONS.range); unusable.add('sex'); }
   }
   if (input.height != null) {
     const height = measured.safeParse(input.height);
@@ -275,11 +274,15 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
       if (byAge) Object.assign(birth, { birthYear, birthMonth: 1 });
       else Object.assign(birth, { birthYear, birthMonth: birthYear === base.birthYear ? base.birthMonth : undefined });
       applied.push(field);
-    } else reject(field, REASONS.range);
+    } else {
+      // A refused age must not leave the saved one answering: no age, so no adult-only card (US-07 AC6).
+      reject(field, REASONS.range);
+      Object.assign(birth, { birthYear: undefined, birthMonth: undefined });
+    }
   }
 
   const payload: Record<string, unknown> = { ...base, ...overlay, ...birth };
-  if (payload.birthMonth === undefined) delete payload.birthMonth;
+  for (const f of ['birthYear', 'birthMonth']) if (payload[f] === undefined) delete payload[f];
   for (const f of unusable) delete payload[f];
   if (unusable.size > 0 && base.measurementHistory !== undefined) {
     const gone = new Set([...unusable].map(f => FIELD_TO_METRIC[f]));
