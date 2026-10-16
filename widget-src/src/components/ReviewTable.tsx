@@ -514,6 +514,11 @@ export function ReviewTable({
     });
   }, [docHistoryIndex, results]);
 
+  // Document dates are independent of blood-test dates. Keep unknown dates
+  // null and month-only dates at their extracted precision, never day=01.
+  const [documentDates, setDocumentDates] = useState<Record<number, string | null>>(() =>
+    Object.fromEntries(results.map((r, fi) => [fi, r.document?.documentDate ?? null])));
+
   // Per-document: editable title
   const [docTitles, setDocTitles] = useState<Record<number, string>>(() => {
     const map: Record<number, string> = {};
@@ -765,8 +770,7 @@ export function ReviewTable({
     const documents: DocumentToSave[] = [];
     results.forEach((r, fi) => {
       if (!r.document || !docChecked[fi]) return;
-      const date = fileDates[fi];
-      const dateStr = date.year && date.month ? fullDateToIso(date) : null;
+      const dateStr = documentDates[fi];
 
       const screeningType = r.document.metadata?.screeningType as string | undefined;
       const screeningKey = screeningType ? `${screeningType}_last_date` : undefined;
@@ -834,6 +838,7 @@ export function ReviewTable({
         if (!r.error && !r.document && !hasNothingForMatrix) return null;
 
         const date = fileDates[fi];
+        const documentDate = documentDates[fi];
         const isDocDup = r.document ? isDocDuplicate(r.fileName, docHistoryIndex) : false;
 
         return (
@@ -873,13 +878,11 @@ export function ReviewTable({
                 <div className="review-file-date">
                   <span>Date:</span>
                   <DraftDateCell
-                    date={fullDateToIso(date)}
-                    needsDay={!date.day}
+                    date={documentDate ? (documentDate.length === 7 ? `${documentDate}-01` : documentDate) : fullDateToIso(date)}
+                    needsDay={!documentDate || documentDate.length < 10}
+                    label={!documentDate ? 'Date unknown' : undefined}
                     ariaLabel="Document date"
-                    onChange={picked => {
-                      const parsed = parseIsoToFullDate(picked);
-                      if (parsed) setFileDates(prev => ({ ...prev, [fi]: parsed }));
-                    }}
+                    onChange={picked => setDocumentDates(prev => ({ ...prev, [fi]: picked || null }))}
                   />
                 </div>
 
@@ -892,12 +895,13 @@ export function ReviewTable({
                   <label className="review-screening-update">
                     <input
                       type="checkbox"
-                      checked={screeningChecked[fi] ?? false}
+                      checked={!!documentDate && (screeningChecked[fi] ?? false)}
+                      disabled={!documentDate}
                       onChange={(e) => setScreeningChecked(prev => ({ ...prev, [fi]: e.target.checked }))}
                     />
                     <span>
                       Update <strong>{String(r.document.metadata.screeningType)}</strong> screening date
-                      {r.document.documentDate ? ` to ${r.document.documentDate}` : ''}
+                      {documentDate ? ` to ${documentDate}` : ' (choose a document date first)'}
                     </span>
                   </label>
                 )}
