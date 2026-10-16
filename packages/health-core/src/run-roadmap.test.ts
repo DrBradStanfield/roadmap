@@ -698,7 +698,7 @@ describe('US-15 AC33: a stated birth year, and values past the cap', () => {
     expect(ctx(both.contextJson).profile.age).toBe(55);
     const minor = { ...PROFILE, birthYear: new Date().getFullYear() - 14 };
     expect(runRoadmap(minor, { values: [], birthYear: 1970 }).rejected).toEqual([{ field: 'birthYear', reason: MINOR }]);
-    for (const birthYear of [1974.5, 1700, '1974']) {
+    for (const birthYear of [1974.5, 1700, 'nineteen seventy-four']) {
       expect(runRoadmap(PROFILE, { values: [], birthYear }).rejected).toEqual([{ field: 'birthYear', reason: 'out of range for this field' }]);
     }
   });
@@ -756,41 +756,55 @@ describe('US-15 AC33: older BP numbers, the cap, and a refused age or sex', () =
     expect(cards(r.contextJson)).not.toContain('hba1c-diabetic');
   });
 
-  it('R4: a refused age or birth year takes the saved birth year out, so no adult-only card runs on it', () => {
-    for (const input of [{ age: -1 }, { age: 'sixteen' }, { birthYear: 2009.5 }]) {
+  // Simplified 2026-10-16 (Option A, Brad): with ages rounded down, a refused age is
+  // only nonsense (-1, 200, a word), so the saved age and sex stay. Removing them lost
+  // the inputs eGFR needs, and with them the kidney-adjusted protein target.
+  it('a refused age, birth year or sex keeps the saved one', () => {
+    for (const input of [{ age: -1 }, { age: 'sixteen' }, { birthYear: 2009.5 }, { sex: 'Female' }]) {
       const r = runRoadmap(PROFILE, { values: [val('ldlC', 4.5, 'mmol/L')], ...input });
       expect(r.rejected.map(x => x.reason)).toContain('out of range for this field');
-      expect(ctx(r.contextJson).profile.age).toBeUndefined();
-      expect(cards(r.contextJson)).not.toContain('med-statin');
+      expect(ctx(r.contextJson).profile).toMatchObject({ sex: 'male', age: ctx(buildChatContextJson(PROFILE)).profile.age });
     }
-  });
-
-  it('R8: a refused sex takes the saved sex out of the run', () => {
-    const r = runRoadmap(PROFILE, { values: [], sex: 'Female' });
-    expect(r.rejected).toEqual([{ field: 'sex', reason: 'out of range for this field' }]);
-    expect(r.contextJson === null || ctx(r.contextJson).profile.sex === undefined).toBe(true);
   });
 });
 
-// US-15 AC33, Codex round 3 (2026-10-16): eGFR also needs age and sex, so a
-// refused age, birth year or sex drops a saved kidney adjustment the same way.
-describe('US-15 AC33: any refusal that loses a saved eGFR withholds the protein target', () => {
+// US-15 AC33: the protein card is left out only when this run has no eGFR although the
+// saved data had one, or a creatinine was stated (Codex rounds 2-3, adversary round 4).
+describe('US-15 AC33: the protein target is withheld only when the run loses kidney function', () => {
   const KIDNEY = { ...PROFILE, creatinine: 200 };
   const cards = (json: string | null) => (json ? ctx(json).currentSuggestions : []).map((s: { id: string }) => s.id);
+  const card = (json: string | null) => ctx(json).currentSuggestions.find((s: { id: string }) => s.id === 'protein-target');
   const PROTEIN = 'the protein target depends on kidney function, which this run could not work out, so it is left out until the refused value is confirmed';
 
-  it('a refused age, birth year or sex: no protein card, and the reason says why', () => {
+  it('a saved creatinine with nothing refused: the card shows, kidney-adjusted', () => {
+    const r = runRoadmap(KIDNEY, { values: [val('ldlC', 3.1, 'mmol/L')] });
+    expect(card(r.contextJson).description).toMatch(/adjusted for kidney function/);
+    expect(r.rejected).toEqual([]);
+  });
+
+  it('a refused age, birth year or sex keeps the saved kidney adjustment', () => {
     for (const input of [{ age: 200 }, { birthYear: 1972.5 }, { sex: 'Male' }]) {
       const r = runRoadmap(KIDNEY, { values: [val('ldlC', 3.1, 'mmol/L')], ...input });
-      expect(cards(r.contextJson)).not.toContain('protein-target');
-      // A refused sex leaves no plan at all, so there is no card to explain.
-      if (r.contextJson) expect(r.rejected.map(x => x.reason)).toContain(PROTEIN);
+      expect(card(r.contextJson).description).toMatch(/adjusted for kidney function/);
+      expect(r.rejected.map(x => x.reason)).not.toContain(PROTEIN);
     }
   });
 
-  it('a saved profile with no kidney reading keeps the protein card when the age is refused', () => {
-    const r = runRoadmap(PROFILE, { values: [], age: 200 });
-    expect(cards(r.contextJson)).toContain('protein-target');
+  it('a stated creatinine with a refused age and no saved birth year: no card, and the reason says why', () => {
+    const { birthYear: _y, birthMonth: _m, ...noAge } = PROFILE;
+    const r = runRoadmap(noAge, { values: [val('creatinine', 200, 'µmol/L')], age: 200 });
+    expect(cards(r.contextJson)).not.toContain('protein-target');
+    expect(r.rejected.map(x => x.reason)).toContain(PROTEIN);
+  });
+
+  it('a saved creatinine but no saved age, nothing stated about kidneys: the card shows as the saved plan does', () => {
+    const { birthYear: _y, birthMonth: _m, ...noAge } = KIDNEY;
+    expect(cards(runRoadmap(noAge, { values: [val('ldlC', 3.1, 'mmol/L')] }).contextJson)).toContain('protein-target');
+  });
+
+  it('a stated age that makes a saved adult a minor adds no creatinine reason', () => {
+    const r = runRoadmap(KIDNEY, { values: [], age: 16 });
+    expect(r.rejected).toEqual([]);
   });
 });
 
@@ -800,6 +814,9 @@ describe('US-15 AC33: a stated age is rounded down, never refused for not being 
   it('16.5, 17.9 and "16" are minors; 18.2 is an adult', () => {
     const profile = (age: unknown) => ctx(runRoadmap({}, { values: [val('ldlC', 5.2, 'mmol/L')], sex: 'male', height: { value: 175, unit: 'cm' }, age }).contextJson).profile;
     for (const age of [16.5, 17.9, '16']) expect(profile(age).knownMinor).toBe(true);
+    // A birth year sent as text is read the same way (adversary round 4, R2).
+    const byYear = ctx(runRoadmap({}, { values: [], sex: 'male', height: { value: 175, unit: 'cm' }, birthYear: String(new Date().getFullYear() - 16) }).contextJson).profile;
+    expect(byYear.knownMinor).toBe(true);
     expect(profile(18.2)).not.toHaveProperty('knownMinor');
     expect(profile(18.2).age).toBe(18);
   });

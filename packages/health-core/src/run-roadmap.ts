@@ -131,6 +131,9 @@ const askUnit = (metric: MetricType, r: { valueSI: number; system: UnitSystem })
 /** The day of a value whose date could not be read: later than any real day, so it outdates every stated value. */
 const UNKNOWN_DAY = '9999-12-31';
 const measured = z.object({ value: z.number().finite(), unit: z.string().min(1).max(32) });
+/** A number, or a numeric string read as one (a model may send "16" for an integer field); NaN otherwise. */
+const numeric = (v: unknown) =>
+  typeof v === 'number' ? v : typeof v === 'string' && /^\s*\d+(\.\d+)?\s*$/.test(v) ? Number(v) : NaN;
 const obj = (v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {}) as Record<string, unknown>;
 /** A field the schema knows: the result never names the model's own string. */
 const isEditable = (f: unknown): f is EditableField => typeof f === 'string' && (EDITABLE_FIELDS as readonly string[]).includes(f);
@@ -248,7 +251,7 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   for (const [field, { si }] of stated) overlay[field] = si;
   if (input.sex != null) {
     if (inRange('sex', input.sex)) overlay.sex = input.sex;
-    else { reject('sex', REASONS.range); unusable.add('sex'); }
+    else reject('sex', REASONS.range);
   }
   if (input.height != null) {
     const height = measured.safeParse(input.height);
@@ -265,10 +268,10 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   const byAge = input.age != null;
   if (byAge || input.birthYear != null) {
     const field = byAge ? 'age' : 'birthYear';
-    // An age is rounded down (16.5 is 16), never refused for not being whole: a refused
-    // age with no saved one would leave no age, and so no minor gate (US-07 AC6).
-    const years = typeof input.age === 'string' && /^\s*\d+(\.\d+)?\s*$/.test(input.age) ? Number(input.age) : input.age;
-    const birthYear = byAge ? (typeof years === 'number' && Number.isFinite(years) ? now.getFullYear() - Math.floor(years) : NaN) : input.birthYear;
+    // An age is rounded down (16.5 is 16) and a number sent as text is read, so a usable
+    // age is never refused: a refused one keeps the saved age, or leaves none (US-07 AC6).
+    const value = numeric(byAge ? input.age : input.birthYear);
+    const birthYear = byAge ? now.getFullYear() - Math.floor(value) : value;
     // US-07 AC6: a saved known minor stays one, whatever the message says.
     if (knownMinorOf(base)) reject(field, REASONS.minor);
     else if (Number.isInteger(birthYear) && inRange('birthYear', birthYear)) {
@@ -277,15 +280,11 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
       if (byAge) Object.assign(birth, { birthYear, birthMonth: 1 });
       else Object.assign(birth, { birthYear, birthMonth: birthYear === base.birthYear ? base.birthMonth : undefined });
       applied.push(field);
-    } else {
-      // A refused age must not leave the saved one answering: no age, so no adult-only card (US-07 AC6).
-      reject(field, REASONS.range);
-      Object.assign(birth, { birthYear: undefined, birthMonth: undefined });
-    }
+    } else reject(field, REASONS.range);
   }
 
   const payload: Record<string, unknown> = { ...base, ...overlay, ...birth };
-  for (const f of ['birthYear', 'birthMonth']) if (payload[f] === undefined) delete payload[f];
+  if (payload.birthMonth === undefined) delete payload.birthMonth;
   for (const f of unusable) delete payload[f];
   if (unusable.size > 0 && base.measurementHistory !== undefined) {
     const gone = new Set([...unusable].map(f => FIELD_TO_METRIC[f]));
@@ -297,12 +296,13 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   }
   const contextJson = buildChatContextJson(payload);
   if (!contextJson) return { contextJson, applied, rejected };
-  // Without an eGFR the protein card falls back to the standard target, so a
-  // refused creatinine, or a refusal that loses a saved eGFR (it also needs age
-  // and sex), would quietly drop a kidney adjustment: withhold the card.
+  // Without an eGFR the protein card falls back to the standard target. When this run
+  // has none although the saved data had one, or a creatinine was stated, that would
+  // quietly drop a kidney adjustment: withhold the card. (A minor's eGFR is hidden, not lost.)
   const plan = JSON.parse(contextJson);
-  const lostEgfr = plan.derivedValues?.eGFR === undefined
-    && (unusable.has('creatinine') || JSON.parse(buildChatContextJson(base) ?? '{}').derivedValues?.eGFR !== undefined);
+  const lostEgfr = plan.derivedValues?.eGFR === undefined && !plan.profile?.knownMinor
+    && (items.some(raw => obj(raw).field === 'creatinine')
+      || JSON.parse(buildChatContextJson(base) ?? '{}').derivedValues?.eGFR !== undefined);
   if (!lostEgfr) return { contextJson, applied, rejected };
   plan.currentSuggestions = plan.currentSuggestions?.filter((s: { id?: string }) => s.id !== 'protein-target');
   reject('creatinine', REASONS.protein);
