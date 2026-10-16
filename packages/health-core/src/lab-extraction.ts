@@ -223,7 +223,7 @@ ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metri
   5. Multi-page documents: date on page 1, results on later pages — correlate them.
   6. If uncertain about a value, set confidence to "low" with a "question" explaining why.
   7. Extract ALL other numeric test results NOT in TARGET METRICS into "additionalValues" array.
-  8. A blood pressure printed as one reading ("118/65 mmHg") is two TARGET METRICS: systolic_bp 118 and diastolic_bp 65, both in "values".
+  8. A measured blood pressure printed as one reading ("120/80 mmHg") is two TARGET METRICS: systolic_bp 120 and diastolic_bp 80, both in "values".
 
   ADDITIONAL VALUES — use these standardized snake_case names when applicable:
   FBC: haemoglobin, rbc, wbc, platelets, mcv, mch, haematocrit, neutrophils, lymphocytes, monocytes, eosinophils, basophils
@@ -441,12 +441,12 @@ export function parseExtractionJson(text: string): unknown {
   return JSON.parse(extractJsonObject(text).replace(BARE_DOT_THOUSANDS, '$1"$2"'));
 }
 
-/** Build a UnifiedExtractionResult from a parsed-and-filtered unified response. */
 /** The core metrics an additional value can be promoted into (US-12 AC11).
  *  Never creatinine: a urine creatinine prints in mg/dL too, and serum
  *  creatinine drives eGFR. */
 const PROMOTABLE = new Set<string>(VALID_METRICS.filter(m => m !== 'creatinine'));
 
+/** Build a UnifiedExtractionResult from a parsed-and-filtered unified response. */
 export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>): UnifiedExtractionResult {
   const isLab = parsed.classification === 'lab_report';
   // A core test the model filed as an additional value ("systolic_bp",
