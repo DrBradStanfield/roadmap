@@ -232,6 +232,9 @@ export async function sendMessage(
     if (!content && proposedEdits.length > 0) {
       content = toolOnlyAck(proposedEdits);
     }
+    // A reply cut off before any text: an error, never a blank answer saved to
+    // history (the transport lets an empty max_tokens stop through for uploads).
+    if (!content) return { result: null, error: { error: 'Empty response from Anthropic. Try again.' } };
   } catch (error) {
     if (error instanceof ByokAnthropicError) return { result: null, error: { error: error.message } };
     console.warn('BYOK chat error:', error);

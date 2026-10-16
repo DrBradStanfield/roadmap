@@ -238,3 +238,22 @@ describe('US-15 AC34: the Pages chat request on Haiku 5.5', () => {
     expect(body.messages.at(-1)).toEqual({ role: 'user', content: 'hi' });
   });
 });
+
+describe('US-15 AC34: a Pages chat reply cut off before any text is an error, not a blank answer', () => {
+  beforeEach(() => {
+    const store = new Map([['hr_anthropic_key', 'sk-ant-test']]);
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    });
+    state.replies = [];
+  });
+
+  it('returns the empty-response error and no result', async () => {
+    state.replies = [{ text: '', blocks: [] }];
+    const out = await sendMessage('hi', null, SNAPSHOT);
+    expect(out.result).toBeNull();
+    expect(out.error).toEqual({ error: 'Empty response from Anthropic. Try again.' });
+  });
+});
