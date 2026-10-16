@@ -224,8 +224,9 @@ async function classify(comment: string): Promise<{ classification: string; raw:
   };
   const result = await callAnthropic(body);
   if (!result.ok) return { classification: 'ERROR', raw: JSON.stringify(result.raw) };
-  const cleaned = result.text.trim().toUpperCase().replace(/[^A-Z]/g, '');
-  const valid = ['ROUTE', 'GREETING', 'PRODUCT', 'ACCOUNT'];
+  // The first word, against every label, as production parses it (app/lib/chat-classifier.server.ts).
+  const cleaned = result.text.toUpperCase().match(/[A-Z]+/)?.[0] ?? '';
+  const valid = ['ROUTE', 'GREETING', 'PRODUCT', 'ACCOUNT', 'MEASUREMENT'];
   return { classification: valid.includes(cleaned) ? cleaned : 'ERROR', raw: result.text };
 }
 

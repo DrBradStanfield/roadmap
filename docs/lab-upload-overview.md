@@ -145,7 +145,7 @@ States are `'select' | 'processing' | 'review' | 'done'` in `UploadModal.tsx`. A
 <a id="contract"></a>
 ## 4 · LLM extraction contract
 
-The system prompt is `unifiedSystemPrompt(mode)` in `packages/health-core/src/lab-extraction.ts`, imported by the server and the BYOK build; the document only ever rides in the user message, so a malicious PDF can't override it. One LLM call per file. Two modes: `'full'` (the website: classify, then extract lab values or convert the document to markdown, 8192 tokens) and `'metadata'` (the connector: title, date, one-line summary, 2048 tokens). Both target the same 11 core metrics.
+The system prompt is `unifiedSystemPrompt(mode)` in `packages/health-core/src/lab-extraction.ts`, imported by the server and the BYOK build; the document only ever rides in the user message, so a malicious PDF can't override it. One LLM call per file. Two modes: `'full'` (the website: classify, then extract lab values or convert the document to markdown, 12288 tokens) and `'metadata'` (the connector: title, date, one-line summary, 3072 tokens). Both target the same 11 core metrics.
 
 ### Target metrics (11)
 

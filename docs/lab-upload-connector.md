@@ -59,7 +59,7 @@ connector holds cannot see files dropped into the folder.
   the `{`-prefill second call shares the first call's deadline. I/O ends 4 s
   before the deadline so slotting and the stash fit.
 - Non-lab documents are asked for metadata only (`documentMode: 'metadata'`,
-  2048 tokens: title, date, one-line summary). The connector files no
+  3072 tokens: title, date, one-line summary). The connector files no
   document text, so a four-page letter fits the budget.
 - Charges: connection day quota, machine cap, hourly write allowance, in
   that order; a later refusal refunds the earlier. A file cut off by time is

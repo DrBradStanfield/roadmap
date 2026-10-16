@@ -139,7 +139,7 @@ Health data must never be auto-saved without explicit user confirmation. The rev
    - Multi-page correlation: date on page 1, results on later pages
 3. **Confidence flags**: The LLM marks each value as `high`, `medium`, or `low` confidence. Low-confidence values include a `question` string explaining the ambiguity.
 4. **Unrecognized values**: Tests not in our target list are returned in an `unrecognized` array for display; catalogued extras (sodium, ferritin…) are returned as additional lab values.
-5. **Non-lab documents**: in `'full'` mode (the website) the whole document comes back as markdown with title, date and metadata (`EXTRACTION_MAX_TOKENS = 8192`). In `'metadata'` mode (the connector) only title, date and a one-line summary (`METADATA_MAX_TOKENS = 2048`).
+5. **Non-lab documents**: in `'full'` mode (the website) the whole document comes back as markdown with title, date and metadata (`EXTRACTION_MAX_TOKENS = 12288`). In `'metadata'` mode (the connector) only title, date and a one-line summary (`METADATA_MAX_TOKENS = 2048`).
 
 **Output schema** (lab report):
 ```json
@@ -268,7 +268,7 @@ The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: 
 | Max files | 200 per upload session (client) | `UploadModal.tsx` |
 | Max pages | 20 per PDF (client); 100 page blocks per request (`labImportRequestSchema`) | `pdf-extract.ts`, `validation.ts` |
 | Max file size | 10 MB per file (client only); server rejects bodies over 200 MB | `UploadModal.tsx`, `api.lab-import-v2.ts` |
-| Max tokens | 8192 (`'full'`), 2048 (`'metadata'`) | `lab-extraction.ts`, `anthropic.server.ts` |
+| Max tokens | 12288 (`'full'`), 3072 (`'metadata'`) | `lab-extraction.ts`, `anthropic.server.ts` |
 | Worst-case cost | bounded by the quotas, not the file cap: 60 files × ~$0.005 ≈ $0.30 per IP per day | |
 | Sentry | `feature: 'lab_import_v2'`, page count and types only, never values | `api.lab-import-v2.ts` |
 
