@@ -118,7 +118,7 @@ const REASONS = {
   superseded: 'a later or same-day value for this field could not be used, so this one was not used either',
   pair: 'blood pressure is read as a pair: both numbers are needed, each one usable, so neither was used',
   minor: 'the saved profile is under 18: a stated age or birth year is not used',
-  protein: 'the protein target depends on kidney function, so it is left out until the user confirms their creatinine',
+  protein: 'the protein target depends on kidney function, which this run could not work out, so it is left out until the refused value is confirmed',
 } as const;
 
 const BP_FIELDS: readonly string[] = ['systolicBp', 'diastolicBp'];
@@ -265,7 +265,10 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   const byAge = input.age != null;
   if (byAge || input.birthYear != null) {
     const field = byAge ? 'age' : 'birthYear';
-    const birthYear = byAge ? (Number.isInteger(input.age) ? now.getFullYear() - (input.age as number) : NaN) : input.birthYear;
+    // An age is rounded down (16.5 is 16), never refused for not being whole: a refused
+    // age with no saved one would leave no age, and so no minor gate (US-07 AC6).
+    const years = typeof input.age === 'string' && /^\s*\d+(\.\d+)?\s*$/.test(input.age) ? Number(input.age) : input.age;
+    const birthYear = byAge ? (typeof years === 'number' && Number.isFinite(years) ? now.getFullYear() - Math.floor(years) : NaN) : input.birthYear;
     // US-07 AC6: a saved known minor stays one, whatever the message says.
     if (knownMinorOf(base)) reject(field, REASONS.minor);
     else if (Number.isInteger(birthYear) && inRange('birthYear', birthYear)) {

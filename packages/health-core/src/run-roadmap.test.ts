@@ -120,7 +120,7 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
   });
 
   it('rejects an out-of-range profile value', () => {
-    const run = runRoadmap(PROFILE, { values: [], sex: 'other', height: { value: 900, unit: 'cm' }, age: 40.5 });
+    const run = runRoadmap(PROFILE, { values: [], sex: 'other', height: { value: 900, unit: 'cm' }, age: -3 });
     expect(run.rejected.map(r => r.field)).toEqual(['sex', 'heightCm', 'age']);
   });
 
@@ -433,7 +433,7 @@ describe('US-15 AC33: the third review (R1-R4, R8)', () => {
     expect(r.applied).toEqual([]);
     expect(r.rejected[0]).toEqual({ field, reason: UNIT });
     // A refused creatinine also withholds the protein card (Codex round 2).
-    expect(r.rejected.slice(1)).toEqual(field === 'creatinine' ? [{ field, reason: 'the protein target depends on kidney function, so it is left out until the user confirms their creatinine' }] : []);
+    expect(r.rejected.slice(1)).toEqual(field === 'creatinine' ? [{ field, reason: 'the protein target depends on kidney function, which this run could not work out, so it is left out until the refused value is confirmed' }] : []);
     expect(latest(r)).not.toHaveProperty(key);
   });
 
@@ -455,7 +455,7 @@ describe('US-15 AC33: the third review (R1-R4, R8)', () => {
 
   it('R2: a lab above its range in the stated unit: confirm the unit; the saved value is removed', () => {
     const r = run({ values: [val('hba1c', 48, '%'), val('creatinine', 90, 'mg/dL')] });
-    expect(r.rejected).toEqual([{ field: 'hba1c', reason: LAB_ABOVE }, { field: 'creatinine', reason: LAB_ABOVE }, { field: 'creatinine', reason: 'the protein target depends on kidney function, so it is left out until the user confirms their creatinine' }]);
+    expect(r.rejected).toEqual([{ field: 'hba1c', reason: LAB_ABOVE }, { field: 'creatinine', reason: LAB_ABOVE }, { field: 'creatinine', reason: 'the protein target depends on kidney function, which this run could not work out, so it is left out until the refused value is confirmed' }]);
     expect(latest(r)).not.toHaveProperty('hba1c');
     expect(latest(r)).not.toHaveProperty('creatinine');
     expect(ctx(r.contextJson).measurementHistory ?? {}).not.toHaveProperty('hba1c');
@@ -651,7 +651,7 @@ describe('US-15 AC33: the fourth review (Codex R1; adversary R2, R3, R7)', () =>
     const r = runRoadmap(minor, { values: [], age: 40 });
     expect(r.rejected).toEqual([{ field: 'age', reason: 'the saved profile is under 18: a stated age or birth year is not used' }]);
     expect(ctx(r.contextJson).profile.knownMinor).toBe(true);
-    for (const age of [40.5, -3, 200, '40']) {
+    for (const age of [-3, 200, 'forty', true]) {
       expect(runRoadmap(PROFILE, { values: [], age }).rejected).toEqual([{ field: 'age', reason: 'out of range for this field' }]);
     }
   });
@@ -671,7 +671,7 @@ describe('US-15 AC33: the fourth review (Codex R1; adversary R2, R3, R7)', () =>
 
   it('R7: HbA1c 6.1 mmol/mol and creatinine 15 µmol/L stay in the ask-unit band', () => {
     const r = run({ values: [val('hba1c', 6.1, 'mmol/mol'), val('creatinine', 15, 'µmol/L')] });
-    expect(r.rejected.map(x => x.reason)).toEqual(['unit not recognised for this field: ask the user which unit', 'unit not recognised for this field: ask the user which unit', 'the protein target depends on kidney function, so it is left out until the user confirms their creatinine']);
+    expect(r.rejected.map(x => x.reason)).toEqual(['unit not recognised for this field: ask the user which unit', 'unit not recognised for this field: ask the user which unit', 'the protein target depends on kidney function, which this run could not work out, so it is left out until the refused value is confirmed']);
   });
 });
 
@@ -757,7 +757,7 @@ describe('US-15 AC33: older BP numbers, the cap, and a refused age or sex', () =
   });
 
   it('R4: a refused age or birth year takes the saved birth year out, so no adult-only card runs on it', () => {
-    for (const input of [{ age: 16.5 }, { age: '16' }, { birthYear: 2009.5 }]) {
+    for (const input of [{ age: -1 }, { age: 'sixteen' }, { birthYear: 2009.5 }]) {
       const r = runRoadmap(PROFILE, { values: [val('ldlC', 4.5, 'mmol/L')], ...input });
       expect(r.rejected.map(x => x.reason)).toContain('out of range for this field');
       expect(ctx(r.contextJson).profile.age).toBeUndefined();
@@ -777,10 +777,10 @@ describe('US-15 AC33: older BP numbers, the cap, and a refused age or sex', () =
 describe('US-15 AC33: any refusal that loses a saved eGFR withholds the protein target', () => {
   const KIDNEY = { ...PROFILE, creatinine: 200 };
   const cards = (json: string | null) => (json ? ctx(json).currentSuggestions : []).map((s: { id: string }) => s.id);
-  const PROTEIN = 'the protein target depends on kidney function, so it is left out until the user confirms their creatinine';
+  const PROTEIN = 'the protein target depends on kidney function, which this run could not work out, so it is left out until the refused value is confirmed';
 
   it('a refused age, birth year or sex: no protein card, and the reason says why', () => {
-    for (const input of [{ age: 54.5 }, { birthYear: 1972.5 }, { sex: 'Male' }]) {
+    for (const input of [{ age: 200 }, { birthYear: 1972.5 }, { sex: 'Male' }]) {
       const r = runRoadmap(KIDNEY, { values: [val('ldlC', 3.1, 'mmol/L')], ...input });
       expect(cards(r.contextJson)).not.toContain('protein-target');
       // A refused sex leaves no plan at all, so there is no card to explain.
@@ -789,7 +789,18 @@ describe('US-15 AC33: any refusal that loses a saved eGFR withholds the protein 
   });
 
   it('a saved profile with no kidney reading keeps the protein card when the age is refused', () => {
-    const r = runRoadmap(PROFILE, { values: [], age: 54.5 });
+    const r = runRoadmap(PROFILE, { values: [], age: 200 });
     expect(cards(r.contextJson)).toContain('protein-target');
+  });
+});
+
+// US-15 AC33, adversary round 3 (R2): an age that is not a whole number used to be
+// refused, so with no saved birth year a 16.5-year-old got adult cards.
+describe('US-15 AC33: a stated age is rounded down, never refused for not being whole', () => {
+  it('16.5, 17.9 and "16" are minors; 18.2 is an adult', () => {
+    const profile = (age: unknown) => ctx(runRoadmap({}, { values: [val('ldlC', 5.2, 'mmol/L')], sex: 'male', height: { value: 175, unit: 'cm' }, age }).contextJson).profile;
+    for (const age of [16.5, 17.9, '16']) expect(profile(age).knownMinor).toBe(true);
+    expect(profile(18.2)).not.toHaveProperty('knownMinor');
+    expect(profile(18.2).age).toBe(18);
   });
 });
