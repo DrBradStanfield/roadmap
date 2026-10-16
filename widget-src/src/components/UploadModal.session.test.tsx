@@ -123,6 +123,17 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(screen.getByDisplayValue('4.2')).toBeTruthy();
     expect(labImport).toHaveBeenCalledOnce();
   });
+  it('US-35 AC8b — a core validation errorCount keeps review open instead of reporting success', async () => {
+    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 1 });
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Done' })).toBeNull();
+    expect(screen.getByDisplayValue('3.9')).toBeTruthy();
+    expect(onComplete).not.toHaveBeenCalled();
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+
   it('keeps failed save drafts for retry', async () => {
     vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(new Error('synthetic failure'));
     render(<Harness />); const value = await ready();

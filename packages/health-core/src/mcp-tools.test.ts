@@ -2047,6 +2047,19 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     return file;
   }
 
+  it('US-35 AC8b — rejects the whole commit when a core row is refused, including documents and valid labs', () => {
+    const file = base();
+    const before = structuredClone(file);
+    const payload = payloadFor(file, [extracted('new.pdf', labReport())]);
+    const core = payload.candidates.find(c => c.kind === 'measurement')!;
+    core.value = -1; // Defense in depth at commit, even if a prepared payload is invalid.
+    const outcome = importDocumentsCommit(file, payload, { receipt: 'r', accept: payload.candidates.map(c => c.id), replace: [] }, NOW);
+    expect(outcome.status).toBe('rejected');
+    expect(outcome).not.toHaveProperty('file');
+    expect(outcome.text).toMatch(/Nothing was written/);
+    expect(file).toEqual(before);
+  });
+
   it('files accepted free candidates with source lab_import, and documents as metadata rows', () => {
     const file = base();
     const payload = payloadFor(file, [extracted('new.pdf', labReport()), letter('Cardiology letter')]);

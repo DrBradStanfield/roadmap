@@ -174,7 +174,7 @@ export interface BulkSaveResult {
   saved: ApiMeasurement[];
   /** How many submitted rows were already present (active) at (user, metric, recorded_at). */
   skippedDuplicates: number;
-  /** How many submitted rows hit a server error (rare; surface in UI). */
+  /** How many submitted rows failed validation or could not be saved (surface in UI). */
   errorCount: number;
 }
 
