@@ -73,19 +73,23 @@ export async function extractOrClassify(
     try {
       return await extractOrClassifyOnce(apiKey, content, opts.timeoutMs, opts.httpAttempts, opts.documentMode ?? 'full');
     } catch (error) {
-      if (attempt >= attempts) throw error;
+      // A refusal usually repeats on the same request (US-15 AC34): fail now.
+      if (attempt >= attempts || (error instanceof Error && error.message === REFUSAL_ERROR)) throw error;
       await sleep(1000);
     }
   }
 }
 
-/** Plenty for a lab panel or a document's metadata; the 8192 default exists for markdown transcription. */
-const METADATA_MAX_TOKENS = 2048;
+/** Plenty for a lab panel or a document's metadata; the 12288 default (EXTRACTION_MAX_TOKENS) exists for markdown transcription. */
+const METADATA_MAX_TOKENS = 3072;
+
+/** Thrown by `callAnthropic` on a refusal; `extractOrClassify` does not retry it (US-15 AC34). */
+const REFUSAL_ERROR = 'Anthropic refusal';
 
 /**
  * One attempt: the call, and the SAME request sent once more when the first
  * answer did not parse (Haiku 5.5 400s on the `{` prefill this used to send,
- * US-15 AC31). `timeoutMs` is ONE deadline for the pair — the retry gets what
+ * US-15 AC34). `timeoutMs` is ONE deadline for the pair — the retry gets what
  * is left, never a fresh window — so a caller inside a budget (US-35 AC5)
  * cannot be run past it by a malformed first answer.
  */
@@ -464,7 +468,7 @@ async function readEventStream(
 /** Text-only wrapper for extraction, where a refusal is a failed call. */
 async function callAnthropic(apiKey: string, body: Record<string, unknown>, timeoutMs?: number, maxAttempts?: number): Promise<string> {
   const result = await fetchAnthropicRaw(apiKey, body, timeoutMs, maxAttempts);
-  if (result.stopReason === 'refusal') throw new Error('Anthropic refusal');
+  if (result.stopReason === 'refusal') throw new Error(REFUSAL_ERROR);
   return result.content;
 }
 
@@ -615,7 +619,9 @@ export async function pollBatch(
       const index = parseInt(entry.custom_id?.replace('file-', ''), 10);
       if (isNaN(index)) continue;
 
-      if (entry.result?.type === 'succeeded') {
+      // A refused request still comes back 'succeeded', maybe with partial
+      // text: never parsed as values (US-15 AC34).
+      if (entry.result?.type === 'succeeded' && entry.result.message?.stop_reason !== 'refusal') {
         const textBlock = entry.result.message?.content?.find((b: any) => b.type === 'text');
         if (textBlock?.text) {
           try {

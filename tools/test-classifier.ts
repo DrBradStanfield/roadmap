@@ -72,7 +72,8 @@ type Classification = 'ROUTE' | 'GREETING' | 'PRODUCT' | 'ACCOUNT' | 'MEASUREMEN
 const VALID: ReadonlyArray<Classification> = ['ROUTE', 'GREETING', 'PRODUCT', 'ACCOUNT', 'MEASUREMENT'];
 
 function parseClassification(raw: string): Classification {
-  const cleaned = raw.trim().toUpperCase().replace(/[^A-Z]/g, '') as Classification;
+  // The first word, as production parses it (app/lib/chat-classifier.server.ts).
+  const cleaned = (raw.toUpperCase().match(/[A-Z]+/)?.[0] ?? '') as Classification;
   return VALID.includes(cleaned) ? cleaned : 'ERROR';
 }
 
@@ -83,9 +84,9 @@ function parseClassification(raw: string): Classification {
 async function callClassifier(query: string): Promise<{ classification: Classification; raw: string; latencyMs: number }> {
   const t0 = Date.now();
   const body = {
-    // 8, as production sends (app/lib/chat-classifier.server.ts): 5 truncates
-    // 'MEASUREMENT' on Sonnet 5.5 and measures the cap, not the classifier.
-    ...modelParams(CLASSIFIER_MODEL, 8, thinkingOff ? 'off' : 'low'),
+    // 16, as production sends (app/lib/chat-classifier.server.ts): a smaller
+    // cap truncates 'MEASUREMENT' and measures the cap, not the classifier.
+    ...modelParams(CLASSIFIER_MODEL, 16, thinkingOff ? 'off' : 'low'),
     system: [
       { type: 'text', text: CLASSIFIER_PROMPT, cache_control: PROMPT_CACHE },
     ],

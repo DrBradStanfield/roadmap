@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('./byok-chat', () => ({ getAnthropicKey: () => 'sk-ant-synthetic' }));
 
 import { labImport, labImportBatch, pollBatchStatus } from './byok-upload';
+import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
 
 const PAGES = [{ type: 'text' as const, content: 'doc' }];
 
@@ -20,10 +21,10 @@ const message = (text: string) => () => Response.json({ content: [{ type: 'text'
 
 afterEach(() => { vi.unstubAllGlobals(); vi.resetAllMocks(); vi.restoreAllMocks(); });
 
-// US-15 AC31: Haiku 5.5 400s on an assistant prefill and on sampling params,
+// US-15 AC34: Haiku 5.5 400s on an assistant prefill and on sampling params,
 // and thinks unless told not to. A malformed first answer is re-sent as the
 // SAME request.
-describe('US-15 AC31: the BYOK extraction request on Haiku 5.5', () => {
+describe('US-15 AC34: the BYOK extraction request on Haiku 5.5', () => {
   const VALID = '{"classification":"other","reportDate":null,"values":[],"additionalValues":[],"document":null}';
 
   it('re-sends the same body after a malformed answer: no assistant turn, thinking disabled, no temperature', async () => {
@@ -43,6 +44,43 @@ describe('US-15 AC31: the BYOK extraction request on Haiku 5.5', () => {
   it('reads the answer by block type: a leading thinking block is skipped', async () => {
     stubAnthropic(() => Response.json({ content: [{ type: 'thinking', thinking: '', signature: 's' }, { type: 'text', text: VALID }] }));
     expect((await labImport(PAGES, 'si')).result).not.toBeNull();
+  });
+});
+
+// US-15 AC34: Haiku 5.5 runs safety classifiers that Haiku 4.5 did not. A
+// refusal is HTTP 200 with stop_reason 'refusal' and may carry partial text:
+// that text is never a chat answer or a set of lab values (US-15 AC14).
+describe('US-15 AC34: a BYOK refusal is a failure, never content', () => {
+  const refusal = () => Response.json({ stop_reason: 'refusal', content: [{ type: 'text', text: '{"classification":"lab_report"' }] });
+
+  it('the shared transport throws a refused error with a fixed line, not the partial text', async () => {
+    stubAnthropic(refusal);
+    const error = await callAnthropicDirectRaw('sk-ant-synthetic', {}).then(() => null, (e: unknown) => e);
+    expect(error).toBeInstanceOf(ByokAnthropicError);
+    expect(error).toMatchObject({ code: 'refused', message: "I can't help with that here. Please raise it with your doctor or pharmacist." });
+    expect((error as Error).message).not.toContain('classification');
+  });
+
+  it('a cyber refusal gets the plain line', async () => {
+    stubAnthropic(() => Response.json({ stop_reason: 'refusal', stop_details: { type: 'refusal', category: 'cyber' }, content: [] }));
+    const error = await callAnthropicDirectRaw('sk-ant-synthetic', {}).then(() => null, (e: unknown) => e);
+    expect(error).toMatchObject({ code: 'refused', message: "I can't help with that request." });
+  });
+
+  it('a health-topic refusal (bio, general_harms or unknown) points to a doctor, as the website chat does (US-15 AC14)', async () => {
+    for (const category of ['bio', 'general_harms', null]) {
+      stubAnthropic(() => Response.json({ stop_reason: 'refusal', stop_details: { type: 'refusal', category }, content: [] }));
+      const error = await callAnthropicDirectRaw('sk-ant-synthetic', {}).then(() => null, (e: unknown) => e);
+      expect(error).toMatchObject({ code: 'refused', message: "I can't help with that here. Please raise it with your doctor or pharmacist." });
+    }
+  });
+
+  it('an upload refusal fails the file once, with no re-send of the same request', async () => {
+    const fetchMock = stubAnthropic(refusal);
+    const out = await labImport(PAGES, 'si');
+    expect(out.result).toBeNull();
+    expect(out.errorCode).toBe('server_error');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
 

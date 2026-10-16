@@ -12,7 +12,7 @@
  * upload's `ByokUploadError`).
  */
 
-export type ByokErrorCode = 'unauthorized' | 'rate_limit' | 'bad_request' | 'network' | 'empty' | 'server_error';
+export type ByokErrorCode = 'unauthorized' | 'rate_limit' | 'bad_request' | 'network' | 'empty' | 'server_error' | 'refused';
 
 export class ByokAnthropicError extends Error {
   constructor(readonly code: ByokErrorCode, message: string) {
@@ -22,6 +22,14 @@ export class ByokAnthropicError extends Error {
 }
 
 const ANTHROPIC_MESSAGES_URL = 'https://api.anthropic.com/v1/messages';
+
+/** The website chat's refusal lines (app/lib/chat.server.ts, US-15 AC14): a
+ *  health-topic or unknown category points to a doctor. Keep the two in step. */
+function refusalLine(category: string | null | undefined): string {
+  return category === 'cyber' || category === 'frontier_llm' || category === 'reasoning_extraction'
+    ? "I can't help with that request."
+    : "I can't help with that here. Please raise it with your doctor or pharmacist.";
+}
 
 /** One block of an Anthropic Messages `content` array (text or tool_use). */
 export interface AnthropicContentBlock {
@@ -99,6 +107,10 @@ export async function callAnthropicDirectRaw(
   }
 
   const data = await response.json();
+  // A refusal is HTTP 200 and can carry partial text: it is never an answer
+  // or a set of lab values (US-15 AC14, AC34; Haiku 5.5 runs safety classifiers).
+  const { stop_reason: stopReason, stop_details: stopDetails } = data as { stop_reason?: string; stop_details?: { category?: string | null } };
+  if (stopReason === 'refusal') throw new ByokAnthropicError('refused', refusalLine(stopDetails?.category));
   const blocks = extractContentBlocks(data);
   const text = extractResponseText(data);
   const hasToolUse = blocks.some((b) => b.type === 'tool_use');

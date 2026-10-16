@@ -133,9 +133,9 @@ describe('US-12 AC8: a batch result keeps a dot-thousands JSON number a string',
   });
 });
 
-// US-15 AC31: each batch request has Haiku 5.5's shape (thinking disabled, no
+// US-15 AC34: each batch request has Haiku 5.5's shape (thinking disabled, no
 // sampling param, ending on the user turn), and a result is read by block type.
-describe('US-15 AC31: the batch path on Haiku 5.5', () => {
+describe('US-15 AC34: the batch path on Haiku 5.5', () => {
   it('sends each file with thinking disabled, no temperature and no assistant turn', async () => {
     let sent: { requests: Array<{ params: Record<string, any> }> } | undefined;
     vi.stubGlobal('fetch', vi.fn(async (_url: string, init: RequestInit) => {
@@ -157,5 +157,17 @@ describe('US-15 AC31: the batch path on Haiku 5.5', () => {
     })]);
     const { results } = await pollBatch('batch_synthetic');
     expect(results!.map(errorOf)).toEqual([undefined]);
+  });
+});
+
+describe('US-15 AC34: a refused batch request is an error, not a parse of its partial text', () => {
+  it('marks a succeeded result whose message stop_reason is refusal as a server error', async () => {
+    const refused = JSON.stringify({
+      custom_id: 'file-1',
+      result: { type: 'succeeded', message: { stop_reason: 'refusal', content: [{ type: 'text', text: letter }] } },
+    });
+    stubBatch([succeeded(0), refused]);
+    const { results } = await pollBatch('batch_synthetic');
+    expect(results!.map(errorOf)).toEqual([undefined, 'server_error']);
   });
 });

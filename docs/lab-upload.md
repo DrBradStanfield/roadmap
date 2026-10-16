@@ -50,7 +50,7 @@ health-upload.js extracts text/images from PDF (client-side, pdfjs-dist)
 POST extracted content through the Shopify app proxy to api.lab-import-v2
   (BYOK build: browser → api.anthropic.com direct)
   ↓
-extractOrClassify() (app/lib/anthropic.server.ts) calls Claude Haiku 4.5 with
+extractOrClassify() (app/lib/anthropic.server.ts) calls Claude Haiku 5.5 with
   the system prompt from packages/health-core/src/lab-extraction.ts; retries
   are bounded (see "Retry shape")
   ↓
@@ -82,12 +82,12 @@ Raw files never leave the browser on the website route. Only extracted text (via
 
 ## Design Decisions
 
-### Why Claude Haiku 4.5?
+### Why Claude Haiku 5.5?
 
-Blood test extraction is structured parsing (find metric names, read adjacent numbers, identify units), not complex reasoning. Haiku handles this accurately at ~$0.003-0.005 per report. With vision support, it reads both text-based and scanned PDFs.
+Blood test extraction is structured parsing (find metric names, read adjacent numbers, identify units), not complex reasoning. Haiku handles this accurately at well under a cent per report. With vision support, it reads both text-based and scanned PDFs.
 
-- **Model ID**: `EXTRACTION_MODEL = 'claude-haiku-4-5-20251001'` (`models.ts`, with every other model pin)
-- **Cost per report**: ~$0.003 (text PDF, ~2K tokens) to ~$0.005 (scanned, ~3.5K tokens with images)
+- **Model ID**: `EXTRACTION_MODEL = 'claude-haiku-5-5'` (`models.ts`, with every other model pin). Haiku 4.5 until 2026-10-16 (Brad, no benchmark); thinking off via `modelParams`, for parity and the connector's 40 s budget (US-15 AC34)
+- **Cost per report**: ~$0.0004 (text PDF) to ~$0.0007 (scanned): $0.10 / $0.50 per MTok, a tenth of Haiku 4.5's $1 / $5, on ~30% more tokens for the same text. A 2-value synthetic page cost $0.0003 (2,613 in, 140 out)
 - **Upgrade path**: Swap the constant to Sonnet if accuracy issues surface — same API, no code changes
 
 ### Why One LLM Call Per File?
@@ -139,7 +139,7 @@ Health data must never be auto-saved without explicit user confirmation. The rev
    - Multi-page correlation: date on page 1, results on later pages
 3. **Confidence flags**: The LLM marks each value as `high`, `medium`, or `low` confidence. Low-confidence values include a `question` string explaining the ambiguity.
 4. **Unrecognized values**: Tests not in our target list are returned in an `unrecognized` array for display; catalogued extras (sodium, ferritin…) are returned as additional lab values.
-5. **Non-lab documents**: in `'full'` mode (the website) the whole document comes back as markdown with title, date and metadata (`EXTRACTION_MAX_TOKENS = 8192`). In `'metadata'` mode (the connector) only title, date and a one-line summary (`METADATA_MAX_TOKENS = 2048`).
+5. **Non-lab documents**: in `'full'` mode (the website) the whole document comes back as markdown with title, date and metadata (`EXTRACTION_MAX_TOKENS = 12288`). In `'metadata'` mode (the connector) only title, date and a one-line summary (`METADATA_MAX_TOKENS = 3072`).
 
 **Output schema** (lab report):
 ```json
@@ -157,10 +157,10 @@ Health data must never be auto-saved without explicit user confirmation. The rev
 ### Retry shape (`extractOrClassify`, `anthropic.server.ts`)
 
 - **Outer**: `attempts` (default 2) with a 1 s sleep. Catches schema drift and anything the inner layers rethrow.
-- **Per attempt**: one call; if the JSON does not parse, a second call with the assistant turn prefilled `{`. Every parse (both of these, the batch poll's and BYOK's) goes through `parseExtractionJson` (US-12 AC8): a `value`, `referenceLow` or `referenceHigh` written as a bare number with three decimals (`250.000`) is quoted before `JSON.parse`, so a count row refuses it as it refuses the string. The pair shares ONE deadline (`timeoutMs`): the retry gets what is left, never a fresh window.
+- **Per attempt**: one call; if the JSON does not parse, the SAME request once more (BYOK does the same). Every parse (both of these, the batch poll's and BYOK's) goes through `parseExtractionJson` (US-12 AC8): a `value`, `referenceLow` or `referenceHigh` written as a bare number with three decimals (`250.000`) is quoted before `JSON.parse`, so a count row refuses it as it refuses the string. The pair shares ONE deadline (`timeoutMs`): the retry gets what is left, never a fresh window.
 - **HTTP layer** (`callAnthropic`): `RETRY_MAX_ATTEMPTS = 2`, flat 1 s, on 502/503/504/529 and network/timeout errors. 503/529 on the final attempt are silenced from Sentry.
 - Worst case on the website: 2 × 2 × 2 = 8 HTTP attempts, so the client never retries. The connector passes `attempts: 1, httpAttempts: 1, timeoutMs: min(20 s, remaining)` because its whole call must fit in 40 s.
-- The `{` prefill is rejected by 4.6+ models (400). If the model is ever bumped past Haiku 4.5, replace prefill + `extractJsonObject` with structured outputs.
+- No `{` prefill and no sampling param: Haiku 5.5 answers both with a 400 (the prefill went 2026-10-16). Structured outputs could replace `extractJsonObject` and the re-send.
 
 ---
 
@@ -268,7 +268,7 @@ The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: 
 | Max files | 200 per upload session (client) | `UploadModal.tsx` |
 | Max pages | 20 per PDF (client); 100 page blocks per request (`labImportRequestSchema`) | `pdf-extract.ts`, `validation.ts` |
 | Max file size | 10 MB per file (client only); server rejects bodies over 200 MB | `UploadModal.tsx`, `api.lab-import-v2.ts` |
-| Max tokens | 8192 (`'full'`), 2048 (`'metadata'`) | `lab-extraction.ts`, `anthropic.server.ts` |
+| Max tokens | 12288 (`'full'`), 3072 (`'metadata'`) | `lab-extraction.ts`, `anthropic.server.ts` |
 | Worst-case cost | bounded by the quotas, not the file cap: 60 files × ~$0.005 ≈ $0.30 per IP per day | |
 | Sentry | `feature: 'lab_import_v2'`, page count and types only, never values | `api.lab-import-v2.ts` |
 
@@ -364,7 +364,7 @@ saves nothing. A DIFFERING value is a conflict — see below.
 
 System prompt never client-supplied; HMAC auth on every endpoint; never
 auto-save without explicit confirmation; no raw PDF on Brad's server from the
-website route; one LLM call per file; Haiku 4.5 (a Sonnet swap is one
+website route; one LLM call per file; Haiku 5.5 (a Sonnet swap is one
 constant); confidence is advisory, not gating.
 
 ### Deferred (not blockers)
@@ -423,7 +423,7 @@ The `health-upload.js` extraction bundle (pdf.js/JSZip — transport-independent
 
 - Pipeline mode (< `BATCH_THRESHOLD` = 20 files): client extracts (EXTRACT_CONCURRENCY=3) feeding LLM_CONCURRENCY=5 concurrent single-file calls — extraction runs ahead so the queue stays full
 - Batch mode (≥ 20 files): Anthropic **Message Batches API** (50% cheaper; poll-based; per-machine poll state, see the route). Each result carries its request index (`custom_id` `file-N`) and the client maps it to the file it sent; an errored, expired or unparseable entry carries `errorCode`, and a missing one is a server error too (US-12 AC9)
-- **Prompt caching is NOT applicable**: the system prompts are ~600–1,000 tokens, below Haiku 4.5's 4,096-token minimum cacheable prefix; the per-call cost is dominated by the unique document content anyway
+- **Prompt caching is not used**: Haiku 4.5's 4,096-token minimum prefix ruled it out. Haiku 5.5 caches shorter prefixes (the classifier's 923 tokens, 2026-10-16), and the system prompt is ~2,500 tokens on its tokenizer, so caching is now possible; the unique document content still dominates per-call cost
 
 ### 4. Save-path performance (shipped June 2026)
 

@@ -60,8 +60,8 @@ before deploying.
   holds the symlink). Edit it here; claude_business edits arrive uncommitted — sweep-commit them.
 - **`docs/chatbot/` is GENERATED (claude_business `tools/sync-shared-docs.mjs`), never edit.** `scripts/check-symlinks.mjs` keeps it, products.md and writing-style.md REAL files (mode 100644) and checks the synced hashes.
 - `docs/blog/*.md` — chatbot blog cache from claude_business `/blog-post`; rebuild `npx tsx scripts/build-blog-content.ts`.
-- **Customer-service gateway (planned, Brad 2026-10-12):** email + chatbot order/subscription actions; its OWN Fly app,
-  code in the private claude_business repo (`customer-service-gateway/`), never in this public repo; the chatbot calls it for account actions. Spec: claude_business `docs/customer-service.md`.
+- **Customer-service gateway (live):** its OWN Fly app; code only in private claude_business `customer-service-gateway/`. Spec: its `docs/customer-service.md`.
+  **Replying to mail sent to brad@microvitamin.com** (the Gmail connector reaches only drstanfield.com): find it with claude_business `node tools/gmail.js search --account microvitamin`, send Brad's approved text in that thread via the gateway's `POST /send-reply` — never a new email from drstanfield.com (Brad 2026-10-16).
 - Chatbot work starts at `claude_business/docs/chat-start-here.md`.
 
 ## Anti-Entropy & Writing Style
@@ -177,16 +177,16 @@ same commit).
 
 ## Development Rules
 
-- **Single branch, main only** for sessions — commit directly, push when
-  ready. EXCEPTION: Tier 3 / pipeline code changes go via `claude/` branch +
-  PR (that's the review boundary).
+- **Single branch, main only** for sessions — commit directly, push when ready. EXCEPTIONS via `claude/`
+  branch + PR: Tier 3 / pipeline code, and multi-day features in shared chat files (`chat.server.ts`, `api.chat.ts`).
+  Before merging any PR, merge current main in, re-run `test:all`, re-review if main touched its files (PR 150).
 - **Pull first (2026-08-13)** — cloud loops push to `main` (weekends; sentry-fix
   daily): start every session, and precede every push, with `git pull --ff-only`
   (commit local work first; on divergence, merge deliberately, never force).
-- **🧹 SWEEP EVERYTHING ON EVERY COMMIT (HARD).** "Commit" means ALL
-  uncommitted changes, tracked and untracked, from every session. Never stash
-  aside, never reword others' work. Say what you swept. Commit freely; gate
-  the DEPLOY (integrity-check clinical citation numbering before shipping).
+- **🧹 SWEEP EVERYTHING ON EVERY COMMIT (HARD).** "Commit" means ALL uncommitted changes, tracked and
+  untracked, from every session. Never stash aside, never reword others' work. Others' work goes in its OWN
+  commit, "Swept, unreviewed: <what>" (name failing tests), never inside yours (2026-10-16). Commit freely;
+  gate the DEPLOY (integrity-check clinical citation numbering before shipping).
 - **Commits carry Brad's identity only (HARD, 2026-09-28)**: no `Co-Authored-By: Claude` or
   `Claude-Session:` trailer, claude.ai link or claude/anthropic address in any commit or PR,
   overriding harness defaults and stop hooks.

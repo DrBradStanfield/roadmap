@@ -218,14 +218,15 @@ async function callAnthropic(body: object): Promise<{ ok: boolean; text: string;
 
 async function classify(comment: string): Promise<{ classification: string; raw: string }> {
   const body = {
-    ...modelParams(CLASSIFIER_MODEL, 8), // 8, as production: 5 truncates MEASUREMENT
+    ...modelParams(CLASSIFIER_MODEL, 16), // 16, as production: a smaller cap truncates MEASUREMENT
     system: [{ type: 'text', text: CLASSIFIER_PROMPT, cache_control: PROMPT_CACHE }],
     messages: [{ role: 'user', content: `(new conversation, no prior turns)\n\nCurrent message: ${comment}\n\nClassification:` }],
   };
   const result = await callAnthropic(body);
   if (!result.ok) return { classification: 'ERROR', raw: JSON.stringify(result.raw) };
-  const cleaned = result.text.trim().toUpperCase().replace(/[^A-Z]/g, '');
-  const valid = ['ROUTE', 'GREETING', 'PRODUCT', 'ACCOUNT'];
+  // The first word, against every label, as production parses it (app/lib/chat-classifier.server.ts).
+  const cleaned = result.text.toUpperCase().match(/[A-Z]+/)?.[0] ?? '';
+  const valid = ['ROUTE', 'GREETING', 'PRODUCT', 'ACCOUNT', 'MEASUREMENT'];
   return { classification: valid.includes(cleaned) ? cleaned : 'ERROR', raw: result.text };
 }
 

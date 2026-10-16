@@ -3,7 +3,7 @@ import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MODEL, EXTRACTION_
 
 // Request shapes per model family (docs/chat-audit-2026-09-29.md F1, US-15 AC13).
 // Sonnet 5 and 5.5 400 on sampling params; 5.5 also 400s on `disabled` thinking.
-// Haiku 5.5 400s on sampling params too, and thinks unless told not to (US-15 AC31).
+// Haiku 5.5 400s on sampling params too, and thinks unless told not to (US-15 AC34).
 describe('modelParams', () => {
   it('Haiku 5.5 thinking-off: disabled thinking, the caller max_tokens, no sampling param', () => {
     const p = modelParams('claude-haiku-5-5', 8);
@@ -18,11 +18,11 @@ describe('modelParams', () => {
       output_config: { effort: 'low' },
     });
   });
-  it('the production classifier and extraction bodies: Haiku 5.5 with thinking off (US-15 AC31)', () => {
+  it('the production classifier and extraction bodies: Haiku 5.5 with thinking off (US-15 AC34)', () => {
     expect(CLASSIFIER_MODEL).toBe('claude-haiku-5-5');
     expect(EXTRACTION_MODEL).toBe('claude-haiku-5-5');
-    expect(modelParams(CLASSIFIER_MODEL, 8))
-      .toEqual({ model: 'claude-haiku-5-5', max_tokens: 8, thinking: { type: 'disabled' } });
+    expect(modelParams(CLASSIFIER_MODEL, 16))
+      .toEqual({ model: 'claude-haiku-5-5', max_tokens: 16, thinking: { type: 'disabled' } });
   });
   it('Sonnet 5.5 thinking-off: between_tools, no temperature, no other thinking field', () => {
     const p = modelParams('claude-sonnet-5-5', 200, 'off');

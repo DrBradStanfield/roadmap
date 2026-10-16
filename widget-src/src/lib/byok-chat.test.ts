@@ -216,9 +216,9 @@ describe('US-15 AC33: run_roadmap in the Pages chat', () => {
   });
 });
 
-// US-15 AC31: the Pages chat runs on Haiku 5.5, which 400s on sampling params
+// US-15 AC34: the Pages chat runs on Haiku 5.5, which 400s on sampling params
 // and on an assistant prefill, and thinks unless told not to.
-describe('US-15 AC31: the Pages chat request on Haiku 5.5', () => {
+describe('US-15 AC34: the Pages chat request on Haiku 5.5', () => {
   beforeEach(() => {
     const store = new Map([['hr_anthropic_key', 'sk-ant-test']]);
     vi.stubGlobal('localStorage', {

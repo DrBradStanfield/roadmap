@@ -21,7 +21,7 @@ vi.mock('node:dns/promises', () => ({ default: { lookup: async () => [{ address:
 import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../packages/health-core/src/roadmap-file';
-import { EXTRACTION_MODEL } from '../packages/health-core/src/models';
+import { EXTRACTION_MODEL, modelParams } from '../packages/health-core/src/models';
 import { MCP_TOOLS } from '../packages/health-core/src/mcp-tools';
 import { resetMcpMemory } from '../app/lib/mcp-grants.server';
 import { mcpEndpoint, setAdapterFactory } from '../app/lib/mcp.server';
@@ -178,7 +178,7 @@ async function converse(access: string, fixture: keyof typeof FIXTURES, system: 
     const res = await realFetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: EXTRACTION_MODEL, max_tokens: 4096, system, tools, messages }),
+      body: JSON.stringify({ ...modelParams(EXTRACTION_MODEL, 4096), system, tools, messages }),
       signal: AbortSignal.timeout(120_000),
     });
     const reply = (await res.json()) as { content: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }>; stop_reason: string };

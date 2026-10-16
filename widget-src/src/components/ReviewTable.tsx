@@ -7,6 +7,7 @@ import {
   parseLocalisedNumber,
   BLOOD_TEST_METRICS,
   VITAL_METRICS,
+  hasUnitChoice,
   isScreeningEligible,
   displayLabUnit,
   labSlotKey,
@@ -176,8 +177,8 @@ function labUnitText(lab: { name: string; unit: string }): string {
  *  and the stored `vitamin_d` share one row, as in the connector (US-35 AC6).
  *  `|` is swapped out because the cellKey format is `${rowKey}|${dateKey}`, and
  *  an LLM-emitted name like "ALT | AST ratio" would otherwise collide. Prefixed
- *  so a lab row named like a core metric ("ldl", "systolic_bp", saved before
- *  US-12 AC11) never shares a cell with that metric. */
+ *  so a lab row named like a core metric ("ldl", "systolic_bp": saved before
+ *  US-12 AC11, or by a connector commit today) never shares a cell with it. */
 function normaliseLabName(name: string): string {
   return `lab:${labSlotKey(name).replace(/\|/g, '/')}`;
 }
@@ -298,17 +299,23 @@ export function buildMatrixModel(
   //    test seeds its own column. A saved BP seeds only a date this upload
   //    brings, so it conflicts like any held slot (US-13 AC3) without every
   //    vitals date becoming a column.
+  //    A file brings a column only when it has a date and contributes a value:
+  //    document-only files (scans, letters) keep their own card below the
+  //    matrix, off the date axis. One rule for the seeding and the overlay.
+  const uploadDateKey = (r: FileResult, fi: number) =>
+    fileDates[fi] && r.values.length + r.additionalValues.length > 0 ? buildDatePrefix(fileDates[fi]) : null;
   const bloodTestSet = new Set<string>(BLOOD_TEST_METRICS);
   const vitalSet = new Set<string>(VITAL_METRICS);
-  const uploadDates = new Set(results.flatMap((r, fi) =>
-    fileDates[fi] && r.values.length + r.additionalValues.length > 0 ? [buildDatePrefix(fileDates[fi])] : []));
+  const uploadDates = new Set(results.map(uploadDateKey));
   for (const m of measurementHistory) {
     const dateKey = m.recordedAt.slice(0, 10);
     const metric = m.metricType as MetricType;
-    if (bloodTestSet.has(metric)) {
+    const blood = bloodTestSet.has(metric);
+    if (!blood && !(vitalSet.has(metric) && uploadDates.has(dateKey))) continue;
+    if (blood) {
       addColumn(dateKey, parseReportDate(dateKey), null);
       coreMetricsSeen.add(metric);
-    } else if (!vitalSet.has(metric) || !uploadDates.has(dateKey)) continue;
+    }
     const display = UNIT_DEFS[metric]
       ? cellText(metric, m.value, displayFor(metric))
       : String(m.value);
@@ -342,14 +349,9 @@ export function buildMatrixModel(
   //    recorded (leave the context cell), a differing one becomes a conflict
   //    the user resolves in the table — never a silent drop (US-32).
   results.forEach((r, fi) => {
-    const fdate = fileDates[fi];
-    if (!fdate) return;
-    // Only seed a column when this file contributes a lab value to the matrix.
-    // Document-only files (scan results, clinic letters) keep their own per-file
-    // card below the matrix; they shouldn't pollute the date axis with an empty column.
-    if (r.values.length === 0 && r.additionalValues.length === 0) return;
-    const dateKey = buildDatePrefix(fdate);
-    addColumn(dateKey, fdate, fi);
+    const dateKey = uploadDateKey(r, fi);
+    if (!dateKey) return;
+    addColumn(dateKey, fileDates[fi], fi);
 
     r.values.forEach((v, vi) => {
       const metric = v.metric as MetricType;
@@ -405,8 +407,8 @@ export function buildMatrixModel(
   // 3) Sort. Columns chronological asc (oldest left, newest right).
   //    Core rows in the canonical BLOOD_TEST_METRICS order so the matrix
   //    reads the same as the live timeline, then any vitals the report
-  //    printed (BP): save takes every cell, so every cell needs a row
-  //    (US-12 AC11). Additional rows alphabetic.
+  //    printed (BP; extraction never returns weight or waist): save takes
+  //    every cell, so every cell needs a row (US-12 AC11). Additional rows alphabetic.
   const columns = Array.from(columnsByKey.values()).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
   const coreRows: CoreRow[] = [...BLOOD_TEST_METRICS, ...VITAL_METRICS]
     .filter(m => coreMetricsSeen.has(m as MetricType))
@@ -1086,7 +1088,7 @@ function MatrixRowView({
   const rowDisplay = row.kind === 'core' ? (metricUnitOverrides?.[row.metric] ?? unitSystem) : unitSystem;
   const { label, unitLabel, refLabel } = describeRow(row, rowDisplay, grading);
   // A fixed unit (mmHg, PSA's ng/mL) gets a static chip, not a toggle that does nothing.
-  const toggleUnit = row.kind === 'core' && onToggleFieldUnit && UNIT_DEFS[row.metric].label.si !== UNIT_DEFS[row.metric].label.conventional
+  const toggleUnit = row.kind === 'core' && onToggleFieldUnit && hasUnitChoice(row.metric)
     ? () => onToggleFieldUnit(METRIC_TO_FIELD[row.metric])
     : undefined;
 

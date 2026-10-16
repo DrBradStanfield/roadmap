@@ -181,6 +181,7 @@ export {
   fromCanonicalValue,
   formatDisplayValue,
   getDisplayLabel,
+  hasUnitChoice,
   getDisplayRange,
   detectUnitSystem,
   HBA1C_THRESHOLDS,

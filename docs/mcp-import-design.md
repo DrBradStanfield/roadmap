@@ -47,14 +47,14 @@ of truth for acceptance criteria and the schemas live in
    read and delete — and the REST adapters hand it to `fetch`. 5 folder
    files per call by default with `remaining` naming the rest, per-file
    partial results, extraction HTTP timeout min(20 s, what is left) with no
-   retry, inner or outer, on this path, and the `{`-prefill second call
-   shares the first call's deadline (`extractOrClassifyOnce` computes one
+   retry, inner or outer, on this path, and the second call (the same
+   request re-sent on a malformed answer) shares the first call's deadline (`extractOrClassifyOnce` computes one
    `until` for the pair); an extract's I/O ends 4 s before the deadline so
    slotting and the stash fit inside it. What time cut off is `remaining` on
    BOTH routes and its day's charge is refunded (`createQuotaCounter.refund`);
    `next` says commit first, then ask again. Non-lab documents are asked for
    metadata only (`documentMode: 'metadata'`: title, date, a one-line
-   summary, 2048 tokens) — the connector files no text, so a four-page
+   summary, 3072 tokens) — the connector files no text, so a four-page
    letter no longer runs past the budget; the website keeps the full prompt. PDFs/images ≤5 MB, ZIP ≤20 MB, ≤20 entries,
    inflate counted on the stream, type by magic bytes per entry, entries by
    position. Dropbox: list the root, download by `id`, files only, names
