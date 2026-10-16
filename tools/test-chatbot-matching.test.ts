@@ -684,4 +684,9 @@ describe('test-chatbot-matching run_roadmap round (US-15 AC33)', () => {
     expect(run(fixture({ expect_roadmap_run: true, must_mention: ['plain'] }), false).out).toContain('did not call run_roadmap');
     expect(run(fixture({ expect_roadmap_run: false }), true).out).toContain('called run_roadmap');
   }, 120_000);
+
+  it('expect_roadmap_run alone still triggers the answer check (Codex PR 150 round 4)', () => {
+    expect(run(fixture({ must_mention: undefined, expect_roadmap_run: true }), false).out).toContain('did not call run_roadmap');
+    expect(run(fixture({ must_mention: undefined, expect_roadmap_run: false }), true).out).toContain('called run_roadmap');
+  }, 120_000);
 });

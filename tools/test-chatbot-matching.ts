@@ -636,7 +636,7 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
   if (forbidden.length > 0) routingPassed = false;
 
   let answerCheck: AnswerCheckResult | null = null;
-  if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || q.must_not_claim?.length || q.must_match?.length || q.must_not_match?.length || typeof q.max_length_chars === 'number')) {
+  if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || q.must_not_claim?.length || q.must_match?.length || q.must_not_match?.length || typeof q.max_length_chars === 'number' || q.expect_roadmap_run !== undefined)) {
     const answerRuns: AnswerCheckResult[] = [];
     for (let i = 0; i < answerCheckRuns; i++) {
       answerRuns.push(await checkAnswer(q, intersection));
