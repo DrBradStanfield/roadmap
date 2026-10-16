@@ -74,14 +74,17 @@ export async function extractOrClassify(
       return await extractOrClassifyOnce(apiKey, content, opts.timeoutMs, opts.httpAttempts, opts.documentMode ?? 'full');
     } catch (error) {
       // A refusal usually repeats on the same request (US-15 AC31): fail now.
-      if (attempt >= attempts || (error instanceof Error && error.message === 'Anthropic refusal')) throw error;
+      if (attempt >= attempts || (error instanceof Error && error.message === REFUSAL_ERROR)) throw error;
       await sleep(1000);
     }
   }
 }
 
-/** Plenty for a lab panel or a document's metadata; the 8192 default exists for markdown transcription. */
+/** Plenty for a lab panel or a document's metadata; the 12288 default (EXTRACTION_MAX_TOKENS) exists for markdown transcription. */
 const METADATA_MAX_TOKENS = 3072;
+
+/** Thrown by `callAnthropic` on a refusal; `extractOrClassify` does not retry it (US-15 AC31). */
+const REFUSAL_ERROR = 'Anthropic refusal';
 
 /**
  * One attempt: the call, and the SAME request sent once more when the first
@@ -460,7 +463,7 @@ async function readEventStream(
 /** Text-only wrapper for extraction, where a refusal is a failed call. */
 async function callAnthropic(apiKey: string, body: Record<string, unknown>, timeoutMs?: number, maxAttempts?: number): Promise<string> {
   const result = await fetchAnthropicRaw(apiKey, body, timeoutMs, maxAttempts);
-  if (result.stopReason === 'refusal') throw new Error('Anthropic refusal');
+  if (result.stopReason === 'refusal') throw new Error(REFUSAL_ERROR);
   return result.content;
 }
 

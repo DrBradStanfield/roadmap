@@ -56,7 +56,8 @@ connector holds cannot see files dropped into the folder.
   aborted at it: record read/write, listing, download, the pending-file
   write, the commit's read and delete. The model call gets
   `timeoutMs: min(20 s, what is left)`, `attempts: 1`, `httpAttempts: 1`, and
-  the `{`-prefill second call shares the first call's deadline. I/O ends 4 s
+  the second call (the same request re-sent on a malformed answer) shares
+  the first call's deadline. I/O ends 4 s
   before the deadline so slotting and the stash fit.
 - Non-lab documents are asked for metadata only (`documentMode: 'metadata'`,
   3072 tokens: title, date, one-line summary). The connector files no
