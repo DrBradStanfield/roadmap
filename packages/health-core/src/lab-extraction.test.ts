@@ -22,6 +22,7 @@ import {
   type PageContent,
   zipMemberName,
   fileNameLine,
+  unifiedSystemPrompt,
 } from './lab-extraction';
 import { oneLine } from './plan';
 
@@ -689,6 +690,15 @@ describe('US-12 AC9 / US-35 — one line cleaner for names, never a split charac
       expect(zipMemberName('a.zip', 'x/' + '😀'.repeat(n) + '.pdf')).not.toMatch(lone);
       expect(zipMemberName('😀'.repeat(n) + '.zip', 'results.pdf')).not.toMatch(lone);
       expect(zipMemberName('z'.repeat(n) + '😀'.repeat(20) + '.zip', 'results.pdf')).not.toMatch(lone);
+    }
+  });
+});
+
+describe('US-12 AC11: the prompt splits a printed blood pressure into its two core metrics', () => {
+  it('both prompt modes carry the rule, with a generic example reading', () => {
+    for (const mode of ['full', 'metadata'] as const) {
+      const prompt = unifiedSystemPrompt(mode);
+      expect(prompt).toContain('A measured blood pressure printed as one reading ("120/80 mmHg") is two TARGET METRICS: systolic_bp 120 and diastolic_bp 80, both in "values".');
     }
   });
 });

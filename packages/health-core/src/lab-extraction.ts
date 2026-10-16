@@ -223,6 +223,7 @@ ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metri
   5. Multi-page documents: date on page 1, results on later pages — correlate them.
   6. If uncertain about a value, set confidence to "low" with a "question" explaining why.
   7. Extract ALL other numeric test results NOT in TARGET METRICS into "additionalValues" array.
+  8. A measured blood pressure printed as one reading ("120/80 mmHg") is two TARGET METRICS: systolic_bp 120 and diastolic_bp 80, both in "values".
 
   ADDITIONAL VALUES — use these standardized snake_case names when applicable:
   FBC: haemoglobin, rbc, wbc, platelets, mcv, mch, haematocrit, neutrophils, lymphocytes, monocytes, eosinophils, basophils
@@ -440,29 +441,36 @@ export function parseExtractionJson(text: string): unknown {
   return JSON.parse(extractJsonObject(text).replace(BARE_DOT_THOUSANDS, '$1"$2"'));
 }
 
+/** The core metrics an additional value can be promoted into (US-12 AC11).
+ *  Never creatinine: a urine creatinine prints in mg/dL too, and serum
+ *  creatinine drives eGFR. */
+const PROMOTABLE = new Set<string>(VALID_METRICS.filter(m => m !== 'creatinine'));
+
 /** Build a UnifiedExtractionResult from a parsed-and-filtered unified response. */
 export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>): UnifiedExtractionResult {
   const isLab = parsed.classification === 'lab_report';
   // A core test the model filed as an additional value ("systolic_bp",
   // "apolipoprotein_b") is that core value (US-12 AC11): saved as a lab row,
   // the plan never sees it. Only into a free slot, and only in a unit the
-  // test is measured in: a name alone can be another test, or carry no
-  // unit to convert. Never creatinine: a urine creatinine prints in mg/dL too, and
-  // serum creatinine drives eGFR. Anything else stays a lab row, never dropped.
+  // test is measured in: a name alone can be another test, or carry no unit
+  // to convert. Anything else stays a lab row, never dropped.
   const coreRows = [...parsed.values];
   const taken = new Set(coreRows.map(v => v.metric));
-  const additionalValues = parsed.additionalValues.filter(v => {
+  const additionalValues: typeof parsed.additionalValues = [];
+  for (const v of isLab ? parsed.additionalValues : []) {
     const metric = resolveCoreMetricName(v.name);
-    if (!metric || metric === 'creatinine' || !VALID_METRICS.includes(metric) || taken.has(metric) || !reportedToCanonical(metric, v.value, v.unit)) return true;
-    taken.add(metric);
-    coreRows.push({ metric, value: v.value, unit: v.unit, confidence: 'high' });
-    return false;
-  });
+    if (metric && PROMOTABLE.has(metric) && !taken.has(metric) && reportedToCanonical(metric, v.value, v.unit)) {
+      taken.add(metric);
+      coreRows.push({ metric, value: v.value, unit: v.unit, confidence: 'high' });
+    } else {
+      additionalValues.push(v);
+    }
+  }
   return {
     classification: parsed.classification,
     reportDate: parsed.reportDate,
     values: isLab ? resolveLabValues(coreRows) : [],
-    additionalValues: isLab ? additionalValues : [],
+    additionalValues,
     unrecognized: parsed.unrecognized || [],
     document: parsed.document ? {
       classification: parsed.classification,

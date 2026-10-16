@@ -23,6 +23,7 @@ import {
   getDisplayLabel,
   getDisplayRange,
   UNIT_DEFS,
+  hasUnitChoice,
   FIELD_METRIC_MAP,
   medicationsToInputs,
   screeningsToInputs,
@@ -294,9 +295,7 @@ export function InputPanel({
   /** Whether a field has different SI/conventional labels (i.e., a toggle is useful). */
   const hasUnitToggle = (field: string): boolean => {
     const metric = FIELD_METRIC_MAP[field];
-    if (!metric) return false;
-    const def = UNIT_DEFS[metric];
-    return def.label.si !== def.label.conventional;
+    return !!metric && hasUnitChoice(metric);
   };
   const prefillComplete = !!(inputs.sex && inputs.heightCm && inputs.birthYear && inputs.birthYear >= 1900 && inputs.birthMonth);
 

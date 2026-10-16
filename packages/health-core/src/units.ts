@@ -370,6 +370,11 @@ export function formatGradedValue(
   return (Math.min(floored, x * 10 - 1) / fine).toFixed(dp + 1);
 }
 
+/** Whether a metric prints differently in SI and conventional units, so a unit toggle does something (not mmHg, not PSA's ng/mL). */
+export function hasUnitChoice(metric: MetricType): boolean {
+  return UNIT_DEFS[metric].label.si !== UNIT_DEFS[metric].label.conventional;
+}
+
 /** Get the display unit label for a metric (e.g. "mg/dL" or "mmol/L"). */
 export function getDisplayLabel(metric: MetricType, system: UnitSystem): string {
   return UNIT_DEFS[metric].label[system];
