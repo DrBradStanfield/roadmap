@@ -367,6 +367,13 @@ export class RoadmapStore {
     return store;
   }
 
+  /** Only for a newly created candidate rejected before installation. create()
+   *  schedules mirror recovery after its final await; synchronous rejection can
+   *  cancel it before it runs. This does not stop an already-running save. */
+  cancelBootstrapPersistence(): void {
+    this.cancelDebounce();
+  }
+
   get backendId() {
     return this.sync.backendId;
   }
@@ -816,6 +823,11 @@ export class RoadmapStore {
    *  one still sitting on the debounce. */
   private get writePending(): boolean {
     return this.running !== null || this.persistTimer !== null;
+  }
+
+  /** Replacement must not abandon unsaved edits or race an active save. */
+  get hasPendingWrites(): boolean {
+    return this.writePending || this.unsaved;
   }
 
   /** True while a change to the working copy has not landed, a failed save's
