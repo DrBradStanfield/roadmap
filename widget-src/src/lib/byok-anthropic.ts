@@ -108,6 +108,7 @@ export async function callAnthropicDirectRaw(
   const blocks = extractContentBlocks(data);
   const text = extractResponseText(data);
   const hasToolUse = blocks.some((b) => b.type === 'tool_use');
-  if (!text && !hasToolUse) throw new ByokAnthropicError('empty', 'Empty response from Anthropic. Try again.');
+  // A max_tokens stop is the caller's to judge (upload: too_long), even with no text.
+  if (!text && !hasToolUse && stopReason !== 'max_tokens') throw new ByokAnthropicError('empty', 'Empty response from Anthropic. Try again.');
   return { text, blocks, stopReason };
 }

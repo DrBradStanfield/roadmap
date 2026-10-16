@@ -180,3 +180,12 @@ describe('privacy: a BYOK parse failure logs no report text', () => {
     expect(logged).not.toContain('141');
   });
 });
+
+describe('US-15 AC34: a BYOK answer cut off with no text is too_long, not empty', () => {
+  it('maps an empty max_tokens stop to too_long, with one call', async () => {
+    const fetchMock = stubAnthropic(() => Response.json({ stop_reason: 'max_tokens', content: [] }));
+    const out = await labImport(PAGES, 'si');
+    expect(out.errorCode).toBe('too_long');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});

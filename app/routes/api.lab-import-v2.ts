@@ -159,7 +159,9 @@ export async function action({ request }: ActionFunctionArgs) {
 
     const { pages } = validation.data;
     try {
-      // One deadline for the file: a malformed answer's re-send gets what is left (US-15 AC34).
+      // One deadline for the file's calls: a malformed answer's re-send gets what
+      // is left. A timed-out HTTP attempt is still retried once in a fresh window
+      // (fetchAnthropicRaw), kept for capacity blips; ~46 s answers make it rare (US-15 AC34).
       const result = await extractOrClassify(pages, { timeoutMs: 60_000 });
       return Response.json({ success: true, data: result, remaining: ipQuota.remaining(ip) });
     } catch (error) {
