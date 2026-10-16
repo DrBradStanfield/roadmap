@@ -85,7 +85,7 @@ export { ROADMAP_DOC };
  * (US-09 AC4): a failed cloud persist mirrors the working copy locally under
  * this marker; a failed connect-time lift and an on-device fallback session
  * (standalone/connect.ts) mark the existing local file the same way. Cleared by the next successful cloud
- * save, after create() has merged the on-device copy back in. ONLY the
+ * save that includes the on-device copy (normally lifted by create()). ONLY the
  * functions below write it — the key is exported for tests alone.
  */
 export const PENDING_MIRROR_KEY = 'health_roadmap_pending_cloud_sync';
@@ -1078,11 +1078,13 @@ export class RoadmapStore {
     // already taken the change into the working copy (US-34 AC1). Announce it
     // here or the screen stays stale until a reload.
     let remoteFolded = false;
+    let savedFile = this.file;
     try {
       do {
         this.dirtyDuringPersist = false;
         const saving = this.changes;
         const result = await this.sync.save(this.file);
+        savedFile = result.file;
         this.seenRevision = result.version; // what it wrote, never what its verify read
         this.savedChanges = saving;
         // Fold remote changes back in without dropping mutations made during the
@@ -1094,9 +1096,23 @@ export class RoadmapStore {
       this.running = null;
       if (remoteFolded) notify(REMOTE_CHANGED_EVENT);
       this.lastSyncedAt = new Date().toISOString();
-      // A skipped (unreadable) mirror holds data this save did NOT include —
-      // keep its marker so the next load retries it.
-      if (this.adapter.id !== 'local' && !this.mirrorSkipped) clearSyncPending();
+      // Read AFTER the await: another tab may have mirrored a failure meanwhile.
+      // Clear only if merging that copy adds nothing to the file actually saved,
+      // not this tab's working copy (which may already hold another unsaved edit).
+      const since = syncPendingSince();
+      if (this.adapter.id !== 'local' && !this.mirrorSkipped && since != null) {
+        try {
+          const { body } = new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME);
+          const ctx = { ...this.ctx(), keepNewerThan: since };
+          const covered = body == null ? savedFile : ROADMAP_DOC.merge(ROADMAP_DOC.migrate(body, ctx), savedFile, ctx);
+          // eraseEpoch is deletion state, not a clock: contentOf omits all meta.
+          if ((covered.meta.eraseEpoch ?? 0) === (savedFile.meta.eraseEpoch ?? 0) && contentOf(covered) === contentOf(savedFile)) {
+            clearSyncPending();
+          }
+        } catch {
+          /* unreadable mirror: leave it for create() to handle; the cloud save succeeded */
+        }
+      }
       return true;
     } catch (error) {
       this.running = null; // as above: ended before the marker is announced
