@@ -6,11 +6,11 @@
  * terminal. The CLI keeps reading the file and rendering text and HTML;
  * `renderJson` is the agent-facing shape, and both surfaces return it.
  */
-import { calculateHealthResults } from './calculations';
+import { calculateHealthResults, missingPlanInputs } from './calculations';
 import { fileProfileToApi, fileScreeningRows } from './file-inputs';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 import {
-  FIELD_METRIC_MAP,
+  FIELD_UNITS,
   METRIC_LABELS,
   METRIC_TO_FIELD,
   measurementsToInputs,
@@ -25,7 +25,7 @@ import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-s
 import { CURRENT_SCHEMA_VERSION, type FileLabValue, type RoadmapFile } from './roadmap-file';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import {
-  CANONICAL_UNITS, UNIT_DEFS, formatDisplayValue, formatGradedValue, getDisplayLabel, type MetricType, type UnitSystem,
+  UNIT_DEFS, formatDisplayValue, formatGradedValue, getDisplayLabel, type MetricType, type UnitSystem,
 } from './units';
 import { getValidationErrors, validateHealthInputs } from './validation';
 
@@ -247,25 +247,6 @@ export function dueSplit(plan: Plan): { overdue: ReminderScheduleItem[]; upcomin
   };
 }
 
-/**
- * The inputs whose absence silently removes plan content: the four the whole
- * plan is computed from (sex, birth year, height, weight) and the five markers
- * that each gate a group of suggestions. Creatinine is one of them: without it
- * there is no eGFR, and no CKD adjustment to the protein target. Naming them is
- * the difference between a thin plan and a plan the assistant knows is thin (US-32).
- */
-const GATING_INPUTS = ['sex', 'birthYear', 'heightCm', 'weightKg', 'waistCm', 'systolicBp', 'hba1c', 'apoB', 'creatinine'] as const;
-
-/** Those of them the record does not hold. Empty when nothing is missing. */
-function missingPlanInputs(plan: Plan): Array<(typeof GATING_INPUTS)[number]> {
-  return GATING_INPUTS.filter((field) => plan.inputs[field] === undefined || plan.inputs[field] === null);
-}
-
-/** The SI unit each `inputs` field holds, keyed the way `inputs` is keyed. */
-const INPUT_UNITS: Record<string, string> = Object.fromEntries(
-  Object.entries(FIELD_METRIC_MAP).map(([field, metric]) => [field, CANONICAL_UNITS[metric]]),
-);
-
 /** The agent-facing shape. Field names are stable; add, never rename. */
 export function planPayload(plan: Plan) {
   const { overdue, upcoming } = dueSplit(plan);
@@ -277,7 +258,7 @@ export function planPayload(plan: Plan) {
     generatedAt: plan.generatedAt,
     today: plan.today,
     unitSystem: plan.unitSystem,
-    units: INPUT_UNITS,
+    units: FIELD_UNITS,
     profile: {
       sex: plan.inputs.sex,
       age: plan.results.age ?? null,
@@ -290,7 +271,7 @@ export function planPayload(plan: Plan) {
       proteinTargetG: adult?.proteinTarget ?? null,
     },
     inputs: plan.inputs,
-    missingInputs: missingPlanInputs(plan),
+    missingInputs: missingPlanInputs(plan.inputs),
     currentValues: currentValues(plan),
     labValues: plan.labs,
     medications: plan.medications,

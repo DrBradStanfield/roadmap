@@ -9,7 +9,7 @@
  */
 import type { HealthInputs } from './types';
 import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem } from './types';
-import { UNIT_DEFS, type MetricType } from './units';
+import { CANONICAL_UNITS, UNIT_DEFS, type MetricType } from './units';
 import { parseLocalisedNumber } from './parseNumber';
 
 /**
@@ -76,6 +76,11 @@ export const FIELD_METRIC_MAP: Record<string, MetricType> = {
   psa: 'psa',
   lpa: 'lpa',
 };
+
+/** The SI unit each input field holds, keyed by field (US-32 AC35): `get_plan` and the chat context publish it. */
+export const FIELD_UNITS: Record<string, string> = Object.fromEntries(
+  Object.entries(FIELD_METRIC_MAP).map(([field, metric]) => [field, CANONICAL_UNITS[metric]]),
+);
 
 /** Human-readable display names for metric types. */
 export const METRIC_LABELS: Record<string, string> = {

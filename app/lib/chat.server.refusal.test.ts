@@ -47,11 +47,13 @@ describe('US-15 AC13: the answer body comes from the model pin', () => {
 
 // US-15 AC19: the form tools go only to a client that applies them.
 describe('US-15 AC19: tools only where a client can apply them', () => {
-  it('canApplyEdits: true sends the two form tools', async () => {
+  it('canApplyEdits: true sends the two form tools, and run_roadmap when the message has a digit (US-15 AC33)', async () => {
     const fetchMock = respond('end_turn', [{ type: 'text', text: 'An answer.' }]);
     await getChatCompletion([], [{ role: 'user', content: 'hi' }], true);
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(body.tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit']);
+    await getChatCompletion([], [{ role: 'user', content: 'LDL 4.1 mmol/L, how is that?' }], true);
+    const names = (i: number) => JSON.parse(fetchMock.mock.calls[i][1].body).tools.map((t: { name: string }) => t.name);
+    expect(names(0)).toEqual(['propose_field_edit', 'propose_medication_edit']);
+    expect(names(1)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
   });
 
   it('canApplyEdits: false sends no tools', async () => {

@@ -31,7 +31,7 @@ vi.mock('../lib/supabase.server', () => ({
 vi.mock('../lib/chat.server', async (original) => ({
   resolveChatContext: () => ({ healthDocuments: [], userContextJson: '{}' }),
   buildSystemBlocks: (_u: string, opts?: { blogArticles?: string | null }) => { mocks.blogArticles = opts?.blogArticles; return []; },
-  buildConversationMessages: () => [],
+  buildConversationMessages: (_history: unknown, message: string) => [{ role: 'user', content: message }],
   matchDocumentTitle: () => null,
   loadMatchedArticlesFromHandles: (handles: string[], titled?: string[]) => mocks.loadArticles ? mocks.loadArticles(handles, titled) : mocks.articles,
   DOCTOR_POSTURE: '', BRAND_POSTURE: '',
@@ -279,7 +279,7 @@ describe('US-15 AC16 — without stream: true the route is unchanged', () => {
   it('answers JSON, calls the model without onEvent, and logs streamed: false', async () => {
     const res = await post({ message: 'hello', localFirst: true });
     expect(res.headers.get('content-type')).toBe('application/json');
-    expect(mocks.getChatCompletion.mock.calls[0]).toHaveLength(3);
+    expect(mocks.getChatCompletion.mock.calls[0][3]).toBeUndefined(); // no onEvent
     const body = await res.json();
     expect(Object.keys(body)).toEqual(['success', 'conversationId', 'messageId', 'content', 'isFallback', 'sessionToken', 'isGuest']);
     expect(timing().streamed).toBe(false);
@@ -299,7 +299,7 @@ describe('US-15 AC16 — CHAT_STREAMING=false is the off switch', () => {
     process.env.CHAT_STREAMING = 'false';
     const res = await post({ message: 'hello', localFirst: true, stream: true });
     expect(res.headers.get('content-type')).toBe('application/json');
-    expect(mocks.getChatCompletion.mock.calls[0]).toHaveLength(3);
+    expect(mocks.getChatCompletion.mock.calls[0][3]).toBeUndefined(); // no onEvent
     expect((await res.json()).content).toBe('Synthetic answer');
     expect(timing().streamed).toBe(false);
   });
@@ -333,13 +333,20 @@ describe('US-15 AC19 — tools only for a client that applies edits', () => {
     expect(await anthropicBody({ message: 'hello' })).not.toHaveProperty('tools');
   });
 
+  it('US-15 AC19: canApplyEdits from a client that is not the widget (no localFirst) sends no tools', async () => {
+    expect(await anthropicBody({ message: 'my LDL is 4.1 mmol/L', canApplyEdits: true })).not.toHaveProperty('tools');
+    expect(await anthropicBody({ message: 'my LDL is 4.1 mmol/L', localFirst: 'true', canApplyEdits: true })).not.toHaveProperty('tools');
+  });
+
   it('a non-boolean canApplyEdits sends no tools', async () => {
     expect(await anthropicBody({ message: 'hello', localFirst: true, canApplyEdits: 'yes' })).not.toHaveProperty('tools');
   });
 
-  it('canApplyEdits: true sends the form tools', async () => {
+  it('canApplyEdits: true sends the form tools, and run_roadmap when the message has a digit (US-15 AC33)', async () => {
     const sent = await anthropicBody({ message: 'hello', localFirst: true, canApplyEdits: true });
     expect(sent.tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit']);
+    const withValue = await anthropicBody({ message: 'my LDL is 4.1 mmol/L', localFirst: true, canApplyEdits: true });
+    expect(withValue.tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
   });
 
   it('the streamed path passes the same flag', async () => {

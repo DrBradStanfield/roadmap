@@ -73,7 +73,7 @@ export async function extractOrClassify(
     try {
       return await extractOrClassifyOnce(apiKey, content, opts.timeoutMs, opts.httpAttempts, opts.documentMode ?? 'full');
     } catch (error) {
-      // A refusal usually repeats on the same request (US-15 AC31): fail now.
+      // A refusal usually repeats on the same request (US-15 AC34): fail now.
       if (attempt >= attempts || (error instanceof Error && error.message === REFUSAL_ERROR)) throw error;
       await sleep(1000);
     }
@@ -83,13 +83,13 @@ export async function extractOrClassify(
 /** Plenty for a lab panel or a document's metadata; the 12288 default (EXTRACTION_MAX_TOKENS) exists for markdown transcription. */
 const METADATA_MAX_TOKENS = 3072;
 
-/** Thrown by `callAnthropic` on a refusal; `extractOrClassify` does not retry it (US-15 AC31). */
+/** Thrown by `callAnthropic` on a refusal; `extractOrClassify` does not retry it (US-15 AC34). */
 const REFUSAL_ERROR = 'Anthropic refusal';
 
 /**
  * One attempt: the call, and the SAME request sent once more when the first
  * answer did not parse (Haiku 5.5 400s on the `{` prefill this used to send,
- * US-15 AC31). `timeoutMs` is ONE deadline for the pair — the retry gets what
+ * US-15 AC34). `timeoutMs` is ONE deadline for the pair — the retry gets what
  * is left, never a fresh window — so a caller inside a budget (US-35 AC5)
  * cannot be run past it by a malformed first answer.
  */
@@ -145,12 +145,17 @@ export interface AnthropicUsage {
   cacheReadTokens: number;
 }
 
-/** One block of an Anthropic Messages `content` array (text or tool_use). */
+/** One block of an Anthropic Messages `content` array (text, thinking or tool_use), kept whole so a tool round can replay it unmodified. */
 export interface AnthropicContentBlock {
   type: string;
   text?: string;
+  /** tool_use: the id its tool_result answers. */
+  id?: string;
   name?: string;
   input?: unknown;
+  /** thinking: the summary and the signature the API checks on replay. */
+  thinking?: string;
+  signature?: string;
 }
 
 /**
@@ -615,7 +620,7 @@ export async function pollBatch(
       if (isNaN(index)) continue;
 
       // A refused request still comes back 'succeeded', maybe with partial
-      // text: never parsed as values (US-15 AC31).
+      // text: never parsed as values (US-15 AC34).
       if (entry.result?.type === 'succeeded' && entry.result.message?.stop_reason !== 'refusal') {
         const textBlock = entry.result.message?.content?.find((b: any) => b.type === 'text');
         if (textBlock?.text) {

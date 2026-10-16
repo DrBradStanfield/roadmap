@@ -65,7 +65,7 @@ function errorKind(error: unknown): string {
 
 /** One direct extraction call; on bad JSON the SAME request is sent once more
  *  (same recovery as the server's extractOrClassifyOnce; Haiku 5.5 400s on the
- *  `{` prefill this used to send, US-15 AC31). */
+ *  `{` prefill this used to send, US-15 AC34). */
 async function extractDirect(apiKey: string, pages: PageContent[]): Promise<LabImportResult> {
   const body = {
     ...modelParams(EXTRACTION_MODEL, EXTRACTION_MAX_TOKENS),

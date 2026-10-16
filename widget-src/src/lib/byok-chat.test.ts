@@ -9,6 +9,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const state = vi.hoisted(() => ({
   sent: null as { system: string } | null,
+  /** Every request body, and replies to hand back in order (then the default). */
+  bodies: [] as Array<Record<string, any>>,
+  replies: [] as Array<{ text: string; blocks: unknown[] } | Error>,
 }));
 
 vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(null) }));
@@ -16,7 +19,10 @@ vi.mock('./byok-anthropic', () => ({
   ByokAnthropicError: class ByokAnthropicError extends Error {},
   callAnthropicDirectRaw: async (_key: string, body: { system: string }) => {
     state.sent = body;
-    return { text: 'ok', blocks: [] };
+    state.bodies.push(body);
+    const reply = state.replies.shift() ?? { text: 'ok', blocks: [] };
+    if (reply instanceof Error) throw reply;
+    return reply;
   },
 }));
 
@@ -143,9 +149,76 @@ describe('US-07 AC6: the Pages chat and a known minor', () => {
   });
 });
 
-// US-15 AC31: the Pages chat runs on Haiku 5.5, which 400s on sampling params
+// US-15 AC33: the Pages chat runs the same one-round run_roadmap loop as the
+// website chat, with the plan computed here in the browser.
+describe('US-15 AC33: run_roadmap in the Pages chat', () => {
+  const RUN = { type: 'tool_use', id: 'toolu_run', name: 'run_roadmap', input: { values: [{ field: 'ldlC', value: 4.1, unit: 'mmol/L' }] } };
+  const FIELD = { type: 'tool_use', id: 'toolu_field', name: 'propose_field_edit', input: { field: 'ldlC', value: 4.1, unit: 'mmol/L' } };
+
+  beforeEach(() => {
+    state.bodies = [];
+    state.replies = [];
+    const store = new Map([['hr_anthropic_key', 'sk-ant-test']]);
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    });
+  });
+
+  it('offers run_roadmap with the form tools only when the message has a digit; its guidance is in the tool, not the prompt', async () => {
+    await sendMessage('hi', null, SNAPSHOT);
+    await sendMessage('my LDL is 4.1 mmol/L', null, SNAPSHOT);
+    expect(state.bodies[0].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit']);
+    expect(state.bodies[1].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
+    expect(state.bodies[1].tools[2].description).toContain('Answer only from the result');
+    expect(state.bodies[1].system).not.toContain('run_roadmap');
+    // C10: the form-tools rule names the form tools, so it does not forbid run_roadmap.
+    expect(state.bodies[1].system).not.toMatch(/Use tools only|without any tool/);
+    expect(state.bodies[1].system).toContain('without these tools when no edit is requested. Use them only when');
+  });
+
+  it('computes the plan in the browser on the stated values, then answers from a second call with no tools', async () => {
+    state.replies = [{ text: '', blocks: [RUN, FIELD] }, { text: 'From your roadmap.', blocks: [{ type: 'text', text: 'From your roadmap.' }] }];
+    const { result, error } = await sendMessage('analyse: LDL 4.1 mmol/L', null, SNAPSHOT);
+    expect(error).toBeNull();
+    expect(result!.content).toBe('From your roadmap.');
+    expect(result!.proposedEdits).toEqual([{ kind: 'field', field: 'ldlC', displayValue: 4.1, unitSystem: 'si', date: null }]);
+    expect(state.bodies).toHaveLength(2);
+    const second = state.bodies[1];
+    expect(second.tool_choice).toEqual({ type: 'none' });
+    expect(second.messages.at(-2)).toEqual({ role: 'assistant', content: [RUN, FIELD] });
+    const [runResult, fieldResult] = second.messages.at(-1).content;
+    const roadmap = JSON.parse(runResult.content).roadmap;
+    expect(roadmap).toEqual(JSON.parse(buildChatContextJson({ ...SNAPSHOT, ldlC: 4.1 })!));
+    expect(fieldResult.tool_use_id).toBe('toolu_field');
+  });
+
+  it('adversary R3: the tool takes a stated age, and the plan computed in the browser applies the minor gate to it', async () => {
+    const run = { ...RUN, input: { values: [], sex: 'male', height: { value: 170, unit: 'cm' }, age: 17 } };
+    state.replies = [{ text: '', blocks: [run] }, { text: 'Under 18.', blocks: [{ type: 'text', text: 'Under 18.' }] }];
+    await sendMessage('I am 17, LDL 4.1 mmol/L', null, null);
+    const tool = state.bodies[0].tools.find((t: { name: string }) => t.name === 'run_roadmap');
+    expect(tool.input_schema.properties.age.type).toBe('integer');
+    expect(tool.input_schema.properties.birthYear.description).toMatch(/do not compute/i);
+    const result = JSON.parse(state.bodies[1].messages.at(-1).content[0].content);
+    expect(result.applied).toEqual(['sex', 'heightCm', 'age']);
+    expect(result.roadmap.profile.knownMinor).toBe(true);
+  });
+
+  it('a failed second call is the chat\'s error, not a partial answer', async () => {
+    state.replies = [{ text: '', blocks: [RUN] }, new TypeError('network down')];
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { result, error } = await sendMessage('analyse: LDL 4.1 mmol/L', null, SNAPSHOT);
+    expect(result).toBeNull();
+    expect(error).toEqual({ error: 'Network error reaching Anthropic. Check your connection.' });
+    warn.mockRestore();
+  });
+});
+
+// US-15 AC34: the Pages chat runs on Haiku 5.5, which 400s on sampling params
 // and on an assistant prefill, and thinks unless told not to.
-describe('US-15 AC31: the Pages chat request on Haiku 5.5', () => {
+describe('US-15 AC34: the Pages chat request on Haiku 5.5', () => {
   beforeEach(() => {
     const store = new Map([['hr_anthropic_key', 'sk-ant-test']]);
     vi.stubGlobal('localStorage', {

@@ -194,10 +194,10 @@ describe('US-12: extractOrClassify outer retry (extractOrClassifyOnce failure â†
   });
 });
 
-// US-15 AC31: Haiku 5.5 400s on an assistant prefill and on sampling params,
+// US-15 AC34: Haiku 5.5 400s on an assistant prefill and on sampling params,
 // and thinks unless told not to. A malformed first answer is re-sent as the
 // SAME request, never with a `{` assistant turn.
-describe('US-15 AC31: the extraction request on Haiku 5.5', () => {
+describe('US-15 AC34: the extraction request on Haiku 5.5', () => {
   afterEach(() => { global.fetch = REAL_FETCH; });
 
   it('the re-send after a malformed answer is the same body: no assistant turn, thinking disabled, no temperature', async () => {
@@ -446,9 +446,9 @@ describe('US-12 AC8: extractOrClassify refuses a dot-thousands count written as 
   });
 });
 
-// US-15 AC31: Haiku 5.5's safety classifiers can refuse, with no fallback, and
+// US-15 AC34: Haiku 5.5's safety classifiers can refuse, with no fallback, and
 // the same request usually refuses again: a refusal fails the file at once.
-describe('US-15 AC31: a refused extraction is not retried', () => {
+describe('US-15 AC34: a refused extraction is not retried', () => {
   it('makes one call, then throws', async () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json({ stop_reason: 'refusal', content: [] }));
     global.fetch = fetchMock as unknown as typeof fetch;

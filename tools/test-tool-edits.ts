@@ -9,7 +9,7 @@
  *
  * This harness calls the SAME main-LLM path the production chat uses — the
  * chat system prompt (which carries the tool-use instructions) + `tools:
- * CHAT_EDIT_TOOLS` — and asserts the model emits the CORRECT structured intent
+ * chatToolsFor(...)` — and asserts the model emits the CORRECT structured intent
  * by running the production parser `parseProposedEdits()` over the returned
  * content blocks. It checks the PARSED intent (field/value/unit/date), not
  * fuzzy text, so it can never drift from what the widget actually applies.
@@ -39,11 +39,8 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import {
-  CHAT_EDIT_TOOLS,
-  parseProposedEdits,
-  type ProposedEdit,
-} from '../packages/health-core/src/chat-edits';
+import { parseProposedEdits, type ProposedEdit } from '../packages/health-core/src/chat-edits';
+import { chatToolsFor } from '../packages/health-core/src/run-roadmap';
 import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, getArg as getArgOf, modelParams } from '../packages/health-core/src/models';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -135,11 +132,12 @@ interface ChatRunResult {
 }
 
 async function runChat(query: string, retryOnRateLimit = true): Promise<ChatRunResult> {
+  const messages = [{ role: 'user' as const, content: query }];
   const body = {
     ...modelParams(MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: PROMPT_CACHE }],
-    tools: CHAT_EDIT_TOOLS,
-    messages: [{ role: 'user', content: query }],
+    tools: chatToolsFor(messages), // production's set: run_roadmap when the query has a digit (US-15 AC33)
+    messages,
   };
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {

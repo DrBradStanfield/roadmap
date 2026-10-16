@@ -19,11 +19,12 @@
  */
 import {
   buildChatContextJson,
-  CHAT_EDIT_TOOLS,
+  chatToolsFor,
   MINOR_CHAT_RULE,
   MAX_HISTORY_MESSAGES,
   toolOnlyAck,
-  parseProposedEdits,
+  withRoadmapRound,
+  type ChatTurnMessage,
   type ProposedEdit,
 } from '@roadmap/health-core';
 import { modelParams } from '@roadmap/health-core/models';
@@ -152,7 +153,7 @@ export async function deleteConversation(conversationId: string): Promise<boolea
 // Deliberately NOT the website chat's model (health-core models.ts CHAT_MODEL,
 // a Sonnet): here the user pays with their own key, and Haiku keeps a typical
 // chat under a cent. Haiku 5.5 since 2026-10-16, thinking off as on Haiku 4.5;
-// modelParams gives its body shape (US-15 AC31).
+// modelParams gives its body shape (US-15 AC34).
 const CHAT_MODEL = 'claude-haiku-5-5';
 
 const SYSTEM_PROMPT = `You are the chat assistant inside "Health Plan by Dr Brad", a preventative-health planning app by Dr Brad Stanfield (GP, drstanfield.com). The user runs this app on their own infrastructure with their own AI key.
@@ -173,7 +174,7 @@ Updating the user's form (tools):
 - If a unit is ambiguous (e.g. cholesterol can be mmol/L or mg/dL) and the user did not state it, ASK which unit — do NOT guess and do NOT call the tool.
 - For multiple results from one blood draw, call \`propose_field_edit\` once per metric with the SAME date so they batch into one save.
 - For \`propose_medication_edit\`: medications save immediately. After the tool call, state plainly what changed (e.g. "Done — set your statin to atorvastatin 20mg") and tell them they can undo it.
-- You can answer normally without any tool when no edit is requested. Use tools only when the user is clearly giving you a value/medication to record.`;
+- You can answer normally without these tools when no edit is requested. Use them only when the user is clearly giving you a value/medication to record.`;
 
 export async function sendMessage(
   message: string,
@@ -211,17 +212,17 @@ export async function sendMessage(
   let content: string;
   let proposedEdits: ProposedEdit[] = [];
   try {
-    const { text, blocks } = await callAnthropicDirectRaw(apiKey, {
-      ...modelParams(CHAT_MODEL, 1024),
-      system,
-      tools: CHAT_EDIT_TOOLS,
-      messages: [
-        ...history.map((m) => ({ role: m.role, content: m.content })),
-        { role: 'user', content: message },
-      ],
-    });
-    content = text;
-    proposedEdits = parseProposedEdits(blocks);
+    // US-15 AC33: the same one-round run_roadmap loop as the website chat, computed here in the browser.
+    const messages: ChatTurnMessage[] = [
+      ...history.map((m) => ({ role: m.role, content: m.content })),
+      { role: 'user', content: message },
+    ];
+    const turn = await withRoadmapRound(messages, async (fields) => {
+      const { text, blocks } = await callAnthropicDirectRaw(apiKey, { ...modelParams(CHAT_MODEL, 1024), system, tools: chatToolsFor(messages), ...fields });
+      return { text, contentBlocks: blocks };
+    }, guestInputs);
+    content = turn.final.text;
+    proposedEdits = turn.proposedEdits;
     // Tool-only response (the model proposed an edit with no prose): give the
     // chat thread something to show. The confirmation card carries the detail.
     if (!content && proposedEdits.length > 0) {

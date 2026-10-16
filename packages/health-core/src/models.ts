@@ -7,7 +7,7 @@
  * user pays for it, so it stays on Haiku (its body still comes from modelParams).
  *
  * Haiku 5.5 since 2026-10-16 (Brad, no benchmark): the classifier, extraction and
- * BYOK chat, all with thinking off (US-15 AC31).
+ * BYOK chat, all with thinking off (US-15 AC34).
  */
 
 /** Main chat answer (web, Discord, YouTube). */

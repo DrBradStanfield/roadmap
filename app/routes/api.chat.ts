@@ -31,6 +31,7 @@ import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../pac
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 import { findDuplicateReply, type DedupHistoryItem } from '../lib/chat-dedup.server';
 import { PURGED_TEXT } from '../lib/chat-purge-cron.server';
+import { recordServerEvent } from '../lib/product-events.server';
 import { subscriptionActionsEnabled, getCachedSubscriptions, formatSubscriptionBlock, subscriptionCard, SUBSCRIPTION_HELP_LINE } from '../lib/subscription-gateway.server';
 
 
@@ -398,8 +399,9 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     }
 
-    // Only the widget's own chat applies form edits, so only it gets the tools (US-15 AC19).
-    const canApplyEdits = body.canApplyEdits === true;
+    // Only the widget's own chat applies form edits, so only it gets the tools (US-15 AC19):
+    // the server holds the other surfaces to that, whatever their body says.
+    const canApplyEdits = widget && body.canApplyEdits === true;
     // The streamed turn opens its stream here, before stage 1, so the user
     // sees progress while the classifier, router and content load (US-15
     // AC20). From here on a failure is a `done` line there and an HTTP 500
@@ -532,13 +534,18 @@ export async function action({ request }: ActionFunctionArgs) {
           write(event);
         }
         : undefined;
-      // The subscription tool rides only while enabled (US-49); otherwise the call is exactly as before.
-      const completion = subscriptionsOn
-        ? await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, onEvent, { subscriptionTool: true })
-        : onEvent
-          ? await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, onEvent)
-          : await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits);
+      // The subscription tool rides only while enabled (US-49), and never on a widget turn:
+      // that is always a guest, so it could only end in "I can't make that change here",
+      // replacing a health answer. run_roadmap reads the widget's own record (US-15 AC33).
+      const subscriptionTool = subscriptionsOn && !widget;
+      const completion = await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, onEvent,
+        subscriptionTool || canApplyEdits ? { subscriptionTool, guestInputs: body.guestInputs } : undefined);
       const tAfterLlm = Date.now();
+      // US-15 AC33 usage signal: one counter per run_roadmap round, the numbers of
+      // stated values used and rejected and nothing else. Fire-and-forget.
+      if (completion.roadmapRun) {
+        void recordServerEvent('chat_run_roadmap', { count: completion.roadmapRun.applied, rejected: completion.roadmapRun.rejected });
+      }
 
       // US-49: a proposal becomes a confirm card only when the gateway's summary
       // lists that subscription and action with a token. Otherwise the reply
@@ -682,6 +689,8 @@ export async function action({ request }: ActionFunctionArgs) {
         messageChars: message.length,
         // Ms from the LLM call to the first answer text; null when not streamed or no text came.
         firstTokenMs,
+        // US-15 AC33: the turn ran run_roadmap, so llmMs and the tokens cover two calls. A flag only.
+        roadmapRun: !!completion.roadmapRun,
       }));
 
       // The streamed path sends this as its `done` line.

@@ -35,6 +35,8 @@ function refusalLine(category: string | null | undefined): string {
 export interface AnthropicContentBlock {
   type: string;
   text?: string;
+  /** tool_use: the id its tool_result answers (US-15 AC33). */
+  id?: string;
   name?: string;
   input?: unknown;
 }
@@ -106,7 +108,7 @@ export async function callAnthropicDirectRaw(
 
   const data = await response.json();
   // A refusal is HTTP 200 and can carry partial text: it is never an answer
-  // or a set of lab values (US-15 AC14, AC31; Haiku 5.5 runs safety classifiers).
+  // or a set of lab values (US-15 AC14, AC34; Haiku 5.5 runs safety classifiers).
   const { stop_reason: stopReason, stop_details: stopDetails } = data as { stop_reason?: string; stop_details?: { category?: string | null } };
   if (stopReason === 'refusal') throw new ByokAnthropicError('refused', refusalLine(stopDetails?.category));
   const blocks = extractContentBlocks(data);

@@ -44,13 +44,33 @@
  *                             "without doubt", "none other than") never count as a negation.
  *                             Markdown * and _ are stripped, curly quotes straightened. A heuristic:
  *                             keep the phrases claim-shaped.
+ *   must_match?: string[]      answer check only: regexes that must each match, and must_not_match?:
+ *                             string[] regexes none may match. Both run on the answer as must_not_claim
+ *                             sees it (lower case, straight quotes, no markdown * or _). For a claim a
+ *                             phrase list cannot pin down, such as whose order a first step belongs to.
+ *                             A regex that does not compile exits the harness before any API call.
  *   surface?: 'doctor' | 'brand'  answer check only: adds app/lib/chat-posture-<surface>.md after the
  *                             products block, where production's buildSystemBlocks puts it. Omitted =
  *                             no posture block (the harness's behaviour before 2026-10-07).
- *   user_context?: object     answer check only: a chat-context JSON object (the shape health-core
- *                             buildChatContextJson emits), sent as "## Current User Health Data" after
- *                             the posture and before any articles, where buildSystemBlocks puts it.
- *                             Omitted = no user data (US-07 AC6, 2026-10-14).
+ *   user_context?: object      answer check only: the raw payload a widget sends as the chat's context
+ *                             (chatContextOf's shape: form fields, unitSystem, medications, screenings).
+ *                             It goes through production's resolveChatContext, and the answer call
+ *                             gets production's buildSystemBlocks (so the evidence and knowledge-overview
+ *                             blocks too) with the fixture's posture, which it must name: the widget's is
+ *                             'doctor'. An explicit {} is production's empty context ('{}', no data
+ *                             entered). Any other payload that makes no plan, has a key the widget never
+ *                             sends, or loses a field to its range exits the harness before any API call.
+ *   expect_empty_context?: true  with user_context: production collapses this payload to '{}' (no sex
+ *                             or height, so no plan), and the answer gets '{}' as production sends it.
+ *                             A payload that does make a plan then exits the harness before any API call.
+ *   history?: {role, content}[]  answer check only: earlier turns of the conversation, sent before the
+ *                             query as the widget sends its history: alternating user and assistant
+ *                             text, from a user turn to an assistant one. Any other shape exits the
+ *                             harness before any API call.
+ *   expect_roadmap_run?: boolean  answer check only: the answer must (true) or must not (false) call
+ *                             run_roadmap. Every answer runs production's one-round loop (health-core
+ *                             withRoadmapRound, US-15 AC33) on the fixture's raw user_context, and is
+ *                             scored on the second call's text when the tool ran.
  *
  * A fetch that throws (timeout, DNS, reset) counts as an API error, like a non-2xx:
  * visible, scored as ∅, and the run continues but never exits green. So does a
@@ -71,7 +91,7 @@
  * (system prompt + algorithm + products knowledge) PLUS matched pathway/blog content
  * loaded from the handles the router returned, or from `answer_handles` (block 4). The check runs N times
  * (matching --answer-check-runs, default = --runs) and requires majority pass so
- * a single stochastic blip doesn't flip the test. Does not load user data.
+ * a single stochastic blip doesn't flip the test. Loads user data only from a fixture's user_context.
  *
  * COST DISCIPLINE — read this before iterating, the audit cycle of 2026-05-14/15
  * burned ~$30 because of these mistakes:
@@ -97,9 +117,11 @@ import {
   CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, ROUTER_MODEL as PRODUCTION_ROUTER_MODEL,
   PROMPT_CACHE, getArg as getArgOf, modelParams, summaryLine, toStat, type CallStat,
 } from '../packages/health-core/src/models';
-import { CHAT_EDIT_TOOLS } from '../packages/health-core/src/chat-edits';
+import { chatToolsFor, withRoadmapRound, type ChatContentBlock } from '../packages/health-core/src/run-roadmap';
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
 import { parseRouterReply } from '../app/lib/router-reply';
+import { buildSystemBlocks, EMPTY_CHAT_CONTEXT, resolveChatContext } from '../app/lib/chat.server';
+import { healthInputSchema } from '../packages/health-core/src/validation';
 import { PRODUCTS_BLOCK_FILES, productsBlockText } from '../app/lib/chat-products-block';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -153,7 +175,7 @@ console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 
 // Dynamic portion (per-query, in checkAnswer): block 4 matched pathway/blog
 // content, loaded via loadMatchedContent() from the routing intersection
 // (or a fixture's answer_handles).
-// Does NOT load user data (per-user, would require a fake profile).
+// User data comes only from a fixture's made-up user_context (see the header).
 // ---------------------------------------------------------------------------
 
 // --answer-model qualifies a candidate answer model; the body shape follows its family.
@@ -368,10 +390,15 @@ interface TestQuery {
   must_mention?: string[];     // answer must contain ALL of these (case-insensitive)
   must_not_mention?: string[]; // answer must contain NONE of these (case-insensitive)
   must_not_claim?: string[];   // no un-negated sentence may hold these (see the header)
+  must_match?: string[];       // regexes the answer must each match (see the header)
+  must_not_match?: string[];   // regexes the answer must not match (see the header)
   max_length_chars?: number;   // answer must be at most this many characters
   answer_handles?: string[];   // fixed-handle answer check, no `expected` (see the header)
   surface?: 'doctor' | 'brand'; // answer check adds that surface's posture block (see the header)
-  user_context?: Record<string, unknown>; // answer check adds it as the user health data (see the header)
+  user_context?: unknown;      // answer check sends this widget payload as the user's data (see the header)
+  expect_empty_context?: true; // production collapses user_context to '{}' (see the header)
+  expect_roadmap_run?: boolean; // the answer must (true) or must not (false) call run_roadmap (see the header)
+  history?: Array<{ role: 'user' | 'assistant'; content: string }>; // earlier turns, before the query (see the header)
 }
 
 const ALL_QUERIES: TestQuery[] = JSON.parse(
@@ -410,10 +437,38 @@ for (const q of ALL_QUERIES) {
   }
   POSTURES.set(q.surface, fs.readFileSync(file, 'utf-8'));
 }
-// A user_context that isn't a JSON object would send something production never builds.
-const badContext = ALL_QUERIES.filter(q => q.user_context !== undefined && (typeof q.user_context !== 'object' || q.user_context === null || Array.isArray(q.user_context)));
-if (badContext.length > 0) {
-  console.error(`user_context must be a JSON object on: ${badContext.map(q => q.query).join(' | ')}`);
+// A payload that makes no plan, or silently loses a key or a value, would score a context the fixture never meant.
+const CONTEXT_KEYS = new Set([...Object.keys(healthInputSchema.shape), 'unitSystem', 'medications', 'screenings', 'measurementHistory']);
+const USER_CONTEXTS = new Map<TestQuery, string>();
+for (const q of ALL_QUERIES.filter(q => q.user_context !== undefined)) {
+  // Production always sends a posture with the user's data; without one the answer is not production's.
+  if (q.surface === undefined) {
+    console.error(`user_context needs a surface on: ${q.query}`);
+    process.exit(1);
+  }
+  // As /api/chat. Only an explicit {}, or a payload declared to collapse, may resolve to the empty context.
+  const ctx = resolveChatContext(q.user_context);
+  const empty = JSON.stringify(q.user_context) === '{}' || q.expect_empty_context === true;
+  const unknown = Object.keys(q.user_context ?? {}).filter(k => !CONTEXT_KEYS.has(k));
+  if ((ctx === EMPTY_CHAT_CONTEXT) !== empty || unknown.length > 0 || JSON.parse(ctx.userContextJson).excludedFields) {
+    console.error(`user_context does not parse${unknown.length ? ` (unknown keys: ${unknown.join(', ')})` : ''} on: ${q.query}`);
+    process.exit(1);
+  }
+  USER_CONTEXTS.set(q, ctx.userContextJson);
+}
+// A history the widget could never send would score a conversation production never has.
+const badHistory = ALL_QUERIES.filter(q => q.history !== undefined && !(Array.isArray(q.history) && q.history.length % 2 === 0
+  && q.history.every((m, i) => m && m.role === (i % 2 === 0 ? 'user' : 'assistant') && typeof m.content === 'string' && m.content.length > 0)));
+if (badHistory.length > 0) {
+  console.error(`history must alternate user and assistant text, ending on the assistant, on: ${badHistory.map(q => q.query).join(', ')}`);
+  process.exit(1);
+}
+// A regex that cannot compile would throw mid-run, after money is spent.
+const badRegex = ALL_QUERIES.flatMap(q => [...q.must_match ?? [], ...q.must_not_match ?? []].filter(r => {
+  try { new RegExp(r); return false; } catch { return true; }
+}));
+if (badRegex.length > 0) {
+  console.error(`must_match / must_not_match regexes that do not compile: ${badRegex.join(', ')}`);
   process.exit(1);
 }
 // --category takes a comma list, so several categories share one run and one cache warmup.
@@ -456,9 +511,12 @@ const CLAUSE_BREAK = /[;—–]|\bbut\b|\band\b/g;
 // Idioms that hold a negation word but affirm ("there is no doubt it can …").
 const AFFIRMING = /\b(no doubt|not only|no wonder|no question|without (a )?doubt|none other than)\b/g;
 
+/** The answer as must_not_claim and the regex checks see it: lower case, straight quotes, no markdown * or _. */
+const plain = (response: string) => response.toLowerCase().replace(/[’‘]/g, "'").replace(/[*_]/g, '');
+
 /** Phrases stated as fact: no negation in the up-to-12 words before them, within their clause. */
 function claimed(response: string, phrases: string[]): string[] {
-  const text = response.toLowerCase().replace(/[’‘]/g, "'").replace(/[*_]/g, '');
+  const text = plain(response);
   const sentences = text.split(/(?<=[.!?])\s+|\n+/);
   return phrases.filter(p => sentences.some(s => {
     const phrase = p.toLowerCase().replace(/[’‘]/g, "'");
@@ -473,56 +531,66 @@ function claimed(response: string, phrases: string[]): string[] {
   }));
 }
 
-async function checkAnswer(q: TestQuery, matchedHandles: string[] = [], retryOnRateLimit = true): Promise<AnswerCheckResult> {
+/** A failed answer call: its label (a status or a fetch error) and any detail. */
+class AnswerApiError extends Error {
+  constructor(readonly label: string, detail?: string) { super(detail ? `${label}: ${detail}` : label); }
+}
+
+async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise<AnswerCheckResult> {
   const { query, surface, max_length_chars: maxLengthChars } = q;
   const mustMention = q.must_mention ?? [];
   const mustNotMention = q.must_not_mention ?? [];
   const matchedContent = loadMatchedContent(matchedHandles).content;
-  // Production order (buildSystemBlocks): products, then the surface posture, the user data, then articles.
-  const postured = surface ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n${POSTURES.get(surface)}` : ANSWER_SYSTEM_CONTEXT;
-  const base = q.user_context
-    ? `${postured}\n\n---\n\n## Current User Health Data\n\n${JSON.stringify(q.user_context, null, 2)}`
-    : postured;
-  const system = matchedContent
-    ? `${base}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
-    : base;
+  // Production order (buildSystemBlocks): products, then the surface posture, then articles.
+  const base = surface ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n${POSTURES.get(surface)}` : ANSWER_SYSTEM_CONTEXT;
+  const userContextJson = USER_CONTEXTS.get(q);
+  const system = userContextJson !== undefined
+    ? buildSystemBlocks(userContextJson, { surfaceContext: surface && POSTURES.get(surface), blogArticles: matchedContent || null })
+    : matchedContent
+      ? `${base}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
+      : base;
+  const messages = [...q.history ?? [], { role: 'user' as const, content: query }];
   const body = {
     ...modelParams(ANSWER_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system,
-    tools: CHAT_EDIT_TOOLS, // as production: the tools change what the model writes
-    messages: [{ role: 'user', content: query }],
+    tools: chatToolsFor(messages), // as production: the tools change what the model writes
   };
 
-  // As production (callAnthropicWithUsage): thinking makes an answer take 10-20 s.
-  const res = await postMessages(body, 60_000);
-  if (typeof res === 'string') {
+  // One Messages call; a 429 waits and retries once. As production (callAnthropicWithUsage): thinking makes an answer take 10-20 s.
+  const send = async (fields: object) => {
+    for (let retry = true; ; retry = false) {
+      const res = await postMessages({ ...body, ...fields }, 60_000);
+      if (typeof res === 'string') throw new AnswerApiError(res);
+      if (res.status === 429 && retry) {
+        const retryAfter = parseInt(res.headers.get('retry-after') ?? '30', 10);
+        process.stdout.write(` [429, waiting ${retryAfter}s]`);
+        await new Promise(r => setTimeout(r, retryAfter * 1000));
+        continue;
+      }
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new AnswerApiError(String(res.status), text.slice(0, 200).replace(/\s+/g, ' '));
+      }
+      const data = await res.json() as { content?: ChatContentBlock[]; stop_reason?: string; stop_details?: { category?: string } | null };
+      return { contentBlocks: data.content ?? [], stopReason: data.stop_reason, category: data.stop_details?.category };
+    }
+  };
+
+  // As production (getChatCompletion): the same one-round run_roadmap loop, on the payload the widget sends.
+  const turn = await withRoadmapRound(messages, send, q.user_context ?? null)
+    .catch((err: unknown) => { if (err instanceof AnswerApiError) return err; throw err; });
+  if (turn instanceof AnswerApiError) {
     // Count it: a majority vote could otherwise hide one timeout and exit green.
     apiErrorCount++;
-    process.stdout.write(` [api-error ${res}]`);
-    return { passed: false, failures: [`API error ${res}`], response: '' };
+    process.stdout.write(` [api-error ${turn.label}]`);
+    return { passed: false, failures: [`API error ${turn.message}`], response: '' };
   }
-
-  if (res.status === 429 && retryOnRateLimit) {
-    const retryAfter = parseInt(res.headers.get('retry-after') ?? '30', 10);
-    process.stdout.write(` [429, waiting ${retryAfter}s]`);
-    await new Promise(r => setTimeout(r, retryAfter * 1000));
-    return checkAnswer(q, matchedHandles, false);
-  }
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    const detail = body.slice(0, 200).replace(/\s+/g, ' ');
-    apiErrorCount++;
-    process.stdout.write(` [api-error ${res.status}]`);
-    return { passed: false, failures: [`API error ${res.status}: ${detail}`], response: '' };
-  }
-
-  const data = await res.json() as { content?: Array<{ type: string; text?: string }>; stop_reason?: string; stop_details?: { category?: string } | null };
-  if (data.stop_reason === 'refusal') {
-    return { passed: false, failures: [`refusal (${data.stop_details?.category ?? 'no category'})`], response: '' };
+  const data = turn.final;
+  if (data.stopReason === 'refusal') {
+    return { passed: false, failures: [`refusal (${data.category ?? 'no category'})`], response: '' };
   }
   // Thinking blocks come first on Sonnet; join every text block, as production does.
-  const response = (data.content ?? []).filter(c => c.type === 'text').map(c => c.text ?? '').join('');
+  const response = data.contentBlocks.filter(c => c.type === 'text').map(c => (c as { text?: string }).text ?? '').join('');
   const lower = response.toLowerCase();
 
   const failures: string[] = [];
@@ -530,11 +598,17 @@ async function checkAnswer(q: TestQuery, matchedHandles: string[] = [], retryOnR
     if (!lower.includes(term.toLowerCase())) failures.push(`missing: "${term}"`);
   }
   for (const term of claimed(response, q.must_not_claim ?? [])) failures.push(`claimed: "${term}"`);
+  const plainText = plain(response);
+  for (const re of q.must_match ?? []) if (!new RegExp(re).test(plainText)) failures.push(`no match: /${re}/`);
+  for (const re of q.must_not_match ?? []) if (new RegExp(re).test(plainText)) failures.push(`matched forbidden: /${re}/`);
   for (const term of mustNotMention) {
     if (lower.includes(term.toLowerCase())) failures.push(`found forbidden: "${term}"`);
   }
   if (typeof maxLengthChars === 'number' && response.length > maxLengthChars) {
     failures.push(`length ${response.length} chars > cap ${maxLengthChars}`);
+  }
+  if (q.expect_roadmap_run !== undefined && q.expect_roadmap_run !== (turn.counts !== null)) {
+    failures.push(q.expect_roadmap_run ? 'did not call run_roadmap' : 'called run_roadmap');
   }
 
   return { passed: failures.length === 0, failures, response };
@@ -562,7 +636,7 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
   if (forbidden.length > 0) routingPassed = false;
 
   let answerCheck: AnswerCheckResult | null = null;
-  if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || q.must_not_claim?.length || typeof q.max_length_chars === 'number')) {
+  if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || q.must_not_claim?.length || q.must_match?.length || q.must_not_match?.length || typeof q.max_length_chars === 'number' || q.expect_roadmap_run !== undefined)) {
     const answerRuns: AnswerCheckResult[] = [];
     for (let i = 0; i < answerCheckRuns; i++) {
       answerRuns.push(await checkAnswer(q, intersection));
