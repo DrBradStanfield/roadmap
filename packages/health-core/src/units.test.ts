@@ -30,6 +30,7 @@ import {
   elevatedWaistFromCm,
   type MetricType,
   type UnitSystem,
+  hasUnitChoice,
 } from './units';
 import { METRIC_TYPES } from './validation';
 import { getLpaStatus } from './calculations';
@@ -640,5 +641,13 @@ describe('lipid reference hints (US-07 AC5)', () => {
   ] as const)('%s', (metric, si, conv) => {
     expect(refHintFor(metric, 'si')).toBe(si);
     expect(refHintFor(metric, 'conventional')).toBe(conv);
+  });
+});
+
+describe('hasUnitChoice (US-12 AC11: a fixed unit gets a static chip)', () => {
+  it('is true where SI and conventional print differently, false for mmHg and PSA', () => {
+    expect(hasUnitChoice('ldl')).toBe(true);
+    expect(hasUnitChoice('systolic_bp')).toBe(false);
+    expect(hasUnitChoice('psa')).toBe(false);
   });
 });
