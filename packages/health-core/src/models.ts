@@ -77,7 +77,7 @@ export function modelParams(model: string, maxTokens: number, thinking: 'off' | 
  * `stop_details.category` on a refusal, bounded so it can go to telemetry.
  * Anthropic's set is open; anything new or missing is 'other'.
  */
-export const REFUSAL_CATEGORIES = ['cyber', 'bio', 'frontier_llm', 'reasoning_extraction', 'general_harms', 'other'] as const;
+const REFUSAL_CATEGORIES = ['cyber', 'bio', 'frontier_llm', 'reasoning_extraction', 'general_harms', 'other'] as const;
 export type RefusalCategory = typeof REFUSAL_CATEGORIES[number];
 export const toRefusalCategory = (category: unknown): RefusalCategory =>
   (REFUSAL_CATEGORIES as readonly string[]).includes(category as string) ? category as RefusalCategory : 'other';
