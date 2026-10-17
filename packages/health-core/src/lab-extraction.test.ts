@@ -736,6 +736,20 @@ describe('US-21 AC7/AC8: a unit printed only in the range column reaches the wri
     expect(stored?.stored).toEqual({ value: 332.1, unit: 'pmol/L', referenceLow: 147.6, referenceHigh: 664.2 });
   });
 
+  it('a whitespace-only unit is no unit: it reads as empty, so no path stores a blank label', () => {
+    const [row] = lab({ name: 'INR', value: 1.1, unit: '   ' });
+    expect(row.unit).toBe('');
+  });
+
+  it('an inferred core unit that fits both scales is flagged low, so it never saves unnoticed; one that fits one scale stays medium', () => {
+    const [lpa, ldl] = resolveLabValues([
+      { metric: 'lpa', value: 50, unit: '', confidence: 'high' }, // 50 nmol/L or 50 mg/dL: both plausible
+      { metric: 'ldl', value: 100, unit: '', confidence: 'high' }, // only mg/dL fits
+    ]);
+    expect(lpa.confidence).toBe('low');
+    expect(ldl.confidence).toBe('medium');
+  });
+
   it('an empty unit stays empty: nothing upstream guesses it', () => {
     const [row] = lab({ name: 'homocysteine', value: 9, unit: '', referenceLow: null, referenceHigh: 15 });
     expect(row).toMatchObject({ value: 9, unit: '', referenceLow: null, referenceHigh: 15 });
@@ -746,7 +760,7 @@ describe('US-21 AC7/AC8: a unit printed only in the range column reaches the wri
       classification: 'lab_report', reportDate: '2026-01-15', document: null, additionalValues: [],
       values: [{ metric: 'ldl', value: 2.8, unit: '', confidence: 'high' }],
     })).values;
-    expect(ldl.confidence).toBe('medium');
+    expect(ldl.confidence).toBe('low'); // 2.8 fits mmol/L and mg/dL alike: no guess is safe
     expect(ldl.question).toBe('No unit was printed, so the unit was inferred — please verify this value');
   });
 
@@ -792,9 +806,13 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
 // A sheet with a "Prev." column of older results. A dated one is that day's
 // values; an undated one is ignored, as before. Synthetic two-date table.
 describe('US-12 AC12: a previous-results column with its own printed date becomes that date\'s values', () => {
+  it('full: takes only the ONE most recent dated previous column, so a cumulative report cannot outgrow the token cap', () => {
+    expect(unifiedSystemPrompt('full')).toContain('Extract only the ONE most recent such column; ignore every older previous column.');
+  });
+
   it('full (website, BYOK): takes a previous column printed with a full day, ignores one with a month only or no date', () => {
     const prompt = unifiedSystemPrompt('full');
-    expect(prompt).toContain('each of its rows is its own entry with "recordedAt" set to that column\'s collection date as YYYY-MM-DD');
+    expect(prompt).toContain('Each of its rows is its own entry with "recordedAt" set to that column\'s collection date as YYYY-MM-DD');
     expect(prompt).toContain('A previous column whose date is not printed as a full day (a month and year only, or no date at all), a trend graph, or a value you cannot tie to one printed day: IGNORE it completely.');
     expect(prompt).toContain('at most ONE entry per metric per date');
     expect(prompt).not.toContain('even if those historical columns are dated');
@@ -848,6 +866,12 @@ describe('US-12 AC12: a previous-results column with its own printed date become
       expect(result.additionalValues.map(v => [v.value, v.recordedAt]), String(blank)).toEqual([[138, undefined]]);
       expect(result.droppedValueCount).toBe(0);
     }
+  });
+
+  it('the report date is cut to its day too, and one that is not a calendar day orders nothing', () => {
+    expect(own('2026-03-10', '2026-03-10T08:00:00').values.map(v => v.recordedAt)).toEqual([undefined]);
+    expect(own('2025-09-02', '2026-03-10T08:00:00').values.map(v => v.recordedAt)).toEqual(['2025-09-02']);
+    expect(own('2025-09-02', '10/03/2026').values).toEqual([]);
   });
 
   it('a datetime is cut to its day first: "2026-03-10T08:00" on a 2026-03-10 report is the primary column', () => {

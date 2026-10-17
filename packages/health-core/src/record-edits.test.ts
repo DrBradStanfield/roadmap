@@ -162,11 +162,13 @@ describe('US-31 AC4 — measurement ranges, lab values as reported', () => {
     expect((result.row as FileLabValue).value).toBe(9999);
   });
 
-  it('US-21 AC7 — a test the catalogue does not know, printed with no unit, is kept unitless; a catalogued one is refused naming its units', () => {
-    const inr = ok(appendLabValue(base(), { metricName: 'INR', value: 1.1, unit: '', recordedAt: '2026-08-14', now: NOW }));
-    expect(inr.row as FileLabValue).toMatchObject({ metricName: 'inr', value: 1.1, unit: '' });
-    const ferritin = appendLabValue(base(), { metricName: 'ferritin', value: 150, unit: '', recordedAt: '2026-08-14', now: NOW });
-    expect(ferritin).toMatchObject({ ok: false, reason: 'unknown-unit' });
+  it('US-21 AC7 — the assistant tools’ door still needs a unit: empty or blank is refused, as before the 1.0.2 review', () => {
+    for (const unit of ['', '   ']) {
+      for (const metricName of ['INR', 'ferritin']) {
+        expect(appendLabValue(base(), { metricName, value: 1.1, unit, recordedAt: '2026-08-14', now: NOW }), `${metricName} "${unit}"`)
+          .toMatchObject({ ok: false, reason: 'invalid-value' });
+      }
+    }
   });
 });
 

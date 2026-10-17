@@ -147,6 +147,8 @@ export function resolveUnit(metric: MetricType, unitStr: string, value: number):
   valueSI: number;
   system: UnitSystem;
   confident: boolean;
+  /** The number fits both scales, so no guess is safe (US-21 AC17). */
+  fitsBoth?: true;
 } {
   const reported = reportedToCanonical(metric, value, unitStr);
   if (reported) return { ...reported, confident: true };
@@ -165,7 +167,7 @@ export function resolveUnit(metric: MetricType, unitStr: string, value: number):
     return { valueSI: toCanonicalValue(metric, value, 'conventional'), system: 'conventional', confident: false };
   }
   // Fits both or neither — assume SI, flag low confidence
-  return { valueSI: value, system: 'si', confident: false };
+  return { valueSI: value, system: 'si', confident: false, ...(fitsInSI && fitsInConv ? { fitsBoth: true as const } : null) };
 }
 
 /** Resolve units for an array of LLM-extracted lab values. Shared by all extraction paths. */
@@ -174,14 +176,16 @@ export function resolveLabValues(rawValues: Array<{ metric: string; value: numbe
   for (const v of rawValues) {
     if (!VALID_METRICS.includes(v.metric as MetricType)) continue;
     const metric = v.metric as MetricType;
-    const { valueSI, system, confident } = resolveUnit(metric, v.unit, v.value);
+    const { valueSI, system, confident, fitsBoth } = resolveUnit(metric, v.unit, v.value);
     values.push({
       metric: v.metric,
       valueSI,
       displayValue: v.value,
       displayUnit: v.unit,
       displaySystem: system,
-      confidence: !confident && v.confidence === 'high' ? 'medium' : v.confidence,
+      // No printed unit and a number that fits both scales (Lp(a) 50): low, so
+      // the review flags it and it never saves unnoticed (US-21 AC17).
+      confidence: fitsBoth && !v.unit.trim() ? 'low' : !confident && v.confidence === 'high' ? 'medium' : v.confidence,
       question: !confident
         ? [v.question?.trim().replace(/[^.?!]$/, '$&.'), `${v.unit ? `Unit "${v.unit}" was inferred` : 'No unit was printed, so the unit was inferred'} — please verify this value`].filter(Boolean).join(' ')
         : v.question,
@@ -200,7 +204,7 @@ export const DOCUMENT_CLASSIFICATIONS = ['lab_report', ...DOCUMENT_TYPES] as con
 /** Rule 2. The website and BYOK read a dated previous column (US-12 AC12); the
  *  connector keeps the base rule until the MCP 1.0.2 review ends (US-35 AC5). */
 const PREVIOUS_RESULTS_RULE: Record<DocumentPromptMode, string> = {
-  full: 'PREVIOUS RESULTS: the current report\'s primary column (the most recent collection) gives entries with no "recordedAt". A column of earlier results that prints its own collection date as a full day (a "Previous" or "Last visit" column headed with a date, or one dated column per visit) is extracted too: each of its rows is its own entry with "recordedAt" set to that column\'s collection date as YYYY-MM-DD (rules 3 and 4 apply). A previous column whose date is not printed as a full day (a month and year only, or no date at all), a trend graph, or a value you cannot tie to one printed day: IGNORE it completely. Return at most ONE entry per metric per date — never duplicate a metric on one date.',
+  full: 'PREVIOUS RESULTS: the current report\'s primary column (the most recent collection) gives entries with no "recordedAt". A column of earlier results that prints its own collection date as a full day (a "Previous" or "Last visit" column headed with a date, or one dated column per visit) is extracted too. Extract only the ONE most recent such column; ignore every older previous column. Each of its rows is its own entry with "recordedAt" set to that column\'s collection date as YYYY-MM-DD (rules 3 and 4 apply). A previous column whose date is not printed as a full day (a month and year only, or no date at all), a trend graph, or a value you cannot tie to one printed day: IGNORE it completely. Return at most ONE entry per metric per date — never duplicate a metric on one date.',
   metadata: 'If the report shows previous/historical results (in a "Previous" column, "Last visit" column, trend graph, or any side-by-side layout), IGNORE them completely. Extract ONLY values from the current report\'s primary column, even if those historical columns are dated. Return at most ONE entry per metric — never duplicate a metric in the output.',
 };
 
@@ -387,9 +391,14 @@ const labDay = z.preprocess(d => {
   // Any other non-string (20250902, {}, []) is no day: a value that is not a
   // calendar day, which `toUnifiedResult` leaves out. Never the primary column.
   if (typeof d !== 'string') return 'unusable';
-  const text = d.trim();
-  return /^\d{4}-\d{2}-\d{2}[T ]/.test(text) ? text.slice(0, 10) : text || undefined;
+  return toDay(d) || undefined;
 }, z.string().optional());
+
+/** A printed date trimmed, and a datetime cut to its day. */
+function toDay(text: string): string {
+  const trimmed = text.trim();
+  return /^\d{4}-\d{2}-\d{2}[T ]/.test(trimmed) ? trimmed.slice(0, 10) : trimmed;
+}
 const labBound = z.preprocess(readModelNumber, z.number().nullable()).optional();
 
 const coreValueRow = z.object({
@@ -404,7 +413,7 @@ const coreValueRow = z.object({
 const additionalValueRow = z.object({
   name: z.string().trim().min(1),
   value: labValue,
-  unit: z.string().nullish().transform(u => u ?? ''),
+  unit: z.string().nullish().transform(u => u?.trim() ?? ''),
   referenceLow: labBound,
   referenceHigh: labBound,
   recordedAt: labDay,
@@ -477,10 +486,11 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>): 
   // that is a calendar day before it is a previous column's. Anything else (a
   // month only, a DD/MM swap, a future day, no report date to order it by) is
   // left out on its own, never counted and never moved onto the report date.
+  const reportDay = parsed.reportDate === null ? null : toDay(parsed.reportDate);
   const ownDay = <T extends { recordedAt?: string }>(v: T): T[] =>
     !v.recordedAt ? [v]
-      : v.recordedAt === parsed.reportDate ? [{ ...v, recordedAt: undefined }]
-        : parsed.reportDate && isCalendarDay(v.recordedAt) && v.recordedAt < parsed.reportDate ? [v] : [];
+      : v.recordedAt === reportDay ? [{ ...v, recordedAt: undefined }]
+        : reportDay && isCalendarDay(reportDay) && isCalendarDay(v.recordedAt) && v.recordedAt < reportDay ? [v] : [];
   const coreRows = parsed.values.flatMap(ownDay);
   const slot = (metric: string, day?: string) => `${metric}@${day ?? ''}`;
   const taken = new Set(coreRows.map(v => slot(v.metric, v.recordedAt)));

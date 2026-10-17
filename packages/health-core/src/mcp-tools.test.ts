@@ -1861,13 +1861,13 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     ]);
   });
 
-  it('US-21 AC7 — a lab printed with no unit: an uncatalogued test is offered unitless, a catalogued one is refused in words', () => {
+  it('US-21 AC7 — a lab printed with no unit is refused in words on the connector, uncatalogued or not, as before the 1.0.2 review', () => {
     const { payload, unrecognized } = prepareImport(base(), bundleOf([extracted('unitless.pdf', labReport({
       values: [], unrecognized: [],
       additionalValues: [{ name: 'INR', value: 1.1, unit: '' }, { name: 'ferritin', value: 150, unit: '' }],
     }))]), IMPORT_CTX);
-    expect(payload.candidates.map((c) => [c.metric, c.value, c.unit])).toEqual([['inr', 1.1, '']]);
-    expect(unrecognized).toEqual([expect.stringMatching(/^ferritin: /)]);
+    expect(payload.candidates).toEqual([]);
+    expect(unrecognized).toEqual([expect.stringMatching(/^INR: .*unit/), expect.stringMatching(/^ferritin: .*unit/)]);
   });
 
   it('AC6 — candidates are shown in the record’s own unit system and stored canonical; equality is judged in that system', () => {

@@ -156,7 +156,7 @@ Anything outside this list goes to `additionalValues` (unified) or `unrecognized
 ### Critical rules in the prompt
 
 1. Extract **measured values only**; a printed reference range goes in `referenceLow`/`referenceHigh`, never in the value
-2. A previous-results column with its **own printed date** is extracted with `recordedAt`; an undated one is ignored (US-12 AC12)
+2. The **most recent** previous-results column printed with a **full day** is extracted with `recordedAt`; older, month-only and undated ones are ignored; the connector ignores them all for now (US-12 AC12, US-35 AC5)
 3. Use the **collection date**, not the print/report date
 4. Ambiguous dates: `DD/MM/YYYY` for non-US labs, else low confidence
 5. Uncertain values → `confidence: "low"` + a `question` string

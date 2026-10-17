@@ -370,8 +370,7 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
       : `"${request.metricName}" is the core metric ${coreMetric} — write it as a measurement, in SI units`);
   }
   if (!Number.isFinite(value)) return reject('invalid-value', 'A value must be a finite number');
-  // No printed unit (US-21 AC7): a catalogued test is refused below, its scale
-  // unknown; one the catalogue does not know (INR, a ratio) is kept unitless.
+  if (!request.unit.trim()) return reject('invalid-value', 'A lab value needs the unit the lab reported it in');
   const recordedAt = resolveRecordedAt(request.recordedAt, request);
   if (typeof recordedAt !== 'string') return recordedAt;
 
