@@ -81,7 +81,7 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   retry on timeout; a double timeout reads `latencyMs` ~11 000, text in `router_error`
   (Supabase only; Sentry sees /api/chat alone). 104 turns 09-29..10-16: good p95 3.5 s;
   3 first-try timeouts, all 10-14..10-16. PROBABLY upstream (output ≤200 tokens
-  and request ruled out; host/network not). Met 10-16 → Brad decides (2026-10-16.md).
+  and request ruled out; host/network not). Met 10-16; Brad 10-17 (#157): no change.
 - `[class][widget]` 2026-09-17, root-fixed 2026-09-20 — Anything `main()`
   awaits before `createRoot` is a blank-widget path: an unhandled rejection
   there leaves the mount empty and the user reloads (1-4 loads per session in
