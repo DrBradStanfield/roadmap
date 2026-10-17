@@ -238,9 +238,11 @@ const UNIT_VALUE_RE = new RegExp(
   `\\b${NUMBER}\\s*(?:(?:${alternation(PLAIN_UNITS)})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
 // A name starts where no letter or digit runs into it ("γ-GT" starts with no
 // word character, so not a word boundary) and ends where no letter does: digits straight
-// after a name are its value ("ldl140"), never part of it.
+// after a name are its value ("ldl140"), never part of it. Past a gap, the
+// value starts a token: the gap never ends in a letter, so "Hb" cannot take
+// the 1 of "A1c" in "Hb A1c 7.2".
 const METRIC_THEN_VALUE_RE = new RegExp(
-  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])([^\\d\\n]{0,20}?)(${NUMBER})`, 'gi');
+  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])((?:[^\\d\\n]{0,19}?[^\\da-z\\n])?)(${NUMBER})`, 'gi');
 const VALUE_THEN_METRIC_RE = new RegExp(
   `(${NUMBER})([^\\d\\n]{0,20}?)\\b(${alternation(SCRUB_METRIC_WORDS)})\\b`, 'gi');
 

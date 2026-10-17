@@ -303,7 +303,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `apoa1` | g/L | mg/dl | 0.01 | a milligram per decilitre is a hundredth of a gram per litre |
 | `ck` | U/L | iu/l | 1 | an international unit of enzyme activity IS a unit |
 
-A plain "calcium" is total calcium (`calcium_total`), never corrected calcium (US-21 AC12, fixed 2026-10-18; it used to land on `calcium_corrected`). Rows already stored under the key `calcium_corrected` stay there: no migration. A row stored under the printed name "calcium" now reads as total calcium.
+A plain "calcium" is total calcium (`calcium_total`), never corrected calcium (US-21 AC12, fixed 2026-10-18; it used to land on `calcium_corrected`). Rows already stored under the key `calcium_corrected` stay there: no migration. A row stored as a plain calcium (the website upload's snake_case `calcium`, or the assistant's printed "Calcium") now reads as total calcium.
 
 Three catalogued tests take only their canonical unit, so they have no row above: `cystatin_c` (mg/L), `homocysteine` (µmol/L) and `b12_active` (pmol/L). Any other spelling is refused.
 

@@ -256,6 +256,11 @@ describe('free-text scrub parity', () => {
         ['LDL-140', 'LDL-[value]'], ['ldl140', 'ldl[value]'], ['glucose-140', 'glucose-[value]'], ['glucose 140', 'glucose [value]'],
         ['IGF-1 200', 'IGF-1 [value]'], ['IGF 1 200', 'IGF 1 [value]'], ['Apo A1 1.2', 'Apo A1 [value]'],
         ['Vitamin B12 300', 'Vitamin B12 [value]'], ['Free T4 15', 'Free T4 [value]'],
+        // A short name never reaches into the next word for a digit: the value
+        // is a number that starts a token, or follows the name directly.
+        ['Hb A1c 7.2', 'Hb A1c [value]'], ['HbA1c 48', 'HbA1c [value]'], ['Hb A1c was 48', 'Hb A1c was [value]'],
+        ['ld a1c 6', 'ld a1c [value]'], ['LDL 3.2mmol/L', 'LDL [value]'], ['BP-140/90', 'BP-[value]'],
+        ['Vitamin B12 is low', 'Vitamin B12 is low'],
       ]) {
         expect(impl.scrubText(text), text).toBe(scrubbed);
       }
@@ -266,7 +271,7 @@ describe('free-text scrub parity', () => {
     for (const impl of [source, copy]) {
       for (const entry of LAB_CATALOG) {
         for (const name of [entry.key, entry.label, ...entry.aliases]) {
-          for (const text of [`${name} 123`, `${name} was 123`]) {
+          for (const text of [`${name} 123`, `${name} was 123`, `${name} is 123.5`, `${name}: 123`, `${name}=123`]) {
             expect(impl.scrubText(text), `${entry.key}: ${text}`).not.toContain('123');
           }
         }
