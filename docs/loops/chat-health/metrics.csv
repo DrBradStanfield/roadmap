@@ -110,3 +110,26 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W41,yt_reply_gt90w_count_7d,1,1,0,chat_messages,"1/18 (6%) raw, max 96; tag-stripped 0/18, max 90; >5 sentences tag-stripped 2 (six each); any sentence >25 words 5/18 (splitter caveat)"
 2026-W41,routing_miss_share_pct,33.3,80,-58,manual categorisation,"1/3: widget 'analyse my data' (own-data ask, no topic; ∅ 6/6 as typed, each a clean empty reply; third week of this shape). Other 2: a router JSON-parse error (two objects with a self-correction between them; routed 16/16 on replay) and a YouTube reaction on the companion blog's topic; fixtures added 395 → 397 (router 307 → 309)"
 2026-W41,harness_lifestyle_pass,15,14,7,tools/test-chatbot-matching.ts,"on the committed fixtures (after review R3/R9) L3 14/18, L4 15/18, raw replies logged; L3 keto ∅ was a two-object parse failure; earlier arms on the pre-review fixture text L1 15/18, L2 14/18 (--category lifestyle --runs 3, claude-sonnet-5-5 thinking off, 0 API errors, $0.83/arm); prior = W40 14/16. Excluding the 2 new fixtures both arms 14/16 (W39 + W40 own-data KNOWN-FAILs); new: own-data ∅ both arms, keto PASS L1 / FAIL L2 (one ∅ run of three)"
+2026-W42,lint_unresolved_marker,87,87,0,tools/knowledge-lint.ts,weekly lint
+2026-W42,lint_uncited_reference,208,206,1,tools/knowledge-lint.ts,weekly lint
+2026-W42,lint_uncited_list,39,39,0,tools/knowledge-lint.ts,weekly lint
+2026-W42,lint_doi_shape,1,1,0,tools/knowledge-lint.ts,weekly lint
+2026-W42,lint_pmid_shape,1,1,0,tools/knowledge-lint.ts,weekly lint
+2026-W42,lint_id_mismatch,3,3,0,tools/knowledge-lint.ts,weekly lint
+2026-W42,lint_link_dead,18,21,-14,tools/knowledge-lint.ts,"weekly lint; not a trend: a different slice from W41, and 757 identifiers fell over the 500 cap; 12 of the 16 new queue items are dead DOIs in cocoa-flavanols (6 hand-checked 404 on doi.org)"
+2026-W42,lint_grokipedia,62,62,0,tools/knowledge-lint.ts,weekly lint
+2026-W42,lint_dose_mismatch,12,12,0,tools/knowledge-lint.ts,weekly lint
+2026-W42,lint_product_rise,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W42,lint_grokipedia_only_sentences,608,608,0,tools/knowledge-lint.ts,weekly lint
+2026-W42,lint_due_entries,183,89,106,tools/knowledge-lint.ts,weekly lint
+2026-W42,empty_handle_turns,13,3,333,chat_match_events,"window 2026-10-10T22:25Z → 10-17T22:25Z; split widget 10 / youtube 3 / shopify 0 / discord 0; total match events 119 = 63 skipped + 56 ran (all ROUTE, all router_version 2); 7 of 13 from one widget user correcting urine-creatinine values in 18 minutes on 10-17; W41 slice re-measured 3 of 94 = published"
+2026-W42,router_errors_7d,2,1,100,chat_match_events,"2 timeouts at 11,006 and 11,008 ms (widget 10-14T09:32Z, youtube 10-16T09:39Z), the router's 5 s call + backoff + retry; sentry-fix #157, Brad chose no change; fallbacks 0 (match events and chat_messages)"
+2026-W42,router_latency_median_ms,1688,1627,4,chat_match_events,"n=56 (1687.5), all v2; excluding the 2 timeouts 1548.5 (n=54)"
+2026-W42,router_latency_p90_ms,4041,2989,35,chat_match_events,"nearest-rank 51st of 56; excluding the 2 timeouts 3384 (49th of 54)"
+2026-W42,router_cache_hit_rate_pct,64,49,31,chat_match_events,"36/56; hits gap to previous ran row ≤300 s 22, 300–3,600 s 11, >3,600 s 2 (3,604 s and 46,695 s), 1 first-in-window; hit median 1426.5 ms vs miss 2240"
+2026-W42,yt_reply_median_words,78,78,0,chat_messages,"n=32 excluding 4 SKIP_NO_REPLY sentinels (36 assistant rows); all 32 carry the tag; tag-stripped median 72"
+2026-W42,yt_reply_gt90w_count_7d,1,1,0,chat_messages,"1/32 raw (max 97), 1/32 tag-stripped (max 91); >5 sentences tag-stripped 5 (W41 2); any sentence >25 words 5/32 (splitter caveat)"
+2026-W42,harness_full_pass,296,297,,tools/test-chatbot-matching.ts,"full router suite --runs 3, 309 fixtures (W40 arms 297/304 and 295/304), claude-sonnet-5-5 thinking off, 0 API errors, $14.73, HEAD 5b1c27e; on W40's 304: 293; 4 fail only because a new refresh entry (anxiety-in-adults, dyspepsia-and-heartburn-gord, dysphagia) is now picked and the fixture notes say no such pathway exists; old index (2abe071^) passes 3 of those 4"
+2026-W42,classifier_catchable_share_pct,54,0,,manual categorisation + replay,"7/13, ends seven zero weeks: one widget user's lab-value corrections and a complaint, 10-17 in 18 minutes (MEASUREMENT by the prompt's own definition). Replayed in thread context: Haiku 5.5 ROUTE 35/35, Haiku 4.5 MEASUREMENT 14/14. Router correctly returned nothing on all 7. Classifier skipped 63 upstream (GREETING 29 / ACCOUNT 14 / PRODUCT 10 / MEASUREMENT 10)"
+2026-W42,routing_miss_share_pct,15.4,33.3,-54,manual categorisation + replay,"2/13: widget 'what do you think of my results' (own-data ask, no topic; ∅ 6/6, fourth week of the shape) and a YouTube taurine side-effect question (∅ in production, taurine reference 18/18 on replay: one draw). Other 4: 2 router timeouts (both route 6/6 on replay), 1 YouTube oblique question the companion blog half-covers, 1 meta question about document access (∅ 6/6, defensible). Fixtures 610 → 612 (router +1, classifier +1)"
+2026-W42,harness_classifier_pass,16,,,tools/test-classifier.ts,"--runs 1 on claude-haiku-5-5 (switched this week), 18 fixtures, $0.0003; fails: 'do you ship to Australia?' ACCOUNT→PRODUCT, 'female' GREETING→ROUTE (known fail); no prior loop measurement on file"
