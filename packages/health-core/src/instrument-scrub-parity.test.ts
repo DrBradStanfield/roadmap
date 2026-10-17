@@ -250,6 +250,30 @@ describe('free-text scrub parity', () => {
     }
   });
 
+  it('US-21 AC17 — a name never absorbs a value: digits after a name are the value unless the name itself ends in them', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, scrubbed] of [
+        ['LDL-140', 'LDL-[value]'], ['ldl140', 'ldl[value]'], ['glucose-140', 'glucose-[value]'], ['glucose 140', 'glucose [value]'],
+        ['IGF-1 200', 'IGF-1 [value]'], ['IGF 1 200', 'IGF 1 [value]'], ['Apo A1 1.2', 'Apo A1 [value]'],
+        ['Vitamin B12 300', 'Vitamin B12 [value]'], ['Free T4 15', 'Free T4 [value]'],
+      ]) {
+        expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
+  it('US-21 AC17 — every catalogue key, label and alias, followed by a value, loses the value', () => {
+    for (const impl of [source, copy]) {
+      for (const entry of LAB_CATALOG) {
+        for (const name of [entry.key, entry.label, ...entry.aliases]) {
+          for (const text of [`${name} 123`, `${name} was 123`]) {
+            expect(impl.scrubText(text), `${entry.key}: ${text}`).not.toContain('123');
+          }
+        }
+      }
+    }
+  });
+
   it('scrubText produces identical output', () => {
     for (const t of TEXTS) expect(copy.scrubText(t)).toBe(source.scrubText(t));
   });

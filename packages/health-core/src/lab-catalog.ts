@@ -549,7 +549,7 @@ const GENERIC_NAME_WORDS = new Set([
  * the prefix of hs-CRP, which `crp` already carries. Everything else short —
  * bp, hb, t3, t4, e2 — stays, so "BP 140/90" and "free T4 15" are refused.
  */
-export const SHORT_NAME_WORDS: ReadonlySet<string> = new Set(['na', 'gt', 'hs', 'am', 'oh', 'sat']);
+const SHORT_NAME_WORDS = new Set(['na', 'gt', 'hs', 'am', 'oh', 'sat']);
 
 /** "Lp(a)" is one name, not "lp" and "a" — folded before either side is read. */
 export function foldLpa(text: string): string {

@@ -864,9 +864,13 @@ function valueNearMetric(text: string): string | null {
       if (phrase.every((w, k) => words[i + k] === w)) names.push([i, i + phrase.length - 1]);
     }
   }
+  // A name inside a longer one is that longer name: "igf" in "IGF-1" goes, so
+  // the 1 is never read as a value.
+  const longest = names.filter(([first, last]) =>
+    !names.some(([f, l]) => f <= first && l >= last && l - f > last - first));
   for (const [i, word] of words.entries()) {
     if (!BARE_NUMBER.test(word)) continue;
-    for (const [first, last] of names) {
+    for (const [first, last] of longest) {
       const inside = i >= first && i <= last;
       if (!inside && i >= first - METRIC_DISTANCE && i <= last + METRIC_DISTANCE) return `${words.slice(first, last + 1).join(' ')} ${word}`;
     }

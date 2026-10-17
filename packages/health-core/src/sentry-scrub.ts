@@ -6,7 +6,7 @@
  * via Sentry error reports.
  */
 
-import { CATALOG_UNITS, LAB_CATALOG, metricNameWords, SHORT_NAME_WORDS } from './lab-catalog';
+import { CATALOG_UNITS, LAB_CATALOG, metricNameWords } from './lab-catalog';
 
 const REDACTED = '[Filtered]';
 
@@ -208,23 +208,19 @@ export const SCRUB_UNITS: readonly string[] = [
 ];
 
 /** Metric and lab names that make an adjacent number a health value. */
-export const SCRUB_METRIC_WORDS: readonly string[] = [
-  // Every word a metric or catalogued test is known by. 3 is the floor: "mg"
-  // and "na" are a unit and a word long before they are magnesium and sodium.
+export const SCRUB_METRIC_WORDS: readonly string[] = [...new Set([
+  // Every word a metric or catalogued test is known by. 3 is the floor for a
+  // word split out of a name: "mg" and "na" are a unit and a word long before
+  // they are magnesium and sodium.
   ...metricNameWords(3),
-  // A catalogue key or alias is a test's own name, so a short one skips the
-  // floor: "CK 120", "Ca 2.4" and "LD 180" are values. The short English words
-  // the feedback guard drops ("na") stay out here too.
-  ...LAB_CATALOG.flatMap((entry) => [entry.key, ...entry.aliases])
-    .filter((name) => name.length < 3 && !SHORT_NAME_WORDS.has(name)),
-  // A name of several words ending in a digit is one phrase, so "IGF 1 200"
-  // keeps its 1 and loses the 200.
-  ...new Set(LAB_CATALOG.flatMap((entry) => [entry.label, ...entry.aliases])
-    .map((name) => name.toLowerCase()).filter((name) => /[^a-z0-9]/.test(name) && /\d$/.test(name))),
+  // Every name a catalogued test is known by, whole: a whole name is that test
+  // however short ("Na 140", "Ca 2.4"), and a name ending in a digit keeps the
+  // digit while the value goes ("IGF 1 200", "Free T4 15").
+  ...LAB_CATALOG.flatMap((entry) => [entry.key, entry.label, ...entry.aliases]).map((name) => name.toLowerCase()),
   // What no name in either list spells: the phrases a person writes, and the
   // metrics that live in the calculator rather than the catalogue.
   'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height',
-];
+])];
 
 /** A number, or a blood-pressure pair ("140/90"). */
 const NUMBER = '\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?';
@@ -233,14 +229,6 @@ const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const alternation = (words: readonly string[]) =>
   [...words].sort((a, b) => b.length - a.length).map(escapeRe).join('|');
 
-/**
- * The digits a name ends in ("IGF-1", "Apo A1", "Vitamin B12") belong to the
- * name, not the value, so "IGF-1 200" scrubs the 200 and keeps the 1. Never a
- * bare spaced number, and never one a decimal continues, so "LDL 3.2" and
- * "ldl 3 then 4" still lose their first number.
- */
-const NAME_DIGITS = '(?:(?:-?\\d+|\\s?[a-z]\\d+)(?![.,]?\\d))?';
-
 /** Inches only at the end of a phrase — never "in" leading a word. */
 const INCH_UNIT = '(?:in(?=\\s*(?:[^A-Za-z0-9\\s]|$))|")';
 const PLAIN_UNITS = SCRUB_UNITS.filter(u => u !== 'in' && u !== '"');
@@ -248,8 +236,11 @@ const PLAIN_UNITS = SCRUB_UNITS.filter(u => u !== 'in' && u !== '"');
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const UNIT_VALUE_RE = new RegExp(
   `\\b${NUMBER}\\s*(?:(?:${alternation(PLAIN_UNITS)})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
+// A name starts where no letter or digit runs into it ("γ-GT" starts with no
+// word character, so not a word boundary) and ends where no letter does: digits straight
+// after a name are its value ("ldl140"), never part of it.
 const METRIC_THEN_VALUE_RE = new RegExp(
-  `\\b((?:${alternation(SCRUB_METRIC_WORDS)})${NAME_DIGITS})(?![a-z0-9])([^\\d\\n]{0,20}?)(${NUMBER})`, 'gi');
+  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])([^\\d\\n]{0,20}?)(${NUMBER})`, 'gi');
 const VALUE_THEN_METRIC_RE = new RegExp(
   `(${NUMBER})([^\\d\\n]{0,20}?)\\b(${alternation(SCRUB_METRIC_WORDS)})\\b`, 'gi');
 
