@@ -1689,7 +1689,7 @@ import {
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { recordSync } from './roadmap-doc';
 import { ROADMAP_FILE_NAME } from './adapter';
-import type { UnifiedExtractionResult } from './lab-extraction';
+import { parseUnifiedResult, toUnifiedResult, type UnifiedExtractionResult } from './lab-extraction';
 import { IMPORT_FILE_REASONS, IMPORT_LIMITS, IMPORT_REFUSALS, importHint } from './import-hints';
 
 const LAB_DAY = '2026-08-20';
@@ -1828,6 +1828,36 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(fileDates.type).toBe('array');
     expect(fileDates.items.required).toEqual(['file', 'date']);
     expect(importHint('no_date')).toContain('fileDates: [{ "file": "<name as listed>", "date": "YYYY-MM-DD" }]');
+  });
+
+  // US-12 AC12 on the connector: a report with a dated "Prev." column, through
+  // the real parse of the model's reply. Synthetic values.
+  it('AC5/AC13 — a dated previous-column value is offered on its own day, and the user’s file date never moves it', () => {
+    const report = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-08-20', document: null,
+      values: [
+        { metric: 'ldl', value: 2.6, unit: 'mmol/L', confidence: 'high' },
+        { metric: 'ldl', value: 3.1, unit: 'mmol/L', confidence: 'high', recordedAt: '2026-05-04' },
+      ],
+      additionalValues: [
+        { name: 'ferritin', value: 150, unit: 'ug/L' },
+        { name: 'ferritin', value: 180, unit: 'ug/L', recordedAt: '2026-05-04' },
+      ],
+    }));
+    const offered = (fileDates?: Record<string, string>) =>
+      prepareImport(base(), { ...bundleOf([extracted('cumulative.pdf', report)]), ...(fileDates ? { fileDates } : null) }, IMPORT_CTX)
+        .payload.candidates.map((c) => [c.metric, c.value, c.recordedAt, c.slot.state]);
+    expect(offered()).toEqual([
+      ['ldl', 2.6, '2026-08-20', 'free'], ['ldl', 3.1, '2026-05-04', 'free'],
+      ['ferritin', 150, '2026-08-20', 'free'], ['ferritin', 180, '2026-05-04', 'free'],
+    ]);
+    expect(offered({ 'cumulative.pdf': '2026-08-21' }).map(([metric, , day]) => [metric, day])).toEqual([
+      ['ldl', '2026-08-21'], ['ldl', '2026-05-04'], ['ferritin', '2026-08-21'], ['ferritin', '2026-05-04'],
+    ]);
+    // The contract says so, inside the tools/list budget: fileDates sets the file's date, never a previous column's.
+    const tool = MCP_TOOLS.find((t) => t.name === 'import_documents')!;
+    expect((tool.inputSchema.properties.fileDates as { description: string }).description)
+      .toContain('Sets the file’s date, never a dated previous column’s.');
   });
 
   it('AC6 — candidates are shown in the record’s own unit system and stored canonical; equality is judged in that system', () => {

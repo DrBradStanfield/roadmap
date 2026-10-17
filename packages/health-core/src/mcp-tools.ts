@@ -2526,7 +2526,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
             required: ['file', 'date'],
             additionalProperties: false,
           },
-          description: 'For a lab file that printed no date: the date the test was taken, from the user, e.g. [{ "file": "results.pdf", "date": "2026-08-12" }]. Wins over the file’s own date.',
+          description: 'For a lab file that printed no date: the date the test was taken, from the user, e.g. [{ "file": "results.pdf", "date": "2026-08-12" }]. Sets the file’s date, never a dated previous column’s.',
         },
         fromNudge: { type: 'boolean', description: 'True when this import answers the folder list a read returned. Counted, nothing else.' },
         commit: {

@@ -132,8 +132,9 @@ Health data must never be auto-saved without explicit user confirmation. The rev
 
 1. **Target metrics** with aliases — e.g. LDL can appear as "LDL", "LDL-C", "LDL Cholesterol", "Low Density Lipoprotein"
 2. **Disambiguation rules** to avoid common extraction errors:
-   - Extract ACTUAL measured values, not reference ranges
-   - If both current and previous results shown, extract only the most recent
+   - Extract ACTUAL measured values; a printed reference range goes in `referenceLow`/`referenceHigh`
+   - Units exactly as printed (beside the result, else the column header, else the row's range), never converted, empty when none is printed (US-21 AC7)
+   - A previous-results column with its own printed date is extracted, each value with `recordedAt`; an undated one is ignored (US-12 AC12)
    - Use COLLECTION/SAMPLE date, not report/print date
    - For ambiguous date formats (03/04/2026): prefer DD/MM/YYYY for non-US labs, MM/DD/YYYY for US
    - Multi-page correlation: date on page 1, results on later pages
