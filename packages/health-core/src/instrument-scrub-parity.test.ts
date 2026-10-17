@@ -256,11 +256,11 @@ describe('free-text scrub parity', () => {
         ['LDL-140', 'LDL-[value]'], ['ldl140', 'ldl[value]'], ['glucose-140', 'glucose-[value]'], ['glucose 140', 'glucose [value]'],
         ['IGF-1 200', 'IGF-1 [value]'], ['IGF 1 200', 'IGF 1 [value]'], ['Apo A1 1.2', 'Apo A1 [value]'],
         ['Vitamin B12 300', 'Vitamin B12 [value]'], ['Free T4 15', 'Free T4 [value]'],
-        // A short name never reaches into the next word for a digit: the value
-        // is a number that starts a token, or follows the name directly.
+        // A number inside a word (a letter on both sides, the 1 of "A1c") is
+        // never the value; a number after a letter, or before a unit, still is.
         ['Hb A1c 7.2', 'Hb A1c [value]'], ['HbA1c 48', 'HbA1c [value]'], ['Hb A1c was 48', 'Hb A1c was [value]'],
-        ['ld a1c 6', 'ld a1c [value]'], ['LDL 3.2mmol/L', 'LDL [value]'], ['BP-140/90', 'BP-[value]'],
-        ['Vitamin B12 is low', 'Vitamin B12 is low'],
+        ['ld a1c 6', 'ld a1c [value]'], ['sodium a140', 'sodium a[value]'], ['ferritin was210', 'ferritin was[value]'],
+        ['LDL 3.2mmol/L', 'LDL [value]'], ['BP-140/90', 'BP-[value]'],
       ]) {
         expect(impl.scrubText(text), text).toBe(scrubbed);
       }

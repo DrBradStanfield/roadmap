@@ -237,10 +237,10 @@ const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const UNIT_VALUE_RE = new RegExp(
   `\\b${NUMBER}\\s*(?:(?:${alternation(PLAIN_UNITS)})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
 // A name starts where no letter or digit runs into it and ends where no letter
-// does: digits straight after a name are its value. Past a gap, the value
-// starts a token (mirror of sentry-scrub.ts).
+// does: digits straight after a name are its value. A number inside a word
+// (the 1 of "A1c") is never the value (mirror of sentry-scrub.ts).
 const METRIC_THEN_VALUE_RE = new RegExp(
-  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])((?:[^\\d\\n]{0,19}?[^\\da-z\\n])?)(${NUMBER})`, 'gi');
+  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])([^\\d\\n]{0,20}?)(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z])(${NUMBER})`, 'gi');
 const VALUE_THEN_METRIC_RE = new RegExp(
   `(${NUMBER})([^\\d\\n]{0,20}?)\\b(${alternation(SCRUB_METRIC_WORDS)})\\b`, 'gi');
 
