@@ -32,6 +32,7 @@ const letterOnly: Import = { result: { classification: 'clinic_letter', reportDa
 const nothing: Import = { result: { classification: 'lab_report', document: null, reportDate: null, values: [], additionalValues: [] } } as unknown as Import;
 const history: UploadHistory = { measurements: [], labValues: [], documents: [] };
 const extractFromPdf = vi.fn();
+const docxToText = vi.fn();
 const pages = (content: string) => ({ pages: [{ type: 'text', content }], truncated: false });
 
 function pick(...files: File[]) {
@@ -68,6 +69,9 @@ beforeEach(() => {
     isZip: () => false,
     isImage: (f: File) => f.name.endsWith('.jpg'),
     resizeImage: vi.fn(async () => 'base64'),
+    isDocx: (f: File) => f.name.endsWith('.docx'),
+    isLegacyDoc: (f: File) => f.name.endsWith('.doc'),
+    docxToText,
   } });
 });
 afterEach(cleanup);
@@ -84,7 +88,7 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     });
     render_(); pick(pdf('good.pdf'), pdf('locked.pdf'));
     await screen.findByDisplayValue('3.9');
-    expect(reasonFor('locked.pdf')).toBe('Could not open it. It may be password-protected, damaged, or not a PDF or photo.');
+    expect(reasonFor('locked.pdf')).toBe('Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.');
     expect(reasonFor('good.pdf')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
@@ -190,7 +194,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual({
       picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1,
-      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0,
+      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0,
     });
     expect(Object.values(outcomes()[0]!).every(Number.isInteger)).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
@@ -519,5 +523,52 @@ describe('US-12 AC9: the Shopify build keeps its server wording', () => {
     vi.mocked(labImportBatch).mockResolvedValue({ batchId: null, error: 'x', errorCode });
     render_(); pick(...Array.from({ length: 20 }, (_, i) => pdf(`r${i}.pdf`)));
     await screen.findByText(text);
+  });
+});
+
+describe('US-12 AC12: a .docx is read in the browser and sent as text', () => {
+  const word = (name: string) => new File(['x'], name);
+
+  it('sends the document text as one text page and counts the file as docx', async () => {
+    docxToText.mockResolvedValue('Ferritin | 85 | 60 | ug/L | 30-400');
+    render_(); pick(word('baseline.docx'));
+    await screen.findByDisplayValue('3.9');
+    expect(labImport).toHaveBeenCalledWith([{ type: 'text', content: 'Ferritin | 85 | 60 | ug/L | 30-400' }], 'si');
+    expect(docxToText.mock.calls[0][0]).toBeInstanceOf(ArrayBuffer);
+    expect(reasonFor('baseline.docx')).toBeNull();
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 1, withValues: 1, docx: 1 }));
+  });
+
+  it('names a .docx with no text, or one that will not open, as could not open', async () => {
+    docxToText.mockImplementation(async (b: ArrayBuffer) => { if (b.byteLength === 1) return ''; throw new Error('docx too large'); });
+    render_(); pick(pdf('good.pdf'), word('empty.docx'), new File(['xx'], 'bomb.docx'));
+    await screen.findByDisplayValue('3.9');
+    expect(reasonFor('empty.docx')).toBe('Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.');
+    expect(reasonFor('bomb.docx')).toMatch(/^Could not open it/);
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 3, withValues: 1, openFailed: 2, docx: 2 }));
+  });
+
+  it('refuses a legacy .doc with a notice to save it as PDF or .docx, and never reads it', async () => {
+    render_(); pick(pdf('good.pdf'), word('old.doc'));
+    await screen.findByDisplayValue('3.9');
+    expect(reasonFor('old.doc')).toBe('Word .doc files cannot be read. Save it as a PDF or .docx, then upload that.');
+    expect(docxToText).not.toHaveBeenCalled();
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 2, openFailed: 1, docx: 0 }));
+  });
+
+  it('counts an oversize .docx as docx and too large', () => {
+    const huge = word('huge.docx');
+    Object.defineProperty(huge, 'size', { value: 11 * 1024 * 1024 });
+    render_(); pick(huge);
+    expect(reasonFor('huge.docx')).toMatch(/^Too large/);
+    expect(outcomes()).toEqual([expect.objectContaining({ picked: 1, tooLarge: 1, docx: 1 })]);
+  });
+
+  it('offers .docx and .doc in the file picker', () => {
+    render_();
+    expect(document.querySelector('input[type=file]')!.getAttribute('accept')!.split(',')).toEqual(expect.arrayContaining(['.docx', '.doc']));
   });
 });
