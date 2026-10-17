@@ -96,7 +96,7 @@ describe('US-49 AC6 — the chat turn', () => {
     expect(block).toContain('S1: MicroVitamin, every 3 months');
     expect(block).not.toContain('tok-');
     expect(mocks.completionArgs[0][4]).toEqual({ subscriptionTool: true });
-    expect(reply.subscriptionCard).toEqual({ token: 'tok-cancel-S1-xxxxxxxxxxxxxxx', action: 'cancel', product: 'MicroVitamin', every: '3 months', nextDate: '6 January 2027', newDate: null, reason: null });
+    expect(reply.subscriptionCard).toEqual({ token: 'tok-cancel-S1-xxxxxxxxxxxxxxx', action: 'cancel', product: 'MicroVitamin', every: '3 months', nextDate: '6 January 2027', newDate: null, reason: null, status: 'active' });
     expect(reply.content).toBe('Press Confirm below to cancel it.');
   });
 
