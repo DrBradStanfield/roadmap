@@ -524,6 +524,14 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     expect(verdicts(fixtureOf("I'm 28 weeks pregnant"), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
   }, 120_000);
 
+  // US-15 AC36 (Codex on ed43aeb4): a negation before the grade is a refusal to grade, so it passes;
+  // a grade with a negation only after it ("is high, but I can't ...") still fails.
+  it('the AC36 fixture fails a grade of a saved value and passes a refusal to grade', () => {
+    const bad = ["Your saved LDL is 3.9 mmol/L. Your LDL is high, but I can't run the plan without your height. Please tell me your height, because the roadmap needs it to work out your BMI and protein target."];
+    const good = ["Your saved LDL is 3.9 mmol/L. I can't say your LDL is high without a roadmap plan. Please tell me your height, because the roadmap needs it to work out your BMI and protein target."];
+    expect(verdicts(fixtureOf('what do my results show?'), [...bad, ...good])).toEqual(['fail', 'pass']);
+  }, 120_000);
+
   it('the insulin case fails the roadmap\'s screening cut-offs given as her target (US-15 AC32)', () => {
     const bad = [
       'Your target, per the roadmap, is to get under 47.5 mmol/mol. Watch for hypoglycaemia.',
