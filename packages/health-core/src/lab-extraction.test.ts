@@ -780,3 +780,71 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
     });
   }
 });
+
+// A sheet with a "Prev." column of older results. A dated one is that day's
+// values; an undated one is ignored, as before. Synthetic two-date table.
+describe('US-12 AC12: a previous-results column with its own printed date becomes that date\'s values', () => {
+  for (const mode of ['full', 'metadata'] as const) {
+    it(`${mode}: the prompt takes a dated previous column with recordedAt and ignores an undated one`, () => {
+      const prompt = unifiedSystemPrompt(mode);
+      expect(prompt).toContain('each of its rows is its own entry with "recordedAt" set to that column\'s collection date as YYYY-MM-DD');
+      expect(prompt).toContain('A previous column with NO printed date, a trend graph, or a value you cannot tie to one printed date: IGNORE it completely.');
+      expect(prompt).toContain('at most ONE entry per metric per date');
+      expect(prompt).not.toContain('even if those historical columns are dated');
+    });
+  }
+
+  const twoDates = (extra: Record<string, unknown> = {}) => toUnifiedResult(parseUnifiedResult({
+    classification: 'lab_report', reportDate: '2026-03-10', document: null,
+    values: [
+      { metric: 'ldl', value: 2.6, unit: 'mmol/L', confidence: 'high' },
+      { metric: 'ldl', value: 3.1, unit: 'mmol/L', confidence: 'high', recordedAt: '2025-09-02' },
+    ],
+    additionalValues: [
+      { name: 'sodium', value: 140, unit: 'mmol/L', referenceLow: 135, referenceHigh: 145, recordedAt: null },
+      { name: 'sodium', value: 138, unit: 'mmol/L', referenceLow: 135, referenceHigh: 145, recordedAt: '2025-09-02' },
+    ],
+    ...extra,
+  }));
+
+  it('carries each previous value\'s own day on the value; the primary column has none', () => {
+    const result = twoDates();
+    expect(result.values.map(v => [v.displayValue, v.recordedAt])).toEqual([[2.6, undefined], [3.1, '2025-09-02']]);
+    expect(result.additionalValues.map(v => [v.value, v.recordedAt])).toEqual([[140, undefined], [138, '2025-09-02']]);
+    expect(result.droppedValueCount).toBe(0);
+  });
+
+  it('a recordedAt equal to the report date is the primary column: no own day', () => {
+    const [v] = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-03-10', document: null, additionalValues: [],
+      values: [{ metric: 'hdl', value: 1.4, unit: 'mmol/L', confidence: 'high', recordedAt: '2026-03-10' }],
+    })).values;
+    expect(v.recordedAt).toBeUndefined();
+  });
+
+  it('a recordedAt that is not a real calendar day refuses the row, counted, never lands on the report date', () => {
+    const result = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-03-10', document: null,
+      values: [
+        { metric: 'ldl', value: 3.1, unit: 'mmol/L', confidence: 'high', recordedAt: '2025-02-30' },
+        { metric: 'hdl', value: 1.2, unit: 'mmol/L', confidence: 'high', recordedAt: 'Sept 2025' },
+      ],
+      additionalValues: [{ name: 'sodium', value: 138, unit: 'mmol/L', recordedAt: '02/09/2025' }],
+    }));
+    expect(result.values).toEqual([]);
+    expect(result.additionalValues).toEqual([]);
+    expect(result.droppedValueCount).toBe(3);
+  });
+
+  it('promotes a core test filed as additional on each of its dates (US-12 AC11, per day)', () => {
+    const result = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-03-10', document: null, values: [],
+      additionalValues: [
+        { name: 'apolipoprotein_b', value: 0.9, unit: 'g/L' },
+        { name: 'apolipoprotein_b', value: 1.1, unit: 'g/L', recordedAt: '2025-09-02' },
+      ],
+    }));
+    expect(result.values.map(v => [v.metric, v.valueSI, v.recordedAt])).toEqual([['apob', 0.9, undefined], ['apob', 1.1, '2025-09-02']]);
+    expect(result.additionalValues).toEqual([]);
+  });
+});

@@ -137,6 +137,13 @@ function parseIsoToFullDate(iso: string): FullDate | null {
 }
 
 /** Build the most precise date prefix for duplicate matching. */
+/** What sets a value's date, and keys the date state: its file's report date,
+ *  or its own printed day from a dated previous-results column (US-12 AC12),
+ *  so editing one column's date never moves the other. */
+function dateSource(fi: number, recordedAt?: string): string {
+  return recordedAt ? `${fi}@${recordedAt}` : String(fi);
+}
+
 function buildDatePrefix(date: FullDate): string {
   const month = date.month.padStart(2, '0');
   if (date.day) {
@@ -196,7 +203,7 @@ interface MatrixColumn {
   dateKey: DateKey;     // sort key, also rendered as the column header
   date: FullDate;       // mutable for new columns; sourced from history for existing
   isNew: boolean;       // false = history-only; true = at least one upload contributes
-  fileIndices: number[]; // upload files at this date (empty for history-only columns)
+  sources: string[];    // upload date sources at this date (`dateSource`; empty for history-only columns)
 }
 
 interface CoreRow {
@@ -247,7 +254,7 @@ type MatrixCell =
  *  `conflict` the user can accept as a correction. Exported for tests. */
 export function buildMatrixModel(
   results: FileResult[],
-  fileDates: Record<number, FullDate>,
+  fileDates: Record<string, FullDate>,
   measurementHistory: ApiMeasurement[],
   labValueHistory: ApiLabValue[],
   unitSystem: UnitSystem,
@@ -282,31 +289,36 @@ export function buildMatrixModel(
     return equal ? 'skip' : { id: prev.id, display: prev.displayValue, valueSI: prev.valueSI, lab: prev.lab, displayUnit: prev.displayUnit };
   };
 
-  const addColumn = (dateKey: DateKey, date: FullDate, fileIndex: number | null) => {
+  const addColumn = (dateKey: DateKey, date: FullDate, source: string | null) => {
     let col = columnsByKey.get(dateKey);
     if (!col) {
-      col = { dateKey, date, isNew: fileIndex !== null, fileIndices: [] };
+      col = { dateKey, date, isNew: source !== null, sources: [] };
       columnsByKey.set(dateKey, col);
     }
-    if (fileIndex !== null) {
+    if (source !== null) {
       col.isNew = true;
-      if (!col.fileIndices.includes(fileIndex)) col.fileIndices.push(fileIndex);
+      if (!col.sources.includes(source)) col.sources.push(source);
     }
     return col;
   };
+
+  /** A value's date: its own printed day when it has one (US-12 AC12), else its file's. */
+  const valueDate = (fi: number, recordedAt?: string): FullDate | undefined =>
+    recordedAt ? fileDates[dateSource(fi, recordedAt)] ?? parseReportDate(recordedAt) : fileDates[fi];
 
   // 1) Seed columns + cells from existing history (greyed context). A blood
   //    test seeds its own column. A saved BP seeds only a date this upload
   //    brings, so it conflicts like any held slot (US-13 AC3) without every
   //    vitals date becoming a column.
-  //    A file brings a column only when it has a date and contributes a value:
+  //    An upload brings a column only for a date one of its values carries:
   //    document-only files (scans, letters) keep their own card below the
   //    matrix, off the date axis. One rule for the seeding and the overlay.
-  const uploadDateKey = (r: FileResult, fi: number) =>
-    fileDates[fi] && r.values.length + r.additionalValues.length > 0 ? buildDatePrefix(fileDates[fi]) : null;
   const bloodTestSet = new Set<string>(BLOOD_TEST_METRICS);
   const vitalSet = new Set<string>(VITAL_METRICS);
-  const uploadDates = new Set(results.map(uploadDateKey));
+  const uploadDates = new Set(results.flatMap((r, fi) => [...r.values, ...r.additionalValues].flatMap(v => {
+    const date = valueDate(fi, v.recordedAt);
+    return date ? [buildDatePrefix(date)] : [];
+  })));
   for (const m of measurementHistory) {
     const dateKey = m.recordedAt.slice(0, 10);
     const metric = m.metricType as MetricType;
@@ -349,11 +361,18 @@ export function buildMatrixModel(
   //    recorded (leave the context cell), a differing one becomes a conflict
   //    the user resolves in the table — never a silent drop (US-32).
   results.forEach((r, fi) => {
-    const dateKey = uploadDateKey(r, fi);
-    if (!dateKey) return;
-    addColumn(dateKey, fileDates[fi], fi);
+    /** The column a value lands in: its own date's (US-12 AC12) or its file's. */
+    const columnFor = (recordedAt?: string): DateKey | null => {
+      const date = valueDate(fi, recordedAt);
+      if (!date) return null;
+      const dateKey = buildDatePrefix(date);
+      addColumn(dateKey, date, dateSource(fi, recordedAt));
+      return dateKey;
+    };
 
     r.values.forEach((v, vi) => {
+      const dateKey = columnFor(v.recordedAt);
+      if (!dateKey) return;
       const metric = v.metric as MetricType;
       coreMetricsSeen.add(metric);
       const cellKey = `${metric}|${dateKey}`;
@@ -373,6 +392,8 @@ export function buildMatrixModel(
     });
 
     r.additionalValues.forEach((av, ai) => {
+      const dateKey = columnFor(av.recordedAt);
+      if (!dateKey) return;
       const nameKey = normaliseLabName(av.name);
       if (!additionalByKey.has(nameKey)) {
         additionalByKey.set(nameKey, {
@@ -469,10 +490,16 @@ export function ReviewTable({
   const [lpaUnit, chooseLpaUnit] = useLpaUnit(unitSystem);
   const units = useMemo<Partial<Record<MetricType, CellUnit>>>(() => ({ ...metricUnitOverrides, lpa: lpaUnit }), [metricUnitOverrides, lpaUnit]);
 
-  // Per-file full date state (day/month/year)
-  const [fileDates, setFileDates] = useState<Record<number, FullDate>>(() => {
-    const dates: Record<number, FullDate> = {};
-    results.forEach((r, i) => { dates[i] = parseReportDate(r.reportDate); });
+  // Full date state (day/month/year) per file, and per printed day of a
+  // dated previous-results column (`dateSource`, US-12 AC12).
+  const [fileDates, setFileDates] = useState<Record<string, FullDate>>(() => {
+    const dates: Record<string, FullDate> = {};
+    results.forEach((r, i) => {
+      dates[i] = parseReportDate(r.reportDate);
+      for (const v of [...r.values, ...r.additionalValues]) {
+        if (v.recordedAt) dates[dateSource(i, v.recordedAt)] = parseReportDate(v.recordedAt);
+      }
+    });
     return dates;
   });
 
@@ -704,20 +731,20 @@ export function ReviewTable({
     return !!(col.date.year && col.date.month && col.date.day);
   }), [matrix.columns]);
 
-  /** Column-level date editing: propagate to every contributing file so the
-   *  matrix stays consistent. New-column dates only — existing-history
+  /** Column-level date editing: propagate to every contributing date source so
+   *  the matrix stays consistent. New-column dates only — existing-history
    *  columns are read-only (correction goes through the live timeline). */
   const handleColumnDateChange = (col: MatrixColumn, update: Partial<FullDate>) => {
     if (!col.isNew) return;
     setFileDates(prev => {
       const next = { ...prev };
-      for (const fi of col.fileIndices) {
-        const merged = { ...prev[fi], ...update };
+      for (const source of col.sources) {
+        const merged = { ...(prev[source] ?? col.date), ...update };
         if (merged.day) {
           const maxDay = getDaysInMonth(merged.month, merged.year);
           if (parseInt(merged.day) > maxDay) merged.day = String(maxDay);
         }
-        next[fi] = merged;
+        next[source] = merged;
       }
       return next;
     });

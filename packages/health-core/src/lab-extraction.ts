@@ -18,6 +18,7 @@ import { reportedToCanonical, toCanonicalValue, UNIT_DEFS, type MetricType, type
 import { foldName, LAB_CATALOG, LAB_GROUPS, normalizeLabUnit } from './lab-catalog';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES } from './validation';
+import { ISO_DATE } from './measurement-history';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -168,7 +169,7 @@ export function resolveUnit(metric: MetricType, unitStr: string, value: number):
 }
 
 /** Resolve units for an array of LLM-extracted lab values. Shared by all extraction paths. */
-export function resolveLabValues(rawValues: Array<{ metric: string; value: number; unit: string; confidence: 'high' | 'medium' | 'low'; question?: string }>): ExtractedValue[] {
+export function resolveLabValues(rawValues: Array<{ metric: string; value: number; unit: string; confidence: 'high' | 'medium' | 'low'; question?: string; recordedAt?: string }>): ExtractedValue[] {
   const values: ExtractedValue[] = [];
   for (const v of rawValues) {
     if (!VALID_METRICS.includes(v.metric as MetricType)) continue;
@@ -184,6 +185,7 @@ export function resolveLabValues(rawValues: Array<{ metric: string; value: numbe
       question: !confident
         ? (v.question || (v.unit ? `Unit "${v.unit}" was inferred` : 'No unit was printed, so the unit was inferred') + ' — please verify this value')
         : v.question,
+      ...(v.recordedAt ? { recordedAt: v.recordedAt } : null),
     });
   }
   return values;
@@ -217,7 +219,7 @@ ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metri
 
   CRITICAL RULES:
   1. Extract ACTUAL measured result values ONLY. A reference range, target value or normal limit is never a value (a row's printed range goes in referenceLow/referenceHigh, rule 10).
-  2. If the report shows previous/historical results (in a "Previous" column, "Last visit" column, trend graph, or any side-by-side layout), IGNORE them completely. Extract ONLY values from the current report's primary column, even if those historical columns are dated. Return at most ONE entry per metric — never duplicate a metric in the output.
+  2. PREVIOUS RESULTS: the current report's primary column (the most recent collection) gives entries with no "recordedAt". A column of earlier results that prints its own collection date (a "Previous" or "Last visit" column headed with a date, or one dated column per visit) is extracted too: each of its rows is its own entry with "recordedAt" set to that column's collection date as YYYY-MM-DD (rules 3 and 4 apply). A previous column with NO printed date, a trend graph, or a value you cannot tie to one printed date: IGNORE it completely. Return at most ONE entry per metric per date — never duplicate a metric on one date.
   3. Use COLLECTION/SAMPLE date, NOT report/print date. Return as YYYY-MM-DD.
   4. For ambiguous dates (03/04/2026): prefer DD/MM/YYYY for non-US labs, MM/DD/YYYY for US.
   5. Multi-page documents: date on page 1, results on later pages — correlate them.
@@ -370,6 +372,11 @@ function refusedCountRow(row: unknown): boolean {
 }
 
 const labValue = z.preprocess(readModelNumber, z.number());
+/** A value's own day, from a dated previous-results column (US-12 AC12). A
+ *  string that is not a real YYYY-MM-DD refuses the row: on the report's date
+ *  instead it would be an older result filed as today's. */
+const labDay = z.string().regex(ISO_DATE).refine(d => !Number.isNaN(Date.parse(d)) && new Date(d).toISOString().slice(0, 10) === d)
+  .nullish().transform(d => d ?? undefined);
 const labBound = z.preprocess(readModelNumber, z.number().nullable()).optional();
 
 const coreValueRow = z.object({
@@ -378,6 +385,7 @@ const coreValueRow = z.object({
   unit: z.string(),
   confidence: z.enum(['high', 'medium', 'low']),
   question: z.string().nullish().transform(q => q ?? undefined),
+  recordedAt: labDay,
 });
 
 const additionalValueRow = z.object({
@@ -386,6 +394,7 @@ const additionalValueRow = z.object({
   unit: z.string().nullish().transform(u => u ?? ''),
   referenceLow: labBound,
   referenceHigh: labBound,
+  recordedAt: labDay,
 });
 
 const unifiedResultSchema = z.object({
@@ -451,14 +460,18 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>): 
   // the plan never sees it. Only into a free slot, and only in a unit the
   // test is measured in: a name alone can be another test, or carry no unit
   // to convert. Anything else stays a lab row, never dropped.
-  const coreRows = [...parsed.values];
-  const taken = new Set(coreRows.map(v => v.metric));
+  // A value's own day equal to the report's is the primary column (US-12 AC12).
+  const ownDay = <T extends { recordedAt?: string }>(v: T): T =>
+    v.recordedAt && v.recordedAt === parsed.reportDate ? { ...v, recordedAt: undefined } : v;
+  const coreRows = parsed.values.map(ownDay);
+  const slot = (metric: string, day?: string) => `${metric}@${day ?? ''}`;
+  const taken = new Set(coreRows.map(v => slot(v.metric, v.recordedAt)));
   const additionalValues: typeof parsed.additionalValues = [];
-  for (const v of isLab ? parsed.additionalValues : []) {
+  for (const v of isLab ? parsed.additionalValues.map(ownDay) : []) {
     const metric = resolveCoreMetricName(v.name);
-    if (metric && PROMOTABLE.has(metric) && !taken.has(metric) && reportedToCanonical(metric, v.value, v.unit)) {
-      taken.add(metric);
-      coreRows.push({ metric, value: v.value, unit: v.unit, confidence: 'high' });
+    if (metric && PROMOTABLE.has(metric) && !taken.has(slot(metric, v.recordedAt)) && reportedToCanonical(metric, v.value, v.unit)) {
+      taken.add(slot(metric, v.recordedAt));
+      coreRows.push({ metric, value: v.value, unit: v.unit, confidence: 'high', recordedAt: v.recordedAt });
     } else {
       additionalValues.push(v);
     }
