@@ -6,9 +6,9 @@
 import { extractFromPdf, isPdf } from './lib/pdf-extract';
 import { getZipEntries, isZip } from './lib/zip-extract';
 import { resizeImage, isImage } from './lib/image-resize';
-import { docxToText, isDocx, isLegacyDoc } from './lib/docx-extract';
+import { docxToText } from './lib/docx-extract';
 
-export { extractFromPdf, isPdf, getZipEntries, isZip, resizeImage, isImage, docxToText, isDocx, isLegacyDoc };
+export { extractFromPdf, isPdf, getZipEntries, isZip, resizeImage, isImage, docxToText };
 
 // Expose on window for the main widget bundle to access
 (window as any).HealthUpload = {
@@ -19,6 +19,4 @@ export { extractFromPdf, isPdf, getZipEntries, isZip, resizeImage, isImage, docx
   resizeImage,
   isImage,
   docxToText,
-  isDocx,
-  isLegacyDoc,
 };

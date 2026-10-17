@@ -5,7 +5,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
-import { docxToText, isDocx, isLegacyDoc } from './docx-extract';
+import { docxToText } from './docx-extract';
 
 const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"';
 /** A paragraph of runs, each with formatting the extractor must ignore. */
@@ -92,23 +92,25 @@ describe('US-12 AC12: docxToText', () => {
     await expect(docxToText(bomb)).rejects.toThrow(/too large/);
   });
 
+  it('reads crafted XML of unclosed tags in linear time, not quadratic', async () => {
+    // 1 MB of `<w:t ` and `<mc:Fallback` opens with no close: each once scanned to the end of the part.
+    const crafted = '<w:t x'.repeat(90_000) + '<mc:Fallback>'.repeat(40_000);
+    expect(crafted.length).toBeGreaterThan(1_000_000);
+    const file = await docx(crafted);
+    const started = performance.now();
+    expect(await docxToText(file)).toBe('');
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  it('keeps every line of a document with more paragraphs than a call takes arguments', async () => {
+    // JavaScriptCore caps a call near 65k arguments, V8 near 125k; a spread push past it throws.
+    const count = 150_000;
+    const text = await docxToText(await docx('<w:p><w:t>a</w:t></w:p>'.repeat(count)));
+    expect(text.split('\n')).toHaveLength(count);
+  });
+
   it('counts headers and footers toward the cap too', async () => {
     const big = 'b'.repeat(3 * 1024 * 1024);
     await expect(docxToText(await docx(p(big), { 'word/header1.xml': hdr(p(big)) }))).rejects.toThrow(/too large/);
-  });
-});
-
-describe('US-12 AC12: isDocx and isLegacyDoc', () => {
-  const file = (name: string, type = '') => new File([], name, { type });
-  it('knows a .docx by its mime type or its extension, in any case', () => {
-    expect(isDocx(file('x', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'))).toBe(true);
-    expect(isDocx(file('Baseline.DOCX'))).toBe(true);
-    expect(isDocx(file('baseline.doc'))).toBe(false);
-    expect(isDocx(file('baseline.pdf', 'application/pdf'))).toBe(false);
-  });
-  it('knows a legacy .doc by its mime type or its extension, never a .docx', () => {
-    expect(isLegacyDoc(file('x', 'application/msword'))).toBe(true);
-    expect(isLegacyDoc(file('Old.DOC'))).toBe(true);
-    expect(isLegacyDoc(file('new.docx'))).toBe(false);
   });
 });

@@ -398,5 +398,5 @@ export {
 
 // US-35: the slot rule and the bulk save the website and the connector share.
 export { bulkAppendValues, correctValue, sameLabQuantity, slotKey, slotState, type BulkRow, type LabQuantity, type LabUnitRefusal, type SlotState } from './record-edits';
-export { fileNameLine, isImportableEntryName, zipMemberName } from './lab-extraction';
+export { fileNameLine, inflateCapped, isImportableEntryName, zipMemberName } from './lab-extraction';
 export { IMPORT_LIMITS } from './import-hints';

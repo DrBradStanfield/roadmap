@@ -15,6 +15,7 @@ import { Sentry } from '../lib/sentry';
 import { recordFailure } from '../lib/error-diagnostics';
 import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
+import { isDocx, isLegacyDoc } from '../lib/file-kinds';
 
 class UploadError extends Error {
   constructor(message: string, public code: UploadErrorCode) {
@@ -125,8 +126,6 @@ interface HealthUploadAPI {
   resizeImage: (file: File, maxDim: number) => Promise<string>;
   isImage: (file: File) => boolean;
   docxToText: (data: ArrayBuffer) => Promise<string>;
-  isDocx: (file: File) => boolean;
-  isLegacyDoc: (file: File) => boolean;
 }
 
 const MAX_FILES = 200;
@@ -194,10 +193,10 @@ async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: R
       if (pages.length > 0) return { pages, file };
     } else if (upload.isImage(file)) {
       return { pages: [{ type: 'image', content: await withTimeout(upload.resizeImage(file, 1200)), mimeType: 'image/jpeg' }], file };
-    } else if (upload.isDocx(file)) {
+    } else if (isDocx(file)) {
       const text = await withTimeout(upload.docxToText(await file.arrayBuffer()));
       if (text) return { pages: [{ type: 'text', content: text }], file };
-    } else if (upload.isLegacyDoc(file)) {
+    } else if (isLegacyDoc(file)) {
       notices.push({ name, reason: 'openFailed', text: LEGACY_DOC_TEXT });
       return { pages: [] };
     }
@@ -223,10 +222,9 @@ function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, 
 }
 
 /** US-12 AC10: one run's counts, integers only. Never a name, unit or value.
- *  `seen` is every file picked, by name, only to count them and their .docx (AC12). */
-function trackUploadOutcome(seen: string[], withValues: number, notices: FileNotice[]): void {
-  const docx = seen.filter(name => name.toLowerCase().endsWith('.docx')).length;
-  const counts: Partial<Record<UploadOutcomeKey, number>> = { picked: seen.length, withValues, docx };
+ *  `docx` is how many of the picked files were .docx (AC12). */
+function trackUploadOutcome(picked: number, withValues: number, docx: number, notices: FileNotice[]): void {
+  const counts: Partial<Record<UploadOutcomeKey, number>> = { picked, withValues, docx };
   for (const n of notices) counts[n.reason] = (counts[n.reason] ?? 0) + (n.count ?? 1);
   trackProductEvent('upload_outcome', Object.fromEntries(
     UPLOAD_OUTCOME_KEYS.map(k => [k, Math.min(counts[k] ?? 0, UPLOAD_OUTCOME_MAX)]),
@@ -351,11 +349,12 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     const fileArray = Array.from(selectedFiles).slice(0, MAX_FILES);
     const valid = fileArray.filter(f => f.size <= MAX_FILE_SIZE);
     const tooLarge = fileArray.filter(f => f.size > MAX_FILE_SIZE).map(f => ({ name: f.name, reason: 'tooLarge' as const }));
+    const docx = fileArray.filter(isDocx).length;
     setFiles(valid);
     setError(null);
     setNotices(tooLarge);
-    if (valid.length > 0) void handleProcess(valid, tooLarge);
-    else if (tooLarge.length > 0) trackUploadOutcome(tooLarge.map(n => n.name), 0, tooLarge);
+    if (valid.length > 0) void handleProcess(valid, tooLarge, docx);
+    else if (tooLarge.length > 0) trackUploadOutcome(tooLarge.length, 0, docx, tooLarge);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -363,7 +362,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     handleFileSelect(e.dataTransfer.files);
   };
 
-  const handleProcess = async (filesToProcess: File[], tooLarge: FileNotice[]) => {
+  const handleProcess = async (filesToProcess: File[], tooLarge: FileNotice[], docx: number) => {
     // Claim synchronously: React state alone cannot guard two selections in
     // the same render, especially while quota/draft flushing is still pending.
     if (abortRef.current || savingRef.current || filesToProcess.length === 0) return;
@@ -399,7 +398,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         else runNotices.push({ name: r.fileName, reason: r.document ? 'documentOnly' : 'noValues' });
       }
       setNotices(runNotices);
-      trackUploadOutcome([...tooLarge.map(n => n.name), ...names], withValues, runNotices);
+      trackUploadOutcome(tooLarge.length + names.length, withValues, docx, runNotices);
     };
 
     try {

@@ -542,6 +542,49 @@ export const IMPORTABLE_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png'] as const;
 /** What the connector's folder route reads: the same, plus a ZIP of them (US-35 AC2; the nudge lists by it too, US-37 AC1). */
 export const FOLDER_IMPORT_EXTENSIONS = [...IMPORTABLE_EXTENSIONS, '.zip'] as const;
 
+/** JSZip's streaming reader, which its typings leave undeclared. */
+interface EntryStream {
+  on(event: 'data', handler: (chunk: Uint8Array) => void): EntryStream;
+  on(event: 'end', handler: () => void): EntryStream;
+  on(event: 'error', handler: (error: Error) => void): EntryStream;
+  pause(): EntryStream;
+  resume(): EntryStream;
+}
+
+/**
+ * Inflate one JSZip entry, counting bytes; null once the count passes `cap`,
+ * so a ZIP bomb never fills memory. Typed by shape, so health-core needs no
+ * JSZip: the .docx reader (US-12 AC12) and the connector's unzip (US-35 AC5) share it.
+ */
+export function inflateCapped(entry: object, cap: number): Promise<Uint8Array | null> {
+  return new Promise((resolve, reject) => {
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    let stopped = false;
+    const stream = (entry as { internalStream(type: 'uint8array'): EntryStream }).internalStream('uint8array');
+    stream.on('data', (chunk) => {
+      if (stopped) return;
+      size += chunk.byteLength;
+      if (size > cap) {
+        stopped = true;
+        stream.pause();
+        resolve(null);
+        return;
+      }
+      chunks.push(chunk);
+    });
+    stream.on('error', (error) => (stopped ? undefined : reject(error)));
+    stream.on('end', () => {
+      if (stopped) return;
+      const out = new Uint8Array(size);
+      let at = 0;
+      for (const c of chunks) { out.set(c, at); at += c.byteLength; }
+      resolve(out);
+    });
+    stream.resume();
+  });
+}
+
 /** A file name's limit wherever one is stored or shown (`sourceFileName`, the connector's output). */
 export const MAX_FILE_NAME_LENGTH = 255;
 

@@ -69,8 +69,6 @@ beforeEach(() => {
     isZip: () => false,
     isImage: (f: File) => f.name.endsWith('.jpg'),
     resizeImage: vi.fn(async () => 'base64'),
-    isDocx: (f: File) => f.name.endsWith('.docx'),
-    isLegacyDoc: (f: File) => f.name.endsWith('.doc'),
     docxToText,
   } });
 });
@@ -557,6 +555,16 @@ describe('US-12 AC12: a .docx is read in the browser and sent as text', () => {
     expect(docxToText).not.toHaveBeenCalled();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 2, openFailed: 1, docx: 0 }));
+  });
+
+  it('reads and counts a .docx by the one rule, its mime type when the name has no extension', async () => {
+    docxToText.mockResolvedValue('Ferritin | 85');
+    const typed = new File(['x'], 'baseline', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    render_(); pick(typed);
+    await screen.findByDisplayValue('3.9');
+    expect(docxToText).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 1, withValues: 1, docx: 1 }));
   });
 
   it('counts an oversize .docx as docx and too large', () => {

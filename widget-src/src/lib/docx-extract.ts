@@ -9,46 +9,10 @@
  * text nodes and the paragraph, row and cell boundaries matter.
  */
 import JSZip from 'jszip';
+import { inflateCapped } from '@roadmap/health-core';
 
 /** XML inflated across every part read: a ZIP bomb stops here, not in memory. */
 const MAX_XML_BYTES = 4 * 1024 * 1024;
-
-const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-
-/** JSZip's streaming reader, which its typings leave undeclared (the connector's `inflateCapped` uses it too). */
-interface EntryStream {
-  on(event: 'data', handler: (chunk: Uint8Array) => void): EntryStream;
-  on(event: 'end' | 'error', handler: (error?: Error) => void): EntryStream;
-  pause(): EntryStream;
-  resume(): EntryStream;
-}
-
-/** Inflate one part, counting bytes against what is left of the cap. */
-function inflateCapped(entry: JSZip.JSZipObject, budget: number): Promise<Uint8Array> {
-  return new Promise((resolve, reject) => {
-    const chunks: Uint8Array[] = [];
-    let size = 0;
-    const stream = (entry as unknown as { internalStream(type: 'uint8array'): EntryStream }).internalStream('uint8array');
-    stream.on('data', (chunk) => {
-      if (size > budget) return;
-      size += chunk.byteLength;
-      if (size > budget) {
-        stream.pause();
-        reject(new Error('docx too large'));
-        return;
-      }
-      chunks.push(chunk);
-    });
-    stream.on('error', (error) => reject(error));
-    stream.on('end', () => {
-      const out = new Uint8Array(size);
-      let at = 0;
-      for (const c of chunks) { out.set(c, at); at += c.byteLength; }
-      resolve(out);
-    });
-    stream.resume();
-  });
-}
 
 const ENTITY = /&(?:#x([0-9a-f]+)|#(\d+)|(lt|gt|amp|quot|apos));/gi;
 const NAMED: Record<string, string> = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" };
@@ -64,13 +28,29 @@ function decodeEntities(text: string): string {
 
 /** A text run, or a paragraph, row, cell, tab or break tag. `w:delText` and
  *  `w:instrText` never match, so tracked deletions and field codes drop out. */
-const TOKEN = /<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<(\/?)w:(p|tr|tc|tab|br|cr)(?=[\s/>])[^>]*>/g;
+const TOKEN = /<w:t(?:\s[^<>]*)?>([^<]*)<\/w:t>|<(\/?)w:(p|tr|tc|tab|br|cr)(?=[\s/>])[^<>]*>/g;
 
-/** One XML part's lines: paragraphs and table rows in document order. */
-function partLines(xml: string): string[] {
-  // A text box is written twice, the modern copy and a fallback: keep one.
-  const source = xml.replace(/<mc:Fallback\b[\s\S]*?<\/mc:Fallback>/g, '');
-  const lines: string[] = [];
+const FALLBACK_OPEN = '<mc:Fallback';
+const FALLBACK_CLOSE = '</mc:Fallback>';
+
+/** A text box is written twice, the modern copy and a fallback: keep one.
+ *  A scan, not a lazy regex, so an open tag with no close costs one pass. */
+function dropFallbacks(xml: string): string {
+  let out = '';
+  let at = 0;
+  for (let open = xml.indexOf(FALLBACK_OPEN); open >= 0; open = xml.indexOf(FALLBACK_OPEN, open + 1)) {
+    if (open < at || /\w/.test(xml[open + FALLBACK_OPEN.length] ?? '')) continue;
+    const close = xml.indexOf(FALLBACK_CLOSE, open);
+    if (close < 0) break;
+    out += xml.slice(at, open);
+    at = close + FALLBACK_CLOSE.length;
+  }
+  return out + xml.slice(at);
+}
+
+/** Add one XML part's lines to `lines`: paragraphs and table rows in document order. */
+function addPartLines(xml: string, lines: string[]): void {
+  const source = dropFallbacks(xml);
   /** Open rows, innermost last; each holds its cells, and the paragraphs of the open cell. */
   const rows: Array<{ cells: string[]; cell: string[] }> = [];
   let para = '';
@@ -91,13 +71,12 @@ function partLines(xml: string): string[] {
         const row = rows.pop();
         if (row && row.cells.some(Boolean)) emit(row.cells.join(' | '));
       }
-    } else if (rows.length) {
+    } else if (close && rows.length) { // tc
       const row = rows[rows.length - 1];
-      if (close) row.cells.push(row.cell.join(' ')); // tc
+      row.cells.push(row.cell.join(' '));
       row.cell = [];
     }
   }
-  return lines;
 }
 
 /**
@@ -116,18 +95,9 @@ export async function docxToText(data: ArrayBuffer): Promise<string> {
   let budget = MAX_XML_BYTES;
   for (const part of parts) {
     const bytes = await inflateCapped(part, budget);
+    if (!bytes) throw new Error('docx too large');
     budget -= bytes.byteLength;
-    lines.push(...partLines(decoder.decode(bytes)));
+    addPartLines(decoder.decode(bytes), lines);
   }
   return lines.join('\n');
-}
-
-/** Returns true if the file looks like a .docx */
-export function isDocx(file: File): boolean {
-  return file.type === DOCX_MIME || file.name.toLowerCase().endsWith('.docx');
-}
-
-/** Returns true for a legacy Word .doc, which this reader cannot open. */
-export function isLegacyDoc(file: File): boolean {
-  return file.type === 'application/msword' || file.name.toLowerCase().endsWith('.doc');
 }
