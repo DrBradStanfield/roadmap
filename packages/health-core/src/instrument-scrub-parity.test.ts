@@ -237,6 +237,11 @@ describe('free-text scrub parity', () => {
       expect(impl.scrubText('IGF-1 200')).toBe('IGF-1 [value]');
       expect(impl.scrubText('Apo A1 1.2')).toBe('Apo A1 [value]');
       expect(impl.scrubText('Vitamin B12 300')).toBe('Vitamin B12 [value]');
+      // A catalogue name ending in a digit after a space or a hyphen is one phrase.
+      expect(impl.scrubText('IGF 1 200')).toBe('IGF 1 [value]');
+      expect(impl.scrubText('apoa-1 1.3')).toBe('apoa-1 [value]');
+      expect(impl.scrubText('Free T4 15')).toBe('Free T4 [value]');
+      expect(impl.scrubText('insulin-like growth factor 1 was 200')).toBe('insulin-like growth factor 1 was [value]');
       // A plain value is still the value, decimal or not, and a lone name stays.
       expect(impl.scrubText('LDL 3.2')).toBe('LDL [value]');
       expect(impl.scrubText('ldl 3 then 4')).toBe('ldl [value] then 4');

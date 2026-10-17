@@ -183,8 +183,10 @@ export const SCRUB_METRIC_WORDS = [
   'thyrotropin', 'thyroxine', 'tibc', 'tpo', 'tpoab', 'transferase', 'transferrin',
   'triglycerides', 'triiodothyronine', 'tsat', 'tsh', 'upcr', 'urate', 'urea', 'uric',
   'urinary', 'urine', 'vitamin', 'waist', 'wbc', 'weight', 'zinc', 'k', 'k+', 'cl', 'ld',
-  'hb', 'e2', 'lh', 'mg', 'ca', 'ck', 'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp',
-  'bmi', 'height',
+  'hb', 'e2', 'lh', 'mg', 'ca', 'ck', 'total co2', 'free t4', 'free t3', 'igf-1', 'igf 1',
+  'insulin-like growth factor 1', 'vitamin d3', 'vitamin b12', 'active b12',
+  'apolipoprotein a1', 'apo a1', 'apo a-1', 'apoa-1', 'blood pressure', 'apo b', 'lp(a)',
+  'a1c', 'bp', 'bmi', 'height',
 ];
 
 const NUMBER = '\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?';

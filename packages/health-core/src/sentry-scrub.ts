@@ -217,6 +217,10 @@ export const SCRUB_METRIC_WORDS: readonly string[] = [
   // the feedback guard drops ("na") stay out here too.
   ...LAB_CATALOG.flatMap((entry) => [entry.key, ...entry.aliases])
     .filter((name) => name.length < 3 && !SHORT_NAME_WORDS.has(name)),
+  // A name of several words ending in a digit is one phrase, so "IGF 1 200"
+  // keeps its 1 and loses the 200.
+  ...new Set(LAB_CATALOG.flatMap((entry) => [entry.label, ...entry.aliases])
+    .map((name) => name.toLowerCase()).filter((name) => /[^a-z0-9]/.test(name) && /\d$/.test(name))),
   // What no name in either list spells: the phrases a person writes, and the
   // metrics that live in the calculator rather than the catalogue.
   'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height',
