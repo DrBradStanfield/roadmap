@@ -305,7 +305,7 @@ describe('US-35 AC2/AC5: isImportableEntryName', () => {
 // US-12 AC8 — dot thousands on a count, apostrophe thousands, and a count of
 // the rows the parse dropped
 // ---------------------------------------------------------------------------
-import { canonicalLabRow, LAB_CATALOG, LAB_GROUPS, resolveLabCatalogEntry } from './lab-catalog';
+import { canonicalLabRow, LAB_CATALOG, LAB_GROUPS, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 
 describe('US-12 AC8: an ambiguous number is refused, and the refusal is counted', () => {
   // A null optional field is not an unreadable value: the row stays.
@@ -809,9 +809,27 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
     it(`${mode}: an uncatalogued test still gets a descriptive name, and no hand-kept name survives`, () => {
       const lines = block(unifiedSystemPrompt(mode));
       expect(lines.at(-1)).toBe('  Any other test: use the best descriptive snake_case name.');
-      expect(lines.join('\n')).not.toMatch(/\b(?:homocysteine|fasting_glucose|free_t4|hs_crp)\b/);
+      expect(lines.join('\n')).not.toMatch(/\b(?:fasting_glucose|fasting_insulin|free_t4|hs_crp)\b/);
+    });
+    it(`${mode}: the tests the catalogue gained in AC17 are named too`, () => {
+      const lines = block(unifiedSystemPrompt(mode)).join('\n');
+      for (const key of ['calcium_total', 'free_testosterone_calculated', 'glucose_random', 'urine_creatinine', 'urine_pcr', 'psa_free']) {
+        expect(lines, key).toMatch(new RegExp(`\\b${key}\\b`));
+      }
     });
   }
+
+  // The nine names the old hand-kept list suggested. Rows stored under them
+  // before AC4 must share a slot with a new upload filed under the key.
+  it.each([
+    ['cystatin_c', 'cystatin_c'], ['tibc', 'tibc'], ['free_testosterone', 'free_testosterone'],
+    ['progesterone', 'progesterone'], ['dhea_s', 'dhea_s'], ['igf1', 'igf1'],
+    ['fasting_glucose', 'glucose'], ['fasting_insulin', 'insulin'], ['homocysteine', 'homocysteine'],
+  ])('the old prompt name %s resolves to the catalogue key %s, one slot with a new upload', (legacy, key) => {
+    expect(resolveLabCatalogEntry(legacy)?.key).toBe(key);
+    expect(labSlotKey(legacy)).toBe(key);
+    expect(labSlotKey(legacy)).toBe(labSlotKey(LAB_CATALOG.find(e => e.key === key)!.label));
+  });
 });
 
 // A sheet with a "Prev." column of older results. A dated one is that day's
