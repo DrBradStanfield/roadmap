@@ -8,7 +8,7 @@ import { render, fireEvent, cleanup } from '@testing-library/react';
 import { SubscriptionChangeCard } from './SubscriptionChangeCard';
 import { readSubscriptionCard, confirmSubscriptionChange, resultText, SUBSCRIPTION_HELP_LINE, type SubscriptionCard } from '../lib/subscription-card';
 
-const skip: SubscriptionCard = { token: 'tok-skip-S1-xxxxxxxxxxxxxxxx', action: 'skip', product: 'MicroVitamin', every: '3 months', nextDate: '6 January 2027', newDate: '6 April 2027', reason: null };
+const skip: SubscriptionCard = { token: 'tok-skip-S1-xxxxxxxxxxxxxxxx', action: 'skip', product: 'MicroVitamin', every: '3 months', nextDate: '6 January 2027', newDate: '6 April 2027', reason: null, paused: false };
 const cancel: SubscriptionCard = { ...skip, token: 'tok-cancel-S1-xxxxxxxxxxxxxxx', action: 'cancel', newDate: null, reason: 'too_expensive' };
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
@@ -72,3 +72,15 @@ describe('US-49 AC8 — subscription-card helpers', () => {
     expect(await confirmSubscriptionChange(cancel)).toEqual({ status: 'unconfirmed' });
   });
 });
+
+// Live pilot, 18 Oct: a paused subscription's cancel card shows "Paused" and no pause hint.
+import { cardLines } from '../lib/subscription-card';
+describe('cardLines for a paused subscription', () => {
+  it('shows Paused, no next order and no pause hint', () => {
+    const card = readSubscriptionCard({ token: 't'.repeat(30), action: 'cancel', product: 'MicroVitamin', every: '3 months', nextDate: '15 April 2027', newDate: null, reason: null, status: 'paused' })!;
+    expect(cardLines(card)).toEqual(['MicroVitamin, every 3 months', 'Paused', "Cancelling can't be undone."]);
+    const active = readSubscriptionCard({ token: 't'.repeat(30), action: 'cancel', product: 'MicroVitamin', every: '3 months', nextDate: '15 April 2027', newDate: null, reason: null, status: 'active' })!;
+    expect(cardLines(active)).toEqual(['MicroVitamin, every 3 months', 'Next order: 15 April 2027', "Cancelling can't be undone. You could pause it instead."]);
+  });
+});
+

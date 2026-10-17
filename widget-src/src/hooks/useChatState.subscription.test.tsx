@@ -9,7 +9,7 @@ import { act } from 'react';
 import { renderHook } from '@testing-library/react';
 import type { SubscriptionCard } from '../lib/subscription-card';
 
-const card: SubscriptionCard = { token: 'tok-pause-S1-xxxxxxxxxxxxxxxx', action: 'pause', product: 'MicroVitamin', every: '3 months', nextDate: '6 January 2027', newDate: null, reason: null };
+const card: SubscriptionCard = { token: 'tok-pause-S1-xxxxxxxxxxxxxxxx', action: 'pause', product: 'MicroVitamin', every: '3 months', nextDate: '6 January 2027', newDate: null, reason: null, paused: false };
 const mocks = vi.hoisted(() => ({ confirm: vi.fn(), postSync: vi.fn() }));
 vi.mock('../lib/chat-api', () => ({
   sendMessage: vi.fn(async () => ({ result: { conversationId: 'c1', messageId: 'm1', content: 'Press Confirm below to pause it.', subscriptionCard: card }, error: null })),
