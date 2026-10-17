@@ -124,7 +124,7 @@ export const NO_PLAN_CHAT_RULE =
   '`heightCm`, the roadmap has no plan yet. Use and mention the values they have saved, without grading them, ask for ' +
   'the missing sex or height, and say in one plain sentence why: the roadmap needs height and sex to work out the plan ' +
   '(BMI, waist-to-height ratio, the protein target from ideal body weight, and kidney function, as eGFR needs sex), ' +
-  'and with them it can run their full plan.';
+  'and with them it can run their plan.';
 
 /**
  * The JSON the model reads for a payload, or null when it holds nothing:
@@ -183,7 +183,7 @@ export function buildChatContextJson(payload: unknown): string | null {
   const hasHistory = Object.keys(measurementHistory).length > 0;
   // US-15 AC36: no plan and nothing saved is the empty form, which the callers send as '{}'.
   if (!results && !knownMinor && !hasHistory && excludedFields.length === 0
-    && [inputs, medications, screenings].every(o => Object.keys(o).length === 0)) return null;
+    && [inputs, medications, screenings].every(o => Object.values(o).every(v => v === undefined))) return null;
   for (const [field, value] of Object.entries(latestFromHistory(measurementHistory))) {
     latestValues[field] ??= `${value}`;
   }

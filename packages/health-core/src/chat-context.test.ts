@@ -279,6 +279,11 @@ describe('US-07 AC6: the chat context marks a known minor', () => {
 // user with saved blood tests that they had no data (harness fixture X3). The
 // context now carries what is saved, and names what the plan needs.
 describe('US-15 AC36: no plan still sends what is saved', () => {
+  it('a form whose fields were typed and then cleared is still the empty form (Codex + adversary on 0986b981)', () => {
+    expect(buildChatContextJson(chatContextOf({ weightKg: undefined } as Partial<HealthInputs>, 'si', [], [], []))).toBeNull();
+    expect(buildChatContextJson({ weightKg: undefined, birthMonth: undefined })).toBeNull();
+  });
+
   const SAVED = {
     sex: 'female' as const, birthYear: 1978, birthMonth: 2, weightKg: 70, waistCm: 86,
     ldlC: 3.9, hba1c: 40, systolicBp: 138, diastolicBp: 88,
