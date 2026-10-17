@@ -590,7 +590,7 @@ interface EntryStream {
 /**
  * Inflate one JSZip entry, counting bytes; null once the count passes `cap`,
  * so a ZIP bomb never fills memory. Typed by shape, so health-core needs no
- * JSZip: the .docx reader (US-12 AC12) and the connector's unzip (US-35 AC5) share it.
+ * JSZip: the .docx reader (US-12 AC13) and the connector's unzip (US-35 AC5) share it.
  */
 export function inflateCapped(entry: object, cap: number): Promise<Uint8Array | null> {
   return new Promise((resolve, reject) => {

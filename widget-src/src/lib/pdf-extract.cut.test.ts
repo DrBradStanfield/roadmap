@@ -1,5 +1,5 @@
 /**
- * US-12 AC12: a PDF page's text past the server's text-page cap is cut at a
+ * US-12 AC13: a PDF page's text past the server's text-page cap is cut at a
  * space and marked truncated, so one dense page never fails a whole batch.
  * pdf.js is faked: only getTextContent matters for a text page.
  */
@@ -16,7 +16,7 @@ vi.mock('pdfjs-dist', () => ({
 }));
 const { extractFromPdf } = await import('./pdf-extract');
 
-describe('US-12 AC12: extractFromPdf cuts a page past the text-page cap', () => {
+describe('US-12 AC13: extractFromPdf cuts a page past the text-page cap', () => {
   it('keeps a normal page whole', async () => {
     pageText.items = [{ str: 'Ferritin 85 ug/L (30-400)' }, { str: 'HbA1c 38 mmol/mol (20-41)' }];
     expect(await extractFromPdf(new File([], 'a.pdf'))).toEqual({ pages: [{ type: 'text', content: '[Page 1/1]\nFerritin 85 ug/L (30-400) HbA1c 38 mmol/mol (20-41)' }], truncated: false });

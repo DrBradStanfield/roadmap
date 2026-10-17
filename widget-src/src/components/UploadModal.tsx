@@ -228,7 +228,7 @@ function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, 
 }
 
 /** US-12 AC10: one run's counts, integers only. Never a name, unit or value.
- *  `docx` is how many of the picked files were .docx (AC12). A zero is never
+ *  `docx` is how many of the picked files were .docx (AC13). A zero is never
  *  sent: every key is optional, so a server a deploy behind meets a new key
  *  only once it counts something. */
 function trackUploadOutcome(picked: number, withValues: number, docx: number, notices: FileNotice[]): void {

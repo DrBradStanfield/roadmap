@@ -1,5 +1,5 @@
 /**
- * What a picked file is, by its mime type or name (US-12 AC12). Pure, so the
+ * What a picked file is, by its mime type or name (US-12 AC13). Pure, so the
  * modal reads and counts by the same rule without loading the upload bundle.
  */
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';

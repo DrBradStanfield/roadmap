@@ -27,7 +27,7 @@ export interface PageContent {
  * Text-based pages → text content (cheaper LLM call).
  * Scanned/image pages → JPEG base64 (vision LLM call).
  * `truncated`: the PDF had more pages than the website reads (US-12 AC9), or
- * a page's text ran past the server's text-page cap and was cut (AC12).
+ * a page's text ran past the server's text-page cap and was cut (AC13).
  */
 export async function extractFromPdf(file: File): Promise<{ pages: PageContent[]; truncated: boolean }> {
   const arrayBuffer = await file.arrayBuffer();

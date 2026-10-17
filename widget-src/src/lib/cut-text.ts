@@ -1,5 +1,5 @@
 /**
- * Text cut to at most `max` characters at a boundary (US-12 AC12): the last
+ * Text cut to at most `max` characters at a boundary (US-12 AC13): the last
  * line end, else the last whitespace, else the cap itself, backed out of a
  * number and never between the halves of a surrogate pair. A value is never
  * sent half-written.

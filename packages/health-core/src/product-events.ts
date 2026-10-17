@@ -172,7 +172,7 @@ export const GUIDE_PLACEMENTS = ['header', 'footer'] as const;
  *  rows the parse refused, not files; the others sum to `picked`. `refused` and
  *  `tooLong` are files Claude declined or stopped short on (US-15 AC34). `docx`
  *  counts the picked .docx files, a kind that overlaps the rest; `picturesOnly`
- *  is a .docx of pictures and no text (US-12 AC12). */
+ *  is a .docx of pictures and no text (US-12 AC13). */
 export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped', 'docx', 'picturesOnly'] as const;
 export type UploadOutcomeKey = (typeof UPLOAD_OUTCOME_KEYS)[number];
 /** The most one count may say; the server refuses more, so the client clamps. */

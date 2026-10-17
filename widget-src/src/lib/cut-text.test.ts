@@ -1,8 +1,8 @@
-/** US-12 AC12: text sent as a page is cut at a boundary, never mid-value. */
+/** US-12 AC13: text sent as a page is cut at a boundary, never mid-value. */
 import { describe, it, expect } from 'vitest';
 import { cutText } from './cut-text';
 
-describe('US-12 AC12: cutText', () => {
+describe('US-12 AC13: cutText', () => {
   it('leaves text within the cap as it is', () => {
     expect(cutText('LDL 2.9', 7)).toBe('LDL 2.9');
   });

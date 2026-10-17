@@ -1,5 +1,5 @@
 /**
- * US-12 AC12: a .docx is read in the browser into one text page. Each table
+ * US-12 AC13: a .docx is read in the browser into one text page. Each table
  * row is one line, its cells in order joined by " | "; headers come first,
  * footers last. Synthetic files built here with JSZip; every value is made up.
  */
@@ -27,7 +27,7 @@ async function docx(body: string, parts: Record<string, string> = {}): Promise<A
 const hdr = (xml: string) => `<w:hdr ${NS}>${xml}</w:hdr>`;
 const ftr = (xml: string) => `<w:ftr ${NS}>${xml}</w:ftr>`;
 
-describe('US-12 AC12: docxToText', () => {
+describe('US-12 AC13: docxToText', () => {
   it('keeps each table row on one line, its cells in order, an empty previous result in its column', async () => {
     const { text } = await docxToText(await docx(tbl(
       tr('Test', 'Result', 'Previous result', 'Unit', 'Reference range'),
@@ -121,7 +121,7 @@ describe('US-12 AC12: docxToText', () => {
   });
 });
 
-describe('US-12 AC12: what a lab sheet in Word holds beyond plain runs', () => {
+describe('US-12 AC13: what a lab sheet in Word holds beyond plain runs', () => {
   const run = (xml: string) => `<w:r>${xml}</w:r>`;
   const t = (s: string) => run(`<w:t>${s}</w:t>`);
   const raw = (...runs: string[]) => `<w:p>${runs.join('')}</w:p>`;
@@ -266,7 +266,7 @@ describe('US-12 AC12: what a lab sheet in Word holds beyond plain runs', () => {
   });
 });
 
-describe('US-12 AC12: a document whose WordprocessingML prefix is not w:', () => {
+describe('US-12 AC13: a document whose WordprocessingML prefix is not w:', () => {
   it('reads the prefixes the root binds to the main and markup-compatibility namespaces', async () => {
     const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
     const MC = 'http://schemas.openxmlformats.org/markup-compatibility/2006';

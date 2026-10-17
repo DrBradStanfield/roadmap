@@ -533,7 +533,7 @@ describe('US-12 AC9: the Shopify build keeps its server wording', () => {
   });
 });
 
-describe('US-12 AC12: a .docx is read in the browser and sent as text', () => {
+describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
   const word = (name: string) => new File(['x'], name);
 
   it('sends the document text as one text page and counts the file as docx', async () => {

@@ -1,5 +1,5 @@
 /**
- * Client-side .docx text extraction (US-12 AC12) using JSZip.
+ * Client-side .docx text extraction (US-12 AC13) using JSZip.
  * Bundled in health-upload.js (separate IIFE), NOT in main widget.
  *
  * A .docx is a ZIP of XML parts. The text a lab sheet holds is in

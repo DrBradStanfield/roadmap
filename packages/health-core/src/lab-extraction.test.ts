@@ -939,7 +939,7 @@ describe('US-12 AC12: a previous-results column with its own printed date become
 
 import { inflateCapped } from './lab-extraction';
 
-describe('US-12 AC12 / US-35 AC5: inflateCapped, shared by the .docx reader and the connector', () => {
+describe('US-12 AC13 / US-35 AC5: inflateCapped, shared by the .docx reader and the connector', () => {
   /** A stand-in for a JSZip entry: its stream plays `events` once resumed. */
   function entry(events: Array<['data', Uint8Array] | ['end'] | ['error', Error]>) {
     const handlers: Record<string, (arg?: unknown) => void> = {};
