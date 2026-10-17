@@ -2552,20 +2552,24 @@
   {
     "query": "which of your products is best for my skin?",
     "category": "product-collagen",
-    "source": "us-15-ac35-2026-10-16",
+    "source": "us-15-ac35-2026-10-18",
     "surface": "brand",
     "answer_handles": [],
     "must_not_mention": [
-      "MicroVitamin+ Powder (best)",
-      "collagen for skin",
       "two complementary mechanisms",
-      "comprehensive skin support"
+      "comprehensive skin support",
+      "within the range studied",
+      "Pu 2023",
+      "Pu et al",
+      "Kim 2022",
+      "Kim et al",
+      "Myung"
     ],
     "must_not_match": [
-      "microvitamin\\+(?:(?!\\.\\s)[^\\n]){0,200}(skin hydration|elasticity|wrinkle)",
-      "(skin hydration|elasticity|wrinkle)(?:(?!\\.\\s)[^\\n]){0,200}microvitamin\\+"
+      "\\bcollagen\\b(?:(?!\\.\\s)[^\\n]){0,200}(wrinkle|fine line|rebuild|structur)",
+      "(wrinkle|fine line|rebuild|structur)(?:(?!\\.\\s)[^\\n]){0,200}\\bcollagen\\b"
     ],
-    "notes": "US-15 AC35 (Brad's collagen update, 2026-10-16; Codex review of roadmap fd68004b). Product answers attach no skin benefit to MicroVitamin+'s collagen in any market, and never select MicroVitamin+ for a skin concern. The regexes fail skin hydration, elasticity or wrinkles in the same sentence as MicroVitamin+ (a full stop followed by a space ends the window, so the decimal in 12.5g does not). answer_handles [] = products block plus the brand posture only; routing is not asserted."
+    "notes": "US-15 AC35 (amended 2026-10-18, Brad's collagen update v3). The chat may suggest collagen peptides for skin, saying they may improve skin hydration and elasticity (Batool 2026), and may say MicroVitamin+ contains 12.5 g. It must not tie collagen to wrinkles, fine lines, rebuilding or skin structure in the same sentence (a full stop followed by a space ends the window, so the decimal in 12.5 g does not), call 12.5 g within the range studied, or cite Pu, Kim or Myung. Known false fails, judge by reading: a negated sentence (\"has not been shown to reduce wrinkles\") and a non-supplement collagen mention (retinoids or red light \"stimulate collagen\") in the same sentence as wrinkles. answer_handles [] = products block plus the brand posture only; routing is not asserted."
   },
   {
     "query": "Is MicroVitamin gluten free?",

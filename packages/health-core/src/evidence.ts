@@ -550,10 +550,10 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'supplement-collagen': {
-    reason: 'Collagen peptides have been studied for skin hydration and elasticity; trials used 0.5 to 10 g a day.',
+    reason: 'Collagen peptides may improve skin hydration and elasticity.',
     guidelines: [],
     references: [
-      { label: 'Batool 2026 – Oral collagen peptides & skin: meta-analysis of 35 RCTs (J Cosmet Dermatol)', url: 'https://doi.org/10.1111/jocd.71041' },
+      { label: 'Batool 2026 – Oral collagen peptides & skin: meta-analysis (J Cosmet Dermatol)', url: 'https://doi.org/10.1111/jocd.71041' },
     ],
   },
 

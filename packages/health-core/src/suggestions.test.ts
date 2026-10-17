@@ -2380,14 +2380,13 @@ describe('generateSuggestions', () => {
 
       // Each card's user-facing description should surface the actual trial /
       // meta-analysis evidence from evidence.ts (trial + finding + dose), not
-      // generic marketing language. Exception: the collagen card is deliberately
-      // NOT a trial-finding card (Brad's collagen update, 2026-10-16). It says only
-      // that collagen peptides have been studied and the doses trials used; its
-      // meta-analysis (Batool 2026) is carried by the evidence reference, checked after the loop.
+      // generic marketing language. The collagen card states Brad's education line
+      // (collagen update v3, 2026-10-18): collagen peptides may improve skin hydration
+      // and elasticity (Batool 2026); the Batool reference is checked after the loop.
       const expectMentions: Record<string, RegExp> = {
         'supplement-micronutrient-base': /COSMOS/i,
         'supplement-creatine': /meta-analysis/i,
-        'supplement-collagen': /0\.5 to 10 g/i,
+        'supplement-collagen': /may improve skin hydration and elasticity \(Batool 2026\)/i,
         'supplement-omega3': /cardiovascular events/i,
         'supplement-sleep': /melatonin/i,
       };
