@@ -538,6 +538,9 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
       'I can’t give a full plan, though your cholesterol looks raised.',
       'Your LDL of 3.9 mmol/L is high, and if you share your height the roadmap can build your plan.',
       'Your LDL is above target, so ask your doctor whether a statin fits.',
+      'Your LDL is classified as high.',
+      'Your LDL, at 3.9 mmol/L, is high.',
+      'LDL: 3.9 mmol/L is high.',
     ];
     const refusals = [
       "I can't say your LDL is high without a roadmap plan.",
@@ -547,6 +550,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
       "It isn't my place to say your LDL is high; the roadmap decides that.",
       "There's no way for me to say your LDL is high without the plan.",
       "Until you add your height, I'll hold off on saying your LDL is high or on target.",
+      'Your LDL is not classified as high without a plan.',
     ];
     expect(verdicts(fixtureOf('what do my results show?'), [...grades, ...refusals].map(s => s + ask)))
       .toEqual([...grades.map(() => 'fail'), ...refusals.map(() => 'pass')]);
