@@ -149,7 +149,8 @@ duplicates.
   silent-fleet entry: that one was our routines, this one is the platform. **Lifted 10-05;
   push and event triggers returned 10-06, but the cron schedules did not** (Workflow
   Integrity and Stranded branch watch: 0 runs 09-18 → 10-10, W41). After any outage,
-  check runs per workflow, crons included, not just "Actions runs again".)
+  check runs per workflow, crons included, not just "Actions runs again". Both crons back
+  daily from 10-12 after a disable/enable, W42.)
 - **2026-09-26 [usage]** Reach can double in a week with no source we hold able
   to say why: `results_viewed` 172 → 384, the 09-20 spike (91 views, 73 visitors,
   22 of 24 hours), while Clarity's 3-day window had already rolled past it and
@@ -161,7 +162,7 @@ duplicates.
   back only in the browser that made it, and mostly lands elsewhere: 14 of 17
   W40 clicks fired `email_landing_empty` within ~3.4 s (16 of 21 since 09-24);
   1 of 8 visitors clearly recovered. W41: 9 of 20, about 8 clicks opened a plan,
-  2 of 9 recovered; none of the 9 ids had any earlier event (an unused browser). A connect is not a recovery: require
+  2 of 9 recovered; W42: 11 of 30, 3 of 10. None of the landing ids had any earlier event (an unused browser). A connect is not a recovery: require
   `results_viewed` after it (W39's "recovered" visitor connected, saw nothing,
   and kept looking). Pair clicks to landings by timestamp; the email events'
   constant `visitor_id` cannot.
@@ -171,3 +172,7 @@ duplicates.
   (94627c07, "never repeat one") shipped 8 h later, so it is ruled out; the
   cause is one of three bundles that night. Check the suspect commit's deploy
   time against the last row before naming it (W40 review R2).
+- **2026-10-18 [feedback]** The plan-ready email's reply is a feedback channel the form search
+  misses: W40's Drive-permission complaint and W42's urine-creatinine report (a clinical-pipeline
+  defect, unread for hours) both came as replies to "Your Health Roadmap is ready". Search
+  replies to that subject every run, and read them first.
