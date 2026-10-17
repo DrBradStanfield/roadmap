@@ -176,7 +176,7 @@ Health data must never be auto-saved without explicit user confirmation. The rev
 
 ### Image Handling (`image-resize.ts`)
 
-JPG/PNG uploaded directly → resize to max 1500px dimension (canvas, preserving aspect ratio) → convert to JPEG base64. Resizing saves bandwidth and LLM input cost. A `.docx` (`docx-extract.ts`, US-12 AC12) becomes one `text` page: headers, body, footers, each table row one line with its cells joined by " | ", XML inflation capped at 4 MB; a legacy `.doc` is refused with a save-as notice.
+JPG/PNG uploaded directly → resize to max 1500px dimension (canvas, preserving aspect ratio) → convert to JPEG base64. Resizing saves bandwidth and LLM input cost. A `.docx` (`docx-extract.ts`, US-12 AC12) becomes one `text` page: headers, body, footers, each table row one line with its cells joined by " | ", XML inflation capped at 4 MB and 50 header/footer parts, text cut at 60,000 characters with the truncated notice; merged cells padded, tracked deletions and moves dropped, `w:sym` signs mapped; a `.docx` of pictures only gets its own notice (`picturesOnly`); a legacy `.doc` is refused with a save-as notice. The server refuses a text page over 100,000 characters.
 
 ### ZIP Handling (`zip-extract.ts`)
 

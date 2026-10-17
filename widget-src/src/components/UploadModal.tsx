@@ -125,7 +125,7 @@ interface HealthUploadAPI {
   isZip: (file: File) => boolean;
   resizeImage: (file: File, maxDim: number) => Promise<string>;
   isImage: (file: File) => boolean;
-  docxToText: (data: ArrayBuffer) => Promise<string>;
+  docxToText: (data: ArrayBuffer) => Promise<{ text: string; truncated: boolean; picturesOnly: boolean }>;
 }
 
 const MAX_FILES = 200;
@@ -146,6 +146,7 @@ const FILE_NOTICE_TEXT: Record<Exclude<FileNoticeReason, 'valuesDropped'>, strin
   limitError: 'Not read. The daily upload limit was reached.',
   refused: 'Not read. Claude declined to read this file, so trying again will not help.',
   tooLong: 'Not read. The file is too long to read in one go.',
+  picturesOnly: 'This Word file holds pictures, not text. Save it as a PDF, or upload a photo of the page.',
 };
 const BYOK_NOTICE_TEXT: Partial<Record<FileNoticeReason, string>> = {
   serverError: 'Not read. Anthropic could not be reached or could not read it. Please try again.',
@@ -194,8 +195,13 @@ async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: R
     } else if (upload.isImage(file)) {
       return { pages: [{ type: 'image', content: await withTimeout(upload.resizeImage(file, 1200)), mimeType: 'image/jpeg' }], file };
     } else if (isDocx(file)) {
-      const text = await withTimeout(upload.docxToText(await file.arrayBuffer()));
+      const { text, truncated, picturesOnly } = await withTimeout(upload.docxToText(await file.arrayBuffer()));
+      if (truncated) notices.push({ name, reason: 'truncated' });
       if (text) return { pages: [{ type: 'text', content: text }], file };
+      if (picturesOnly) {
+        notices.push({ name, reason: 'picturesOnly' });
+        return { pages: [] };
+      }
     } else if (isLegacyDoc(file)) {
       notices.push({ name, reason: 'openFailed', text: LEGACY_DOC_TEXT });
       return { pages: [] };
@@ -415,8 +421,10 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       trackProductEvent('upload_started', { count: fileCount });
       const upload = await loadUploadBundle();
       if (abort.signal.aborted) return;
-      const zipFiles = filesToProcess.filter(f => upload.isZip(f));
-      const otherFiles = filesToProcess.filter(f => !upload.isZip(f));
+      // A .docx is itself a ZIP, and some browsers say so: it is read as a .docx.
+      const isZip = (f: File) => !isDocx(f) && upload.isZip(f);
+      const zipFiles = filesToProcess.filter(isZip);
+      const otherFiles = filesToProcess.filter(f => !isZip(f));
 
       // Every file to read, ZIP members first (named with their ZIP: `ReadInput`).
       // A ZIP that will not open, or holds nothing readable, is itself the file named.

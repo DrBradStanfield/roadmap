@@ -34,6 +34,7 @@ const history: UploadHistory = { measurements: [], labValues: [], documents: [] 
 const extractFromPdf = vi.fn();
 const docxToText = vi.fn();
 const pages = (content: string) => ({ pages: [{ type: 'text', content }], truncated: false });
+const docxText = (text: string, more: { truncated?: boolean; picturesOnly?: boolean } = {}) => ({ text, truncated: false, picturesOnly: false, ...more });
 
 function pick(...files: File[]) {
   fireEvent.change(document.querySelector('input[type=file]')!, { target: { files } });
@@ -192,7 +193,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual({
       picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1,
-      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0,
+      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0,
     });
     expect(Object.values(outcomes()[0]!).every(Number.isInteger)).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
@@ -528,7 +529,7 @@ describe('US-12 AC12: a .docx is read in the browser and sent as text', () => {
   const word = (name: string) => new File(['x'], name);
 
   it('sends the document text as one text page and counts the file as docx', async () => {
-    docxToText.mockResolvedValue('Ferritin | 85 | 60 | ug/L | 30-400');
+    docxToText.mockResolvedValue(docxText('Ferritin | 85 | 60 | ug/L | 30-400'));
     render_(); pick(word('baseline.docx'));
     await screen.findByDisplayValue('3.9');
     expect(labImport).toHaveBeenCalledWith([{ type: 'text', content: 'Ferritin | 85 | 60 | ug/L | 30-400' }], 'si');
@@ -539,7 +540,7 @@ describe('US-12 AC12: a .docx is read in the browser and sent as text', () => {
   });
 
   it('names a .docx with no text, or one that will not open, as could not open', async () => {
-    docxToText.mockImplementation(async (b: ArrayBuffer) => { if (b.byteLength === 1) return ''; throw new Error('docx too large'); });
+    docxToText.mockImplementation(async (b: ArrayBuffer) => { if (b.byteLength === 1) return docxText(''); throw new Error('docx too large'); });
     render_(); pick(pdf('good.pdf'), word('empty.docx'), new File(['xx'], 'bomb.docx'));
     await screen.findByDisplayValue('3.9');
     expect(reasonFor('empty.docx')).toBe('Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.');
@@ -558,13 +559,41 @@ describe('US-12 AC12: a .docx is read in the browser and sent as text', () => {
   });
 
   it('reads and counts a .docx by the one rule, its mime type when the name has no extension', async () => {
-    docxToText.mockResolvedValue('Ferritin | 85');
+    docxToText.mockResolvedValue(docxText('Ferritin | 85'));
     const typed = new File(['x'], 'baseline', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
     render_(); pick(typed);
     await screen.findByDisplayValue('3.9');
     expect(docxToText).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 1, withValues: 1, docx: 1 }));
+  });
+
+  it('names a .docx of pictures and no text with its own notice, and counts it', async () => {
+    docxToText.mockResolvedValue(docxText('', { picturesOnly: true }));
+    render_(); pick(pdf('good.pdf'), word('scan.docx'));
+    await screen.findByDisplayValue('3.9');
+    expect(reasonFor('scan.docx')).toBe('This Word file holds pictures, not text. Save it as a PDF, or upload a photo of the page.');
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 2, withValues: 1, picturesOnly: 1, openFailed: 0, docx: 1 }));
+  });
+
+  it('sends a long .docx cut short, with the notice a long PDF gets', async () => {
+    docxToText.mockResolvedValue(docxText('Ferritin | 85', { truncated: true }));
+    render_(); pick(word('long.docx'));
+    await screen.findByDisplayValue('3.9');
+    expect(reasonFor('long.docx')).toBe('Only the first 20 pages were read.');
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 1, withValues: 1, truncated: 1, docx: 1 }));
+  });
+
+  it('reads a .docx the browser calls a ZIP as a .docx, never unzips it', async () => {
+    docxToText.mockResolvedValue(docxText('Ferritin | 85'));
+    const getZipEntries = vi.fn(async () => []);
+    Object.assign((window as unknown as { HealthUpload: object }).HealthUpload, { isZip: (f: File) => f.type === 'application/zip', getZipEntries });
+    render_(); pick(new File(['x'], 'baseline.docx', { type: 'application/zip' }));
+    await screen.findByDisplayValue('3.9');
+    expect(getZipEntries).not.toHaveBeenCalled();
+    expect(docxToText).toHaveBeenCalledTimes(1);
   });
 
   it('counts an oversize .docx as docx and too large', () => {

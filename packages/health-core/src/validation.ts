@@ -335,12 +335,14 @@ export type ValidatedScreening = z.infer<typeof screeningSchema>;
 // Lab Import schemas
 // ---------------------------------------------------------------------------
 
-/** A single page of content extracted client-side from a PDF or image. */
+/** A single page of content extracted client-side from a PDF, image or .docx.
+ *  A text page stops at 100,000 characters, past any page the browser sends
+ *  (a .docx stops at 60,000); an image's base64 runs longer, so it has no cap. */
 export const labImportPageSchema = z.object({
   type: z.enum(['text', 'image']),
   content: z.string().min(1),
   mimeType: z.string().optional(),
-});
+}).refine(page => page.type !== 'text' || page.content.length <= 100_000, { message: 'Text page too long', path: ['content'] });
 
 /** Request body for POST /api/lab-import */
 export const labImportRequestSchema = z.object({
