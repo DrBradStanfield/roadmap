@@ -936,3 +936,38 @@ describe('US-12 AC12: a previous-results column with its own printed date become
     expect(result.additionalValues).toEqual([]);
   });
 });
+
+import { inflateCapped } from './lab-extraction';
+
+describe('US-12 AC12 / US-35 AC5: inflateCapped, shared by the .docx reader and the connector', () => {
+  /** A stand-in for a JSZip entry: its stream plays `events` once resumed. */
+  function entry(events: Array<['data', Uint8Array] | ['end'] | ['error', Error]>) {
+    const handlers: Record<string, (arg?: unknown) => void> = {};
+    let paused = false;
+    const stream = {
+      on(event: string, handler: (arg?: unknown) => void) { handlers[event] = handler; return stream; },
+      pause() { paused = true; return stream; },
+      resume() {
+        for (const [event, arg] of events) if (event !== 'data' || !paused) handlers[event]?.(arg);
+        return stream;
+      },
+    };
+    return { internalStream: () => stream };
+  }
+  const bytes = (...values: number[]) => new Uint8Array(values);
+
+  it('joins the chunks in order into one Uint8Array', async () => {
+    const out = await inflateCapped(entry([['data', bytes(1, 2)], ['data', bytes(3)], ['end']]), 3);
+    expect(out).toEqual(bytes(1, 2, 3));
+    expect(out).toBeInstanceOf(Uint8Array);
+  });
+
+  it('gives null once the count passes the cap, and ignores the end and error that follow', async () => {
+    await expect(inflateCapped(entry([['data', bytes(1, 2)], ['data', bytes(3, 4)], ['end']]), 3)).resolves.toBeNull();
+    await expect(inflateCapped(entry([['data', bytes(1, 2, 3, 4)], ['error', new Error('late')]]), 3)).resolves.toBeNull();
+  });
+
+  it('rejects on a stream error before the cap', async () => {
+    await expect(inflateCapped(entry([['data', bytes(1)], ['error', new Error('corrupt')]]), 3)).rejects.toThrow('corrupt');
+  });
+});
