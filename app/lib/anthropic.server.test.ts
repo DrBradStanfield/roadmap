@@ -111,8 +111,9 @@ describe('resolveLabValues', () => {
   });
 
   it('downgrades confidence when unit is inferred', () => {
+    // 100 fits mg/dL only; 2.8 fits both scales, which is 'low' (US-21 AC17).
     const result = resolveLabValues([
-      { metric: 'ldl', value: 2.8, unit: 'unknown_unit', confidence: 'high' },
+      { metric: 'ldl', value: 100, unit: 'unknown_unit', confidence: 'high' },
     ]);
     expect(result).toHaveLength(1);
     expect(result[0].confidence).toBe('medium');

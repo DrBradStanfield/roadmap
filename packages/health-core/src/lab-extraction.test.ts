@@ -750,6 +750,17 @@ describe('US-21 AC7/AC8: a unit printed only in the range column reaches the wri
     expect(ldl.confidence).toBe('medium');
   });
 
+  it('an unknown printed unit is a guess too: a number that fits both scales is low; a known unit is trusted', () => {
+    const [unknown, oneScale, known] = resolveLabValues([
+      { metric: 'lpa', value: 50, unit: 'units', confidence: 'high' },
+      { metric: 'ldl', value: 100, unit: 'units', confidence: 'high' },
+      { metric: 'lpa', value: 50, unit: 'nmol/L', confidence: 'high' },
+    ]);
+    expect(unknown.confidence).toBe('low');
+    expect(oneScale.confidence).toBe('medium');
+    expect(known.confidence).toBe('high');
+  });
+
   it('an empty unit stays empty: nothing upstream guesses it', () => {
     const [row] = lab({ name: 'homocysteine', value: 9, unit: '', referenceLow: null, referenceHigh: 15 });
     expect(row).toMatchObject({ value: 9, unit: '', referenceLow: null, referenceHigh: 15 });

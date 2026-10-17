@@ -183,9 +183,10 @@ export function resolveLabValues(rawValues: Array<{ metric: string; value: numbe
       displayValue: v.value,
       displayUnit: v.unit,
       displaySystem: system,
-      // No printed unit and a number that fits both scales (Lp(a) 50): low, so
-      // the review flags it and it never saves unnoticed (US-21 AC17).
-      confidence: fitsBoth && !v.unit.trim() ? 'low' : !confident && v.confidence === 'high' ? 'medium' : v.confidence,
+      // A guessed unit (none printed, or one not known) and a number that fits
+      // both scales (Lp(a) 50): low, so the review flags it and it never saves
+      // unnoticed (US-21 AC17).
+      confidence: fitsBoth ? 'low' : !confident && v.confidence === 'high' ? 'medium' : v.confidence,
       question: !confident
         ? [v.question?.trim().replace(/[^.?!]$/, '$&.'), `${v.unit ? `Unit "${v.unit}" was inferred` : 'No unit was printed, so the unit was inferred'} — please verify this value`].filter(Boolean).join(' ')
         : v.question,
