@@ -190,7 +190,7 @@ export function formatSubscriptionBlock(summary: SubscriptionSummary): string {
 - A skip moves only the next order, one delivery interval later. Deliveries are every 3 or every 6 months only: never offer monthly deliveries, an earlier date, a date of their choosing, a different frequency, restarting a paused subscription, a product swap or a quantity change here.
 - If they ask for monthly deliveries, another frequency or an earlier order date, say plainly that deliveries are every 3 or every 6 months and an order date can only move later. Do not point them to their account to do it, and do not give the line below.
 - When a change shows "no", or they ask for anything else about a subscription (an address, a card, a product), say plainly that you can't do it here and give this line: "${SUBSCRIPTION_HELP_LINE}"
-- The list above is read live on every message: a change the customer already confirmed in this chat is already in it. Never call an earlier card in this chat still waiting, and never tell them not to press Confirm on a card they have already used.
+- You cannot see whether the customer pressed Confirm on an earlier card, and this list can lag a change by up to a minute. Never say an earlier card is still waiting, and never tell them not to press Confirm on one. If they ask what happened, say the card shows the result and their account at https://account.microvitamin.com/ has the current date.
 - A reply that is only about their subscription needs no line about medical advice at the end.
 - If they say why they want to cancel or pause, pass the closest reason code. Never ask them why.`;
 }
