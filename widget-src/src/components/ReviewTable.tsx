@@ -187,6 +187,11 @@ function labUnitText(lab: { name: string; unit: string }): string {
  *  an LLM-emitted name like "ALT | AST ratio" would otherwise collide. Prefixed
  *  so a lab row named like a core metric ("ldl", "systolic_bp": saved before
  *  US-12 AC11, or by a connector commit today) never shares a cell with it. */
+/** A lab row's name: the catalogue's label, as the blood-test matrix shows it (lab-rows.ts), else the printed name tidied. */
+function rowLabel(name: string): string {
+  return resolveLabCatalogEntry(name)?.label ?? labValueLabel(name);
+}
+
 function normaliseLabName(name: string): string {
   return `lab:${labSlotKey(name).replace(/\|/g, '/')}`;
 }
@@ -345,7 +350,7 @@ export function buildMatrixModel(
       additionalByKey.set(nameKey, {
         kind: 'additional',
         nameKey,
-        displayName: labValueLabel(lv.metricName),
+        displayName: rowLabel(lv.metricName),
         // Same display-only unit-spelling normalization as the lab-rows
         // matrix ("umol/L" → "µmol/L", ratio ≡ L/L) — these are stored rows,
         // already in the catalogue's SI unit when the test is catalogued.
@@ -364,7 +369,9 @@ export function buildMatrixModel(
   // 2) Overlay upload values. On an occupied slot: an equal value is already
   //    recorded (leave the context cell), a differing one becomes a conflict
   //    the user resolves in the table — never a silent drop (US-32).
-  results.forEach((r, fi) => {
+  //    Primary columns first: a file's own reading of a (metric, day) wins
+  //    over another file's previous-column read of it (US-12 AC12).
+  for (const previous of [false, true]) results.forEach((r, fi) => {
     /** The column a value lands in: its own date's (US-12 AC12) or its file's. */
     const columnFor = (recordedAt?: string): DateKey | null => {
       const dateKey = valueDateKey(fi, recordedAt);
@@ -373,6 +380,7 @@ export function buildMatrixModel(
     };
 
     r.values.forEach((v, vi) => {
+      if (!!v.recordedAt !== previous) return;
       const dateKey = columnFor(v.recordedAt);
       if (!dateKey) return;
       const metric = v.metric as MetricType;
@@ -395,6 +403,7 @@ export function buildMatrixModel(
     });
 
     r.additionalValues.forEach((av, ai) => {
+      if (!!av.recordedAt !== previous) return;
       const dateKey = columnFor(av.recordedAt);
       if (!dateKey) return;
       const nameKey = normaliseLabName(av.name);
@@ -402,7 +411,7 @@ export function buildMatrixModel(
         additionalByKey.set(nameKey, {
           kind: 'additional',
           nameKey,
-          displayName: labValueLabel(av.name),
+          displayName: rowLabel(av.name),
           // Display-only spelling normalization. The review shows the report
           // as PRINTED, and the save path passes av.unit on unchanged — the
           // conversion to SI happens once, at the write (US-21 phase 3).

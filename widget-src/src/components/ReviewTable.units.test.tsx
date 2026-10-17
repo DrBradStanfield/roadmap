@@ -55,6 +55,18 @@ describe('US-21 AC17: a catalogued test printed in another unit shows the SI val
   });
 });
 
+describe('US-21 AC1: a catalogued row is named by the catalogue\'s label, as the blood-test matrix names it', () => {
+  it('ft4 reads "Free T4" and urine_acr "Urine ACR", not a title-cased key', () => {
+    const { container } = renderReview([{
+      fileName: 'labs.pdf', reportDate: DAY, values: [],
+      additionalValues: [{ name: 'ft4', value: 15, unit: 'pmol/L' }, { name: 'urine_acr', value: 1.2, unit: 'mg/mmol' }],
+    }]);
+    const labels = [...container.querySelectorAll('.bt-name-label')].map(l => l.textContent);
+    expect(labels).toEqual(expect.arrayContaining(['Free T4', 'Urine ACR']));
+    expect(labels).not.toContain('Ft4');
+  });
+});
+
 describe('US-21 AC17: a core value whose unit was guessed shows its question, highlighted', () => {
   const core = (confidence: 'high' | 'medium' | 'low', question?: string): FileResult[] => [{
     fileName: 'labs.pdf', reportDate: DAY, additionalValues: [],

@@ -161,6 +161,13 @@ describe('US-31 AC4 — measurement ranges, lab values as reported', () => {
     const result = ok(appendLabValue(base(), { metricName: 'ferritin', value: 9999, unit: 'ug/L', recordedAt: '2026-08-14', now: NOW }));
     expect((result.row as FileLabValue).value).toBe(9999);
   });
+
+  it('US-21 AC7 — a test the catalogue does not know, printed with no unit, is kept unitless; a catalogued one is refused naming its units', () => {
+    const inr = ok(appendLabValue(base(), { metricName: 'INR', value: 1.1, unit: '', recordedAt: '2026-08-14', now: NOW }));
+    expect(inr.row as FileLabValue).toMatchObject({ metricName: 'inr', value: 1.1, unit: '' });
+    const ferritin = appendLabValue(base(), { metricName: 'ferritin', value: 150, unit: '', recordedAt: '2026-08-14', now: NOW });
+    expect(ferritin).toMatchObject({ ok: false, reason: 'unknown-unit' });
+  });
 });
 
 describe('US-31 AC5 — catalogue keys (agent-access rule 10)', () => {
@@ -527,6 +534,15 @@ describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pu
     expect(result.file.measurements).toHaveLength(2);
     expect(result.file.labValues).toHaveLength(2);
     expect(result.file.meta.updatedAt).toBe(NOW);
+  });
+
+  it('US-21 AC7 — no printed unit: an uncatalogued test (INR, a ratio) is kept unitless; a catalogued one is refused and shown', () => {
+    const result = bulkAppendValues(base(), [
+      { kind: 'lab', metricName: 'INR', value: 1.1, unit: '', recordedAt: day, source: 'lab_import' },
+      { kind: 'lab', metricName: 'ferritin', value: 150, unit: '', recordedAt: day, source: 'lab_import' },
+    ], NOW);
+    expect(result.saved).toEqual([expect.objectContaining({ metricName: 'INR', value: 1.1, unit: '' })]);
+    expect(result.refused).toEqual([expect.objectContaining({ key: 'ferritin', unit: '' })]);
   });
 
   it('a second row of the batch on the same slot is skipped, not doubled', () => {

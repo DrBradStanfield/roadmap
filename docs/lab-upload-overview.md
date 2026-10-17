@@ -160,7 +160,7 @@ Anything outside this list goes to `additionalValues` (unified) or `unrecognized
 3. Use the **collection date**, not the print/report date
 4. Ambiguous dates: `DD/MM/YYYY` for non-US labs, else low confidence
 5. Uncertain values → `confidence: "low"` + a `question` string
-6. Units **as printed**: beside the result, else the column header, else the row's reference range; never converted or relabelled; empty when none is printed (US-21 AC7)
+6. Units **as printed**: beside the result, else the row's own reference range, else the column header; never converted or relabelled; empty when none is printed (US-21 AC7)
 
 ### Output schema (after server-side unit resolution)
 

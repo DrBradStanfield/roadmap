@@ -709,8 +709,8 @@ describe('US-12 AC11: the prompt splits a printed blood pressure into its two co
 describe('US-21 AC7: the prompt copies each unit as printed and never converts', () => {
   for (const mode of ['full', 'metadata'] as const) {
     const prompt = unifiedSystemPrompt(mode);
-    it(`${mode}: the unit comes from beside the result, else the column header, else the row's reference range`, () => {
-      expect(prompt).toContain('copy each row\'s unit exactly as the report prints it for that row: the unit beside the result; else the unit in that column\'s header; else the unit printed in that row\'s reference range ("200-900 pg/mL" gives "pg/mL")');
+    it(`${mode}: the unit comes from beside the result, else the row's own reference range, else the column header`, () => {
+      expect(prompt).toContain('copy each row\'s unit exactly as the report prints it for that row: the unit beside the result; else the unit printed in that row\'s own reference range ("200-900 pg/mL" gives "pg/mL"); else the unit in that column\'s header');
     });
     it(`${mode}: never convert or relabel, and an empty unit when none is printed`, () => {
       expect(prompt).toContain('NEVER convert a value and NEVER relabel its unit');
@@ -749,6 +749,14 @@ describe('US-21 AC7/AC8: a unit printed only in the range column reaches the wri
     expect(ldl.confidence).toBe('medium');
     expect(ldl.question).toBe('No unit was printed, so the unit was inferred — please verify this value');
   });
+
+  it('keeps the model\'s own question and adds the inferred-unit note to it, never one for the other', () => {
+    const [ldl] = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-01-15', document: null, additionalValues: [],
+      values: [{ metric: 'ldl', value: 2.6, unit: '', confidence: 'medium', question: 'Faint print.' }],
+    })).values;
+    expect(ldl.question).toBe('Faint print. No unit was printed, so the unit was inferred — please verify this value');
+  });
 });
 
 // The prompt's suggested names were a hand list that drifted from the catalogue
@@ -784,15 +792,20 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
 // A sheet with a "Prev." column of older results. A dated one is that day's
 // values; an undated one is ignored, as before. Synthetic two-date table.
 describe('US-12 AC12: a previous-results column with its own printed date becomes that date\'s values', () => {
-  for (const mode of ['full', 'metadata'] as const) {
-    it(`${mode}: the prompt takes a dated previous column with recordedAt and ignores an undated one`, () => {
-      const prompt = unifiedSystemPrompt(mode);
-      expect(prompt).toContain('each of its rows is its own entry with "recordedAt" set to that column\'s collection date as YYYY-MM-DD');
-      expect(prompt).toContain('A previous column with NO printed date, a trend graph, or a value you cannot tie to one printed date: IGNORE it completely.');
-      expect(prompt).toContain('at most ONE entry per metric per date');
-      expect(prompt).not.toContain('even if those historical columns are dated');
-    });
-  }
+  it('full (website, BYOK): takes a previous column printed with a full day, ignores one with a month only or no date', () => {
+    const prompt = unifiedSystemPrompt('full');
+    expect(prompt).toContain('each of its rows is its own entry with "recordedAt" set to that column\'s collection date as YYYY-MM-DD');
+    expect(prompt).toContain('A previous column whose date is not printed as a full day (a month and year only, or no date at all), a trend graph, or a value you cannot tie to one printed day: IGNORE it completely.');
+    expect(prompt).toContain('at most ONE entry per metric per date');
+    expect(prompt).not.toContain('even if those historical columns are dated');
+  });
+
+  it('metadata (the connector, held during the MCP 1.0.2 review): the base rule, every previous column ignored', () => {
+    const prompt = unifiedSystemPrompt('metadata');
+    expect(prompt).toContain('If the report shows previous/historical results (in a "Previous" column, "Last visit" column, trend graph, or any side-by-side layout), IGNORE them completely. Extract ONLY values from the current report\'s primary column, even if those historical columns are dated. Return at most ONE entry per metric — never duplicate a metric in the output.');
+    expect(prompt).not.toContain('recordedAt');
+    expect(prompt).not.toContain('PREVIOUS RESULTS');
+  });
 
   const twoDates = (extra: Record<string, unknown> = {}) => toUnifiedResult(parseUnifiedResult({
     classification: 'lab_report', reportDate: '2026-03-10', document: null,
@@ -822,18 +835,49 @@ describe('US-12 AC12: a previous-results column with its own printed date become
     expect(v.recordedAt).toBeUndefined();
   });
 
-  it('a recordedAt that is not a real calendar day refuses the row, counted, never lands on the report date', () => {
+  const own = (recordedAt: unknown, reportDate: string | null = '2026-03-10') => toUnifiedResult(parseUnifiedResult({
+    classification: 'lab_report', reportDate, document: null,
+    values: [{ metric: 'ldl', value: 3.1, unit: 'mmol/L', confidence: 'high', recordedAt }],
+    additionalValues: [{ name: 'sodium', value: 138, unit: 'mmol/L', recordedAt }],
+  }));
+
+  it('an empty, blank or null recordedAt is the primary column: the value stays, on the report date', () => {
+    for (const blank of ['', '   ', null, undefined]) {
+      const result = own(blank);
+      expect(result.values.map(v => [v.displayValue, v.recordedAt]), String(blank)).toEqual([[3.1, undefined]]);
+      expect(result.additionalValues.map(v => [v.value, v.recordedAt]), String(blank)).toEqual([[138, undefined]]);
+      expect(result.droppedValueCount).toBe(0);
+    }
+  });
+
+  it('a datetime is cut to its day first: "2026-03-10T08:00" on a 2026-03-10 report is the primary column', () => {
+    const result = own('2026-03-10T08:00');
+    expect(result.values.map(v => v.recordedAt)).toEqual([undefined]);
+    expect(result.additionalValues.map(v => v.recordedAt)).toEqual([undefined]);
+    expect(own('2025-09-02T08:00').values.map(v => v.recordedAt)).toEqual(['2025-09-02']);
+  });
+
+  it('a day that is not a full calendar day, or not before the report date, is left out on its own: not counted, never moved onto the report date', () => {
+    // A month only, an impossible day, another format; the report's own day
+    // or later (a DD/MM swap, a future day); and no report date to order it by.
+    for (const [day, reportDate] of [['2025-09', '2026-03-10'], ['2025-02-30', '2026-03-10'], ['02/09/2025', '2026-03-10'],
+      ['2026-10-03', '2026-03-10'], ['2099-01-01', '2026-03-10'], ['2025-09-02', null]] as const) {
+      const result = own(day, reportDate);
+      expect(result.values, day).toEqual([]);
+      expect(result.additionalValues, day).toEqual([]);
+      expect(result.droppedValueCount, day).toBe(0);
+    }
+  });
+
+  it('a bad own day never costs the primary column beside it', () => {
     const result = toUnifiedResult(parseUnifiedResult({
-      classification: 'lab_report', reportDate: '2026-03-10', document: null,
+      classification: 'lab_report', reportDate: '2026-03-10', document: null, additionalValues: [],
       values: [
-        { metric: 'ldl', value: 3.1, unit: 'mmol/L', confidence: 'high', recordedAt: '2025-02-30' },
-        { metric: 'hdl', value: 1.2, unit: 'mmol/L', confidence: 'high', recordedAt: 'Sept 2025' },
+        { metric: 'ldl', value: 2.6, unit: 'mmol/L', confidence: 'high' },
+        { metric: 'ldl', value: 3.1, unit: 'mmol/L', confidence: 'high', recordedAt: '2026-10-03' },
       ],
-      additionalValues: [{ name: 'sodium', value: 138, unit: 'mmol/L', recordedAt: '02/09/2025' }],
     }));
-    expect(result.values).toEqual([]);
-    expect(result.additionalValues).toEqual([]);
-    expect(result.droppedValueCount).toBe(3);
+    expect(result.values.map(v => [v.displayValue, v.recordedAt])).toEqual([[2.6, undefined]]);
   });
 
   it('promotes a core test filed as additional on each of its dates (US-12 AC11, per day)', () => {

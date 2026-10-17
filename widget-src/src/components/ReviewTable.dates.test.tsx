@@ -51,6 +51,20 @@ describe('US-12 AC12: a dated previous column is its own date in the review', ()
     expect(cells.get(`lab:sodium|${PRIMARY}`)).toMatchObject({ state: 'editable', valueSI: 140 });
   });
 
+  it('a primary-column reading beats another file\'s previous-column read of the same (metric, day), whichever file comes first', () => {
+    const sameDay: FileResult[] = [
+      ...twoDates,
+      { fileName: 'older.pdf', reportDate: PREVIOUS, additionalValues: [],
+        values: [{ metric: 'ldl', valueSI: 3.0, displayValue: 3.0, displayUnit: 'mmol/L', confidence: 'high' }] },
+    ];
+    const dateOf = (iso: string) => { const [year, month, day] = iso.split('-'); return { year, month, day }; };
+    for (const results of [sameDay, [...sameDay].reverse()]) {
+      const dates = Object.fromEntries(results.map((r, i) => [i, dateOf(r.reportDate!)]));
+      const { cells } = buildMatrixModel(results, dates, [], [], 'si');
+      expect(cells.get(`ldl|${PREVIOUS}`)).toMatchObject({ state: 'editable', valueSI: 3.0 });
+    }
+  });
+
   it('saves each value as an ordinary row on its own day', () => {
     const { onSave, save } = renderReview();
     save();

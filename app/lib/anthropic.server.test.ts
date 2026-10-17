@@ -119,12 +119,12 @@ describe('resolveLabValues', () => {
     expect(result[0].question).toContain('inferred');
   });
 
-  it('preserves existing question when unit is inferred', () => {
+  it('preserves existing question when unit is inferred, and adds the inferred-unit note to it (US-21 AC17)', () => {
     const result = resolveLabValues([
       { metric: 'ldl', value: 2.8, unit: 'unknown', confidence: 'low', question: 'Ambiguous value' },
     ]);
     expect(result[0].confidence).toBe('low');
-    expect(result[0].question).toBe('Ambiguous value');
+    expect(result[0].question).toBe('Ambiguous value. Unit "unknown" was inferred — please verify this value');
   });
 
   it('handles empty array', () => {
