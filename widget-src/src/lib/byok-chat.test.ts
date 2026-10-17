@@ -81,8 +81,21 @@ describe('BYOK chat context — per-field sanitizing', () => {
     expect(context!.latestValues.ldlC).toBe('2.1');
   });
 
-  it('still sends no context when the required fields are unusable', async () => {
-    expect(await contextSent({ ...SNAPSHOT, heightCm: 9999 })).toBeNull();
+  // US-15 AC36 (2026-10-18): an unusable height used to drop the whole context ("none entered yet").
+  it('US-15 AC36: an unusable height sends the saved values with no plan, and the prompt says to ask for it and why', async () => {
+    const context = await contextSent({ ...SNAPSHOT, heightCm: 9999 }) as ChatContext & Record<string, unknown>;
+    expect(context).not.toBeNull();
+    expect(context.latestValues.systolicBp).toBe('138');
+    expect(context.excludedFields).toEqual(['heightCm']);
+    expect(context.missingInputs).toContain('heightCm');
+    expect(context).not.toHaveProperty('currentSuggestions');
+    expect(state.sent!.system).toMatch(/no `currentSuggestions`.*ask for/i);
+    expect(state.sent!.system).toMatch(/needs height and sex to work out the plan/);
+  });
+
+  it('US-15 AC36: an empty form still sends no context', async () => {
+    expect(await contextSent({ unitSystem: 'si', medications: [], screenings: [] })).toBeNull();
+    expect(state.sent!.system).toContain('User data: none entered yet');
   });
 
   it('names the stripped field so the model knows a value exists but was unusable', async () => {

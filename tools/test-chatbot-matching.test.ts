@@ -392,7 +392,7 @@ describe('test-chatbot-matching router reply parsing (US-15 AC28)', () => {
 describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
   interface Entry {
     query: string; category: string; surface?: string; answer_handles?: string[]; user_context?: unknown;
-    must_mention?: string[]; must_match?: string[]; must_not_match?: string[]; expect_empty_context?: true;
+    must_mention?: string[]; must_match?: string[]; must_not_match?: string[]; expect_no_plan?: true;
   }
   const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
   const CATEGORIES = 'own-data-analysis,algorithm-precedence,algorithm-precedence-parked,minor-gate';
@@ -478,15 +478,17 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     expect(noSurface.status).toBe(1);
   }, 60_000);
 
-  // Adversary round 2 (2026-10-12, R2): production sends '{}' whenever sex or height is missing, so a
-  // fixture may declare that its payload collapses; the harness then sends '{}' as production does.
-  it('a payload declared expect_empty_context sends production\'s \'{}\'; undeclared, or making a plan, it exits', () => {
+  // US-15 AC36 (2026-10-18): production sends the saved values with no plan when sex or height is
+  // missing (it used to send '{}'). A fixture declares a payload that makes no plan, so a payload
+  // that silently lost its sex or height still exits; the harness sends the context production sends.
+  it('a payload declared expect_no_plan sends production\'s no-plan context; undeclared, or making a plan, it exits', () => {
     const noSex = { heightCm: 168, systolicBp: 138, diastolicBp: 88, ldlC: 3.9, unitSystem: 'si', medications: [], screenings: [] };
     const fixture = (extra: Partial<Entry>): Entry => ({ query: 'can you analyze my data', category: 'own-data-analysis', surface: 'doctor', answer_handles: [], user_context: noSex, must_mention: ['x'], ...extra });
-    const declared = run([fixture({ expect_empty_context: true })]);
+    const declared = run([fixture({ expect_no_plan: true })]);
     expect(declared.calls.length, declared.stderr).toBe(1);
-    expect(declared.calls[0].system.map(b => b.text)).toContain('## Current User Health Data\n\n{}');
-    for (const bad of [fixture({}), fixture({ expect_empty_context: true, user_context: { ...noSex, sex: 'female' } })]) {
+    expect(declared.calls[0].system.map(b => b.text)).toContain(`## Current User Health Data\n\n${resolveChatContext(noSex).userContextJson}`);
+    expect(JSON.parse(resolveChatContext(noSex).userContextJson).missingInputs).toContain('sex');
+    for (const bad of [fixture({}), fixture({ expect_no_plan: true, user_context: { ...noSex, sex: 'female' } })]) {
       const { status, stderr, calls } = run([bad]);
       expect(stderr).toMatch(/user_context does not parse.* on: can you analyze my data/);
       expect(calls).toEqual([]);

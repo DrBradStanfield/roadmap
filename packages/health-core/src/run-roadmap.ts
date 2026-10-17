@@ -119,6 +119,7 @@ const REASONS = {
   pair: 'blood pressure is read as a pair: both numbers are needed, each one usable, so neither was used',
   minor: 'the saved profile is under 18: a stated age or birth year is not used',
   protein: 'the protein target depends on kidney function, which this run could not work out, so it is left out until the refused value is confirmed',
+  proteinAge: 'the protein target depends on kidney function, which needs the user\'s age: ask for their age',
 } as const;
 
 const BP_FIELDS: readonly string[] = ['systolicBp', 'diastolicBp'];
@@ -176,7 +177,7 @@ function savedLatestDay(history: Record<string, unknown>, metric: string, today:
  * So does a blood pressure that is not a usable pair (two numbers from one day).
  * A stated age sets the birth year from `now`, in January, so the plan's age
  * is the stated one and the minor gate is exactly under 18. A stated birth
- * year (only when no age is given) is used as stated, without a month.
+ * year (when no usable age is given) is used as stated, without a month.
  */
 export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Date()): RoadmapRun {
   const base = obj(guestInputs);
@@ -265,22 +266,22 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
   } else if (input.heightCm != null) reject('heightCm', REASONS.shape);
   const applied = Object.keys(overlay);
   const birth: Record<string, unknown> = {};
-  const byAge = input.age != null;
-  if (byAge || input.birthYear != null) {
-    const field = byAge ? 'age' : 'birthYear';
+  // The age wins when both are usable; a refused age falls back to a stated birth year.
+  for (const field of ['age', 'birthYear'] as const) {
+    if (input[field] == null) continue;
+    // US-07 AC6: a saved known minor stays one, whatever the message says.
+    if (knownMinorOf(base)) { reject(field, REASONS.minor); continue; }
     // An age is rounded down (16.5 is 16) and a number sent as text is read, so a usable
     // age is never refused: a refused one keeps the saved age, or leaves none (US-07 AC6).
-    const value = numeric(byAge ? input.age : input.birthYear);
-    const birthYear = byAge ? now.getFullYear() - Math.floor(value) : value;
-    // US-07 AC6: a saved known minor stays one, whatever the message says.
-    if (knownMinorOf(base)) reject(field, REASONS.minor);
-    else if (Number.isInteger(birthYear) && inRange('birthYear', birthYear)) {
-      // An age sets January: the plan's age (calculateAge) is the stated one all year, and the minor gate is age < 18.
-      // A different stated birth year makes the saved month meaningless; with no month the gate stays conservative.
-      if (byAge) Object.assign(birth, { birthYear, birthMonth: 1 });
-      else Object.assign(birth, { birthYear, birthMonth: birthYear === base.birthYear ? base.birthMonth : undefined });
-      applied.push(field);
-    } else reject(field, REASONS.range);
+    const value = numeric(input[field]);
+    const birthYear = field === 'age' ? now.getFullYear() - Math.floor(value) : value;
+    if (!Number.isInteger(birthYear) || !inRange('birthYear', birthYear)) { reject(field, REASONS.range); continue; }
+    // An age sets January: the plan's age (calculateAge) is the stated one all year, and the minor gate is age < 18.
+    // A different stated birth year makes the saved month meaningless; with no month the gate stays conservative.
+    if (field === 'age') Object.assign(birth, { birthYear, birthMonth: 1 });
+    else Object.assign(birth, { birthYear, birthMonth: birthYear === base.birthYear ? base.birthMonth : undefined });
+    applied.push(field);
+    break;
   }
 
   const payload: Record<string, unknown> = { ...base, ...overlay, ...birth };
@@ -295,17 +296,21 @@ export function runRoadmap(guestInputs: unknown, rawInput: unknown, now = new Da
     payload.unitSystem = stated.values().next().value?.system ?? 'si';
   }
   const contextJson = buildChatContextJson(payload);
-  if (!contextJson) return { contextJson, applied, rejected };
+  const plan = contextJson ? JSON.parse(contextJson) : null;
+  // No usable sex or height: the context carries the values but no cards (US-15 AC36);
+  // this tool still answers "no plan". A known minor's context has no cards either, and is sent.
+  if (!plan?.currentSuggestions && !plan?.profile?.knownMinor) return { contextJson: null, applied, rejected };
   // Without an eGFR the protein card falls back to the standard target. When this run
   // has none although the saved data had one, or a creatinine was stated, that would
   // quietly drop a kidney adjustment: withhold the card. (A minor's eGFR is hidden, not lost.)
-  const plan = JSON.parse(contextJson);
   const lostEgfr = plan.derivedValues?.eGFR === undefined && !plan.profile?.knownMinor
     && (items.some(raw => obj(raw).field === 'creatinine')
       || JSON.parse(buildChatContextJson(base) ?? '{}').derivedValues?.eGFR !== undefined);
   if (!lostEgfr) return { contextJson, applied, rejected };
   plan.currentSuggestions = plan.currentSuggestions?.filter((s: { id?: string }) => s.id !== 'protein-target');
-  reject('creatinine', REASONS.protein);
+  // A creatinine the run used with no age to read it by: the gap is the age, not a refused value.
+  if (plan.latestValues?.creatinine !== undefined && plan.profile?.age === undefined) reject('age', REASONS.proteinAge);
+  else reject('creatinine', REASONS.protein);
   return { contextJson: JSON.stringify(plan), applied, rejected };
 }
 

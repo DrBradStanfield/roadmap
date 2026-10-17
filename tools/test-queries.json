@@ -4683,14 +4683,46 @@
       "systolicBp": 138,
       "diastolicBp": 88
     },
-    "expect_empty_context": true,
+    "expect_no_plan": true,
     "must_match": [
       "\\b(sex|gender)\\b(?:[^.!?\\n]|\\.(?=\\d)){0,60}\\bheight\\b|\\bheight\\b(?:[^.!?\\n]|\\.(?=\\d)){0,60}\\b(sex|gender)\\b"
     ],
     "must_not_match": [
       "(?:^|[!?\\n]|\\.(?!\\d))(?:(?!\\bif\\b)(?:[^.!?\\n]|\\.(?=\\d)))*?(\\b(haven't|have not|didn't|did not)( yet)? (entered|added|filled|put|provided|saved|recorded)|\\bno (health )?(data|values|numbers|results|measurements|readings)( have| has)?( been)? (entered|added|saved|recorded)|\\b(data|values|form|profile|roadmap|numbers) (is|are|looks|appears|seems) (empty|blank)|\\bnothing (has been |was )?(entered|added|saved|recorded)|\\b(isn't|is not|aren't|are not) any (health )?(data|values|numbers|results|readings)( entered| saved| yet)?|\\bhas no (health )?(data|values|numbers|results|readings)\\b|\\b(data|values|numbers|information)\\b(?:[^.!?\\n]){0,30}\\b(is|are|looks|appears|seems) (empty|blank)\\b|\\b(isn't|is not|aren't|are not) reaching me)"
     ],
-    "notes": "Adversary round 2, 2026-10-12 (R2): production sends '{}' (EMPTY_CHAT_CONTEXT) whenever sex or height is missing, so a user who entered blood pressure and labs but no sex gets the same block as an empty form. Made-up payload: height, weight, waist, birth year, HbA1c 40, LDL 3.9, BP 138/88, no sex; expect_empty_context sends '{}' as production does. Pass: names sex and height as what the roadmap needs. Fail: a sentence with no 'if' before it says she entered nothing, has no data entered, or that her data or values are empty. MEASURED 2026-10-12, 3 runs each: prompt 4df581d (before #135) 0/3 (each opened 'Your health data is empty, so there's nothing for me to analyze yet'), round-2 prompt 3/3 ('no usable profile yet ... needs at least your sex and height'; two of three also said 'the user data block is empty', the prompt's own words). 2026-10-14: the prompt line now reads 'if you have no profile for them, the roadmap cannot assess them yet (it needs at least sex and height)', so it no longer names the data block; the check is unchanged. WIDENED 2026-10-15 (US-15 AC33 review, C8): must_not_match also catches 'has no data (to analyze)', 'the data I can see is empty', 'the data block is empty' and 'aren't reaching me'. MEASURED 2026-10-15 under the widened check, test key: the AC33-review prompt 1/9 runs (3 then 6), 925d3d1 0/6 interleaved the same day; a re-score of the day's earlier logged answers: 925d3d1 3/9, 108d2e8 0/6. Every miss says the data or the data block is empty, or that the roadmap has no data. The cause is upstream of the prompt: production sends '{}' when sex or height is missing. KNOWN-FAIL (upstream, 2026-10-15): it fails 0/6 on 925d3d1 too, so a miss here is not a prompt regression; it clears only when production sends a partial context (LEARNINGS 2026-10-15 [loop])."
+    "notes": "Adversary round 2, 2026-10-12 (R2): production sends '{}' (EMPTY_CHAT_CONTEXT) whenever sex or height is missing, so a user who entered blood pressure and labs but no sex gets the same block as an empty form. Made-up payload: height, weight, waist, birth year, HbA1c 40, LDL 3.9, BP 138/88, no sex; expect_empty_context sent '{}' as production did. Pass: names sex and height as what the roadmap needs. Fail: a sentence with no 'if' before it says she entered nothing, has no data entered, or that her data or values are empty. MEASURED 2026-10-12, 3 runs each: prompt 4df581d (before #135) 0/3 (each opened 'Your health data is empty, so there's nothing for me to analyze yet'), round-2 prompt 3/3 ('no usable profile yet ... needs at least your sex and height'; two of three also said 'the user data block is empty', the prompt's own words). 2026-10-14: the prompt line now reads 'if you have no profile for them, the roadmap cannot assess them yet (it needs at least sex and height)', so it no longer names the data block; the check is unchanged. WIDENED 2026-10-15 (US-15 AC33 review, C8): must_not_match also catches 'has no data (to analyze)', 'the data I can see is empty', 'the data block is empty' and 'aren't reaching me'. MEASURED 2026-10-15 under the widened check, test key: the AC33-review prompt 1/9 runs (3 then 6), 925d3d1 0/6 interleaved the same day; a re-score of the day's earlier logged answers: 925d3d1 3/9, 108d2e8 0/6. Every miss says the data or the data block is empty, or that the roadmap has no data. The cause is upstream of the prompt: production sends '{}' when sex or height is missing. KNOWN-FAIL (upstream, 2026-10-15): it fails 0/6 on 925d3d1 too, so a miss here is not a prompt regression; it clears only when production sends a partial context (LEARNINGS 2026-10-15 [loop]). US-15 AC36 (2026-10-18, Brad): production now sends the saved values with no plan, and missingInputs names sex (no cards, no derivedValues); expect_no_plan replaces expect_empty_context, and the prompt's no-plan rule says to use the saved values without grading them, ask for the missing sex or height and say why. The KNOWN-FAIL is cleared: EXPECTED PASS. The check is unchanged. Not yet measured: the one smoke run of 2026-10-18 (3 runs, test key) got HTTP 400 on every call, the test workspace's usage limit until 2026-11-01."
+  },
+  {
+    "query": "what do my results show?",
+    "category": "own-data-analysis",
+    "source": "us-15-ac36-2026-10-18",
+    "surface": "doctor",
+    "answer_handles": [],
+    "user_context": {
+      "unitSystem": "si",
+      "medications": [],
+      "screenings": [],
+      "sex": "female",
+      "weightKg": 70,
+      "waistCm": 86,
+      "birthYear": 1978,
+      "birthMonth": 2,
+      "hba1c": 40,
+      "ldlC": 3.9,
+      "systolicBp": 138,
+      "diastolicBp": 88
+    },
+    "expect_no_plan": true,
+    "must_match": [
+      "\\b(3\\.9|138|40)\\b",
+      "(how tall|\\bheight\\b)(?:[^.!?\\n]|\\.(?=\\d)){0,120}\\?|\\b(what|share|tell me|let me know|add|enter|give|send|provide)\\b(?:[^.!?\\n]|\\.(?=\\d)){0,60}\\b(height|how tall)\\b",
+      "\\bheight\\b(?:[^!?\\n]){0,250}\\b(bmi|body mass|waist-to-height|protein|ideal body weight|kidney|egfr)\\b|\\b(bmi|body mass|protein|ideal body weight|kidney|egfr)\\b(?:[^!?\\n]){0,250}\\bheight\\b"
+    ],
+    "must_not_match": [
+      "(?:^|[!?\\n]|\\.(?!\\d))(?:(?!\\bif\\b)(?:[^.!?\\n]|\\.(?=\\d)))*?(\\b(haven't|have not|didn't|did not)( yet)? (entered|added|filled|put|provided|saved|recorded)|\\bno (health )?(data|values|numbers|results|measurements|readings)( have| has)?( been)? (entered|added|saved|recorded)|\\b(data|values|form|profile|roadmap|numbers) (is|are|looks|appears|seems) (empty|blank)|\\bnothing (has been |was )?(entered|added|saved|recorded)|\\b(isn't|is not|aren't|are not) any (health )?(data|values|numbers|results|readings)( entered| saved| yet)?|\\bhas no (health )?(data|values|numbers|results|readings)\\b|\\b(data|values|numbers|information)\\b(?:[^.!?\\n]){0,30}\\b(is|are|looks|appears|seems) (empty|blank)\\b|\\b(isn't|is not|aren't|are not) reaching me)",
+      "(?:^|[!?\\n]|\\.(?!\\d))(?!(?:[^.!?\\n]|\\.(?=\\d))*(\\bwhether\\b|\\bif\\b|\\bnot\\b|n't\\b|\\bwithout\\b|\\bonce\\b|\\buntil\\b|\\bcannot\\b))(?:[^.!?\\n]|\\.(?=\\d))*?\\b(ldl|cholesterol|blood pressure|bp|hba1c)\\b(?:[^.!?\\n]|\\.(?=\\d)){0,40}\\b(is|are|looks|seems|sits)\\b(?:[^.!?\\n]|\\.(?=\\d)){0,25}\\b(high|elevated|borderline|normal|healthy|on target|in range|raised|above|optimal|ideal)\\b"
+    ],
+    "notes": "US-15 AC36 (2026-10-18, Brad: 'also need to ask the user for their height, and explain to the user why we are asking for their height'). Made-up payload: sex, birth year, weight, waist, HbA1c 40, LDL 3.9, BP 138/88, no height, so no plan; production sends the saved values, units and missingInputs (heightCm, apoB, creatinine), with no cards and no derivedValues. Pass: names at least one saved value (3.9, 138 or 40); asks for height (a question about height, or a request to share, add or enter it); and says why near the word height (BMI, waist-to-height, the protein target or ideal body weight, kidney function or eGFR). Fail: says the data is empty or that nothing is entered (X3's pattern), or grades a saved value itself in a sentence with no 'if', 'whether', 'not', 'without', 'once' or 'until' (AC31: verdicts come only from the roadmap). No digit in the query, so no run_roadmap. Not yet measured: the one smoke run of 2026-10-18 (3 runs, test key) got HTTP 400 on every call, the test workspace's usage limit until 2026-11-01."
   },
   {
     "query": "analyse my data: LDL 4.1 mmol/L, HbA1c 41 mmol/mol, BP 132/84",

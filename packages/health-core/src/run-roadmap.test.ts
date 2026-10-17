@@ -692,6 +692,28 @@ describe('US-15 AC33: a stated birth year, and values past the cap', () => {
     expect(runRoadmap(PROFILE, { values: [], birthYear: 1972 }).contextJson).toBe(buildChatContextJson(PROFILE));
   });
 
+  // US-15 AC33 follow-up (2026-10-18, Brad): a malformed age used to hide a usable birth year.
+  it('a refused age falls back to a usable stated birth year', () => {
+    const born = new Date().getFullYear() - 16;
+    const { birthYear: _y, birthMonth: _m, ...noAge } = PROFILE;
+    for (const age of ['x', -1, 200]) {
+      const fresh = runRoadmap(noAge, { values: [], age, birthYear: born });
+      expect(fresh.applied).toEqual(['birthYear']);
+      expect(fresh.rejected).toEqual([{ field: 'age', reason: 'out of range for this field' }]);
+      expect(ctx(fresh.contextJson).profile.knownMinor).toBe(true);
+      const adult = runRoadmap(PROFILE, { values: [], age, birthYear: 1980 });
+      expect(adult.applied).toEqual(['birthYear']);
+      expect(adult.contextJson).toBe(buildChatContextJson({ ...PROFILE, birthYear: 1980, birthMonth: undefined }));
+    }
+    // Both refused: both named, and the saved birth year stays.
+    const neither = runRoadmap(PROFILE, { values: [], age: 'x', birthYear: 1700 });
+    expect(neither.rejected).toEqual([{ field: 'age', reason: 'out of range for this field' }, { field: 'birthYear', reason: 'out of range for this field' }]);
+    expect(neither.contextJson).toBe(buildChatContextJson(PROFILE));
+    // A saved known minor refuses both.
+    const minor = { ...PROFILE, birthYear: new Date().getFullYear() - 14 };
+    expect(runRoadmap(minor, { values: [], age: 'x', birthYear: 1970 }).rejected).toEqual([{ field: 'age', reason: MINOR }, { field: 'birthYear', reason: MINOR }]);
+  });
+
   it('age wins when both are given; a saved minor refuses a birth year; a bad one is refused', () => {
     const both = runRoadmap({}, { values: [], sex: 'male', height: { value: 180, unit: 'cm' }, age: 55, birthYear: 1950 });
     expect(both.applied).toEqual(['sex', 'heightCm', 'age']);
@@ -775,6 +797,7 @@ describe('US-15 AC33: the protein target is withheld only when the run loses kid
   const cards = (json: string | null) => (json ? ctx(json).currentSuggestions : []).map((s: { id: string }) => s.id);
   const card = (json: string | null) => ctx(json).currentSuggestions.find((s: { id: string }) => s.id === 'protein-target');
   const PROTEIN = 'the protein target depends on kidney function, which this run could not work out, so it is left out until the refused value is confirmed';
+  const NEEDS_AGE = 'the protein target depends on kidney function, which needs the user\'s age: ask for their age';
 
   it('a saved creatinine with nothing refused: the card shows, kidney-adjusted', () => {
     const r = runRoadmap(KIDNEY, { values: [val('ldlC', 3.1, 'mmol/L')] });
@@ -790,11 +813,34 @@ describe('US-15 AC33: the protein target is withheld only when the run loses kid
     }
   });
 
-  it('a stated creatinine with a refused age and no saved birth year: no card, and the reason says why', () => {
+  // US-15 AC33 follow-up (2026-10-18, Brad): when the gap is the age, not a refused value,
+  // the reason asks for the age instead of waiting on a value that was never refused.
+  it('a stated creatinine with no saved birth year: no card, and the reason asks for the age', () => {
     const { birthYear: _y, birthMonth: _m, ...noAge } = PROFILE;
-    const r = runRoadmap(noAge, { values: [val('creatinine', 200, 'µmol/L')], age: 200 });
-    expect(cards(r.contextJson)).not.toContain('protein-target');
-    expect(r.rejected.map(x => x.reason)).toContain(PROTEIN);
+    for (const input of [{}, { age: 200 }]) {
+      const r = runRoadmap(noAge, { values: [val('creatinine', 200, 'µmol/L')], ...input });
+      expect(r.applied).toContain('creatinine');
+      expect(cards(r.contextJson)).not.toContain('protein-target');
+      expect(r.rejected).toContainEqual({ field: 'age', reason: NEEDS_AGE });
+      expect(r.rejected.map(x => x.reason)).not.toContain(PROTEIN);
+    }
+  });
+
+  it('a refused creatinine keeps the refused-value reason, with or without an age', () => {
+    const { birthYear: _y, birthMonth: _m, ...noAge } = KIDNEY;
+    for (const profile of [KIDNEY, noAge]) {
+      const r = runRoadmap(profile, { values: [val('creatinine', 3000, 'µmol/L')] });
+      expect(cards(r.contextJson)).not.toContain('protein-target');
+      expect(r.rejected).toContainEqual({ field: 'creatinine', reason: PROTEIN });
+      expect(r.rejected.map(x => x.reason)).not.toContain(NEEDS_AGE);
+    }
+  });
+
+  it('no sex or height: no plan, and no protein reason (US-15 AC36 sends the values, but run_roadmap still answers no plan)', () => {
+    const r = runRoadmap({}, { values: [val('creatinine', 90, 'µmol/L'), val('ldlC', 4.1, 'mmol/L')] });
+    expect(r.contextJson).toBeNull();
+    expect(r.rejected).toEqual([]);
+    expect(JSON.parse(roadmapResultText(r)).note).toMatch(/sex and height/);
   });
 
   it('a saved creatinine but no saved age, nothing stated about kidneys: the card shows as the saved plan does', () => {

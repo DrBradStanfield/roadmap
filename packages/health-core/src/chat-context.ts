@@ -14,7 +14,10 @@
  *     (US-07 AC6); profile.unitSystem is 'si' or 'conventional'.
  *     A known minor with no usable sex or height still gets a context, with
  *     no plan: profile.knownMinor and whatever passed the schema below, and
- *     no profile.age or currentSuggestions (US-07 AC6).
+ *     no profile.age, missingInputs or currentSuggestions (US-07 AC6). Anyone
+ *     else with no plan gets what is saved, profile.age and missingInputs
+ *     (sex, heightCm and the rest), with no derivedValues or
+ *     currentSuggestions (US-15 AC36).
  *   - latestValues: the longitudinal fields that pass the input schema, or
  *     the newest history point, printed from numbers; units: each of those
  *     fields' SI unit, from FIELD_UNITS.
@@ -63,7 +66,7 @@ import {
   buildMeasurementHistory, latestFromHistory, HISTORY_CAP_PER_METRIC, ISO_DATE,
   type MeasurementHistoryMap,
 } from './measurement-history';
-import { calculateHealthResults, knownMinorOf, missingPlanInputs } from './calculations';
+import { calculateAge, calculateHealthResults, knownMinorOf, missingPlanInputs } from './calculations';
 import { parseLocalisedNumber } from './parseNumber';
 
 /** What a client sends as the chat's context. A row carries only the fields
@@ -112,9 +115,20 @@ export const MINOR_CHAT_RULE =
   "point them to their doctor (when a parent is asking, the child's doctor).";
 
 /**
- * The JSON the model reads for a payload, or null when the payload cannot
- * make a plan (no usable sex and height) and is not a known minor's. See the
- * header for what reaches it.
+ * The rule every chat's prompt carries for a context with values and no plan
+ * (US-15 AC36): no usable sex or height. Verdicts come only from the plan
+ * (AC31), so the model grades nothing and asks for what the plan needs.
+ */
+export const NO_PLAN_CHAT_RULE =
+  "When the user's health data has saved values but no `currentSuggestions` because `missingInputs` names `sex` or " +
+  '`heightCm`, the roadmap has no plan yet. Use and mention the values they have saved, without grading them, ask for ' +
+  'the missing sex or height, and say in one plain sentence why: the roadmap needs height and sex to work out the plan ' +
+  '(BMI, waist-to-height ratio, the protein target from ideal body weight, and kidney function, as eGFR needs sex), ' +
+  'and with them it can run their full plan.';
+
+/**
+ * The JSON the model reads for a payload, or null when it holds nothing:
+ * no plan and nothing saved (an empty form). See the header for what reaches it.
  */
 export function buildChatContextJson(payload: unknown): string | null {
   const raw = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>;
@@ -127,7 +141,6 @@ export function buildChatContextJson(payload: unknown): string | null {
   // US-07 AC6: a known minor's context always says so, plan or not, so no chat
   // grades their values against adult targets.
   const knownMinor = knownMinorOf(sanitized);
-  if (!parsed.success && !knownMinor) return null;
 
   const inputs: Partial<HealthInputs> = parsed.success ? parsed.data : healthInputSchema.partial().parse(sanitized);
   const excludedFields = excludedInputFields(raw as Partial<HealthInputs>);
@@ -168,13 +181,16 @@ export function buildChatContextJson(payload: unknown): string | null {
   // snapshot lacks, and is sent beside it.
   const measurementHistory = historyOf(raw.measurementHistory);
   const hasHistory = Object.keys(measurementHistory).length > 0;
+  // US-15 AC36: no plan and nothing saved is the empty form, which the callers send as '{}'.
+  if (!results && !knownMinor && !hasHistory && excludedFields.length === 0
+    && [inputs, medications, screenings].every(o => Object.keys(o).length === 0)) return null;
   for (const [field, value] of Object.entries(latestFromHistory(measurementHistory))) {
     latestValues[field] ??= `${value}`;
   }
 
   return JSON.stringify({
     // US-07 AC6: the plan's adults-only gate applies, so every surface's model knows.
-    profile: { sex: inputs.sex, age: results?.age, heightCm: inputs.heightCm, unitSystem, ...(knownMinor ? { knownMinor: true } : {}) },
+    profile: { sex: inputs.sex, age: results ? results.age : knownMinor ? undefined : ageOf(inputs), heightCm: inputs.heightCm, unitSystem, ...(knownMinor ? { knownMinor: true } : {}) },
     latestValues,
     // US-15 AC33: what a bare latestValues number is in, whatever profile.unitSystem says (US-32 AC35's table).
     units: Object.fromEntries(Object.keys(latestValues).map(field => [field, FIELD_UNITS[field]])),
@@ -187,8 +203,10 @@ export function buildChatContextJson(payload: unknown): string | null {
         nonHdlCholesterol: results.nonHdlCholesterol,
         eGFR: adult?.eGFR,
       },
-      missingInputs: missingPlanInputs(inputs),
     } : {}),
+    // US-15 AC36: with no plan too, so the model asks for what the plan needs.
+    // Not for a known minor with no plan: their plan is withheld whatever they add.
+    ...(results || !knownMinor ? { missingInputs: missingPlanInputs(inputs) } : {}),
     // Field names only: the user HAS a value here, but it was out of range.
     // Without it the model reads the gap as "never entered".
     ...(excludedFields.length > 0 ? { excludedFields } : {}),
@@ -208,6 +226,10 @@ export function buildChatContextJson(payload: unknown): string | null {
     uploadedDocuments: [],
   }, null, 2);
 }
+
+/** The age the plan would compute, for a context with no plan (US-15 AC36). */
+const ageOf = (inputs: Partial<HealthInputs>) =>
+  inputs.birthYear === undefined ? undefined : calculateAge(inputs.birthYear, inputs.birthMonth ?? 1);
 
 // ---------------------------------------------------------------------------
 // Row sanitizers
