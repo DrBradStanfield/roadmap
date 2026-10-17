@@ -541,6 +541,10 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
       'Your LDL is classified as high.',
       'Your LDL, at 3.9 mmol/L, is high.',
       'LDL: 3.9 mmol/L is high.',
+      'There is no doubt that your LDL is high.',
+      'No need to panic — your LDL is only mildly elevated.',
+      "I can't build your full plan yet — your LDL is high.",
+      "I can't run your plan yet, and your LDL is high.",
     ];
     const refusals = [
       "I can't say your LDL is high without a roadmap plan.",
@@ -551,6 +555,10 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
       "There's no way for me to say your LDL is high without the plan.",
       "Until you add your height, I'll hold off on saying your LDL is high or on target.",
       'Your LDL is not classified as high without a plan.',
+      "I can't say whether your LDL and blood pressure are high without a plan.",
+      "I can't say whether your LDL, blood pressure and HbA1c are high or normal until the roadmap has your height.",
+      "I can't say whether your LDL (3.9), blood pressure (138/88) and HbA1c (40) are high or normal yet.",
+      "I can't say whether your LDL of 3.9 and blood pressure of 138/88 are high or normal.",
     ];
     expect(verdicts(fixtureOf('what do my results show?'), [...grades, ...refusals].map(s => s + ask)))
       .toEqual([...grades.map(() => 'fail'), ...refusals.map(() => 'pass')]);
