@@ -5197,7 +5197,7 @@ a.action-btn-small.action-btn-small:hover {
   min-width: 0;
 }
 /* A lab cell whose unit differs from its row's (US-35 AC6), the SI value a
-   converted lab saves, and a core value's question (both US-21 AC17). */
+   converted lab saves, and a core value's question (both US-21 AC18). */
 .bt-cell-unit,
 .bt-cell-si,
 .bt-cell-question {
@@ -5220,7 +5220,7 @@ a.action-btn-small.action-btn-small:hover {
   gap: 3px;
   font-size: 0.75em;
 }
-/* Low or medium confidence: a doubtful read or a guessed unit (US-21 AC17). */
+/* Low or medium confidence: a doubtful read or a guessed unit (US-21 AC18). */
 .bt-cell-low-confidence .bt-input {
   border-color: var(--color-warning);
 }

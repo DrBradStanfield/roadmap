@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * US-21 AC17 — the review shows what Save will store. A catalogued test
+ * US-21 AC18 — the review shows what Save will store. A catalogued test
  * printed in another unit shows the SI value the catalogue converts it to,
  * and a core value whose unit was guessed says so. Synthetic values.
  */
@@ -23,7 +23,7 @@ const lab = (name: string, value: number, unit: string): FileResult[] => [{
   fileName: 'labs.pdf', reportDate: DAY, values: [], additionalValues: [{ name, value, unit }],
 }];
 
-describe('US-21 AC17: a catalogued test printed in another unit shows the SI value Save stores', () => {
+describe('US-21 AC18: a catalogued test printed in another unit shows the SI value Save stores', () => {
   it('450 pg/mL vitamin B12 shows → 332.1 pmol/L, the catalogue\'s own conversion', () => {
     const { container } = renderReview(lab('Vitamin B12', 450, 'pg/mL'));
     expect(container.querySelector('.bt-cell-si')?.textContent).toBe('→ 332.1 pmol/L');
@@ -67,7 +67,7 @@ describe('US-21 AC1: a catalogued row is named by the catalogue\'s label, as the
   });
 });
 
-describe('US-21 AC17: a core value whose unit was guessed shows its question, highlighted', () => {
+describe('US-21 AC18: a core value whose unit was guessed shows its question, highlighted', () => {
   const core = (confidence: 'high' | 'medium' | 'low', question?: string): FileResult[] => [{
     fileName: 'labs.pdf', reportDate: DAY, additionalValues: [],
     values: [{ metric: 'ldl', valueSI: 2.8, displayValue: 2.8, displayUnit: '', confidence, question }],

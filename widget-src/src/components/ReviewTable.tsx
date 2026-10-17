@@ -1230,13 +1230,13 @@ const MatrixCellView = memo(function MatrixCellView({
   // Stamp the row's display unit so a toggle-after-typing doesn't
   // misconvert the typed value at save time.
   const handleChange = (v: string) => onCellChange(cellKey, v, isCore ? unitSystem : undefined);
-  // A guessed unit (medium) and a doubtful read (low) both ask to be checked (US-21 AC17).
+  // A guessed unit (medium) and a doubtful read (low) both ask to be checked (US-21 AC18).
   const lowConfClass = isCore && cell.confidence !== 'high' ? ' bt-cell-low-confidence' : '';
   let storedText: string | null = null;
   if (cell.kind === 'additional') {
     // What Save stores for a catalogued test printed in another unit: the write's
     // own canonicalLabRow on the number as it now reads, so a row the write
-    // refuses (a count off its range's scale) previews nothing (US-21 AC17).
+    // refuses (a count off its range's scale) previews nothing (US-21 AC18).
     const entry = resolveLabCatalogEntry(cell.lab.name);
     const typed = entry ? parseLocalisedNumber(editedValue) : undefined;
     const row = entry && typed !== undefined

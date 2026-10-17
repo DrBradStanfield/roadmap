@@ -440,7 +440,7 @@ describe('ReviewTable — a lab printed in another unit conflicts, shows its uni
     expect(unit?.textContent).toBe('ng/mL');
     expect(unit?.parentElement?.parentElement?.classList.contains('bt-strip-inner')).toBe(true);
     // A screen reader hears the unit the eye sees (adversary R3).
-    // ...and the SI value Save stores (US-21 AC17).
+    // ...and the SI value Save stores (US-21 AC18).
     expect(container.querySelector('input[aria-label="Vitamin D (25-OH) value ng/mL, saved as 124.8 nmol/L"]')).not.toBeNull();
   });
 

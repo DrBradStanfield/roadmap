@@ -111,7 +111,7 @@ describe('resolveLabValues', () => {
   });
 
   it('downgrades confidence when unit is inferred', () => {
-    // 100 fits mg/dL only; 2.8 fits both scales, which is 'low' (US-21 AC17).
+    // 100 fits mg/dL only; 2.8 fits both scales, which is 'low' (US-21 AC18).
     const result = resolveLabValues([
       { metric: 'ldl', value: 100, unit: 'unknown_unit', confidence: 'high' },
     ]);
@@ -120,7 +120,7 @@ describe('resolveLabValues', () => {
     expect(result[0].question).toContain('inferred');
   });
 
-  it('preserves existing question when unit is inferred, and adds the inferred-unit note to it (US-21 AC17)', () => {
+  it('preserves existing question when unit is inferred, and adds the inferred-unit note to it (US-21 AC18)', () => {
     const result = resolveLabValues([
       { metric: 'ldl', value: 2.8, unit: 'unknown', confidence: 'low', question: 'Ambiguous value' },
     ]);
