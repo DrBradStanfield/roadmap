@@ -182,7 +182,7 @@ export function resolveLabValues(rawValues: Array<{ metric: string; value: numbe
       displaySystem: system,
       confidence: !confident && v.confidence === 'high' ? 'medium' : v.confidence,
       question: !confident
-        ? (v.question || `Unit "${v.unit}" was inferred — please verify this value`)
+        ? (v.question || (v.unit ? `Unit "${v.unit}" was inferred` : 'No unit was printed, so the unit was inferred') + ' — please verify this value')
         : v.question,
     });
   }
@@ -216,7 +216,7 @@ IF "lab_report":
 ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metric].join(', ')}`).join('\n')}
 
   CRITICAL RULES:
-  1. Extract ACTUAL measured result values ONLY. NEVER extract reference ranges, target values, or normal limits.
+  1. Extract ACTUAL measured result values ONLY. A reference range, target value or normal limit is never a value (a row's printed range goes in referenceLow/referenceHigh, rule 10).
   2. If the report shows previous/historical results (in a "Previous" column, "Last visit" column, trend graph, or any side-by-side layout), IGNORE them completely. Extract ONLY values from the current report's primary column, even if those historical columns are dated. Return at most ONE entry per metric — never duplicate a metric in the output.
   3. Use COLLECTION/SAMPLE date, NOT report/print date. Return as YYYY-MM-DD.
   4. For ambiguous dates (03/04/2026): prefer DD/MM/YYYY for non-US labs, MM/DD/YYYY for US.
@@ -224,6 +224,8 @@ ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metri
   6. If uncertain about a value, set confidence to "low" with a "question" explaining why.
   7. Extract ALL other numeric test results NOT in TARGET METRICS into "additionalValues" array.
   8. A measured blood pressure printed as one reading ("120/80 mmHg") is two TARGET METRICS: systolic_bp 120 and diastolic_bp 80, both in "values".
+  9. UNITS, in "values" and "additionalValues" alike: copy each row's unit exactly as the report prints it for that row: the unit beside the result; else the unit in that column's header; else the unit printed in that row's reference range ("200-900 pg/mL" gives "pg/mL"). NEVER convert a value and NEVER relabel its unit to the one you expect for that test: a result printed in pg/mL is returned in pg/mL, even where pmol/L is more common. If no unit is printed anywhere for the row, return "unit": "" (an empty string). Never guess one.
+  10. REFERENCE RANGES: for each "additionalValues" row, return the row's printed reference range as "referenceLow" and "referenceHigh": the numbers as printed, in the row's printed unit, never converted. A one-sided range sets one side ("<5" is referenceHigh 5, ">40" is referenceLow 40) and the other is null; both are null when no range is printed.
 
   ADDITIONAL VALUES — use these standardized snake_case names when applicable:
   FBC: haemoglobin, rbc, wbc, platelets, mcv, mch, haematocrit, neutrophils, lymphocytes, monocytes, eosinophils, basophils
@@ -237,7 +239,6 @@ ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metri
   Hormones: testosterone, free_testosterone, shbg, estradiol, prolactin, progesterone, dhea_s, igf1
   Metabolic: fasting_glucose, fasting_insulin, uric_acid
   Other: homocysteine, or any other metric — use best descriptive snake_case name.
-  Include reference ranges (referenceLow, referenceHigh) when visible on the report.
 
 IF any other classification:
   Set "values" to [].

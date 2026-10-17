@@ -155,11 +155,12 @@ Anything outside this list goes to `additionalValues` (unified) or `unrecognized
 
 ### Critical rules in the prompt
 
-1. Extract **measured values only** — never reference ranges or targets
+1. Extract **measured values only**; a printed reference range goes in `referenceLow`/`referenceHigh`, never in the value
 2. If current + previous shown, take **only the most recent**
 3. Use the **collection date**, not the print/report date
 4. Ambiguous dates: `DD/MM/YYYY` for non-US labs, else low confidence
 5. Uncertain values → `confidence: "low"` + a `question` string
+6. Units **as printed**: beside the result, else the column header, else the row's reference range; never converted or relabelled; empty when none is printed (US-21 AC7)
 
 ### Output schema (after server-side unit resolution)
 

@@ -25,6 +25,7 @@ import {
   unifiedSystemPrompt,
 } from './lab-extraction';
 import { oneLine } from './plan';
+import { canonicalLabRow, resolveLabCatalogEntry } from './lab-catalog';
 
 describe('US-12: pagesToContentBlocks', () => {
   it('converts a text page to a text content block', () => {
@@ -700,5 +701,53 @@ describe('US-12 AC11: the prompt splits a printed blood pressure into its two co
       const prompt = unifiedSystemPrompt(mode);
       expect(prompt).toContain('A measured blood pressure printed as one reading ("120/80 mmHg") is two TARGET METRICS: systolic_bp 120 and diastolic_bp 80, both in "values".');
     }
+  });
+});
+
+// A sheet printed vitamin B12's unit only in its reference-range column; the
+// model labelled the value pmol/L without converting it, so the catalogue
+// stored the pg/mL number as pmol/L. Synthetic values throughout.
+describe('US-21 AC7: the prompt copies each unit as printed and never converts', () => {
+  for (const mode of ['full', 'metadata'] as const) {
+    const prompt = unifiedSystemPrompt(mode);
+    it(`${mode}: the unit comes from beside the result, else the column header, else the row's reference range`, () => {
+      expect(prompt).toContain('copy each row\'s unit exactly as the report prints it for that row: the unit beside the result; else the unit in that column\'s header; else the unit printed in that row\'s reference range ("200-900 pg/mL" gives "pg/mL")');
+    });
+    it(`${mode}: never convert or relabel, and an empty unit when none is printed`, () => {
+      expect(prompt).toContain('NEVER convert a value and NEVER relabel its unit');
+      expect(prompt).toContain('If no unit is printed anywhere for the row, return "unit": "" (an empty string). Never guess one.');
+    });
+    it(`${mode}: the printed reference range is extracted, never converted, and no longer forbidden outright`, () => {
+      expect(prompt).toContain('return the row\'s printed reference range as "referenceLow" and "referenceHigh"');
+      expect(prompt).toContain('in the row\'s printed unit, never converted');
+      expect(prompt).not.toContain('NEVER extract reference ranges');
+    });
+  }
+});
+
+describe('US-21 AC7/AC8: a unit printed only in the range column reaches the write as printed', () => {
+  const lab = (row: Record<string, unknown>) => toUnifiedResult(parseUnifiedResult({
+    classification: 'lab_report', reportDate: '2026-01-15', values: [], additionalValues: [row], document: null,
+  })).additionalValues;
+
+  it('keeps 450 pg/mL with its printed range; the catalogue then converts value and range by one factor', () => {
+    const [b12] = lab({ name: 'vitamin_b12', value: 450, unit: 'pg/mL', referenceLow: 200, referenceHigh: 900 });
+    expect(b12).toEqual({ name: 'vitamin_b12', value: 450, unit: 'pg/mL', referenceLow: 200, referenceHigh: 900 });
+    const stored = canonicalLabRow(resolveLabCatalogEntry(b12.name)!, b12);
+    expect(stored?.stored).toEqual({ value: 332.1, unit: 'pmol/L', referenceLow: 147.6, referenceHigh: 664.2 });
+  });
+
+  it('an empty unit stays empty: nothing upstream guesses it', () => {
+    const [row] = lab({ name: 'homocysteine', value: 9, unit: '', referenceLow: null, referenceHigh: 15 });
+    expect(row).toMatchObject({ value: 9, unit: '', referenceLow: null, referenceHigh: 15 });
+  });
+
+  it('a core value with no printed unit is flagged for review, never silently trusted', () => {
+    const [ldl] = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-01-15', document: null, additionalValues: [],
+      values: [{ metric: 'ldl', value: 2.8, unit: '', confidence: 'high' }],
+    })).values;
+    expect(ldl.confidence).toBe('medium');
+    expect(ldl.question).toBe('No unit was printed, so the unit was inferred — please verify this value');
   });
 });
