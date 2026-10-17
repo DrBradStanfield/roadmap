@@ -228,12 +228,14 @@ function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, 
 }
 
 /** US-12 AC10: one run's counts, integers only. Never a name, unit or value.
- *  `docx` is how many of the picked files were .docx (AC12). */
+ *  `docx` is how many of the picked files were .docx (AC12). A zero is never
+ *  sent: every key is optional, so a server a deploy behind meets a new key
+ *  only once it counts something. */
 function trackUploadOutcome(picked: number, withValues: number, docx: number, notices: FileNotice[]): void {
   const counts: Partial<Record<UploadOutcomeKey, number>> = { picked, withValues, docx };
   for (const n of notices) counts[n.reason] = (counts[n.reason] ?? 0) + (n.count ?? 1);
   trackProductEvent('upload_outcome', Object.fromEntries(
-    UPLOAD_OUTCOME_KEYS.map(k => [k, Math.min(counts[k] ?? 0, UPLOAD_OUTCOME_MAX)]),
+    UPLOAD_OUTCOME_KEYS.filter(k => counts[k]).map(k => [k, Math.min(counts[k]!, UPLOAD_OUTCOME_MAX)]),
   ));
 }
 

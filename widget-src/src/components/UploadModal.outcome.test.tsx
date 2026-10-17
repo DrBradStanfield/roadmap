@@ -5,6 +5,7 @@
  * Same harness shape as UploadModal.session.test.tsx.
  */
 import { zipMemberName } from '@roadmap/health-core';
+import { UPLOAD_OUTCOME_KEYS } from '@roadmap/health-core/product-events';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
@@ -51,8 +52,13 @@ function reasonFor(name: string): string | null {
   const items = within(list).queryAllByText(name);
   return items.length ? items.map(i => i.closest('li')!.textContent!.slice(name.length).trim()).join(' | ') : null;
 }
+/** The raw `upload_outcome` metadata sent, each run's. */
+function sent() {
+  return vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'upload_outcome').map(([, m]) => m as Record<string, number>);
+}
+/** Each run's counts as the product-health read takes them: a key not sent is 0. */
 function outcomes() {
-  return vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'upload_outcome').map(([, m]) => m);
+  return sent().map(m => Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, m[k] ?? 0])));
 }
 
 beforeEach(() => {
@@ -196,6 +202,8 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
       tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0,
     });
     expect(Object.values(outcomes()[0]!).every(Number.isInteger)).toBe(true);
+    // A zero is never sent, so a server a deploy behind never meets a new key it would refuse.
+    expect(sent()[0]).toEqual({ picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 1 });
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
     expect(outcomes()).toHaveLength(1);

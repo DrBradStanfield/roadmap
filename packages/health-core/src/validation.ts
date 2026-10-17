@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { UNIT_DEFS, UnitSystem } from './units';
 import { FIELD_METRIC_MAP } from './mappings';
 import type { HealthInputs } from './types';
+import { IMPORT_LIMITS } from './import-hints';
 
 /**
  * Valid metric types for the health_measurements table.
@@ -336,13 +337,13 @@ export type ValidatedScreening = z.infer<typeof screeningSchema>;
 // ---------------------------------------------------------------------------
 
 /** A single page of content extracted client-side from a PDF, image or .docx.
- *  A text page stops at 100,000 characters, past any page the browser sends
- *  (a .docx stops at 60,000); an image's base64 runs longer, so it has no cap. */
+ *  A text page stops at `websiteTextPageChars`, a backstop: the browser cuts a
+ *  PDF page there and a .docx sooner. An image's base64 runs longer: no cap. */
 export const labImportPageSchema = z.object({
   type: z.enum(['text', 'image']),
   content: z.string().min(1),
   mimeType: z.string().optional(),
-}).refine(page => page.type !== 'text' || page.content.length <= 100_000, { message: 'Text page too long', path: ['content'] });
+}).refine(page => page.type !== 'text' || page.content.length <= IMPORT_LIMITS.websiteTextPageChars, { message: 'Text page too long', path: ['content'] });
 
 /** Request body for POST /api/lab-import */
 export const labImportRequestSchema = z.object({

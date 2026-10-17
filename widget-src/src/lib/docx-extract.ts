@@ -10,6 +10,7 @@
  */
 import JSZip from 'jszip';
 import { inflateCapped } from '@roadmap/health-core';
+import { cutText } from './cut-text';
 
 /** XML inflated across every part read: a ZIP bomb stops here, not in memory. */
 const MAX_XML_BYTES = 4 * 1024 * 1024;
@@ -21,56 +22,78 @@ const MAX_TEXT_CHARS = 60_000;
 const ENTITY = /&(?:#x([0-9a-f]+)|#(\d+)|(lt|gt|amp|quot|apos));/gi;
 const NAMED: Record<string, string> = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" };
 
-/** One pass, so `&amp;lt;` stays `&lt;`. A code point out of range stays as written. */
+/** One pass, so `&amp;lt;` stays `&lt;`. A code point out of range, or half a surrogate pair, stays as written. */
 function decodeEntities(text: string): string {
   return text.replace(ENTITY, (whole, hex: string | undefined, dec: string | undefined, name: string | undefined) => {
     if (name) return NAMED[name.toLowerCase()];
     const code = parseInt(hex ?? dec ?? '', hex ? 16 : 10);
-    return code <= 0x10ffff ? String.fromCodePoint(code) : whole;
+    return code <= 0x10ffff && (code < 0xd800 || code > 0xdfff) ? String.fromCodePoint(code) : whole;
   });
+}
+
+const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const MC_NS = 'http://schemas.openxmlformats.org/markup-compatibility/2006';
+
+/** The prefix, colon included and escaped for a RegExp, that the part's root
+ *  element binds to `uri`; `fallback` when the root does not declare it. */
+function prefixFor(xml: string, uri: string, fallback: string): string {
+  const root = /<[^?!][^<>]*>/.exec(xml)?.[0] ?? '';
+  const bound = new RegExp(`\\sxmlns(?::([\\w.-]+))?="${uri.replace(/\./g, '\\.')}"`).exec(root);
+  const name = bound ? bound[1] ?? '' : fallback;
+  return name && `${name.replace(/\./g, '\\.')}:`;
 }
 
 /** A text run, or a tag that shapes the text: a paragraph, row or cell; a
  *  character written as a tag; a row's or cell's merge or deletion. `w:delText`
  *  and `w:instrText` never match, so tracked deletions and field codes drop out. */
-const TOKEN = /<w:t(?:\s[^<>]*)?>([^<]*)<\/w:t>|<(\/?)w:(p|tr|tc|tab|br|cr|ptab|noBreakHyphen|sym|trPr|del|gridSpan|gridBefore|gridAfter)(?=[\s/>])([^<>]*)>/g;
+function tokens(w: string): RegExp {
+  return new RegExp(`<${w}t(?:\\s[^<>]*)?>([^<]*)</${w}t>|<(/?)${w}(p|tr|tc|tab|br|cr|ptab|noBreakHyphen|sym|trPr|del|gridSpan|gridBefore|gridAfter)(?=[\\s/>])([^<>]*)>`, 'g');
+}
 
 /** Characters Word writes as tags. A soft hyphen is not one: it shows only at a line break. */
 const CHAR_TAGS: Record<string, string> = { tab: ' ', br: ' ', cr: ' ', ptab: ' ', noBreakHyphen: '-' };
 /** The Symbol font's private-use codes for the signs a lab sheet uses. */
-const SYMBOL_CHARS: Record<number, string> = { 0xf03c: '<', 0xf03e: '>', 0xf0a3: '≤', 0xf0b3: '≥', 0xf06d: 'µ', 0xf0b1: '±' };
+const SYMBOL_CHARS: Record<number, string> = {
+  0xf03c: '<', 0xf03e: '>', 0xf0a3: '≤', 0xf0b3: '≥', 0xf06d: 'µ', 0xf0b1: '±',
+  0xf0b4: '×', 0xf0b0: '°', 0xf0d7: '·', 0xf061: 'α', 0xf062: 'β', 0xf067: 'γ',
+};
 /** Word's widest table; a merge never pads a row past it. */
 const MAX_COLUMNS = 63;
+
+/** One attribute's value, whatever its prefix. */
+const attr = (attrs: string, name: string) => new RegExp(`(?:^|\\s)(?:[\\w.-]+:)?${name}="([^"]*)"`).exec(attrs)?.[1];
 
 /** A `w:sym` character: a code outside the private-use area is itself; in the
  *  Symbol font, a sign above or a digit or punctuation mark it shares with
  *  ASCII. Anything else shows as "?", so a symbol never silently vanishes. */
 function symChar(attrs: string): string {
-  const code = parseInt(/\bw:char="([0-9a-f]{1,6})"/i.exec(attrs)?.[1] ?? '', 16);
+  const char = attr(attrs, 'char') ?? '';
+  const code = /^[0-9a-f]{1,6}$/i.test(char) ? parseInt(char, 16) : NaN;
   if ((code >= 0x20 && code < 0xd800) || (code > 0xf8ff && code <= 0x10ffff)) return String.fromCodePoint(code);
-  if (!/\bw:font="Symbol"/i.test(attrs)) return '?';
+  if (attr(attrs, 'font')?.toLowerCase() !== 'symbol') return '?';
   if (SYMBOL_CHARS[code]) return SYMBOL_CHARS[code];
   const ascii = code - 0xf000;
   return ascii >= 0x20 && ascii <= 0x3f && !'"$\''.includes(String.fromCharCode(ascii)) ? String.fromCharCode(ascii) : '?';
 }
 
 /**
- * Drop each `<name …>…</name>` element; a self-closing one holds nothing. A
- * scan, not a lazy regex, so an open tag with no close costs one pass: the
- * scan stops at the first one.
+ * Drop each element `names` matches, with all it holds; a self-closing one
+ * holds nothing. Nesting is counted, so an inner close never ends an outer
+ * element. One pass, not a lazy regex: an element never closed is kept.
  */
-function dropElements(xml: string, name: string): string {
-  const openTag = new RegExp(`<${name}(?=[\\s/>])[^<>]*>`, 'y');
-  const close = `</${name}>`;
+function dropElements(xml: string, names: string): string {
   let out = '';
   let at = 0;
-  for (let open = xml.indexOf(`<${name}`); open >= 0; open = xml.indexOf(`<${name}`, Math.max(open + 1, at))) {
-    openTag.lastIndex = open;
-    if (openTag.exec(xml)?.[0].endsWith('/>') !== false) continue;
-    const end = xml.indexOf(close, open);
-    if (end < 0) break;
-    out += xml.slice(at, open);
-    at = end + close.length;
+  let depth = 0;
+  let start = 0;
+  for (const tag of xml.matchAll(new RegExp(`<(/?)(?:${names})(?=[\\s/>])[^<>]*>`, 'g'))) {
+    if (tag[0].endsWith('/>')) continue;
+    if (!tag[1]) {
+      if (depth++ === 0) start = tag.index;
+    } else if (depth > 0 && --depth === 0) {
+      out += xml.slice(at, start);
+      at = tag.index + tag[0].length;
+    }
   }
   return out + xml.slice(at);
 }
@@ -81,7 +104,7 @@ interface Row { cells: string[]; cell: string[]; span: number; after: number; de
 
 /** A merge's `w:val`, at most MAX_COLUMNS. */
 function count(attrs: string): number {
-  return Math.min(Number(/\bw:val="(\d+)"/.exec(attrs)?.[1] ?? 1), MAX_COLUMNS);
+  return Math.min(Number(attr(attrs, 'val') ?? 1) || 1, MAX_COLUMNS);
 }
 
 /** Empty cells for a merge, so a row keeps the header's columns. */
@@ -91,13 +114,17 @@ function pad(row: Row, count: number): void {
 
 /** Add one XML part's lines to `lines`: paragraphs and table rows in document order. */
 function addPartLines(xml: string, lines: string[]): void {
-  // A text box is written twice, the modern copy and a fallback: keep one.
-  // Text moved with tracked changes is written twice too: keep where it went.
-  const source = dropElements(dropElements(xml, 'mc:Fallback'), 'w:moveFrom');
+  const w = prefixFor(xml, W_NS, 'w');
+  // A text box is written twice, the modern copy and a fallback: keep one. Text
+  // moved with tracked changes is written twice too: keep where it went. A
+  // tracked formatting change keeps the old properties: never re-apply them.
+  const source = dropElements(xml, `${prefixFor(xml, MC_NS, 'mc')}Fallback|${w}(?:moveFrom|trPrChange|tcPrChange|pPrChange|rPrChange|tblPrChange|sectPrChange)`);
   /** Open rows, innermost last. */
   const rows: Row[] = [];
-  /** Open paragraphs, innermost last: a text box's paragraph inside another is its own line. */
-  const paras: string[] = [];
+  /** The open paragraph's text, and how many are open: a paragraph that opens
+   *  inside another (a text box's) ends the outer's text so far as a line. */
+  let para = '';
+  let depth = 0;
   let inRowProps = false;
   /** A finished paragraph or nested row goes to the open cell, or out as a line. */
   const emit = (text: string) => {
@@ -105,14 +132,15 @@ function addPartLines(xml: string, lines: string[]): void {
     if (rows.length) rows[rows.length - 1].cell.push(text);
     else lines.push(text);
   };
-  const add = (text: string) => { if (paras.length) paras[paras.length - 1] += text; };
-  for (const [, text, close, tag, attrs] of source.matchAll(TOKEN)) {
+  const flush = () => { emit(para.replace(/\s+/g, ' ').trim()); para = ''; };
+  const add = (text: string) => { if (depth) para += text; };
+  for (const [, text, close, tag, attrs] of source.matchAll(tokens(w))) {
     if (text !== undefined) { add(decodeEntities(text)); continue; }
     const row = rows[rows.length - 1];
     if (close) {
-      if (tag === 'p') {
-        const para = paras.pop();
-        if (para !== undefined) emit(para.replace(/\s+/g, ' ').trim());
+      if (tag === 'p' && depth) {
+        flush();
+        depth--;
       } else if (tag === 'tr') {
         rows.pop();
         if (row && !row.deleted) {
@@ -128,8 +156,10 @@ function addPartLines(xml: string, lines: string[]): void {
     } else if (tag in CHAR_TAGS) add(CHAR_TAGS[tag]);
     else if (tag === 'sym') add(symChar(attrs));
     else if (attrs.endsWith('/') && (tag === 'p' || tag === 'trPr')) continue;
-    else if (tag === 'p') paras.push('');
-    else if (tag === 'tr') rows.push({ cells: [], cell: [], span: 1, after: 0, deleted: false });
+    else if (tag === 'p') {
+      if (depth) flush();
+      depth++;
+    } else if (tag === 'tr') rows.push({ cells: [], cell: [], span: 1, after: 0, deleted: false });
     else if (tag === 'trPr') inRowProps = true;
     else if (tag === 'gridSpan' && row) row.span = count(attrs);
     else if (inRowProps && row) {
@@ -142,7 +172,7 @@ function addPartLines(xml: string, lines: string[]): void {
 
 /**
  * The document's text, headers first and footers last, one table row per
- * line, cut at the last line end within MAX_TEXT_CHARS (`truncated`).
+ * line, cut within MAX_TEXT_CHARS at a boundary (`truncated`; `cutText`).
  * `picturesOnly`: no text, but pictures. Throws when it is not a .docx or
  * its XML passes MAX_XML_BYTES.
  */
@@ -162,11 +192,7 @@ export async function docxToText(data: ArrayBuffer): Promise<{ text: string; tru
     budget -= bytes.byteLength;
     addPartLines(decoder.decode(bytes), lines);
   }
-  let text = lines.join('\n');
-  const truncated = text.length > MAX_TEXT_CHARS;
-  if (truncated) {
-    const end = text.lastIndexOf('\n', MAX_TEXT_CHARS);
-    text = text.slice(0, end > 0 ? end : MAX_TEXT_CHARS);
-  }
-  return { text, truncated, picturesOnly: !text && zip.file(/^word\/media\//).length > 0 };
+  const whole = lines.join('\n');
+  const text = cutText(whole, MAX_TEXT_CHARS);
+  return { text, truncated: text.length < whole.length, picturesOnly: !text && zip.file(/^word\/media\//).length > 0 };
 }

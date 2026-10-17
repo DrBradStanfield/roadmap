@@ -54,6 +54,11 @@ describe('US-12 AC12: docxToText', () => {
     expect(text).toBe('Ferritin 85 ug/L\nLipids | LDL 2.9 HDL 1.4');
   });
 
+  it('leaves a lone surrogate code point as written, never half a character', async () => {
+    const { text } = await docxToText(await docx(p('a &#xD800; b &#56320; c')));
+    expect(text).toBe('a &#xD800; b &#56320; c');
+  });
+
   it('decodes XML entities once', async () => {
     const { text } = await docxToText(await docx(p('eGFR &gt;90 &amp; CRP &lt;1.0 &#x2264;5 &#956;mol &quot;a&quot; &apos;b&apos; &amp;lt;')));
     expect(text).toBe('eGFR >90 & CRP <1.0 ≤5 μmol "a" \'b\' &lt;');
@@ -134,12 +139,13 @@ describe('US-12 AC12: what a lab sheet in Word holds beyond plain runs', () => {
     expect(await read(raw(t('CRP '), sym('F03C'), t('1.0 '), sym('F03E'), t('0 '), sym('F0A3'), t('5 '), sym('F0B3'), t('6 '), sym('F06D'), t('mol '), sym('F0B1'), t('2')))).toBe('CRP <1.0 >0 ≤5 ≥6 µmol ±2');
     expect(await read(raw(t('eGFR '), sym('2265', 'Cambria Math'), t('90')))).toBe('eGFR ≥90');
     expect(await read(raw(t('Ratio '), sym('F033'), sym('F02E'), sym('F032')))).toBe('Ratio 3.2');
+    expect(await read(raw(t('WBC 6.1 '), sym('F0B4'), t('10^9/L, 37'), sym('F0B0'), t('C, 2'), sym('F0D7'), t('3, '), sym('F061'), sym('F062'), sym('F067')))).toBe('WBC 6.1 ×10^9/L, 37°C, 2·3, αβγ');
     expect(await read(raw(t('Haemo'), run('<w:softHyphen/>'), t('globin 140')))).toBe('Haemoglobin 140');
   });
 
   it('shows a symbol it cannot map as a visible "?", never nothing', async () => {
     expect(await read(raw(t('Done '), run('<w:sym w:font="Wingdings" w:char="F0FC"/>')))).toBe('Done ?');
-    expect(await read(raw(t('A '), run('<w:sym w:font="Symbol" w:char="F061"/>'), t(' B')))).toBe('A ? B');
+    expect(await read(raw(t('A '), run('<w:sym w:font="Symbol" w:char="F0E5"/>'), t(' B')))).toBe('A ? B');
   });
 
   it('never starts a drop at a self-closing fallback', async () => {
@@ -177,9 +183,41 @@ describe('US-12 AC12: what a lab sheet in Word holds beyond plain runs', () => {
 
   it('keeps a text box\'s paragraph off the paragraph it sits in', async () => {
     const box = run('<mc:AlternateContent><mc:Choice Requires="wps"><w:drawing><w:txbxContent>' + p('5 mmol/L') + '</w:txbxContent></w:drawing></mc:Choice></mc:AlternateContent>');
-    const lines = (await read(raw(t('Result: 4'), box, t(' end')))).split('\n');
-    expect(lines).toHaveLength(2);
-    expect(lines).toEqual(expect.arrayContaining(['5 mmol/L', 'Result: 4 end']));
+    expect(await read(raw(t('Result: 4'), box, t(' end')))).toBe('Result: 4\n5 mmol/L\nend');
+  });
+
+  it('keeps each label before its boxed value, in reading order', async () => {
+    const boxed = (value: string) => run('<mc:AlternateContent><mc:Choice Requires="wps"><w:drawing><wps:txbx><w:txbxContent>' + p(value)
+      + '</w:txbxContent></wps:txbx></w:drawing></mc:Choice><mc:Fallback><w:pict><v:textbox><w:txbxContent>' + p(value)
+      + '</w:txbxContent></v:textbox></w:pict></mc:Fallback></mc:AlternateContent>');
+    expect(await read(raw(t('LDL '), boxed('2.9 mmol/L')) + raw(t('Ferritin '), boxed('85 ug/L')))).toBe('LDL\n2.9 mmol/L\nFerritin\n85 ug/L');
+  });
+
+  it('drops a fallback nested inside another whole, never leaking the outer one\'s tail', async () => {
+    const inner = '<w:r><mc:AlternateContent><mc:Choice Requires="w14"></mc:Choice><mc:Fallback><w:t>x</w:t></mc:Fallback></mc:AlternateContent></w:r>';
+    const box = run('<mc:AlternateContent><mc:Choice Requires="wps"><w:txbxContent>' + p('85 ug/L') + '</w:txbxContent></mc:Choice>'
+      + '<mc:Fallback><w:pict><w:txbxContent><w:p>' + inner + t('85 ug/L') + '</w:p></w:txbxContent></w:pict></mc:Fallback></mc:AlternateContent>');
+    expect(await read(raw(t('Ferritin '), box))).toBe('Ferritin\n85 ug/L');
+  });
+
+  it('ignores the old properties a tracked formatting change keeps, so they never re-apply a merge or a deletion', async () => {
+    const head = tr('Test', 'Result', 'Prev', 'Unit');
+    const rowChange = '<w:tr><w:trPr><w:gridBefore w:val="1"/><w:trPrChange w:id="9" w:author="a"><w:trPr><w:gridBefore w:val="1"/></w:trPr></w:trPrChange></w:trPr>'
+      + tc('42') + tc('40') + tc('mmol/mol') + '</w:tr>';
+    const cellChange = '<w:tr>' + tc('HbA1c') + '<w:tc><w:tcPr><w:tcPrChange w:id="5" w:author="a"><w:tcPr><w:gridSpan w:val="2"/></w:tcPr></w:tcPrChange></w:tcPr>'
+      + p('38') + '</w:tc>' + tc('36') + tc('mmol/mol') + '</w:tr>';
+    const delAfterChange = '<w:tr><w:trPr><w:trPrChange w:id="7" w:author="a"><w:trPr><w:cantSplit/></w:trPr></w:trPrChange><w:del w:id="3" w:author="a"/></w:trPr>'
+      + tc('Ferritin') + tc('58') + tc('') + tc('ug/L') + '</w:tr>';
+    const changes = '<w:p><w:pPr><w:pPrChange w:id="1" w:author="a"><w:pPr><w:tabs><w:tab w:val="left" w:pos="720"/></w:tabs></w:pPr></w:pPrChange></w:pPr>'
+      + '<w:r><w:rPr><w:rPrChange w:id="2" w:author="a"><w:rPr><w:b/></w:rPr></w:rPrChange></w:rPr><w:t>Comment</w:t></w:r></w:p>';
+    const tableChange = '<w:tbl><w:tblPr><w:tblPrChange w:id="4" w:author="a"><w:tblPr/></w:tblPrChange></w:tblPr>' + tr('LDL', '2.9') + '</w:tbl>';
+    expect(await read(tbl(head, rowChange, cellChange, delAfterChange) + changes + tableChange)).toBe([
+      'Test | Result | Prev | Unit',
+      ' | 42 | 40 | mmol/mol',
+      'HbA1c | 38 | 36 | mmol/mol',
+      'Comment',
+      'LDL | 2.9',
+    ].join('\n'));
   });
 
   it('stops at 60,000 characters, at a line end, and says it was cut short', async () => {
@@ -191,6 +229,13 @@ describe('US-12 AC12: what a lab sheet in Word holds beyond plain runs', () => {
     expect(long.text.length).toBeLessThanOrEqual(60_000);
     expect(long.text.length).toBeGreaterThan(59_000);
     expect(long.text.split('\n').every(l => l === line)).toBe(true);
+  });
+
+  it('cuts one line longer than the cap at its last space, never inside a number', async () => {
+    const { text, truncated } = await docxToText(await docx(p('Ferritin 85 ug/L '.repeat(4000))));
+    expect(truncated).toBe(true);
+    expect(text.length).toBeLessThanOrEqual(60_000);
+    expect(text.endsWith('Ferritin 85 ug/L')).toBe(true);
   });
 
   it('reads at most 50 header and footer parts in all', async () => {
@@ -218,5 +263,19 @@ describe('US-12 AC12: what a lab sheet in Word holds beyond plain runs', () => {
     expect(await zipped(false)).toEqual({ text: '', truncated: false, picturesOnly: true });
     expect(await zipped(true)).toEqual({ text: 'Ferritin 85', truncated: false, picturesOnly: false });
     expect((await docxToText(await docx('<w:p/>'))).picturesOnly).toBe(false);
+  });
+});
+
+describe('US-12 AC12: a document whose WordprocessingML prefix is not w:', () => {
+  it('reads the prefixes the root binds to the main and markup-compatibility namespaces', async () => {
+    const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+    const MC = 'http://schemas.openxmlformats.org/markup-compatibility/2006';
+    const body = '<ns0:p><ns0:r><ns0:t>Ferritin</ns0:t></ns0:r></ns0:p>'
+      + '<ns0:tbl><ns0:tr><ns0:tc><ns0:p><ns0:r><ns0:t>LDL</ns0:t></ns0:r></ns0:p></ns0:tc><ns0:tc><ns0:p><ns0:r><ns0:t>2.9</ns0:t></ns0:r></ns0:p></ns0:tc></ns0:tr></ns0:tbl>'
+      + '<ns0:p><ns0:r><compat:AlternateContent><compat:Choice Requires="wps"><ns0:t>Box</ns0:t></compat:Choice><compat:Fallback><ns0:t>Box</ns0:t></compat:Fallback></compat:AlternateContent></ns0:r></ns0:p>';
+    const zip = new JSZip();
+    zip.file('word/document.xml', `<?xml version="1.0"?><ns0:document xmlns:ns0="${W}" xmlns:compat="${MC}"><ns0:body>${body}</ns0:body></ns0:document>`);
+    const { text } = await docxToText(await zip.generateAsync({ type: 'arraybuffer' }));
+    expect(text).toBe('Ferritin\nLDL | 2.9\nBox');
   });
 });

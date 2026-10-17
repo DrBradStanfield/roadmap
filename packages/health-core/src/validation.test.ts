@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { IMPORT_LIMITS } from './import-hints';
 import { convertValidationErrorsToUnits, labImportPageSchema, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid, sanitizeInputs, excludedInputFields } from './validation';
 
 // ---------------------------------------------------------------------------
@@ -504,6 +505,7 @@ describe('sanitizeInputs — prototype-chain keys', () => {
 
 describe('US-12 AC12: labImportPageSchema caps a text page, not an image', () => {
   it('takes a text page up to 100,000 characters and refuses one longer', () => {
+    expect(IMPORT_LIMITS.websiteTextPageChars).toBe(100_000);
     expect(labImportPageSchema.safeParse({ type: 'text', content: 'a'.repeat(100_000) }).success).toBe(true);
     expect(labImportPageSchema.safeParse({ type: 'text', content: 'a'.repeat(100_001) }).success).toBe(false);
   });

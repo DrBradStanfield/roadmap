@@ -6,6 +6,7 @@ import { WITH_RESOLVERS_PREFIX } from './promise-with-resolvers'; // must preced
 import * as pdfjsLib from 'pdfjs-dist';
 import workerCode from 'pdfjs-dist/build/pdf.worker.min.mjs?raw';
 import { IMPORT_LIMITS } from '@roadmap/health-core/import-hints';
+import { cutText } from './cut-text';
 
 // Inline the pdf.js worker as a blob URL so it works from any CDN origin.
 // The ?raw import inlines the worker source at build time.
@@ -25,7 +26,8 @@ export interface PageContent {
  * Extract content from a PDF file. Returns an array of page content blocks.
  * Text-based pages → text content (cheaper LLM call).
  * Scanned/image pages → JPEG base64 (vision LLM call).
- * `truncated`: the PDF had more pages than the website reads (US-12 AC9).
+ * `truncated`: the PDF had more pages than the website reads (US-12 AC9), or
+ * a page's text ran past the server's text-page cap and was cut (AC12).
  */
 export async function extractFromPdf(file: File): Promise<{ pages: PageContent[]; truncated: boolean }> {
   const arrayBuffer = await file.arrayBuffer();
@@ -33,6 +35,7 @@ export async function extractFromPdf(file: File): Promise<{ pages: PageContent[]
 
   const pageCount = Math.min(pdf.numPages, IMPORT_LIMITS.websitePdfPages);
   const pages: PageContent[] = [];
+  let cut = false;
 
   for (let i = 1; i <= pageCount; i++) {
     const page = await pdf.getPage(i);
@@ -45,7 +48,10 @@ export async function extractFromPdf(file: File): Promise<{ pages: PageContent[]
       .trim();
 
     if (text.length > TEXT_THRESHOLD) {
-      pages.push({ type: 'text', content: `[Page ${i}/${pdf.numPages}]\n${text}` });
+      const label = `[Page ${i}/${pdf.numPages}]\n`;
+      const kept = cutText(text, IMPORT_LIMITS.websiteTextPageChars - label.length);
+      cut ||= kept.length < text.length;
+      pages.push({ type: 'text', content: label + kept });
     } else {
       // Scanned page — render to canvas → JPEG
       const viewport = page.getViewport({ scale: 1.5 });
@@ -66,7 +72,7 @@ export async function extractFromPdf(file: File): Promise<{ pages: PageContent[]
     page.cleanup();
   }
 
-  return { pages, truncated: pdf.numPages > pageCount };
+  return { pages, truncated: pdf.numPages > pageCount || cut };
 }
 
 /** Returns true if the file looks like a PDF */
