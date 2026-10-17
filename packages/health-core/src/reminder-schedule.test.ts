@@ -187,7 +187,8 @@ describe('computeReminderSchedule — RoadmapFile adapter', () => {
     const valid = computeReminderSchedule(file({ profile, measurements: [dated] }), NOW);
     expect(valid.find((i) => i.category === 'blood_test_lipids')).toMatchObject({ dueAt: '2026-05-01' });
 
-    for (const bad of [undefined, '', 'soon', '2026-13-45']) {
+    // '2026-02-30' parses (V8 rolls it to 2 March) yet is no calendar day: dropped too.
+    for (const bad of [undefined, '', 'soon', '2026-13-45', '2026-02-30']) {
       const junk = { ...createMeasurement({ id: 'm2', metricType: 'ldl', value: 9, recordedAt: '2026-06-01T08:00:00Z', createdAt: '2026-06-01T08:00:00Z' }), recordedAt: bad as unknown as string };
       expect(computeReminderSchedule(file({ profile, measurements: [dated, junk] }), NOW)).toEqual(valid);
     }

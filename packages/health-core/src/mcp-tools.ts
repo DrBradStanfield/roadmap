@@ -1462,9 +1462,14 @@ export function prepareImport(
       };
       // The name as printed rides along on the assistant route (US-36 AC3), bounded like every string from a document.
       const printed = (value: { printedName?: string }) => (value.printedName ? { printedName: oneLine(value.printedName).slice(0, MAX_NAME_LENGTH) } : null);
+      // A day of its own on the folder route is a dated previous-results column
+      // the shared parse now reads for the website (US-12 AC12). Held off the
+      // connector until the MCP 1.0.2 review ends: left out, as the old prompt
+      // left it out. The assistant's own per-line day (US-36 AC1) is kept.
+      const previousColumn = (value: { recordedAt?: string }) => bundle.route !== 'assistant' && !!value.recordedAt;
       for (const value of result.values) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
-        if (!VALID_METRICS.includes(value.metric as MetricType)) continue;
+        if (!VALID_METRICS.includes(value.metric as MetricType) || previousColumn(value)) continue;
         const metric = value.metric as MetricType;
         const own = value.recordedAt ?? day;
         // A dry run of the real append: it validates the value and the day the
@@ -1485,6 +1490,7 @@ export function prepareImport(
       }
       for (const value of result.additionalValues) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
+        if (previousColumn(value)) continue;
         const own = value.recordedAt ?? day;
         // With its range: the write checks the whole row (US-21 AC15), so the preview does too.
         const check = bundle.checked ? null : appendLabValue(file, {

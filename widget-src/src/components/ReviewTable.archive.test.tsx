@@ -440,7 +440,8 @@ describe('ReviewTable — a lab printed in another unit conflicts, shows its uni
     expect(unit?.textContent).toBe('ng/mL');
     expect(unit?.parentElement?.parentElement?.classList.contains('bt-strip-inner')).toBe(true);
     // A screen reader hears the unit the eye sees (adversary R3).
-    expect(container.querySelector('input[aria-label="Vitamin D value ng/mL"]')).not.toBeNull();
+    // ...and the SI value Save stores (US-21 AC17).
+    expect(container.querySelector('input[aria-label="Vitamin D (25-OH) value ng/mL, saved as 124.8 nmol/L"]')).not.toBeNull();
   });
 
   it('50 ng/mL against a saved 50 nmol/L: one row, a conflict naming both units, and Replace saves 50 ng/mL', () => {
@@ -452,7 +453,7 @@ describe('ReviewTable — a lab printed in another unit conflicts, shows its uni
     expect(container.querySelectorAll('.bt-cell-conflict')).toHaveLength(1);
     expect(container.querySelector('.bt-cell-conflict .bt-cell-unit')?.textContent).toBe('ng/mL');
     const replace = container.querySelector<HTMLInputElement>('.bt-cell-conflict-replace input')!;
-    expect(replace.getAttribute('aria-label')).toBe('Replace the saved Vitamin D value 50 nmol/L with 50 ng/mL');
+    expect(replace.getAttribute('aria-label')).toBe('Replace the saved Vitamin D (25-OH) value 50 nmol/L with 50 ng/mL');
     fireEvent.click(replace);
     fireEvent.click(container.querySelector<HTMLButtonElement>('.review-save-btn')!);
     expect(onSave.mock.calls.at(-1)![0].labValues).toEqual([

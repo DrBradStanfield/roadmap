@@ -1712,7 +1712,7 @@ import {
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { recordSync } from './roadmap-doc';
 import { ROADMAP_FILE_NAME } from './adapter';
-import type { UnifiedExtractionResult } from './lab-extraction';
+import { parseUnifiedResult, toUnifiedResult, type UnifiedExtractionResult } from './lab-extraction';
 import { IMPORT_FILE_REASONS, IMPORT_LIMITS, IMPORT_REFUSALS, importHint } from './import-hints';
 
 const LAB_DAY = '2026-08-20';
@@ -1851,6 +1851,46 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(fileDates.type).toBe('array');
     expect(fileDates.items.required).toEqual(['file', 'date']);
     expect(importHint('no_date')).toContain('fileDates: [{ "file": "<name as listed>", "date": "YYYY-MM-DD" }]');
+  });
+
+  // US-12 AC12 is website-only while MCP 1.0.2 is in OpenAI's review: the
+  // shared parse now reads a dated "Prev." column, and import_documents must
+  // offer exactly what it did before. Synthetic values, through the real parse.
+  it('AC5/AC13 — import_documents does not offer a previous-column value, and fileDates moves only the primary column', () => {
+    const report = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-08-20', document: null,
+      values: [
+        { metric: 'ldl', value: 2.6, unit: 'mmol/L', confidence: 'high' },
+        { metric: 'ldl', value: 3.1, unit: 'mmol/L', confidence: 'high', recordedAt: '2026-05-04' },
+      ],
+      additionalValues: [
+        { name: 'ferritin', value: 150, unit: 'ug/L' },
+        { name: 'ferritin', value: 180, unit: 'ug/L', recordedAt: '2026-05-04' },
+      ],
+    }));
+    const prepared = (fileDates?: Record<string, string>) =>
+      prepareImport(base(), { ...bundleOf([extracted('cumulative.pdf', report)]), ...(fileDates ? { fileDates } : null) }, IMPORT_CTX);
+    const offered = (fileDates?: Record<string, string>) =>
+      prepared(fileDates).payload.candidates.map((c) => [c.metric, c.value, c.recordedAt, c.slot.state]);
+    expect(offered()).toEqual([['ldl', 2.6, '2026-08-20', 'free'], ['ferritin', 150, '2026-08-20', 'free']]);
+    expect(offered({ 'cumulative.pdf': '2026-08-21' })).toEqual([['ldl', 2.6, '2026-08-21', 'free'], ['ferritin', 150, '2026-08-21', 'free']]);
+    // Left out as the old prompt left it out: not refused, not counted, no new hint.
+    expect(prepared().unrecognized).toEqual([]);
+    expect(prepared().files[0]).toEqual({ name: 'cumulative.pdf', status: 'extracted', classification: 'lab_report', documentDate: '2026-08-20' });
+    // file_results is untouched: the assistant's own per-line recordedAt still files on its day (US-36 AC1).
+    const assistant = prepareImport(base(), { ...bundleOf([extracted('cumulative.pdf', report)]), route: 'assistant' as const }, IMPORT_CTX);
+    expect(assistant.payload.candidates.map((c) => [c.metric, c.recordedAt])).toEqual([
+      ['ldl', '2026-08-20'], ['ldl', '2026-05-04'], ['ferritin', '2026-08-20'], ['ferritin', '2026-05-04'],
+    ]);
+  });
+
+  it('US-21 AC7 — a lab printed with no unit is refused in words on the connector, uncatalogued or not, as before the 1.0.2 review', () => {
+    const { payload, unrecognized } = prepareImport(base(), bundleOf([extracted('unitless.pdf', labReport({
+      values: [], unrecognized: [],
+      additionalValues: [{ name: 'INR', value: 1.1, unit: '' }, { name: 'ferritin', value: 150, unit: '' }],
+    }))]), IMPORT_CTX);
+    expect(payload.candidates).toEqual([]);
+    expect(unrecognized).toEqual([expect.stringMatching(/^INR: .*unit/), expect.stringMatching(/^ferritin: .*unit/)]);
   });
 
   it('AC6 — candidates are shown in the record’s own unit system and stored canonical; equality is judged in that system', () => {
@@ -2575,6 +2615,15 @@ describe('US-36 AC2 — every row runs the record’s own dry run; a bad row is 
     ]);
     // The good row still files: a refusal is per row.
     expect(out.payload.candidates.map((c) => [c.metric, c.slot.state])).toEqual([['ferritin', 'free']]);
+  });
+
+  it('refuses a per-value day that is not on the calendar (2026-02-30), as one line, never rolled into March', () => {
+    const out = prepared(labCall([
+      row('hdl', 'HDL Cholesterol', 1.3, 'mmol/L', { recordedAt: '2026-02-30' }),
+      row('ferritin', 'Ferritin', 210, 'ug/L'),
+    ]));
+    expect(out.unrecognized).toEqual([expect.stringMatching(/^HDL Cholesterol 1.3 mmol\/L: "2026-02-30" is not a date\. Ask the user for the date, then re-send\.$/)]);
+    expect(out.payload.candidates.map((c) => [c.metric, c.recordedAt])).toEqual([['ferritin', expect.any(String)]]);
   });
 });
 
