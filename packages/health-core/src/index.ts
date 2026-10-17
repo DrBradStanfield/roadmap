@@ -323,7 +323,7 @@ export {
   LAB_CATALOG,
   LAB_GROUPS,
   resolveLabCatalogEntry,
-  canonicalLabValue,
+  canonicalLabRow,
   labSlotKey,
   normalizeLabUnit,
   displayLabUnit,

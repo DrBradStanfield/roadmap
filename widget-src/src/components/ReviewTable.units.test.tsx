@@ -36,6 +36,16 @@ describe('US-21 AC17: a catalogued test printed in another unit shows the SI val
     expect(container.querySelector('.bt-cell-si')?.textContent).toBe('→ 369 pmol/L');
   });
 
+  it('previews only a row the write takes: a count off its own range\'s scale shows nothing, one on it shows the stored count', () => {
+    const platelets = (value: number): FileResult[] => [{
+      fileName: 'labs.pdf', reportDate: DAY, values: [],
+      additionalValues: [{ name: 'Platelets', value, unit: 'cells/µL', referenceLow: 150000, referenceHigh: 450000 }],
+    }];
+    expect(renderReview(platelets(250)).container.querySelector('.bt-cell-si')).toBeNull();
+    cleanup();
+    expect(renderReview(platelets(250000)).container.querySelector('.bt-cell-si')?.textContent).toBe('→ 250 ×10⁹/L');
+  });
+
   it('says nothing when the number does not change, the test is uncatalogued, or the unit is refused', () => {
     for (const results of [lab('Sodium', 140, 'mEq/L'), lab('Ferritin', 134, 'ug/L'), lab('homocysteine', 9, 'µmol/L'), lab('Vitamin B12', 450, 'mg')]) {
       const { container } = renderReview(results);

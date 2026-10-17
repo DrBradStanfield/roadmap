@@ -18,7 +18,7 @@ import { reportedToCanonical, toCanonicalValue, UNIT_DEFS, type MetricType, type
 import { foldName, LAB_CATALOG, LAB_GROUPS, normalizeLabUnit } from './lab-catalog';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES } from './validation';
-import { ISO_DATE } from './measurement-history';
+import { isCalendarDay } from './measurement-history';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -375,8 +375,7 @@ const labValue = z.preprocess(readModelNumber, z.number());
 /** A value's own day, from a dated previous-results column (US-12 AC12). A
  *  string that is not a real YYYY-MM-DD refuses the row: on the report's date
  *  instead it would be an older result filed as today's. */
-const labDay = z.string().regex(ISO_DATE).refine(d => !Number.isNaN(Date.parse(d)) && new Date(d).toISOString().slice(0, 10) === d)
-  .nullish().transform(d => d ?? undefined);
+const labDay = z.string().refine(isCalendarDay).nullish().transform(d => d ?? undefined);
 const labBound = z.preprocess(readModelNumber, z.number().nullable()).optional();
 
 const coreValueRow = z.object({

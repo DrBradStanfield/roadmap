@@ -2583,6 +2583,15 @@ describe('US-36 AC2 — every row runs the record’s own dry run; a bad row is 
     // The good row still files: a refusal is per row.
     expect(out.payload.candidates.map((c) => [c.metric, c.slot.state])).toEqual([['ferritin', 'free']]);
   });
+
+  it('refuses a per-value day that is not on the calendar (2026-02-30), as one line, never rolled into March', () => {
+    const out = prepared(labCall([
+      row('hdl', 'HDL Cholesterol', 1.3, 'mmol/L', { recordedAt: '2026-02-30' }),
+      row('ferritin', 'Ferritin', 210, 'ug/L'),
+    ]));
+    expect(out.unrecognized).toEqual([expect.stringMatching(/^HDL Cholesterol 1.3 mmol\/L: "2026-02-30" is not a date\. Ask the user for the date, then re-send\.$/)]);
+    expect(out.payload.candidates.map((c) => [c.metric, c.recordedAt])).toEqual([['ferritin', expect.any(String)]]);
+  });
 });
 
 describe('US-36 AC3 — the printed name must agree with the claimed metric', () => {

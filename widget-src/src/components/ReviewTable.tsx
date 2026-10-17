@@ -12,7 +12,7 @@ import {
   displayLabUnit,
   labSlotKey,
   resolveLabCatalogEntry,
-  canonicalLabValue,
+  canonicalLabRow,
   sameLabQuantity,
   slotState,
   type LabQuantity,
@@ -137,7 +137,6 @@ function parseIsoToFullDate(iso: string): FullDate | null {
   return { year, month, day };
 }
 
-/** Build the most precise date prefix for duplicate matching. */
 /** What sets a value's date, and keys the date state: its file's report date,
  *  or its own printed day from a dated previous-results column (US-12 AC12),
  *  so editing one column's date never moves the other. */
@@ -145,6 +144,7 @@ function dateSource(fi: number, recordedAt?: string): string {
   return recordedAt ? `${fi}@${recordedAt}` : String(fi);
 }
 
+/** Build the most precise date prefix for duplicate matching. */
 function buildDatePrefix(date: FullDate): string {
   const month = date.month.padStart(2, '0');
   if (date.day) {
@@ -238,7 +238,7 @@ interface ExistingCell { id: string; display: string; valueSI?: number; lab?: La
 
 type EditableMatrixCell =
   | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; question?: string; valueSI: number; displayUnit: string; existing?: ExistingCell }
-  | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; lab: LabQuantity; existing?: ExistingCell };
+  | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; lab: LabQuantity; referenceLow?: number | null; referenceHigh?: number | null; existing?: ExistingCell };
 
 /** A core cell as rendered: its text in the row's unit and the value it saves. */
 interface CoreCellView { text: string; valueSI?: number }
@@ -303,9 +303,15 @@ export function buildMatrixModel(
     return col;
   };
 
-  /** A value's date: its own printed day when it has one (US-12 AC12), else its file's. */
+  /** A value's date: its own printed day when it has one (US-12 AC12), else
+   *  its file's. The date state holds only what the user picked; a printed day
+   *  nobody edited is read from the value itself. */
   const valueDate = (fi: number, recordedAt?: string): FullDate | undefined =>
     recordedAt ? fileDates[dateSource(fi, recordedAt)] ?? parseReportDate(recordedAt) : fileDates[fi];
+  const valueDateKey = (fi: number, recordedAt?: string): DateKey | null => {
+    const date = valueDate(fi, recordedAt);
+    return date ? buildDatePrefix(date) : null;
+  };
 
   // 1) Seed columns + cells from existing history (greyed context). A blood
   //    test seeds its own column. A saved BP seeds only a date this upload
@@ -316,10 +322,7 @@ export function buildMatrixModel(
   //    matrix, off the date axis. One rule for the seeding and the overlay.
   const bloodTestSet = new Set<string>(BLOOD_TEST_METRICS);
   const vitalSet = new Set<string>(VITAL_METRICS);
-  const uploadDates = new Set(results.flatMap((r, fi) => [...r.values, ...r.additionalValues].flatMap(v => {
-    const date = valueDate(fi, v.recordedAt);
-    return date ? [buildDatePrefix(date)] : [];
-  })));
+  const uploadDates = new Set(results.flatMap((r, fi) => [...r.values, ...r.additionalValues].map(v => valueDateKey(fi, v.recordedAt))));
   for (const m of measurementHistory) {
     const dateKey = m.recordedAt.slice(0, 10);
     const metric = m.metricType as MetricType;
@@ -364,10 +367,8 @@ export function buildMatrixModel(
   results.forEach((r, fi) => {
     /** The column a value lands in: its own date's (US-12 AC12) or its file's. */
     const columnFor = (recordedAt?: string): DateKey | null => {
-      const date = valueDate(fi, recordedAt);
-      if (!date) return null;
-      const dateKey = buildDatePrefix(date);
-      addColumn(dateKey, date, dateSource(fi, recordedAt));
+      const dateKey = valueDateKey(fi, recordedAt);
+      if (dateKey) addColumn(dateKey, valueDate(fi, recordedAt)!, dateSource(fi, recordedAt));
       return dateKey;
     };
 
@@ -422,6 +423,8 @@ export function buildMatrixModel(
         valueSI: av.value,
         displayUnit: labUnitText(av),
         lab,
+        referenceLow: av.referenceLow,
+        referenceHigh: av.referenceHigh,
         existing,
       });
     });
@@ -492,16 +495,11 @@ export function ReviewTable({
   const [lpaUnit, chooseLpaUnit] = useLpaUnit(unitSystem);
   const units = useMemo<Partial<Record<MetricType, CellUnit>>>(() => ({ ...metricUnitOverrides, lpa: lpaUnit }), [metricUnitOverrides, lpaUnit]);
 
-  // Full date state (day/month/year) per file, and per printed day of a
-  // dated previous-results column (`dateSource`, US-12 AC12).
+  // Full date state (day/month/year) per file, and, once edited, per printed
+  // day of a dated previous-results column (`dateSource`, US-12 AC12).
   const [fileDates, setFileDates] = useState<Record<string, FullDate>>(() => {
     const dates: Record<string, FullDate> = {};
-    results.forEach((r, i) => {
-      dates[i] = parseReportDate(r.reportDate);
-      for (const v of [...r.values, ...r.additionalValues]) {
-        if (v.recordedAt) dates[dateSource(i, v.recordedAt)] = parseReportDate(v.recordedAt);
-      }
-    });
+    results.forEach((r, i) => { dates[i] = parseReportDate(r.reportDate); });
     return dates;
   });
 
@@ -1219,13 +1217,18 @@ const MatrixCellView = memo(function MatrixCellView({
   const handleChange = (v: string) => onCellChange(cellKey, v, isCore ? unitSystem : undefined);
   // A guessed unit (medium) and a doubtful read (low) both ask to be checked (US-21 AC17).
   const lowConfClass = isCore && cell.confidence !== 'high' ? ' bt-cell-low-confidence' : '';
-  // What Save stores for a catalogued test printed in another unit: the
-  // catalogue's own conversion of the number as it now reads (US-21 AC17).
-  const lab = cell.kind === 'additional' ? cell.lab : undefined;
-  const entry = lab && resolveLabCatalogEntry(lab.name);
-  const typed = entry ? parseLocalisedNumber(editedValue) : undefined;
-  const stored = lab && entry && typed !== undefined ? canonicalLabValue(entry, typed, lab.unit) : null;
-  const storedText = stored && stored.factor !== 1 ? `${stored.value} ${stored.unit}` : null;
+  let storedText: string | null = null;
+  if (cell.kind === 'additional') {
+    // What Save stores for a catalogued test printed in another unit: the write's
+    // own canonicalLabRow on the number as it now reads, so a row the write
+    // refuses (a count off its range's scale) previews nothing (US-21 AC17).
+    const entry = resolveLabCatalogEntry(cell.lab.name);
+    const typed = entry ? parseLocalisedNumber(editedValue) : undefined;
+    const row = entry && typed !== undefined
+      ? canonicalLabRow(entry, { value: typed, unit: cell.lab.unit, referenceLow: cell.referenceLow, referenceHigh: cell.referenceHigh })
+      : null;
+    if (row && row.factor !== 1) storedText = `${row.stored.value} ${row.stored.unit}`;
+  }
 
   const input = isCore ? (
     <NumericInputCell
