@@ -219,7 +219,7 @@ ApoB SI canonical = `g/L`, validation range `0–3`. Conventional = `mg/dL`, ran
 | Level | Set when… | What the UI does with it |
 |---|---|---|
 | high | LLM self-rated "high" *and* the unit was a direct lookup hit | Plain editable cell. No `question` shown. |
-| medium | LLM rated "medium", OR LLM rated "high" but unit was inferred via range fallback | Plain editable cell. `question` shown if present. |
+| medium | LLM rated "medium", OR LLM rated "high" but unit was inferred via range fallback | Cell **highlighted** (`bt-cell-low-confidence`), `question` shown in the cell (US-21 AC17; before 2026-10-18 neither was). |
 | low | LLM rated "low" (ambiguous date, both current+previous visible, etc.) | Cell **highlighted** (`bt-cell-low-confidence`), `question` shown. Still saves unless the user clears it. |
 
 Confidence is *advisory*, not gating. Nothing in the pipeline cross-checks the LLM against itself or against a second engine. Confidence comes entirely from the LLM's own introspection, which it is not particularly good at when the input is a low-resolution scanned PDF.

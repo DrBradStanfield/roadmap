@@ -12,6 +12,7 @@ import {
   displayLabUnit,
   labSlotKey,
   resolveLabCatalogEntry,
+  canonicalLabValue,
   sameLabQuantity,
   slotState,
   type LabQuantity,
@@ -236,7 +237,7 @@ type MatrixRow = CoreRow | AdditionalRow;
 interface ExistingCell { id: string; display: string; valueSI?: number; lab?: LabQuantity; displayUnit?: string }
 
 type EditableMatrixCell =
-  | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; valueSI: number; displayUnit: string; existing?: ExistingCell }
+  | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; question?: string; valueSI: number; displayUnit: string; existing?: ExistingCell }
   | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; lab: LabQuantity; existing?: ExistingCell };
 
 /** A core cell as rendered: its text in the row's unit and the value it saves. */
@@ -385,6 +386,7 @@ export function buildMatrixModel(
         state: 'editable', kind: 'core', fi, vi,
         initialDisplay,
         confidence: v.confidence,
+        question: v.question,
         valueSI: v.valueSI,
         displayUnit: v.displayUnit,
         existing,
@@ -1215,7 +1217,15 @@ const MatrixCellView = memo(function MatrixCellView({
   // Stamp the row's display unit so a toggle-after-typing doesn't
   // misconvert the typed value at save time.
   const handleChange = (v: string) => onCellChange(cellKey, v, isCore ? unitSystem : undefined);
-  const lowConfClass = isCore && cell.confidence === 'low' ? ' bt-cell-low-confidence' : '';
+  // A guessed unit (medium) and a doubtful read (low) both ask to be checked (US-21 AC17).
+  const lowConfClass = isCore && cell.confidence !== 'high' ? ' bt-cell-low-confidence' : '';
+  // What Save stores for a catalogued test printed in another unit: the
+  // catalogue's own conversion of the number as it now reads (US-21 AC17).
+  const lab = cell.kind === 'additional' ? cell.lab : undefined;
+  const entry = lab && resolveLabCatalogEntry(lab.name);
+  const typed = entry ? parseLocalisedNumber(editedValue) : undefined;
+  const stored = lab && entry && typed !== undefined ? canonicalLabValue(entry, typed, lab.unit) : null;
+  const storedText = stored && stored.factor !== 1 ? `${stored.value} ${stored.unit}` : null;
 
   const input = isCore ? (
     <NumericInputCell
@@ -1226,14 +1236,15 @@ const MatrixCellView = memo(function MatrixCellView({
       valueSI={valueSI}
       onChange={handleChange}
       wrapperClass={`bt-cell-input bt-cell-review${lowConfClass}`}
+      note={cell.question && <span className="bt-cell-question">{cell.question}</span>}
     />
   ) : (
     <NumericInputCell
       value={editedValue}
       onChange={handleChange}
       wrapperClass="bt-cell-input bt-cell-review"
-      ariaLabel={withUnitText(`${rowName(row)} value`, cell.displayUnit)}
-      note={unitNote(cell.displayUnit)}
+      ariaLabel={withUnitText(`${rowName(row)} value`, cell.displayUnit) + (storedText ? `, saved as ${storedText}` : '')}
+      note={<>{unitNote(cell.displayUnit)}{storedText && <span className="bt-cell-si">→ {storedText}</span>}</>}
     />
   );
 
