@@ -13,7 +13,7 @@
  */
 import { deadlineSignal } from './adapter';
 import { dayOf, daysBetween, stampFields } from './merge';
-import { displayLabUnit, foldLpa, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
+import { displayLabUnit, foldLpa, LAB_CATALOG, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
 import { ISO_DATE, latestActivePerMetric } from './measurement-history';
 import {
   type AdditionalLabValue,
@@ -843,14 +843,33 @@ const BARE_NUMBER = /^\d+(?:[.,]\d+)?$/;
 /** How many words from a metric name a number still reads as that metric's value. */
 const METRIC_DISTANCE = 3;
 
+/**
+ * Every catalogue name of two or more words, as the guard splits it. A phrase
+ * is one name, so the distance runs from its ends: in "insulin-like growth
+ * factor 1 was 200" the generic words inside it cannot carry the value out of
+ * reach of "insulin", and the 1 inside it is the name, not a value.
+ */
+const METRIC_PHRASES = [...new Set(LAB_CATALOG.flatMap((entry) => [entry.label, ...entry.aliases]).map(foldLpa))]
+  .map((name) => name.match(FEEDBACK_WORD) ?? [])
+  .filter((phrase) => phrase.length > 1);
+
 /** "My LDL is 3.2" — a bare number a few words from a name this record knows. */
 function valueNearMetric(text: string): string | null {
   const words = foldLpa(text).match(FEEDBACK_WORD) ?? [];
+  // Where a name sits: one word, or a whole phrase from its first word to its last.
+  const names: Array<[number, number]> = [];
+  for (const [i, word] of words.entries()) {
+    if (METRIC_WORDS.has(word)) names.push([i, i]);
+    for (const phrase of METRIC_PHRASES) {
+      if (phrase.every((w, k) => words[i + k] === w)) names.push([i, i + phrase.length - 1]);
+    }
+  }
   for (const [i, word] of words.entries()) {
     if (!BARE_NUMBER.test(word)) continue;
-    const from = Math.max(0, i - METRIC_DISTANCE);
-    const to = Math.min(words.length - 1, i + METRIC_DISTANCE);
-    for (let j = from; j <= to; j += 1) if (METRIC_WORDS.has(words[j])) return `${words[j]} ${word}`;
+    for (const [first, last] of names) {
+      const inside = i >= first && i <= last;
+      if (!inside && i >= first - METRIC_DISTANCE && i <= last + METRIC_DISTANCE) return `${words.slice(first, last + 1).join(' ')} ${word}`;
+    }
   }
   return null;
 }

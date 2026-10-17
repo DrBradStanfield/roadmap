@@ -182,8 +182,9 @@ export const SCRUB_METRIC_WORDS = [
   'somatomedin', 'sulfate', 'sulphate', 'systolic', 'testosterone', 'thyroid',
   'thyrotropin', 'thyroxine', 'tibc', 'tpo', 'tpoab', 'transferase', 'transferrin',
   'triglycerides', 'triiodothyronine', 'tsat', 'tsh', 'upcr', 'urate', 'urea', 'uric',
-  'urinary', 'urine', 'vitamin', 'waist', 'wbc', 'weight', 'zinc', 'lh', 'ck',
-  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height',
+  'urinary', 'urine', 'vitamin', 'waist', 'wbc', 'weight', 'zinc', 'k', 'k+', 'cl', 'ld',
+  'hb', 'e2', 'lh', 'mg', 'ca', 'ck', 'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp',
+  'bmi', 'height',
 ];
 
 const NUMBER = '\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?';
@@ -197,8 +198,10 @@ const PLAIN_UNITS = SCRUB_UNITS.filter(u => u !== 'in' && u !== '"');
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const UNIT_VALUE_RE = new RegExp(
   `\\b${NUMBER}\\s*(?:(?:${alternation(PLAIN_UNITS)})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
+// The digits a name ends in belong to the name (mirror of sentry-scrub.ts).
+const NAME_DIGITS = '(?:(?:-?\\d+|\\s?[a-z]\\d+)(?![.,]?\\d))?';
 const METRIC_THEN_VALUE_RE = new RegExp(
-  `\\b(${alternation(SCRUB_METRIC_WORDS)})(?![a-z0-9])([^\\d\\n]{0,20}?)(${NUMBER})`, 'gi');
+  `\\b((?:${alternation(SCRUB_METRIC_WORDS)})${NAME_DIGITS})(?![a-z0-9])([^\\d\\n]{0,20}?)(${NUMBER})`, 'gi');
 const VALUE_THEN_METRIC_RE = new RegExp(
   `(${NUMBER})([^\\d\\n]{0,20}?)\\b(${alternation(SCRUB_METRIC_WORDS)})\\b`, 'gi');
 

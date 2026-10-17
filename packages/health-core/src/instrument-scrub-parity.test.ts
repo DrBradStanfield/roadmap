@@ -227,6 +227,24 @@ describe('free-text scrub parity', () => {
     }
   });
 
+  it('US-21 AC17 — a short alias is a name, and a name ending in a digit keeps its digit while the value goes', () => {
+    for (const impl of [source, copy]) {
+      // Short aliases skip the 3-letter floor, as short keys do.
+      expect(impl.scrubText('Ca 2.4')).toBe('Ca [value]');
+      expect(impl.scrubText('LD 180')).toBe('LD [value]');
+      expect(impl.scrubText('CK 120')).toBe('CK [value]');
+      // The name's own trailing digit is the name, not the value.
+      expect(impl.scrubText('IGF-1 200')).toBe('IGF-1 [value]');
+      expect(impl.scrubText('Apo A1 1.2')).toBe('Apo A1 [value]');
+      expect(impl.scrubText('Vitamin B12 300')).toBe('Vitamin B12 [value]');
+      // A plain value is still the value, decimal or not, and a lone name stays.
+      expect(impl.scrubText('LDL 3.2')).toBe('LDL [value]');
+      expect(impl.scrubText('ldl 3 then 4')).toBe('ldl [value] then 4');
+      expect(impl.scrubText('B12')).toBe('B12');
+      expect(impl.scrubText('B12 low')).toBe('B12 low');
+    }
+  });
+
   it('scrubText produces identical output', () => {
     for (const t of TEXTS) expect(copy.scrubText(t)).toBe(source.scrubText(t));
   });

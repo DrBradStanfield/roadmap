@@ -102,6 +102,11 @@ const PERCENT_OF_WBC_NOTE = { '%': {
 const ENZYME_ALIASES = ['iu/l'];
 /** An electrolyte with one charge: mEq/L and mmol/L are the same number. */
 const MEQ_ALIASES = ['meq/l'];
+/** Free testosterone, measured or calculated: testosterone 288.42 g/mol; a
+ *  nanomole is a thousand picomoles. */
+const FREE_TESTOSTERONE = { 'pg/ml': 3.467, 'ng/dl': 34.67, 'nmol/l': 1000 };
+/** Glucose, fasting or random: glucose 180.16 g/mol. */
+const GLUCOSE = { 'mg/dl': 0.05551 };
 /** A gonadotrophin: mIU/mL and U/L are IU/L, the same number. */
 const GONADOTROPHIN_ALIASES = ['miu/ml', 'u/l'];
 
@@ -173,7 +178,10 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
 
   // ── Hormones ──────────────────────────────────────────────────────────
   { key: 'testosterone_total', label: 'Testosterone (total)', group: 'hormones', unit: 'nmol/L', aliases: ['total testosterone', 'testosterone'], conversions: { 'ng/dl': 0.0347, 'ng/ml': 3.467 } }, // testosterone 288.42 g/mol
-  { key: 'free_testosterone', label: 'Free testosterone', group: 'hormones', unit: 'pmol/L', aliases: ['calculated free testosterone', 'cft'], conversions: { 'pg/ml': 3.467, 'ng/dl': 34.67, 'nmol/l': 1000 } }, // testosterone 288.42 g/mol; a nanomole is a thousand picomoles
+  // Measured and calculated free testosterone are two tests, as total and
+  // corrected calcium are: same unit and factors, never one slot.
+  { key: 'free_testosterone', label: 'Free testosterone', group: 'hormones', unit: 'pmol/L', aliases: [], conversions: FREE_TESTOSTERONE },
+  { key: 'free_testosterone_calculated', label: 'Free testosterone (calculated)', group: 'hormones', unit: 'pmol/L', aliases: ['calculated free testosterone', 'cft', 'calculated free t'], conversions: FREE_TESTOSTERONE },
   { key: 'shbg', label: 'SHBG', group: 'hormones', unit: 'nmol/L', aliases: ['sex hormone binding globulin'] },
   { key: 'estradiol', label: 'Estradiol', group: 'hormones', unit: 'pmol/L', aliases: ['oestradiol', 'e2'], conversions: { 'pg/ml': 3.671, 'ng/l': 3.671 } }, // estradiol 272.38 g/mol
   { key: 'prolactin', label: 'Prolactin', group: 'hormones', unit: 'mIU/L', aliases: [], unitAliases: ['µiu/ml'] }, // ng/mL is deliberately REFUSED: the mIU factor is assay-dependent (~21.2 for the WHO 3rd IS), so converting would invent precision
@@ -206,7 +214,8 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'esr', label: 'ESR', group: 'inflammation', unit: 'mm/hr', aliases: ['erythrocyte sedimentation rate', 'sed rate'], unitAliases: ['mm/h'] },
 
   // ── Metabolic ─────────────────────────────────────────────────────────
-  { key: 'glucose', label: 'Glucose', group: 'metabolic', unit: 'mmol/L', aliases: ['fasting glucose', 'fasting plasma glucose', 'plasma glucose', 'glucose fasting', 'blood glucose', 'fpg', 'fbg', 'random glucose'], conversions: { 'mg/dl': 0.05551 } }, // glucose 180.16 g/mol
+  { key: 'glucose', label: 'Glucose', group: 'metabolic', unit: 'mmol/L', aliases: ['fasting glucose', 'fasting plasma glucose', 'plasma glucose', 'glucose fasting', 'blood glucose', 'fpg', 'fbg'], conversions: GLUCOSE },
+  { key: 'glucose_random', label: 'Glucose (random)', group: 'metabolic', unit: 'mmol/L', aliases: ['random glucose', 'glucose random', 'non-fasting glucose'], conversions: GLUCOSE }, // not a fasting glucose: a test of its own
   { key: 'insulin', label: 'Insulin', group: 'metabolic', unit: 'mIU/L', aliases: ['fasting insulin', 'serum insulin'], unitAliases: ['µiu/ml', 'mu/l', 'µu/ml'], conversions: { 'pmol/l': 0.1667 } }, // 1 µIU/mL = 6.00 pmol/L (the insulin-standardisation convention)
   { key: 'apoa1', label: 'ApoA1', group: 'metabolic', unit: 'g/L', aliases: ['apolipoprotein a1', 'apolipoprotein a-i', 'apo a1', 'apo a-1', 'apoa-1', 'apoa-i'], conversions: { 'mg/dl': 0.01 } }, // a milligram per decilitre is a hundredth of a gram per litre
   { key: 'homocysteine', label: 'Homocysteine', group: 'metabolic', unit: 'µmol/L', aliases: ['total homocysteine', 'plasma homocysteine'] },
@@ -530,7 +539,7 @@ const GENERIC_NAME_WORDS = new Set([
   'binding', 'sex', 'hormone', 'stimulating', 'estimated', 'morning', 'adjusted', 'corrected',
   'saturation', 'ratio', 'protein',
   'like', 'random', 'direct', 'active', 'factor', 'growth', 'capacity', 'calculated', 'anti',
-  'antibodies', 'inorganic', 'conjugated',
+  'antibodies', 'inorganic', 'conjugated', 'non',
 ]);
 
 /**
@@ -540,7 +549,7 @@ const GENERIC_NAME_WORDS = new Set([
  * the prefix of hs-CRP, which `crp` already carries. Everything else short —
  * bp, hb, t3, t4, e2 — stays, so "BP 140/90" and "free T4 15" are refused.
  */
-const SHORT_NAME_WORDS = new Set(['na', 'gt', 'hs', 'am', 'oh', 'sat']);
+export const SHORT_NAME_WORDS: ReadonlySet<string> = new Set(['na', 'gt', 'hs', 'am', 'oh', 'sat']);
 
 /** "Lp(a)" is one name, not "lp" and "a" — folded before either side is read. */
 export function foldLpa(text: string): string {

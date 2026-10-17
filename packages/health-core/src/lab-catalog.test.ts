@@ -681,7 +681,12 @@ describe('US-21 AC17 — the common blood tests are catalogued, in SI', () => {
     ['Insulin', 8, 'uU/mL', 'insulin', 8, 'mIU/L'],
     ['Free Testosterone', 100, 'pg/mL', 'free_testosterone', 346.7, 'pmol/L'],
     ['Free Testosterone', 10, 'ng/dL', 'free_testosterone', 346.7, 'pmol/L'],
-    ['Calculated Free Testosterone', 0.35, 'nmol/L', 'free_testosterone', 350, 'pmol/L'],
+    ['Free Testosterone', 0.35, 'nmol/L', 'free_testosterone', 350, 'pmol/L'],
+    ['Calculated Free Testosterone', 0.35, 'nmol/L', 'free_testosterone_calculated', 350, 'pmol/L'],
+    ['Calculated Free T', 100, 'pg/mL', 'free_testosterone_calculated', 346.7, 'pmol/L'],
+    ['Free Testosterone (calculated)', 10, 'ng/dL', 'free_testosterone_calculated', 346.7, 'pmol/L'],
+    ['Random Glucose', 100, 'mg/dL', 'glucose_random', 5.551, 'mmol/L'],
+    ['Non-fasting Glucose', 5.8, 'mmol/L', 'glucose_random', 5.8, 'mmol/L'],
     ['LH', 5, 'mIU/mL', 'lh', 5, 'IU/L'],
     ['Luteinizing Hormone', 5, 'U/L', 'lh', 5, 'IU/L'],
     ['FSH', 6, 'mIU/mL', 'fsh', 6, 'IU/L'],
@@ -719,9 +724,10 @@ describe('US-21 AC17 — the common blood tests are catalogued, in SI', () => {
 
   // Every alias the decision named, against the key it must reach.
   const ALIASES: Record<string, string[]> = {
-    glucose: ['fasting glucose', 'fasting plasma glucose', 'plasma glucose', 'glucose fasting', 'blood glucose', 'fpg', 'fbg', 'random glucose'],
+    glucose: ['fasting glucose', 'fasting plasma glucose', 'plasma glucose', 'glucose fasting', 'blood glucose', 'fpg', 'fbg'],
+    glucose_random: ['random glucose', 'glucose random', 'non-fasting glucose'],
     insulin: ['fasting insulin', 'serum insulin'],
-    free_testosterone: ['calculated free testosterone', 'cft'],
+    free_testosterone_calculated: ['calculated free testosterone', 'cft', 'calculated free t'],
     lh: ['luteinising hormone', 'luteinizing hormone'],
     fsh: ['follicle stimulating hormone'],
     progesterone: ['progesterone'],
@@ -748,6 +754,7 @@ describe('US-21 AC17 — the common blood tests are catalogued, in SI', () => {
   const BY_KEY_OR_LABEL: Array<[string, string]> = [
     ['urine_creatinine', 'Urine creatinine'], ['cystatin_c', 'Cystatin C'], ['free_testosterone', 'Free testosterone'],
     ['b12_active', 'Active B12'], ['anti_tpo', 'Anti-TPO'], ['dhea_s', 'DHEA-S'], ['igf1', 'IGF-1'],
+    ['free_testosterone_calculated', 'Free testosterone (calculated)'], ['glucose_random', 'Glucose (random)'],
   ];
 
   it.each(BY_KEY_OR_LABEL)('US-21 AC17 — %s resolves by its key and its label, folded', (key, label) => {
@@ -769,11 +776,11 @@ describe('US-21 AC17 — the common blood tests are catalogued, in SI', () => {
   it('US-21 AC17 — each new test sits in its decided panel; metabolic is a group of its own', () => {
     const GROUPS: Record<string, string[]> = {
       renal: ['urine_creatinine', 'urine_pcr', 'cystatin_c'],
-      hormones: ['lh', 'fsh', 'progesterone', 'dhea_s', 'igf1', 'free_testosterone'],
+      hormones: ['lh', 'fsh', 'progesterone', 'dhea_s', 'igf1', 'free_testosterone', 'free_testosterone_calculated', 'psa_free'],
       thyroid: ['anti_tpo'],
       liver: ['bilirubin_direct', 'ldh'],
       vitamins: ['tibc', 'transferrin', 'b12_active', 'phosphate', 'calcium_total'],
-      metabolic: ['glucose', 'insulin', 'apoa1', 'homocysteine', 'ck'],
+      metabolic: ['glucose', 'glucose_random', 'insulin', 'apoa1', 'homocysteine', 'ck'],
     };
     for (const [group, keys] of Object.entries(GROUPS)) {
       for (const key of keys) expect(entryOf(key).group, key).toBe(group);
@@ -786,6 +793,16 @@ describe('US-21 AC17 — the common blood tests are catalogued, in SI', () => {
     expect(canonicalLabValue(entryOf('homocysteine'), 11, 'mg/L')).toBeNull();
     expect(canonicalLabValue(entryOf('active b12'), 70, 'pg/mL')).toBeNull();
     expect(canonicalLabValue(entryOf('glucose'), 90, 'mg/L')).toBeNull();
+  });
+
+  it('US-21 AC17 — a calculated free testosterone and a random glucose are tests of their own, as corrected calcium is', () => {
+    expect(labSlotKey('Free Testosterone')).toBe('free_testosterone');
+    expect(labSlotKey('Calculated Free Testosterone')).toBe('free_testosterone_calculated');
+    expect(labSlotKey('Fasting Glucose')).toBe('glucose');
+    expect(labSlotKey('Random Glucose')).toBe('glucose_random');
+    // Same unit and factors: a different test, not a different scale.
+    expect(entryOf('free_testosterone_calculated')).toMatchObject({ unit: entryOf('free_testosterone').unit, conversions: entryOf('free_testosterone').conversions });
+    expect(entryOf('glucose_random')).toMatchObject({ unit: entryOf('glucose').unit, conversions: entryOf('glucose').conversions });
   });
 
   it('US-21 AC12 fixed — a plain calcium is total calcium, never the corrected one', () => {

@@ -1245,10 +1245,16 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       'only 1 active tab, growth of 5 rows, factor 2 slower',
       'capacity hit 100 and the calculated 4 was anti 3 antibodies 2',
       'the inorganic 7 and conjugated 8 labels overlap',
+      // The number inside a name is the name.
+      'the insulin-like growth factor 1 row is missing',
+      'the non-blocking call ran 3 times',
     ]) {
       expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
     }
-    for (const detail of ['fasting glucose 5.4', 'my fasting 5.4 was dropped', 'plasma 5.4 went in the wrong row']) {
+    for (const detail of ['fasting glucose 5.4', 'my fasting 5.4 was dropped', 'plasma 5.4 went in the wrong row',
+      // A name of many words is one name: the distance runs from its end, so
+      // the generic words inside it cannot carry the value out of reach.
+      'insulin-like growth factor 1 was 200', '200 was my insulin-like growth factor 1']) {
       expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
     }
   });

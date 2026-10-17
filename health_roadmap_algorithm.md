@@ -261,6 +261,9 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `free_testosterone` | pmol/L | pg/ml | 3.467 | testosterone 288.42 g/mol |
 | `free_testosterone` | pmol/L | ng/dl | 34.67 | testosterone 288.42 g/mol |
 | `free_testosterone` | pmol/L | nmol/l | 1000 | a nanomole is a thousand picomoles |
+| `free_testosterone_calculated` | pmol/L | pg/ml | 3.467 | testosterone 288.42 g/mol (a calculated free testosterone: a test of its own, same factors) |
+| `free_testosterone_calculated` | pmol/L | ng/dl | 34.67 | testosterone 288.42 g/mol |
+| `free_testosterone_calculated` | pmol/L | nmol/l | 1000 | a nanomole is a thousand picomoles |
 | `estradiol` | pmol/L | pg/ml | 3.671 | estradiol 272.38 g/mol |
 | `estradiol` | pmol/L | ng/l | 3.671 | estradiol 272.38 g/mol |
 | `prolactin` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number (ng/mL stays refused: assay-dependent) |
@@ -292,6 +295,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `crp` | mg/L | mg/dl | 10 | a decilitre is a tenth of a litre |
 | `esr` | mm/hr | mm/h | 1 | spelling only |
 | `glucose` | mmol/L | mg/dl | 0.05551 | glucose 180.16 g/mol |
+| `glucose_random` | mmol/L | mg/dl | 0.05551 | glucose 180.16 g/mol (a random glucose: a test of its own, not a fasting one) |
 | `insulin` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number |
 | `insulin` | mIU/L | mu/l | 1 | mU/L is mIU/L, printed short |
 | `insulin` | mIU/L | µu/ml | 1 | µU/mL is µIU/mL, printed short |
