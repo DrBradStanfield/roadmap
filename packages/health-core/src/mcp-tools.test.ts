@@ -1236,6 +1236,29 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
     }
   });
+
+  it('US-21 AC17 — the English words in the new test names are not test words; fasting still is', () => {
+    for (const detail of [
+      'the page took like 10 seconds',
+      'a random 3 rows went missing',
+      'the direct link failed 2 times',
+      'only 1 active tab, growth of 5 rows, factor 2 slower',
+      'capacity hit 100 and the calculated 4 was anti 3 antibodies 2',
+      'the inorganic 7 and conjugated 8 labels overlap',
+      // The number inside a name is the name.
+      'the insulin-like growth factor 1 row is missing',
+      'the IGF-1 row is missing',
+      'the non-blocking call ran 3 times',
+    ]) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
+    }
+    for (const detail of ['fasting glucose 5.4', 'my fasting 5.4 was dropped', 'plasma 5.4 went in the wrong row',
+      // A name of many words is one name: the distance runs from its end, so
+      // the generic words inside it cannot carry the value out of reach.
+      'insulin-like growth factor 1 was 200', '200 was my insulin-like growth factor 1', 'IGF-1 was 200']) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
+    }
+  });
 });
 
 
@@ -2585,6 +2608,16 @@ describe('US-36 AC3 — the printed name must agree with the claimed metric', ()
     // Sent as a lab under its printed name, an unknown test still files (labSlotKey), so nothing the report holds is lost.
     const asLab = prepared(labCall([row('Non-HDL Cholesterol', 'Non-HDL Cholesterol', 3.9, 'mmol/L')]));
     expect(asLab.payload.candidates.map((c) => [c.kind, c.metric])).toEqual([['lab', 'non-hdl cholesterol']]);
+  });
+
+  it('US-21 AC17 — free PSA and urine creatinine file as their own tests, never as core PSA or creatinine', () => {
+    const out = prepared(labCall([row('psa', 'Free PSA', 0.3, 'ng/mL'), row('creatinine', 'Urine Creatinine', 100, 'mg/dL')]));
+    expect(out.unrecognized).toEqual([
+      'Free PSA 0.3 ng/mL: printed name Free PSA is psa_free, not psa. Re-send it as psa_free.',
+      'Urine Creatinine 100 mg/dL: printed name Urine Creatinine is urine_creatinine, not creatinine. Re-send it as urine_creatinine.',
+    ]);
+    const asLab = prepared(labCall([row('psa_free', 'Free PSA', 0.3, 'ng/mL'), row('urine_creatinine', 'Urine Creatinine', 100, 'mg/dL')]));
+    expect(asLab.payload.candidates.map((c) => [c.kind, c.metric])).toEqual([['lab', 'psa_free'], ['lab', 'urine_creatinine']]);
   });
 
   it('refuses the lazy pairing (printedName is the bare key), and a claimed lab key whose printed name is another test', () => {
