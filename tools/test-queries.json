@@ -7474,5 +7474,22 @@
     ],
     "must_not_mention": [],
     "notes": "Changed. Entry: \"A grade 1 to 2 mid-systolic murmur may be a flow murmur, or a murmur from a thickened or sclerotic aortic valve.\""
+  },
+  {
+    "query": "You look kind of strange in this one... could that be from the taurin??",
+    "expected": [
+      "taurine-benefits-forms-dosing-and-side-effects",
+      "1-394-person-study-on-taurine-proves-what-we-suspected"
+    ],
+    "category": "supplement",
+    "source": "production",
+    "notes": "2026-W42 chat-health: YouTube comment, paraphrased. A remark about the presenter, then a side-effect question with 'taurine' misspelled. Production routed nothing (one sample, no error); the W42 replay picked the taurine reference 18/18. Guards against the lead-in or the misspelling dropping the supplement."
+  },
+  {
+    "query": "The March 8.5 creatinine was actually a urine sample, not blood",
+    "category": "measurement",
+    "source": "production",
+    "expected_classification": "MEASUREMENT",
+    "notes": "2026-W42 chat-health: widget turn, paraphrased. The user corrects an already-recorded value (wrong specimen): the prompt's MEASUREMENT definition ('READ BACK, RESTATE or CORRECT their own already-recorded numbers'). Production (Haiku 5.5) labelled the real turn ROUTE mid-thread; replay with thread context ROUTE 35/35 on Haiku 5.5, MEASUREMENT 14/14 on Haiku 4.5. This context-free fixture is a weak guard (Haiku 5.5 MEASUREMENT 4/5): the harness cannot send prior turns."
   }
 ]
