@@ -148,9 +148,9 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   empty. It fails 0/6 on 925d3d1 too. Do not read a miss as a regression or
   tune the prompt for it; it clears only when production sends partial data.
 - **2026-10-18 [classifier]** A classifier model swap moves labels with no
-  prompt change. Replayed with thread context, Haiku 5.5 labelled seven
-  mid-thread value corrections ROUTE 35/35; Haiku 4.5 said MEASUREMENT 14/14.
+  prompt change. Replayed with thread context, Haiku 5.5 labelled six
+  mid-thread value corrections ROUTE 30/30; Haiku 4.5 said MEASUREMENT 12/12.
   `test-classifier.ts` sends no prior turns, so it cannot see this. Replays:
   production classifies the RAW text (`api.chat.ts:437`); widget rows store
   digits as `#` (US-15 AC33), so substitute values (a masked replay flipped
-  1 label in 12). No column records the classifier model per turn.
+  1 label in 11). No column records the classifier model per turn.
