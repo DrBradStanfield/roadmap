@@ -15,7 +15,7 @@
  */
 import { z } from 'zod';
 import { reportedToCanonical, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from './units';
-import { foldName, normalizeLabUnit } from './lab-catalog';
+import { foldName, LAB_CATALOG, LAB_GROUPS, normalizeLabUnit } from './lab-catalog';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES } from './validation';
 
@@ -228,17 +228,10 @@ ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metri
   10. REFERENCE RANGES: for each "additionalValues" row, return the row's printed reference range as "referenceLow" and "referenceHigh": the numbers as printed, in the row's printed unit, never converted. A one-sided range sets one side ("<5" is referenceHigh 5, ">40" is referenceLow 40) and the other is null; both are null when no range is printed.
 
   ADDITIONAL VALUES — use these standardized snake_case names when applicable:
-  FBC: haemoglobin, rbc, wbc, platelets, mcv, mch, haematocrit, neutrophils, lymphocytes, monocytes, eosinophils, basophils
-  LFTs: alt, ast, ggt, alp, bilirubin, albumin, total_protein, globulin
-  U&Es: sodium, potassium, urea, chloride, bicarbonate
-  Kidney: cystatin_c, egfr
-  Thyroid: tsh, free_t4, free_t3
-  Iron: ferritin, iron, tibc, transferrin_saturation
-  Vitamins: vitamin_b12, folate, vitamin_d
-  Inflammation: crp, hs_crp, esr
-  Hormones: testosterone, free_testosterone, shbg, estradiol, prolactin, progesterone, dhea_s, igf1
-  Metabolic: fasting_glucose, fasting_insulin, uric_acid
-  Other: homocysteine, or any other metric — use best descriptive snake_case name.
+${LAB_GROUPS.map((group) => [group.label, LAB_CATALOG.filter((entry) => entry.group === group.id).map((entry) => entry.key)] as const)
+  .filter(([, keys]) => keys.length > 0)
+  .map(([label, keys]) => `  ${label}: ${keys.join(', ')}`).join('\n')}
+  Any other test: use the best descriptive snake_case name.
 
 IF any other classification:
   Set "values" to [].

@@ -25,7 +25,6 @@ import {
   unifiedSystemPrompt,
 } from './lab-extraction';
 import { oneLine } from './plan';
-import { canonicalLabRow, resolveLabCatalogEntry } from './lab-catalog';
 
 describe('US-12: pagesToContentBlocks', () => {
   it('converts a text page to a text content block', () => {
@@ -306,7 +305,7 @@ describe('US-35 AC2/AC5: isImportableEntryName', () => {
 // US-12 AC8 — dot thousands on a count, apostrophe thousands, and a count of
 // the rows the parse dropped
 // ---------------------------------------------------------------------------
-import { canonicalLabRow, resolveLabCatalogEntry } from './lab-catalog';
+import { canonicalLabRow, LAB_CATALOG, LAB_GROUPS, resolveLabCatalogEntry } from './lab-catalog';
 
 describe('US-12 AC8: an ambiguous number is refused, and the refusal is counted', () => {
   // A null optional field is not an unreadable value: the row stays.
@@ -750,4 +749,34 @@ describe('US-21 AC7/AC8: a unit printed only in the range column reaches the wri
     expect(ldl.confidence).toBe('medium');
     expect(ldl.question).toBe('No unit was printed, so the unit was inferred — please verify this value');
   });
+});
+
+// The prompt's suggested names were a hand list that drifted from the catalogue
+// (bilirubin vs bilirubin_total, free_t4 vs ft4, a dozen tests the catalogue
+// never had). One list now: the catalogue's own keys, by panel.
+describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those', () => {
+  const block = (prompt: string) => {
+    const start = prompt.indexOf('ADDITIONAL VALUES');
+    return prompt.slice(start, prompt.indexOf('\n\n', start)).split('\n').slice(1);
+  };
+  for (const mode of ['full', 'metadata'] as const) {
+    it(`${mode}: every catalogue key is named once, under its panel's label`, () => {
+      const lines = block(unifiedSystemPrompt(mode));
+      const named = lines.filter(l => !l.includes('Any other test')).flatMap(l => {
+        const [label, keys] = l.trim().split(': ');
+        const group = LAB_GROUPS.find(g => g.label === label);
+        expect(group, `panel label "${label}"`).toBeDefined();
+        return keys.split(', ').map(key => {
+          expect(LAB_CATALOG.find(e => e.key === key)?.group, key).toBe(group!.id);
+          return key;
+        });
+      });
+      expect([...named].sort()).toEqual(LAB_CATALOG.map(e => e.key).sort());
+    });
+    it(`${mode}: an uncatalogued test still gets a descriptive name, and no hand-kept name survives`, () => {
+      const lines = block(unifiedSystemPrompt(mode));
+      expect(lines.at(-1)).toBe('  Any other test: use the best descriptive snake_case name.');
+      expect(lines.join('\n')).not.toMatch(/\b(?:homocysteine|fasting_glucose|free_t4|hs_crp)\b/);
+    });
+  }
 });
