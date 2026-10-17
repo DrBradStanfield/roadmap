@@ -6,7 +6,7 @@
  * via Sentry error reports.
  */
 
-import { CATALOG_UNITS, metricNameWords } from './lab-catalog';
+import { CATALOG_UNITS, LAB_CATALOG, metricNameWords } from './lab-catalog';
 
 const REDACTED = '[Filtered]';
 
@@ -212,10 +212,12 @@ export const SCRUB_METRIC_WORDS: readonly string[] = [
   // Every word a metric or catalogued test is known by. 3 is the floor: "mg"
   // and "na" are a unit and a word long before they are magnesium and sodium.
   ...metricNameWords(3),
+  // A catalogue key is a test's own name, so a short one skips the floor:
+  // "CK 120" and "LH 5" are values.
+  ...LAB_CATALOG.map((entry) => entry.key).filter((key) => key.length < 3),
   // What no name in either list spells: the phrases a person writes, and the
-  // metrics that live in the calculator rather than the catalogue, and the two
-  // catalogued tests whose only short names fall under the floor.
-  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height', 'ck', 'lh',
+  // metrics that live in the calculator rather than the catalogue.
+  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height',
 ];
 
 /** A number, or a blood-pressure pair ("140/90"). */

@@ -4,12 +4,12 @@
  * Read-only: no editing, no unit conversion — values render as-reported
  * (see decisions in docs/user-stories.md § US-21).
  */
-import { LAB_GROUPS, labSlotKey, resolveLabCatalogEntry, displayLabUnit, type LabGroupId } from '@roadmap/health-core';
+import { LAB_GROUPS, labSlotKey, resolveLabCatalogEntry, displayLabUnit, type LabGroup, type LabGroupId } from '@roadmap/health-core';
 import { labValueLabel } from './lab-value-labels';
 import type { ApiLabValue } from './api-types';
 
 export type LabRowsGroupId = LabGroupId | 'other';
-export type LabRowsIcon = 'kidney' | 'liver' | 'droplet' | 'thyroid' | 'hormones' | 'vitamins' | 'flame' | 'flask';
+export type LabRowsIcon = LabGroup['icon'];
 
 /** Widget-side pseudo-group for names the catalogue doesn't (yet) know. */
 const OTHER_GROUP: { id: 'other'; label: string; icon: LabRowsIcon } = {

@@ -182,8 +182,8 @@ export const SCRUB_METRIC_WORDS = [
   'somatomedin', 'sulfate', 'sulphate', 'systolic', 'testosterone', 'thyroid',
   'thyrotropin', 'thyroxine', 'tibc', 'tpo', 'tpoab', 'transferase', 'transferrin',
   'triglycerides', 'triiodothyronine', 'tsat', 'tsh', 'upcr', 'urate', 'urea', 'uric',
-  'urinary', 'urine', 'vitamin', 'waist', 'wbc', 'weight', 'zinc', 'blood pressure',
-  'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height', 'ck', 'lh',
+  'urinary', 'urine', 'vitamin', 'waist', 'wbc', 'weight', 'zinc', 'lh', 'ck',
+  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height',
 ];
 
 const NUMBER = '\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?';

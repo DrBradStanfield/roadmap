@@ -721,14 +721,13 @@ describe('US-21 AC17 — the common blood tests are catalogued, in SI', () => {
   const ALIASES: Record<string, string[]> = {
     glucose: ['fasting glucose', 'fasting plasma glucose', 'plasma glucose', 'glucose fasting', 'blood glucose', 'fpg', 'fbg', 'random glucose'],
     insulin: ['fasting insulin', 'serum insulin'],
-    free_testosterone: ['free testosterone', 'calculated free testosterone', 'cft'],
+    free_testosterone: ['calculated free testosterone', 'cft'],
     lh: ['luteinising hormone', 'luteinizing hormone'],
     fsh: ['follicle stimulating hormone'],
     progesterone: ['progesterone'],
-    dhea_s: ['dhea-s', 'dheas', 'dhea sulphate', 'dhea sulfate', 'dehydroepiandrosterone sulfate', 'dehydroepiandrosterone sulphate'],
-    igf1: ['igf-1', 'igf 1', 'insulin-like growth factor 1', 'somatomedin c'],
+    dhea_s: ['dheas', 'dhea sulphate', 'dhea sulfate', 'dehydroepiandrosterone sulfate', 'dehydroepiandrosterone sulphate'],
+    igf1: ['igf 1', 'insulin-like growth factor 1', 'somatomedin c'],
     apoa1: ['apolipoprotein a1', 'apolipoprotein a-i', 'apo a1', 'apo a-1', 'apoa-1', 'apoa-i'],
-    cystatin_c: ['cystatin c'],
     homocysteine: ['total homocysteine', 'plasma homocysteine'],
     calcium_total: ['calcium', 'total calcium', 'serum calcium', 'ca'],
     phosphate: ['phosphorus', 'inorganic phosphate', 'po4'],
@@ -737,12 +736,27 @@ describe('US-21 AC17 — the common blood tests are catalogued, in SI', () => {
     ck: ['creatine kinase', 'cpk', 'creatine phosphokinase'],
     tibc: ['total iron binding capacity'],
     transferrin: ['transferrin'],
-    anti_tpo: ['anti-tpo', 'tpo antibodies', 'thyroid peroxidase antibodies', 'anti thyroid peroxidase', 'tpoab'],
+    anti_tpo: ['tpo antibodies', 'thyroid peroxidase antibodies', 'anti thyroid peroxidase', 'tpoab'],
     psa_free: ['free psa'],
-    b12_active: ['active b12', 'holotranscobalamin', 'holotc'],
-    urine_creatinine: ['urine creatinine', 'creatinine urine', 'urinary creatinine', 'creatinine (urine)'],
+    b12_active: ['holotranscobalamin', 'holotc'],
+    urine_creatinine: ['creatinine urine', 'urinary creatinine', 'creatinine (urine)'],
     urine_pcr: ['protein creatinine ratio', 'protein:creatinine ratio', 'urine protein creatinine ratio', 'upcr'],
   };
+
+  // These names are the entry's own key or label, which the resolver already
+  // indexes folded, so the entry carries no alias that repeats them.
+  const BY_KEY_OR_LABEL: Array<[string, string]> = [
+    ['urine_creatinine', 'Urine creatinine'], ['cystatin_c', 'Cystatin C'], ['free_testosterone', 'Free testosterone'],
+    ['b12_active', 'Active B12'], ['anti_tpo', 'Anti-TPO'], ['dhea_s', 'DHEA-S'], ['igf1', 'IGF-1'],
+  ];
+
+  it.each(BY_KEY_OR_LABEL)('US-21 AC17 — %s resolves by its key and its label, folded', (key, label) => {
+    expect(entryOf(key).label).toBe(label);
+    for (const name of [key, key.replace(/_/g, ' '), label, label.toLowerCase(), label.toUpperCase().replace(/ /g, '_')]) {
+      expect(resolveLabCatalogEntry(name)?.key, name).toBe(key);
+      expect(labSlotKey(name), name).toBe(key);
+    }
+  });
 
   it.each(Object.entries(ALIASES))('US-21 AC17 — every spelling of %s resolves to it', (key, aliases) => {
     for (const alias of [key, ...aliases]) {
