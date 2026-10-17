@@ -527,6 +527,8 @@ const GENERIC_NAME_WORDS = new Set([
   'corpuscular', 'serum', 'acid', 'high', 'sensitivity', 'rate', 'sed', 'distribution', 'width',
   'binding', 'sex', 'hormone', 'stimulating', 'estimated', 'morning', 'adjusted', 'corrected',
   'saturation', 'ratio', 'protein',
+  'like', 'random', 'direct', 'active', 'factor', 'growth', 'capacity', 'calculated', 'anti',
+  'antibodies', 'inorganic', 'conjugated',
 ]);
 
 /**

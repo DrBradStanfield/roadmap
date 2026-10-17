@@ -1236,6 +1236,22 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
     }
   });
+
+  it('US-21 AC17 — the English words in the new test names are not test words; fasting still is', () => {
+    for (const detail of [
+      'the page took like 10 seconds',
+      'a random 3 rows went missing',
+      'the direct link failed 2 times',
+      'only 1 active tab, growth of 5 rows, factor 2 slower',
+      'capacity hit 100 and the calculated 4 was anti 3 antibodies 2',
+      'the inorganic 7 and conjugated 8 labels overlap',
+    ]) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
+    }
+    for (const detail of ['fasting glucose 5.4', 'my fasting 5.4 was dropped', 'plasma 5.4 went in the wrong row']) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
+    }
+  });
 });
 
 
