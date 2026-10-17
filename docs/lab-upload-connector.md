@@ -111,9 +111,7 @@ No collection date in the file → the value is not offered (`no_date`), and
 the hint asks the assistant to call again with
 `fileDates: [{ "file": "<name as listed>", "date": "YYYY-MM-DD" }]` (a list of
 pairs, not a map: ChatGPT's renderer dropped the map-shaped param, live
-2026-09-07), which sets the file's date and wins over its print; a dated
-previous-results column keeps its own printed day, each value offered on
-that day (US-12 AC12, 2026-10-18); a refused date is `bad_date`
+2026-09-07), which wins over any printed date; a refused date is `bad_date`
 with the record's own reason first. Several files dragged into ChatGPT mean
 one call per file; a value already extracted this chat for the same
 (metric, day) is a conflict the moved-slot guard refuses at commit. Two files offering one (metric, day) are both shown,

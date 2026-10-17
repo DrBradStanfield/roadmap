@@ -1830,9 +1830,10 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(importHint('no_date')).toContain('fileDates: [{ "file": "<name as listed>", "date": "YYYY-MM-DD" }]');
   });
 
-  // US-12 AC12 on the connector: a report with a dated "Prev." column, through
-  // the real parse of the model's reply. Synthetic values.
-  it('AC5/AC13 — a dated previous-column value is offered on its own day, and the user’s file date never moves it', () => {
+  // US-12 AC12 is website-only while MCP 1.0.2 is in OpenAI's review: the
+  // shared parse now reads a dated "Prev." column, and import_documents must
+  // offer exactly what it did before. Synthetic values, through the real parse.
+  it('AC5/AC13 — import_documents does not offer a previous-column value, and fileDates moves only the primary column', () => {
     const report = toUnifiedResult(parseUnifiedResult({
       classification: 'lab_report', reportDate: '2026-08-20', document: null,
       values: [
@@ -1844,20 +1845,20 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
         { name: 'ferritin', value: 180, unit: 'ug/L', recordedAt: '2026-05-04' },
       ],
     }));
+    const prepared = (fileDates?: Record<string, string>) =>
+      prepareImport(base(), { ...bundleOf([extracted('cumulative.pdf', report)]), ...(fileDates ? { fileDates } : null) }, IMPORT_CTX);
     const offered = (fileDates?: Record<string, string>) =>
-      prepareImport(base(), { ...bundleOf([extracted('cumulative.pdf', report)]), ...(fileDates ? { fileDates } : null) }, IMPORT_CTX)
-        .payload.candidates.map((c) => [c.metric, c.value, c.recordedAt, c.slot.state]);
-    expect(offered()).toEqual([
-      ['ldl', 2.6, '2026-08-20', 'free'], ['ldl', 3.1, '2026-05-04', 'free'],
-      ['ferritin', 150, '2026-08-20', 'free'], ['ferritin', 180, '2026-05-04', 'free'],
+      prepared(fileDates).payload.candidates.map((c) => [c.metric, c.value, c.recordedAt, c.slot.state]);
+    expect(offered()).toEqual([['ldl', 2.6, '2026-08-20', 'free'], ['ferritin', 150, '2026-08-20', 'free']]);
+    expect(offered({ 'cumulative.pdf': '2026-08-21' })).toEqual([['ldl', 2.6, '2026-08-21', 'free'], ['ferritin', 150, '2026-08-21', 'free']]);
+    // Left out as the old prompt left it out: not refused, not counted, no new hint.
+    expect(prepared().unrecognized).toEqual([]);
+    expect(prepared().files[0]).toEqual({ name: 'cumulative.pdf', status: 'extracted', classification: 'lab_report', documentDate: '2026-08-20' });
+    // file_results is untouched: the assistant's own per-line recordedAt still files on its day (US-36 AC1).
+    const assistant = prepareImport(base(), { ...bundleOf([extracted('cumulative.pdf', report)]), route: 'assistant' as const }, IMPORT_CTX);
+    expect(assistant.payload.candidates.map((c) => [c.metric, c.recordedAt])).toEqual([
+      ['ldl', '2026-08-20'], ['ldl', '2026-05-04'], ['ferritin', '2026-08-20'], ['ferritin', '2026-05-04'],
     ]);
-    expect(offered({ 'cumulative.pdf': '2026-08-21' }).map(([metric, , day]) => [metric, day])).toEqual([
-      ['ldl', '2026-08-21'], ['ldl', '2026-05-04'], ['ferritin', '2026-08-21'], ['ferritin', '2026-05-04'],
-    ]);
-    // The contract says so, inside the tools/list budget: fileDates sets the file's date, never a previous column's.
-    const tool = MCP_TOOLS.find((t) => t.name === 'import_documents')!;
-    expect((tool.inputSchema.properties.fileDates as { description: string }).description)
-      .toContain('Sets the file’s date, never a dated previous column’s.');
   });
 
   it('AC6 — candidates are shown in the record’s own unit system and stored canonical; equality is judged in that system', () => {

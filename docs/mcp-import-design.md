@@ -138,9 +138,6 @@ of truth for acceptance criteria and the schemas live in
     (`displayValue`/`displayUnit`), stored canonical, and slot equality is
     judged in that system. A missing collection date is answered by the
     caller's `fileDates: {name: 'YYYY-MM-DD'}`, which wins over the print.
-    It sets the file's date only: a dated previous-results column keeps
-    its own printed day, each value a candidate on that day (US-12 AC12,
-    2026-10-18).
     Two files offering one (metric, day) are both shown, the second marked
     `sameDayAs`; a commit accepting both is refused in words. Sentry gets a
     fixed message and the error class, never a parse message.
