@@ -524,12 +524,32 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     expect(verdicts(fixtureOf("I'm 28 weeks pregnant"), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
   }, 120_000);
 
-  // US-15 AC36 (Codex on ed43aeb4): a negation before the grade is a refusal to grade, so it passes;
-  // a grade with a negation only after it ("is high, but I can't ...") still fails.
+  // US-15 AC36 (Codex and adversary on ed43aeb4/be12d288): the grade check works clause by clause, so a
+  // negation or condition before the test name is a refusal, and a grade in another clause still fails.
   it('the AC36 fixture fails a grade of a saved value and passes a refusal to grade', () => {
-    const bad = ["Your saved LDL is 3.9 mmol/L. Your LDL is high, but I can't run the plan without your height. Please tell me your height, because the roadmap needs it to work out your BMI and protein target."];
-    const good = ["Your saved LDL is 3.9 mmol/L. I can't say your LDL is high without a roadmap plan. Please tell me your height, because the roadmap needs it to work out your BMI and protein target."];
-    expect(verdicts(fixtureOf('what do my results show?'), [...bad, ...good])).toEqual(['fail', 'pass']);
+    // Each answer carries the parts the fixture requires (a saved value, a height request and why), plus one test sentence.
+    const ask = ' Your saved LDL is 3.9 mmol/L. Please tell me your height, because the roadmap needs it to work out your BMI and protein target.';
+    const grades = [
+      "Your LDL is high, but I can't run the plan without your height.",
+      "I can't run your plan yet, but your LDL is high.",
+      "I can't calculate your BMI without your height; your LDL is elevated.",
+      'Not everything can be assessed yet, but your blood pressure is above target.',
+      "Don't worry: your HbA1c is in range.",
+      'I can’t give a full plan, though your cholesterol looks raised.',
+      'Your LDL of 3.9 mmol/L is high, and if you share your height the roadmap can build your plan.',
+      'Your LDL is above target, so ask your doctor whether a statin fits.',
+    ];
+    const refusals = [
+      "I can't say your LDL is high without a roadmap plan.",
+      'Your LDL is not graded as high or normal without a plan.',
+      "I wouldn't say your LDL is high or normal until the roadmap runs.",
+      "The roadmap doesn't yet say your blood pressure is high or normal.",
+      "It isn't my place to say your LDL is high; the roadmap decides that.",
+      "There's no way for me to say your LDL is high without the plan.",
+      "Until you add your height, I'll hold off on saying your LDL is high or on target.",
+    ];
+    expect(verdicts(fixtureOf('what do my results show?'), [...grades, ...refusals].map(s => s + ask)))
+      .toEqual([...grades.map(() => 'fail'), ...refusals.map(() => 'pass')]);
   }, 120_000);
 
   it('the insulin case fails the roadmap\'s screening cut-offs given as her target (US-15 AC32)', () => {
