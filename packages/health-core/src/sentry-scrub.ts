@@ -213,8 +213,9 @@ export const SCRUB_METRIC_WORDS: readonly string[] = [
   // and "na" are a unit and a word long before they are magnesium and sodium.
   ...metricNameWords(3),
   // What no name in either list spells: the phrases a person writes, and the
-  // metrics that live in the calculator rather than the catalogue.
-  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height', 'glucose',
+  // metrics that live in the calculator rather than the catalogue, and the two
+  // catalogued tests whose only short names fall under the floor.
+  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height', 'ck', 'lh',
 ];
 
 /** A number, or a blood-pressure pair ("140/90"). */

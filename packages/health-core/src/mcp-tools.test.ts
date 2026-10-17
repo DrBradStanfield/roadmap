@@ -2587,6 +2587,16 @@ describe('US-36 AC3 — the printed name must agree with the claimed metric', ()
     expect(asLab.payload.candidates.map((c) => [c.kind, c.metric])).toEqual([['lab', 'non-hdl cholesterol']]);
   });
 
+  it('US-21 AC17 — free PSA and urine creatinine file as their own tests, never as core PSA or creatinine', () => {
+    const out = prepared(labCall([row('psa', 'Free PSA', 0.3, 'ng/mL'), row('creatinine', 'Urine Creatinine', 100, 'mg/dL')]));
+    expect(out.unrecognized).toEqual([
+      'Free PSA 0.3 ng/mL: printed name Free PSA is psa_free, not psa. Re-send it as psa_free.',
+      'Urine Creatinine 100 mg/dL: printed name Urine Creatinine is urine_creatinine, not creatinine. Re-send it as urine_creatinine.',
+    ]);
+    const asLab = prepared(labCall([row('psa_free', 'Free PSA', 0.3, 'ng/mL'), row('urine_creatinine', 'Urine Creatinine', 100, 'mg/dL')]));
+    expect(asLab.payload.candidates.map((c) => [c.kind, c.metric])).toEqual([['lab', 'psa_free'], ['lab', 'urine_creatinine']]);
+  });
+
   it('refuses the lazy pairing (printedName is the bare key), and a claimed lab key whose printed name is another test', () => {
     const out = prepared(labCall([row('apob', 'apob', 0.9, 'g/L'), row('ferritin', 'TSH', 1.8, 'mIU/L')]));
     expect(out.unrecognized).toEqual([

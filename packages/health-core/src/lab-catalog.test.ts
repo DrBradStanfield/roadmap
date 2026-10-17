@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { acceptedLabUnits, canonicalLabRow, displayLabUnit, canonicalLabValue, LAB_CATALOG, labCountFault, LAB_CONVERSIONS, LAB_GROUPS, labUnitRefusal, labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, normalizeLabUnit, labSlotKey } from './lab-catalog';
+import { resolveCoreMetricName } from './lab-extraction';
 
 // US-21 · Additional blood tests — catalogue integrity (phase-1 scaffold).
 describe('lab catalogue integrity (US-21)', () => {
@@ -657,5 +658,150 @@ describe('US-21 AC16 — mm3 and mm³ fold to µL', () => {
       }
     }
     expect(canonicalLabValue(entryOf('mcv'), 90, '10^3/mm³')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-21 AC17 — every common blood test has a catalogue entry.
+// ---------------------------------------------------------------------------
+// Each test below landed in "Other tests" with its printed unit, so one test
+// could hold a mg/dL row and a mmol/L row side by side. Now each is stored in
+// its SI unit, through the factor for each spelling it accepts. The units and
+// factors are the orchestrator's clinical decisions (2026-10-18).
+describe('US-21 AC17 — the common blood tests are catalogued, in SI', () => {
+  const entryOf = (name: string) => resolveLabCatalogEntry(name)!;
+
+  // [printed name, value, printed unit, key, stored value, stored unit]
+  const CONVERSIONS: Array<[string, number, string, string, number, string]> = [
+    ['Fasting Glucose', 90, 'mg/dL', 'glucose', 4.9959, 'mmol/L'],
+    ['Glucose', 5.2, 'mmol/L', 'glucose', 5.2, 'mmol/L'],
+    ['Fasting Insulin', 60, 'pmol/L', 'insulin', 10.002, 'mIU/L'],
+    ['Insulin', 8, 'uIU/mL', 'insulin', 8, 'mIU/L'],
+    ['Insulin', 8, 'mU/L', 'insulin', 8, 'mIU/L'],
+    ['Insulin', 8, 'uU/mL', 'insulin', 8, 'mIU/L'],
+    ['Free Testosterone', 100, 'pg/mL', 'free_testosterone', 346.7, 'pmol/L'],
+    ['Free Testosterone', 10, 'ng/dL', 'free_testosterone', 346.7, 'pmol/L'],
+    ['Calculated Free Testosterone', 0.35, 'nmol/L', 'free_testosterone', 350, 'pmol/L'],
+    ['LH', 5, 'mIU/mL', 'lh', 5, 'IU/L'],
+    ['Luteinizing Hormone', 5, 'U/L', 'lh', 5, 'IU/L'],
+    ['FSH', 6, 'mIU/mL', 'fsh', 6, 'IU/L'],
+    ['Follicle Stimulating Hormone', 6, 'IU/L', 'fsh', 6, 'IU/L'],
+    ['Progesterone', 10, 'ng/mL', 'progesterone', 31.8, 'nmol/L'],
+    ['DHEA-S', 200, 'ug/dL', 'dhea_s', 5.428, 'µmol/L'],
+    ['DHEA Sulphate', 5.4, 'umol/L', 'dhea_s', 5.4, 'µmol/L'],
+    ['IGF-1', 150, 'ng/mL', 'igf1', 19.605, 'nmol/L'],
+    ['Apolipoprotein A1', 150, 'mg/dL', 'apoa1', 1.5, 'g/L'],
+    ['Cystatin C', 0.9, 'mg/L', 'cystatin_c', 0.9, 'mg/L'],
+    ['Homocysteine', 11, 'umol/L', 'homocysteine', 11, 'µmol/L'],
+    ['Calcium', 9.5, 'mg/dL', 'calcium_total', 2.37025, 'mmol/L'],
+    ['Total Calcium', 2.4, 'mmol/L', 'calcium_total', 2.4, 'mmol/L'],
+    ['Phosphorus', 3.5, 'mg/dL', 'phosphate', 1.13015, 'mmol/L'],
+    ['Direct Bilirubin', 0.2, 'mg/dL', 'bilirubin_direct', 3.42, 'µmol/L'],
+    ['LDH', 180, 'IU/L', 'ldh', 180, 'U/L'],
+    ['Lactate Dehydrogenase', 180, 'U/L', 'ldh', 180, 'U/L'],
+    ['CK', 120, 'Units/L', 'ck', 120, 'U/L'],
+    ['Creatine Kinase', 120, 'IU/L', 'ck', 120, 'U/L'],
+    ['TIBC', 300, 'ug/dL', 'tibc', 53.7, 'µmol/L'],
+    ['Transferrin', 250, 'mg/dL', 'transferrin', 2.5, 'g/L'],
+    ['Anti-TPO', 12, 'kIU/L', 'anti_tpo', 12, 'IU/mL'],
+    ['TPO Antibodies', 12, 'U/mL', 'anti_tpo', 12, 'IU/mL'],
+    ['Free PSA', 0.3, 'ng/mL', 'psa_free', 0.3, 'µg/L'],
+    ['Active B12', 70, 'pmol/L', 'b12_active', 70, 'pmol/L'],
+    ['Urine Creatinine', 100, 'mg/dL', 'urine_creatinine', 8.84, 'mmol/L'],
+    ['Protein Creatinine Ratio', 150, 'mg/g', 'urine_pcr', 16.95, 'mg/mmol'],
+  ];
+
+  it.each(CONVERSIONS)('US-21 AC17 — %s %s %s is stored as %s in SI', (name, value, unit, key, stored, storedUnit) => {
+    const entry = resolveLabCatalogEntry(name);
+    expect(entry?.key, name).toBe(key);
+    expect(canonicalLabValue(entry!, value, unit), `${name} ${unit}`).toMatchObject({ value: stored, unit: storedUnit });
+  });
+
+  // Every alias the decision named, against the key it must reach.
+  const ALIASES: Record<string, string[]> = {
+    glucose: ['fasting glucose', 'fasting plasma glucose', 'plasma glucose', 'glucose fasting', 'blood glucose', 'fpg', 'fbg', 'random glucose'],
+    insulin: ['fasting insulin', 'serum insulin'],
+    free_testosterone: ['free testosterone', 'calculated free testosterone', 'cft'],
+    lh: ['luteinising hormone', 'luteinizing hormone'],
+    fsh: ['follicle stimulating hormone'],
+    progesterone: ['progesterone'],
+    dhea_s: ['dhea-s', 'dheas', 'dhea sulphate', 'dhea sulfate', 'dehydroepiandrosterone sulfate', 'dehydroepiandrosterone sulphate'],
+    igf1: ['igf-1', 'igf 1', 'insulin-like growth factor 1', 'somatomedin c'],
+    apoa1: ['apolipoprotein a1', 'apolipoprotein a-i', 'apo a1', 'apo a-1', 'apoa-1', 'apoa-i'],
+    cystatin_c: ['cystatin c'],
+    homocysteine: ['total homocysteine', 'plasma homocysteine'],
+    calcium_total: ['calcium', 'total calcium', 'serum calcium', 'ca'],
+    phosphate: ['phosphorus', 'inorganic phosphate', 'po4'],
+    bilirubin_direct: ['direct bilirubin', 'conjugated bilirubin'],
+    ldh: ['lactate dehydrogenase', 'ld'],
+    ck: ['creatine kinase', 'cpk', 'creatine phosphokinase'],
+    tibc: ['total iron binding capacity'],
+    transferrin: ['transferrin'],
+    anti_tpo: ['anti-tpo', 'tpo antibodies', 'thyroid peroxidase antibodies', 'anti thyroid peroxidase', 'tpoab'],
+    psa_free: ['free psa'],
+    b12_active: ['active b12', 'holotranscobalamin', 'holotc'],
+    urine_creatinine: ['urine creatinine', 'creatinine urine', 'urinary creatinine', 'creatinine (urine)'],
+    urine_pcr: ['protein creatinine ratio', 'protein:creatinine ratio', 'urine protein creatinine ratio', 'upcr'],
+  };
+
+  it.each(Object.entries(ALIASES))('US-21 AC17 — every spelling of %s resolves to it', (key, aliases) => {
+    for (const alias of [key, ...aliases]) {
+      expect(resolveLabCatalogEntry(alias)?.key, alias).toBe(key);
+      expect(resolveLabCatalogEntry(alias.toUpperCase())?.key, alias).toBe(key);
+      expect(labSlotKey(alias), alias).toBe(key);
+    }
+  });
+
+  it('US-21 AC17 — each new test sits in its decided panel; metabolic is a group of its own', () => {
+    const GROUPS: Record<string, string[]> = {
+      renal: ['urine_creatinine', 'urine_pcr', 'cystatin_c'],
+      hormones: ['lh', 'fsh', 'progesterone', 'dhea_s', 'igf1', 'free_testosterone'],
+      thyroid: ['anti_tpo'],
+      liver: ['bilirubin_direct', 'ldh'],
+      vitamins: ['tibc', 'transferrin', 'b12_active', 'phosphate', 'calcium_total'],
+      metabolic: ['glucose', 'insulin', 'apoa1', 'homocysteine', 'ck'],
+    };
+    for (const [group, keys] of Object.entries(GROUPS)) {
+      for (const key of keys) expect(entryOf(key).group, key).toBe(group);
+    }
+    expect(LAB_GROUPS.find((g) => g.id === 'metabolic')?.label).toBe('Metabolic');
+  });
+
+  it('US-21 AC17 — a spelling the decision did not give is still refused, never guessed', () => {
+    expect(canonicalLabValue(entryOf('cystatin c'), 0.9, 'mg/dL')).toBeNull();
+    expect(canonicalLabValue(entryOf('homocysteine'), 11, 'mg/L')).toBeNull();
+    expect(canonicalLabValue(entryOf('active b12'), 70, 'pg/mL')).toBeNull();
+    expect(canonicalLabValue(entryOf('glucose'), 90, 'mg/L')).toBeNull();
+  });
+
+  it('US-21 AC12 fixed — a plain calcium is total calcium, never the corrected one', () => {
+    expect(resolveLabCatalogEntry('Calcium')?.key).toBe('calcium_total');
+    expect(labSlotKey('calcium')).toBe('calcium_total');
+    expect(entryOf('calcium_corrected').aliases).not.toContain('calcium');
+    for (const name of ['corrected calcium', 'adjusted calcium', 'Calcium (corrected)']) {
+      expect(resolveLabCatalogEntry(name)?.key, name).toBe('calcium_corrected');
+    }
+  });
+
+  it('US-21 AC17 — non-HDL cholesterol stays uncatalogued: the app derives it from total and HDL', () => {
+    expect(resolveLabCatalogEntry('Non-HDL Cholesterol')).toBeUndefined();
+    expect(resolveLabCatalogEntry('non_hdl_cholesterol')).toBeUndefined();
+  });
+
+  it('US-21 AC17 — free PSA and urine creatinine never reach the core PSA or creatinine', () => {
+    for (const name of ['Free PSA', 'free_psa', 'PSA (free)', 'psa_free']) {
+      expect(resolveCoreMetricName(name), name).toBeNull();
+      expect(labSlotKey(name), name).toBe('psa_free');
+    }
+    for (const name of ['Urine Creatinine', 'Creatinine (urine)', 'creatinine urine', 'Urinary Creatinine', 'urine_creatinine']) {
+      expect(resolveCoreMetricName(name), name).toBeNull();
+      expect(labSlotKey(name), name).toBe('urine_creatinine');
+    }
+  });
+
+  it('US-21 AC17 — no catalogue spelling is a core metric name, so the core resolver never shadows a test', () => {
+    for (const entry of LAB_CATALOG) {
+      for (const form of formsOf(entry)) expect(resolveCoreMetricName(form), `${entry.key}: ${form}`).toBeNull();
+    }
   });
 });

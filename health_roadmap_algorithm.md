@@ -184,6 +184,8 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `urate` | mmol/L | mg/dl | 0.05948 | urate 168.11 g/mol |
 | `urate` | mmol/L | µmol/l | 0.001 | a micromole is a thousandth of a millimole (UK labs print µmol/L) |
 | `urine_acr` | mg/mmol | mg/g | 0.113 | creatinine 113.12 g/mol, so 1 g ≡ 8.840 mmol |
+| `urine_creatinine` | mmol/L | mg/dl | 0.0884 | creatinine 113.12 g/mol |
+| `urine_pcr` | mg/mmol | mg/g | 0.113 | creatinine 113.12 g/mol, so 1 g ≡ 8.840 mmol (as `urine_acr`) |
 | `egfr` | mL/min/1.73m² | ml/min/1.73 m² | 1 | spacing only |
 | `egfr` | mL/min/1.73m² | ml/min/1.73 | 1 | the body-surface area left unwritten (LabCorp) |
 | `alt` | U/L | iu/l | 1 | an international unit of enzyme activity IS a unit |
@@ -191,6 +193,8 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `ggt` | U/L | iu/l | 1 | an international unit of enzyme activity IS a unit |
 | `alp` | U/L | iu/l | 1 | an international unit of enzyme activity IS a unit |
 | `bilirubin_total` | µmol/L | mg/dl | 17.1 | bilirubin 584.66 g/mol |
+| `bilirubin_direct` | µmol/L | mg/dl | 17.1 | bilirubin 584.66 g/mol |
+| `ldh` | U/L | iu/l | 1 | an international unit of enzyme activity IS a unit |
 | `albumin` | g/L | g/dl | 10 | a decilitre is a tenth of a litre |
 | `total_protein` | g/L | g/dl | 10 | a decilitre is a tenth of a litre |
 | `globulin` | g/L | g/dl | 10 | a decilitre is a tenth of a litre |
@@ -250,12 +254,25 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `tsh` | mIU/L | mu/l | 1 | mU/L is mIU/L, printed short |
 | `ft4` | pmol/L | ng/dl | 12.87 | thyroxine 776.87 g/mol |
 | `ft3` | pmol/L | pg/ml | 1.536 | triiodothyronine 650.97 g/mol |
+| `anti_tpo` | IU/mL | kiu/l | 1 | kIU/L and IU/mL are the same number |
+| `anti_tpo` | IU/mL | u/ml | 1 | U/mL is IU/mL, printed short |
 | `testosterone_total` | nmol/L | ng/dl | 0.0347 | testosterone 288.42 g/mol |
 | `testosterone_total` | nmol/L | ng/ml | 3.467 | testosterone 288.42 g/mol |
+| `free_testosterone` | pmol/L | pg/ml | 3.467 | testosterone 288.42 g/mol |
+| `free_testosterone` | pmol/L | ng/dl | 34.67 | testosterone 288.42 g/mol |
+| `free_testosterone` | pmol/L | nmol/l | 1000 | a nanomole is a thousand picomoles |
 | `estradiol` | pmol/L | pg/ml | 3.671 | estradiol 272.38 g/mol |
 | `estradiol` | pmol/L | ng/l | 3.671 | estradiol 272.38 g/mol |
 | `prolactin` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number (ng/mL stays refused: assay-dependent) |
 | `cortisol_am` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
+| `psa_free` | µg/L | ng/ml | 1 | ng/mL and µg/L are the same number |
+| `lh` | IU/L | miu/ml | 1 | mIU/mL and IU/L are the same number |
+| `lh` | IU/L | u/l | 1 | U/L is IU/L, printed short |
+| `fsh` | IU/L | miu/ml | 1 | mIU/mL and IU/L are the same number |
+| `fsh` | IU/L | u/l | 1 | U/L is IU/L, printed short |
+| `progesterone` | nmol/L | ng/ml | 3.180 | progesterone 314.46 g/mol |
+| `dhea_s` | µmol/L | µg/dl | 0.02714 | DHEA sulfate 368.49 g/mol |
+| `igf1` | nmol/L | ng/ml | 0.1307 | IGF-1 7649 g/mol |
 | `vitamin_d` | nmol/L | ng/ml | 2.496 | 25-OH-D 400.64 g/mol |
 | `vitamin_d` | nmol/L | µg/l | 2.496 | 25-OH-D 400.64 g/mol |
 | `vitamin_b12` | pmol/L | pg/ml | 0.738 | cyanocobalamin 1355.4 g/mol |
@@ -264,14 +281,29 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `folate` | nmol/L | µg/l | 2.266 | folate 441.4 g/mol |
 | `ferritin` | µg/L | ng/ml | 1 | ng/mL and µg/L are the same number |
 | `iron` | µmol/L | µg/dl | 0.179 | iron 55.845 g/mol |
+| `tibc` | µmol/L | µg/dl | 0.179 | iron 55.845 g/mol |
+| `transferrin` | g/L | mg/dl | 0.01 | a milligram per decilitre is a hundredth of a gram per litre |
 | `magnesium` | mmol/L | mg/dl | 0.4114 | magnesium 24.305 g/mol |
 | `magnesium` | mmol/L | meq/l | 0.5 | Mg²⁺ carries two charges |
 | `calcium_corrected` | mmol/L | mg/dl | 0.2495 | calcium 40.078 g/mol |
+| `calcium_total` | mmol/L | mg/dl | 0.2495 | calcium 40.078 g/mol |
+| `phosphate` | mmol/L | mg/dl | 0.3229 | phosphorus 30.97 g/mol |
 | `zinc` | µmol/L | µg/dl | 0.153 | zinc 65.38 g/mol |
 | `crp` | mg/L | mg/dl | 10 | a decilitre is a tenth of a litre |
 | `esr` | mm/hr | mm/h | 1 | spelling only |
+| `glucose` | mmol/L | mg/dl | 0.05551 | glucose 180.16 g/mol |
+| `insulin` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number |
+| `insulin` | mIU/L | mu/l | 1 | mU/L is mIU/L, printed short |
+| `insulin` | mIU/L | µu/ml | 1 | µU/mL is µIU/mL, printed short |
+| `insulin` | mIU/L | pmol/l | 0.1667 | 1 µIU/mL = 6.00 pmol/L, the insulin-standardisation convention |
+| `apoa1` | g/L | mg/dl | 0.01 | a milligram per decilitre is a hundredth of a gram per litre |
+| `ck` | U/L | iu/l | 1 | an international unit of enzyme activity IS a unit |
 
-`calcium_corrected` also answers to a plain "calcium" (an existing alias), so a plain calcium converts on the corrected-calcium factor — the same number, a different test. Known, pre-existing, not fixed here.
+A plain "calcium" is total calcium (`calcium_total`), never corrected calcium (US-21 AC12, fixed 2026-10-18; it used to land on `calcium_corrected`). Rows already stored under the key `calcium_corrected` stay there: no migration. A row stored under the printed name "calcium" now reads as total calcium.
+
+Three catalogued tests take only their canonical unit, so they have no row above: `cystatin_c` (mg/L), `homocysteine` (µmol/L) and `b12_active` (pmol/L). Any other spelling is refused.
+
+Non-HDL cholesterol is deliberately not catalogued. The app derives it from total cholesterol and HDL, so a stored lab row would duplicate it; a printed one is kept as an uncatalogued row with its printed unit.
 
 Three-file sync: `evidence.ts` and `roadmap_text.html` are untouched because no threshold, suggestion or user-facing sentence changes — only the unit a stored number is expressed in.
 
