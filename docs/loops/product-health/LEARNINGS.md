@@ -12,9 +12,8 @@ duplicates.
   resurrection, reminder-optout revert, BP validation hole) share one shape:
   a mutation path that bypasses the established stamped/validated helper. When
   auditing, look for the sibling that doesn't use the shared helper.
-- **2026-08-07 [funnel]** Product events went live 2026-08-06; treat earlier
-  weeks as no-data, not zero-usage. lab_rows_viewed/lab_row_added went live
-  2026-08-07 (US-21 phase 1).
+- **2026-08-07 [funnel]** Product events went live 2026-08-06 (lab rows 08-07): earlier weeks are
+  no-data, not zero-usage.
 - **2026-08-10 [funnel]** A funnel event reading 0 can be dead instrumentation,
   not zero usage (`chat_opened`: unreachable emit site, then a second layer —
   side bundles with their own vite configs never define `VITE_SHOPIFY_SURFACE`,
@@ -65,9 +64,8 @@ duplicates.
   same fingerprint). **Receded by 2026-09-05:** 4,133 sessions/3d, organic
   mobile/Google-led shape, `/pages/roadmap` extractable again — floods can
   end on their own; re-check shape every pull rather than carrying the gap.
-- **2026-08-16 [usage]** The typed reminder lane outdraws cloud (W33: 17 vs 3;
-  W40: 194 vs 20 all-time, ~10:1). A partial first week fakes a "doubling":
-  compare per-day rates across a series' first two weeks.
+- **2026-08-16 [usage]** The typed reminder lane outdraws cloud (~10:1 all-time, W40). A partial
+  first week fakes a "doubling": compare per-day rates across a series' first two weeks.
 - **2026-08-29 [tooling]** git approxidate parses `--since=8d` as "August 8"
   (day-of-month), NOT "8 days ago" — so the charter's workflow-integrity
   command over-scans mid-month and, in the first days of a month, resolves to
@@ -172,7 +170,9 @@ duplicates.
   (94627c07, "never repeat one") shipped 8 h later, so it is ruled out; the
   cause is one of three bundles that night. Check the suspect commit's deploy
   time against the last row before naming it (W40 review R2).
-- **2026-10-18 [feedback]** The plan-ready email's reply is a feedback channel the form search
-  misses: W40's Drive-permission complaint and W42's urine-creatinine report (a clinical-pipeline
-  defect, unread for hours) both came as replies to "Your Health Roadmap is ready". Search
-  replies to that subject every run, and read them first.
+- **2026-10-18 [feedback]** Replies to our emails are a feedback channel the form search misses:
+  W40's Drive complaint (Klaviyo follow-up) and W42's urine-creatinine report (plan-ready email, a
+  clinical-pipeline defect, unread for hours) both came that way. Search those replies every run.
+- **2026-10-18 [instrumentation]** `upload_started`/`upload_saved` fire once per TAB
+  (server-api.ts:164-171); only `upload_outcome` (live 10-13) counts runs. Unit refusals with no
+  nearby start/save are a tab's later runs (W41's "untraced path"); started vs saved hides those runs.
