@@ -65,6 +65,20 @@ describe('US-12 AC12: a dated previous column is its own date in the review', ()
     }
   });
 
+  it('a primary reading equal to saved history still claims its slot: a previous read of it never becomes a conflict', () => {
+    const sameDay: FileResult[] = [
+      ...twoDates,
+      { fileName: 'older.pdf', reportDate: PREVIOUS, additionalValues: [],
+        values: [{ metric: 'ldl', valueSI: 3.0, displayValue: 3.0, displayUnit: 'mmol/L', confidence: 'high' }] },
+    ];
+    const dateOf = (iso: string) => { const [year, month, day] = iso.split('-'); return { year, month, day }; };
+    for (const results of [sameDay, [...sameDay].reverse()]) {
+      const dates = Object.fromEntries(results.map((r, i) => [i, dateOf(r.reportDate!)]));
+      const { cells } = buildMatrixModel(results, dates, held(3.0), [], 'si');
+      expect(cells.get(`ldl|${PREVIOUS}`)).toMatchObject({ state: 'context', id: 'held-ldl' });
+    }
+  });
+
   it('saves each value as an ordinary row on its own day', () => {
     const { onSave, save } = renderReview();
     save();

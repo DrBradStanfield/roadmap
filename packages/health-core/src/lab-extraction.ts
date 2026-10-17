@@ -383,7 +383,11 @@ const labValue = z.preprocess(readModelNumber, z.number());
  *  is none, a datetime is cut to its day. Whether the day is usable is
  *  `toUnifiedResult`'s call, so a bad one never costs the row a count. */
 const labDay = z.preprocess(d => {
-  const text = typeof d === 'string' ? d.trim() : '';
+  if (d === undefined || d === null) return undefined;
+  // Any other non-string (20250902, {}, []) is no day: a value that is not a
+  // calendar day, which `toUnifiedResult` leaves out. Never the primary column.
+  if (typeof d !== 'string') return 'unusable';
+  const text = d.trim();
   return /^\d{4}-\d{2}-\d{2}[T ]/.test(text) ? text.slice(0, 10) : text || undefined;
 }, z.string().optional());
 const labBound = z.preprocess(readModelNumber, z.number().nullable()).optional();

@@ -869,6 +869,15 @@ describe('US-12 AC12: a previous-results column with its own printed date become
     }
   });
 
+  it('a recordedAt that is not a string (a number, an object, an array) is unusable: left out, uncounted, never primary', () => {
+    for (const odd of [20250902, {}, []]) {
+      const result = own(odd);
+      expect(result.values, JSON.stringify(odd)).toEqual([]);
+      expect(result.additionalValues, JSON.stringify(odd)).toEqual([]);
+      expect(result.droppedValueCount).toBe(0);
+    }
+  });
+
   it('a bad own day never costs the primary column beside it', () => {
     const result = toUnifiedResult(parseUnifiedResult({
       classification: 'lab_report', reportDate: '2026-03-10', document: null, additionalValues: [],

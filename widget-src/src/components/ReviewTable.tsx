@@ -371,7 +371,11 @@ export function buildMatrixModel(
   //    the user resolves in the table — never a silent drop (US-32).
   //    Primary columns first: a file's own reading of a (metric, day) wins
   //    over another file's previous-column read of it (US-12 AC12).
+  const claimed = new Set<string>();
   for (const previous of [false, true]) results.forEach((r, fi) => {
+    /** A slot a primary reading claimed, even one the record already held
+     *  equal, is never taken by a previous-column read. */
+    const ceded = (cellKey: string) => (previous ? claimed.has(cellKey) : (claimed.add(cellKey), false));
     /** The column a value lands in: its own date's (US-12 AC12) or its file's. */
     const columnFor = (recordedAt?: string): DateKey | null => {
       const dateKey = valueDateKey(fi, recordedAt);
@@ -389,6 +393,7 @@ export function buildMatrixModel(
       const initialDisplay = UNIT_DEFS[metric]
         ? cellText(metric, v.valueSI, displayFor(metric))
         : String(v.displayValue);
+      if (ceded(cellKey)) return;
       const existing = collide(cellKey, initialDisplay, v.valueSI);
       if (existing === 'skip') return;
       cells.set(cellKey, {
@@ -422,6 +427,7 @@ export function buildMatrixModel(
       }
       const cellKey = `${nameKey}|${dateKey}`;
       const lab = { name: av.name, value: av.value, unit: av.unit };
+      if (ceded(cellKey)) return;
       const existing = collide(cellKey, String(av.value), undefined, lab);
       if (existing === 'skip') return;
       cells.set(cellKey, {
