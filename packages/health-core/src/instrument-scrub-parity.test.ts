@@ -227,6 +227,58 @@ describe('free-text scrub parity', () => {
     }
   });
 
+  it('US-21 AC17 — a short alias is a name, and a name ending in a digit keeps its digit while the value goes', () => {
+    for (const impl of [source, copy]) {
+      // Short aliases skip the 3-letter floor, as short keys do.
+      expect(impl.scrubText('Ca 2.4')).toBe('Ca [value]');
+      expect(impl.scrubText('LD 180')).toBe('LD [value]');
+      expect(impl.scrubText('CK 120')).toBe('CK [value]');
+      // The name's own trailing digit is the name, not the value.
+      expect(impl.scrubText('IGF-1 200')).toBe('IGF-1 [value]');
+      expect(impl.scrubText('Apo A1 1.2')).toBe('Apo A1 [value]');
+      expect(impl.scrubText('Vitamin B12 300')).toBe('Vitamin B12 [value]');
+      // A catalogue name ending in a digit after a space or a hyphen is one phrase.
+      expect(impl.scrubText('IGF 1 200')).toBe('IGF 1 [value]');
+      expect(impl.scrubText('apoa-1 1.3')).toBe('apoa-1 [value]');
+      expect(impl.scrubText('Free T4 15')).toBe('Free T4 [value]');
+      expect(impl.scrubText('insulin-like growth factor 1 was 200')).toBe('insulin-like growth factor 1 was [value]');
+      // A plain value is still the value, decimal or not, and a lone name stays.
+      expect(impl.scrubText('LDL 3.2')).toBe('LDL [value]');
+      expect(impl.scrubText('ldl 3 then 4')).toBe('ldl [value] then 4');
+      expect(impl.scrubText('B12')).toBe('B12');
+      expect(impl.scrubText('B12 low')).toBe('B12 low');
+    }
+  });
+
+  it('US-21 AC17 — a name never absorbs a value: digits after a name are the value unless the name itself ends in them', () => {
+    for (const impl of [source, copy]) {
+      for (const [text, scrubbed] of [
+        ['LDL-140', 'LDL-[value]'], ['ldl140', 'ldl[value]'], ['glucose-140', 'glucose-[value]'], ['glucose 140', 'glucose [value]'],
+        ['IGF-1 200', 'IGF-1 [value]'], ['IGF 1 200', 'IGF 1 [value]'], ['Apo A1 1.2', 'Apo A1 [value]'],
+        ['Vitamin B12 300', 'Vitamin B12 [value]'], ['Free T4 15', 'Free T4 [value]'],
+        // A number inside a word (a letter on both sides, the 1 of "A1c") is
+        // never the value; a number after a letter, or before a unit, still is.
+        ['Hb A1c 7.2', 'Hb A1c [value]'], ['HbA1c 48', 'HbA1c [value]'], ['Hb A1c was 48', 'Hb A1c was [value]'],
+        ['ld a1c 6', 'ld a1c [value]'], ['sodium a140', 'sodium a[value]'], ['ferritin was210', 'ferritin was[value]'],
+        ['LDL 3.2mmol/L', 'LDL [value]'], ['BP-140/90', 'BP-[value]'],
+      ]) {
+        expect(impl.scrubText(text), text).toBe(scrubbed);
+      }
+    }
+  });
+
+  it('US-21 AC17 — every catalogue key, label and alias, followed by a value, loses the value', () => {
+    for (const impl of [source, copy]) {
+      for (const entry of LAB_CATALOG) {
+        for (const name of [entry.key, entry.label, ...entry.aliases]) {
+          for (const text of [`${name} 123`, `${name} was 123`, `${name} is 123.5`, `${name}: 123`, `${name}=123`]) {
+            expect(impl.scrubText(text), `${entry.key}: ${text}`).not.toContain('123');
+          }
+        }
+      }
+    }
+  });
+
   it('scrubText produces identical output', () => {
     for (const t of TEXTS) expect(copy.scrubText(t)).toBe(source.scrubText(t));
   });

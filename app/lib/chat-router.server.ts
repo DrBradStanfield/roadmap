@@ -163,8 +163,8 @@ export function sanitizeForRouter(s: string): string {
 const WIDGET_ROW_COLUMNS = [
   'message_id', 'conversation_id', 'user_id', 'message', 'router_context', 'matched_handles',
   'router_version', 'router_latency_ms', 'router_cache_hit', 'router_input_tokens',
-  'router_cache_read_tokens', 'router_raw', 'router_error', 'classification', 'router_skipped',
-  'is_fallback', 'failure_mode',
+  'router_cache_read_tokens', 'router_output_tokens', 'router_raw', 'router_error', 'classification',
+  'router_skipped', 'is_fallback', 'failure_mode',
 ] as const;
 
 export interface MatchEventRow extends Record<string, unknown> {
@@ -346,10 +346,14 @@ export async function routeQuery(
   };
 
   let rawJson: string | null = null;
+  // A reply that arrived but did not parse (cut off at max_tokens, a refusal)
+  // keeps its real counts (US-15 AC37); only a missing reply reads 0.
+  let usage = EMPTY_USAGE;
 
   try {
     const result = await callAnthropicWithUsage(body, 5_000);
     rawJson = result.content;
+    usage = result.usage;
 
     const rawParsed = parseRouterReply(rawJson) as { handles?: unknown };
     rawParsed.handles = sanitizeRawHandles(rawParsed.handles);
@@ -377,9 +381,9 @@ export async function routeQuery(
     return {
       handles: [],
       rawJson,
-      usage: EMPTY_USAGE,
+      usage,
       latencyMs,
-      cacheHit: false,
+      cacheHit: usage.cacheReadTokens > 0,
       // JSON.parse quotes a snippet of the bad input that can end mid-pair
       // (US-15 AC27). This is toWellFormed(), which the ES2022 lib lacks.
       error: errorMsg.replace(/[\uD800-\uDFFF]/gu, '\uFFFD'),

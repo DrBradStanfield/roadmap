@@ -52,6 +52,8 @@ export interface SubscriptionCard {
   nextDate: string | null;
   newDate: string | null;
   reason: SubscriptionReason | null;
+  /** 'paused': the card shows "Paused" and no pause hint (live pilot, 18 Oct). */
+  status: 'active' | 'paused';
 }
 export interface SubscriptionProposal { ref: string; action: SubscriptionActionName; reason: SubscriptionReason | null }
 
@@ -188,7 +190,10 @@ export function formatSubscriptionBlock(summary: SubscriptionSummary): string {
 - You can set up three changes for the customer to confirm: pause a subscription, skip its next order, or cancel it. When the customer clearly asks for one of these for a subscription listed above, and it shows "yes", call \`propose_subscription_change\` with its ref and the action. If they have more than one subscription and it is not clear which one they mean, ask which first.
 - You never make the change. A card appears under your reply and the change happens only if the customer presses Confirm on it. Say so in one short line, such as "Press Confirm below to pause it." Never say it is done.
 - A skip moves only the next order, one delivery interval later. Deliveries are every 3 or every 6 months only: never offer monthly deliveries, an earlier date, a date of their choosing, a different frequency, restarting a paused subscription, a product swap or a quantity change here.
-- When a change shows "no", or they ask for anything else about a subscription, say plainly that you can't do it here and give this line: "${SUBSCRIPTION_HELP_LINE}"
+- If they ask for monthly deliveries, another frequency or an earlier order date, say plainly that deliveries are every 3 or every 6 months and an order date can only move later. Do not point them to their account to do it, and do not give the line below.
+- When a change shows "no", or they ask for anything else about a subscription (an address, a card, a product), say plainly that you can't do it here and give this line: "${SUBSCRIPTION_HELP_LINE}"
+- You cannot see whether the customer pressed Confirm on an earlier card, and this list can lag a change by up to a minute. Never say an earlier card is still waiting, and never tell them not to press Confirm on one. If they ask what happened, say the card shows the result and their account at https://account.microvitamin.com/ has the current date.
+- A reply that is only about their subscription needs no line about medical advice at the end.
 - If they say why they want to cancel or pause, pass the closest reason code. Never ask them why.`;
 }
 
@@ -243,6 +248,7 @@ export function subscriptionCard(summary: SubscriptionSummary | null, proposal: 
     nextDate: s.nextDate,
     newDate: st.newDate ?? null,
     reason: proposal.reason,
+    status: s.status === 'paused' ? 'paused' : 'active',
   };
 }
 

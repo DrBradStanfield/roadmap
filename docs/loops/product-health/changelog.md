@@ -4,6 +4,11 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-10-18 (Brad: "do it", on the W42 charter asks): Feedback emails also
+  search replies to our own emails (W42's urine-creatinine report came as a
+  reply to the plan-ready email); the OpenAI item tracks v1.0.2 receipt
+  `C-jVtw19jIhBb8` (#60 closed); the funnel adds `upload_outcome` (per run)
+  and `subscription_action_confirmed`. Net +8 lines (`wc -l -c`: 168 11236 → 176 12077).
 - 2026-10-14 (Brad, on #118: "na, for now, just do it weekly with the
   existing health roadmap loop"): Gather runs repo-health's external-inbound
   triage once a week instead of scheduling repo-health daily, under that

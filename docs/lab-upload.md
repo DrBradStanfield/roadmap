@@ -132,8 +132,9 @@ Health data must never be auto-saved without explicit user confirmation. The rev
 
 1. **Target metrics** with aliases — e.g. LDL can appear as "LDL", "LDL-C", "LDL Cholesterol", "Low Density Lipoprotein"
 2. **Disambiguation rules** to avoid common extraction errors:
-   - Extract ACTUAL measured values, not reference ranges
-   - If both current and previous results shown, extract only the most recent
+   - Extract ACTUAL measured values; a printed reference range goes in `referenceLow`/`referenceHigh`
+   - Units exactly as printed (beside the result, else the row's own range, else the column header), never converted, empty when none is printed (US-21 AC7)
+   - The most recent previous-results column printed with a full day is extracted (older ones ignored), each value with `recordedAt`; one with a month only or no date is ignored (US-12 AC12). The connector's `import_documents` leaves those values out until the MCP 1.0.2 review ends (US-35 AC5)
    - Use COLLECTION/SAMPLE date, not report/print date
    - For ambiguous date formats (03/04/2026): prefer DD/MM/YYYY for non-US labs, MM/DD/YYYY for US
    - Multi-page correlation: date on page 1, results on later pages
@@ -176,7 +177,7 @@ Health data must never be auto-saved without explicit user confirmation. The rev
 
 ### Image Handling (`image-resize.ts`)
 
-JPG/PNG uploaded directly → resize to max 1500px dimension (canvas, preserving aspect ratio) → convert to JPEG base64. Resizing saves bandwidth and LLM input cost.
+JPG/PNG uploaded directly → resize to max 1500px dimension (canvas, preserving aspect ratio) → convert to JPEG base64. Resizing saves bandwidth and LLM input cost. A `.docx` (`docx-extract.ts`, US-12 AC13) becomes one `text` page: headers, body, footers, each table row one line with its cells joined by " | ", XML inflation capped at 4 MB and 50 header/footer parts, text cut at 60,000 characters at a line end or space (`cut-text.ts`) with the truncated notice; merged cells padded, tracked deletions, moves and property changes dropped, `w:sym` signs mapped, a text box's paragraph its own line after its label; a `.docx` of pictures only gets its own notice (`picturesOnly`); a legacy `.doc` is refused with a save-as notice. A PDF page's text is cut the same way at 100,000 characters (`IMPORT_LIMITS.websiteTextPageChars`), and the server's `labImportPageSchema` refuses a longer text page as a backstop.
 
 ### ZIP Handling (`zip-extract.ts`)
 
@@ -210,7 +211,7 @@ The upload modal (`UploadModal.tsx`) is a 4-state machine: `'select' | 'processi
 
 ### State 4: Done
 - "Saved N blood test values, M additional lab values, K documents"; skipped-duplicate and "could not be saved" notices
-- **Files to check (US-12 AC9–10, 2026-10-13):** a guest's nine lab PDFs once saved with no word about the files that vanished. Review, done and error screens now list every file not fully read, by name, inside the Clarity-masked modal: could not open (pdf.js threw, the 30 s read timed out, or no pages; `readPages` notes it; a ZIP that will not open, or holds nothing readable, is named itself), too large, only the first 20 pages read, filed as a document with no values (`toUnifiedResult` discards a non-lab file's values), no values found, N values could not be read (`droppedValueCount`, rows the parse refused), server error (a failed or missing batch entry too), daily limit, declined by Claude and too long to read in one go (a refusal or a `max_tokens` stop, US-15 AC34: the website answers 422 with `errorCode` `refused` or `too_long`, a batch result carries the code, BYOK maps its own; neither says "try again"). The Pages build has no server of ours and no daily limit, so there the last two read "Anthropic could not be reached or could not read it" and "Your Anthropic key hit its rate limit. Wait a minute and try again" (`SHOPIFY_SURFACE`; the error screen too); a key Anthropic refuses (401, 403) or an account with no credit (a 400 naming credit or billing) says what to check instead, since trying again never helps; the `upload_outcome` keys are the same. A run that fails whole (batch refused, poll failed) gives every file without a verdict the server-error or daily-limit reason. Each run past the quota check, and each pick of only oversize files, fires one `upload_outcome` with integer counts only (`picked`, `withValues`, `documentOnly`, `noValues`, `openFailed`, `tooLarge`, `truncated`, `serverError`, `limitError`, `refused`, `tooLong`, `valuesDropped`, clamped to 1000), and the server refuses any other key on it; `truncated` overlaps the rest and `valuesDropped` counts values, not files. It is the one event `trackProductEvent` does not throttle per tab.
+- **Files to check (US-12 AC9–10, 2026-10-13):** a guest's nine lab PDFs once saved with no word about the files that vanished. Review, done and error screens now list every file not fully read, by name, inside the Clarity-masked modal: could not open (pdf.js threw, the 30 s read timed out, or no pages; `readPages` notes it; a ZIP that will not open, or holds nothing readable, is named itself), too large, only its first part read (a PDF past 20 pages, a long PDF page or a cut `.docx`), filed as a document with no values (`toUnifiedResult` discards a non-lab file's values), no values found, N values could not be read (`droppedValueCount`, rows the parse refused), server error (a failed or missing batch entry too), daily limit, declined by Claude and too long to read in one go (a refusal or a `max_tokens` stop, US-15 AC34: the website answers 422 with `errorCode` `refused` or `too_long`, a batch result carries the code, BYOK maps its own; neither says "try again"). The Pages build has no server of ours and no daily limit, so there the last two read "Anthropic could not be reached or could not read it" and "Your Anthropic key hit its rate limit. Wait a minute and try again" (`SHOPIFY_SURFACE`; the error screen too); a key Anthropic refuses (401, 403) or an account with no credit (a 400 naming credit or billing) says what to check instead, since trying again never helps; the `upload_outcome` keys are the same. A run that fails whole (batch refused, poll failed) gives every file without a verdict the server-error or daily-limit reason. Each run past the quota check, and each pick of only oversize files, fires one `upload_outcome` with integer counts only (`picked`, `withValues`, `documentOnly`, `noValues`, `openFailed`, `tooLarge`, `truncated`, `serverError`, `limitError`, `refused`, `tooLong`, `valuesDropped`, plus `docx`, a kind count, and `picturesOnly`, a `.docx` of pictures and no text, both since 2026-10-18; clamped to 1000; a zero is not sent, so a missing key reads as 0), and the server refuses any other key on it; `truncated` overlaps the rest and `valuesDropped` counts values, not files. It is the one event `trackProductEvent` does not throttle per tab.
 - "Done" closes the modal and triggers a store refresh
 
 ### Entry Point
@@ -317,7 +318,7 @@ Thin wrapper around the Anthropic API using direct `fetch` (no SDK). `extractOrC
 Current file-by-file inventory: docs/reference.md. The upload feature spans
 `app/routes/api.lab-import-v2.ts`, `app/lib/anthropic.server.ts`,
 `packages/health-core/src/{lab-extraction,document-path,record-edits,import-hints}.ts`,
-`widget-src/src/lib/{pdf-extract,zip-extract,image-resize,upload-api,byok-upload,archive-payloads}.ts`,
+`widget-src/src/lib/{pdf-extract,docx-extract,zip-extract,image-resize,upload-api,byok-upload,archive-payloads}.ts`,
 `widget-src/src/components/{UploadModal,ReviewTable}.tsx`, and
 `widget-src/src/storage/roadmap-store.ts`. Connector: `app/lib/mcp-import.server.ts` + `packages/health-core/src/mcp-tools.ts`.
 
