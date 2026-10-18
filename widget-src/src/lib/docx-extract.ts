@@ -94,11 +94,14 @@ function dropElements(xml: string, names: string): string {
   let depth = 0;
   let start = 0;
   let emptyPairClose = -1;
+  /** The close tag right after an open one, whitespace allowed: an empty pair. */
+  const closeNext = /\s*<\/([^\s<>]+)\s*>/y;
   for (const tag of xml.matchAll(new RegExp(`<(/?)(${names})(?=[\\s/>])[^<>]*>`, 'g'))) {
     if (tag[0].endsWith('/>') || tag.index === emptyPairClose) continue;
     const end = tag.index + tag[0].length;
-    if (!tag[1] && xml.startsWith(`</${tag[2]}>`, end)) {
-      emptyPairClose = end;
+    closeNext.lastIndex = end;
+    if (!tag[1] && closeNext.exec(xml)?.[1] === tag[2]) {
+      emptyPairClose = xml.indexOf('<', end);
       continue;
     }
     if (!tag[1]) {
@@ -134,7 +137,8 @@ function addPartLines(xml: string, lines: string[], kept: { chars: number }): bo
   // A text box is written twice, the modern copy and a fallback: keep one. Text
   // moved with tracked changes is written twice too: keep where it went. A
   // tracked formatting change keeps the old properties: never re-apply them.
-  // A deleted run is dropped with all it holds; a row's self-closing `w:del` stays.
+  // A deleted run is dropped with all it holds; a row's empty `w:del` marker
+  // (self-closing or an empty pair) stays.
   const source = dropElements(xml, `${prefixFor(xml, MC_NS, 'mc')}Fallback|${w}(?:del|moveFrom|trPrChange|tcPrChange|pPrChange|rPrChange|tblPrChange|sectPrChange)`);
   /** Open rows, innermost last. */
   const rows: Row[] = [];
@@ -154,9 +158,22 @@ function addPartLines(xml: string, lines: string[], kept: { chars: number }): bo
       kept.chars += text.length + 1;
     }
   };
-  const full = () => kept.chars + rows.reduce((sum, r) => sum + r.copied, 0) > MAX_KEPT_CHARS;
+  /** Merge text copied into rows still open: one running count, so a check is O(1). */
+  let openCopied = 0;
+  const full = () => kept.chars + openCopied > MAX_KEPT_CHARS;
   const flush = () => { emit(para.replace(/\s+/g, ' ').trim()); para = ''; };
   const add = (text: string) => { if (depth) para += text; };
+  /** An early stop: the open rows' text so far goes out as lines, outermost
+   *  first: a row's closed cells as one, then each paragraph or nested row its
+   *  open cell holds, so the cut keeps whole lines. */
+  const stop = () => {
+    flush();
+    for (const r of rows.filter(r => !r.deleted)) {
+      if (r.cells.some(Boolean)) lines.push(r.cells.join(' | '));
+      for (const text of r.cell) lines.push(text); // no spread: a cell can hold more than a call takes
+    }
+    return true;
+  };
   for (const [, text, close, tag, attrs] of source.matchAll(tokens(w))) {
     if (text !== undefined) { add(decodeEntities(text)); continue; }
     const row = rows[rows.length - 1];
@@ -166,28 +183,33 @@ function addPartLines(xml: string, lines: string[], kept: { chars: number }): bo
         depth--;
       } else if (tag === 'tr') {
         rows.pop();
+        // A nested row's copies move to its parent; a top-level row's leave the count as its line joins `kept`.
+        if (row && rows.length && !row.deleted) rows[rows.length - 1].copied += row.copied;
+        else if (row) openCopied -= row.copied;
         if (row && !row.deleted) {
           pad(row, row.after);
-          if (rows.length) rows[rows.length - 1].copied += row.copied;
           if (row.cells.some(Boolean)) emit(row.cells.join(' | '));
-          if (full()) return true;
+          if (full()) return stop();
         }
       } else if (tag === 'tbl') tables.pop();
       else if (tag === 'tc' && row) {
         // An empty continued cell shows its restart cell's text, as Word does.
-        // A deleted row neither starts nor ends a merge.
+        // A deleted row neither starts, ends nor copies a merge.
         const col = row.cells.length;
         const own = row.cell.join(' ');
-        const text = row.vMerge === 'continue' && !own ? row.merges.get(col) ?? '' : own;
+        const text = row.vMerge === 'continue' && !own && !row.deleted ? row.merges.get(col) ?? '' : own;
         if (!row.deleted && row.vMerge === 'restart') row.merges.set(col, text);
         else if (!row.deleted && !row.vMerge) for (let c = col; c < col + row.span; c++) row.merges.delete(c);
-        if (text !== own) row.copied += text.length;
+        if (text !== own) {
+          row.copied += text.length;
+          openCopied += text.length;
+        }
         row.cells.push(text);
         row.vMerge = undefined;
         pad(row, row.span - 1);
-        if (full()) return true;
         row.cell = [];
         row.span = 1;
+        if (full()) return stop();
       } else if (tag === 'trPr') inRowProps = false;
     } else if (tag in CHAR_TAGS) add(CHAR_TAGS[tag]);
     else if (tag === 'sym') add(symChar(attrs));

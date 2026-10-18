@@ -343,6 +343,43 @@ describe('US-12 AC13: vertical merges, run-level deletions and loose attribute s
     expect(text.length).toBeLessThanOrEqual(60_000);
   });
 
+  // Review of c1362acd (Codex + adversary).
+  it('reads many open rows then many cell closes, and deep balanced nesting, in linear time', async () => {
+    const n = 60_000;
+    let started = performance.now();
+    await docxToText(await docx('<w:tr>'.repeat(n) + '<w:tc></w:tc>'.repeat(n)));
+    expect(performance.now() - started).toBeLessThan(3000);
+    const nest = (depth: number): string => (depth ? `<w:tbl><w:tr><w:tc>${nest(depth - 1)}</w:tc></w:tr></w:tbl>` : p('core'));
+    started = performance.now();
+    const { text } = await docxToText(await docx(nest(2000)));
+    expect(performance.now() - started).toBeLessThan(3000);
+    expect(text).toBe('core');
+  });
+
+  it('a deleted row neither copies merge text nor counts it, so what follows is kept', async () => {
+    const mid = 'Fasting sample; result reported per local reference interval. '.repeat(40);
+    const head = `<w:tr>${tc('Head')}${vm('restart', mid).repeat(15)}</w:tr>`;
+    const gone = `<w:tr><w:trPr><w:del w:id="1" w:author="a" w:date="2024"/></w:trPr>${tc('Old')}${vm(null, '').repeat(15)}</w:tr>`;
+    const { text, truncated } = await docxToText(await docx(tbl(head, gone) + p('Ferritin 58 ug/L')));
+    expect(text.endsWith('\nFerritin 58 ug/L')).toBe(true);
+    expect(truncated).toBe(false);
+  });
+
+  it('an empty pair with whitespace between the tags, or inside the close, is still a row marker', async () => {
+    const row = `<w:tr><w:trPr><w:del w:id="1" w:author="a" w:date="2024"> </w:del ></w:trPr>${tc('Gone')}${tc('9')}</w:tr>`;
+    expect(await read(tbl(tr('Keep', '1'), row))).toBe('Keep | 1');
+  });
+
+  it('an early stop inside a nested table keeps the text the enclosing row held so far', async () => {
+    const note = 'Serum, collected 01/05/2024 08:00, fasting, ref lab ABC 12345';
+    const inner = tbl(`<w:tr>${tc('Ferritin')}${tc('58')}${vm('restart', note)}</w:tr>`, ...Array.from({ length: 1100 }, (_, i) => `<w:tr>${tc(`Test${i}`)}${tc(String(i))}${vm(null, '')}</w:tr>`));
+    const { text, truncated } = await docxToText(await docx(p('Patient summary') + tbl(`<w:tr><w:tc>${p('Report 2024-05-01')}${inner}</w:tc></w:tr>`)));
+    expect(truncated).toBe(true);
+    // Each piece the open cell holds is its own line, so the cut keeps whole rows.
+    expect(text.startsWith('Patient summary\nReport 2024-05-01\nFerritin | 58 | Serum')).toBe(true);
+    expect(text.length).toBeLessThanOrEqual(60_000);
+  });
+
   it('a merge in one table never reaches into the next', async () => {
     expect(await read(
       tbl(`<w:tr>${tc('Ferritin')}${vm('restart', 'ug/L')}</w:tr>`)
