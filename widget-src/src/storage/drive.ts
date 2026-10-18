@@ -294,7 +294,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
       }),
     });
     if (!res.ok) {
-      throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`);
+      throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     }
     const json = (await res.json()) as { accessToken: string; refreshToken?: string; expiresIn: number; idToken?: string };
     setJson(TOKENS_KEY, {
@@ -427,7 +427,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     if (expectedVersion !== null) throw new ConflictError(`${this.label} no longer holds that file`);
     // First write — create the file (multipart: metadata + content).
     const res = await this.createMultipart(fileName, 'application/json', json);
-    if (!res.ok) throw new StorageError(`Google Drive create failed (${res.status}): ${await res.text()}`);
+    if (!res.ok) throw new StorageError(`Google Drive create failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     const created = await jsonBody<{ id?: string; version?: string }>(res);
     if (!created.id) throw new StorageError('Google Drive create returned no file id.');
     this.rememberFileId(fileName, created.id);
@@ -440,7 +440,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const id = await this.findFileId(name, parentId);
     if (!id) throw new StorageError(`Google Drive document not found.`);
     const res = await fetch(`${DRIVE_API}/files/${id}?alt=media`, { headers: await this.authHeaders() });
-    if (!res.ok) throw new StorageError(`Google Drive document read failed (${res.status}).`);
+    if (!res.ok) throw new StorageError(`Google Drive document read failed (${res.status}).`, undefined, undefined, res.status);
     return res.blob();
   }
 
@@ -455,7 +455,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     // produces a same-named duplicate with identical bytes, which Drive allows
     // and readDocument resolves by name; accepted orphan semantics (§5.3).
     const res = await this.createMultipart(name, type, bytes, parentId);
-    if (!res.ok) throw new StorageError(`Google Drive document create failed (${res.status}).`);
+    if (!res.ok) throw new StorageError(`Google Drive document create failed (${res.status}).`, undefined, undefined, res.status);
   }
 
   // --- change signal (US-34) -------------------------------------------------
@@ -509,7 +509,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   private async changesRequest(url: string, signal: AbortSignal): Promise<Response> {
     const res = await fetch(url, { headers: await this.authHeaders(), signal });
-    if (!res.ok) throw new StorageError(`Google Drive watch failed (${res.status}).`);
+    if (!res.ok) throw new StorageError(`Google Drive watch failed (${res.status}).`, undefined, undefined, res.status);
     return res;
   }
 
