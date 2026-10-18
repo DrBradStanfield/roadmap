@@ -33,6 +33,27 @@ describe('scrubSensitiveData', () => {
       });
     });
 
+    it('scrubs the extraction fields a lab row actually uses (US-09 AC7b)', () => {
+      const input = {
+        displayValue: 4.2,
+        valueSI: 3.1,
+        contentMarkdown: 'synthetic note',
+        display_value: 1,
+        value_si: 2,
+        content_markdown: 'note',
+        pageCount: 2,
+      };
+      expect(scrubSensitiveData(input)).toEqual({
+        displayValue: '[Filtered]',
+        valueSI: '[Filtered]',
+        contentMarkdown: '[Filtered]',
+        display_value: '[Filtered]',
+        value_si: '[Filtered]',
+        content_markdown: '[Filtered]',
+        pageCount: 2,
+      });
+    });
+
     it('scrubs calculated results', () => {
       const input = { bmi: 24.5, egfr: 90, idealBodyWeight: 70, nonHdlCholesterol: 3.8 };
       const result = scrubSensitiveData(input);
