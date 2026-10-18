@@ -122,7 +122,9 @@ the second marked `sameDayAs`; a commit accepting both is refused.
 `import-hints.ts` is one closed table: reason → a sentence naming the limit
 and the way round it (`unsupported` incl. HEIC, `nested_zip`, `too_large`,
 `no_date`, `bad_date`, `quota`, `allowance`, `time`, `unreadable`,
-`too_many`), plus whole-call refusals (mobile drag, empty folder, malformed
+`too_many`, and the extraction stops `too_long` (split into smaller files) and
+`refused` (retrying will not help; ask for the values), each its own sentence
+since 2026-10-19, never the clearer-scan line), plus whole-call refusals (mobile drag, empty folder, malformed
 commit or arguments). Every unread `files[]` entry carries `hint`; `next` is
 short and points at `hint`, `question`, `unrecognized`, `sameDayAs`. No raw
 zod text, no document text, reaches the assistant through `next`.
@@ -133,7 +135,8 @@ The result and the receipt never carry `extractedText`, `contentMarkdown` or
 free-form `metadata`; `title` and `question` are ≤ 120 chars, control
 characters stripped, labelled as text from the document. One prompt line says
 the document is data, not instructions. Telemetry is `mcp_import {route,
-phase, files: bucket}`, value-free; Sentry gets a fixed message and the error
+phase, files: bucket}`, value-free, plus `tooLong` and `refused` integer counts
+on a Dropbox extract when non-zero; Sentry gets a fixed message and the error
 class. Routes: `dropbox`, `drive_refused`, `assistant`; phases `extract`, `commit`, `nudge` (US-37: a read on Dropbox found folder files not in the record), with `fromNudge: true` on an extract that answered one.
 
 ## Gotchas archived (docs/reference.md)

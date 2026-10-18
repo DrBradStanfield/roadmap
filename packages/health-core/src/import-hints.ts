@@ -5,6 +5,7 @@
  * limit and the way round it, so the assistant never has to explain a token
  * it was not given. The limits are stated here and enforced from here.
  */
+import type { ExtractionStopCode } from './models';
 
 /** The bounds the sentences name; the server's byte caps and counters derive from these. */
 export const IMPORT_LIMITS = {
@@ -30,8 +31,13 @@ export const IMPORT_ACCEPTED_TYPES = 'PDF, JPEG, PNG or ZIP';
 /** The `fileDates` argument, shown verbatim: a list of pairs, because ChatGPT drops a map-shaped param (live 2026-09-07). */
 const FILE_DATES_SHAPE = 'fileDates: [{ "file": "<name as listed>", "date": "YYYY-MM-DD" }]';
 
+/**
+ * The reasons tools/list names. The extraction stops (`too_long`, `refused`,
+ * US-15 AC34) have sentences below but are not named there: the tool text is
+ * frozen while the MCP 1.0.2 submission is in review (2026-10-19).
+ */
 export const IMPORT_FILE_REASONS = ['unsupported', 'nested_zip', 'too_large', 'no_date', 'bad_date', 'quota', 'allowance', 'time', 'unreadable', 'too_many'] as const;
-export type ImportFileReason = (typeof IMPORT_FILE_REASONS)[number];
+export type ImportFileReason = (typeof IMPORT_FILE_REASONS)[number] | ExtractionStopCode;
 
 const FILE_HINTS: Record<ImportFileReason, string> = {
   unsupported:
@@ -58,6 +64,11 @@ const FILE_HINTS: Record<ImportFileReason, string> = {
     'The file could not be read as a document. A clearer scan or the original PDF usually works; the website’s upload is another route.',
   too_many:
     'A ZIP is read twenty files at a time and this entry was past the twentieth. Split the ZIP and import the rest.',
+  // The same request stops the same way again (US-15 AC34), so neither invites a retry of this file.
+  too_long:
+    'This file is too long to read in one go. Split it into smaller files, a few pages each, and import those.',
+  refused:
+    'This file could not be read, and trying again will not help. Ask the user for the values, or to enter them on drstanfield.com/pages/roadmap.',
 };
 
 /**
