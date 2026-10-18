@@ -7494,6 +7494,6 @@
     "category": "measurement",
     "source": "production",
     "expected_classification": "MEASUREMENT",
-    "notes": "2026-W42 chat-health: widget turn, paraphrased. The user corrects an already-recorded value (wrong specimen): the prompt's MEASUREMENT definition ('READ BACK, RESTATE or CORRECT their own already-recorded numbers'). Production (Haiku 5.5) labelled the real turn ROUTE mid-thread; replay with thread context ROUTE 35/35 on Haiku 5.5, MEASUREMENT 14/14 on Haiku 4.5. This context-free fixture is a weak guard (Haiku 5.5 MEASUREMENT 4/5): the harness cannot send prior turns."
+    "notes": "2026-W42 chat-health: widget turn, paraphrased. The user corrects an already-recorded value (wrong specimen): the prompt's MEASUREMENT definition ('READ BACK, RESTATE or CORRECT their own already-recorded numbers'). KNOWN-FLAKY: production labelled the real turn ROUTE mid-thread (classifier model unrecorded); replayed in thread, Haiku 5.5 ROUTE, Haiku 4.5 MEASUREMENT. Context-free, Haiku 5.5 gives MEASUREMENT 4/5, so a multi-run suite fails it about half the time; the harness cannot send prior turns."
   }
 ]
