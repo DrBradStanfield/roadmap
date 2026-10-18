@@ -81,6 +81,17 @@ describe('scrubSensitiveData', () => {
       }
     });
 
+    it('US-09 AC7c — a report date, a collection date, a value being replaced and the chat document are filtered', () => {
+      const input = {
+        reportDate: '2026-03-01', report_date: '2026-03-01',
+        collectedOn: '2026-03-01', collected_on: '2026-03-01',
+        existingValue: 4.1,
+        documentType: 'lab_report', documentContent: 'synthetic document text',
+      };
+      const out = scrubSensitiveData(input) as Record<string, unknown>;
+      for (const key of Object.keys(input)) expect(out[key], key).toBe('[Filtered]');
+    });
+
     it('US-09 AC7c — `name` is kept: the SDK names the OS and runtime by it', () => {
       const contexts = { os: { name: 'Linux', version: '6.1' }, runtime: { name: 'node', version: 'v22' } };
       expect(scrubSensitiveData(contexts)).toEqual(contexts);

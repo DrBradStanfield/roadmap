@@ -212,6 +212,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
   /** Signed ID token from the most recent server refresh (openid grants only) —
    *  consumed by getReminderIdToken; never persisted. */
   private lastIdToken: string | null = null;
+  /** HTTP status of the most recent server refresh, undefined when none
+   *  answered — put on the StorageError a failed refresh leads to (US-09 AC6c). */
+  private lastRefreshStatus: number | undefined;
   /** At-most-once-per-session guard for the cosmetic folder migration. */
   private folderCheckDone = false;
 
@@ -294,7 +297,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
       }),
     });
     if (!res.ok) {
-      throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`);
+      throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     }
     const json = (await res.json()) as { accessToken: string; refreshToken?: string; expiresIn: number; idToken?: string };
     setJson(TOKENS_KEY, {
@@ -337,6 +340,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
    * transient failure must not block auto-enrolment forever (review 2026-09-10).
    */
   private async refresh(): Promise<'ok' | 'none' | 'transient'> {
+    this.lastRefreshStatus = undefined;
     if (!this.tokens?.refreshToken) return 'none';
     let res: Response;
     try {
@@ -351,6 +355,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     } catch {
       return 'transient'; // network/server down/timeout → caller falls back to the popup path
     }
+    this.lastRefreshStatus = res.status;
     if (res.status === 400 || res.status === 401) {
       this.clearTokens(); // refresh token revoked/expired — stop retrying
       return 'none';
@@ -390,7 +395,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
    */
   async getReminderIdToken(): Promise<string | null> {
     const outcome = await this.refresh();
-    if (outcome === 'transient') throw new StorageError('Google token refresh unavailable — retry later.');
+    if (outcome === 'transient') throw new StorageError('Google token refresh unavailable — retry later.', undefined, undefined, this.lastRefreshStatus);
     return outcome === 'ok' ? this.lastIdToken : null;
   }
 
@@ -427,7 +432,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     if (expectedVersion !== null) throw new ConflictError(`${this.label} no longer holds that file`);
     // First write — create the file (multipart: metadata + content).
     const res = await this.createMultipart(fileName, 'application/json', json);
-    if (!res.ok) throw new StorageError(`Google Drive create failed (${res.status}): ${await res.text()}`);
+    if (!res.ok) throw new StorageError(`Google Drive create failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     const created = await jsonBody<{ id?: string; version?: string }>(res);
     if (!created.id) throw new StorageError('Google Drive create returned no file id.');
     this.rememberFileId(fileName, created.id);
@@ -440,7 +445,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const id = await this.findFileId(name, parentId);
     if (!id) throw new StorageError(`Google Drive document not found.`);
     const res = await fetch(`${DRIVE_API}/files/${id}?alt=media`, { headers: await this.authHeaders() });
-    if (!res.ok) throw new StorageError(`Google Drive document read failed (${res.status}).`);
+    if (!res.ok) throw new StorageError(`Google Drive document read failed (${res.status}).`, undefined, undefined, res.status);
     return res.blob();
   }
 
@@ -455,7 +460,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     // produces a same-named duplicate with identical bytes, which Drive allows
     // and readDocument resolves by name; accepted orphan semantics (§5.3).
     const res = await this.createMultipart(name, type, bytes, parentId);
-    if (!res.ok) throw new StorageError(`Google Drive document create failed (${res.status}).`);
+    if (!res.ok) throw new StorageError(`Google Drive document create failed (${res.status}).`, undefined, undefined, res.status);
   }
 
   // --- change signal (US-34) -------------------------------------------------
@@ -509,7 +514,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   private async changesRequest(url: string, signal: AbortSignal): Promise<Response> {
     const res = await fetch(url, { headers: await this.authHeaders(), signal });
-    if (!res.ok) throw new StorageError(`Google Drive watch failed (${res.status}).`);
+    if (!res.ok) throw new StorageError(`Google Drive watch failed (${res.status}).`, undefined, undefined, res.status);
     return res;
   }
 
@@ -650,7 +655,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
   private async getToken(): Promise<string> {
     if (this.hasValidToken()) return this.tokens!.accessToken;
     if (await this.tryServerRefresh()) return this.tokens!.accessToken;
-    throw new StorageError('Google Drive needs to be reconnected.');
+    throw new StorageError('Google Drive needs to be reconnected.', undefined, undefined, this.lastRefreshStatus);
   }
 
   /** GIS popup token grant (requires a user gesture). */

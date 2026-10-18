@@ -72,6 +72,8 @@ export const SENSITIVE_EXACT_KEYS: ReadonlySet<string> = new Set([
   'unrecognized', 'question', 'extractedtext', 'content_md', 'document_type',
   'recordedat', 'recorded_at', 'documentdate', 'document_date',
   'classification', 'supplementname', 'supplement_name', 'metadata',
+  'reportdate', 'report_date', 'collectedon', 'collected_on',
+  'existingvalue', 'documenttype', 'documentcontent',
   // Screening-specific
   'prostatepsavalue', 'prostate_psa_value',
   'lungpackyears', 'lung_pack_years',

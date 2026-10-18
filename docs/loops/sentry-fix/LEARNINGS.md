@@ -106,9 +106,10 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   `area=cloud-connect`, both with fixed text and two closed-list tags:
   `errorClass` (StorageError/ConflictError/SchemaTooNewError/RecordShapeError/
   other) and `httpStatus` (401/403/404/409/429/4xx/5xx/none). Status comes
-  only from a StorageError that carries one: Drive and Dropbox record calls
-  do; GitHub, WebDAV and the OAuth exchange read `none`. Two 403s (scope vs
-  a Drive rate limit) no longer read apart: the reason text is gone.
+  only from a StorageError that carries one: Drive and Dropbox set it on every
+  throw after a response, the OAuth exchange and token refresh included;
+  GitHub, WebDAV and a network failure read `none`. Two 403s (scope vs a
+  Drive rate limit) no longer read apart: the reason text is gone.
 - `[class][widget]` 2026-09-24 — Storage-blocked browsers come in three shapes
   and the field sent all three inside ten days: `localStorage` missing (Safari
   26.6, ReferenceError), the getter throwing SecurityError (Chrome Mobile),
