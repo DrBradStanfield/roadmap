@@ -50,7 +50,8 @@ export interface SendMessageResult {
 /**
  * A streamed delta: the model's thinking summary or the answer text (US-15
  * AC16/AC17), a fixed server progress line, or the titles of the articles
- * loaded for the answer (AC20).
+ * loaded for the answer (AC20). A progress line clears the answer text
+ * streamed before it (AC38).
  */
 export type ChatDelta =
   | { type: 'thinking' | 'text' | 'status'; text: string }

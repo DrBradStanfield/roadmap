@@ -126,6 +126,68 @@ describe('US-15 AC16/AC17 — streaming state in useChatState', () => {
   });
 });
 
+// US-15 AC38: a run_roadmap round's first call often streams a preamble ("Let
+// me run those numbers…") or a premature verdict. The status line between the
+// calls clears it, so the answer fills an empty bubble and nothing flashes.
+describe('US-15 AC38 — a status line clears the text streamed before it', () => {
+  const ROUND = 'Running your numbers through the roadmap';
+  const PREAMBLE = 'Let me run those numbers through your roadmap. ';
+
+  it('a run_roadmap round clears the preamble, shows the status, then streams the answer alone', async () => {
+    const { hook, sending } = await startSend();
+    act(() => {
+      send.onDelta!({ type: 'status', text: 'Writing the answer' });
+      send.onDelta!({ type: 'text', text: PREAMBLE });
+    });
+    await waitFor(() => expect(hook.result.current.state.pending.text).toBe(PREAMBLE));
+    act(() => { send.onDelta!({ type: 'status', text: ROUND }); });
+    await waitFor(() => expect(hook.result.current.state.pending.status).toBe(ROUND));
+    expect(hook.result.current.state.pending.text).toBe('');
+    act(() => { send.onDelta!({ type: 'text', text: 'Your LDL is above target.' }); });
+    await waitFor(() => expect(hook.result.current.state.pending.text).toBe('Your LDL is above target.'));
+    await act(async () => { send.resolve!({ result: { conversationId: 'c1', messageId: null, content: 'Your LDL is above target.' }, error: null }); await sending; });
+    expect(hook.result.current.state.messages.at(-1)!.content).toBe('Your LDL is above target.');
+  });
+
+  it('a turn with no tool streams as before: the text accumulates under the last status', async () => {
+    const { hook } = await startSend();
+    act(() => {
+      send.onDelta!({ type: 'status', text: 'Reading your question' });
+      send.onDelta!({ type: 'status', text: 'Writing the answer' });
+      send.onDelta!({ type: 'text', text: 'ApoB ' });
+      send.onDelta!({ type: 'text', text: 'counts' });
+    });
+    await waitFor(() => expect(hook.result.current.state.pending.text).toBe('ApoB counts'));
+    expect(hook.result.current.state.pending.status).toBe('Writing the answer');
+  });
+
+  it('the thinking summary and the articles read survive the round', async () => {
+    const { hook } = await startSend();
+    act(() => {
+      send.onDelta!({ type: 'sources', titles: ['LDL explained'] });
+      send.onDelta!({ type: 'thinking', text: THINKING });
+      send.onDelta!({ type: 'text', text: PREAMBLE });
+      send.onDelta!({ type: 'status', text: ROUND });
+    });
+    await waitFor(() => expect(hook.result.current.state.pending.status).toBe(ROUND));
+    expect(hook.result.current.state.pending).toMatchObject({ text: '', thinking: THINKING, sources: ['LDL explained'] });
+  });
+
+  it('a failed second call keeps today\'s fallback: the fallback line replaces the cleared stream', async () => {
+    const { hook, sending } = await startSend();
+    act(() => { send.onDelta!({ type: 'text', text: PREAMBLE }); send.onDelta!({ type: 'status', text: ROUND }); });
+    await waitFor(() => expect(hook.result.current.state.pending.status).toBe(ROUND));
+    await act(async () => {
+      send.resolve!({ result: { conversationId: 'c1', messageId: null, content: 'Sorry, try again.', isFallback: true }, error: null });
+      await sending;
+    });
+    const { state } = hook.result.current;
+    expect(state.pending.text).toBe('');
+    expect(state.messages.at(-1)).toMatchObject({ role: 'assistant', content: 'Sorry, try again.', isFallback: true });
+    expect(state.approachById).toEqual({});
+  });
+});
+
 describe('US-15 AC19 — only the chat that applies edits asks for the tools', () => {
   async function sendWith(onProposeEdit?: () => void) {
     const { sendMessage } = await import('../lib/chat-api');
