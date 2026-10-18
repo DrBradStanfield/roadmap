@@ -8,7 +8,6 @@
  */
 import { beforeAll, describe, it, expect, vi } from 'vitest';
 import Ajv2020 from 'ajv/dist/2020';
-import { createHash } from 'node:crypto';
 import { isRefusalReason, MCP_REFUSAL_REASONS, MCP_TOOL_NAMES } from './product-events';
 import { z } from 'zod';
 import {
@@ -2021,7 +2020,8 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(importHint('too_many')).toMatch(/twenty/);
     // US-35 AC13 (2026-10-19): a file the model cut off or declined is not a bad scan, and
     // the same request stops the same way again, so neither hint invites a retry of the same file.
-    expect(importHint('too_long')).toMatch(/too long to read in one go.*Split it into smaller files/);
+    // The connector reads at 3,072 output tokens and the website at 10,000, so the website is named first.
+    expect(importHint('too_long')).toMatch(/too long to read in one go\. Upload it on drstanfield\.com\/pages\/roadmap, which reads longer reports, or split it/);
     expect(importHint('refused')).toMatch(/trying again will not help.*drstanfield\.com\/pages\/roadmap/);
     for (const stop of EXTRACTION_STOP_CODES) {
       expect(importHint(stop), stop).not.toBe(importHint('unreadable'));
@@ -3003,15 +3003,6 @@ describe('US-36 AC9 — the assistant’s manners are the only gate when a clien
     for (const name of ['correct_value', 'update_profile', 'report_feedback']) {
       expect(MCP_TOOLS.find((t) => t.name === name)!.description, name).toContain('after their own yes, in their own words');
     }
-  });
-});
-
-describe('US-35 AC13 — the tool text is frozen while MCP 1.0.2 is in review (2026-10-19)', () => {
-  // The hash of every published tool definition (names, descriptions, input and output
-  // schemas, annotations, _meta) at origin/main cab5615a. A wording change in a RESULT moves
-  // nothing here; a change to what tools/list publishes fails this test until the review ends.
-  it('JSON.stringify(MCP_TOOLS) hashes to the value at origin/main', () => {
-    expect(createHash('sha256').update(JSON.stringify(MCP_TOOLS)).digest('hex')).toBe('4d36f2f0084cc27973b47fcb43219e9ddf4e6b714fde81b4a4284a35aced7e31');
   });
 });
 

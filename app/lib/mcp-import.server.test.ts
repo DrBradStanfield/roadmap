@@ -714,7 +714,7 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     }));
   });
 
-  it('a file cut off at max_tokens fails as too_long, and the extract counter carries both stop counts as integers (US-35 usage signal)', async () => {
+  it('a file cut off at max_tokens fails as too_long, and the extract counter stays route, phase and bucket (US-35 usage signal is the Sentry stop message)', async () => {
     const cloud = new MemoryCloud();
     cloud.docs.set('a-long.pdf', new Blob([PDF]));
     cloud.docs.set('b-declined.pdf', new Blob([PDF.map((b, i) => (i === PDF.length - 1 ? b ^ 1 : b))]));
@@ -730,8 +730,9 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
       tags: expect.objectContaining({ path: 'connector', stopCode: 'too_long' }),
     }));
     expect(vi.mocked(recordServerEvent).mock.calls.filter(([name]) => name === 'mcp_import').map(([, meta]) => meta)).toEqual([
-      { route: 'dropbox', phase: 'extract', files: '2-5', tooLong: 1, refused: 1 },
+      { route: 'dropbox', phase: 'extract', files: '2-5' },
     ]);
+    expect(Object.keys(vi.mocked(recordServerEvent).mock.calls[0][1] ?? {})).toEqual(['route', 'phase', 'files']);
   });
 
   it('a ZIP flows through extract(): entries in order under the same file, each typed, charged and hashed; junk and a nested zip named (AC5)', async () => {

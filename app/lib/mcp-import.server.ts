@@ -32,7 +32,7 @@ import { openStep, signStep, UUID } from './mcp-step.server';
 import { recordServerEvent } from './product-events.server';
 import { machineFiles } from './rate-limiter';
 import { deadlineSignal, StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
-import { IMPORT_LIMITS, IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
+import { type ImportFileReason, IMPORT_LIMITS, IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
 import {
   type DocumentPromptMode,
   isImportableEntryName,
@@ -222,7 +222,7 @@ function driveRefusal(client: McpClientLabel): string {
 }
 
 /** Why one file could not be read, as a closed word the assistant can act on. */
-function failureReason(error: unknown): string {
+function failureReason(error: unknown): ImportFileReason {
   if (isNetworkOrTimeoutError(error)) return 'time';
   if (error instanceof Error && /status 400/.test(error.message)) return 'too_large';
   if (error instanceof ExtractionStopError) return error.code;
@@ -270,8 +270,8 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
     }
   }
 
-  function count(route: McpImportRoute, phase: 'extract' | 'commit', files: number, fromNudge = false, stops: { tooLong?: number; refused?: number } = {}): void {
-    void recordServerEvent('mcp_import', { route, phase, files: importFilesBucket(files), ...(fromNudge ? { fromNudge: true } : null), ...stops });
+  function count(route: McpImportRoute, phase: 'extract' | 'commit', files: number, fromNudge = false): void {
+    void recordServerEvent('mcp_import', { route, phase, files: importFilesBucket(files), ...(fromNudge ? { fromNudge: true } : null) });
   }
 
   return {
@@ -431,9 +431,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
           if (!remaining.includes(name)) remaining.push(name);
         }
       });
-      // Files the model cut off or declined, as integers, only when there are any (US-35 usage signal).
-      const stopped = (reason: string) => files.filter((f) => f.reason === reason).length || undefined;
-      count('dropbox', 'extract', files.filter((f) => f.contentHash).length, request.fromNudge === true, { tooLong: stopped('too_long'), refused: stopped('refused') });
+      count('dropbox', 'extract', files.filter((f) => f.contentHash).length, request.fromNudge === true);
       return { route: 'dropbox', files, remaining };
     },
 

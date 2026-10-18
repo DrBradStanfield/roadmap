@@ -35,6 +35,10 @@ const FILE_DATES_SHAPE = 'fileDates: [{ "file": "<name as listed>", "date": "YYY
  * The reasons tools/list names. The extraction stops (`too_long`, `refused`,
  * US-15 AC34) have sentences below but are not named there: the tool text is
  * frozen while the MCP 1.0.2 submission is in review (2026-10-19).
+ * TODO(after the 1.0.2 verdict): add `too_long` and `refused` to this list,
+ * drop `| ExtractionStopCode` below, and point the AC13 test in
+ * mcp-tools.test.ts back at this list alone (then re-take the pins in
+ * app/lib/mcp-freeze.test.ts, since the published `reason` text moves).
  */
 export const IMPORT_FILE_REASONS = ['unsupported', 'nested_zip', 'too_large', 'no_date', 'bad_date', 'quota', 'allowance', 'time', 'unreadable', 'too_many'] as const;
 export type ImportFileReason = (typeof IMPORT_FILE_REASONS)[number] | ExtractionStopCode;
@@ -66,7 +70,7 @@ const FILE_HINTS: Record<ImportFileReason, string> = {
     'A ZIP is read twenty files at a time and this entry was past the twentieth. Split the ZIP and import the rest.',
   // The same request stops the same way again (US-15 AC34), so neither invites a retry of this file.
   too_long:
-    'This file is too long to read in one go. Split it into smaller files, a few pages each, and import those.',
+    'This file is too long to read in one go. Upload it on drstanfield.com/pages/roadmap, which reads longer reports, or split it into smaller files and import those.',
   refused:
     'This file could not be read, and trying again will not help. Ask the user for the values, or to enter them on drstanfield.com/pages/roadmap.',
 };

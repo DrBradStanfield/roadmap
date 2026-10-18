@@ -83,9 +83,6 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   step: ['mcp_tool_call'],
   rejected: ['chat_run_roadmap'],
   ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, ['upload_outcome']])),
-  /** US-35: the connector's extract counts the files the model cut off or declined, as the upload does. */
-  tooLong: ['upload_outcome', 'mcp_import'],
-  refused: ['upload_outcome', 'mcp_import'],
 };
 
 /** Events whose metadata is ONLY their own keys: a shared key such as

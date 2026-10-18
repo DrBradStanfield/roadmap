@@ -354,17 +354,6 @@ describe('recordServerEvent — the server path validates too', () => {
     });
   });
 
-  // US-35 usage signal (2026-10-19): the connector's extract counts the files the model cut
-  // off or declined, as integers, under the upload counter's own two keys; no other key rides.
-  it('keeps the connector extract’s tooLong and refused counts, integers only, and no other upload count', async () => {
-    await recordServerEvent('mcp_import', { route: 'dropbox', phase: 'extract', files: '2-5', tooLong: 1, refused: 2 });
-    expect(inserts[0]?.metadata).toEqual({ route: 'dropbox', phase: 'extract', files: '2-5', tooLong: 1, refused: 2 });
-    await recordServerEvent('mcp_import', { route: 'dropbox', phase: 'extract', files: '1', tooLong: 1.5, picked: 1 });
-    expect(inserts[1]?.metadata).toEqual({ route: 'dropbox', phase: 'extract', files: '1' });
-    await recordServerEvent('mcp_tool_call', { tool: 'import_documents', outcome: 'ok', tooLong: 1 });
-    expect(inserts[2]?.metadata).toEqual({ tool: 'import_documents', outcome: 'ok' });
-  });
-
   it('does not write a reason the vocabulary does not name', async () => {
     await recordServerEvent('mcp_tool_call', {
       tool: 'add_measurement',
