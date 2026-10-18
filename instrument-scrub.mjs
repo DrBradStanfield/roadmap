@@ -62,6 +62,9 @@ const SENSITIVE_EXACT_KEYS = new Set([
   // this is the field its number or its text sits in.
   'value', 'values', 'result', 'results',
   'title', 'note', 'notes', 'summary',
+  'displayvalue', 'display_value',
+  'valuesi', 'value_si',
+  'contentmarkdown', 'content_markdown',
   // Screening-specific
   'prostatepsavalue', 'prostate_psa_value',
   'lungpackyears', 'lung_pack_years',

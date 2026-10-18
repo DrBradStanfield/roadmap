@@ -88,6 +88,27 @@ describe('chat-api streaming (US-15 AC16/AC17)', () => {
     expect(JSON.stringify(store.recordExchange.mock.calls)).not.toContain('ApoB explained');
   });
 
+  // US-15 AC38: a run_roadmap round's preamble, status line and answer reach onDelta
+  // in order (the hook clears the preamble on the status); an unknown event or
+  // field, as a later server might send, is dropped.
+  it('forwards a round in order and drops unknown events and fields', async () => {
+    fetchMock.mockResolvedValue(ndjson([
+      { type: 'text', text: 'Let me run those numbers. ' },
+      { type: 'status', text: 'Running your numbers through the roadmap', reset: true },
+      { type: 'phase', name: 'tool' },
+      { type: 'text', text: 'Final answer' },
+      done,
+    ]));
+    const { seen, onDelta } = deltas();
+    const { result } = await sendMessage('q', null, null, [], onDelta);
+    expect(seen).toEqual([
+      { type: 'text', text: 'Let me run those numbers. ' },
+      { type: 'status', text: 'Running your numbers through the roadmap' },
+      { type: 'text', text: 'Final answer' },
+    ]);
+    expect(result?.content).toBe('Final answer');
+  });
+
   // US-15 AC19: only the widget's own chat, which applies edits, asks for the tools.
   it('sends canApplyEdits only when the caller applies edits', async () => {
     fetchMock.mockImplementation(async () => ndjson([done]));

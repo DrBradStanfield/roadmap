@@ -64,3 +64,34 @@ describe('US-15 AC27: stored text cuts keep surrogate pairs whole (Sentry 6Y)', 
     for (const { row: r } of supa.inserts) expect(JSON.stringify(r)).not.toMatch(LONE_SURROGATE);
   });
 });
+
+// US-15 AC37 (Sentry 6Z): the row carries the router's output token count,
+// and null when the router did not run.
+describe('US-15 AC37: router_output_tokens on the Discord row', () => {
+  const turn = {
+    conversationId: null, authorId: 'u1', userMessage: 'hello', userDiscordMessageId: 'm1',
+    assistantContent: 'Hi', assistantDiscordMessageIds: ['m2'],
+    usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 },
+    isFallback: false, contextRecent: [],
+  };
+  const row = () => supa.inserts.find((i) => i.table === 'chat_match_events')?.row;
+
+  it('US-15 AC37: carries the count when the router ran', async () => {
+    supa.inserts.length = 0;
+    await persistConversation({
+      ...turn,
+      routerResult: {
+        handles: [], rawJson: '{"handles":[]}', latencyMs: 1, cacheHit: false, error: null,
+        usage: { inputTokens: 900, outputTokens: 37, cacheCreationTokens: 0, cacheReadTokens: 0 },
+      },
+      classifier: { classification: 'ROUTE', routerSkipped: false },
+    });
+    expect(row()?.router_output_tokens).toBe(37);
+  });
+
+  it('US-15 AC37: reads null when the router did not run', async () => {
+    supa.inserts.length = 0;
+    await persistConversation({ ...turn, routerResult: null, classifier: { classification: 'GREETING', routerSkipped: true } });
+    expect(row()?.router_output_tokens).toBeNull();
+  });
+});

@@ -374,3 +374,29 @@ describe('US-15 AC27 — stored cuts keep surrogate pairs whole', () => {
     expect(JSON.stringify(inserts)).not.toMatch(/\\u[dD][89a-fA-F]/);
   });
 });
+
+// US-15 AC37 (Sentry 6Z): the router timed out twice, and nothing logged how
+// long its reply was. Its output token count now rides on the row and the line.
+describe('US-15 AC37 — router output tokens on the row and in chat_timing', () => {
+  const routerUsage = { inputTokens: 900, outputTokens: 37, cacheCreationTokens: 0, cacheReadTokens: 800 };
+  beforeEach(() => {
+    mocks.fireRouter = true;
+    vi.mocked(routeQuery).mockResolvedValueOnce(
+      { handles: ['apob'], rawJson: null, latencyMs: 0, cacheHit: true, error: null, usage: routerUsage },
+    );
+  });
+  const matchRow = async (res: Response) => {
+    await lines(res);
+    await new Promise((resolve) => setImmediate(resolve));
+    return inserts.find((i) => i.table === 'chat_match_events')!.row;
+  };
+
+  it('US-15 AC37: a stored-surface row and chat_timing carry the count', async () => {
+    expect((await matchRow(await post({ message: 'hello', stream: true }))).router_output_tokens).toBe(37);
+    expect(timing().routerOutputTokens).toBe(37);
+  });
+
+  it('US-15 AC37: the widget row keeps the count', async () => {
+    expect((await matchRow(await post({ message: 'hello', localFirst: true, stream: true }))).router_output_tokens).toBe(37);
+  });
+});

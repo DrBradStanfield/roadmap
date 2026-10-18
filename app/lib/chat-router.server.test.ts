@@ -119,6 +119,10 @@ describe('redactForWidget', () => {
     expect(out).not.toHaveProperty('error_detail');
     expect(out).not.toHaveProperty('content');
   });
+
+  it('US-15 AC37: keeps router_output_tokens, a number', () => {
+    expect(redactForWidget({ ...row, router_output_tokens: 37 }).router_output_tokens).toBe(37);
+  });
 });
 
 // US-15 AC26: the router's 2,000-char slice never splits an emoji.
@@ -140,6 +144,33 @@ describe('US-15 AC27: router_error carries no lone surrogate', () => {
     const r = await routeQuery('hello');
     expect(r.error).toBeTruthy();
     expect(JSON.stringify(r.error)).not.toMatch(/\\u[dD][89a-fA-F]/);
+  });
+});
+
+// US-15 AC37: the count passes through; 0 only when no reply arrived.
+describe('US-15 AC37: router output tokens', () => {
+  it('US-15 AC37: passes the API count through, and reads 0 on an error', async () => {
+    vi.mocked(callAnthropicWithUsage).mockResolvedValueOnce({
+      content: '{"handles":[]}',
+      usage: { inputTokens: 5, outputTokens: 37, cacheCreationTokens: 0, cacheReadTokens: 0 },
+    } as Awaited<ReturnType<typeof callAnthropicWithUsage>>);
+    expect((await routeQuery('hello')).usage.outputTokens).toBe(37);
+    vi.mocked(callAnthropicWithUsage).mockRejectedValueOnce(new DOMException('The operation was aborted due to timeout', 'TimeoutError'));
+    const failed = await routeQuery('hello');
+    expect(failed.error).toBeTruthy();
+    expect(failed.usage.outputTokens).toBe(0);
+  });
+
+  it('US-15 AC37: a reply cut off at max_tokens keeps its real counts', async () => {
+    vi.mocked(callAnthropicWithUsage).mockResolvedValueOnce({
+      content: '{"handles":["apob","vitam',
+      usage: { inputTokens: 900, outputTokens: 200, cacheCreationTokens: 0, cacheReadTokens: 800 },
+    } as Awaited<ReturnType<typeof callAnthropicWithUsage>>);
+    const cut = await routeQuery('hello');
+    expect(cut.error).toBeTruthy();
+    expect(cut.usage.outputTokens).toBe(200);
+    expect(cut.usage.inputTokens).toBe(900);
+    expect(cut.cacheHit).toBe(true);
   });
 });
 

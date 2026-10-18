@@ -762,6 +762,7 @@ export async function persistConversation(p: PersistParams): Promise<void> {
       router_cache_hit: r?.cacheHit ?? null,
       router_input_tokens: r?.usage.inputTokens ?? null,
       router_cache_read_tokens: r?.usage.cacheReadTokens ?? null,
+      router_output_tokens: r?.usage.outputTokens ?? null,
       router_raw: r?.error && r.rawJson != null ? cutText(r.rawJson, 500) : null,
       router_error: r?.error ?? null,
       classification: p.classifier.classification,
