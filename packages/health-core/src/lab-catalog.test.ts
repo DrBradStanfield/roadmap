@@ -725,6 +725,10 @@ describe('US-21 AC17 — the common blood tests are catalogued, in SI', () => {
     ['Albumin Creatinine Ratio', 30, 'mg/g creatinine', 'urine_acr', 3.39, 'mg/mmol'],
     ['Insulin', 8, 'microIU/mL', 'insulin', 8, 'mIU/L'],
     ['Insulin', 8, 'mcIU/mL', 'insulin', 8, 'mIU/L'],
+    ['TSH', 2.1, 'microIU/mL', 'tsh', 2.1, 'mIU/L'],
+    ['TSH', 2.1, 'mcIU/mL', 'tsh', 2.1, 'mIU/L'],
+    ['Prolactin', 250, 'microIU/mL', 'prolactin', 250, 'mIU/L'],
+    ['Prolactin', 250, 'mcIU/mL', 'prolactin', 250, 'mIU/L'],
   ];
 
   it.each(CONVERSIONS)('US-21 AC17 — %s %s %s is stored as %s in SI', (name, value, unit, key, stored, storedUnit) => {

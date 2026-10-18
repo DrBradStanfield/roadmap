@@ -304,6 +304,45 @@ describe('US-12 AC13: vertical merges, run-level deletions and loose attribute s
     ].join('\n'));
   });
 
+  // Final review 2026-10-18 (Codex + adversary).
+  it('a row deletion marker deletes its row whether written self-closing or as an empty pair', async () => {
+    const row = (marker: string) => `<w:tr><w:trPr>${marker}</w:trPr>${tc('Ferritin')}${tc('58')}</w:tr>`;
+    for (const marker of ['<w:del w:id="9" w:author="Lab" w:date="2024-01-02T00:00:00Z"/>', '<w:del w:id="9" w:author="Lab" w:date="2024-01-02T00:00:00Z"></w:del>']) {
+      expect(await read(tbl(tr('Test', 'Result'), row(marker), tr('HbA1c', '38'))), marker).toBe('Test | Result\nHbA1c | 38');
+    }
+  });
+
+  it('a continuation cell with its own text keeps it', async () => {
+    expect(await read(tbl(`<w:tr>${tc('A')}${vm('restart', 'x')}</w:tr>`, `<w:tr>${tc('B')}${vm(null, 'y')}</w:tr>`))).toBe('A | x\nB | y');
+  });
+
+  it('a deleted row never starts a merge (probe A)', async () => {
+    const deleted = `<w:tr><w:trPr><w:del w:id="1" w:author="a" w:date="2024"/></w:trPr>${tc('Old')}${vm('restart', 'mg/dL')}</w:tr>`;
+    expect(await read(tbl(tr('Test', 'Unit'), deleted, `<w:tr>${tc('LDL')}${vm(null, '')}</w:tr>`))).toBe('Test | Unit\nLDL | ');
+  });
+
+  it('an unmerged cell spanning columns ends every merge it covers (probe B)', async () => {
+    const wide = '<w:tr><w:tc><w:tcPr><w:gridSpan w:val="3"/></w:tcPr>' + p('wide') + '</w:tc></w:tr>';
+    expect(await read(tbl(`<w:tr>${tc('a')}${tc('b')}${vm('restart', 'U')}</w:tr>`, wide, `<w:tr>${tc('c')}${tc('d')}${vm(null, '')}</w:tr>`)))
+      .toBe('a | b | U\nwide |  | \nc | d | ');
+  });
+
+  it('stops copying merged text once past the cap: a thousand rows of merged columns finish fast, truncated', async () => {
+    // 15 merged columns of 40,000 characters down 1,000 rows: 600 million
+    // characters copied, past the longest string JavaScript can hold.
+    const restart = 'Long unit note '.repeat(2667);
+    const cols = 15;
+    const rows = [
+      `<w:tr>${tc('Test')}${vm('restart', restart).repeat(cols)}</w:tr>`,
+      ...Array.from({ length: 1000 }, (_, i) => `<w:tr>${tc(`T${i}`)}${vm(null, '').repeat(cols)}</w:tr>`),
+    ];
+    const started = performance.now();
+    const { text, truncated } = await docxToText(await docx(tbl(...rows)));
+    expect(performance.now() - started).toBeLessThan(3000);
+    expect(truncated).toBe(true);
+    expect(text.length).toBeLessThanOrEqual(60_000);
+  });
+
   it('a merge in one table never reaches into the next', async () => {
     expect(await read(
       tbl(`<w:tr>${tc('Ferritin')}${vm('restart', 'ug/L')}</w:tr>`)

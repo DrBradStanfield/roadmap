@@ -258,6 +258,8 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `mchc` | g/L | g/dl | 10 | a decilitre is a tenth of a litre |
 | `tsh` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number |
 | `tsh` | mIU/L | mu/l | 1 | mU/L is mIU/L, printed short |
+| `tsh` | mIU/L | microiu/ml | 1 | µIU/mL with the prefix spelled out |
+| `tsh` | mIU/L | mciu/ml | 1 | µIU/mL with the mc prefix (as mcg) |
 | `ft4` | pmol/L | ng/dl | 12.87 | thyroxine 776.87 g/mol |
 | `ft3` | pmol/L | pg/ml | 1.536 | triiodothyronine 650.97 g/mol |
 | `anti_tpo` | IU/mL | kiu/l | 1 | kIU/L and IU/mL are the same number |
@@ -273,6 +275,8 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `estradiol` | pmol/L | pg/ml | 3.671 | estradiol 272.38 g/mol |
 | `estradiol` | pmol/L | ng/l | 3.671 | estradiol 272.38 g/mol |
 | `prolactin` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number (ng/mL stays refused: assay-dependent) |
+| `prolactin` | mIU/L | microiu/ml | 1 | µIU/mL with the prefix spelled out |
+| `prolactin` | mIU/L | mciu/ml | 1 | µIU/mL with the mc prefix (as mcg) |
 | `cortisol_am` | nmol/L | µg/dl | 27.59 | cortisol 362.46 g/mol |
 | `psa_free` | µg/L | ng/ml | 1 | ng/mL and µg/L are the same number |
 | `lh` | IU/L | miu/ml | 1 | mIU/mL and IU/L are the same number |

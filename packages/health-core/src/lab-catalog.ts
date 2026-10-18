@@ -171,7 +171,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'rdw', label: 'RDW', group: 'haematology', unit: '%', aliases: ['red cell distribution width'] },
 
   // ── Thyroid ───────────────────────────────────────────────────────────
-  { key: 'tsh', label: 'TSH', group: 'thyroid', unit: 'mIU/L', aliases: ['thyroid stimulating hormone', 'thyrotropin'], unitAliases: ['µiu/ml', 'mu/l'] },
+  { key: 'tsh', label: 'TSH', group: 'thyroid', unit: 'mIU/L', aliases: ['thyroid stimulating hormone', 'thyrotropin'], unitAliases: ['µiu/ml', 'mu/l', 'microiu/ml', 'mciu/ml'] },
   { key: 'ft4', label: 'Free T4', group: 'thyroid', unit: 'pmol/L', aliases: ['free thyroxine', 't4 free', 'free t4'], conversions: { 'ng/dl': 12.87 } }, // thyroxine 776.87 g/mol
   { key: 'ft3', label: 'Free T3', group: 'thyroid', unit: 'pmol/L', aliases: ['free triiodothyronine', 't3 free', 'free t3'], conversions: { 'pg/ml': 1.536 } }, // triiodothyronine 650.97 g/mol
   { key: 'anti_tpo', label: 'Anti-TPO', group: 'thyroid', unit: 'IU/mL', aliases: ['tpo antibodies', 'thyroid peroxidase antibodies', 'anti thyroid peroxidase', 'tpoab'], unitAliases: ['kiu/l', 'u/ml'] },
@@ -184,7 +184,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'free_testosterone_calculated', label: 'Free testosterone (calculated)', group: 'hormones', unit: 'pmol/L', aliases: ['calculated free testosterone', 'cft', 'calculated free t'], conversions: FREE_TESTOSTERONE },
   { key: 'shbg', label: 'SHBG', group: 'hormones', unit: 'nmol/L', aliases: ['sex hormone binding globulin'] },
   { key: 'estradiol', label: 'Estradiol', group: 'hormones', unit: 'pmol/L', aliases: ['oestradiol', 'e2'], conversions: { 'pg/ml': 3.671, 'ng/l': 3.671 } }, // estradiol 272.38 g/mol
-  { key: 'prolactin', label: 'Prolactin', group: 'hormones', unit: 'mIU/L', aliases: [], unitAliases: ['µiu/ml'] }, // ng/mL is deliberately REFUSED: the mIU factor is assay-dependent (~21.2 for the WHO 3rd IS), so converting would invent precision
+  { key: 'prolactin', label: 'Prolactin', group: 'hormones', unit: 'mIU/L', aliases: [], unitAliases: ['µiu/ml', 'microiu/ml', 'mciu/ml'] }, // ng/mL is deliberately REFUSED: the mIU factor is assay-dependent (~21.2 for the WHO 3rd IS), so converting would invent precision
   { key: 'cortisol_am', label: 'Cortisol (morning)', group: 'hormones', unit: 'nmol/L', aliases: ['cortisol', 'am cortisol'], conversions: { 'µg/dl': 27.59 } }, // cortisol 362.46 g/mol
   { key: 'psa_free', label: 'PSA (free)', group: 'hormones', unit: 'µg/L', aliases: ['free psa'], unitAliases: ['ng/ml'] },
   { key: 'lh', label: 'LH', group: 'hormones', unit: 'IU/L', aliases: ['luteinising hormone', 'luteinizing hormone'], unitAliases: GONADOTROPHIN_ALIASES },
