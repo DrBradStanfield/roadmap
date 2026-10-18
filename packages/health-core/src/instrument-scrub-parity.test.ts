@@ -20,6 +20,7 @@ import * as copy from '../../../instrument-scrub.mjs';
 // One field per sensitive key currently redacted by the source. If health-core's list grows,
 // add the key here AND to instrument-scrub.mjs (the in-code comments say so).
 const SENSITIVE_SAMPLE: Record<string, unknown> = {
+  content_md: 'document text', document_type: 'lab_report',
   weightKg: 80, weight_kg: 80, weight: 80,
   waistCm: 90, waist_cm: 90, waist: 90,
   heightCm: 180, height_cm: 180, height: 180,

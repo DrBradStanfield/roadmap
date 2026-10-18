@@ -70,7 +70,7 @@ export const SENSITIVE_EXACT_KEYS = new Set([
   // names the OS and runtime by it in `contexts`.
   'metric', 'metricname', 'metric_name', 'printedname',
   'referencelow', 'reference_low', 'referencehigh', 'reference_high',
-  'unrecognized', 'question', 'extractedtext',
+  'unrecognized', 'question', 'extractedtext', 'content_md', 'document_type',
   'recordedat', 'recorded_at', 'documentdate', 'document_date',
   'classification', 'supplementname', 'supplement_name', 'metadata',
   // Screening-specific
