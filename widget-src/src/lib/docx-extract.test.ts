@@ -345,9 +345,9 @@ describe('US-12 AC13: vertical merges, run-level deletions and loose attribute s
 
   // Review of c1362acd (Codex + adversary).
   it('reads many open rows then many cell closes, and deep balanced nesting, in linear time', async () => {
-    const n = 60_000;
+    // 64 open rows (the cap) and many cell closes, so every close runs the running count.
     let started = performance.now();
-    await docxToText(await docx('<w:tr>'.repeat(n) + '<w:tc></w:tc>'.repeat(n)));
+    await docxToText(await docx('<w:tr>'.repeat(64) + '<w:tc></w:tc>'.repeat(200_000)));
     expect(performance.now() - started).toBeLessThan(3000);
     const nest = (depth: number): string => (depth ? `<w:tbl><w:tr><w:tc>${nest(depth - 1)}</w:tc></w:tr></w:tbl>` : p('core'));
     // Within the cap of 64 open rows, nesting reads whole.
