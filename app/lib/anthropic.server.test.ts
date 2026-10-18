@@ -301,7 +301,8 @@ describe('parseUnifiedResult — tolerates string-typed numeric values', () => {
     const result = parseUnifiedResult({
       ...base,
       values: [
-        { metric: 'ldl', value: 2.5, unit: null, confidence: 'high' },
+        // A null unit is "no unit printed" and kept (review 2026-10-18, R4); a null metric is malformed.
+        { metric: null, value: 2.5, unit: 'mmol/L', confidence: 'high' },
         { metric: 'hdl', value: 1.3, unit: 'mmol/L', confidence: 'very high' },
         { metric: 'apob', value: 0.9, unit: 'g/L', confidence: 'high' },
       ],

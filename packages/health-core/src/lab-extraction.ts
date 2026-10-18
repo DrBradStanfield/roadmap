@@ -405,7 +405,8 @@ const labBound = z.preprocess(readModelNumber, z.number().nullable()).optional()
 const coreValueRow = z.object({
   metric: z.string(),
   value: labValue,
-  unit: z.string(),
+  // Null, missing or blank is "no unit printed", as on an additional row.
+  unit: z.string().nullish().transform(u => u?.trim() ?? ''),
   confidence: z.enum(['high', 'medium', 'low']),
   question: z.string().nullish().transform(q => q ?? undefined),
   recordedAt: labDay,

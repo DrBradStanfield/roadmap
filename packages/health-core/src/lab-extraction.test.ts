@@ -766,6 +766,24 @@ describe('US-21 AC7/AC8: a unit printed only in the range column reaches the wri
     expect(row).toMatchObject({ value: 9, unit: '', referenceLow: null, referenceHigh: 15 });
   });
 
+  // Review 2026-10-18 (adversary R4): a core row's unit null, missing or blank
+  // is "no unit printed", as on an additional row; the row is never dropped.
+  it('a core value whose unit is null, missing or blank is kept with no unit, not dropped', () => {
+    const parsed = parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-01-15', document: null, additionalValues: [],
+      values: [
+        { metric: 'ldl', value: 100, unit: null, confidence: 'high' },
+        { metric: 'hdl', value: 50, confidence: 'high' },
+        { metric: 'apob', value: 90, unit: '  ', confidence: 'high' },
+      ],
+    });
+    expect(parsed.droppedValueCount).toBe(0);
+    expect(parsed.values.map(v => v.unit)).toEqual(['', '', '']);
+    const values = toUnifiedResult(parsed).values;
+    expect(values.map(v => v.metric)).toEqual(['ldl', 'hdl', 'apob']);
+    expect(values.every(v => v.question?.includes('No unit was printed'))).toBe(true);
+  });
+
   it('a core value with no printed unit is flagged for review, never silently trusted', () => {
     const [ldl] = toUnifiedResult(parseUnifiedResult({
       classification: 'lab_report', reportDate: '2026-01-15', document: null, additionalValues: [],
