@@ -123,7 +123,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(screen.getByDisplayValue('4.2')).toBeTruthy();
     expect(labImport).toHaveBeenCalledOnce();
   });
-  it('US-35 AC8b — a core validation errorCount keeps review open instead of reporting success', async () => {
+  it('US-35 AC17 — a core validation errorCount keeps review open instead of reporting success', async () => {
     vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 1 });
     render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));

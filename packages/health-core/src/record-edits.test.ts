@@ -521,7 +521,7 @@ describe('US-35 AC6 — one slot rule for the website and the connector', () => 
 describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pure rule', () => {
   const day = '2026-08-01';
 
-  it('US-35 AC8b — refuses an invalid core correction without tombstoning the old row', () => {
+  it('US-35 AC17 — refuses an invalid core correction without tombstoning the old row', () => {
     const file = base();
     const result = bulkAppendValues(file, [
       { kind: 'measurement', metricType: 'ldl', value: -1, recordedAt: '2026-07-14', source: 'lab_import', correctsId: 'm1' },
@@ -534,7 +534,7 @@ describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pu
     ]);
   });
 
-  it.each([-1, 0, 19.99, 300.01, NaN, Infinity, -Infinity])('US-35 AC8b — refuses invalid weight %s without taking its slot', value => {
+  it.each([-1, 0, 19.99, 300.01, NaN, Infinity, -Infinity])('US-35 AC17 — refuses invalid weight %s without taking its slot', value => {
     const result = bulkAppendValues(base(), [
       { kind: 'measurement', metricType: 'weight', value, recordedAt: day, source: 'lab_import' },
       { kind: 'measurement', metricType: 'weight', value: 70, recordedAt: day, source: 'lab_import' },
@@ -544,7 +544,7 @@ describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pu
     expect(result.skippedDuplicates).toBe(0);
   });
 
-  it.each([20, 300])('US-35 AC8b — accepts inclusive weight boundary %s', value => {
+  it.each([20, 300])('US-35 AC17 — accepts inclusive weight boundary %s', value => {
     const result = bulkAppendValues(base(), [
       { kind: 'measurement', metricType: 'weight', value, recordedAt: day, source: 'lab_import' },
     ], NOW);
@@ -552,7 +552,7 @@ describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pu
     expect(result.saved.map(row => row.value)).toEqual([value]);
   });
 
-  it.each(['unknown_metric', '__proto__', 'toString'])('US-35 AC8b — refuses unknown runtime metric %s without throwing', metricType => {
+  it.each(['unknown_metric', '__proto__', 'toString'])('US-35 AC17 — refuses unknown runtime metric %s without throwing', metricType => {
     const file = base();
     const result = bulkAppendValues(file, [
       { kind: 'measurement', metricType, value: 70, recordedAt: day, source: 'lab_import' },
@@ -563,7 +563,7 @@ describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pu
     expect(result.measurementRefusals).toMatchObject([{ index: 0, metricType, reason: 'unknown-metric' }]);
   });
 
-  it('US-35 AC8b — a refused correction does not block a later valid correction of the same row', () => {
+  it('US-35 AC17 — a refused correction does not block a later valid correction of the same row', () => {
     const file = base();
     const before = structuredClone(file);
     const result = bulkAppendValues(file, [

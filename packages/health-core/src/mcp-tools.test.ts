@@ -2047,7 +2047,7 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     return file;
   }
 
-  it('US-35 AC8b — rejects the whole commit when a core row is refused, including documents and valid labs', () => {
+  it('US-35 AC17 — rejects the whole commit when a core row is refused, including documents and valid labs', () => {
     const file = base();
     const before = structuredClone(file);
     const payload = payloadFor(file, [extracted('new.pdf', labReport())]);
