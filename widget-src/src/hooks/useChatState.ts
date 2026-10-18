@@ -105,10 +105,12 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   }, []);
 
   // Deltas collect in a ref and render at most once per animation frame.
+  // A status line starts a new phase: text streamed before it was not the
+  // answer (a run_roadmap round's preamble, US-15 AC38), so it is cleared.
   const handleDelta = useCallback((delta: ChatDelta) => {
     const stream = streamRef.current;
     if (delta.type === 'sources') stream.sources = delta.titles;
-    else if (delta.type === 'status') stream.status = delta.text;
+    else if (delta.type === 'status') { stream.status = delta.text; stream.text = ''; }
     else stream[delta.type] += delta.text;
     if (stream.frame) return;
     stream.frame = requestAnimationFrame(() => {
