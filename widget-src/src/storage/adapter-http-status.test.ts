@@ -97,16 +97,20 @@ describe('Google Drive: the HTTP status reaches failureTags (US-09 AC6c)', () =>
     expect(await tagsOf(GoogleDriveAdapter.completeRedirect(CONFIG))).toEqual({ errorClass: 'StorageError', httpStatus: tag });
   });
 
-  it('a transient refresh for the reminder identity reads its status', async () => {
+  // The refresh-path errors read `none` on purpose. Their throw sits after an
+  // await in the caller, not beside the response, so the status would have to
+  // live on the adapter, and two overlapping refreshes would race: one
+  // request's error could carry the other's status. Untracked beats wrong.
+  it('a transient refresh for the reminder identity reads none', async () => {
     const adapter = connected(0);
     answerAll(503);
-    expect((await tagsOf(adapter.getReminderIdToken())).httpStatus).toBe('5xx');
+    expect((await tagsOf(adapter.getReminderIdToken())).httpStatus).toBe('none');
   });
 
-  it('"needs to be reconnected" after a refused refresh reads the refusal', async () => {
+  it('"needs to be reconnected" after a refused refresh reads none', async () => {
     const adapter = connected(0);
     answerAll(401);
-    expect((await tagsOf(adapter.writeDocument('a.pdf', new Blob(['x'])))).httpStatus).toBe('401');
+    expect((await tagsOf(adapter.writeDocument('a.pdf', new Blob(['x'])))).httpStatus).toBe('none');
   });
 
   it('a first-write create, a document read and a document write read their status', async () => {

@@ -212,9 +212,6 @@ export class GoogleDriveAdapter implements StorageAdapter {
   /** Signed ID token from the most recent server refresh (openid grants only) —
    *  consumed by getReminderIdToken; never persisted. */
   private lastIdToken: string | null = null;
-  /** HTTP status of the most recent server refresh, undefined when none
-   *  answered — put on the StorageError a failed refresh leads to (US-09 AC6c). */
-  private lastRefreshStatus: number | undefined;
   /** At-most-once-per-session guard for the cosmetic folder migration. */
   private folderCheckDone = false;
 
@@ -340,7 +337,6 @@ export class GoogleDriveAdapter implements StorageAdapter {
    * transient failure must not block auto-enrolment forever (review 2026-09-10).
    */
   private async refresh(): Promise<'ok' | 'none' | 'transient'> {
-    this.lastRefreshStatus = undefined;
     if (!this.tokens?.refreshToken) return 'none';
     let res: Response;
     try {
@@ -355,7 +351,6 @@ export class GoogleDriveAdapter implements StorageAdapter {
     } catch {
       return 'transient'; // network/server down/timeout → caller falls back to the popup path
     }
-    this.lastRefreshStatus = res.status;
     if (res.status === 400 || res.status === 401) {
       this.clearTokens(); // refresh token revoked/expired — stop retrying
       return 'none';
@@ -395,7 +390,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
    */
   async getReminderIdToken(): Promise<string | null> {
     const outcome = await this.refresh();
-    if (outcome === 'transient') throw new StorageError('Google token refresh unavailable — retry later.', undefined, undefined, this.lastRefreshStatus);
+    if (outcome === 'transient') throw new StorageError('Google token refresh unavailable — retry later.');
     return outcome === 'ok' ? this.lastIdToken : null;
   }
 
@@ -655,7 +650,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
   private async getToken(): Promise<string> {
     if (this.hasValidToken()) return this.tokens!.accessToken;
     if (await this.tryServerRefresh()) return this.tokens!.accessToken;
-    throw new StorageError('Google Drive needs to be reconnected.', undefined, undefined, this.lastRefreshStatus);
+    throw new StorageError('Google Drive needs to be reconnected.');
   }
 
   /** GIS popup token grant (requires a user gesture). */

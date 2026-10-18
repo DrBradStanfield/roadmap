@@ -44,9 +44,12 @@ export const HTTP_STATUS_TAGS = ['401', '403', '404', '409', '429', '4xx', '5xx'
  *  list, so a refused token (401/403) reads apart from a rate limit (429) or
  *  an outage (5xx). Literal names, since a minified bundle renames classes.
  *  The status is the one a StorageError carries: the Drive and Dropbox
- *  adapters set it wherever they throw after a response, OAuth exchange and
- *  token refresh included; GitHub, WebDAV, a network failure and a check that
- *  made no request read `none`. Never the message or the body. */
+ *  adapters set it wherever they throw beside a response, the OAuth exchange
+ *  and Dropbox's token refresh included. Drive's refresh-path errors ("retry
+ *  later", "needs to be reconnected") read `none`: their status is not kept
+ *  across the refresh, since overlapping refreshes would race. GitHub, WebDAV,
+ *  a network failure and a check that made no request also read `none`.
+ *  Never the message or the body. */
 export function failureTags(error: unknown): { errorClass: string; httpStatus: string } {
   const errorClass = error instanceof StorageError ? 'StorageError'
     : error instanceof ConflictError ? 'ConflictError'
