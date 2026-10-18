@@ -326,3 +326,29 @@ describe('US-15 AC27: stored text cuts keep surrogate pairs whole (Sentry 6Y)', 
     for (const { row } of supa.inserts) expect(JSON.stringify(row)).not.toMatch(LONE_SURROGATE);
   });
 });
+
+// US-15 AC37 (Sentry 6Z): the row carries the router's output token count,
+// and null when the router did not run.
+describe('US-15 AC37: router_output_tokens on the YouTube row', () => {
+  const thread = {
+    topLevelCommentId: 'c1', videoId: 'v1', authorDisplayName: 'Viewer', authorChannelId: 'UC_viewer',
+    text: 'hello', publishedAt: '2026-10-14T00:00:00Z',
+  };
+  const routerResult = {
+    handles: [], rawJson: '{"handles":[]}', latencyMs: 1, cacheHit: false, error: null,
+    usage: { inputTokens: 900, outputTokens: 37, cacheCreationTokens: 0, cacheReadTokens: 0 },
+  };
+  const row = () => supa.inserts.find((i) => i.table === 'chat_match_events')?.row;
+
+  it('US-15 AC37: carries the count when the router ran', async () => {
+    supa.inserts.length = 0;
+    await persistYouTubeTurn({ thread, outcome: { posted: false, skipReason: 'no-match', routerResult }, postedYoutubeId: null });
+    expect(row()?.router_output_tokens).toBe(37);
+  });
+
+  it('US-15 AC37: reads null when the router did not run', async () => {
+    supa.inserts.length = 0;
+    await persistYouTubeTurn({ thread, outcome: { posted: false, skipReason: 'classifier-skip' }, postedYoutubeId: null });
+    expect(row()?.router_output_tokens).toBeNull();
+  });
+});
