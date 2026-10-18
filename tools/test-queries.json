@@ -2572,6 +2572,30 @@
     "notes": "US-15 AC35 (amended 2026-10-18, Brad's collagen update v3). The chat may suggest collagen peptides for skin, saying they may improve skin hydration and elasticity (Batool 2026), and may say MicroVitamin+ contains 12.5 g. It must not tie collagen to wrinkles, fine lines, rebuilding or skin structure in the same sentence (a full stop followed by a space ends the window, so the decimal in 12.5 g does not), call 12.5 g within the range studied, or cite Pu, Kim or Myung. Known false fails, judge by reading: a negated sentence (\"has not been shown to reduce wrinkles\") and a non-supplement collagen mention (retinoids or red light \"stimulate collagen\") in the same sentence as wrinkles. answer_handles [] = products block plus the brand posture only; routing is not asserted."
   },
   {
+    "query": "how much collagen should I take for my skin?",
+    "category": "product-collagen",
+    "source": "us-15-ac35-2026-10-19",
+    "surface": "brand",
+    "answer_handles": [],
+    "must_match": [
+      "0\\.5\\s*(?:g|grams)?\\s*(?:to|-|\u2013|\u2014|and)\\s*10\\s*(?:g\\b|grams)",
+      "batool"
+    ],
+    "must_not_mention": [
+      "within the range studied",
+      "Pu 2023",
+      "Pu et al",
+      "Kim 2022",
+      "Kim et al",
+      "Myung"
+    ],
+    "must_not_match": [
+      "\\bcollagen\\b(?:(?!\\.\\s)[^\\n]){0,200}(wrinkle|fine line|rebuild|structur)",
+      "(wrinkle|fine line|rebuild|structur)(?:(?!\\.\\s)[^\\n]){0,200}\\bcollagen\\b"
+    ],
+    "notes": "US-15 AC35 (amended 2026-10-19, Brad: the chat gives the collagen dose range the trials used). Asked how much collagen to take for skin, the answer gives 0.5 to 10 g a day and cites Batool 2026; must_match runs on the lower-cased answer, so 'batool' matches 'Batool'. The range is what the trials used, never 'within the range studied' for MicroVitamin+'s 12.5 g. The wrinkle and structure regexes and the Pu/Kim/Myung list are AC35's (same known false fails, judge by reading). answer_handles [] = products block plus the brand posture only; routing is not asserted."
+  },
+  {
     "query": "Is MicroVitamin gluten free?",
     "expected": [],
     "category": "product-facts",
