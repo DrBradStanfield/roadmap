@@ -101,6 +101,14 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   a "nothing will be kept" notice is still owed. Reading tells: a same-second PAIR (handled `cloud-connect
   op=migrate-up` + a second capture) is one page load; an exchange POST plus a
   `navigation` crumb before it is a fresh consent, not a refresh.
+  2026-10-19 (PR #160 + follow-up, US-09 AC6b/AC6c): that pair tell is stale.
+  The lift now reports `area=cloud-sync op=migrate-up`, the OAuth exchange
+  `area=cloud-connect`, both with fixed text and two closed-list tags:
+  `errorClass` (StorageError/ConflictError/SchemaTooNewError/RecordShapeError/
+  other) and `httpStatus` (401/403/404/409/429/4xx/5xx/none). Status comes
+  only from a StorageError that carries one: Drive and Dropbox record calls
+  do; GitHub, WebDAV and the OAuth exchange read `none`. Two 403s (scope vs
+  a Drive rate limit) no longer read apart: the reason text is gone.
 - `[class][widget]` 2026-09-24 — Storage-blocked browsers come in three shapes
   and the field sent all three inside ten days: `localStorage` missing (Safari
   26.6, ReferenceError), the getter throwing SecurityError (Chrome Mobile),

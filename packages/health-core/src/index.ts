@@ -277,7 +277,7 @@ export {
 export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
 export { mergeFiles, stampFields, CLOCK_KEYS, earliestRowStamp, dayOf, localDay, type MergeOptions } from './merge';
 export { classifyMedicationChange, classifySupplementChange, isTakingDrug } from './history-change';
-export { migrateFile, SchemaTooNewError } from './migrate';
+export { migrateFile, SchemaTooNewError, RecordShapeError } from './migrate';
 
 // v2 reminder schedule (client-computed; the server is a dumb scheduler — §10)
 export {

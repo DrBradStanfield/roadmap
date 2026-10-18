@@ -61,6 +61,16 @@ const SENSITIVE_SAMPLE: Record<string, unknown> = {
   displayValue: 4.2, display_value: 4.2,
   valueSI: 3.1, value_si: 3.1,
   contentMarkdown: 'synthetic note', content_markdown: 'note',
+  metric: 'ferritin', metricName: 'ferritin', metric_name: 'ferritin',
+  printedName: 'Ferritin (serum)',
+  referenceLow: 30, reference_low: 30, referenceHigh: 400, reference_high: 400,
+  unrecognized: ['Synthetic marker 12 U'], question: 'Is this 12 or 1.2?',
+  extractedText: 'Synthetic Person, ferritin 12',
+  recordedAt: '2026-03-01', recorded_at: '2026-03-01',
+  documentDate: '2026-03-01', document_date: '2026-03-01',
+  classification: 'lab_report',
+  supplementName: 'Synthetic iron', supplement_name: 'Synthetic iron',
+  metadata: { patient: 'Synthetic Person' },
   unsubscribe_token: 'tok', accessToken: 'tok', authorization: 'Bearer x',
   bearerToken: 'b', apiKey: 'k', api_key: 'k',
   cookie: 'c', 'http.request.header.cookie.theme': 'c',
@@ -79,6 +89,12 @@ describe('instrument-scrub.mjs ↔ health-core sentry-scrub parity', () => {
   it('scrubSensitiveData produces identical output', () => {
     const nested = { user: SENSITIVE_SAMPLE, list: [SENSITIVE_SAMPLE], note: 'safe' };
     expect(copy.scrubSensitiveData(nested)).toEqual(source.scrubSensitiveData(nested));
+  });
+
+  // US-09 AC7c: the sets themselves, not a sample of them — a key added to one
+  // copy and missing from SENSITIVE_SAMPLE still fails here.
+  it('US-09 AC7c — both copies carry the same exact-key set', () => {
+    expect([...copy.SENSITIVE_EXACT_KEYS].sort()).toEqual([...source.SENSITIVE_EXACT_KEYS].sort());
   });
 
   it('redacts every known sensitive key and preserves safe keys (both impls)', () => {

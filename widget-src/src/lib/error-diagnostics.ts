@@ -1,4 +1,4 @@
-import { StorageError } from '@roadmap/health-core';
+import { ConflictError, RecordShapeError, SchemaTooNewError, StorageError } from '@roadmap/health-core';
 
 /** Expected transport interruptions stay quiet without retaining raw messages. */
 export const EXPECTED_NETWORK_ERRORS = [
@@ -12,6 +12,7 @@ export const EXPECTED_NETWORK_ERRORS = [
 type RecordFailure =
   | 'Document file not stored'
   | 'Cloud sync failed'
+  | 'Cloud connect failed'
   | 'Cloud record could not be loaded'
   | 'Upload processing failed'
   | 'Upload save failed';
@@ -33,4 +34,27 @@ export function storageFailureClass(error: unknown): string {
   const cause = error instanceof StorageError ? error.cause : undefined;
   const name = cause instanceof Error || cause instanceof DOMException ? cause.name : '';
   return STORAGE_FAILURE_CLASSES.includes(name) ? name : 'other';
+}
+
+export const ERROR_CLASS_TAGS = ['StorageError', 'ConflictError', 'SchemaTooNewError', 'RecordShapeError', 'other'];
+export const HTTP_STATUS_TAGS = ['401', '403', '404', '409', '429', '4xx', '5xx', 'none'];
+
+/** What a fixed-message capture still needs to be read (US-09 AC6c): the
+ *  error's class and the provider's HTTP status class, each from a closed
+ *  list, so a refused token (401/403) reads apart from a rate limit (429) or
+ *  an outage (5xx). Literal names, since a minified bundle renames classes.
+ *  Never the message or the body. */
+export function failureTags(error: unknown): { errorClass: string; httpStatus: string } {
+  const errorClass = error instanceof StorageError ? 'StorageError'
+    : error instanceof ConflictError ? 'ConflictError'
+    : error instanceof SchemaTooNewError ? 'SchemaTooNewError'
+    : error instanceof RecordShapeError ? 'RecordShapeError'
+    : 'other';
+  const status = error instanceof StorageError ? error.status : undefined;
+  const httpStatus = status === undefined ? 'none'
+    : HTTP_STATUS_TAGS.includes(String(status)) ? String(status)
+    : status >= 400 && status < 500 ? '4xx'
+    : status >= 500 && status < 600 ? '5xx'
+    : 'none';
+  return { errorClass, httpStatus };
 }
