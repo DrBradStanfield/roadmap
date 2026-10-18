@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react';
-import { EXPECTED_NETWORK_ERRORS } from './error-diagnostics';
+import { ERROR_CLASS_TAGS, EXPECTED_NETWORK_ERRORS, HTTP_STATUS_TAGS } from './error-diagnostics';
 import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl, scrubEventText, dropLongStrings } from '@roadmap/health-core';
 
 declare const __SENTRY_RELEASE__: string;
@@ -52,15 +52,18 @@ function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb): Sentry.Breadcrumb | nul
 export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
   // Record errors can quote clinical filenames in messages, causes and fetch
   // breadcrumbs. These captures carry only closed operation/provider tags.
-  if (event.tags?.area === 'cloud-sync' || event.tags?.area === 'upload-save' || event.tags?.feature === 'upload') {
-    const { area, op, backend, branch, uploadErrorCode, cause } = event.tags;
+  const strictArea = ['cloud-sync', 'cloud-connect', 'upload-save'].includes(String(event.tags?.area));
+  if (strictArea || event.tags?.feature === 'upload') {
+    const { area, op, backend, branch, uploadErrorCode, cause, errorClass, httpStatus } = event.tags!;
     event.tags = {
-      ...(area === 'cloud-sync' || area === 'upload-save' ? { area } : { feature: 'upload' }),
+      ...(strictArea ? { area } : { feature: 'upload' }),
       ...(['write-document', 'read-document', 'persist', 'log-off', 'copy-down', 'migrate-up', 'load'].includes(String(op)) ? { op } : {}),
       ...(['google-drive', 'dropbox', 'github', 'self-host', 'local', 'file', 'memory'].includes(String(backend)) ? { backend } : {}),
       ...(['measurements', 'documents', 'labValues'].includes(String(branch)) ? { branch } : {}),
       ...(['rate_limit', 'timeout', 'server_restart', 'no_files', 'server_error', 'network', 'unknown'].includes(String(uploadErrorCode)) ? { uploadErrorCode } : {}),
       ...(['QuotaExceededError', 'SecurityError', 'TypeError', 'ReferenceError', 'other'].includes(String(cause)) ? { cause } : {}),
+      ...(ERROR_CLASS_TAGS.includes(String(errorClass)) ? { errorClass } : {}),
+      ...(HTTP_STATUS_TAGS.includes(String(httpStatus)) ? { httpStatus } : {}),
     };
     if (event.message) event.message = 'Health record operation failed';
     if (event.exception?.values) event.exception.values = event.exception.values.map(value => ({
