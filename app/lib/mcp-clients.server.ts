@@ -334,12 +334,14 @@ function isPublicIpv6(address: string): boolean {
   if ((groups[0] & 0xffc0) === 0xfe80) return false; // link-local
   if ((groups[0] & 0xff00) === 0xff00) return false; // multicast
   if (groups[0] === 0x2002) return false; // 6to4
-  if (groups[0] === 0x0064 && groups[1] === 0xff9b) return false; // well-known and local-use NAT64
-  const embedded = mapped || (groups.slice(0, 6).every((group) => group === 0));
-  if (embedded && !(groups[5] === 0 && groups[6] === 0 && groups[7] <= 1)) {
-    const octets = [groups[6] >> 8, groups[6] & 0xff, groups[7] >> 8, groups[7] & 0xff];
-    return isPublicIpv4(octets.join('.'));
+  const lastIpv4 = [groups[6] >> 8, groups[6] & 0xff, groups[7] >> 8, groups[7] & 0xff].join('.');
+  // Well-known NAT64, 64:ff9b::/96 (RFC 6052): judge the IPv4 it carries. The rest
+  // of 64:ff9b::/32, local-use 64:ff9b:1::/48 included, stays refused.
+  if (groups[0] === 0x0064 && groups[1] === 0xff9b) {
+    return groups.slice(2, 6).every((group) => group === 0) && isPublicIpv4(lastIpv4);
   }
+  const embedded = mapped || (groups.slice(0, 6).every((group) => group === 0));
+  if (embedded && !(groups[5] === 0 && groups[6] === 0 && groups[7] <= 1)) return isPublicIpv4(lastIpv4);
   return true;
 }
 
