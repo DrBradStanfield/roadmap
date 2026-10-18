@@ -361,12 +361,14 @@ const UNIT_ATOMS = new Set([
   'l', 'dl', 'ml', 'µl', 'ul', 'mcl', 'fl', 'nl',
   'eq', 'meq', 'kat', 'ukat', 'µkat', 'nkat', 'osm', 'mosm',
   // Enzyme and international units, English and Romance spellings.
-  'u', 'iu', 'miu', 'µiu', 'uiu', 'kiu', 'ku', 'mu', 'µu', 'uu', 'ui', 'mui', 'µui', 'au', 'unit', 'units',
+  'u', 'iu', 'miu', 'µiu', 'uiu', 'microiu', 'mciu', 'kiu', 'ku', 'mu', 'µu', 'uu', 'ui', 'mui', 'µui', 'au', 'unit', 'units',
   // Counts and what is counted.
   'cells', 'cell', 'cel', 'células', 'celulas', 'cellules', 'komórek', 'komorek', 'zellen', 'leu', 'wbc', 'rbc', 'lymphs',
   'tys', 'mln', 'mio', 'tsd', 'thou', 'thousand', 'million', 'mil', 'k', 'giga', 'tera', 't', 'gpt', 'tpt',
   'cumm', 'cmm', 'cu', 'c', 'mm', 'hpf', 'lpf', 'feu', 'ddu',
   'ratio', 'index', 'fraction', 'titre', 'titer',
+  // What a ratio is per: "mg/g creat" (US-21 AC17).
+  'creat', 'creatinine',
   // Time, pressure, length and weight.
   'min', 'sec', 'seg', 's', 'h', 'hr', 'hrs', 'hour', 'hours', 'day', 'd',
   'mmhg', 'kpa', 'pa', 'm', 'cm', 'in', 'ft', 'lb', 'lbs',
