@@ -185,7 +185,11 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `urate` | mmol/L | µmol/l | 0.001 | a micromole is a thousandth of a millimole (UK labs print µmol/L) |
 | `urine_acr` | mg/mmol | mg/g | 0.113 | creatinine 113.12 g/mol, so 1 g ≡ 8.840 mmol |
 | `urine_creatinine` | mmol/L | mg/dl | 0.0884 | creatinine 113.12 g/mol |
+| `urine_creatinine` | mmol/L | µmol/l | 0.001 | a micromole is a thousandth of a millimole |
 | `urine_pcr` | mg/mmol | mg/g | 0.113 | creatinine 113.12 g/mol, so 1 g ≡ 8.840 mmol (as `urine_acr`) |
+| `urine_pcr` | mg/mmol | mg/g creat | 0.113 | mg/g with the creatinine named |
+| `urine_pcr` | mg/mmol | mg/g creatinine | 0.113 | mg/g with the creatinine named |
+| `urine_pcr` | mg/mmol | mg/mg | 113.12 | mg protein per mg creatinine; creatinine 113.12 g/mol, so 1 mg ≡ 1/113.12 mmol |
 | `egfr` | mL/min/1.73m² | ml/min/1.73 m² | 1 | spacing only |
 | `egfr` | mL/min/1.73m² | ml/min/1.73 | 1 | the body-surface area left unwritten (LabCorp) |
 | `alt` | U/L | iu/l | 1 | an international unit of enzyme activity IS a unit |
@@ -276,6 +280,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `progesterone` | nmol/L | ng/ml | 3.180 | progesterone 314.46 g/mol |
 | `dhea_s` | µmol/L | µg/dl | 0.02714 | DHEA sulfate 368.49 g/mol |
 | `igf1` | nmol/L | ng/ml | 0.1307 | IGF-1 7649 g/mol |
+| `igf1` | nmol/L | µg/l | 0.1307 | µg/L is the ng/mL number |
 | `vitamin_d` | nmol/L | ng/ml | 2.496 | 25-OH-D 400.64 g/mol |
 | `vitamin_d` | nmol/L | µg/l | 2.496 | 25-OH-D 400.64 g/mol |
 | `vitamin_b12` | pmol/L | pg/ml | 0.738 | cyanocobalamin 1355.4 g/mol |
@@ -299,6 +304,8 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `insulin` | mIU/L | µiu/ml | 1 | µIU/mL and mIU/L are the same number |
 | `insulin` | mIU/L | mu/l | 1 | mU/L is mIU/L, printed short |
 | `insulin` | mIU/L | µu/ml | 1 | µU/mL is µIU/mL, printed short |
+| `insulin` | mIU/L | microiu/ml | 1 | µIU/mL with the prefix spelled out |
+| `insulin` | mIU/L | mciu/ml | 1 | µIU/mL with the mc prefix (as mcg) |
 | `insulin` | mIU/L | pmol/l | 0.1667 | 1 µIU/mL = 6.00 pmol/L, the insulin-standardisation convention |
 | `apoa1` | g/L | mg/dl | 0.01 | a milligram per decilitre is a hundredth of a gram per litre |
 | `ck` | U/L | iu/l | 1 | an international unit of enzyme activity IS a unit |

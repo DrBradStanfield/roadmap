@@ -137,8 +137,8 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   },
   { key: 'urate', label: 'Urate', group: 'renal', unit: 'mmol/L', aliases: ['uric acid'], conversions: { 'mg/dl': 0.05948, 'µmol/l': 0.001 } }, // urate 168.11 g/mol; a micromole is a thousandth of a millimole (UK labs print µmol/L)
   { key: 'urine_acr', label: 'Urine ACR', group: 'renal', unit: 'mg/mmol', aliases: ['albumin creatinine ratio', 'acr', 'microalbumin ratio'], conversions: { 'mg/g': 0.113 } }, // creatinine 113.12 g/mol: 1 g ≡ 8.840 mmol
-  { key: 'urine_creatinine', label: 'Urine creatinine', group: 'renal', unit: 'mmol/L', aliases: ['creatinine urine', 'urinary creatinine', 'creatinine (urine)'], conversions: { 'mg/dl': 0.0884 } }, // creatinine 113.12 g/mol
-  { key: 'urine_pcr', label: 'Urine PCR', group: 'renal', unit: 'mg/mmol', aliases: ['protein creatinine ratio', 'protein:creatinine ratio', 'urine protein creatinine ratio', 'upcr'], conversions: { 'mg/g': 0.113 } }, // creatinine 113.12 g/mol: 1 g ≡ 8.840 mmol
+  { key: 'urine_creatinine', label: 'Urine creatinine', group: 'renal', unit: 'mmol/L', aliases: ['creatinine urine', 'urinary creatinine', 'creatinine (urine)'], conversions: { 'mg/dl': 0.0884, 'µmol/l': 0.001 } }, // creatinine 113.12 g/mol; a micromole is a thousandth of a millimole
+  { key: 'urine_pcr', label: 'Urine PCR', group: 'renal', unit: 'mg/mmol', aliases: ['protein creatinine ratio', 'protein:creatinine ratio', 'urine protein creatinine ratio', 'upcr'], conversions: { 'mg/g': 0.113, 'mg/g creat': 0.113, 'mg/g creatinine': 0.113, 'mg/mg': 113.12 } }, // creatinine 113.12 g/mol: 1 g ≡ 8.840 mmol, 1 mg ≡ 1/113.12 mmol
   { key: 'cystatin_c', label: 'Cystatin C', group: 'renal', unit: 'mg/L', aliases: [] },
   { key: 'egfr', label: 'eGFR', group: 'renal', unit: 'mL/min/1.73m²', aliases: ['estimated gfr', 'gfr', 'estimated glomerular filtration rate'], unitAliases: ['ml/min/1.73 m²', 'ml/min/1.73'] },
 
@@ -191,7 +191,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'fsh', label: 'FSH', group: 'hormones', unit: 'IU/L', aliases: ['follicle stimulating hormone'], unitAliases: GONADOTROPHIN_ALIASES },
   { key: 'progesterone', label: 'Progesterone', group: 'hormones', unit: 'nmol/L', aliases: [], conversions: { 'ng/ml': 3.180 } }, // progesterone 314.46 g/mol
   { key: 'dhea_s', label: 'DHEA-S', group: 'hormones', unit: 'µmol/L', aliases: ['dheas', 'dhea sulphate', 'dhea sulfate', 'dehydroepiandrosterone sulfate', 'dehydroepiandrosterone sulphate'], conversions: { 'µg/dl': 0.02714 } }, // DHEA sulfate 368.49 g/mol
-  { key: 'igf1', label: 'IGF-1', group: 'hormones', unit: 'nmol/L', aliases: ['igf 1', 'insulin-like growth factor 1', 'somatomedin c'], conversions: { 'ng/ml': 0.1307 } }, // IGF-1 7649 g/mol
+  { key: 'igf1', label: 'IGF-1', group: 'hormones', unit: 'nmol/L', aliases: ['igf 1', 'insulin-like growth factor 1', 'somatomedin c'], conversions: { 'ng/ml': 0.1307, 'µg/l': 0.1307 } }, // IGF-1 7649 g/mol; µg/L is the ng/mL number
 
   // ── Vitamins & minerals ───────────────────────────────────────────────
   { key: 'vitamin_d', label: 'Vitamin D (25-OH)', group: 'vitamins', unit: 'nmol/L', aliases: ['25-hydroxyvitamin d', '25-oh vitamin d', 'vitamin d3', '25(oh)d'], conversions: { 'ng/ml': 2.496, 'µg/l': 2.496 } }, // 25-OH-D 400.64 g/mol
@@ -216,7 +216,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   // ── Metabolic ─────────────────────────────────────────────────────────
   { key: 'glucose', label: 'Glucose', group: 'metabolic', unit: 'mmol/L', aliases: ['fasting glucose', 'fasting plasma glucose', 'plasma glucose', 'glucose fasting', 'blood glucose', 'fpg', 'fbg'], conversions: GLUCOSE },
   { key: 'glucose_random', label: 'Glucose (random)', group: 'metabolic', unit: 'mmol/L', aliases: ['random glucose', 'glucose random', 'non-fasting glucose'], conversions: GLUCOSE }, // not a fasting glucose: a test of its own
-  { key: 'insulin', label: 'Insulin', group: 'metabolic', unit: 'mIU/L', aliases: ['fasting insulin', 'serum insulin'], unitAliases: ['µiu/ml', 'mu/l', 'µu/ml'], conversions: { 'pmol/l': 0.1667 } }, // 1 µIU/mL = 6.00 pmol/L (the insulin-standardisation convention)
+  { key: 'insulin', label: 'Insulin', group: 'metabolic', unit: 'mIU/L', aliases: ['fasting insulin', 'serum insulin'], unitAliases: ['µiu/ml', 'mu/l', 'µu/ml', 'microiu/ml', 'mciu/ml'], conversions: { 'pmol/l': 0.1667 } }, // 1 µIU/mL = 6.00 pmol/L (the insulin-standardisation convention)
   { key: 'apoa1', label: 'ApoA1', group: 'metabolic', unit: 'g/L', aliases: ['apolipoprotein a1', 'apolipoprotein a-i', 'apo a1', 'apo a-1', 'apoa-1', 'apoa-i'], conversions: { 'mg/dl': 0.01 } }, // a milligram per decilitre is a hundredth of a gram per litre
   { key: 'homocysteine', label: 'Homocysteine', group: 'metabolic', unit: 'µmol/L', aliases: ['total homocysteine', 'plasma homocysteine'] },
   { key: 'ck', label: 'CK', group: 'metabolic', unit: 'U/L', aliases: ['creatine kinase', 'cpk', 'creatine phosphokinase'], unitAliases: ENZYME_ALIASES },

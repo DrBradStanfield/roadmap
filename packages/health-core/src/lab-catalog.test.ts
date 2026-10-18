@@ -714,6 +714,15 @@ describe('US-21 AC17 — the common blood tests are catalogued, in SI', () => {
     ['Active B12', 70, 'pmol/L', 'b12_active', 70, 'pmol/L'],
     ['Urine Creatinine', 100, 'mg/dL', 'urine_creatinine', 8.84, 'mmol/L'],
     ['Protein Creatinine Ratio', 150, 'mg/g', 'urine_pcr', 16.95, 'mg/mmol'],
+    // Same-scale spellings added in review (2026-10-18, adversary R2).
+    ['IGF-1', 150, 'ug/L', 'igf1', 19.605, 'nmol/L'],
+    ['IGF-1', 150, 'mcg/L', 'igf1', 19.605, 'nmol/L'],
+    ['Urine Creatinine', 8840, 'umol/L', 'urine_creatinine', 8.84, 'mmol/L'],
+    ['Protein Creatinine Ratio', 0.15, 'mg/mg', 'urine_pcr', 16.968, 'mg/mmol'],
+    ['Protein Creatinine Ratio', 150, 'mg/g creat', 'urine_pcr', 16.95, 'mg/mmol'],
+    ['Protein Creatinine Ratio', 150, 'mg/g creatinine', 'urine_pcr', 16.95, 'mg/mmol'],
+    ['Insulin', 8, 'microIU/mL', 'insulin', 8, 'mIU/L'],
+    ['Insulin', 8, 'mcIU/mL', 'insulin', 8, 'mIU/L'],
   ];
 
   it.each(CONVERSIONS)('US-21 AC17 — %s %s %s is stored as %s in SI', (name, value, unit, key, stored, storedUnit) => {
