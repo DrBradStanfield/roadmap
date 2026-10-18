@@ -5,6 +5,10 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-10-19 (Brad-directed: loop effort medium):** Brad: "change the loop default model to medium effort
+  rather than high effort." Orchestration now says the cloud environment sets `CLAUDE_CODE_EFFORT_LEVEL=medium`
+  (was high, 2026-09-28) and that it overrides the agents' high pins, so cloud workers and reviewers run at
+  medium too. The environment variable itself is changed by Brad in claude.ai environment settings. Line count unchanged.
 - **2026-10-13 (Brad-directed: Haiku allowed in loops):** Brad agreed to remove "never Haiku" here too, matching
   claude_business's constitution (changed 2026-10-12: "haiku 5.5 is not too bad"). Orchestration's model
   bullet now allows Sonnet 5.5 and the newest Haiku for mechanical routines; the Opus pins on `worker` and

@@ -308,6 +308,87 @@ describe('CIMD fetch policy (US-32, design §4 — this is an SSRF surface)', ()
     expect(isPublicAddress('2606:4700::1111', 6)).toBe(true);
   });
 
+  it('rejects a non-public address written in another spelling (US-32 AC45)', () => {
+    for (const ip of [
+      '0:0:0:0:0:ffff:127.0.0.1',
+      '0:0:0:0:0:FFFF:169.254.169.254',
+      '0000:0000:0000:0000:0000:ffff:7f00:0001',
+      '::ffff:7f00:1',
+      '64:ff9b::127.0.0.1',
+      '64:ff9b::7f00:1',
+      '2002:7f00:1::',
+      '2002:0101:0101::',
+      'ff02::1',
+      '::127.0.0.1',
+      '::7f00:1',
+      '::ffff:0:10.0.0.1',
+      '127.0.0.1',
+      '64:ff9b:1::7f00:1',
+      '64:ff9b:1::127.0.0.1',
+      'fc0::1',
+      'fd::1',
+      '::ffff:0:0:0:1',
+      '0:0:0:0:ffff:0:7f00:1',
+      '::ffff:0:7f00:1',
+      '0:0:0:0:ffff:0:101:101',
+    ]) {
+      expect(isPublicAddress(ip, 6), ip).toBe(false);
+    }
+    expect(isPublicAddress('0:0:0:0:0:ffff:1.1.1.1', 6)).toBe(true);
+    expect(isPublicAddress('::FFFF:1.1.1.1', 6)).toBe(true);
+    expect(isPublicAddress('::ffff:0101:0101', 6)).toBe(true);
+    expect(isPublicAddress('::1.1.1.1', 6)).toBe(true);
+    expect(isPublicAddress('2606:4700::1.1.1.1', 6)).toBe(true);
+  });
+
+  it('judges a well-known NAT64 address by the IPv4 it carries (US-32 AC45)', () => {
+    // 64:ff9b::/96 (RFC 6052): a DNS64 resolver synthesises these for IPv4-only
+    // hosts. The hex and dotted spellings of each address must agree.
+    for (const ip of [
+      '64:ff9b::101:101', '64:ff9b::1.1.1.1',
+      '64:FF9B::1.1.1.1', '64:ff9b:0:0:0:0:101:101',
+      '0064:ff9b:0000:0000:0000:0000:0101:0101', '0064:ff9b:0:0:0:0:1.1.1.1',
+    ]) {
+      expect(isPublicAddress(ip, 6), ip).toBe(true);
+    }
+    for (const ip of [
+      '64:ff9b::7f00:1', '64:ff9b::127.0.0.1',
+      '64:ff9b::a9fe:a9fe', '64:ff9b::169.254.169.254',
+      '64:ff9b::a00:5', '64:ff9b::10.0.0.5',
+      '64:ff9b::ac14:101', '64:ff9b::172.20.1.1',
+      '64:ff9b::c0a8:101', '64:ff9b::192.168.1.1',
+      '64:ff9b::6440:1', '64:ff9b::100.64.0.1',
+      '64:ff9b::e000:1', '64:ff9b::224.0.0.1',
+      '64:ff9b::', '64:ff9b::0.0.0.0',
+      '64:ff9b::1', '64:ff9b::0.0.0.1',
+      '0064:ff9b:0000:0000:0000:0000:a9fe:a9fe', '64:FF9B:0:0:0:0:169.254.169.254',
+    ]) {
+      expect(isPublicAddress(ip, 6), ip).toBe(false);
+    }
+    // The rest of 64:ff9b::/32 stays refused, local-use 64:ff9b:1::/48 included.
+    for (const ip of [
+      '64:ff9b:1::101:101', '64:ff9b:1::1.1.1.1',
+      '64:ff9b:0:0:1::101:101', '64:ff9b:0:0:1::1.1.1.1',
+      '64:ff9b:0:0:0:1:101:101', '64:ff9b:0:0:0:1:1.1.1.1',
+      '64:ff9b:ffff::101:101', '64:ff9b:ffff::1.1.1.1',
+    ]) {
+      expect(isPublicAddress(ip, 6), ip).toBe(false);
+    }
+    // Fails closed: garbage, a zone id, a prefix length, the wrong or an unknown family.
+    for (const [ip, family] of [
+      ['64:ff9b::101:101%eth0', 6], ['64:ff9b::1.1.1.1%eth0', 6],
+      ['64:ff9b::101:101/96', 6], ['64:ff9b::1.1.1', 6], ['64:ff9b::1.1.1.256', 6],
+      ['64:ff9b:::101:101', 6], ['64:ff9b::101:101:', 6], ['64:ff9b::1.1.1.1:101', 6],
+      ['64:ff9b::101:101', 4], ['64:ff9b::101:101', 0], ['64:ff9b::101:101', 5],
+      // Malformed dotted quads Number() would read (adversary on 0c5c8d3d): empty, padded, hex, exponent, leading zero.
+      ['64:ff9b::1..1.1', 6], ['64:ff9b::1.1.1.', 6], ['64:ff9b:: 1.1.1.1', 6], ['64:ff9b::1.1.1.1\n', 6],
+      ['64:ff9b::0x1.1.1.1', 6], ['64:ff9b::1e2.0.0.1', 6], ['64:ff9b::0177.0.0.1', 6], ['::ffff:1..1.1', 6], ['::1.1.1.', 6],
+      ['1..1.1', 4], ['0177.0.0.1', 4], ['1.1.1.1\n', 4], [' 1.1.1.1', 4], ['0x1.1.1.1', 4],
+    ] as Array<[string, number]>) {
+      expect(isPublicAddress(ip, family), `${ip} family ${family}`).toBe(false);
+    }
+  });
+
   it('refuses plain http', async () => {
     vi.stubGlobal('fetch', vi.fn());
     expect(await resolveClient('http://claude.ai/.well-known/oauth-client')).toBeNull();
