@@ -138,7 +138,7 @@ export function groupLabHistory(rows: LabValueRow[]): {
   for (const row of rows) {
     const key = labSlotKey(row.metricName);
     if (!series[key]) {
-      series[key] = { label: resolveLabCatalogEntry(row.metricName)?.label ?? labValueLabel(row.metricName), rows: [] };
+      series[key] = { label: labValueLabel(row.metricName), rows: [] };
     }
     series[key].rows.push(row);
   }

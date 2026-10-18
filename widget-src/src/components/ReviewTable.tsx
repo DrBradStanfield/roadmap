@@ -187,11 +187,6 @@ function labUnitText(lab: { name: string; unit: string }): string {
  *  an LLM-emitted name like "ALT | AST ratio" would otherwise collide. Prefixed
  *  so a lab row named like a core metric ("ldl", "systolic_bp": saved before
  *  US-12 AC11, or by a connector commit today) never shares a cell with it. */
-/** A lab row's name: the catalogue's label, as the blood-test matrix shows it (lab-rows.ts), else the printed name tidied. */
-function rowLabel(name: string): string {
-  return resolveLabCatalogEntry(name)?.label ?? labValueLabel(name);
-}
-
 function normaliseLabName(name: string): string {
   return `lab:${labSlotKey(name).replace(/\|/g, '/')}`;
 }
@@ -350,7 +345,7 @@ export function buildMatrixModel(
       additionalByKey.set(nameKey, {
         kind: 'additional',
         nameKey,
-        displayName: rowLabel(lv.metricName),
+        displayName: labValueLabel(lv.metricName), // the catalogue label, as the matrix shows it
         // Same display-only unit-spelling normalization as the lab-rows
         // matrix ("umol/L" → "µmol/L", ratio ≡ L/L) — these are stored rows,
         // already in the catalogue's SI unit when the test is catalogued.
@@ -416,7 +411,7 @@ export function buildMatrixModel(
         additionalByKey.set(nameKey, {
           kind: 'additional',
           nameKey,
-          displayName: rowLabel(av.name),
+          displayName: labValueLabel(av.name),
           // Display-only spelling normalization. The review shows the report
           // as PRINTED, and the save path passes av.unit on unchanged — the
           // conversion to SI happens once, at the write (US-21 phase 3).

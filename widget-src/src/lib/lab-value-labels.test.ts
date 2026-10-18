@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { labUnitRefusalLine, labValueLabel, LAB_VALUE_LABELS } from './lab-value-labels';
+import { LAB_CATALOG } from '@roadmap/health-core';
+import { labUnitRefusalLine, labValueLabel } from './lab-value-labels';
 
 // US-21 AC11 / AC7: a catalogued test printed with no unit is refused, and the
 // line says so plainly instead of "unit not recognised ()" (adversary R3).
@@ -14,57 +15,30 @@ describe('labUnitRefusalLine: no unit printed', () => {
   });
 });
 
+// A test is named by its catalogue label, the rule the review and the matrix
+// already used (US-21 AC18); only a name off the catalogue is title-cased.
 describe('labValueLabel', () => {
-  it('returns known label for sodium', () => {
+  it('names a catalogued test by its catalogue label, from its key or an alias', () => {
     expect(labValueLabel('sodium')).toBe('Sodium');
-  });
-
-  it('returns known label for free_t4', () => {
+    expect(labValueLabel('ft4')).toBe('Free T4');
     expect(labValueLabel('free_t4')).toBe('Free T4');
-  });
-
-  it('returns known label for hs_crp', () => {
-    expect(labValueLabel('hs_crp')).toBe('hs-CRP');
-  });
-
-  it('returns known label for igf1', () => {
+    expect(labValueLabel('hs_crp')).toBe('CRP');
     expect(labValueLabel('igf1')).toBe('IGF-1');
-  });
-
-  it('returns known label for dhea_s', () => {
     expect(labValueLabel('dhea_s')).toBe('DHEA-S');
+    expect(labValueLabel('vitamin_d')).toBe('Vitamin D (25-OH)');
   });
 
-  it('title-cases unknown snake_case metric', () => {
-    expect(labValueLabel('gamma_gt')).toBe('Gamma Gt');
+  it('gives every catalogue key its catalogue label', () => {
+    for (const entry of LAB_CATALOG) expect(labValueLabel(entry.key), entry.key).toBe(entry.label);
   });
 
-  it('title-cases single word metric', () => {
-    expect(labValueLabel('cortisol')).toBe('Cortisol');
+  it('title-cases a snake_case name off the catalogue', () => {
+    expect(labValueLabel('ana_titre')).toBe('Ana Titre');
+    expect(labValueLabel('lipase')).toBe('Lipase');
+    expect(labValueLabel('mean_platelet_component_x')).toBe('Mean Platelet Component X');
   });
 
-  it('handles multi-underscore names', () => {
-    expect(labValueLabel('mean_corpuscular_volume')).toBe('Mean Corpuscular Volume');
-  });
-
-  it('has labels for all FBC metrics', () => {
-    const fbc = ['haemoglobin', 'rbc', 'wbc', 'platelets', 'mcv', 'mch', 'haematocrit', 'neutrophils', 'lymphocytes', 'monocytes', 'eosinophils', 'basophils'];
-    for (const m of fbc) {
-      expect(LAB_VALUE_LABELS[m]).toBeDefined();
-    }
-  });
-
-  it('has labels for all LFT metrics', () => {
-    const lfts = ['alt', 'ast', 'ggt', 'alp', 'bilirubin', 'albumin', 'total_protein', 'globulin'];
-    for (const m of lfts) {
-      expect(LAB_VALUE_LABELS[m]).toBeDefined();
-    }
-  });
-
-  it('has labels for all hormone metrics', () => {
-    const hormones = ['testosterone', 'free_testosterone', 'shbg', 'estradiol', 'prolactin', 'progesterone', 'dhea_s', 'igf1'];
-    for (const m of hormones) {
-      expect(LAB_VALUE_LABELS[m]).toBeDefined();
-    }
+  it('names the test in a refused-unit line by its catalogue label', () => {
+    expect(labUnitRefusalLine('vitamin_d', 'mg/dL')).toMatch(/^Vitamin D \(25-OH\): unit not recognised/);
   });
 });
