@@ -13,6 +13,7 @@
 import crypto from 'node:crypto';
 import https from 'node:https';
 import net from 'node:net';
+import zlib from 'node:zlib';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // The client-metadata fetch resolves through `node:dns` inside its connect-time
@@ -24,11 +25,6 @@ vi.mock('node:dns', async (importOriginal) => {
     setImmediate(() => callback(null, dnsAnswer.records));
   return { ...real, default: { ...real, lookup } };
 });
-// A resolver consulted before the connection, as the old pre-check was. It says
-// "public" to every name, so only a check made at connect time can refuse.
-vi.mock('node:dns/promises', () => ({
-  default: { lookup: async () => [{ address: '1.1.1.1', family: 4 }] },
-}));
 import { checkAuthorize, MAX_STATE_LENGTH, sealState, verifyPkce } from './mcp-authorize.server';
 import { ALLOWED_REDIRECTS, isAllowedRedirect, isLoopbackRedirect, isPublicAddress, KNOWN_CLIENTS, redirectMatches, registerClient, resolveClient } from './mcp-clients.server';
 import { isMcpEnabled } from './mcp-config.server';
@@ -437,7 +433,7 @@ describe('CIMD fetch policy (US-32, design §4 — this is an SSRF surface)', ()
     expect(await resolveClient(CIMD)).toMatchObject({ clientId: CIMD, name: 'Claude' });
     const [url, options] = spy.mock.calls[0] as unknown as [URL, https.RequestOptions];
     expect(url.href).toBe(CIMD);
-    expect(options.headers).toEqual({ Accept: 'application/json', 'User-Agent': 'node' });
+    expect(options.headers).toEqual({ Accept: 'application/json', 'Accept-Encoding': 'gzip, deflate, br', 'User-Agent': 'node' });
     expect(options.auth).toBeUndefined();
     expect(options.method ?? 'GET').toBe('GET');
     expect(typeof options.lookup).toBe('function');
@@ -472,12 +468,61 @@ describe('CIMD fetch policy (US-32, design §4 — this is an SSRF surface)', ()
     expect(await resolveClient(CIMD)).toBeNull();
   });
 
-  it('gives up after one 5-second deadline, whether the headers or the body stall (US-32 AC47)', async () => {
+  it('decodes gzip, deflate and br, as fetch did (US-32 AC47)', async () => {
+    const json = JSON.stringify(METADATA);
+    for (const [coding, encode] of [
+      ['gzip', zlib.gzipSync], ['x-gzip', zlib.gzipSync], ['GZIP', zlib.gzipSync],
+      ['deflate', zlib.deflateSync], ['br', zlib.brotliCompressSync], ['identity', Buffer.from],
+    ] as Array<[string, (s: string) => Buffer]>) {
+      resetMcpMemory();
+      stubHttpsRequest(() => ({ headers: { 'content-encoding': coding }, body: encode(json) }));
+      expect(await resolveClient(CIMD), coding).toMatchObject({ clientId: CIMD, name: 'Claude' });
+    }
+  });
+
+  it('refuses a compressed body that decodes past the cap (US-32 AC47)', async () => {
+    const bomb = JSON.stringify({ ...METADATA, pad: 'x'.repeat(1_000_000) });
+    for (const [coding, packed] of [['gzip', zlib.gzipSync(bomb)], ['deflate', zlib.deflateSync(bomb)], ['br', zlib.brotliCompressSync(bomb)]] as const) {
+      expect(packed.byteLength, coding).toBeLessThan(65536);
+      resetMcpMemory();
+      stubHttpsRequest(() => ({ headers: { 'content-encoding': coding, 'content-length': String(packed.byteLength) }, body: packed }));
+      expect(await resolveClient(CIMD), coding).toBeNull();
+    }
+  });
+
+  it('refuses a content encoding it does not decode (US-32 AC47)', async () => {
+    for (const coding of ['compress', 'zstd', 'gzip, br', 'br, gzip', 'constructor', '__proto__', 'toString']) {
+      resetMcpMemory();
+      stubHttpsRequest(() => ({ headers: { 'content-encoding': coding }, body: JSON.stringify(METADATA) }));
+      expect(await resolveClient(CIMD), coding).toBeNull();
+    }
+  });
+
+  it('refuses the ports fetch refused, and no other (US-32 AC47)', async () => {
+    for (const port of [1, 21, 22, 25, 53, 110, 143, 465, 587, 993, 995, 2049, 6000, 6667, 10080]) {
+      const url = `https://claude.ai:${port}/.well-known/oauth-client`;
+      const spy = serveClientMetadata({ [url]: { ...METADATA, client_id: url } });
+      expect(await resolveClient(url), url).toBeNull();
+      expect(spy, url).not.toHaveBeenCalled();
+      spy.mockRestore();
+    }
+    for (const url of ['https://claude.ai:8443/.well-known/oauth-client', 'https://claude.ai:443/.well-known/oauth-client']) {
+      serveClientMetadata({ [new URL(url).href]: { ...METADATA, client_id: url } });
+      expect(await resolveClient(url), url).toMatchObject({ clientId: url });
+    }
+  });
+
+  it('gives up after one 5-second deadline, whether the headers, the body or its decoding stall (US-32 AC47)', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const gzipped = zlib.gzipSync(JSON.stringify(METADATA));
     try {
-      for (const stall of ['headers', 'body'] as const) {
+      for (const [stall, answer] of [
+        ['headers', { body: JSON.stringify(METADATA) }],
+        ['body', { body: JSON.stringify(METADATA) }],
+        ['body', { headers: { 'content-encoding': 'gzip' }, body: gzipped.subarray(0, gzipped.byteLength >> 1) }],
+      ] as const) {
         resetMcpMemory();
-        const spy = stubHttpsRequest(() => ({ stall, body: JSON.stringify(METADATA) }));
+        const spy = stubHttpsRequest(() => ({ stall, ...answer }));
         let settled = false;
         const result = resolveClient(CIMD).finally(() => { settled = true; });
         await vi.advanceTimersByTimeAsync(4999);
@@ -519,6 +564,18 @@ describe('CIMD fetch policy (US-32, design §4 — this is an SSRF surface)', ()
     const spy = serveClientMetadata({ [literal]: { ...METADATA, client_id: literal } });
     expect(await resolveClient(literal)).toMatchObject({ clientId: literal });
     expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes a public answer through the connect-time lookup, in both shapes Node asks for (US-32 AC47)', async () => {
+    const spy = serveClientMetadata({ [CIMD]: METADATA });
+    await resolveClient(CIMD);
+    const lookup = (spy.mock.calls[0] as unknown as [URL, https.RequestOptions])[1].lookup as unknown as (
+      host: string, options: { all?: boolean }, callback: (...args: unknown[]) => void) => void;
+    const records = [{ address: '1.1.1.1', family: 4 }, { address: '2606:4700::1111', family: 6 }];
+    dnsAnswer.records = records;
+    const call = (all: boolean) => new Promise<unknown[]>((resolve) => lookup('claude.ai', { all }, (...args) => resolve(args)));
+    expect(await call(true)).toEqual([null, records]);
+    expect(await call(false)).toEqual([null, '1.1.1.1', 4]);
   });
 
   /**

@@ -14,8 +14,8 @@ export interface StubAnswer {
   status?: number;
   /** Lower-case names, as Node delivers them. `content-type` defaults to JSON. */
   headers?: Record<string, string>;
-  body?: string;
-  /** 'headers': no response ever arrives. 'body': headers arrive, the body never ends. */
+  body?: string | Buffer;
+  /** 'headers': no response ever arrives. 'body': headers and any `body` arrive, the body never ends. */
   stall?: 'headers' | 'body';
 }
 
@@ -37,6 +37,7 @@ export function stubHttpsRequest(answer: (url: URL) => StubAnswer) {
           });
           onResponse(res as unknown as IncomingMessage);
           if (reply.stall !== 'body') res.end(reply.body ?? '');
+          else if (reply.body) res.write(reply.body);
         });
         return req;
       },

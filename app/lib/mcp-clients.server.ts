@@ -8,6 +8,8 @@ import crypto from 'node:crypto';
 import dns from 'node:dns';
 import https from 'node:https';
 import { isIP, type LookupFunction } from 'node:net';
+import { pipeline, type Transform } from 'node:stream';
+import zlib from 'node:zlib';
 import { clientHmacKey } from './mcp-config.server';
 import { b64url } from './mcp-seal.server';
 
@@ -232,9 +234,10 @@ const CIMD_MAX_TTL_MS = 60 * 60 * 1000;
 /**
  * Fetching a URL the caller chose is an SSRF gun pointed at Fly's internal
  * network, so the policy is mandatory and every clause below is load-bearing:
- * https only, every resolved address public, zero redirects, one 5-second
- * deadline over the whole request, 64 KB cap, `application/json` required, no
- * credentials sent, and the result into the bounded cache above.
+ * https only, every resolved address public, none of the ports `fetch` refused,
+ * zero redirects, one 5-second deadline over the whole request, 64 KB cap on
+ * the decoded body, `application/json` required, no credentials sent, and the
+ * result into the bounded cache above.
  *
  * The address check runs where the socket is opened (US-32 AC47): Node calls
  * this lookup for the connection, every address in the answer must be public,
@@ -260,6 +263,20 @@ const lookupPublic: LookupFunction = (hostname, options, callback) => {
  * connection to an internal ip:port ("TLS poison"). No keep-alive either.
  */
 const CIMD_AGENT = new https.Agent({ maxCachedSessions: 0 });
+
+/** The WHATWG fetch "bad port" list, which `fetch` refused before connecting. */
+const BAD_PORTS = new Set([
+  1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 69, 77, 79, 87, 95, 101, 102, 103, 104, 109,
+  110, 111, 113, 115, 117, 119, 123, 135, 137, 139, 143, 161, 179, 389, 427, 465, 512, 513, 514, 515, 526, 530,
+  531, 532, 540, 548, 554, 556, 563, 587, 601, 636, 989, 990, 993, 995, 1719, 1720, 1723, 2049, 3659, 4045,
+  4190, 5060, 5061, 6000, 6566, 6665, 6666, 6667, 6668, 6669, 6679, 6697, 10080,
+].map(String));
+
+/** The content codings `fetch` decoded; any other is refused. A Map, so no inherited key is a decoder. */
+const DECODERS = new Map<string, (() => Transform) | null>([
+  ['', null], ['identity', null], ['gzip', zlib.createGunzip], ['x-gzip', zlib.createGunzip],
+  ['deflate', zlib.createInflate], ['br', zlib.createBrotliDecompress],
+]);
 
 /**
  * Refuses a non-public address in the spellings this check parses, not only the
@@ -373,7 +390,7 @@ async function fetchClientMetadata(clientId: string, nowMs = Date.now()): Promis
     return null;
   }
   // `node:https` would send userinfo as an Authorization header.
-  if (url.protocol !== 'https:' || url.username || url.password) return null;
+  if (url.protocol !== 'https:' || url.username || url.password || BAD_PORTS.has(url.port)) return null;
   const literal = url.hostname.replace(/^\[(.*)\]$/, '$1');
   if (isIP(literal) && !isPublicAddress(literal, isIP(literal))) return null;
 
@@ -402,8 +419,10 @@ async function fetchClientMetadata(clientId: string, nowMs = Date.now()): Promis
 
 /**
  * One GET, never followed: a 3xx is refused like any other non-2xx. The
- * deadline covers the body read too. The user-agent is the one `fetch` sent,
- * so a document host sees the same request as before.
+ * deadline covers the body read and its decoding too, and the cap counts
+ * decoded bytes, so a decompression bomb stops at 64 KB. Accept, Accept-Encoding
+ * and the user-agent (`node`) are the ones `fetch` sent; its accept-language
+ * and sec-fetch-mode are not, and the connection closes rather than keeps alive.
  */
 function getCimdDocument(url: URL): Promise<{ text: string; cacheControl: string | null } | null> {
   return new Promise((resolve) => {
@@ -415,17 +434,19 @@ function getCimdDocument(url: URL): Promise<{ text: string; cacheControl: string
     const req = https.request(url, {
       agent: CIMD_AGENT,
       lookup: lookupPublic,
-      headers: { Accept: 'application/json', 'User-Agent': 'node' },
+      headers: { Accept: 'application/json', 'Accept-Encoding': 'gzip, deflate, br', 'User-Agent': 'node' },
     }, (res) => {
       const status = res.statusCode ?? 0;
       const type = (res.headers['content-type'] ?? '').toLowerCase();
-      if (status < 200 || status > 299 || !type.startsWith('application/json')
+      const decode = DECODERS.get((res.headers['content-encoding'] ?? '').trim().toLowerCase());
+      if (status < 200 || status > 299 || !type.startsWith('application/json') || decode === undefined
         || Number(res.headers['content-length'] ?? 0) > 65536) {
         res.destroy();
         return settle(null);
       }
       const cacheControl = res.headers['cache-control'] ?? null;
-      readCapped(res, 65536).then((text) => settle({ text, cacheControl }), () => settle(null));
+      const body = decode ? pipeline(res, decode(), () => {}) : res;
+      readCapped(body, 65536).then((text) => settle({ text, cacheControl }), () => settle(null));
     });
     const deadline = setTimeout(() => settle(null), 5000);
     req.on('error', () => settle(null));
