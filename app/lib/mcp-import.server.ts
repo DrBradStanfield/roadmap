@@ -32,7 +32,7 @@ import { openStep, signStep, UUID } from './mcp-step.server';
 import { recordServerEvent } from './product-events.server';
 import { machineFiles } from './rate-limiter';
 import { deadlineSignal, StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
-import { IMPORT_LIMITS, IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
+import { type ImportFileReason, IMPORT_LIMITS, IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
 import {
   type DocumentPromptMode,
   isImportableEntryName,
@@ -222,9 +222,10 @@ function driveRefusal(client: McpClientLabel): string {
 }
 
 /** Why one file could not be read, as a closed word the assistant can act on. */
-function failureReason(error: unknown): string {
+function failureReason(error: unknown): ImportFileReason {
   if (isNetworkOrTimeoutError(error)) return 'time';
   if (error instanceof Error && /status 400/.test(error.message)) return 'too_large';
+  if (error instanceof ExtractionStopError) return error.code;
   return 'unreadable';
 }
 

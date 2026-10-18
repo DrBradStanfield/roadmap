@@ -1714,6 +1714,7 @@ import { recordSync } from './roadmap-doc';
 import { ROADMAP_FILE_NAME } from './adapter';
 import { parseUnifiedResult, toUnifiedResult, type UnifiedExtractionResult } from './lab-extraction';
 import { IMPORT_FILE_REASONS, IMPORT_LIMITS, IMPORT_REFUSALS, importHint } from './import-hints';
+import { EXTRACTION_STOP_CODES } from './models';
 
 const LAB_DAY = '2026-08-20';
 
@@ -2002,7 +2003,7 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
   });
 
   it('AC13 — every reason in the table is a sentence that names the limit and the way round it', () => {
-    for (const reason of IMPORT_FILE_REASONS) {
+    for (const reason of [...IMPORT_FILE_REASONS, ...EXTRACTION_STOP_CODES]) {
       const hint = importHint(reason);
       expect(hint.length, reason).toBeGreaterThan(40);
       expect(hint, reason).toMatch(/[.!]$/);
@@ -2017,6 +2018,15 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(importHint('allowance')).toMatch(/allowance for the hour/);
     expect(importHint('time')).toMatch(/Ask again.*already filed are skipped/);
     expect(importHint('too_many')).toMatch(/twenty/);
+    // US-35 AC13 (2026-10-19): a file the model cut off or declined is not a bad scan, and
+    // the same request stops the same way again, so neither hint invites a retry of the same file.
+    // The connector reads at 3,072 output tokens and the website at 10,000, so the website is named first.
+    expect(importHint('too_long')).toMatch(/too long to read in one go\. Upload it on drstanfield\.com\/pages\/roadmap, which reads longer reports, or split it/);
+    expect(importHint('refused')).toMatch(/trying again will not help.*drstanfield\.com\/pages\/roadmap/);
+    for (const stop of EXTRACTION_STOP_CODES) {
+      expect(importHint(stop), stop).not.toBe(importHint('unreadable'));
+      expect(importHint(stop), stop).not.toMatch(/scan|safety|classifier|policy/i);
+    }
     // A reason outside the table is a bug in us, worded as unreadable rather than a bare token.
     expect(importHint('something_else')).toBe(importHint('unreadable'));
     expect(importHint(undefined)).toBe(importHint('unreadable'));
