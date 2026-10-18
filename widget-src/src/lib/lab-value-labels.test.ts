@@ -1,5 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { labValueLabel, LAB_VALUE_LABELS } from './lab-value-labels';
+import { labUnitRefusalLine, labValueLabel, LAB_VALUE_LABELS } from './lab-value-labels';
+
+// US-21 AC11 / AC7: a catalogued test printed with no unit is refused, and the
+// line says so plainly instead of "unit not recognised ()" (adversary R3).
+describe('labUnitRefusalLine: no unit printed', () => {
+  it('names the missing unit and the unit the test takes', () => {
+    expect(labUnitRefusalLine('ferritin', '')).toBe('Ferritin: no unit was printed, so it was not saved. This test takes µg/L.');
+    expect(labUnitRefusalLine('ferritin', '  ')).toBe('Ferritin: no unit was printed, so it was not saved. This test takes µg/L.');
+  });
+
+  it('keeps the unrecognised-unit line for a unit that was printed', () => {
+    expect(labUnitRefusalLine('ferritin', 'mg/dL')).toMatch(/^Ferritin: unit not recognised \(mg\/dL\)\. It was not saved\. This test takes µg\/L\./);
+  });
+});
 
 describe('labValueLabel', () => {
   it('returns known label for sodium', () => {

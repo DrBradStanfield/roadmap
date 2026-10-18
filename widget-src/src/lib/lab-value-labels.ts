@@ -96,8 +96,11 @@ export function labUnitRefusalLine(key: string, unit: string, fault?: LabUnitRef
   const entry = resolveLabCatalogEntry(key);
   const note = labUnitRefusalNote(entry, unit, fault);
   if (fault === 'scale') return `${labValueLabel(key)}: ${note}.`;
+  const takes = entry ? ` This test takes ${entry.unit}.` : '';
   const lead = labUnitTaken(entry, unit)
     ? `${labValueLabel(key)}: the number was not saved.`
-    : `${labValueLabel(key)}: unit not recognised (${unit}). It was not saved.${entry ? ` This test takes ${entry.unit}.` : ''}`;
+    : !unit.trim()
+      ? `${labValueLabel(key)}: no unit was printed, so it was not saved.${takes}`
+      : `${labValueLabel(key)}: unit not recognised (${unit}). It was not saved.${takes}`;
   return note ? `${lead} ${note}.` : lead;
 }
