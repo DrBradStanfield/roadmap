@@ -6,6 +6,7 @@
  */
 import crypto from 'node:crypto';
 import dns from 'node:dns/promises';
+import { isIP } from 'node:net';
 import { clientHmacKey } from './mcp-config.server';
 import { b64url } from './mcp-seal.server';
 
@@ -247,7 +248,16 @@ async function assertPublicHost(hostname: string): Promise<void> {
   }
 }
 
+/**
+ * Refuses a non-public address in the spellings this check parses, not only the
+ * compressed mapped form. A public mapped address stays allowed, including a
+ * hex spelling the old remainder check refused. Unparseable input is not
+ * public. Teredo is not classified here.
+ */
 export function isPublicAddress(address: string, family: number): boolean {
+  // Node's own parser first: an address it does not read as exactly this family
+  // (empty, padded, hex or leading-zero octets) is not public (US-32 AC45).
+  if (isIP(address) !== family) return false;
   if (family === 4) {
     const parts = address.split('.').map(Number);
     if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return false;
@@ -260,11 +270,82 @@ export function isPublicAddress(address: string, family: number): boolean {
     if (a >= 224) return false; // multicast + reserved
     return true;
   }
+  if (family === 6) return isPublicIpv6(address);
+  return false;
+}
+
+function isPublicIpv4(address: string): boolean {
+  return isPublicAddress(address, 4);
+}
+
+function ipv4Groups(dotted: string): [number, number] | null {
+  const parts = dotted.split('.');
+  if (parts.length !== 4) return null;
+  const nums = parts.map(Number);
+  if (nums.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return null;
+  return [(nums[0] << 8) | nums[1], (nums[2] << 8) | nums[3]];
+}
+
+function parseIpv6(address: string): number[] | null {
   const ip = address.toLowerCase();
-  if (ip === '::' || ip === '::1') return false;
-  if (ip.startsWith('fc') || ip.startsWith('fd')) return false; // unique-local
-  if (ip.startsWith('fe80')) return false; // link-local
-  if (ip.startsWith('::ffff:')) return isPublicAddress(ip.slice(7), 4); // v4-mapped
+  if (ip.includes('%') || ip.includes('/')) return null;
+  const halves = ip.split('::');
+  if (halves.length > 2) return null;
+  const parseSide = (side: string): number[] | null => {
+    if (side === '') return [];
+    const bits = side.split(':');
+    const groups: number[] = [];
+    for (let i = 0; i < bits.length; i++) {
+      const bit = bits[i];
+      if (bit.includes('.')) {
+        if (i !== bits.length - 1) return null;
+        const pair = ipv4Groups(bit);
+        if (!pair) return null;
+        groups.push(pair[0], pair[1]);
+      } else if (!/^[0-9a-f]{1,4}$/.test(bit)) {
+        return null;
+      } else {
+        groups.push(parseInt(bit, 16));
+      }
+    }
+    return groups;
+  };
+  const head = parseSide(halves[0]);
+  if (!head) return null;
+  if (halves.length === 1) return head.length === 8 ? head : null;
+  const tail = parseSide(halves[1]);
+  if (!tail) return null;
+  const missing = 8 - head.length - tail.length;
+  if (missing < 1) return null;
+  return [...head, ...Array(missing).fill(0), ...tail];
+}
+
+function isPublicIpv6(address: string): boolean {
+  const ip = address.toLowerCase();
+  // The old check refused these by text prefix, including strings that are not
+  // the network prefix. Keep that refusal so this change does not start allowing them.
+  if (ip.startsWith('fc') || ip.startsWith('fd')) return false;
+  const groups = parseIpv6(address);
+  if (!groups) return false;
+  const mapped = groups.slice(0, 5).every((group) => group === 0) && groups[5] === 0xffff;
+  if (ip.startsWith('::ffff:') && !mapped) return false;
+  // IPv4-translated, 0:0:0:0:ffff:0::/96. The expanded spelling does not start
+  // with the mapped prefix, so the text check above does not see it.
+  if (groups[4] === 0xffff && groups[5] === 0 && groups.slice(0, 4).every((group) => group === 0)) return false;
+  if (groups.every((group) => group === 0)) return false;
+  if (groups.slice(0, 7).every((group) => group === 0) && groups[7] === 1) return false;
+  if ((groups[0] & 0xfe00) === 0xfc00) return false; // unique-local
+  if ((groups[0] & 0xffc0) === 0xfe80) return false; // link-local
+  if ((groups[0] & 0xff00) === 0xff00) return false; // multicast
+  if (groups[0] === 0x2002) return false; // 6to4
+  const lastIpv4 = [groups[6] >> 8, groups[6] & 0xff, groups[7] >> 8, groups[7] & 0xff].join('.');
+  // Well-known NAT64, 64:ff9b::/96 (RFC 6052): judge the IPv4 it carries. The rest
+  // of 64:ff9b::/32, local-use 64:ff9b:1::/48 included, stays refused.
+  if (groups[0] === 0x0064 && groups[1] === 0xff9b) {
+    return groups.slice(2, 6).every((group) => group === 0) && isPublicIpv4(lastIpv4);
+  }
+  const embedded = mapped || (groups.slice(0, 6).every((group) => group === 0));
+  if (embedded && !(groups[5] === 0 && groups[6] === 0 && groups[7] <= 1)) return isPublicIpv4(lastIpv4);
   return true;
 }
 
