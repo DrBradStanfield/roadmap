@@ -38,7 +38,10 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   WORKFLOW, scheduled ones included: a cron workflow (Workflow Integrity,
   Stranded branch watch) with no `schedule` run in its last 2 days is dark,
   even while push runs flow (W41: both dark 22 days after the flag lifted).
-- **Feedback emails** (Gmail MCP): `subject:"Health Roadmap Feedback" newer_than:8d`.
+- **Feedback emails** (Gmail MCP): `subject:"Health Roadmap Feedback" newer_than:8d`, AND replies
+  to our own emails, read first: `newer_than:8d -from:me (subject:"Health Roadmap" OR
+  subject:"Health Plan" OR subject:reminder)` (plan-ready, reminder, Klaviyo follow-up).
+  W42's worst report (urine creatinine read as serum) came as a reply; so did W40's Drive one.
 - **Supabase** (env: `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
   `SUPABASE_PRODUCT_HEALTH_KEY` — a READ-ONLY role, SELECT-only on the 8
   operational tables, expires 2027-08; you never get the service key. REST
@@ -49,7 +52,11 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   REST filter `router_context->>platform=eq.widget`, no quotes —
   the widget stores no `chat_messages` since 2026-09-10, US-15 AC7); new
   `feedback_submissions`; `product_events` by `event_name` — the funnel:
-  results_viewed → upload_started/saved/extract_failed →
+  results_viewed → upload_started/saved/extract_failed (started and saved fire once per TAB) →
+  upload_outcome (one per RUN, US-12 AC10: sum its integer keys `picked`, `withValues`,
+  `documentOnly`, `noValues`, `openFailed`, `tooLarge`, `truncated`, `serverError`, `limitError`,
+  `refused`, `tooLong`, `valuesDropped`, `docx`, `picturesOnly` (US-12 AC13; `docx` overlaps the
+  others); a key not sent is 0 (zero counts are omitted); an unpaired start is located by its outcome row) →
   cloud_connect_started/success → chat_opened → correction_made →
   lab_rows_viewed/lab_row_added → medication_history_viewed →
   reminder_optin/optout → report_email_* →
@@ -79,7 +86,9 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   sent once per tab, so the split counts each tab's first answer only;
   `chat_run_roadmap` (server: the chat ran the plan on values typed into
   it; `count` used and `rejected` stated values, counts only, read against
-  `chat_opened`, US-15 AC33); `reminder_optin_v2` total by `provider`. Read `mcp_authorize_shown` with a
+  `chat_opened`, US-15 AC33); `subscription_action_confirmed` (server, name only: a customer
+  confirmed a subscription change card in the microvitamin.com chat, US-49 subscriptions; a zero
+  is by design while `CHAT_SUBSCRIPTION_ACTIONS` is off); `reminder_optin_v2` total by `provider`. Read `mcp_authorize_shown` with a
   clock: more than two rows a second from one client, with no
   `mcp_consent_posted` following, is a probe scanning the door, not people
   trying to connect — count it as traffic and say so, never as demand.
@@ -104,10 +113,10 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   not apply. Log in its `ledger.csv`, `metrics.csv` and `feature-backlog.csv`;
   the report gets one line, and drafted replies for Brad go in it verbatim.
 - **OpenAI app review status** (Gmail MCP; the portal needs a login):
-  search for a verdict on submission `C-udsciSnH0UNo` ("Health by Dr Brad"
-  v1.0.1, receipt 2026-09-17T20:30Z; v1.0.0 `C-Ggl3RkPf6el6` was rejected
-  2026-09-15). If it has moved (approved or rejected), surface issue #60 as
-  the next action in the report.
+  search for a verdict on submission `C-jVtw19jIhBb8` ("Health by Dr Brad"
+  v1.0.2, receipt 2026-10-13T23:55Z; v1.0.1 rejected 2026-09-30, v1.0.0
+  2026-09-15). If it has moved (approved or rejected), lead the report with it
+  as Brad's next action (#60 is closed as superseded).
 - **Newer-Sonnet check** (audit `docs/chat-audit-2026-09-29.md` §4.3, US-15
   AC18). Run `npx tsx tools/check-newer-model.ts` (needs
   `ANTHROPIC_TEST_API_KEY`). Exit 0 = nothing newer; 1 = a named gap. On exit

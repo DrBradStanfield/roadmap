@@ -48,11 +48,25 @@ function consumeQuota(ip: string, count: number): boolean {
 // required on every poll; without it, or with the wrong one, the batch does not
 // exist (404, the same answer as an id nobody created).
 const MAX_ACTIVE_BATCHES = 200;
-const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; reported?: boolean }>();
+const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; ownDates: boolean; reported?: boolean }>();
 setInterval(() => {
   const cutoff = Date.now() - 60 * 60_000;
   for (const [id, b] of activeBatches) if (b.createdAt < cutoff) activeBatches.delete(id);
 }, 10 * 60_000);
+
+/**
+ * A widget from before dated previous columns ignores `recordedAt` and would
+ * file those values on the report date, so it never gets them (US-12 AC12).
+ * Only the new widget sends `ownDates: true`.
+ */
+function withoutOwnDays<T>(result: T): T {
+  const r = result as { values?: Array<{ recordedAt?: string }>; additionalValues?: Array<{ recordedAt?: string }> };
+  return {
+    ...result,
+    ...(r.values && { values: r.values.filter(v => !v.recordedAt) }),
+    ...(r.additionalValues && { additionalValues: r.additionalValues.filter(v => !v.recordedAt) }),
+  };
+}
 
 /** The token the uploader gets back and every poll must present. */
 function newPollToken(): string {
@@ -87,7 +101,7 @@ async function answerPoll(batchId: string, pollToken: string | null): Promise<Re
       for (const stop of result.stops ?? []) reportExtractionStop(stop.code, stop.refusalCategory, 'batch');
     }
     return Response.json(
-      { status: result.status, results: result.results, completed: result.completed, total: result.total },
+      { status: result.status, results: batch.ownDates ? result.results : result.results?.map(withoutOwnDays), completed: result.completed, total: result.total },
     );
   } catch (error) {
     console.error('Batch poll error (v2):', error);
@@ -129,7 +143,7 @@ export async function action({ request }: ActionFunctionArgs) {
     // --- Batch mode ---
     const batchValidation = batchImportRequestSchema.safeParse(body);
     if (batchValidation.success) {
-      const { files } = batchValidation.data;
+      const { files, ownDates } = batchValidation.data;
       if (!consumeQuota(ip, files.length)) {
         return Response.json(
           { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
@@ -141,7 +155,7 @@ export async function action({ request }: ActionFunctionArgs) {
       }
       const { batchId } = await createBatch(files);
       const pollToken = newPollToken();
-      activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollToken });
+      activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollToken, ownDates: ownDates === true });
       return Response.json({ success: true, batchId, pollToken, totalFiles: files.length });
     }
 
@@ -157,13 +171,13 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
-    const { pages } = validation.data;
+    const { pages, ownDates } = validation.data;
     try {
       // One deadline for the file's calls: a malformed answer's re-send gets what
       // is left. A timed-out HTTP attempt is still retried once in a fresh window
       // (fetchAnthropicRaw), kept for capacity blips; ~46 s answers make it rare (US-15 AC34).
       const result = await extractOrClassify(pages, { timeoutMs: 60_000 });
-      return Response.json({ success: true, data: result, remaining: ipQuota.remaining(ip) });
+      return Response.json({ success: true, data: ownDates ? result : withoutOwnDays(result), remaining: ipQuota.remaining(ip) });
     } catch (error) {
       // Declined or cut off: its own answer, so the widget does not say "try
       // again" (US-15 AC34). The code and category only, never document text.

@@ -1035,7 +1035,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Collagen peptides',
-      description: 'Collagen peptides have been studied for skin hydration and elasticity; trials used 0.5 to 10 g a day.',
+      description: 'Collagen peptides may improve skin hydration and elasticity (Batool 2026).',
     },
     {
       id: 'supplement-omega3',

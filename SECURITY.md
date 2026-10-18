@@ -9,6 +9,10 @@ Use **[Report a vulnerability](https://github.com/DrBradStanfield/roadmap/securi
 on this repository. That opens a private thread with the maintainer. Nobody
 else can read it, and it stays private until there is a fix to publish.
 
+If you can't use GitHub, email the maintainer at
+[brad@drstanfield.com](mailto:brad@drstanfield.com). This is also the security
+contact for automated scanning reports.
+
 Please do not open a public issue for a security problem. A public issue is a
 working set of instructions for anyone who reads it first.
 

@@ -13,7 +13,7 @@
  */
 import { deadlineSignal } from './adapter';
 import { dayOf, daysBetween, stampFields } from './merge';
-import { displayLabUnit, foldLpa, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
+import { displayLabUnit, foldLpa, LAB_CATALOG, type LabCatalogEntry, labSlotKey, metricNameWords, resolveLabCatalogEntry } from './lab-catalog';
 import { ISO_DATE, latestActivePerMetric } from './measurement-history';
 import {
   type AdditionalLabValue,
@@ -843,14 +843,37 @@ const BARE_NUMBER = /^\d+(?:[.,]\d+)?$/;
 /** How many words from a metric name a number still reads as that metric's value. */
 const METRIC_DISTANCE = 3;
 
+/**
+ * Every catalogue name of two or more words, as the guard splits it. A phrase
+ * is one name, so the distance runs from its ends: in "insulin-like growth
+ * factor 1 was 200" the generic words inside it cannot carry the value out of
+ * reach of "insulin", and the 1 inside it is the name, not a value.
+ */
+const METRIC_PHRASES = [...new Set(LAB_CATALOG.flatMap((entry) => [entry.label, ...entry.aliases]).map(foldLpa))]
+  .map((name) => name.match(FEEDBACK_WORD) ?? [])
+  .filter((phrase) => phrase.length > 1);
+
 /** "My LDL is 3.2" — a bare number a few words from a name this record knows. */
 function valueNearMetric(text: string): string | null {
   const words = foldLpa(text).match(FEEDBACK_WORD) ?? [];
+  // Where a name sits: one word, or a whole phrase from its first word to its last.
+  const names: Array<[number, number]> = [];
+  for (const [i, word] of words.entries()) {
+    if (METRIC_WORDS.has(word)) names.push([i, i]);
+    for (const phrase of METRIC_PHRASES) {
+      if (phrase.every((w, k) => words[i + k] === w)) names.push([i, i + phrase.length - 1]);
+    }
+  }
+  // A name inside a longer one is that longer name: "igf" in "IGF-1" goes, so
+  // the 1 is never read as a value.
+  const longest = names.filter(([first, last]) =>
+    !names.some(([f, l]) => f <= first && l >= last && l - f > last - first));
   for (const [i, word] of words.entries()) {
     if (!BARE_NUMBER.test(word)) continue;
-    const from = Math.max(0, i - METRIC_DISTANCE);
-    const to = Math.min(words.length - 1, i + METRIC_DISTANCE);
-    for (let j = from; j <= to; j += 1) if (METRIC_WORDS.has(words[j])) return `${words[j]} ${word}`;
+    for (const [first, last] of longest) {
+      const inside = i >= first && i <= last;
+      if (!inside && i >= first - METRIC_DISTANCE && i <= last + METRIC_DISTANCE) return `${words.slice(first, last + 1).join(' ')} ${word}`;
+    }
   }
   return null;
 }
@@ -1439,9 +1462,14 @@ export function prepareImport(
       };
       // The name as printed rides along on the assistant route (US-36 AC3), bounded like every string from a document.
       const printed = (value: { printedName?: string }) => (value.printedName ? { printedName: oneLine(value.printedName).slice(0, MAX_NAME_LENGTH) } : null);
+      // A day of its own on the folder route is a dated previous-results column
+      // the shared parse now reads for the website (US-12 AC12). Held off the
+      // connector until the MCP 1.0.2 review ends: left out, as the old prompt
+      // left it out. The assistant's own per-line day (US-36 AC1) is kept.
+      const previousColumn = (value: { recordedAt?: string }) => bundle.route !== 'assistant' && !!value.recordedAt;
       for (const value of result.values) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
-        if (!VALID_METRICS.includes(value.metric as MetricType)) continue;
+        if (!VALID_METRICS.includes(value.metric as MetricType) || previousColumn(value)) continue;
         const metric = value.metric as MetricType;
         const own = value.recordedAt ?? day;
         // A dry run of the real append: it validates the value and the day the
@@ -1462,6 +1490,7 @@ export function prepareImport(
       }
       for (const value of result.additionalValues) {
         if (candidates.length >= MAX_IMPORT_CANDIDATES) break;
+        if (previousColumn(value)) continue;
         const own = value.recordedAt ?? day;
         // With its range: the write checks the whole row (US-21 AC15), so the preview does too.
         const check = bundle.checked ? null : appendLabValue(file, {

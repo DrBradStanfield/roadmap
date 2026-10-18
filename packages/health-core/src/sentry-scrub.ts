@@ -6,7 +6,7 @@
  * via Sentry error reports.
  */
 
-import { CATALOG_UNITS, metricNameWords } from './lab-catalog';
+import { CATALOG_UNITS, LAB_CATALOG, metricNameWords } from './lab-catalog';
 
 const REDACTED = '[Filtered]';
 
@@ -211,14 +211,19 @@ export const SCRUB_UNITS: readonly string[] = [
 ];
 
 /** Metric and lab names that make an adjacent number a health value. */
-export const SCRUB_METRIC_WORDS: readonly string[] = [
-  // Every word a metric or catalogued test is known by. 3 is the floor: "mg"
-  // and "na" are a unit and a word long before they are magnesium and sodium.
+export const SCRUB_METRIC_WORDS: readonly string[] = [...new Set([
+  // Every word a metric or catalogued test is known by. 3 is the floor for a
+  // word split out of a name: "mg" and "na" are a unit and a word long before
+  // they are magnesium and sodium.
   ...metricNameWords(3),
+  // Every name a catalogued test is known by, whole: a whole name is that test
+  // however short ("Na 140", "Ca 2.4"), and a name ending in a digit keeps the
+  // digit while the value goes ("IGF 1 200", "Free T4 15").
+  ...LAB_CATALOG.flatMap((entry) => [entry.key, entry.label, ...entry.aliases]).map((name) => name.toLowerCase()),
   // What no name in either list spells: the phrases a person writes, and the
   // metrics that live in the calculator rather than the catalogue.
-  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height', 'glucose',
-];
+  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height',
+])];
 
 /** A number, or a blood-pressure pair ("140/90"). */
 const NUMBER = '\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?';
@@ -234,8 +239,13 @@ const PLAIN_UNITS = SCRUB_UNITS.filter(u => u !== 'in' && u !== '"');
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const UNIT_VALUE_RE = new RegExp(
   `\\b${NUMBER}\\s*(?:(?:${alternation(PLAIN_UNITS)})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
+// A name starts where no letter or digit runs into it ("γ-GT" starts with no
+// word character, so not a word boundary) and ends where no letter does: digits straight
+// after a name are its value ("ldl140"), never part of it. A number inside a
+// word, with a letter on both sides (the 1 of "A1c"), is never the value, so
+// "Hb" cannot take it in "Hb A1c 7.2"; "a1c" scrubs the 7.2 itself.
 const METRIC_THEN_VALUE_RE = new RegExp(
-  `\\b(${alternation(SCRUB_METRIC_WORDS)})(?![a-z0-9])([^\\d\\n]{0,20}?)(${NUMBER})`, 'gi');
+  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])([^\\d\\n]{0,20}?)(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z])(${NUMBER})`, 'gi');
 const VALUE_THEN_METRIC_RE = new RegExp(
   `(${NUMBER})([^\\d\\n]{0,20}?)\\b(${alternation(SCRUB_METRIC_WORDS)})\\b`, 'gi');
 

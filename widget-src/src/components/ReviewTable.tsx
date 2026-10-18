@@ -12,6 +12,7 @@ import {
   displayLabUnit,
   labSlotKey,
   resolveLabCatalogEntry,
+  canonicalLabRow,
   sameLabQuantity,
   slotState,
   type LabQuantity,
@@ -136,6 +137,13 @@ function parseIsoToFullDate(iso: string): FullDate | null {
   return { year, month, day };
 }
 
+/** What sets a value's date, and keys the date state: its file's report date,
+ *  or its own printed day from a dated previous-results column (US-12 AC12),
+ *  so editing one column's date never moves the other. */
+function dateSource(fi: number, recordedAt?: string): string {
+  return recordedAt ? `${fi}@${recordedAt}` : String(fi);
+}
+
 /** Build the most precise date prefix for duplicate matching. */
 function buildDatePrefix(date: FullDate): string {
   const month = date.month.padStart(2, '0');
@@ -196,7 +204,7 @@ interface MatrixColumn {
   dateKey: DateKey;     // sort key, also rendered as the column header
   date: FullDate;       // mutable for new columns; sourced from history for existing
   isNew: boolean;       // false = history-only; true = at least one upload contributes
-  fileIndices: number[]; // upload files at this date (empty for history-only columns)
+  sources: string[];    // upload date sources at this date (`dateSource`; empty for history-only columns)
 }
 
 interface CoreRow {
@@ -229,8 +237,8 @@ type MatrixRow = CoreRow | AdditionalRow;
 interface ExistingCell { id: string; display: string; valueSI?: number; lab?: LabQuantity; displayUnit?: string }
 
 type EditableMatrixCell =
-  | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; valueSI: number; displayUnit: string; existing?: ExistingCell }
-  | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; lab: LabQuantity; existing?: ExistingCell };
+  | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; question?: string; valueSI: number; displayUnit: string; existing?: ExistingCell }
+  | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; lab: LabQuantity; referenceLow?: number | null; referenceHigh?: number | null; existing?: ExistingCell };
 
 /** A core cell as rendered: its text in the row's unit and the value it saves. */
 interface CoreCellView { text: string; valueSI?: number }
@@ -247,7 +255,7 @@ type MatrixCell =
  *  `conflict` the user can accept as a correction. Exported for tests. */
 export function buildMatrixModel(
   results: FileResult[],
-  fileDates: Record<number, FullDate>,
+  fileDates: Record<string, FullDate>,
   measurementHistory: ApiMeasurement[],
   labValueHistory: ApiLabValue[],
   unitSystem: UnitSystem,
@@ -282,31 +290,39 @@ export function buildMatrixModel(
     return equal ? 'skip' : { id: prev.id, display: prev.displayValue, valueSI: prev.valueSI, lab: prev.lab, displayUnit: prev.displayUnit };
   };
 
-  const addColumn = (dateKey: DateKey, date: FullDate, fileIndex: number | null) => {
+  const addColumn = (dateKey: DateKey, date: FullDate, source: string | null) => {
     let col = columnsByKey.get(dateKey);
     if (!col) {
-      col = { dateKey, date, isNew: fileIndex !== null, fileIndices: [] };
+      col = { dateKey, date, isNew: source !== null, sources: [] };
       columnsByKey.set(dateKey, col);
     }
-    if (fileIndex !== null) {
+    if (source !== null) {
       col.isNew = true;
-      if (!col.fileIndices.includes(fileIndex)) col.fileIndices.push(fileIndex);
+      if (!col.sources.includes(source)) col.sources.push(source);
     }
     return col;
+  };
+
+  /** A value's date: its own printed day when it has one (US-12 AC12), else
+   *  its file's. The date state holds only what the user picked; a printed day
+   *  nobody edited is read from the value itself. */
+  const valueDate = (fi: number, recordedAt?: string): FullDate | undefined =>
+    recordedAt ? fileDates[dateSource(fi, recordedAt)] ?? parseReportDate(recordedAt) : fileDates[fi];
+  const valueDateKey = (fi: number, recordedAt?: string): DateKey | null => {
+    const date = valueDate(fi, recordedAt);
+    return date ? buildDatePrefix(date) : null;
   };
 
   // 1) Seed columns + cells from existing history (greyed context). A blood
   //    test seeds its own column. A saved BP seeds only a date this upload
   //    brings, so it conflicts like any held slot (US-13 AC3) without every
   //    vitals date becoming a column.
-  //    A file brings a column only when it has a date and contributes a value:
+  //    An upload brings a column only for a date one of its values carries:
   //    document-only files (scans, letters) keep their own card below the
   //    matrix, off the date axis. One rule for the seeding and the overlay.
-  const uploadDateKey = (r: FileResult, fi: number) =>
-    fileDates[fi] && r.values.length + r.additionalValues.length > 0 ? buildDatePrefix(fileDates[fi]) : null;
   const bloodTestSet = new Set<string>(BLOOD_TEST_METRICS);
   const vitalSet = new Set<string>(VITAL_METRICS);
-  const uploadDates = new Set(results.map(uploadDateKey));
+  const uploadDates = new Set(results.flatMap((r, fi) => [...r.values, ...r.additionalValues].map(v => valueDateKey(fi, v.recordedAt))));
   for (const m of measurementHistory) {
     const dateKey = m.recordedAt.slice(0, 10);
     const metric = m.metricType as MetricType;
@@ -329,7 +345,7 @@ export function buildMatrixModel(
       additionalByKey.set(nameKey, {
         kind: 'additional',
         nameKey,
-        displayName: labValueLabel(lv.metricName),
+        displayName: labValueLabel(lv.metricName), // the catalogue label, as the matrix shows it
         // Same display-only unit-spelling normalization as the lab-rows
         // matrix ("umol/L" → "µmol/L", ratio ≡ L/L) — these are stored rows,
         // already in the catalogue's SI unit when the test is catalogued.
@@ -348,24 +364,38 @@ export function buildMatrixModel(
   // 2) Overlay upload values. On an occupied slot: an equal value is already
   //    recorded (leave the context cell), a differing one becomes a conflict
   //    the user resolves in the table — never a silent drop (US-32).
-  results.forEach((r, fi) => {
-    const dateKey = uploadDateKey(r, fi);
-    if (!dateKey) return;
-    addColumn(dateKey, fileDates[fi], fi);
+  //    Primary columns first: a file's own reading of a (metric, day) wins
+  //    over another file's previous-column read of it (US-12 AC12).
+  const claimed = new Set<string>();
+  for (const previous of [false, true]) results.forEach((r, fi) => {
+    /** A slot a primary reading claimed, even one the record already held
+     *  equal, is never taken by a previous-column read. */
+    const ceded = (cellKey: string) => (previous ? claimed.has(cellKey) : (claimed.add(cellKey), false));
+    /** The column a value lands in: its own date's (US-12 AC12) or its file's. */
+    const columnFor = (recordedAt?: string): DateKey | null => {
+      const dateKey = valueDateKey(fi, recordedAt);
+      if (dateKey) addColumn(dateKey, valueDate(fi, recordedAt)!, dateSource(fi, recordedAt));
+      return dateKey;
+    };
 
     r.values.forEach((v, vi) => {
+      if (!!v.recordedAt !== previous) return;
+      const dateKey = columnFor(v.recordedAt);
+      if (!dateKey) return;
       const metric = v.metric as MetricType;
       coreMetricsSeen.add(metric);
       const cellKey = `${metric}|${dateKey}`;
       const initialDisplay = UNIT_DEFS[metric]
         ? cellText(metric, v.valueSI, displayFor(metric))
         : String(v.displayValue);
+      if (ceded(cellKey)) return;
       const existing = collide(cellKey, initialDisplay, v.valueSI);
       if (existing === 'skip') return;
       cells.set(cellKey, {
         state: 'editable', kind: 'core', fi, vi,
         initialDisplay,
         confidence: v.confidence,
+        question: v.question,
         valueSI: v.valueSI,
         displayUnit: v.displayUnit,
         existing,
@@ -373,6 +403,9 @@ export function buildMatrixModel(
     });
 
     r.additionalValues.forEach((av, ai) => {
+      if (!!av.recordedAt !== previous) return;
+      const dateKey = columnFor(av.recordedAt);
+      if (!dateKey) return;
       const nameKey = normaliseLabName(av.name);
       if (!additionalByKey.has(nameKey)) {
         additionalByKey.set(nameKey, {
@@ -389,6 +422,7 @@ export function buildMatrixModel(
       }
       const cellKey = `${nameKey}|${dateKey}`;
       const lab = { name: av.name, value: av.value, unit: av.unit };
+      if (ceded(cellKey)) return;
       const existing = collide(cellKey, String(av.value), undefined, lab);
       if (existing === 'skip') return;
       cells.set(cellKey, {
@@ -399,6 +433,8 @@ export function buildMatrixModel(
         valueSI: av.value,
         displayUnit: labUnitText(av),
         lab,
+        referenceLow: av.referenceLow,
+        referenceHigh: av.referenceHigh,
         existing,
       });
     });
@@ -469,9 +505,10 @@ export function ReviewTable({
   const [lpaUnit, chooseLpaUnit] = useLpaUnit(unitSystem);
   const units = useMemo<Partial<Record<MetricType, CellUnit>>>(() => ({ ...metricUnitOverrides, lpa: lpaUnit }), [metricUnitOverrides, lpaUnit]);
 
-  // Per-file full date state (day/month/year)
-  const [fileDates, setFileDates] = useState<Record<number, FullDate>>(() => {
-    const dates: Record<number, FullDate> = {};
+  // Full date state (day/month/year) per file, and, once edited, per printed
+  // day of a dated previous-results column (`dateSource`, US-12 AC12).
+  const [fileDates, setFileDates] = useState<Record<string, FullDate>>(() => {
+    const dates: Record<string, FullDate> = {};
     results.forEach((r, i) => { dates[i] = parseReportDate(r.reportDate); });
     return dates;
   });
@@ -704,20 +741,20 @@ export function ReviewTable({
     return !!(col.date.year && col.date.month && col.date.day);
   }), [matrix.columns]);
 
-  /** Column-level date editing: propagate to every contributing file so the
-   *  matrix stays consistent. New-column dates only — existing-history
+  /** Column-level date editing: propagate to every contributing date source so
+   *  the matrix stays consistent. New-column dates only — existing-history
    *  columns are read-only (correction goes through the live timeline). */
   const handleColumnDateChange = (col: MatrixColumn, update: Partial<FullDate>) => {
     if (!col.isNew) return;
     setFileDates(prev => {
       const next = { ...prev };
-      for (const fi of col.fileIndices) {
-        const merged = { ...prev[fi], ...update };
+      for (const source of col.sources) {
+        const merged = { ...(prev[source] ?? col.date), ...update };
         if (merged.day) {
           const maxDay = getDaysInMonth(merged.month, merged.year);
           if (parseInt(merged.day) > maxDay) merged.day = String(maxDay);
         }
-        next[fi] = merged;
+        next[source] = merged;
       }
       return next;
     });
@@ -1188,7 +1225,20 @@ const MatrixCellView = memo(function MatrixCellView({
   // Stamp the row's display unit so a toggle-after-typing doesn't
   // misconvert the typed value at save time.
   const handleChange = (v: string) => onCellChange(cellKey, v, isCore ? unitSystem : undefined);
-  const lowConfClass = isCore && cell.confidence === 'low' ? ' bt-cell-low-confidence' : '';
+  // A guessed unit (medium) and a doubtful read (low) both ask to be checked (US-21 AC18).
+  const lowConfClass = isCore && cell.confidence !== 'high' ? ' bt-cell-low-confidence' : '';
+  let storedText: string | null = null;
+  if (cell.kind === 'additional') {
+    // What Save stores for a catalogued test printed in another unit: the write's
+    // own canonicalLabRow on the number as it now reads, so a row the write
+    // refuses (a count off its range's scale) previews nothing (US-21 AC18).
+    const entry = resolveLabCatalogEntry(cell.lab.name);
+    const typed = entry ? parseLocalisedNumber(editedValue) : undefined;
+    const row = entry && typed !== undefined
+      ? canonicalLabRow(entry, { value: typed, unit: cell.lab.unit, referenceLow: cell.referenceLow, referenceHigh: cell.referenceHigh })
+      : null;
+    if (row && row.factor !== 1) storedText = `${row.stored.value} ${row.stored.unit}`;
+  }
 
   const input = isCore ? (
     <NumericInputCell
@@ -1199,14 +1249,15 @@ const MatrixCellView = memo(function MatrixCellView({
       valueSI={valueSI}
       onChange={handleChange}
       wrapperClass={`bt-cell-input bt-cell-review${lowConfClass}`}
+      note={cell.question && <span className="bt-cell-question">{cell.question}</span>}
     />
   ) : (
     <NumericInputCell
       value={editedValue}
       onChange={handleChange}
       wrapperClass="bt-cell-input bt-cell-review"
-      ariaLabel={withUnitText(`${rowName(row)} value`, cell.displayUnit)}
-      note={unitNote(cell.displayUnit)}
+      ariaLabel={withUnitText(`${rowName(row)} value`, cell.displayUnit) + (storedText ? `, saved as ${storedText}` : '')}
+      note={<>{unitNote(cell.displayUnit)}{storedText && <span className="bt-cell-si">→ {storedText}</span>}</>}
     />
   );
 

@@ -15,6 +15,7 @@ import { Sentry } from '../lib/sentry';
 import { recordFailure } from '../lib/error-diagnostics';
 import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
+import { isDocx, isLegacyDoc } from '../lib/file-kinds';
 
 class UploadError extends Error {
   constructor(message: string, public code: UploadErrorCode) {
@@ -124,32 +125,35 @@ interface HealthUploadAPI {
   isZip: (file: File) => boolean;
   resizeImage: (file: File, maxDim: number) => Promise<string>;
   isImage: (file: File) => boolean;
+  docxToText: (data: ArrayBuffer) => Promise<{ text: string; truncated: boolean; picturesOnly: boolean }>;
 }
 
 const MAX_FILES = 200;
 const MAX_FILE_SIZE = IMPORT_LIMITS.websiteFileMb * 1024 * 1024; // the connector's hint names this number
 
 /** Why a file was not fully read (US-12 AC9). Each is also its `upload_outcome` count. */
-type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues'>;
+type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx'>;
 /** `name` is the file's whole path, its identity; the list shows it short (`noticeName`).
  *  `count` is how many the notice stands for (values dropped); `text` overrides the reason's. */
 interface FileNotice { name: string; reason: FileNoticeReason; count?: number; text?: string }
 const FILE_NOTICE_TEXT: Record<Exclude<FileNoticeReason, 'valuesDropped'>, string> = {
-  openFailed: 'Could not open it. It may be password-protected, damaged, or not a PDF or photo.',
+  openFailed: 'Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.',
   tooLarge: `Too large to read. The limit is ${IMPORT_LIMITS.websiteFileMb} MB per file.`,
-  truncated: `Only the first ${IMPORT_LIMITS.websitePdfPages} pages were read.`,
+  truncated: 'This file is long, so only its first part was read.',
   documentOnly: 'Filed as a document. No blood test values found.',
   noValues: 'No blood test values found.',
   serverError: 'Our server could not read it. Please try again.',
   limitError: 'Not read. The daily upload limit was reached.',
   refused: 'Not read. Claude declined to read this file, so trying again will not help.',
   tooLong: 'Not read. The file is too long to read in one go.',
+  picturesOnly: 'This Word file holds pictures, not text. Save it as a PDF, or upload a photo of the page.',
 };
 const BYOK_NOTICE_TEXT: Partial<Record<FileNoticeReason, string>> = {
   serverError: 'Not read. Anthropic could not be reached or could not read it. Please try again.',
   limitError: 'Not read. Your Anthropic key hit its rate limit. Wait a minute and try again.',
 };
 const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
+const LEGACY_DOC_TEXT = 'Word .doc files cannot be read. Save it as a PDF or .docx, then upload that.';
 
 function noticeText({ reason, count = 1, text }: FileNotice): string {
   if (text) return text;
@@ -173,7 +177,7 @@ function withTimeout<T>(work: Promise<T>): Promise<T> {
  *  the document's `sourceFileName`, stable across uploads of the same ZIP. */
 interface ReadInput { fileName: string; getFile: () => Promise<File> }
 
-/** Reads one file's pages (pdf.js or image resize), with the file they came
+/** Reads one file's pages (pdf.js, image resize or .docx text), with the file they came
  *  from: its original travels with its result. A file that will not open, or
  *  has no pages, is noted and gives none; it is never silently dropped. The
  *  size limit is checked here too: a small ZIP can hold a member past it. */
@@ -190,6 +194,17 @@ async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: R
       if (pages.length > 0) return { pages, file };
     } else if (upload.isImage(file)) {
       return { pages: [{ type: 'image', content: await withTimeout(upload.resizeImage(file, 1200)), mimeType: 'image/jpeg' }], file };
+    } else if (isDocx(file)) {
+      const { text, truncated, picturesOnly } = await withTimeout(upload.docxToText(await file.arrayBuffer()));
+      if (truncated) notices.push({ name, reason: 'truncated' });
+      if (text) return { pages: [{ type: 'text', content: text }], file };
+      if (picturesOnly) {
+        notices.push({ name, reason: 'picturesOnly' });
+        return { pages: [] };
+      }
+    } else if (isLegacyDoc(file)) {
+      notices.push({ name, reason: 'openFailed', text: LEGACY_DOC_TEXT });
+      return { pages: [] };
     }
   } catch { /* noted below: the reason is the user's, the error is pdf.js's */ }
   notices.push({ name, reason: 'openFailed' });
@@ -212,12 +227,15 @@ function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, 
   return { fileName, reportDate: null, values: [], additionalValues: [], error };
 }
 
-/** US-12 AC10: one run's counts, integers only. Never a name, unit or value. */
-function trackUploadOutcome(picked: number, withValues: number, notices: FileNotice[]): void {
-  const counts: Partial<Record<UploadOutcomeKey, number>> = { picked, withValues };
+/** US-12 AC10: one run's counts, integers only. Never a name, unit or value.
+ *  `docx` is how many of the picked files were .docx (AC13). A zero is never
+ *  sent: every key is optional, so a server a deploy behind meets a new key
+ *  only once it counts something. */
+function trackUploadOutcome(picked: number, withValues: number, docx: number, notices: FileNotice[]): void {
+  const counts: Partial<Record<UploadOutcomeKey, number>> = { picked, withValues, docx };
   for (const n of notices) counts[n.reason] = (counts[n.reason] ?? 0) + (n.count ?? 1);
   trackProductEvent('upload_outcome', Object.fromEntries(
-    UPLOAD_OUTCOME_KEYS.map(k => [k, Math.min(counts[k] ?? 0, UPLOAD_OUTCOME_MAX)]),
+    UPLOAD_OUTCOME_KEYS.filter(k => counts[k]).map(k => [k, Math.min(counts[k]!, UPLOAD_OUTCOME_MAX)]),
   ));
 }
 
@@ -339,11 +357,12 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     const fileArray = Array.from(selectedFiles).slice(0, MAX_FILES);
     const valid = fileArray.filter(f => f.size <= MAX_FILE_SIZE);
     const tooLarge = fileArray.filter(f => f.size > MAX_FILE_SIZE).map(f => ({ name: f.name, reason: 'tooLarge' as const }));
+    const docx = fileArray.filter(isDocx).length;
     setFiles(valid);
     setError(null);
     setNotices(tooLarge);
-    if (valid.length > 0) void handleProcess(valid, tooLarge);
-    else if (tooLarge.length > 0) trackUploadOutcome(tooLarge.length, 0, tooLarge);
+    if (valid.length > 0) void handleProcess(valid, tooLarge, docx);
+    else if (tooLarge.length > 0) trackUploadOutcome(tooLarge.length, 0, docx, tooLarge);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -351,7 +370,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     handleFileSelect(e.dataTransfer.files);
   };
 
-  const handleProcess = async (filesToProcess: File[], tooLarge: FileNotice[]) => {
+  const handleProcess = async (filesToProcess: File[], tooLarge: FileNotice[], docx: number) => {
     // Claim synchronously: React state alone cannot guard two selections in
     // the same render, especially while quota/draft flushing is still pending.
     if (abortRef.current || savingRef.current || filesToProcess.length === 0) return;
@@ -387,7 +406,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         else runNotices.push({ name: r.fileName, reason: r.document ? 'documentOnly' : 'noValues' });
       }
       setNotices(runNotices);
-      trackUploadOutcome(tooLarge.length + names.length, withValues, runNotices);
+      trackUploadOutcome(tooLarge.length + names.length, withValues, docx, runNotices);
     };
 
     try {
@@ -404,8 +423,10 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       trackProductEvent('upload_started', { count: fileCount });
       const upload = await loadUploadBundle();
       if (abort.signal.aborted) return;
-      const zipFiles = filesToProcess.filter(f => upload.isZip(f));
-      const otherFiles = filesToProcess.filter(f => !upload.isZip(f));
+      // A .docx is itself a ZIP, and some browsers say so: it is read as a .docx.
+      const isZip = (f: File) => !isDocx(f) && upload.isZip(f);
+      const zipFiles = filesToProcess.filter(isZip);
+      const otherFiles = filesToProcess.filter(f => !isZip(f));
 
       // Every file to read, ZIP members first (named with their ZIP: `ReadInput`).
       // A ZIP that will not open, or holds nothing readable, is itself the file named.
@@ -793,12 +814,12 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               >
                 <div className="upload-dropzone-icon">&#128196;</div>
                 <p className="upload-dropzone-text">Drop health records here, or click to browse</p>
-                <p className="upload-dropzone-hint">PDF, JPG, PNG, or ZIP &mdash; up to {MAX_FILES} files</p>
+                <p className="upload-dropzone-hint">PDF, JPG, PNG, DOCX, or ZIP &mdash; up to {MAX_FILES} files</p>
               </div>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.zip"
+                accept=".pdf,.jpg,.jpeg,.png,.docx,.doc,.zip"
                 multiple
                 onChange={(e) => handleFileSelect(e.target.files)}
                 style={{ display: 'none' }}

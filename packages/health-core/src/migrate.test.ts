@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { migrateFile, SchemaTooNewError } from './migrate';
 import { mergeFiles } from './merge';
+import { labSlotKey } from './lab-catalog';
 import { CURRENT_SCHEMA_VERSION, createEmptyFile, createMeasurement, stableStringify, type FileLabValue, type FileMeasurement } from './roadmap-file';
 
 const OPTS = { deviceId: 'dev_x', now: '2026-06-08T00:00:00Z' };
@@ -406,5 +407,80 @@ describe('US-21 phase 3 — legacy lab rows are corrected into SI at load', () =
     expect(merged.labValues.filter((l) => l.status === 'active').map((l) => l.id)).toEqual(['l1#si']);
     // And migrating the merge output changes nothing at all.
     expect(stableStringify(migrateFile(JSON.parse(JSON.stringify(merged)), OPTS).labValues)).toBe(stableStringify(merged.labValues));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-21 AC17 — what a load does to rows written before the new entries existed.
+// ---------------------------------------------------------------------------
+// Until AC17 these tests were uncatalogued and kept their printed unit. Now
+// each is catalogued, so a legacy row in a spelling that converts is corrected
+// once through AC9's #si path, and its slot is the catalogue key.
+describe('US-21 AC17 — legacy rows of the newly catalogued tests, at load and merge', () => {
+  const labRow = (over: Partial<FileLabValue> & { id: string; metricName: string; value: number; unit: string }): FileLabValue => ({
+    referenceLow: null, referenceHigh: null, recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z',
+    source: 'lab_import', status: 'active', correctsId: null, ...over,
+  });
+  const fileWith = (rows: FileLabValue[]) => ({
+    schemaVersion: 1,
+    meta: { createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-08-01T00:00:00Z', lastDeviceId: 'dev_a', lamport: 3 },
+    labValues: rows,
+  });
+  const actives = (rows: FileLabValue[]) => rows.filter((r) => r.status === 'active').map((r) => r.id).sort();
+
+  it('US-21 AC17 — fasting_glucose in mg/dL, free_testosterone in pg/mL and insulin in pmol/L each convert once; the second load is a no-op', () => {
+    const rows = [
+      labRow({ id: 'g1', metricName: 'fasting_glucose', value: 90, unit: 'mg/dL', referenceLow: 70, referenceHigh: 99 }),
+      labRow({ id: 't1', metricName: 'free_testosterone', value: 100, unit: 'pg/mL' }),
+      labRow({ id: 'i1', metricName: 'Insulin', value: 60, unit: 'pmol/L' }),
+    ];
+    const once = migrateFile(fileWith(rows), OPTS);
+    expect(once.labValues).toHaveLength(6);
+    for (const id of ['g1', 't1', 'i1']) {
+      expect(once.labValues.find((r) => r.id === id)!.status, id).toBe('entered-in-error');
+    }
+    expect(once.labValues.find((r) => r.id === 'g1#si')).toMatchObject({
+      metricName: 'fasting_glucose', value: 4.9959, unit: 'mmol/L', referenceLow: 3.8857, referenceHigh: 5.49549,
+      status: 'active', correctsId: 'g1', recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z',
+    });
+    expect(once.labValues.find((r) => r.id === 't1#si')).toMatchObject({ value: 346.7, unit: 'pmol/L', status: 'active', correctsId: 't1' });
+    expect(once.labValues.find((r) => r.id === 'i1#si')).toMatchObject({ value: 10.002, unit: 'mIU/L', status: 'active', correctsId: 'i1' });
+    const twice = migrateFile(JSON.parse(JSON.stringify(once)), OPTS);
+    expect(stableStringify(twice.labValues)).toBe(stableStringify(once.labValues));
+    // A merge with itself, or with a device that has not loaded it yet, keeps one active row per test.
+    expect(actives(mergeFiles(once, once, OPTS).labValues)).toEqual(['g1#si', 'i1#si', 't1#si']);
+    expect(actives(mergeFiles(once, migrateFile(fileWith(rows), OPTS), OPTS).labValues)).toEqual(['g1#si', 'i1#si', 't1#si']);
+  });
+
+  it('US-21 AC17 — a same-day measured and calculated free testosterone stay in two slots: neither is demoted', () => {
+    const rows = [
+      labRow({ id: 'ft', metricName: 'Free Testosterone', value: 100, unit: 'pg/mL', createdAt: '2026-07-14T08:00:00Z' }),
+      labRow({ id: 'cft', metricName: 'Calculated Free Testosterone', value: 110, unit: 'pg/mL', createdAt: '2026-07-14T09:00:00Z' }),
+    ];
+    const merged = mergeFiles(migrateFile(fileWith(rows), OPTS), createEmptyFile(OPTS), OPTS);
+    expect(actives(merged.labValues)).toEqual(['cft#si', 'ft#si']);
+  });
+
+  it('US-21 AC12 — no calcium row is rewritten; a slot is read from the name the row was stored under', () => {
+    const rows = [
+      labRow({ id: 'plain', metricName: 'Calcium', value: 2.4, unit: 'mmol/L' }),
+      labRow({ id: 'keyed', metricName: 'calcium_corrected', value: 2.35, unit: 'mmol/L' }),
+    ];
+    const out = migrateFile(fileWith(rows), OPTS);
+    expect(stableStringify(out.labValues)).toBe(stableStringify(rows));
+    // A row stored under the printed "Calcium" now reads as total calcium; one
+    // stored under the key stays corrected. Two slots, so neither is demoted.
+    expect(out.labValues.map((r) => labSlotKey(r.metricName))).toEqual(['calcium_total', 'calcium_corrected']);
+    expect(actives(mergeFiles(out, createEmptyFile(OPTS), OPTS).labValues)).toEqual(['keyed', 'plain']);
+  });
+
+  it('US-21 AC17 — two legacy names that now share one slot on one day keep one active row: the later createdAt', () => {
+    const rows = [
+      labRow({ id: 'a', metricName: 'Fasting Glucose', value: 5.1, unit: 'mmol/L', createdAt: '2026-07-14T08:00:00Z' }),
+      labRow({ id: 'b', metricName: 'FPG', value: 5.1, unit: 'mmol/L', createdAt: '2026-07-14T09:00:00Z' }),
+    ];
+    const merged = mergeFiles(migrateFile(fileWith(rows), OPTS), createEmptyFile(OPTS), OPTS);
+    expect(actives(merged.labValues)).toEqual(['b']);
+    expect(merged.labValues.find((r) => r.id === 'a')!.status).toBe('entered-in-error');
   });
 });

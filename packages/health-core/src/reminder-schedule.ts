@@ -40,7 +40,7 @@ import {
 } from './reminders';
 import { knownMinorOf } from './calculations';
 import { dayOf, localDay } from './merge';
-import { ISO_DATE } from './measurement-history';
+import { ISO_DATE, isCalendarDay } from './measurement-history';
 import type { RoadmapFile } from './roadmap-file';
 import { screeningsToInputs } from './mappings';
 import { fileScreeningRows } from './file-inputs';
@@ -290,7 +290,7 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
     // `day > prev`, and produces dueAt 'NaN-NaN-NaN' — which the server's
     // scheduleSchema rejects, failing the user's ENTIRE schedule push.
     const day = (m.recordedAt || '').slice(0, 10);
-    if (!ISO_DATE.test(day) || Number.isNaN(Date.parse(day))) continue;
+    if (!isCalendarDay(day)) continue;
     const prev = measurementDates[m.metricType];
     if (!prev || day > prev) measurementDates[m.metricType] = day;
   }

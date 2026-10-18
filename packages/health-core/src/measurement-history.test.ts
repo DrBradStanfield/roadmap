@@ -4,7 +4,19 @@ import {
   latestActivePerMetric,
   latestFromHistory,
   HISTORY_CAP_PER_METRIC,
+  isCalendarDay,
 } from './measurement-history';
+
+describe('isCalendarDay — one real-calendar-day check for every reader', () => {
+  it('takes a YYYY-MM-DD that exists, leap days included', () => {
+    for (const day of ['2026-02-28', '2024-02-29', '2026-12-31', '2026-01-01']) expect(isCalendarDay(day), day).toBe(true);
+  });
+  it('refuses a day the calendar lacks, which Date.parse would roll forward, and any other shape', () => {
+    for (const day of ['2026-02-30', '2025-02-29', '2026-04-31', '2026-13-01', '2026-00-10', '2026-2-3', '2026-02-03T00:00:00Z', '', 'soon']) {
+      expect(isCalendarDay(day), day).toBe(false);
+    }
+  });
+});
 
 describe('buildMeasurementHistory', () => {
   it('groups by metricType and sorts chronologically', () => {
