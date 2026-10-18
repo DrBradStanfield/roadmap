@@ -1786,6 +1786,9 @@ export function importDocumentsCommit(
   }
 
   const applied = bulkAppendValues(file, rows, now);
+  if (applied.measurementRefusals.length) {
+    return { status: 'rejected', text: 'A selected core measurement is invalid or outside the accepted range. Nothing was written. Extract again and review the values.' };
+  }
   if (applied.skippedDuplicates > 0) throw new ToolContractError('import commit skipped a row its own slot check accepted');
   // A unit the catalogue does not know for that test is refused at the write
   // (US-21 phase 3). Said out loud, never dropped quietly: the user chose that
