@@ -35,6 +35,7 @@ import {
 import { METRIC_TO_FIELD } from './mappings';
 import { resolveCoreMetricName } from './lab-extraction';
 import { dayOf, localDay } from './merge';
+import { isCalendarDay } from './measurement-history';
 import { createLabValue, createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { healthInputSchema, type MeasurementSource, METRIC_TYPES } from './validation';
@@ -170,8 +171,7 @@ function newId(): string {
 export function resolveRecordedAt(recordedAt: string | undefined, ctx: EditContext): string | EditRejection {
   const when = recordedAt ?? localDay(ctx.now);
   const day = dayOf(when);
-  const parsed = new Date(day);
-  if (!/^\d{4}-\d{2}-\d{2}([T ]|$)/.test(when) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day) {
+  if (!/^\d{4}-\d{2}-\d{2}([T ]|$)/.test(when) || !isCalendarDay(day)) {
     return reject('invalid-date', `"${when}" is not a date`);
   }
   if (day > (ctx.latestDay ?? localDay(ctx.now))) {

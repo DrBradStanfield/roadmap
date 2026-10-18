@@ -154,29 +154,75 @@ export function scrubBreadcrumbData(data) {
 // imports nothing. When the catalogue moves, the parity test fails and prints
 // the arrays to paste back in.
 export const SCRUB_UNITS = [
-  '%', 'L/L', 'U/L', 'cm', 'fL', 'g/L', 'in', 'kg', 'lbs', 'mIU/L', 'mL/min/1.73m²',
-  'mg/L', 'mg/dL', 'mg/mmol', 'mm/hr', 'mmHg', 'mmol/L', 'mmol/mol', 'ng/mL', 'nmol/L',
-  'pg', 'pmol/L', 'µg/L', 'µmol/L', '×10¹²/L', '×10⁹/L', 'mm Hg', 'umol/L', 'micromol/L',
-  'ug/L', 'lb', 'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'ml', 'units', '"',
+  '%', 'IU/L', 'IU/mL', 'L/L', 'U/L', 'cm', 'fL', 'g/L', 'in', 'kg', 'lbs', 'mIU/L',
+  'mL/min/1.73m²', 'mg/L', 'mg/dL', 'mg/mmol', 'mm/hr', 'mmHg', 'mmol/L', 'mmol/mol',
+  'ng/mL', 'nmol/L', 'pg', 'pmol/L', 'µg/L', 'µmol/L', '×10¹²/L', '×10⁹/L', 'mm Hg',
+  'umol/L', 'micromol/L', 'ug/L', 'lb', 'mcg', 'µg', 'mg', 'g', 'IU', 'mL', 'ml', 'units',
+  '"',
 ];
 
 export const SCRUB_METRIC_WORDS = [
-  'acr', 'alanine', 'albumin', 'alkaline', 'alp', 'alt', 'aminotransferase', 'apob',
-  'aspartate', 'ast', 'b12', 'basophil', 'basophils', 'bicarbonate', 'bilirubin', 'bun',
-  'calcium', 'chloride', 'cholesterol', 'co2', 'cobalamin', 'concentration', 'cortisol',
-  'creatinine', 'crp', 'diastolic', 'egfr', 'eosinophil', 'eosinophils', 'erythrocyte',
-  'erythrocytes', 'esr', 'estradiol', 'ferritin', 'filtration', 'folate', 'folic', 'ft3',
-  'ft4', 'gamma', 'gfr', 'ggt', 'ggtp', 'globulin', 'glomerular', 'glutamyl',
-  'haematocrit', 'haemoglobin', 'hba1c', 'hco3', 'hct', 'hdl', 'hematocrit', 'hemoglobin',
-  'hgb', 'hscrp', 'hydroxyvitamin', 'iron', 'ldl', 'leucocytes', 'leukocytes', 'lpa',
-  'lymphocyte', 'lymphocytes', 'magnesium', 'mch', 'mchc', 'mcv', 'microalbumin',
-  'monocyte', 'monocytes', 'neut', 'neutrophil', 'neutrophils', 'nitrogen', 'oestradiol',
-  'pcv', 'phosphatase', 'platelet', 'platelets', 'plt', 'potassium', 'prolactin', 'psa',
-  'rbc', 'rdw', 'reactive', 'sedimentation', 'sgot', 'sgpt', 'shbg', 'sodium', 'systolic',
-  'testosterone', 'thyroid', 'thyrotropin', 'thyroxine', 'transferase', 'transferrin',
-  'triglycerides', 'triiodothyronine', 'tsat', 'tsh', 'urate', 'urea', 'uric', 'urine',
-  'vitamin', 'waist', 'wbc', 'weight', 'zinc', 'blood pressure', 'apo b', 'lp(a)', 'a1c',
-  'bp', 'bmi', 'height', 'glucose',
+  'acr', 'alanine', 'albumin', 'alkaline', 'alp', 'alt', 'aminotransferase', 'apo', 'apoa',
+  'apoa1', 'apob', 'apolipoprotein', 'aspartate', 'ast', 'b12', 'basophil', 'basophils',
+  'bicarbonate', 'bilirubin', 'bun', 'calcium', 'cft', 'chloride', 'cholesterol', 'co2',
+  'cobalamin', 'concentration', 'cortisol', 'cpk', 'creatine', 'creatinine', 'crp',
+  'cystatin', 'dehydroepiandrosterone', 'dehydrogenase', 'dhea', 'dheas', 'diastolic',
+  'egfr', 'eosinophil', 'eosinophils', 'erythrocyte', 'erythrocytes', 'esr', 'estradiol',
+  'fasting', 'fbg', 'ferritin', 'filtration', 'folate', 'folic', 'follicle', 'fpg', 'fsh',
+  'ft3', 'ft4', 'gamma', 'gfr', 'ggt', 'ggtp', 'globulin', 'glomerular', 'glucose',
+  'glutamyl', 'haematocrit', 'haemoglobin', 'hba1c', 'hco3', 'hct', 'hdl', 'hematocrit',
+  'hemoglobin', 'hgb', 'holotc', 'holotranscobalamin', 'homocysteine', 'hscrp',
+  'hydroxyvitamin', 'igf', 'igf1', 'insulin', 'iron', 'kinase', 'lactate', 'ldh', 'ldl',
+  'leucocytes', 'leukocytes', 'lpa', 'luteinising', 'luteinizing', 'lymphocyte',
+  'lymphocytes', 'magnesium', 'mch', 'mchc', 'mcv', 'microalbumin', 'monocyte',
+  'monocytes', 'neut', 'neutrophil', 'neutrophils', 'nitrogen', 'oestradiol', 'pcr', 'pcv',
+  'peroxidase', 'phosphatase', 'phosphate', 'phosphokinase', 'phosphorus', 'plasma',
+  'platelet', 'platelets', 'plt', 'po4', 'potassium', 'progesterone', 'prolactin', 'psa',
+  'rbc', 'rdw', 'reactive', 'sedimentation', 'sgot', 'sgpt', 'shbg', 'sodium',
+  'somatomedin', 'sulfate', 'sulphate', 'systolic', 'testosterone', 'thyroid',
+  'thyrotropin', 'thyroxine', 'tibc', 'tpo', 'tpoab', 'transferase', 'transferrin',
+  'triglycerides', 'triiodothyronine', 'tsat', 'tsh', 'upcr', 'urate', 'urea', 'uric',
+  'urinary', 'urine', 'vitamin', 'waist', 'wbc', 'weight', 'zinc', 'na', 'na+', 'k', 'k+',
+  'cl', 'cl-', 'total co2', 'blood urea nitrogen', 'urea nitrogen', 'uric acid',
+  'urine_acr', 'urine acr', 'albumin creatinine ratio', 'microalbumin ratio',
+  'urine_creatinine', 'urine creatinine', 'creatinine urine', 'urinary creatinine',
+  'creatinine (urine)', 'urine_pcr', 'urine pcr', 'protein creatinine ratio',
+  'protein:creatinine ratio', 'urine protein creatinine ratio', 'cystatin_c', 'cystatin c',
+  'estimated gfr', 'estimated glomerular filtration rate', 'alanine aminotransferase',
+  'aspartate aminotransferase', 'gamma gt', 'gamma-glutamyl transferase', 'γ-gt',
+  'alkaline phosphatase', 'bilirubin_total', 'bilirubin (total)', 'total bilirubin',
+  'bilirubin_direct', 'bilirubin (direct)', 'direct bilirubin', 'conjugated bilirubin',
+  'lactate dehydrogenase', 'ld', 'total_protein', 'total protein', 'protein total',
+  'protein', 'hb', 'packed cell volume', 'red blood cells', 'red blood cell count',
+  'red cell count', 'white blood cells', 'white blood cell count', 'white cell count',
+  'total white cell count', 'platelet count', 'neutrophil count', 'lymphocyte count',
+  'monocyte count', 'eosinophil count', 'basophil count', 'mean cell volume',
+  'mean corpuscular volume', 'mean cell haemoglobin', 'mean corpuscular hemoglobin',
+  'mean cell haemoglobin concentration', 'mean corpuscular hemoglobin concentration',
+  'red cell distribution width', 'thyroid stimulating hormone', 'free t4',
+  'free thyroxine', 't4 free', 'free t3', 'free triiodothyronine', 't3 free', 'anti_tpo',
+  'anti-tpo', 'tpo antibodies', 'thyroid peroxidase antibodies', 'anti thyroid peroxidase',
+  'testosterone_total', 'testosterone (total)', 'total testosterone', 'free_testosterone',
+  'free testosterone', 'free_testosterone_calculated', 'free testosterone (calculated)',
+  'calculated free testosterone', 'calculated free t', 'sex hormone binding globulin',
+  'e2', 'cortisol_am', 'cortisol (morning)', 'am cortisol', 'psa_free', 'psa (free)',
+  'free psa', 'lh', 'luteinising hormone', 'luteinizing hormone',
+  'follicle stimulating hormone', 'dhea_s', 'dhea-s', 'dhea sulphate', 'dhea sulfate',
+  'dehydroepiandrosterone sulfate', 'dehydroepiandrosterone sulphate', 'igf-1', 'igf 1',
+  'insulin-like growth factor 1', 'somatomedin c', 'vitamin_d', 'vitamin d (25-oh)',
+  '25-hydroxyvitamin d', '25-oh vitamin d', 'vitamin d3', '25(oh)d', 'vitamin_b12',
+  'vitamin b12', 'b12_active', 'active b12', 'folic acid', 'serum folate', 'serum iron',
+  'total iron binding capacity', 'transferrin_sat', 'transferrin saturation',
+  'iron saturation', 'mg', 'calcium_corrected', 'calcium (corrected)', 'corrected calcium',
+  'adjusted calcium', 'calcium_total', 'calcium (total)', 'total calcium', 'serum calcium',
+  'ca', 'inorganic phosphate', 'c-reactive protein', 'hs-crp', 'hs crp',
+  'high sensitivity crp', 'erythrocyte sedimentation rate', 'sed rate', 'fasting glucose',
+  'fasting plasma glucose', 'plasma glucose', 'glucose fasting', 'blood glucose',
+  'glucose_random', 'glucose (random)', 'random glucose', 'glucose random',
+  'non-fasting glucose', 'fasting insulin', 'serum insulin', 'apolipoprotein a1',
+  'apolipoprotein a-i', 'apo a1', 'apo a-1', 'apoa-1', 'apoa-i', 'total homocysteine',
+  'plasma homocysteine', 'ck', 'creatine kinase', 'creatine phosphokinase',
+  'blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height',
 ];
 
 const NUMBER = '\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?';
@@ -190,8 +236,11 @@ const PLAIN_UNITS = SCRUB_UNITS.filter(u => u !== 'in' && u !== '"');
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const UNIT_VALUE_RE = new RegExp(
   `\\b${NUMBER}\\s*(?:(?:${alternation(PLAIN_UNITS)})(?![A-Za-z])|${INCH_UNIT})`, 'gi');
+// A name starts where no letter or digit runs into it and ends where no letter
+// does: digits straight after a name are its value. A number inside a word
+// (the 1 of "A1c") is never the value (mirror of sentry-scrub.ts).
 const METRIC_THEN_VALUE_RE = new RegExp(
-  `\\b(${alternation(SCRUB_METRIC_WORDS)})(?![a-z0-9])([^\\d\\n]{0,20}?)(${NUMBER})`, 'gi');
+  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])([^\\d\\n]{0,20}?)(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z])(${NUMBER})`, 'gi');
 const VALUE_THEN_METRIC_RE = new RegExp(
   `(${NUMBER})([^\\d\\n]{0,20}?)\\b(${alternation(SCRUB_METRIC_WORDS)})\\b`, 'gi');
 

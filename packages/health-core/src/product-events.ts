@@ -170,8 +170,10 @@ export const GUIDE_PLACEMENTS = ['header', 'footer'] as const;
 /** The `upload_outcome` counter's integer counts (US-12 AC10): files seen, then
  *  how each ended. `truncated` overlaps the rest and `valuesDropped` counts value
  *  rows the parse refused, not files; the others sum to `picked`. `refused` and
- *  `tooLong` are files Claude declined or stopped short on (US-15 AC34). */
-export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped'] as const;
+ *  `tooLong` are files Claude declined or stopped short on (US-15 AC34). `docx`
+ *  counts the picked .docx files, a kind that overlaps the rest; `picturesOnly`
+ *  is a .docx of pictures and no text (US-12 AC13). */
+export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped', 'docx', 'picturesOnly'] as const;
 export type UploadOutcomeKey = (typeof UPLOAD_OUTCOME_KEYS)[number];
 /** The most one count may say; the server refuses more, so the client clamps. */
 export const UPLOAD_OUTCOME_MAX = 1000;
@@ -359,12 +361,14 @@ const UNIT_ATOMS = new Set([
   'l', 'dl', 'ml', 'µl', 'ul', 'mcl', 'fl', 'nl',
   'eq', 'meq', 'kat', 'ukat', 'µkat', 'nkat', 'osm', 'mosm',
   // Enzyme and international units, English and Romance spellings.
-  'u', 'iu', 'miu', 'µiu', 'uiu', 'kiu', 'ku', 'mu', 'µu', 'uu', 'ui', 'mui', 'µui', 'au', 'unit', 'units',
+  'u', 'iu', 'miu', 'µiu', 'uiu', 'microiu', 'mciu', 'kiu', 'ku', 'mu', 'µu', 'uu', 'ui', 'mui', 'µui', 'au', 'unit', 'units',
   // Counts and what is counted.
   'cells', 'cell', 'cel', 'células', 'celulas', 'cellules', 'komórek', 'komorek', 'zellen', 'leu', 'wbc', 'rbc', 'lymphs',
   'tys', 'mln', 'mio', 'tsd', 'thou', 'thousand', 'million', 'mil', 'k', 'giga', 'tera', 't', 'gpt', 'tpt',
   'cumm', 'cmm', 'cu', 'c', 'mm', 'hpf', 'lpf', 'feu', 'ddu',
   'ratio', 'index', 'fraction', 'titre', 'titer',
+  // What a ratio is per: "mg/g creat" (US-21 AC17).
+  'creat', 'creatinine',
   // Time, pressure, length and weight.
   'min', 'sec', 'seg', 's', 'h', 'hr', 'hrs', 'hour', 'hours', 'day', 'd',
   'mmhg', 'kpa', 'pa', 'm', 'cm', 'in', 'ft', 'lb', 'lbs',

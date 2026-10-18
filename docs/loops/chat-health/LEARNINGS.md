@@ -77,6 +77,9 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   Lp(a)-diet on one arm (never stolen), D3-in-product ∅ on both, a
   child-anxiety population hit on one, own-data asks ∅ 6/6. Model, rule 7,
   12 fixtures and the harness changed together: not attributable.
+  W42: index growth makes fixtures stale. 40 refresh entries won 4 fixtures
+  whose `expected` predates them (anxiety, GORD, dysphagia); an arm on the
+  pre-change index (`git show 2abe071^:docs/blog/index.json`) attributes it.
   History: [notes/router-steals-and-shapes-2026.md](notes/router-steals-and-shapes-2026.md).
 - **2026-08-10 [loop]** Baseline a production failure in the harness BEFORE
   editing anything: the 08-05 MSM miss already passed at baseline (the 08-07
@@ -115,7 +118,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   and three later "watch" notes chased that. W40 confirmed the 1-hour TTL on
   v2: measured to the previous SAME-version call, every v2 miss came >3,600 s
   after it; 2 of 13 hits had no v2 call in the hour before (an unlogged
-  caller on the production key, unverified). A v1 call cannot warm v2.
+  caller on the production key, unverified; W42 again: a hit 46,695 s after
+  the previous logged call). A v1 call cannot warm v2.
 - **2026-10-03 [latency]** The Sonnet 5.5 router is slower in production than
   the Haiku one it replaced: W40 v2 median 2,234 ms, p90 3,469 ms (n=24) vs
   v1 1,225 / 1,666 ms (n=19); v2 cache misses median 2,826 ms vs hits 1,340.
@@ -149,3 +153,10 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   regression. Its partner fixture, source `us-15-ac36-2026-10-18`, checks the
   answer asks for height and says why. Neither is measured yet (test key
   limit until 2026-11-01).
+- **2026-10-18 [classifier]** A classifier model swap moves labels with no
+  prompt change. Replayed with thread context, Haiku 5.5 labelled six
+  mid-thread value corrections ROUTE 30/30; Haiku 4.5 said MEASUREMENT 12/12.
+  `test-classifier.ts` sends no prior turns, so it cannot see this. Replays:
+  production classifies the RAW text (`api.chat.ts:437`); widget rows store
+  digits as `#` (US-15 AC33), so substitute values (a masked replay flipped
+  1 label in 11). No column records the classifier model per turn.

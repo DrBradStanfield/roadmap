@@ -19,6 +19,7 @@ export interface SubscriptionCard {
   nextDate: string | null;
   newDate: string | null;
   reason: string | null;
+  paused: boolean;
 }
 
 export interface SubscriptionResult { status: 'done' | 'accepted' | 'unconfirmed' | 'refused'; code?: string; newDate?: string }
@@ -41,6 +42,7 @@ export function readSubscriptionCard(value: unknown): SubscriptionCard | null {
     nextDate: str(v.nextDate, 60),
     newDate: str(v.newDate, 60),
     reason: str(v.reason, 40),
+    paused: v.status === 'paused',
   };
 }
 
@@ -74,9 +76,11 @@ export function cardTitle(action: SubscriptionCardAction): string {
 /** The card's fact lines, plain. */
 export function cardLines(card: SubscriptionCard): string[] {
   const lines = [card.every ? `${card.product}, every ${card.every}` : card.product];
-  if (card.action === 'skip' && card.nextDate && card.newDate) lines.push(`Your next order moves from ${card.nextDate} to ${card.newDate}.`);
+  // A paused subscription has no next order to show, and pausing it is no alternative (live pilot, 18 Oct).
+  if (card.paused) lines.push('Paused');
+  else if (card.action === 'skip' && card.nextDate && card.newDate) lines.push(`Your next order moves from ${card.nextDate} to ${card.newDate}.`);
   else if (card.nextDate) lines.push(`Next order: ${card.nextDate}`);
-  if (card.action === 'cancel') lines.push("Cancelling can't be undone. You could pause it instead.");
+  if (card.action === 'cancel') lines.push(card.paused ? "Cancelling can't be undone." : "Cancelling can't be undone. You could pause it instead.");
   return lines;
 }
 

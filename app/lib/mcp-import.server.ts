@@ -40,6 +40,7 @@ import {
   type UnifiedExtractionResult,
   zipMemberName,
   fileNameLine,
+  inflateCapped,
 } from '../../packages/health-core/src/lab-extraction';
 import {
   type ExtractedFile,
@@ -171,39 +172,6 @@ export async function unzip(bytes: Uint8Array): Promise<{ entries: ZipEntryBytes
     entries.push({ name, bytes: inflated, mimeType });
   }
   return { entries, skipped };
-}
-
-/** JSZip's streaming reader, which its typings leave undeclared. */
-interface EntryStream {
-  on(event: 'data', handler: (chunk: Uint8Array) => void): EntryStream;
-  on(event: 'end', handler: () => void): EntryStream;
-  on(event: 'error', handler: (error: Error) => void): EntryStream;
-  pause(): EntryStream;
-  resume(): EntryStream;
-}
-
-/** Inflate one entry, counting bytes; null once the count passes `cap`. */
-function inflateCapped(entry: JSZip.JSZipObject, cap: number): Promise<Uint8Array | null> {
-  return new Promise((resolve, reject) => {
-    const chunks: Uint8Array[] = [];
-    let size = 0;
-    let stopped = false;
-    const stream = (entry as unknown as { internalStream(type: 'uint8array'): EntryStream }).internalStream('uint8array');
-    stream.on('data', (chunk: Uint8Array) => {
-      if (stopped) return;
-      size += chunk.byteLength;
-      if (size > cap) {
-        stopped = true;
-        stream.pause();
-        resolve(null);
-        return;
-      }
-      chunks.push(chunk);
-    });
-    stream.on('error', (error: Error) => (stopped ? undefined : reject(error)));
-    stream.on('end', () => (stopped ? undefined : resolve(Buffer.concat(chunks))));
-    stream.resume();
-  });
 }
 
 function sha256Hex(bytes: Uint8Array | string): string {

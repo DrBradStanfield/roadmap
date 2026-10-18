@@ -111,20 +111,21 @@ describe('resolveLabValues', () => {
   });
 
   it('downgrades confidence when unit is inferred', () => {
+    // 100 fits mg/dL only; 2.8 fits both scales, which is 'low' (US-21 AC18).
     const result = resolveLabValues([
-      { metric: 'ldl', value: 2.8, unit: 'unknown_unit', confidence: 'high' },
+      { metric: 'ldl', value: 100, unit: 'unknown_unit', confidence: 'high' },
     ]);
     expect(result).toHaveLength(1);
     expect(result[0].confidence).toBe('medium');
     expect(result[0].question).toContain('inferred');
   });
 
-  it('preserves existing question when unit is inferred', () => {
+  it('preserves existing question when unit is inferred, and adds the inferred-unit note to it (US-21 AC18)', () => {
     const result = resolveLabValues([
       { metric: 'ldl', value: 2.8, unit: 'unknown', confidence: 'low', question: 'Ambiguous value' },
     ]);
     expect(result[0].confidence).toBe('low');
-    expect(result[0].question).toBe('Ambiguous value');
+    expect(result[0].question).toBe('Ambiguous value. Unit "unknown" was inferred — please verify this value');
   });
 
   it('handles empty array', () => {
@@ -300,7 +301,8 @@ describe('parseUnifiedResult — tolerates string-typed numeric values', () => {
     const result = parseUnifiedResult({
       ...base,
       values: [
-        { metric: 'ldl', value: 2.5, unit: null, confidence: 'high' },
+        // A null unit is "no unit printed" and kept (review 2026-10-18, R4); a null metric is malformed.
+        { metric: null, value: 2.5, unit: 'mmol/L', confidence: 'high' },
         { metric: 'hdl', value: 1.3, unit: 'mmol/L', confidence: 'very high' },
         { metric: 'apob', value: 0.9, unit: 'g/L', confidence: 'high' },
       ],

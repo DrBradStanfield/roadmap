@@ -137,7 +137,7 @@ describe('US-49 AC4: a proposal becomes a card only for a listed subscription an
   });
   it('the card carries the gateway token and plain facts; refused actions and unknown refs make no card', () => {
     expect(subscriptionCard(summary, { ref: 'S1', action: 'skip', reason: null })).toEqual({
-      token: 'tok-skip-S1-xxxxxxxxxxxxxxxx', action: 'skip', product: 'MicroVitamin', every: '3 months', nextDate: '6 January 2027', newDate: '6 April 2027', reason: null,
+      token: 'tok-skip-S1-xxxxxxxxxxxxxxxx', action: 'skip', product: 'MicroVitamin', every: '3 months', nextDate: '6 January 2027', newDate: '6 April 2027', reason: null, status: 'active',
     });
     expect(subscriptionCard(summary, { ref: 'S2', action: 'skip', reason: null })).toBeNull();
     expect(subscriptionCard(summary, { ref: 'S9', action: 'cancel', reason: null })).toBeNull();

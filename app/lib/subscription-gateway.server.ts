@@ -52,6 +52,8 @@ export interface SubscriptionCard {
   nextDate: string | null;
   newDate: string | null;
   reason: SubscriptionReason | null;
+  /** 'paused': the card shows "Paused" and no pause hint (live pilot, 18 Oct). */
+  status: 'active' | 'paused';
 }
 export interface SubscriptionProposal { ref: string; action: SubscriptionActionName; reason: SubscriptionReason | null }
 
@@ -246,6 +248,7 @@ export function subscriptionCard(summary: SubscriptionSummary | null, proposal: 
     nextDate: s.nextDate,
     newDate: st.newDate ?? null,
     reason: proposal.reason,
+    status: s.status === 'paused' ? 'paused' : 'active',
   };
 }
 

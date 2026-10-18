@@ -90,6 +90,8 @@ export interface ExtractedValue {
   displaySystem?: import('@roadmap/health-core').UnitSystem;
   confidence: 'high' | 'medium' | 'low';
   question?: string;
+  /** This value's own day, from a dated previous-results column (US-12 AC12); absent for the report's own date. */
+  recordedAt?: string;
 }
 
 /** Document data returned by the LLM for non-lab documents.
@@ -109,6 +111,8 @@ export interface AdditionalLabValue {
   unit: string;
   referenceLow?: number | null;
   referenceHigh?: number | null;
+  /** As on `ExtractedValue` (US-12 AC12). */
+  recordedAt?: string;
 }
 
 export interface LabImportResult {
