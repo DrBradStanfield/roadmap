@@ -380,6 +380,10 @@ describe('CIMD fetch policy (US-32, design §4 — this is an SSRF surface)', ()
       ['64:ff9b::101:101/96', 6], ['64:ff9b::1.1.1', 6], ['64:ff9b::1.1.1.256', 6],
       ['64:ff9b:::101:101', 6], ['64:ff9b::101:101:', 6], ['64:ff9b::1.1.1.1:101', 6],
       ['64:ff9b::101:101', 4], ['64:ff9b::101:101', 0], ['64:ff9b::101:101', 5],
+      // Malformed dotted quads Number() would read (adversary on 0c5c8d3d): empty, padded, hex, exponent, leading zero.
+      ['64:ff9b::1..1.1', 6], ['64:ff9b::1.1.1.', 6], ['64:ff9b:: 1.1.1.1', 6], ['64:ff9b::1.1.1.1\n', 6],
+      ['64:ff9b::0x1.1.1.1', 6], ['64:ff9b::1e2.0.0.1', 6], ['64:ff9b::0177.0.0.1', 6], ['::ffff:1..1.1', 6], ['::1.1.1.', 6],
+      ['1..1.1', 4], ['0177.0.0.1', 4], ['1.1.1.1\n', 4], [' 1.1.1.1', 4], ['0x1.1.1.1', 4],
     ] as Array<[string, number]>) {
       expect(isPublicAddress(ip, family), `${ip} family ${family}`).toBe(false);
     }

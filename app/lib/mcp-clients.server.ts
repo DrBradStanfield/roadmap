@@ -6,6 +6,7 @@
  */
 import crypto from 'node:crypto';
 import dns from 'node:dns/promises';
+import { isIP } from 'node:net';
 import { clientHmacKey } from './mcp-config.server';
 import { b64url } from './mcp-seal.server';
 
@@ -254,6 +255,9 @@ async function assertPublicHost(hostname: string): Promise<void> {
  * public. Teredo is not classified here.
  */
 export function isPublicAddress(address: string, family: number): boolean {
+  // Node's own parser first: an address it does not read as exactly this family
+  // (empty, padded, hex or leading-zero octets) is not public (US-32 AC45).
+  if (isIP(address) !== family) return false;
   if (family === 4) {
     const parts = address.split('.').map(Number);
     if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return false;
