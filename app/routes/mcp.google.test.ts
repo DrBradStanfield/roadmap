@@ -15,7 +15,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import crypto from 'node:crypto';
 
-vi.mock('node:dns/promises', () => ({ default: { lookup: async () => [{ address: '1.1.1.1', family: 4 }] } }));
+import { serveClientMetadata } from '../lib/mcp-cimd.test-helpers';
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { DRIVE_FOLDER_NAME } from '../../packages/health-core/src/drive-rest';
@@ -42,6 +42,8 @@ let cloud: MemoryCloud;
 let builtFor: McpProvider[] = [];
 
 beforeEach(() => {
+  // A client id that is a URL means a CIMD fetch: answered here, so no DNS or socket leaves the machine.
+  serveClientMetadata();
   process.env.MCP_ISSUER = ISSUER;
   process.env.MCP_SEAL_KEYS = Buffer.alloc(32, 5).toString('base64');
   process.env.MCP_CLIENT_HMAC_KEY = Buffer.alloc(32, 6).toString('base64');

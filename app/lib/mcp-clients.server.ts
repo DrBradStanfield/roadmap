@@ -5,8 +5,9 @@
  * NOTHING HERE MAY LOG A URL.
  */
 import crypto from 'node:crypto';
-import dns from 'node:dns/promises';
-import { isIP } from 'node:net';
+import dns from 'node:dns';
+import https from 'node:https';
+import { isIP, type LookupFunction } from 'node:net';
 import { clientHmacKey } from './mcp-config.server';
 import { b64url } from './mcp-seal.server';
 
@@ -231,28 +232,40 @@ const CIMD_MAX_TTL_MS = 60 * 60 * 1000;
 /**
  * Fetching a URL the caller chose is an SSRF gun pointed at Fly's internal
  * network, so the policy is mandatory and every clause below is load-bearing:
- * https only, every resolved address public, zero redirects, 5-second timeout,
- * 64 KB cap, `application/json` required, no credentials sent, and the result
- * into the bounded cache above.
+ * https only, every resolved address public, zero redirects, one 5-second
+ * deadline over the whole request, 64 KB cap, `application/json` required, no
+ * credentials sent, and the result into the bounded cache above.
  *
- * Residual, stated: `fetch` resolves DNS again after our check, so a rebinding
- * attacker has a window. §4 asks for the re-check at connect time and that is
- * what this is; pinning the connection to a checked address is not available
- * through `fetch`.
+ * The address check runs where the socket is opened (US-32 AC47): Node calls
+ * this lookup for the connection, every address in the answer must be public,
+ * and the socket can only go to an address in that answer. There is no second
+ * resolution for a rebinding resolver to answer differently. Node calls no
+ * lookup for an IP-literal host, so `fetchClientMetadata` checks those itself.
  */
-async function assertPublicHost(hostname: string): Promise<void> {
-  const records = await dns.lookup(hostname, { all: true });
-  if (records.length === 0) throw new Error('unresolvable');
-  for (const { address, family } of records) {
-    if (!isPublicAddress(address, family)) throw new Error('non-public address');
-  }
-}
+const lookupPublic: LookupFunction = (hostname, options, callback) => {
+  dns.lookup(hostname, { ...options, all: true }, (err, records) => {
+    if (err) return callback(err, '');
+    if (records.length === 0) return callback(new Error('unresolvable'), '');
+    if (!records.every(({ address, family }) => isPublicAddress(address, family))) {
+      return callback(new Error('non-public address'), '');
+    }
+    if (options.all) return callback(null, records);
+    callback(null, records[0].address, records[0].family);
+  });
+};
+
+/**
+ * No TLS session cache: Node keys a cached session by server name, not
+ * address, so a ticket an attacker's server issued could ride a later
+ * connection to an internal ip:port ("TLS poison"). No keep-alive either.
+ */
+const CIMD_AGENT = new https.Agent({ maxCachedSessions: 0 });
 
 /**
  * Refuses a non-public address in the spellings this check parses, not only the
  * compressed mapped form. A public mapped address stays allowed, including a
  * hex spelling the old remainder check refused. Unparseable input is not
- * public. Teredo is not classified here.
+ * public.
  */
 export function isPublicAddress(address: string, family: number): boolean {
   // Node's own parser first: an address it does not read as exactly this family
@@ -261,13 +274,18 @@ export function isPublicAddress(address: string, family: number): boolean {
   if (family === 4) {
     const parts = address.split('.').map(Number);
     if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return false;
-    const [a, b] = parts;
+    const [a, b, c] = parts;
     if (a === 0 || a === 10 || a === 127) return false;
     if (a === 169 && b === 254) return false; // link-local, and Fly's metadata
     if (a === 172 && b >= 16 && b <= 31) return false;
     if (a === 192 && b === 168) return false;
     if (a === 100 && b >= 64 && b <= 127) return false; // CGNAT
-    if (a >= 224) return false; // multicast + reserved
+    if (a === 192 && b === 0 && (c === 0 || c === 2)) return false; // IETF protocol assignments, TEST-NET-1
+    if (a === 192 && b === 88 && c === 99) return false; // 6to4 relay anycast
+    if (a === 198 && (b === 18 || b === 19)) return false; // benchmarking
+    if (a === 198 && b === 51 && c === 100) return false; // TEST-NET-2
+    if (a === 203 && b === 0 && c === 113) return false; // TEST-NET-3
+    if (a >= 224) return false; // multicast + reserved, 240.0.0.0/4 included
     return true;
   }
   if (family === 6) return isPublicIpv6(address);
@@ -321,31 +339,26 @@ function parseIpv6(address: string): number[] | null {
 }
 
 function isPublicIpv6(address: string): boolean {
-  const ip = address.toLowerCase();
-  // The old check refused these by text prefix, including strings that are not
-  // the network prefix. Keep that refusal so this change does not start allowing them.
-  if (ip.startsWith('fc') || ip.startsWith('fd')) return false;
   const groups = parseIpv6(address);
   if (!groups) return false;
-  const mapped = groups.slice(0, 5).every((group) => group === 0) && groups[5] === 0xffff;
-  if (ip.startsWith('::ffff:') && !mapped) return false;
-  // IPv4-translated, 0:0:0:0:ffff:0::/96. The expanded spelling does not start
-  // with the mapped prefix, so the text check above does not see it.
-  if (groups[4] === 0xffff && groups[5] === 0 && groups.slice(0, 4).every((group) => group === 0)) return false;
-  if (groups.every((group) => group === 0)) return false;
-  if (groups.slice(0, 7).every((group) => group === 0) && groups[7] === 1) return false;
-  if ((groups[0] & 0xfe00) === 0xfc00) return false; // unique-local
-  if ((groups[0] & 0xffc0) === 0xfe80) return false; // link-local
-  if ((groups[0] & 0xff00) === 0xff00) return false; // multicast
-  if (groups[0] === 0x2002) return false; // 6to4
   const lastIpv4 = [groups[6] >> 8, groups[6] & 0xff, groups[7] >> 8, groups[7] & 0xff].join('.');
   // Well-known NAT64, 64:ff9b::/96 (RFC 6052): judge the IPv4 it carries. The rest
   // of 64:ff9b::/32, local-use 64:ff9b:1::/48 included, stays refused.
   if (groups[0] === 0x0064 && groups[1] === 0xff9b) {
     return groups.slice(2, 6).every((group) => group === 0) && isPublicIpv4(lastIpv4);
   }
-  const embedded = mapped || (groups.slice(0, 6).every((group) => group === 0));
-  if (embedded && !(groups[5] === 0 && groups[6] === 0 && groups[7] <= 1)) return isPublicIpv4(lastIpv4);
+  // IPv4-mapped (::ffff:0:0/96) and IPv4-compatible (::/96): judge the IPv4 they
+  // carry. `::` and `::1` carry 0.0.0.0 and 0.0.0.1, which are not public.
+  const mapped = groups.slice(0, 5).every((group) => group === 0) && groups[5] === 0xffff;
+  if (mapped || groups.slice(0, 6).every((group) => group === 0)) return isPublicIpv4(lastIpv4);
+  // Anything else must be global unicast, 2000::/3 (US-32 AC47). That refuses
+  // unique-local, link-local, site-local, multicast, IPv4-translated and every
+  // other special block outside it without a list; these are the ones inside.
+  if ((groups[0] & 0xe000) !== 0x2000) return false;
+  if (groups[0] === 0x2001 && groups[1] < 0x0200) return false; // 2001::/23: Teredo, benchmarking, ORCHID
+  if (groups[0] === 0x2001 && groups[1] === 0x0db8) return false; // documentation
+  if (groups[0] === 0x2002) return false; // 6to4
+  if (groups[0] === 0x3fff && groups[1] < 0x1000) return false; // documentation, 3fff::/20
   return true;
 }
 
@@ -359,36 +372,14 @@ async function fetchClientMetadata(clientId: string, nowMs = Date.now()): Promis
   } catch {
     return null;
   }
-  if (url.protocol !== 'https:') return null;
-  try {
-    await assertPublicHost(url.hostname);
-  } catch {
-    return null;
-  }
+  // `node:https` would send userinfo as an Authorization header.
+  if (url.protocol !== 'https:' || url.username || url.password) return null;
+  const literal = url.hostname.replace(/^\[(.*)\]$/, '$1');
+  if (isIP(literal) && !isPublicAddress(literal, isIP(literal))) return null;
 
-  const abort = AbortSignal.timeout(5000);
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      redirect: 'error',
-      signal: abort,
-      credentials: 'omit',
-      headers: { Accept: 'application/json' },
-    });
-  } catch {
-    return null;
-  }
-  if (!res.ok) return null;
-  if (!(res.headers.get('content-type') ?? '').toLowerCase().startsWith('application/json')) return null;
-  const length = Number(res.headers.get('content-length') ?? 0);
-  if (length > 65536) return null;
-
-  let text: string;
-  try {
-    text = await readCapped(res, 65536);
-  } catch {
-    return null;
-  }
+  const fetched = await getCimdDocument(url).catch(() => null);
+  if (!fetched) return null;
+  const { text, cacheControl } = fetched;
   let doc: Record<string, unknown>;
   try {
     doc = JSON.parse(text) as Record<string, unknown>;
@@ -403,10 +394,43 @@ async function fetchClientMetadata(clientId: string, nowMs = Date.now()): Promis
   if (!metadata) return null;
 
   const client: McpClient = { clientId, name: metadata.client_name, redirectUris: metadata.redirect_uris };
-  const ttl = Math.min(cacheTtlMs(res.headers.get('cache-control')), CIMD_MAX_TTL_MS);
+  const ttl = Math.min(cacheTtlMs(cacheControl), CIMD_MAX_TTL_MS);
   if (cimdCache.size >= CIMD_CACHE_MAX) cimdCache.delete(cimdCache.keys().next().value as string);
   cimdCache.set(clientId, { client, until: nowMs + ttl });
   return client;
+}
+
+/**
+ * One GET, never followed: a 3xx is refused like any other non-2xx. The
+ * deadline covers the body read too. The user-agent is the one `fetch` sent,
+ * so a document host sees the same request as before.
+ */
+function getCimdDocument(url: URL): Promise<{ text: string; cacheControl: string | null } | null> {
+  return new Promise((resolve) => {
+    const settle = (result: { text: string; cacheControl: string | null } | null) => {
+      clearTimeout(deadline);
+      req.destroy();
+      resolve(result);
+    };
+    const req = https.request(url, {
+      agent: CIMD_AGENT,
+      lookup: lookupPublic,
+      headers: { Accept: 'application/json', 'User-Agent': 'node' },
+    }, (res) => {
+      const status = res.statusCode ?? 0;
+      const type = (res.headers['content-type'] ?? '').toLowerCase();
+      if (status < 200 || status > 299 || !type.startsWith('application/json')
+        || Number(res.headers['content-length'] ?? 0) > 65536) {
+        res.destroy();
+        return settle(null);
+      }
+      const cacheControl = res.headers['cache-control'] ?? null;
+      readCapped(res, 65536).then((text) => settle({ text, cacheControl }), () => settle(null));
+    });
+    const deadline = setTimeout(() => settle(null), 5000);
+    req.on('error', () => settle(null));
+    req.end();
+  });
 }
 
 function cacheTtlMs(header: string | null): number {
@@ -417,29 +441,25 @@ function cacheTtlMs(header: string | null): number {
 /**
  * Read at most `cap` bytes of a request or a response body, or throw. A
  * `content-length` is the sender's claim, so it is checked where it exists but
- * never believed — a chunked body has none at all.
+ * never believed — a chunked body has none at all. Takes a web `Request` or
+ * `Response`, or a Node stream such as an `IncomingMessage`.
  */
-export async function readCapped(source: { body: ReadableStream<Uint8Array> | null }, cap: number): Promise<string> {
-  return (await readCappedBytes(source, cap)).toString('utf8');
-}
-
-/** The same capped read, as bytes. */
-async function readCappedBytes(source: { body: ReadableStream<Uint8Array> | null }, cap: number): Promise<Buffer> {
-  const reader = source.body?.getReader();
-  if (!reader) return Buffer.alloc(0);
-  const chunks: Uint8Array[] = [];
+export async function readCapped(
+  source: { body: ReadableStream<Uint8Array> | null } | AsyncIterable<Uint8Array>,
+  cap: number,
+): Promise<string> {
+  // A web stream is async-iterable in Node; the DOM types just do not say so.
+  const chunks = 'body' in source ? (source.body as unknown as AsyncIterable<Uint8Array> | null) : source;
+  if (!chunks) return '';
+  const read: Uint8Array[] = [];
   let size = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    size += value.byteLength;
-    if (size > cap) {
-      await reader.cancel();
-      throw new Error('body too large');
-    }
-    chunks.push(value);
+  // Leaving the loop early (the throw) cancels a web stream and destroys a Node one.
+  for await (const chunk of chunks) {
+    size += chunk.byteLength;
+    if (size > cap) throw new Error('body too large');
+    read.push(chunk);
   }
-  return Buffer.concat(chunks);
+  return Buffer.concat(read).toString('utf8');
 }
 
 /**
