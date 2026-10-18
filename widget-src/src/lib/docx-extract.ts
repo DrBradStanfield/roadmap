@@ -62,6 +62,8 @@ const SYMBOL_CHARS: Record<number, string> = {
 };
 /** Word's widest table; a merge never pads a row past it. */
 const MAX_COLUMNS = 63;
+/** Rows open at once, tables in tables; Word never nests near this deep. Past it reading stops, cut short. */
+const MAX_OPEN_ROWS = 64;
 
 /** One attribute's value, whatever its prefix, either quote, spaces around "=". */
 const attr = (attrs: string, name: string) => {
@@ -164,11 +166,12 @@ function addPartLines(xml: string, lines: string[], kept: { chars: number }): bo
   const flush = () => { emit(para.replace(/\s+/g, ' ').trim()); para = ''; };
   const add = (text: string) => { if (depth) para += text; };
   /** An early stop: the open rows' text so far goes out as lines, outermost
-   *  first: a row's closed cells as one, then each paragraph or nested row its
-   *  open cell holds, so the cut keeps whole lines. */
+   *  first, up to a deleted row: a row's closed cells as one, then each
+   *  paragraph or nested row its open cell holds, so the cut keeps whole lines. */
   const stop = () => {
     flush();
-    for (const r of rows.filter(r => !r.deleted)) {
+    for (const r of rows) {
+      if (r.deleted) break;
       if (r.cells.some(Boolean)) lines.push(r.cells.join(' | '));
       for (const text of r.cell) lines.push(text); // no spread: a cell can hold more than a call takes
     }
@@ -218,7 +221,11 @@ function addPartLines(xml: string, lines: string[], kept: { chars: number }): bo
       if (depth) flush();
       depth++;
     } else if (tag === 'tbl') tables.push(new Map());
-    else if (tag === 'tr') rows.push({ cells: [], cell: [], span: 1, after: 0, deleted: false, merges: tables[tables.length - 1] ?? new Map(), copied: 0 });
+    else if (tag === 'tr') {
+      if (rows.length >= MAX_OPEN_ROWS) return stop();
+      // A row nested in a deleted row is deleted with it.
+      rows.push({ cells: [], cell: [], span: 1, after: 0, deleted: row?.deleted ?? false, merges: tables[tables.length - 1] ?? new Map(), copied: 0 });
+    }
     else if (tag === 'trPr') inRowProps = true;
     else if (tag === 'gridSpan' && row) row.span = count(attrs);
     else if (tag === 'vMerge' && row) row.vMerge = attr(attrs, 'val') === 'restart' ? 'restart' : 'continue';

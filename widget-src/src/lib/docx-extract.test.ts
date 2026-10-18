@@ -350,10 +350,31 @@ describe('US-12 AC13: vertical merges, run-level deletions and loose attribute s
     await docxToText(await docx('<w:tr>'.repeat(n) + '<w:tc></w:tc>'.repeat(n)));
     expect(performance.now() - started).toBeLessThan(3000);
     const nest = (depth: number): string => (depth ? `<w:tbl><w:tr><w:tc>${nest(depth - 1)}</w:tc></w:tr></w:tbl>` : p('core'));
+    // Within the cap of 64 open rows, nesting reads whole.
+    expect(await docxToText(await docx(nest(64)))).toMatchObject({ text: 'core', truncated: false });
+    // Past it, reading stops and says so (Word never nests tables near that deep).
     started = performance.now();
-    const { text } = await docxToText(await docx(nest(2000)));
-    expect(performance.now() - started).toBeLessThan(3000);
-    expect(text).toBe('core');
+    expect(await docxToText(await docx(p('top') + nest(2000)))).toMatchObject({ text: 'top', truncated: true });
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  // The adversary's perf probe: 16,000 nested rows around 1 MB of text would
+  // copy it up through every level.
+  it('stops at the nesting cap before deep rows copy a long text up each level', async () => {
+    const depth = 16_000;
+    const body = '<w:tr><w:tc>'.repeat(depth) + `<w:p><w:r><w:t>${'a '.repeat(500_000)}</w:t></w:r></w:p>` + '</w:tc><w:tc></w:tc></w:tr>'.repeat(depth);
+    const file = await docx(body);
+    const started = performance.now();
+    expect((await docxToText(file)).truncated).toBe(true);
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  // stop2 R1: rows nested in a deleted row are deleted too.
+  it('a row nested in a deleted row is deleted with it: it copies nothing and an early stop never prints it', async () => {
+    const note = 'N'.repeat(500);
+    const inner = tbl(`<w:tr>${tc('Head')}${vm('restart', note)}</w:tr>`, ...Array.from({ length: 200 }, (_, i) => `<w:tr>${tc(`DELETEDTEXT${i}`)}${vm(null, '')}</w:tr>`));
+    const deleted = `<w:tr><w:trPr><w:del w:id="1" w:author="a" w:date="2024"/></w:trPr><w:tc>${inner}</w:tc></w:tr>`;
+    expect(await docxToText(await docx(p('Before') + tbl(deleted) + p('After 58')))).toMatchObject({ text: 'Before\nAfter 58', truncated: false });
   });
 
   it('a deleted row neither copies merge text nor counts it, so what follows is kept', async () => {
