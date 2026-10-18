@@ -38,7 +38,7 @@ const MC_NS = 'http://schemas.openxmlformats.org/markup-compatibility/2006';
  *  element binds to `uri`; `fallback` when the root does not declare it. */
 function prefixFor(xml: string, uri: string, fallback: string): string {
   const root = /<[^?!][^<>]*>/.exec(xml)?.[0] ?? '';
-  const bound = new RegExp(`\\sxmlns(?::([\\w.-]+))?="${uri.replace(/\./g, '\\.')}"`).exec(root);
+  const bound = new RegExp(`\\sxmlns(?::([\\w.-]+))?\\s*=\\s*(["'])${uri.replace(/\./g, '\\.')}\\2`).exec(root);
   const name = bound ? bound[1] ?? '' : fallback;
   return name && `${name.replace(/\./g, '\\.')}:`;
 }
@@ -47,7 +47,7 @@ function prefixFor(xml: string, uri: string, fallback: string): string {
  *  character written as a tag; a row's or cell's merge or deletion. `w:delText`
  *  and `w:instrText` never match, so tracked deletions and field codes drop out. */
 function tokens(w: string): RegExp {
-  return new RegExp(`<${w}t(?:\\s[^<>]*)?>([^<]*)</${w}t>|<(/?)${w}(p|tr|tc|tab|br|cr|ptab|noBreakHyphen|sym|trPr|del|gridSpan|gridBefore|gridAfter)(?=[\\s/>])([^<>]*)>`, 'g');
+  return new RegExp(`<${w}t(?:\\s[^<>]*)?>([^<]*)</${w}t>|<(/?)${w}(p|tbl|tr|tc|tab|br|cr|ptab|noBreakHyphen|sym|trPr|del|gridSpan|gridBefore|gridAfter|vMerge)(?=[\\s/>])([^<>]*)>`, 'g');
 }
 
 /** Characters Word writes as tags. A soft hyphen is not one: it shows only at a line break. */
@@ -60,8 +60,11 @@ const SYMBOL_CHARS: Record<number, string> = {
 /** Word's widest table; a merge never pads a row past it. */
 const MAX_COLUMNS = 63;
 
-/** One attribute's value, whatever its prefix. */
-const attr = (attrs: string, name: string) => new RegExp(`(?:^|\\s)(?:[\\w.-]+:)?${name}="([^"]*)"`).exec(attrs)?.[1];
+/** One attribute's value, whatever its prefix, either quote, spaces around "=". */
+const attr = (attrs: string, name: string) => {
+  const m = new RegExp(`(?:^|\\s)(?:[\\w.-]+:)?${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`).exec(attrs);
+  return m ? m[1] ?? m[2] : undefined;
+};
 
 /** A `w:sym` character: a code outside the private-use area is itself; in the
  *  Symbol font, a sign above or a digit or punctuation mark it shares with
@@ -99,8 +102,9 @@ function dropElements(xml: string, names: string): string {
 }
 
 /** An open table row: its cells, the paragraphs of its open cell, that cell's
- *  span, the empty cells owed at its end, and whether it was deleted. */
-interface Row { cells: string[]; cell: string[]; span: number; after: number; deleted: boolean }
+ *  span and vertical merge, the empty cells owed at its end, whether it was
+ *  deleted, and its table's restart text per grid column. */
+interface Row { cells: string[]; cell: string[]; span: number; vMerge?: 'restart' | 'continue'; after: number; deleted: boolean; merges: Map<number, string> }
 
 /** A merge's `w:val`, at most MAX_COLUMNS. */
 function count(attrs: string): number {
@@ -118,9 +122,12 @@ function addPartLines(xml: string, lines: string[]): void {
   // A text box is written twice, the modern copy and a fallback: keep one. Text
   // moved with tracked changes is written twice too: keep where it went. A
   // tracked formatting change keeps the old properties: never re-apply them.
-  const source = dropElements(xml, `${prefixFor(xml, MC_NS, 'mc')}Fallback|${w}(?:moveFrom|trPrChange|tcPrChange|pPrChange|rPrChange|tblPrChange|sectPrChange)`);
+  // A deleted run is dropped with all it holds; a row's self-closing `w:del` stays.
+  const source = dropElements(xml, `${prefixFor(xml, MC_NS, 'mc')}Fallback|${w}(?:del|moveFrom|trPrChange|tcPrChange|pPrChange|rPrChange|tblPrChange|sectPrChange)`);
   /** Open rows, innermost last. */
   const rows: Row[] = [];
+  /** Each open table's restart text per grid column, innermost last. */
+  const tables: Array<Map<number, string>> = [];
   /** The open paragraph's text, and how many are open: a paragraph that opens
    *  inside another (a text box's) ends the outer's text so far as a line. */
   let para = '';
@@ -147,8 +154,15 @@ function addPartLines(xml: string, lines: string[]): void {
           pad(row, row.after);
           if (row.cells.some(Boolean)) emit(row.cells.join(' | '));
         }
-      } else if (tag === 'tc' && row) {
-        row.cells.push(row.cell.join(' '));
+      } else if (tag === 'tbl') tables.pop();
+      else if (tag === 'tc' && row) {
+        // A continued vertical merge shows its restart cell's text, as Word does.
+        const col = row.cells.length;
+        const text = row.vMerge === 'continue' ? row.merges.get(col) ?? '' : row.cell.join(' ');
+        if (row.vMerge === 'restart') row.merges.set(col, text);
+        else if (!row.vMerge) row.merges.delete(col);
+        row.cells.push(text);
+        row.vMerge = undefined;
         pad(row, row.span - 1);
         row.cell = [];
         row.span = 1;
@@ -159,9 +173,11 @@ function addPartLines(xml: string, lines: string[]): void {
     else if (tag === 'p') {
       if (depth) flush();
       depth++;
-    } else if (tag === 'tr') rows.push({ cells: [], cell: [], span: 1, after: 0, deleted: false });
+    } else if (tag === 'tbl') tables.push(new Map());
+    else if (tag === 'tr') rows.push({ cells: [], cell: [], span: 1, after: 0, deleted: false, merges: tables[tables.length - 1] ?? new Map() });
     else if (tag === 'trPr') inRowProps = true;
     else if (tag === 'gridSpan' && row) row.span = count(attrs);
+    else if (tag === 'vMerge' && row) row.vMerge = attr(attrs, 'val') === 'restart' ? 'restart' : 'continue';
     else if (inRowProps && row) {
       if (tag === 'del') row.deleted = true;
       else if (tag === 'gridBefore') pad(row, count(attrs));

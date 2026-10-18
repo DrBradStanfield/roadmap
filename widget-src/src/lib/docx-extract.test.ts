@@ -279,3 +279,50 @@ describe('US-12 AC13: a document whose WordprocessingML prefix is not w:', () =>
     expect(text).toBe('Ferritin\nLDL | 2.9\nBox');
   });
 });
+
+// Review 2026-10-18 (adversary R3, Codex): what a real Word table writes.
+describe('US-12 AC13: vertical merges, run-level deletions and loose attribute syntax', () => {
+  const read = async (body: string) => (await docxToText(await docx(body))).text;
+  const vm = (val: string | null, text: string) =>
+    `<w:tc><w:tcPr>${val === null ? '<w:vMerge/>' : `<w:vMerge w:val="${val}"/>`}</w:tcPr>${text ? p(text) : '<w:p/>'}</w:tc>`;
+
+  it('a vertically merged unit column gives each continued row its restart cell\'s text', async () => {
+    expect(await read(tbl(
+      tr('Test', 'Result', 'Unit'),
+      `<w:tr>${tc('Ferritin')}${tc('85')}${vm('restart', 'ug/L')}</w:tr>`,
+      `<w:tr>${tc('Iron')}${tc('18')}${vm(null, '')}</w:tr>`,
+      `<w:tr>${tc('B12')}${tc('400')}${vm('continue', '')}</w:tr>`,
+      `<w:tr>${tc('Folate')}${tc('20')}${tc('nmol/L')}</w:tr>`,
+      `<w:tr>${tc('Zinc')}${tc('14')}${vm(null, '')}</w:tr>`,
+    ))).toBe([
+      'Test | Result | Unit',
+      'Ferritin | 85 | ug/L',
+      'Iron | 18 | ug/L',
+      'B12 | 400 | ug/L',
+      'Folate | 20 | nmol/L',
+      'Zinc | 14 | ',
+    ].join('\n'));
+  });
+
+  it('a merge in one table never reaches into the next', async () => {
+    expect(await read(
+      tbl(`<w:tr>${tc('Ferritin')}${vm('restart', 'ug/L')}</w:tr>`)
+      + tbl(`<w:tr>${tc('Iron')}${vm(null, '')}</w:tr>`),
+    )).toBe('Ferritin | ug/L\nIron | ');
+  });
+
+  it('drops a deleted run whole, with the symbol, tab and hyphen it holds', async () => {
+    const deleted = '<w:del w:id="3" w:author="Lab" w:date="2024-01-02T00:00:00Z"><w:r><w:sym w:font="Symbol" w:char="F03C"/><w:tab/><w:noBreakHyphen/><w:delText>99</w:delText></w:r></w:del>';
+    expect(await read(`<w:p><w:r><w:t>CRP </w:t></w:r>${deleted}<w:r><w:t>1.0</w:t></w:r></w:p>`)).toBe('CRP 1.0');
+  });
+
+  it('reads attributes with spaces around "=" and single quotes', async () => {
+    const spanned = "<w:tc><w:tcPr><w:gridSpan w:val='2'/></w:tcPr>" + p('38') + '</w:tc>';
+    expect(await read(tbl(tr('Test', 'Result', 'Previous', 'Unit'), `<w:tr>${tc('HbA1c')}${spanned}${tc('mmol/mol')}</w:tr>`)))
+      .toBe('Test | Result | Previous | Unit\nHbA1c | 38 |  | mmol/mol');
+    const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+    const zip = new JSZip();
+    zip.file('word/document.xml', `<?xml version="1.0"?><ns0:document xmlns:ns0 = '${W}'><ns0:body><ns0:p><ns0:r><ns0:t>Ferritin 85</ns0:t></ns0:r></ns0:p></ns0:body></ns0:document>`);
+    expect((await docxToText(await zip.generateAsync({ type: 'arraybuffer' }))).text).toBe('Ferritin 85');
+  });
+});
