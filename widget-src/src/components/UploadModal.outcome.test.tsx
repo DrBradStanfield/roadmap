@@ -120,11 +120,11 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     expect(checkLabImportQuota).not.toHaveBeenCalled();
   });
 
-  it('says only the first 20 pages of a long PDF were read', async () => {
+  it('says only the first part of a long PDF was read (US-12 AC9, AC13)', async () => {
     extractFromPdf.mockImplementation(async (f: File) => ({ ...pages(f.name), truncated: true }));
     render_(); pick(pdf('long.pdf'));
     await screen.findByDisplayValue('3.9');
-    expect(reasonFor('long.pdf')).toBe('Only the first 20 pages were read.');
+    expect(reasonFor('long.pdf')).toBe('This file is long, so only its first part was read.');
   });
 
   it('says a file filed as a document gave no blood test values', async () => {
@@ -589,7 +589,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     docxToText.mockResolvedValue(docxText('Ferritin | 85', { truncated: true }));
     render_(); pick(word('long.docx'));
     await screen.findByDisplayValue('3.9');
-    expect(reasonFor('long.docx')).toBe('Only the first 20 pages were read.');
+    expect(reasonFor('long.docx')).toBe('This file is long, so only its first part was read.');
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 1, withValues: 1, truncated: 1, docx: 1 }));
   });

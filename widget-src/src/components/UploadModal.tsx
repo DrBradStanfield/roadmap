@@ -139,7 +139,7 @@ interface FileNotice { name: string; reason: FileNoticeReason; count?: number; t
 const FILE_NOTICE_TEXT: Record<Exclude<FileNoticeReason, 'valuesDropped'>, string> = {
   openFailed: 'Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.',
   tooLarge: `Too large to read. The limit is ${IMPORT_LIMITS.websiteFileMb} MB per file.`,
-  truncated: `Only the first ${IMPORT_LIMITS.websitePdfPages} pages were read.`,
+  truncated: 'This file is long, so only its first part was read.',
   documentOnly: 'Filed as a document. No blood test values found.',
   noValues: 'No blood test values found.',
   serverError: 'Our server could not read it. Please try again.',
