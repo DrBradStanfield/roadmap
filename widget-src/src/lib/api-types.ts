@@ -8,7 +8,7 @@
  * disturbing the type graph. `api.ts` re-exports everything here for back-compat
  * import paths; new code may import directly from `./api-types`.
  */
-import type { HealthInputs, DocumentType, ApiMeasurement, ApiMedication, ApiScreening, LabUnitRefusal } from '@roadmap/health-core';
+import type { HealthInputs, DocumentType, ApiMeasurement, ApiMedication, ApiScreening, LabUnitRefusal, MeasurementRefusal } from '@roadmap/health-core';
 import type { ExtractionStopCode } from '@roadmap/health-core/models';
 
 export interface ApiReminderPreference {
@@ -174,8 +174,10 @@ export interface BulkSaveResult {
   saved: ApiMeasurement[];
   /** How many submitted rows were already present (active) at (user, metric, recorded_at). */
   skippedDuplicates: number;
-  /** How many submitted rows failed validation or could not be saved (surface in UI). */
+  /** How many submitted rows hit a server error (rare; surface in UI). */
   errorCount: number;
+  /** Rows refused for their metric or number — never silently dropped. */
+  refused: MeasurementRefusal[];
 }
 
 export interface BulkLabValuesResult {

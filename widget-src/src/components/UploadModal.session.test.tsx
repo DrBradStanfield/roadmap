@@ -7,6 +7,7 @@ import { attachOriginals, synthesizeLabArchiveEntries } from '../lib/archive-pay
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { Sentry } from '../lib/sentry';
+import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
@@ -51,7 +52,7 @@ beforeEach(() => {
   vi.mocked(getDocumentArchiveMode).mockReturnValue('cloud');
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
-  vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0 } as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
+  vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
   vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0 });
   extractFromPdf.mockResolvedValue({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false });
   Object.assign(window, { HealthUpload: { extractFromPdf, isPdf: () => true, isZip: () => false, isImage: () => false } });
@@ -123,14 +124,16 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(screen.getByDisplayValue('4.2')).toBeTruthy();
     expect(labImport).toHaveBeenCalledOnce();
   });
-  it('US-35 AC17 — a core validation errorCount keeps review open instead of reporting success', async () => {
-    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 1 });
+  it('US-12 AC6 / US-35 AC17 — a refused core value is settled: named once on its own line, no retry offered', async () => {
+    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [0, 1].map(index => ({ index, metricType: 'ldl', reason: 'out-of-range' as const, message: 'synthetic' })) });
     render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Done' })).toBeNull();
-    expect(screen.getByDisplayValue('3.9')).toBeTruthy();
-    expect(onComplete).not.toHaveBeenCalled();
+    expect(await screen.findByText('LDL Cholesterol: the number was not saved. It is outside the range the record accepts.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy();
+    expect(screen.queryByText(/try again/)).toBeNull();
+    expect(screen.queryByText('No items saved')).toBeNull();
+    expect(trackProductEvent).toHaveBeenCalledWith('upload_saved', { count: 0 });
+    expect(onComplete).toHaveBeenCalledOnce();
     expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 
@@ -233,7 +236,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     fireEvent.click(screen.getByRole('button', { name: /Saving health records/ }));
     expect(screen.getByDisplayValue('3.9')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    await act(async () => saving.resolve({ saved: [{}], skippedDuplicates: 0, errorCount: 0 } as Awaited<ReturnType<typeof bulkSaveMeasurements>>));
+    await act(async () => saving.resolve({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>));
     fireEvent.click(screen.getByRole('button', { name: /Health records saved/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Done' }));
     fireEvent.click(screen.getByRole('button', { name: 'Upload records' }));

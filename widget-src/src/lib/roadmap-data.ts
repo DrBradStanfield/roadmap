@@ -151,7 +151,7 @@ export async function saveScreening(screeningKey: string, value: string): Promis
   return store ? store.saveScreening(screeningKey, value) : false;
 }
 export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[]): Promise<BulkSaveResult> {
-  return store ? store.bulkSaveMeasurements(measurements) : { saved: [], skippedDuplicates: 0, errorCount: measurements.length };
+  return store ? store.bulkSaveMeasurements(measurements) : { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };
 }
 export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {
   if (!store) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };

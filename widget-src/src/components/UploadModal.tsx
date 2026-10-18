@@ -1,12 +1,12 @@
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota } from '../lib/upload-api';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { IMPORT_LIMITS, zipMemberName, type LabUnitRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
+import { IMPORT_LIMITS, zipMemberName, type LabUnitRefusal, type MeasurementRefusal, type UnitSystem, type MetricType } from '@roadmap/health-core';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { LabImportResult, PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
-import { labUnitRefusalLine } from '../lib/lab-value-labels';
+import { labUnitRefusalLine, measurementRefusalLine } from '../lib/lab-value-labels';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
@@ -274,6 +274,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   // US-21 phase 3: lab rows the record would not store because it does not know
   // that unit for that test. Shown by name — a dropped value must never be silent.
   const [refusedLabUnits, setRefusedLabUnits] = useState<LabUnitRefusal[]>([]);
+  const [refusedMeasurements, setRefusedMeasurements] = useState<MeasurementRefusal[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const savingRef = useRef(false);
@@ -297,6 +298,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     setSavedDocCount(0);
     setSavedLabCount(0);
     setRefusedLabUnits([]);
+    setRefusedMeasurements([]);
   }, []);
 
   // Closing active work only hides it. Drafts and pending saves remain mounted.
@@ -726,7 +728,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         return fallback;
       };
       const [savedValues, savedDocs, savedLabValues] = await Promise.all([
-        measurements.length > 0 ? bulkSaveMeasurements(measurements).catch(failed('measurements', { saved: [], skippedDuplicates: 0, errorCount: measurements.length })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
+        measurements.length > 0 ? bulkSaveMeasurements(measurements).catch(failed('measurements', { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] }),
         docPayloads.length > 0 ? bulkSaveDocuments(docPayloads).catch(failed('documents', { saved: [], errorCount: docPayloads.length })) : Promise.resolve({ saved: [], errorCount: 0 }),
         labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads).catch(failed('labValues', { saved: [], skippedDuplicates: 0, errorCount: labValuePayloads.length, refused: [] })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] }),
       ]);
@@ -735,12 +737,13 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       setSkippedMeasurements(savedValues.skippedDuplicates);
       setSkippedLabValues(savedLabValues.skippedDuplicates);
       setRefusedLabUnits(savedLabValues.refused);
+      setRefusedMeasurements(savedValues.refused);
       const saveErrors = savedValues.errorCount + savedLabValues.errorCount + savedDocs.errorCount;
       setSaveErrorCount(saveErrors);
       setSavedDocCount(savedDocs.saved.length);
       setSavedLabCount(savedLabValues.saved.length);
       // A save error is the only failure: it keeps the review open so a second
-      // Save retries that branch (US-12 AC6). A duplicate and a refused unit
+      // Save retries that branch (US-12 AC6). A duplicate and a refused unit or number
       // are settled outcomes — the data is already there, or the record will
       // never take it — and neither is anything a retry could change.
       const totalSaved = savedValues.saved.length + savedDocs.saved.length + savedLabValues.saved.length;
@@ -883,7 +886,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                 {savedDocCount > 0 && `${savedDocCount} document${savedDocCount !== 1 ? 's' : ''}`}
                 {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0
                   && skippedMeasurements === 0 && skippedLabValues === 0 && saveErrorCount === 0
-                  && refusedLabUnits.length === 0 && 'No items saved'}
+                  && refusedLabUnits.length === 0 && refusedMeasurements.length === 0 && 'No items saved'}
               </p>
               {skippedMeasurements > 0 && (
                 <p className="upload-done-skipped">
@@ -901,6 +904,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                   was refused for its number, not its unit (US-21 AC15). */}
               {[...new Map(refusedLabUnits.map(r => [`${r.key}|${r.unit}`, r])).values()].map(r => (
                 <p key={`${r.key}|${r.unit}`} className="upload-done-skipped">{labUnitRefusalLine(r.key, r.unit, r.fault)}</p>
+              ))}
+              {[...new Map(refusedMeasurements.map(r => [`${r.metricType}|${r.reason}`, r])).values()].map(r => (
+                <p key={`${r.metricType}|${r.reason}`} className="upload-done-skipped">{measurementRefusalLine(r)}</p>
               ))}
               {saveErrorCount > 0 && (
                 <p className="upload-done-skipped">

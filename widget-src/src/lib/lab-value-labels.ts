@@ -1,4 +1,4 @@
-import { labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, type LabUnitRefusal } from '@roadmap/health-core';
+import { METRIC_LABELS, labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, type LabUnitRefusal, type MeasurementRefusal } from '@roadmap/health-core';
 
 /** A lab test's name for display: its catalogue label, else the snake_case name title-cased. */
 export function labValueLabel(metricName: string): string {
@@ -23,4 +23,13 @@ export function labUnitRefusalLine(key: string, unit: string, fault?: LabUnitRef
       ? `${labValueLabel(key)}: no unit was printed, so it was not saved.${takes}`
       : `${labValueLabel(key)}: unit not recognised (${unit}). It was not saved.${takes}`;
   return note ? `${lead} ${note}.` : lead;
+}
+
+/** The same line for a blood test value the record refused (US-12 AC6,
+ *  US-35 AC17): the test named, never the number or the store's message. */
+export function measurementRefusalLine({ metricType, reason }: MeasurementRefusal): string {
+  const label = Object.prototype.hasOwnProperty.call(METRIC_LABELS, metricType) ? METRIC_LABELS[metricType] : metricType;
+  return reason === 'unknown-metric'
+    ? `${label}: not a test the record knows, so it was not saved.`
+    : `${label}: the number was not saved. It is outside the range the record accepts.`;
 }

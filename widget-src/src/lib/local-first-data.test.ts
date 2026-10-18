@@ -29,12 +29,13 @@ describe('explicit local-first data path', () => {
     vi.unstubAllGlobals();
   });
 
-  it('US-35 AC17 — reports invalid core rows to UI callers as errors, not duplicates', async () => {
+  it('US-35 AC17 / US-12 AC6 — returns an invalid core row as a refusal, not a retryable error or a duplicate', async () => {
     const result = await data.bulkSaveMeasurements([
       { metricType: 'weight', value: -1, recordedAt: '2026-08-01', source: 'lab_import' },
       { metricType: 'weight', value: 70, recordedAt: '2026-08-01', source: 'lab_import' },
     ]);
-    expect(result.errorCount).toBe(1);
+    expect(result.refused).toMatchObject([{ index: 0, metricType: 'weight', reason: 'out-of-range' }]);
+    expect(result.errorCount).toBe(0);
     expect(result.skippedDuplicates).toBe(0);
     expect(result.saved.map(row => row.value)).toEqual([70]);
     await flushRoadmapStore();
