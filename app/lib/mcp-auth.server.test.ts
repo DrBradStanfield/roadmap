@@ -498,8 +498,8 @@ describe('CIMD fetch policy (US-32, design §4 — this is an SSRF surface)', ()
     }
   });
 
-  it('refuses the ports fetch refused, and no other (US-32 AC47)', async () => {
-    for (const port of [1, 21, 22, 25, 53, 110, 143, 465, 587, 993, 995, 2049, 6000, 6667, 10080]) {
+  it('refuses the ports fetch refused, and port 0, and no other (US-32 AC47)', async () => {
+    for (const port of [0, 1, 21, 22, 25, 53, 110, 143, 465, 587, 993, 995, 2049, 6000, 6667, 10080]) {
       const url = `https://claude.ai:${port}/.well-known/oauth-client`;
       const spy = serveClientMetadata({ [url]: { ...METADATA, client_id: url } });
       expect(await resolveClient(url), url).toBeNull();

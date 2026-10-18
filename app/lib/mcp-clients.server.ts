@@ -264,15 +264,15 @@ const lookupPublic: LookupFunction = (hostname, options, callback) => {
  */
 const CIMD_AGENT = new https.Agent({ maxCachedSessions: 0 });
 
-/** The WHATWG fetch "bad port" list, which `fetch` refused before connecting. */
+/** The WHATWG fetch "bad port" list, which `fetch` refused before connecting, plus port 0, which no host serves. */
 const BAD_PORTS = new Set([
-  1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 69, 77, 79, 87, 95, 101, 102, 103, 104, 109,
+  0, 1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 69, 77, 79, 87, 95, 101, 102, 103, 104, 109,
   110, 111, 113, 115, 117, 119, 123, 135, 137, 139, 143, 161, 179, 389, 427, 465, 512, 513, 514, 515, 526, 530,
   531, 532, 540, 548, 554, 556, 563, 587, 601, 636, 989, 990, 993, 995, 1719, 1720, 1723, 2049, 3659, 4045,
   4190, 5060, 5061, 6000, 6566, 6665, 6666, 6667, 6668, 6669, 6679, 6697, 10080,
 ].map(String));
 
-/** The content codings `fetch` decoded; any other is refused. A Map, so no inherited key is a decoder. */
+/** One content coding each, decoded strictly (zlib-wrapped deflate, no truncated or stacked codings); any other is refused. A Map, so no inherited key is a decoder. */
 const DECODERS = new Map<string, (() => Transform) | null>([
   ['', null], ['identity', null], ['gzip', zlib.createGunzip], ['x-gzip', zlib.createGunzip],
   ['deflate', zlib.createInflate], ['br', zlib.createBrotliDecompress],
