@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef, memo } from 'react';
 import type { LpaUnit, UnitSystem, MetricType, MeasurementSource, ApiMeasurement, DocumentType } from '@roadmap/health-core';
 import {
   UNIT_DEFS,
+  healthInputSchema,
   METRIC_LABELS,
   METRIC_TO_FIELD,
   parseLocalisedNumber,
@@ -22,7 +23,7 @@ import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, Docu
 import { labValueLabel } from '../lib/lab-value-labels';
 import { unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
-import { type CellUnit, type Grading, cellHint, cellLabel, cellText, cellToSI } from '../lib/blood-test-cell';
+import { type CellUnit, type Grading, cellHint, cellLabel, cellText, cellToSI, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
@@ -241,7 +242,7 @@ type EditableMatrixCell =
   | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; lab: LabQuantity; referenceLow?: number | null; referenceHigh?: number | null; existing?: ExistingCell };
 
 /** A core cell as rendered: its text in the row's unit and the value it saves. */
-interface CoreCellView { text: string; valueSI?: number }
+interface CoreCellView { text: string; valueSI?: number; error: string | null }
 
 type MatrixCell =
   | { state: 'empty' }
@@ -633,12 +634,19 @@ export function ReviewTable({
 
   const metricOf = (cell: EditableMatrixCell) =>
     cell.kind === 'core' ? results[cell.fi]?.values[cell.vi]?.metric as MetricType | undefined : undefined;
-  // Edited = differs from the extracted value as shown in the unit the user
-  // typed in; a toggle after typing re-renders initialDisplay in the other unit.
+  const extractedError = (cell: EditableMatrixCell): string | null => {
+    const metric = metricOf(cell);
+    if (!metric || !UNIT_DEFS[metric]) return null;
+    const parsed = healthInputSchema.shape[METRIC_TO_FIELD[metric] as keyof typeof healthInputSchema.shape].safeParse(cell.valueSI);
+    return parsed.success ? null : parsed.error.issues[0].message;
+  };
+  // Equal rendered text preserves valid extraction precision. An explicit
+  // correction of an invalid extraction must instead use the typed quantity.
   const isEditedText = (cellKey: string, cell: EditableMatrixCell, editedStr: string) => {
     const typedIn = touchedRef.current.get(cellKey)?.display;
     const metric = metricOf(cell);
-    return editedStr !== (typedIn && metric && UNIT_DEFS[metric] ? cellText(metric, cell.valueSI, typedIn) : cell.initialDisplay);
+    return (touchedRef.current.has(cellKey) && extractedError(cell) !== null)
+      || editedStr !== (typedIn && metric && UNIT_DEFS[metric] ? cellText(metric, cell.valueSI, typedIn) : cell.initialDisplay);
   };
 
   /** The value a cell saves (SI for a core metric): the extracted one while
@@ -652,6 +660,16 @@ export function ReviewTable({
     const metric = metricOf(cell);
     if (!metric || !UNIT_DEFS[metric]) return parsed;
     return cellToSI(metric, parsed, touchedRef.current.get(cellKey)?.display ?? units[metric] ?? unitSystem);
+  };
+
+  // Validate the quantity we save, not a rounded rendering after a unit switch.
+  const cellError = (cellKey: string, cell: EditableMatrixCell, text: string): string | null => {
+    const metric = metricOf(cell);
+    if (!text || !metric || !UNIT_DEFS[metric]) return null;
+    if (isEditedText(cellKey, cell, text)) {
+      return validateTypedValue(metric, text, touchedRef.current.get(cellKey)?.display ?? units[metric] ?? unitSystem).error;
+    }
+    return extractedError(cell);
   };
 
   /** Is a ticked replacement the value already saved? A lab compares quantity, in its printed unit (US-35 AC6). */
@@ -673,12 +691,17 @@ export function ReviewTable({
       isEdited: boolean;
     }
     const out: CellPayload[] = [];
+    let hasInvalid = false;
     for (const [cellKey, cell] of matrix.cells) {
       if (cell.state !== 'editable') continue;
       // A conflicting cell saves only when the user asserts the replacement.
       if (cell.existing && !replaceChecked[cellKey]) continue;
       const editedStr = (editedDisplayValues[cellKey] ?? cell.initialDisplay).trim();
       if (!editedStr) continue;
+      if (cellError(cellKey, cell, editedStr)) {
+        hasInvalid = true;
+        continue;
+      }
       const value = savedValue(cellKey, cell, editedStr);
       if (value === undefined) continue;
       // A "replacement" that matches what is already saved would append a
@@ -689,10 +712,10 @@ export function ReviewTable({
       const dateKey = cellKey.slice(cellKey.lastIndexOf('|') + 1);
       out.push({ cellKey, dateKey, cell, value, isEdited: isEditedText(cellKey, cell, editedStr) });
     }
-    return out;
+    return { cells: out, hasInvalid };
   };
 
-  const saveableCells = useMemo(collectSaveableCells, [matrix, editedDisplayValues, replaceChecked]);
+  const { cells: saveableCells, hasInvalid } = useMemo(collectSaveableCells, [matrix, editedDisplayValues, replaceChecked]);
   // What each core cell shows, and the value its colour grades: the value it
   // saves (US-13 AC4), in the row's unit. Typed text is kept verbatim in the
   // unit it was typed in, so a unit toggle shows the same quantity in the new
@@ -709,6 +732,7 @@ export function ReviewTable({
       const typedIn = touchedRef.current.get(cellKey)?.display ?? shownIn;
       views.set(cellKey, {
         valueSI,
+        error: cellError(cellKey, cell, text),
         text: !isEditedText(cellKey, cell, text) ? cell.initialDisplay
           : typedIn === shownIn || valueSI === undefined || !UNIT_DEFS[metric] ? text
           : cellText(metric, valueSI, shownIn),
@@ -761,6 +785,7 @@ export function ReviewTable({
   };
 
   const handleSave = () => {
+    if (hasInvalid) return;
     // Collect core lab values
     const selected: ReviewedValue[] = [];
     const selectedLabValues: ReviewedLabValue[] = [];
@@ -950,13 +975,14 @@ export function ReviewTable({
         <p className="review-date-hint">Pick a day for every new column before saving — keeps the saved date precise.</p>
       )}
 
+      {hasInvalid && <p role="status">Correct or clear the values with errors before saving.</p>}
       {error && <p className="upload-error">{error}</p>}
 
       <div className="review-actions">
         <button
           className="btn-primary review-save-btn"
           onClick={handleSave}
-          disabled={(nothingSelected && archiveCount === 0) || !allDatesSet || isSaving}
+          disabled={hasInvalid || (nothingSelected && archiveCount === 0) || !allDatesSet || isSaving}
         >
           {isSaving ? 'Saving...' : `Save ${[
             selectedCount > 0 && `${selectedCount} Value${selectedCount !== 1 ? 's' : ''}`,
@@ -1153,6 +1179,7 @@ function MatrixRowView({
                 grading={grading}
                 editedValue={coreCellViews.get(cellKey)?.text ?? editedDisplayValues[cellKey] ?? ''}
                 valueSI={coreCellViews.get(cellKey)?.valueSI}
+                validationError={coreCellViews.get(cellKey)?.error}
                 onCellChange={onCellChange}
                 replace={replaceChecked[cellKey] ?? false}
                 onReplaceToggle={onReplaceToggle}
@@ -1195,13 +1222,14 @@ interface MatrixCellViewProps {
   editedValue: string;
   /** The value a core cell saves, which its colour grades (US-13 AC4). */
   valueSI?: number;
+  validationError?: string | null;
   onCellChange: (cellKey: string, value: string, display?: CellUnit) => void;
   replace: boolean;
   onReplaceToggle: (cellKey: string, on: boolean) => void;
 }
 
 const MatrixCellView = memo(function MatrixCellView({
-  cell, cellKey, row, unitSystem, grading, editedValue, valueSI, onCellChange, replace, onReplaceToggle,
+  cell, cellKey, row, unitSystem, grading, editedValue, valueSI, validationError, onCellChange, replace, onReplaceToggle,
 }: MatrixCellViewProps) {
   if (cell.state === 'empty') {
     // NBSP keeps :empty from matching — the theme has a global
@@ -1247,6 +1275,7 @@ const MatrixCellView = memo(function MatrixCellView({
       grading={grading}
       value={editedValue}
       valueSI={valueSI}
+      validationResult={validationError}
       onChange={handleChange}
       wrapperClass={`bt-cell-input bt-cell-review${lowConfClass}`}
       note={cell.question && <span className="bt-cell-question">{cell.question}</span>}
