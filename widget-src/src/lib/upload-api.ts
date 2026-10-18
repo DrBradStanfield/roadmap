@@ -40,7 +40,8 @@ export async function labImport(
       method: 'POST',
       // No Content-Type header — the route parses JSON regardless of it
       // (parseSimpleRequestJson). Same-origin via the app proxy; no CORS here.
-      body: JSON.stringify({ pages, unitSystem }),
+      // `ownDates`: this widget files a value on its own day (US-12 AC12).
+      body: JSON.stringify({ pages, unitSystem, ownDates: true }),
     });
     if (response.status === 429) {
       return { result: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
@@ -80,7 +81,7 @@ export async function labImportBatch(
       // is a compatibility label that names nothing: a server older than
       // 2026-10-13 requires the field, and CI ships this widget before the
       // server. Drop it once every live server strips it.
-      body: JSON.stringify({ batch: true, files: files.map(({ pages }, i) => ({ fileName: `file-${i + 1}`, pages })) }),
+      body: JSON.stringify({ batch: true, ownDates: true, files: files.map(({ pages }, i) => ({ fileName: `file-${i + 1}`, pages })) }),
     });
     if (response.status === 429) {
       return { batchId: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };

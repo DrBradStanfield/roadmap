@@ -34,6 +34,11 @@ export const HISTORY_CAP_PER_METRIC = 24;
 /** What counts as a valid dated point — shared with the server-side sanitizer. */
 export const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+/** A YYYY-MM-DD the calendar has. `Date.parse` alone takes 2026-02-30 and rolls it to 2 March. */
+export function isCalendarDay(day: string): boolean {
+  return ISO_DATE.test(day) && !Number.isNaN(Date.parse(day)) && new Date(day).toISOString().slice(0, 10) === day;
+}
+
 /**
  * Group raw measurement records into the chat-context history map: keyed by
  * metricType, sorted oldest→newest, capped at the newest `cap` points per

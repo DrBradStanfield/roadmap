@@ -211,3 +211,61 @@ describe('a single file that stopped short', () => {
     expect((await action({ request: single() } as never)).status).toBe(500);
   });
 });
+
+// US-12 AC12: a tab opened before the deploy ignores `recordedAt` and would
+// save a previous column's values on the report date. Only the new widget
+// sends `ownDates: true`; without it, every value with its own day is cut.
+describe('US-12 AC12: a value with its own day reaches only a widget that reads it', () => {
+  const dated = () => ({
+    classification: 'lab_report', reportDate: '2026-03-10', document: null,
+    values: [
+      { metric: 'ldl', valueSI: 2.1, displayValue: 2.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' },
+      { metric: 'ldl', valueSI: 2.6, displayValue: 2.6, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high', recordedAt: '2025-09-02' },
+    ],
+    additionalValues: [
+      { name: 'ferritin', value: 80, unit: 'ug/L' },
+      { name: 'ferritin', value: 95, unit: 'ug/L', recordedAt: '2025-09-02' },
+    ],
+  });
+  const single = (extra: Record<string, unknown>) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST',
+    headers: { 'fly-client-ip': `10.1.0.${++ipCounter}` },
+    body: JSON.stringify({ pages: FILES[0].pages, ...extra }),
+  });
+  const batch = (extra: Record<string, unknown>) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST',
+    headers: { 'fly-client-ip': `10.1.0.${++ipCounter}` },
+    body: JSON.stringify({ batch: true, files: FILES, ...extra }),
+  });
+
+  it('single file, old widget (no flag): the previous column is cut, the primary kept', async () => {
+    extractOrClassify.mockResolvedValueOnce(dated());
+    const { data } = await (await action({ request: single({}) } as never)).json();
+    expect(data.values.map((v: { valueSI: number }) => v.valueSI)).toEqual([2.1]);
+    expect(data.additionalValues.map((v: { value: number }) => v.value)).toEqual([80]);
+  });
+
+  it('single file, new widget (ownDates: true): both columns answer', async () => {
+    extractOrClassify.mockResolvedValueOnce(dated());
+    const { data } = await (await action({ request: single({ ownDates: true }) } as never)).json();
+    expect(data.values.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined, '2025-09-02']);
+    expect(data.additionalValues).toHaveLength(2);
+  });
+
+  it('batch, old widget: each ended file loses its dated values; an error entry passes through', async () => {
+    const { batchId, pollToken } = await (await action({ request: batch({}) } as never)).json();
+    pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 2, total: 2, results: [{ index: 0, ...dated() }, { index: 1, errorCode: 'server_error' }] } as never);
+    const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
+    expect(results[0].values.map((v: { valueSI: number }) => v.valueSI)).toEqual([2.1]);
+    expect(results[0].additionalValues.map((v: { value: number }) => v.value)).toEqual([80]);
+    expect(results[1]).toEqual({ index: 1, errorCode: 'server_error' });
+  });
+
+  it('batch, new widget: the poll answers both columns', async () => {
+    const { batchId, pollToken } = await (await action({ request: batch({ ownDates: true }) } as never)).json();
+    pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 1, total: 1, results: [{ index: 0, ...dated() }] } as never);
+    const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
+    expect(results[0].values).toHaveLength(2);
+    expect(results[0].additionalValues).toHaveLength(2);
+  });
+});

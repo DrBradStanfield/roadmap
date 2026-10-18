@@ -137,10 +137,22 @@ describe('US-49 AC4: a proposal becomes a card only for a listed subscription an
   });
   it('the card carries the gateway token and plain facts; refused actions and unknown refs make no card', () => {
     expect(subscriptionCard(summary, { ref: 'S1', action: 'skip', reason: null })).toEqual({
-      token: 'tok-skip-S1-xxxxxxxxxxxxxxxx', action: 'skip', product: 'MicroVitamin', every: '3 months', nextDate: '6 January 2027', newDate: '6 April 2027', reason: null,
+      token: 'tok-skip-S1-xxxxxxxxxxxxxxxx', action: 'skip', product: 'MicroVitamin', every: '3 months', nextDate: '6 January 2027', newDate: '6 April 2027', reason: null, status: 'active',
     });
     expect(subscriptionCard(summary, { ref: 'S2', action: 'skip', reason: null })).toBeNull();
     expect(subscriptionCard(summary, { ref: 'S9', action: 'cancel', reason: null })).toBeNull();
     expect(subscriptionCard(null, { ref: 'S1', action: 'cancel', reason: null })).toBeNull();
   });
 });
+
+// US-49 AC10 (live pilot, 18 Oct): the rules the first pilot test showed were missing.
+describe('formatSubscriptionBlock pilot rules (AC10)', () => {
+  it('refuses other frequencies and earlier dates without the account link, never calls a card waiting, and drops the medical line', () => {
+    const block = formatSubscriptionBlock({ enabled: true, subscriptions: [{ ref: 's1', product: 'MicroVitamin', every: '3 months', status: 'active', nextDate: '15 April 2027', actions: { pause: { ok: true }, skip: { ok: true, newDate: '15 July 2027' }, cancel: { ok: true } } } as any] });
+    expect(block).toMatch(/monthly deliveries, another frequency or an earlier order date[^\n]*Do not point them to their account/);
+    expect(block).toMatch(/Never say an earlier card is still waiting, and never tell them not to press Confirm/);
+    expect(block).toMatch(/can lag a change by up to a minute/);
+    expect(block).toMatch(/needs no line about medical advice/);
+  });
+});
+
