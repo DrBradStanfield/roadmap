@@ -136,7 +136,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
     nameConversions: [{ names: ['bun', 'blood urea nitrogen', 'urea nitrogen'], conversions: { 'mg/dl': 0.357 } }],
   },
   { key: 'urate', label: 'Urate', group: 'renal', unit: 'mmol/L', aliases: ['uric acid'], conversions: { 'mg/dl': 0.05948, 'µmol/l': 0.001 } }, // urate 168.11 g/mol; a micromole is a thousandth of a millimole (UK labs print µmol/L)
-  { key: 'urine_acr', label: 'Urine ACR', group: 'renal', unit: 'mg/mmol', aliases: ['albumin creatinine ratio', 'acr', 'microalbumin ratio'], conversions: { 'mg/g': 0.113 } }, // creatinine 113.12 g/mol: 1 g ≡ 8.840 mmol
+  { key: 'urine_acr', label: 'Urine ACR', group: 'renal', unit: 'mg/mmol', aliases: ['albumin creatinine ratio', 'acr', 'microalbumin ratio'], conversions: { 'mg/g': 0.113, 'mg/g creat': 0.113, 'mg/g creatinine': 0.113 } }, // creatinine 113.12 g/mol: 1 g ≡ 8.840 mmol
   { key: 'urine_creatinine', label: 'Urine creatinine', group: 'renal', unit: 'mmol/L', aliases: ['creatinine urine', 'urinary creatinine', 'creatinine (urine)'], conversions: { 'mg/dl': 0.0884, 'µmol/l': 0.001 } }, // creatinine 113.12 g/mol; a micromole is a thousandth of a millimole
   { key: 'urine_pcr', label: 'Urine PCR', group: 'renal', unit: 'mg/mmol', aliases: ['protein creatinine ratio', 'protein:creatinine ratio', 'urine protein creatinine ratio', 'upcr'], conversions: { 'mg/g': 0.113, 'mg/g creat': 0.113, 'mg/g creatinine': 0.113, 'mg/mg': 113.12 } }, // creatinine 113.12 g/mol: 1 g ≡ 8.840 mmol, 1 mg ≡ 1/113.12 mmol
   { key: 'cystatin_c', label: 'Cystatin C', group: 'renal', unit: 'mg/L', aliases: [] },

@@ -721,6 +721,8 @@ describe('US-21 AC17 — the common blood tests are catalogued, in SI', () => {
     ['Protein Creatinine Ratio', 0.15, 'mg/mg', 'urine_pcr', 16.968, 'mg/mmol'],
     ['Protein Creatinine Ratio', 150, 'mg/g creat', 'urine_pcr', 16.95, 'mg/mmol'],
     ['Protein Creatinine Ratio', 150, 'mg/g creatinine', 'urine_pcr', 16.95, 'mg/mmol'],
+    ['Albumin Creatinine Ratio', 30, 'mg/g creat', 'urine_acr', 3.39, 'mg/mmol'],
+    ['Albumin Creatinine Ratio', 30, 'mg/g creatinine', 'urine_acr', 3.39, 'mg/mmol'],
     ['Insulin', 8, 'microIU/mL', 'insulin', 8, 'mIU/L'],
     ['Insulin', 8, 'mcIU/mL', 'insulin', 8, 'mIU/L'],
   ];

@@ -184,6 +184,8 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `urate` | mmol/L | mg/dl | 0.05948 | urate 168.11 g/mol |
 | `urate` | mmol/L | µmol/l | 0.001 | a micromole is a thousandth of a millimole (UK labs print µmol/L) |
 | `urine_acr` | mg/mmol | mg/g | 0.113 | creatinine 113.12 g/mol, so 1 g ≡ 8.840 mmol |
+| `urine_acr` | mg/mmol | mg/g creat | 0.113 | mg/g with the creatinine named |
+| `urine_acr` | mg/mmol | mg/g creatinine | 0.113 | mg/g with the creatinine named |
 | `urine_creatinine` | mmol/L | mg/dl | 0.0884 | creatinine 113.12 g/mol |
 | `urine_creatinine` | mmol/L | µmol/l | 0.001 | a micromole is a thousandth of a millimole |
 | `urine_pcr` | mg/mmol | mg/g | 0.113 | creatinine 113.12 g/mol, so 1 g ≡ 8.840 mmol (as `urine_acr`) |
