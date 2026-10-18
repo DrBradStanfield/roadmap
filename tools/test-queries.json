@@ -2568,12 +2568,12 @@
     "must_not_match": [
       "\\bcollagen\\b(?:(?!\\.\\s)[^\\n]){0,200}(wrinkle|fine line|rebuild|structur)",
       "(wrinkle|fine line|rebuild|structur)(?:(?!\\.\\s)[^\\n]){0,200}\\bcollagen\\b",
-      "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside|in line with|consistent with)\\b"
+      "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside (?:that|the|this) range|in line with|consistent with|falls in|in the middle of|covered by)\\b"
     ],
     "notes": "US-15 AC35 (amended 2026-10-18, Brad's collagen update v3). The chat may suggest collagen peptides for skin, saying they may improve skin hydration and elasticity (Batool 2026), and may say MicroVitamin+ contains 12.5 g. It must not tie collagen to wrinkles, fine lines, rebuilding or skin structure in the same sentence (a full stop followed by a space ends the window, so the decimal in 12.5 g does not), call 12.5 g within the range studied, or cite Pu, Kim or Myung. Known false fails, judge by reading: a negated sentence (\"has not been shown to reduce wrinkles\") and a non-supplement collagen mention (retinoids or red light \"stimulate collagen\") in the same sentence as wrinkles. answer_handles [] = products block plus the brand posture only; routing is not asserted. Amended 2026-10-19: a collagen suggestion also gives the range the trials used, 0.5 to 10 g a day (Batool 2026); 12.5 g is never put inside that range.",
     "must_match": [
-      "0\\.5\\s*(?:g|grams)?(?:\\s*(?:/|per|a)\\s*day)?\\s*(?:to|up to|-|–|—|and)\\s*10\\s*(?:g\\b|gm\\b|grams)",
-      "batool"
+      "(?<![\\d.])0\\.5\\s*(?:g|grams?)?(?:\\s*(?:/|per|a)\\s*day)?\\s*(?:to|up to|through|-|–|—|−|and)\\s*10(?:\\.0)?\\s*(?:g\\b|gm\\b|grams)",
+      "batool|jocd\\.71041"
     ]
   },
   {
@@ -2583,8 +2583,8 @@
     "surface": "brand",
     "answer_handles": [],
     "must_match": [
-      "0\\.5\\s*(?:g|grams)?(?:\\s*(?:/|per|a)\\s*day)?\\s*(?:to|up to|-|–|—|and)\\s*10\\s*(?:g\\b|gm\\b|grams)",
-      "batool"
+      "(?<![\\d.])0\\.5\\s*(?:g|grams?)?(?:\\s*(?:/|per|a)\\s*day)?\\s*(?:to|up to|through|-|–|—|−|and)\\s*10(?:\\.0)?\\s*(?:g\\b|gm\\b|grams)",
+      "batool|jocd\\.71041"
     ],
     "must_not_mention": [
       "within the range studied",
@@ -2597,9 +2597,38 @@
     "must_not_match": [
       "\\bcollagen\\b(?:(?!\\.\\s)[^\\n]){0,200}(wrinkle|fine line|rebuild|structur)",
       "(wrinkle|fine line|rebuild|structur)(?:(?!\\.\\s)[^\\n]){0,200}\\bcollagen\\b",
-      "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside|in line with|consistent with)\\b"
+      "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside (?:that|the|this) range|in line with|consistent with|falls in|in the middle of|covered by)\\b",
+      "\\b(you should take|aim for|i (?:would )?recommend taking)\\b"
     ],
-    "notes": "US-15 AC35 (amended 2026-10-19, Brad: the chat gives the collagen dose range the trials used). Asked how much collagen to take for skin, the answer gives 0.5 to 10 g a day and cites Batool 2026; must_match runs on the lower-cased answer, so 'batool' matches 'Batool'. The range is what the trials used, never 'within the range studied' for MicroVitamin+'s 12.5 g. The wrinkle and structure regexes and the Pu/Kim/Myung list are AC35's (same known false fails, judge by reading). answer_handles [] = products block plus the brand posture only; routing is not asserted. The last must_not_match regex catches paraphrases that put 12.5 g inside the range in the same sentence (adversary R3, 2026-10-19)."
+    "notes": "US-15 AC35 (amended 2026-10-19, Brad: the chat gives the collagen dose range the trials used). Asked how much collagen to take for skin, the answer gives 0.5 to 10 g a day and cites Batool 2026; must_match runs on the lower-cased answer, so 'batool' matches 'Batool'. The range is what the trials used, never 'within the range studied' for MicroVitamin+'s 12.5 g. The wrinkle and structure regexes and the Pu/Kim/Myung list are AC35's (same known false fails, judge by reading). answer_handles [] = products block plus the brand posture only; routing is not asserted. The last must_not_match regex catches paraphrases that put 12.5 g inside the range in the same sentence (adversary R3, 2026-10-19). Second review (2026-10-19): the range regex is anchored so 10.5 cannot pass and takes 'through', a Unicode minus and '10.0'; the citation may be the DOI link instead of the name; a personal-dose phrase ('you should take', 'aim for', 'I recommend taking') fails. Known false fail, judge by reading: 'collagen is the main structural protein in skin' trips the structure regex."
+  },
+  {
+    "query": "how much collagen should I take for my skin?",
+    "category": "product-collagen",
+    "source": "us-15-ac35-2026-10-19",
+    "surface": "brand",
+    "answer_handles": [
+      "reverse-signs-skin-aging"
+    ],
+    "must_match": [
+      "(?<![\\d.])0\\.5\\s*(?:g|grams?)?(?:\\s*(?:/|per|a)\\s*day)?\\s*(?:to|up to|through|-|–|—|−|and)\\s*10(?:\\.0)?\\s*(?:g\\b|gm\\b|grams)",
+      "batool|jocd\\.71041"
+    ],
+    "must_not_mention": [
+      "within the range studied",
+      "Pu 2023",
+      "Pu et al",
+      "Kim 2022",
+      "Kim et al",
+      "Myung"
+    ],
+    "must_not_match": [
+      "\\bcollagen\\b(?:(?!\\.\\s)[^\\n]){0,200}(wrinkle|fine line|rebuild|structur)",
+      "(wrinkle|fine line|rebuild|structur)(?:(?!\\.\\s)[^\\n]){0,200}\\bcollagen\\b",
+      "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside (?:that|the|this) range|in line with|consistent with|falls in|in the middle of|covered by)\\b",
+      "\\b(you should take|aim for|i (?:would )?recommend taking)\\b"
+    ],
+    "notes": "US-15 AC35 (2026-10-19, second review R1): the dose question with Brad's 'reverse signs of skin aging' post loaded, which says he takes 10-15 g of collagen peptides a day. The prompt rule says to report Brad's own article as written and still give the trials' range. Same assertions as the no-article twin; the advice regex may false-fail on a quoted 'I take' line (judge by reading)."
   },
   {
     "query": "how much collagen should I take for my skin?",
@@ -2610,8 +2639,8 @@
       "collagen-benefits-best-forms-dosing-and-side-effects"
     ],
     "must_match": [
-      "0\\.5\\s*(?:g|grams)?(?:\\s*(?:/|per|a)\\s*day)?\\s*(?:to|up to|-|–|—|and)\\s*10\\s*(?:g\\b|gm\\b|grams)",
-      "batool"
+      "(?<![\\d.])0\\.5\\s*(?:g|grams?)?(?:\\s*(?:/|per|a)\\s*day)?\\s*(?:to|up to|through|-|–|—|−|and)\\s*10(?:\\.0)?\\s*(?:g\\b|gm\\b|grams)",
+      "batool|jocd\\.71041"
     ],
     "must_not_mention": [
       "within the range studied",
@@ -2624,9 +2653,10 @@
     "must_not_match": [
       "\\bcollagen\\b(?:(?!\\.\\s)[^\\n]){0,200}(wrinkle|fine line|rebuild|structur)",
       "(wrinkle|fine line|rebuild|structur)(?:(?!\\.\\s)[^\\n]){0,200}\\bcollagen\\b",
-      "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside|in line with|consistent with)\\b"
+      "12\\.5\\s*g(?:(?!\\.\\s)[^\\n]){0,120}\\b(within|inside (?:that|the|this) range|in line with|consistent with|falls in|in the middle of|covered by)\\b",
+      "\\b(you should take|aim for|i (?:would )?recommend taking)\\b"
     ],
-    "notes": "US-15 AC35 (2026-10-19, adversary R1): the same question with Brad's collagen reference article loaded, as the router likely does in production. The article has its own dosing table (2.5-5 g for skin) and a 10-15 g/day summary; the prompt rule says to give the trials' 0.5 to 10 g range even when a loaded article gives other doses. Same assertions as the no-handles twin; the wrinkle regexes may false-fail on the article's own wording (judge by reading)."
+    "notes": "US-15 AC35 (2026-10-19, adversary R1): the same question with Brad's collagen reference article loaded, as the router likely does in production. The article has its own dosing table (2.5-5 g for skin) and a 10-15 g/day summary; the prompt rule says to give the trials' 0.5 to 10 g range even when a loaded article gives other doses. Same assertions as the no-handles twin; the wrinkle regexes may false-fail on the article's own wording (judge by reading). Second review (2026-10-19): the range regex is anchored so 10.5 cannot pass and takes 'through', a Unicode minus and '10.0'; the citation may be the DOI link instead of the name; a personal-dose phrase ('you should take', 'aim for', 'I recommend taking') fails. Known false fail, judge by reading: 'collagen is the main structural protein in skin' trips the structure regex."
   },
   {
     "query": "Is MicroVitamin gluten free?",
