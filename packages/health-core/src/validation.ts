@@ -349,6 +349,8 @@ export const labImportPageSchema = z.object({
 export const labImportRequestSchema = z.object({
   pages: z.array(labImportPageSchema).min(1).max(100),
   unitSystem: z.enum(['si', 'conventional']).optional(),
+  /** Sent only by a widget that files a value on its own `recordedAt` (US-12 AC12). */
+  ownDates: z.literal(true).optional(),
 });
 
 export type LabImportRequest = z.infer<typeof labImportRequestSchema>;
@@ -359,6 +361,8 @@ export const batchImportRequestSchema = z.object({
   files: z.array(z.object({
     pages: z.array(labImportPageSchema).min(1).max(100),
   })).min(1).max(200),
+  /** As on a single file (US-12 AC12). */
+  ownDates: z.literal(true).optional(),
 });
 
 /** Bulk measurement save — array variant of measurementSchema */

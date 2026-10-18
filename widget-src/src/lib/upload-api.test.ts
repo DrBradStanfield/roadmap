@@ -87,7 +87,7 @@ describe('privacy: no file name in the request body', () => {
     expect(raw[0]).not.toContain('Jane');
     expect(raw[0]).not.toContain('.pdf');
     expect(raw[0]).not.toContain('.zip');
-    expect(JSON.parse(raw[0])).toEqual({ batch: true, files: [
+    expect(JSON.parse(raw[0])).toEqual({ batch: true, ownDates: true, files: [
       { fileName: 'file-1', pages: NAMED[0].pages },
       { fileName: 'file-2', pages: NAMED[1].pages },
     ] });
@@ -110,11 +110,13 @@ describe('privacy: no file name in the request body', () => {
     expect(oldBatchSchema.safeParse(body).success).toBe(true);
     const parsed = batchImportRequestSchema.parse(body);
     expect(parsed.files).toEqual([{ pages: NAMED[0].pages }, { pages: NAMED[1].pages }]);
+    expect(parsed.ownDates).toBe(true); // US-12 AC12: this widget files a value on its own day
   });
 
-  it('the single-file path sends pages and the unit system only', async () => {
+  // US-12 AC12: `ownDates` tells the server this widget files a value on its own day.
+  it('the single-file path sends pages, the unit system and ownDates only', async () => {
     await labImport(NAMED[0].pages, 'si');
-    expect(JSON.parse(raw[0])).toEqual({ pages: NAMED[0].pages, unitSystem: 'si' });
+    expect(JSON.parse(raw[0])).toEqual({ pages: NAMED[0].pages, unitSystem: 'si', ownDates: true });
   });
 });
 
