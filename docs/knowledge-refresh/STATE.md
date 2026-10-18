@@ -29,7 +29,8 @@ Every batch: AC8 signed by Brad (sheets signoff-*.md); answer checks (AC5) pre-r
 
 ## When work resumes (Brad 2026-10-15: new batches only on his word, later in the week)
 1. AC5 answer checks after 2026-11-01: `npx tsx --env-file=.env tools/test-chatbot-matching.ts --fixed-handles-only --category <pathway-refresh-...>` against main before and after each batch's merge commit; proposed flip rule (pending Brad): 3 runs per case, majority decides; a batch passes if no case passing on baseline fails on candidate and every changed-fact case passes on candidate; read any failure by hand.
-2. Batch 4 onward: next 20 changed pathways by traffic from ~/Documents/knowledge-refresh-recovery/runs/traffic-ranking-2026-10-14.csv (about 550 changed pathways remain; refresh-manifest.csv in the raw folder).
+2. First, before batch 4 (Brad 2026-10-18, issue #169): re-source the references in `cocoa-flavanols-benefits-forms-dosing-and-side-effects`. All 12 of its DOIs in `docs/loops/chat-health/lint-fix-queue.json` (rule link-dead) return 404 on doi.org and Crossref, so they look made up.
+3. Batch 4 onward: next 20 changed pathways by traffic from ~/Documents/knowledge-refresh-recovery/runs/traffic-ranking-2026-10-14.csv (about 550 changed pathways remain; refresh-manifest.csv in the raw folder).
 
 ## Batch recipe (as run for batch 3)
 1. Handles file + empty exceptions file; one Opus `worker` per entry with docs/knowledge-refresh/writer-brief-batch-3.md (HANDLE in the prompt; own scratch folder), at most 5 in flight; commit each entry as it lands; orchestrator notes in batch-N-notes.md.
