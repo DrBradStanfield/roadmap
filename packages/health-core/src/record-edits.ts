@@ -223,14 +223,21 @@ function toStoredLab(
   return canonical.stored;
 }
 
-/** Rule 8 — SI canonical, inside the range the app itself accepts. */
+/** Rule 8 — SI canonical, inside the range the app itself accepts. The
+ *  assistant that typed the number reads it back in the refusal. */
 function checkMeasurementValue(metricType: string, value: number): EditRejection | null {
+  const fault = measurementValueFault(metricType, value);
+  return fault?.reason === 'out-of-range' ? { ...fault, message: `${fault.message} (got ${value})` } : fault;
+}
+
+/** Rule 8's refusal without the number, for a bulk refusal (US-35 AC17). */
+function measurementValueFault(metricType: string, value: number): EditRejection | null {
   if (!Number.isFinite(value)) return reject('invalid-value', 'A value must be a finite number');
   const shape = healthInputSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean; error?: { issues: Array<{ message: string }> } } }>;
   const field = METRIC_TO_FIELD[metricType];
   const parsed = shape[field].safeParse(value);
   if (parsed.success) return null;
-  return reject('out-of-range', `${parsed.error?.issues[0]?.message ?? 'Value out of range'} (got ${value})`);
+  return reject('out-of-range', parsed.error?.issues[0]?.message ?? 'Value out of range');
 }
 
 /**
@@ -566,7 +573,7 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
         measurementRefusals.push({ index, metricType: input.metricType, reason: 'unknown-metric', message: 'Unknown core metric' });
         continue;
       }
-      const invalid = checkMeasurementValue(input.metricType, input.value);
+      const invalid = measurementValueFault(input.metricType, input.value);
       if (invalid) {
         measurementRefusals.push({ index, metricType: input.metricType, reason: Number.isFinite(input.value) ? 'out-of-range' : 'invalid-value', message: invalid.message });
         continue;

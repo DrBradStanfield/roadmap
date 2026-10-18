@@ -544,6 +544,16 @@ describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pu
     expect(result.skippedDuplicates).toBe(0);
   });
 
+  it('US-35 AC17 — a refusal names the metric and the reason, never the value', () => {
+    const result = bulkAppendValues(base(), [
+      { kind: 'measurement', metricType: 'weight', value: 987.65, recordedAt: day, source: 'lab_import' },
+    ], NOW);
+    const [refusal] = result.measurementRefusals;
+    expect(refusal).toMatchObject({ metricType: 'weight', reason: 'out-of-range' });
+    expect(refusal.message).toMatch(/\S/);
+    expect(JSON.stringify(result.measurementRefusals)).not.toMatch(/987/);
+  });
+
   it.each([20, 300])('US-35 AC17 — accepts inclusive weight boundary %s', value => {
     const result = bulkAppendValues(base(), [
       { kind: 'measurement', metricType: 'weight', value, recordedAt: day, source: 'lab_import' },
