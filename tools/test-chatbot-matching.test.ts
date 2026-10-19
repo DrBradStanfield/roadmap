@@ -392,7 +392,8 @@ describe('test-chatbot-matching router reply parsing (US-15 AC28)', () => {
 describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
   interface Entry {
     query: string; category: string; surface?: string; answer_handles?: string[]; user_context?: unknown;
-    must_mention?: string[]; must_match?: string[]; must_not_match?: string[]; expect_empty_context?: true;
+    must_mention?: string[]; must_match?: string[]; must_not_match?: string[]; expect_no_plan?: true;
+    expect_roadmap_run?: boolean;
   }
   const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
   const CATEGORIES = 'own-data-analysis,algorithm-precedence,algorithm-precedence-parked,minor-gate';
@@ -478,15 +479,17 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     expect(noSurface.status).toBe(1);
   }, 60_000);
 
-  // Adversary round 2 (2026-10-12, R2): production sends '{}' whenever sex or height is missing, so a
-  // fixture may declare that its payload collapses; the harness then sends '{}' as production does.
-  it('a payload declared expect_empty_context sends production\'s \'{}\'; undeclared, or making a plan, it exits', () => {
+  // US-15 AC36 (2026-10-18): production sends the saved values with no plan when sex or height is
+  // missing (it used to send '{}'). A fixture declares a payload that makes no plan, so a payload
+  // that silently lost its sex or height still exits; the harness sends the context production sends.
+  it('a payload declared expect_no_plan sends production\'s no-plan context; undeclared, or making a plan, it exits', () => {
     const noSex = { heightCm: 168, systolicBp: 138, diastolicBp: 88, ldlC: 3.9, unitSystem: 'si', medications: [], screenings: [] };
     const fixture = (extra: Partial<Entry>): Entry => ({ query: 'can you analyze my data', category: 'own-data-analysis', surface: 'doctor', answer_handles: [], user_context: noSex, must_mention: ['x'], ...extra });
-    const declared = run([fixture({ expect_empty_context: true })]);
+    const declared = run([fixture({ expect_no_plan: true })]);
     expect(declared.calls.length, declared.stderr).toBe(1);
-    expect(declared.calls[0].system.map(b => b.text)).toContain('## Current User Health Data\n\n{}');
-    for (const bad of [fixture({}), fixture({ expect_empty_context: true, user_context: { ...noSex, sex: 'female' } })]) {
+    expect(declared.calls[0].system.map(b => b.text)).toContain(`## Current User Health Data\n\n${resolveChatContext(noSex).userContextJson}`);
+    expect(JSON.parse(resolveChatContext(noSex).userContextJson).missingInputs).toContain('sex');
+    for (const bad of [fixture({}), fixture({ expect_no_plan: true, user_context: { ...noSex, sex: 'female' } })]) {
       const { status, stderr, calls } = run([bad]);
       expect(stderr).toMatch(/user_context does not parse.* on: can you analyze my data/);
       expect(calls).toEqual([]);
@@ -521,6 +524,102 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     ];
     expect(verdicts(fixtureOf("I'm 28 weeks pregnant"), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
   }, 120_000);
+
+  // US-15 AC36 (Codex and adversary on ed43aeb4/be12d288): the grade check works clause by clause, so a
+  // negation or condition before the test name is a refusal, and a grade in another clause still fails.
+  it('the AC36 fixture fails a grade of a saved value and passes a refusal to grade', () => {
+    // Each answer carries the parts the fixture requires (a saved value, a height request and why), plus one test sentence.
+    const ask = ' Your saved LDL is 3.9 mmol/L. Please tell me your height, because the roadmap needs it to work out your BMI and protein target. You can enter it in the roadmap tool.';
+    const grades = [
+      "Your LDL is high, but I can't run the plan without your height.",
+      "I can't run your plan yet, but your LDL is high.",
+      "I can't calculate your BMI without your height; your LDL is elevated.",
+      'Not everything can be assessed yet, but your blood pressure is above target.',
+      "Don't worry: your HbA1c is in range.",
+      'I can’t give a full plan, though your cholesterol looks raised.',
+      'Your LDL of 3.9 mmol/L is high, and if you share your height the roadmap can build your plan.',
+      'Your LDL is above target, so ask your doctor whether a statin fits.',
+      'Your LDL is classified as high.',
+      'Your LDL, at 3.9 mmol/L, is high.',
+      'LDL: 3.9 mmol/L is high.',
+      'There is no doubt that your LDL is high.',
+      'No need to panic — your LDL is only mildly elevated.',
+      "I can't build your full plan yet — your LDL is high.",
+      "I can't run your plan yet, and your LDL is high.",
+      // Review R3 (2026-10-20): diagnosis words and other linking verbs.
+      'Your blood pressure counts as stage 1 hypertension.',
+      'Your HbA1c is in the prediabetes range.',
+      'Your BP falls into the hypertension range.',
+      'Your blood pressure qualifies as stage 2.',
+    ];
+    const refusals = [
+      "I can't say your LDL is high without a roadmap plan.",
+      'Your LDL is not graded as high or normal without a plan.',
+      "I wouldn't say your LDL is high or normal until the roadmap runs.",
+      "The roadmap doesn't yet say your blood pressure is high or normal.",
+      "It isn't my place to say your LDL is high; the roadmap decides that.",
+      "There's no way for me to say your LDL is high without the plan.",
+      "Until you add your height, I'll hold off on saying your LDL is high or on target.",
+      'Your LDL is not classified as high without a plan.',
+      "I can't say whether your LDL and blood pressure are high without a plan.",
+      "I can't say whether your LDL, blood pressure and HbA1c are high or normal until the roadmap has your height.",
+      "I can't say whether your LDL (3.9), blood pressure (138/88) and HbA1c (40) are high or normal yet.",
+      "I can't say whether your LDL of 3.9 and blood pressure of 138/88 are high or normal.",
+      "I can't say whether your blood pressure counts as hypertension until the roadmap runs.",
+    ];
+    expect(verdicts(fixtureOf('what do my results show?'), [...grades, ...refusals].map(s => s + ask)))
+      .toEqual([...grades.map(() => 'fail'), ...refusals.map(() => 'pass')]);
+  }, 120_000);
+
+  // US-15 AC36 (2026-10-20, Brad): with no plan, the bot asks for the missing value and says where to give
+  // it. The chat cannot save sex or height, so it points to the tool and never claims a save.
+  it('the AC36 fixtures fail an answer that skips the tool or claims to save the height', () => {
+    const why = ' Your saved LDL is 3.9 mmol/L. Please tell me your height, because the roadmap needs it to work out your BMI and protein target.';
+    // Review R1 (2026-10-20): a refusal that names the form without sending her there is not a pointer.
+    expect(verdicts(fixtureOf('what do my results show?'), [why, why + " I can't add it to your profile.", why + ' Enter it in the roadmap tool and it can run your plan.']))
+      .toEqual(['fail', 'fail', 'pass']);
+    const bad = [
+      "I've saved your height as 165 cm. Your roadmap can now run.",
+      "Done! I've updated your height to 165 cm in the form.",
+      "Sure, I'll save that for you. Add anything else in the form.",
+      'Your height is now saved. You can also enter it in the tool.',
+      'Thanks! At 165 cm the roadmap can run your plan.',
+      // Review R1 (2026-10-20): the pre-fill offer, the passive save and the gone-ahead save; bare refusals.
+      'Would you like me to pre-fill your height of 165 cm? You can also enter it in the tool.',
+      'Your height of 165 cm has been saved. You can also enter it in the tool.',
+      "I've gone ahead and saved it. You can also enter it in the tool.",
+      "I can't save your height from this chat.",
+      "I can't add it to your profile here.",
+    ];
+    const good = [
+      "I can't save it from this chat. Please enter your height in the roadmap tool, and it can then run your plan.",
+      "This chat can't store it, so add your height (165 cm) to your profile in the tool.",
+      "I'm not able to save values here. Fill in your height in the form and press Save.",
+    ];
+    expect(verdicts(fixtureOf('can you save my height'), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
+  }, 120_000);
+
+  // US-15 AC36 review R2 (2026-10-20): the in-chat half. Sex and height stated this turn go through run_roadmap,
+  // and the answer comes from its plan. The offline stub never calls the tool, so the regexes are scored directly,
+  // on text lowercased with straight quotes as the harness scores it.
+  it('the stated-sex-and-height fixture wants run_roadmap and fails an answer that asks again or claims a save', () => {
+    const q = cases.find(c => c.query === "I'm 165 cm and male, analyse my data")!;
+    expect(q.expect_no_plan).toBe(true);
+    expect(q.expect_roadmap_run).toBe(true);
+    const scores = (answer: string) => {
+      const t = answer.toLowerCase().replace(/[’‘]/g, "'");
+      return q.must_match!.every(r => new RegExp(r).test(t)) && !q.must_not_match!.some(r => new RegExp(r).test(t));
+    };
+    const tail = " These values aren't saved, so enter your sex and height in the roadmap tool to keep them.";
+    expect(scores('With your height and sex, the roadmap suggests talking to your doctor about your LDL.' + tail)).toBe(true);
+    for (const bad of [
+      'What is your height? The roadmap needs it.' + tail,
+      'The roadmap has no plan for you yet.' + tail,
+      "I've saved your height and sex. Enter anything else in the form.",
+      'From your roadmap, your LDL card says to talk to your doctor.', // no "not saved", no pointer
+      "These values aren't saved, and I can't add them to your profile.",
+    ]) expect(scores(bad), bad).toBe(false);
+  });
 
   it('the insulin case fails the roadmap\'s screening cut-offs given as her target (US-15 AC32)', () => {
     const bad = [

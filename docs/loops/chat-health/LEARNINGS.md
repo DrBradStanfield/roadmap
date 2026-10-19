@@ -147,6 +147,12 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   sends '{}' when sex or height is missing, so the model says the data is
   empty. It fails 0/6 on 925d3d1 too. Do not read a miss as a regression or
   tune the prompt for it; it clears only when production sends partial data.
+- **2026-10-18 [loop]** X3's upstream cause is fixed (US-15 AC36): with
+  no sex or height, production now sends the saved values and `missingInputs`,
+  with no cards. X3 is an expected pass from here; a miss now is a real
+  regression. Its partner fixture, source `us-15-ac36-2026-10-18`, checks the
+  answer asks for height and says why. Neither is measured yet (test key
+  limit until 2026-11-01).
 - **2026-10-18 [classifier]** A classifier model swap moves labels with no
   prompt change. Replayed with thread context, Haiku 5.5 labelled six
   mid-thread value corrections ROUTE 30/30; Haiku 4.5 said MEASUREMENT 12/12.
