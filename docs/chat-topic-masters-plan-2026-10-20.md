@@ -1,8 +1,9 @@
-# Topic masters: plan
+# Topic masters: plan (v2)
 
-Status: plan for Brad, 2026-10-20. Nothing built. Supersedes the analysis in
-[chat-topic-masters-proposal-2026-10-20.md](chat-topic-masters-proposal-2026-10-20.md).
-Story: a new US (draft below), extending US-15.
+Status: plan for Brad, 2026-10-20. Nothing built. v2 folds in a fresh Opus
+adversary review (17 findings) and Codex (gpt-6.1-sol, 2 findings) of v1.
+Earlier analysis: [chat-topic-masters-proposal-2026-10-20.md](chat-topic-masters-proposal-2026-10-20.md).
+Stories: extends US-15 (chat) and US-42 (knowledge refresh).
 
 ## The problem in one paragraph
 
@@ -20,215 +21,285 @@ most out of date.
 | # | Decision |
 |---|---|
 | D1 | Each of the 113 reference pages becomes its topic's master: current view on top with a `reviewed:` date, the evidence review below, and a dated list of Brad's videos on the topic. |
-| D2 | Video posts get a `topics:` list naming their master. Linked posts leave the router's list. They stay in the system for YouTube comments and readers. |
-| D3 | Posts with no master (statins, exercise and the like) stay visible to the router. |
-| D4 | A master changes for two reasons only: a new Brad video, or a change in its sources (ConsumerLab, NIH ODS). No PubMed literature search: a single new paper must not swing the conclusion. |
+| D2 | Video posts get a `topics:` list naming their master. Posts a master fully covers leave the router's list. All posts stay in the system for YouTube comments and readers. |
+| D3 | Topics with no master stay visible to the router. |
+| D4 | A master changes for two reasons only: a new Brad video, or a change in its sources (ConsumerLab, NIH ODS). No literature search: one new paper must not swing a conclusion. |
 | D5 | Sources are re-checked monthly. |
-| D6 | A mechanical lint fails loudly when a master is older than its newest linked post, a source is overdue, or a master changed but the other places its topic appears did not. |
+| D6 | A mechanical lint flags a master older than its newest linked post, an overdue source, or a master that changed while the other places its topic appears did not. |
 | D7 | The three clinical files stay, and the lint checks them against the master. |
 | D8 | products.md keeps the latest studies behind each product ingredient, not just product facts. |
 | D9 | Opus writes, a fresh adversary and Codex review. When the review is clean, publish without Brad. Bring Brad only the points where we are unsure. |
-| D10 | Old video posts are never edited. When a master changes, its published web page is updated too. |
+| D10 | Old video post bodies are never edited (only a `topics:` line is added to their frontmatter). When a master changes, its published web page is updated too. |
 | D11 | All 113 masters now, in batches. |
-| D12 | Masters live in this repo's `docs/blog/`; triggers and source checks live in claude_business (`/blog-post`, the supplement-wiki tooling). This is the existing split. |
+| D12 | Masters live in this repo's `docs/blog/`; triggers and source checks live in claude_business (`/blog-post`, supplement-wiki tooling). This is the existing split. |
 | D13 | ConsumerLab rules stand: our own words, never its proprietary sections, raw text never in the repo. |
+
+## What changed from v1, and why
+
+| v1 said | v2 says | Found by |
+|---|---|---|
+| Hide every post with a `topics:` tag | Hide only posts whose whole subject is one master's substance; never tag drug, lifestyle or test posts to a supplement master | both reviewers |
+| Tag and hide all posts first | A post hides only once its master has been rewritten (`reviewed:` set), behind an env flag | adversary |
+| Same-view video: "bump nothing" | A same-view video moves `reviewed:` forward (the view was confirmed) | both |
+| Date checks in `test:all` | Date checks in the weekly knowledge-lint loop (US-43); only static checks in `test:all` | adversary |
+| A new general safety rule | No new rule; the collagen and nitric-oxide lines stay | adversary |
+| Move per-topic rules into masters | Keep them where they are; register them so the lint flags them when a master changes | adversary |
+| Agents publish to Shopify with `--update` | The ID map is stale and the tool defaults to the wrong store; see section 8 | adversary |
+| A new process beside US-42 | Master rewrites run under US-42's checker and rules; D9 needs US-42 AC6 and AC8 amended | adversary |
 
 ## Design
 
 ### 1. The master page
 
-Every reference keeps its URL, handle and evidence review. Three additions:
+Every reference keeps its URL, handle and evidence review. Additions:
 
-```markdown
----
-type: "reference"
-reviewed: "2026-10-20"            # date the current view was last confirmed
-sources:                          # one row per source, re-checked monthly
-  - { name: consumerlab, url: "...", checked: "2026-10-20", fingerprint: "sha256:..." }
-  - { name: nih-ods,     url: "...", checked: "2026-10-20", fingerprint: "sha256:..." }
-  - { name: brad-video,  handle: "the-collagen-peptides-for-skin-story-is-changing", date: "2026-10-15" }
----
+- Frontmatter, one line per key (the index builder reads only `key: value`
+  lines): `reviewed: "2026-10-20"` and `sources:` as single-line JSON
+  (name, url, checked date, fingerprint). The loader strips frontmatter
+  before the answer model sees a page, so URLs and hashes never reach it.
+- `## Current view (reviewed 20 October 2026)`: 3–6 sentences. The
+  conclusion, the key citation, the dose the trials used, who it is for
+  and who it is not for.
+- `## Brad's videos on this topic`: date, title, one-line take, and
+  "superseded on X" where the view has since moved.
+- The evidence review below, revised to agree.
+- The index summary is rewritten in the same commit (collagen's still says
+  "wrinkle reduction … 10–15g/day", and the router reads it every time).
 
-## Brad's current view (reviewed 20 October 2026)
-3–6 sentences. The conclusion, the key citation, the dose the trials used,
-who it is for and who it is not for.
+**Whose view.** The answer prompt lets the model quote loaded content as
+Brad's view, so this section must never put words in his mouth:
 
-## Brad's videos on this topic
-- 15 Oct 2026, "The Collagen Peptides for Skin Story is Changing": hydration
-  and elasticity improve; wrinkles do not. Current.
-- 27 Aug 2025, "No Evidence to Support the Use of Collagen Supplements":
-  rebutted Myung 2025; claimed wrinkle benefits. Superseded on wrinkles.
-- ...
-
-## (existing evidence review, revised to agree with the current view)
-```
-
-The current view comes from Brad's own latest words on the topic, in order:
-his newest video post on it, then products.md and the clinical files where
-they carry a Brad position. The writer never invents a position. Where Brad
-has never spoken on a topic, the current view is an evidence summary from
-ConsumerLab and NIH, labelled as such (Q1).
+- Where Brad has a video or post on the topic, the current view restates
+  that post, and each sentence cites its handle.
+- Where he has none (most of the 113), the section is titled
+  "Current evidence position", says it is an evidence summary, and does
+  not claim to be his view (Q1).
 
 ### 2. Linking posts to masters
 
-- A Sonnet pass proposes `topics:` for all 202 video posts, from title,
-  summary and body; an Opus pass checks each proposal. A post can name
-  several masters (a "5 supplements that work" post names five).
-- `scripts/rebuild-blog-index.ts` carries `topics` into `index.json`.
-- The router's view (`chat-router.server.ts`) drops a post whose `topics`
-  is non-empty. Posts without `topics` stay. A unit test asserts every
-  untagged post and every master is in the router's view, so a topic
-  without a master can never disappear (D3).
-- Router prompt rules 3 and 4 change: a supplement question routes to the
-  master; "what does Dr Brad think" routes to the master, whose video list
-  answers "what did you say in the video". A post with no master still
-  routes as today.
-- Expected effect: about 20% fewer router lines, and one file loaded per
-  supplement instead of up to three (about a third less loaded text on the
-  10-18 collagen question).
+- Sonnet proposes `topics:` for the 202 posts; Opus checks each one.
+- A post is **hidden from the router** only when its whole subject is one
+  master's substance (the four collagen posts, the four NAD/NMN posts).
+  A post that mixes subjects keeps its tag for the master's video list but
+  stays routable (reverse-signs-skin-aging also covers sunscreen and
+  retinoids; salt-substitutes holds the SSaSS trial; 5-livesaving-blog-tests
+  is about blood tests). Drug posts (GLP-1, statins), lifestyle and test
+  posts are never tagged to a supplement master.
+- That flag is explicit: `router: hidden` in the post's frontmatter,
+  set only by the Opus check, never inferred from `topics:`.
+- Gate in code: a hidden post stays in the router view until its master has
+  a `reviewed:` date. So no topic ever loads a stale master alone.
+- The filter sits in the router's index block, not in `loadBlogIndex()`
+  (the YouTube bot finds posts through that), and the matching harness
+  applies the same filter. ROUTER_VERSION is bumped. An env flag turns the
+  filter off, which is the rollback.
+- Tests: every untagged post, every mixed post and every master stays in the
+  router view; a mixed-topic regression case. The 27 router fixtures that
+  expect a post handle are re-pointed to the master before the filter ships.
+- Router rules 3 and 4 change so supplement questions and "what does Dr Brad
+  think" route to the master.
+- Effect, honestly sized: articles are the most-loaded type today (155 of 389
+  loaded slots since 09-20). Hiding single-subject posts cuts the duplicates
+  on supplement questions. The index shrinks by much less than 20%, because
+  mixed posts stay.
 
 ### 3. YouTube
 
-A comment on a video still loads that video's post by video ID, as today
-(D2). New: the bot also loads the post's master(s) into the same platform
-context, after the post. The YouTube prompt gains a two-axis rule: the video's
-post is the authority on what the video said; the master is the authority on
-Brad's view today. Where they differ, the reply says the view has moved on
-and gives the current one. The current "canonical, authoritative" wording in
-`chat-youtube-prompt.md` changes to match.
+A comment still loads its video's post by video ID. New:
+
+- The bot also loads the **current-view section only** of the post's
+  master(s), not the whole page (references run 29–83K characters, and the
+  YouTube context is uncached), de-duplicated against the router's picks and
+  size-capped.
+- Masters added this way do not count as "related articles loaded" for the
+  reply-or-skip rule in `chat-youtube-prompt.md`, so the bot does not start
+  replying to comments it skips today.
+- Two-axis rule: the video's post is the authority on what the video said;
+  the current view is the authority on Brad's view today.
+- Whether a public reply may say "Brad's view has since changed" under his
+  own old video is a question for Brad (Q5).
 
 ### 4. Precedence in the answer prompt
 
-One general rule replaces per-topic "even when a loaded article says
-otherwise" clauses: a master's current view beats any older loaded post, and
-a reply says plainly when Brad's view changed. Loaded blocks get a header
-with their type and date so the model can apply it.
+- Loaded blocks get a header with type and date.
+- One rule: a master's current view beats any older loaded post, and a reply
+  says plainly when the view changed.
+- This must be reconciled with the existing section that calls loaded
+  content "supplementary, not authoritative": the current view outranks
+  posts, and the system prompt and products.md still outrank both.
 
-### 5. What happens to per-topic rules (collagen worked through)
+### 5. Per-topic rules (collagen worked through)
 
-Today's collagen rule (`chat-system-prompt.md:104`, about 1,500 characters)
-mixes five kinds of instruction. Each goes to the place that is loaded when
-it is needed:
+v1 proposed moving these out of the system prompt. The review showed that is
+mostly unsafe, so v2 keeps them and makes the lint watch them.
 
-| Part of the rule | Example | Goes to | Why |
-|---|---|---|---|
-| Evidence claim | "may improve skin hydration and elasticity (Batool 2026)" | master's current view, and products.md (D8) | the master carries the view; products.md is always loaded, so product questions still see it |
-| Dose the trials used | "Trials used 0.5 to 10 g a day" | master and products.md | same |
-| Precedence | "even when a loaded article or video gives other doses"; never cite Myung 2025 | the general rule (section 4) plus the master marking Myung as superseded | no topic-specific clause needed |
-| Product compliance | never imply 12.5 g is within the studied range; structure/function wording only | stays always loaded: products.md's collagen block (it is already there twice, lines 149 and 518) | must hold on product turns, where the router never runs |
-| Clinical safety | never for a skin disease, wound, burn, or a pathway-covered condition | stays in the system prompt, rewritten as a general rule for any supplement | a safety line must not depend on routing |
+The collagen line (`chat-system-prompt.md:104`, 1,334 characters) mixes:
 
-The catch, and why this is not "delete the rule": the classifier skips the
-router on about 59% of turns, including product questions, and the router
-returns nothing for questions about Brad's own products ("how much collagen is
-in MicroVitamin+?" loaded nothing on 10-16 and 10-17). On those turns no
-master loads. Anything
-that must hold on every turn stays in an always-loaded block: products.md for
-ingredients in Brad's products, the system prompt for safety. So the system
-prompt shrinks only by the topic-specific evidence and precedence clauses.
-Today that is two rules (collagen, nitric oxide), so the saving is small. The
-real gain is that the next change of view goes to one master plus products.md,
-not into the system prompt.
+| Part | Example | v2 |
+|---|---|---|
+| Evidence claim | "may improve skin hydration and elasticity (Batool 2026)" | stays; also in the master and products.md (D8) |
+| Trial dose | "Trials used 0.5 to 10 g a day" | stays; also in the master and products.md |
+| Precedence | "even when a loaded article gives other doses"; never cite Myung 2025 | stays for now; the general rule (section 4) covers it once tested |
+| Product compliance | never imply 12.5 g is within the studied range | stays (system prompt and products.md) |
+| Clinical safety | never for skin disease, wounds, burns | stays, collagen-specific |
+
+Why it stays:
+- These lines hold on every turn. A master loads only when the router picks
+  it, and the router does not run on about half of turns (classifier skips
+  222 of 428 since 09-20) and returns nothing on 38 of the 206 it routes,
+  including product questions.
+- A general safety rule ("never for anything a loaded pathway covers") would
+  block vitamin D for deficiency, iron for iron deficiency, melatonin with
+  the insomnia pathway. That is a new clinical rule, not a refactor.
+- The nitric-oxide line encodes Brad's dietary-nitrate position, which the
+  nitric-oxide reference (citrulline, arginine, beetroot) does not.
+- US-15 AC35 says the collagen rule lives in the system prompt and
+  products.md.
+
+What changes: every such line (collagen, nitric oxide, the dose list at
+line 11, the omega-3 rule at line 12) goes in the topic register (section
+7), so when a master changes, the lint names the prompt lines to recheck.
 
 ### 6. Triggers
 
-**A new video** (`/blog-post`, claude_business). After writing the post:
-1. Propose its `topics:` from the script.
-2. For each master, compare the script's position with the master's current
-   view. Same view: add the video to the master's list, bump nothing else.
-   Changed view: draft a master update (section 8 pipeline).
-3. Run the lint.
+**A new video** (`/blog-post`, claude_business):
+1. Propose `topics:` and whether the post is single-subject.
+2. Compare the script's position with each master's current view.
+   - Same view: add the video to the list and move `reviewed:` forward.
+   - Changed view: draft a master update (section 8).
 
-**A source change** (monthly, claude_business). For each master, fetch the
-NIH ODS fact sheet (public HTTP) and the ConsumerLab page (Brad's logged-in
-Chrome through DevTools; captcha guard). Fingerprint the parts we use. A
-changed fingerprint queues a draft. ConsumerLab needs Brad's Mac and browser,
-so this is a local session, not a cloud loop (Q4).
+**A source change** (monthly):
+- NIH ODS fact sheets by public HTTP.
+- ConsumerLab through Brad's logged-in Chrome (DevTools; captcha guard
+  still open), extracting only the sections supplement-wiki already allows
+  (What It Is, What It Does, ConsumerTips, Concerns and Cautions).
+- The fingerprint is a hash of that extracted text, normalised (whitespace,
+  no dates or page furniture), so layout changes do not queue 113 drafts.
+- A changed fingerprint queues a draft.
+- Needs Brad's Mac and browser: a scheduled local session (Q4), and Brad
+  should check ConsumerLab's terms allow monthly automated reads (Q6).
 
-### 7. Lint (`tools/topic-lint.ts`, run in `test:all`)
+### 7. Lint
 
-Fails when:
-1. A master's `reviewed:` is older than its newest linked post.
-2. A source's `checked:` is more than 35 days old (monthly plus slack).
-3. A master's current view changed in a commit that did not touch, or
-   explicitly waive, each place listed for that topic in
-   `docs/topic-register.json`: products.md lines, the three clinical files'
-   ids (`supplement-collagen`), diet guideline lines, answer-bank entries,
-   system-prompt rules.
-4. A citation in a master's current view is missing from products.md where
-   the topic is a product ingredient (D8), or from `evidence.ts` where an id
-   is registered.
-5. A post names a master that does not exist, or a master has no sources.
+Extend the existing US-43 knowledge lint (`tools/knowledge-lint.ts`, with
+`lint-state.json` and `lint-allowlist.json`); do not add a second lint.
 
-The lint checks agreement mechanically (citations, dates, ids). It cannot
-judge whether two sentences mean the same thing; the adversary does that.
+**In `test:all` (static, never date-dependent):**
+1. A post names a master that does not exist; a master has no sources.
+2. A `router: hidden` post's master has no `reviewed:` date (gate check).
+3. Every DOI in a master's current view also appears in products.md where
+   the topic is a product ingredient. **Warn only**, never fail: a forced
+   copy into products.md or `evidence.ts` would turn every master edit into
+   a product-block or three-file change.
 
-### 8. Write, review, publish (per batch of about 10 masters)
+**In the weekly knowledge-lint loop (date-dependent, reports, never blocks
+deploys):**
+4. A master's `reviewed:` is older than its newest linked post.
+5. A source's `checked:` is more than 35 days old.
+6. A master's current view changed (content hash in `lint-state.json`)
+   while a place listed for that topic in `docs/topic-register.json` did
+   not. The register lists products.md blocks, `evidence.ts` ids, the
+   three clinical files, diet-guideline lines, answer-bank entries and
+   system-prompt lines. A deliberate non-change is waived in
+   `lint-allowlist.json` with author and date.
+7. Overlapping masters disagree on a shared DOI's conclusion (red yeast rice
+   and cholesterol-lowering supplements; arginine, citrulline and nitric
+   oxide; omega-3 and flaxseed) — flagged for the adversary, not decided.
 
-1. Sonnet: fetch ConsumerLab (Chrome) and NIH for the batch; record
-   fingerprints; collect each topic's linked posts.
-2. Opus `worker-opus`, one per master: write the current view, the video
-   list, and revise the evidence review to agree. Changes from the old page
-   are listed in a batch notes file.
-3. Fresh Opus `adversary` and Codex on the batch. Two rounds at most.
-4. **Unsure list.** Anything either reviewer or the writer could not settle
-   goes to Brad as a short list (D9). Always on it, whatever the reviewers
-   say: a change in the direction of a recommendation (for becomes against
-   or the reverse), a dose change, a new safety warning or one removed, a
-   conflict between ConsumerLab or NIH and Brad's latest video, and any
-   claim about one of Brad's products.
-5. Clean masters publish: commit the `.md`, update the drstanfield.com
-   article (`shopify-article-create.js --update`), regenerate and update the
-   microvitamin.com commerce copy (`commerceUrl`, brand posture), rebuild
-   the index. The chatbot reads the `.md` from the deployed app, so the
-   chatbot change goes live at the next Deploy (Brad, or the Tier 3 path).
-   Agents cannot deploy.
+Putting date checks in `test:all` would turn CI red 36 days after any commit,
+block every deploy including security fixes, and fail rollbacks.
 
-Batch order: changed-view topics first (collagen; NAD/NMN with its four
-posts; resveratrol), then by chat traffic.
+The answer bank is generated in claude_business, so a flag on it is fixed
+there, not here.
 
-### 9. Draft story (for docs/user-stories.md)
+### 8. Write, review, publish (batches of about 10; 12 batches)
 
-US-xx Topic masters. ACs: one master per reference with `reviewed:` and
-`sources:`; `topics:` on posts; router view excludes linked posts and keeps
-every untagged post and every master (tested); YouTube loads the video's
-post plus its masters; the general precedence rule; lint checks 1–5 in
-`test:all`; publish updates both stores.
-Usage signal: loaded characters per routed turn and the share of
-supplement turns whose first loaded entry is a master, from
-`chat_match_events`.
+US-42 already governs these reference files (references-1 re-sourced five
+of them). Masters are written under its rules:
+- Raw-quote checker (AC2).
+- DOIs and PMIDs resolve; no Grokipedia; product mentions do not rise (AC7).
+- A study first seen in ConsumerLab is cited only with its PubMed abstract.
+
+Steps per batch:
+1. Sonnet fetches ConsumerLab and NIH, records fingerprints, collects each
+   topic's posts.
+2. One Opus `worker-opus` per master writes the current view, the video list,
+   the revised review and the new index summary. Changes are listed in a
+   batch notes file.
+3. US-42 checker, then a fresh `adversary` and Codex. Two rounds at most.
+4. **Unsure list to Brad** (D9). Always on it, whatever the reviewers say:
+   - a recommendation that changes direction;
+   - a dose change;
+   - a safety warning added or removed;
+   - ConsumerLab or NIH disagreeing with Brad's latest video;
+   - any claim about one of Brad's products;
+   - any change the lint says touches products.md, the system prompt or the
+     three clinical files (those are never auto-published).
+5. Clean masters: commit, rebuild the index, and wait for Brad's Deploy
+   (agents cannot deploy; Tier 3 rejects clinical content).
+6. **After the deploy is verified**, update the web pages, so the site and
+   the chatbot never disagree for days:
+   - drstanfield.com: resolve the article ID by handle through the API (the
+     ID map is stale: 0 of 113 keys match a current handle), run with `--edu`
+     explicitly (the tool defaults to microvitamin.com), and save the old
+     body for rollback.
+   - microvitamin.com: the commerce copy is rebuilt from the live page plus
+     product callouts, not from the `.md`, so it always goes on Brad's list.
+
+**What D9 needs changed first:** US-42 AC8 (Brad signs each batch) and AC6
+(no agent writes to Shopify) must be amended in `docs/user-stories.md`, with
+the unsure-list rule above, or the two processes contradict each other.
+Auto mode may also block Shopify writes; if so, Brad adds an allow rule or
+runs the publish command himself.
+
+Batch order: changed-view topics first (collagen; NAD/NMN; resveratrol), then
+by chat traffic.
+
+### 9. Draft story
+
+US-xx Topic masters (extends US-15 and US-42). ACs:
+- One master per reference with `reviewed:` and `sources:`.
+- `topics:` on posts; `router: hidden` only on single-subject posts.
+- The router view keeps every untagged post, every mixed post and every
+  master (tested), and hides nothing whose master is unrewritten.
+- YouTube adds the master's current view, capped, outside the skip rule.
+- The precedence rule.
+- Lint checks 1–3 in `test:all`, 4–7 in the weekly loop.
+- Web pages updated after deploy, per store.
+
+Usage signal: loaded characters per routed turn, and the share of supplement
+turns whose first loaded entry is a master (`chat_match_events`).
 
 ## Pushback
 
-1. **Publishing without Brad (D9).** Agreed, with the unsure list in step 4
-   as the floor. This changes the pathway-refresh rule (Brad signs every
-   batch), so it needs writing into the refresh rulings, or the two
-   processes will contradict each other.
-2. **Agents writing to Shopify.** Updating live articles is a live write.
-   Auto mode may block it, as it blocked report edits in the pathway refresh.
-   If it does, either Brad adds an allow rule for
-   `shopify-article-create.js --update`, or the batch stops at "ready to
-   publish" and Brad runs one command.
-3. **Two web pages per master.** Each reference exists on drstanfield.com and,
-   rewritten for brand posture, on microvitamin.com. Updating both doubles
-   the publish step and the review surface (the commerce rewrite has its own
-   compliance rules).
-4. **Grokipedia.** The supplement-wiki pipeline uses it as a third source.
-   D4 names only ConsumerLab and NIH. I would drop it from the monthly
-   check: it is the least reliable of the three and changes often, which
-   would trigger needless drafts (Q2).
-5. **Scale.** 113 masters is about 6 pathway-sized batches of clinical
-   writing, plus 202 post tags. ConsumerLab extraction for 113 topics through
-   Brad's browser is the slow part, and the captcha guard is still open.
+1. **Regression testing is not optional.** You said no measuring, and I agree
+   we skip a separate study. But the router change moves 27 existing fixtures
+   and touches every supplement answer, so the existing router harness runs
+   before the filter ships, as for any router change. It needs the test API
+   key (capped until 2026-11-01) or your yes for the production key.
+2. **D9 is the biggest risk.** 113 masters published without you, each loaded
+   on every question about its topic. The unsure list is the floor. It will
+   be long in the first batches.
+3. **Cost.** Agents run on your Claude plan, not the API. Rewriting 113
+   masters plus reviews is about the size of the pathway refresh, which hit
+   session limits twice. Codex runs on your ChatGPT plan; if it runs out, the
+   review is adversary-only (Q7).
 
 ## Questions for Brad
 
-- **Q1.** Topics where you have never made a video (most of the 113): is an
-  evidence summary labelled "evidence summary, not a Brad position" right, or
-  should those masters carry no current-view section?
-- **Q2.** Drop Grokipedia from the monthly source check?
-- **Q3.** Does an update to the microvitamin.com copy go out with the
-  drstanfield.com one every time, or only when the change touches a product
-  claim?
+- **Q1.** Topics you have never made a video on: is a section titled "Current
+  evidence position" (an evidence summary, not your view) right?
+- **Q2.** Router: hide single-subject posts only (v2), or keep all posts and
+  rely on the master winning by precedence?
+- **Q3.** D9 means amending US-42 AC6 and AC8. Confirm, with the unsure list
+  in section 8 step 4 as the rule?
 - **Q4.** Monthly ConsumerLab checks need your Mac and logged-in Chrome. OK
-  to run them as a scheduled local session?
+  as a scheduled local session?
+- **Q5.** May the YouTube bot say publicly, under your old video, that your
+  view has since changed?
+- **Q6.** Will you check ConsumerLab's terms allow monthly automated reads of
+  113 pages?
+- **Q7.** If Codex is out of quota, or the work runs in a cloud loop, does D9
+  still allow publishing on the adversary's review alone?
+- **Q8.** microvitamin.com copies: always on your list (v2), or skip them
+  unless a product claim changes?
