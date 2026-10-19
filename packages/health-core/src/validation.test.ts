@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { IMPORT_LIMITS } from './import-hints';
-import { convertValidationErrorsToUnits, labImportPageSchema, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid, sanitizeInputs, excludedInputFields } from './validation';
+import { convertValidationErrorsToUnits, healthInputSchema, labImportPageSchema, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid, sanitizeInputs, excludedInputFields } from './validation';
+import { UNIT_DEFS } from './units';
 
 // ---------------------------------------------------------------------------
 // Client-side input validation (identity fields only — no unit conversion)
@@ -60,17 +61,27 @@ describe('validateInputValue', () => {
   });
 
   // PSA
-  it('rejects PSA above max (100)', () => {
-    expect(validateInputValue('psa', 150)).toBeUndefined();
+  // US-35 AC17 (Brad 2026-10-19): metastatic prostate cancer can read above 100.
+  it('rejects PSA above max (200)', () => {
+    expect(validateInputValue('psa', 200.1)).toBeUndefined();
   });
 
   it('accepts PSA within range', () => {
     expect(validateInputValue('psa', 2.5)).toBe(2.5);
+    expect(validateInputValue('psa', 150)).toBe(150);
   });
 
   it('accepts PSA at boundaries', () => {
     expect(validateInputValue('psa', 0)).toBe(0);
-    expect(validateInputValue('psa', 100)).toBe(100);
+    expect(validateInputValue('psa', 200)).toBe(200);
+  });
+
+  it('US-35 AC17 — the schema, the form range and the unit table agree on the PSA ceiling of 200 ng/mL', () => {
+    expect(healthInputSchema.shape.psa.safeParse(200).success).toBe(true);
+    const over = healthInputSchema.shape.psa.safeParse(200.1);
+    expect(over.success).toBe(false);
+    expect(over.error?.issues[0]?.message).toBe('PSA must be at most 200 ng/mL');
+    expect(UNIT_DEFS.psa.validationRange).toEqual({ si: { min: 0, max: 200 }, conventional: { min: 0, max: 200 } });
   });
 
   // Edge cases

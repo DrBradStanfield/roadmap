@@ -982,7 +982,7 @@ Source: `units.ts` (UNIT_DEFS) + `validation.ts`
 | creatinine | 10 umol/L | 2650 umol/L | 0.1 mg/dL | 30 mg/dL |
 | systolic_bp | 60 mmHg | 250 mmHg | 60 mmHg | 250 mmHg |
 | diastolic_bp | 40 mmHg | 150 mmHg | 40 mmHg | 150 mmHg |
-| psa | 0 ng/mL | 100 ng/mL | 0 ng/mL | 100 ng/mL |
+| psa | 0 ng/mL | 200 ng/mL | 0 ng/mL | 200 ng/mL |
 | lpa | 0 nmol/L | 750 nmol/L | 0 mg/dL | 300 mg/dL (= 750 / 2.5; EAS pairs 300 mg/dL with 750 nmol/L) |
 
 ### Profile Validation

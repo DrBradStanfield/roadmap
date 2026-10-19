@@ -95,7 +95,7 @@ export const healthInputSchema = z.object({
   psa: z
     .number()
     .min(0, 'PSA must be positive')
-    .max(100, 'PSA must be at most 100 ng/mL')
+    .max(200, 'PSA must be at most 200 ng/mL')
     .optional(),
   lpa: z
     .number()
@@ -400,7 +400,7 @@ const IDENTITY_FIELD_RANGES: Record<string, { min: number; max: number }> = {
   birthMonth: { min: 1, max: 12 },
   systolicBp: { min: 60, max: 250 },
   diastolicBp: { min: 40, max: 150 },
-  psa: { min: 0, max: 100 },
+  psa: { min: 0, max: 200 },
 };
 
 /**
