@@ -65,6 +65,29 @@ describe('trackProductEvent on the Shopify surface', () => {
     expect(body.metadata).toEqual({ picked: 1, openFailed: 1 });
   });
 
+  it('US-35 AC17 — counts a refused measurement once per metric and refusal word, not once per tab', async () => {
+    const { trackProductEvent } = await import('./server-api');
+    trackProductEvent('measurement_refused', { metric: 'ldl', refusal: 'invalid-value' });
+    trackProductEvent('measurement_refused', { metric: 'ldl', refusal: 'invalid-value' });
+    trackProductEvent('measurement_refused', { metric: 'psa', refusal: 'invalid-value' });
+    trackProductEvent('measurement_refused', { refusal: 'unknown-metric' });
+    expect(fetchMock.mock.calls.map(c => JSON.parse((c[1] as RequestInit).body as string).metadata)).toEqual([
+      { metric: 'ldl', refusal: 'invalid-value' }, { metric: 'psa', refusal: 'invalid-value' }, { refusal: 'unknown-metric' },
+    ]);
+  });
+
+  // Codex R1 2026-10-20: dropping `metric` from an out-of-range row must not
+  // collapse the throttle, so the metric stays in the LOCAL key only.
+  it('US-35 AC17 — counts two out-of-range metrics as two events, neither sending its metric', async () => {
+    const { trackProductEvent } = await import('./server-api');
+    trackProductEvent('measurement_refused', { refusal: 'out-of-range' }, 'weight');
+    trackProductEvent('measurement_refused', { refusal: 'out-of-range' }, 'weight');
+    trackProductEvent('measurement_refused', { refusal: 'out-of-range' }, 'psa');
+    const bodies = fetchMock.mock.calls.map(c => (c[1] as RequestInit).body as string);
+    expect(bodies.map(b => JSON.parse(b).metadata)).toEqual([{ refusal: 'out-of-range' }, { refusal: 'out-of-range' }]);
+    expect(bodies.join()).not.toMatch(/weight|psa/);
+  });
+
   it('sends allow-listed metadata when given', async () => {
     const { trackProductEvent } = await import('./server-api');
     trackProductEvent('cloud_connect_success', { provider: 'dropbox' });

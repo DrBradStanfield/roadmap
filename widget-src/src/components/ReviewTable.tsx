@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef, memo, useId } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, memo, useId, type ReactNode } from 'react';
 import type { LpaUnit, UnitSystem, MetricType, MeasurementSource, ApiMeasurement, DocumentType } from '@roadmap/health-core';
 import {
   UNIT_DEFS,
@@ -23,6 +23,7 @@ import {
 } from '@roadmap/health-core';
 import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
+import type { RefusedLabValue } from '@roadmap/health-core';
 import { labValueLabel } from '../lib/lab-value-labels';
 import { unarchivedOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
@@ -43,6 +44,8 @@ export interface FileResult {
   error?: string;
   /** Present for non-lab documents (scan results, clinic letters, etc.) */
   document?: DocumentResult;
+  /** Values the extractor refused rather than guessed, listed under "Not saved" (US-12 AC15). */
+  refusedValues?: RefusedLabValue[];
   /** The original uploaded bytes — saved into the user's cloud archive (v2). */
   file?: Blob;
   /** 'sha256-<hex>' of `file` — matched against the record's document rows. */
@@ -96,6 +99,8 @@ interface ReviewTableProps {
   onCancel: () => void;
   isSaving: boolean;
   error: string | null;
+  /** The values the last save refused, shown beside its error (US-12 AC6). */
+  refusals?: ReactNode;
 }
 
 /** Full date state: day/month/year. Day is null when the LLM didn't extract one. */
@@ -269,7 +274,7 @@ type MatrixRow = CoreRow | AdditionalRow;
 interface ExistingCell { id: string; display: string; valueSI?: number; lab?: LabQuantity; displayUnit?: string }
 
 type EditableMatrixCell =
-  | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; question?: string; valueSI: number; displayUnit: string; existing?: ExistingCell }
+  | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; question?: string; printed?: string; valueSI: number; displayUnit: string; existing?: ExistingCell }
   | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; lab: LabQuantity; referenceLow?: number | null; referenceHigh?: number | null; existing?: ExistingCell };
 
 /** What a cell's review state (typed text, touched, Replace) is keyed by: its
@@ -487,6 +492,10 @@ export function buildMatrixModel(
         initialDisplay,
         confidence: v.confidence,
         question: v.question,
+        // What the report printed, when the cell shows something else: a
+        // converted number, or a guessed unit (US-13 AC11). By number: "1.10" is "1.1".
+        printed: v.unitGuessed || Number(initialDisplay) !== v.displayValue
+          ? `Printed: ${v.displayValue} ${v.displayUnit || '(no unit)'}` : undefined,
         valueSI: v.valueSI,
         displayUnit: v.displayUnit,
         existing,
@@ -593,6 +602,7 @@ export function ReviewTable({
   onCancel,
   isSaving,
   error,
+  refusals,
 }: ReviewTableProps) {
   const docHistoryIndex = useMemo(() => buildDocHistoryIndex(history.documents), [history.documents]);
   // Lp(a) has its own three units, kept in the record, as in the blood-test
@@ -1149,7 +1159,11 @@ export function ReviewTable({
       {hiddenNotice && <p className="review-date-hint" role="status">{hiddenNotice}</p>}
 
       {hasInvalid && <p role="status">Correct or clear the values with errors before saving.</p>}
-      {error && <p className="upload-error">{error}</p>}
+      {/* One live region, so a screen reader hears the save's answer (US-12 AC6). */}
+      <div className="review-save-outcome" role="status">
+        {error && <p className="upload-error">{error}</p>}
+        {refusals && <div className="review-refusals">{refusals}</div>}
+      </div>
 
       <div className="review-actions">
         <button
@@ -1426,7 +1440,7 @@ const MatrixCellView = memo(function MatrixCellView({
   // Ids of the text that describes the inputs: labels name the test and
   // column, never a value (US-13 AC10).
   const id = useId();
-  const [unitId, siId, oldId, newId] = ['unit', 'si', 'old', 'new'].map(part => `${id}${part}`);
+  const [unitId, siId, oldId, newId, printedId] = ['unit', 'si', 'old', 'new', 'printed'].map(part => `${id}${part}`);
   if (cell.state === 'empty') {
     // NBSP keeps :empty from matching — the theme has a global
     // `div:empty { display: none }` (specificity beats .bt-cell-empty).
@@ -1478,8 +1492,9 @@ const MatrixCellView = memo(function MatrixCellView({
       validationResult={validationError}
       onChange={handleChange}
       ariaLabel={label}
+      ariaDescribedBy={describedBy(cell.printed && printedId)}
       wrapperClass={`bt-cell-input bt-cell-review${lowConfClass}`}
-      note={cell.question && <span className="bt-cell-question">{cell.question}</span>}
+      note={<>{cell.printed && <span id={printedId} className="bt-cell-printed">{cell.printed}</span>}{cell.question && <span className="bt-cell-question">{cell.question}</span>}</>}
     />
   ) : (
     <NumericInputCell

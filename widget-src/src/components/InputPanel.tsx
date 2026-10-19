@@ -1897,8 +1897,8 @@ export function InputPanel({
                               onKeyDown={onNumericEnter}
                               placeholder=""
                               step="0.1"
-                              min="0"
-                              max="100"
+                              min={range('psa').min}
+                              max={range('psa').max}
                               className={errors.psa ? 'error' : ''}
                             />
                             <InlineDatePicker value={psaDate} onChange={setPsaDate} />

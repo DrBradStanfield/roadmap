@@ -1,0 +1,1158 @@
+[
+  {
+    "handle": "collagen-benefits-best-forms-dosing-and-side-effects",
+    "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-collagen-supplements-review-peptides-hydrolysate-collagen.md",
+    "cl_raw_sha256": "b4a969b545cecb30c07a1fd839a84453ca3181e9dd18ea14cc1e36aff98b44c3",
+    "cl_url": "https://www.consumerlab.com/reviews/collagen-supplements-review-peptides-hydrolysate/collagen/",
+    "nih_raw": null,
+    "nih_raw_sha256": null,
+    "nih_url": null,
+    "positions": [
+      {
+        "file": "health_roadmap_algorithm.md",
+        "line": 1006,
+        "line_text": "| `supplement-collagen` | Collagen peptides | Hydrolyzed collagen peptides; may improve skin hydration and elasticity | Skin hydration/elasticity meta-analysis (Batool 2026) |",
+        "note": "recommendation: may improve skin hydration/elasticity",
+        "last_changed": "2026-10-18"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 148,
+        "line_text": "Each scoop contains 12.5g of collagen peptides. Collagen peptides may support skin hydration and elasticity (Batool et al., J Cosmet Dermatol, 2026). Trials used 0.5 to 10 g a day (Batool 2026).",
+        "note": "benefit + trial dose range 0.5-10 g (Batool 2026); product link",
+        "last_changed": "2026-10-19"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 149,
+        "line_text": "**Collagen wording (the chatbot included):** collagen peptides may support skin hydration and elasticity (Batool 2026), and MicroVitamin+ contains 12.5g of them. For a concern about skin ageing, skin hydration or skin elasticity in an adult, the chatbot may suggest collagen peptides on that basis; n",
+        "note": "chatbot wording rule; product claim",
+        "last_changed": "2026-10-18"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 307,
+        "line_text": "| Skin hydration and elasticity | MicroVitamin+ Powder | Collagen peptides may support skin hydration and elasticity (Batool 2026); MicroVitamin+ contains 12.5g of collagen peptides |",
+        "note": "product recommendation for skin",
+        "last_changed": "2026-10-18"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 518,
+        "line_text": "**Collagen wording (the chatbot included):** collagen peptides may support skin hydration and elasticity (Batool 2026), and MicroVitamin+ contains 12.5g of them. For a concern about skin ageing, skin hydration or skin elasticity in an adult, the chatbot may suggest collagen peptides on that basis; n",
+        "note": "chatbot wording rule (duplicate of 149)",
+        "last_changed": "2026-10-18"
+      },
+      {
+        "file": "docs/guideline/diet.md",
+        "line": 243,
+        "line_text": "- **Collagen**: Collagen peptides may improve skin hydration and elasticity (Batool 2026). Trials used 0.5 to 10 g a day (Batool 2026).",
+        "note": "benefit + trial dose",
+        "last_changed": "2026-10-19"
+      },
+      {
+        "file": "app/lib/chat-system-prompt.md",
+        "line": 104,
+        "line_text": "- **Collagen and skin:** for a concern about skin ageing, skin hydration or skin elasticity in an adult, you may suggest collagen peptides, which may improve skin hydration and elasticity according to a 2026 meta-analysis (Batool 2026, https://doi.org/10.1111/jocd.71041). When you suggest collagen p",
+        "note": "chatbot rule: suggest for skin; give trial range 0.5-10 g, never imply 12.5 g is within it",
+        "last_changed": "2026-10-19"
+      },
+      {
+        "file": "packages/health-core/src/suggestions.ts",
+        "line": 1038,
+        "line_text": "description: 'Collagen peptides may improve skin hydration and elasticity (Batool 2026).',",
+        "note": "suggestion text",
+        "last_changed": "2026-10-18"
+      },
+      {
+        "file": "packages/health-core/src/evidence.ts",
+        "line": 553,
+        "line_text": "reason: 'Collagen peptides may improve skin hydration and elasticity.',",
+        "note": "evidence reason",
+        "last_changed": "2026-10-18"
+      },
+      {
+        "file": "roadmap_text.html",
+        "line": 407,
+        "line_text": "<h3>Step 4: Collagen Peptide Supplements</h3>",
+        "note": "Step 4 heading",
+        "last_changed": "2026-10-18"
+      },
+      {
+        "file": "roadmap_text.html",
+        "line": 408,
+        "line_text": "<p>Collagen peptides may improve skin hydration and elasticity.[94] Trials used 0.5 to 10 g a day.[94]</p>",
+        "note": "benefit + trial dose",
+        "last_changed": "2026-10-18"
+      },
+      {
+        "file": "roadmap_text.html",
+        "line": 929,
+        "line_text": "<li>18<sup>th</sup> October 2026: Collagen peptides are back in the Young Skin steps as Step 4 (Steps 4–7 are now 5–8), citing a 2026 meta-analysis [94]; the separate Supplements entry was removed.</li>",
+        "note": "changelog 18 Oct 2026: collagen back in as Step 4",
+        "last_changed": "2026-10-18"
+      },
+      {
+        "file": "roadmap_text.html",
+        "line": 930,
+        "line_text": "<li>16<sup>th</sup> October 2026: Collagen removed from the Young Skin steps (Steps 5–8 are now 4–7); the Supplements entry now cites a 2026 meta-analysis [94].</li>",
+        "note": "changelog 16 Oct 2026: collagen removed (superseded by 18 Oct)",
+        "last_changed": "2026-10-16"
+      }
+    ],
+    "notes": "No NIH fact sheet exists for collagen.",
+    "posts": [
+      {
+        "handle": "the-collagen-peptides-for-skin-story-is-changing",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-collagen-peptides-for-skin-story-is-changing.md",
+        "url": "https://drstanfield.com/blogs/articles/the-collagen-peptides-for-skin-story-is-changing",
+        "publishedAt": "2026-10-15T00:00:00Z",
+        "title": "The Collagen Peptides for Skin Story is Changing",
+        "single_subject": true
+      },
+      {
+        "handle": "an-evidence-based-anti-aging-skincare-routine",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/an-evidence-based-anti-aging-skincare-routine.md",
+        "url": "https://drstanfield.com/blogs/articles/an-evidence-based-anti-aging-skincare-routine",
+        "publishedAt": "2025-09-07T21:16:10Z",
+        "title": "An Evidence-Based Anti-Aging Skincare Routine",
+        "single_subject": false
+      },
+      {
+        "handle": "no-evidence-to-support-the-use-of-collagen-supplements",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/no-evidence-to-support-the-use-of-collagen-supplements.md",
+        "url": "https://drstanfield.com/blogs/articles/no-evidence-to-support-the-use-of-collagen-supplements",
+        "publishedAt": "2025-08-27T21:15:34Z",
+        "title": "\\\"No Evidence to Support the Use of Collagen Supplements\\\"",
+        "single_subject": true
+      },
+      {
+        "handle": "the-only-three-supplements-doctor-brad-takes",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-only-three-supplements-doctor-brad-takes.md",
+        "url": "https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes",
+        "publishedAt": "2025-07-30T20:38:06Z",
+        "title": "The Only Three Supplements Doctor Brad Takes",
+        "single_subject": false
+      },
+      {
+        "handle": "25-reduction-in-skin-wrinkles-after-8-weeks-new-collagen-study",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/25-reduction-in-skin-wrinkles-after-8-weeks-new-collagen-study.md",
+        "url": "https://drstanfield.com/blogs/articles/25-reduction-in-skin-wrinkles-after-8-weeks-new-collagen-study",
+        "publishedAt": "2025-06-11T22:02:52Z",
+        "title": "25% Reduction in Skin Wrinkles After 8 Weeks (New Collagen Study)",
+        "single_subject": false
+      },
+      {
+        "handle": "collagen-peptides-can-fix-skin-wrinkles",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/collagen-peptides-can-fix-skin-wrinkles.md",
+        "url": "https://drstanfield.com/blogs/articles/collagen-peptides-can-fix-skin-wrinkles",
+        "publishedAt": "2025-03-12T23:28:06Z",
+        "title": "New Study Proves That Collagen Peptides Can Fix Skin Wrinkles!",
+        "single_subject": false
+      },
+      {
+        "handle": "supplements-best-skin-tightening",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/supplements-best-skin-tightening.md",
+        "url": "https://drstanfield.com/blogs/articles/supplements-best-skin-tightening",
+        "publishedAt": "2024-12-31T00:13:37Z",
+        "title": "Guide: Which Supplements Are Best for Skin Tightening?",
+        "single_subject": false
+      },
+      {
+        "handle": "reverse-signs-skin-aging",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/reverse-signs-skin-aging.md",
+        "url": "https://drstanfield.com/blogs/articles/reverse-signs-skin-aging",
+        "publishedAt": "2024-12-17T01:24:10Z",
+        "title": "How To Reverse the Signs of Skin Aging (Latest Protocol)",
+        "single_subject": false
+      },
+      {
+        "handle": "only-supplements-work-2025",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/only-supplements-work-2025.md",
+        "url": "https://drstanfield.com/blogs/articles/only-supplements-work-2025",
+        "publishedAt": "2024-11-19T03:13:05Z",
+        "title": "The Only Supplements That ACTUALLY Work (2025)",
+        "single_subject": false
+      }
+    ]
+  },
+  {
+    "handle": "nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects",
+    "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-nmn-nadh-nicotinamide-riboside-nmn-nadh-nicotinamide-riboside.md",
+    "cl_raw_sha256": "472f8cbbf26b730fa360f85357235c49ea8b29fe814be59a2bcc96290269cb78",
+    "cl_url": "https://www.consumerlab.com/reviews/nmn-nadh-nicotinamide-riboside/nmn-nadh-nicotinamide-riboside/",
+    "nih_raw": null,
+    "nih_raw_sha256": null,
+    "nih_url": null,
+    "positions": [
+      {
+        "file": "docs/products.md",
+        "line": 447,
+        "line_text": "- **NMN / NR** — interesting mice and single-cell data on NAD+ precursors, but human data showing a benefit is lacking. Brad focuses on the small dose of Nicotinamide in MicroVitamin plus exercise, diet, fasting, and sleep instead.",
+        "note": "position: human benefit data lacking; Brad uses small nicotinamide dose in MicroVitamin",
+        "last_changed": "2026-08-10"
+      },
+      {
+        "file": "roadmap_text.html",
+        "line": 791,
+        "line_text": "<p>There’s interesting mice and single cell studies regarding NAD+ precursors, however the human data demonstrating a benefit is lacking. A more grounded approach to limiting the decline in NAD+ is a small dose of Niacin alongside regular exercise, a good diet, periods of safe fasting, and restful s",
+        "note": "position: human data lacking; says small dose of NIACIN (products.md says Nicotinamide: possible drift)",
+        "last_changed": "2026-07-31"
+      },
+      {
+        "file": "roadmap_text.html",
+        "line": 792,
+        "line_text": "<p>Furthermore we don’t know the long-term effects of boosting NAD+ to very high levels.</p>",
+        "note": "safety: long-term effects of very high NAD+ unknown",
+        "last_changed": "2026-02-19"
+      }
+    ],
+    "notes": "Reference uses only the CL NMN/NADH/NR review. No NIH ODS sheet.",
+    "posts": [
+      {
+        "handle": "new-study-says-i-was-wrong-about-nmn-and-nr",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/new-study-says-i-was-wrong-about-nmn-and-nr.md",
+        "url": "https://drstanfield.com/blogs/articles/new-study-says-i-was-wrong-about-nmn-and-nr",
+        "publishedAt": "2026-04-09T12:00:00Z",
+        "title": "New Study Says I Was Wrong About NMN and NR?",
+        "single_subject": true
+      },
+      {
+        "handle": "the-anti-aging-supplement-scam-new-evidence",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-anti-aging-supplement-scam-new-evidence.md",
+        "url": "https://drstanfield.com/blogs/articles/the-anti-aging-supplement-scam-new-evidence",
+        "publishedAt": "2026-04-09T12:00:00Z",
+        "title": "The Anti-Aging Supplement Scam (New Evidence)",
+        "single_subject": false
+      },
+      {
+        "handle": "nmn-nad-supplements-for-anti-aging-just-changed",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/nmn-nad-supplements-for-anti-aging-just-changed.md",
+        "url": "https://drstanfield.com/blogs/articles/nmn-nad-supplements-for-anti-aging-just-changed",
+        "publishedAt": "2026-01-11T22:03:17Z",
+        "title": "NMN & NAD Supplements for Anti-Aging Just Changed",
+        "single_subject": false
+      },
+      {
+        "handle": "popular-longevity-treatment-makes-you-sick",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/popular-longevity-treatment-makes-you-sick.md",
+        "url": "https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick",
+        "publishedAt": "2025-11-20T19:11:54Z",
+        "title": "Popular Longevity Treatment Makes You Sick",
+        "single_subject": false
+      },
+      {
+        "handle": "human-studies-nmn-supplements",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/human-studies-nmn-supplements.md",
+        "url": "https://drstanfield.com/blogs/articles/human-studies-nmn-supplements",
+        "publishedAt": "2024-11-07T22:07:19Z",
+        "title": "Human Studies on NMN Supplements: Are There Any Benefits?",
+        "single_subject": true
+      },
+      {
+        "handle": "tmg-betaine-exploding-popularity",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/tmg-betaine-exploding-popularity.md",
+        "url": "https://drstanfield.com/blogs/articles/tmg-betaine-exploding-popularity",
+        "publishedAt": "2024-10-09T13:30:02Z",
+        "title": "Why TMG (Betaine) is Exploding in Popularity",
+        "single_subject": false
+      },
+      {
+        "handle": "popular-supplements-try-avoid",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/popular-supplements-try-avoid.md",
+        "url": "https://drstanfield.com/blogs/articles/popular-supplements-try-avoid",
+        "publishedAt": "2024-08-11T19:43:34Z",
+        "title": "Which Popular Supplements Should You Actually Try to Avoid?",
+        "single_subject": false
+      }
+    ]
+  },
+  {
+    "handle": "resveratrol-benefits-forms-dosing-and-side-effects",
+    "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-resveratrol-review-resveratrol-red-wine.md",
+    "cl_raw_sha256": "ac039af43e391e14c42043b13d13ddfc0b3789676263fab4f9c117d66266401b",
+    "cl_url": "https://www.consumerlab.com/reviews/resveratrol-review/resveratrol-red-wine/",
+    "nih_raw": null,
+    "nih_raw_sha256": null,
+    "nih_url": null,
+    "positions": [
+      {
+        "file": "docs/products.md",
+        "line": 448,
+        "line_text": "- **Resveratrol / Pterostilbene** — sirtuin-1 activation evidence conflicting; a 2020 CRISPR study found resveratrol's effect on cell proliferation was independent of SIRT1 (Pezzuto, Molecules, 2020).",
+        "note": "position: SIRT1 activation evidence conflicting; 2020 CRISPR study",
+        "last_changed": "2026-08-10"
+      },
+      {
+        "file": "roadmap_text.html",
+        "line": 795,
+        "line_text": "<p>Furthermore, it’s unlikely that resveratrol/pterostilbene directly activates sirtuin-1 anyway. There was a paper published in 2020 that used CRISPR technology that explored how resveratrol/pterostilbene work and the authors found the following:</p>",
+        "note": "position: unlikely to directly activate sirtuin-1",
+        "last_changed": "2026-02-19"
+      }
+    ],
+    "posts": [
+      {
+        "handle": "the-anti-aging-supplement-scam-new-evidence",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-anti-aging-supplement-scam-new-evidence.md",
+        "url": "https://drstanfield.com/blogs/articles/the-anti-aging-supplement-scam-new-evidence",
+        "publishedAt": "2026-04-09T12:00:00Z",
+        "title": "The Anti-Aging Supplement Scam (New Evidence)",
+        "single_subject": false
+      },
+      {
+        "handle": "this-incredibly-popular-supplement-damages-your-blood-vessels",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/this-incredibly-popular-supplement-damages-your-blood-vessels.md",
+        "url": "https://drstanfield.com/blogs/articles/this-incredibly-popular-supplement-damages-your-blood-vessels",
+        "publishedAt": "2025-05-15T23:18:01Z",
+        "title": "This Incredibly Popular Supplement DAMAGES Your Blood Vessels",
+        "single_subject": false
+      },
+      {
+        "handle": "stop-these-longevity-supplements-dangerous-side-effects",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/stop-these-longevity-supplements-dangerous-side-effects.md",
+        "url": "https://drstanfield.com/blogs/articles/stop-these-longevity-supplements-dangerous-side-effects",
+        "publishedAt": "2025-02-24T21:22:36Z",
+        "title": "Stop These Longevity Supplements (Dangerous Side Effects)",
+        "single_subject": false
+      },
+      {
+        "handle": "popular-supplements-try-avoid",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/popular-supplements-try-avoid.md",
+        "url": "https://drstanfield.com/blogs/articles/popular-supplements-try-avoid",
+        "publishedAt": "2024-08-11T19:43:34Z",
+        "title": "Which Popular Supplements Should You Actually Try to Avoid?",
+        "single_subject": false
+      }
+    ]
+  },
+  {
+    "handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+    "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-vitamin-d-supplements-review-vitamin-d.md",
+    "cl_raw_sha256": "5ae7d76b7ea7c30da383fc8b8c17fda462fe4babb3cd5e1040aa62f3252eb782",
+    "cl_url": "https://www.consumerlab.com/reviews/vitamin-d-supplements-review/vitamin-d/",
+    "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/vitamin-d-nih.md",
+    "nih_raw_sha256": "8d28b5a67b819377ca98cf982411052799fac605214c0a39b8f14e5ec1005de8",
+    "nih_url": "https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/",
+    "nih_source": "refresh-2026-09-29/nih (Sept 2026)",
+    "positions": [
+      {
+        "file": "docs/guideline/diet.md",
+        "line": 239,
+        "line_text": "- **Vitamin D** (1000 IU): most people are insufficient, especially at higher latitudes. Supplementation corrects deficiency safely.",
+        "note": "who benefits: most insufficient at higher latitudes; 1000 IU",
+        "last_changed": "2026-04-13"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 25,
+        "line_text": "- Bone Density: Encapsulated Vitamin K2 MK-7 90mcg (K2VITAL® DELTA), Encapsulated Vitamin D3 1,000IU (AlgeD3™), Boron 1mg. D3 supports calcium absorption and K2 activates osteocalcin to direct calcium to bone (Myneni & Mezey, *Oral Dis*, 2017). A meta-analysis of 8 RCTs (971 participants) found comb",
+        "note": "product: D3 1,000IU supports calcium absorption",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 90,
+        "line_text": "The amounts found are not a safety concern: vitamin D at 48.4 mcg is well below the NIH Tolerable Upper Intake Level of 100 mcg (4,000 IU), and folate at 404.5 mcg DFE is approximately the standard Daily Value (400 mcg DFE).",
+        "note": "safety: 48.4 mcg below UL 100 mcg",
+        "last_changed": "2026-08-10"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 350,
+        "line_text": "The opposite — MicroVitamin is deliberately low-dose. In the US, most ingredients are at or below 100% of the Daily Value; vitamin B12 (absorption falls with age) and vitamin D are higher. Other markets' labels use different reference values (UK/EU %NRV: Regional Formula Differences). The formula is",
+        "note": "dose: D higher than DV, deliberately low-dose overall",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/chatbot/answer-bank.md",
+        "line": 253,
+        "line_text": "Regarding Vitamin D, 1,000IU in MicroVitamin is well within the upper",
+        "note": "safety: 1,000 IU within UL 4,000 IU even with sun",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/chatbot/answer-bank.md",
+        "line": 264,
+        "line_text": "The upper tolerable limit set by the NIH is 100 mcg (4,000IU), so",
+        "note": "safety: UL 100 mcg / 4,000 IU",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/chatbot/answer-bank.md",
+        "line": 272,
+        "line_text": "MicroVitamin doses Vitamin D slightly higher than the RDA, and the RDA",
+        "note": "dose: slightly above RDA; RDA assumes zero sun",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/chatbot/answer-bank.md",
+        "line": 275,
+        "line_text": "There's no current standard about what vitamin D level to target either.",
+        "note": "no standard target level",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/chatbot/answer-bank.md",
+        "line": 279,
+        "line_text": "The Endocrine Society for example does not recommend routine vitamin D",
+        "note": "Endocrine Society does not recommend routine testing",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "app/lib/chat-system-prompt.md",
+        "line": 51,
+        "line_text": "- **RDA vs UL — never conflate.** When stating a dose as a percentage, the denominator must match: % of RDA uses the RDA value, % of UL uses the UL value. Common confusion: the Vitamin D RDA is 600 IU (15 mcg) for adults 19–70 and 800 IU (20 mcg) for 70+; 4,000 IU (100 mcg) is the Tolerable Upper In",
+        "note": "RDA vs UL: RDA 600 IU (15 mcg) 19-70, 800 IU 70+; UL 4,000 IU",
+        "last_changed": "2026-05-28"
+      },
+      {
+        "file": "health_roadmap_algorithm.md",
+        "line": 1004,
+        "line_text": "| `supplement-micronutrient-base` | Micronutrient base | Methylated B-complex; vitamin D3 + K2; magnesium taurate; trace minerals (glycinate); lutein + zeaxanthin; TMG; lycopene | COSMOS trial (Baker 2023) |",
+        "note": "suggestion bundle lists vitamin D3 + K2 (listing only, weak)",
+        "last_changed": "2026-06-15"
+      }
+    ],
+    "posts": [
+      {
+        "handle": "this-vitamin-d-study-forced-me-to-change-my-view",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/this-vitamin-d-study-forced-me-to-change-my-view.md",
+        "url": "https://drstanfield.com/blogs/articles/this-vitamin-d-study-forced-me-to-change-my-view",
+        "publishedAt": "2025-12-03T16:41:41Z",
+        "title": "This Vitamin D Study Forced Me to Change My View",
+        "single_subject": true
+      },
+      {
+        "handle": "new-vitamin-d-study-on-telomeres-and-aging",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/new-vitamin-d-study-on-telomeres-and-aging.md",
+        "url": "https://drstanfield.com/blogs/articles/new-vitamin-d-study-on-telomeres-and-aging",
+        "publishedAt": "2025-10-16T20:05:51Z",
+        "title": "New Vitamin D Study on Telomeres and Aging",
+        "single_subject": false
+      },
+      {
+        "handle": "5-supplements-that-actually-work",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/5-supplements-that-actually-work.md",
+        "url": "https://drstanfield.com/blogs/articles/5-supplements-that-actually-work",
+        "publishedAt": "2025-10-05T20:31:48Z",
+        "title": "5 Supplements That ACTUALLY Work",
+        "single_subject": false
+      },
+      {
+        "handle": "the-only-three-supplements-doctor-brad-takes",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-only-three-supplements-doctor-brad-takes.md",
+        "url": "https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes",
+        "publishedAt": "2025-07-30T20:38:06Z",
+        "title": "The Only Three Supplements Doctor Brad Takes",
+        "single_subject": false
+      },
+      {
+        "handle": "do-this-daily-to-stop-bone-loss-after-40",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/do-this-daily-to-stop-bone-loss-after-40.md",
+        "url": "https://drstanfield.com/blogs/articles/do-this-daily-to-stop-bone-loss-after-40",
+        "publishedAt": "2025-07-03T02:07:16Z",
+        "title": "Do This Daily to STOP Bone Loss After 40",
+        "single_subject": false
+      },
+      {
+        "handle": "when-dosed-correctly-vitamin-d-cuts-sick-days-by-17",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/when-dosed-correctly-vitamin-d-cuts-sick-days-by-17.md",
+        "url": "https://drstanfield.com/blogs/articles/when-dosed-correctly-vitamin-d-cuts-sick-days-by-17",
+        "publishedAt": "2025-06-14T00:01:42Z",
+        "title": "When Dosed Correctly, Vitamin D Cuts Sick Days by 17%",
+        "single_subject": true
+      },
+      {
+        "handle": "this-study-proved-we-were-wrong-about-vitamin-d",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/this-study-proved-we-were-wrong-about-vitamin-d.md",
+        "url": "https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d",
+        "publishedAt": "2025-04-18T22:00:59Z",
+        "title": "This Study Proved We Were WRONG About Vitamin D",
+        "single_subject": true
+      },
+      {
+        "handle": "vitamin-k2-d3-together",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/vitamin-k2-d3-together.md",
+        "url": "https://drstanfield.com/blogs/articles/vitamin-k2-d3-together",
+        "publishedAt": "2024-11-25T20:42:35Z",
+        "title": "Should You Take Vitamin K2 and Vitamin D3 Together?",
+        "single_subject": false
+      },
+      {
+        "handle": "calcium-rich-foods-diet",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/calcium-rich-foods-diet.md",
+        "url": "https://drstanfield.com/blogs/articles/calcium-rich-foods-diet",
+        "publishedAt": "2024-10-14T21:25:53Z",
+        "title": "How to Include More Calcium-Rich Foods in Your Diet",
+        "single_subject": false
+      },
+      {
+        "handle": "vitamin-d3-k2-benefits-differences",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/vitamin-d3-k2-benefits-differences.md",
+        "url": "https://drstanfield.com/blogs/articles/vitamin-d3-k2-benefits-differences",
+        "publishedAt": "2024-06-20T20:21:11Z",
+        "title": "Vitamin D3 and K2: The Benefits, Differences, and Usage",
+        "single_subject": false
+      }
+    ]
+  },
+  {
+    "handle": "vitamin-k-benefits-forms-dosing-and-side-effects",
+    "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-vitamin-k-supplements-review-vitamin-k.md",
+    "cl_raw_sha256": "4df6c8fd2890b327679d282691233b18cc9bcc17681967103e051b83c596f8cd",
+    "cl_url": "https://www.consumerlab.com/reviews/vitamin-k-supplements-review/vitamin-k/",
+    "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/vitamin-k-nih.md",
+    "nih_raw_sha256": "62847a21114ffa6ad152d50339277fc272edd28f3f8e6633ca4e702aed75719f",
+    "nih_url": "https://ods.od.nih.gov/factsheets/VitaminK-HealthProfessional/",
+    "nih_source": "refresh-2026-09-29/nih (Sept 2026)",
+    "positions": [
+      {
+        "file": "docs/products.md",
+        "line": 25,
+        "line_text": "- Bone Density: Encapsulated Vitamin K2 MK-7 90mcg (K2VITAL® DELTA), Encapsulated Vitamin D3 1,000IU (AlgeD3™), Boron 1mg. D3 supports calcium absorption and K2 activates osteocalcin to direct calcium to bone (Myneni & Mezey, *Oral Dis*, 2017). A meta-analysis of 8 RCTs (971 participants) found comb",
+        "note": "product: K2 activates osteocalcin (bone)",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 74,
+        "line_text": "MicroVitamin contains Vitamin K2 (90mcg), which can affect blood clotting — consult your doctor before use if you take blood thinners (warfarin/Coumadin). The product is gluten-free, soy-free, contains no artificial colors, no fillers, and no titanium dioxide. It is not intended for children under 1",
+        "note": "safety: blood thinners, consult doctor",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 309,
+        "line_text": "| Bone density concerns | MicroVitamin or MicroVitamin+ Powder | K2 MK-7 90mcg (directs calcium to bones via osteocalcin activation) + D3 1,000IU (calcium absorption), both encapsulated in the USA, Australia and UK/EU (Canada v7: not encapsulated) + Boron (bone metabolism). Meta-analyses of K+D comb",
+        "note": "product rec: bone density, K2 MK-7 90mcg",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 385,
+        "line_text": "**Honest note on the combination evidence:** Most direct factorial RCTs use vitamin K2 as MK-4 at pharmacological doses (45mg/day), whereas MicroVitamin uses MK-7 at 90 μg. The largest modern MK-7 + D3 RCT (Rønn et al., 2020) was null on BMD. The combination is biologically rational and supported by",
+        "note": "evidence caveat: MK-7 90 ug + D3 RCT (Ronn 2020) null on BMD; synergy not proven",
+        "last_changed": "2026-08-10"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 409,
+        "line_text": "- **Vitamin K2** (in MicroVitamin and MicroVitamin+): Consult your doctor before use if taking blood thinners (warfarin/Coumadin), as Vitamin K2 can affect blood clotting",
+        "note": "safety: warfarin/Coumadin",
+        "last_changed": "2026-08-10"
+      },
+      {
+        "file": "docs/chatbot/answer-bank.md",
+        "line": 286,
+        "line_text": "This video of mine regarding the latest Vitamin K2 RCT might be of interest",
+        "note": "Brad video on K2 RCT, arterial calcification concern",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "health_roadmap_algorithm.md",
+        "line": 1004,
+        "line_text": "| `supplement-micronutrient-base` | Micronutrient base | Methylated B-complex; vitamin D3 + K2; magnesium taurate; trace minerals (glycinate); lutein + zeaxanthin; TMG; lycopene | COSMOS trial (Baker 2023) |",
+        "note": "suggestion bundle lists D3 + K2 (listing only, weak)",
+        "last_changed": "2026-06-15"
+      }
+    ],
+    "posts": [
+      {
+        "handle": "why-arent-cardiologists-prescribing-vitamin-k2",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/why-arent-cardiologists-prescribing-vitamin-k2.md",
+        "url": "https://drstanfield.com/blogs/articles/why-arent-cardiologists-prescribing-vitamin-k2",
+        "publishedAt": "2026-09-03T20:14:01Z",
+        "title": "Why Aren't Cardiologists Prescribing Vitamin K2?",
+        "single_subject": true
+      },
+      {
+        "handle": "does-vitamin-k2-actually-protect-your-heart-new-trial",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/does-vitamin-k2-actually-protect-your-heart-new-trial.md",
+        "url": "https://drstanfield.com/blogs/articles/does-vitamin-k2-actually-protect-your-heart-new-trial",
+        "publishedAt": "2026-06-29T12:00:00Z",
+        "title": "Does Vitamin K2 Actually Protect Your Heart? (New Trial)",
+        "single_subject": true
+      },
+      {
+        "handle": "5-supplements-that-actually-work",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/5-supplements-that-actually-work.md",
+        "url": "https://drstanfield.com/blogs/articles/5-supplements-that-actually-work",
+        "publishedAt": "2025-10-05T20:31:48Z",
+        "title": "5 Supplements That ACTUALLY Work",
+        "single_subject": false
+      },
+      {
+        "handle": "the-only-three-supplements-doctor-brad-takes",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-only-three-supplements-doctor-brad-takes.md",
+        "url": "https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes",
+        "publishedAt": "2025-07-30T20:38:06Z",
+        "title": "The Only Three Supplements Doctor Brad Takes",
+        "single_subject": false
+      },
+      {
+        "handle": "do-this-daily-to-stop-bone-loss-after-40",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/do-this-daily-to-stop-bone-loss-after-40.md",
+        "url": "https://drstanfield.com/blogs/articles/do-this-daily-to-stop-bone-loss-after-40",
+        "publishedAt": "2025-07-03T02:07:16Z",
+        "title": "Do This Daily to STOP Bone Loss After 40",
+        "single_subject": false
+      },
+      {
+        "handle": "vitamin-k2-d3-together",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/vitamin-k2-d3-together.md",
+        "url": "https://drstanfield.com/blogs/articles/vitamin-k2-d3-together",
+        "publishedAt": "2024-11-25T20:42:35Z",
+        "title": "Should You Take Vitamin K2 and Vitamin D3 Together?",
+        "single_subject": false
+      },
+      {
+        "handle": "vitamin-d3-k2-benefits-differences",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/vitamin-d3-k2-benefits-differences.md",
+        "url": "https://drstanfield.com/blogs/articles/vitamin-d3-k2-benefits-differences",
+        "publishedAt": "2024-06-20T20:21:11Z",
+        "title": "Vitamin D3 and K2: The Benefits, Differences, and Usage",
+        "single_subject": false
+      }
+    ]
+  },
+  {
+    "handle": "magnesium-benefits-best-forms-dosing",
+    "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-magnesium-supplement-review-magnesium.md",
+    "cl_raw_sha256": "c697a6973e90202e5170e509b74b888e3ca1cea57e3e901e10217022e474c815",
+    "cl_url": "https://www.consumerlab.com/reviews/magnesium-supplement-review/magnesium/",
+    "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/magnesium-nih.md",
+    "nih_raw_sha256": "822498e828c4d743857e2f880483a6526710efb4a9caeaea90ee964fcfbf5e6f",
+    "nih_url": "https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/",
+    "nih_source": "refresh-2026-09-29/nih (Sept 2026)",
+    "positions": [
+      {
+        "file": "docs/guideline/diet.md",
+        "line": 240,
+        "line_text": "- **Magnesium**: intakes are commonly below the RDA. Magnesium taurate in MicroVitamin supports cardiovascular and metabolic health.",
+        "note": "who: intakes commonly below RDA; taurate for CV/metabolic",
+        "last_changed": "2026-04-13"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 391,
+        "line_text": "Magnesium Taurate was specifically chosen over other magnesium forms for cardiovascular benefit — it combines magnesium with taurine to support absorption, heart rhythm, and relaxation (USA formula. For Australian customers of MicroVitamin capsules, never give the magnesium form as a heart-health re",
+        "note": "form choice: taurate for cardiovascular benefit",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 311,
+        "line_text": "| Heart health / cardiovascular risk | MicroVitamin or MicroVitamin+ Powder | Magnesium Taurate (USA; for Australian MicroVitamin capsules never give the magnesium form as a heart-health reason, see Regional Formula Differences), chosen specifically for cardiovascular benefit, plus encapsulated Lyco",
+        "note": "product rec: heart health (never give AU magnesium form as heart rec)",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 207,
+        "line_text": "- Magnesium Bisglycinate 126mg elemental, fully chelated — each magnesium bound to glycine. **Mah & Pitre caveat:** a 2021 review pooled 2 small trials, both using magnesium oxide at 500-729mg a day: people fell asleep ~17 min sooner than with placebo, and the evidence was rated low to very low qual",
+        "note": "sleep: bisglycinate 126 mg; Mah & Pitre caveat",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 248,
+        "line_text": "Magnesium Bisglycinate provides 126mg of elemental magnesium, fully chelated — each magnesium bound to glycine. A systematic review found that magnesium status was linked with sleep quality in observational studies, while the randomized trials it included gave mixed results (Arab et al., Biol Trace ",
+        "note": "sleep: status linked to sleep quality",
+        "last_changed": "2026-10-03"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 314,
+        "line_text": "| Can't fall asleep | Sleep by Dr Brad | Melatonin 0.8mg sustained release (circadian signal) + Magnesium Bisglycinate (evidence is modest: ~17 min faster sleep onset pooled from 2 small magnesium oxide trials, low to very low quality, Mah & Pitre 2021; a 250mg-a-day bisglycinate trial found a small",
+        "note": "sleep: modest evidence, ~17 min faster onset pooled",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 331,
+        "line_text": "**In Australia:** MicroVitamin v8.5 declares 260 mg of magnesium as magnesium amino acid chelate, so adding Sleep gives 386 mg a day, above the 350 mg daily upper limit for magnesium from supplements (the limit is set mainly to avoid loose stools or diarrhoea, and it does not count magnesium from fo",
+        "note": "safety: AU stacking exceeds 350 mg UL from supplements",
+        "last_changed": "2026-09-29"
+      },
+      {
+        "file": "docs/guideline/sleep.md",
+        "line": 322,
+        "line_text": "**Guideline position:** HealthPathways lists magnesium as having \"equivocal evidence of efficacy\" for sleep. UpToDate notes magnesium among the \"many other dietary supplements marketed for insomnia\" with insufficient evidence. It is listed as generally safe.",
+        "note": "guideline: equivocal evidence for sleep",
+        "last_changed": "2026-04-17"
+      },
+      {
+        "file": "docs/guideline/sleep.md",
+        "line": 328,
+        "line_text": "**Brad's position:** Aligns with cautious use. Brad's Sleep product contains 126 mg elemental magnesium as fully chelated magnesium bisglycinate (each magnesium bound to two glycines). The elemental amount is unchanged from V1; what changed in V2 is that the chelate is now fully chelated, where V1's",
+        "note": "Brad position on Sleep product",
+        "last_changed": "2026-10-03"
+      },
+      {
+        "file": "docs/guideline/sleep.md",
+        "line": 480,
+        "line_text": "The evidence is modest but promising. If you are magnesium-deficient (common in Western diets), supplementation may improve sleep quality and reduce time to fall asleep. The glycinate form has the best bioavailability and tolerability for sleep purposes. A dose of around 150–400 mg elemental magnesi",
+        "note": "Q&A: magnesium for sleep modest but promising",
+        "last_changed": "2026-04-17"
+      },
+      {
+        "file": "docs/chatbot/answer-bank.md",
+        "line": 12,
+        "line_text": "For Magnesium, we use Magnesium Taurate and not Magnesium Glycinate",
+        "note": "form: taurate not glycinate in MicroVitamin",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/chatbot/answer-bank.md",
+        "line": 319,
+        "line_text": "For some people, magnesium can cause loose stools, however it's unusual for",
+        "note": "side effect: loose stools",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "health_roadmap_algorithm.md",
+        "line": 1008,
+        "line_text": "| `supplement-sleep` | Sleep support | Low-dose melatonin; glycine; magnesium glycinate | Melatonin (Low 2020) |",
+        "note": "suggestion: sleep support lists magnesium glycinate",
+        "last_changed": "2026-06-15"
+      },
+      {
+        "file": "health_roadmap_algorithm.md",
+        "line": 1004,
+        "line_text": "| `supplement-micronutrient-base` | Micronutrient base | Methylated B-complex; vitamin D3 + K2; magnesium taurate; trace minerals (glycinate); lutein + zeaxanthin; TMG; lycopene | COSMOS trial (Baker 2023) |",
+        "note": "suggestion bundle lists magnesium taurate (listing only, weak)",
+        "last_changed": "2026-06-15"
+      }
+    ],
+    "posts": [
+      {
+        "handle": "5-supplements-that-actually-work",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/5-supplements-that-actually-work.md",
+        "url": "https://drstanfield.com/blogs/articles/5-supplements-that-actually-work",
+        "publishedAt": "2025-10-05T20:31:48Z",
+        "title": "5 Supplements That ACTUALLY Work",
+        "single_subject": false
+      },
+      {
+        "handle": "supplement-not-melatonin-improved-sleep-in-155-person-study",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/supplement-not-melatonin-improved-sleep-in-155-person-study.md",
+        "url": "https://drstanfield.com/blogs/articles/supplement-not-melatonin-improved-sleep-in-155-person-study",
+        "publishedAt": "2025-10-03T23:28:30Z",
+        "title": "Supplement (Not Melatonin) Improved Sleep in 155-Person Study",
+        "single_subject": true
+      },
+      {
+        "handle": "this-amino-acid-was-accidentally-found-to-improve-our-sleep",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/this-amino-acid-was-accidentally-found-to-improve-our-sleep.md",
+        "url": "https://drstanfield.com/blogs/articles/this-amino-acid-was-accidentally-found-to-improve-our-sleep",
+        "publishedAt": "2025-08-20T02:05:05Z",
+        "title": "Glycine was Accidentally Found To Improve Our Sleep",
+        "single_subject": false
+      },
+      {
+        "handle": "the-only-three-supplements-doctor-brad-takes",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-only-three-supplements-doctor-brad-takes.md",
+        "url": "https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes",
+        "publishedAt": "2025-07-30T20:38:06Z",
+        "title": "The Only Three Supplements Doctor Brad Takes",
+        "single_subject": false
+      },
+      {
+        "handle": "do-this-daily-to-stop-bone-loss-after-40",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/do-this-daily-to-stop-bone-loss-after-40.md",
+        "url": "https://drstanfield.com/blogs/articles/do-this-daily-to-stop-bone-loss-after-40",
+        "publishedAt": "2025-07-03T02:07:16Z",
+        "title": "Do This Daily to STOP Bone Loss After 40",
+        "single_subject": false
+      },
+      {
+        "handle": "what-is-the-best-magnesium-dose-form-14-studies-later",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/what-is-the-best-magnesium-dose-form-14-studies-later.md",
+        "url": "https://drstanfield.com/blogs/articles/what-is-the-best-magnesium-dose-form-14-studies-later",
+        "publishedAt": "2025-07-01T18:11:29Z",
+        "title": "What is the Best Magnesium Dose & Form? (14 Studies Later)",
+        "single_subject": true
+      },
+      {
+        "handle": "zma-supplements-benefits-research",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/zma-supplements-benefits-research.md",
+        "url": "https://drstanfield.com/blogs/articles/zma-supplements-benefits-research",
+        "publishedAt": "2025-01-29T16:30:23Z",
+        "title": "ZMA Supplements: What Are the Benefits and Research?",
+        "single_subject": false
+      },
+      {
+        "handle": "best-worst-forms-magnesium",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/best-worst-forms-magnesium.md",
+        "url": "https://drstanfield.com/blogs/articles/best-worst-forms-magnesium",
+        "publishedAt": "2024-12-02T04:33:38Z",
+        "title": "What Are the Best and Worst Forms of Magnesium to Take?",
+        "single_subject": true
+      },
+      {
+        "handle": "difference-magnesium-oxide-glycinate",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/difference-magnesium-oxide-glycinate.md",
+        "url": "https://drstanfield.com/blogs/articles/difference-magnesium-oxide-glycinate",
+        "publishedAt": "2024-10-06T22:16:11Z",
+        "title": "What Is the Difference Between Magnesium Oxide and Glycinate?",
+        "single_subject": true
+      },
+      {
+        "handle": "mistakes-people-make-magnesium",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/mistakes-people-make-magnesium.md",
+        "url": "https://drstanfield.com/blogs/articles/mistakes-people-make-magnesium",
+        "publishedAt": "2024-07-09T18:36:45Z",
+        "title": "Which Mistakes Do Most People Make with Magnesium?",
+        "single_subject": true
+      },
+      {
+        "handle": "magnesium-l-threonate-effects-sleep",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/magnesium-l-threonate-effects-sleep.md",
+        "url": "https://drstanfield.com/blogs/articles/magnesium-l-threonate-effects-sleep",
+        "publishedAt": "2024-06-12T20:32:54Z",
+        "title": "Magnesium L-Threonate and Its Effects on Sleep Quality",
+        "single_subject": true
+      }
+    ]
+  },
+  {
+    "handle": "lithium-benefits-forms-dosing-and-side-effects",
+    "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-lithium-low-dose-supplements-lithium.md",
+    "cl_raw_sha256": "e0e6d307c853f46829cde15abbfc43c979867adaad53f0491ca42c4bc7f85ecf",
+    "cl_url": "https://www.consumerlab.com/reviews/lithium-low-dose-supplements/lithium/",
+    "nih_raw": null,
+    "nih_raw_sha256": null,
+    "nih_url": null,
+    "positions": [
+      {
+        "file": "docs/products.md",
+        "line": 100,
+        "line_text": "Lithium isn't an established nutrient: there is no recommended daily intake for it anywhere, and no recognised deficiency. The interest in low-dose lithium comes mainly from animal studies and from population studies of lithium in drinking water, which can't show cause and effect. The human trials s",
+        "note": "position: not an established nutrient; human trials small; why excluded from MicroVitamin",
+        "last_changed": "2026-10-09"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 189,
+        "line_text": "Lithium orotate, astaxanthin, cocoa flavanols: same answers as the MicroVitamin FAQ.",
+        "note": "powder FAQ defers to MicroVitamin lithium answer",
+        "last_changed": "2026-10-14"
+      }
+    ],
+    "posts": [
+      {
+        "handle": "low-dose-lithium-crushes-dementia",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/low-dose-lithium-crushes-dementia.md",
+        "url": "https://drstanfield.com/blogs/articles/low-dose-lithium-crushes-dementia",
+        "publishedAt": "2025-09-09T00:29:58Z",
+        "title": "Low-Dose Lithium CRUSHES Dementia & Brain Aging?",
+        "single_subject": true
+      }
+    ]
+  },
+  {
+    "handle": "taurine-benefits-forms-dosing-and-side-effects",
+    "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-taurine-supplements-review-taurine.md",
+    "cl_raw_sha256": "34dd95389868356b5a2aa5ef4099ab49cc3b899c2c0bc3ea66a4918f5aceacb0",
+    "cl_url": "https://www.consumerlab.com/reviews/taurine-supplements-review/taurine/",
+    "nih_raw": null,
+    "nih_raw_sha256": null,
+    "nih_url": null,
+    "positions": [
+      {
+        "file": "docs/products.md",
+        "line": 164,
+        "line_text": "MicroVitamin+ includes 1g of additional taurine on top of the taurine already present in Magnesium Taurate. A 2025 meta-analysis of 34 RCTs (~1,394 participants) found taurine supplementation significantly reduced fasting blood glucose (−5.90 mg/dL, 95% CI −9.65 to −2.15), HbA1c (−0.21%, 95% CI −0.3",
+        "note": "benefit: 2025 meta-analysis of 34 RCTs; 1 g extra in MicroVitamin+",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 391,
+        "line_text": "Magnesium Taurate was specifically chosen over other magnesium forms for cardiovascular benefit — it combines magnesium with taurine to support absorption, heart rhythm, and relaxation (USA formula. For Australian customers of MicroVitamin capsules, never give the magnesium form as a heart-health re",
+        "note": "form: taurate magnesium + taurine (heart rhythm, relaxation)",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 308,
+        "line_text": "| Muscle loss / exercise performance | MicroVitamin+ Powder | Creatine 5g (clinical dose) + Taurine 1g in one scoop. No separate creatine needed |",
+        "note": "product rec: creatine + taurine for muscle",
+        "last_changed": "2026-08-10"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 775,
+        "line_text": "- Taurine (34 RCTs, 1,394 participants): Nie et al., Nutrition Reviews, 2025 — https://doi.org/10.1093/nutrit/nuaf220",
+        "note": "citation: Nie 2025 meta-analysis",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 776,
+        "line_text": "- Taurine (25 RCTs): Tzang et al., 2024 — https://doi.org/10.1038/s41387-024-00289-z",
+        "note": "citation: Tzang 2024 25 RCTs",
+        "last_changed": "2026-08-10"
+      }
+    ],
+    "notes": "Header SHA256 inside the CL file differs from _fetch-log (post-fetch account-line drop); cl_raw_sha256 is of the file on disk. The reference .md also links a magnesium CL URL (magnesium-supplements-review, not fetched).",
+    "posts": [
+      {
+        "handle": "1-394-person-study-on-taurine-proves-what-we-suspected",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/1-394-person-study-on-taurine-proves-what-we-suspected.md",
+        "url": "https://drstanfield.com/blogs/articles/1-394-person-study-on-taurine-proves-what-we-suspected",
+        "publishedAt": "2026-02-12T21:13:15Z",
+        "title": "1,394 Person Study on Taurine Proves What We Suspected",
+        "single_subject": true
+      },
+      {
+        "handle": "popular-longevity-treatment-makes-you-sick",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/popular-longevity-treatment-makes-you-sick.md",
+        "url": "https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick",
+        "publishedAt": "2025-11-20T19:11:54Z",
+        "title": "Popular Longevity Treatment Makes You Sick",
+        "single_subject": false
+      },
+      {
+        "handle": "the-only-three-supplements-doctor-brad-takes",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-only-three-supplements-doctor-brad-takes.md",
+        "url": "https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes",
+        "publishedAt": "2025-07-30T20:38:06Z",
+        "title": "The Only Three Supplements Doctor Brad Takes",
+        "single_subject": false
+      },
+      {
+        "handle": "taurine-time-to-throw-it-away-two-new-studies",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/taurine-time-to-throw-it-away-two-new-studies.md",
+        "url": "https://drstanfield.com/blogs/articles/taurine-time-to-throw-it-away-two-new-studies",
+        "publishedAt": "2025-07-08T18:07:26Z",
+        "title": "Taurine.. Time to Throw it Away? Two New Studies",
+        "single_subject": true
+      },
+      {
+        "handle": "why-scientists-are-calling-taurine-the-youth-molecule",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/why-scientists-are-calling-taurine-the-youth-molecule.md",
+        "url": "https://drstanfield.com/blogs/articles/why-scientists-are-calling-taurine-the-youth-molecule",
+        "publishedAt": "2025-03-25T23:52:48Z",
+        "title": "Why Scientists Are Calling Taurine “The Youth Molecule”",
+        "single_subject": true
+      }
+    ]
+  },
+  {
+    "handle": "creatine-benefits-best-forms-dosing-and-side-effects",
+    "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-review-creatine-creatine.md",
+    "cl_raw_sha256": "2d8545d21a72a758f870c48d82107f53aa07bfbf4f033911cc0df320e33d6eb6",
+    "cl_url": "https://www.consumerlab.com/reviews/review-creatine/creatine/",
+    "nih_raw": null,
+    "nih_raw_sha256": null,
+    "nih_url": null,
+    "positions": [
+      {
+        "file": "docs/products.md",
+        "line": 145,
+        "line_text": "Creatine Monohydrate (5g — the standard clinical dose) is the most evidence-backed supplement for physical performance, supporting muscle strength, power, and recovery (Kreider et al., J Int Soc Sports Nutr, 2017). It is especially relevant for adults over 30 experiencing age-related muscle decline.",
+        "note": "benefit/dose: 5 g, strength, power, recovery (Kreider)",
+        "last_changed": "2026-10-03"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 399,
+        "line_text": "MicroVitamin+ Powder provides Creatine Monohydrate 5g (the standard clinical dose and most evidence-backed sports supplement) + TMG 500mg (methyl donor; at higher doses, betaine combined with exercise has improved body composition (Cholewa et al., 2013) and muscle endurance (Arazi et al., 2022) vs p",
+        "note": "benefit/dose: 5 g standard clinical dose",
+        "last_changed": "2026-10-03"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 308,
+        "line_text": "| Muscle loss / exercise performance | MicroVitamin+ Powder | Creatine 5g (clinical dose) + Taurine 1g in one scoop. No separate creatine needed |",
+        "note": "product rec: muscle loss/performance",
+        "last_changed": "2026-08-10"
+      },
+      {
+        "file": "docs/products.md",
+        "line": 769,
+        "line_text": "- Creatine (cognition, 16 RCTs meta-analysis): Xu et al., 2024 — https://doi.org/10.3389/fnut.2024.1424972 — memory SMD=0.31, greater benefit in people with diseases, those aged 18–60, and females",
+        "note": "cognition: Xu 2024 16-RCT meta-analysis",
+        "last_changed": "2026-10-03"
+      },
+      {
+        "file": "packages/health-core/src/evidence.ts",
+        "line": 544,
+        "line_text": "reason: 'Creatine monohydrate is one of the most well-studied supplements. A meta-analysis found it significantly increases muscle strength and lean mass when combined with resistance training, and emerging evidence suggests cognitive benefits, particularly under conditions of stress or sleep depriv",
+        "note": "evidence reason: strength, lean mass, cognition",
+        "last_changed": "2026-06-15"
+      },
+      {
+        "file": "packages/health-core/src/suggestions.ts",
+        "line": 1031,
+        "line_text": "description: 'One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training, with emerging evidence for cognitive benefits.',",
+        "note": "suggestion: 3-5 g/day",
+        "last_changed": "2026-06-19"
+      },
+      {
+        "file": "health_roadmap_algorithm.md",
+        "line": 1005,
+        "line_text": "| `supplement-creatine` | Creatine | Creatine monohydrate, 3–5 g/day | Strength/lean mass (Kreider 2017); cognition (Avgerinos 2018) |",
+        "note": "suggestion: 3-5 g/day; strength (Kreider), cognition (Avgerinos)",
+        "last_changed": "2026-06-15"
+      },
+      {
+        "file": "docs/guideline/diet.md",
+        "line": 244,
+        "line_text": "- **Creatine**: evidence supports muscle preservation, cognitive function, and exercise performance — difficult to obtain in adequate amounts from diet alone without high red meat intake.",
+        "note": "diet guideline: muscle preservation, cognition, performance",
+        "last_changed": "2026-04-13"
+      },
+      {
+        "file": "docs/guideline/exercise.md",
+        "line": 266,
+        "line_text": "**Product connection:** MicroVitamin+ Powder includes Creatine 5g (supports RT adaptations and muscle preservation) and Collagen 12.5g.",
+        "note": "exercise guideline: supports RT adaptations, muscle preservation",
+        "last_changed": "2026-04-15"
+      },
+      {
+        "file": "roadmap_text.html",
+        "line": 719,
+        "line_text": "<li>The International Society of Sports Nutrition’s position stand describes creatine as the most effective ergogenic nutritional supplement available to athletes for increasing high-intensity exercise capacity and lean body mass during training.[58]</li>",
+        "note": "ISSN position stand: most effective ergogenic",
+        "last_changed": "2026-07-31"
+      },
+      {
+        "file": "docs/chatbot/answer-bank.md",
+        "line": 650,
+        "line_text": "In studies of healthy people, creatine at the usual 5g dose hasn't been shown to harm the kidneys",
+        "note": "safety: 5 g not shown to harm kidneys in healthy people",
+        "last_changed": "2026-10-14"
+      },
+      {
+        "file": "docs/chatbot/answer-bank.md",
+        "line": 651,
+        "line_text": "But any abnormal kidney test is best reviewed by your doctor, so please let them know you take creatine",
+        "note": "safety: tell doctor about abnormal kidney tests",
+        "last_changed": "2026-10-14"
+      }
+    ],
+    "notes": "Reference also lists CL BCAA, glutamine and taurine reviews (reviews-branched-chain-amino-acids-bcaas.md, reviews-glutamine-review-comparisons-glutamine.md, reviews-taurine-supplements-review-taurine.md); the creatine review is the best match. No NIH creatine fact sheet.",
+    "posts": [
+      {
+        "handle": "ashwagandha-supplement-fails-in-new-study",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/ashwagandha-supplement-fails-in-new-study.md",
+        "url": "https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study",
+        "publishedAt": "2025-10-15T20:07:54Z",
+        "title": "Ashwagandha Supplement Fails in New Study!",
+        "single_subject": false
+      },
+      {
+        "handle": "5-supplements-that-actually-work",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/5-supplements-that-actually-work.md",
+        "url": "https://drstanfield.com/blogs/articles/5-supplements-that-actually-work",
+        "publishedAt": "2025-10-05T20:31:48Z",
+        "title": "5 Supplements That ACTUALLY Work",
+        "single_subject": false
+      },
+      {
+        "handle": "the-only-three-supplements-doctor-brad-takes",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/the-only-three-supplements-doctor-brad-takes.md",
+        "url": "https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes",
+        "publishedAt": "2025-07-30T20:38:06Z",
+        "title": "The Only Three Supplements Doctor Brad Takes",
+        "single_subject": false
+      },
+      {
+        "handle": "creatine-fails-in-new-study-don-t-be-misled",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/creatine-fails-in-new-study-don-t-be-misled.md",
+        "url": "https://drstanfield.com/blogs/articles/creatine-fails-in-new-study-don-t-be-misled",
+        "publishedAt": "2025-04-02T06:54:33Z",
+        "title": "Creatine “FAILS” in New Study - Don’t Be Misled!",
+        "single_subject": true
+      },
+      {
+        "handle": "why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking.md",
+        "url": "https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking",
+        "publishedAt": "2025-03-26T19:59:34Z",
+        "title": "Why Creatine Is The ONE Supplement All Longevity Researchers Are Taking",
+        "single_subject": true
+      },
+      {
+        "handle": "only-supplements-work-2025",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/only-supplements-work-2025.md",
+        "url": "https://drstanfield.com/blogs/articles/only-supplements-work-2025",
+        "publishedAt": "2024-11-19T03:13:05Z",
+        "title": "The Only Supplements That ACTUALLY Work (2025)",
+        "single_subject": false
+      },
+      {
+        "handle": "older-adults-seniors-creatine-supplements",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/older-adults-seniors-creatine-supplements.md",
+        "url": "https://drstanfield.com/blogs/articles/older-adults-seniors-creatine-supplements",
+        "publishedAt": "2024-07-01T01:37:47Z",
+        "title": "Can Older Adults and Seniors Still Take Creatine Supplements?",
+        "single_subject": true
+      }
+    ]
+  },
+  {
+    "handle": "vitamin-c-benefits-forms-dosing-and-side-effects",
+    "cl_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/consumerlab/review/reviews-vitamin-c-supplement-review-vitaminc.md",
+    "cl_raw_sha256": "0700978a6052f63e40fd6137b74b28a6a377b6911460c7fba73fa1e124242473",
+    "cl_url": "https://www.consumerlab.com/reviews/vitamin-c-supplement-review/vitaminc/",
+    "nih_raw": "/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw/refresh-2026-09-29/nih/vitaminc-nih.md",
+    "nih_raw_sha256": "c90bdbe5335f77121d0603a4cc602e844987bad2ba22430bb33a7b09bd374f3d",
+    "nih_url": "https://ods.od.nih.gov/factsheets/VitaminC-HealthProfessional/",
+    "nih_source": "refresh-2026-09-29/nih (Sept 2026)",
+    "positions": [
+      {
+        "file": "docs/products.md",
+        "line": 27,
+        "line_text": "- Antioxidant: Vitamin C 45mg (Calcium Ascorbate)",
+        "note": "product: 45 mg calcium ascorbate labelled antioxidant (only position found)",
+        "last_changed": "2026-08-10"
+      }
+    ],
+    "posts": [
+      {
+        "handle": "more-vitamins-worse-health-new-trial",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/more-vitamins-worse-health-new-trial.md",
+        "url": "https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial",
+        "publishedAt": "2026-07-08T12:00:00Z",
+        "title": "They Had to Stop This Vitamin C Trial Early",
+        "single_subject": false
+      },
+      {
+        "handle": "popular-longevity-treatment-makes-you-sick",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/popular-longevity-treatment-makes-you-sick.md",
+        "url": "https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick",
+        "publishedAt": "2025-11-20T19:11:54Z",
+        "title": "Popular Longevity Treatment Makes You Sick",
+        "single_subject": false
+      },
+      {
+        "handle": "stop-these-longevity-supplements-dangerous-side-effects",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/stop-these-longevity-supplements-dangerous-side-effects.md",
+        "url": "https://drstanfield.com/blogs/articles/stop-these-longevity-supplements-dangerous-side-effects",
+        "publishedAt": "2025-02-24T21:22:36Z",
+        "title": "Stop These Longevity Supplements (Dangerous Side Effects)",
+        "single_subject": false
+      },
+      {
+        "handle": "liposomal-vitamin-c-worth",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/liposomal-vitamin-c-worth.md",
+        "url": "https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth",
+        "publishedAt": "2024-12-09T15:30:08Z",
+        "title": "Is Liposomal Vitamin C Worth the Money or a Useless Fad?",
+        "single_subject": true
+      },
+      {
+        "handle": "popular-supplements-try-avoid",
+        "path": "/Users/bradstanfield/Documents/roadmap/docs/blog/popular-supplements-try-avoid.md",
+        "url": "https://drstanfield.com/blogs/articles/popular-supplements-try-avoid",
+        "publishedAt": "2024-08-11T19:43:34Z",
+        "title": "Which Popular Supplements Should You Actually Try to Avoid?",
+        "single_subject": false
+      }
+    ]
+  }
+]

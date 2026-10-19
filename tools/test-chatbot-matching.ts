@@ -59,11 +59,13 @@
  *                             gets production's buildSystemBlocks (so the evidence and knowledge-overview
  *                             blocks too) with the fixture's posture, which it must name: the widget's is
  *                             'doctor'. An explicit {} is production's empty context ('{}', no data
- *                             entered). Any other payload that makes no plan, has a key the widget never
- *                             sends, or loses a field to its range exits the harness before any API call.
- *   expect_empty_context?: true  with user_context: production collapses this payload to '{}' (no sex
- *                             or height, so no plan), and the answer gets '{}' as production sends it.
- *                             A payload that does make a plan then exits the harness before any API call.
+ *                             entered). Any other payload that makes no plan undeclared, has a key the
+ *                             widget never sends, or loses a field to its range exits the harness before
+ *                             any API call.
+ *   expect_no_plan?: true      with user_context: this payload makes no plan (no sex or height), and the
+ *                             answer gets the saved values with no cards, as production sends them
+ *                             (US-15 AC36). A payload that does make a plan then exits the harness before
+ *                             any API call.
  *   history?: {role, content}[]  answer check only: earlier turns of the conversation, sent before the
  *                             query as the widget sends its history: alternating user and assistant
  *                             text, from a user turn to an assistant one. Any other shape exits the
@@ -377,7 +379,7 @@ interface TestQuery {
   answer_handles?: string[];   // fixed-handle answer check, no `expected` (see the header)
   surface?: 'doctor' | 'brand'; // answer check adds that surface's posture block (see the header)
   user_context?: unknown;      // answer check sends this widget payload as the user's data (see the header)
-  expect_empty_context?: true; // production collapses user_context to '{}' (see the header)
+  expect_no_plan?: true;       // user_context makes no plan: no sex or height (see the header)
   expect_roadmap_run?: boolean; // the answer must (true) or must not (false) call run_roadmap (see the header)
   history?: Array<{ role: 'user' | 'assistant'; content: string }>; // earlier turns, before the query (see the header)
   pending?: string;            // listed, not run, unless --include-pending (see the header)
@@ -428,11 +430,14 @@ for (const q of ALL_QUERIES.filter(q => q.user_context !== undefined)) {
     console.error(`user_context needs a surface on: ${q.query}`);
     process.exit(1);
   }
-  // As /api/chat. Only an explicit {}, or a payload declared to collapse, may resolve to the empty context.
+  // As /api/chat. Only an explicit {} may resolve to the empty context, and only a payload
+  // declared expect_no_plan to a context with no cards.
   const ctx = resolveChatContext(q.user_context);
-  const empty = JSON.stringify(q.user_context) === '{}' || q.expect_empty_context === true;
+  const empty = JSON.stringify(q.user_context) === '{}';
+  const noPlan = !empty && !('currentSuggestions' in JSON.parse(ctx.userContextJson));
   const unknown = Object.keys(q.user_context ?? {}).filter(k => !CONTEXT_KEYS.has(k));
-  if ((ctx === EMPTY_CHAT_CONTEXT) !== empty || unknown.length > 0 || JSON.parse(ctx.userContextJson).excludedFields) {
+  if ((ctx === EMPTY_CHAT_CONTEXT) !== empty || noPlan !== (q.expect_no_plan === true) || unknown.length > 0
+    || JSON.parse(ctx.userContextJson).excludedFields) {
     console.error(`user_context does not parse${unknown.length ? ` (unknown keys: ${unknown.join(', ')})` : ''} on: ${q.query}`);
     process.exit(1);
   }

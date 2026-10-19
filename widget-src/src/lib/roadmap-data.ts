@@ -4,12 +4,14 @@ import {
   type FileReminderOptIn,
   type HealthInputs,
   type LpaUnit,
+  type MetricType,
   isLabUnitWord,
   labUnitTaken,
   type ReminderScheduleItem,
   knownMinorOf,
   resolveLabCatalogEntry,
 } from '@roadmap/health-core';
+import { MEASUREMENT_REFUSALS_WITH_METRIC } from '@roadmap/health-core/product-events';
 import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, setChatHistoryFactory } from './chat-history-access';
@@ -151,7 +153,19 @@ export async function saveScreening(screeningKey: string, value: string): Promis
   return store ? store.saveScreening(screeningKey, value) : false;
 }
 export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[]): Promise<BulkSaveResult> {
-  return store ? store.bulkSaveMeasurements(measurements) : { saved: [], skippedDuplicates: 0, errorCount: measurements.length };
+  if (!store) return { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };
+  const result = store.bulkSaveMeasurements(measurements);
+  // Counted like a refused lab unit, in closed words only (US-35 AC17). The
+  // metric rides only on an invalid value: an out-of-range one would say this
+  // visitor's value is past a bound, and an unknown metric is free text. An
+  // out-of-range metric still keys the tab's throttle, locally, so two tests
+  // past their bounds count twice.
+  for (const row of result.refused) {
+    if (MEASUREMENT_REFUSALS_WITH_METRIC.includes(row.reason)) trackProductEvent('measurement_refused', { metric: row.metricType as MetricType, refusal: row.reason });
+    else if (row.reason === 'out-of-range') trackProductEvent('measurement_refused', { refusal: row.reason }, row.metricType);
+    else trackProductEvent('measurement_refused', { refusal: row.reason });
+  }
+  return result;
 }
 export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {
   if (!store) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };

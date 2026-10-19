@@ -335,3 +335,53 @@ describe('US-12 AC12: a value with its own day reaches only a widget that reads 
     expect(results[0].additionalValues).toHaveLength(2);
   });
 });
+
+// Issue #166: refused rows count in `droppedValueCount` only here, for a widget
+// that predates `refusedValues`, so this widget lists them once (US-12 AC15).
+describe('US-12 AC15: a refused value reaches an old widget as a value that could not be read', () => {
+  const refusing = () => ({
+    classification: 'lab_report', reportDate: '2026-03-10', document: null, droppedValueCount: 1,
+    values: [{ metric: 'ldl', valueSI: 2.1, displayValue: 2.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' }],
+    additionalValues: [],
+    refusedValues: [
+      { metric: 'creatinine', value: 2, unit: 'mg/mmol', reason: 'This unit is usually a urine result.' },
+      { metric: 'creatinine', value: 3, unit: 'mg/mmol', reason: 'This unit is usually a urine result.', recordedAt: '2025-09-02' },
+    ],
+  });
+  const FLAGS = { ownDates: true, undatedPrev: true };
+  const single = (extra: Record<string, unknown>) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST', headers: { 'fly-client-ip': `10.1.0.${++ipCounter}` },
+    body: JSON.stringify({ pages: FILES[0].pages, ...extra }),
+  });
+  const batch = (extra: Record<string, unknown>) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
+    method: 'POST', headers: { 'fly-client-ip': `10.1.0.${++ipCounter}` },
+    body: JSON.stringify({ batch: true, files: FILES, ...extra }),
+  });
+
+  it('single file: an old widget gets each refused value it reads added to droppedValueCount; this one gets them listed, uncounted', async () => {
+    extractOrClassify.mockResolvedValueOnce(refusing());
+    const old = (await (await action({ request: single(FLAGS) } as never)).json()).data;
+    expect(old.droppedValueCount).toBe(3);
+    extractOrClassify.mockResolvedValueOnce(refusing());
+    const oldest = (await (await action({ request: single({}) } as never)).json()).data;
+    expect(oldest.droppedValueCount).toBe(2); // the previous-column one is cut with its column
+    extractOrClassify.mockResolvedValueOnce(refusing());
+    const now = (await (await action({ request: single({ ...FLAGS, refusedRows: true }) } as never)).json()).data;
+    expect(now.droppedValueCount).toBe(1);
+    expect(now.refusedValues).toHaveLength(2);
+  });
+
+  it('batch: the same rule on the poll', async () => {
+    for (const [extra, dropped] of [[FLAGS, 3], [{ ...FLAGS, refusedRows: true }, 1]] as const) {
+      const { batchId, pollToken } = await (await action({ request: batch(extra) } as never)).json();
+      pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 1, total: 1, results: [{ index: 0, ...refusing() }] } as never);
+      const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
+      expect(results[0].droppedValueCount).toBe(dropped);
+    }
+  });
+
+  it('refusedRows is `true` or absent', async () => {
+    expect((await action({ request: single({ refusedRows: 1 }) } as never)).status).toBe(400);
+    expect((await action({ request: batch({ refusedRows: 'yes' }) } as never)).status).toBe(400);
+  });
+});

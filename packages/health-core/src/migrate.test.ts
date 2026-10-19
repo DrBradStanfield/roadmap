@@ -484,3 +484,25 @@ describe('US-21 AC17 — legacy rows of the newly catalogued tests, at load and 
     expect(merged.labValues.find((r) => r.id === 'a')!.status).toBe('entered-in-error');
   });
 });
+
+// US-21 AC21 — load never deletes or rewrites a stored row: one above its
+// test's ceiling is left exactly as it is, whether still in its printed unit
+// or already converted by an older client.
+describe('US-21 AC21 — rows above a ceiling are left as they are at load', () => {
+  it('US-21 AC21 — a legacy nmol/L free T with a pmol/L number gets no #si child; a stored 312,600 pmol/L row is untouched', () => {
+    const row = (over: Partial<FileLabValue> & { id: string }): FileLabValue => ({
+      metricName: 'free_testosterone', value: 312.6, unit: 'nmol/L', referenceLow: 163, referenceHigh: 473,
+      recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z', source: 'lab_import', status: 'active', correctsId: null, ...over,
+    });
+    const rows = [
+      row({ id: 'legacy' }),
+      row({ id: 'old#si', value: 312600, unit: 'pmol/L', referenceLow: 163000, referenceHigh: 473000, correctsId: 'old', recordedAt: '2026-06-01' }),
+    ];
+    const raw = {
+      schemaVersion: 1,
+      meta: { createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-08-01T00:00:00Z', lastDeviceId: 'dev_a', lamport: 3 },
+      labValues: rows,
+    };
+    expect(stableStringify(migrateFile(raw, OPTS).labValues)).toBe(stableStringify(rows));
+  });
+});

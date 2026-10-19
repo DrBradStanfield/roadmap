@@ -55,12 +55,18 @@ export function cellFromSI(metric: MetricType, valueSI: number, unit: CellUnit):
   return isSystem(unit) ? fromCanonicalValue(metric, valueSI, unit) : canonicalToReported(metric, valueSI, unit)!;
 }
 
-/** A stored value as the cell shows it, at its unit's step: Lp(a) at one
- *  decimal place in mg/dL, whole numbers in nmol/L and mg/L. */
+/** The decimal places a cell shows in `unit`: Lp(a) at one in mg/dL, none
+ *  in nmol/L and mg/L. */
+export function cellDecimalPlaces(metric: MetricType, unit: CellUnit): number {
+  if (isSystem(unit)) return unitDecimalPlaces(metric, unit);
+  const { system, scale } = lookupUnit(metric, unit)!; // every Lp(a) unit is in the unit table
+  return unitDecimalPlaces(metric, system, scale);
+}
+
+/** A stored value as the cell shows it, at its unit's step. */
 export function cellText(metric: MetricType, valueSI: number, unit: CellUnit): string {
   if (isSystem(unit)) return formatDisplayValue(metric, valueSI, unit);
-  const { system, scale } = lookupUnit(metric, unit)!; // every Lp(a) unit is in the unit table
-  return cellFromSI(metric, valueSI, unit).toFixed(unitDecimalPlaces(metric, system, scale));
+  return cellFromSI(metric, valueSI, unit).toFixed(cellDecimalPlaces(metric, unit));
 }
 
 /** The unit's label: the system's for the metric, or the Lp(a) unit itself. */
