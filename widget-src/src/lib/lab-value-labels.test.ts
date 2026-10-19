@@ -34,7 +34,7 @@ describe('labValueLabel', () => {
 
   it('title-cases a snake_case name off the catalogue', () => {
     expect(labValueLabel('ana_titre')).toBe('Ana Titre');
-    expect(labValueLabel('lipase')).toBe('Lipase');
+    expect(labValueLabel('plateletcrit')).toBe('Plateletcrit');
     expect(labValueLabel('mean_platelet_component_x')).toBe('Mean Platelet Component X');
   });
 

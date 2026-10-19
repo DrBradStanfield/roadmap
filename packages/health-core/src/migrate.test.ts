@@ -326,7 +326,7 @@ describe('US-21 phase 3 — legacy lab rows are corrected into SI at load', () =
       labRow({ id: 'spelling', metricName: 'ferritin', value: 210, unit: 'ug/L' }),
       labRow({ id: 'superseded', status: 'entered-in-error' }),
       labRow({ id: 'unknown', metricName: 'ferritin', value: 210, unit: 'pmol/L' }),
-      labRow({ id: 'uncatalogued', metricName: 'lipase', value: 44, unit: 'U/mL' }),
+      labRow({ id: 'uncatalogued', metricName: 'plateletcrit', value: 44, unit: 'U/mL' }),
       // mg/dL under the bare molecule name is ambiguous, so it is refused at
       // the write and left exactly as it is at load (US-21 phase 3).
       labRow({ id: 'ambiguous', metricName: 'urea', value: 14, unit: 'mg/dL' }),
