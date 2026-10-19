@@ -9,7 +9,7 @@ import { readFileSync } from 'fs';
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('./supabase.server', () => ({ supabaseAdmin: null }));
 
-import { MASTER_VIEWS_HEADING } from './youtube-bot.server';
+import { MASTER_VIEWS_HEADING } from './youtube-context';
 
 const system = readFileSync('app/lib/chat-system-prompt.md', 'utf-8');
 const youtube = readFileSync('app/lib/chat-youtube-prompt.md', 'utf-8');
@@ -28,6 +28,12 @@ describe('answer prompt precedence (US-50 AC5)', () => {
     expect(loaded).toMatch(/"Current view" section .* outranks any loaded post or video published before that date/);
     expect(loaded).toMatch(/This prompt .* and the PRODUCTS section still outrank both/);
     expect(loaded).toContain("say plainly that Brad's view has changed");
+  });
+
+  it('a post published after the reviewed date wins over the current view, said plainly', () => {
+    expect(loaded).toContain("A loaded post or video published after the current view's reviewed date wins over that current view");
+    expect(loaded).toContain('it may record a change of view the reference has not caught up with');
+    expect(loaded).toContain('say plainly that this newer post is Brad\'s latest position');
   });
 
   it('only cited Current-view sentences are Brad\'s view; a Current evidence position never is', () => {
@@ -49,6 +55,10 @@ describe('YouTube prompt and the master views (US-50 AC6)', () => {
 
   it('the reply-or-skip rule ignores the section', () => {
     expect(youtube).toContain('Ignore it in Step 1 and Step 2: decide between Output A and Output B exactly as you would without it.');
+  });
+
+  it("a video published after the reviewed date wins on Brad's view today", () => {
+    expect(youtube).toContain("If this video was published after the section's reviewed date, the video wins: it may record a change of view the topic page has not caught up with, so give the video's view and say plainly that it is Brad's newer position.");
   });
 
   it('states the two-axis rule and allows a public "view has changed"', () => {

@@ -16,6 +16,7 @@
  *   - health_roadmap_algorithm.md
  *   - docs/blog/index.json (router handle index)
  *   - docs/blog/<slug>.md (per-video platform-context, looked up by youtube: frontmatter)
+ *   - app/lib/youtube-context.ts (the bot's platform-context builder and its YouTube prompt)
  *
  * Auth for YouTube comment fetch: shells out to claude_business/tools/youtube-analytics.js
  * (read-only OAuth as b.d.stanfield@gmail.com — same token used for analytics).
@@ -34,6 +35,8 @@ import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
 import { loadBlogIndex, findBlogByVideoId, type BlogIndexEntry } from '../app/lib/blog-index.server';
 import { loadMatchedContent } from '../app/lib/matched-content';
+import { buildYouTubePlatformContext } from '../app/lib/youtube-context';
+import { stripFrontmatter } from '../app/lib/frontmatter';
 import {
   CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg as getArgOf, modelParams, parseClassification,
 } from '../packages/health-core/src/models';
@@ -90,7 +93,6 @@ const usingTestKey = !!process.env.ANTHROPIC_TEST_API_KEY;
 const CLASSIFIER_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-classifier-prompt.md'), 'utf-8');
 const ROUTER_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-router-prompt.md'), 'utf-8');
 const SYSTEM_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-system-prompt.md'), 'utf-8');
-const YOUTUBE_PROMPT_TEMPLATE = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-youtube-prompt.md'), 'utf-8');
 const ALGORITHM_DOC = fs.readFileSync(path.join(REPO_ROOT, 'health_roadmap_algorithm.md'), 'utf-8');
 const PRODUCTS_DOC = fs.readFileSync(path.join(REPO_ROOT, 'docs/products.md'), 'utf-8');
 
@@ -116,6 +118,7 @@ interface BlogPost {
   slug: string;
   title: string;
   body: string;
+  entry: BlogIndexEntry;
 }
 
 function loadBlogPostForVideo(videoId: string): BlogPost {
@@ -128,7 +131,8 @@ function loadBlogPostForVideo(videoId: string): BlogPost {
   return {
     slug: entry.handle,
     title: entry.title,
-    body: content.replace(/^---[\s\S]*?---\n\n?/, ''),
+    body: stripFrontmatter(content),
+    entry,
   };
 }
 
@@ -254,15 +258,9 @@ async function routeQuery(comment: string): Promise<{ handles: string[]; raw: st
   }
 }
 
-function buildYouTubePlatformContext(blogPost: BlogPost): string {
-  return YOUTUBE_PROMPT_TEMPLATE
-    .replace('{{VIDEO_TITLE}}', blogPost.title)
-    .replace('{{VIDEO_URL}}', `https://youtu.be/${VIDEO_ID}`)
-    .replace('{{VIDEO_CONTENT}}', blogPost.body);
-}
-
 async function callMainLLM(comment: string, blogPost: BlogPost, matchedHandles: string[]): Promise<{ text: string; error: string | null }> {
-  const platformContext = buildYouTubePlatformContext(blogPost);
+  // The bot's own builder: the video's post plus the topic masters' current views (US-50 AC6).
+  const platformContext = buildYouTubePlatformContext(VIDEO_ID, blogPost.entry, blogPost.body, matchedHandles);
   const matchedContent = loadMatchedContent(matchedHandles).content;
 
   // System block construction mirrors production: cached blocks 1-3 (system prompt

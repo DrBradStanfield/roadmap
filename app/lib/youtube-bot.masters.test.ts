@@ -42,7 +42,8 @@ vi.mock('./chat.server', async (orig) => ({
   getChatCompletion: vi.fn(async () => ({ content: 'SKIP_NO_REPLY', usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 }, isFallback: false })),
 }));
 
-import { currentViewSection, masterViews, runPipeline, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS } from './youtube-bot.server';
+import { runPipeline } from './youtube-bot.server';
+import { currentViewSection, masterViews, MASTER_VIEWS_HEADING, MAX_MASTER_VIEW_CHARS } from './youtube-context';
 import { getChatCompletion } from './chat.server';
 import { routeQuery } from './chat-router.server';
 
@@ -139,5 +140,19 @@ describe('runPipeline: the reply-or-skip input (US-50 AC6)', () => {
     const texts = systemOf();
     expect(texts.find(t => t.startsWith('## Referenced Blog Articles'))).toContain('Collagen peptides');
     expect(texts.join('\n')).not.toContain(`${MASTER_VIEWS_HEADING}\n\n[reference`);
+  });
+});
+
+// US-50 AC6: the dry-run preview builds its context through the bot's function,
+// so it adds master views too. It is a paid script, so this checks its source.
+describe('youtube-comment-dryrun shares the context builder (US-50 AC6)', () => {
+  const src = fs.readFileSync('tools/youtube-comment-dryrun.ts', 'utf-8');
+  it('imports buildYouTubePlatformContext from youtube-context and keeps no copy', () => {
+    expect(src).toMatch(/import \{[^}]*\bbuildYouTubePlatformContext\b[^}]*\} from '\.\.\/app\/lib\/youtube-context'/);
+    expect(src).not.toMatch(/function buildYouTubePlatformContext/);
+    expect(src).not.toContain('chat-youtube-prompt.md');
+  });
+  it("passes the router's picks, so master views are de-duplicated as in the bot", () => {
+    expect(src).toMatch(/buildYouTubePlatformContext\(VIDEO_ID, [^)]*matchedHandles\)/);
   });
 });
