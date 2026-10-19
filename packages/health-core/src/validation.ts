@@ -353,6 +353,8 @@ export const labImportRequestSchema = z.object({
   ownDates: z.literal(true).optional(),
   /** Sent only by a widget that asks the user an undated previous column's day (US-12 AC14). */
   undatedPrev: z.literal(true).optional(),
+  /** Sent only by a widget that lists `refusedValues` under "Not saved" (US-12 AC15). */
+  refusedRows: z.literal(true).optional(),
 });
 
 export type LabImportRequest = z.infer<typeof labImportRequestSchema>;
@@ -363,9 +365,10 @@ export const batchImportRequestSchema = z.object({
   files: z.array(z.object({
     pages: z.array(labImportPageSchema).min(1).max(100),
   })).min(1).max(200),
-  /** As on a single file (US-12 AC12, AC14). */
+  /** As on a single file (US-12 AC12, AC14, AC15). */
   ownDates: z.literal(true).optional(),
   undatedPrev: z.literal(true).optional(),
+  refusedRows: z.literal(true).optional(),
 });
 
 /** Bulk measurement save — array variant of measurementSchema */

@@ -49,7 +49,7 @@ function consumeQuota(ip: string, count: number): boolean {
 // required on every poll; without it, or with the wrong one, the batch does not
 // exist (404, the same answer as an id nobody created).
 const MAX_ACTIVE_BATCHES = 200;
-const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; days: DayFlags; reported?: boolean }>();
+const activeBatches = new Map<string, { totalFiles: number; createdAt: number; pollToken: string; days: DayFlags; refusedRows?: true; reported?: boolean }>();
 setInterval(() => {
   const cutoff = Date.now() - 60 * 60_000;
   for (const [id, b] of activeBatches) if (b.createdAt < cutoff) activeBatches.delete(id);
@@ -68,12 +68,25 @@ type DayFlags = { ownDates?: true; undatedPrev?: true };
 function withDaysItReads<T>(result: T, { ownDates, undatedPrev }: DayFlags): T {
   if (ownDates && undatedPrev) return result;
   const reads = (v: { recordedAt?: string }) => !v.recordedAt || (!!ownDates && v.recordedAt !== UNDATED_PREVIOUS);
-  const r = result as { values?: Array<{ recordedAt?: string }>; additionalValues?: Array<{ recordedAt?: string }> };
+  const r = result as { values?: Array<{ recordedAt?: string }>; additionalValues?: Array<{ recordedAt?: string }>; refusedValues?: Array<{ recordedAt?: string }> };
   return {
     ...result,
     ...(r.values && { values: r.values.filter(reads) }),
     ...(r.additionalValues && { additionalValues: r.additionalValues.filter(reads) }),
+    ...(r.refusedValues && { refusedValues: r.refusedValues.filter(reads) }),
   };
+}
+
+/**
+ * A widget from before refused rows never reads `refusedValues`, so it hears
+ * them as values that could not be read. They are added to its
+ * `droppedValueCount` here and only here: this widget sends `refusedRows: true`
+ * and lists them once, under "Not saved" (US-12 AC15).
+ */
+function withRefusalsItReads<T>(result: T, refusedRows?: true): T {
+  const r = result as { droppedValueCount?: number; refusedValues?: unknown[] };
+  if (refusedRows || !r.refusedValues?.length) return result;
+  return { ...result, droppedValueCount: (r.droppedValueCount ?? 0) + r.refusedValues.length };
 }
 
 /** The token the uploader gets back and every poll must present. */
@@ -109,7 +122,7 @@ async function answerPoll(batchId: string, pollToken: string | null): Promise<Re
       for (const stop of result.stops ?? []) reportExtractionStop(stop.code, stop.refusalCategory, 'batch');
     }
     return Response.json(
-      { status: result.status, results: result.results?.map(r => withDaysItReads(r, batch.days)), completed: result.completed, total: result.total },
+      { status: result.status, results: result.results?.map(r => withRefusalsItReads(withDaysItReads(r, batch.days), batch.refusedRows)), completed: result.completed, total: result.total },
     );
   } catch (error) {
     console.error('Batch poll error (v2):', error);
@@ -151,7 +164,7 @@ export async function action({ request }: ActionFunctionArgs) {
     // --- Batch mode ---
     const batchValidation = batchImportRequestSchema.safeParse(body);
     if (batchValidation.success) {
-      const { files, ownDates, undatedPrev } = batchValidation.data;
+      const { files, ownDates, undatedPrev, refusedRows } = batchValidation.data;
       if (!consumeQuota(ip, files.length)) {
         return Response.json(
           { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
@@ -163,7 +176,7 @@ export async function action({ request }: ActionFunctionArgs) {
       }
       const { batchId } = await createBatch(files);
       const pollToken = newPollToken();
-      activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollToken, days: { ownDates, undatedPrev } });
+      activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now(), pollToken, days: { ownDates, undatedPrev }, refusedRows });
       return Response.json({ success: true, batchId, pollToken, totalFiles: files.length });
     }
 
@@ -179,13 +192,13 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
-    const { pages, ownDates, undatedPrev } = validation.data;
+    const { pages, ownDates, undatedPrev, refusedRows } = validation.data;
     try {
       // One deadline for the file's calls: a malformed answer's re-send gets what
       // is left. A timed-out HTTP attempt is still retried once in a fresh window
       // (fetchAnthropicRaw), kept for capacity blips; ~46 s answers make it rare (US-15 AC34).
       const result = await extractOrClassify(pages, { timeoutMs: 60_000 });
-      return Response.json({ success: true, data: withDaysItReads(result, { ownDates, undatedPrev }), remaining: ipQuota.remaining(ip) });
+      return Response.json({ success: true, data: withRefusalsItReads(withDaysItReads(result, { ownDates, undatedPrev }), refusedRows), remaining: ipQuota.remaining(ip) });
     } catch (error) {
       // Declined or cut off: its own answer, so the widget does not say "try
       // again" (US-15 AC34). The code and category only, never document text.

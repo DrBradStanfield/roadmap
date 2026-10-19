@@ -199,7 +199,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual({
       picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1,
-      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0, undatedPrevious: 0,
+      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0, undatedPrevious: 0, unitsGuessed: 0, unitsRefused: 0,
     });
     expect(Object.values(outcomes()[0]!).every(Number.isInteger)).toBe(true);
     // A zero is never sent, so a server a deploy behind never meets a new key it would refuse.
@@ -629,5 +629,38 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
   it('offers .docx and .doc in the file picker', () => {
     render_();
     expect(document.querySelector('input[type=file]')!.getAttribute('accept')!.split(',')).toEqual(expect.arrayContaining(['.docx', '.doc']));
+  });
+});
+
+// Issue #166: a creatinine the extractor would not read is listed under
+// "Not saved", once, and counted; a guessed unit is counted (US-12 AC15, AC16).
+describe('US-12 AC15, AC16: refused and guessed units are shown and counted', () => {
+  it('lists a refused creatinine under "Not saved" on review and done, never as "could not be read", and counts it', async () => {
+    vi.mocked(labImport).mockResolvedValue({ result: { ...withValues.result!,
+      values: [...withValues.result!.values, { metric: 'hdl', valueSI: 1.2, displayValue: 1.2, displayUnit: '', confidence: 'medium', unitGuessed: true }],
+      droppedValueCount: 0,
+      refusedValues: [{ metric: 'creatinine', value: 2, unit: 'mg/mmol', reason: 'This unit is usually a urine result.' }],
+    } } as Import);
+    render_(); pick(pdf('acr.pdf'));
+    await screen.findByDisplayValue('3.9');
+    const list = screen.getByRole('list', { name: 'Values not saved' });
+    expect(list.textContent).toBe('acr.pdf Creatinine 2 mg/mmol. This unit is usually a urine result.');
+    expect(reasonFor('acr.pdf')).toBeNull();
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    expect(sent()[0]).toEqual({ picked: 1, withValues: 1, unitsGuessed: 1, unitsRefused: 1 });
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(screen.getByRole('list', { name: 'Values not saved' })).toBeTruthy();
+  });
+
+  it('a file whose only values were refused is not "No blood test values found." and not counted noValues', async () => {
+    vi.mocked(labImport).mockResolvedValue({ result: { ...nothing.result!,
+      refusedValues: [{ metric: 'creatinine', value: 2, unit: 'mg/mmol', reason: 'This unit is usually a urine result.' }],
+    } } as Import);
+    render_(); pick(pdf('acr.pdf'));
+    await screen.findByRole('list', { name: 'Values not saved' });
+    expect(reasonFor('acr.pdf')).toBeNull();
+    await waitFor(() => expect(sent()).toHaveLength(1));
+    expect(sent()[0]).toEqual({ picked: 1, unitsRefused: 1 });
   });
 });

@@ -1511,6 +1511,10 @@ export function prepareImport(
         });
       }
       for (const line of result.unrecognized) unrecognized.push(oneLine(line).slice(0, MAX_UNRECOGNIZED_LINE_LENGTH));
+      // A creatinine the extractor refused rather than guessed (US-12 AC15, D7a): one line with why, never a "could not be read" count.
+      for (const value of result.refusedValues ?? []) {
+        if (!previousColumn(value)) unrecognized.push(oneLine(`${`${value.metric} ${value.value} ${value.unit}`.trim()}: not saved. ${value.reason}`).slice(0, MAX_UNRECOGNIZED_LINE_LENGTH));
+      }
       // Once filed, the report dedups as already_imported: a refused value is said now or never. A count, no value.
       const n = result.droppedValueCount ?? 0;
       if (n > 0) {

@@ -1768,6 +1768,77 @@ function bundleOf(files: ExtractedFile[]) {
   return { route: 'dropbox' as const, remaining: [], files };
 }
 
+// Issue #166 on import_documents (D7a, D7b): the connector runs the same
+// extractor (metadata mode). A creatinine in a urine or ratio unit is an
+// `unrecognized` line, once, never a candidate and never "could not be read";
+// a blank or unknown unit is inferred and stored in SI, as before (D7a, Brad
+// 2026-10-20: "save it as SI unit"); a creatinine too high for blood carries
+// its question (US-12 AC15, AC16, US-13 AC11).
+describe('US-12 AC15/AC16 — import_documents refuses a urine creatinine, infers a blank unit', () => {
+  const modelAnswer = (values: unknown[]) => toUnifiedResult(parseUnifiedResult({
+    classification: 'lab_report', reportDate: LAB_DAY, values, additionalValues: [], document: null,
+  }), 'metadata');
+
+  it('mg/mmol and "mg/dL (urine)" are unrecognized lines with why; no candidate, no droppedValues', () => {
+    const { payload, files, unrecognized } = prepareImport(base(), bundleOf([extracted('acr.pdf', modelAnswer([
+      { metric: 'creatinine', value: 12, unit: 'mg/mmol', confidence: 'high' },
+      { metric: 'creatinine', value: 80, unit: 'mg/dL (urine)', confidence: 'high' },
+      { metric: 'creatinine', value: 95, unit: 'mg/g creatinine', confidence: 'high' },
+    ]))]), IMPORT_CTX);
+    expect(payload.candidates).toEqual([]);
+    expect(files[0].droppedValues).toBeUndefined();
+    expect(unrecognized).toEqual([
+      'creatinine 12 mg/mmol: not saved. This unit is usually a urine result.',
+      'creatinine 80 mg/dL (urine): not saved. This unit is usually a urine result.',
+      'creatinine 95 mg/g creatinine: not saved. This unit is usually a urine result.',
+    ]);
+  });
+
+  it('a blank unit is inferred, stored in SI and asked about at medium: 1.1 from mg/dL, 95 as µmol/L', () => {
+    for (const [value, si] of [[1.1, 97.24], [95, 95]]) {
+      const { payload, unrecognized } = prepareImport(base(), bundleOf([extracted('blank.pdf', modelAnswer([
+        { metric: 'creatinine', value, unit: '', confidence: 'high' },
+      ]))]), IMPORT_CTX);
+      expect(unrecognized).toEqual([]);
+      expect(payload.candidates).toHaveLength(1);
+      expect(payload.candidates[0]).toMatchObject({ metric: 'creatinine', unit: 'µmol/L', confidence: 'medium', question: 'No unit was printed, so the unit was inferred — please verify this value' });
+      expect(payload.candidates[0].value).toBeCloseTo(si, 1);
+    }
+  });
+
+  it('mmol/L converts ×1000 (adversary R1): 3.2 is refused by the save range, 0.09 is 90, 1.5 asks', () => {
+    const { payload, unrecognized } = prepareImport(base(), bundleOf([extracted('mmol.pdf', modelAnswer([
+      { metric: 'creatinine', value: 3.2, unit: 'mmol/L', confidence: 'high' },
+    ]))]), IMPORT_CTX);
+    expect(payload.candidates).toEqual([]);
+    expect(unrecognized).toHaveLength(1);
+    expect(unrecognized[0]).toMatch(/^creatinine: /);
+    for (const [value, si, confidence] of [[0.09, 90, 'high'], [1.5, 1500, 'medium']] as const) {
+      const { payload: p } = prepareImport(base(), bundleOf([extracted('mmol.pdf', modelAnswer([
+        { metric: 'creatinine', value, unit: 'mmol/L', confidence: 'high' },
+      ]))]), IMPORT_CTX);
+      expect(p.candidates[0]).toMatchObject({ metric: 'creatinine', value: si, confidence });
+    }
+  });
+
+  it('a blank-unit creatinine filed as a lab row stays a lab row and is turned away as a core test (R3)', () => {
+    const answer = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: LAB_DAY, values: [], document: null,
+      additionalValues: [{ name: 'Serum Creatinine', value: 95, unit: '' }],
+    }), 'metadata');
+    const { payload, unrecognized } = prepareImport(base(), bundleOf([extracted('row.pdf', answer)]), IMPORT_CTX);
+    expect(payload.candidates).toEqual([]);
+    expect(unrecognized).toEqual(['Serum Creatinine: "Serum Creatinine" is the core metric creatinine — write it as a measurement, in SI units']);
+  });
+
+  it('a creatinine above 500 µmol/L is offered with its question and medium confidence', () => {
+    const { payload } = prepareImport(base(), bundleOf([extracted('high.pdf', modelAnswer([
+      { metric: 'creatinine', value: 650, unit: 'µmol/L', confidence: 'high' },
+    ]))]), IMPORT_CTX);
+    expect(payload.candidates[0]).toMatchObject({ metric: 'creatinine', value: 650, confidence: 'medium', question: 'Was this a blood test?' });
+  });
+});
+
 describe('US-35 AC6 — prepareImport slots every candidate against the record', () => {
   it('free, held_equal by displayed string, one candidate per slot, and the file report', () => {
     const file = base(); // m1: ldl 3.4 on 2026-07-14; l1: ferritin 210 on 2026-07-14

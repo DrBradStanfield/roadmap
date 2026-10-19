@@ -5215,9 +5215,11 @@ a.action-btn-small.action-btn-small:hover {
   min-width: 0;
 }
 /* A lab cell whose unit differs from its row's (US-35 AC6), the SI value a
-   converted lab saves, and a core value's question (both US-21 AC18). */
+   converted lab saves, and a core value's question (both US-21 AC18) and
+   printed value (US-13 AC11). */
 .bt-cell-unit,
 .bt-cell-si,
+.bt-cell-printed,
 .bt-cell-question {
   display: block;
   font-size: 0.7em;
