@@ -9,6 +9,7 @@ import type { LabImportResult, PageContent, UploadErrorCode, UploadHistory } fro
 import { labUnitRefusalLine } from '../lib/lab-value-labels';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
+import { ErrorBoundary } from './ErrorBoundary';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
@@ -859,6 +860,13 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
 
           {state === 'review' && <FileNotices notices={notices} />}
           {state === 'review' && (
+            // A review that throws while rendering is never a dead widget (US-13 AC9).
+            <ErrorBoundary feature="upload_review" fallback={
+              <div className="upload-review-error" role="alert">
+                <p>Something went wrong showing these results. Your file was read; please try again.</p>
+                <button type="button" className="btn-primary" onClick={handleDiscard}>Cancel</button>
+              </div>
+            }>
             <ReviewTable
               results={results}
               history={history}
@@ -873,6 +881,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               isSaving={isSaving}
               error={error}
             />
+            </ErrorBoundary>
           )}
 
           {state === 'done' && (

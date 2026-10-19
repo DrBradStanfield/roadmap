@@ -128,10 +128,11 @@ function monthLabel(month: string): string {
   return MONTHS_SHORT.find(m => m.value === month.padStart(2, '0'))?.label ?? month;
 }
 
-/** "5 Jan 2019" for 2019-01-05, "Jun 2025" for 2025-06. */
-function longDate(day: string): string {
-  const [year, month, date] = day.split('-');
-  return `${date ? `${Number(date)} ` : ''}${monthLabel(month)} ${year}`;
+/** "5 Jan 2019" for 2019-01-05, "Jun 2025" for 2025-06; null for anything
+ *  else (an undated column's key, `undated:<file>`, is no date). */
+function longDate(day: string): string | null {
+  const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(day);
+  return m && `${m[3] ? `${Number(m[3])} ` : ''}${monthLabel(m[2])} ${m[1]}`;
 }
 
 /** A column's date when it is a calendar day that has happened, else null:
@@ -444,7 +445,9 @@ export function buildMatrixModel(
     const blocked = !!winner && !(winner.rank === rank && winner.heldEqual);
     if (!blocked) claims.set(slot, { rank, quantity, edited, heldEqual: equalHeld });
     if (equalHeld) {
-      if (slot !== cellKey) cells.set(cellKey, prev!);
+      // Never over a conflict another reading of this test already put in
+      // the same column (a test printed twice in one undated column).
+      if (slot !== cellKey && cells.get(cellKey)?.state !== 'editable') cells.set(cellKey, prev!);
       return null;
     }
     if (blocked) {
@@ -685,8 +688,9 @@ export function ReviewTable({
     const byDay = new Map<string, Set<string>>();
     for (const { label, day } of matrix.hiddenReadings) byDay.set(day, (byDay.get(day) ?? new Set()).add(label));
     const names = [...byDay.values()].reduce((count, labels) => count + labels.size, 0);
-    const groups = [...byDay].map(([day, labels]) => `${[...labels].join(', ')} on ${longDate(day)}`).join('; ');
-    return `${n} reading${n === 1 ? '' : 's'} not saved: ${groups} already ${names === 1 ? 'has' : 'have'} a reading from another column.`;
+    const where = (day: string) => { const date = longDate(day); return date ? `on ${date}` : 'in the undated previous column'; };
+    const groups = [...byDay].map(([day, labels]) => `${[...labels].join(', ')} ${where(day)}`).join('; ');
+    return `${n} reading${n === 1 ? '' : 's'} not saved: ${groups} already ${names === 1 ? 'has' : 'have'} another reading.`;
   }, [matrix]);
 
   // Initial display values are derived from the matrix (not from raw results)
