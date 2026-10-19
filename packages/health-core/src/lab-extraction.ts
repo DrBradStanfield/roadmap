@@ -130,14 +130,14 @@ export const VALID_METRICS: MetricType[] = [
  * must resolve to nothing, not to `hdl`.
  */
 export const CORE_METRIC_ALIASES: Record<MetricType, string[]> = {
-  ldl: ['LDL', 'LDL-C', 'LDL Cholesterol', 'LDL Cholesterol (calc)', 'LDL Cholesterol (calculated)', 'LDL Chol Calc', 'Low Density Lipoprotein'],
-  hdl: ['HDL', 'HDL-C', 'HDL Cholesterol', 'High Density Lipoprotein'],
+  ldl: ['LDL', 'LDL-C', 'LDL Cholesterol', 'LDL Cholesterol (calc)', 'LDL Cholesterol (calculated)', 'LDL Chol Calc', 'Low Density Lipoprotein', 'LDL-Cholesterol', 'LDL Chol Calc (NIH)', 'Cholesterol (LDL) (calculated)'],
+  hdl: ['HDL', 'HDL-C', 'HDL Cholesterol', 'High Density Lipoprotein', 'HDL-Cholesterol', 'Cholesterol (HDL)'],
   total_cholesterol: ['Total Cholesterol', 'TC', 'Cholesterol Total', 'Cholesterol', 'Cholesterol, Total', 'Total Chol'],
   triglycerides: ['Triglycerides', 'TG', 'Trigs', 'Triglyceride'],
-  hba1c: ['HbA1c', 'Hemoglobin A1c', 'Glycated Hemoglobin', 'A1C', 'Glycated Haemoglobin', 'Haemoglobin A1c'],
+  hba1c: ['HbA1c', 'Hemoglobin A1c', 'Glycated Hemoglobin', 'A1C', 'Glycated Haemoglobin', 'Haemoglobin A1c', 'Glycated haemoglobin (HbA1c)'],
   creatinine: ['Creatinine', 'Creat', 'Cr', 'Serum Creatinine'],
   apob: ['ApoB', 'Apolipoprotein B', 'Apo B'],
-  psa: ['PSA', 'Prostate Specific Antigen', 'Prostate-Specific Antigen'],
+  psa: ['PSA', 'Prostate Specific Antigen', 'Prostate-Specific Antigen', 'PSA, Total', 'Prostate Specific Ag'],
   lpa: ['Lp(a)', 'Lipoprotein(a)', 'Lipoprotein little a', 'Lipoprotein (a)'],
   systolic_bp: ['Systolic Blood Pressure', 'Systolic BP', 'SBP'],
   diastolic_bp: ['Diastolic Blood Pressure', 'Diastolic BP', 'DBP'],
@@ -259,7 +259,7 @@ ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metri
   10. REFERENCE RANGES: for each "additionalValues" row, return the row's printed reference range as "referenceLow" and "referenceHigh": the numbers as printed, in the row's printed unit, never converted. A one-sided range sets one side ("<5" is referenceHigh 5, ">40" is referenceLow 40) and the other is null; both are null when no range is printed.
 
   ADDITIONAL VALUES — use these standardized snake_case names when applicable:
-${LAB_GROUPS.map((group) => [group.label, LAB_CATALOG.filter((entry) => entry.group === group.id).map((entry) => entry.key)] as const)
+${LAB_GROUPS.map((group) => [group.label, LAB_CATALOG.filter((entry) => entry.group === group.id).flatMap((entry) => [entry.key, ...(entry.nameConversions ?? []).map((named) => named.names[0])])] as const)
   .filter(([, keys]) => keys.length > 0)
   .map(([label, keys]) => `  ${label}: ${keys.join(', ')}`).join('\n')}
   Any other test: use the best descriptive snake_case name.

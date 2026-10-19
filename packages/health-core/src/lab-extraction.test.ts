@@ -306,7 +306,7 @@ describe('US-35 AC2/AC5: isImportableEntryName', () => {
 // US-12 AC8 — dot thousands on a count, apostrophe thousands, and a count of
 // the rows the parse dropped
 // ---------------------------------------------------------------------------
-import { canonicalLabRow, LAB_CATALOG, LAB_GROUPS, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
+import { canonicalLabRow, canonicalLabValue, LAB_CATALOG, LAB_GROUPS, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 
 describe('US-12 AC8: an ambiguous number is refused, and the refusal is counted', () => {
   // A null optional field is not an unreadable value: the row stays.
@@ -819,11 +819,19 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
         const group = LAB_GROUPS.find(g => g.label === label);
         expect(group, `panel label "${label}"`).toBeDefined();
         return keys.split(', ').map(key => {
-          expect(LAB_CATALOG.find(e => e.key === key)?.group, key).toBe(group!.id);
+          expect(resolveLabCatalogEntry(key)?.group, key).toBe(group!.id);
           return key;
         });
       });
-      expect([...named].sort()).toEqual(LAB_CATALOG.map(e => e.key).sort());
+      // Every key, plus the one name that carries its own factor (US-21 AC20).
+      expect([...named].sort()).toEqual([...LAB_CATALOG.map(e => e.key), 'bun'].sort());
+    });
+    it(`${mode}: a urea nitrogen row is offered the name "bun", which keeps BUN's mg/dL factor (US-21 AC20)`, () => {
+      const renal = block(unifiedSystemPrompt(mode)).find(l => l.trim().startsWith('Renal'))!;
+      expect(renal).toMatch(/\burea, bun\b/);
+      expect(resolveLabCatalogEntry('bun')?.key).toBe('urea');
+      expect(canonicalLabValue(resolveLabCatalogEntry('bun')!, 14, 'mg/dL')).toMatchObject({ factor: 0.357 });
+      expect(canonicalLabValue(resolveLabCatalogEntry('urea')!, 14, 'mg/dL')).toBeNull();
     });
     it(`${mode}: an uncatalogued test still gets a descriptive name, and no hand-kept name survives`, () => {
       const lines = block(unifiedSystemPrompt(mode));

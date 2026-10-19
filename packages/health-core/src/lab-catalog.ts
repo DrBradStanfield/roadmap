@@ -109,6 +109,16 @@ const FREE_TESTOSTERONE = { 'pg/ml': 3.467, 'ng/dl': 34.67, 'nmol/l': 1000 };
 const GLUCOSE = { 'mg/dl': 0.05551 };
 /** A gonadotrophin: mIU/mL and U/L are IU/L, the same number. */
 const GONADOTROPHIN_ALIASES = ['miu/ml', 'u/l'];
+/** eGFR's unit, spaced or with the body-surface area left off (LabCorp). */
+const EGFR_ALIASES = ['ml/min/1.73 m²', 'ml/min/1.73'];
+/** The five differentials in their absolute form, as US reports print them (US-21 AC20). */
+const absolute = (...names: string[]) => names.flatMap((n) => [`${n} (absolute)`, `absolute ${n}`, `${n} abs`]);
+/** ng/mL and µg/L are the same number. */
+const NG_PER_ML = ['ng/ml'];
+/** pg/mL and ng/L are the same number. */
+const PG_PER_ML = ['pg/ml'];
+/** A milligram per decilitre is a hundredth of a gram per litre. */
+const MG_DL_TO_G_L = { 'mg/dl': 0.01 };
 
 export const LAB_GROUPS: LabGroup[] = [
   { id: 'renal', label: 'Renal & electrolytes', icon: 'kidney' },
@@ -126,100 +136,181 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'sodium', label: 'Sodium', group: 'renal', unit: 'mmol/L', aliases: ['na', 'na+'], unitAliases: MEQ_ALIASES },
   { key: 'potassium', label: 'Potassium', group: 'renal', unit: 'mmol/L', aliases: ['k', 'k+'], unitAliases: MEQ_ALIASES },
   { key: 'chloride', label: 'Chloride', group: 'renal', unit: 'mmol/L', aliases: ['cl', 'cl-'], unitAliases: MEQ_ALIASES },
-  { key: 'bicarbonate', label: 'Bicarbonate', group: 'renal', unit: 'mmol/L', aliases: ['hco3', 'co2', 'total co2'], unitAliases: MEQ_ALIASES },
+  { key: 'bicarbonate', label: 'Bicarbonate', group: 'renal', unit: 'mmol/L', aliases: ['hco3', 'co2', 'total co2', 'carbon dioxide, total', 'carbon dioxide'], unitAliases: MEQ_ALIASES },
   {
-    key: 'urea', label: 'Urea', group: 'renal', unit: 'mmol/L', aliases: ['bun', 'blood urea nitrogen', 'urea nitrogen'],
+    key: 'urea', label: 'Urea', group: 'renal', unit: 'mmol/L', aliases: ['bun', 'blood urea nitrogen', 'urea nitrogen', 'urea nitrogen (bun)', 'urea (bun)'],
     // mg/dL under the bare name "urea" is ambiguous — US reports print the
     // nitrogen, the rest of the world the molecule — so it is REFUSED there
     // and accepted only under a nitrogen name. Urea nitrogen is the 2 N of the
-    // molecule, 28.014 g/mol: ×10 → mg/L, ÷28.014 → mmol/L.
-    nameConversions: [{ names: ['bun', 'blood urea nitrogen', 'urea nitrogen'], conversions: { 'mg/dl': 0.357 } }],
+    // molecule, 28.014 g/mol: ×10 → mg/L, ÷28.014 → mmol/L. "Urea (BUN)" does
+    // not say which a lab means, so it takes mmol/L only (US-21 AC20). The
+    // first name is offered to the extractor, so a BUN row keeps its factor.
+    nameConversions: [{ names: ['bun', 'blood urea nitrogen', 'urea nitrogen', 'urea nitrogen (bun)'], conversions: { 'mg/dl': 0.357 } }],
   },
   { key: 'urate', label: 'Urate', group: 'renal', unit: 'mmol/L', aliases: ['uric acid'], conversions: { 'mg/dl': 0.05948, 'µmol/l': 0.001 } }, // urate 168.11 g/mol; a micromole is a thousandth of a millimole (UK labs print µmol/L)
   { key: 'urine_acr', label: 'Urine ACR', group: 'renal', unit: 'mg/mmol', aliases: ['albumin creatinine ratio', 'acr', 'microalbumin ratio'], conversions: { 'mg/g': 0.113, 'mg/g creat': 0.113, 'mg/g creatinine': 0.113 } }, // creatinine 113.12 g/mol: 1 g ≡ 8.840 mmol
   { key: 'urine_creatinine', label: 'Urine creatinine', group: 'renal', unit: 'mmol/L', aliases: ['creatinine urine', 'urinary creatinine', 'creatinine (urine)'], conversions: { 'mg/dl': 0.0884, 'µmol/l': 0.001 } }, // creatinine 113.12 g/mol; a micromole is a thousandth of a millimole
   { key: 'urine_pcr', label: 'Urine PCR', group: 'renal', unit: 'mg/mmol', aliases: ['protein creatinine ratio', 'protein:creatinine ratio', 'urine protein creatinine ratio', 'upcr'], conversions: { 'mg/g': 0.113, 'mg/g creat': 0.113, 'mg/g creatinine': 0.113, 'mg/mg': 113.12 } }, // creatinine 113.12 g/mol: 1 g ≡ 8.840 mmol, 1 mg ≡ 1/113.12 mmol
   { key: 'cystatin_c', label: 'Cystatin C', group: 'renal', unit: 'mg/L', aliases: [] },
-  { key: 'egfr', label: 'eGFR', group: 'renal', unit: 'mL/min/1.73m²', aliases: ['estimated gfr', 'gfr', 'estimated glomerular filtration rate'], unitAliases: ['ml/min/1.73 m²', 'ml/min/1.73'] },
+  { key: 'egfr', label: 'eGFR', group: 'renal', unit: 'mL/min/1.73m²', aliases: ['estimated gfr', 'gfr', 'estimated glomerular filtration rate', 'egfr (ckd-epi)'], unitAliases: EGFR_ALIASES },
+  // US-21 AC19: each its own slot. An eGFR from cystatin C, or from both
+  // markers, is not the creatinine eGFR. Osmolality only under a serum or
+  // plasma name: a bare "osmolality" is as often the urine test.
+  { key: 'egfr_cystatin', label: 'eGFR (cystatin C)', group: 'renal', unit: 'mL/min/1.73m²', aliases: ['egfrcys', 'egfr cystatin c', 'egfr cystatin'], unitAliases: EGFR_ALIASES },
+  { key: 'egfr_combined', label: 'eGFR (creatinine-cystatin C)', group: 'renal', unit: 'mL/min/1.73m²', aliases: ['egfrcr-cys', 'egfr cr-cys', 'egfr creatinine-cystatin c'], unitAliases: EGFR_ALIASES },
+  { key: 'anion_gap', label: 'Anion gap', group: 'renal', unit: 'mmol/L', aliases: [], unitAliases: MEQ_ALIASES },
+  { key: 'osmolality_serum', label: 'Osmolality (serum)', group: 'renal', unit: 'mOsm/kg', aliases: ['serum osmolality', 'plasma osmolality', 'osmolality, serum', 'osmolality, plasma', 'osmolality (plasma)'] },
 
   // ── Liver ─────────────────────────────────────────────────────────────
-  { key: 'alt', label: 'ALT', group: 'liver', unit: 'U/L', aliases: ['alanine aminotransferase', 'sgpt'], unitAliases: ENZYME_ALIASES },
-  { key: 'ast', label: 'AST', group: 'liver', unit: 'U/L', aliases: ['aspartate aminotransferase', 'sgot'], unitAliases: ENZYME_ALIASES },
-  { key: 'ggt', label: 'GGT', group: 'liver', unit: 'U/L', aliases: ['gamma gt', 'gamma-glutamyl transferase', 'γ-gt', 'ggtp'], unitAliases: ENZYME_ALIASES },
-  { key: 'alp', label: 'ALP', group: 'liver', unit: 'U/L', aliases: ['alkaline phosphatase'], unitAliases: ENZYME_ALIASES },
-  { key: 'bilirubin_total', label: 'Bilirubin (total)', group: 'liver', unit: 'µmol/L', aliases: ['total bilirubin', 'bilirubin'], conversions: { 'mg/dl': 17.1 } }, // bilirubin 584.66 g/mol
-  { key: 'bilirubin_direct', label: 'Bilirubin (direct)', group: 'liver', unit: 'µmol/L', aliases: ['direct bilirubin', 'conjugated bilirubin'], conversions: { 'mg/dl': 17.1 } }, // bilirubin 584.66 g/mol
+  { key: 'alt', label: 'ALT', group: 'liver', unit: 'U/L', aliases: ['alanine aminotransferase', 'sgpt', 'alt (sgpt)'], unitAliases: ENZYME_ALIASES },
+  { key: 'ast', label: 'AST', group: 'liver', unit: 'U/L', aliases: ['aspartate aminotransferase', 'sgot', 'ast (sgot)'], unitAliases: ENZYME_ALIASES },
+  { key: 'ggt', label: 'GGT', group: 'liver', unit: 'U/L', aliases: ['gamma gt', 'gamma-glutamyl transferase', 'γ-gt', 'ggtp', 'gamma gt (ggt)'], unitAliases: ENZYME_ALIASES },
+  { key: 'alp', label: 'ALP', group: 'liver', unit: 'U/L', aliases: ['alkaline phosphatase', 'alk phos', 'alk. phosphatase'], unitAliases: ENZYME_ALIASES },
+  { key: 'bilirubin_total', label: 'Bilirubin (total)', group: 'liver', unit: 'µmol/L', aliases: ['total bilirubin', 'bilirubin', 'bilirubin, total'], conversions: { 'mg/dl': 17.1 } }, // bilirubin 584.66 g/mol
+  { key: 'bilirubin_direct', label: 'Bilirubin (direct)', group: 'liver', unit: 'µmol/L', aliases: ['direct bilirubin', 'conjugated bilirubin', 'bilirubin, direct'], conversions: { 'mg/dl': 17.1 } }, // bilirubin 584.66 g/mol
   { key: 'ldh', label: 'LDH', group: 'liver', unit: 'U/L', aliases: ['lactate dehydrogenase', 'ld'], unitAliases: ENZYME_ALIASES },
   { key: 'albumin', label: 'Albumin', group: 'liver', unit: 'g/L', aliases: [], conversions: { 'g/dl': 10 } }, // a decilitre is a tenth of a litre
-  { key: 'total_protein', label: 'Total protein', group: 'liver', unit: 'g/L', aliases: ['protein total', 'protein'], conversions: { 'g/dl': 10 } }, // a decilitre is a tenth of a litre
-  { key: 'globulin', label: 'Globulin', group: 'liver', unit: 'g/L', aliases: [], conversions: { 'g/dl': 10 } }, // a decilitre is a tenth of a litre
+  { key: 'total_protein', label: 'Total protein', group: 'liver', unit: 'g/L', aliases: ['protein total', 'protein', 'protein, total'], conversions: { 'g/dl': 10 } }, // a decilitre is a tenth of a litre
+  { key: 'globulin', label: 'Globulin', group: 'liver', unit: 'g/L', aliases: ['globulin, total'], conversions: { 'g/dl': 10 } }, // a decilitre is a tenth of a litre
+  // US-21 AC19. Indirect bilirubin is total minus direct; the app derives it nowhere, so a printed one is kept.
+  { key: 'bilirubin_indirect', label: 'Bilirubin (indirect)', group: 'liver', unit: 'µmol/L', aliases: ['indirect bilirubin', 'unconjugated bilirubin', 'bilirubin, indirect'], conversions: { 'mg/dl': 17.1 } }, // bilirubin 584.66 g/mol
+  { key: 'lipase', label: 'Lipase', group: 'liver', unit: 'U/L', aliases: ['serum lipase'], unitAliases: ENZYME_ALIASES },
+  { key: 'amylase', label: 'Amylase', group: 'liver', unit: 'U/L', aliases: ['serum amylase'], unitAliases: ENZYME_ALIASES },
 
   // ── Blood count (haematology) ─────────────────────────────────────────
-  { key: 'haemoglobin', label: 'Haemoglobin', group: 'haematology', unit: 'g/L', aliases: ['hemoglobin', 'hb', 'hgb'], conversions: { 'g/dl': 10, 'mmol/l': 16.11 } }, // g/dL ×10; Hb per haem 16.11 g/mol (Dutch convention)
-  { key: 'haematocrit', label: 'Haematocrit', group: 'haematology', unit: 'L/L', aliases: ['hematocrit', 'hct', 'pcv', 'packed cell volume'], unitAliases: ['ratio', 'fraction'], conversions: { '%': 0.01 } }, // a percentage is a hundredth
+  { key: 'haemoglobin', label: 'Haemoglobin', group: 'haematology', unit: 'g/L', aliases: ['hemoglobin', 'hb', 'hgb', 'haemoglobin (hb)'], conversions: { 'g/dl': 10, 'mmol/l': 16.11 } }, // g/dL ×10; Hb per haem 16.11 g/mol (Dutch convention)
+  { key: 'haematocrit', label: 'Haematocrit', group: 'haematology', unit: 'L/L', aliases: ['hematocrit', 'hct', 'pcv', 'packed cell volume', 'haematocrit (hct)'], unitAliases: ['ratio', 'fraction'], conversions: { '%': 0.01 } }, // a percentage is a hundredth
   { key: 'rbc', label: 'RBC', group: 'haematology', unit: '×10¹²/L', aliases: ['red blood cells', 'red blood cell count', 'red cell count', 'erythrocytes'], unitAliases: COUNT_ALIASES_12 },
   { key: 'wbc', label: 'WBC', group: 'haematology', unit: '×10⁹/L', aliases: ['white blood cells', 'white blood cell count', 'white cell count', 'total white cell count', 'leukocytes', 'leucocytes'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL },
   { key: 'platelets', label: 'Platelets', group: 'haematology', unit: '×10⁹/L', aliases: ['platelet count', 'plt'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL },
-  { key: 'neutrophils', label: 'Neutrophils', group: 'haematology', unit: '×10⁹/L', aliases: ['neutrophil count', 'neut'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
-  { key: 'lymphocytes', label: 'Lymphocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['lymphocyte count'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
-  { key: 'monocytes', label: 'Monocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['monocyte count'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
-  { key: 'eosinophils', label: 'Eosinophils', group: 'haematology', unit: '×10⁹/L', aliases: ['eosinophil count'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
-  { key: 'basophils', label: 'Basophils', group: 'haematology', unit: '×10⁹/L', aliases: ['basophil count'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
+  { key: 'neutrophils', label: 'Neutrophils', group: 'haematology', unit: '×10⁹/L', aliases: ['neutrophil count', 'neut', ...absolute('neutrophils')], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
+  { key: 'lymphocytes', label: 'Lymphocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['lymphocyte count', ...absolute('lymphocytes'), 'lymphs (absolute)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
+  { key: 'monocytes', label: 'Monocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['monocyte count', ...absolute('monocytes'), 'monocytes(absolute)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
+  { key: 'eosinophils', label: 'Eosinophils', group: 'haematology', unit: '×10⁹/L', aliases: ['eosinophil count', ...absolute('eosinophils'), 'eos (absolute)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
+  { key: 'basophils', label: 'Basophils', group: 'haematology', unit: '×10⁹/L', aliases: ['basophil count', ...absolute('basophils'), 'baso (absolute)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
   { key: 'mcv', label: 'MCV', group: 'haematology', unit: 'fL', aliases: ['mean cell volume', 'mean corpuscular volume'] },
   { key: 'mch', label: 'MCH', group: 'haematology', unit: 'pg', aliases: ['mean cell haemoglobin', 'mean corpuscular hemoglobin'] },
   { key: 'mchc', label: 'MCHC', group: 'haematology', unit: 'g/L', aliases: ['mean cell haemoglobin concentration', 'mean corpuscular hemoglobin concentration'], conversions: { 'g/dl': 10 } }, // a decilitre is a tenth of a litre
-  { key: 'rdw', label: 'RDW', group: 'haematology', unit: '%', aliases: ['red cell distribution width'] },
+  { key: 'rdw', label: 'RDW', group: 'haematology', unit: '%', aliases: ['red cell distribution width', 'rdw-cv', 'rdw cv'] },
+  // US-21 AC19. RDW-SD is the width in fL, a test of its own beside RDW-CV in %.
+  { key: 'rdw_sd', label: 'RDW-SD', group: 'haematology', unit: 'fL', aliases: [] },
+  { key: 'mpv', label: 'MPV', group: 'haematology', unit: 'fL', aliases: ['mean platelet volume'] },
+  { key: 'immature_granulocytes', label: 'Immature granulocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['immature granulocyte count'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL },
+  { key: 'reticulocytes', label: 'Reticulocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['reticulocyte count', 'retic count', 'absolute reticulocyte count'], unitAliases: COUNT_ALIASES_9, conversions: { '×10¹²/l': 1000 } }, // 10¹² is a thousand 10⁹; a reticulocyte % is refused
+  { key: 'nrbc', label: 'NRBC', group: 'haematology', unit: '×10⁹/L', aliases: ['nucleated red blood cells', 'nucleated rbc', 'nucleated red cells'], unitAliases: COUNT_ALIASES_9 }, // "/100 WBC" is a ratio: refused
+  // D-dimer only in fibrinogen-equivalent units: a bare ng/mL is often D-dimer
+  // units (DDU), about half the FEU number, so no spelling without FEU converts.
+  { key: 'd_dimer', label: 'D-dimer', group: 'haematology', unit: 'mg/L FEU', aliases: [], unitAliases: ['mg/l (feu)', 'µg/ml feu', 'µg/ml (feu)'], conversions: { 'ng/ml feu': 0.001, 'ng/ml (feu)': 0.001, 'µg/l feu': 0.001, 'µg/l (feu)': 0.001 } }, // µg/mL is mg/L; ng/mL is µg/L, a thousandth of mg/L
+  { key: 'fibrinogen', label: 'Fibrinogen', group: 'haematology', unit: 'g/L', aliases: [], conversions: MG_DL_TO_G_L },
 
   // ── Thyroid ───────────────────────────────────────────────────────────
-  { key: 'tsh', label: 'TSH', group: 'thyroid', unit: 'mIU/L', aliases: ['thyroid stimulating hormone', 'thyrotropin'], unitAliases: ['µiu/ml', 'mu/l', 'microiu/ml', 'mciu/ml'] },
-  { key: 'ft4', label: 'Free T4', group: 'thyroid', unit: 'pmol/L', aliases: ['free thyroxine', 't4 free', 'free t4'], conversions: { 'ng/dl': 12.87 } }, // thyroxine 776.87 g/mol
-  { key: 'ft3', label: 'Free T3', group: 'thyroid', unit: 'pmol/L', aliases: ['free triiodothyronine', 't3 free', 'free t3'], conversions: { 'pg/ml': 1.536 } }, // triiodothyronine 650.97 g/mol
-  { key: 'anti_tpo', label: 'Anti-TPO', group: 'thyroid', unit: 'IU/mL', aliases: ['tpo antibodies', 'thyroid peroxidase antibodies', 'anti thyroid peroxidase', 'tpoab'], unitAliases: ['kiu/l', 'u/ml'] },
+  { key: 'tsh', label: 'TSH', group: 'thyroid', unit: 'mIU/L', aliases: ['thyroid stimulating hormone', 'thyrotropin', 'tsh (thyroid stimulating hormone)'], unitAliases: ['µiu/ml', 'mu/l', 'microiu/ml', 'mciu/ml'] },
+  { key: 'ft4', label: 'Free T4', group: 'thyroid', unit: 'pmol/L', aliases: ['free thyroxine', 't4 free', 'free t4', 't4, free', 'free t4 (ft4)', 'free thyroxine (ft4)'], conversions: { 'ng/dl': 12.87 } }, // thyroxine 776.87 g/mol
+  { key: 'ft3', label: 'Free T3', group: 'thyroid', unit: 'pmol/L', aliases: ['free triiodothyronine', 't3 free', 'free t3', 't3, free'], conversions: { 'pg/ml': 1.536 } }, // triiodothyronine 650.97 g/mol
+  { key: 'anti_tpo', label: 'Anti-TPO', group: 'thyroid', unit: 'IU/mL', aliases: ['tpo antibodies', 'thyroid peroxidase antibodies', 'anti thyroid peroxidase', 'tpoab', 'thyroid peroxidase (tpo) ab'], unitAliases: ['kiu/l', 'u/ml'] },
+  // US-21 AC19. Total T4 and T3 are tests of their own beside the free ones;
+  // a bare "T4" or "T3" can mean either, so neither is an alias. The free
+  // thyroxine index stays uncatalogued: two scales share its name.
+  { key: 'total_t4', label: 'Total T4', group: 'thyroid', unit: 'nmol/L', aliases: ['t4 total', 't4, total', 'thyroxine (t4)', 'total thyroxine'], conversions: { 'µg/dl': 12.87 } }, // thyroxine 776.87 g/mol
+  { key: 'total_t3', label: 'Total T3', group: 'thyroid', unit: 'nmol/L', aliases: ['t3 total', 't3, total', 'triiodothyronine (t3)', 'total triiodothyronine'], conversions: { 'ng/dl': 0.01536, 'ng/ml': 1.536, 'µg/l': 1.536 } }, // triiodothyronine 650.97 g/mol
+  { key: 'reverse_t3', label: 'Reverse T3', group: 'thyroid', unit: 'pmol/L', aliases: ['rt3', 'reverse triiodothyronine'], conversions: { 'pg/ml': 1.536, 'ng/dl': 15.36 } }, // reverse T3 650.97 g/mol, as T3
+  { key: 't3_uptake', label: 'T3 uptake', group: 'thyroid', unit: '%', aliases: ['t-uptake', 't3u'] }, // a ratio (THBR) or arbitrary units is refused
+  { key: 'thyroglobulin', label: 'Thyroglobulin', group: 'thyroid', unit: 'µg/L', aliases: [], unitAliases: NG_PER_ML },
+  // Antibody assays: no conversion across assays. TRAb in U/L is refused: older non-WHO assays are not IU/L.
+  { key: 'anti_tg', label: 'Anti-Tg', group: 'thyroid', unit: 'IU/mL', aliases: ['thyroglobulin antibodies', 'anti-thyroglobulin', 'anti thyroglobulin antibodies', 'tgab'], unitAliases: ['kiu/l'] },
+  { key: 'trab', label: 'TRAb', group: 'thyroid', unit: 'IU/L', aliases: ['tsh receptor antibodies', 'tsh receptor antibody', 'thyrotropin receptor antibodies'] },
 
   // ── Hormones ──────────────────────────────────────────────────────────
-  { key: 'testosterone_total', label: 'Testosterone (total)', group: 'hormones', unit: 'nmol/L', aliases: ['total testosterone', 'testosterone'], conversions: { 'ng/dl': 0.0347, 'ng/ml': 3.467 } }, // testosterone 288.42 g/mol
+  { key: 'testosterone_total', label: 'Testosterone (total)', group: 'hormones', unit: 'nmol/L', aliases: ['total testosterone', 'testosterone', 'testosterone, total'], conversions: { 'ng/dl': 0.0347, 'ng/ml': 3.467 } }, // testosterone 288.42 g/mol
   // Measured and calculated free testosterone are two tests, as total and
   // corrected calcium are: same unit and factors, never one slot.
-  { key: 'free_testosterone', label: 'Free testosterone', group: 'hormones', unit: 'pmol/L', aliases: [], conversions: FREE_TESTOSTERONE },
+  { key: 'free_testosterone', label: 'Free testosterone', group: 'hormones', unit: 'pmol/L', aliases: ['testosterone, free'], conversions: FREE_TESTOSTERONE },
   { key: 'free_testosterone_calculated', label: 'Free testosterone (calculated)', group: 'hormones', unit: 'pmol/L', aliases: ['calculated free testosterone', 'cft', 'calculated free t'], conversions: FREE_TESTOSTERONE },
-  { key: 'shbg', label: 'SHBG', group: 'hormones', unit: 'nmol/L', aliases: ['sex hormone binding globulin'] },
+  { key: 'shbg', label: 'SHBG', group: 'hormones', unit: 'nmol/L', aliases: ['sex hormone binding globulin', 'shbg (sex hormone binding globulin)'] },
   { key: 'estradiol', label: 'Estradiol', group: 'hormones', unit: 'pmol/L', aliases: ['oestradiol', 'e2'], conversions: { 'pg/ml': 3.671, 'ng/l': 3.671 } }, // estradiol 272.38 g/mol
   { key: 'prolactin', label: 'Prolactin', group: 'hormones', unit: 'mIU/L', aliases: [], unitAliases: ['µiu/ml', 'microiu/ml', 'mciu/ml'] }, // ng/mL is deliberately REFUSED: the mIU factor is assay-dependent (~21.2 for the WHO 3rd IS), so converting would invent precision
-  { key: 'cortisol_am', label: 'Cortisol (morning)', group: 'hormones', unit: 'nmol/L', aliases: ['cortisol', 'am cortisol'], conversions: { 'µg/dl': 27.59 } }, // cortisol 362.46 g/mol
-  { key: 'psa_free', label: 'PSA (free)', group: 'hormones', unit: 'µg/L', aliases: ['free psa'], unitAliases: ['ng/ml'] },
+  { key: 'cortisol_am', label: 'Cortisol (morning)', group: 'hormones', unit: 'nmol/L', aliases: ['cortisol', 'am cortisol', 'cortisol, am'], conversions: { 'µg/dl': 27.59 } }, // cortisol 362.46 g/mol
+  { key: 'psa_free', label: 'PSA (free)', group: 'hormones', unit: 'µg/L', aliases: ['free psa', 'psa, free'], unitAliases: ['ng/ml'] },
   { key: 'lh', label: 'LH', group: 'hormones', unit: 'IU/L', aliases: ['luteinising hormone', 'luteinizing hormone'], unitAliases: GONADOTROPHIN_ALIASES },
   { key: 'fsh', label: 'FSH', group: 'hormones', unit: 'IU/L', aliases: ['follicle stimulating hormone'], unitAliases: GONADOTROPHIN_ALIASES },
   { key: 'progesterone', label: 'Progesterone', group: 'hormones', unit: 'nmol/L', aliases: [], conversions: { 'ng/ml': 3.180 } }, // progesterone 314.46 g/mol
   { key: 'dhea_s', label: 'DHEA-S', group: 'hormones', unit: 'µmol/L', aliases: ['dheas', 'dhea sulphate', 'dhea sulfate', 'dehydroepiandrosterone sulfate', 'dehydroepiandrosterone sulphate'], conversions: { 'µg/dl': 0.02714 } }, // DHEA sulfate 368.49 g/mol
   { key: 'igf1', label: 'IGF-1', group: 'hormones', unit: 'nmol/L', aliases: ['igf 1', 'insulin-like growth factor 1', 'somatomedin c'], conversions: { 'ng/ml': 0.1307, 'µg/l': 0.1307 } }, // IGF-1 7649 g/mol; µg/L is the ng/mL number
+  // US-21 AC19.
+  { key: 'pth', label: 'PTH', group: 'hormones', unit: 'pmol/L', aliases: ['parathyroid hormone', 'intact pth', 'pth intact', 'pth, intact'], conversions: { 'pg/ml': 0.1061, 'ng/l': 0.1061 } }, // PTH 1-84 9424.7 g/mol (UniProt P01270, residues 32-115)
+  { key: 'amh', label: 'AMH', group: 'hormones', unit: 'pmol/L', aliases: ['anti-mullerian hormone', 'anti-müllerian hormone', 'anti mullerian hormone'], conversions: { 'ng/ml': 7.14 } }, // the 140 kDa dimer convention, as insulin's 6.00 is one
+  { key: 'bioavailable_testosterone', label: 'Bioavailable testosterone', group: 'hormones', unit: 'nmol/L', aliases: ['testosterone, bioavailable'], conversions: { 'ng/dl': 0.0347 } }, // testosterone 288.42 g/mol
+  { key: 'psa_free_percent', label: 'PSA (% free)', group: 'hormones', unit: '%', aliases: ['% free psa', 'percent free psa', 'free psa %', 'psa % free'] },
+  { key: 'estrone', label: 'Estrone', group: 'hormones', unit: 'pmol/L', aliases: ['oestrone', 'e1'], conversions: { 'pg/ml': 3.699 } }, // estrone 270.37 g/mol
+  { key: 'androstenedione', label: 'Androstenedione', group: 'hormones', unit: 'nmol/L', aliases: [], conversions: { 'ng/dl': 0.03492, 'ng/ml': 3.492 } }, // androstenedione 286.41 g/mol
+  { key: 'oh_progesterone_17', label: '17-OH progesterone', group: 'hormones', unit: 'nmol/L', aliases: ['17-hydroxyprogesterone', '17 hydroxyprogesterone', '17-ohp'], conversions: { 'ng/dl': 0.03026, 'ng/ml': 3.026 } }, // 17-hydroxyprogesterone 330.46 g/mol
+  { key: 'dht', label: 'DHT', group: 'hormones', unit: 'nmol/L', aliases: ['dihydrotestosterone'], conversions: { 'ng/dl': 0.03443, 'pg/ml': 0.003443 } }, // dihydrotestosterone 290.44 g/mol
+  { key: 'acth', label: 'ACTH', group: 'hormones', unit: 'pmol/L', aliases: ['adrenocorticotropic hormone', 'corticotropin'], conversions: { 'pg/ml': 0.2202, 'ng/l': 0.2202 } }, // ACTH 1-39 4541 g/mol
+  { key: 'gh', label: 'Growth hormone', group: 'hormones', unit: 'µg/L', aliases: ['hgh', 'human growth hormone', 'somatotropin'], unitAliases: NG_PER_ML }, // mIU/L is assay-dependent: refused
+  { key: 'hcg', label: 'hCG', group: 'hormones', unit: 'IU/L', aliases: ['beta hcg', 'beta-hcg', 'b-hcg', 'human chorionic gonadotropin', 'total hcg'], unitAliases: ['miu/ml'] },
 
   // ── Vitamins & minerals ───────────────────────────────────────────────
-  { key: 'vitamin_d', label: 'Vitamin D (25-OH)', group: 'vitamins', unit: 'nmol/L', aliases: ['25-hydroxyvitamin d', '25-oh vitamin d', 'vitamin d3', '25(oh)d'], conversions: { 'ng/ml': 2.496, 'µg/l': 2.496 } }, // 25-OH-D 400.64 g/mol
-  { key: 'vitamin_b12', label: 'Vitamin B12', group: 'vitamins', unit: 'pmol/L', aliases: ['b12', 'cobalamin'], conversions: { 'pg/ml': 0.738, 'ng/l': 0.738 } }, // cyanocobalamin 1355.4 g/mol
+  { key: 'vitamin_d', label: 'Vitamin D (25-OH)', group: 'vitamins', unit: 'nmol/L', aliases: ['25-hydroxyvitamin d', '25-oh vitamin d', 'vitamin d3', '25(oh)d', 'vitamin d, 25-hydroxy', '25-hydroxy vitamin d', '25 oh vitamin d', 'vitamin d (25 oh)'], conversions: { 'ng/ml': 2.496, 'µg/l': 2.496 } }, // 25-OH-D 400.64 g/mol
+  { key: 'vitamin_b12', label: 'Vitamin B12', group: 'vitamins', unit: 'pmol/L', aliases: ['b12', 'cobalamin', 'vitamin b12 (cobalamin)'], conversions: { 'pg/ml': 0.738, 'ng/l': 0.738 } }, // cyanocobalamin 1355.4 g/mol
   { key: 'b12_active', label: 'Active B12', group: 'vitamins', unit: 'pmol/L', aliases: ['holotranscobalamin', 'holotc'] },
-  { key: 'folate', label: 'Folate', group: 'vitamins', unit: 'nmol/L', aliases: ['folic acid', 'serum folate'], conversions: { 'ng/ml': 2.266, 'µg/l': 2.266 } }, // folate 441.4 g/mol
-  { key: 'ferritin', label: 'Ferritin', group: 'vitamins', unit: 'µg/L', aliases: [], unitAliases: ['ng/ml'] },
-  { key: 'iron', label: 'Iron', group: 'vitamins', unit: 'µmol/L', aliases: ['serum iron'], conversions: { 'µg/dl': 0.179 } }, // iron 55.845 g/mol
-  { key: 'tibc', label: 'TIBC', group: 'vitamins', unit: 'µmol/L', aliases: ['total iron binding capacity'], conversions: { 'µg/dl': 0.179 } }, // iron 55.845 g/mol
+  { key: 'folate', label: 'Folate', group: 'vitamins', unit: 'nmol/L', aliases: ['folic acid', 'serum folate', 'folate, serum'], conversions: { 'ng/ml': 2.266, 'µg/l': 2.266 } }, // folate 441.4 g/mol
+  { key: 'ferritin', label: 'Ferritin', group: 'vitamins', unit: 'µg/L', aliases: ['ferritin (serum)'], unitAliases: ['ng/ml'] },
+  { key: 'iron', label: 'Iron', group: 'vitamins', unit: 'µmol/L', aliases: ['serum iron', 'iron, total'], conversions: { 'µg/dl': 0.179 } }, // iron 55.845 g/mol
+  { key: 'tibc', label: 'TIBC', group: 'vitamins', unit: 'µmol/L', aliases: ['total iron binding capacity', 'iron binding capacity'], conversions: { 'µg/dl': 0.179 } }, // iron 55.845 g/mol
   { key: 'transferrin', label: 'Transferrin', group: 'vitamins', unit: 'g/L', aliases: [], conversions: { 'mg/dl': 0.01 } }, // a milligram per decilitre is a hundredth of a gram per litre
-  { key: 'transferrin_sat', label: 'Transferrin saturation', group: 'vitamins', unit: '%', aliases: ['tsat', 'iron saturation', 'transferrin saturation'] },
+  { key: 'transferrin_sat', label: 'Transferrin saturation', group: 'vitamins', unit: '%', aliases: ['tsat', 'iron saturation', 'transferrin saturation', 'transferrin saturation %'] },
   { key: 'magnesium', label: 'Magnesium', group: 'vitamins', unit: 'mmol/L', aliases: ['mg'], conversions: { 'mg/dl': 0.4114, 'meq/l': 0.5 } }, // magnesium 24.305 g/mol; Mg²⁺ carries two charges
   { key: 'calcium_corrected', label: 'Calcium (corrected)', group: 'vitamins', unit: 'mmol/L', aliases: ['corrected calcium', 'adjusted calcium'], conversions: { 'mg/dl': 0.2495 } }, // calcium 40.078 g/mol
   { key: 'calcium_total', label: 'Calcium (total)', group: 'vitamins', unit: 'mmol/L', aliases: ['calcium', 'total calcium', 'serum calcium', 'ca'], conversions: { 'mg/dl': 0.2495 } }, // calcium 40.078 g/mol
   { key: 'phosphate', label: 'Phosphate', group: 'vitamins', unit: 'mmol/L', aliases: ['phosphorus', 'inorganic phosphate', 'po4'], conversions: { 'mg/dl': 0.3229 } }, // phosphorus 30.97 g/mol
   { key: 'zinc', label: 'Zinc', group: 'vitamins', unit: 'µmol/L', aliases: [], conversions: { 'µg/dl': 0.153 } }, // zinc 65.38 g/mol
+  // US-21 AC19. Red cell folate and ionised calcium are tests of their own,
+  // never one slot with serum folate or total and corrected calcium.
+  { key: 'red_cell_folate', label: 'Red cell folate', group: 'vitamins', unit: 'nmol/L', aliases: ['rbc folate', 'erythrocyte folate', 'red blood cell folate'], conversions: { 'ng/ml': 2.266, 'µg/l': 2.266 } }, // folate 441.4 g/mol
+  { key: 'calcium_ionised', label: 'Calcium (ionised)', group: 'vitamins', unit: 'mmol/L', aliases: ['ionised calcium', 'ionized calcium', 'free calcium', 'ca++', 'calcium, ionized', 'calcium, ionised'], conversions: { 'mg/dl': 0.2495, 'meq/l': 0.5 } }, // calcium 40.078 g/mol; Ca²⁺ carries two charges
+  { key: 'uibc', label: 'UIBC', group: 'vitamins', unit: 'µmol/L', aliases: ['unsaturated iron binding capacity'], conversions: { 'µg/dl': 0.179 } }, // iron 55.845 g/mol
+  { key: 'stfr', label: 'Soluble transferrin receptor', group: 'vitamins', unit: 'mg/L', aliases: [] }, // nmol/L is assay-dependent: refused
+  { key: 'copper', label: 'Copper', group: 'vitamins', unit: 'µmol/L', aliases: ['serum copper'], conversions: { 'µg/dl': 0.1574 } }, // copper 63.546 g/mol
+  { key: 'caeruloplasmin', label: 'Caeruloplasmin', group: 'vitamins', unit: 'g/L', aliases: ['ceruloplasmin'], conversions: MG_DL_TO_G_L },
+  { key: 'selenium', label: 'Selenium', group: 'vitamins', unit: 'µmol/L', aliases: [], conversions: { 'µg/l': 0.01266, 'ng/ml': 0.01266 } }, // selenium 78.971 g/mol
+  { key: 'omega3_index', label: 'Omega-3 index', group: 'vitamins', unit: '%', aliases: ['omega 3 index'] },
+  { key: 'vitamin_a', label: 'Vitamin A', group: 'vitamins', unit: 'µmol/L', aliases: ['retinol'], conversions: { 'µg/dl': 0.03491 } }, // retinol 286.45 g/mol
+  { key: 'vitamin_e', label: 'Vitamin E', group: 'vitamins', unit: 'µmol/L', aliases: ['alpha-tocopherol', 'alpha tocopherol'], conversions: { 'mg/l': 2.322, 'mg/dl': 23.22 } }, // alpha-tocopherol 430.71 g/mol
+  { key: 'vitamin_c', label: 'Vitamin C', group: 'vitamins', unit: 'µmol/L', aliases: ['ascorbic acid'], conversions: { 'mg/dl': 56.78 } }, // ascorbic acid 176.12 g/mol
+  { key: 'vitamin_b6', label: 'Vitamin B6', group: 'vitamins', unit: 'nmol/L', aliases: ['pyridoxal 5-phosphate', "pyridoxal 5'-phosphate", 'pyridoxal phosphate', 'plp'], conversions: { 'ng/ml': 4.046, 'µg/l': 4.046 } }, // pyridoxal 5'-phosphate 247.14 g/mol
+  { key: 'vitamin_b1', label: 'Vitamin B1', group: 'vitamins', unit: 'nmol/L', aliases: ['thiamine', 'thiamin'] }, // thiamine and its diphosphate differ in mass: no factor guessed
+  { key: 'mma', label: 'Methylmalonic acid', group: 'vitamins', unit: 'µmol/L', aliases: [], conversions: { 'nmol/l': 0.001 } }, // a nanomole is a thousandth of a micromole
 
   // ── Inflammation ──────────────────────────────────────────────────────
-  { key: 'crp', label: 'CRP', group: 'inflammation', unit: 'mg/L', aliases: ['c-reactive protein', 'hs-crp', 'hs crp', 'high sensitivity crp', 'hscrp'], conversions: { 'mg/dl': 10 } }, // a decilitre is a tenth of a litre
-  { key: 'esr', label: 'ESR', group: 'inflammation', unit: 'mm/hr', aliases: ['erythrocyte sedimentation rate', 'sed rate'], unitAliases: ['mm/h'] },
+  { key: 'crp', label: 'CRP', group: 'inflammation', unit: 'mg/L', aliases: ['c-reactive protein', 'hs-crp', 'hs crp', 'high sensitivity crp', 'hscrp', 'crp, high sensitivity', 'cardiac crp', 'c reactive protein'], conversions: { 'mg/dl': 10 } }, // a decilitre is a tenth of a litre
+  { key: 'esr', label: 'ESR', group: 'inflammation', unit: 'mm/hr', aliases: ['erythrocyte sedimentation rate', 'sed rate', 'sedimentation rate'], unitAliases: ['mm/h'] },
+  // US-21 AC19. Antibody assays take their own unit only: no conversion across assays.
+  { key: 'procalcitonin', label: 'Procalcitonin', group: 'inflammation', unit: 'µg/L', aliases: [], unitAliases: NG_PER_ML },
+  { key: 'ige', label: 'IgE (total)', group: 'inflammation', unit: 'kU/L', aliases: ['total ige', 'immunoglobulin e', 'serum ige'], unitAliases: ['iu/ml', 'kiu/l'] }, // a kU/L of IgE is an IU/mL
+  { key: 'rf', label: 'Rheumatoid factor', group: 'inflammation', unit: 'IU/mL', aliases: [], unitAliases: ['kiu/l'] },
+  { key: 'anti_ccp', label: 'Anti-CCP', group: 'inflammation', unit: 'U/mL', aliases: ['ccp antibodies', 'anti-cyclic citrullinated peptide', 'cyclic citrullinated peptide antibodies'] },
+  { key: 'total_iga', label: 'IgA (total)', group: 'inflammation', unit: 'g/L', aliases: ['total iga', 'iga', 'immunoglobulin a', 'serum iga'], conversions: MG_DL_TO_G_L },
+  { key: 'ttg_iga', label: 'tTG-IgA', group: 'inflammation', unit: 'U/mL', aliases: ['tissue transglutaminase iga', 'anti-ttg iga', 'tissue transglutaminase antibody iga'] },
 
   // ── Metabolic ─────────────────────────────────────────────────────────
-  { key: 'glucose', label: 'Glucose', group: 'metabolic', unit: 'mmol/L', aliases: ['fasting glucose', 'fasting plasma glucose', 'plasma glucose', 'glucose fasting', 'blood glucose', 'fpg', 'fbg'], conversions: GLUCOSE },
+  { key: 'glucose', label: 'Glucose', group: 'metabolic', unit: 'mmol/L', aliases: ['fasting glucose', 'fasting plasma glucose', 'plasma glucose', 'glucose fasting', 'blood glucose', 'fpg', 'fbg', 'glucose, fasting'], conversions: GLUCOSE },
   { key: 'glucose_random', label: 'Glucose (random)', group: 'metabolic', unit: 'mmol/L', aliases: ['random glucose', 'glucose random', 'non-fasting glucose'], conversions: GLUCOSE }, // not a fasting glucose: a test of its own
   { key: 'insulin', label: 'Insulin', group: 'metabolic', unit: 'mIU/L', aliases: ['fasting insulin', 'serum insulin'], unitAliases: ['µiu/ml', 'mu/l', 'µu/ml', 'microiu/ml', 'mciu/ml'], conversions: { 'pmol/l': 0.1667 } }, // 1 µIU/mL = 6.00 pmol/L (the insulin-standardisation convention)
   { key: 'apoa1', label: 'ApoA1', group: 'metabolic', unit: 'g/L', aliases: ['apolipoprotein a1', 'apolipoprotein a-i', 'apo a1', 'apo a-1', 'apoa-1', 'apoa-i'], conversions: { 'mg/dl': 0.01 } }, // a milligram per decilitre is a hundredth of a gram per litre
   { key: 'homocysteine', label: 'Homocysteine', group: 'metabolic', unit: 'µmol/L', aliases: ['total homocysteine', 'plasma homocysteine'] },
   { key: 'ck', label: 'CK', group: 'metabolic', unit: 'U/L', aliases: ['creatine kinase', 'cpk', 'creatine phosphokinase'], unitAliases: ENZYME_ALIASES },
+  // US-21 AC19. The natriuretic peptides in pmol/L are refused. Troponin T and
+  // I are two tests; a bare "troponin" says neither, so it is no alias.
+  { key: 'nt_probnp', label: 'NT-proBNP', group: 'metabolic', unit: 'ng/L', aliases: ['nt pro bnp', 'ntprobnp', 'n-terminal pro-bnp', 'n-terminal pro b-type natriuretic peptide'], unitAliases: PG_PER_ML },
+  { key: 'bnp', label: 'BNP', group: 'metabolic', unit: 'ng/L', aliases: ['b-type natriuretic peptide', 'brain natriuretic peptide'], unitAliases: PG_PER_ML },
+  { key: 'troponin_t', label: 'Troponin T', group: 'metabolic', unit: 'ng/L', aliases: ['hs troponin t', 'hs-troponin t', 'high sensitivity troponin t', 'hs-tnt', 'hs-ctnt'], unitAliases: PG_PER_ML, conversions: { 'µg/l': 1000, 'ng/ml': 1000 } }, // a microgram is a thousand nanograms
+  { key: 'troponin_i', label: 'Troponin I', group: 'metabolic', unit: 'ng/L', aliases: ['hs troponin i', 'hs-troponin i', 'high sensitivity troponin i', 'hs-tni', 'hs-ctni'], unitAliases: PG_PER_ML, conversions: { 'µg/l': 1000, 'ng/ml': 1000 } }, // a microgram is a thousand nanograms
+  { key: 'c_peptide', label: 'C-peptide', group: 'metabolic', unit: 'pmol/L', aliases: [], conversions: { 'ng/ml': 331.1, 'µg/l': 331.1, 'nmol/l': 1000 } }, // C-peptide 3020.3 g/mol; a nanomole is a thousand picomoles
+  // Derived values the app does not derive (eAG from HbA1c, VLDL from triglycerides): kept as printed tests.
+  { key: 'eag', label: 'eAG', group: 'metabolic', unit: 'mmol/L', aliases: ['estimated average glucose'], conversions: GLUCOSE },
+  { key: 'vldl', label: 'VLDL cholesterol', group: 'metabolic', unit: 'mmol/L', aliases: ['vldl-c', 'vldl chol'], conversions: { 'mg/dl': 0.02586 } }, // cholesterol 386.65 g/mol
+  { key: 'lactate', label: 'Lactate', group: 'metabolic', unit: 'mmol/L', aliases: ['lactic acid'], conversions: { 'mg/dl': 0.111 } }, // lactic acid 90.08 g/mol
+  { key: 'fructosamine', label: 'Fructosamine', group: 'metabolic', unit: 'µmol/L', aliases: [] },
 ];
 
 const SUPERSCRIPT_DIGITS: Record<string, string> = {
@@ -540,16 +631,21 @@ const GENERIC_NAME_WORDS = new Set([
   'saturation', 'ratio', 'protein',
   'like', 'random', 'direct', 'active', 'factor', 'growth', 'capacity', 'calculated', 'anti',
   'antibodies', 'inorganic', 'conjugated', 'non',
+  // US-21 AC19 and AC20.
+  'absolute', 'abs', 'average', 'beta', 'brain', 'carbon', 'cardiac', 'combined', 'dioxide', 'gap', 'human',
+  'immature', 'index', 'indirect', 'intact', 'ionised', 'ionized', 'nucleated', 'percent', 'pro', 'receptor',
+  'reverse', 'soluble', 'terminal', 'tissue', 'type', 'unconjugated', 'unsaturated', 'uptake',
 ]);
 
 /**
  * Short names that are English (or markup) long before they are tests: "na" is
  * not applicable, "gt" is `&gt;` in every rendering bug ever filed, "am" is a
  * clock and half a sentence, "oh" is a sigh, "sat" is a verb, and "hs" is only
- * the prefix of hs-CRP, which `crp` already carries. Everything else short —
+ * the prefix of hs-CRP, which `crp` already carries. "gh" is GitHub, "ab" an
+ * A/B test and "sd" a standard deviation in any bug report. Everything else short —
  * bp, hb, t3, t4, e2 — stays, so "BP 140/90" and "free T4 15" are refused.
  */
-const SHORT_NAME_WORDS = new Set(['na', 'gt', 'hs', 'am', 'oh', 'sat']);
+const SHORT_NAME_WORDS = new Set(['na', 'gt', 'hs', 'am', 'oh', 'sat', 'gh', 'ab', 'sd']);
 
 /** "Lp(a)" is one name, not "lp" and "a" — folded before either side is read. */
 export function foldLpa(text: string): string {

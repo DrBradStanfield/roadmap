@@ -851,3 +851,214 @@ describe('US-21 AC17 — the common blood tests are catalogued, in SI', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// US-21 AC19 — the tests the 2026-10-19 catalogue audit found missing.
+// ---------------------------------------------------------------------------
+// Brad approved the audit 2026-10-20 with the reviewer's corrections: D-dimer
+// only in FEU, FTI uncatalogued, NT-proBNP in pmol/L and TRAb in U/L refused,
+// osmolality under serum or plasma names only. Every factor is one molar mass
+// (PubChem, or UniProt for PTH 1-84), written beside it in lab-catalog.ts.
+// Record-keeping only: no suggestion reads a catalogued test.
+describe('US-21 AC19 — the audit\'s missing tests are catalogued, in SI', () => {
+  const entryOf = (name: string) => resolveLabCatalogEntry(name)!;
+
+  // [printed name, value, printed unit, key, stored value, stored unit]
+  const CONVERSIONS: Array<[string, number, string, string, number, string]> = [
+    ['Lipase', 40, 'IU/L', 'lipase', 40, 'U/L'],
+    ['Total T4', 8, 'ug/dL', 'total_t4', 102.96, 'nmol/L'],
+    ['T4, Total', 8, 'mcg/dL', 'total_t4', 102.96, 'nmol/L'],
+    ['Total T3', 120, 'ng/dL', 'total_t3', 1.8432, 'nmol/L'],
+    ['T3, Total', 1.2, 'ng/mL', 'total_t3', 1.8432, 'nmol/L'],
+    ['RDW-SD', 42, 'fL', 'rdw_sd', 42, 'fL'],
+    ['T3 Uptake', 30, '%', 't3_uptake', 30, '%'],
+    ['MPV', 10.2, 'fL', 'mpv', 10.2, 'fL'],
+    ['Anion Gap', 12, 'mEq/L', 'anion_gap', 12, 'mmol/L'],
+    ['Indirect Bilirubin', 0.5, 'mg/dL', 'bilirubin_indirect', 8.55, 'µmol/L'],
+    ['PTH', 40, 'pg/mL', 'pth', 4.244, 'pmol/L'],
+    ['Intact PTH', 40, 'ng/L', 'pth', 4.244, 'pmol/L'],
+    ['Red Cell Folate', 500, 'ng/mL', 'red_cell_folate', 1133.0, 'nmol/L'],
+    ['NT-proBNP', 100, 'pg/mL', 'nt_probnp', 100, 'ng/L'],
+    ['Ionised Calcium', 4.8, 'mg/dL', 'calcium_ionised', 1.1976, 'mmol/L'],
+    ['Ionized Calcium', 2.4, 'mEq/L', 'calcium_ionised', 1.2, 'mmol/L'],
+    ['Immature Granulocytes', 20, 'cells/uL', 'immature_granulocytes', 0.02, '×10⁹/L'],
+    ['Reticulocytes', 0.05, 'x10^12/L', 'reticulocytes', 50.0, '×10⁹/L'],
+    ['NRBC', 0.01, 'K/uL', 'nrbc', 0.01, '×10⁹/L'],
+    ['C-Peptide', 2, 'ng/mL', 'c_peptide', 662.2, 'pmol/L'],
+    ['C-Peptide', 0.6, 'nmol/L', 'c_peptide', 600.0, 'pmol/L'],
+    ['eAG', 117, 'mg/dL', 'eag', 6.49467, 'mmol/L'],
+    ['UIBC', 200, 'ug/dL', 'uibc', 35.8, 'µmol/L'],
+    ['Copper', 100, 'ug/dL', 'copper', 15.74, 'µmol/L'],
+    ['Selenium', 120, 'ug/L', 'selenium', 1.5192, 'µmol/L'],
+    ['Omega-3 Index', 8, '%', 'omega3_index', 8, '%'],
+    ['AMH', 2, 'ng/mL', 'amh', 14.28, 'pmol/L'],
+    ['Bioavailable Testosterone', 150, 'ng/dL', 'bioavailable_testosterone', 5.205, 'nmol/L'],
+    ['% Free PSA', 20, '%', 'psa_free_percent', 20, '%'],
+    ['Troponin T', 10, 'pg/mL', 'troponin_t', 10, 'ng/L'],
+    ['Troponin I', 0.01, 'ng/mL', 'troponin_i', 10.0, 'ng/L'],
+    ['Fibrinogen', 300, 'mg/dL', 'fibrinogen', 3.0, 'g/L'],
+    ['Amylase', 60, 'U/L', 'amylase', 60, 'U/L'],
+    ['Total IgA', 200, 'mg/dL', 'total_iga', 2.0, 'g/L'],
+    ['tTG-IgA', 2, 'U/mL', 'ttg_iga', 2, 'U/mL'],
+    ['Reverse T3', 15, 'ng/dL', 'reverse_t3', 230.4, 'pmol/L'],
+    ['Reverse T3', 150, 'pg/mL', 'reverse_t3', 230.4, 'pmol/L'],
+    ['Thyroglobulin', 10, 'ng/mL', 'thyroglobulin', 10, 'µg/L'],
+    ['Thyroglobulin Antibodies', 4, 'kIU/L', 'anti_tg', 4, 'IU/mL'],
+    ['TRAb', 1.2, 'IU/L', 'trab', 1.2, 'IU/L'],
+    ['Vitamin A', 50, 'ug/dL', 'vitamin_a', 1.7455, 'µmol/L'],
+    ['Vitamin E', 12, 'mg/L', 'vitamin_e', 27.864, 'µmol/L'],
+    ['Vitamin E', 1.2, 'mg/dL', 'vitamin_e', 27.864, 'µmol/L'],
+    ['Vitamin C', 1, 'mg/dL', 'vitamin_c', 56.78, 'µmol/L'],
+    ['Vitamin B6', 10, 'ng/mL', 'vitamin_b6', 40.46, 'nmol/L'],
+    ['Vitamin B1', 120, 'nmol/L', 'vitamin_b1', 120, 'nmol/L'],
+    ['Methylmalonic Acid', 250, 'nmol/L', 'mma', 0.25, 'µmol/L'],
+    ['Estrone', 50, 'pg/mL', 'estrone', 184.95, 'pmol/L'],
+    ['Androstenedione', 100, 'ng/dL', 'androstenedione', 3.492, 'nmol/L'],
+    ['Androstenedione', 1, 'ng/mL', 'androstenedione', 3.492, 'nmol/L'],
+    ['17-OH Progesterone', 100, 'ng/dL', 'oh_progesterone_17', 3.026, 'nmol/L'],
+    ['17-OH Progesterone', 1, 'ng/mL', 'oh_progesterone_17', 3.026, 'nmol/L'],
+    ['DHT', 50, 'ng/dL', 'dht', 1.7215, 'nmol/L'],
+    ['DHT', 500, 'pg/mL', 'dht', 1.7215, 'nmol/L'],
+    ['VLDL Cholesterol', 20, 'mg/dL', 'vldl', 0.5172, 'mmol/L'],
+    ['eGFR (cystatin C)', 90, 'mL/min/1.73m2', 'egfr_cystatin', 90, 'mL/min/1.73m²'],
+    ['eGFR (creatinine-cystatin C)', 90, 'mL/min/1.73', 'egfr_combined', 90, 'mL/min/1.73m²'],
+    ['D-Dimer', 0.4, 'ug/mL FEU', 'd_dimer', 0.4, 'mg/L FEU'],
+    ['D-Dimer', 400, 'ng/mL FEU', 'd_dimer', 0.4, 'mg/L FEU'],
+    ['D-Dimer', 400, 'ng/mL (FEU)', 'd_dimer', 0.4, 'mg/L FEU'],
+    ['Lactate', 9, 'mg/dL', 'lactate', 0.999, 'mmol/L'],
+    ['Serum Osmolality', 290, 'mOsm/kg', 'osmolality_serum', 290, 'mOsm/kg'],
+    ['Procalcitonin', 0.05, 'ng/mL', 'procalcitonin', 0.05, 'µg/L'],
+    ['IgE', 50, 'IU/mL', 'ige', 50, 'kU/L'],
+    ['Rheumatoid Factor', 10, 'IU/mL', 'rf', 10, 'IU/mL'],
+    ['Anti-CCP', 5, 'U/mL', 'anti_ccp', 5, 'U/mL'],
+    ['Fructosamine', 250, 'umol/L', 'fructosamine', 250, 'µmol/L'],
+    ['Soluble Transferrin Receptor', 1.2, 'mg/L', 'stfr', 1.2, 'mg/L'],
+    ['ACTH', 20, 'pg/mL', 'acth', 4.404, 'pmol/L'],
+    ['Growth Hormone', 1, 'ng/mL', 'gh', 1, 'µg/L'],
+    ['hCG', 5, 'mIU/mL', 'hcg', 5, 'IU/L'],
+    ['Caeruloplasmin', 30, 'mg/dL', 'caeruloplasmin', 0.3, 'g/L'],
+    ['BNP', 50, 'pg/mL', 'bnp', 50, 'ng/L'],
+  ];
+
+  it.each(CONVERSIONS)('US-21 AC19 — %s %s %s is stored as %s in SI', (name, value, unit, key, stored, storedUnit) => {
+    const entry = resolveLabCatalogEntry(name);
+    expect(entry?.key, name).toBe(key);
+    expect(canonicalLabValue(entry!, value, unit), `${name} ${unit}`).toMatchObject({ value: stored, unit: storedUnit });
+  });
+
+  it('US-21 AC19 — each new test sits in its panel', () => {
+    const GROUPS: Record<string, string[]> = {
+      renal: ['anion_gap', 'egfr_cystatin', 'egfr_combined', 'osmolality_serum'],
+      liver: ['lipase', 'bilirubin_indirect', 'amylase'],
+      haematology: ['rdw_sd', 'mpv', 'immature_granulocytes', 'reticulocytes', 'nrbc', 'd_dimer', 'fibrinogen'],
+      thyroid: ['total_t4', 'total_t3', 't3_uptake', 'reverse_t3', 'thyroglobulin', 'anti_tg', 'trab'],
+      hormones: ['pth', 'amh', 'bioavailable_testosterone', 'psa_free_percent', 'estrone', 'androstenedione', 'oh_progesterone_17', 'dht', 'acth', 'gh', 'hcg'],
+      vitamins: ['red_cell_folate', 'calcium_ionised', 'uibc', 'copper', 'selenium', 'omega3_index', 'vitamin_a', 'vitamin_e', 'vitamin_c', 'vitamin_b6', 'vitamin_b1', 'mma', 'caeruloplasmin', 'stfr'],
+      inflammation: ['procalcitonin', 'ige', 'rf', 'anti_ccp', 'total_iga', 'ttg_iga'],
+      metabolic: ['nt_probnp', 'bnp', 'troponin_t', 'troponin_i', 'c_peptide', 'eag', 'vldl', 'lactate', 'fructosamine'],
+    };
+    for (const [group, keys] of Object.entries(GROUPS)) {
+      for (const key of keys) expect(resolveLabCatalogEntry(key)?.group, key).toBe(group);
+    }
+  });
+
+  it('US-21 AC19 — D-dimer converts only in FEU: a bare mass unit or DDU is refused', () => {
+    for (const unit of ['ng/mL', 'ug/mL', 'mg/L', 'ng/mL DDU', 'µg/L DDU']) {
+      expect(canonicalLabValue(entryOf('D-dimer'), 400, unit), unit).toBeNull();
+    }
+    expect(acceptedLabUnits(entryOf('d_dimer')).every((u) => /feu/i.test(u))).toBe(true);
+  });
+
+  it('US-21 AC19 — NT-proBNP and BNP in pmol/L, and TRAb in U/L, are refused', () => {
+    expect(canonicalLabValue(entryOf('NT-proBNP'), 12, 'pmol/L')).toBeNull();
+    expect(canonicalLabValue(entryOf('BNP'), 12, 'pmol/L')).toBeNull();
+    expect(canonicalLabValue(entryOf('TRAb'), 1.2, 'U/L')).toBeNull();
+  });
+
+  it('US-21 AC19 — osmolality resolves only under a serum or plasma name: a urine one is never this test', () => {
+    for (const name of ['Serum Osmolality', 'Plasma Osmolality', 'Osmolality, Serum', 'Osmolality (plasma)', 'osmolality_serum']) {
+      expect(resolveLabCatalogEntry(name)?.key, name).toBe('osmolality_serum');
+    }
+    for (const name of ['Osmolality', 'Urine Osmolality', 'Osmolality, Urine']) expect(resolveLabCatalogEntry(name), name).toBeUndefined();
+  });
+
+  it('US-21 AC19 — what the audit left out stays uncatalogued: FTI, the unitless ratios, INR, PT, APTT, bare T4, T3 and troponin', () => {
+    for (const name of ['Free Thyroxine Index', 'FTI', 'T7', 'T7 Index', 'Cholesterol (total/HDL)', 'Chol/HDL Ratio', 'INR', 'PT', 'APTT',
+      'Free Androgen Index', 'HOMA-IR', 'A/G Ratio', 'BUN/Creatinine Ratio', 'T4', 'T3', 'Troponin', 'Base Excess', 'Lymphs', 'Eos', 'Baso']) {
+      expect(resolveLabCatalogEntry(name), name).toBeUndefined();
+    }
+  });
+
+  it('US-21 AC19 — a new test beside an old one is a test of its own, never one slot', () => {
+    const PAIRS: Array<[string, string]> = [
+      ['Red Cell Folate', 'Serum Folate'], ['Ionised Calcium', 'Calcium'], ['Ionised Calcium', 'Corrected Calcium'],
+      ['RDW-SD', 'RDW'], ['eGFR (cystatin C)', 'eGFR'], ['eGFR (creatinine-cystatin C)', 'eGFR'], ['eGFR (cystatin C)', 'Cystatin C'],
+      ['Total T4', 'Free T4'], ['Total T3', 'Free T3'], ['Reverse T3', 'Free T3'], ['Troponin T', 'Troponin I'],
+      ['BNP', 'NT-proBNP'], ['Bioavailable Testosterone', 'Free Testosterone'], ['Indirect Bilirubin', 'Bilirubin'],
+      ['% Free PSA', 'Free PSA'], ['UIBC', 'TIBC'], ['Anti-Tg', 'Thyroglobulin'],
+    ];
+    for (const [a, b] of PAIRS) {
+      expect(resolveLabCatalogEntry(a), a).toBeDefined();
+      expect(resolveLabCatalogEntry(b), b).toBeDefined();
+      expect(labSlotKey(a), a).not.toBe(labSlotKey(b));
+    }
+  });
+
+  it('US-21 AC19 — the AMH factor is the 140 kDa convention; reticulocytes take ×10⁹/L and ×10¹²/L, never %', () => {
+    expect(canonicalLabValue(entryOf('AMH'), 1, 'ng/mL')).toMatchObject({ factor: 7.14 });
+    expect(canonicalLabValue(entryOf('Reticulocytes'), 50, '×10⁹/L')).toMatchObject({ value: 50, factor: 1 });
+    expect(canonicalLabValue(entryOf('Reticulocytes'), 1.2, '%')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-21 AC20 — the spellings real reports print for tests the record holds.
+// ---------------------------------------------------------------------------
+describe('US-21 AC20 — comma, bracket and "absolute" spellings reach their test; Brad\'s own HDL and LDL reach the core', () => {
+  const ALIASES: Record<string, string[]> = {
+    bilirubin_total: ['Bilirubin, Total'], bilirubin_direct: ['Bilirubin, Direct'], total_protein: ['Protein, Total'],
+    globulin: ['Globulin, Total'], bicarbonate: ['Carbon Dioxide, Total', 'Carbon Dioxide'], iron: ['Iron, Total'],
+    glucose: ['Glucose, Fasting'], folate: ['Folate, Serum'], ft4: ['T4, Free', 'Free T4 (FT4)', 'Free Thyroxine (FT4)'],
+    ft3: ['T3, Free'], testosterone_total: ['Testosterone, Total'], free_testosterone: ['Testosterone, Free'],
+    psa_free: ['PSA, Free'], cortisol_am: ['Cortisol, AM'], crp: ['CRP, High Sensitivity', 'Cardiac CRP', 'C Reactive Protein'],
+    esr: ['Sedimentation Rate'], vitamin_d: ['Vitamin D, 25-Hydroxy', '25-Hydroxy Vitamin D', '25 OH Vitamin D', 'Vitamin D (25 OH)'],
+    alt: ['ALT (SGPT)'], ast: ['AST (SGOT)'], ggt: ['Gamma GT (GGT)'], alp: ['Alk Phos', 'Alk. Phosphatase'], rdw: ['RDW-CV', 'RDW CV'],
+    tibc: ['Iron Binding Capacity'], anti_tpo: ['Thyroid Peroxidase (TPO) Ab'], tsh: ['TSH (Thyroid Stimulating Hormone)'],
+    haemoglobin: ['Haemoglobin (Hb)'], haematocrit: ['Haematocrit (HCT)'], shbg: ['SHBG (Sex Hormone Binding Globulin)'],
+    ferritin: ['Ferritin (serum)'], vitamin_b12: ['Vitamin B12 (Cobalamin)'], egfr: ['eGFR (CKD-EPI)'],
+    transferrin_sat: ['Transferrin saturation %'], urea: ['Urea Nitrogen (BUN)', 'Urea (BUN)'],
+    neutrophils: ['Neutrophils (Absolute)', 'Absolute Neutrophils', 'Neutrophils Abs'],
+    lymphocytes: ['Lymphocytes (Absolute)', 'Absolute Lymphocytes', 'Lymphocytes Abs', 'Lymphs (Absolute)'],
+    monocytes: ['Monocytes (Absolute)', 'Absolute Monocytes', 'Monocytes Abs', 'Monocytes(Absolute)'],
+    eosinophils: ['Eosinophils (Absolute)', 'Absolute Eosinophils', 'Eosinophils Abs', 'Eos (Absolute)'],
+    basophils: ['Basophils (Absolute)', 'Absolute Basophils', 'Basophils Abs', 'Baso (Absolute)'],
+  };
+
+  it.each(Object.entries(ALIASES))('US-21 AC20 — the printed spellings of %s resolve to it', (key, names) => {
+    for (const name of names) {
+      expect(resolveLabCatalogEntry(name)?.key, name).toBe(key);
+      expect(labSlotKey(name), name).toBe(key);
+      expect(resolveCoreMetricName(name), name).toBeNull();
+    }
+  });
+
+  it('US-21 AC20 — BUN\'s mg/dL factor needs a name that says nitrogen: "Urea (BUN)" in mg/dL is refused', () => {
+    expect(canonicalLabValue(resolveLabCatalogEntry('Urea Nitrogen (BUN)')!, 15, 'mg/dL')).toMatchObject({ value: 5.355, unit: 'mmol/L' });
+    expect(canonicalLabValue(resolveLabCatalogEntry('Urea (BUN)')!, 15, 'mg/dL')).toBeNull();
+    expect(canonicalLabValue(resolveLabCatalogEntry('Urea (BUN)')!, 5.4, 'mmol/L')).toMatchObject({ value: 5.4, unit: 'mmol/L' });
+  });
+
+  it('US-21 AC20 — Brad\'s lab\'s HDL and LDL names, and the other core spellings the audit found, reach the core metric', () => {
+    const CORE: Array<[string, string]> = [
+      ['Cholesterol (HDL)', 'hdl'], ['HDL-Cholesterol', 'hdl'],
+      ['Cholesterol (LDL) (calculated)', 'ldl'], ['LDL-Cholesterol', 'ldl'], ['LDL Chol Calc (NIH)', 'ldl'],
+      ['Glycated haemoglobin (HbA1c)', 'hba1c'], ['PSA, Total', 'psa'], ['Prostate Specific Ag', 'psa'],
+    ];
+    for (const [name, metric] of CORE) {
+      expect(resolveCoreMetricName(name), name).toBe(metric);
+      expect(resolveLabCatalogEntry(name), name).toBeUndefined();
+    }
+    // Exact match only: the ratio printed on the same report is not HDL.
+    expect(resolveCoreMetricName('Cholesterol (total/HDL)')).toBeNull();
+  });
+});
