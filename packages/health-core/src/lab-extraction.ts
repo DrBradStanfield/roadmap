@@ -214,9 +214,12 @@ function readPrintedUnit(metric: MetricType, value: number, unit: string) {
  *  spaces). Not mmol/L: a serum creatinine can print in it too. */
 const URINE_OR_RATIO_UNITS = new Set(['mg/mmol', 'g/mol', 'mg/g', 'mg/mg', 'g/g', 'mg/gcreat', 'mg/gcr', 'mg/24h', 'mmol/24h', 'ml/min']);
 
-/** A urine marker as a whole token: "(urine)", "(U)", "[u]", "urine", "urin". Never "U/L". */
-const URINE_MARKER = /(?:^|[\s(\[])urine?(?=$|[\s)\]])|[(\[]\s*u\s*[)\]]/i;
-const isUrineOrRatioUnit = (unit: string) => URINE_MARKER.test(unit) || URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''));
+/** A urine marker between letter edges ("urine,", "/urine", "(urinary)", "urina",
+ *  "orina", "Harn", "moczu"), "U-Creat", a trailing " U" or ",U", or "(U)".
+ *  Never "U/L", "IU", "mU/L", "(uric)" or "(uncorrected)". No lookbehind:
+ *  this runs in the BYOK browser bundle too. */
+const URINE_MARKER = /(?:^|[^a-z])(?:urin(?:e|a|ary)?|orina|harn|moczu)(?![a-z])|(?:^|[^a-z])u-(?:creat|cr)|[\s,]u$|[(\[]\s*u\s*[)\]]/i;
+const isUrineOrRatioUnit = (unit: string) => URINE_MARKER.test(unit.trim()) || URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''));
 
 /** Why a creatinine was refused, in the user's words (US-12 AC15). */
 function creatinineRefusal(unit: string): string {
@@ -617,7 +620,13 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
     });
     return true;
   };
-  const coreRows = isLab ? parsed.values.flatMap(ownDay).filter(v => v.metric !== 'creatinine' || !refusesCreatinine(v)) : [];
+  // mmol/L is a real creatinine unit the table leaves out (website: refused
+  // above); on the connector it converts exactly, never by `resolveUnit`'s
+  // guess, which would read a urine ACR's 3.2 as mg/dL (D7a, adversary R1).
+  const exactMmol = <T extends { metric: string; value: number; unit: string }>(v: T): T =>
+    mode === 'metadata' && v.metric === 'creatinine' && /^mmol\/l$/i.test(cleanedCreatinineUnit(v.unit).replace(/\s+/g, ''))
+      ? { ...v, value: Math.round(v.value * 1e6) / 1e3, unit: 'µmol/L' } : v;
+  const coreRows = isLab ? parsed.values.flatMap(ownDay).filter(v => v.metric !== 'creatinine' || !refusesCreatinine(v)).map(exactMmol) : [];
   const slot = (metric: string, day?: string) => `${metric}@${day ?? ''}`;
   const taken = new Set(coreRows.map(v => slot(v.metric, v.recordedAt)));
   const additionalValues: typeof parsed.additionalValues = [];

@@ -1802,6 +1802,31 @@ describe('US-12 AC15/AC16 — import_documents refuses a urine creatinine, infer
     }
   });
 
+  it('mmol/L converts ×1000 (adversary R1): 3.2 is refused by the save range, 0.09 is 90, 1.5 asks', () => {
+    const { payload, unrecognized } = prepareImport(base(), bundleOf([extracted('mmol.pdf', modelAnswer([
+      { metric: 'creatinine', value: 3.2, unit: 'mmol/L', confidence: 'high' },
+    ]))]), IMPORT_CTX);
+    expect(payload.candidates).toEqual([]);
+    expect(unrecognized).toHaveLength(1);
+    expect(unrecognized[0]).toMatch(/^creatinine: /);
+    for (const [value, si, confidence] of [[0.09, 90, 'high'], [1.5, 1500, 'medium']] as const) {
+      const { payload: p } = prepareImport(base(), bundleOf([extracted('mmol.pdf', modelAnswer([
+        { metric: 'creatinine', value, unit: 'mmol/L', confidence: 'high' },
+      ]))]), IMPORT_CTX);
+      expect(p.candidates[0]).toMatchObject({ metric: 'creatinine', value: si, confidence });
+    }
+  });
+
+  it('a blank-unit creatinine filed as a lab row stays a lab row and is turned away as a core test (R3)', () => {
+    const answer = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: LAB_DAY, values: [], document: null,
+      additionalValues: [{ name: 'Serum Creatinine', value: 95, unit: '' }],
+    }), 'metadata');
+    const { payload, unrecognized } = prepareImport(base(), bundleOf([extracted('row.pdf', answer)]), IMPORT_CTX);
+    expect(payload.candidates).toEqual([]);
+    expect(unrecognized).toEqual(['Serum Creatinine: "Serum Creatinine" is the core metric creatinine — write it as a measurement, in SI units']);
+  });
+
   it('a creatinine above 500 µmol/L is offered with its question and medium confidence', () => {
     const { payload } = prepareImport(base(), bundleOf([extracted('high.pdf', modelAnswer([
       { metric: 'creatinine', value: 650, unit: 'µmol/L', confidence: 'high' },

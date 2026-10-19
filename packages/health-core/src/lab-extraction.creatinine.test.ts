@@ -65,14 +65,35 @@ describe('US-12 AC15: a creatinine in a unit the table does not know is refused,
 
   // Fix 3 (Brad: never treat a urine row as blood creatinine): a urine marker as
   // a whole token is a urine unit on every path, the connector included.
-  const URINE_MARKED = ['mg/dL (urine)', 'µmol/L (U)', 'mmol/L urine', 'µmol/L [u]', 'mg/dL Urin', 'urine'];
-  it.each(['full', 'metadata'] as const)('%s mode: a unit with a urine marker is refused as a urine result; "U/L" and plain µmol/L are not', (mode) => {
+  // Letter edges, so punctuation and other languages count too (adversary R2).
+  const URINE_MARKED = [
+    'mg/dL (urine)', 'µmol/L (U)', 'mmol/L urine', 'µmol/L [u]', 'mg/dL Urin', 'urine',
+    'mg/dL urine,', 'µmol/L urine:', 'mg/dL/urine', 'mg/dL-urine', 'mg/dL (urinary)', 'µmol/L (urina)', 'mg/dL (orina)',
+    'umol/L Harn', 'µmol/L moczu', 'U-Creat', 'µmol/L U', 'µmol/L,U',
+  ];
+  const NOT_MARKED = ['U/L', 'IU/L', 'mU/L', 'mg/dL (uncorrected)', 'mg/dL (uric)', 'µmol/L (serum)'];
+  it.each(['full', 'metadata'] as const)('%s mode: a unit with a urine marker is refused as a urine result; "U/L", "IU", "(uric)" and plain µmol/L are not', (mode) => {
     const result = toUnifiedResult(parseUnifiedResult({
       classification: 'lab_report', reportDate: '2026-10-10', document: null, additionalValues: [],
-      values: [...URINE_MARKED.map(unit => creat(80, unit)), creat(80, 'U/L'), creat(80, 'µmol/L'), creat(80, 'mg/dL (uric)')],
+      values: [...URINE_MARKED.map(unit => creat(80, unit)), ...NOT_MARKED.map(unit => creat(80, unit)), creat(80, 'µmol/L')],
     }), mode);
     expect(result.refusedValues?.filter(r => r.reason === 'This unit is usually a urine result.').map(r => r.unit)).toEqual(URINE_MARKED);
-    expect(result.values.map(v => v.displayUnit)).toEqual(mode === 'full' ? ['µmol/L'] : ['U/L', 'µmol/L', 'mg/dL (uric)']);
+    expect(result.values.map(v => v.displayUnit)).toEqual(mode === 'full' ? ['µmol/L'] : [...NOT_MARKED, 'µmol/L']);
+  });
+
+  // Adversary R1: mmol/L is a real unit, not a guess. resolveUnit has no
+  // mmol/L entry and would read 3.2 (a urine ACR's creatinine) as mg/dL, 283 µmol/L.
+  it('the connector converts a creatinine in mmol/L exactly, ×1000; the website still refuses it', () => {
+    const answer = () => parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-10-10', document: null, additionalValues: [],
+      values: [creat(3.2, 'mmol/L'), creat(0.09, 'mmol/L'), creat(1.5, 'mmol/L H')],
+    });
+    const connector = toUnifiedResult(answer(), 'metadata');
+    expect(connector.values.map(v => [v.valueSI, v.confidence, v.question])).toEqual([
+      [3200, 'medium', 'Was this a blood test?'], [90, 'high', undefined], [1500, 'medium', 'Was this a blood test?'],
+    ]);
+    expect(connector.refusedValues).toBeUndefined();
+    expect(toUnifiedResult(answer(), 'full').refusedValues?.map(r => r.value)).toEqual([3.2, 0.09, 1.5]);
   });
 
   it('a lab row named creatinine in an unknown unit is refused too; "Cr" (chromium) and a known unit stay lab rows', () => {
