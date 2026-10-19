@@ -205,10 +205,12 @@ function readPrintedUnit(metric: MetricType, value: number, unit: string) {
  *  spaces). Not mmol/L: a serum creatinine can print in it too. */
 const URINE_OR_RATIO_UNITS = new Set(['mg/mmol', 'g/mol', 'mg/g', 'mg/mg', 'g/g', 'mg/gcreat', 'mg/gcr', 'mg/24h', 'mmol/24h', 'ml/min']);
 
+const isUrineOrRatioUnit = (unit: string) => URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''));
+
 /** Why a creatinine was refused, in the user's words (US-12 AC15). */
 function creatinineRefusal(unit: string): string {
   if (!unit) return 'No unit was printed.';
-  return URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''))
+  return isUrineOrRatioUnit(unit)
     ? 'This unit is usually a urine result.'
     : 'This unit could not be read as a blood creatinine.';
 }
@@ -593,8 +595,11 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
   // ("Cr" alone may be chromium): it is listed with why (US-12 AC15). A urine
   // ratio guessed as mg/dL became a low eGFR (issue #166).
   const refusedValues: RefusedLabValue[] = [];
+  // The connector (`metadata`, its prompt alone) refuses only a urine or ratio
+  // unit; a blank or unknown one is inferred and stored in SI, as before (D7a,
+  // Brad 2026-10-20: "save it as SI unit"; US-12 AC15).
   const refusesCreatinine = (v: { value: number; unit: string; recordedAt?: string; printedMonth?: string }) => {
-    if (readPrintedUnit('creatinine', v.value, v.unit)) return false;
+    if (readPrintedUnit('creatinine', v.value, v.unit) || (mode === 'metadata' && !isUrineOrRatioUnit(v.unit))) return false;
     refusedValues.push({
       metric: 'creatinine', value: v.value, unit: v.unit, reason: creatinineRefusal(v.unit),
       ...(v.recordedAt ? { recordedAt: v.recordedAt } : null), ...(v.printedMonth ? { printedMonth: v.printedMonth } : null),

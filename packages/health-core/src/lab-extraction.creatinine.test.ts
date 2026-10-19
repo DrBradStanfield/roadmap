@@ -39,6 +39,22 @@ describe('US-12 AC15: a creatinine in a unit the table does not know is refused,
     expect(result.refusedValues?.map(r => [r.unit, r.reason])).toEqual([['', 'No unit was printed.'], ['', 'No unit was printed.']]);
   });
 
+  it('the connector (metadata mode) infers a blank or unknown unit and stores SI; a urine unit is still refused (D7a, Brad 2026-10-20)', () => {
+    const result = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-10-10', document: null,
+      values: [creat(1.1, ''), creat(95, ''), creat(80, 'mg/dL (urine)'), creat(12, 'mg/mmol')],
+      additionalValues: [{ name: 'Serum Creatinine', value: 3, unit: '' }, { name: 'creatinine', value: 2, unit: 'mg/g' }],
+    }), 'metadata');
+    expect(result.values.map(v => [v.displayValue, Math.round(v.valueSI * 100) / 100, v.confidence, v.unitGuessed])).toEqual([
+      [1.1, 97.24, 'medium', true], [95, 95, 'medium', true], [80, 80, 'medium', true],
+    ]);
+    expect(result.refusedValues).toEqual([
+      { metric: 'creatinine', value: 12, unit: 'mg/mmol', reason: 'This unit is usually a urine result.' },
+      { metric: 'creatinine', value: 2, unit: 'mg/g', reason: 'This unit is usually a urine result.' },
+    ]);
+    expect(result.additionalValues.map(v => v.name)).toEqual(['Serum Creatinine']);
+  });
+
   it('a bracket or a word is never stripped: "mg/dL (urine)", "µmol/L (U)", "mg/dL (24h)" stay unknown', () => {
     const result = extract([creat(80, 'mg/dL (urine)'), creat(80, 'µmol/L (U)'), creat(80, 'mg/dL (24h)')]);
     expect(result.values).toEqual([]);

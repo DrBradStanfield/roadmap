@@ -1754,32 +1754,42 @@ function bundleOf(files: ExtractedFile[]) {
 }
 
 // Issue #166 on import_documents (D7a, D7b): the connector runs the same
-// extractor (metadata mode), so a creatinine it cannot read is an
+// extractor (metadata mode). A creatinine in a urine or ratio unit is an
 // `unrecognized` line, once, never a candidate and never "could not be read";
-// a creatinine too high for blood carries its question (US-12 AC15, US-13 AC11).
-describe('US-12 AC15 — import_documents lists a refused creatinine as unrecognized', () => {
+// a blank or unknown unit is inferred and stored in SI, as before (D7a, Brad
+// 2026-10-20: "save it as SI unit"); a creatinine too high for blood carries
+// its question (US-12 AC15, AC16, US-13 AC11).
+describe('US-12 AC15/AC16 — import_documents refuses a urine creatinine, infers a blank unit', () => {
   const modelAnswer = (values: unknown[]) => toUnifiedResult(parseUnifiedResult({
     classification: 'lab_report', reportDate: LAB_DAY, values, additionalValues: [], document: null,
   }), 'metadata');
 
-  it('mg/mmol and a blank unit are unrecognized lines with why; no candidate, no droppedValues', () => {
+  it('mg/mmol is an unrecognized line with why; no candidate, no droppedValues', () => {
     const { payload, files, unrecognized } = prepareImport(base(), bundleOf([extracted('acr.pdf', modelAnswer([
-      { metric: 'creatinine', value: 2, unit: 'mg/mmol', confidence: 'high' },
-      { metric: 'creatinine', value: 3, unit: '', confidence: 'high' },
+      { metric: 'creatinine', value: 12, unit: 'mg/mmol', confidence: 'high' },
     ]))]), IMPORT_CTX);
     expect(payload.candidates).toEqual([]);
     expect(files[0].droppedValues).toBeUndefined();
-    expect(unrecognized).toEqual([
-      'creatinine 2 mg/mmol: not saved. This unit is usually a urine result.',
-      'creatinine 3: not saved. No unit was printed.',
-    ]);
+    expect(unrecognized).toEqual(['creatinine 12 mg/mmol: not saved. This unit is usually a urine result.']);
+  });
+
+  it('a blank unit is inferred, stored in SI and asked about at medium: 1.1 from mg/dL, 95 as µmol/L', () => {
+    for (const [value, si] of [[1.1, 97.24], [95, 95]]) {
+      const { payload, unrecognized } = prepareImport(base(), bundleOf([extracted('blank.pdf', modelAnswer([
+        { metric: 'creatinine', value, unit: '', confidence: 'high' },
+      ]))]), IMPORT_CTX);
+      expect(unrecognized).toEqual([]);
+      expect(payload.candidates).toHaveLength(1);
+      expect(payload.candidates[0]).toMatchObject({ metric: 'creatinine', unit: 'µmol/L', confidence: 'medium', question: 'No unit was printed, so the unit was inferred — please verify this value' });
+      expect(payload.candidates[0].value).toBeCloseTo(si, 1);
+    }
   });
 
   it('a creatinine above 500 µmol/L is offered with its question and medium confidence', () => {
     const { payload } = prepareImport(base(), bundleOf([extracted('high.pdf', modelAnswer([
-      { metric: 'creatinine', value: 1200, unit: 'µmol/L', confidence: 'high' },
+      { metric: 'creatinine', value: 650, unit: 'µmol/L', confidence: 'high' },
     ]))]), IMPORT_CTX);
-    expect(payload.candidates[0]).toMatchObject({ metric: 'creatinine', confidence: 'medium', question: 'Was this a blood test?' });
+    expect(payload.candidates[0]).toMatchObject({ metric: 'creatinine', value: 650, confidence: 'medium', question: 'Was this a blood test?' });
   });
 });
 
