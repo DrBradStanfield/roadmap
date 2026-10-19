@@ -32,8 +32,9 @@ import { supabaseAdmin } from './supabase.server';
 import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
 import { routeQuery, sanitizeForRouter, ROUTER_VERSION, type RouterResult } from './chat-router.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
-import { findBlogByVideoId, type BlogIndexEntry } from './blog-index.server';
-import { loadBlogArticle } from './matched-content';
+import { findBlogByVideoId, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { loadBlogArticle, contentHeader } from './matched-content';
+import { parseFrontmatter, stripFrontmatter } from './frontmatter';
 import {
   buildSystemBlocks,
   buildConversationMessages,
@@ -198,12 +199,67 @@ FOLLOW-UP TURN: You already replied once in this comment thread (see the convers
 - If the message is hostile, sarcastic, bait, a rant, or mere disagreement without a question — return SKIP_NO_REPLY. Never argue, never defend yourself, never reply to hostility.
 - This is your LAST reply in this thread either way, so make it self-contained and do not invite further questions.`;
 
-function buildYouTubePlatformContext(videoId: string, entry: BlogIndexEntry, body: string, isFollowUp = false): string {
+function buildYouTubePlatformContext(videoId: string, entry: BlogIndexEntry, body: string, isFollowUp = false, views: string | null = null): string {
   const base = YOUTUBE_PROMPT_TEMPLATE
     .replace('{{VIDEO_TITLE}}', entry.title)
     .replace('{{VIDEO_URL}}', `https://youtu.be/${videoId}`)
     .replace('{{VIDEO_CONTENT}}', body);
-  return isFollowUp ? base + FOLLOWUP_POSTURE : base;
+  // The template ends with the video's content, so the master views follow it.
+  const withViews = views ? `${base}\n\n${views}` : base;
+  return isFollowUp ? withViews + FOLLOWUP_POSTURE : withViews;
+}
+
+// ---------------------------------------------------------------------------
+// Topic masters (US-50 AC6): the current-view section of each master the
+// video's post names, in its own labelled block. chat-youtube-prompt.md names
+// this heading and tells the model to ignore the block for reply-or-skip.
+// ---------------------------------------------------------------------------
+
+export const MASTER_VIEWS_HEADING = "## Brad's current view on this video's topics (added automatically for this video; not router-matched content)";
+
+/**
+ * Cap on the master views one comment adds. A current-view section is 3 to 6
+ * sentences (about 1,000 to 2,000 characters), so 12,000 holds every master a
+ * post names today with room to spare, while a malformed section (a missing
+ * next heading pulling in the whole 29K to 83K reference) is skipped. The
+ * YouTube context is uncached, so every character is paid on every comment.
+ */
+export const MAX_MASTER_VIEW_CHARS = 12_000;
+
+/** A master's "Current view" or "Current evidence position" section, heading to
+ *  the next `## ` heading, demoted one level to sit under MASTER_VIEWS_HEADING.
+ *  Null when the master has neither. */
+export function currentViewSection(md: string): string | null {
+  const body = stripFrontmatter(md);
+  const heading = body.match(/^## (?:Current view\b|Current evidence position\b).*$/m);
+  if (!heading || heading.index === undefined) return null;
+  const rest = body.slice(heading.index + heading[0].length);
+  const next = rest.search(/^## /m);
+  return `#${heading[0]}${next === -1 ? rest : rest.slice(0, next)}`.trim();
+}
+
+/**
+ * The master views for a comment: each reference named in the post's `topics`,
+ * once, skipping masters the router already loaded (they arrive whole as
+ * router-matched content). A section that would pass the cap is skipped, never
+ * the rest. Null when nothing is added.
+ */
+export function masterViews(topics: string[] | undefined, routerHandles: string[]): string | null {
+  const parts: string[] = [];
+  let total = 0;
+  for (const handle of new Set(topics ?? [])) {
+    if (routerHandles.includes(handle)) continue;
+    const entry = loadBlogIndex().find(e => e.handle === handle);
+    if (entry?.type !== 'reference') continue;
+    const md = loadBlogArticle(handle);
+    const section = md && currentViewSection(md);
+    if (!section) continue;
+    const block = `${contentHeader(entry, parseFrontmatter(md) ?? {})}\n\n${section}`;
+    if (total + block.length > MAX_MASTER_VIEW_CHARS) continue;
+    parts.push(block);
+    total += block.length;
+  }
+  return parts.length > 0 ? `${MASTER_VIEWS_HEADING}\n\n${parts.join('\n\n---\n\n')}` : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -703,7 +759,7 @@ function loadVideoBody(videoId: string): { entry: BlogIndexEntry; body: string }
   if (!entry) return null;
   const fullContent = loadBlogArticle(entry.handle);
   if (!fullContent) return null;
-  return { entry, body: fullContent.replace(/^---[\s\S]*?---\n\n?/, '') };
+  return { entry, body: stripFrontmatter(fullContent) };
 }
 
 function filterThread(thread: YouTubeThread): FilterResult {
@@ -913,7 +969,7 @@ export async function runPipeline(
     routerHandles = routerResult.handles;
   }
 
-  const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body, isFollowUp);
+  const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body, isFollowUp, masterViews(entry.topics, routerHandles));
   const blogArticles = loadMatchedArticlesFromHandles(routerHandles)?.content ?? null;
   // YouTube is a doctor-family surface (Brad's public channel) → strict doctor posture.
   const systemBlocks = buildSystemBlocks(platformContext, { surfaceContext: DOCTOR_POSTURE, blogArticles });

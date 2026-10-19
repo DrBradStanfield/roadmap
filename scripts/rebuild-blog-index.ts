@@ -25,6 +25,8 @@
 
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { parseFrontmatter } from '../app/lib/frontmatter';
 
 const BLOG_DIR = path.join(process.cwd(), 'docs/blog');
 const INDEX_PATH = path.join(BLOG_DIR, 'index.json');
@@ -48,6 +50,12 @@ interface IndexEntry {
   youtube?: string;
   product?: 'microvitamin' | 'microvitamin-plus' | 'sleep';
   summary?: string;
+  /** Master handles this post is about (US-50 AC2). */
+  topics?: string[];
+  /** Set only on a single-subject post: the router may drop it once its masters are up to date (US-50 AC3). */
+  router?: 'hidden';
+  /** A master's review date, YYYY-MM-DD (US-50 AC1). */
+  reviewed?: string;
 }
 
 // Directories to scan for content files
@@ -57,31 +65,27 @@ const CONTENT_DIRS = [
   path.join(process.cwd(), 'docs/pathway'),
 ];
 
-function parseFrontmatter(content: string): Record<string, any> | null {
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!match) return null;
+/** One index entry from a file's frontmatter. Exported for tests. */
+export function indexEntry(handle: string, fm: Record<string, any>): IndexEntry {
+  const entry: IndexEntry = {
+    title: fm.title,
+    handle,
+    url: fm.url || `https://drstanfield.com/blogs/articles/${handle}`,
+    tags: Array.isArray(fm.tags) ? fm.tags : [],
+    keywords: Array.isArray(fm.keywords) ? fm.keywords : [],
+    publishedAt: fm.publishedAt || '',
+  };
 
-  const fm: Record<string, any> = {};
-  for (const line of match[1].split('\n')) {
-    const kv = line.match(/^(\w+):\s*(.+)$/);
-    if (!kv) continue;
-    const [, key, rawValue] = kv;
-    let value: any = rawValue.trim();
-
-    // Strip surrounding quotes
-    if ((value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
-
-    // Parse JSON arrays
-    if (value.startsWith('[')) {
-      try { value = JSON.parse(value); } catch {}
-    }
-
-    fm[key] = value;
-  }
-  return fm;
+  if (fm.commerceUrl) entry.commerceUrl = fm.commerceUrl;
+  if (fm.type) entry.type = fm.type;
+  if (fm.youtube) entry.youtube = fm.youtube;
+  if (fm.product) entry.product = fm.product;
+  if (fm.summary) entry.summary = fm.summary;
+  // Topic masters (US-50 AC2). A malformed value is left out, so it hides nothing.
+  if (Array.isArray(fm.topics) && fm.topics.every((t: unknown) => typeof t === 'string')) entry.topics = fm.topics;
+  if (fm.router === 'hidden') entry.router = 'hidden';
+  if (typeof fm.reviewed === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fm.reviewed)) entry.reviewed = fm.reviewed;
+  return entry;
 }
 
 function main() {
@@ -103,23 +107,7 @@ function main() {
         continue;
       }
 
-      const handle = file.replace('.md', '');
-      const entry: IndexEntry = {
-        title: fm.title,
-        handle,
-        url: fm.url || `https://drstanfield.com/blogs/articles/${handle}`,
-        tags: Array.isArray(fm.tags) ? fm.tags : [],
-        keywords: Array.isArray(fm.keywords) ? fm.keywords : [],
-        publishedAt: fm.publishedAt || '',
-      };
-
-      if (fm.commerceUrl) entry.commerceUrl = fm.commerceUrl;
-      if (fm.type) entry.type = fm.type;
-      if (fm.youtube) entry.youtube = fm.youtube;
-      if (fm.product) entry.product = fm.product;
-      if (fm.summary) entry.summary = fm.summary;
-
-      index.push(entry);
+      index.push(indexEntry(file.replace('.md', ''), fm));
       stats[dirName as keyof typeof stats]++;
     }
   }
@@ -135,4 +123,5 @@ function main() {
   if (stats.skipped) console.log(`  ⚠ Skipped ${stats.skipped} files with no/invalid frontmatter`);
 }
 
-main();
+// Run only as a script, so the test can import indexEntry.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

@@ -16,6 +16,12 @@ export interface BlogIndexEntry {
   youtube?: string;
   summary?: string;
   type?: 'reference' | 'article' | 'guideline' | 'pathway';
+  /** Master handles this post is about (US-50 AC2). */
+  topics?: string[];
+  /** Set only on a single-subject post: the router drops it once its masters are up to date (US-50 AC3). */
+  router?: 'hidden';
+  /** A master's review date, YYYY-MM-DD (US-50 AC1). */
+  reviewed?: string;
 }
 
 const INDEX_PATH = path.join(process.cwd(), 'docs/blog/index.json');

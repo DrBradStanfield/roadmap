@@ -10,7 +10,8 @@
  * routing behavior, so sharing those files catches any drift. The one server
  * import is app/lib/matched-content.ts, the Sentry-free loader production uses
  * for matched articles (its only dependency is blog-index.server.ts, so tsx can
- * follow it). It reads from process.cwd(): run from the repo root.
+ * follow it). It reads from process.cwd(): run from the repo root. The router
+ * view and its index block come from app/lib/router-view.ts, as in production.
  *
  * Each query runs N times; pass = at least one expected handle appears in
  * the intersection of all runs (consistently returned across retries).
@@ -119,6 +120,8 @@ import {
 } from '../packages/health-core/src/models';
 import { chatToolsFor, withRoadmapRound, type ChatContentBlock } from '../packages/health-core/src/run-roadmap';
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
+import { routerView, routerIndexBlock, ROUTER_SUMMARY_MAX_CHARS } from '../app/lib/router-view';
+import type { BlogIndexEntry } from '../app/lib/blog-index.server';
 import { parseRouterReply } from '../app/lib/router-reply';
 import { buildSystemBlocks, EMPTY_CHAT_CONTEXT, resolveChatContext } from '../app/lib/chat.server';
 import { healthInputSchema } from '../packages/health-core/src/validation';
@@ -215,13 +218,6 @@ const ROUTER_MODEL = getArg('--model', PRODUCTION_ROUTER_MODEL);
 const thinkingOff = !args.includes('--effort-low');
 const callStats: CallStat[] = [];
 
-interface BlogIndexEntry {
-  title: string;
-  handle: string;
-  type?: 'reference' | 'article' | 'guideline' | 'pathway';
-  summary?: string;
-}
-
 // --index <path> overrides the index the ROUTER sees, so an experimental index
 // (e.g. summary-capped) can be A/B'd against production without touching
 // docs/blog/index.json. Matched-article loading still reads the real .md files.
@@ -230,26 +226,15 @@ const INDEX_PATH = indexPathArg
   ? path.resolve(indexPathArg)
   : path.join(REPO_ROOT, 'docs/blog/index.json');
 
-const BLOG_INDEX: BlogIndexEntry[] = JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8'));
+// The router's view, through the production function (US-50 AC3): a hidden post
+// whose masters are up to date leaves the allow-list, the index block and the count.
+const BLOG_INDEX: BlogIndexEntry[] = routerView(JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8')));
 
 const VALID_HANDLES = new Set(BLOG_INDEX.map(e => e.handle));
 
-// Mirrors ROUTER_SUMMARY_MAX_CHARS + capSummary() in chat-router.server.ts.
-// The harness did NOT truncate until 2026-08-07, so it was rendering FULL
-// summaries while production rendered capped ones — every "baseline" number
-// measured a prompt production never sends. --summary-cap overrides it so
+// --summary-cap overrides ROUTER_SUMMARY_MAX_CHARS (router-view.ts) so
 // alternative caps can be A/B'd without editing the index.
-const SUMMARY_CAP = args.includes('--summary-cap') ? parseInt(getArg('--summary-cap', '150'), 10) : 150;
-
-function capSummary(s: string): string {
-  if (s.length <= SUMMARY_CAP) return s;
-  const cut = s.slice(0, SUMMARY_CAP);
-  for (const sep of ['. ', '; ', ', ', ' ']) {
-    const p = cut.lastIndexOf(sep);
-    if (p > SUMMARY_CAP * 0.6) return cut.slice(0, p).replace(/[ ,;.]+$/, '');
-  }
-  return cut.trimEnd();
-}
+const SUMMARY_CAP = args.includes('--summary-cap') ? parseInt(getArg('--summary-cap', String(ROUTER_SUMMARY_MAX_CHARS)), 10) : ROUTER_SUMMARY_MAX_CHARS;
 
 // Mirrors repairHandle() in app/lib/chat-router.server.ts — strips a leading
 // `<type>-` when the remainder is a real handle (the router emits
@@ -267,16 +252,7 @@ function repairHandle(h: string): string {
   return h;
 }
 
-const TYPE_ORDER: Record<string, number> = { pathway: 0, guideline: 1, reference: 2, article: 3 };
-
-const ROUTER_INDEX_BLOCK: string = [...BLOG_INDEX]
-  .sort((a, b) => {
-    const tr = (TYPE_ORDER[a.type ?? 'article'] ?? 3) - (TYPE_ORDER[b.type ?? 'article'] ?? 3);
-    if (tr !== 0) return tr;
-    return a.handle.localeCompare(b.handle);
-  })
-  .map(e => `[${e.type ?? 'article'}] ${e.handle}: ${capSummary(e.summary ?? e.title ?? '')}`)
-  .join('\n');
+const ROUTER_INDEX_BLOCK = routerIndexBlock(BLOG_INDEX, SUMMARY_CAP);
 
 // {{ENTRY_COUNT}} substitution must mirror chat-router.server.ts getRouterPrompt().
 // Without it the harness would send the literal placeholder to the model and

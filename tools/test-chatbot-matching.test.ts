@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { REPO_ROOT, tsxSpawn } from './test-helpers';
 import { loadBlogArticle } from '../app/lib/matched-content';
+import { stripFrontmatter } from '../app/lib/frontmatter';
 import { resolveChatContext } from '../app/lib/chat.server';
 import { runRoadmap } from '../packages/health-core/src/run-roadmap';
 
@@ -75,7 +76,8 @@ describe('test-chatbot-matching fixed-handle answer checks (US-15 AC24)', () => 
   // The lithium orotate case: no other entry shares its category AND source, so
   // a run filtered by both is this one case.
   const q = all.find(x => x.answer_handles && x.must_not_mention?.includes('Grokipedia'))!;
-  const snippet = (loadBlogArticle(q.answer_handles![0]) ?? '').slice(0, 300);
+  // The body, not the frontmatter: the model never sees that (US-50 AC4).
+  const snippet = stripFrontmatter(loadBlogArticle(q.answer_handles![0]) ?? '').slice(0, 300);
 
   /** Run the harness offline. goodAnswer: answer well when the article is in the prompt; otherwise always fail. */
   function run(flags: string[], goodAnswer: boolean) {
@@ -689,4 +691,47 @@ describe('test-chatbot-matching run_roadmap round (US-15 AC33)', () => {
     expect(run(fixture({ must_mention: undefined, expect_roadmap_run: true }), false).out).toContain('did not call run_roadmap');
     expect(run(fixture({ must_mention: undefined, expect_roadmap_run: false }), true).out).toContain('called run_roadmap');
   }, 120_000);
+});
+
+// US-50 AC3: the harness builds its router view through the production
+// function, so a hidden post leaves its index block and entry count too.
+describe('test-chatbot-matching router view (US-50 AC3)', () => {
+  it('drops a hidden post whose master is up to date from the index block and the count', () => {
+    interface Entry { handle: string; type?: string; youtube?: string; topics?: string[]; router?: string; reviewed?: string }
+    const index = JSON.parse(readFileSync(join(REPO_ROOT, 'docs/blog/index.json'), 'utf-8')) as Entry[];
+    const m = index.find(e => e.type === 'reference')!;
+    const p = index.find(e => e.youtube)!;
+    m.reviewed = '2099-01-01';
+    p.topics = [m.handle];
+    p.router = 'hidden';
+    const q = pickCase();
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-view-'));
+    try {
+      const indexPath = join(dir, 'index.json');
+      const seen = join(dir, 'router-system.json');
+      writeFileSync(indexPath, JSON.stringify(index));
+      const stub = join(dir, 'fetch-stub.mjs');
+      writeFileSync(stub, `
+        import { writeFileSync } from 'node:fs';
+        globalThis.fetch = async (_url, init) => {
+          const body = JSON.parse(init.body);
+          if (Array.isArray(body.system)) writeFileSync(${JSON.stringify(seen)}, JSON.stringify(body.system.map(b => b.text)));
+          return new Response(JSON.stringify({
+            content: [{ type: 'text', text: '{"handles":[]}' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 },
+          }), { status: 200, headers: { 'content-type': 'application/json' } });
+        };
+      `);
+      const [bin, args] = tsxSpawn(['--import', stub, 'tools/test-chatbot-matching.ts',
+        '--category', q.category, '--runs', '1', '--index', indexPath]);
+      const { ANTHROPIC_API_KEY: _live, TOPIC_MASTER_HIDE: _flag, ...rest } = process.env; // never a real key: no call leaves the machine
+      const res = spawnSync(bin, args, { cwd: REPO_ROOT, env: { ...rest, ANTHROPIC_TEST_API_KEY: 'stub' }, encoding: 'utf-8', timeout: 60_000 });
+      const [prompt, block] = JSON.parse(readFileSync(seen, 'utf-8')) as string[];
+      expect(block, res.stderr).not.toContain(`] ${p.handle}:`);
+      expect(block).toContain(`] ${m.handle}:`);
+      expect(block.split('\n')).toHaveLength(index.length - 1);
+      expect(prompt).toContain(`a ${index.length - 1}-entry index`);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
 });

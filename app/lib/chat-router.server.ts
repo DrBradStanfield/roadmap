@@ -13,7 +13,8 @@ import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
 import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
-import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { loadBlogIndex } from './blog-index.server';
+import { routerView, routerIndexBlock } from './router-view';
 import { parseRouterReply } from './router-reply';
 // The router's model lives with the other pins; modelParams gives its family's body shape.
 import { PROMPT_CACHE, ROUTER_MODEL, modelParams } from '../../packages/health-core/src/models';
@@ -25,15 +26,18 @@ import { cutText } from '../../packages/health-core/src/chat-history';
 // ---------------------------------------------------------------------------
 
 // 2: router model Haiku 4.5 -> Sonnet 5.5 and the rule 7 rework (2026-09-29).
-export const ROUTER_VERSION = 2;
+// 3: the router view drops hidden posts whose masters are up to date (US-50 AC3).
+export const ROUTER_VERSION = 3;
 
-const BLOG_INDEX = loadBlogIndex();
+// The router's view, not the full index: the allow-list, the index block and
+// {{ENTRY_COUNT}} all come from it (US-50 AC3). loadBlogIndex() stays whole.
+const ROUTER_VIEW = routerView(loadBlogIndex());
 
 // ---------------------------------------------------------------------------
 // Valid handles allowlist — O(1) lookup to drop hallucinated handles
 // ---------------------------------------------------------------------------
 
-export const VALID_HANDLES = new Set(BLOG_INDEX.map(e => e.handle));
+export const VALID_HANDLES = new Set(ROUTER_VIEW.map(e => e.handle));
 
 /**
  * Repair the one handle malformation the router makes systematically: emitting
@@ -65,60 +69,8 @@ export function repairHandle(h: string): string {
   return h;
 }
 
-// ---------------------------------------------------------------------------
-// Router index block — one line per entry, sorted by type then handle for
-// stable Anthropic cache keys. Locking this sort order; changes = cache miss.
-// Type order: pathway, guideline, reference, article (clinical first).
-// ---------------------------------------------------------------------------
-
-const TYPE_ORDER: Record<string, number> = { pathway: 0, guideline: 1, reference: 2, article: 3 };
-
-function typeRank(entry: BlogIndexEntry): number {
-  return TYPE_ORDER[entry.type ?? 'article'] ?? 3;
-}
-
-/**
- * Cap on summary length in the ROUTER's view of the index.
- *
- * The router's job is discriminative — "is this entry about the user's topic?" —
- * which does not need the full summary. Full summaries averaged 269 chars and
- * made the rendered index ~81K tokens; capping at 150 brings it to ~44K (54%)
- * with no entries dropped.
- *
- * Measured with tools/test-chatbot-matching.ts (--runs 1, 2026-08-07), routing
- * did NOT degrade — it improved slightly in every arm:
- *   symptomatic (n=81):  baseline 92.6%  →  cap150 96.3%  →  cap120 93.8%
- *   supplement  (n=16):  baseline 81.3%  →  cap120 87.5%
- * Likely mechanism: less prose to scan sharpens the signal. Differences are
- * within single-run noise, so treat this as "no degradation detected" rather
- * than a proven gain — but the direction was consistent across all three.
- *
- * Only the ROUTER sees the truncated text. index.json is untouched, and
- * buildKnowledgeOverview() in chat.server.ts keeps its own 50-word cap.
- */
-const ROUTER_SUMMARY_MAX_CHARS = 150;
-
-function capSummary(s: string): string {
-  if (s.length <= ROUTER_SUMMARY_MAX_CHARS) return s;
-  const cut = s.slice(0, ROUTER_SUMMARY_MAX_CHARS);
-  // Prefer a clause boundary so we never sever mid-word.
-  for (const sep of ['. ', '; ', ', ', ' ']) {
-    const p = cut.lastIndexOf(sep);
-    if (p > ROUTER_SUMMARY_MAX_CHARS * 0.6) return cut.slice(0, p).replace(/[ ,;.]+$/, '');
-  }
-  return cut.trimEnd();
-}
-
-const ROUTER_INDEX_BLOCK: string = (() => {
-  const sorted = [...BLOG_INDEX].sort((a, b) => {
-    const tr = typeRank(a) - typeRank(b);
-    if (tr !== 0) return tr;
-    return a.handle.localeCompare(b.handle);
-  });
-  return sorted
-    .map(e => `[${e.type ?? 'article'}] ${e.handle}: ${capSummary(e.summary ?? e.title ?? '')}`)
-    .join('\n');
-})();
+// Router index block (router-view.ts): one line per entry, in a locked order.
+const ROUTER_INDEX_BLOCK = routerIndexBlock(ROUTER_VIEW);
 
 // ---------------------------------------------------------------------------
 // Router system prompt — loaded from chat-router-prompt.md with 60s TTL so
@@ -141,7 +93,7 @@ function getRouterPrompt(): string {
     // wrong size of the very list being handed to the model in the same prompt.
     cachedPrompt = fs
       .readFileSync(PROMPT_PATH, 'utf-8')
-      .replace(/\{\{ENTRY_COUNT\}\}/g, String(BLOG_INDEX.length));
+      .replace(/\{\{ENTRY_COUNT\}\}/g, String(ROUTER_VIEW.length));
     promptCachedAt = Date.now();
     return cachedPrompt;
   } catch {
