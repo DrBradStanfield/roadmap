@@ -24,6 +24,7 @@ import {
   type WriteResult,
 } from '@roadmap/health-core';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
+import { encodeStoragePath } from './storage-path';
 import { bytesToBase64, base64ToBytes } from '../lib/base64';
 
 const CONFIG_KEY = 'health_roadmap_github';
@@ -210,7 +211,7 @@ export class GitHubAdapter implements StorageAdapter {
 
   private contentsUrl(path: string): string {
     if (!this.config) throw new StorageError('GitHub is not connected.');
-    return `${API}/repos/${this.config.owner}/${this.config.repo}/contents/${path}`;
+    return `${API}/repos/${this.config.owner}/${this.config.repo}/contents/${encodeStoragePath(path)}`;
   }
 
   private headers(): Record<string, string> {

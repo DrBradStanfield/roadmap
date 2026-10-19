@@ -25,6 +25,7 @@ import {
   type WriteResult,
 } from '@roadmap/health-core';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
+import { encodeStoragePath } from './storage-path';
 import { bytesToBase64 } from '../lib/base64';
 
 const CONFIG_KEY = 'health_roadmap_selfhost';
@@ -152,7 +153,7 @@ export class WebDavAdapter implements StorageAdapter {
 
   private urlFor(path: string): string {
     if (!this.config) throw new StorageError('Self-host is not connected.');
-    return this.config.url.replace(/\/?$/, '/') + path;
+    return this.config.url.replace(/\/?$/, '/') + encodeStoragePath(path);
   }
 
   private authHeaders(): Record<string, string> {
