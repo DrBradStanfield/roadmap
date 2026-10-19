@@ -685,11 +685,16 @@ export function ReviewTable({
   const hiddenNotice = useMemo(() => {
     const n = matrix.hiddenReadings.length;
     if (n === 0) return null;
-    const byDay = new Map<string, Set<string>>();
-    for (const { label, day } of matrix.hiddenReadings) byDay.set(day, (byDay.get(day) ?? new Set()).add(label));
-    const names = [...byDay.values()].reduce((count, labels) => count + labels.size, 0);
-    const where = (day: string) => { const date = longDate(day); return date ? `on ${date}` : 'in the undated previous column'; };
-    const groups = [...byDay].map(([day, labels]) => `${[...labels].join(', ')} ${where(day)}`).join('; ');
+    // Grouped by where: a day, or every unpicked undated column as one group.
+    const undated = new Set(matrix.hiddenReadings.map(r => r.day).filter(day => !longDate(day)));
+    const byPlace = new Map<string, Set<string>>();
+    for (const { label, day } of matrix.hiddenReadings) {
+      const date = longDate(day);
+      const place = date ? `on ${date}` : `in the undated previous column${undated.size > 1 ? 's' : ''}`;
+      byPlace.set(place, (byPlace.get(place) ?? new Set()).add(label));
+    }
+    const names = [...byPlace.values()].reduce((count, labels) => count + labels.size, 0);
+    const groups = [...byPlace].map(([place, labels]) => `${[...labels].join(', ')} ${place}`).join('; ');
     return `${n} reading${n === 1 ? '' : 's'} not saved: ${groups} already ${names === 1 ? 'has' : 'have'} another reading.`;
   }, [matrix]);
 

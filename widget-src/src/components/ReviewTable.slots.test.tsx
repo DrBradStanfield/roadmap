@@ -143,6 +143,14 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
     expect(lab.notice()).toBe('1 reading not saved: Sodium in the undated previous column already has another reading.');
   });
 
+  it('several unpicked undated columns share one notice group, in the plural', () => {
+    const t = review([
+      file('a.docx', '2026-03-10', [v('hdl', 1.2, U), v('hdl', 1.4, U)]),
+      file('b.docx', '2026-04-10', [], [{ name: 'sodium', value: 139, unit: 'mmol/L', recordedAt: U }, { name: 'Sodium', value: 141, unit: 'mmol/L', recordedAt: U }]),
+    ]);
+    expect(t.notice()).toBe('2 readings not saved: HDL Cholesterol, Sodium in the undated previous columns already have another reading.');
+  });
+
   for (const order of ['differing first', 'equal first'] as const) {
     it(`one undated column with a test twice, one equal to the saved row (${order}): the differing one stays the conflict`, () => {
       const values = [v('hdl', 1.4, U), v('hdl', 1.2, U)];

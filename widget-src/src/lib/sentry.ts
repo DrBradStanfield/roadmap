@@ -53,10 +53,13 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
   // Record errors can quote clinical filenames in messages, causes and fetch
   // breadcrumbs. These captures carry only closed operation/provider tags.
   const strictArea = ['cloud-sync', 'cloud-connect', 'upload-save'].includes(String(event.tags?.area));
-  if (strictArea || event.tags?.feature === 'upload') {
+  // `upload_review`: the review's error boundary (US-13 AC9). Its breadcrumbs
+  // quote what the review showed (a Replace label names the values).
+  const strictFeature = ['upload', 'upload_review'].find(feature => feature === event.tags?.feature);
+  if (strictArea || strictFeature) {
     const { area, op, backend, branch, uploadErrorCode, cause, errorClass, httpStatus } = event.tags!;
     event.tags = {
-      ...(strictArea ? { area } : { feature: 'upload' }),
+      ...(strictArea ? { area } : { feature: strictFeature }),
       ...(['write-document', 'read-document', 'persist', 'log-off', 'copy-down', 'migrate-up', 'load'].includes(String(op)) ? { op } : {}),
       ...(['google-drive', 'dropbox', 'github', 'self-host', 'local', 'file', 'memory'].includes(String(backend)) ? { backend } : {}),
       ...(['measurements', 'documents', 'labValues'].includes(String(branch)) ? { branch } : {}),
