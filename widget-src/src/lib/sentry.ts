@@ -8,18 +8,33 @@ const SENTRY_DSN = 'https://d7664c1590ec997ebf0126ed5917fea4@o4510813459709952.i
 
 let initialized = false;
 
-/** Scrub navigation, fetch/xhr and console breadcrumbs of PII/PHI. */
-function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb): Sentry.Breadcrumb | null {
-  // Strip ALL non-primitive values from UI breadcrumbs — DOM element refs
-  // contain React fiber circular references (__reactFiber$ → stateNode → element)
-  if ((breadcrumb.category === 'ui.click' || breadcrumb.category === 'ui.input') && breadcrumb.data) {
-    const safe: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(breadcrumb.data)) {
-      if (v === null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
-        safe[k] = v;
-      }
-    }
-    breadcrumb.data = safe;
+type PathElement = { tagName?: unknown; id?: unknown; className?: unknown; parentNode?: unknown };
+
+/** The SDK's element path (up to five levels, outermost first) with tag, #id and .classes only. */
+function elementPath(target: unknown): string | undefined {
+  const parts: string[] = [];
+  for (let el = target as PathElement | null; el && typeof el.tagName === 'string' && parts.length < 5;
+    el = el.parentNode as PathElement | null) {
+    const tag = el.tagName.toLowerCase();
+    if (tag === 'html') break;
+    const classes = typeof el.className === 'string' ? el.className.split(/\s+/).filter(Boolean) : [];
+    parts.push(tag + (typeof el.id === 'string' && el.id ? `#${el.id}` : '') + classes.map(c => `.${c}`).join(''));
+  }
+  return parts.length ? parts.reverse().join(' > ') : undefined;
+}
+
+/** Scrub UI, navigation, fetch/xhr and console breadcrumbs of PII/PHI. */
+export function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb, hint?: Sentry.BreadcrumbHint): Sentry.Breadcrumb | null {
+  // The SDK names a clicked or typed-in element by its aria-label, type, name,
+  // title and alt, and a label can quote values ("Replace the saved zinc value
+  // 0.4 … with 0.7 …") that scrubText misses. Keep tag, id and classes only
+  // (US-09 AC7d). Without the element, cut at the first attribute: the SDK
+  // does not escape values, so no pattern can tell where one ends. `data`
+  // goes whole: it held DOM refs and a component name, nothing we read.
+  if (breadcrumb.category === 'ui.click' || breadcrumb.category === 'ui.input') {
+    const event = hint?.event as { target?: unknown } | undefined;
+    breadcrumb.message = elementPath(event?.target ?? event) ?? breadcrumb.message?.split('[')[0].trimEnd();
+    delete breadcrumb.data;
   }
   // Scrub fetch/xhr breadcrumbs (request bodies contain health data)
   if ((breadcrumb.category === 'fetch' || breadcrumb.category === 'xhr') && breadcrumb.data) {
