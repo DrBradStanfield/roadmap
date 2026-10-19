@@ -428,7 +428,7 @@ describe('ReviewTable — a lab printed in another unit conflicts, shows its uni
 
   it('a reading in another unit on a new date stays in its own column, its unit inside the cell (Codex R1)', () => {
     const later: FileResult[] = [{ ...upload[0], reportDate: '2025-03-01' }];
-    const { container } = render(
+    const { container, getByRole } = render(
       <ReviewTable grading={{}} results={later} history={{ measurements: [], labValues: [heldLab], documents: [] }}
         unitSystem="si" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />,
     );
@@ -440,20 +440,22 @@ describe('ReviewTable — a lab printed in another unit conflicts, shows its uni
     expect(unit?.textContent).toBe('ng/mL');
     expect(unit?.parentElement?.parentElement?.classList.contains('bt-strip-inner')).toBe(true);
     // A screen reader hears the unit the eye sees (adversary R3).
-    // ...and the SI value Save stores (US-21 AC18).
-    expect(container.querySelector('input[aria-label="Vitamin D (25-OH) value ng/mL, saved as 124.8 nmol/L"]')).not.toBeNull();
+    // ...and the SI value Save stores (US-21 AC18), from the visible text, never a label (US-13 AC10).
+    expect(getByRole('textbox', { name: 'Vitamin D (25-OH) value', description: 'ng/mL → 124.8 nmol/L' })).toBeTruthy();
   });
 
   it('50 ng/mL against a saved 50 nmol/L: one row, a conflict naming both units, and Replace saves 50 ng/mL', () => {
     const onSave = vi.fn();
-    const { container } = render(
+    const { container, getByRole } = render(
       <ReviewTable grading={{}} results={upload} history={{ measurements: [], labValues: [heldLab], documents: [] }}
         unitSystem="si" onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />,
     );
     expect(container.querySelectorAll('.bt-cell-conflict')).toHaveLength(1);
     expect(container.querySelector('.bt-cell-conflict .bt-cell-unit')?.textContent).toBe('ng/mL');
     const replace = container.querySelector<HTMLInputElement>('.bt-cell-conflict-replace input')!;
-    expect(replace.getAttribute('aria-label')).toBe('Replace the saved Vitamin D (25-OH) value 50 nmol/L with 50 ng/mL');
+    // Both sides shown and heard with their units, from the visible text (US-13 AC10).
+    expect(container.querySelector('.bt-cell-conflict-old')?.textContent).toBe('50 nmol/L');
+    expect(getByRole('checkbox', { name: 'Replace the saved Vitamin D (25-OH) value with the new one', description: '50 nmol/L 50 ng/mL' })).toBe(replace);
     fireEvent.click(replace);
     fireEvent.click(container.querySelector<HTMLButtonElement>('.review-save-btn')!);
     expect(onSave.mock.calls.at(-1)![0].labValues).toEqual([

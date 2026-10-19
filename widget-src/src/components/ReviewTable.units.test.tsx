@@ -25,9 +25,10 @@ const lab = (name: string, value: number, unit: string): FileResult[] => [{
 
 describe('US-21 AC18: a catalogued test printed in another unit shows the SI value Save stores', () => {
   it('450 pg/mL vitamin B12 shows → 332.1 pmol/L, the catalogue\'s own conversion', () => {
-    const { container } = renderReview(lab('Vitamin B12', 450, 'pg/mL'));
+    const { container, getByRole } = renderReview(lab('Vitamin B12', 450, 'pg/mL'));
     expect(container.querySelector('.bt-cell-si')?.textContent).toBe('→ 332.1 pmol/L');
-    expect(container.querySelector('input[aria-label="Vitamin B12 value, saved as 332.1 pmol/L"]')).not.toBeNull();
+    // Heard from the visible note; the label names the test only (US-13 AC10).
+    expect(getByRole('textbox', { name: 'Vitamin B12 value', description: '→ 332.1 pmol/L' })).toBeTruthy();
   });
 
   it('follows an edit: the note is the value the typed number saves', () => {

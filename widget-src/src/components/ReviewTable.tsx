@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef, memo } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, memo, useId } from 'react';
 import type { LpaUnit, UnitSystem, MetricType, MeasurementSource, ApiMeasurement, DocumentType } from '@roadmap/health-core';
 import {
   UNIT_DEFS,
@@ -1412,15 +1412,21 @@ interface MatrixCellViewProps {
 const MatrixCellView = memo(function MatrixCellView({
   cell, row, unitSystem, grading, editedValue, valueSI, validationError, onCellChange, replace, alreadySaved, onReplaceToggle,
 }: MatrixCellViewProps) {
+  // Ids of the visible text that describes the inputs: labels stay value-free (US-13 AC10).
+  const id = useId();
+  const [unitId, siId, oldId, newId] = ['unit', 'si', 'old', 'new'].map(part => `${id}${part}`);
   if (cell.state === 'empty') {
     // NBSP keeps :empty from matching — the theme has a global
     // `div:empty { display: none }` (specificity beats .bt-cell-empty).
     return <div className="bt-cell-value bt-cell-empty">{' '}</div>;
   }
   // Rows merge by slot key (US-35 AC6), so one lab row can hold readings in
-  // different units: a cell whose unit is not its row's says its own.
-  const showUnit = (unit?: string): unit is string => row.kind === 'additional' && !!unit && unit !== row.unit;
-  const unitNote = (unit?: string) => showUnit(unit) && <span className="bt-cell-unit">{unit}</span>;
+  // different units: a cell whose unit is not its row's says its own, and a
+  // conflict whose two units differ shows both, so each side is heard with its unit.
+  const unitsDiffer = cell.state === 'editable' && cell.kind === 'additional'
+    && !!cell.existing?.displayUnit && cell.existing.displayUnit !== cell.displayUnit;
+  const showUnit = (unit?: string): unit is string => row.kind === 'additional' && !!unit && (unitsDiffer || unit !== row.unit);
+  const unitNote = (unit?: string) => showUnit(unit) && <span id={unitId} className="bt-cell-unit">{unit}</span>;
   const withUnitText = (text: string, unit?: string) => (showUnit(unit) ? `${text} ${unit}` : text);
   if (cell.state === 'context') {
     return (
@@ -1458,6 +1464,7 @@ const MatrixCellView = memo(function MatrixCellView({
       valueSI={valueSI}
       validationResult={validationError}
       onChange={handleChange}
+      id={newId}
       wrapperClass={`bt-cell-input bt-cell-review${lowConfClass}`}
       note={cell.question && <span className="bt-cell-question">{cell.question}</span>}
     />
@@ -1466,31 +1473,29 @@ const MatrixCellView = memo(function MatrixCellView({
       value={editedValue}
       onChange={handleChange}
       wrapperClass="bt-cell-input bt-cell-review"
-      ariaLabel={withUnitText(`${rowName(row)} value`, cell.displayUnit) + (storedText ? `, saved as ${storedText}` : '')}
-      note={<>{unitNote(cell.displayUnit)}{storedText && <span className="bt-cell-si">→ {storedText}</span>}</>}
+      id={newId}
+      ariaLabel={`${rowName(row)} value`}
+      ariaDescribedBy={[showUnit(cell.displayUnit) && unitId, storedText && siId].filter(Boolean).join(' ') || undefined}
+      note={<>{unitNote(cell.displayUnit)}{storedText && <span id={siId} className="bt-cell-si">→ {storedText}</span>}</>}
     />
   );
 
   if (!cell.existing) return input;
   const oldText = withUnitText(cell.existing.display, cell.existing.displayUnit);
-  const newText = withUnitText(editedValue || 'the uploaded value', cell.displayUnit);
-  // A screen reader hears both units whenever they differ, even when the saved one is the row's.
-  const unitsDiffer = !isCore && !!cell.existing.displayUnit && cell.existing.displayUnit !== cell.displayUnit;
-  const heardOld = unitsDiffer ? `${cell.existing.display} ${cell.existing.displayUnit}` : oldText;
-  const heardNew = unitsDiffer ? `${editedValue || 'the uploaded value'} ${cell.displayUnit}` : newText;
 
   // Slot already holds a different saved value. Show it, show the file's, and
   // let the user assert the replacement. Layout lives in styles.css.
   return (
     <div className="bt-cell-conflict">
-      <span className="bt-value-num num bt-cell-conflict-old">{oldText}</span>
+      <span id={oldId} className="bt-value-num num bt-cell-conflict-old">{oldText}</span>
       {input}
       {!alreadySaved && <label className="bt-cell-conflict-replace">
         <input
           type="checkbox"
           checked={replace}
           onChange={(e) => onReplaceToggle(replaceKey(cell, cell.existing!), e.target.checked)}
-          aria-label={`Replace the saved ${rowName(row)} value ${heardOld} with ${heardNew}`}
+          aria-label={`Replace the saved ${rowName(row)} value with the new one`}
+          aria-describedby={[oldId, newId, showUnit(cell.displayUnit) && unitId].filter(Boolean).join(' ')}
         />
         <span aria-hidden="true">Replace</span>
       </label>}
