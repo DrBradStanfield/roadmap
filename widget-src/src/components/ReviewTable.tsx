@@ -268,7 +268,10 @@ type EditableMatrixCell =
  *  value's place in the extraction, never its column. A picked date re-keys
  *  the column, and an edit or a clear made before the pick must survive it. */
 function editId(cell: EditableMatrixCell): string {
-  return cell.kind === 'core' ? `${cell.fi}:v${cell.vi}` : `${cell.fi}:a${cell.ai}`;
+  return cell.kind === 'core' ? valueId(cell.fi, 'core', cell.vi) : valueId(cell.fi, 'additional', cell.ai);
+}
+function valueId(fi: number, kind: 'core' | 'additional', i: number): string {
+  return `${fi}:${kind === 'core' ? 'v' : 'a'}${i}`;
 }
 
 /** A Replace tick holds for one saved row only: a date moved onto another
@@ -297,6 +300,9 @@ export function buildMatrixModel(
   labValueHistory: ApiLabValue[],
   unitSystem: UnitSystem,
   metricUnitOverrides?: Partial<Record<MetricType, CellUnit>>,
+  /** Values the user edited (`editId`): never hidden as already saved. Their
+   *  cell stays editable against the saved row, judged by the edited text. */
+  touched?: { has(id: string): boolean },
 ): { columns: MatrixColumn[]; coreRows: CoreRow[]; additionalRows: AdditionalRow[]; cells: Map<string, MatrixCell> } {
   const cells = new Map<string, MatrixCell>();
   const columnsByKey = new Map<DateKey, MatrixColumn>();
@@ -315,7 +321,7 @@ export function buildMatrixModel(
    *  lab compares quantities: the record holds it in SI, the report prints its
    *  own unit, so health-core's `sameLabQuantity` converts both, as the
    *  connector does (US-35 AC6). */
-  const collide = (cellKey: string, display: string, valueSI?: number, lab?: LabQuantity): ExistingCell | 'skip' | undefined => {
+  const collide = (cellKey: string, display: string, valueSI?: number, lab?: LabQuantity, edited = false): ExistingCell | 'skip' | undefined => {
     const prev = cells.get(cellKey);
     if (!prev) return undefined;
     if (prev.state !== 'context') return 'skip';
@@ -324,7 +330,7 @@ export function buildMatrixModel(
       : lab && prev.lab
         ? sameLabQuantity(prev.lab, lab)
         : slotState(prev.displayValue, display) === 'held_equal';
-    return equal ? 'skip' : { id: prev.id, display: prev.displayValue, valueSI: prev.valueSI, lab: prev.lab, displayUnit: prev.displayUnit };
+    return equal && !edited ? 'skip' : { id: prev.id, display: prev.displayValue, valueSI: prev.valueSI, lab: prev.lab, displayUnit: prev.displayUnit };
   };
 
   const addColumn = (dateKey: DateKey, date: FullDate, source: string | null) => {
@@ -440,7 +446,7 @@ export function buildMatrixModel(
         ? cellText(metric, v.valueSI, displayFor(metric))
         : String(v.displayValue);
       if (ceded(slot)) return;
-      const existing = collide(slot, initialDisplay, v.valueSI);
+      const existing = collide(slot, initialDisplay, v.valueSI, undefined, touched?.has(valueId(fi, 'core', vi)));
       if (existing === 'skip') return;
       cells.set(cellKey, {
         state: 'editable', kind: 'core', fi, vi,
@@ -475,7 +481,7 @@ export function buildMatrixModel(
       const slot = slotFor(nameKey, av, dateKey);
       const lab = { name: av.name, value: av.value, unit: av.unit };
       if (ceded(slot)) return;
-      const existing = collide(slot, String(av.value), undefined, lab);
+      const existing = collide(slot, String(av.value), undefined, lab, touched?.has(valueId(fi, 'additional', ai)));
       if (existing === 'skip') return;
       cells.set(cellKey, {
         state: 'editable',
@@ -631,8 +637,13 @@ export function ReviewTable({
   // saveable. Cells in `context` state come from history (greyed, no edit);
   // `editable` cells come from this upload. Save selection = an editable
   // cell whose `editedDisplayValues` entry is non-empty (clear-to-skip).
+  // Per-cell edit metadata. Membership = "user touched this cell" (drives
+  // the touched-stays-on-toggle behaviour below). `display` is the row's
+  // display unit at the moment of edit, read at save time so a unit toggle
+  // *after* typing doesn't misconvert the typed value into the wrong SI.
+  const touchedRef = useRef<Map<string, { display?: CellUnit }>>(new Map());
   const matrix = useMemo(
-    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units),
+    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedRef.current),
     [results, fileDates, history.measurements, history.labValues, unitSystem, units],
   );
 
@@ -650,12 +661,6 @@ export function ReviewTable({
   const [editedDisplayValues, setEditedDisplayValues] = useState<Record<string, string>>(
     () => ({ ...initialDisplayValues }),
   );
-  // Per-cell edit metadata. Membership = "user touched this cell" (drives
-  // the touched-stays-on-toggle behaviour below). `display` is the row's
-  // display unit at the moment of edit, read at save time so a unit toggle
-  // *after* typing doesn't misconvert the typed value into the wrong SI.
-  const touchedRef = useRef<Map<string, { display?: CellUnit }>>(new Map());
-
   // Conflict cells only: "Replace the saved value with this one". Default
   // off — the record already holds a value, so replacing is the user's call.
   const [replaceChecked, setReplaceChecked] = useState<Record<string, boolean>>({});
@@ -771,6 +776,18 @@ export function ReviewTable({
   };
 
   const { cells: saveableCells, hasInvalid } = useMemo(collectSaveableCells, [matrix, editedDisplayValues, replaceChecked]);
+  /** Cells whose value as now typed is the saved row's: already saved, so no
+   *  Replace is offered and nothing saves (an edit judged by its edited value). */
+  const heldEqual = useMemo(() => {
+    const ids = new Set<string>();
+    for (const cell of matrix.cells.values()) {
+      if (cell.state !== 'editable' || !cell.existing) continue;
+      const text = (editedDisplayValues[editId(cell)] ?? cell.initialDisplay).trim();
+      const value = savedValue(cell, text);
+      if (value !== undefined && replacesNothing(cell, cell.existing, value, text)) ids.add(editId(cell));
+    }
+    return ids;
+  }, [matrix, editedDisplayValues]);
   // What each core cell shows, and the value its colour grades: the value it
   // saves (US-13 AC4), in the row's unit. Typed text is kept verbatim in the
   // unit it was typed in, so a unit toggle shows the same quantity in the new
@@ -976,6 +993,7 @@ export function ReviewTable({
           datedColumns={datedColumns}
           pickHints={pickHints}
           replaceChecked={replaceChecked}
+          heldEqual={heldEqual}
           onReplaceToggle={toggleReplace}
         />
       )}
@@ -1114,12 +1132,13 @@ interface ReviewMatrixProps {
   datedColumns: ReadonlySet<DateKey>;
   pickHints: ReadonlyMap<DateKey, string>;
   replaceChecked: Record<string, boolean>;
+  heldEqual: ReadonlySet<string>;
   onReplaceToggle: (key: string, on: boolean) => void;
 }
 
 function ReviewMatrix({
   matrix, unitSystem, metricUnitOverrides, onToggleFieldUnit, onChooseLpaUnit, grading,
-  editedDisplayValues, coreCellViews, onCellChange, onColumnDateChange, datedColumns, pickHints, replaceChecked, onReplaceToggle,
+  editedDisplayValues, coreCellViews, onCellChange, onColumnDateChange, datedColumns, pickHints, replaceChecked, heldEqual, onReplaceToggle,
 }: ReviewMatrixProps) {
   const scrollSync = useMatrixScrollSync(matrix.columns.length);
 
@@ -1155,6 +1174,7 @@ function ReviewMatrix({
             coreCellViews={coreCellViews}
             onCellChange={onCellChange}
             replaceChecked={replaceChecked}
+          heldEqual={heldEqual}
             onReplaceToggle={onReplaceToggle}
           />
         ))}
@@ -1179,6 +1199,7 @@ function ReviewMatrix({
                 coreCellViews={coreCellViews}
                 onCellChange={onCellChange}
                 replaceChecked={replaceChecked}
+          heldEqual={heldEqual}
                 onReplaceToggle={onReplaceToggle}
               />
             ))}
@@ -1237,12 +1258,13 @@ interface MatrixRowViewProps {
   coreCellViews: ReadonlyMap<string, CoreCellView>;
   onCellChange: (id: string, value: string, display?: CellUnit) => void;
   replaceChecked: Record<string, boolean>;
+  heldEqual: ReadonlySet<string>;
   onReplaceToggle: (key: string, on: boolean) => void;
 }
 
 function MatrixRowView({
   row, rowIdx, columns, cells, unitSystem, metricUnitOverrides, onToggleFieldUnit, onChooseLpaUnit,
-  grading, scrollSync, editedDisplayValues, coreCellViews, onCellChange, replaceChecked, onReplaceToggle,
+  grading, scrollSync, editedDisplayValues, coreCellViews, onCellChange, replaceChecked, heldEqual, onReplaceToggle,
 }: MatrixRowViewProps) {
   const rowKey = matrixRowKey(row);
   const rowDisplay = row.kind === 'core' ? (metricUnitOverrides?.[row.metric] ?? unitSystem) : unitSystem;
@@ -1278,6 +1300,7 @@ function MatrixRowView({
                 validationError={coreCellViews.get(id)?.error}
                 onCellChange={onCellChange}
                 replace={cell.state === 'editable' && !!cell.existing && !!replaceChecked[replaceKey(cell, cell.existing)]}
+                alreadySaved={heldEqual.has(id)}
                 onReplaceToggle={onReplaceToggle}
               />
             );
@@ -1321,12 +1344,14 @@ interface MatrixCellViewProps {
   /** Keyed by `editId`. */
   onCellChange: (id: string, value: string, display?: CellUnit) => void;
   replace: boolean;
+  /** The value as now typed is the saved row's: no Replace is offered. */
+  alreadySaved: boolean;
   /** Keyed by `replaceKey`. */
   onReplaceToggle: (key: string, on: boolean) => void;
 }
 
 const MatrixCellView = memo(function MatrixCellView({
-  cell, row, unitSystem, grading, editedValue, valueSI, validationError, onCellChange, replace, onReplaceToggle,
+  cell, row, unitSystem, grading, editedValue, valueSI, validationError, onCellChange, replace, alreadySaved, onReplaceToggle,
 }: MatrixCellViewProps) {
   if (cell.state === 'empty') {
     // NBSP keeps :empty from matching — the theme has a global
@@ -1401,7 +1426,7 @@ const MatrixCellView = memo(function MatrixCellView({
     <div className="bt-cell-conflict">
       <span className="bt-value-num num bt-cell-conflict-old">{oldText}</span>
       {input}
-      <label className="bt-cell-conflict-replace">
+      {!alreadySaved && <label className="bt-cell-conflict-replace">
         <input
           type="checkbox"
           checked={replace}
@@ -1409,7 +1434,7 @@ const MatrixCellView = memo(function MatrixCellView({
           aria-label={`Replace the saved ${rowName(row)} value ${heardOld} with ${heardNew}`}
         />
         <span aria-hidden="true">Replace</span>
-      </label>
+      </label>}
     </div>
   );
 });

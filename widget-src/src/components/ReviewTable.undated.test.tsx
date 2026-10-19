@@ -275,9 +275,34 @@ describe('US-12 AC14: an undated column never merges, and its day comes before i
     expect(save.disabled).toBe(false);
   });
 
-  it('an edit survives while its value is hidden as already saved, and saves once the day moves on', () => {
-    const held: ApiMeasurement[] = [{ id: 'held-hdl', metricType: 'hdl', value: 1.2, recordedAt: '2025-09-02T00:00:00.000Z', createdAt: '2025-09-02T00:00:00.000Z' }];
-    const { view, onSave, save, previousPicker } = renderReview(sheet('2026-03-10'), held);
+  const heldHdl = (value: number): ApiMeasurement[] => [{ id: 'held-hdl', metricType: 'hdl', value, recordedAt: '2025-09-02T00:00:00.000Z', createdAt: '2025-09-02T00:00:00.000Z' }];
+  const replaceBox = (view: ReturnType<typeof render>) => view.queryByRole('checkbox', { name: /Replace the saved hdl value/ }) as HTMLInputElement | null;
+
+  it('an edit is judged by its edited value: on a day holding the extracted value it is a conflict, Replace unticked, never hidden', () => {
+    const { view, onSave, save, previousPicker } = renderReview(sheet('2026-03-10'), heldHdl(1.2));
+    fireEvent.change(cellInput(view, '1.2'), { target: { value: '1.5' } });
+    fireEvent.change(previousPicker(), { target: { value: '2025-09-02' } });
+    expect(cellInput(view, '1.5')).toBeDefined();
+    expect(replaceBox(view)?.checked).toBe(false);
+    fireEvent.click(save);
+    expect(onSave.mock.calls[0][0].values.find((v: { metric: string }) => v.metric === 'hdl')).toBeUndefined();
+    fireEvent.click(replaceBox(view)!);
+    fireEvent.click(save);
+    expect(onSave.mock.calls[1][0].values.find((v: { metric: string }) => v.metric === 'hdl'))
+      .toMatchObject({ valueSI: 1.5, recordedAt: '2025-09-02T00:00:00.000Z', source: 'lab_import_edited', correctsId: 'held-hdl' });
+  });
+
+  it('an edit equal to the saved row is context: no Replace, nothing saved for it', () => {
+    const { view, onSave, save, previousPicker } = renderReview(sheet('2026-03-10'), heldHdl(1.0));
+    fireEvent.change(cellInput(view, '1.2'), { target: { value: '1.0' } });
+    fireEvent.change(previousPicker(), { target: { value: '2025-09-02' } });
+    expect(replaceBox(view)).toBeNull();
+    fireEvent.click(save);
+    expect(onSave.mock.calls[0][0].values.find((v: { metric: string }) => v.metric === 'hdl')).toBeUndefined();
+  });
+
+  it('an edit made on a day holding the extracted value saves once the day moves on', () => {
+    const { view, onSave, save, previousPicker } = renderReview(sheet('2026-03-10'), heldHdl(1.2));
     fireEvent.change(cellInput(view, '1.2'), { target: { value: '1.5' } });
     fireEvent.change(previousPicker(), { target: { value: '2025-09-02' } });
     fireEvent.change(previousPicker(), { target: { value: '2025-08-01' } });
