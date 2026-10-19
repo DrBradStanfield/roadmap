@@ -96,8 +96,9 @@ The author records one status per finding:
 
 A disputed BLOCKING finding stays blocking until the reviewer withdraws it,
 a verified fix lands, or Brad resolves it. Disputed optional findings need no
-further round. After two rounds, unresolved blockers go to Brad with both
-positions and the evidence.
+further round. Review rounds are capped (Brad, 2026-10-19, usage audit): one full review, then at most ONE
+re-check scoped to the fix diff and the findings it answers. Anything still unresolved after the
+re-check goes to Brad with both positions; never a third round or a fresh full re-review, with the evidence.
 
 ## Merge
 

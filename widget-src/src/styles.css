@@ -5048,6 +5048,8 @@ a.action-btn-small.action-btn-small:hover {
   justify-content: center;
   flex-shrink: 0;
 }
+/* Both blood pressure halves wrong: each error on its own line (US-13 AC10). */
+.bt-vitals-bp-inputs + .bt-cell-foot { flex-direction: column; }
 .bt-status-tick.bt-status-ok    { background: var(--bt-ok); }
 .bt-status-tick.bt-status-warn  { background: var(--bt-warn); }
 .bt-status-tick.bt-status-bad   { background: var(--bt-bad); }
@@ -5228,6 +5230,8 @@ a.action-btn-small.action-btn-small:hover {
   text-decoration: line-through;
   font-size: 0.85em;
   text-align: center;
+  /* A saved value with its unit ("99.5 mL/min/1.73m²") wraps inside the cell. */
+  overflow-wrap: anywhere;
 }
 .bt-cell-conflict-replace {
   display: flex;
@@ -5475,8 +5479,10 @@ a.action-btn-small.action-btn-small:hover {
 .lpa-check .lpa-check-note { margin-top: 8px; }
 .lpa-check-wait { align-self: center; }
 .lpa-check-status { margin: 8px 0 0; }
-/* US-04 AC1: a matrix's live region for its cells' messages; each shows in its cell. */
-.bt-cell-messages {
+/* US-04 AC1: a matrix's live region for its cells' messages; each shows in its cell.
+   US-13 AC10: a review cell's new value, mirrored as text for its Replace box. */
+.bt-cell-messages,
+.bt-cell-heard {
   position: absolute;
   width: 1px;
   height: 1px;

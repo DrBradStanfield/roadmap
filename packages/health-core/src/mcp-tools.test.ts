@@ -1259,6 +1259,19 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
     }
   });
+
+  it('US-21 AC19 — the English words in the audit\'s new test names are not test words; the tests still are', () => {
+    for (const detail of [
+      'the index page took 4 seconds', 'a gap of 2 rows', 'the absolute 3 and abs 4 values', 'average 5 clicks',
+      'the reverse 2 order', 'intact 3 times', 'gh issue 12', 'ab test 2 arms', 'sd 3 of the timings', 'the receptor 2 call was soluble 3',
+      'human 2 type 3 brain 4', 'uptake 5 percent 6', 'pro 2 plan', 'cardiac 3 combined 4',
+    ]) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
+    }
+    for (const detail of ['my lipase 40 was dropped', 'troponin 12 went missing', 'PTH 4.2 was lost', 'D-dimer 0.4 row']) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
+    }
+  });
 });
 
 

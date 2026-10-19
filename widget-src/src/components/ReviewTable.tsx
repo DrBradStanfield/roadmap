@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef, memo, type ReactNode } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, memo, useId, type ReactNode } from 'react';
 import type { LpaUnit, UnitSystem, MetricType, MeasurementSource, ApiMeasurement, DocumentType } from '@roadmap/health-core';
 import {
   UNIT_DEFS,
@@ -33,6 +33,7 @@ import { DraftDateCell } from './DraftDateCell';
 import { LpaUnitControl } from './LpaUnitControl';
 import { UnitChip } from './UnitChip';
 import { MONTHS_SHORT } from '../lib/constants';
+import { describedBy } from '../lib/aria';
 
 export interface FileResult {
   fileName: string;
@@ -552,9 +553,9 @@ export function buildMatrixModel(
   return { columns, coreRows, additionalRows, cells, hiddenReadings };
 }
 
-/** What a screen reader names the row: the metric key, or the lab row's own name (never its `lab:` key). */
+/** What a screen reader names the row: the label it shows, or the lab row's own name (never its `lab:` key). */
 function rowName(row: MatrixRow): string {
-  return row.kind === 'core' ? row.metric : row.displayName;
+  return row.kind === 'core' ? METRIC_LABELS[row.metric] || row.metric : row.displayName;
 }
 
 /** Cell key for the matrix model (used by both the cells Map and the
@@ -1304,6 +1305,13 @@ function MatrixColumnHeader({ col, set, hint, onDateChange }: { col: MatrixColum
   );
 }
 
+/** A column's date in words for a cell's label, so cells in one row read
+ *  apart: "2 Sep 2025", "Sep 2025" with no day yet, or the undated column (US-13 AC10). */
+function columnWords(date: FullDate): string {
+  if (date.undated) return 'the undated previous results';
+  return longDate(`${date.year}-${date.month.padStart(2, '0')}${date.day ? `-${date.day.padStart(2, '0')}` : ''}`) ?? 'the new column';
+}
+
 function formatColumnDate(date: FullDate): string {
   const yy = date.year.slice(-2);
   return date.day ? `${date.day} ${monthLabel(date.month)} '${yy}` : `${monthLabel(date.month)} '${yy}`;
@@ -1359,6 +1367,7 @@ function MatrixRowView({
                 key={col.dateKey}
                 cell={cell}
                 row={row}
+                columnWords={columnWords(col.date)}
                 unitSystem={rowDisplay}
                 grading={grading}
                 editedValue={coreCellViews.get(id)?.text ?? editedDisplayValues[id] ?? ''}
@@ -1401,6 +1410,8 @@ function describeRow(row: MatrixRow, display: CellUnit, grading: Grading): { lab
 interface MatrixCellViewProps {
   cell: MatrixCell;
   row: MatrixRow;
+  /** The column's date in words (`columnWords`). */
+  columnWords: string;
   unitSystem: CellUnit;
   grading: Grading;
   editedValue: string;
@@ -1417,18 +1428,24 @@ interface MatrixCellViewProps {
 }
 
 const MatrixCellView = memo(function MatrixCellView({
-  cell, row, unitSystem, grading, editedValue, valueSI, validationError, onCellChange, replace, alreadySaved, onReplaceToggle,
+  cell, row, columnWords, unitSystem, grading, editedValue, valueSI, validationError, onCellChange, replace, alreadySaved, onReplaceToggle,
 }: MatrixCellViewProps) {
+  // Ids of the text that describes the inputs: labels name the test and
+  // column, never a value (US-13 AC10).
+  const id = useId();
+  const [unitId, siId, oldId, newId] = ['unit', 'si', 'old', 'new'].map(part => `${id}${part}`);
   if (cell.state === 'empty') {
     // NBSP keeps :empty from matching — the theme has a global
     // `div:empty { display: none }` (specificity beats .bt-cell-empty).
     return <div className="bt-cell-value bt-cell-empty">{' '}</div>;
   }
   // Rows merge by slot key (US-35 AC6), so one lab row can hold readings in
-  // different units: a cell whose unit is not its row's says its own.
-  const showUnit = (unit?: string): unit is string => row.kind === 'additional' && !!unit && unit !== row.unit;
-  const unitNote = (unit?: string) => showUnit(unit) && <span className="bt-cell-unit">{unit}</span>;
-  const withUnitText = (text: string, unit?: string) => (showUnit(unit) ? `${text} ${unit}` : text);
+  // different units: a cell whose unit is not its row's says its own, and a
+  // conflict whose two units differ shows both, so each side is heard with its unit.
+  const unitsDiffer = cell.state === 'editable' && cell.kind === 'additional'
+    && !!cell.existing?.displayUnit && cell.existing.displayUnit !== cell.displayUnit;
+  const showUnit = (unit?: string): unit is string => row.kind === 'additional' && !!unit && (unitsDiffer || unit !== row.unit);
+  const unitNote = (unit?: string) => showUnit(unit) && <span id={unitId} className="bt-cell-unit">{unit}</span>;
   if (cell.state === 'context') {
     return (
       <div className="bt-cell-value bt-cell-context" title="Already saved at this date">
@@ -1455,6 +1472,8 @@ const MatrixCellView = memo(function MatrixCellView({
       : null;
     if (row && row.factor !== 1) storedText = `${row.stored.value} ${row.stored.unit}`;
   }
+  const label = `${rowName(row)} value from ${columnWords}`;
+  const newUnitShown = showUnit(cell.displayUnit);
 
   const input = isCore ? (
     <NumericInputCell
@@ -1465,6 +1484,7 @@ const MatrixCellView = memo(function MatrixCellView({
       valueSI={valueSI}
       validationResult={validationError}
       onChange={handleChange}
+      ariaLabel={label}
       wrapperClass={`bt-cell-input bt-cell-review${lowConfClass}`}
       note={cell.question && <span className="bt-cell-question">{cell.question}</span>}
     />
@@ -1473,31 +1493,30 @@ const MatrixCellView = memo(function MatrixCellView({
       value={editedValue}
       onChange={handleChange}
       wrapperClass="bt-cell-input bt-cell-review"
-      ariaLabel={withUnitText(`${rowName(row)} value`, cell.displayUnit) + (storedText ? `, saved as ${storedText}` : '')}
-      note={<>{unitNote(cell.displayUnit)}{storedText && <span className="bt-cell-si">→ {storedText}</span>}</>}
+      ariaLabel={label}
+      ariaDescribedBy={describedBy(newUnitShown && unitId, storedText && siId)}
+      note={<>{unitNote(cell.displayUnit)}{storedText && <span id={siId} className="bt-cell-si">→ {storedText}</span>}</>}
     />
   );
 
   if (!cell.existing) return input;
-  const oldText = withUnitText(cell.existing.display, cell.existing.displayUnit);
-  const newText = withUnitText(editedValue || 'the uploaded value', cell.displayUnit);
-  // A screen reader hears both units whenever they differ, even when the saved one is the row's.
-  const unitsDiffer = !isCore && !!cell.existing.displayUnit && cell.existing.displayUnit !== cell.displayUnit;
-  const heardOld = unitsDiffer ? `${cell.existing.display} ${cell.existing.displayUnit}` : oldText;
-  const heardNew = unitsDiffer ? `${editedValue || 'the uploaded value'} ${cell.displayUnit}` : newText;
+  const { display, displayUnit } = cell.existing;
 
   // Slot already holds a different saved value. Show it, show the file's, and
   // let the user assert the replacement. Layout lives in styles.css.
   return (
     <div className="bt-cell-conflict">
-      <span className="bt-value-num num bt-cell-conflict-old">{oldText}</span>
+      <span id={oldId} className="bt-value-num num bt-cell-conflict-old">{showUnit(displayUnit) ? `${display} ${displayUnit}` : display}</span>
       {input}
+      {/* The new value as text for the Replace box: a description names text, never an input (US-13 AC10). */}
+      {!alreadySaved && <span id={newId} className="bt-cell-heard">{editedValue ? `new value ${editedValue}` : 'no new value'}</span>}
       {!alreadySaved && <label className="bt-cell-conflict-replace">
         <input
           type="checkbox"
           checked={replace}
           onChange={(e) => onReplaceToggle(replaceKey(cell, cell.existing!), e.target.checked)}
-          aria-label={`Replace the saved ${rowName(row)} value ${heardOld} with ${heardNew}`}
+          aria-label={`Replace the saved ${rowName(row)} value from ${columnWords}`}
+          aria-describedby={describedBy(oldId, newId, newUnitShown && unitId)}
         />
         <span aria-hidden="true">Replace</span>
       </label>}

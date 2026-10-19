@@ -99,7 +99,8 @@ describe('ReviewTable range errors before save', () => {
     fireEvent.click(getByRole('radio', { name: 'mg/dL' }));
     expect(input.value).toBe('300.0');
     expect(input.getAttribute('aria-invalid')).toBe('true');
-    expect(input.title).toBe('Max 750 nmol/L');
+    // The visible error describes the input; no title copies it (US-13 AC10).
+    expect(getByRole('textbox', { description: 'Max 750 nmol/L' })).toBe(input);
     const save = container.querySelector<HTMLButtonElement>('.review-save-btn')!;
     expect(save.disabled).toBe(true);
     fireEvent.click(save);

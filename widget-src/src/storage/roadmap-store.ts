@@ -608,7 +608,7 @@ export class RoadmapStore {
         const ref = buildDocumentRef({
           type: doc.type,
           title: doc.title,
-          date: doc.date ?? localDay(new Date()),
+          date: doc.date,
           sourceFileName: d.sourceFileName,
           existingRefs,
         });

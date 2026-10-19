@@ -369,7 +369,7 @@ const UNIT_ATOMS = new Set([
   'mol', 'mmol', 'µmol', 'umol', 'nmol', 'pmol', 'fmol',
   'g', 'gm', 'kg', 'mg', 'µg', 'ug', 'mcg', 'ng', 'pg', 'fg',
   'l', 'dl', 'ml', 'µl', 'ul', 'mcl', 'fl', 'nl',
-  'eq', 'meq', 'kat', 'ukat', 'µkat', 'nkat', 'osm', 'mosm',
+  'eq', 'meq', 'kat', 'ukat', 'µkat', 'nkat', 'osm', 'mosm', 'osmol', 'mosmol',
   // Enzyme and international units, English and Romance spellings.
   'u', 'iu', 'miu', 'µiu', 'uiu', 'microiu', 'mciu', 'kiu', 'ku', 'mu', 'µu', 'uu', 'ui', 'mui', 'µui', 'au', 'unit', 'units',
   // Counts and what is counted.

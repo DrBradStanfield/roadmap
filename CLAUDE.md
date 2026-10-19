@@ -208,9 +208,13 @@ same commit).
   the curated list below ONLY if silent (no error, no test catches it) or
   repo-wide; domain-specific ones go to the owning loop's LEARNINGS.md.
 - **Model delegation (Brad, 2026-09-28):** the main session runs the newest Opus as orchestrator and
-  keeps the calls: clinical logic, merge semantics, FHIR shapes, security, synthesis. All delegated
-  work goes to `worker`, every adversarial check to a FRESH `adversary`: both Opus at high effort,
-  pinned in `.claude/agents/`. Spawn them by name, never with a per-call `model`; never set
+  keeps the calls: clinical logic, merge semantics, FHIR shapes, security, synthesis. Delegated work goes
+  to `worker` (Sonnet 5.5, medium; Brad 2026-10-19 usage audit); implementation touching clinical
+  logic, merge/FHIR, security or a live write path, and every knowledge-base entry
+  or web page, to `worker-opus` (Opus, medium); every adversarial
+  check to a FRESH `adversary` (Opus, medium). All pinned in `.claude/agents/`. Review rounds capped:
+  one full review + one fix-scoped re-check, then Brad (docs/review-format.md). Full 1M context kept (Brad
+  2026-10-20, no auto-compact cap); Brad compacts or `/clear`s by hand. Spawn them by name, never with a per-call `model`; never set
   `CLAUDE_CODE_SUBAGENT_MODEL`. Sonnet 5.5 (`general-purpose` + `model: sonnet`, 2026-09-29)
   does mechanical work: fetching, scraping, tool fixes, data pulls. The newest Haiku is allowed
   (2026-10-12; first use: customer-service email triage). Opus 5.5 writes every knowledge-base
