@@ -43,6 +43,9 @@ export interface NumericInputCellProps {
   /** Caller-supplied error (e.g. save failure) — takes precedence over
    *  the local validation error so retry feedback is visible inline. */
   externalError?: string | null;
+  /** Review's canonical validation: undefined uses local text validation;
+   *  null means valid, even when the rounded display exceeds a local bound. */
+  validationResult?: string | null;
   onFocus?: () => void;
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
@@ -55,10 +58,11 @@ export function NumericInputCell({
   metric, display, value, valueSI, onChange,
   wrapperClass, inputClass = 'bt-input',
   grading,
-  active, autoFocus, disabled, placeholder, ariaLabel, externalError,
+  active, autoFocus, disabled, placeholder, ariaLabel, externalError, validationResult,
   onFocus, onBlur, onKeyDown = blockBadNumericKeys, inputRef, note,
 }: NumericInputCellProps) {
-  const validationError = metric && display ? validateTypedValue(metric, value, display).error : null;
+  const validationError = validationResult !== undefined ? validationResult
+    : metric && display ? validateTypedValue(metric, value, display).error : null;
   const error = externalError ?? validationError;
   const status = !grading || error || !metric || !display
     ? null

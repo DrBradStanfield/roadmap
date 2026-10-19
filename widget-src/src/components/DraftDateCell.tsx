@@ -10,15 +10,19 @@ export interface DraftDateCellProps {
   /** ISO YYYY-MM-DD. Pass YYYY-MM-01 + needsDay when the day is unknown. */
   date: string;
   onChange: (date: string) => void;
-  /** Render "—" instead of the day digit to flag a placeholder day. */
+  /** No day chosen yet: "—" for the day, and the picker starts EMPTY.
+   *  Picking a prefilled picker's own day fires no change, so the day it
+   *  was filled with could never be chosen (US-13 AC8). */
   needsDay?: boolean;
+  /** With needsDay, a line shown instead of the date ("Pick a day in Jun 2024"). */
+  placeholder?: string;
   ariaLabel?: string;
   /** A first line above the date. The matrices say "New", so the draft
    *  column never reads as a second copy of a saved column's date. */
   label?: string;
 }
 
-export function DraftDateCell({ date, onChange, needsDay, ariaLabel, label }: DraftDateCellProps) {
+export function DraftDateCell({ date, onChange, needsDay, placeholder, ariaLabel, label }: DraftDateCellProps) {
   const ref = useRef<HTMLInputElement | null>(null);
   const d = new Date(date + 'T00:00');
   const day = d.getDate();
@@ -33,9 +37,9 @@ export function DraftDateCell({ date, onChange, needsDay, ariaLabel, label }: Dr
             title={needsDay ? 'Pick the exact day' : 'Click to change date'}
             className={`bt-cell-value bt-cell-draft-date${needsDay ? ' bt-cell-draft-date-incomplete' : ''}`}>
       {label && <span className="bt-draft-label">{label}</span>}
-      <span className="bt-date-day">{needsDay ? '—' : day} {mon}</span>
+      <span className="bt-date-day">{needsDay && placeholder ? placeholder : `${needsDay ? '—' : day} ${mon}`}</span>
       <div className="bt-draft-date-year-row">
-        <span className="bt-date-year">'{yr}</span>
+        {!(needsDay && placeholder) && <span className="bt-date-year">'{yr}</span>}
         <svg width="10" height="10" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="bt-draft-date-icon">
           <rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
           <line x1="2" y1="6.5" x2="14" y2="6.5" stroke="currentColor" strokeWidth="1.3"/>
@@ -43,7 +47,7 @@ export function DraftDateCell({ date, onChange, needsDay, ariaLabel, label }: Dr
           <line x1="11" y1="2" x2="11" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
         </svg>
       </div>
-      <input ref={ref} type="date" value={date}
+      <input ref={ref} type="date" value={needsDay ? '' : date}
              onChange={e => onChange(e.target.value)}
              className="bt-date-hidden-icon"
              aria-label={ariaLabel ?? 'Choose date'}/>

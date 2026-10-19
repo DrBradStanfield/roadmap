@@ -659,7 +659,7 @@ describe('the Lp(a) check counter', () => {
 });
 
 describe('the upload outcome counter (US-12 AC10)', () => {
-  const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, refused: 1, tooLong: 1, valuesDropped: 3, docx: 1, picturesOnly: 1 };
+  const counts = { picked: 9, withValues: 6, documentOnly: 1, noValues: 0, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 0, limitError: 0, refused: 1, tooLong: 1, valuesDropped: 3, docx: 1, picturesOnly: 1, undatedPrevious: 4 };
 
   it('takes integer counts from a browser', () => {
     expect(parseProductEvent({ eventName: 'upload_outcome', visitorId: VISITOR, metadata: counts }))
@@ -668,7 +668,7 @@ describe('the upload outcome counter (US-12 AC10)', () => {
 
   it('refuses a string, a negative, a fraction, a count over 1000 and a value-shaped field', () => {
     for (const metadata of [
-      { picked: '9' }, { openFailed: -1 }, { withValues: 1.5 }, { tooLarge: 1001 }, { valuesDropped: 1001 }, { docx: 1.5 }, { docx: 'docx' },
+      { picked: '9' }, { openFailed: -1 }, { withValues: 1.5 }, { tooLarge: 1001 }, { valuesDropped: 1001 }, { docx: 1.5 }, { docx: 'docx' }, { undatedPrevious: 1.5 }, { undatedPrevious: -1 }, { undatedPrevious: 'undated' },
       { picked: 1, fileName: 'report.pdf' }, { picked: 1, unit: 'mmol/L' }, { picked: 1, value: 4.2 },
     ]) {
       expect(

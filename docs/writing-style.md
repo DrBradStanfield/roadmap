@@ -33,6 +33,8 @@ Source: Wikipedia "Signs of AI writing" (Aug 2026), distilled to what matters fo
 
 **Formulaic wrap-ups.** No "In summary / In conclusion / Overall", no paragraph restating what the reader just read (once-and-done), no "Despite these challenges…" pivots, no "Future outlook" sections.
 
+**Narrator meta vs Brad's signposts (scripts; Brad 2026-10-19).** Banned AI narrator meta: compressed aphorisms ("Supplements face the same wall"), recap stacks, "And in [year] came the X", "Here's the difference / Here's the change", one-word verdict fragments ("Encouraging."), self-praising "honest", and the staged self-correction "I had thought most of this came from cells in a dish. It didn't." Allowed, because Brad writes them himself: plain viewer-directed signposts that name the next subject, his verdict or an earlier set-up ("Which brings us to astaxanthin.", "So here's my take on Lp(a).", "Here are 5 potential explanations." (a numbered list inside one section, only after the opening paragraph of Section 2, per `writing-rules-voice.md` Rule 30's position test), "But I don't think so, and here's why.", "Let's keep going to find out.", "As I mentioned earlier…"). The test: does the line name the next subject, question or verdict (allowed), or the script's structure, meaning or a recap (banned)? Don't flag Brad's signposts in a style audit.
+
 **Hedging filler.** "It's important to note", "it's worth noting", "keep in mind", "that said". Either the point earns its own sentence or it goes.
 
 **Formatting tells** (blogs/emails/X): no bold-header bullet lists ("**Speed:** it's fast") as a default structure — write prose; no title-case headings (sentence case); no emoji as section decoration; bold at most one phrase per screen of text.
