@@ -83,11 +83,11 @@ export function reportExtractionStop(
  * Throws ExtractionStopError on a refusal or a max_tokens stop; `undefined`
  * means the answer will not parse.
  */
-function readExtraction(result: AnthropicResult): UnifiedExtractionResult | undefined {
+function readExtraction(result: AnthropicResult, mode: DocumentPromptMode): UnifiedExtractionResult | undefined {
   const stop = extractionStopCode(result.stopReason);
   if (stop) throw new ExtractionStopError(stop, result.refusalCategory);
   try {
-    return toUnifiedResult(parseUnifiedResult(parseExtractionJson(result.content)));
+    return toUnifiedResult(parseUnifiedResult(parseExtractionJson(result.content)), mode);
   } catch {
     // The error CLASS only, never its message: a SyntaxError quotes ~10 chars
     // of the model's answer and Zod names the values it received — both are
@@ -130,7 +130,7 @@ export async function extractOrClassify(
   };
 
   for (let call = 1; ; call++) {
-    const parsed = readExtraction(await fetchAnthropicRaw(apiKey, body, left(), opts.httpAttempts));
+    const parsed = readExtraction(await fetchAnthropicRaw(apiKey, body, left(), opts.httpAttempts), documentMode);
     if (parsed) return parsed;
     // A fixed message and no `cause`: Sentry serialises it (api.lab-import-v2).
     if (call >= 2) throw new Error('extraction returned malformed JSON');
@@ -627,7 +627,7 @@ export async function pollBatch(
       if (entry.result?.type === 'succeeded') {
         const m = entry.result.message ?? {};
         try {
-          const parsed = readExtraction(toResult(m.content ?? [], toUsage(m.usage), m.stop_reason ?? undefined, m.stop_details?.category));
+          const parsed = readExtraction(toResult(m.content ?? [], toUsage(m.usage), m.stop_reason ?? undefined, m.stop_details?.category), 'full');
           if (parsed) {
             resultMap.set(index, { ...parsed, index });
             continue;

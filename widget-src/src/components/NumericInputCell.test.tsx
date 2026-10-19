@@ -25,11 +25,11 @@ describe('NumericInputCell validation authority', () => {
 
   it('shows an authoritative canonical error instead of the rounded-local error', () => {
     const { getByRole } = render(<NumericInputCell {...props} validationResult="Canonical error" />);
-    expect(getByRole('textbox').getAttribute('title')).toBe('Canonical error');
+    expect(getByRole('textbox', { description: 'Canonical error' }).getAttribute('title')).toBeNull();
   });
 
   it('keeps external save errors ahead of an explicit valid result', () => {
     const { getByRole } = render(<NumericInputCell {...props} validationResult={null} externalError="Save failed" />);
-    expect(getByRole('textbox').getAttribute('title')).toBe('Save failed');
+    expect(getByRole('textbox', { description: 'Save failed' }).getAttribute('title')).toBeNull();
   });
 });

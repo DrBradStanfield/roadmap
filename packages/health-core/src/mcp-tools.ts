@@ -42,6 +42,7 @@ import {
   slotState,
   stampUpdatedAt,
   type EditRejection,
+  validDay,
 } from './record-edits';
 import type { FileDocument, FileLabValue, FileMeasurement, RoadmapFile, RoadmapProfile } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
@@ -1313,12 +1314,6 @@ function alreadyImportedHint(match: ImportedMatch | null): string {
 function fromDocument(text: string | undefined | null): string | undefined {
   const clean = oneLine(text ?? '').replace(/\s+/g, ' ').trim().slice(0, MAX_DOCUMENT_TEXT);
   return clean || undefined;
-}
-
-/** A calendar day the record will slot a value on — the appends' own rule; null when absent or refused. */
-function validDay(day: string | null | undefined, ctx: EditContext): string | null {
-  const resolved = day ? resolveRecordedAt(day, ctx) : null;
-  return typeof resolved === 'string' ? resolved : null;
 }
 
 /** What a candidate finds in its slot (AC6): a core metric by its displayed string, a lab by quantity (`sameLabQuantity`, the website's rule too). */

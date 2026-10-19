@@ -17,7 +17,7 @@
 // doesn't carry, so they live here. Everything else reuses the `.bt-*` CSS,
 // the matrix's `Sparkline`, `NumericInputCell`, `DraftDateCell`, and `UnitChip`.
 
-import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import {
   type ApiMeasurement,
   type HealthInputs,
@@ -44,6 +44,7 @@ import {
   validateTypedValue,
 } from '../lib/blood-test-cell';
 import { VITALS_DRAFT_KEY } from '../lib/storage';
+import { describedBy } from '../lib/aria';
 import { useDraftMirror, useMatrixDraft, type CellRef } from '../lib/useMatrixDraft';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
@@ -745,6 +746,12 @@ function BpInputCell({
   const sysError = validateTypedValue('systolic_bp', sys, 'si').error ?? clash;
   const diaError = validateTypedValue('diastolic_bp', dia, 'si').error ?? clash;
   const error = sysError ?? diaError;
+  // Each half's visible error describes it; a title would be captured with
+  // the page (US-13 AC10). One error for the pair (a clash) shows once, and
+  // when it falls to the diastolic line it describes both halves.
+  const id = useId();
+  const [sysErrorId, diaErrorId] = [`${id}sys`, `${id}dia`];
+  const diaOwnError = diaError && diaError !== sysError;
   // `bt-cell-value` carries the fixed column width (flex: 0 0 var(--bt-value-w)).
   // The backfill branch was missing it, so an empty BP slot collapsed to its
   // content width (~33px) and pushed every column to its right out of
@@ -766,18 +773,18 @@ function BpInputCell({
       <div className="bt-vitals-bp-inputs">
         <input ref={sysRef} className={`bt-input${active ? ' bt-input-active' : ''}${sysError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="sys" size={1} aria-label="Systolic blood pressure"
-               aria-invalid={!!sysError} title={sysError ?? undefined}
+               aria-invalid={!!sysError} aria-describedby={describedBy(sysError && sysErrorId, diaOwnError && diaError === clash && diaErrorId)}
                value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey}/>
         <span className="bt-vitals-bp-sep">/</span>
         <input ref={diaRef} className={`bt-input${active ? ' bt-input-active' : ''}${diaError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="dia" size={1} aria-label="Diastolic blood pressure"
-               aria-invalid={!!diaError} title={diaError ?? undefined}
+               aria-invalid={!!diaError} aria-describedby={describedBy(diaError && (diaOwnError ? diaErrorId : sysErrorId))}
                value={dia} onChange={e => handleDiaChange(e.target.value)} onKeyDown={onKey}/>
       </div>
       <div className="bt-cell-foot">
-        {error
-          ? <span className="bt-input-error-text">{error}</span>
-          : <span className={`bt-status-tick bt-status-${previewStatus ?? 'none'}`}/>}
+        {sysError && <span id={sysErrorId} className="bt-input-error-text">{sysError}</span>}
+        {diaOwnError && <span id={diaErrorId} className="bt-input-error-text">{diaError}</span>}
+        {!error && <span className={`bt-status-tick bt-status-${previewStatus ?? 'none'}`}/>}
       </div>
     </div>
   );

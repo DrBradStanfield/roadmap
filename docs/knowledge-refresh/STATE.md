@@ -33,10 +33,10 @@ Every batch: AC8 signed by Brad (sheets signoff-*.md); answer checks (AC5) pre-r
 3. Batch 4 onward: next 20 changed pathways by traffic from ~/Documents/knowledge-refresh-recovery/runs/traffic-ranking-2026-10-14.csv (about 550 changed pathways remain; refresh-manifest.csv in the raw folder).
 
 ## Batch recipe (as run for batch 3)
-1. Handles file + empty exceptions file; one Opus `worker` per entry with docs/knowledge-refresh/writer-brief-batch-3.md (HANDLE in the prompt; own scratch folder), at most 5 in flight; commit each entry as it lands; orchestrator notes in batch-N-notes.md.
+1. Handles file + empty exceptions file; one `worker-opus` per entry with docs/knowledge-refresh/writer-brief-batch-3.md (HANDLE in the prompt; own scratch folder), at most 5 in flight; commit each entry as it lands; orchestrator notes in batch-N-notes.md.
 2. One Sonnet fixer: report records (AC2/AC4) + style, urgency and comparator audit (brief: ~/Documents/knowledge-refresh-recovery/runs/batch-3-fixer-brief.md).
 3. One Sonnet currency check against Medsafe data sheets (runs/currency-brief.md; ruling 13); the orchestrator rules each item in batch-N-currency-*.md.
-4. One Opus worker applies style, urgency, comparator and accepted currency fixes; orchestrator files exceptions (data-sheet numbers, scrape defects, house lines).
+4. One `worker-opus` (Opus) applies style, urgency, comparator and accepted currency fixes; orchestrator files exceptions (data-sheet numbers, scrape defects, house lines).
 5. Review branch built FRESH from origin/main (fetch first) holding only the batch; raws staged under refresh-2026-09-29/batch-pathways-N/{new,april} (two --include folders cannot share a name); fresh Opus `adversary` + Codex (`--range origin/main..<review-branch>`) in parallel; rulings in batch-N-review-fixes-*.md; one Opus worker applies; Codex round 2; cap two rounds.
 6. Sonnet writes 40 answer fixtures (notes quote our entries, never the raw).
 7. Sign-off sheet (signoff-batch-N.md), Brad's AC8.
