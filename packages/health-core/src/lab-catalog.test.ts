@@ -1108,3 +1108,72 @@ describe('US-21 AC19/AC20 — review round: osmolality and reverse T3 spellings,
     else expect(result).toMatchObject({ value: stored, unit: 'mmol/L' });
   });
 });
+
+// ---------------------------------------------------------------------------
+// US-21 AC21 — a value no human sample reaches is a unit printed a prefix away
+// (Brad 2026-10-20: a real sheet printed free testosterone in "nmol/L" with a
+// pmol/L number and range, which converted ×1000 to an impossible result).
+// ---------------------------------------------------------------------------
+describe('US-21 AC21 — a per-test ceiling refuses a mislabelled prefix', () => {
+  const entryOf = (name: string) => resolveLabCatalogEntry(name)!;
+  const NOTE = 'Free testosterone above 10,000 pmol/L is not a measured value, so the printed unit is probably wrong (nmol/L vs pmol/L). Check the report, then type it in';
+
+  it('US-21 AC21 — free T 312.6 nmol/L with range 163–473 nmol/L is refused, never rescaled', () => {
+    const row = { value: 312.6, unit: 'nmol/L', referenceLow: 163, referenceHigh: 473 };
+    expect(canonicalLabRow(entryOf('Free Testosterone'), row)).toBeNull();
+    expect(labCountFault(entryOf('Free Testosterone'), row)).toBe('ceiling');
+  });
+
+  it('US-21 AC21 — free T 0.45 nmol/L converts to 450 pmol/L; 312 pmol/L is stored as printed', () => {
+    expect(canonicalLabRow(entryOf('Free Testosterone'), { value: 0.45, unit: 'nmol/L', referenceLow: 0.163, referenceHigh: 0.473 }))
+      .toEqual({ stored: { value: 450, unit: 'pmol/L', referenceLow: 163, referenceHigh: 473 }, factor: 1000 });
+    expect(canonicalLabRow(entryOf('Free Testosterone'), { value: 312, unit: 'pmol/L', referenceLow: 163, referenceHigh: 473 }))
+      .toMatchObject({ stored: { value: 312, unit: 'pmol/L' }, factor: 1 });
+  });
+
+  it('US-21 AC21 — a value in range is refused when the printed high bound converts above the ceiling', () => {
+    // 5 nmol/L is 5000 pmol/L, under the ceiling; 473 nmol/L is not.
+    const row = { value: 5, unit: 'nmol/L', referenceLow: 163, referenceHigh: 473 };
+    expect(canonicalLabRow(entryOf('Free Testosterone'), row)).toBeNull();
+    expect(labCountFault(entryOf('Free Testosterone'), row)).toBe('ceiling');
+  });
+
+  // Review R1 (2026-10-20): the ceiling catches a WRONG CONVERSION, so a row
+  // printed in the canonical unit is never refused by it (a real free T on
+  // heavy androgen use can pass 10,000 pmol/L).
+  it('US-21 AC21 — only a converted row meets the ceiling: 11,000 pmol/L is stored, 11 nmol/L is refused', () => {
+    expect(canonicalLabRow(entryOf('Free Testosterone'), { value: 11000, unit: 'pmol/L', referenceLow: 163, referenceHigh: 473 }))
+      .toMatchObject({ stored: { value: 11000, unit: 'pmol/L' }, factor: 1 });
+    expect(labCountFault(entryOf('Free Testosterone'), { value: 11000, unit: 'pmol/L' })).toBeNull();
+    expect(canonicalLabRow(entryOf('Free Testosterone'), { value: 11, unit: 'nmol/L' })).toBeNull();
+    expect(labCountFault(entryOf('Free Testosterone'), { value: 11, unit: 'nmol/L' })).toBe('ceiling');
+    // The range-high trigger likewise: a canonical high bound past the ceiling stores.
+    expect(canonicalLabRow(entryOf('Free Testosterone'), { value: 300, unit: 'pmol/L', referenceLow: 163, referenceHigh: 12000 }))
+      .toMatchObject({ stored: { value: 300, referenceHigh: 12000 }, factor: 1 });
+    expect(canonicalLabRow(entryOf('Reticulocytes'), { value: 2500, unit: 'G/L' })).toMatchObject({ stored: { value: 2500 }, factor: 1 });
+    // A real unit that is not a prefix step is never blamed: a US lab's 2,900 pg/mL is 10,054 pmol/L.
+    expect(labCountFault(entryOf('Free Testosterone'), { value: 2900, unit: 'pg/mL' })).toBeNull();
+    expect(canonicalLabRow(entryOf('Free Testosterone'), { value: 2900, unit: 'pg/mL' })).toMatchObject({ stored: { value: 10054.3 } });
+  });
+
+  it('US-21 AC21 — the other prefix-reachable tests carry their ceilings; troponin carries none', () => {
+    expect(Object.fromEntries(LAB_CATALOG.filter((e) => e.ceiling !== undefined).map((e) => [e.key, e.ceiling]))).toEqual({
+      free_testosterone: 10000, free_testosterone_calculated: 10000, reverse_t3: 10000, c_peptide: 50000, reticulocytes: 2000,
+    });
+    expect(canonicalLabRow(entryOf('Reverse T3'), { value: 230, unit: 'nmol/L' })).toBeNull();
+    expect(canonicalLabRow(entryOf('C-peptide'), { value: 600, unit: 'nmol/L' })).toBeNull();
+    expect(canonicalLabRow(entryOf('Reticulocytes'), { value: 50, unit: '×10¹²/L' })).toBeNull();
+    // A troponin in µg/L that converts to tens of thousands of ng/L is a real result.
+    expect(canonicalLabRow(entryOf('hs troponin t'), { value: 25, unit: 'µg/L', referenceLow: 0, referenceHigh: 14 }))
+      .toMatchObject({ stored: { value: 25000, unit: 'ng/L', referenceHigh: 14000 }, factor: 1000 });
+    expect(labCountFault(entryOf('hs troponin t'), { value: 25, unit: 'µg/L', referenceHigh: 14 })).toBeNull();
+  });
+
+  it('US-21 AC21 — the refusal names the test, the printed unit and what to check, never the number', () => {
+    expect(labUnitRefusalNote(entryOf('Free Testosterone'), 'nmol/L', 'ceiling')).toBe(NOTE);
+    const message = labUnitRefusal(entryOf('Free Testosterone'), 'nmol/L', 'ceiling');
+    expect(message).toContain('the printed unit is probably wrong (nmol/L vs pmol/L)');
+    expect(message).toContain('do not re-send it in another unit on your own');
+    expect(message).not.toContain('312');
+  });
+});

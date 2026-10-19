@@ -824,3 +824,33 @@ describe('US-21 AC15 — cells/µL at the write doors', () => {
     expect(result.message).toContain('absolute count (×10⁹/L or cells/µL)');
   });
 });
+
+// ---------------------------------------------------------------------------
+// US-21 AC21 — a row above its test's ceiling is refused at every write door
+// ---------------------------------------------------------------------------
+describe('US-21 AC21 — the ceiling at the write doors', () => {
+  it('US-21 AC21 — the append, the bulk save and a correction refuse free T printed in nmol/L with pmol/L numbers', () => {
+    const appended = appendLabValue(base(), {
+      metricName: 'Free Testosterone', value: 312.6, unit: 'nmol/L', referenceLow: 163, referenceHigh: 473, recordedAt: '2026-08-14', now: NOW,
+    });
+    expect(appended.ok).toBe(false);
+    if (!appended.ok) {
+      expect(appended.reason).toBe('unknown-unit');
+      expect(appended.message).toContain('probably wrong (nmol/L vs pmol/L)');
+      expect(appended.message).not.toContain('312');
+    }
+
+    const bulk = bulkAppendValues(base(), [
+      { kind: 'lab', metricName: 'Free Testosterone', value: 312.6, unit: 'nmol/L', referenceLow: 163, referenceHigh: 473, recordedAt: '2026-08-14', source: 'lab_import' },
+      { kind: 'lab', metricName: 'Free Testosterone', value: 0.45, unit: 'nmol/L', recordedAt: '2026-08-15', source: 'lab_import' },
+    ], NOW);
+    expect(bulk.saved).toHaveLength(1);
+    expect(bulk.saved[0]).toMatchObject({ value: 450, unit: 'pmol/L', recordedAt: '2026-08-15' });
+    expect(bulk.refused).toEqual([{ key: 'free_testosterone', unit: 'nmol/L', message: expect.stringContaining('not a measured value'), fault: 'ceiling' }]);
+
+    const id = bulk.saved[0].id;
+    const corrected = correctValue(bulk.file, { id, newValue: 312.6, unit: 'nmol/L', now: NOW });
+    expect(corrected.ok).toBe(false);
+    if (!corrected.ok) expect(corrected.message).toContain('not a measured value');
+  });
+});

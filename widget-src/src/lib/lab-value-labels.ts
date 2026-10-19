@@ -16,6 +16,7 @@ export function labUnitRefusalLine(key: string, unit: string, fault?: LabUnitRef
   const entry = resolveLabCatalogEntry(key);
   const note = labUnitRefusalNote(entry, unit, fault);
   if (fault === 'scale') return `${labValueLabel(key)}: ${note}.`;
+  if (fault === 'ceiling') return `${note}.`;
   const takes = entry ? ` This test takes ${entry.unit}.` : '';
   const lead = labUnitTaken(entry, unit)
     ? `${labValueLabel(key)}: the number was not saved.`

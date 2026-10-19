@@ -12,7 +12,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LAB_CONVERSIONS } from './lab-catalog';
+import { LAB_CATALOG, LAB_CONVERSIONS } from './lab-catalog';
 
 const DOC_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -70,5 +70,19 @@ describe('the documented lab conversion table is the code table', () => {
     const documented = documentedRows();
     expect(new Set(documented).size).toBe(documented.length);
     expect(documented.length).toBe(coded.length);
+  });
+});
+
+// US-21 AC21 review R4 (2026-10-20): the §2 ceiling sentence and the code's
+// `ceiling` values are one list, pinned both ways like the factor table.
+describe('the documented lab ceilings are the code ceilings (US-21 AC21)', () => {
+  it('US-21 AC21 — every ceiling, key, number and unit, appears in §2 and nowhere else', () => {
+    const md = readFileSync(DOC_PATH, 'utf8');
+    const bullet = md.split('\n').find((l) => l.startsWith('- **A value no human sample reaches is refused**'));
+    expect(bullet, 'the §2 ceiling bullet must exist').toBeTruthy();
+    const documented = [...bullet!.matchAll(/`([a-z0-9_]+)` ([\d,]+) (\S+?)[,.]/g)]
+      .map(([, key, n, unit]) => `${key} ${Number(n.replace(/,/g, ''))} ${unit}`).sort();
+    const coded = LAB_CATALOG.filter((e) => e.ceiling !== undefined).map((e) => `${e.key} ${e.ceiling} ${e.unit}`).sort();
+    expect(documented).toEqual(coded);
   });
 });
