@@ -20,6 +20,7 @@
 import {
   ConflictError,
   StorageError,
+  fetchOrFail,
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
@@ -84,7 +85,7 @@ export class WebDavAdapter implements StorageAdapter {
   // --- file ops -------------------------------------------------------------
 
   async read(fileName: string): Promise<ReadResult> {
-    const res = await fetch(this.urlFor(fileName), { headers: this.authHeaders() });
+    const res = await fetchOrFail('Self-host', this.urlFor(fileName), { headers: this.authHeaders() });
     if (res.status === 404) return { body: null, version: null };
     if (!res.ok) throw new StorageError(`Self-host read failed (${res.status}): ${await res.text()}`);
     const etag = res.headers.get('etag');
