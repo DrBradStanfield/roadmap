@@ -185,7 +185,7 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
     const context = Array.from(t.view.container.querySelectorAll('.bt-cell-context .bt-value-num')).map(e => e.textContent);
     expect(context).toContain('130');
     // The differing diastolic is a conflict, Replace unticked.
-    expect((t.view.getByRole('checkbox', { name: /Replace the saved diastolic_bp value/ }) as HTMLInputElement).checked).toBe(false);
+    expect((t.view.getByRole('checkbox', { name: /Replace the saved Diastolic BP value/ }) as HTMLInputElement).checked).toBe(false);
     fireEvent.click(t.save());
     expect(t.onSave).toHaveBeenCalledTimes(0);
   });
@@ -194,11 +194,11 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
     const t = review([file('a.docx', '2026-03-10', [v('hdl', 1.2, U)])], [held('H', 'hdl', 1.2, '2025-09-02')]);
     fireEvent.change(t.input('1.2'), { target: { value: '1.5' } });
     t.pick('2025-09-02');
-    fireEvent.click(t.view.getByRole('checkbox', { name: /Replace the saved hdl value/ }));
+    fireEvent.click(t.view.getByRole('checkbox', { name: /Replace the saved HDL Cholesterol value/ }));
     fireEvent.change(t.input('1.5'), { target: { value: '1.2' } });
-    expect(t.view.queryByRole('checkbox', { name: /Replace the saved hdl value/ })).toBeNull();
+    expect(t.view.queryByRole('checkbox', { name: /Replace the saved HDL Cholesterol value/ })).toBeNull();
     fireEvent.change(t.input('1.2'), { target: { value: '1.7' } });
-    expect((t.view.getByRole('checkbox', { name: /Replace the saved hdl value/ }) as HTMLInputElement).checked).toBe(false);
+    expect((t.view.getByRole('checkbox', { name: /Replace the saved HDL Cholesterol value/ }) as HTMLInputElement).checked).toBe(false);
   });
 
   it('the header names every limit: the printed month and the report day', () => {

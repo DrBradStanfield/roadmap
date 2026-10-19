@@ -441,7 +441,7 @@ describe('ReviewTable — a lab printed in another unit conflicts, shows its uni
     expect(unit?.parentElement?.parentElement?.classList.contains('bt-strip-inner')).toBe(true);
     // A screen reader hears the unit the eye sees (adversary R3).
     // ...and the SI value Save stores (US-21 AC18), from the visible text, never a label (US-13 AC10).
-    expect(getByRole('textbox', { name: 'Vitamin D (25-OH) value', description: 'ng/mL → 124.8 nmol/L' })).toBeTruthy();
+    expect(getByRole('textbox', { name: 'Vitamin D (25-OH) value from 1 Mar 2025', description: 'ng/mL → 124.8 nmol/L' })).toBeTruthy();
   });
 
   it('50 ng/mL against a saved 50 nmol/L: one row, a conflict naming both units, and Replace saves 50 ng/mL', () => {
@@ -455,7 +455,7 @@ describe('ReviewTable — a lab printed in another unit conflicts, shows its uni
     const replace = container.querySelector<HTMLInputElement>('.bt-cell-conflict-replace input')!;
     // Both sides shown and heard with their units, from the visible text (US-13 AC10).
     expect(container.querySelector('.bt-cell-conflict-old')?.textContent).toBe('50 nmol/L');
-    expect(getByRole('checkbox', { name: 'Replace the saved Vitamin D (25-OH) value with the new one', description: '50 nmol/L 50 ng/mL' })).toBe(replace);
+    expect(getByRole('checkbox', { name: 'Replace the saved Vitamin D (25-OH) value from 1 Feb 2025', description: '50 nmol/L new value 50 ng/mL' })).toBe(replace);
     fireEvent.click(replace);
     fireEvent.click(container.querySelector<HTMLButtonElement>('.review-save-btn')!);
     expect(onSave.mock.calls.at(-1)![0].labValues).toEqual([

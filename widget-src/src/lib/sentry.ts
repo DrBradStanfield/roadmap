@@ -30,8 +30,8 @@ function elementPath(target: unknown): string | undefined {
 /** Scrub UI, navigation, fetch/xhr and console breadcrumbs of PII/PHI. */
 export function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb, hint?: Sentry.BreadcrumbHint): Sentry.Breadcrumb | null {
   // The SDK names a clicked or typed-in element by its aria-label, type, name,
-  // title and alt, and a label can quote values ("Replace the saved zinc value
-  // 0.4 … with 0.7 …") that scrubText misses. Keep tag, id and classes only
+  // title and alt, and a label can quote values that scrubText misses (the
+  // review's Replace label did, "… zinc value 0.4 … with 0.7 …", until US-13 AC10). Keep tag, id and classes only
   // (US-09 AC7d), minus the classes that encode a value. Without the element,
   // cut at the first attribute: the SDK does not escape values, so no pattern
   // can tell where one ends. `data` goes whole: it held DOM refs and a
@@ -75,7 +75,7 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
   // breadcrumbs. These captures carry only closed operation/provider tags.
   const strictArea = ['cloud-sync', 'cloud-connect', 'upload-save'].includes(String(event.tags?.area));
   // `upload_review`: the review's error boundary (US-13 AC9). Its breadcrumbs
-  // quote what the review showed (a Replace label names the values).
+  // can quote what the review showed (its Replace label named the values until US-13 AC10).
   const strictFeature = ['upload', 'upload_review'].find(feature => feature === event.tags?.feature);
   if (strictArea || strictFeature) {
     const { area, op, backend, branch, uploadErrorCode, cause, errorClass, httpStatus } = event.tags!;

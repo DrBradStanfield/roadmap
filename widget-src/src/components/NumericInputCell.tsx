@@ -8,6 +8,7 @@
 import { useId } from 'react';
 import type React from 'react';
 import type { MetricType } from '@roadmap/health-core';
+import { describedBy } from '../lib/aria';
 import {
   type CellUnit,
   type Grading,
@@ -41,9 +42,8 @@ export interface NumericInputCellProps {
   disabled?: boolean;
   placeholder?: string;
   ariaLabel?: string;
-  /** The input's id, and the ids of visible text that describes it. The
-   *  label stays value-free; values are heard from that text (US-13 AC10). */
-  id?: string;
+  /** Ids of visible text that describes the input. The label stays
+   *  value-free; values are heard from that text (US-13 AC10). */
   ariaDescribedBy?: string;
   /** Caller-supplied error (e.g. save failure) — takes precedence over
    *  the local validation error so retry feedback is visible inline. */
@@ -63,7 +63,7 @@ export function NumericInputCell({
   metric, display, value, valueSI, onChange,
   wrapperClass, inputClass = 'bt-input',
   grading,
-  active, autoFocus, disabled, placeholder, ariaLabel, id, ariaDescribedBy, externalError, validationResult,
+  active, autoFocus, disabled, placeholder, ariaLabel, ariaDescribedBy, externalError, validationResult,
   onFocus, onBlur, onKeyDown = blockBadNumericKeys, inputRef, note,
 }: NumericInputCellProps) {
   const errorId = useId();
@@ -95,11 +95,10 @@ export function NumericInputCell({
         onFocus={onFocus}
         onBlur={onBlur}
         placeholder={placeholder}
-        id={id}
         aria-label={ariaLabel}
         aria-invalid={!!error}
         // The visible error, not a title: a title is captured with the page (US-13 AC10).
-        aria-describedby={[ariaDescribedBy, error && errorId].filter(Boolean).join(' ') || undefined}
+        aria-describedby={describedBy(ariaDescribedBy, error && errorId)}
         autoFocus={autoFocus}
         disabled={disabled}
         className={`${inputClass}${active ? ' bt-input-active' : ''}${error ? ' bt-input-error' : ''}`}

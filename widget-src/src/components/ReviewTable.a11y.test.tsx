@@ -2,14 +2,17 @@
 /**
  * US-13 AC10: the review's accessibility text never stores a value. Session
  * replay and error tools capture aria-label, title and alt, so those name
- * tests only. A screen reader still hears the values: the Replace box and a
- * lab input are described (aria-describedby) by the visible text that shows
- * them. Synthetic values; test names without digits, so any digit is a value.
+ * tests and dates only; the date, in words, tells columns apart. A screen
+ * reader still hears the values through aria-describedby: a lab input from
+ * its visible notes, the Replace box from the visible saved value and a
+ * hidden line mirroring the new one (text, never the input itself).
+ * Synthetic values; test names without digits, so any other digit is a value.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import type { ApiMeasurement } from '@roadmap/health-core';
 import type { ApiLabValue } from '../lib/api-types';
+import { a11yTextWithDigits } from '../testing/a11y-text';
 import { ReviewTable, type FileResult } from './ReviewTable';
 
 afterEach(cleanup);
@@ -39,57 +42,78 @@ const history = {
   documents: [],
 };
 
-function renderReview() {
-  return render(<ReviewTable grading={{}} results={results} history={history}
+function renderReview(files: FileResult[] = results) {
+  return render(<ReviewTable grading={{}} results={files} history={history}
     unitSystem="si" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />);
 }
 
-/** Every label-like attribute in the review, with its text. */
-const labelText = (root: HTMLElement) =>
-  [...root.querySelectorAll('[aria-label], [title], [alt], [aria-valuetext]')].flatMap(el =>
-    ['aria-label', 'title', 'alt', 'aria-valuetext'].map(a => el.getAttribute(a)).filter((t): t is string => t !== null));
+const ON = 'from 10 Mar 2026';
 
 describe('US-13 AC10: no aria-label, title or alt holds a value', () => {
-  it('conflicts, context, converted and refused units, edits and a validation error: no digit in any label', () => {
+  it('conflicts, context, converted and refused units, edits and a validation error: no number but a date in any label', () => {
     const view = renderReview();
     // The fixture really has each case on screen.
     expect(view.container.querySelectorAll('.bt-cell-conflict')).toHaveLength(2);
     expect(view.container.querySelectorAll('.bt-cell-context').length).toBeGreaterThanOrEqual(2);
     expect(view.container.querySelectorAll('.bt-cell-si')).toHaveLength(2);
-    expect(labelText(view.container)).not.toHaveLength(0);
-    expect(labelText(view.container).filter(t => /\d/.test(t))).toEqual([]);
+    expect(view.getByRole('textbox', { name: `HDL Cholesterol value ${ON}` })).toBeTruthy(); // a date is allowed
+    expect(a11yTextWithDigits(view.container)).toEqual([]);
 
-    const [hdl, albumin] = ['1.4', '4'].map(v =>
-      [...view.container.querySelectorAll<HTMLInputElement>('.bt-cell-input input')].find(i => i.value === v)!);
+    const [hdl, albumin] = ['1.4', '4'].map(v => view.getByDisplayValue(v));
     fireEvent.change(albumin, { target: { value: '5' } });
     fireEvent.change(hdl, { target: { value: '999' } }); // out of range: an inline error
     expect(view.container.querySelector('.bt-input-error-text')).not.toBeNull();
-    expect(labelText(view.container).filter(t => /\d/.test(t))).toEqual([]);
+    expect(a11yTextWithDigits(view.container)).toEqual([]);
+  });
+
+  it('the scan still catches a value beside a date', () => {
+    const root = document.createElement('div');
+    root.innerHTML = '<input aria-label="HDL value from 2 Sep 2025"><span title="Sep 2025"></span><b aria-label="HDL 1.2 from 2 Sep 2025"></b>';
+    expect(a11yTextWithDigits(root)).toEqual(['HDL 1.2 from 2 Sep 2025']);
   });
 });
 
-describe('US-13 AC10: a screen reader hears the values through the visible text', () => {
-  it('the Replace box is named by the test and described by the saved value and the new one', () => {
+describe('US-13 AC10: a screen reader hears the values through text', () => {
+  /** Every element an aria-describedby names: text, never an input. */
+  const describers = (el: HTMLElement) =>
+    (el.getAttribute('aria-describedby') ?? '').split(' ').filter(Boolean).map(id => document.getElementById(id)!);
+
+  it('the Replace box is named by the test and its date, and described by the saved value and the new one', () => {
     const view = renderReview();
-    const hdl = view.getByRole('checkbox', { name: 'Replace the saved hdl value with the new one' });
-    expect(view.getByRole('checkbox', { description: '1.2 1.4' })).toBe(hdl);
+    const hdl = view.getByRole('checkbox', { name: `Replace the saved HDL Cholesterol value ${ON}` });
+    expect(view.getByRole('checkbox', { description: '1.2 new value 1.4' })).toBe(hdl);
+    expect(describers(hdl).map(el => el.tagName)).toEqual(['SPAN', 'SPAN']);
     fireEvent.change(view.getByDisplayValue('1.4'), { target: { value: '1.6' } });
-    expect(view.getByRole('checkbox', { description: '1.2 1.6' })).toBe(hdl);
+    expect(view.getByRole('checkbox', { description: '1.2 new value 1.6' })).toBe(hdl);
   });
 
   it('a lab saved in another unit: both units are shown and heard', () => {
     const view = renderReview();
-    const iron = view.getByRole('checkbox', { name: 'Replace the saved Iron value with the new one' });
-    expect(view.getByRole('checkbox', { description: '15 µmol/L 100 µg/dL' })).toBe(iron);
+    const iron = view.getByRole('checkbox', { name: `Replace the saved Iron value ${ON}` });
+    expect(view.getByRole('checkbox', { description: '15 µmol/L new value 100 µg/dL' })).toBe(iron);
+    expect(describers(iron).every(el => el.tagName === 'SPAN')).toBe(true);
     const conflict = iron.closest('.bt-cell-conflict')!;
     expect(conflict.querySelector('.bt-cell-conflict-old')?.textContent).toBe('15 µmol/L');
     expect(conflict.querySelector('.bt-cell-unit')?.textContent).toBe('µg/dL');
-    expect(view.getByRole('textbox', { name: 'Iron value', description: 'µg/dL → 17.9 µmol/L' })).toBeTruthy();
+    expect(view.getByRole('textbox', { name: `Iron value ${ON}`, description: 'µg/dL → 17.9 µmol/L' })).toBeTruthy();
   });
 
-  it('a lab input is named by its test and described by the value Save stores', () => {
+  it('a lab input is named by its test and date, and described by the value Save stores', () => {
     const view = renderReview();
-    expect(view.getByRole('textbox', { name: 'Albumin value', description: '→ 40 g/L' })).toBeTruthy();
+    expect(view.getByRole('textbox', { name: `Albumin value ${ON}`, description: '→ 40 g/L' })).toBeTruthy();
+  });
+
+  it('one test in three columns: each input names its own column, the undated one in words', () => {
+    const view = renderReview([{
+      fileName: 'labs.pdf', reportDate: DAY, additionalValues: [],
+      values: [core('ldl', 3.1), { ...core('ldl', 3.0), recordedAt: '2025-09-02' }],
+    }, {
+      fileName: 'old.docx', reportDate: '2025-06-10', additionalValues: [], values: [{ ...core('ldl', 2.9), recordedAt: 'undated' }],
+    }]);
+    for (const name of ['from 10 Mar 2026', 'from 2 Sep 2025', 'from the undated previous results']) {
+      expect(view.getByRole('textbox', { name: `LDL Cholesterol value ${name}` })).toBeTruthy();
+    }
+    expect(a11yTextWithDigits(view.container)).toEqual([]);
   });
 
   it('a validation error describes its input; it is not a title', () => {

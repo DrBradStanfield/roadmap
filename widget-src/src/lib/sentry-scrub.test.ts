@@ -134,8 +134,9 @@ describe('scrubEvent — navigation breadcrumbs', () => {
 });
 
 // US-09 AC7d: the SDK names a clicked or typed-in element by its aria-label,
-// type, name, title and alt. The upload review's Replace checkbox is labelled
-// "Replace the saved <name> value <old> with <new>", and scrubText misses
+// type, name, title and alt. The upload review's Replace checkbox was labelled
+// "Replace the saved <name> value <old> with <new>" until US-13 AC10; any label
+// may still quote a value, and scrubText misses
 // values in units it does not know. Only tag, id and classes may leave.
 describe('scrubBreadcrumb — ui.click and ui.input element names', () => {
   const LABEL = 'Replace the saved zinc value 0.4 weird with 0.7 weird';

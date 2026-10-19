@@ -28,7 +28,7 @@ describe('US-21 AC18: a catalogued test printed in another unit shows the SI val
     const { container, getByRole } = renderReview(lab('Vitamin B12', 450, 'pg/mL'));
     expect(container.querySelector('.bt-cell-si')?.textContent).toBe('→ 332.1 pmol/L');
     // Heard from the visible note; the label names the test only (US-13 AC10).
-    expect(getByRole('textbox', { name: 'Vitamin B12 value', description: '→ 332.1 pmol/L' })).toBeTruthy();
+    expect(getByRole('textbox', { name: 'Vitamin B12 value from 10 Mar 2026', description: '→ 332.1 pmol/L' })).toBeTruthy();
   });
 
   it('follows an edit: the note is the value the typed number saves', () => {

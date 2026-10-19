@@ -164,9 +164,9 @@ describe('US-12 AC14: an undated previous column waits for the user\'s date', ()
     const held = (id: string, day: string): ApiMeasurement => ({ id, metricType: 'hdl', value: 1.0, recordedAt: `${day}T00:00:00.000Z`, createdAt: `${day}T00:00:00.000Z` });
     const { view, onSave, save, previousPicker } = renderReview(sheet('2026-03-10'), [held('held-a', '2025-09-02'), held('held-b', '2025-08-01')]);
     fireEvent.change(previousPicker(), { target: { value: '2025-09-02' } });
-    fireEvent.click(view.getByRole('checkbox', { name: /Replace the saved hdl value/ }));
+    fireEvent.click(view.getByRole('checkbox', { name: /Replace the saved HDL Cholesterol value/ }));
     fireEvent.change(previousPicker(), { target: { value: '2025-08-01' } });
-    expect((view.getByRole('checkbox', { name: /Replace the saved hdl value/ }) as HTMLInputElement).checked).toBe(false);
+    expect((view.getByRole('checkbox', { name: /Replace the saved HDL Cholesterol value/ }) as HTMLInputElement).checked).toBe(false);
     fireEvent.click(save);
     expect(onSave.mock.calls[0][0].values.find((v: { metric: string }) => v.metric === 'hdl')).toBeUndefined();
   });
@@ -276,7 +276,7 @@ describe('US-12 AC14: an undated column never merges, and its day comes before i
   });
 
   const heldHdl = (value: number): ApiMeasurement[] => [{ id: 'held-hdl', metricType: 'hdl', value, recordedAt: '2025-09-02T00:00:00.000Z', createdAt: '2025-09-02T00:00:00.000Z' }];
-  const replaceBox = (view: ReturnType<typeof render>) => view.queryByRole('checkbox', { name: /Replace the saved hdl value/ }) as HTMLInputElement | null;
+  const replaceBox = (view: ReturnType<typeof render>) => view.queryByRole('checkbox', { name: /Replace the saved HDL Cholesterol value/ }) as HTMLInputElement | null;
 
   it('an edit is judged by its edited value: on a day holding the extracted value it is a conflict, Replace unticked, never hidden', () => {
     const { view, onSave, save, previousPicker } = renderReview(sheet('2026-03-10'), heldHdl(1.2));
