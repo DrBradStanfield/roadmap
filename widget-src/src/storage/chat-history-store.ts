@@ -23,6 +23,8 @@ import {
 } from '@roadmap/health-core';
 import type { StorageAdapter } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
+import { LocalStorageAdapter, localEraseGeneration } from './local-storage-adapter';
+import { ConflictError } from '@roadmap/health-core';
 import { SyncManager, type DocumentSpec } from '@roadmap/health-core';
 
 /** What the conversation list shows — everything but the message bodies. */
@@ -56,16 +58,26 @@ export class ChatHistoryStore {
   private constructor(
     private readonly sync: SyncManager<ChatHistoryFile>,
     private file: ChatHistoryFile,
+    private readonly localAdapter?: LocalStorageAdapter,
+    private localGeneration: string | null = null,
   ) {}
 
   /** Load chat history from the given backend and return a ready store. */
   static async create(adapter: StorageAdapter): Promise<ChatHistoryStore> {
     const sync = new SyncManager(adapter, getDeviceId(), CHAT_HISTORY_DOC);
+    if (adapter instanceof LocalStorageAdapter) {
+      // Read a content-free cleanup fence with the local chat snapshot. It
+      // survives roadmap removal and does not parse unrelated health data.
+      const generation = localEraseGeneration();
+      const file = migrateChatHistoryFile(adapter.readSync(CHAT_HISTORY_DOC.fileName).body, chatContext());
+      return new ChatHistoryStore(sync, file, adapter, generation);
+    }
     return new ChatHistoryStore(sync, await sync.load());
   }
 
   /** Live (non-deleted) conversation summaries, newest first. */
   listConversations(): ChatConversationSummary[] {
+    this.refreshLocalAfterErase();
     return this.liveConversations().map(({ id, title, createdAt, updatedAt }) => ({
       id,
       title,
@@ -75,6 +87,7 @@ export class ChatHistoryStore {
   }
 
   getMessages(conversationId: string): ChatFileMessage[] {
+    this.refreshLocalAfterErase();
     const conv = this.file.conversations.find((c) => c.id === conversationId);
     return conv && !conv.deleted ? conv.messages : [];
   }
@@ -96,6 +109,7 @@ export class ChatHistoryStore {
     /** A fallback or refusal line: stored so the dedup never re-serves it after a reload. */
     isFallback?: boolean;
   }): Promise<void> {
+    this.refreshLocalAfterErase();
     const now = new Date().toISOString();
     const messages: ChatFileMessage[] = [
       { id: `u-${Date.now()}`, role: 'user', content: opts.userText, createdAt: now },
@@ -128,6 +142,7 @@ export class ChatHistoryStore {
 
   /** Tombstone a conversation (monotonic — merge keeps it deleted everywhere). */
   async deleteConversation(conversationId: string): Promise<void> {
+    this.refreshLocalAfterErase();
     const conv = this.file.conversations.find((c) => c.id === conversationId);
     if (!conv || conv.deleted) return;
     tombstone(conv);
@@ -142,6 +157,7 @@ export class ChatHistoryStore {
    * rule — the title is the last of the user's own words in this file.
    */
   async eraseAll(): Promise<void> {
+    this.refreshLocalAfterErase();
     if (this.file.conversations.length === 0) return; // nothing to tombstone
     const now = new Date().toISOString();
     for (const conv of this.file.conversations) tombstone(conv, now);
@@ -160,7 +176,40 @@ export class ChatHistoryStore {
     for (const conv of this.liveConversations().slice(CHAT_HISTORY_MAX_CONVERSATIONS)) tombstone(conv);
   }
 
+  /** On local erase, replace the entire stale working copy before appending
+   * new chat. Never merge pre-erase ids into the now-missing chat file. */
+  private refreshLocalAfterErase(): void {
+    if (!this.localAdapter) return;
+    const generation = localEraseGeneration();
+    if (generation === this.localGeneration) return;
+    this.file = migrateChatHistoryFile(this.localAdapter.readSync(CHAT_HISTORY_DOC.fileName).body, chatContext());
+    this.localGeneration = generation;
+  }
+
   private async persist(): Promise<void> {
+    if (this.localAdapter) {
+      // No await between checking the erase fence, merging and writing. This
+      // preserves the local adapter's existing best-effort CAS semantics and
+      // avoids an async continuation carrying a pre-erase snapshot back in.
+      for (let attempt = 0; attempt < 5; attempt++) {
+        this.refreshLocalAfterErase();
+        const { body, version } = this.localAdapter.readSync(CHAT_HISTORY_DOC.fileName);
+        const ctx = chatContext();
+        const merged = mergeChatHistoryFiles(this.file, migrateChatHistoryFile(body, ctx), ctx);
+        try {
+          this.localAdapter.writeSync(CHAT_HISTORY_DOC.fileName, merged, version);
+          this.file = merged;
+          return;
+        } catch (error) {
+          if (!(error instanceof ConflictError) || attempt === 4) throw error;
+        }
+      }
+      return;
+    }
     this.file = (await this.sync.save(this.file)).file;
   }
+}
+
+function chatContext(): { deviceId: string; now: string } {
+  return { deviceId: getDeviceId(), now: new Date().toISOString() };
 }
