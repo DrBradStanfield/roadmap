@@ -1151,6 +1151,9 @@ describe('US-21 AC21 — a per-test ceiling refuses a mislabelled prefix', () =>
     expect(canonicalLabRow(entryOf('Free Testosterone'), { value: 300, unit: 'pmol/L', referenceLow: 163, referenceHigh: 12000 }))
       .toMatchObject({ stored: { value: 300, referenceHigh: 12000 }, factor: 1 });
     expect(canonicalLabRow(entryOf('Reticulocytes'), { value: 2500, unit: 'G/L' })).toMatchObject({ stored: { value: 2500 }, factor: 1 });
+    // A real unit that is not a prefix step is never blamed: a US lab's 2,900 pg/mL is 10,054 pmol/L.
+    expect(labCountFault(entryOf('Free Testosterone'), { value: 2900, unit: 'pg/mL' })).toBeNull();
+    expect(canonicalLabRow(entryOf('Free Testosterone'), { value: 2900, unit: 'pg/mL' })).toMatchObject({ stored: { value: 10054.3 } });
   });
 
   it('US-21 AC21 — the other prefix-reachable tests carry their ceilings; troponin carries none', () => {

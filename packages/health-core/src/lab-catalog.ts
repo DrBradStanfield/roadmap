@@ -535,8 +535,8 @@ export function labCountFault(
   const spelling = normalizeLabUnit(row.unit).toLowerCase();
   const fault = countRowFault(entry, spelling, row.value, row.referenceLow, row.referenceHigh);
   const factor = factorOf(entry, spelling);
-  if (fault || entry.ceiling === undefined || factor === undefined || factor === 1) return fault;
-  // A converted value or printed high bound past the ceiling (US-21 AC21); a factor-1 row is as printed.
+  if (fault || entry.ceiling === undefined || factor === undefined || factor < 1000) return fault;
+  // A value or printed high bound past the ceiling after a ×1000 prefix step (US-21 AC21); any other spelling is a real unit.
   return [row.value, row.referenceHigh].some((n) => typeof n === 'number' && n * factor > entry.ceiling!) ? 'ceiling' : null;
 }
 
