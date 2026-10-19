@@ -480,7 +480,9 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
     // A park the provider refuses: the refusal stands, and Sentry hears status and class only.
     vi.mocked(Sentry.captureMessage).mockClear();
     adapter.write = async (...args) => { throw new StorageError(`Dropbox write failed (429): ${args[0]}`, undefined, undefined, 429); };
+    order.length = 0;
     expect(await surface.stash(PAYLOAD, deadline())).toEqual({ refusal: expect.stringMatching(/could not be parked/) });
+    expect(order).toEqual([]); // no sweep after a refused park
     expect(Sentry.captureMessage).toHaveBeenCalledWith('mcp_import: candidates not parked', {
       level: 'warning', tags: { feature: 'mcp_import', errorClass: 'StorageError', httpStatus: 429 },
     });
