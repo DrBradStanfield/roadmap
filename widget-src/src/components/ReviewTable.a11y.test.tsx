@@ -6,7 +6,7 @@
  * reader still hears the values through aria-describedby: a lab input from
  * its visible notes, the Replace box from the visible saved value and a
  * hidden line mirroring the new one (text, never the input itself).
- * Synthetic values; test names without digits, so any other digit is a value.
+ * Synthetic values. A test's own name may hold a digit (HbA1c); any other is a value.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
@@ -66,10 +66,11 @@ describe('US-13 AC10: no aria-label, title or alt holds a value', () => {
     expect(a11yTextWithDigits(view.container)).toEqual([]);
   });
 
-  it('the scan still catches a value beside a date', () => {
+  it('the scan still catches a value beside a date or a row\'s name, and a name the page does not show', () => {
     const root = document.createElement('div');
-    root.innerHTML = '<input aria-label="HDL value from 2 Sep 2025"><span title="Sep 2025"></span><b aria-label="HDL 1.2 from 2 Sep 2025"></b>';
-    expect(a11yTextWithDigits(root)).toEqual(['HDL 1.2 from 2 Sep 2025']);
+    root.innerHTML = '<div class="bt-name-label">Vitamin B12</div><input aria-label="Vitamin B12 value from 2 Sep 2025">'
+      + '<span title="Sep 2025"></span><b aria-label="Vitamin B12 1.2 from 2 Sep 2025"></b><i aria-label="Vitamin B13 value"></i>';
+    expect(a11yTextWithDigits(root)).toEqual(['Vitamin B12 1.2 from 2 Sep 2025', 'Vitamin B13 value']);
   });
 });
 
@@ -113,6 +114,22 @@ describe('US-13 AC10: a screen reader hears the values through text', () => {
     for (const name of ['from 10 Mar 2026', 'from 2 Sep 2025', 'from the undated previous results']) {
       expect(view.getByRole('textbox', { name: `LDL Cholesterol value ${name}` })).toBeTruthy();
     }
+    expect(a11yTextWithDigits(view.container)).toEqual([]);
+  });
+
+  it('a report dated with a month only: its inputs name the month', () => {
+    const view = renderReview([{ fileName: 'labs.pdf', reportDate: '2025-09', additionalValues: [], values: [core('ldl', 3.1)] }]);
+    expect(view.getByRole('textbox', { name: 'LDL Cholesterol value from Sep 2025' })).toBeTruthy();
+  });
+
+  it('a test whose own name has a digit: the name is allowed, a value is not', () => {
+    const view = renderReview([{
+      fileName: 'labs.pdf', reportDate: DAY,
+      values: [{ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol', confidence: 'high' }],
+      additionalValues: [{ name: 'Vitamin B12', value: 450, unit: 'pg/mL' }],
+    }]);
+    expect(view.getByRole('textbox', { name: `HbA1c value ${ON}` })).toBeTruthy();
+    expect(view.getByRole('textbox', { name: `Vitamin B12 value ${ON}` })).toBeTruthy();
     expect(a11yTextWithDigits(view.container)).toEqual([]);
   });
 

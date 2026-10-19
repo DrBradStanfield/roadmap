@@ -747,7 +747,8 @@ function BpInputCell({
   const diaError = validateTypedValue('diastolic_bp', dia, 'si').error ?? clash;
   const error = sysError ?? diaError;
   // Each half's visible error describes it; a title would be captured with
-  // the page (US-13 AC10). One error for the pair (a clash) shows once.
+  // the page (US-13 AC10). One error for the pair (a clash) shows once, and
+  // when it falls to the diastolic line it describes both halves.
   const id = useId();
   const [sysErrorId, diaErrorId] = [`${id}sys`, `${id}dia`];
   const diaOwnError = diaError && diaError !== sysError;
@@ -772,7 +773,7 @@ function BpInputCell({
       <div className="bt-vitals-bp-inputs">
         <input ref={sysRef} className={`bt-input${active ? ' bt-input-active' : ''}${sysError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="sys" size={1} aria-label="Systolic blood pressure"
-               aria-invalid={!!sysError} aria-describedby={describedBy(sysError && sysErrorId)}
+               aria-invalid={!!sysError} aria-describedby={describedBy(sysError && sysErrorId, diaOwnError && diaError === clash && diaErrorId)}
                value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey}/>
         <span className="bt-vitals-bp-sep">/</span>
         <input ref={diaRef} className={`bt-input${active ? ' bt-input-active' : ''}${diaError ? ' bt-input-error' : ''}`}

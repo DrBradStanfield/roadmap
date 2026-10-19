@@ -9,6 +9,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import type { ApiMeasurement } from '@roadmap/health-core';
 import { VITALS_DRAFT_KEY } from '../lib/storage';
 import { a11yTextWithDigits } from '../testing/a11y-text';
+import { SAME_SLOT } from './BloodTestTimeline';
 import { StartingInfoVitals } from './StartingInfoVitals';
 
 afterEach(() => { cleanup(); localStorage.clear(); });
@@ -49,19 +50,32 @@ describe('US-13 AC10: a blood pressure error describes its input; it is not a ti
     expect(a11yTextWithDigits(view.container)).toEqual([]);
   });
 
-  it('one error for the pair (the day already holds a blood pressure): shown once, describing both inputs', () => {
+  /** A kept draft typed before today's reading was saved: its cell is taken, a clash (US-03 AC2). */
+  function renderTaken(sys: string) {
     const now = new Date();
     const today = [now.getFullYear(), now.getMonth() + 1, now.getDate()].map(n => String(n).padStart(2, '0')).join('-');
     const row = (id: string, metricType: string, value: number) =>
       ({ id, metricType, value, recordedAt: `${today}T00:00:00.000Z`, createdAt: `${today}T00:00:00.000Z`, status: 'active' as const });
-    // A kept draft typed before today's reading was saved: its cell is taken (US-03 AC2).
-    localStorage.setItem(VITALS_DRAFT_KEY, JSON.stringify({ draft: { values: { sys: '130' } }, backfills: {}, meta: {} }));
+    localStorage.setItem(VITALS_DRAFT_KEY, JSON.stringify({ draft: { values: { sys } }, backfills: {}, meta: {} }));
     const view = renderVitals([row('s', 'systolic_bp', 120), row('d', 'diastolic_bp', 80)]);
-    const draft = view.container.querySelector('.bt-cell-draft .bt-vitals-bp-inputs')!;
+    return { view, draft: view.container.querySelector('.bt-cell-draft .bt-vitals-bp-inputs')! };
+  }
+
+  it('one error for the pair (the day already holds a blood pressure): shown once, describing both inputs', () => {
+    const { draft } = renderTaken('130');
     const shown = [...draft.parentElement!.querySelectorAll('.bt-input-error-text')].map(e => e.textContent!);
     expect(shown).toHaveLength(1);
     for (const input of draft.querySelectorAll('input')) {
       expect(document.getElementById(input.getAttribute('aria-describedby')!)?.textContent).toBe(shown[0]);
     }
+  });
+
+  it('a systolic range error and the clash: both shown, the clash describing both inputs', () => {
+    const { view, draft } = renderTaken('999');
+    const [range, clash] = [...draft.parentElement!.querySelectorAll('.bt-input-error-text')].map(e => e.textContent!);
+    expect(range).toBe('Max 250 mmHg');
+    expect(clash).toBe(SAME_SLOT);
+    expect(view.getByRole('textbox', { name: 'Systolic blood pressure', description: `${range} ${clash}` })).toBeTruthy();
+    expect(view.getByRole('textbox', { name: 'Diastolic blood pressure', description: clash })).toBeTruthy();
   });
 });
