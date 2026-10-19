@@ -26,6 +26,7 @@ import {
   type WriteResult,
 } from '@roadmap/health-core';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
+import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64 } from '../lib/base64';
 
 const CONFIG_KEY = 'health_roadmap_selfhost';
@@ -125,7 +126,10 @@ export class WebDavAdapter implements StorageAdapter {
   }
 
   async readDocument(ref: string): Promise<Blob> {
-    const res = await fetch(this.urlFor(ref), { headers: this.authHeaders() });
+    const url = this.urlFor(ref);
+    let res = await fetch(url, { headers: this.authHeaders() });
+    const legacy = res.status === 404 ? legacyDocumentUrl(url, this.urlFor(''), ref) : null;
+    if (legacy) res = await fetch(legacy, { headers: this.authHeaders() });
     if (!res.ok) throw new StorageError(`Self-host document read failed (${res.status}).`);
     return res.blob();
   }
@@ -153,7 +157,7 @@ export class WebDavAdapter implements StorageAdapter {
 
   private urlFor(path: string): string {
     if (!this.config) throw new StorageError('Self-host is not connected.');
-    return this.config.url.replace(/\/?$/, '/') + path;
+    return this.config.url.replace(/\/?$/, '/') + encodeStoragePath(path);
   }
 
   private authHeaders(): Record<string, string> {
