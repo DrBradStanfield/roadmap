@@ -97,12 +97,15 @@ interface ReviewTableProps {
   error: string | null;
 }
 
-/** Full date state: day/month/year. Day is null when the LLM didn't extract
- *  one; month and year are empty only for an undated previous column (US-12 AC14). */
+/** Full date state: day/month/year. Day is null when the LLM didn't extract one. */
 interface FullDate {
   day: string | null; // "01"-"31" or null
   month: string;      // "1"-"12"
   year: string;       // "2024"
+  /** An undated previous column the user has not dated yet (US-12 AC14):
+   *  month and year are empty, and `printedMonth` (YYYY-MM) is a hint only. */
+  undated?: true;
+  printedMonth?: string;
 }
 
 /** A printed date as review state. A day is kept only if it exists in its
@@ -117,9 +120,14 @@ function parseReportDate(dateStr: string | null): FullDate {
   return { day: m[3] && isCalendarDay(`${m[1]}-${m[2]}-${m[3]}`) ? m[3] : null, month: m[2], year: m[1] };
 }
 
-/** The date of an undated previous column until the user picks one: no month,
- *  so it never shares a column with the report's or any month's (US-12 AC14). */
-const NO_DATE: FullDate = { day: null, month: '', year: '' };
+/** The date of an undated previous column until the user picks one: no
+ *  month, so it never shares a column with the report's or any month's (US-12 AC14). */
+const undatedDate = (printedMonth?: string): FullDate => ({ day: null, month: '', year: '', undated: true, printedMonth });
+
+/** "Jun" for "6" or "06". */
+function monthLabel(month: string): string {
+  return MONTHS_SHORT.find(m => m.value === month.padStart(2, '0'))?.label ?? month;
+}
 
 /** A column's date when it is a calendar day that has happened, else null:
  *  only then is it set, and Save allowed (US-13 AC8). */
@@ -332,12 +340,13 @@ export function buildMatrixModel(
   /** A value's date: its own printed day when it has one (US-12 AC12), else
    *  its file's. The date state holds only what the user picked; a printed day
    *  nobody edited is read from the value itself. */
-  const valueDate = (fi: number, recordedAt?: string): FullDate | undefined =>
-    recordedAt ? fileDates[dateSource(fi, recordedAt)] ?? (recordedAt === UNDATED_PREVIOUS ? NO_DATE : parseReportDate(recordedAt)) : fileDates[fi];
+  type Dated = { recordedAt?: string; printedMonth?: string };
+  const valueDate = (fi: number, { recordedAt, printedMonth }: Dated): FullDate | undefined =>
+    recordedAt ? fileDates[dateSource(fi, recordedAt)] ?? (recordedAt === UNDATED_PREVIOUS ? undatedDate(printedMonth) : parseReportDate(recordedAt)) : fileDates[fi];
   /** An undated previous column is keyed by its file until the user dates it (US-12 AC14). */
-  const valueDateKey = (fi: number, recordedAt?: string): DateKey | null => {
-    const date = valueDate(fi, recordedAt);
-    return !date ? null : date.month ? buildDatePrefix(date) : `undated:${fi}`;
+  const valueDateKey = (fi: number, v: Dated): DateKey | null => {
+    const date = valueDate(fi, v);
+    return !date ? null : date.undated ? `undated:${fi}` : buildDatePrefix(date);
   };
 
   // 1) Seed columns + cells from existing history (greyed context). A blood
@@ -349,7 +358,7 @@ export function buildMatrixModel(
   //    matrix, off the date axis. One rule for the seeding and the overlay.
   const bloodTestSet = new Set<string>(BLOOD_TEST_METRICS);
   const vitalSet = new Set<string>(VITAL_METRICS);
-  const uploadDates = new Set(results.flatMap((r, fi) => [...r.values, ...r.additionalValues].map(v => valueDateKey(fi, v.recordedAt))));
+  const uploadDates = new Set(results.flatMap((r, fi) => [...r.values, ...r.additionalValues].map(v => valueDateKey(fi, v))));
   for (const m of measurementHistory) {
     const dateKey = m.recordedAt.slice(0, 10);
     const metric = m.metricType as MetricType;
@@ -399,15 +408,15 @@ export function buildMatrixModel(
      *  equal, is never taken by a previous-column read. */
     const ceded = (cellKey: string) => (previous ? claimed.has(cellKey) : (claimed.add(cellKey), false));
     /** The column a value lands in: its own date's (US-12 AC12) or its file's. */
-    const columnFor = (recordedAt?: string): DateKey | null => {
-      const dateKey = valueDateKey(fi, recordedAt);
-      if (dateKey) addColumn(dateKey, valueDate(fi, recordedAt)!, dateSource(fi, recordedAt));
+    const columnFor = (v: Dated): DateKey | null => {
+      const dateKey = valueDateKey(fi, v);
+      if (dateKey) addColumn(dateKey, valueDate(fi, v)!, dateSource(fi, v.recordedAt));
       return dateKey;
     };
 
     r.values.forEach((v, vi) => {
       if (!!v.recordedAt !== previous) return;
-      const dateKey = columnFor(v.recordedAt);
+      const dateKey = columnFor(v);
       if (!dateKey) return;
       const metric = v.metric as MetricType;
       coreMetricsSeen.add(metric);
@@ -431,7 +440,7 @@ export function buildMatrixModel(
 
     r.additionalValues.forEach((av, ai) => {
       if (!!av.recordedAt !== previous) return;
-      const dateKey = columnFor(av.recordedAt);
+      const dateKey = columnFor(av);
       if (!dateKey) return;
       const nameKey = normaliseLabName(av.name);
       if (!additionalByKey.has(nameKey)) {
@@ -474,7 +483,7 @@ export function buildMatrixModel(
   //    every cell, so every cell needs a row (US-12 AC11). Additional rows alphabetic.
   //    An undated previous column comes first: it is older than its report.
   const columns = Array.from(columnsByKey.values())
-    .sort((a, b) => Number(!!a.date.month) - Number(!!b.date.month) || a.dateKey.localeCompare(b.dateKey));
+    .sort((a, b) => Number(!a.date.undated) - Number(!b.date.undated) || a.dateKey.localeCompare(b.dateKey));
   const coreRows: CoreRow[] = [...BLOOD_TEST_METRICS, ...VITAL_METRICS]
     .filter(m => coreMetricsSeen.has(m as MetricType))
     .map(m => ({ kind: 'core' as const, metric: m as MetricType }));
@@ -811,7 +820,7 @@ export function ReviewTable({
     setFileDates(prev => {
       const next = { ...prev };
       for (const source of col.sources) {
-        const merged = { ...(prev[source] ?? col.date), ...update };
+        const merged: FullDate = { ...(prev[source] ?? col.date), ...update, undated: undefined, printedMonth: undefined };
         if (merged.day) {
           const maxDay = getDaysInMonth(merged.month, merged.year);
           if (parseInt(merged.day) > maxDay) merged.day = String(maxDay);
@@ -1147,40 +1156,23 @@ function MatrixColumnHeader({ col, set, onDateChange }: { col: MatrixColumn; set
     const parsed = parseIsoToFullDate(picked);
     if (parsed) onDateChange(col, parsed);
   };
-  if (set) {
-    return <DraftDateCell date={fullDateToIso(col.date)} ariaLabel="Choose column date" onChange={onChange} />;
-  }
-  return <PickDayHeader col={col} onChange={onChange} />;
-}
-
-/** A new column with no past day yet (US-13 AC8, US-12 AC14): "— Mon 'YY", or
- *  "Pick date" for an undated previous column, over a picker that starts
- *  EMPTY. A prefilled picker fires no change for its own day, so that day
- *  could never be chosen. One element, so later headers stay over their values. */
-function PickDayHeader({ col, onChange }: { col: MatrixColumn; onChange: (picked: string) => void }) {
-  const ref = useRef<HTMLInputElement | null>(null);
-  const month = MONTHS_SHORT.find(m => m.value === col.date.month.padStart(2, '0'))?.label;
-  const open = () => {
-    try { ref.current?.showPicker?.(); }
-    catch { ref.current?.click(); }
-  };
+  // A column with no past day yet (US-13 AC8) opens an empty picker; an
+  // undated previous column (US-12 AC14) says so, naming a printed month.
+  const { undated, printedMonth } = col.date;
   return (
-    <button type="button" onClick={open} title="Pick the exact day"
-            className="bt-cell-value bt-cell-draft-date bt-cell-draft-date-incomplete">
-      <span className="bt-date-day">{month ? `— ${month}` : 'Pick'}</span>
-      <span className="bt-date-year">{month ? `'${col.date.year.slice(-2)}` : 'date'}</span>
-      <input ref={ref} type="date" value="" onChange={e => onChange(e.target.value)}
-             className="bt-date-hidden-icon"
-             aria-label={month ? 'Choose column date' : 'Choose the date of the previous results'}/>
-    </button>
+    <DraftDateCell
+      date={undated ? '' : fullDateToIso(col.date)}
+      needsDay={!set}
+      placeholder={undated ? `Pick a day${printedMonth ? ` in ${monthLabel(printedMonth.slice(5))} ${printedMonth.slice(0, 4)}` : ''}` : undefined}
+      ariaLabel={undated ? 'Choose the date of the previous results' : 'Choose column date'}
+      onChange={onChange}
+    />
   );
 }
 
 function formatColumnDate(date: FullDate): string {
-  const monthEntry = MONTHS_SHORT.find(m => m.value === date.month.padStart(2, '0'));
-  const monthLabel = monthEntry?.label ?? date.month;
   const yy = date.year.slice(-2);
-  return date.day ? `${date.day} ${monthLabel} '${yy}` : `${monthLabel} '${yy}`;
+  return date.day ? `${date.day} ${monthLabel(date.month)} '${yy}` : `${monthLabel(date.month)} '${yy}`;
 }
 
 interface MatrixRowViewProps {

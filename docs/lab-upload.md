@@ -134,7 +134,7 @@ Health data must never be auto-saved without explicit user confirmation. The rev
 2. **Disambiguation rules** to avoid common extraction errors:
    - Extract ACTUAL measured values; a printed reference range goes in `referenceLow`/`referenceHigh`
    - Units exactly as printed (beside the result, else the row's own range, else the column header), never converted, empty when none is printed (US-21 AC7)
-   - The most recent previous-results column is extracted (older ones ignored), each value with `recordedAt`: its day when printed as a full day (US-12 AC12), else "undated" for a month only or no date, and the review asks the user its day (AC14; sent only to a widget whose request carries `undatedPrev: true`). The connector's `import_documents` leaves those values out until the MCP 1.0.2 review ends (US-35 AC5)
+   - The most recent previous-results column is extracted (older ones ignored), each value with `recordedAt`: its day when printed as a full day (US-12 AC12), else "undated" for a month only or no date, and the review asks the user its day (AC14; sent only to a widget whose request carries `ownDates: 2`). The connector's `import_documents` leaves those values out until the MCP 1.0.2 review ends (US-35 AC5)
    - Use COLLECTION/SAMPLE date, not report/print date
    - For ambiguous date formats (03/04/2026): prefer DD/MM/YYYY for non-US labs, MM/DD/YYYY for US
    - Multi-page correlation: date on page 1, results on later pages

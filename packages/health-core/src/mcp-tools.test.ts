@@ -1868,7 +1868,7 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
         { name: 'ferritin', value: 150, unit: 'ug/L' },
         { name: 'ferritin', value: 180, unit: 'ug/L', recordedAt: '2026-05-04' },
       ],
-    }));
+    }), 'full');
     const prepared = (fileDates?: Record<string, string>) =>
       prepareImport(base(), { ...bundleOf([extracted('cumulative.pdf', report)]), ...(fileDates ? { fileDates } : null) }, IMPORT_CTX);
     const offered = (fileDates?: Record<string, string>) =>

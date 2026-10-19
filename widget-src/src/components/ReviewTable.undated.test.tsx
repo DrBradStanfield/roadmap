@@ -41,9 +41,9 @@ describe('US-12 AC14: an undated previous column waits for the user\'s date', ()
   it('is its own column, first, keyed apart from the report\'s column and from any month', () => {
     for (const fileDate of [{ day: '10', month: '03', year: '2026' }, { day: null, month: '10', year: '2026' }]) {
       const { columns, cells } = buildMatrixModel(sheet(null), { 0: fileDate }, [], [], 'si');
-      expect(columns.map(c => [c.dateKey, c.isNew, c.date.month])).toEqual([
-        ['undated:0', true, ''],
-        [fileDate.day ? '2026-03-10' : '2026-10', true, fileDate.month],
+      expect(columns.map(c => [c.dateKey, c.isNew, !!c.date.undated])).toEqual([
+        ['undated:0', true, true],
+        [fileDate.day ? '2026-03-10' : '2026-10', true, false],
       ]);
       expect(cells.get('ldl|undated:0')).toMatchObject({ state: 'editable', valueSI: 3.4 });
       expect(cells.get('hdl|undated:0')).toMatchObject({ state: 'editable', valueSI: 1.2 });
@@ -54,13 +54,14 @@ describe('US-12 AC14: an undated previous column waits for the user\'s date', ()
 
   it('two files\' undated columns never merge', () => {
     const { columns } = buildMatrixModel([...sheet(null), ...sheet(null)], {}, [], [], 'si');
-    expect(columns.filter(c => !c.date.month).map(c => c.dateKey)).toEqual(['undated:0', 'undated:1']);
+    expect(columns.filter(c => c.date.undated).map(c => c.dateKey)).toEqual(['undated:0', 'undated:1']);
   });
 
   it('shows no date, and Save stays disabled until its day is picked, even with a dated report', () => {
     const { view, onSave, save, previousPicker } = renderReview(sheet('2026-03-10'));
     expect(previousPicker().value).toBe('');
-    expect(view.container.querySelector('.bt-header-row')?.textContent).toContain('Pick');
+    expect(view.container.querySelector('.bt-header-row')?.textContent).toContain('Pick a day');
+    expect(view.container.querySelector('.bt-header-row')?.textContent).not.toContain('NaN');
     expect(view.queryByRole('button', { name: /^Use / })).toBeNull();
     expect(save.disabled).toBe(true);
     fireEvent.click(save);
@@ -96,6 +97,17 @@ describe('US-12 AC14: an undated previous column waits for the user\'s date', ()
     const { save, previousPicker } = renderReview(sheet('2026-03-10'));
     fireEvent.change(previousPicker(), { target: { value: '2027-01-05' } });
     expect(save.disabled).toBe(true);
+  });
+
+  it('a month-only previous column names its printed month, and still needs a day', () => {
+    const results = sheet('2026-03-10');
+    results[0].values = results[0].values.map(v => (v.recordedAt ? { ...v, printedMonth: '2024-06' } : v));
+    const { view, save, previousPicker } = renderReview(results);
+    expect(view.container.querySelector('.bt-header-row')?.textContent).toContain('Pick a day in Jun 2024');
+    expect(previousPicker().value).toBe('');
+    expect(save.disabled).toBe(true);
+    fireEvent.change(previousPicker(), { target: { value: '2024-06-01' } });
+    expect(save.disabled).toBe(false);
   });
 
   // A stray "today" (an iOS picker dismissed) must not date the previous column.

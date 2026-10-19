@@ -87,7 +87,7 @@ describe('privacy: no file name in the request body', () => {
     expect(raw[0]).not.toContain('Jane');
     expect(raw[0]).not.toContain('.pdf');
     expect(raw[0]).not.toContain('.zip');
-    expect(JSON.parse(raw[0])).toEqual({ batch: true, ownDates: true, undatedPrev: true, files: [
+    expect(JSON.parse(raw[0])).toEqual({ batch: true, ownDates: 2, files: [
       { fileName: 'file-1', pages: NAMED[0].pages },
       { fileName: 'file-2', pages: NAMED[1].pages },
     ] });
@@ -110,14 +110,14 @@ describe('privacy: no file name in the request body', () => {
     expect(oldBatchSchema.safeParse(body).success).toBe(true);
     const parsed = batchImportRequestSchema.parse(body);
     expect(parsed.files).toEqual([{ pages: NAMED[0].pages }, { pages: NAMED[1].pages }]);
-    expect(parsed.ownDates).toBe(true); // US-12 AC12: this widget files a value on its own day
+    expect(parsed.ownDates).toBe(2); // US-12 AC12, AC14: this widget files a value on its own day, dated or not
   });
 
   // US-12 AC12: `ownDates` tells the server this widget files a value on its own day.
-  // US-12 AC14: `undatedPrev` tells it this widget asks for an undated previous column's date.
-  it('the single-file path sends pages, the unit system, ownDates and undatedPrev only', async () => {
+  // US-12 AC14: `ownDates: 2` says it also asks the day of an undated previous column.
+  it('the single-file path sends pages, the unit system and ownDates: 2 only', async () => {
     await labImport(NAMED[0].pages, 'si');
-    expect(JSON.parse(raw[0])).toEqual({ pages: NAMED[0].pages, unitSystem: 'si', ownDates: true, undatedPrev: true });
+    expect(JSON.parse(raw[0])).toEqual({ pages: NAMED[0].pages, unitSystem: 'si', ownDates: 2 });
   });
 });
 

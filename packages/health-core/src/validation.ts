@@ -349,10 +349,9 @@ export const labImportPageSchema = z.object({
 export const labImportRequestSchema = z.object({
   pages: z.array(labImportPageSchema).min(1).max(100),
   unitSystem: z.enum(['si', 'conventional']).optional(),
-  /** Sent only by a widget that files a value on its own `recordedAt` (US-12 AC12). */
-  ownDates: z.literal(true).optional(),
-  /** Sent only by a widget that asks the user an undated previous column's day (US-12 AC14). */
-  undatedPrev: z.literal(true).optional(),
+  /** Which own days the widget reads: `true` a dated `recordedAt` only (US-12
+   *  AC12), `2` an undated previous column's too (AC14), absent neither. */
+  ownDates: z.union([z.literal(true), z.literal(2)]).optional(),
 });
 
 export type LabImportRequest = z.infer<typeof labImportRequestSchema>;
@@ -364,8 +363,7 @@ export const batchImportRequestSchema = z.object({
     pages: z.array(labImportPageSchema).min(1).max(100),
   })).min(1).max(200),
   /** As on a single file (US-12 AC12, AC14). */
-  ownDates: z.literal(true).optional(),
-  undatedPrev: z.literal(true).optional(),
+  ownDates: z.union([z.literal(true), z.literal(2)]).optional(),
 });
 
 /** Bulk measurement save — array variant of measurementSchema */
