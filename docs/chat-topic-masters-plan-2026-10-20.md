@@ -1,7 +1,10 @@
-# Topic masters: plan (v2)
+# Topic masters: plan (v3)
 
-Status: plan for Brad, 2026-10-20. Nothing built. v2 folds in a fresh Opus
-adversary review (17 findings) and Codex (gpt-6.1-sol, 2 findings) of v1.
+Status: plan for Brad, 2026-10-20. Nothing built. Reviewed twice by a fresh
+Opus adversary and Codex (gpt-6.1-sol): round 1 on v1 (17 + 2 findings),
+round 2 on v2 (11 + 3). v3 folds in round 2's findings; review rounds are
+used up, so those changes are unreviewed until the first build review.
+Codex could not see the claude_business tools; the adversary checked them.
 Earlier analysis: [chat-topic-masters-proposal-2026-10-20.md](chat-topic-masters-proposal-2026-10-20.md).
 Stories: extends US-15 (chat) and US-42 (knowledge refresh).
 
@@ -29,7 +32,7 @@ most out of date.
 | D7 | The three clinical files stay, and the lint checks them against the master. |
 | D8 | products.md keeps the latest studies behind each product ingredient, not just product facts. |
 | D9 | Opus writes, a fresh adversary and Codex review. When the review is clean, publish without Brad. Bring Brad only the points where we are unsure. |
-| D10 | Old video post bodies are never edited (only a `topics:` line is added to their frontmatter). When a master changes, its published web page is updated too. |
+| D10 | Old video post bodies are never edited (only `topics:` and, for single-subject posts, `router: hidden` lines are added to their frontmatter). When a master changes, its published web page is updated too. |
 | D11 | All 113 masters now, in batches. |
 | D12 | Masters live in this repo's `docs/blog/`; triggers and source checks live in claude_business (`/blog-post`, supplement-wiki tooling). This is the existing split. |
 | D13 | ConsumerLab rules stand: our own words, never its proprietary sections, raw text never in the repo. |
@@ -39,7 +42,7 @@ most out of date.
 | v1 said | v2 says | Found by |
 |---|---|---|
 | Hide every post with a `topics:` tag | Hide only posts whose whole subject is one master's substance; never tag drug, lifestyle or test posts to a supplement master | both reviewers |
-| Tag and hide all posts first | A post hides only once its master has been rewritten (`reviewed:` set), behind an env flag | adversary |
+| Tag and hide all posts first | A post hides only once its master was reviewed on or after the post's date, batch by batch, behind an env flag | both |
 | Same-view video: "bump nothing" | A same-view video moves `reviewed:` forward (the view was confirmed) | both |
 | Date checks in `test:all` | Date checks in the weekly knowledge-lint loop (US-43); only static checks in `test:all` | adversary |
 | A new general safety rule | No new rule; the collagen and nitric-oxide lines stay | adversary |
@@ -55,8 +58,11 @@ Every reference keeps its URL, handle and evidence review. Additions:
 
 - Frontmatter, one line per key (the index builder reads only `key: value`
   lines): `reviewed: "2026-10-20"` and `sources:` as single-line JSON
-  (name, url, checked date, fingerprint). The loader strips frontmatter
-  before the answer model sees a page, so URLs and hashes never reach it.
+  (name, url, checked date, fingerprint).
+- Build step: `loadMatchedContent()` strips frontmatter before the answer
+  model sees a page. Today it passes the raw `.md` (only the YouTube video
+  body is stripped), so without this the sources JSON would reach the model
+  and count against the 120K cap. Covered by a test.
 - `## Current view (reviewed 20 October 2026)`: 3–6 sentences. The
   conclusion, the key citation, the dose the trials used, who it is for
   and who it is not for.
@@ -87,15 +93,27 @@ Brad's view, so this section must never put words in his mouth:
   posts are never tagged to a supplement master.
 - That flag is explicit: `router: hidden` in the post's frontmatter,
   set only by the Opus check, never inferred from `topics:`.
-- Gate in code: a hidden post stays in the router view until its master has
-  a `reviewed:` date. So no topic ever loads a stale master alone.
+- Gate in code: a hidden post stays in the router view until its master's
+  `reviewed:` date is on or after the post's `publishedAt`. So a stale
+  master never answers alone, and a newer video that changes Brad's view
+  stays visible until its master catches up.
+- `router: hidden` is added batch by batch, in the same commit as the
+  master's rewrite, never up front.
+- Schema: `topics`, `router` and `reviewed` are added to
+  `rebuild-blog-index.ts` (`IndexEntry`), `BlogIndexEntry`, and the
+  claude_business `/blog-post` index writer, or the filter sees nothing.
+- The router's handle allow-list and its stated entry count come from the
+  filtered view, not the full index.
 - The filter sits in the router's index block, not in `loadBlogIndex()`
   (the YouTube bot finds posts through that), and the matching harness
   applies the same filter. ROUTER_VERSION is bumped. An env flag turns the
   filter off, which is the rollback.
 - Tests: every untagged post, every mixed post and every master stays in the
-  router view; a mixed-topic regression case. The 27 router fixtures that
-  expect a post handle are re-pointed to the master before the filter ships.
+  router view; a mixed-topic regression case; the newer-video gate case.
+  Of the 27 router fixtures that expect a post handle, only those whose post
+  is actually hidden are re-pointed to the master (most are drug, test or
+  mixed posts that stay). New fixtures cover the collagen and NAD questions,
+  which no fixture names today.
 - Router rules 3 and 4 change so supplement questions and "what does Dr Brad
   think" route to the master.
 - Effect, honestly sized: articles are the most-loaded type today (155 of 389
@@ -111,9 +129,12 @@ A comment still loads its video's post by video ID. New:
   master(s), not the whole page (references run 29–83K characters, and the
   YouTube context is uncached), de-duplicated against the router's picks and
   size-capped.
-- Masters added this way do not count as "related articles loaded" for the
-  reply-or-skip rule in `chat-youtube-prompt.md`, so the bot does not start
-  replying to comments it skips today.
+- The extraction takes the "Current view" or "Current evidence position"
+  section; a master with neither adds nothing.
+- Masters added this way must not count as "related articles loaded" for the
+  reply-or-skip rule in `chat-youtube-prompt.md`: a labelled block plus a
+  prompt change and a fixture, so the bot does not start replying to
+  comments it skips today.
 - Two-axis rule: the video's post is the authority on what the video said;
   the current view is the authority on Brad's view today.
 - Whether a public reply may say "Brad's view has since changed" under his
@@ -127,6 +148,9 @@ A comment still loads its video's post by video ID. New:
 - This must be reconciled with the existing section that calls loaded
   content "supplementary, not authoritative": the current view outranks
   posts, and the system prompt and products.md still outrank both.
+- A clause in the answer prompt: only "Current view" sentences that cite a
+  Brad post may be presented as Brad's view; a "Current evidence position"
+  never is. The heading alone would not stop the model.
 
 ### 5. Per-topic rules (collagen worked through)
 
@@ -165,7 +189,10 @@ line 11, the omega-3 rule at line 12) goes in the topic register (section
 **A new video** (`/blog-post`, claude_business):
 1. Propose `topics:` and whether the post is single-subject.
 2. Compare the script's position with each master's current view.
-   - Same view: add the video to the list and move `reviewed:` forward.
+   - Same view, master already rewritten: add the video to the list and
+     move `reviewed:` forward.
+   - Master not yet rewritten: queue it for its batch; never create
+     `reviewed:` on a stale page (that would open the hiding gate).
    - Changed view: draft a master update (section 8).
 
 **A source change** (monthly):
@@ -185,8 +212,12 @@ Extend the existing US-43 knowledge lint (`tools/knowledge-lint.ts`, with
 `lint-state.json` and `lint-allowlist.json`); do not add a second lint.
 
 **In `test:all` (static, never date-dependent):**
-1. A post names a master that does not exist; a master has no sources.
-2. A `router: hidden` post's master has no `reviewed:` date (gate check).
+1. A post names a master that does not exist; a rewritten master (one
+   with `reviewed:`) has no sources. Unrewritten pages are exempt, so CI
+   stays green through the 12 batches.
+2. **Warn only:** a `router: hidden` post whose master fails the gate (the
+   code gate keeps it visible meanwhile; a hard fail would block the sweep
+   commits that `/blog-post` edits arrive in).
 3. Every DOI in a master's current view also appears in products.md where
    the topic is a product ingredient. **Warn only**, never fail: a forced
    copy into products.md or `evidence.ts` would turn every master edit into
@@ -197,11 +228,15 @@ deploys):**
 4. A master's `reviewed:` is older than its newest linked post.
 5. A source's `checked:` is more than 35 days old.
 6. A master's current view changed (content hash in `lint-state.json`)
-   while a place listed for that topic in `docs/topic-register.json` did
-   not. The register lists products.md blocks, `evidence.ts` ids, the
-   three clinical files, diet-guideline lines, answer-bank entries and
-   system-prompt lines. A deliberate non-change is waived in
-   `lint-allowlist.json` with author and date.
+   while a place listed for that topic did not. The places are added to
+   the existing US-43 `docs/loops/chat-health/lint-topics.json`, not a new
+   register: products.md blocks, `evidence.ts` ids, the three clinical
+   files, diet-guideline lines, answer-bank entries and system-prompt rules,
+   each anchored by a text snippet, never a line number. A deliberate
+   non-change is waived in `lint-allowlist.json` with author and date.
+   The master hashes live in their own section of the lint state, written
+   by each batch's publish commit (free), not by the paid
+   `knowledge-lint-compare.ts --run`.
 7. Overlapping masters disagree on a shared DOI's conclusion (red yeast rice
    and cholesterol-lowering supplements; arginine, citrulline and nitric
    oxide; omega-3 and flaxseed) — flagged for the adversary, not decided.
@@ -215,7 +250,10 @@ there, not here.
 ### 8. Write, review, publish (batches of about 10; 12 batches)
 
 US-42 already governs these reference files (references-1 re-sourced five
-of them). Masters are written under its rules:
+of them). Prerequisite: extend its writer contract and checker to allow the
+master fields (`reviewed`, `sources`, `topics`, `router`) and the rewritten
+summary, keeping the protection on every other field. Masters are then
+written under its rules:
 - Raw-quote checker (AC2).
 - DOIs and PMIDs resolve; no Grokipedia; product mentions do not rise (AC7).
 - A study first seen in ConsumerLab is cited only with its PubMed abstract.
@@ -246,9 +284,16 @@ Steps per batch:
    - microvitamin.com: the commerce copy is rebuilt from the live page plus
      product callouts, not from the `.md`, so it always goes on Brad's list.
 
-**What D9 needs changed first:** US-42 AC8 (Brad signs each batch) and AC6
-(no agent writes to Shopify) must be amended in `docs/user-stories.md`, with
-the unsure-list rule above, or the two processes contradict each other.
+**What D9 needs changed first,** in `docs/user-stories.md`, or the two
+processes contradict each other:
+- AC8 (Brad signs each batch): replaced by the unsure-list rule above.
+- AC6 (no agent writes to Shopify or `index.json`): both, since step 5
+  rebuilds the index and step 6 writes Shopify.
+- AC1 (the index diff is exactly the listed summary corrections): extended
+  to the new keys.
+- AC5 (one pre-registered answer check per refreshed entry): 113 checks,
+  run on the test key after 2026-11-01, or on Brad's yes for the
+  production key.
 Auto mode may also block Shopify writes; if so, Brad adds an allow rule or
 runs the publish command himself.
 
@@ -291,8 +336,8 @@ turns whose first loaded entry is a master (`chat_match_events`).
   evidence position" (an evidence summary, not your view) right?
 - **Q2.** Router: hide single-subject posts only (v2), or keep all posts and
   rely on the master winning by precedence?
-- **Q3.** D9 means amending US-42 AC6 and AC8. Confirm, with the unsure list
-  in section 8 step 4 as the rule?
+- **Q3.** D9 means amending US-42 AC1, AC5, AC6 and AC8 (section 8).
+  Confirm, with the unsure list in section 8 step 4 as the rule?
 - **Q4.** Monthly ConsumerLab checks need your Mac and logged-in Chrome. OK
   as a scheduled local session?
 - **Q5.** May the YouTube bot say publicly, under your old video, that your
