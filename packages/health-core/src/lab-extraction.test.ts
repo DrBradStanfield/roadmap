@@ -23,6 +23,7 @@ import {
   zipMemberName,
   fileNameLine,
   unifiedSystemPrompt,
+  UNDATED_PREVIOUS,
 } from './lab-extraction';
 import { oneLine } from './plan';
 
@@ -854,13 +855,13 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
 // values; an undated one is ignored, as before. Synthetic two-date table.
 describe('US-12 AC12: a previous-results column with its own printed date becomes that date\'s values', () => {
   it('full: takes only the ONE most recent dated previous column, so a cumulative report cannot outgrow the token cap', () => {
-    expect(unifiedSystemPrompt('full')).toContain('Extract only the ONE most recent such column; ignore every older previous column.');
+    expect(unifiedSystemPrompt('full')).toContain('the ONE most recent previous column, dated or not (with no dates printed, the one beside the current results); ignore every older previous column.');
   });
 
   it('full (website, BYOK): takes a previous column printed with a full day, ignores one with a month only or no date', () => {
     const prompt = unifiedSystemPrompt('full');
-    expect(prompt).toContain('Each of its rows is its own entry with "recordedAt" set to that column\'s collection date as YYYY-MM-DD');
-    expect(prompt).toContain('A previous column whose date is not printed as a full day (a month and year only, or no date at all), a trend graph, or a value you cannot tie to one printed day: IGNORE it completely.');
+    expect(prompt).toContain('with "recordedAt" set to that column\'s collection date as YYYY-MM-DD (rules 3 and 4 apply)');
+    expect(prompt).toContain('A previous column dated with a month and year only, a trend graph, or a value you cannot tie to one column: IGNORE it completely.');
     expect(prompt).toContain('at most ONE entry per metric per date');
     expect(prompt).not.toContain('even if those historical columns are dated');
   });
@@ -970,6 +971,76 @@ describe('US-12 AC12: a previous-results column with its own printed date become
     }));
     expect(result.values.map(v => [v.metric, v.valueSI, v.recordedAt])).toEqual([['apob', 0.9, undefined], ['apob', 1.1, '2025-09-02']]);
     expect(result.additionalValues).toEqual([]);
+  });
+});
+
+// A Word baseline sheet with no dates anywhere: its blood results only in a
+// "Prev. Result" column, "Today's Result" blank for those rows. Synthetic
+// two-column table: weight in today's column, LDL and sodium only in Prev.
+describe('US-12 AC14: an undated previous column is read, marked undated, for the review to date', () => {
+  it('full: rule 2 takes the most recent previous column dated or not, and marks an undated one "undated"', () => {
+    const prompt = unifiedSystemPrompt('full');
+    expect(prompt).toContain('Each of its rows is its own entry, even when that row\'s current result is blank');
+    expect(prompt).toContain('or to the exact string "undated" when no date is printed for that column anywhere in the document');
+    expect(UNDATED_PREVIOUS).toBe('undated');
+  });
+
+  it('full: a document with any blood or lab result rows is a lab_report, even with body or lifestyle metrics beside them', () => {
+    expect(unifiedSystemPrompt('full')).toContain('A document with ANY blood or lab result rows is a "lab_report", even when it also lists body measurements or lifestyle metrics.');
+  });
+
+  it('metadata (the connector): neither rule; the base rule word for word', () => {
+    const prompt = unifiedSystemPrompt('metadata');
+    expect(prompt).not.toContain('undated');
+    expect(prompt).not.toContain('ANY blood or lab result rows');
+    expect(prompt).toContain('- "lab_report": Blood test results, pathology panels, metabolic panels, lipid panels\n');
+  });
+
+  const undatedSheet = (reportDate: string | null, recordedAt: unknown = 'undated') => parseUnifiedResult({
+    classification: 'lab_report', reportDate, document: null,
+    values: [
+      { metric: 'ldl', value: 3.4, unit: 'mmol/L', confidence: 'high', recordedAt },
+      { metric: 'hdl', value: 1.2, unit: 'mmol/L', confidence: 'high' },
+    ],
+    additionalValues: [
+      { name: 'sodium', value: 139, unit: 'mmol/L', recordedAt },
+      { name: 'apolipoprotein_b', value: 1.1, unit: 'g/L', recordedAt },
+    ],
+  });
+
+  it('full: the undated column keeps its marker, with or without a report date; the primary column has none', () => {
+    for (const reportDate of [null, '2026-03-10']) {
+      const result = toUnifiedResult(undatedSheet(reportDate), 'full');
+      expect(result.values.map(v => [v.metric, v.recordedAt]), String(reportDate)).toEqual([['ldl', 'undated'], ['hdl', undefined], ['apob', 'undated']]);
+      expect(result.additionalValues.map(v => [v.name, v.recordedAt])).toEqual([['sodium', 'undated']]);
+      expect(result.droppedValueCount).toBe(0);
+    }
+  });
+
+  it('full: the marker is matched before the report date, so a report date of "undated" never makes it primary', () => {
+    expect(toUnifiedResult(undatedSheet('undated'), 'full').values.map(v => v.recordedAt)).toEqual(['undated', undefined, 'undated']);
+  });
+
+  it('full: only the exact marker (trimmed) counts; anything like it is left out, uncounted', () => {
+    expect(toUnifiedResult(undatedSheet(null, '  undated '), 'full').values.map(v => v.recordedAt)).toEqual(['undated', undefined, 'undated']);
+    for (const odd of ['Undated', 'UNDATED', 'undated column', 'none', 'prev']) {
+      const result = toUnifiedResult(undatedSheet('2026-03-10', odd), 'full');
+      expect(result.values.map(v => v.metric), odd).toEqual(['hdl']);
+      expect(result.additionalValues, odd).toEqual([]);
+      expect(result.droppedValueCount, odd).toBe(0);
+    }
+  });
+
+  it('metadata (the connector), and the default: an undated value is left out, uncounted; the primary column stays', () => {
+    for (const result of [toUnifiedResult(undatedSheet('2026-03-10'), 'metadata'), toUnifiedResult(undatedSheet('2026-03-10'))]) {
+      expect(result.values.map(v => [v.metric, v.recordedAt])).toEqual([['hdl', undefined]]);
+      expect(result.additionalValues).toEqual([]);
+      expect(result.droppedValueCount).toBe(0);
+    }
+  });
+
+  it('full: a dated previous column still reads as before', () => {
+    expect(toUnifiedResult(undatedSheet('2026-03-10', '2025-09-02'), 'full').values.map(v => v.recordedAt)).toEqual(['2025-09-02', undefined, '2025-09-02']);
   });
 });
 

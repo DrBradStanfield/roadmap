@@ -261,6 +261,34 @@ describe('US-12 AC12: a value with its own day reaches only a widget that reads 
     expect(results[1]).toEqual({ index: 1, errorCode: 'server_error' });
   });
 
+  // US-12 AC14: an undated previous column carries the `recordedAt` marker,
+  // so an old tab, which would file it on the report date, never gets it.
+  const undated = () => {
+    const result = dated();
+    result.values[1].recordedAt = 'undated';
+    result.additionalValues[1].recordedAt = 'undated';
+    return result;
+  };
+
+  it('US-12 AC14 — no flag: an undated previous value is cut too, single file and batch', async () => {
+    extractOrClassify.mockResolvedValueOnce(undated());
+    const { data } = await (await action({ request: single({}) } as never)).json();
+    expect(data.values.map((v: { valueSI: number }) => v.valueSI)).toEqual([2.1]);
+    expect(data.additionalValues.map((v: { value: number }) => v.value)).toEqual([80]);
+    const { batchId, pollToken } = await (await action({ request: batch({}) } as never)).json();
+    pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 1, total: 1, results: [{ index: 0, ...undated() }] } as never);
+    const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
+    expect(results[0].values.map((v: { valueSI: number }) => v.valueSI)).toEqual([2.1]);
+    expect(results[0].additionalValues.map((v: { value: number }) => v.value)).toEqual([80]);
+  });
+
+  it('US-12 AC14 — with the flag: the undated value answers, marked', async () => {
+    extractOrClassify.mockResolvedValueOnce(undated());
+    const { data } = await (await action({ request: single({ ownDates: true }) } as never)).json();
+    expect(data.values.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined, 'undated']);
+    expect(data.additionalValues.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined, 'undated']);
+  });
+
   it('batch, new widget: the poll answers both columns', async () => {
     const { batchId, pollToken } = await (await action({ request: batch({ ownDates: true }) } as never)).json();
     pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 1, total: 1, results: [{ index: 0, ...dated() }] } as never);

@@ -1885,6 +1885,26 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     ]);
   });
 
+  // US-12 AC14: an undated previous column, even one a full-mode parse kept,
+  // is never offered on the connector: it carries a `recordedAt` marker.
+  it('AC5 — import_documents never offers an undated previous-column value', () => {
+    const report = toUnifiedResult(parseUnifiedResult({
+      classification: 'lab_report', reportDate: '2026-08-20', document: null,
+      values: [
+        { metric: 'ldl', value: 2.6, unit: 'mmol/L', confidence: 'high' },
+        { metric: 'ldl', value: 3.1, unit: 'mmol/L', confidence: 'high', recordedAt: 'undated' },
+      ],
+      additionalValues: [
+        { name: 'ferritin', value: 150, unit: 'ug/L' },
+        { name: 'ferritin', value: 180, unit: 'ug/L', recordedAt: 'undated' },
+      ],
+    }), 'full');
+    expect(report.values.map((v) => v.recordedAt)).toEqual([undefined, 'undated']);
+    const prepared = prepareImport(base(), bundleOf([extracted('baseline.pdf', report)]), IMPORT_CTX);
+    expect(prepared.payload.candidates.map((c) => [c.metric, c.value, c.recordedAt])).toEqual([['ldl', 2.6, '2026-08-20'], ['ferritin', 150, '2026-08-20']]);
+    expect(prepared.unrecognized).toEqual([]);
+  });
+
   it('US-21 AC7 — a lab printed with no unit is refused in words on the connector, uncatalogued or not, as before the 1.0.2 review', () => {
     const { payload, unrecognized } = prepareImport(base(), bundleOf([extracted('unitless.pdf', labReport({
       values: [], unrecognized: [],

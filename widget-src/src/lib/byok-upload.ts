@@ -95,7 +95,7 @@ function toResult(responseText: string): LabImportResult {
   // document.classification typed DocumentType instead of string. The widening
   // cast is safe because the review UI reads document.classification as a plain
   // string; the extra `unrecognized` field is harmless if present.
-  return toUnifiedResult(parseUnifiedResult(parseExtractionJson(responseText))) as LabImportResult;
+  return toUnifiedResult(parseUnifiedResult(parseExtractionJson(responseText)), 'full') as LabImportResult;
 }
 
 export async function labImport(

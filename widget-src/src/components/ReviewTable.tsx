@@ -18,6 +18,7 @@ import {
   slotState,
   validDay,
   isCalendarDay,
+  UNDATED_PREVIOUS,
   type LabQuantity,
 } from '@roadmap/health-core';
 import { getCurrentDateValue } from './DatePicker';
@@ -96,7 +97,8 @@ interface ReviewTableProps {
   error: string | null;
 }
 
-/** Full date state: day/month/year. Day is null when the LLM didn't extract one. */
+/** Full date state: day/month/year. Day is null when the LLM didn't extract
+ *  one; month and year are empty only for an undated previous column (US-12 AC14). */
 interface FullDate {
   day: string | null; // "01"-"31" or null
   month: string;      // "1"-"12"
@@ -114,6 +116,10 @@ function parseReportDate(dateStr: string | null): FullDate {
   }
   return { day: m[3] && isCalendarDay(`${m[1]}-${m[2]}-${m[3]}`) ? m[3] : null, month: m[2], year: m[1] };
 }
+
+/** The date of an undated previous column until the user picks one: no month,
+ *  so it never shares a column with the report's or any month's (US-12 AC14). */
+const NO_DATE: FullDate = { day: null, month: '', year: '' };
 
 /** A column's date when it is a calendar day that has happened, else null:
  *  only then is it set, and Save allowed (US-13 AC8). */
@@ -314,10 +320,11 @@ export function buildMatrixModel(
    *  its file's. The date state holds only what the user picked; a printed day
    *  nobody edited is read from the value itself. */
   const valueDate = (fi: number, recordedAt?: string): FullDate | undefined =>
-    recordedAt ? fileDates[dateSource(fi, recordedAt)] ?? parseReportDate(recordedAt) : fileDates[fi];
+    recordedAt ? fileDates[dateSource(fi, recordedAt)] ?? (recordedAt === UNDATED_PREVIOUS ? NO_DATE : parseReportDate(recordedAt)) : fileDates[fi];
+  /** An undated previous column is keyed by its file until the user dates it (US-12 AC14). */
   const valueDateKey = (fi: number, recordedAt?: string): DateKey | null => {
     const date = valueDate(fi, recordedAt);
-    return date ? buildDatePrefix(date) : null;
+    return !date ? null : date.month ? buildDatePrefix(date) : `undated:${fi}`;
   };
 
   // 1) Seed columns + cells from existing history (greyed context). A blood
@@ -452,7 +459,9 @@ export function buildMatrixModel(
   //    reads the same as the live timeline, then any vitals the report
   //    printed (BP; extraction never returns weight or waist): save takes
   //    every cell, so every cell needs a row (US-12 AC11). Additional rows alphabetic.
-  const columns = Array.from(columnsByKey.values()).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+  //    An undated previous column comes first: it is older than its report.
+  const columns = Array.from(columnsByKey.values())
+    .sort((a, b) => Number(!!a.date.month) - Number(!!b.date.month) || a.dateKey.localeCompare(b.dateKey));
   const coreRows: CoreRow[] = [...BLOOD_TEST_METRICS, ...VITAL_METRICS]
     .filter(m => coreMetricsSeen.has(m as MetricType))
     .map(m => ({ kind: 'core' as const, metric: m as MetricType }));
@@ -1117,12 +1126,13 @@ function MatrixColumnHeader({ col, onDateChange }: { col: MatrixColumn; onDateCh
   return <PickDayHeader col={col} onChange={onChange} />;
 }
 
-/** A new column with no past day yet (US-13 AC8): "— Mon 'YY" over a picker
- *  that starts EMPTY. A prefilled picker fires no change for its own day, so that day
+/** A new column with no past day yet (US-13 AC8, US-12 AC14): "— Mon 'YY", or
+ *  "Pick date" for an undated previous column, over a picker that starts
+ *  EMPTY. A prefilled picker fires no change for its own day, so that day
  *  could never be chosen. One element, so later headers stay over their values. */
 function PickDayHeader({ col, onChange }: { col: MatrixColumn; onChange: (picked: string) => void }) {
   const ref = useRef<HTMLInputElement | null>(null);
-  const month = MONTHS_SHORT.find(m => m.value === col.date.month.padStart(2, '0'))?.label ?? col.date.month;
+  const month = MONTHS_SHORT.find(m => m.value === col.date.month.padStart(2, '0'))?.label;
   const open = () => {
     try { ref.current?.showPicker?.(); }
     catch { ref.current?.click(); }
@@ -1130,11 +1140,11 @@ function PickDayHeader({ col, onChange }: { col: MatrixColumn; onChange: (picked
   return (
     <button type="button" onClick={open} title="Pick the exact day"
             className="bt-cell-value bt-cell-draft-date bt-cell-draft-date-incomplete">
-      <span className="bt-date-day">— {month}</span>
-      <span className="bt-date-year">'{col.date.year.slice(-2)}</span>
+      <span className="bt-date-day">{month ? `— ${month}` : 'Pick'}</span>
+      <span className="bt-date-year">{month ? `'${col.date.year.slice(-2)}` : 'date'}</span>
       <input ref={ref} type="date" value="" onChange={e => onChange(e.target.value)}
              className="bt-date-hidden-icon"
-             aria-label="Choose column date"/>
+             aria-label={month ? 'Choose column date' : 'Choose the date of the previous results'}/>
     </button>
   );
 }
