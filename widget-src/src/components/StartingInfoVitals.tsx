@@ -17,7 +17,7 @@
 // doesn't carry, so they live here. Everything else reuses the `.bt-*` CSS,
 // the matrix's `Sparkline`, `NumericInputCell`, `DraftDateCell`, and `UnitChip`.
 
-import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import {
   type ApiMeasurement,
   type HealthInputs,
@@ -745,6 +745,9 @@ function BpInputCell({
   const sysError = validateTypedValue('systolic_bp', sys, 'si').error ?? clash;
   const diaError = validateTypedValue('diastolic_bp', dia, 'si').error ?? clash;
   const error = sysError ?? diaError;
+  // The visible error describes the input it belongs to; a title would be
+  // captured with the page (US-13 AC10).
+  const errorId = useId();
   // `bt-cell-value` carries the fixed column width (flex: 0 0 var(--bt-value-w)).
   // The backfill branch was missing it, so an empty BP slot collapsed to its
   // content width (~33px) and pushed every column to its right out of
@@ -766,17 +769,17 @@ function BpInputCell({
       <div className="bt-vitals-bp-inputs">
         <input ref={sysRef} className={`bt-input${active ? ' bt-input-active' : ''}${sysError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="sys" size={1} aria-label="Systolic blood pressure"
-               aria-invalid={!!sysError} title={sysError ?? undefined}
+               aria-invalid={!!sysError} aria-describedby={sysError ? errorId : undefined}
                value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey}/>
         <span className="bt-vitals-bp-sep">/</span>
         <input ref={diaRef} className={`bt-input${active ? ' bt-input-active' : ''}${diaError ? ' bt-input-error' : ''}`}
                inputMode="numeric" pattern="[0-9]*" placeholder="dia" size={1} aria-label="Diastolic blood pressure"
-               aria-invalid={!!diaError} title={diaError ?? undefined}
+               aria-invalid={!!diaError} aria-describedby={diaError && error === diaError ? errorId : undefined}
                value={dia} onChange={e => handleDiaChange(e.target.value)} onKeyDown={onKey}/>
       </div>
       <div className="bt-cell-foot">
         {error
-          ? <span className="bt-input-error-text">{error}</span>
+          ? <span id={errorId} className="bt-input-error-text">{error}</span>
           : <span className={`bt-status-tick bt-status-${previewStatus ?? 'none'}`}/>}
       </div>
     </div>
