@@ -6,7 +6,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { buildChatContextJson } from './chat-context';
 import { reportedToCanonical } from './units';
-import { PROPOSE_FIELD_EDIT_TOOL } from './chat-edits';
+import { EDITABLE_FIELDS, PROPOSE_FIELD_EDIT_TOOL } from './chat-edits';
 import {
   runRoadmap, roadmapResultText, roadmapToolResults, withRoadmapRound,
   RUN_ROADMAP_MAX_VALUES, RUN_ROADMAP_TOOL, CHAT_TOOLS, chatToolsFor,
@@ -163,6 +163,14 @@ describe('US-15 AC33: runRoadmap overlays stated values and returns the plan cod
     for (const rule of ['not in their saved data', 'do NOT convert', 'stated them in this conversation', 'ASK which unit',
       'do not grade the value in any unit', 'Answer only from the result', 'not saved', 'pre-fill',
       "the user's own values", "not a family member's"]) expect(d).toContain(rule);
+  });
+
+  // US-15 AC36 review R1 (2026-10-20): propose_field_edit cannot set sex or height, so the tool never offers
+  // to pre-fill them; it sends the user to the roadmap tool to keep them.
+  it('US-15 AC36: offers a pre-fill only for measurements, never for sex or height', () => {
+    expect(RUN_ROADMAP_TOOL.description).toContain('never offer that for sex or height: tell them to enter those in the roadmap tool');
+    expect(EDITABLE_FIELDS).not.toContain('sex');
+    expect(EDITABLE_FIELDS).not.toContain('heightCm');
   });
 });
 

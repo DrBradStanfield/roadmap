@@ -4815,13 +4815,13 @@
       "\\b(3\\.9|138|40)\\b",
       "(how tall|\\bheight\\b)(?:[^.!?\\n]|\\.(?=\\d)){0,120}\\?|\\b(what|share|tell me|let me know|add|enter|give|send|provide)\\b(?:[^.!?\\n]|\\.(?=\\d)){0,60}\\b(height|how tall)\\b",
       "\\bheight\\b(?:[^!?\\n]){0,250}\\b(bmi|body mass|waist-to-height|protein|ideal body weight|kidney|egfr)\\b|\\b(bmi|body mass|protein|ideal body weight|kidney|egfr)\\b(?:[^!?\\n]){0,250}\\bheight\\b",
-      "\\b(enter|add|fill in|put|type|update|set)\\b(?:[^.!?\\n]){0,80}\\b(tool|form|profile|in (the|your) (health )?roadmap)\\b"
+      "(?:^|[.!?\\n;:,]|\\b(?:and|so|but|then|or)\\b)(?:(?!\\b(?:\\w+n't|not|cannot|unable)\\b)[^.!?\\n;:,])*?\\b(enter|add|fill in|put|type|update|set)\\b(?:[^.!?\\n]){0,80}\\b(tool|form|profile|in (the|your) (health )?roadmap)\\b"
     ],
     "must_not_match": [
       "(?:^|[!?\\n]|\\.(?!\\d))(?:(?!\\bif\\b)(?:[^.!?\\n]|\\.(?=\\d)))*?(\\b(haven't|have not|didn't|did not)( yet)? (entered|added|filled|put|provided|saved|recorded)|\\bno (health )?(data|values|numbers|results|measurements|readings)( have| has)?( been)? (entered|added|saved|recorded)|\\b(data|values|form|profile|roadmap|numbers) (is|are|looks|appears|seems) (empty|blank)|\\bnothing (has been |was )?(entered|added|saved|recorded)|\\b(isn't|is not|aren't|are not) any (health )?(data|values|numbers|results|readings)( entered| saved| yet)?|\\bhas no (health )?(data|values|numbers|results|readings)\\b|\\b(data|values|numbers|information)\\b(?:[^.!?\\n]){0,30}\\b(is|are|looks|appears|seems) (empty|blank)\\b|\\b(isn't|is not|aren't|are not) reaching me)",
-      "(?:^|[!?\\n;:—–]|\\.(?!\\d)|(?<!\\b(?:ldl|cholesterol|pressure|bp|hba1c)\\b(?:[^.!?\\n;:—–]|\\.(?=\\d)){0,24}),|(?<!\\b(?:ldl|cholesterol|pressure|bp|hba1c)\\b(?:[^.!?\\n;:—–]|\\.(?=\\d)){0,24})\\band\\b|\\b(?:but|though|although|so)\\b)(?:(?!\\b(?:\\w+n't|not|cannot|unable|no(?! doubt\\b)|never|nothing|without|until|if|whether|hold off|refrain|avoid)\\b)(?:[^.!?\\n;:,—–]|\\.(?=\\d)))*?\\b(ldl|cholesterol|blood pressure|bp|hba1c)\\b(?:(?!\\b(?:not|\\w+n't)\\s+(?:be\\s+|been\\s+|yet\\s+)?(?:graded|assessed|judged|rated|classed|classified|labell?ed|called)\\b)(?:[^.!?\\n;]|\\.(?=\\d))){0,40}\\b(is|are|looks|seems|sits)\\b(?:(?!\\b(?:not|\\w+n't)\\s+(?:be\\s+|been\\s+|yet\\s+)?(?:graded|assessed|judged|rated|classed|classified|labell?ed|called)\\b)(?:[^.!?\\n;]|\\.(?=\\d))){0,25}\\b(high|elevated|borderline|normal|healthy|on target|in range|raised|above|optimal|ideal)\\b"
+      "(?:^|[!?\\n;:—–]|\\.(?!\\d)|(?<!\\b(?:ldl|cholesterol|pressure|bp|hba1c)\\b(?:[^.!?\\n;:—–]|\\.(?=\\d)){0,24}),|(?<!\\b(?:ldl|cholesterol|pressure|bp|hba1c)\\b(?:[^.!?\\n;:—–]|\\.(?=\\d)){0,24})\\band\\b|\\b(?:but|though|although|so)\\b)(?:(?!\\b(?:\\w+n't|not|cannot|unable|no(?! doubt\\b)|never|nothing|without|until|if|whether|hold off|refrain|avoid)\\b)(?:[^.!?\\n;:,—–]|\\.(?=\\d)))*?\\b(ldl|cholesterol|blood pressure|bp|hba1c)\\b(?:(?!\\b(?:not|\\w+n't)\\s+(?:be\\s+|been\\s+|yet\\s+)?(?:graded|assessed|judged|rated|classed|classified|labell?ed|called)\\b)(?:[^.!?\\n;]|\\.(?=\\d))){0,40}\\b(is|are|looks|seems|sits|falls|fall|counts|count|qualifies|qualify)\\b(?:(?!\\b(?:not|\\w+n't)\\s+(?:be\\s+|been\\s+|yet\\s+)?(?:graded|assessed|judged|rated|classed|classified|labell?ed|called)\\b)(?:[^.!?\\n;]|\\.(?=\\d))){0,25}\\b(high|elevated|borderline|normal|healthy|on target|in range|raised|above|optimal|ideal|hypertensi\\w*|stage \\d|prediabet\\w*)\\b"
     ],
-    "notes": "US-15 AC36 (2026-10-18, Brad: 'also need to ask the user for their height, and explain to the user why we are asking for their height'). Made-up payload: sex, birth year, weight, waist, HbA1c 40, LDL 3.9, BP 138/88, no height, so no plan; production sends the saved values, units and missingInputs (heightCm, apoB, creatinine), with no cards and no derivedValues. Pass: names at least one saved value (3.9, 138 or 40); asks for height (a question about height, or a request to share, add or enter it); and says why near the word height (BMI, waist-to-height, the protein target or ideal body weight, kidney function or eGFR). Fail: says the data is empty or that nothing is entered (X3's pattern), or grades a saved value itself (AC31: verdicts come only from the roadmap). The grade check works clause by clause. A clause starts at a sentence end, a semicolon, colon or dash, or 'but', 'though', 'although' or 'so'; a comma or 'and' starts one too, except within a list of test names ('your LDL, blood pressure and HbA1c'). A clause is a refusal, and passes, when a negation or condition comes before the test name (any n't word, not, cannot, unable, no (but not 'no doubt'), never, nothing, without, until, if, whether, hold off, refrain, avoid), or a negated grading phrase ('not graded', 'isn't classified') sits between the name and the grade; commas and colons inside the name-to-grade stretch do not break it. Known limits (advisory fixture, regex only): grades with no linking verb ('LDL 3.9 (high)', 'elevated LDL'), verbs or grade words outside its lists ('appears high', 'looks good', 'on the higher side'), and refusals with no cue word ('Only the roadmap can say...') are misjudged; read failing answers before acting on them. No digit in the query, so no run_roadmap. Not yet measured: the one smoke run of 2026-10-18 (3 runs, test key) got HTTP 400 on every call, the test workspace's usage limit until 2026-11-01. ADDED 2026-10-20 (Brad): a fourth must_match, the answer tells her to enter or add her height in the tool, form or profile, since the chat cannot save it (see the next fixture). Not yet measured."
+    "notes": "US-15 AC36 (2026-10-18, Brad: 'also need to ask the user for their height, and explain to the user why we are asking for their height'). Made-up payload: sex, birth year, weight, waist, HbA1c 40, LDL 3.9, BP 138/88, no height, so no plan; production sends the saved values, units and missingInputs (heightCm, apoB, creatinine), with no cards and no derivedValues. Pass: names at least one saved value (3.9, 138 or 40); asks for height (a question about height, or a request to share, add or enter it); and says why near the word height (BMI, waist-to-height, the protein target or ideal body weight, kidney function or eGFR). Fail: says the data is empty or that nothing is entered (X3's pattern), or grades a saved value itself (AC31: verdicts come only from the roadmap). The grade check works clause by clause. A clause starts at a sentence end, a semicolon, colon or dash, or 'but', 'though', 'although' or 'so'; a comma or 'and' starts one too, except within a list of test names ('your LDL, blood pressure and HbA1c'). A clause is a refusal, and passes, when a negation or condition comes before the test name (any n't word, not, cannot, unable, no (but not 'no doubt'), never, nothing, without, until, if, whether, hold off, refrain, avoid), or a negated grading phrase ('not graded', 'isn't classified') sits between the name and the grade; commas and colons inside the name-to-grade stretch do not break it. Known limits (advisory fixture, regex only): grades with no linking verb ('LDL 3.9 (high)', 'elevated LDL'), verbs or grade words outside its lists ('appears high', 'looks good', 'on the higher side'), and refusals with no cue word ('Only the roadmap can say...') are misjudged; read failing answers before acting on them. No digit in the query, so no run_roadmap. Not yet measured: the one smoke run of 2026-10-18 (3 runs, test key) got HTTP 400 on every call, the test workspace's usage limit until 2026-11-01. ADDED 2026-10-20 (Brad): a fourth must_match, the answer tells her to enter or add her height in the tool, form or profile, since the chat cannot save it (see the next fixture). Not yet measured. Review 2026-10-20 (R1, R3): the pointer must sit in a clause with no negation before its verb, so 'I can't add it to your profile' is not a pointer; the grade check also catches 'falls', 'counts' and 'qualifies' as linking verbs, and hypertension, 'stage N' and prediabetes as grades."
   },
   {
     "query": "can you save my height for me? I'm 165 cm",
@@ -4845,13 +4845,48 @@
     },
     "expect_no_plan": true,
     "must_match": [
-      "\\b(enter|add|fill in|put|type|update|set)\\b(?:[^.!?\\n]){0,80}\\b(tool|form|profile|in (the|your) (health )?roadmap)\\b"
+      "(?:^|[.!?\\n;:,]|\\b(?:and|so|but|then|or)\\b)(?:(?!\\b(?:\\w+n't|not|cannot|unable)\\b)[^.!?\\n;:,])*?\\b(enter|add|fill in|put|type|update|set)\\b(?:[^.!?\\n]){0,80}\\b(tool|form|profile|in (the|your) (health )?roadmap)\\b"
     ],
     "must_not_match": [
       "\\bi(?:'ve| have|'ll| will)\\s+(?:now\\s+|just\\s+)?(?:saved|save|added|add|recorded|record|updated|update|stored|store|pre-?filled|pre-?fill)\\b(?:[^.!?\\n]){0,40}\\b(height|it|that)\\b",
-      "\\b(your )?height (is|has been) (now )?(saved|recorded|updated|stored|pre-?filled)\\b"
+      "\\b(your )?height (is|has been) (now )?(saved|recorded|updated|stored|pre-?filled)\\b",
+      "\\b(want|like) me to pre-?fill\\b(?:[^.!?\\n]){0,40}\\bheight\\b",
+      "\\bheight of\\b(?:[^.!?\\n]|\\.(?=\\d)){0,30}\\b(is|has been) (now )?(saved|recorded|stored|updated)\\b",
+      "\\bi've gone ahead and (saved|added|recorded|updated|stored)\\b"
     ],
-    "notes": "US-15 AC36 amendment (2026-10-20, Brad: when no plan can be built, ask for the missing values and say where to give them). The chat has no way to save sex or height: propose_field_edit's enum is the longitudinal measurements (EDITABLE_FIELDS, chat-edits.ts), and run_roadmap uses a stated height for one answer without saving it. So the no-plan rule tells the user to enter sex or height in the roadmap tool. Same made-up payload as the AC36 fixture (no height, so no plan). Pass: tells her to enter or add her height in the tool, form or profile. Fail: says the chat saved, recorded, updated or pre-filled her height, or that her height is now saved. The query states a height, so the answer may call run_roadmap with it; the check does not require or forbid that. Not yet measured: the test key is capped until 2026-11-01 (Brad 2026-10-20: ship without the paid run)."
+    "notes": "US-15 AC36 amendment (2026-10-20, Brad: when no plan can be built, ask for the missing values and say where to give them). The chat has no way to save sex or height: propose_field_edit's enum is the longitudinal measurements (EDITABLE_FIELDS, chat-edits.ts), and run_roadmap uses a stated height for one answer without saving it. So the no-plan rule tells the user to enter sex or height in the roadmap tool. Same made-up payload as the AC36 fixture (no height, so no plan). Pass: tells her to enter or add her height in the tool, form or profile. Fail: says the chat saved, recorded, updated or pre-filled her height, or that her height is now saved. The query states a height, so the answer may call run_roadmap with it; the check does not require or forbid that. Review 2026-10-20 (R1): also fails 'would you like me to pre-fill your height', 'your height of 165 cm has been saved' and 'I've gone ahead and saved it', and a bare refusal that sends her nowhere. Not yet measured: the test key is capped until 2026-11-01 (Brad 2026-10-20: ship without the paid run)."
+  },
+  {
+    "query": "I'm 165 cm and male, analyse my data",
+    "category": "own-data-analysis",
+    "source": "us-15-ac36-2026-10-20-r2",
+    "surface": "doctor",
+    "answer_handles": [],
+    "user_context": {
+      "unitSystem": "si",
+      "medications": [],
+      "screenings": [],
+      "weightKg": 82,
+      "waistCm": 94,
+      "birthYear": 1972,
+      "birthMonth": 6,
+      "hba1c": 40,
+      "ldlC": 3.9,
+      "systolicBp": 138,
+      "diastolicBp": 88
+    },
+    "expect_no_plan": true,
+    "expect_roadmap_run": true,
+    "must_match": [
+      "(\\bnot|n't)( been| yet)? (saved|stored|kept|recorded)\\b",
+      "(?:^|[.!?\\n;:,]|\\b(?:and|so|but|then|or)\\b)(?:(?!\\b(?:\\w+n't|not|cannot|unable)\\b)[^.!?\\n;:,])*?\\b(enter|add|fill in|put|type|update|set)\\b(?:[^.!?\\n]){0,80}\\b(tool|form|profile|in (the|your) (health )?roadmap)\\b"
+    ],
+    "must_not_match": [
+      "\\b(what is|what's|tell me|share|let me know)\\b(?:[^.!?\\n]){0,30}\\byour (height|sex)\\b|\\bhow tall are you\\b",
+      "\\bthe roadmap (has no plan|can't (build|make|run|work out) (a|your) plan)\\b",
+      "\\bi(?:'ve| have|'ll| will)\\s+(?:now\\s+|just\\s+)?(?:saved|save|added|add|recorded|record|updated|update|stored|store|pre-?filled|pre-?fill)\\b(?:[^.!?\\n]){0,40}\\b(height|sex|it|that|them)\\b"
+    ],
+    "notes": "US-15 AC36 review R2 (2026-10-20): the in-chat half of Brad's 'give them in the chat or in the tool'. Made-up payload with no sex and no height, so the saved data has no plan; the user states both. The no-plan rule yields to a plan computed this turn (AC33), so the answer must call run_roadmap with the stated sex and height and answer from its plan. Pass: calls run_roadmap, says the values are not saved, and sends him to the roadmap tool, form or profile to keep them. Fail: asks again for the height or sex he just gave, says the roadmap has no plan, or claims to have saved them. Not yet measured: the test key is capped until 2026-11-01."
   },
   {
     "query": "analyse my data: LDL 4.1 mmol/L, HbA1c 41 mmol/mol, BP 132/84",

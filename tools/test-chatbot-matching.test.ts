@@ -393,6 +393,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
   interface Entry {
     query: string; category: string; surface?: string; answer_handles?: string[]; user_context?: unknown;
     must_mention?: string[]; must_match?: string[]; must_not_match?: string[]; expect_no_plan?: true;
+    expect_roadmap_run?: boolean;
   }
   const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Entry[];
   const CATEGORIES = 'own-data-analysis,algorithm-precedence,algorithm-precedence-parked,minor-gate';
@@ -545,6 +546,11 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
       'No need to panic — your LDL is only mildly elevated.',
       "I can't build your full plan yet — your LDL is high.",
       "I can't run your plan yet, and your LDL is high.",
+      // Review R3 (2026-10-20): diagnosis words and other linking verbs.
+      'Your blood pressure counts as stage 1 hypertension.',
+      'Your HbA1c is in the prediabetes range.',
+      'Your BP falls into the hypertension range.',
+      'Your blood pressure qualifies as stage 2.',
     ];
     const refusals = [
       "I can't say your LDL is high without a roadmap plan.",
@@ -559,6 +565,7 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
       "I can't say whether your LDL, blood pressure and HbA1c are high or normal until the roadmap has your height.",
       "I can't say whether your LDL (3.9), blood pressure (138/88) and HbA1c (40) are high or normal yet.",
       "I can't say whether your LDL of 3.9 and blood pressure of 138/88 are high or normal.",
+      "I can't say whether your blood pressure counts as hypertension until the roadmap runs.",
     ];
     expect(verdicts(fixtureOf('what do my results show?'), [...grades, ...refusals].map(s => s + ask)))
       .toEqual([...grades.map(() => 'fail'), ...refusals.map(() => 'pass')]);
@@ -568,14 +575,21 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
   // it. The chat cannot save sex or height, so it points to the tool and never claims a save.
   it('the AC36 fixtures fail an answer that skips the tool or claims to save the height', () => {
     const why = ' Your saved LDL is 3.9 mmol/L. Please tell me your height, because the roadmap needs it to work out your BMI and protein target.';
-    expect(verdicts(fixtureOf('what do my results show?'), [why, why + ' Enter it in the roadmap tool and it can run your plan.']))
-      .toEqual(['fail', 'pass']);
+    // Review R1 (2026-10-20): a refusal that names the form without sending her there is not a pointer.
+    expect(verdicts(fixtureOf('what do my results show?'), [why, why + " I can't add it to your profile.", why + ' Enter it in the roadmap tool and it can run your plan.']))
+      .toEqual(['fail', 'fail', 'pass']);
     const bad = [
       "I've saved your height as 165 cm. Your roadmap can now run.",
       "Done! I've updated your height to 165 cm in the form.",
       "Sure, I'll save that for you. Add anything else in the form.",
       'Your height is now saved. You can also enter it in the tool.',
       'Thanks! At 165 cm the roadmap can run your plan.',
+      // Review R1 (2026-10-20): the pre-fill offer, the passive save and the gone-ahead save; bare refusals.
+      'Would you like me to pre-fill your height of 165 cm? You can also enter it in the tool.',
+      'Your height of 165 cm has been saved. You can also enter it in the tool.',
+      "I've gone ahead and saved it. You can also enter it in the tool.",
+      "I can't save your height from this chat.",
+      "I can't add it to your profile here.",
     ];
     const good = [
       "I can't save it from this chat. Please enter your height in the roadmap tool, and it can then run your plan.",
@@ -584,6 +598,28 @@ describe('test-chatbot-matching user_context (US-15, issue #135)', () => {
     ];
     expect(verdicts(fixtureOf('can you save my height'), [...bad, ...good])).toEqual([...bad.map(() => 'fail'), ...good.map(() => 'pass')]);
   }, 120_000);
+
+  // US-15 AC36 review R2 (2026-10-20): the in-chat half. Sex and height stated this turn go through run_roadmap,
+  // and the answer comes from its plan. The offline stub never calls the tool, so the regexes are scored directly,
+  // on text lowercased with straight quotes as the harness scores it.
+  it('the stated-sex-and-height fixture wants run_roadmap and fails an answer that asks again or claims a save', () => {
+    const q = cases.find(c => c.query === "I'm 165 cm and male, analyse my data")!;
+    expect(q.expect_no_plan).toBe(true);
+    expect(q.expect_roadmap_run).toBe(true);
+    const scores = (answer: string) => {
+      const t = answer.toLowerCase().replace(/[’‘]/g, "'");
+      return q.must_match!.every(r => new RegExp(r).test(t)) && !q.must_not_match!.some(r => new RegExp(r).test(t));
+    };
+    const tail = " These values aren't saved, so enter your sex and height in the roadmap tool to keep them.";
+    expect(scores('With your height and sex, the roadmap suggests talking to your doctor about your LDL.' + tail)).toBe(true);
+    for (const bad of [
+      'What is your height? The roadmap needs it.' + tail,
+      'The roadmap has no plan for you yet.' + tail,
+      "I've saved your height and sex. Enter anything else in the form.",
+      'From your roadmap, your LDL card says to talk to your doctor.', // no "not saved", no pointer
+      "These values aren't saved, and I can't add them to your profile.",
+    ]) expect(scores(bad), bad).toBe(false);
+  });
 
   it('the insulin case fails the roadmap\'s screening cut-offs given as her target (US-15 AC32)', () => {
     const bad = [

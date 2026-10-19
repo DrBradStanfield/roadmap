@@ -114,6 +114,11 @@ describe('buildSystemBlocks', () => {
     expect(NO_PLAN_CHAT_RULE).toMatch(/without grading them/);
     expect(NO_PLAN_CHAT_RULE).toMatch(/ask them to enter the missing sex or height in the roadmap tool \(this chat cannot save them\)/);
     expect(NO_PLAN_CHAT_RULE).toMatch(/one plain sentence why: the roadmap needs height and sex to work out the plan/);
+    // Review R2 (2026-10-20): a plan computed this turn from stated values wins (AC33), without naming the tool.
+    expect(NO_PLAN_CHAT_RULE).toMatch(/and no tool result this turn holds a plan/);
+    expect(NO_PLAN_CHAT_RULE).not.toContain('run_roadmap');
+    // Review R4: eGFR needs more than sex.
+    expect(NO_PLAN_CHAT_RULE).toMatch(/kidney function, as eGFR needs sex, age and creatinine/);
     expect(NO_PLAN_CHAT_RULE).not.toMatch(/\u2014/);
   });
 

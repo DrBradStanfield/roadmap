@@ -45,7 +45,8 @@ export const RUN_ROADMAP_TOOL = {
     '(feet and inches as total inches: 5 ft 5 in is 65 in). If a unit is ' +
     'ambiguous and the user did not state it, ASK which unit instead of calling this tool, and do not grade the ' +
     'value in any unit. Answer only from the result, as you would from the user data block: never grade a value ' +
-    'yourself. Tell the user the values are not saved, and offer to pre-fill them with propose_field_edit.',
+    'yourself. Tell the user the values are not saved, and offer to pre-fill the measurements with propose_field_edit; ' +
+    'never offer that for sex or height: tell them to enter those in the roadmap tool.',
   input_schema: {
     type: 'object' as const,
     properties: {
