@@ -927,6 +927,15 @@ describe('test-chatbot-matching pending entries (US-50)', () => {
     expect(status).toBe(0);
   }, 60_000);
 
+  it('an invalid pending entry never stops a run: it is dropped before validation (Codex, merged branch)', () => {
+    const broken = { ...fixture('broken', 'masters not merged'), answer_handles: ['no-such-handle'], must_not_match: ['(unclosed'], history: 'bad' };
+    const { status, stderr, out, calls } = run([fixture('runs now'), broken]);
+    expect(stderr).not.toMatch(/would not load|do not compile|history/);
+    expect(calls, stderr).toEqual(['runs now']);
+    expect(out).toContain('[pending-test] "broken": masters not merged');
+    expect(status).toBe(0);
+  }, 60_000);
+
   it('the four topic-masters fixtures are pending until masters-1 merges', () => {
     const all = JSON.parse(readFileSync(join(REPO_ROOT, 'tools/test-queries.json'), 'utf-8')) as Array<{ category: string; pending?: string }>;
     const tm = all.filter(q => q.category === 'topic-masters');

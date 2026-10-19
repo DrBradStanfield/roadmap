@@ -7735,7 +7735,8 @@
       "saffron-benefits-forms-dosing-and-side-effects"
     ],
     "must_not_match": [
-      "\\b(brad|dr\\.? stanfield|his view|he recommends)\\b(?:'s)?(?: (thinks|believes|recommends|suggests|says|view is|position is|takes))?"
+      "(brad|dr\\.? stanfield)('s)? (thinks|recommends|believes|suggests|view is|position is)",
+      "\\bhe recommends\\b"
     ],
     "must_mention": [
       "record"

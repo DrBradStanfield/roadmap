@@ -31,9 +31,10 @@ describe('answer prompt precedence (US-50 AC5)', () => {
     expect(loaded).toContain('This prompt (including the research and product claims rules), the PRODUCTS section and the ANSWER BANK outrank every loaded block.');
   });
 
-  it('the current view outranks an older post; a newer post wins over the current view', () => {
-    expect(loaded).toContain('a reference\'s "Current view" section outranks any loaded post or video published before the reference\'s reviewed date');
-    expect(loaded).toContain('A loaded post or video published after that reviewed date wins over the current view: it may record a change of view the reference has not caught up with.');
+  it('states the newer-post rule once, in the N2 sentence', () => {
+    // The N2 sentence is the single statement of the rule (Codex, merged branch: no repeat).
+    expect(loaded).not.toContain('Among loaded blocks, a reference');
+    expect(loaded).not.toContain('A loaded post or video published after that reviewed date wins');
   });
 
   it('the "view has changed" trigger is scoped to a Current view against a video post (N2)', () => {
@@ -91,6 +92,17 @@ describe('topic-masters answer fixtures are registered (US-50 AC5)', () => {
   it('covers master vs older post, newer post, evidence position and the brand surface', () => {
     expect(fixtures).toHaveLength(4);
     expect(new Set(fixtures.map(q => q.surface))).toEqual(new Set(['doctor', 'brand']));
+  });
+
+  // The harness lower-cases the answer before matching (Codex, merged branch).
+  it('the saffron fixture lets the required disclaimer through and catches attribution', () => {
+    const saffron = fixtures.find(q => q.answer_handles?.includes('saffron-benefits-forms-dosing-and-side-effects'))!;
+    const hits = (text: string) => (saffron.must_not_match ?? []).some(r => new RegExp(r).test(text.toLowerCase()));
+    expect(hits("There's no record of Brad making a specific statement on saffron.")).toBe(false);
+    expect(hits('Brad has no recorded position on saffron. The evidence suggests it may help mild low mood.')).toBe(false);
+    expect(hits('Brad recommends saffron for low mood.')).toBe(true);
+    expect(hits("Dr Stanfield's view is that saffron works.")).toBe(true);
+    expect(hits('He recommends 30 mg a day.')).toBe(true);
   });
 
   it('each is a fixed-handle answer check on real handles with answer rules that compile', () => {

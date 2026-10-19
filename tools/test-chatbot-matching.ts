@@ -385,9 +385,12 @@ interface TestQuery {
   pending?: string;            // listed, not run, unless --include-pending (see the header)
 }
 
-const ALL_QUERIES: TestQuery[] = JSON.parse(
+const LOADED_QUERIES: TestQuery[] = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'test-queries.json'), 'utf-8')
 );
+// A pending entry waits on content (e.g. an unmerged master). It is dropped here,
+// before any validation below, so an invalid one never stops a run; it is listed later.
+const ALL_QUERIES = includePending ? LOADED_QUERIES : LOADED_QUERIES.filter(q => !q.pending);
 
 // Classifier-only entries (test-classifier.ts) live in the same file but
 // have no `expected` handles array — exclude them from the router suite.
@@ -460,14 +463,12 @@ if (badRegex.length > 0) {
 }
 // --category takes a comma list, so several categories share one run and one cache warmup.
 const categories = categoryFilter?.split(',');
-if (categories) filtered = filtered.filter(q => categories.includes(q.category));
-if (sourceFilter) filtered = filtered.filter(q => q.source === sourceFilter);
-if (categories) fixedHandle = fixedHandle.filter(q => categories.includes(q.category));
-if (sourceFilter) fixedHandle = fixedHandle.filter(q => q.source === sourceFilter);
-// A pending entry waits on content (e.g. an unmerged master): list it, never score it.
-const pending = includePending ? [] : [...filtered, ...fixedHandle].filter(q => q.pending);
-filtered = filtered.filter(q => !pending.includes(q));
-fixedHandle = fixedHandle.filter(q => !pending.includes(q));
+const selected = (q: TestQuery) => (!categories || categories.includes(q.category)) && (!sourceFilter || q.source === sourceFilter);
+filtered = filtered.filter(selected);
+fixedHandle = fixedHandle.filter(selected);
+// The pending entries this run would have held: listed, never scored.
+const pending = LOADED_QUERIES.filter(q => !ALL_QUERIES.includes(q) && selected(q)
+  && (Array.isArray(q.expected) ? !fixedHandlesOnly : answerCheckMode && Array.isArray(q.answer_handles)));
 if (pending.length > 0) {
   console.log(`\x1b[33mPending (skipped; --include-pending runs them): ${pending.length}\x1b[0m`);
   for (const q of pending) console.log(`\x1b[33m  [${q.category}] "${q.query}": ${q.pending}\x1b[0m`);
