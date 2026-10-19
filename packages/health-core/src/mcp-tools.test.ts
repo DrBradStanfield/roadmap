@@ -3321,3 +3321,16 @@ describe('US-21 AC15 — the import preview checks the row the commit will check
     expect(outcome.text).toContain('Do not work the count out from the percentage');
   });
 });
+
+// US-21 AC21 review (Codex R1, 2026-10-20): a ceiling refusal on file_results
+// is one `unrecognized` line in the shape every connector refusal takes: the
+// row the assistant sent, then the refusal, whose own words never hold the number.
+describe('US-21 AC21 — file_results names a ceiling refusal like every other row refusal', () => {
+  it('US-21 AC21 — "<printed name> <value> <unit>: <refusal>"', () => {
+    const result = prepared(labCall([row('free_testosterone', 'Free Testosterone', 200, 'nmol/L', { referenceLow: 163, referenceHigh: 473 })]));
+    expect(result.unrecognized).toEqual([
+      'Free Testosterone 200 nmol/L: Free testosterone in "nmol/L": Free testosterone above 10,000 pmol/L is not a measured value, ' +
+        'so the printed unit is probably wrong (nmol/L vs pmol/L). Ask the person to check the report; do not re-send it in another unit on your own.',
+    ]);
+  });
+});

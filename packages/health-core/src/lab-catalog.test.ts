@@ -1138,6 +1138,21 @@ describe('US-21 AC21 — a per-test ceiling refuses a mislabelled prefix', () =>
     expect(labCountFault(entryOf('Free Testosterone'), row)).toBe('ceiling');
   });
 
+  // Review R1 (2026-10-20): the ceiling catches a WRONG CONVERSION, so a row
+  // printed in the canonical unit is never refused by it (a real free T on
+  // heavy androgen use can pass 10,000 pmol/L).
+  it('US-21 AC21 — only a converted row meets the ceiling: 11,000 pmol/L is stored, 11 nmol/L is refused', () => {
+    expect(canonicalLabRow(entryOf('Free Testosterone'), { value: 11000, unit: 'pmol/L', referenceLow: 163, referenceHigh: 473 }))
+      .toMatchObject({ stored: { value: 11000, unit: 'pmol/L' }, factor: 1 });
+    expect(labCountFault(entryOf('Free Testosterone'), { value: 11000, unit: 'pmol/L' })).toBeNull();
+    expect(canonicalLabRow(entryOf('Free Testosterone'), { value: 11, unit: 'nmol/L' })).toBeNull();
+    expect(labCountFault(entryOf('Free Testosterone'), { value: 11, unit: 'nmol/L' })).toBe('ceiling');
+    // The range-high trigger likewise: a canonical high bound past the ceiling stores.
+    expect(canonicalLabRow(entryOf('Free Testosterone'), { value: 300, unit: 'pmol/L', referenceLow: 163, referenceHigh: 12000 }))
+      .toMatchObject({ stored: { value: 300, referenceHigh: 12000 }, factor: 1 });
+    expect(canonicalLabRow(entryOf('Reticulocytes'), { value: 2500, unit: 'G/L' })).toMatchObject({ stored: { value: 2500 }, factor: 1 });
+  });
+
   it('US-21 AC21 — the other prefix-reachable tests carry their ceilings; troponin carries none', () => {
     expect(Object.fromEntries(LAB_CATALOG.filter((e) => e.ceiling !== undefined).map((e) => [e.key, e.ceiling]))).toEqual({
       free_testosterone: 10000, free_testosterone_calculated: 10000, reverse_t3: 10000, c_peptide: 50000, reticulocytes: 2000,

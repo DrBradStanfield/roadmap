@@ -73,8 +73,9 @@ export interface LabCatalogEntry {
    *  `note` for everyone, `assistant` only in the copy an assistant reads. */
   refusalNotes?: Record<string, { note: string; assistant?: string }>;
   /** In `unit`: a value no human sample reaches, set only where a ×1000
-   *  conversion leads here (US-21 AC21). A row whose converted value or printed
-   *  high bound passes it was printed a prefix away, so it is refused, never rescaled. */
+   *  conversion leads here (US-21 AC21). A CONVERTED row whose value or printed
+   *  high bound passes it was printed a prefix away, so it is refused, never
+   *  rescaled; a row printed in a factor-1 spelling never meets it. */
   ceiling?: number;
 }
 
@@ -442,9 +443,7 @@ export function labUnitRefusalNote(entry: LabCatalogEntry | undefined, unit: str
 
 /** Why a row above its test's ceiling was refused (US-21 AC21): the ceiling is the catalogue's, never the row's number. */
 function ceilingNote(entry: LabCatalogEntry, unit: string): string {
-  const printed = normalizeLabUnit(unit);
-  const pair = printed.toLowerCase() === entry.unit.toLowerCase() ? '' : ` (${printed} vs ${entry.unit})`;
-  return `${entry.label} above ${entry.ceiling?.toLocaleString('en-US')} ${entry.unit} is not a measured value, so the printed unit is probably wrong${pair}`;
+  return `${entry.label} above ${entry.ceiling?.toLocaleString('en-US')} ${entry.unit} is not a measured value, so the printed unit is probably wrong (${normalizeLabUnit(unit)} vs ${entry.unit})`;
 }
 
 /** True when the test takes this spelling, so a refusal in it was about the
@@ -536,8 +535,8 @@ export function labCountFault(
   const spelling = normalizeLabUnit(row.unit).toLowerCase();
   const fault = countRowFault(entry, spelling, row.value, row.referenceLow, row.referenceHigh);
   const factor = factorOf(entry, spelling);
-  if (fault || entry.ceiling === undefined || factor === undefined) return fault;
-  // The value or the printed high bound past the ceiling once converted (US-21 AC21).
+  if (fault || entry.ceiling === undefined || factor === undefined || factor === 1) return fault;
+  // A converted value or printed high bound past the ceiling (US-21 AC21); a factor-1 row is as printed.
   return [row.value, row.referenceHigh].some((n) => typeof n === 'number' && n * factor > entry.ceiling!) ? 'ceiling' : null;
 }
 
